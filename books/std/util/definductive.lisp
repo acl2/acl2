@@ -1723,8 +1723,8 @@
 (define defind-pred-when-valid-proof-thm-name ((pred-name symbolp)
                                                (name symbolp))
   :returns (thm-name symbolp)
-  :short "Name of a @('p[i]-when-valid-proof') theorem."
-  (packn-pos (list (symbol-lfix pred-name) '-when-valid-proof)
+  :short "Name of a @('p[i]-when-proof-validp') theorem."
+  (packn-pos (list (symbol-lfix pred-name) '-when-proof-validp)
              (symbol-lfix name)))
 
 ;;;;;;;;;;
@@ -1750,14 +1750,14 @@
 
 (define defind-ind-fn-name ((pred-name symbolp) (name symbolp))
   :returns (fn-name symbolp)
-  :short "Name of a @('p[i]-ind') function."
-  (packn-pos (list (symbol-lfix pred-name) '-ind) (symbol-lfix name)))
+  :short "Name of a @('p[i]-induct') function."
+  (packn-pos (list (symbol-lfix pred-name) '-induct) (symbol-lfix name)))
 
 ;;;;;;;;;;
 
 (define defind-ind-fn-clique-name ((pred-name symbolp) (name symbolp))
   :returns (defines-name symbolp)
-  :short "Name of a @(tsee defines) of @('p[i]-ind') functions."
+  :short "Name of a @(tsee defines) of @('p[i]-induct') functions."
   (packn-pos (list (defind-ind-fn-name pred-name name) '-clique)
              (symbol-lfix name)))
 
@@ -1773,7 +1773,7 @@
 (define defind-ind-flag-fn-name ((pred-name symbolp) (name symbolp))
   :returns (fn-name symbolp)
   :short "Name of the flag function of a @(tsee defines) of
-          @('p[i]-ind') functions."
+          @('p[i]-induct') functions."
   (packn-pos (list (defind-ind-fn-name pred-name name) '-flag)
              (symbol-lfix name)))
 
@@ -1782,7 +1782,7 @@
 (define defind-ind-flag-macro-name ((pred-name symbolp) (name symbolp))
   :returns (macro-name symbolp)
   :short "Name of the flag macro of a @(tsee defines) of
-          @('p[i]-ind') functions."
+          @('p[i]-induct') functions."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2165,7 +2165,7 @@
 (define defind-valid-proof-thm-section-name ((name symbolp))
   :returns (topic symbolp)
   :short "Name of the @(tsee defsection) containing
-          the @('p[i]-when-valid-proof') theorems
+          the @('p[i]-when-proof-validp') theorems
           and the @('p[i]-proof-count-bound') theorems."
   (packn-pos (list (symbol-lfix name) '-valid-proofs) (symbol-lfix name)))
 
@@ -4026,7 +4026,7 @@
                (print-events pseudo-event-form-listp))
   :short "Generate a @('p[i]') predicate,
           along with its @('p[i]-proof-minimalp') predicate
-          and its @('p[i]-when-valid-proof') theorem."
+          and its @('p[i]-when-proof-validp') theorem."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -4059,7 +4059,7 @@
     "That requirement weakens the @('p[i]-suff') theorem
      that @(tsee defun-sk) generates,
      which now applies only to minimal proofs.
-     So we generate @('p[i]-when-valid-proof'),
+     So we generate @('p[i]-when-proof-validp'),
      which applies to any valid proof,
      and disable @('p[i]-suff') in favor of it;
      the former is exactly the latter
@@ -4223,7 +4223,7 @@
                                       (clique-preds symbol-setp)
                                       (name symbolp))
   :returns (calls true-listp)
-  :short "Generate the recursive calls of a case of a @('p[i]-ind') function."
+  :short "Generate the recursive calls of a case of a @('p[i]-induct') function."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -4258,7 +4258,7 @@
                                 (clique-preds symbol-setp)
                                 (name symbolp))
   :returns (keyword+term true-listp)
-  :short "Generate a case of a @('p[i]-ind') function."
+  :short "Generate a case of a @('p[i]-induct') function."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -4300,7 +4300,7 @@
                                  (clique-preds symbol-setp)
                                  (name symbolp))
   :returns (keywords+terms true-listp)
-  :short "Generate the cases of a @('p[i]-ind') function."
+  :short "Generate the cases of a @('p[i]-induct') function."
   (b* (((when (endp infos)) nil)
        ((defind-irule-info info) (car infos))
        (rest (defind-gen-ind-fn-cases
@@ -4317,7 +4317,7 @@
                                 (clique-preds symbol-setp)
                                 (name symbolp))
   :returns (body "An untranslated term.")
-  :short "Generate the body of a @('p[i]-ind') function."
+  :short "Generate the body of a @('p[i]-induct') function."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -4348,7 +4348,7 @@
                (uses true-listp)
                (enables true-listp))
   :short "Generate the pieces of the termination hints of
-          the @('p[i]-ind') functions of a clique."
+          the @('p[i]-induct') functions of a clique."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -4395,7 +4395,7 @@
   :returns (mv (fn-events pseudo-event-form-listp)
                (thm-events pseudo-event-form-listp)
                (print-events pseudo-event-form-listp))
-  :short "Generate the @('p[i]-ind') functions of a clique,
+  :short "Generate the @('p[i]-induct') functions of a clique,
           and the induction rules if any."
   :long
   (xdoc::topstring
@@ -4542,7 +4542,7 @@
   :returns (mv (fn-events pseudo-event-form-listp)
                (thm-events pseudo-event-form-listp)
                (print-events pseudo-event-form-listp))
-  :short "Generate all the @('p[i]-ind') functions and induction rules."
+  :short "Generate all the @('p[i]-induct') functions and induction rules."
   :long
   (xdoc::topstring
    (xdoc::p

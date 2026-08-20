@@ -1027,11 +1027,11 @@
    (defthm natp-when-evn
      (implies (evn n)
               (natp n))
-     :flag evn-ind)
+     :flag evn-induct)
    (defthm natp-when-odd
      (implies (odd n)
               (natp n))
-     :flag odd-ind)
+     :flag odd-induct)
    :hints (("Goal" :expand ((evn-proof-validp (evn-proof n) n)
                             (odd-proof-validp (odd-proof n) n))
                    :in-theory (enable evn
@@ -1039,8 +1039,8 @@
                                       evn-zero-validp
                                       odd-evn-step-validp
                                       evn-odd-step-validp
-                                      evn-when-valid-proof
-                                      odd-when-valid-proof))))
+                                      evn-when-proof-validp
+                                      odd-when-proof-validp))))
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
