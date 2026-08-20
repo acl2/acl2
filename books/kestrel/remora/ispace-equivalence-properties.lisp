@@ -277,6 +277,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(defines binarize-add-in-dims
+  :short "Turn dimensions into equivalent ones with only binary additions."
+
+  (define binarize-add-in-dim ((dim dimp))
+    :returns (new-dim dimp)
+    :parents (ispace-equivalence-properties binarize-add-in-dims)
+    :short "Turn a dimension into
+            an equivalent one with only binary additions."
+    (dim-case
+     dim
+     :var (dim-var dim.name)
+     :const (dim-const dim.val)
+     :add (binarize-dims-in-add (binarize-add-in-dim-list dim.dims))
+     :mul (dim-mul (binarize-add-in-dim-list dim.dims))
+     :sub (dim-sub (binarize-add-in-dim-list dim.dims)))
+    :measure (dim-count dim))
+
+  (define binarize-add-in-dim-list ((dims dim-listp))
+    :returns (new-dims dim-listp)
+    :parents (ispace-equivalence-properties binarize-add-in-dims)
+    :short "Turn a list of dimensions into
+            an equivalent one with only binary additions."
+    (cond ((endp dims) nil)
+          (t (cons (binarize-add-in-dim (car dims))
+                   (binarize-add-in-dim-list (cdr dims)))))
+    :measure (dim-list-count dims))
+
+  :verify-guards :after-returns
+
+  :flag-local nil
+
+  ///
+
+  (fty::deffixequiv-mutual binarize-add-in-dims))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define binarize-dims-in-mul ((dims dim-listp))
   :returns (mv (new-dim dimp)
                (proof dim=-proofp))
@@ -318,43 +355,6 @@
                   :premise2-proof proof)))))
   :measure (len dims)
   :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defines binarize-add-in-dims
-  :short "Turn dimensions into equivalent ones with only binary additions."
-
-  (define binarize-add-in-dim ((dim dimp))
-    :returns (new-dim dimp)
-    :parents (ispace-equivalence-properties binarize-add-in-dims)
-    :short "Turn a dimension into
-            an equivalent one with only binary additions."
-    (dim-case
-     dim
-     :var (dim-var dim.name)
-     :const (dim-const dim.val)
-     :add (binarize-dims-in-add (binarize-add-in-dim-list dim.dims))
-     :mul (dim-mul (binarize-add-in-dim-list dim.dims))
-     :sub (dim-sub (binarize-add-in-dim-list dim.dims)))
-    :measure (dim-count dim))
-
-  (define binarize-add-in-dim-list ((dims dim-listp))
-    :returns (new-dims dim-listp)
-    :parents (ispace-equivalence-properties binarize-add-in-dims)
-    :short "Turn a list of dimensions into
-            an equivalent one with only binary additions."
-    (cond ((endp dims) nil)
-          (t (cons (binarize-add-in-dim (car dims))
-                   (binarize-add-in-dim-list (cdr dims)))))
-    :measure (dim-list-count dims))
-
-  :verify-guards :after-returns
-
-  :flag-local nil
-
-  ///
-
-  (fty::deffixequiv-mutual binarize-add-in-dims))
 
 ;;;;;;;;;;;;;;;;;;;;
 
