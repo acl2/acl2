@@ -152,11 +152,8 @@
           to a constant in the syntax for tools."
   (c::const-case
    const
-   :int (const-int (ildm-iconst (c::const-int->get const)))
-   :otherwise (prog2$ (raise "Unsupported non-integer constant ~x0."
-                             (c::const-fix const))
-                      (irr-const)))
-  :no-function nil
+   :int (const-int (ildm-iconst const.get))
+   :enum (const-enum (ildm-ident const.get)))
 
   ///
 
