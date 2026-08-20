@@ -149,4 +149,70 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define-sk cst-longest-ascii-escapes-p ((cst abnf::treep))
+  :guard (abnf::tree-terminatedp cst)
+  :returns (yes/no booleanp)
+  :short "Check if a CST does not contain any extensible @('ascii-escape') CST."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "ASCII escapes must extend as long as they can;
+     if one is a prefix of another,
+     and the Unicode characters forming the latter occur,
+     the latter must picked instead of the former.
+     This can only happen with @('SO') and @('SOH'),
+     which are the only non-prefix free pair among the 34 ASCII escapes.")
+   (xdoc::p
+    "Without this restriction,
+     a string literal like @('\"\\SOH\"') would have two possible CSTs:
+     one whose (only) element is the escape @('\\SOH'),
+     and one with the escape @('\\SO')
+     followed by the ordinary character @('H').")
+   (xdoc::p
+    "We state the restriction by saying that
+     if we have a CST matching @('ascii-escape') at a path,
+     the fringe of the CST at the adjacent path (if any)
+     must not be usable to extend the escape name,
+     i.e. any extension within the adjacent fringe
+     must not be the fringe of any possible @('ascii-escape') CST.
+     We do not single out the @('SO')-@('SOH') pair,
+     but we state it generally, for every ASCII escape.")
+   (xdoc::p
+    "An extension of an @('ascii-escape') can only be
+     another @('ascii-escape'):
+     the fringe of an @('ascii-escape') CST is the bare name
+     (without the preceding backslash),
+     which starts with an uppercase letter,
+     and among the escapes that may follow a backslash
+     only the @('ascii-escape') ones start with an uppercase letter:
+     the @('char-escape') ones are lowercase letters or punctuation,
+     the @('caret-escape') ones start with a caret,
+     and the @('num-escape') ones start with a digit,
+     or with an @('o') or @('x') of either case,
+     but no name starts with @('O') or @('X').")
+   (xdoc::p
+    "This is in the context of the fact that an @('ascii-escape')
+     can only occur just after a backslash,
+     in a string literal.")
+   (xdoc::p
+    "Note that an @('SO') escape followed by
+     the empty escape @('\\&') and then @('H') is allowed,
+     since the adjacent fringe starts with a backslash,
+     which cannot extend the name."))
+  (forall (path1 path2)
+          (implies (and (abnf::tree-pathp path1)
+                        (abnf::tree-pathp path2)
+                        (abnf::tree-path-validp path1 cst)
+                        (abnf::tree-path-validp path2 cst)
+                        (abnf::tree-paths-adjacentp path1 path2 cst))
+                   (b* ((cst1 (abnf::tree-at-path path1 cst))
+                        (cst2 (abnf::tree-at-path path2 cst)))
+                     (implies (cst-matchp cst1 "ascii-escape")
+                              (not (extensible-to-cst-fringe-p
+                                    (abnf::tree->string cst1)
+                                    (abnf::tree->string cst2)
+                                    (list "ascii-escape"))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; TODO: more predicates
