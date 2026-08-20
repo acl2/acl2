@@ -1450,7 +1450,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Read literally, C17 and C23 require that two array types be compatible
+    "Read literally, [C17] and [C23] require that two array types be compatible
      iff their element types are compatible and,
      when both size specifiers are present
      and are integer constant expressions,
