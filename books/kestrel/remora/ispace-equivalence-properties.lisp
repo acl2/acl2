@@ -265,7 +265,22 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is called on the dimension arguments of an addition dimension."))
+    "This is called on the dimension arguments of an addition dimension.")
+   (xdoc::p
+    "We show that the resulting dimension is equivalent to
+     the addition of the argument dimensions.")
+   (xdoc::p
+    "We show that the resulting dimension
+     only has binary additions if the argument dimensions do.
+     This function is called after binarizing the dimensions
+     passed as arguments to this function (see caller);
+     that establishes the hypothesis of the theorem.")
+   (xdoc::p
+    "The equivalence theorem,
+     and the related ones in @(tsee binarize-add-in-dims),
+     are proved using the inference rule theorems.
+     In the analogous theorems for multiplications,
+     we used a different proof approach, for comparison."))
   (cond ((endp dims) (dim-const 0))
         ((endp (cdr dims)) (dim-fix (car dims)))
         ((endp (cddr dims)) (dim-add dims))
@@ -273,12 +288,43 @@
                                                       (cadr dims)))
                                        (cddr dims)))))
   :measure (len dims)
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defret dim=-of-binarize-dims-in-add
+    (implies (dim-listp dims)
+             (dim= (dim-add dims) new-dim))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable binarize-dims-in-add
+                                dim=-refl
+                                dim=-add1
+                                dim=-add3m
+                                dim=-trans-swapped))
+            '(:use (dim=-add0))))
+
+  (defret dim-binaddp-of-binarize-dims-in-add
+    (implies (dim-list-binaddp dims)
+             (dim-binaddp new-dim))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* ast-binaddp-rules))
+            '(:expand ((dim-binaddp (dim-add dims))
+                       (dim-binaddp (dim-add (list (car dims)
+                                                   (cadr dims)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defines binarize-add-in-dims
   :short "Turn dimensions into equivalent ones with only binary additions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We show that the resulting dimensions are equivalent to
+     the argument ones.")
+   (xdoc::p
+    "We show that the resulting dimensions only have binary additions."))
 
   (define binarize-add-in-dim ((dim dimp))
     :returns (new-dim dimp)
@@ -310,7 +356,49 @@
 
   ///
 
-  (fty::deffixequiv-mutual binarize-add-in-dims))
+  (fty::deffixequiv-mutual binarize-add-in-dims)
+
+  (defret-mutual dim=-of-binarize-add-in-dims
+    (defret dim=-of-binarize-add-in-dim
+      (implies (dimp dim)
+               (dim= dim new-dim))
+      :fn binarize-add-in-dim)
+    (defret dims=-of-binarize-add-in-dim-list
+      (implies (dim-listp dims)
+               (dims= dims new-dims))
+      :fn binarize-add-in-dim-list)
+    :hints (("Goal"
+             :in-theory (e/d (dim=-refl
+                              dim=-trans-swapped
+                              dims=-refl
+                              dims=-cong-cons)
+                             (dim=-of-binarize-dims-in-add)))
+            '(:use ((:instance dim=-of-binarize-dims-in-add
+                               (dims (binarize-add-in-dim-list
+                                      (dim-add->dims dim))))
+                    (:instance dim=-cong-add
+                               (ds1 (dim-add->dims dim))
+                               (ds2 (binarize-add-in-dim-list
+                                     (dim-add->dims dim))))
+                    (:instance dim=-cong-mul
+                               (ds1 (dim-mul->dims dim))
+                               (ds2 (binarize-add-in-dim-list
+                                     (dim-mul->dims dim))))
+                    (:instance dim=-cong-sub
+                               (ds1 (dim-sub->dims dim))
+                               (ds2 (binarize-add-in-dim-list
+                                     (dim-sub->dims dim))))))))
+
+  (defret-mutual dim-binaddp-of-binarize-add-in-dims
+    (defret dim-binaddp-of-binarize-add-in-dim
+      (dim-binaddp new-dim)
+      :fn binarize-add-in-dim)
+    (defret dim-list-binaddp-of-binarize-add-in-dim-list
+      (dim-list-binaddp new-dims)
+      :fn binarize-add-in-dim-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-binaddp-rules))
+            '(:expand ((dim-binaddp dim))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -319,7 +407,7 @@
                (proof dim=-proofp))
   :short "Turn a list of dimensions in a multiplication
           into a dimension with only binary multiplications,
-          along with a proof tree for the transformation."
+          and construct a proof tree demonstrating equivalence."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -332,7 +420,20 @@
      @('mul0'), @('mul1'), and @('refl'),
      while the recursive case chains, via the rule @('trans'),
      an instance of the rule @('mul3m')
-     with the recursively built proof tree."))
+     with the recursively built proof tree.")
+   (xdoc::p
+    "We use the constructed proof tree to show the equivalence,
+     as we do in the related @(tsee binarize-mul-in-dims).
+     This is a different approach than used for additions,
+     for comparison of the two approaches.")
+   (xdoc::p
+    "We show that the resulting dimension
+     only has binary multiplications if the argument dimensions do.
+     This function is called after binarizing the dimensions
+     passed as arguments to this function (see caller);
+     that establishes the hypothesis of the theorem.
+     This is proved without using the proof trees,
+     similarly to additions."))
   (cond ((endp dims) (mv (dim-const 1)
                          (dim=-proof-mul0)))
         ((endp (cdr dims)) (mv (dim-fix (car dims))
@@ -354,14 +455,49 @@
                                    :ds (dim-list-fix (cddr dims)))
                   :premise2-proof proof)))))
   :measure (len dims)
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defret dim=-proof-validp-of-binarize-dims-in-mul
+    (implies (dim-listp dims)
+             (dim=-proof-validp proof
+                                (dim-mul dims)
+                                new-dim))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable dim=-proof-validp
+                                dim=-refl-validp
+                                dim=-trans-validp
+                                dim=-mul0-validp
+                                dim=-mul1-validp
+                                dim=-mul3m-validp))))
+
+  (defret dim-binmulp-of-binarize-dims-in-mul
+    (implies (dim-list-binmulp dims)
+             (dim-binmulp new-dim))
+    :fn binarize-dims-in-mul
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* ast-binmulp-rules))
+            '(:expand ((dim-binmulp (dim-mul dims))
+                       (dim-binmulp (dim-mul (list (car dims)
+                                                   (cadr dims)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defines binarize-mul-in-dims
   :short "Turn dimensions into equivalent ones
           with only binary multiplications,
-          along with proof trees for the transformations."
+          and construct proof trees demonstrating the equivalence."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We show that the resulting dimensions are equivalent to
+     the argument ones.
+     This is done via the constructed proof trees.")
+   (xdoc::p
+    "We show that the resulting dimensions only have binary multiplications."))
 
   (define binarize-mul-in-dim ((dim dimp))
     :returns (mv (new-dim dimp)
@@ -369,7 +505,7 @@
     :parents (ispace-equivalence-properties binarize-mul-in-dims)
     :short "Turn a dimension into
             an equivalent one with only binary multiplications,
-            along with a proof tree for the transformation."
+            and construct a proof tree demonstrating the equivalence."
     (dim-case
      dim
      :var (mv (dim-var dim.name)
@@ -408,7 +544,7 @@
     :parents (ispace-equivalence-properties binarize-mul-in-dims)
     :short "Turn a list of dimensions into
             an equivalent one with only binary multiplications,
-            along with a proof tree for the transformation."
+            and construct a proof tree demonstrating the equivalence."
     (b* (((when (endp dims)) (mv nil (dims=-proof-refl nil)))
          ((mv new-dim proof1) (binarize-mul-in-dim (car dims)))
          ((mv new-dims proof2) (binarize-mul-in-dim-list (cdr dims))))
@@ -428,142 +564,7 @@
 
   ///
 
-  (fty::deffixequiv-mutual binarize-mul-in-dims))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection dim-equiv-to-binadd-p-when-dimp
-  :short "Every dimension is equivalent to one with only binary additions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This validates the intention of
-     rules @('add0'), @('add1'), and @('add3m'),
-     described in @(see dim-equiv-infrules).")
-   (xdoc::p
-    "We show that the functions that we have defined
-     to reduce variadic additions to binary ones
-     (including eliminating nullary and unary additions),
-     yield equivalent dimensions with only binary additions."))
-
-  (defret dim=-of-binarize-dims-in-add
-    (implies (dim-listp dims)
-             (dim= (dim-add dims) new-dim))
-    :fn binarize-dims-in-add
-    :hints (("Goal"
-             :induct t
-             :in-theory (enable binarize-dims-in-add
-                                dim=-refl
-                                dim=-add1
-                                dim=-add3m
-                                dim=-trans-swapped))
-            '(:use (dim=-add0))))
-
-  (defret dim-binaddp-of-binarize-dims-in-add
-    (implies (dim-list-binaddp dims)
-             (dim-binaddp new-dim))
-    :fn binarize-dims-in-add
-    :hints (("Goal"
-             :induct t
-             :in-theory (enable* binarize-dims-in-add
-                                 ast-binaddp-rules))
-            '(:expand ((dim-binaddp (dim-add dims))
-                       (dim-binaddp (dim-add (list (car dims)
-                                                   (cadr dims))))))))
-
-  (defret-mutual dim=-of-binarize-add-in-dims
-    (defret dim=-of-binarize-add-in-dim
-      (implies (dimp dim)
-               (dim= dim new-dim))
-      :fn binarize-add-in-dim)
-    (defret dims=-of-binarize-add-in-dim-list
-      (implies (dim-listp dims)
-               (dims= dims new-dims))
-      :fn binarize-add-in-dim-list)
-    :hints (("Goal"
-             :in-theory (e/d (binarize-add-in-dim
-                              binarize-add-in-dim-list
-                              dim=-refl
-                              dim=-trans-swapped
-                              dims=-refl
-                              dims=-cong-cons)
-                             (dim=-of-binarize-dims-in-add)))
-            '(:use ((:instance dim=-of-binarize-dims-in-add
-                               (dims (binarize-add-in-dim-list
-                                      (dim-add->dims dim))))
-                    (:instance dim=-cong-add
-                               (ds1 (dim-add->dims dim))
-                               (ds2 (binarize-add-in-dim-list
-                                     (dim-add->dims dim))))
-                    (:instance dim=-cong-mul
-                               (ds1 (dim-mul->dims dim))
-                               (ds2 (binarize-add-in-dim-list
-                                     (dim-mul->dims dim))))
-                    (:instance dim=-cong-sub
-                               (ds1 (dim-sub->dims dim))
-                               (ds2 (binarize-add-in-dim-list
-                                     (dim-sub->dims dim)))))))
-    :mutual-recursion binarize-add-in-dims)
-
-  (defret-mutual dim-binaddp-of-binarize-add-in-dims
-    (defret dim-binaddp-of-binarize-add-in-dim
-      (dim-binaddp new-dim)
-      :fn binarize-add-in-dim)
-    (defret dim-list-binaddp-of-binarize-add-in-dim-list
-      (dim-list-binaddp new-dims)
-      :fn binarize-add-in-dim-list)
-    :hints (("Goal"
-             :in-theory (enable* binarize-add-in-dim
-                                 binarize-add-in-dim-list
-                                 ast-binaddp-rules))
-            '(:expand ((dim-binaddp dim))))
-    :mutual-recursion binarize-add-in-dims)
-
-  (defruled dim-equiv-to-binadd-p-when-dimp
-    (implies (dimp dim)
-             (dim-equiv-to-binadd-p dim))
-    :use (:instance dim-equiv-to-binadd-p-suff
-                    (dim1 (binarize-add-in-dim dim)))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defsection dim-equiv-to-binmul-p-when-dimp
-  :short "Every dimension is equivalent to one
-          with only binary multiplications."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This serves to validate the intention of
-     rules @('mul0'), @('mul1'), and @('mul3m'),
-     described in @(see dim-equiv-infrules).")
-   (xdoc::p
-    "This is proved with a different approach than
-     @(see dim-equiv-to-binadd-p-when-dimp), for comparison.
-     Instead of using the inference rule theorems
-     to show that the binarization functions
-     return equivalent dimensions,
-     we show that the proof trees built by
-     @(tsee binarize-dims-in-mul) and @(tsee binarize-mul-in-dims),
-     alongside the transformed dimensions,
-     are valid proofs of the equivalences,
-     by just running the proof validity predicates;
-     the equivalences follow via the sufficiency theorem of @('dim=')."))
-
-  (defret dim=-proof-validp-of-binarize-dims-in-mul
-    (implies (dim-listp dims)
-             (dim=-proof-validp proof
-                                (dim-mul dims)
-                                new-dim))
-    :fn binarize-dims-in-mul
-    :hints (("Goal"
-             :induct t
-             :in-theory (enable binarize-dims-in-mul
-                                dim=-proof-validp
-                                dim=-refl-validp
-                                dim=-trans-validp
-                                dim=-mul0-validp
-                                dim=-mul1-validp
-                                dim=-mul3m-validp))))
+  (fty::deffixequiv-mutual binarize-mul-in-dims)
 
   (defret-mutual dim=-proof-validp-of-binarize-mul-in-dims
     (defret dim=-proof-validp-of-binarize-mul-in-dim
@@ -579,9 +580,7 @@
                                    new-dims))
       :fn binarize-mul-in-dim-list)
     :hints (("Goal"
-             :in-theory (enable binarize-mul-in-dim
-                                binarize-mul-in-dim-list
-                                dim=-proof-validp
+             :in-theory (enable dim=-proof-validp
                                 dims=-proof-validp
                                 dim=-refl-validp
                                 dim=-trans-validp
@@ -589,20 +588,7 @@
                                 dim=-cong-mul-validp
                                 dim=-cong-sub-validp
                                 dims=-refl-validp
-                                dims=-cong-cons-validp)))
-    :mutual-recursion binarize-mul-in-dims)
-
-  (defret dim-binmulp-of-binarize-dims-in-mul
-    (implies (dim-list-binmulp dims)
-             (dim-binmulp new-dim))
-    :fn binarize-dims-in-mul
-    :hints (("Goal"
-             :induct t
-             :in-theory (enable* binarize-dims-in-mul
-                                 ast-binmulp-rules))
-            '(:expand ((dim-binmulp (dim-mul dims))
-                       (dim-binmulp (dim-mul (list (car dims)
-                                                   (cadr dims))))))))
+                                dims=-cong-cons-validp))))
 
   (defret-mutual dim-binmulp-of-binarize-mul-in-dims
     (defret dim-binmulp-of-binarize-mul-in-dim
@@ -612,18 +598,40 @@
       (dim-list-binmulp new-dims)
       :fn binarize-mul-in-dim-list)
     :hints (("Goal"
-             :in-theory (enable* binarize-mul-in-dim
-                                 binarize-mul-in-dim-list
-                                 ast-binmulp-rules))
-            '(:expand ((dim-binmulp dim))))
-    :mutual-recursion binarize-mul-in-dims)
+             :in-theory (enable* ast-binmulp-rules))
+            '(:expand ((dim-binmulp dim))))))
 
-  (defruled dim-equiv-to-binmul-p-when-dimp
-    (implies (dimp dim)
-             (dim-equiv-to-binmul-p dim))
-    :use ((:instance dim-equiv-to-binmul-p-suff
-                     (dim1 (mv-nth 0 (binarize-mul-in-dim dim))))
-          (:instance dim=-suff
-                     (proof (mv-nth 1 (binarize-mul-in-dim dim)))
-                     (dim1 dim)
-                     (dim2 (mv-nth 0 (binarize-mul-in-dim dim)))))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled dim-equiv-to-binadd-p-when-dimp
+  :short "Every dimension is equivalent to one with only binary additions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This validates the intention of
+     rules @('add0'), @('add1'), and @('add3m'),
+     described in @(see dim-equiv-infrules)."))
+  (implies (dimp dim)
+           (dim-equiv-to-binadd-p dim))
+  :use (:instance dim-equiv-to-binadd-p-suff
+                  (dim1 (binarize-add-in-dim dim))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled dim-equiv-to-binmul-p-when-dimp
+  :short "Every dimension is equivalent to one
+          with only binary multiplications."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This serves to validate the intention of
+     rules @('mul0'), @('mul1'), and @('mul3m'),
+     described in @(see dim-equiv-infrules)."))
+  (implies (dimp dim)
+           (dim-equiv-to-binmul-p dim))
+  :use ((:instance dim-equiv-to-binmul-p-suff
+                   (dim1 (mv-nth 0 (binarize-mul-in-dim dim))))
+        (:instance dim=-suff
+                   (proof (mv-nth 1 (binarize-mul-in-dim dim)))
+                   (dim1 dim)
+                   (dim2 (mv-nth 0 (binarize-mul-in-dim dim))))))
