@@ -563,7 +563,25 @@
 
   ///
 
-  (fty::deffixequiv-mutual ildm-exprs))
+  (fty::deffixequiv-mutual ildm-exprs)
+
+  (defthm-ildm-exprs-flag
+    (defthm ldm-expr-of-ildm-expr
+      (equal (ldm-expr (ildm-expr expr))
+             (mv nil (c::expr-dec0-to-oct0 expr)))
+      :flag ildm-expr)
+    (defthm ldm-expr-list-of-ildm-expr-list
+      (equal (ldm-expr-list (ildm-expr-list exprs))
+             (mv nil (c::expr-list-dec0-to-oct0 exprs)))
+      :flag ildm-expr-list)
+    :hints (("Goal"
+             :in-theory (enable ldm-expr
+                                ildm-unop
+                                ldm-expr-list
+                                check-expr-ident
+                                expr-option-some->val
+                                c::expr-dec0-to-oct0
+                                c::expr-list-dec0-to-oct0)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
