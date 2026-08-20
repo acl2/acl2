@@ -544,11 +544,7 @@
       :function-names (1+ (dirdeclor-derived-type-depth dirdeclor.declor)))
     :measure (dirdeclor-count dirdeclor))
 
-  :ruler-extenders :all
-  :verify-guards nil
-  ///
-
-  (verify-guards declor-derived-type-depth))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -606,11 +602,7 @@
       (1+ (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?)))
     :measure (dirabsdeclor-count dirabsdeclor))
 
-  :ruler-extenders :all
-  :verify-guards nil
-  ///
-
-  (verify-guards absdeclor-derived-type-depth))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
