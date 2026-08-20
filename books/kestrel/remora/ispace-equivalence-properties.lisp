@@ -860,7 +860,18 @@
      if the argument dimensions do and there is at least one of them.
      This function is called after unarizing the subtractions
      in the dimensions passed as arguments to this function (see caller);
-     that establishes the first hypothesis of the theorem."))
+     that establishes the first hypothesis of the theorem.")
+   (xdoc::p
+    "We also show that this function preserves
+     the binary status of multiplications,
+     which this function does not affect.
+     Unlike the other transformations,
+     this function does not preserve the binary status of additions:
+     the right-hand side of the rule @('sub2m') introduces
+     an addition of the remaining argument dimensions,
+     which is binary only when there are exactly three argument dimensions.
+     Thus, the binarization of additions must be applied
+     after this transformation, to binarize the introduced additions."))
   (cond ((endp dims) (mv (dim-sub nil)
                          (dim=-proof-refl (dim-sub nil))))
         ((endp (cdr dims)) (mv (dim-sub dims)
@@ -891,7 +902,12 @@
              :in-theory (enable* ast-unisubp-rules))
             '(:expand ((dim-unisubp (dim-sub dims))
                        (dim-unisubp (dim-sub (list (dim-add
-                                                    (cdr dims))))))))))
+                                                    (cdr dims)))))))))
+
+  (defret dim-binmulp-of-unarize-dims-in-sub
+    (implies (dim-list-binmulp dims)
+             (dim-binmulp new-dim))
+    :hints (("Goal" :in-theory (enable* ast-binmulp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -907,7 +923,14 @@
      This is done via the constructed proof trees.")
    (xdoc::p
     "We show that the resulting dimensions only have unary subtractions
-     if the argument ones have no nullary subtractions."))
+     if the argument ones have no nullary subtractions.")
+   (xdoc::p
+    "We also show that these functions preserve
+     the binary status of multiplications,
+     which these functions do not affect.
+     They do not preserve the binary status of additions,
+     because of the additions introduced by the rule @('sub2m')
+     (see @(tsee unarize-dims-in-sub))."))
 
   (define unarize-sub-in-dim ((dim dimp))
     :returns (mv (new-dim dimp)
@@ -970,6 +993,13 @@
 
     ///
 
+    (defret len-of-unarize-sub-in-dim-list
+      (equal (len new-dims)
+             (len dims))
+      :hints (("Goal"
+               :induct (len dims)
+               :in-theory (enable (:induction len)))))
+
     (defret consp-of-unarize-sub-in-dim-list
       (equal (consp new-dims)
              (consp dims))
@@ -1018,7 +1048,22 @@
              :in-theory (enable* ast-unisubp-rules
                                  ast-nonullsubp-rules))
             '(:expand ((dim-nonullsubp dim)
-                       (dim-unisubp dim))))))
+                       (dim-unisubp dim)))))
+
+  (defret-mutual dim-binmulp-of-unarize-sub-in-dims
+    (defret dim-binmulp-of-unarize-sub-in-dim
+      (implies (dim-binmulp dim)
+               (dim-binmulp new-dim))
+      :fn unarize-sub-in-dim)
+    (defret dim-list-binmulp-of-unarize-sub-in-dim-list
+      (implies (dim-list-binmulp dims)
+               (dim-list-binmulp new-dims))
+      :fn unarize-sub-in-dim-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-binmulp-rules))
+            '(:expand ((dim-binmulp dim)
+                       (dim-binmulp (dim-mul (mv-nth 0 (unarize-sub-in-dim-list
+                                                        (dim-mul->dims dim))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
