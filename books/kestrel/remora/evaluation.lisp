@@ -2393,7 +2393,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define prim-reduce-loop ((acc expr-valuep)
+  (define prim-reduce/fold-loop ((acc expr-valuep)
                             (cells expr-value-listp)
                             (fval expr-valuep)
                             (limit natp))
@@ -2420,7 +2420,7 @@
          ((when (endp cells)) (expr-value-fix acc))
          ((ok fval1) (eval-app-cell fval acc (1- limit)))
          ((ok acc1) (eval-app-cell fval1 (car cells) (1- limit))))
-      (prim-reduce-loop acc1 (cdr cells) fval (1- limit)))
+      (prim-reduce/fold-loop acc1 (cdr cells) fval (1- limit)))
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2453,7 +2453,7 @@
        has the expected dimensions.
        We obtain its cells via @(tsee cells-at-depth-in-expr-value),
        and we left-fold the function value over them
-       via @(tsee prim-reduce-loop),
+       via @(tsee prim-reduce/fold-loop),
        starting with the first cell:
        this mirrors the interpreter in [impl],
        which computes @('foldM (applyFun op) c cs').
@@ -2466,7 +2466,7 @@
           (reserr nil))
          ((ok cells) (cells-at-depth-in-expr-value arg 1))
          ((unless (consp cells)) (reserr nil)))
-      (prim-reduce-loop (car cells) (cdr cells) fval (1- limit)))
+      (prim-reduce/fold-loop (car cells) (cdr cells) fval (1- limit)))
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2506,7 +2506,7 @@
        the argument cell and the initial value.
        We obtain the cells via @(tsee cells-at-depth-in-expr-value),
        and we left-fold the function value over them
-       via @(tsee prim-reduce-loop),
+       via @(tsee prim-reduce/fold-loop),
        starting with the initial value:
        this mirrors the interpreter in [impl],
        which computes @('foldM (applyFun op) zero cells').
@@ -2521,7 +2521,7 @@
          ((unless (equal (dims-of-expr-value zval) s2))
           (reserr nil))
          ((ok cells) (cells-at-depth-in-expr-value arg 1)))
-      (prim-reduce-loop zval cells fval (1- limit)))
+      (prim-reduce/fold-loop zval cells fval (1- limit)))
     :measure (nfix limit))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2624,10 +2624,10 @@
                       (prim-reduce tval d (nat-list-fix s) fval arg limit)
                       (prim-reduce tval d s (expr-value-fix fval) arg limit)
                       (prim-reduce tval d s fval (expr-value-fix arg) limit)
-                      (prim-reduce-loop acc cells fval limit)
-                      (prim-reduce-loop (expr-value-fix acc) cells fval limit)
-                      (prim-reduce-loop acc (expr-value-list-fix cells) fval limit)
-                      (prim-reduce-loop acc cells (expr-value-fix fval) limit)
+                      (prim-reduce/fold-loop acc cells fval limit)
+                      (prim-reduce/fold-loop (expr-value-fix acc) cells fval limit)
+                      (prim-reduce/fold-loop acc (expr-value-list-fix cells) fval limit)
+                      (prim-reduce/fold-loop acc cells (expr-value-fix fval) limit)
                       (prim-fold tval t2val d s s2 fval zval arg limit)
                       (prim-fold (type-value-fix tval) t2val d s s2 fval zval arg limit)
                       (prim-fold tval (type-value-fix t2val) d s s2 fval zval arg limit)
@@ -2736,13 +2736,13 @@
                     (not (reserrp val)))
                (expr-value-wfp val))
       :fn eval-primop-fun)
-    (defret expr-value-wfp-of-prim-reduce-loop
+    (defret expr-value-wfp-of-prim-reduce/fold-loop
       (implies (and (expr-value-wfp acc)
                     (expr-value-list-wfp cells)
                     (expr-value-wfp fval)
                     (not (reserrp val)))
                (expr-value-wfp val))
-      :fn prim-reduce-loop)
+      :fn prim-reduce/fold-loop)
     (defret expr-value-wfp-of-prim-reduce
       (implies (and (expr-value-wfp fval)
                     (expr-value-wfp arg)
@@ -2783,7 +2783,7 @@
                (eval-unbox-list targets ispaces var body type denv limit)
                (eval-primop-fun op arg limit)
                (prim-reduce tval d s fval arg limit)
-               (prim-reduce-loop acc cells fval limit)))))
+               (prim-reduce/fold-loop acc cells fval limit)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

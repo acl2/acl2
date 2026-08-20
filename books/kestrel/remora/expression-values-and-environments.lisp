@@ -504,16 +504,32 @@
                       (fval expr-value)))
     (:fold ())
     (:fold-t ((tval type-value)))
-    (:fold-t-t2 ((tval type-value) (t2val type-value)))
-    (:fold-t-t2-d ((tval type-value) (t2val type-value) (dval nat)))
-    (:fold-t-t2-d-s ((tval type-value) (t2val type-value) (dval nat)
+    (:fold-t-t2 ((tval type-value)
+                 (t2val type-value)))
+    (:fold-t-t2-d ((tval type-value)
+                   (t2val type-value)
+                   (dval nat)))
+    (:fold-t-t2-d-s ((tval type-value)
+                     (t2val type-value)
+                     (dval nat)
                      (sval nat-list)))
-    (:fold-t-t2-d-s-s2 ((tval type-value) (t2val type-value) (dval nat)
-                        (sval nat-list) (s2val nat-list)))
-    (:fold-t-t2-d-s-s2-f ((tval type-value) (t2val type-value) (dval nat)
-                          (sval nat-list) (s2val nat-list) (fval expr-value)))
-    (:fold-t-t2-d-s-s2-f-z ((tval type-value) (t2val type-value) (dval nat)
-                            (sval nat-list) (s2val nat-list) (fval expr-value)
+    (:fold-t-t2-d-s-s2 ((tval type-value)
+                        (t2val type-value)
+                        (dval nat)
+                        (sval nat-list)
+                        (s2val nat-list)))
+    (:fold-t-t2-d-s-s2-f ((tval type-value)
+                          (t2val type-value)
+                          (dval nat)
+                          (sval nat-list)
+                          (s2val nat-list)
+                          (fval expr-value)))
+    (:fold-t-t2-d-s-s2-f-z ((tval type-value)
+                            (t2val type-value)
+                            (dval nat)
+                            (sval nat-list)
+                            (s2val nat-list)
+                            (fval expr-value)
                             (zval expr-value)))
     :pred primop-valuep
     :measure (two-nats-measure (acl2-count x) 0))
@@ -1024,7 +1040,7 @@
 
   ///
 
-  (defrule expr-value-wfp-of-x-stage-xvals
+  (defrule expr-value-wfp-of-expr-value-stages
     (and (implies (primop-value-case op :int-binary-x)
                   (equal (expr-value-wfp (primop-value-int-binary-x->xval op))
                          (primop-value-wfp op)))
@@ -1072,7 +1088,7 @@
     :enable (primop-value-wfp expr-value-wfp)
     :expand ((check-dims-of-primop-value op)))
 
-  (defrule primop-value-wfp-of-x-stage-constructors
+  (defrule primop-value-wfp-of-expr-value-stage-constructors
     (and (equal (primop-value-wfp (primop-value-int-binary-x op xval))
                 (expr-value-wfp xval))
          (equal (primop-value-wfp (primop-value-int-rel-x op xval))
