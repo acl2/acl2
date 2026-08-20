@@ -464,12 +464,6 @@
        Each takes a proof and the arguments of the conclusion,
        and universally quantifies over the other proof trees.")
      (xdoc::p
-      "The count is @('p[i]-proof-count') when
-       the fixtype of proofs is recursive;
-       otherwise FTY generates no count function for that fixtype,
-       and @(tsee acl2-count) is used instead,
-       which serves the same purpose.")
-     (xdoc::p
       "These predicates are currently not guard-verified,
        because they call the non-guard-verified
        @('p[i]-proof-validp') predicates."))
@@ -486,13 +480,17 @@
        there is a proof that is valid for those arguments,
        which are passed to @('p[i]-proof-validp').")
      (xdoc::p
+      "The witness function backing the existential
+       is given the name @('p[i]-proof').")
+     (xdoc::p
       "The proof whose existence is asserted is also required to be minimal,
        according to @('p[i]-proof-minimalp').
        This does not change the meaning of the predicates,
        because a minimal valid proof tree exists
        exactly when any valid proof tree exists.
        It makes the witness @('p[i]-proof') a minimal proof,
-       which support reasoning by induction using the @('p[i]-induct') functions (see below).
+       which supports reasoning by induction
+       using the @('p[i]-induct') functions (see below).
        (A minimal proof tree need not be unique:
        there may be several valid proof trees for the same conclusion
        with the same count.)")
@@ -515,14 +513,8 @@
      (xdoc::p
       "Because of the minimality requirement described above,
        the @('p[i]-suff') theorems that @(tsee defun-sk) generates
-       require the proof tree to be minimal,
-       which is inconvenient.
-       These theorems drop that requirement,
-       and are therefore exactly the @('p[i]-suff') theorems
-       that this macro generated
-       before the minimality requirement was introduced;
-       the @('p[i]-suff') theorems are disabled,
-       since these stronger ones replace them.")
+       require the proof tree to be minimal.
+       These theorems drop that requirement.")
      (xdoc::p
       "Each is proved by descending from the given proof tree
        to a minimal one:
@@ -549,7 +541,8 @@
       "@('...')"
       "@('p[n]-proof-count-bound')")
      (xdoc::p
-      "Theorems saying that the witness proof tree is minimal in fact,
+      "Theorems saying that the witness proof tree produced by @('p[i]-proof')
+       is minimal in fact,
        i.e. that its count is no larger than the count of
        any valid proof tree of the same conclusion.
        These are @(':linear') rules,
@@ -574,10 +567,11 @@
       "@('...')"
       "@('p[n]-ind')")
      (xdoc::p
-      "Functions expressing rule induction for the predicates.
-       Each recurses on the arguments of the conclusions of the premises
-       of the rule that the witness proof tree used,
-       and so mentions no proof tree;
+      "Functions providing an induction scheme for the predicates.
+       Each recurses on the arguments of the premises
+       of the rule that the witness proof tree used.
+       The witness proof is chosen at each step,
+       and therefore is not an argument to the function;
        that is what lets it serve as an induction scheme
        for the predicate itself.
        The results of these functions are irrelevant:
