@@ -278,19 +278,44 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (define binarize-dims-in-mul ((dims dim-listp))
-  :returns (new-dim dimp)
+  :returns (mv (new-dim dimp)
+               (proof dim=-proofp))
   :short "Turn a list of dimensions in a multiplication
-          into a dimension with only binary multiplications."
+          into a dimension with only binary multiplications,
+          along with a proof tree for the transformation."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is called on the dimension arguments of a multiplication dimension."))
-  (cond ((endp dims) (dim-const 1))
-        ((endp (cdr dims)) (dim-fix (car dims)))
-        ((endp (cddr dims)) (dim-mul dims))
-        (t (binarize-dims-in-mul (cons (dim-mul (list (car dims)
-                                                      (cadr dims)))
-                                       (cddr dims)))))
+    "This is called on the dimension arguments of a multiplication dimension.")
+   (xdoc::p
+    "The proof tree proves the equivalence of
+     @('(dim-mul dims)') and the new dimension.
+     Its structure mirrors the recursion of this function:
+     the base cases use the rules
+     @('mul0'), @('mul1'), and @('refl'),
+     while the recursive case chains, via the rule @('trans'),
+     an instance of the rule @('mul3m')
+     with the recursively built proof tree."))
+  (cond ((endp dims) (mv (dim-const 1)
+                         (dim=-proof-mul0)))
+        ((endp (cdr dims)) (mv (dim-fix (car dims))
+                               (dim=-proof-mul1 (dim-fix (car dims)))))
+        ((endp (cddr dims)) (mv (dim-mul dims)
+                                (dim=-proof-refl (dim-mul dims))))
+        (t (b* ((dims1 (cons (dim-mul (list (car dims)
+                                            (cadr dims)))
+                             (cddr dims)))
+                ((mv new-dim proof) (binarize-dims-in-mul dims1)))
+             (mv new-dim
+                 (make-dim=-proof-trans
+                  :d1 (dim-mul dims)
+                  :d2 (dim-mul dims1)
+                  :d3 new-dim
+                  :premise1-proof (make-dim=-proof-mul3m
+                                   :d1 (dim-fix (car dims))
+                                   :d2 (dim-fix (cadr dims))
+                                   :ds (dim-list-fix (cddr dims)))
+                  :premise2-proof proof)))))
   :measure (len dims)
   :verify-guards :after-returns)
 
@@ -335,30 +360,66 @@
 
 (defines binarize-mul-in-dims
   :short "Turn dimensions into equivalent ones
-          with only binary multiplications."
+          with only binary multiplications,
+          along with proof trees for the transformations."
 
   (define binarize-mul-in-dim ((dim dimp))
-    :returns (new-dim dimp)
+    :returns (mv (new-dim dimp)
+                 (proof dim=-proofp))
     :parents (ispace-equivalence-properties binarize-mul-in-dims)
     :short "Turn a dimension into
-            an equivalent one with only binary multiplications."
+            an equivalent one with only binary multiplications,
+            along with a proof tree for the transformation."
     (dim-case
      dim
-     :var (dim-var dim.name)
-     :const (dim-const dim.val)
-     :add (dim-add (binarize-mul-in-dim-list dim.dims))
-     :mul (binarize-dims-in-mul (binarize-mul-in-dim-list dim.dims))
-     :sub (dim-sub (binarize-mul-in-dim-list dim.dims)))
+     :var (mv (dim-var dim.name)
+              (dim=-proof-refl (dim-var dim.name)))
+     :const (mv (dim-const dim.val)
+                (dim=-proof-refl (dim-const dim.val)))
+     :add (b* (((mv new-dims proof) (binarize-mul-in-dim-list dim.dims)))
+            (mv (dim-add new-dims)
+                (make-dim=-proof-cong-add
+                 :ds1 dim.dims
+                 :ds2 new-dims
+                 :premise1-proof proof)))
+     :mul (b* (((mv new-dims proof) (binarize-mul-in-dim-list dim.dims))
+               ((mv new-dim proof1) (binarize-dims-in-mul new-dims)))
+            (mv new-dim
+                (make-dim=-proof-trans
+                 :d1 (dim-mul dim.dims)
+                 :d2 (dim-mul new-dims)
+                 :d3 new-dim
+                 :premise1-proof (make-dim=-proof-cong-mul
+                                  :ds1 dim.dims
+                                  :ds2 new-dims
+                                  :premise1-proof proof)
+                 :premise2-proof proof1)))
+     :sub (b* (((mv new-dims proof) (binarize-mul-in-dim-list dim.dims)))
+            (mv (dim-sub new-dims)
+                (make-dim=-proof-cong-sub
+                 :ds1 dim.dims
+                 :ds2 new-dims
+                 :premise1-proof proof))))
     :measure (dim-count dim))
 
   (define binarize-mul-in-dim-list ((dims dim-listp))
-    :returns (new-dims dim-listp)
+    :returns (mv (new-dims dim-listp)
+                 (proof dims=-proofp))
     :parents (ispace-equivalence-properties binarize-mul-in-dims)
     :short "Turn a list of dimensions into
-            an equivalent one with only binary multiplications."
-    (cond ((endp dims) nil)
-          (t (cons (binarize-mul-in-dim (car dims))
-                   (binarize-mul-in-dim-list (cdr dims)))))
+            an equivalent one with only binary multiplications,
+            along with a proof tree for the transformation."
+    (b* (((when (endp dims)) (mv nil (dims=-proof-refl nil)))
+         ((mv new-dim proof1) (binarize-mul-in-dim (car dims)))
+         ((mv new-dims proof2) (binarize-mul-in-dim-list (cdr dims))))
+      (mv (cons new-dim new-dims)
+          (make-dims=-proof-cong-cons
+           :d1 (dim-fix (car dims))
+           :d2 new-dim
+           :ds1 (dim-list-fix (cdr dims))
+           :ds2 new-dims
+           :premise1-proof proof1
+           :premise2-proof proof2)))
     :measure (dim-list-count dims))
 
   :verify-guards :after-returns
@@ -368,100 +429,6 @@
   ///
 
   (fty::deffixequiv-mutual binarize-mul-in-dims))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define binarize-dims-in-mul-proof ((dims dim-listp))
-  :returns (proof dim=-proofp)
-  :short "Build a proof tree for
-          the transformation operated by @(tsee binarize-dims-in-mul)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The proof tree proves the equivalence of
-     @('(dim-mul dims)') and @('(binarize-dims-in-mul dims)').
-     Its structure mirrors the recursion of @(tsee binarize-dims-in-mul):
-     the base cases use the rules
-     @('mul0'), @('mul1'), and @('refl'),
-     while the recursive case chains, via the rule @('trans'),
-     an instance of the rule @('mul3m')
-     with the recursively built proof tree."))
-  (cond ((endp dims) (dim=-proof-mul0))
-        ((endp (cdr dims)) (dim=-proof-mul1 (dim-fix (car dims))))
-        ((endp (cddr dims)) (dim=-proof-refl (dim-mul dims)))
-        (t (b* ((dims1 (cons (dim-mul (list (car dims)
-                                            (cadr dims)))
-                             (cddr dims))))
-             (make-dim=-proof-trans
-              :d1 (dim-mul dims)
-              :d2 (dim-mul dims1)
-              :d3 (binarize-dims-in-mul dims1)
-              :premise1-proof (make-dim=-proof-mul3m
-                               :d1 (dim-fix (car dims))
-                               :d2 (dim-fix (cadr dims))
-                               :ds (dim-list-fix (cddr dims)))
-              :premise2-proof (binarize-dims-in-mul-proof dims1)))))
-  :measure (len dims)
-  :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defines binarize-mul-in-dims-proof
-  :short "Build proof trees for
-          the transformations operated by @(tsee binarize-mul-in-dims)."
-
-  (define binarize-mul-in-dim-proof ((dim dimp))
-    :returns (proof dim=-proofp)
-    :parents (ispace-equivalence-properties binarize-mul-in-dims-proof)
-    :short "Build a proof tree for
-            the transformations operated by @(tsee binarize-mul-in-dim)."
-    (dim-case
-     dim
-     :var (dim=-proof-refl (dim-var dim.name))
-     :const (dim=-proof-refl (dim-const dim.val))
-     :add (make-dim=-proof-cong-add
-           :ds1 dim.dims
-           :ds2 (binarize-mul-in-dim-list dim.dims)
-           :premise1-proof (binarize-mul-in-dim-list-proof dim.dims))
-     :mul (b* ((new-dims (binarize-mul-in-dim-list dim.dims)))
-            (make-dim=-proof-trans
-             :d1 (dim-mul dim.dims)
-             :d2 (dim-mul new-dims)
-             :d3 (binarize-dims-in-mul new-dims)
-             :premise1-proof (make-dim=-proof-cong-mul
-                              :ds1 dim.dims
-                              :ds2 new-dims
-                              :premise1-proof (binarize-mul-in-dim-list-proof
-                                               dim.dims))
-             :premise2-proof (binarize-dims-in-mul-proof new-dims)))
-     :sub (make-dim=-proof-cong-sub
-           :ds1 dim.dims
-           :ds2 (binarize-mul-in-dim-list dim.dims)
-           :premise1-proof (binarize-mul-in-dim-list-proof dim.dims)))
-    :measure (dim-count dim))
-
-  (define binarize-mul-in-dim-list-proof ((dims dim-listp))
-    :returns (proof dims=-proofp)
-    :parents (ispace-equivalence-properties binarize-mul-in-dims-proof)
-    :short "Build a proof tree for
-            the transformations operated by @(tsee binarize-mul-in-dim-list)."
-    (cond ((endp dims) (dims=-proof-refl nil))
-          (t (make-dims=-proof-cong-cons
-              :d1 (dim-fix (car dims))
-              :d2 (binarize-mul-in-dim (car dims))
-              :ds1 (dim-list-fix (cdr dims))
-              :ds2 (binarize-mul-in-dim-list (cdr dims))
-              :premise1-proof (binarize-mul-in-dim-proof (car dims))
-              :premise2-proof (binarize-mul-in-dim-list-proof (cdr dims)))))
-    :measure (dim-list-count dims))
-
-  :verify-guards :after-returns
-
-  :flag-local nil
-
-  ///
-
-  (fty::deffixequiv-mutual binarize-mul-in-dims-proof))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -576,21 +543,21 @@
      to show that the binarization functions
      return equivalent dimensions,
      we show that the proof trees built by
-     @(tsee binarize-dims-in-mul-proof) and @(tsee binarize-mul-in-dims-proof)
+     @(tsee binarize-dims-in-mul) and @(tsee binarize-mul-in-dims),
+     alongside the transformed dimensions,
      are valid proofs of the equivalences,
      by just running the proof validity predicates;
      the equivalences follow via the sufficiency theorem of @('dim=')."))
 
-  (defret dim=-proof-validp-of-binarize-dims-in-mul-proof
+  (defret dim=-proof-validp-of-binarize-dims-in-mul
     (implies (dim-listp dims)
              (dim=-proof-validp proof
                                 (dim-mul dims)
-                                (binarize-dims-in-mul dims)))
-    :fn binarize-dims-in-mul-proof
+                                new-dim))
+    :fn binarize-dims-in-mul
     :hints (("Goal"
              :induct t
-             :in-theory (enable binarize-dims-in-mul-proof
-                                binarize-dims-in-mul
+             :in-theory (enable binarize-dims-in-mul
                                 dim=-proof-validp
                                 dim=-refl-validp
                                 dim=-trans-validp
@@ -598,23 +565,21 @@
                                 dim=-mul1-validp
                                 dim=-mul3m-validp))))
 
-  (defret-mutual dim=-proof-validp-of-binarize-mul-in-dim-proof
-    (defret dim=-proof-validp-of-binarize-mul-in-dim-proof
+  (defret-mutual dim=-proof-validp-of-binarize-mul-in-dims
+    (defret dim=-proof-validp-of-binarize-mul-in-dim
       (implies (dimp dim)
                (dim=-proof-validp proof
                                   dim
-                                  (binarize-mul-in-dim dim)))
-      :fn binarize-mul-in-dim-proof)
-    (defret dims=-proof-validp-of-binarize-mul-in-dim-list-proof
+                                  new-dim))
+      :fn binarize-mul-in-dim)
+    (defret dims=-proof-validp-of-binarize-mul-in-dim-list
       (implies (dim-listp dims)
                (dims=-proof-validp proof
                                    dims
-                                   (binarize-mul-in-dim-list dims)))
-      :fn binarize-mul-in-dim-list-proof)
+                                   new-dims))
+      :fn binarize-mul-in-dim-list)
     :hints (("Goal"
-             :in-theory (enable binarize-mul-in-dim-proof
-                                binarize-mul-in-dim-list-proof
-                                binarize-mul-in-dim
+             :in-theory (enable binarize-mul-in-dim
                                 binarize-mul-in-dim-list
                                 dim=-proof-validp
                                 dims=-proof-validp
@@ -625,7 +590,7 @@
                                 dim=-cong-sub-validp
                                 dims=-refl-validp
                                 dims=-cong-cons-validp)))
-    :mutual-recursion binarize-mul-in-dims-proof)
+    :mutual-recursion binarize-mul-in-dims)
 
   (defret dim-binmulp-of-binarize-dims-in-mul
     (implies (dim-list-binmulp dims)
@@ -657,8 +622,8 @@
     (implies (dimp dim)
              (dim-equiv-to-binmul-p dim))
     :use ((:instance dim-equiv-to-binmul-p-suff
-                     (dim1 (binarize-mul-in-dim dim)))
+                     (dim1 (mv-nth 0 (binarize-mul-in-dim dim))))
           (:instance dim=-suff
-                     (proof (binarize-mul-in-dim-proof dim))
+                     (proof (mv-nth 1 (binarize-mul-in-dim dim)))
                      (dim1 dim)
-                     (dim2 (binarize-mul-in-dim dim))))))
+                     (dim2 (mv-nth 0 (binarize-mul-in-dim dim)))))))
