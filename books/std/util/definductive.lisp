@@ -4265,7 +4265,20 @@
     "A rule with no premises that call predicates of the same clique
      is a base case of the induction, and yields @('nil');
      the value of the function is irrelevant,
-     only its recursive structure matters."))
+     only its recursive structure matters.")
+   (xdoc::p
+    "As in a case of a @('p[i]-proof-validp') function,
+     we bind all the variables of the rule
+     (see @(tsee defind-gen-proof-valid-fn-case-bindings)).
+     But here only the ones that occur in the arguments of the premises
+     that call predicates of the same clique are used:
+     a variable that occurs only in another premise,
+     or only in the conclusion,
+     is bound and not used.
+     Hence the @('ignorable') declaration,
+     which plays the role that
+     the @(':ignore-ok') of the @('p[l[k]]-rule[k]-validp') functions
+     plays there."))
   (b* (((defind-irule-info info))
        (tag (defind-irule-tag info.name))
        (calls (defind-gen-ind-fn-case-calls info.premises clique-preds name))
@@ -4273,7 +4286,11 @@
        (term (if (endp (cdr calls)) (car calls) `(list ,@calls)))
        (vars (defind-irule-info-free-vars info))
        (bindings (defind-gen-proof-valid-fn-case-bindings vars name)))
-    (list tag (if bindings `(let ,bindings ,term) term)))
+    (list tag (if bindings
+                  `(let ,bindings
+                     (declare (ignorable ,@(symbol-list-fix vars)))
+                     ,term)
+                term)))
   :guard-hints (("Goal" :in-theory (enable symbol-listp-when-symbol-setp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
