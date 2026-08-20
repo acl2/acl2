@@ -809,7 +809,7 @@
                            (if 64-bitp
                                '(run-until-return64 x86)
                              '(run-until-return32 x86))))
-       (term-to-simulate (wrap-in-output-extractor output-indicator term-to-simulate 64-bitp (w state))) ;TODO: delay this if lifting a loop?
+       (term-to-simulate (wrap-in-output-extractor term-to-simulate output-indicator 64-bitp state)) ;TODO: delay this if lifting a loop?
        ((when (not (termp term-to-simulate (w state))))
         (er hard? 'unroll-x86-code-core "Bad term after wrapping in output-extractor: ~x0." term-to-simulate)
         (mv :error-wrapping-in-output-extractor nil nil nil nil nil nil state))
