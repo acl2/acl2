@@ -420,7 +420,21 @@
     (cond ((endp dims) nil)
           (t (cons (binarize-add-in-dim (car dims))
                    (binarize-add-in-dim-list (cdr dims)))))
-    :measure (dim-list-count dims))
+    :measure (dim-list-count dims)
+
+    ///
+
+    (defret len-of-binarize-add-in-dim-list
+      (equal (len new-dims)
+             (len dims))
+      :hints (("Goal"
+               :induct (len dims)
+               :in-theory (enable (:induction len)))))
+
+    (defret consp-of-binarize-add-in-dim-list
+      (equal (consp new-dims)
+             (consp dims))
+      :hints (("Goal" :expand ((binarize-add-in-dim-list dims))))))
 
   :verify-guards :after-returns
 
@@ -469,20 +483,6 @@
     :hints (("Goal"
              :in-theory (enable* ast-binaddp-rules))
             '(:expand ((dim-binaddp dim)))))
-
-  (defret len-of-binarize-add-in-dim-list
-    (equal (len new-dims)
-           (len dims))
-    :fn binarize-add-in-dim-list
-    :hints (("Goal"
-             :induct (len dims)
-             :in-theory (enable (:induction len)))))
-
-  (defret consp-of-binarize-add-in-dim-list
-    (equal (consp new-dims)
-           (consp dims))
-    :fn binarize-add-in-dim-list
-    :hints (("Goal" :expand ((binarize-add-in-dim-list dims)))))
 
   (defret-mutual dim-binmulp-of-binarize-add-in-dims
     (defret dim-binmulp-of-binarize-add-in-dim
@@ -719,7 +719,21 @@
            :ds2 new-dims
            :premise1-proof proof1
            :premise2-proof proof2)))
-    :measure (dim-list-count dims))
+    :measure (dim-list-count dims)
+
+    ///
+
+    (defret len-of-binarize-mul-in-dim-list
+      (equal (len new-dims)
+             (len dims))
+      :hints (("Goal"
+               :induct (len dims)
+               :in-theory (enable (:induction len)))))
+
+    (defret consp-of-binarize-mul-in-dim-list
+      (equal (consp new-dims)
+             (consp dims))
+      :hints (("Goal" :expand ((binarize-mul-in-dim-list dims))))))
 
   :verify-guards :after-returns
 
@@ -761,20 +775,6 @@
     :hints (("Goal"
              :in-theory (enable* ast-binmulp-rules))
             '(:expand ((dim-binmulp dim)))))
-
-  (defret len-of-binarize-mul-in-dim-list
-    (equal (len new-dims)
-           (len dims))
-    :fn binarize-mul-in-dim-list
-    :hints (("Goal"
-             :induct (len dims)
-             :in-theory (enable (:induction len)))))
-
-  (defret consp-of-binarize-mul-in-dim-list
-    (equal (consp new-dims)
-           (consp dims))
-    :fn binarize-mul-in-dim-list
-    :hints (("Goal" :expand ((binarize-mul-in-dim-list dims)))))
 
   (defret-mutual dim-binaddp-of-binarize-mul-in-dims
     (defret dim-binaddp-of-binarize-mul-in-dim
@@ -966,19 +966,20 @@
            :ds2 new-dims
            :premise1-proof proof1
            :premise2-proof proof2)))
-    :measure (dim-list-count dims))
+    :measure (dim-list-count dims)
+
+    ///
+
+    (defret consp-of-unarize-sub-in-dim-list
+      (equal (consp new-dims)
+             (consp dims))
+      :hints (("Goal" :expand ((unarize-sub-in-dim-list dims))))))
 
   :verify-guards :after-returns
 
   ///
 
   (fty::deffixequiv-mutual unarize-sub-in-dims)
-
-  (defret consp-of-unarize-sub-in-dim-list
-    (equal (consp new-dims)
-           (consp dims))
-    :fn unarize-sub-in-dim-list
-    :hints (("Goal" :expand ((unarize-sub-in-dim-list dims)))))
 
   (defret-mutual dim=-proof-validp-of-unarize-sub-in-dims
     (defret dim=-proof-validp-of-unarize-sub-in-dim
