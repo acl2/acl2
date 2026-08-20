@@ -58,7 +58,9 @@
      the type parameter of the operation,
      i.e. the one in the operation's type in @(tsee primop-types);
      then we construct the next instantiation stage of the operation,
-     which stores the type value received.
+     which stores the type values received so far
+     (just one, except for the second stage of @('fold'),
+     which has two type parameters).
      Anything else is an error."))
   (primop-value-case
    op
@@ -117,6 +119,17 @@
                           (list (type-var-atom "t"))))
                  (reserr nil)))
              (expr-value-primop (primop-value-reduce-t tval)))
+   :fold (b* (((unless (type-values-match-type-vars-p
+                        (list tval)
+                        (list (type-var-atom "t"))))
+               (reserr nil)))
+           (expr-value-primop (primop-value-fold-t tval)))
+   :fold-t (b* (((unless (type-values-match-type-vars-p
+                          (list tval)
+                          (list (type-var-atom "t2"))))
+                 (reserr nil)))
+             (expr-value-primop (make-primop-value-fold-t-t2 :tval op.tval
+                                                             :t2val tval)))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-tfunp
                                            type-values-match-type-vars-p)))

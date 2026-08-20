@@ -502,6 +502,35 @@
                       (dval nat)
                       (sval nat-list)
                       (fval expr-value)))
+    (:fold ())
+    (:fold-t ((tval type-value)))
+    (:fold-t-t2 ((tval type-value)
+                 (t2val type-value)))
+    (:fold-t-t2-d ((tval type-value)
+                   (t2val type-value)
+                   (dval nat)))
+    (:fold-t-t2-d-s ((tval type-value)
+                     (t2val type-value)
+                     (dval nat)
+                     (sval nat-list)))
+    (:fold-t-t2-d-s-s2 ((tval type-value)
+                        (t2val type-value)
+                        (dval nat)
+                        (sval nat-list)
+                        (s2val nat-list)))
+    (:fold-t-t2-d-s-s2-f ((tval type-value)
+                          (t2val type-value)
+                          (dval nat)
+                          (sval nat-list)
+                          (s2val nat-list)
+                          (fval expr-value)))
+    (:fold-t-t2-d-s-s2-f-z ((tval type-value)
+                            (t2val type-value)
+                            (dval nat)
+                            (sval nat-list)
+                            (s2val nat-list)
+                            (fval expr-value)
+                            (zval expr-value)))
     :pred primop-valuep
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -846,6 +875,11 @@
                         :unit)
      :reduce-t-d-s-f (b* (((ok &) (check-dims-of-expr-value val.fval)))
                        :unit)
+     :fold-t-t2-d-s-s2-f (b* (((ok &) (check-dims-of-expr-value val.fval)))
+                           :unit)
+     :fold-t-t2-d-s-s2-f-z (b* (((ok &) (check-dims-of-expr-value val.fval))
+                                ((ok &) (check-dims-of-expr-value val.zval)))
+                             :unit)
      :otherwise :unit)
     :measure (primop-value-count val))
 
@@ -1006,7 +1040,7 @@
 
   ///
 
-  (defrule expr-value-wfp-of-x-stage-xvals
+  (defrule expr-value-wfp-of-expr-value-stages
     (and (implies (primop-value-case op :int-binary-x)
                   (equal (expr-value-wfp (primop-value-int-binary-x->xval op))
                          (primop-value-wfp op)))
@@ -1040,11 +1074,21 @@
          (implies (primop-value-case op :reduce-t-d-s-f)
                   (equal (expr-value-wfp
                           (primop-value-reduce-t-d-s-f->fval op))
-                         (primop-value-wfp op))))
+                         (primop-value-wfp op)))
+         (implies (primop-value-case op :fold-t-t2-d-s-s2-f)
+                  (equal (expr-value-wfp
+                          (primop-value-fold-t-t2-d-s-s2-f->fval op))
+                         (primop-value-wfp op)))
+         (implies (and (primop-value-case op :fold-t-t2-d-s-s2-f-z)
+                       (primop-value-wfp op))
+                  (and (expr-value-wfp
+                        (primop-value-fold-t-t2-d-s-s2-f-z->fval op))
+                       (expr-value-wfp
+                        (primop-value-fold-t-t2-d-s-s2-f-z->zval op)))))
     :enable (primop-value-wfp expr-value-wfp)
     :expand ((check-dims-of-primop-value op)))
 
-  (defrule primop-value-wfp-of-x-stage-constructors
+  (defrule primop-value-wfp-of-expr-value-stage-constructors
     (and (equal (primop-value-wfp (primop-value-int-binary-x op xval))
                 (expr-value-wfp xval))
          (equal (primop-value-wfp (primop-value-int-rel-x op xval))
@@ -1067,7 +1111,16 @@
                 (expr-value-wfp xval))
          (equal (primop-value-wfp
                  (primop-value-reduce-t-d-s-f tval dval sval fval))
-                (expr-value-wfp fval)))
+                (expr-value-wfp fval))
+         (equal (primop-value-wfp
+                 (primop-value-fold-t-t2-d-s-s2-f tval t2val dval sval
+                                                  s2val fval))
+                (expr-value-wfp fval))
+         (equal (primop-value-wfp
+                 (primop-value-fold-t-t2-d-s-s2-f-z tval t2val dval sval
+                                                    s2val fval zval))
+                (and (expr-value-wfp fval)
+                     (expr-value-wfp zval))))
     :enable (primop-value-wfp expr-value-wfp)
     :expand ((check-dims-of-primop-value (primop-value-int-binary-x op xval))
              (check-dims-of-primop-value (primop-value-int-rel-x op xval))
@@ -1082,7 +1135,13 @@
              (check-dims-of-primop-value
               (primop-value-index2d-t-m-n-x tval mval nval xval))
              (check-dims-of-primop-value
-              (primop-value-reduce-t-d-s-f tval dval sval fval)))))
+              (primop-value-reduce-t-d-s-f tval dval sval fval))
+             (check-dims-of-primop-value
+              (primop-value-fold-t-t2-d-s-s2-f tval t2val dval sval
+                                               s2val fval))
+             (check-dims-of-primop-value
+              (primop-value-fold-t-t2-d-s-s2-f-z tval t2val dval sval
+                                                 s2val fval zval)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2121,7 +2180,15 @@
                      :reduce-t nil
                      :reduce-t-d nil
                      :reduce-t-d-s t
-                     :reduce-t-d-s-f t))
+                     :reduce-t-d-s-f t
+                     :fold nil
+                     :fold-t nil
+                     :fold-t-t2 nil
+                     :fold-t-t2-d nil
+                     :fold-t-t2-d-s nil
+                     :fold-t-t2-d-s-s2 t
+                     :fold-t-t2-d-s-s2-f t
+                     :fold-t-t2-d-s-s2-f-z t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2213,7 +2280,15 @@
                      :reduce-t nil
                      :reduce-t-d nil
                      :reduce-t-d-s nil
-                     :reduce-t-d-s-f nil))
+                     :reduce-t-d-s-f nil
+                     :fold t
+                     :fold-t t
+                     :fold-t-t2 nil
+                     :fold-t-t2-d nil
+                     :fold-t-t2-d-s nil
+                     :fold-t-t2-d-s-s2 nil
+                     :fold-t-t2-d-s-s2-f nil
+                     :fold-t-t2-d-s-s2-f-z nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2304,7 +2379,15 @@
                      :reduce-t t
                      :reduce-t-d t
                      :reduce-t-d-s nil
-                     :reduce-t-d-s-f nil))
+                     :reduce-t-d-s-f nil
+                     :fold nil
+                     :fold-t nil
+                     :fold-t-t2 t
+                     :fold-t-t2-d t
+                     :fold-t-t2-d-s t
+                     :fold-t-t2-d-s-s2 nil
+                     :fold-t-t2-d-s-s2-f nil
+                     :fold-t-t2-d-s-s2-f-z nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2423,6 +2506,9 @@
                      :transpose2d-t-m-n t
                      :reduce-t-d-s t
                      :reduce-t-d-s-f nil
+                     :fold-t-t2-d-s-s2 t
+                     :fold-t-t2-d-s-s2-f t
+                     :fold-t-t2-d-s-s2-f-z nil
                      :otherwise (impossible))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp))))
 
@@ -2485,6 +2571,13 @@
                      :reduce-t-d (primop-value-reduce)
                      :reduce-t-d-s (primop-value-reduce)
                      :reduce-t-d-s-f (primop-value-reduce)
+                     :fold-t (primop-value-fold)
+                     :fold-t-t2 (primop-value-fold)
+                     :fold-t-t2-d (primop-value-fold)
+                     :fold-t-t2-d-s (primop-value-fold)
+                     :fold-t-t2-d-s-s2 (primop-value-fold)
+                     :fold-t-t2-d-s-s2-f (primop-value-fold)
+                     :fold-t-t2-d-s-s2-f-z (primop-value-fold)
                      :otherwise (primop-value-fix op)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2810,7 +2903,44 @@
                              (make-type-value-array
                               :elem op.tval
                               :dims op.sval))
-                      :dims nil)))
+                      :dims nil)
+     :fold (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :fold-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :fold-t-t2 (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :fold-t-t2-d (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :fold-t-t2-d-s (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :fold-t-t2-d-s-s2
+     (make-type-value-array
+      :elem (nest-function-type-values
+             (list (make-type-value-array
+                    :elem (nest-function-type-values
+                           (list (make-type-value-array :elem op.t2val
+                                                        :dims op.s2val)
+                                 (make-type-value-array :elem op.tval
+                                                        :dims op.sval))
+                           (make-type-value-array :elem op.t2val
+                                                  :dims op.s2val))
+                    :dims nil)
+                   (make-type-value-array :elem op.t2val :dims op.s2val)
+                   (make-type-value-array :elem op.tval
+                                          :dims (cons (1+ op.dval) op.sval)))
+             (make-type-value-array :elem op.t2val :dims op.s2val))
+      :dims nil)
+     :fold-t-t2-d-s-s2-f
+     (make-type-value-array
+      :elem (nest-function-type-values
+             (list (make-type-value-array :elem op.t2val :dims op.s2val)
+                   (make-type-value-array :elem op.tval
+                                          :dims (cons (1+ op.dval) op.sval)))
+             (make-type-value-array :elem op.t2val :dims op.s2val))
+      :dims nil)
+     :fold-t-t2-d-s-s2-f-z
+     (make-type-value-array
+      :elem (nest-function-type-values
+             (list (make-type-value-array :elem op.tval
+                                          :dims (cons (1+ op.dval) op.sval)))
+             (make-type-value-array :elem op.t2val :dims op.s2val))
+      :dims nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
 
   ///
@@ -3506,7 +3636,8 @@
          (cons "flatten" (expr-value-primop (primop-value-flatten)))
          (cons "transpose2d" (expr-value-primop (primop-value-transpose2d)))
          (cons "iota/static" (expr-value-primop (primop-value-iota/static)))
-         (cons "reduce" (expr-value-primop (primop-value-reduce))))))
+         (cons "reduce" (expr-value-primop (primop-value-reduce)))
+         (cons "fold" (expr-value-primop (primop-value-fold))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
