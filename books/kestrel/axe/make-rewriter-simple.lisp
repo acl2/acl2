@@ -508,6 +508,23 @@
        monitoredp
        (cw "(STP result for hyp ~x0 of rule ~x1: ~x2.)~%" hyp-num rule-symbol result)))
 
+;; todo: print the parens before and after?
+(defund print-alist-elided (alist)
+  (declare (xargs :guard (and (symbol-alistp alist)
+                              (darg-listp (strip-cdrs alist)))))
+  (if (endp alist)
+      nil
+    (let* ((entry (first alist))
+           (var (car entry))
+           (darg (cdr entry)))
+      (progn$ (cw "(~x0 . " var) ; maybe don't print the dot?
+              (if (and (darg-quotep darg)
+                       (< 100 (len (unquote darg))))
+                  ;; it's a large quoted list, so elide (could print the first part):
+                  (cw ":elided)~%")
+                (cw "~x0)~%" darg))
+              (print-alist-elided (rest alist))))))
+
 (defun make-rewriter-simple-fn (suffix ;; gets added to generated names
                                 evaluator-base-name
                                 syntaxp-evaluator-suffix
@@ -929,7 +946,9 @@
                           (prog2$ (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
                                        ;;is it worth printing in this case?
                                        (progn$ (cw "(Failed to relieve axe-syntaxp hyp ~x0 for ~x1.)~%" syntaxp-expr rule-symbol)
-                                               (cw "(Alist: ~x0)~%" alist)
+                                               (cw "(Alist: ")
+                                               (print-alist-elided alist)
+                                               (cw ")~%")
                                                ;; (cw "(DAG:~%")
                                                ;; (print-array 'dag-array dag-array (get-dag-len rewrite-stobj2))
                                                ;; (cw ")~%")
@@ -1096,7 +1115,9 @@
                                             (progn$ (cw "(Failed to relieve hyp ~x0 of rule ~x1.~%" hyp rule-symbol)
                                                     (cw "Reason: Rewrote to:~%")
                                                     (print-dag-node-nicely new-nodenum 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) 200)
-                                                    (cw "(Alist: ~x0)~%" alist)
+                                                    (cw "(Alist: ")
+                                                    (print-alist-elided alist)
+                                                    (cw ")~%")
                                                     (and (verbose-monitorp) ; to turn on verbose monitoring, :redef this to return t
                                                          (progn$ (cw "(Refined assumption alist:~%"))
                                                          (print-refined-assumption-alist-elided refined-assumption-alist (get-fns-to-elide rewrite-stobj))

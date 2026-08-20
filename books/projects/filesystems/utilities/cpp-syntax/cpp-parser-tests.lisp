@@ -37,6 +37,24 @@
       (mv (not erp) parstate))
     parstate))
 
+; Strict helper for expression cases where we need AST-shape checks.
+(defmacro test-parse-cpp-expr-assert (input pred)
+  `(acl2::assert!-stobj
+    (b* ((dialect (c::make-dialect :std (c::standard-c17)))
+         (parstate (c$::init-parstate ""
+                                      (acl2::string=>nats ,input)
+                                      dialect
+                                      nil
+                                      parstate))
+         ((mv erp ast ?span parstate) (parse-cpp-expr parstate))
+         ;; Ensure parse-cpp-expr consumed all tokens.
+         ((mv ?erp2 next? ?next-span parstate) (read-token parstate)))
+      (mv (and (not erp)
+               (not next?)
+               ,pred)
+          parstate))
+    parstate))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test 5a: Constructor with ctor-init list and inline body.
@@ -100,6 +118,31 @@
 (test-parse-cpp
  parse-cpp-expr
  "( uint32_t ) 7 + 9")
+
+; Test 8b: (x) * y should remain a multiplication, not a C-style cast.
+
+(test-parse-cpp-expr-assert
+ "( x ) * y"
+ (b* (((unless (cpp-expr-case ast :binary)) nil)
+      (lhs (cpp-expr-binary->lhs ast))
+      (rhs (cpp-expr-binary->rhs ast)))
+   (and (equal (cpp-expr-binary->op ast) (c$::binop-mul))
+        (cpp-expr-case lhs :paren)
+        (cpp-expr-case (cpp-expr-paren->inner lhs) :ident)
+        (equal (ident->unwrap
+                (cpp-expr-ident->name (cpp-expr-paren->inner lhs)))
+               "x")
+        (cpp-expr-case rhs :ident)
+        (equal (ident->unwrap (cpp-expr-ident->name rhs))
+               "y"))))
+
+; Test 8c: (T)7 + 9 should parse as additive with a C-style cast on lhs.
+
+(test-parse-cpp-expr-assert
+ "( uint32_t ) 7 + 9"
+ (b* (((unless (cpp-expr-case ast :binary)) nil))
+   (and (equal (cpp-expr-binary->op ast) (c$::binop-add))
+        (cpp-expr-case (cpp-expr-binary->lhs ast) :c-cast))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

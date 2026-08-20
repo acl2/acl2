@@ -767,6 +767,7 @@
      ;; getbit-of-leftrotate32-high
      leftrotate32-of-0-arg1
      leftrotate32-of-0-arg2
+     leftrotate32-normalize-amt
 
      ;; rightrotate32-trim-arg1-axe ;move to trim rules? or drop since we go to leftrotate32
      ;;i don't think we want these any more (trying without them):

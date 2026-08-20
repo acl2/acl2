@@ -508,6 +508,102 @@
 
   (fty::deffixequiv-mutual declor/dirdeclor->ident))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines declor/dirdeclor-derived-type-depth
+  :short "Depth of the type derived by a declarator or direct declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the number of array, pointer, and function type constructors
+     contributed by the (direct) declarator.
+     Parentheses do not contribute to the depth."))
+
+  (define declor-derived-type-depth ((declor declorp))
+    :returns (depth natp)
+    :parents (declor/dirdeclor-derived-type-depth abstract-syntax-operations)
+    :short "Depth of the type derived by a declarator."
+    (b* (((declor declor) declor))
+      (+ (len declor.pointers)
+         (dirdeclor-derived-type-depth declor.direct)))
+    :measure (declor-count declor))
+
+  (define dirdeclor-derived-type-depth ((dirdeclor dirdeclorp))
+    :returns (depth natp)
+    :parents (declor/dirdeclor-derived-type-depth abstract-syntax-operations)
+    :short "Depth of the type derived by a direct declarator."
+    (dirdeclor-case
+      dirdeclor
+      :ident 0
+      :paren (declor-derived-type-depth dirdeclor.inner)
+      :array (1+ (dirdeclor-derived-type-depth dirdeclor.declor))
+      :array-static1 (1+ (dirdeclor-derived-type-depth dirdeclor.declor))
+      :array-static2 (1+ (dirdeclor-derived-type-depth dirdeclor.declor))
+      :array-star (1+ (dirdeclor-derived-type-depth dirdeclor.declor))
+      :function-params (1+ (dirdeclor-derived-type-depth dirdeclor.declor))
+      :function-names (1+ (dirdeclor-derived-type-depth dirdeclor.declor)))
+    :measure (dirdeclor-count dirdeclor))
+
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines absdeclor/dirabsdeclor-derived-type-depth
+  :short "Depth of the type derived by an abstract declarator
+          or direct abstract declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the number of array, pointer, and function type constructors
+     contributed by the (direct) abstract declarator.
+     Parentheses do not contribute to the depth."))
+
+  (define absdeclor-derived-type-depth ((absdeclor absdeclorp))
+    :returns (depth natp)
+    :parents (absdeclor/dirabsdeclor-derived-type-depth
+              abstract-syntax-operations)
+    :short "Depth of the type derived by an abstract declarator."
+    (b* (((absdeclor absdeclor) absdeclor))
+      (+ (len absdeclor.pointers)
+         (dirabsdeclor-option-derived-type-depth absdeclor.direct?)))
+    :measure (absdeclor-count absdeclor))
+
+  (define dirabsdeclor-option-derived-type-depth
+    ((dirabsdeclor? dirabsdeclor-optionp))
+    :returns (depth natp)
+    :parents (absdeclor/dirabsdeclor-derived-type-depth
+              abstract-syntax-operations)
+    :short "Depth of the type derived by an optional direct abstract
+            declarator."
+    (dirabsdeclor-option-case
+      dirabsdeclor?
+      :none 0
+      :some (dirabsdeclor-derived-type-depth dirabsdeclor?.val))
+    :measure (dirabsdeclor-option-count dirabsdeclor?))
+
+  (define dirabsdeclor-derived-type-depth ((dirabsdeclor dirabsdeclorp))
+    :returns (depth natp)
+    :parents (absdeclor/dirabsdeclor-derived-type-depth
+              abstract-syntax-operations)
+    :short "Depth of the type derived by a direct abstract declarator."
+    (dirabsdeclor-case
+      dirabsdeclor
+      :dummy-base 0
+      :paren (absdeclor-derived-type-depth dirabsdeclor.inner)
+      :array
+      (1+ (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?))
+      :array-static1
+      (1+ (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?))
+      :array-static2
+      (1+ (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?))
+      :array-star
+      (1+ (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?))
+      :function
+      (1+ (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?)))
+    :measure (dirabsdeclor-count dirabsdeclor))
+
+  :verify-guards :after-returns)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define init-declor->ident
@@ -984,7 +1080,16 @@
        ((mv yes/no tyspecs) (check-spec/qual-list-all-typespec (cdr specquals))))
     (if yes/no
         (mv t (cons (spec/qual-typespec->spec specqual) tyspecs))
-      (mv nil nil))))
+      (mv nil nil)))
+
+  ///
+
+  (defrule check-spec/qual-list-all-typespec-of-spec/qual-typespec-list
+    (equal (check-spec/qual-list-all-typespec
+            (spec/qual-typespec-list tyspecs))
+           (mv t (type-spec-list-fix tyspecs)))
+    :induct t
+    :enable spec/qual-typespec-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

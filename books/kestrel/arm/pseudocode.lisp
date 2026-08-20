@@ -28,6 +28,7 @@
 (include-book "std/testing/must-be-redundant" :dir :system)
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 
 (in-theory (disable mv-nth))
 
@@ -392,6 +393,20 @@
          (carry_out (getbit (- shift 1) extended_x)))
     (mv result carry_out)))
 
+(defthm unsigned-byte-p-of-mv-nth-0-of-asr_c
+  (implies (and (unsigned-byte-p n x)
+                (integerp shift))
+           (unsigned-byte-p n (mv-nth 0 (asr_c n x shift))))
+  :hints (("Goal" :in-theory (enable asr_c))))
+
+(defthm mv-nth-0-of-asr_c-becomes-rightrotate
+  (implies (and (unsigned-byte-p n x)
+                (< shift n)
+                (natp shift))
+           (equal (mv-nth 0 (asr_c n x shift))
+                  (bvashr n x shift)))
+  :hints (("Goal" :in-theory (enable asr_c bvashr bvshr bvsx))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Slightly more restrictive than = as this excludes complex numbers.  The spec
@@ -572,6 +587,16 @@
                 (integerp shift))
            (equal (mv-nth 1 (ror_c n x shift))
                   (getbit (+ -1 n) (acl2::rightrotate n shift x))))
+  :hints (("Goal" :in-theory (enable ror_c acl2::rightrotate bvshl bvshr))))
+
+;; This prevenst a ground call of ror_c from generating a warning (before the
+;; overarching mv-nth calls are simplified).
+(defthm ror_c-redef
+  (implies (and (unsigned-byte-p n x)
+                (integerp shift))
+           (equal (ror_c n x shift)
+                  (mv (acl2::rightrotate n shift x)
+                      (getbit (+ -1 n) (acl2::rightrotate n shift x)))))
   :hints (("Goal" :in-theory (enable ror_c acl2::rightrotate bvshl bvshr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

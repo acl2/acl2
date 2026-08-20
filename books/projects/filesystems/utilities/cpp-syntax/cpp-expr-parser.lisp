@@ -26,7 +26,8 @@
 ;    the parser does not recognize "[ ] ( ) { ... }")
 ;  - C++ named casts: static_cast<T>(e), dynamic_cast, reinterpret_cast,
 ;    const_cast, typeid
-;  - C-style casts: (T)e (always parsed as parenthesized expr)
+;  - C-style casts: (keyword)e always cast; (ident)e cast only when
+;    followed by ident/literal/(/++/--)~!/; * + - & are treated as binary
 ;  - new, delete expressions
 ;  - sizeof, alignof expressions
 ;  - try-catch statements (the parser produces a generic statement instead);
@@ -974,6 +975,8 @@
                             (reterr :impossible)))
                         (parse-cpp-postfix-rest prim prim-span parstate)))
                      ((erp next? & parstate) (read-token parstate))
+                     ;; Excluded from cast context: * + - & (also binary ops).
+                     ;; (x) * y stays as multiplication, not a cast of x.
                      (is-cast-context
                       (or (and next? (token-case next? :ident))
                           (and next? (token-case next? :const))
@@ -982,11 +985,7 @@
                           (token-punctuatorp next? "++")
                           (token-punctuatorp next? "--")
                           (token-punctuatorp next? "~")
-                          (token-punctuatorp next? "!")
-                          (token-punctuatorp next? "-")
-                          (token-punctuatorp next? "+")
-                          (token-punctuatorp next? "*")
-                          (token-punctuatorp next? "&")))
+                          (token-punctuatorp next? "!")))
                      ((unless is-cast-context)
                       (b* ((parstate (if next? (unread-token parstate) parstate))
                            (parstate (unread-token parstate)) ; ')'
