@@ -317,7 +317,14 @@
      and the related ones in @(tsee binarize-add-in-dims),
      are proved using the inference rule theorems.
      In the analogous theorems for multiplications,
-     we used a different proof approach, for comparison."))
+     we used a different proof approach, for comparison.")
+   (xdoc::p
+    "We also show that this function preserves
+     the binary status of multiplications
+     and the unary status of subtractions,
+     which this function does not affect.
+     This serves to compose this transformation
+     with the ones for multiplications and subtractions."))
   (cond ((endp dims) (dim-const 0))
         ((endp (cdr dims)) (dim-fix (car dims)))
         ((endp (cddr dims)) (dim-add dims))
@@ -349,7 +356,21 @@
              :in-theory (enable* ast-binaddp-rules))
             '(:expand ((dim-binaddp (dim-add dims))
                        (dim-binaddp (dim-add (list (car dims)
-                                                   (cadr dims)))))))))
+                                                   (cadr dims))))))))
+
+  (defret dim-binmulp-of-binarize-dims-in-add
+    (implies (dim-list-binmulp dims)
+             (dim-binmulp new-dim))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* ast-binmulp-rules))))
+
+  (defret dim-unisubp-of-binarize-dims-in-add
+    (implies (dim-list-unisubp dims)
+             (dim-unisubp new-dim))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* ast-unisubp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -361,7 +382,14 @@
     "We show that the resulting dimensions are equivalent to
      the argument ones.")
    (xdoc::p
-    "We show that the resulting dimensions only have binary additions."))
+    "We show that the resulting dimensions only have binary additions.")
+   (xdoc::p
+    "We also show that these functions preserve
+     the binary status of multiplications
+     and the unary status of subtractions,
+     which these functions do not affect.
+     This serves to compose this transformation
+     with the ones for multiplications and subtractions."))
 
   (define binarize-add-in-dim ((dim dimp))
     :returns (new-dim dimp)
@@ -433,7 +461,45 @@
       :fn binarize-add-in-dim-list)
     :hints (("Goal"
              :in-theory (enable* ast-binaddp-rules))
-            '(:expand ((dim-binaddp dim))))))
+            '(:expand ((dim-binaddp dim)))))
+
+  (defret len-of-binarize-add-in-dim-list
+    (equal (len new-dims)
+           (len dims))
+    :fn binarize-add-in-dim-list
+    :hints (("Goal"
+             :induct (len dims)
+             :in-theory (enable (:induction len)))))
+
+  (defret-mutual dim-binmulp-of-binarize-add-in-dims
+    (defret dim-binmulp-of-binarize-add-in-dim
+      (implies (dim-binmulp dim)
+               (dim-binmulp new-dim))
+      :fn binarize-add-in-dim)
+    (defret dim-list-binmulp-of-binarize-add-in-dim-list
+      (implies (dim-list-binmulp dims)
+               (dim-list-binmulp new-dims))
+      :fn binarize-add-in-dim-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-binmulp-rules))
+            '(:expand ((dim-binmulp dim)
+                       (dim-binmulp (dim-mul (binarize-add-in-dim-list
+                                              (dim-mul->dims dim))))))))
+
+  (defret-mutual dim-unisubp-of-binarize-add-in-dims
+    (defret dim-unisubp-of-binarize-add-in-dim
+      (implies (dim-unisubp dim)
+               (dim-unisubp new-dim))
+      :fn binarize-add-in-dim)
+    (defret dim-list-unisubp-of-binarize-add-in-dim-list
+      (implies (dim-list-unisubp dims)
+               (dim-list-unisubp new-dims))
+      :fn binarize-add-in-dim-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-unisubp-rules))
+            '(:expand ((dim-unisubp dim)
+                       (dim-unisubp (dim-sub (binarize-add-in-dim-list
+                                              (dim-sub->dims dim)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
