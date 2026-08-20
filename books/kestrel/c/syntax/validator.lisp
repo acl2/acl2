@@ -5846,15 +5846,6 @@
                     :kind (if dirabsdeclor.size?
                               (type-array-kind-unknown-complete)
                             (type-array-kind-incomplete))))
-            ((when (and (not dirabsdeclor.declor?)
-                        (not dirabsdeclor.size?)))
-             (retok (make-dirabsdeclor-array
-                     :declor? nil
-                     :qualspecs dirabsdeclor.qualspecs
-                     :size? nil)
-                    type
-                    nil
-                    (vstate-fix vstate)))
             ((erp new-declor? type types vstate)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type vstate))
             ((erp new-size? index-type? more-types vstate)
