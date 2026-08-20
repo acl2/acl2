@@ -492,7 +492,7 @@
        because a minimal valid proof tree exists
        exactly when any valid proof tree exists.
        It makes the witness @('p[i]-proof') a minimal proof,
-       which is what supports reasoning by induction on proofs.
+       which support reasoning by induction using the @('p[i]-induct') functions (see below).
        (A minimal proof tree need not be unique:
        there may be several valid proof trees for the same conclusion
        with the same count.)")
@@ -580,7 +580,7 @@
        and so mentions no proof tree;
        that is what lets it serve as an induction scheme
        for the predicate itself.
-       Their values are irrelevant:
+       The results of these functions are irrelevant:
        only their recursive structure matters.")
      (xdoc::p
       "One event is generated for each clique of predicates.
