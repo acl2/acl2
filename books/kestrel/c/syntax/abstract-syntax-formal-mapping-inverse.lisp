@@ -158,9 +158,8 @@
   ///
 
   (defrule ldm-const-of-ildm-const
-    (implies (c::const-case const :int)
-             (equal (ldm-const (ildm-const const))
-                    (mv nil (c::const-dec0-to-oct0 const))))
+    (equal (ldm-const (ildm-const const))
+           (mv nil (c::const-dec0-to-oct0 const)))
     :enable (ldm-const
              c::const-dec0-to-oct0)))
 
