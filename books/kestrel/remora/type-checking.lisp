@@ -1766,8 +1766,8 @@
         :type (make-type-forall :param atom.param :body be.type)
         :atom (make-atom-tlambda :param atom.param :body be.expr)))
      :tlambdan
-     (b* (((unless (no-duplicatesp-equal atom.params))
-           (reserr nil))
+     (b* (((unless (>= (len atom.params) 2)) (reserr nil))
+          ((unless (no-duplicatesp-equal atom.params)) (reserr nil))
           (senv (senv-add-type-vars atom.params senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
@@ -1780,8 +1780,7 @@
         :type (make-type-pi :param atom.param :body be.type)
         :atom (make-atom-ilambda :param atom.param :body be.expr)))
      :ilambdan
-     (b* (((unless (no-duplicatesp-equal atom.params))
-           (reserr nil))
+     (b* (((unless (no-duplicatesp-equal atom.params)) (reserr nil))
           (senv (senv-add-ispace-vars atom.params senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
@@ -2142,11 +2141,7 @@
                           (make-type-pin :params iparams :body fun-type))
                       fun-type))
           (fun-type (if (consp tparams)
-                        (if (endp (cdr tparams))
-                            (make-type-forall :param (car tparams)
-                                              :body fun-type)
-                          (make-type-foralln :params tparams
-                                             :body fun-type))
+                        (make-type-forall/foralln tparams fun-type)
                       fun-type))
           (type (if (or (consp types) (consp iparams) (consp tparams))
                     (make-type-array

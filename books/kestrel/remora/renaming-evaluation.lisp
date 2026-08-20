@@ -1045,12 +1045,6 @@
 ; renaming maps equals removing all the parameters at once.
 
 (local
- (defruled mergesort-of-cons
-   (equal (set::mergesort (cons a l))
-          (set::insert a (set::mergesort l)))
-   :enable set::mergesort))
-
-(local
  (defruled mergesort-when-singleton
    (implies (and (consp params)
                  (not (consp (cdr params))))
@@ -1145,7 +1139,8 @@
                                        (type-rename-ispace-vars body
                                                                 dim-renam
                                                                 shape-renam))))
-  :enable forall-curried-body)
+  :enable (forall-curried-body
+           make-type-forall/foralln))
 
 ; The analogue for the currying of term lambda abstractions
 ; (see lambda-curried-body), laid down ahead of that currying:
@@ -1988,7 +1983,9 @@
                                                                 atom-all
                                                                 array-all)))))
   :enable (forall-curried-body
-           mergesort-when-singleton)
+           make-type-forall/foralln
+           mergesort-when-singleton
+           acl2::equal-len-const)
   :use ((:instance atom/array-rename-remove-bound-of-insert-then-rest
                    (var (car params))
                    (rest (cdr params)))))
@@ -2151,7 +2148,9 @@
                        type-valuep-when-result-not-error
                        type-value-listp-when-result-not-error
                        type-denv-lookup-type
-                       acl2::lt-len-const))
+                       acl2::lt-len-const
+                       acl2::equal-len-const
+                       consp-of-cdr-of-type-foralln->params))
    (and acl2::stable-under-simplificationp
         '(:use ((:instance denv-type-vars-renamed-p-necc
                            (var (type-var->var type))))))))

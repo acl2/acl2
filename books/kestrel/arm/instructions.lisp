@@ -2134,7 +2134,7 @@
   (b* (;; EncodingSpecificOperations:
        ((when (and (== rd #b1111)
                    (== s #b1)))
-        (update-error (list *unsupported* 'mov-register-core) arm))
+        (update-error (list *unsupported* :mov-register-core) arm))
        (d (uint 4 rd))
        (m (uint 4 rm))
        (setflags (== s #b1))

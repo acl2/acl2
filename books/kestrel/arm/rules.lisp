@@ -123,6 +123,15 @@
   :hints (("Goal" :in-theory (enable cmp-carry mv-nth-1-of-addwithcarry
                                      bvnot bvplus bvlt lognot acl2::getbit-of-+))))
 
+(defthmd sub-carry-elim
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (sub-carry x y)
+                  (bool-to-bit (bvle 32 y x))))
+  :hints (("Goal" :in-theory (enable sub-carry
+                                     mv-nth-1-of-addwithcarry
+                                     bvnot bvplus bvlt lognot acl2::getbit-of-+))))
+
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 ;move
 ;; (local
@@ -172,6 +181,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthm eq-condition-of-sub-zero
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (eq-condition (sub-zero x y))
+                  (equal x y)))
+  :hints (("Goal" :in-theory (enable eq-condition
+                                     sub-zero
+                                     bvplus bvnot lognot acl2::bvchop-of-sum-cases))))
+
+(defthm ne-condition-of-sub-zero
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (ne-condition (sub-zero x y))
+                  (not (equal x y))))
+  :hints (("Goal" :in-theory (enable ne-condition
+                                     sub-zero
+                                     bvplus bvnot lognot acl2::bvchop-of-sum-cases))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm eq-condition-of-cmp-zero
   (implies (and (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y))
@@ -202,6 +231,37 @@
            (equal (ls-condition (cmp-carry x y) (cmp-zero x y))
                   (bvle 32 x y)))
   :hints (("Goal" :in-theory (enable ls-condition cmp-zero-elim cmp-carry-elim))))
+
+;;todo: more like this?
+(defthm cs-condition-of-cmp-carry
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (cs-condition (cmp-carry x y))
+                  (not (bvlt 32 x y))))
+  :hints (("Goal" :in-theory (enable cs-condition cmp-carry-elim))))
+
+(defthm cc-condition-of-cmp-carry
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (cc-condition (cmp-carry x y))
+                  (bvlt 32 x y)))
+  :hints (("Goal" :in-theory (enable cc-condition cmp-carry-elim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm cs-condition-of-sub-carry
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (cs-condition (sub-carry x y))
+                  (bvle 32 y x)))
+  :hints (("Goal" :in-theory (enable cs-condition sub-carry-elim))))
+
+(defthm cc-condition-of-sub-carry
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (cc-condition (sub-carry x y))
+                  (not (bvle 32 y x))))
+  :hints (("Goal" :in-theory (enable cs-condition sub-carry-elim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -309,6 +369,20 @@
            (equal (gt-condition (cmp-sign x y) (cmp-overflow x y) (cmp-zero x y))
                   (sbvlt 32 y x)))
   :hints (("Goal" :in-theory (enable gt-condition cmp-zero-elim sbvlt-when-not-equal-weaken))))
+
+(defthm ge-condition-cmp-idiom
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (ge-condition (cmp-sign x y) (cmp-overflow x y))
+                  (sbvge 32 x y)))
+  :hints (("Goal" :in-theory (enable ge-condition cmp-zero-elim sbvlt-when-not-equal-weaken))))
+
+(defthm lt-condition-cmp-idiom
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (lt-condition (cmp-sign x y) (cmp-overflow x y))
+                  (sbvlt 32 x y)))
+  :hints (("Goal" :in-theory (enable lt-condition cmp-zero-elim sbvlt-when-not-equal-weaken))))
 
 ; restrict to constant k?
 (defthm getbit-32-of-bvplus-helper

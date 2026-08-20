@@ -13,6 +13,7 @@
 (include-book "portcullis")
 (include-book "../rule-lists")
 (include-book "kestrel/arm/encodings" :dir :system)
+(include-book "kestrel/arm/library-models" :dir :system) ; for the library-model-rules
 
 (defun symbolic-execution-rules32-common ()
   (declare (xargs :guard t))
@@ -20,6 +21,8 @@
     update-call-stack-height-aux-base
     update-call-stack-height-aux-of-if-arg1
     stack-height-adjustment
+    arm::step-core-opener
+    arm::step-aux-base ; requires the PC to be a constant
     arm::step-opener
     arm::execute-inst-base ; requires the instruction to be known
     arm::step-of-if
@@ -43,7 +46,9 @@
             run-until-return-with-tracing-aux-opener-axe
             run-until-return-with-tracing-aux-of-if-arg2
             run-until-return-with-tracing
-            run-subroutine-with-tracing)))
+            run-subroutine-with-tracing
+            acl2::append-of-nil-arg1 acl2::append-of-cons-arg1 ; clarifies the trace
+            )))
 
 (defun symbolic-execution-rules-with-stop-pcs32 ()
   (declare (xargs :guard t))
@@ -63,6 +68,7 @@
             run-until-return-with-tracing-or-reach-pc-aux-of-if-arg2
             run-until-return-with-tracing-or-reach-pc
             acl2::memberp-constant-opener ; for resolving the stop-pcs check (when non-position-independent)
+            acl2::append-of-nil-arg1 acl2::append-of-cons-arg1 ; clarifies the trace
             )))
 
 (defun debug-rules32 ()
@@ -111,6 +117,7 @@
                                arm::execute-cmn-register
                                arm::execute-cmn-register-shifted-register
                                arm::execute-sub-immediate))
+          (arm::library-model-rules)
           '(arm::execute-cmp-immediate-alt
             arm::execute-cmp-register-alt
             arm::execute-cmp-register-shifted-register-alt
@@ -234,6 +241,12 @@
      arm::eq-condition-of-cmn-zero
      arm::ne-condition-of-cmn-zero
 
+     arm::eq-condition-of-sub-zero
+     arm::ne-condition-of-sub-zero
+
+     arm::cs-condition-of-sub-carry
+     arm::cc-condition-of-sub-carry
+
      ;; cmp rules: ; todo: add the rest!
      arm::eq-condition-of-cmp-zero
      arm::ne-condition-of-cmp-zero
@@ -241,9 +254,28 @@
      arm::ls-condition-of-cmp-carry-and-cmp-zero
      arm::le-condition-cmp-idiom
      arm::gt-condition-cmp-idiom
+     arm::ge-condition-cmp-idiom
+     arm::lt-condition-cmp-idiom
 
      ;; sub rules: ; todo: add more!
      arm::lt-condition-of-sub-sign-and-sub-overflow
+
+     arm::cs-condition-of-cmp-carry
+     arm::cc-condition-of-cmp-carry
+
+     ;; hope these are ok:
+     arm::cmn-sign-constant-opener
+     arm::cmn-zero-constant-opener
+     arm::cmn-carry-constant-opener
+     arm::cmn-overflow-constant-opener
+     arm::cmp-sign-constant-opener
+     arm::cmp-zero-constant-opener
+     arm::cmp-carry-constant-opener
+     arm::cmp-overflow-constant-opener
+     arm::sub-sign-constant-opener
+     arm::sub-zero-constant-opener
+     arm::sub-carry-constant-opener
+     arm::sub-overflow-constant-opener
 
      arm::eq-condition-constant-opener
      arm::ne-condition-constant-opener
@@ -260,8 +292,26 @@
      arm::gt-condition-constant-opener
      arm::le-condition-constant-opener
 
+     arm::lsl_c-constant-opener
+     arm::lsl-constant-opener
+     arm::lsr_c-constant-opener
+     arm::lsr-constant-opener
+     arm::SignExtend-constant-opener
+     arm::asr_c-constant-opener
+     arm::ror_c-constant-opener
+     arm::ror-constant-opener
+     arm::rrx_c-constant-opener
+     arm::rrx-constant-opener
+     arm::shift_c-constant-opener
+     arm::shift-constant-opener
      arm::addwithcarry-constant-opener ; more?
+     arm::addwithcarry-overflow-constant-opener ; more?
+
      arm::sint-constant-opener
+
+     arm::countleadingzerobits-constant-opener
+     arm::highestsetbit-constant-opener
+     arm::highestsetbit-aux-constant-opener
 
      acl2::lookup-eq-becomes-lookup-equal
      arm::==$inline
@@ -366,8 +416,20 @@
      arm::isetstate-of-set-apsr.q
      arm::isetstate-of-write
      arm::isetstate-of-if
-
      arm::update-isetstate-when-equal-of-isetstate
+
+     arm::library-map-of-set-reg
+     arm::library-map-of-update-isetstate
+     arm::library-map-of-set-apsr.n
+     arm::library-map-of-set-apsr.z
+     arm::library-map-of-set-apsr.c
+     arm::library-map-of-set-apsr.v
+     arm::library-map-of-set-apsr.q
+     arm::library-map-of-write
+     arm::library-map-of-if
+
+     acl2::lookup-becomes-lookup-equal ; for when the library map is empty
+     acl2::lookup-equal-of-nil ; for when the library map is empty
 
      ;;;
 
@@ -471,8 +533,9 @@
      arm::lsr-becomes-bvshr ; arm::lsr
 
      ;; right rotation:
-     arm::mv-nth-0-of-ror_c-becomes-rightrotate ; arm::ror_c
-     arm::mv-nth-1-of-ror_c-becomes-getbit-of-rightrotate
+     arm::ror_c-redef
+     ;; arm::mv-nth-0-of-ror_c-becomes-rightrotate ; arm::ror_c
+     ;; arm::mv-nth-1-of-ror_c-becomes-getbit-of-rightrotate
      arm::ror-becomes-rightrotate ; arm::ror
 
      arm::bitcount
@@ -495,6 +558,8 @@
      arm::write-of-set-reg
      arm::set-reg-of-set-reg-same
      arm::set-reg-of-set-reg-diff-2
+     arm::set-reg-of-if-arg3
+     arm::set-reg-of-pc-and-bvif
 
      arm::decodeimmshift
      arm::decoderegshift
@@ -506,6 +571,9 @@
      arm::mv-nth-2-of-AddWithCarry ; todo: 32-bit only!
      arm::iszerobit
      arm::iszero
+
+     arm::unsigned-byte-p-of-mv-nth-0-of-asr_c ; todo: more like this!
+     arm::mv-nth-0-of-asr_c-becomes-rightrotate
 
      arm::unsigned-byte-p-of-cmn-sign
      arm::unsigned-byte-p-of-cmn-zero
@@ -593,7 +661,7 @@
 
      ;; UNCOMMENT
      arm::read-when-equal-of-read-bytes-and-subregion32p ; for when the bytes are a constant
-     arm::read-when-equal-of-read-bytes-and-subregion32p-alt ; for when the bytes are not a constant
+     arm::read-when-equal-of-read-bytes-and-subregion32p-alt ; for when the bytes are a constant
      arm::read-when-equal-of-read-bytes ; note rule priority
      arm::read-when-equal-of-read-bytes-alt
      ;; acl2::len-of-cons ;  for when read-when-equal-of-read-bytes-and-subregion32p-alt introduces a cons nest

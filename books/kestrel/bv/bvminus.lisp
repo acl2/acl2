@@ -21,9 +21,11 @@
 (local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
+;; move to axe?
 (defthm integerp-of-bvminus
   (integerp (bvminus size x y)))
 
+;; move to axe?
 (defthm natp-of-bvminus
   (natp (bvminus size x y)))
 
@@ -341,3 +343,17 @@
            (equal (bvminus size x (bvplus size x y))
                   (bvminus size 0 y)))
   :hints (("Goal" :in-theory (enable bvminus bvplus))))
+
+;; Can help bridge the gap between normal forms (bvminus vs bvplus of bvuminus)
+;; Targets x+y = x-z
+(defthm equal-of-bvplus-and-bvminus-cancel-1+-1
+  (equal (equal (bvplus size x y) (bvminus size x z))
+         (equal (bvchop size y) (bvuminus size z)))
+  :hints (("Goal" :in-theory (enable bvminus bvuminus bvplus))))
+
+;; Can help bridge the gap between normal forms (bvminus vs bvplus of bvuminus)
+;; Targets y+x = x-z
+(defthm equal-of-bvplus-and-bvminus-cancel-2-1
+  (equal (equal (bvplus size y x) (bvminus size x z))
+         (equal (bvchop size y) (bvuminus size z)))
+  :hints (("Goal" :in-theory (enable bvminus bvuminus bvplus))))

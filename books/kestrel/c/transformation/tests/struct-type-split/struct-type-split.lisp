@@ -1536,3 +1536,86 @@ int main(void) {
 ")
 
   :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This has a self-referential struct that is separate from the one being split,
+;; but it exhibits the fact that, when checking the safety of a cast,
+;; which involves traversing the self-referential struct type,
+;; we need to avoid a loop that follows the self references.
+
+(acl2::must-succeed*
+
+ (c$::input-files :files '("self-ref-checks.c")
+                  :const *old*)
+
+ (struct-type-split *old*
+                    *new*
+                    :struct-tag "s"
+                    :right-members ("b")
+                    :new-tag "s2")
+
+ (c$::output-files :const *new*
+                   :base-dir "new")
+
+ (assert-file-contents
+  :file "new/self-ref-checks.c"
+  :content "struct s {
+  int a;
+};
+
+struct s2 {
+  int b;
+};
+
+struct selfref {
+  int x;
+  struct selfref *y;
+};
+
+static struct selfref sr;
+
+static struct s s;
+
+static struct s2 s_0;
+
+int main(void) {
+  struct selfref *p = (struct selfref *) &sr;
+  return s_0.b;
+}
+")
+
+ :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This tests correct safety checks of incomplete structure types.
+
+(acl2::must-succeed*
+
+ (c$::input-files :files '("opaque.c")
+                  :const *old*)
+
+ (struct-type-split *old*
+                    *new*
+                    :struct-tag "target"
+                    :right-members ("right")
+                    :new-tag "target2")
+
+ (c$::output-files :const *new*
+                   :base-dir "new")
+
+ (assert-file-contents
+  :file "new/opaque.c"
+  :content "struct opaque;
+
+struct target {
+  int left;
+};
+
+struct target2 {
+  int right;
+};
+")
+
+ :with-output-off nil)

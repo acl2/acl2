@@ -15,13 +15,7 @@
 (include-book "kestrel/utilities/defconst-computed" :dir :system)
 (include-book "../priorities")
 
-(include-book "projects/x86isa/machine/instructions/top" :dir :system) ;needed to get the full ruleset instruction-decoding-and-spec-rules
-
-;; TODO: Use union-equal instead of append?  Or even, in some cases, a version that detects duplicates.
-
-;todo: add a variant of get-ruleset that complains if the ruleset doesn't exist..
-(acl2::defconst-computed-simple *instruction-decoding-and-spec-rules*
-  (acl2::get-ruleset 'x86isa::instruction-decoding-and-spec-rules (w state)))
+;; TODO: Use union-equal instead of append below?  Or even, in some cases, a version that detects duplicates.
 
 (defun map-add-suffix (syms str)
   (declare (xargs :guard (and (symbol-listp syms)
@@ -31,20 +25,29 @@
     (cons (add-suffix (first syms) str)
           (map-add-suffix (rest syms) str))))
 
-;; todo: some of these should be added to the X86 package:
+(encapsulate ()
+  (local (include-book "projects/x86isa/machine/instructions/top" :dir :system)) ;needed to get the full ruleset instruction-decoding-and-spec-rules
 
-;; n08$inline and many more
-;; todo: go directly to bvchop?
-(acl2::defconst-computed-simple *unsigned-choppers* (map-add-suffix (acl2::get-ruleset 'x86isa::nw-defs (w state)) "$INLINE"))
+  ;;todo: add a variant of get-ruleset that complains if the ruleset doesn't exist..
+  (acl2::defconst-computed-simple *instruction-decoding-and-spec-rules*
+    (acl2::get-ruleset 'x86isa::instruction-decoding-and-spec-rules (w state)))
 
-;; i08$inline and many more
-(acl2::defconst-computed-simple *signed-choppers* (map-add-suffix (acl2::get-ruleset 'x86isa::iw-defs (w state)) "$INLINE"))
+  ;; todo: some of these should be added to the X86 package:
 
-;; n08p$inline and many more
-(acl2::defconst-computed-simple *unsigned-recognizers* (map-add-suffix (acl2::get-ruleset 'x86isa::nwp-defs (w state)) "$INLINE"))
+  ;; n08$inline and many more
+  ;; todo: go directly to bvchop?
+  (acl2::defconst-computed-simple *unsigned-choppers* (map-add-suffix (acl2::get-ruleset 'x86isa::nw-defs (w state)) "$INLINE"))
 
-;; i08p$inline and many more
-(acl2::defconst-computed-simple *signed-recognizers* (map-add-suffix (acl2::get-ruleset 'x86isa::iwp-defs (w state)) "$INLINE"))
+  ;; i08$inline and many more
+  (acl2::defconst-computed-simple *signed-choppers* (map-add-suffix (acl2::get-ruleset 'x86isa::iw-defs (w state)) "$INLINE"))
+
+  ;; n08p$inline and many more
+  (acl2::defconst-computed-simple *unsigned-recognizers* (map-add-suffix (acl2::get-ruleset 'x86isa::nwp-defs (w state)) "$INLINE"))
+
+  ;; i08p$inline and many more
+  (acl2::defconst-computed-simple *signed-recognizers* (map-add-suffix (acl2::get-ruleset 'x86isa::iwp-defs (w state)) "$INLINE"))
+  )
+
 
 ;; Most of these are just names of functions to open
 (defund instruction-rules ()
@@ -211,13 +214,13 @@
     acl2::consp-of-cons
     cdr-cons
     ;; lists as sets:
-    x86isa::subset-p-of-singleton-arg1
-    x86isa::disjoint-p-subset-p ;has free vars, somewhat aggressive
-    x86isa::subset-p-reflexive  ;strengthen?
-    x86isa::disjoint-p-nil-1
+    ;; x86isa::subset-p-of-singleton-arg1
+    ;; x86isa::disjoint-p-subset-p ;has free vars, somewhat aggressive
+    ;; x86isa::subset-p-reflexive  ;strengthen?
+    ;; x86isa::disjoint-p-nil-1
     ;;disjoint-p-cons-1 ;this may require more rules (e.g., (disjointp y z) and (subsetp x y) and (memberp a z) => (not (memberp a x)))
     ;;not-member-p-when-disjoint-p ;todo: make an alt version
-    x86isa::subset-p-reflexive
+    ;; x86isa::subset-p-reflexive
     ))
 
 ;; For 64-bit mode and low-level 32-bit mode proofs.
@@ -1302,7 +1305,8 @@
 (defund bitops-to-bv-rules ()
   (declare (xargs :guard t))
   '(;; Rules to handle part-select-width-low:
-    acl2::part-select-width-low-becomes-slice ; for when low and width are constants
+    ;; acl2::part-select-width-low-becomes-slice ; for when low and width are constants
+    acl2::part-select-width-low-becomes-slice-gen ; allows low and width to be non-constants (can happen with shifts)
 
     ;; should we instead go to putbits?
     ;; TODO: Think about the case when sizes/indices are not constant
@@ -1937,7 +1941,7 @@
 ;;newer-scheme, 32-bits:
 (defund symbolic-execution-rules-with-stop-pcs32 ()
   (declare (xargs :guard t))
-  '(run-until-return-or-reach-pc4
+  '(run-until-return-or-reach-pc32 ; todo: this case is not tested?
     run-until-esp-is-above-or-reach-pc-opener-axe
     run-until-esp-is-above-or-reach-pc-base-axe
     run-until-esp-is-above-or-reach-pc-of-if-arg2
@@ -2539,7 +2543,7 @@
             ;; stuff from the timessix example:
             ;acl2::getbit-of-bvchop
 
-            x86isa::disjoint-p-cons-1 ;restrict to a singleton?
+            ;x86isa::disjoint-p-cons-1 ;restrict to a singleton?
             ;x86isa::disjoint-p-nil-1
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk
             ;acl2::bvplus-combine-constants
@@ -2920,12 +2924,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; These introduce the 32-bit normal forms:
+(defund register-aliases32 ()
+  (declare (xargs :guard t))
+  '(al-becomes-eax ; 8-bit aliases (low)
+    bl-becomes-ebx
+    cl-becomes-ecx
+    dl-becomes-edx
+    sil-becomes-esi
+    dil-becomes-edi
+    spl-becomes-esp
+    bpl-becomes-ebp
+
+    ah-becomes-eax ; 8-bit aliases (high)
+    bh-becomes-ebx
+    ch-becomes-ecx
+    dh-becomes-edx
+
+    ax-becomes-eax ; 16-bit aliases
+    bx-becomes-ebx
+    cx-becomes-ecx
+    dx-becomes-edx
+    si-becomes-esi
+    di-becomes-edi
+    sp-becomes-esp
+    bp-becomes-ebp))
+
 ;; Used in loop-lifter (old normal form) and unroller (new normal form)
 ;; todo: move some of these to lifter-rules-common
 (defund lifter-rules32 ()
   (declare (xargs :guard t))
   (set-difference-equal
-   (append (lifter-rules-common)
+   (append (register-aliases32)
+           (lifter-rules-common)
            (read-over-write-rules32)
            (segment-base-and-bounds-rules-32)
            (step-opener-rules32)
@@ -3010,26 +3041,6 @@
             write-to-segment-of-set-eip
             write-byte-to-segment-of-set-eip
 
-            al-becomes-eax
-            bl-becomes-ebx
-            cl-becomes-ecx
-            dl-becomes-edx
-            ;; sil-becomes-esi
-            ;; dil-becomes-edi
-            spl-becomes-esp
-            bpl-becomes-ebp
-            ah-becomes-eax
-            bh-becomes-ebx
-            ch-becomes-ecx
-            dh-becomes-edx
-            ax-becomes-eax
-            bx-becomes-ebx
-            cx-becomes-ecx
-            dx-becomes-edx
-            ;; si-becomes-esi
-            ;; di-becomes-edi
-            sp-becomes-esp
-            bp-becomes-ebp
             ))
    '(; caused loops with bvplus-of-constant-and-esp-when-overflow.  probably want to go to bvuminus anyway?:
      acl2::bvminus-of-+-arg2
@@ -4252,10 +4263,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; These introduce the 64-bit normal forms:
+(defund register-aliases64 ()
+  (declare (xargs :guard t))
+  '(al-becomes-rax ; 8-bit aliases (low)
+    bl-becomes-rbx
+    cl-becomes-rcx
+    dl-becomes-rdx
+    sil-becomes-rsi
+    dil-becomes-rdi
+    spl-becomes-rsp
+    bpl-becomes-rbp
+
+    ah-becomes-rax ; 8-bit aliases (high)
+    bh-becomes-rbx
+    ch-becomes-rcx
+    dh-becomes-rdx
+
+    ax-becomes-rax ; 16-bit aliases
+    bx-becomes-rbx
+    cx-becomes-rcx
+    dx-becomes-rdx
+    si-becomes-rsi
+    di-becomes-rdi
+    sp-becomes-rsp
+    bp-becomes-rbp
+
+    eax-becomes-rax ; 32-bit aliases (in 32-bit mode, EAX, etc. would be the normal forms)
+    ebx-becomes-rbx
+    ecx-becomes-rcx
+    edx-becomes-rdx
+    esi-becomes-rsi
+    edi-becomes-rdi
+    esp-becomes-rsp
+    ebp-becomes-rbp))
+
 ;; Used by the unroller (new normal forms) and loop-lifter (old normal forms).
 (defund lifter-rules64 ()
   (declare (xargs :guard t))
-  (append (lifter-rules-common)
+  (append (register-aliases64)
+          (lifter-rules-common)
           (if-lowering-rules64)
           ;; read and write are used by the 64-bit lifter only (well, low-level 32-bit lifting also uses them):
           (linear-memory-rules) ; these introduce read and write
@@ -4289,28 +4336,7 @@
             set-rip-of-logext
             set-rip-of-bvif-split ; we must resolve the RIP to keep going
             set-rip-of-bv-array-read-split-cases-smt ; needs acl2::bv-array-read-cases-opener (just below)
-            acl2::bv-array-read-cases-opener
-
-            al-becomes-rax
-            bl-becomes-rbx
-            cl-becomes-rcx
-            dl-becomes-rdx
-            ;; sil-becomes-rsi
-            ;; dil-becomes-rdi
-            spl-becomes-rsp
-            bpl-becomes-rbp
-            ah-becomes-rax
-            bh-becomes-rbx
-            ch-becomes-rcx
-            dh-becomes-rdx
-            ax-becomes-rax
-            bx-becomes-rbx
-            cx-becomes-rcx
-            dx-becomes-rdx
-            ;; si-becomes-rsi
-            ;; di-becomes-rdi
-            sp-becomes-rsp
-            bp-becomes-rbp)))
+            acl2::bv-array-read-cases-opener)))
 
 (defund new-normal-form-rules64-intro ()
   (declare (xargs :guard t))

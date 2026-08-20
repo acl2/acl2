@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "bound-and-free-variable-operations")
+(include-book "free-variable-operations")
 
 (include-book "kestrel/fty/deffold-map" :dir :system)
 
