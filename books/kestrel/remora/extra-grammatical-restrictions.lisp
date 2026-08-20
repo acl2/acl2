@@ -178,7 +178,9 @@
      We do not single out the @('SO')-@('SOH') pair,
      but we state it generally, for every ASCII escape.")
    (xdoc::p
-    "An extension of an @('ascii-escape') can only be
+    "An @('ascii-escape') can only occur just after a backslash,
+     in a string literal.
+     An extension of an @('ascii-escape') can only be
      another @('ascii-escape'):
      the fringe of an @('ascii-escape') CST is the bare name
      (without the preceding backslash),
@@ -190,10 +192,6 @@
      and the @('num-escape') ones start with a digit,
      or with an @('o') or @('x') of either case,
      but no name starts with @('O') or @('X').")
-   (xdoc::p
-    "This is in the context of the fact that an @('ascii-escape')
-     can only occur just after a backslash,
-     in a string literal.")
    (xdoc::p
     "Note that an @('SO') escape followed by
      the empty escape @('\\&') and then @('H') is allowed,
