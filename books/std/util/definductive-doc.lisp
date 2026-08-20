@@ -519,15 +519,6 @@
        so are the @('p[i]-suff') theorems,
        which @(tsee define-sk) disables.")
      (xdoc::p
-      "Each is proved by descending from the given proof tree
-       to a minimal one:
-       if the proof tree is not minimal,
-       the negation of @('p[i]-proof-minimalp')
-       yields a valid proof tree with a strictly smaller count,
-       which need not be minimal either,
-       so the descent is by induction,
-       carried by a local function @('p[i]-descend').")
-     (xdoc::p
       "The validity hypothesis precedes the recognizer hypothesis,
        so that, when the theorem is used as a rewrite rule,
        free variable matching binds the proof tree from the former
@@ -581,7 +572,7 @@
        only their recursive structure matters.")
      (xdoc::p
       "One event is generated for each clique of predicates.
-       For a clique of a single predicate, the event is a @(tsee defun).
+       For a clique of a single predicate, the event is a @(tsee define).
        For a clique of two or more predicates,
        the functions are mutually recursive,
        and the event is a @(tsee defines)

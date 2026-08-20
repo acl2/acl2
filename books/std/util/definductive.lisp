@@ -4405,7 +4405,7 @@
     "Nothing is generated for a non-recursive predicate:
      it admits no induction scheme at all.")
    (xdoc::p
-    "For a clique of a single predicate, the scheme is a @(tsee defun),
+    "For a clique of a single predicate, the scheme is a @(tsee define),
      and we turn it into an @(':induction') rule,
      so that a plain @(':induct') hint on a call of the predicate works.")
    (xdoc::p
