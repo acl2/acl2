@@ -69,7 +69,33 @@
  (must-be-redundant
   (defthm r*-alt-when-r*
     (implies (r* a b)
-             (r*-alt a b)))))
+             (r*-alt a b))))
+
+ ; The generated induction scheme supports rule induction.
+
+ (encapsulate
+   (((f *) => *))
+   (local (defun f (x) x))
+   (defthm f-preserves
+     (implies (r x y)
+              (r (f x) (f y)))))
+
+ ; A plain :INDUCT hint on a call of the predicate suffices,
+ ; via the generated R*-INDUCTION rule; no proof tree is mentioned.
+
+ (defthm r*-of-f
+   (implies (r* a b)
+            (r* (f a) (f b)))
+   :hints (("Goal" :induct (r* a b)
+                   :expand ((r* a b)
+                            (r*-proof-validp (r*-proof a b) a b))
+                   :in-theory (enable r*-base-validp
+                                      r*-refl-validp
+                                      r*-trans-validp
+                                      r*-base
+                                      r*-refl
+                                      r*-trans
+                                      r*-when-proof-validp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -439,7 +465,31 @@
    :rule-classes nil
    :hints (("Goal" :in-theory (enable even-even-0
                                       even-even-step
-                                      odd-odd-step)))))
+                                      odd-odd-step))))
+
+ ; For a clique of two or more predicates,
+ ; rule induction is via the flag macro:
+ ; both predicates are proved together,
+ ; with no proof tree mentioned in either statement.
+
+ (defthm-even-induction
+   (defthm natp-when-even
+     (implies (even n)
+              (natp n))
+     :flag even-induct)
+   (defthm natp-when-odd
+     (implies (odd n)
+              (natp n))
+     :flag odd-induct)
+   :hints (("Goal" :expand ((even-proof-validp (even-proof n) n)
+                            (odd-proof-validp (odd-proof n) n))
+                   :in-theory (enable even
+                                      odd
+                                      even-even-0-validp
+                                      even-even-step-validp
+                                      odd-odd-step-validp
+                                      even-when-proof-validp
+                                      odd-when-proof-validp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -962,87 +1012,6 @@
    :preds ((r a))
    :irules ((ax ((natp proof$))
                 (r proof$)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; The generated induction scheme supports rule induction.
-
-(must-succeed*
-
- (defstub r (* *) => *)
-
- (definductive rtc-ind
-   :preds ((r* a b))
-   :irules ((base ((r x y))
-                  (r* x y))
-            (refl ()
-                  (r* x x))
-            (trans ((r* x y) (r* y z))
-                   (r* x z))))
-
- (encapsulate
-   (((f *) => *))
-   (local (defun f (x) x))
-   (defthm f-preserves
-     (implies (r x y)
-              (r (f x) (f y)))))
-
- ; A plain :INDUCT hint on a call of the predicate suffices,
- ; via the generated R*-INDUCTION rule; no proof tree is mentioned.
-
- (defthm r*-of-f
-   (implies (r* a b)
-            (r* (f a) (f b)))
-   :hints (("Goal" :induct (r* a b)
-                   :expand ((r* a b)
-                            (r*-proof-validp (r*-proof a b) a b))
-                   :in-theory (enable r*-base-validp
-                                      r*-refl-validp
-                                      r*-trans-validp
-                                      r*-base
-                                      r*-refl
-                                      r*-trans
-                                      r*-when-proof-validp))))
-)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; For a clique of two or more predicates, rule induction is via the flag macro.
-
-(must-succeed*
-
- (definductive evenodd-ind
-   :preds ((evn n)
-           (odd n))
-   :irules ((zero ()
-                  (evn 0))
-            (evn-step ((evn n))
-                      (odd (1+ n)))
-            (odd-step ((odd n))
-                      (evn (1+ n)))))
-
- ; Both predicates are proved together, by mutual rule induction,
- ; with no proof tree mentioned in either statement.
-
- (defthm-evn-induction
-   (defthm natp-when-evn
-     (implies (evn n)
-              (natp n))
-     :flag evn-induct)
-   (defthm natp-when-odd
-     (implies (odd n)
-              (natp n))
-     :flag odd-induct)
-   :hints (("Goal" :expand ((evn-proof-validp (evn-proof n) n)
-                            (odd-proof-validp (odd-proof n) n))
-                   :in-theory (enable evn
-                                      odd
-                                      evn-zero-validp
-                                      odd-evn-step-validp
-                                      evn-odd-step-validp
-                                      evn-when-proof-validp
-                                      odd-when-proof-validp))))
-)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
