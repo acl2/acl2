@@ -591,7 +591,17 @@
           to an optional expression in the syntax for tools."
   (c::expr-option-case expr?
                        :some (ildm-expr expr?.val)
-                       :none nil))
+                       :none nil)
+
+  ///
+
+  (defrule ldm-expr-option-of-ildm-expr-option
+    (equal (ldm-expr-option (ildm-expr-option expr?))
+           (mv nil (c::expr-option-dec0-to-oct0 expr?)))
+    :enable (ldm-expr-option
+             expr-option-some->val
+             c::expr-option-some->val
+             c::expr-option-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
