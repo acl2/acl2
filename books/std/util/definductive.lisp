@@ -4065,7 +4065,7 @@
      as it was before the minimality requirement.
      We generate it disabled, like the other theorems we generate;
      there is no need to disable @('p[i]-suff'),
-     because @(tsee define-sk) already does that.
+     because @(tsee std::define-sk) already does that.
      It is proved by descending from the given proof to a minimal one:
      if the proof is not minimal,
      the negation of the minimality predicate

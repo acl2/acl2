@@ -517,7 +517,7 @@
        These theorems drop that requirement.
        They are disabled, like the rule theorems;
        so are the @('p[i]-suff') theorems,
-       which @(tsee define-sk) disables.")
+       which @(tsee std::define-sk) disables.")
      (xdoc::p
       "The validity hypothesis precedes the recognizer hypothesis,
        so that, when the theorem is used as a rewrite rule,
