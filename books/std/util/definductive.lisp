@@ -4060,10 +4060,12 @@
      that @(tsee defun-sk) generates,
      which now applies only to minimal proofs.
      So we generate @('p[i]-when-proof-validp'),
-     which applies to any valid proof,
-     and disable @('p[i]-suff') in favor of it;
-     the former is exactly the latter
+     which applies to any valid proof;
+     it is exactly @('p[i]-suff')
      as it was before the minimality requirement.
+     We generate it disabled, like the other theorems we generate;
+     there is no need to disable @('p[i]-suff'),
+     because @(tsee define-sk) already does that.
      It is proved by descending from the given proof to a minimal one:
      if the proof is not minimal,
      the negation of the minimality predicate
@@ -4167,14 +4169,13 @@
                   (,descend (,minimalp-witness ,proof ,@concl-vars)
                             ,@concl-vars)
                 nil)))
-           (defrule ,when-valid-proof
+           (defruled ,when-valid-proof
              (implies (and (,proof-validp ,proof ,@concl-vars)
                            (,proofp ,proof))
                       (,pred-info.name ,@concl-vars))
              :hints (("Goal"
                       :induct (,descend ,proof ,@concl-vars)
                       :in-theory (enable ,suff ,minimalp))))))
-       (disable-suff-event `(in-theory (disable ,suff)))
        ;; The count bound is what ties the proof tree obtained from the
        ;; existential back to a concrete proof tree, which the measure of an
        ;; induction scheme needs. It is meaningful only for a recursive
@@ -4198,7 +4199,8 @@
                                 (:instance ,minimalp-necc
                                            (,proof (,witness ,@concl-vars))
                                            (,proof2 ,proof)))
-                          :in-theory (disable ,minimalp-necc)))))))
+                          :in-theory (e/d (,when-valid-proof)
+                                          (,minimalp-necc))))))))
        (print-event?
         (and (evmac-input-print->= print :result)
              `((cw-event "Function ~x0.~%" ',minimalp)
@@ -4207,7 +4209,7 @@
                ,@(and recursivep
                       `((cw-event "Theorem ~x0.~%" ',count-bound)))))))
     (mv (list minimalp-event fn-event)
-        (list* when-valid-proof-event disable-suff-event count-bound-events)
+        (cons when-valid-proof-event count-bound-events)
         print-event?))
 
   ///

@@ -514,7 +514,10 @@
       "Because of the minimality requirement described above,
        the @('p[i]-suff') theorems that @(tsee defun-sk) generates
        require the proof tree to be minimal.
-       These theorems drop that requirement.")
+       These theorems drop that requirement.
+       They are disabled, like the rule theorems;
+       so are the @('p[i]-suff') theorems,
+       which @(tsee define-sk) disables.")
      (xdoc::p
       "Each is proved by descending from the given proof tree
        to a minimal one:
