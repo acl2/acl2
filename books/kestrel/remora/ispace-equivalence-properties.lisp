@@ -236,6 +236,33 @@
                   (equal (len dim.dims) 2))))
   :name ast-binmulp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce unisubp
+  :short "Check if all the dimension subtractions in dimensions are unary."
+  :types (dims)
+  :result booleanp
+  :default t
+  :combine and
+  :override
+  ((dim :sub (and (dim-list-unisubp dim.dims)
+                  (equal (len dim.dims) 1))))
+  :name ast-unisubp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce nonullsubp
+  :short "Check if all the dimension subtractions in dimensions
+          are non-nullary."
+  :types (dims)
+  :result booleanp
+  :default t
+  :combine and
+  :override
+  ((dim :sub (and (dim-list-nonullsubp dim.dims)
+                  (consp dim.dims))))
+  :name ast-nonullsubp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection dim-equiv-to-binadd-p
@@ -255,6 +282,16 @@
     (exists (dim1)
             (and (dim= dim dim1)
                  (dim-binmulp dim1)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-equiv-to-unisub-p
+  :short "Check whether a dimension is equivalent to
+          one with only unary subtractions."
+  (defund-sk dim-equiv-to-unisub-p (dim)
+    (exists (dim1)
+            (and (dim= dim dim1)
+                 (dim-unisubp dim1)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -598,6 +635,204 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define unarize-dims-in-sub ((dims dim-listp))
+  :returns (mv (new-dim dimp)
+               (proof dim=-proofp))
+  :short "Turn a list of dimensions in a subtraction
+          into a dimension with only unary subtractions,
+          and construct a proof tree demonstrating equivalence."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called on the dimension arguments of a subtraction dimension.")
+   (xdoc::p
+    "A subtraction of two or more dimensions is turned into
+     the addition of the first dimension
+     and the unary subtraction of the addition of the remaining dimensions,
+     according to the rule @('sub2m').
+     A subtraction of one dimension is already unary,
+     and is left unchanged.
+     A subtraction of no dimensions is illegal and cannot be reduced
+     (see @(see dim-equiv-infrules)),
+     so it is also left unchanged.
+     Unlike @(tsee binarize-dims-in-add) and @(tsee binarize-dims-in-mul),
+     this function is not recursive,
+     because one application of @('sub2m') suffices.")
+   (xdoc::p
+    "The proof tree proves the equivalence of
+     @('(dim-sub dims)') and the new dimension.
+     The cases of no dimensions and of one dimension
+     use the rule @('refl'),
+     while the case of two or more dimensions uses the rule @('sub2m').")
+   (xdoc::p
+    "We use the constructed proof tree to show the equivalence,
+     as we do in the related @(tsee unarize-sub-in-dims).")
+   (xdoc::p
+    "We show that the resulting dimension only has unary subtractions
+     if the argument dimensions do and there is at least one of them.
+     This function is called after unarizing the subtractions
+     in the dimensions passed as arguments to this function (see caller);
+     that establishes the first hypothesis of the theorem."))
+  (cond ((endp dims) (mv (dim-sub nil)
+                         (dim=-proof-refl (dim-sub nil))))
+        ((endp (cdr dims)) (mv (dim-sub dims)
+                               (dim=-proof-refl (dim-sub dims))))
+        (t (mv (dim-add (list (dim-fix (car dims))
+                              (dim-sub (list (dim-add
+                                              (dim-list-fix (cdr dims)))))))
+               (make-dim=-proof-sub2m
+                :d (dim-fix (car dims))
+                :ds (dim-list-fix (cdr dims))))))
+
+  ///
+
+  (defret dim=-proof-validp-of-unarize-dims-in-sub
+    (implies (dim-listp dims)
+             (dim=-proof-validp proof
+                                (dim-sub dims)
+                                new-dim))
+    :hints (("Goal" :in-theory (enable dim=-proof-validp
+                                       dim=-refl-validp
+                                       dim=-sub2m-validp))))
+
+  (defret dim-unisubp-of-unarize-dims-in-sub
+    (implies (and (dim-list-unisubp dims)
+                  (consp dims))
+             (dim-unisubp new-dim))
+    :hints (("Goal"
+             :in-theory (enable* ast-unisubp-rules))
+            '(:expand ((dim-unisubp (dim-sub dims))
+                       (dim-unisubp (dim-sub (list (dim-add
+                                                    (cdr dims))))))))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defines unarize-sub-in-dims
+  :short "Turn dimensions into equivalent ones
+          with only unary subtractions,
+          and construct proof trees demonstrating the equivalence."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We show that the resulting dimensions are equivalent to
+     the argument ones.
+     This is done via the constructed proof trees.")
+   (xdoc::p
+    "We show that the resulting dimensions only have unary subtractions
+     if the argument ones have no nullary subtractions."))
+
+  (define unarize-sub-in-dim ((dim dimp))
+    :returns (mv (new-dim dimp)
+                 (proof dim=-proofp))
+    :parents (ispace-equivalence-properties unarize-sub-in-dims)
+    :short "Turn a dimension into
+            an equivalent one with only unary subtractions,
+            and construct a proof tree demonstrating the equivalence."
+    (dim-case
+     dim
+     :var (mv (dim-var dim.name)
+              (dim=-proof-refl (dim-var dim.name)))
+     :const (mv (dim-const dim.val)
+                (dim=-proof-refl (dim-const dim.val)))
+     :add (b* (((mv new-dims proof) (unarize-sub-in-dim-list dim.dims)))
+            (mv (dim-add new-dims)
+                (make-dim=-proof-cong-add
+                 :ds1 dim.dims
+                 :ds2 new-dims
+                 :premise1-proof proof)))
+     :mul (b* (((mv new-dims proof) (unarize-sub-in-dim-list dim.dims)))
+            (mv (dim-mul new-dims)
+                (make-dim=-proof-cong-mul
+                 :ds1 dim.dims
+                 :ds2 new-dims
+                 :premise1-proof proof)))
+     :sub (b* (((mv new-dims proof) (unarize-sub-in-dim-list dim.dims))
+               ((mv new-dim proof1) (unarize-dims-in-sub new-dims)))
+            (mv new-dim
+                (make-dim=-proof-trans
+                 :d1 (dim-sub dim.dims)
+                 :d2 (dim-sub new-dims)
+                 :d3 new-dim
+                 :premise1-proof (make-dim=-proof-cong-sub
+                                  :ds1 dim.dims
+                                  :ds2 new-dims
+                                  :premise1-proof proof)
+                 :premise2-proof proof1))))
+    :measure (dim-count dim))
+
+  (define unarize-sub-in-dim-list ((dims dim-listp))
+    :returns (mv (new-dims dim-listp)
+                 (proof dims=-proofp))
+    :parents (ispace-equivalence-properties unarize-sub-in-dims)
+    :short "Turn a list of dimensions into
+            an equivalent one with only unary subtractions,
+            and construct a proof tree demonstrating the equivalence."
+    (b* (((when (endp dims)) (mv nil (dims=-proof-refl nil)))
+         ((mv new-dim proof1) (unarize-sub-in-dim (car dims)))
+         ((mv new-dims proof2) (unarize-sub-in-dim-list (cdr dims))))
+      (mv (cons new-dim new-dims)
+          (make-dims=-proof-cong-cons
+           :d1 (dim-fix (car dims))
+           :d2 new-dim
+           :ds1 (dim-list-fix (cdr dims))
+           :ds2 new-dims
+           :premise1-proof proof1
+           :premise2-proof proof2)))
+    :measure (dim-list-count dims))
+
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv-mutual unarize-sub-in-dims)
+
+  (defret consp-of-unarize-sub-in-dim-list
+    (equal (consp new-dims)
+           (consp dims))
+    :fn unarize-sub-in-dim-list
+    :hints (("Goal" :expand ((unarize-sub-in-dim-list dims)))))
+
+  (defret-mutual dim=-proof-validp-of-unarize-sub-in-dims
+    (defret dim=-proof-validp-of-unarize-sub-in-dim
+      (implies (dimp dim)
+               (dim=-proof-validp proof
+                                  dim
+                                  new-dim))
+      :fn unarize-sub-in-dim)
+    (defret dims=-proof-validp-of-unarize-sub-in-dim-list
+      (implies (dim-listp dims)
+               (dims=-proof-validp proof
+                                   dims
+                                   new-dims))
+      :fn unarize-sub-in-dim-list)
+    :hints (("Goal"
+             :in-theory (enable dim=-proof-validp
+                                dims=-proof-validp
+                                dim=-refl-validp
+                                dim=-trans-validp
+                                dim=-cong-add-validp
+                                dim=-cong-mul-validp
+                                dim=-cong-sub-validp
+                                dims=-refl-validp
+                                dims=-cong-cons-validp))))
+
+  (defret-mutual dim-unisubp-of-unarize-sub-in-dims
+    (defret dim-unisubp-of-unarize-sub-in-dim
+      (implies (dim-nonullsubp dim)
+               (dim-unisubp new-dim))
+      :fn unarize-sub-in-dim)
+    (defret dim-list-unisubp-of-unarize-sub-in-dim-list
+      (implies (dim-list-nonullsubp dims)
+               (dim-list-unisubp new-dims))
+      :fn unarize-sub-in-dim-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-unisubp-rules
+                                 ast-nonullsubp-rules))
+            '(:expand ((dim-nonullsubp dim)
+                       (dim-unisubp dim))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled dim-equiv-to-binadd-p-when-dimp
   :short "Every dimension is equivalent to one with only binary additions."
   :long
@@ -630,3 +865,27 @@
                    (proof (mv-nth 1 (binarize-mul-in-dim dim)))
                    (dim1 dim)
                    (dim2 (mv-nth 0 (binarize-mul-in-dim dim))))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled dim-equiv-to-unisub-p-when-dimp-and-nonullsubp
+  :short "Every dimension without nullary subtractions
+          is equivalent to one with only unary subtractions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This validates the intention of rule @('sub2m'),
+     described in @(see dim-equiv-infrules):
+     variadic subtractions are reduced to unary ones.
+     Since nullary subtractions are illegal and cannot be reduced
+     (each one is only equivalent to itself, via reflexivity),
+     the theorem assumes that the dimension has no nullary subtractions."))
+  (implies (and (dimp dim)
+                (dim-nonullsubp dim))
+           (dim-equiv-to-unisub-p dim))
+  :use ((:instance dim-equiv-to-unisub-p-suff
+                   (dim1 (mv-nth 0 (unarize-sub-in-dim dim))))
+        (:instance dim=-suff
+                   (proof (mv-nth 1 (unarize-sub-in-dim dim)))
+                   (dim1 dim)
+                   (dim2 (mv-nth 0 (unarize-sub-in-dim dim))))))
