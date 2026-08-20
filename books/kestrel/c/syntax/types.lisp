@@ -139,7 +139,8 @@
      array types may need to track a 0 length).")
    (xdoc::p
     "The @(':nonconst-len') case represents complete array types
-     whose size specifier is not an integer constant expression.
+     whose size specifier is not an integer constant expression,
+     including an unspecified size written as @('*').
      We do not yet store any information in this case.
      Eventually, we may wish to distinguish
      a size specified by a nonconstant expression
@@ -230,7 +231,7 @@
         because there are different enumeration types.")
       (xdoc::li
        "An array type [C17:6.2.5/20],
-        derived from the ``element type.'',
+        derived from the ``element type''
         and an array kind.
         See @(tsee type-array-kind).")
       (xdoc::li
