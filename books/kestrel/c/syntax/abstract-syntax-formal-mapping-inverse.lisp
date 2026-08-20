@@ -635,7 +635,16 @@
           to a list of structure declarations in the syntax for tools."
   (cond ((endp sdeclons) nil)
         (t (cons (ildm-struct-declon (car sdeclons))
-                 (ildm-struct-declon-list (cdr sdeclons))))))
+                 (ildm-struct-declon-list (cdr sdeclons)))))
+
+  ///
+
+  (defrule ldm-struct-declon-list-of-ildm-struct-declon-list
+    (equal (ldm-struct-declon-list (ildm-struct-declon-list sdeclons))
+           (mv nil (c::struct-declon-list-dec0-to-oct0 sdeclons)))
+    :induct t
+    :enable (ldm-struct-declon-list
+             c::struct-declon-list-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -651,7 +660,16 @@
   (cond ((endp enumers) nil)
         (t (cons (make-enumer :name (ildm-ident (car enumers)) :value? nil)
                  (ildm-enumer-list (cdr enumers)))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule ldm-enumer-list-of-ildm-enumer-list
+    (equal (ldm-enumer-list (ildm-enumer-list enumers))
+           (mv nil (c::ident-list-fix enumers)))
+    :induct t
+    :enable (ldm-enumer-list
+             ldm-enumer)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -684,7 +702,15 @@
        (declspec (decl-spec-typespec tyspec)))
     (make-declon-declon :extension nil
                         :specs (list declspec)
-                        :declors nil)))
+                        :declors nil))
+
+  ///
+
+  (defrule ldm-declon-tag-of-ildm-tag-declon
+    (equal (ldm-declon-tag (ildm-tag-declon declon))
+           (mv nil (c::tag-declon-dec0-to-oct0 declon)))
+    :enable (ldm-declon-tag
+             c::tag-declon-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
