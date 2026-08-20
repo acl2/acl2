@@ -352,8 +352,6 @@
 
   :verify-guards :after-returns
 
-  :flag-local nil
-
   ///
 
   (fty::deffixequiv-mutual binarize-add-in-dims)
@@ -476,7 +474,6 @@
   (defret dim-binmulp-of-binarize-dims-in-mul
     (implies (dim-list-binmulp dims)
              (dim-binmulp new-dim))
-    :fn binarize-dims-in-mul
     :hints (("Goal"
              :induct t
              :in-theory (enable* ast-binmulp-rules))
@@ -559,8 +556,6 @@
     :measure (dim-list-count dims))
 
   :verify-guards :after-returns
-
-  :flag-local nil
 
   ///
 
