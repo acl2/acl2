@@ -293,6 +293,21 @@
             (and (dim= dim dim1)
                  (dim-unisubp dim1)))))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-equiv-to-binadd-binmul-unisub-p
+  :short "Check whether a dimension is equivalent to
+          one with only
+          binary additions,
+          binary multiplications,
+          and unary subtractions."
+  (defund-sk dim-equiv-to-binadd-binmul-unisub-p (dim)
+    (exists (dim1)
+            (and (dim= dim dim1)
+                 (dim-binaddp dim1)
+                 (dim-binmulp dim1)
+                 (dim-unisubp dim1)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define binarize-dims-in-add ((dims dim-listp))
@@ -1123,3 +1138,57 @@
                    (proof (mv-nth 1 (unarize-sub-in-dim dim)))
                    (concl.dim1 dim)
                    (concl.dim2 (mv-nth 0 (unarize-sub-in-dim dim))))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled dim-equiv-to-binadd-binmul-unisub-p-when-dimp-and-nonullsubp
+  :short "Every dimension without nullary subtractions
+          is equivalent to one with only
+          binary additions,
+          binary multiplications,
+          and unary subtractions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a corollary of composing the three transformations,
+     in the order:
+     unarize subtractions, binarize additions, binarize multiplications.
+     Each transformation establishes its own status,
+     and preserves the statuses established by the preceding ones.
+     Unarizing subtractions must precede binarizing additions,
+     because the former introduces additions
+     (see @(tsee unarize-dims-in-sub));
+     binarizing multiplications could be otherwise reordered,
+     since the other two transformations preserve
+     the binary status of multiplications.")
+   (xdoc::p
+    "This is not the only sequence of transformations
+     that achieves the desired status of the dimensions.
+     For instance,
+     we could swap the binarization of additions and multiplications.
+     But not all sequences work, as noted earlier."))
+  (implies (and (dimp dim)
+                (dim-nonullsubp dim))
+           (dim-equiv-to-binadd-binmul-unisub-p dim))
+  :use ((:instance dim-equiv-to-binadd-binmul-unisub-p-suff
+                   (dim1 (mv-nth 0 (binarize-mul-in-dim
+                                    (binarize-add-in-dim
+                                     (mv-nth 0 (unarize-sub-in-dim dim)))))))
+        (:instance dim=-when-proof-validp
+                   (proof (mv-nth 1 (unarize-sub-in-dim dim)))
+                   (concl.dim1 dim)
+                   (concl.dim2 (mv-nth 0 (unarize-sub-in-dim dim))))
+        (:instance dim=-of-binarize-add-in-dim
+                   (dim (mv-nth 0 (unarize-sub-in-dim dim))))
+        (:instance dim=-when-proof-validp
+                   (proof (mv-nth 1 (binarize-mul-in-dim
+                                     (binarize-add-in-dim
+                                      (mv-nth 0 (unarize-sub-in-dim dim))))))
+                   (concl.dim1 (binarize-add-in-dim
+                                (mv-nth 0 (unarize-sub-in-dim dim))))
+                   (concl.dim2 (mv-nth 0 (binarize-mul-in-dim
+                                          (binarize-add-in-dim
+                                           (mv-nth 0 (unarize-sub-in-dim
+                                                      dim))))))))
+  :enable dim=-trans-swapped
+  :disable dim=-of-binarize-add-in-dim)
