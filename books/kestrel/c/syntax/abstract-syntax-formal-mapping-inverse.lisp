@@ -745,7 +745,16 @@
           to a list of parameter declarations in the syntax for tools."
   (cond ((endp pdeclons) nil)
         (t (cons (ildm-param-declon (car pdeclons))
-                 (ildm-param-declon-list (cdr pdeclons))))))
+                 (ildm-param-declon-list (cdr pdeclons)))))
+
+  ///
+
+  (defrule ldm-param-declon-list-of-ildm-param-declon-list
+    (equal (ldm-param-declon-list (ildm-param-declon-list pdeclons))
+           (mv nil (c::param-declon-list-dec0-to-oct0 pdeclons)))
+    :induct t
+    :enable (ldm-param-declon-list
+             c::param-declon-list-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
