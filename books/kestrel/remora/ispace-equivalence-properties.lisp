@@ -1163,7 +1163,7 @@
      the binary status of multiplications.")
    (xdoc::p
     "This is not the only sequence of transformations
-     that achieves the desired status of the dimensions.
+     that achieves the desired statuses of the dimension.
      For instance,
      we could swap the binarization of additions and multiplications.
      But not all sequences work, as noted earlier."))
