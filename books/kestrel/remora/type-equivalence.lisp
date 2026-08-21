@@ -452,8 +452,7 @@
    :foralln (b* ((type2 (normalize-type type2)))
               (type-case
                type2
-               :forall (b* (((unless (consp type1.params)) nil)
-                            (used (set::union (type-all-type-vars type1)
+               :forall (b* ((used (set::union (type-all-type-vars type1)
                                               (type-all-type-vars type2)))
                             (maps (fresh-type-var-renaming
                                    (list (car type1.params))
