@@ -272,7 +272,7 @@
    (xdoc::p
     "If one type is a variable, the other type must be the same variable.
      Eventually we will need to generalize this so that
-     an array type variable @('*v') is equivalent to @('(A &v @v'),
+     an array type variable @('*v') is equivalent to @('(A &v @v)'),
      i.e. an array type with an atom type variable and a shape variable
      that have the same name as the original variable.")
    (xdoc::p
@@ -329,10 +329,17 @@
      Thus a unary type may be equivalent to an n-ary one,
      and two n-ary types may be equivalent
      even if they have different numbers of bound variables.
-     An n-ary type with no bound variables,
+     An n-ary sum type with no bound variables,
      which is not well-formed,
      is only equivalent to another one with no bound variables,
-     with equivalent bodies.")
+     with equivalent bodies.
+     An n-ary product type with fewer than two bound variables,
+     which is not well-formed,
+     is currently not equivalent to any type;
+     this interim treatment will go away
+     when the fixtype of types requires
+     n-ary product types to have two or more parameters,
+     as it already does for n-ary universal types.")
    (xdoc::p
     "Since we are renaming (ispace and type) variables to fresh ones,
      we do not call the predicates to check for variable capture.

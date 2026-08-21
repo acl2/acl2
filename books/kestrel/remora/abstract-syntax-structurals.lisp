@@ -1001,7 +1001,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pi-curried-body ((params ispace-var-listp) (body typep))
-  :guard (consp params)
+  :guard (>= (len params) 2)
   :returns (new-body typep)
   :short "Peel the first parameter from a product type
           and return the remaining body type."
@@ -1009,7 +1009,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is analogous to @(tsee forall-curried-body)."))
-  (cond ((endp (cdr params)) (type-fix body))
+  (cond ((endp (cdr params)) (prog2$ (impossible) (type-fix body)))
         ((endp (cddr params))
          (make-type-pi :param (cadr params) :body body))
         (t (make-type-pin :params (cdr params) :body body)))
