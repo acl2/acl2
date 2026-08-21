@@ -778,7 +778,18 @@
               (make-declor :pointers (cons nil declor1.pointers)
                            :direct declor1.direct)))
   :measure (c::fun-declor-count declor)
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule ldm-declor-fun-of-ildm-fun-declor
+    (equal (ldm-declor-fun (ildm-fun-declor declor))
+           (mv nil (c::fun-declor-dec0-to-oct0 declor)))
+    :induct t
+    :enable (ldm-declor-fun
+             ldm-declor-fun-loop
+             ldm-dirdeclor-fun
+             c::fun-declor-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
