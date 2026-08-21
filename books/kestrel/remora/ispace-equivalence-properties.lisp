@@ -1166,7 +1166,9 @@
      that achieves the desired statuses of the dimension.
      For instance,
      we could swap the binarization of additions and multiplications.
-     But not all sequences work, as noted earlier."))
+     But not all sequences work, as noted earlier.
+     In general, the sequences that work are exactly the ones where
+     the unarization of subtraction precedes the binarization of addition."))
   (implies (and (dimp dim)
                 (dim-nonullsubp dim))
            (dim-equiv-to-binadd-binmul-unisub-p dim))
