@@ -506,7 +506,8 @@
                                                    maps.3rd
                                                    maps.4th)))
                 (type-equivp body1 body2))
-          :pin (b* (((unless (consp type2.params)) nil)
+          :pin (b* (((unless (>= (len type2.params) 2)) nil)
+                    ;; TODO: remove above check when AST invariant is in
                     (used (set::union (type-all-ispace-vars type1)
                                       (type-all-ispace-vars type2)))
                     (maps (fresh-ispace-var-renaming
@@ -527,7 +528,8 @@
    :pin (b* ((type2 (normalize-type type2)))
           (type-case
            type2
-           :pi (b* (((unless (consp type1.params)) nil)
+           :pi (b* (((unless (>= (len type1.params) 2)) nil)
+                    ;; TODO: remove above check when AST invariant is in
                     (used (set::union (type-all-ispace-vars type1)
                                       (type-all-ispace-vars type2)))
                     (maps (fresh-ispace-var-renaming
