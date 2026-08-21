@@ -454,6 +454,22 @@
 
     (xdoc::desc
      (list
+      "@('p[1]-proof-minimalp')"
+      "@('...')"
+      "@('p[n]-proof-minimalp')")
+     (xdoc::p
+      "Predicates saying that a proof tree is minimal,
+       i.e. that no valid proof tree of the same conclusion
+       has a smaller count.
+       Each takes a proof and the arguments of the conclusion,
+       and universally quantifies over the other proof trees.")
+     (xdoc::p
+      "These predicates are currently not guard-verified,
+       because they call the non-guard-verified
+       @('p[i]-proof-validp') predicates."))
+
+    (xdoc::desc
+     (list
       "@('p[1]')"
       "@('...')"
       "@('p[n]')")
@@ -464,11 +480,144 @@
        there is a proof that is valid for those arguments,
        which are passed to @('p[i]-proof-validp').")
      (xdoc::p
+      "The witness function backing the existential
+       is given the name @('p[i]-proof').")
+     (xdoc::p
+      "The proof whose existence is asserted is also required to be minimal,
+       according to @('p[i]-proof-minimalp').
+       This does not change the meaning of the predicates,
+       because a minimal valid proof tree exists
+       exactly when any valid proof tree exists.
+       It makes the witness @('p[i]-proof') a minimal proof,
+       which supports reasoning by induction
+       using the @('p[i]-induct') functions (see below).
+       (A minimal proof tree need not be unique:
+       there may be several valid proof trees for the same conclusion
+       with the same count.)")
+     (xdoc::p
       "These predicates are currently not guard-verified,
        because they call the non-guard-verified
        @('p[i]-proof-validp') predicates.
        The @('p[i]') predicates do not have fixing theorems,
        because the formals are currently untyped."))
+
+    (xdoc::desc
+     (list
+      "@('p[1]-when-proof-validp')"
+      "@('...')"
+      "@('p[n]-when-proof-validp')")
+     (xdoc::p
+      "Theorems saying that @('(p[i] x[i,1] ... x[i,m[i]])') holds
+       if there is any valid proof tree for those arguments,
+       whether or not that proof tree is minimal.")
+     (xdoc::p
+      "Because of the minimality requirement described above,
+       the @('p[i]-suff') theorems that @(tsee defun-sk) generates
+       require the proof tree to be minimal.
+       These theorems drop that requirement.
+       They are disabled, like the rule theorems;
+       so are the @('p[i]-suff') theorems,
+       which @(tsee std::define-sk) disables.")
+     (xdoc::p
+      "The validity hypothesis precedes the recognizer hypothesis,
+       so that, when the theorem is used as a rewrite rule,
+       free variable matching binds the proof tree from the former
+       rather than from the weaker latter.")
+     (xdoc::p
+      "If XDOC is generated,
+       these theorems and the @('p[i]-proof-count-bound') theorems below
+       are put in a @(tsee defsection) whose name is obtained by
+       extending the @('name') input with the suffix @('-valid-proofs')."))
+
+    (xdoc::desc
+     (list
+      "@('p[1]-proof-count-bound')"
+      "@('...')"
+      "@('p[n]-proof-count-bound')")
+     (xdoc::p
+      "Theorems saying that the witness proof tree produced by @('p[i]-proof')
+       is minimal in fact,
+       i.e. that its count is no larger than the count of
+       any valid proof tree of the same conclusion.
+       These are @(':linear') rules,
+       triggered on the count of the witness.")
+     (xdoc::p
+      "This is what ties the proof tree obtained from the existential
+       back to a concrete proof tree,
+       which the measure of the induction schemes below needs.
+       As with the minimality predicates,
+       the validity hypothesis comes first,
+       so that free variable matching binds the proof tree from it;
+       that is what lets these theorems apply on their own
+       in those measure proofs.")
+     (xdoc::p
+      "These are generated only for the recursive predicates.
+       If XDOC is generated, they go in the @(tsee defsection)
+       mentioned just above."))
+
+    (xdoc::desc
+     (list
+      "@('p[1]-induct')"
+      "@('...')"
+      "@('p[n]-induct')")
+     (xdoc::p
+      "Functions providing an induction scheme for the predicates.
+       Each recurses on the arguments of the premises
+       of the rule that the witness proof tree used.
+       The witness proof is chosen at each step,
+       and therefore is not an argument to the function;
+       that is what lets it serve as an induction scheme
+       for the predicate itself.
+       The results of these functions are irrelevant:
+       only their recursive structure matters.")
+     (xdoc::p
+      "One event is generated for each clique of predicates.
+       For a clique of a single predicate, the event is a @(tsee define).
+       For a clique of two or more predicates,
+       the functions are mutually recursive,
+       and the event is a @(tsee defines)
+       named after the first predicate of the clique,
+       with the suffix @('-induct-clique');
+       it is generated with @(':flag-local nil'),
+       so that the flag macro it generates
+       can be used after the call of this macro,
+       and with explicit names for that macro and its flag function,
+       described just below.")
+     (xdoc::p
+      "These are generated only for the recursive predicates:
+       a non-recursive predicate admits no induction scheme."))
+
+    (xdoc::desc
+     (list
+      "@('p[1]-induction')"
+      "@('...')"
+      "@('p[n]-induction')")
+     (xdoc::p
+      "Rules that make @('p[i]-induct') the induction scheme suggested by
+       a call of @('p[i]'), so that a plain @(':induct') hint on such a call
+       performs rule induction.")
+     (xdoc::p
+      "These are generated only for a clique of a single predicate.
+       ACL2 derives no induction scheme from mutually recursive functions,
+       and so rejects such a rule for a clique of two or more predicates.
+       Nor would such a rule suffice there:
+       the induction hypothesis for a premise that calls
+       a different predicate of the clique
+       would be about the predicate being defined instead.
+       Mutual rule induction needs the whole clique proved together,
+       so the interface for such a clique is instead
+       the flag macro generated by the @(tsee defines) described above,
+       which is named @('defthm-p[i]-induction'),
+       after the first predicate of the clique;
+       its flag function is named @('p[i]-induct-flag').")
+     (xdoc::p
+      "If XDOC is generated, these rules are put
+       in a @(tsee defsection) whose name is obtained by
+       extending the @('name') input with the suffix
+       @('-induction-rules'):
+       the suffix is not just @('-induction'),
+       because that is the name of one of these very rules
+       when a predicate is named as the @('name') input."))
 
     (xdoc::desc
      (list

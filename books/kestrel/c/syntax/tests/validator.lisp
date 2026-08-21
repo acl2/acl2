@@ -451,7 +451,7 @@ void f() {
   }
 ")
 
-(test-valid
+(test-valid-fail
  "int myarray[];
   int foo () {
   int x = sizeof(myarray);
@@ -1177,6 +1177,20 @@ struct s arr[] = {1, [0].y = 2, {.x = 3, 4}, 5};
 (test-valid
   "int foo(void) {
   return (int [1][1]) {42}[0][0];
+}
+")
+
+;; An array of unknown size is completed by the compound literal's
+;; initializer, so the compound literal has complete type and sizeof is valid.
+(test-valid
+  "int f(void) {
+  return sizeof((int []) {1, 2});
+}
+")
+
+(test-valid-fail
+  "int f(void) {
+  return sizeof(int []);
 }
 ")
 
@@ -1908,4 +1922,136 @@ void f(void) {
 void g(void) {
   f(3);
 }
+")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Array size expressions.
+
+;; Standard C requires constant array sizes to be positive.
+(test-valid-fail
+  "int a[-1];
+")
+
+(test-valid-fail
+  "int a[0];
+")
+
+(test-valid-fail
+  "int a[0];
+"
+  :dialect (c::make-dialect :std (c::standard-c23)))
+
+;; GCC and Clang accept zero-length arrays as extensions, but still reject
+;; negative sizes.
+(test-valid
+  "int a[0];
+"
+  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+  "int a[0];
+"
+  :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-valid-fail
+  "int a[-1];
+"
+  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+  "int a[-1];
+"
+  :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+;; Exercise an arithmetic integer constant expression.  The current ICE check
+;; is conservative about evaluated arithmetic, but the declarations are
+;; compatible whether or not it can determine the length precisely.
+(test-valid
+  "int a[2 + 3];
+int a[5];
+")
+
+;; Exercise a variable length array whose bound is an ordinary identifier.
+(test-valid
+  "void f(int n) {
+  int a[n];
+}
+")
+
+;; Different constant lengths make declarations incompatible.
+(test-valid-fail
+  "int a[10];
+int a[20];
+")
+
+;; An intervening incomplete declaration retains the prior known length in the
+;; composite type.
+(test-valid-fail
+  "static int a[10];
+extern int a[];
+static int a[20];
+")
+
+;; The external information retains a composite across translation units.
+(test-valid-fail
+  "extern int a[];
+"
+  "extern int a[10];
+"
+  "extern int a[20];
+")
+
+;; An unspecified parameter list does not discard a prior prototype.
+(test-valid-fail
+  "static int f(int);
+static int f();
+static int f(double);
+")
+
+;; External function information also retains a prototype across translation
+;; units.
+(test-valid-fail
+  "extern int f();
+"
+  "extern int f(int);
+"
+  "extern int f(double);
+")
+
+;; A function definition also retains the composite of its type with a prior
+;; declaration.  Internal linkage ensures this is checked in the ordinary
+;; identifier table rather than via the external information.
+(test-valid-fail
+  "static int f(int);
+static int f(x)
+  int x;
+{
+  return x;
+}
+static int f(double);
+")
+
+;; The precise kind is propagated to inner array layers.
+(test-valid-fail
+  "int a[2][3];
+int a[2][4];
+")
+
+;; It is also propagated through abstract declarators.
+(test-valid-fail
+  "void f(int (*)[10]);
+void f(int (*)[20]);
+")
+
+;; The precise kind is propagated through function and pointer types.
+(test-valid-fail
+  "int (*f(int))[10];
+int (*f(int))[20];
+")
+
+;; Exercise the direct and abstract static array forms.
+(test-valid
+  "void g(int a[static 10], int b[const static 20]);
+void h(int [static 10], int [const static 20]);
 ")

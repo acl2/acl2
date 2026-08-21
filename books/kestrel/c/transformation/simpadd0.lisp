@@ -364,7 +364,8 @@
             (gin (gin-update gin gout-elems)))
          (mv (make-expr-complit :type new-type
                                 :elems new-elems
-                                :final-comma expr.final-comma)
+                                :final-comma expr.final-comma
+                                :info expr.info)
              (gout-no-thm gin)))
        :unary
        (b* (((mv new-arg (gout gout-arg))
