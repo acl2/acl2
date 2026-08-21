@@ -469,11 +469,7 @@
                                                           maps.3rd
                                                           maps.4th)))
                          (type-equivp body1 body2))
-               :foralln (b* (((when (endp type1.params))
-                              (and (endp type2.params)
-                                   (type-equivp type1.body type2.body)))
-                             ((when (endp type2.params)) nil)
-                             (used (set::union (type-all-type-vars type1)
+               :foralln (b* ((used (set::union (type-all-type-vars type1)
                                                (type-all-type-vars type2)))
                              (maps (fresh-type-var-renaming
                                     (list (car type1.params))
