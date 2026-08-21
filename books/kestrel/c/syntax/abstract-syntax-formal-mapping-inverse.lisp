@@ -714,6 +714,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(local
+ (defrule check-decl-spec-list-all-typespec-of-decl-spec-typespec-list
+   (equal (check-decl-spec-list-all-typespec
+           (decl-spec-typespec-list tyspecs))
+          (mv t (type-spec-list-fix tyspecs)))
+   :induct t
+   :enable (check-decl-spec-list-all-typespec
+            decl-spec-typespec-list)))
+
 (define ildm-param-declon ((pdeclon c::param-declonp))
   :returns (pdeclon1 param-declonp)
   :short "Map a parameter declaration in the language definition
@@ -726,7 +735,16 @@
                        :declor (make-param-declor-nonabstract
                                 :declor declor
                                 :info nil)
-                       :attribs nil)))
+                       :attribs nil))
+
+  ///
+
+  (defrule ldm-param-declon-of-ildm-param-declon
+    (equal (ldm-param-declon (ildm-param-declon pdeclon))
+           (mv nil (c::param-declon-dec0-to-oct0 pdeclon)))
+    :enable (ldm-param-declon
+             ldm-param-declor
+             c::param-declon-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
