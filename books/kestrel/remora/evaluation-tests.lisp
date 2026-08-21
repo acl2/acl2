@@ -232,3 +232,54 @@
 ; End-to-end: parse, type-check, and evaluate a reduce expression.
 (test-eval-top-expr
  "(@reduce (Int) (2 []) + [1 2 3])")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Tests for the fold primitive.
+
+; Sum fold with initial value: (+ (+ (+ 10 1) 2) 3) = 16.
+(assert-event
+ (equal (prim-fold *tv-int* *tv-int* 2 nil nil *add-fun* (iv 10) *vec3* 1000)
+        (iv 16)))
+
+; Left fold, seeded with the initial value:
+; (- (- (- 10 1) 2) 3) = 4.
+(assert-event
+ (equal (prim-fold *tv-int* *tv-int* 2 nil nil *sub-fun* (iv 10) *vec3* 1000)
+        (iv 4)))
+
+; A single cell (d = 0): the function value is applied exactly once,
+; to the initial value and the cell.
+(assert-event
+ (equal (prim-fold *tv-int* *tv-int* 0 nil nil *sub-fun* (iv 10)
+                   (expr-value-vector (list (iv 7)))
+                   1000)
+        (iv 3)))
+
+; Initial value dimensions not matching the instantiation.
+(assert-event
+ (reserrp (prim-fold *tv-int* *tv-int* 2 nil (list 3) *add-fun* (iv 10)
+                     *vec3* 1000)))
+
+; Argument cell dimensions not matching the instantiation.
+(assert-event
+ (reserrp (prim-fold *tv-int* *tv-int* 1 nil nil *add-fun* (iv 10)
+                     *vec3* 1000)))
+
+; Via the higher-order eval-primop-fun.
+(assert-event
+ (equal (eval-primop-fun (make-primop-value-fold-t-t2-d-s-s2-f-z
+                          :tval *tv-int*
+                          :t2val *tv-int*
+                          :dval 2
+                          :sval nil
+                          :s2val nil
+                          :fval *add-fun*
+                          :zval (iv 10))
+                         *vec3*
+                         1000)
+        (iv 16)))
+
+; End-to-end: parse, type-check, and evaluate a fold expression.
+(test-eval-top-expr
+ "(@fold (Int Int) (2 [] []) + 10 [1 2 3])")
