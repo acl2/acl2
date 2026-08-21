@@ -714,15 +714,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local
- (defrule check-decl-spec-list-all-typespec-of-decl-spec-typespec-list
-   (equal (check-decl-spec-list-all-typespec
-           (decl-spec-typespec-list tyspecs))
-          (mv t (type-spec-list-fix tyspecs)))
-   :induct t
-   :enable (check-decl-spec-list-all-typespec
-            decl-spec-typespec-list)))
-
 (define ildm-param-declon ((pdeclon c::param-declonp))
   :returns (pdeclon1 param-declonp)
   :short "Map a parameter declaration in the language definition
