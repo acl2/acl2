@@ -13,7 +13,6 @@
 (include-book "ispace-equivalence-infrules")
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
-(include-book "std/util/defund-sk" :dir :system)
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -265,48 +264,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection dim-equiv-to-binadd-p
+(define-sk dim-equiv-to-binadd-p (dim)
+  :returns (yes/no booleanp)
   :short "Check whether a dimension is equivalent to
           one with only binary additions."
-  (defund-sk dim-equiv-to-binadd-p (dim)
-    (exists (dim1)
-            (and (dim= dim dim1)
-                 (dim-binaddp dim1)))))
+  (exists (dim1)
+          (and (dim= dim dim1)
+               (dim-binaddp dim1)))
+  :verify-guards nil) ; because DIM= is not guard-verified
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defsection dim-equiv-to-binmul-p
+(define-sk dim-equiv-to-binmul-p (dim)
+  :returns (yes/no booleanp)
   :short "Check whether a dimension is equivalent to
           one with only binary multiplications."
-  (defund-sk dim-equiv-to-binmul-p (dim)
-    (exists (dim1)
-            (and (dim= dim dim1)
-                 (dim-binmulp dim1)))))
+  (exists (dim1)
+          (and (dim= dim dim1)
+               (dim-binmulp dim1)))
+  :verify-guards nil) ; because DIM= is not guard-verified
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defsection dim-equiv-to-unisub-p
+(define-sk dim-equiv-to-unisub-p (dim)
+  :returns (yes/no booleanp)
   :short "Check whether a dimension is equivalent to
           one with only unary subtractions."
-  (defund-sk dim-equiv-to-unisub-p (dim)
-    (exists (dim1)
-            (and (dim= dim dim1)
-                 (dim-unisubp dim1)))))
+  (exists (dim1)
+          (and (dim= dim dim1)
+               (dim-unisubp dim1)))
+  :verify-guards nil) ; because DIM= is not guard-verified
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defsection dim-equiv-to-binadd-binmul-unisub-p
+(define-sk dim-equiv-to-binadd-binmul-unisub-p (dim)
+  :returns (yes/no booleanp)
   :short "Check whether a dimension is equivalent to
           one with only
           binary additions,
           binary multiplications,
           and unary subtractions."
-  (defund-sk dim-equiv-to-binadd-binmul-unisub-p (dim)
-    (exists (dim1)
-            (and (dim= dim dim1)
-                 (dim-binaddp dim1)
-                 (dim-binmulp dim1)
-                 (dim-unisubp dim1)))))
+  (exists (dim1)
+          (and (dim= dim dim1)
+               (dim-binaddp dim1)
+               (dim-binmulp dim1)
+               (dim-unisubp dim1)))
+  :verify-guards nil) ; because DIM= is not guard-verified
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
