@@ -21,6 +21,7 @@
 (include-book "initializer-validation")
 (include-book "validation-tables")
 (include-book "validation-annotations")
+(include-book "constant-expressions")
 (include-book "null-pointer-constants")
 (include-book "translation-unit-comparison")
 
@@ -315,8 +316,10 @@
    (xdoc::p
     "If no entry exists for the identifier,
      add a new @(tsee valid-ext-info).
-     If an entry does exist, update the @('declared-in') field to include
-     the name of the current translation unit.")
+     If an entry does exist, replace its type with the supplied type
+     and update the @('declared-in') field to include
+     the name of the current translation unit,
+     while preserving its UID.")
    (xdoc::p
     "When an existing entry already exists,
      type compatibility is not checked, nor is the UID.
@@ -330,6 +333,7 @@
          info?
          :some (change-valid-ext-info
                 info?
+                :type type
                 :declared-in (insert table.filepath
                                      (valid-ext-info->declared-in
                                       info?.val)))
@@ -345,7 +349,9 @@
 
 (define vstate-add-ord ((ident identp)
                         (info valid-ord-infop)
-                        (vstate vstatep))
+                        (vstate vstatep)
+                        &key
+                        ((update-extp booleanp) 't))
   :returns (new-vstate vstatep)
   :short "Add an ordinary identifier to the validation state."
   :long
@@ -366,7 +372,8 @@
      We could consider adding a guard to this function
      that characterizes the acceptable overwriting.")
    (xdoc::p
-    "If @('info') indicates external linkage, we update the @('externals') map.
+    "If @('info') indicates external linkage and @('update-extp') is true,
+     we update the @('externals') map.
      See @(tsee vstate-update-ext)."))
   (b* (((vstate vstate) vstate)
        ((valid-table table) vstate.table)
@@ -383,14 +390,16 @@
        (table (change-valid-table table :scopes new-scopes))
        (vstate (change-vstate vstate :table table))
        (vstate
-        (valid-ord-info-case
-         info
-         :objfun (linkage-case
-                  info.linkage
-                  :external
-                  (vstate-update-ext ident info.type info.uid vstate)
-                  :otherwise vstate)
-         :otherwise vstate)))
+        (if update-extp
+            (valid-ord-info-case
+             info
+             :objfun (linkage-case
+                      info.linkage
+                      :external
+                      (vstate-update-ext ident info.type info.uid vstate)
+                      :otherwise vstate)
+             :otherwise vstate)
+          vstate)))
     vstate)
   :guard-hints (("Goal" :in-theory (enable valid-table-num-scopes acons)))
   :no-function nil)
@@ -399,7 +408,9 @@
 
 (define vstate-add-ord-file-scope ((ident identp)
                                    (info valid-ord-infop)
-                                   (vstate vstatep))
+                                   (vstate vstatep)
+                                   &key
+                                   ((update-extp booleanp) 't))
   :returns (new-vstate vstatep)
   :short "Add an ordinary identifier
           to the file scope of a validation table."
@@ -411,7 +422,7 @@
      It is used in some situations.")
    (xdoc::p
     "As in @(tsee vstate-add-ord), we update the @('externals') map
-     if @('info') indicates external linkage."))
+     if @('info') indicates external linkage and @('update-extp') is true."))
   (b* (((vstate vstate) vstate)
        ((valid-table table) vstate.table)
        (scopes (valid-table->scopes table))
@@ -428,14 +439,16 @@
        (table (change-valid-table table :scopes new-scopes))
        (vstate (change-vstate vstate :table table))
        (vstate
-        (valid-ord-info-case
-         info
-         :objfun (linkage-case
-                  info.linkage
-                  :external
-                  (vstate-update-ext ident info.type info.uid vstate)
-                  :otherwise vstate)
-         :otherwise vstate)))
+        (if update-extp
+            (valid-ord-info-case
+             info
+             :objfun (linkage-case
+                      info.linkage
+                      :external
+                      (vstate-update-ext ident info.type info.uid vstate)
+                      :otherwise vstate)
+             :otherwise vstate)
+          vstate)))
     vstate)
   :guard-hints (("Goal" :in-theory (enable acons)))
   :no-function nil)
@@ -1049,8 +1062,12 @@
      @('wchar_t') or @('char16_t') or @('char32_t').
      Since we do not yet model the values of these type definitions,
      we return an array type with
-     an unknown arithmetic element type in these cases."))
-  (b* (((reterr) (make-type-array :of (irr-type) :size nil))
+     an unknown arithmetic element type in these cases.
+     The array has constant length [C17:6.4.5/6],
+     but for now we leave the length itself unknown."))
+  (b* (((reterr) (make-type-array
+                   :of (irr-type)
+                   :kind (make-type-array-kind-const-len :len nil)))
        ((stringlit strlit) strlit)
        ((erp &) (valid-s-char-list strlit.schars strlit.prefix? ienv)))
     (retok (make-type-array
@@ -1058,7 +1075,7 @@
                         (eprefix-case strlit.prefix? :locase-u8))
                     (type-char)
                   (type-unknown-arithmetic))
-            :size nil))) ; TODO: size
+            :kind (make-type-array-kind-const-len :len nil))))
 
   ///
 
@@ -1105,8 +1122,12 @@
      Otherwise, it is an array type with an unknown arithmetic element type.
      This covers both the case of well-defined wide string literals
      (whose types we do not yet model),
-     and the implementation-defined mixed string encoding."))
-  (b* (((reterr) (make-type-array :of (irr-type) :size nil))
+     and the implementation-defined mixed string encoding.
+     The array has constant length [C17:6.4.5/6],
+     but for now we leave the length itself unknown."))
+  (b* (((reterr) (make-type-array
+                   :of (irr-type)
+                   :kind (make-type-array-kind-const-len :len nil)))
        ((unless (consp strlits))
         (retmsg$ "There must be at least one string literal."))
        ((erp prefix? conflictp) (valid-stringlit-list-loop strlits ienv))
@@ -1122,7 +1143,7 @@
                         (and prefix? (not (eprefix-case prefix? :locase-u8))))
                     (type-unknown-arithmetic)
                   (type-char))
-            :size nil))) ; TODO: size
+            :kind (make-type-array-kind-const-len :len nil))))
   :prepwork
   ((define valid-stringlit-list-loop ((strlits stringlit-listp) (ienv ienvp))
      :returns (mv (erp maybe-msgp)
@@ -1612,9 +1633,9 @@
    (xdoc::p
     "The @('sizeof') operator applied to an expression
      requires a non-function complete type [C17:6.5.3.4/1].
-     In our current approximate type system,
-     we just exclude function types,
-     but we do not have a notion of complete types yet.
+     We exclude function types and incomplete array types.
+     Our current approximate type system may not recognize
+     other incomplete types.
      The result has type @('size_t') [C17:6.5.3.4/5],
      whose definition is implementation-defined,
      so for now we just return the unknown type;
@@ -1691,12 +1712,22 @@
                          (type-case type-arg :pointer)))
              (reterr msg)))
          (retok (type-fix type-arg))))
-      (:sizeof (b* (((when (type-case type-arg :function))
+      (:sizeof (b* (((when (type-case
+                            type-arg
+                            :function t
+                            :array (type-array-kind-case type-arg.kind
+                                                         :incomplete)
+                            :otherwise nil))
                      (reterr msg)))
-                 (retok (type-unknown-arithmetic))))
-      (:alignof (b* (((when (type-case type-arg :function))
-                      (reterr msg)))
                   (retok (type-unknown-arithmetic))))
+      (:alignof (b* (((when (type-case
+                             type-arg
+                             :function t
+                             :array (type-array-kind-case type-arg.kind
+                                                          :incomplete)
+                             :otherwise nil))
+                      (reterr msg)))
+                   (retok (type-unknown-arithmetic))))
       (:real (type-case type-arg
                         :floatc (retok (type-float))
                         :doublec (retok (type-double))
@@ -2128,20 +2159,25 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @('sizeof') operator applied to an type name
-     requires a non-function complete type [C17:6.5.3.4/1].
-     In our current approximate type system,
-     we just exclude function types,
-     but we do not have a notion of complete types yet.
+    "The @('sizeof') operator applied to a type name,
+     and the @('_Alignof') operator,
+     require a non-function complete type [C17:6.5.3.4/1].
+     We exclude function types and incomplete array types.
+     Our current approximate type system may not recognize
+     other incomplete types.
      The result has type @('size_t') [C17:6.5.3.4/5],
      whose definition is implementation-defined,
      so for now we just return the unknown arithmetic type;
      we will need to extend implementation environments
      with information about the definition of @('size_t')."))
   (b* (((reterr) (irr-type))
-       ((when (type-case type :function))
+       ((when (type-case
+               type
+               :function t
+               :array (type-array-kind-case type.kind :incomplete)
+               :otherwise nil))
         (retmsg$ "In the ~s0 type expression ~x1, ~
-                  the argument ~x2 is a function type."
+                  the argument ~x2 is a function or incomplete array type."
                  (case (expr-kind expr)
                    (:sizeof "sizeof")
                    (:alignof "_Alignof")
@@ -2772,6 +2808,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-array-size-expr-type-kind ((expr exprp) (ienv ienvp))
+  :guard (expr-unambp expr)
+  :returns (mv (erp maybe-msgp)
+               (kind type-array-kindp))
+  :short "Validate an array size and determine its array kind."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An integer constant expression specifies a constant-length array;
+     any other size expression specifies a nonconstant-length array
+     [C17:6.7.6.2/4-5] [C23:6.7.7.3/4-5].
+     Since @(tsee expr-ice-p) is three-valued,
+     we use @(':unknown-complete') when it cannot determine
+     whether the expression is an integer constant expression.")
+   (xdoc::p
+    "We attempt to evaluate the size expression.
+     A known negative value is invalid.
+     A known zero value is also invalid in standard C
+     [C17:6.7.6.2/1] [C23:6.7.7.3/1],
+     but we allow it when GCC or Clang extensions are enabled.
+     If an integer constant expression evaluates to a positive integer,
+     we retain that length;
+     otherwise, we leave the constant length unknown."))
+  (b* (((reterr) (type-array-kind-unknown-complete))
+       (icep (expr-ice-p expr (ienv->dialect ienv)))
+       (integer? (value-to-integer (const-eval-expr expr ienv)))
+       ((when (and integer? (< integer? 0)))
+        (retmsg$ "The array size expression ~x0 has negative value ~x1."
+                 (expr-fix expr)
+                 integer?))
+       ((when (and (equal integer? 0)
+                   (not (ienv->gcc/clang ienv))))
+        (retmsg$ "The array size expression ~x0 has value zero."
+                 (expr-fix expr)))
+       ((when (eq icep nil))
+        (retok (type-array-kind-nonconst-len)))
+       ((unless (eq icep t))
+        (retok (type-array-kind-unknown-complete))))
+    (retok (make-type-array-kind-const-len
+            :len (and (posp integer?) integer?)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines valid-exprs/decls/stmts
   :short "Validate expressions, declarations, statements,
           and related artifacts."
@@ -2844,7 +2923,11 @@
      (xdoc::p
       "To validate a compound literal, first we validate the type name,
        obtaining a type if that validation is successful.
-       The type of the compound literal is the one denoted by the type name.
+       The type of the compound literal is the one denoted by the type name,
+       except that an array of unknown size is completed by its initializer
+       [C17:6.5.2.5/4].
+       As with initialized array declarations, we currently record the array
+       as having constant length but leave the numerical length unknown.
        We also retrieve
        the storage duration (i.e. lifetime) of the object,
        which is either static or automatic,
@@ -2988,7 +3071,18 @@
                       (valid-tyname expr.type vstate))
                      (lifetime (if (> (vstate-num-scopes vstate) 1)
                                    (lifetime-auto)
-                                 (lifetime-static))))
+                                 (lifetime-static)))
+                     (complit-type
+                      (type-case
+                       target-type
+                       :array
+                       (if (type-array-kind-case target-type.kind :incomplete)
+                           (change-type-array
+                            target-type
+                            :kind (make-type-array-kind-const-len :len nil))
+                         target-type)
+                       :otherwise target-type))
+                     (complit-info (make-type-vinfo :type complit-type)))
                   (cond
                    ((or (type-case target-type :unknown)
                         (type-case target-type :unknown-builtin)
@@ -3003,8 +3097,9 @@
                            vstate)))
                       (retok (make-expr-complit :type new-type
                                                 :elems new-elems
-                                                :final-comma expr.final-comma)
-                             target-type
+                                                :final-comma expr.final-comma
+                                                :info complit-info)
+                             complit-type
                              (set::union types-type types-desiniters)
                              vstate)))
                    ((type-scalarp target-type)
@@ -3052,9 +3147,10 @@
                            :elems (list (make-desiniter
                                          :designors nil
                                          :initer (initer-single new-init-expr)))
-                           :final-comma expr.final-comma)))
+                           :final-comma expr.final-comma
+                           :info complit-info)))
                       (retok new-complit
-                             target-type
+                             complit-type
                              (set::union types-type types-init-expr)
                              vstate)))
                    ((and (type-case target-type :array)
@@ -3106,9 +3202,10 @@
                                        :strings (expr-string->strings
                                                  str-expr)
                                        :info info))))
-                           :final-comma expr.final-comma)))
+                           :final-comma expr.final-comma
+                           :info complit-info)))
                       (retok new-complit
-                             target-type
+                             complit-type
                              types-type
                              (vstate-fix vstate))))
                    ((or (type-aggregatep target-type)
@@ -3130,10 +3227,11 @@
                                                 lifetime
                                                 vstate)))
                       (retok (make-expr-complit
-                              :type new-type
-                              :elems new-elems
-                              :final-comma expr.final-comma)
-                             target-type
+                             :type new-type
+                             :elems new-elems
+                             :final-comma expr.final-comma
+                             :info complit-info)
+                             complit-type
                              (set::union types-type types-desiniters)
                              vstate)))
                    (t (retmsg$ "The compound literal ~x0 ~
@@ -5309,6 +5407,17 @@
        and we recursively validate the enclosed direct declarator.
        Then we validate the index expression (if present),
        ensuring that it has integer type.
+       An array without a size is recorded as incomplete.
+       An array whose size is specified by @('*') is recorded as complete
+       with nonconstant length [C17:6.7.6.2/4].
+       For an array with a size expression,
+       we use @(tsee expr-ice-p) to determine whether
+       the expression is an integer constant expression.
+       We record an integer constant expression as a constant length,
+       retaining its value when constant evaluation determines
+       a positive integer;
+       we record a definite non-ICE as a nonconstant length,
+       and otherwise record the length form as unknown.
        For now we do not check that, if these expressions are constant,
        their values are greater than 0 [C17:6.7.6.2/1].
        Currently we do not need to do anything
@@ -5412,7 +5521,11 @@
                 types
                 vstate))
        :array
-       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
+       (b* ((type (make-type-array
+                    :of type
+                    :kind (if dirdeclor.size?
+                              (type-array-kind-unknown-complete)
+                            (type-array-kind-incomplete))))
             ((erp new-dirdeclor type ident types vstate)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type vstate))
             ((erp new-expr? index-type? more-types vstate)
@@ -5427,7 +5540,23 @@
                        of the direct declarator ~x0 ~
                        has type ~x1."
                       (dirdeclor-fix dirdeclor)
-                      index-type?)))
+                      index-type?))
+            ((erp kind)
+             (expr-option-case
+               new-expr?
+               :some
+               (valid-array-size-expr-type-kind
+                new-expr?.val (vstate->ienv vstate))
+               :none (retok (type-array-kind-incomplete))))
+            (type
+             (expr-option-case
+               new-expr?
+               :some
+               (type-array-change-kind-at-depth
+                type
+                (dirdeclor-derived-type-depth dirdeclor.declor)
+                kind)
+               :none type)))
          (retok (make-dirdeclor-array :declor new-dirdeclor
                                       :qualspecs dirdeclor.qualspecs
                                       :size? new-expr?)
@@ -5436,7 +5565,9 @@
                 (set::union types more-types)
                 vstate))
        :array-static1
-       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
+       (b* ((type (make-type-array
+                    :of type
+                    :kind (type-array-kind-unknown-complete)))
             ((erp new-dirdeclor type ident types vstate)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type vstate))
             ((erp new-expr index-type more-types vstate)
@@ -5450,7 +5581,15 @@
                        of the direct declarator ~x0 ~
                        has type ~x1."
                       (dirdeclor-fix dirdeclor)
-                      index-type)))
+                      index-type))
+            ((erp kind)
+             (valid-array-size-expr-type-kind
+              new-expr (vstate->ienv vstate)))
+            (type
+             (type-array-change-kind-at-depth
+              type
+              (dirdeclor-derived-type-depth dirdeclor.declor)
+              kind)))
          (retok (make-dirdeclor-array-static1 :declor new-dirdeclor
                                               :qualspecs dirdeclor.qualspecs
                                               :size new-expr)
@@ -5459,7 +5598,9 @@
                 (set::union types more-types)
                 vstate))
        :array-static2
-       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
+       (b* ((type (make-type-array
+                    :of type
+                    :kind (type-array-kind-unknown-complete)))
             ((erp new-dirdeclor type ident types vstate)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type vstate))
             ((erp new-expr index-type more-types vstate)
@@ -5473,7 +5614,15 @@
                        of the direct declarator ~x0 ~
                        has type ~x1."
                       (dirdeclor-fix dirdeclor)
-                      index-type)))
+                      index-type))
+            ((erp kind)
+             (valid-array-size-expr-type-kind
+              new-expr (vstate->ienv vstate)))
+            (type
+             (type-array-change-kind-at-depth
+              type
+              (dirdeclor-derived-type-depth dirdeclor.declor)
+              kind)))
          (retok (make-dirdeclor-array-static2 :declor new-dirdeclor
                                               :qualspecs dirdeclor.qualspecs
                                               :size new-expr)
@@ -5482,7 +5631,9 @@
                 (set::union types more-types)
                 vstate))
        :array-star
-       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
+       (b* ((type (make-type-array
+                    :of type
+                    :kind (type-array-kind-nonconst-len)))
             ((erp new-dirdeclor type ident types vstate)
              (valid-dirdeclor
               dirdeclor.declor fundef-params-p type vstate)))
@@ -5690,7 +5841,11 @@
                 types
                 vstate))
        :array
-       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
+       (b* ((type (make-type-array
+                    :of type
+                    :kind (if dirabsdeclor.size?
+                              (type-array-kind-unknown-complete)
+                            (type-array-kind-incomplete))))
             ((erp new-declor? type types vstate)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type vstate))
             ((erp new-size? index-type? more-types vstate)
@@ -5705,7 +5860,24 @@
                        of the direct abstract declarator ~x0 ~
                        has type ~x1."
                       (dirabsdeclor-fix dirabsdeclor)
-                      index-type?)))
+                      index-type?))
+            ((erp kind)
+             (expr-option-case
+               new-size?
+               :some
+               (valid-array-size-expr-type-kind
+                new-size?.val (vstate->ienv vstate))
+               :none (retok (type-array-kind-incomplete))))
+            (type
+             (expr-option-case
+               new-size?
+               :some
+               (type-array-change-kind-at-depth
+                type
+                (dirabsdeclor-option-derived-type-depth
+                 dirabsdeclor.declor?)
+                kind)
+               :none type)))
          (retok (make-dirabsdeclor-array
                  :declor? new-declor?
                  :qualspecs dirabsdeclor.qualspecs
@@ -5714,7 +5886,9 @@
                 (set::union types more-types)
                 vstate))
        :array-static1
-       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
+       (b* ((type (make-type-array
+                    :of type
+                    :kind (type-array-kind-unknown-complete)))
             ((erp new-declor? type types vstate)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type vstate))
             ((erp new-size index-type more-types vstate)
@@ -5728,7 +5902,15 @@
                        of the direct abstract declarator ~x0 ~
                        has type ~x1."
                       (dirabsdeclor-fix dirabsdeclor)
-                      index-type)))
+                      index-type))
+            ((erp kind)
+             (valid-array-size-expr-type-kind
+              new-size (vstate->ienv vstate)))
+            (type
+             (type-array-change-kind-at-depth
+              type
+              (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?)
+              kind)))
          (retok (make-dirabsdeclor-array-static1
                  :declor? new-declor?
                  :qualspecs dirabsdeclor.qualspecs
@@ -5737,7 +5919,9 @@
                 (set::union types more-types)
                 vstate))
        :array-static2
-       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
+       (b* ((type (make-type-array
+                    :of type
+                    :kind (type-array-kind-unknown-complete)))
             ((erp new-declor? type types vstate)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type vstate))
             ((erp new-size index-type more-types vstate)
@@ -5751,7 +5935,15 @@
                        of the direct abstract declarator ~x0 ~
                        has type ~x1."
                       (dirabsdeclor-fix dirabsdeclor)
-                      index-type)))
+                      index-type))
+            ((erp kind)
+             (valid-array-size-expr-type-kind
+              new-size (vstate->ienv vstate)))
+            (type
+             (type-array-change-kind-at-depth
+              type
+              (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?)
+              kind)))
          (retok (make-dirabsdeclor-array-static2
                  :declor? new-declor?
                  :qualspecs dirabsdeclor.qualspecs
@@ -5760,7 +5952,9 @@
                 (set::union types more-types)
                 vstate))
        :array-star
-       (b* ((type (make-type-array :of type :size nil)) ; TODO: size
+       (b* ((type (make-type-array
+                    :of type
+                    :kind (type-array-kind-nonconst-len)))
             ((erp new-declor? type types vstate)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type vstate)))
          (retok (dirabsdeclor-array-star new-declor?)
@@ -6616,6 +6810,15 @@
        The initializer is validated after
        the declared identifier is added to the table [C17:6.2.1/7].")
      (xdoc::p
+      "An array of unknown size has incomplete type while its initializer is
+       being validated.  After successful validation, the initializer
+       completes the array type [C17:6.7.9/22].
+       We record the completed type as having constant length,
+       but we do not yet derive the numerical length from the initializer,
+       so for now we leave the length itself unknown.
+       We replace the incomplete type in the validation table and in the
+       initializer declarator annotation.")
+     (xdoc::p
       "We calculate the definition status for the declaration.
        If we are declaring a function, the status is undefined,
        because we do not have a function body here.
@@ -6659,7 +6862,8 @@
        if the checks pass, we add the identifier to the table.
        If instead both have internal or external linkage,
        they must refer to the same entity,
-       and so we ensure that the types are the same.
+       and so we ensure that the types are compatible
+       [C17:6.2.7/2] [C17:6.7/4].
        We also need to check that the linkages are the same,
        in which case we still add the identifier to the table,
        to record that it is also declared in the current scope;
@@ -6727,7 +6931,96 @@
                     which disallows the initializer, ~
                     but the initializer ~x2 is present."
                    ident type initdeclor.initer?))
+         (declared-type type)
+         (ext-info? (vstate-lookup-ext ident vstate))
+         ((when (and (linkage-case linkage :external)
+                     ext-info?
+                     (not (type-compatible-p
+                           (valid-ext-info->type ext-info?)
+                           type
+                           (vstate->completions vstate)
+                           ienv))))
+          (retmsg$ "The identifier ~x0 with external linkage and type ~x1 ~
+                    was previously declared with incompatible type ~x2."
+                   ident
+                   type
+                   (valid-ext-info->type ext-info?)))
+         ((when (and (linkage-case linkage :external)
+                     (vstate-has-internalp ident vstate)))
+          (retmsg$ "The identifier ~x0 with external linkage ~
+                    was previously declared with internal linkage ~
+                    in the same translation unit."
+                   ident))
+         ((when (and (linkage-case linkage :internal)
+                     ext-info?
+                     (in (vstate->filepath vstate)
+                         (valid-ext-info->declared-in ext-info?))))
+          (retmsg$ "The identifier ~x0 with internal linkage ~
+                    was previously declared with external linkage ~
+                    in the same translation unit."
+                   ident))
          ((mv info? currentp) (vstate-lookup-ord ident vstate))
+         ((when (and info?
+                     currentp
+                     (or (valid-ord-info-case info? :typedef)
+                         (valid-ord-info-case info? :enumconst))))
+          (retmsg$ "The identifier ~x0 ~
+                    is already declared in the current scope ~
+                    with associated information ~x1."
+                   ident info?))
+         (linked-redecl-p
+          (and info?
+               (valid-ord-info-case info? :objfun)
+               (not (linkage-case linkage :none))
+               (not (linkage-case
+                      (valid-ord-info-objfun->linkage info?)
+                      :none))))
+         ((when (and info?
+                     currentp
+                     (valid-ord-info-case info? :objfun)
+                     (not linked-redecl-p)))
+          (retmsg$ "The identifier ~x0 ~
+                    is already declared in the current scope ~
+                    with associated information ~x1."
+                   ident info?))
+         ((when (and linked-redecl-p
+                     (not (type-compatible-p
+                           type
+                           (valid-ord-info-objfun->type info?)
+                           (vstate->completions vstate)
+                           ienv))))
+          (retmsg$ "The identifier ~x0 ~
+                    is declared with type ~x1 ~
+                    after being declared with type ~x2."
+                   ident type (valid-ord-info-objfun->type info?)))
+         ((when (and linked-redecl-p
+                     (linkage-case linkage :internal)
+                     (linkage-case
+                      (valid-ord-info-objfun->linkage info?)
+                      :external)))
+          (retmsg$ "The identifier ~x0 ~
+                    is declared with internal linkage ~
+                    after being declared with external linkage."
+                   ident))
+         ((when (and linked-redecl-p
+                     (linkage-case linkage :external)
+                     (linkage-case
+                      (valid-ord-info-objfun->linkage info?)
+                      :internal)))
+          (raise "Internal error: ~ the identifier ~x0 ~
+                  is declared with external linkage ~
+                  after being declared with internal linkage."
+                 ident)
+          (retmsg$ ""))
+         ((mv type vstate)
+          (if linked-redecl-p
+              (vstate-make-type-composite
+               type (valid-ord-info-objfun->type info?) vstate)
+            (mv (type-fix type) (vstate-fix vstate))))
+         (complete-array-after-initer-p
+          (and initdeclor.initer?
+               (type-case type :array)
+               (type-array-kind-case (type-array->kind type) :incomplete)))
          (defstatus (if (type-case type :function)
                         (valid-defstatus-undefined)
                       (if (> (vstate-num-scopes vstate) 1)
@@ -6749,104 +7042,56 @@
                     :linkage linkage
                     :defstatus defstatus
                     :uid uid))
-         (vstate (vstate-add-ord ident new-info vstate))
-         (anno-info (make-init-declor-vinfo :type type
-                                            :typedefp nil
-                                            :uid uid))
+         (update-ext-p
+          (and (linkage-case linkage :external)
+               ext-info?))
+         (vstate (vstate-add-ord ident
+                                 new-info
+                                 vstate
+                                 :update-extp (not update-ext-p)))
+         ((mv ext-type vstate)
+          (if update-ext-p
+              (vstate-make-type-composite
+               (valid-ext-info->type ext-info?) declared-type vstate)
+            (mv (irr-type) vstate)))
+         (vstate
+          (if update-ext-p
+              (vstate-update-ext ident ext-type uid vstate)
+            vstate))
          ((erp new-initer? more-types vstate)
           (valid-initer-option initdeclor.initer? type lifetime? vstate))
-         ((when (and (linkage-case linkage :external)
-                     (let ((ext-info? (vstate-lookup-ext ident vstate)))
-                       (and ext-info?
-                            (not (type-compatible-p
-                                  (valid-ext-info->type ext-info?)
-                                  type
-                                  (vstate->completions vstate)
-                                  ienv))))))
-          (retmsg$ "The identifier ~x0 with external linkage and type ~x1 ~
-                    was previously declared with incompatible type ~x2."
-                   ident
-                   type
-                   (valid-ext-info->type
-                    (vstate-lookup-ext ident vstate))))
-         ((when (and (linkage-case linkage :external)
-                     (vstate-has-internalp ident vstate)))
-          (retmsg$ "The identifier ~x0 with external linkage ~
-                    was previously declared with internal linkage ~
-                    in the same translation unit."
-                   ident))
-         ((when (and (linkage-case linkage :internal)
-                     (let ((ext-info? (vstate-lookup-ext ident vstate)))
-                       (and ext-info?
-                            (in (vstate->filepath vstate)
-                                (valid-ext-info->declared-in ext-info?))))))
-          (retmsg$ "The identifier ~x0 with internal linkage ~
-                    was previously declared with external linkage ~
-                    in the same translation unit."
-                   ident))
-         ((when (not info?))
-          (retok (make-init-declor :declor new-declor
-                                   :asm? initdeclor.asm?
-                                   :attribs initdeclor.attribs
-                                   :initer? new-initer?
-                                   :info anno-info)
-                 (set::union types more-types)
-                 vstate))
-         ((when (or (valid-ord-info-case info? :typedef)
-                    (valid-ord-info-case info? :enumconst)))
-          (if currentp
-              (retmsg$ "The identifier ~x0 ~
-                        is already declared in the current scope ~
-                        with associated information ~x1."
-                       ident info?)
-            (retok (make-init-declor :declor new-declor
-                                     :asm? initdeclor.asm?
-                                     :attribs initdeclor.attribs
-                                     :initer? new-initer?
-                                     :info anno-info)
-                   (set::union types more-types)
-                   vstate)))
-         ((valid-ord-info-objfun info) info?)
-         ((when (or (linkage-case linkage :none)
-                    (linkage-case info.linkage :none)))
-          (if currentp
-              (retmsg$ "The identifier ~x0 ~
-                        is already declared in the current scope ~
-                        with associated information ~x1."
-                       ident info?)
-            (retok (make-init-declor :declor new-declor
-                                     :asm? initdeclor.asm?
-                                     :attribs initdeclor.attribs
-                                     :initer? new-initer?
-                                     :info anno-info)
-                   (set::union types more-types)
-                   vstate)))
-         ((unless (or (equal type info.type)
-                      (type-case type '(:unknown
-                                        :unknown-builtin
-                                        :unknown-scalar
-                                        :unknown-arithmetic))
-                      (type-case info.type '(:unknown
-                                             :unknown-builtin
-                                             :unknown-scalar
-                                             :unknown-arithmetic))))
-          (retmsg$ "The identifier ~x0 ~
-                    is declared with type ~x1 ~
-                    after being declared with type ~x2."
-                   ident type info.type))
-         ((when (and (linkage-case linkage :internal)
-                     (linkage-case info.linkage :external)))
-          (retmsg$ "The identifier ~x0 ~
-                    is declared with internal linkage ~
-                    after being declared with external linkage."
-                   ident))
-         ((when (and (linkage-case linkage :external)
-                     (linkage-case info.linkage :internal)))
-          (raise "Internal error: ~ the identifier ~x0 ~
-                  is declared with external linkage ~
-                  after being declared with internal linkage."
-                 ident)
-          (retmsg$ "")))
+         ((mv type vstate)
+          (if complete-array-after-initer-p
+              (b* (;; TODO: Derive the length from the initializer.
+                   (type
+                    (change-type-array
+                     type
+                     :kind (make-type-array-kind-const-len :len nil)))
+                   (new-info
+                    (change-valid-ord-info-objfun new-info :type type))
+                   (ext-info? (vstate-lookup-ext ident vstate))
+                   (update-ext-p
+                    (and (linkage-case linkage :external)
+                         ext-info?))
+                   (vstate (vstate-add-ord ident
+                                           new-info
+                                           vstate
+                                           :update-extp
+                                           (not update-ext-p)))
+                   ((mv ext-type vstate)
+                    (if update-ext-p
+                        (vstate-make-type-composite
+                         (valid-ext-info->type ext-info?) type vstate)
+                      (mv (irr-type) vstate)))
+                   (vstate
+                    (if update-ext-p
+                        (vstate-update-ext ident ext-type uid vstate)
+                      vstate)))
+                (mv type vstate))
+            (mv type vstate)))
+         (anno-info (make-init-declor-vinfo :type type
+                                            :typedefp nil
+                                            :uid uid)))
       (retok (make-init-declor :declor new-declor
                                :asm? initdeclor.asm?
                                :attribs initdeclor.attribs
@@ -7440,6 +7685,11 @@
 
   :ruler-extenders :all
 
+  :hints
+  (("Goal"
+    :expand ((dirdeclor-count dirdeclor)
+             (dirabsdeclor-count dirabsdeclor))))
+
   :verify-guards nil ; done below
 
   :prepwork
@@ -7467,8 +7717,6 @@
      :expand (dirabsdeclor-count dirabsdeclor)))
 
   ///
-
-  (verify-guards valid-expr)
 
   (fty::deffixequiv-mutual valid-exprs/decls/stmts)
 
@@ -7747,6 +7995,8 @@
             '(:expand ((valid-dirabsdeclor dirabsdeclor type vstate))))
            (t nil)))))
 
+(verify-guards valid-expr)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-fundef ((fundef fundefp) (vstate vstatep))
@@ -7809,14 +8059,15 @@
    (xdoc::p
     "We extend the validation table with the identifier @('__func__')
      [C17:6.4.2.2].
-     In our currently approximate type system, this has @('char') array type
+     In our currently approximate type system, this has constant-length
+     @('char') array type with unknown length
      (the @('const') type qualifier is ignored).
      If the GCC/Clang flag is enabled (i.e. GCC/Clang extensions are allowed),
      we further extend the table with the identifiers @('__FUNCTION__') and
      @('__PRETTY_FUNCTION__') "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Function-Names.html"
                  "[GCCM:6.12.24]")
-    ".")
+    ", which have the same approximate array type.")
    (xdoc::p
     "We ensure that the body is a compound statement,
      and we validate directly the block items;
@@ -7854,21 +8105,20 @@
        ((unless (type-case type :function))
         (retmsg$ "The function definition ~x0 has type ~x1."
                  (fundef-fix fundef) type))
+       (ext-info? (vstate-lookup-ext ident vstate))
        ((when (and (linkage-case linkage :external)
-                   (let ((ext-info? (vstate-lookup-ext ident vstate)))
-                     (and ext-info?
-                          (not (type-compatible-p
-                                (valid-ext-info->type ext-info?)
-                                type
-                                (vstate->completions vstate)
-                                ienv))))))
+                   ext-info?
+                   (not (type-compatible-p
+                         (valid-ext-info->type ext-info?)
+                         type
+                         (vstate->completions vstate)
+                         ienv))))
         (retmsg$ "The function definition ~x0 ~
                   with external linkage and type ~x1 ~
                   was previously declared with incompatible type ~x2."
                  ident
                  type
-                 (valid-ext-info->type
-                  (vstate-lookup-ext ident vstate))))
+                 (valid-ext-info->type ext-info?)))
        ((when (and (linkage-case linkage :external)
                    (vstate-has-internalp ident vstate)))
         (retmsg$ "The function definition ~x0 with external linkage ~
@@ -7876,17 +8126,18 @@
                   in the same translation unit."
                  ident))
        ((when (and (linkage-case linkage :internal)
-                   (let ((ext-info? (vstate-lookup-ext ident vstate)))
-                     (and ext-info?
-                          (in (vstate->filepath vstate)
-                              (valid-ext-info->declared-in ext-info?))))))
+                   ext-info?
+                   (in (vstate->filepath vstate)
+                       (valid-ext-info->declared-in ext-info?))))
         (retmsg$ "The function definition ~x0 with internal linkage ~
                   was previously declared with external linkage ~
                   in the same translation unit."
                  ident))
+       (declared-type type)
        (info? (vstate-lookup-ord-file-scope ident vstate))
-       ((erp fundef-uid vstate)
-        (b* (((reterr) (irr-uid) (irr-vstate))
+       (update-ext-p (and (linkage-case linkage :external) ext-info?))
+       ((erp fundef-uid type vstate)
+        (b* (((reterr) (irr-uid) (irr-type) (irr-vstate))
              ((when (not info?))
               (b* (((mv uid vstate) (vstate-get-fresh-uid ident linkage vstate))
                    (info (make-valid-ord-info-objfun
@@ -7894,7 +8145,13 @@
                           :linkage linkage
                           :defstatus (valid-defstatus-defined)
                           :uid uid)))
-                (retok uid (vstate-add-ord-file-scope ident info vstate))))
+                (retok uid
+                       (type-fix type)
+                       (vstate-add-ord-file-scope
+                        ident
+                        info
+                        vstate
+                        :update-extp (not update-ext-p)))))
              (info info?)
              ((unless (valid-ord-info-case info :objfun))
               (retmsg$ "The name of the function definition ~x0 ~
@@ -7926,27 +8183,44 @@
               (retmsg$ "The function definition ~x0 ~
                         is a redefinition of the function."
                        (fundef-fix fundef)))
-             ((mv uid vstate)
-              (if (and info? (valid-ord-info-case info? :objfun))
-                  (mv (valid-ord-info-objfun->uid info?) vstate)
-                (vstate-get-fresh-uid ident linkage vstate)))
+             ((mv type vstate)
+              (vstate-make-type-composite type info.type vstate))
+             (uid info.uid)
              (info (make-valid-ord-info-objfun
                     :type type
                     :linkage linkage
                     :defstatus (valid-defstatus-defined)
                     :uid uid)))
-          (retok uid (vstate-add-ord-file-scope ident info vstate))))
+          (retok uid
+                 type
+                 (vstate-add-ord-file-scope
+                  ident
+                  info
+                  vstate
+                  :update-extp (not update-ext-p)))))
+       ((mv ext-type vstate)
+        (if update-ext-p
+            (vstate-make-type-composite
+             (valid-ext-info->type ext-info?) declared-type vstate)
+          (mv (irr-type) vstate)))
+       (vstate
+        (if update-ext-p
+            (vstate-update-ext ident ext-type fundef-uid vstate)
+          vstate))
        ((erp new-declons types vstate)
         (valid-declon-list fundef.declons vstate))
        ((unless (set::emptyp types))
         (retmsg$ "The declarations of the function definition ~x0 ~
                   contain return statements."
                  (fundef-fix fundef)))
+       (function-name-type
+        (make-type-array
+         :of (type-char)
+         :kind (make-type-array-kind-const-len :len nil)))
        ((mv uid vstate) (vstate-get-fresh-uid ident (linkage-none) vstate))
        (vstate (vstate-add-ord (ident "__func__")
                                (make-valid-ord-info-objfun
-                                :type (make-type-array :of (type-char)
-                                                       :size nil) ; TODO: size
+                                :type function-name-type
                                 :linkage (linkage-none)
                                 :defstatus (valid-defstatus-defined)
                                 :uid uid)
@@ -7955,8 +8229,7 @@
        (vstate (if (ienv->gcc/clang ienv)
                    (vstate-add-ord (ident "__FUNCTION__")
                                    (make-valid-ord-info-objfun
-                                    :type (make-type-array :of (type-char)
-                                                           :size nil) ; TODO: size
+                                    :type function-name-type
                                     :linkage (linkage-none)
                                     :defstatus (valid-defstatus-defined)
                                     :uid uid)
@@ -7966,8 +8239,7 @@
        (vstate (if (ienv->gcc/clang ienv)
                    (vstate-add-ord (ident "__PRETTY_FUNCTION__")
                                    (make-valid-ord-info-objfun
-                                    :type (make-type-array :of (type-char)
-                                                           :size nil) ; TODO: size
+                                    :type function-name-type
                                     :linkage (linkage-none)
                                     :defstatus (valid-defstatus-defined)
                                     :uid uid)

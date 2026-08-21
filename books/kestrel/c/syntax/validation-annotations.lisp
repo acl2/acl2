@@ -392,6 +392,9 @@
                         (type-vinfop expr.info)))
      (expr :memberp (and (expr-annop expr.arg)
                          (type-vinfop expr.info)))
+     (expr :complit (and (tyname-annop expr.type)
+                         (desiniter-list-annop expr.elems)
+                         (type-vinfop expr.info)))
      (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                                 (expr-fix expr)))
      (expr :alignof-ambig (raise "Internal error: ambiguous ~x0."
@@ -556,6 +559,13 @@
            (and (expr-annop arg)
                 (type-vinfop info)))
     :expand (expr-annop (expr-memberp arg name info)))
+
+  (defruled expr-annop-of-expr-complit
+    (equal (expr-annop (expr-complit type elems final-comma info))
+           (and (tyname-annop type)
+                (desiniter-list-annop elems)
+                (type-vinfop info)))
+    :expand (expr-annop (expr-complit type elems final-comma info)))
 
   (defruled expr-annop-of-expr-binary
     (equal (expr-annop (expr-binary op arg1 arg2 info))
@@ -769,6 +779,24 @@
     (implies (and (expr-annop expr)
                   (expr-case expr :memberp))
              (type-vinfop (expr-memberp->info expr)))
+    :enable expr-annop)
+
+  (defruled tyname-annop-of-expr-complit->type
+    (implies (and (expr-annop expr)
+                  (expr-case expr :complit))
+             (tyname-annop (expr-complit->type expr)))
+    :enable expr-annop)
+
+  (defruled desiniter-list-annop-of-expr-complit->elems
+    (implies (and (expr-annop expr)
+                  (expr-case expr :complit))
+             (desiniter-list-annop (expr-complit->elems expr)))
+    :enable expr-annop)
+
+  (defruled type-vinfop-of-expr-complit->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :complit))
+             (type-vinfop (expr-complit->info expr)))
     :enable expr-annop)
 
   (defruled expr-annop-of-expr-binary->arg1
@@ -1015,6 +1043,7 @@
      expr-annop-of-expr-unary
      expr-annop-of-expr-member
      expr-annop-of-expr-memberp
+     expr-annop-of-expr-complit
      expr-annop-of-expr-binary
      const-expr-annop-of-const-expr
      type-spec-annop-of-type-spec-struct
@@ -1048,6 +1077,9 @@
      type-vinfop-of-expr-member->info
      expr-annop-of-expr-memberp->arg
      type-vinfop-of-expr-memberp->info
+     tyname-annop-of-expr-complit->type
+     desiniter-list-annop-of-expr-complit->elems
+     type-vinfop-of-expr-complit->info
      expr-annop-of-expr-binary->arg1
      expr-annop-of-expr-binary->arg2
      type-vinfop-of-expr-binary->info
@@ -1128,7 +1160,7 @@
    :funcall (type-vinfo->type expr.info)
    :member (type-vinfo->type expr.info)
    :memberp (type-vinfo->type expr.info)
-   :complit (type-vinfo->type (tyname->info expr.type))
+   :complit (type-vinfo->type expr.info)
    :unary (type-vinfo->type expr.info)
    :label-addr (type-pointer (type-void))
    :sizeof (type-unknown-arithmetic)
