@@ -1095,10 +1095,10 @@
            (dim-equiv-to-binmul-p dim))
   :use ((:instance dim-equiv-to-binmul-p-suff
                    (dim1 (mv-nth 0 (binarize-mul-in-dim dim))))
-        (:instance dim=-suff
+        (:instance dim=-when-proof-validp
                    (proof (mv-nth 1 (binarize-mul-in-dim dim)))
-                   (dim1 dim)
-                   (dim2 (mv-nth 0 (binarize-mul-in-dim dim))))))
+                   (concl.dim1 dim)
+                   (concl.dim2 (mv-nth 0 (binarize-mul-in-dim dim))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1119,7 +1119,7 @@
            (dim-equiv-to-unisub-p dim))
   :use ((:instance dim-equiv-to-unisub-p-suff
                    (dim1 (mv-nth 0 (unarize-sub-in-dim dim))))
-        (:instance dim=-suff
+        (:instance dim=-when-proof-validp
                    (proof (mv-nth 1 (unarize-sub-in-dim dim)))
-                   (dim1 dim)
-                   (dim2 (mv-nth 0 (unarize-sub-in-dim dim))))))
+                   (concl.dim1 dim)
+                   (concl.dim2 (mv-nth 0 (unarize-sub-in-dim dim))))))
