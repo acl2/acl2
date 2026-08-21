@@ -373,4 +373,93 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define-sk cst-longest-decimals-p ((cst abnf::treep))
+  :guard (abnf::tree-terminatedp cst)
+  :returns (yes/no booleanp)
+  :short "Check if a CST does not contain any extensible @('decimal') CST."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Decimals must extend as long as they can;
+     the extension may be not only a longer decimal,
+     but also a float literal that starts with the same digits:
+     the number as a whole is munched maximally,
+     across the two alternatives of @('num-val').")
+   (xdoc::p
+    "Without this restriction,
+     an expression like @('(f 23)') would admit
+     both a CST with the single number @('23')
+     and a CST with the two adjacent numbers @('2') and @('3')
+     (with an empty @('ws') CST between them),
+     and a shape literal @('[23]') would similarly admit
+     a CST with the two dimensions @('2') and @('3').
+     Furthermore, @('(f 1.5)') would admit,
+     besides the CST with the float literal @('1.5'),
+     a CST with the number @('1')
+     followed by the identifier @('.5')
+     (a legitimate identifier,
+     since @('.') may start one and @('5') may continue one),
+     and @('(f 5e3)') would admit
+     a CST with the number @('5') followed by the identifier @('e3'):
+     these are excluded just because
+     @('1.5') and @('5e3') are @('float-lit') fringes,
+     which is why this restriction has two target rule names.")
+   (xdoc::p
+    "We state the restriction by saying that
+     if we have a CST matching @('decimal') at a path,
+     the fringe of the CST at the adjacent path (if any)
+     must not be usable to extend the decimal,
+     i.e. any extension within the adjacent fringe
+     must not be the fringe of
+     any possible @('decimal') or @('float-lit') CST.")
+   (xdoc::p
+    "A @('decimal') CST may occur
+     as the digits of a number
+     (in @('num-val'), including inside a signed number)
+     and as a dimension (in @('shape-lit') and @('dim')).
+     There are no other occurrences:
+     the @('float-lit'), @('exponent'), and @('num-escape') rules
+     use @('DIGIT') repetitions directly,
+     so in particular a @('float-lit') CST
+     contains no @('decimal') CSTs.
+     The restriction applies uniformly to all the @('decimal') CSTs.")
+   (xdoc::p
+    "An extension of a decimal can only be
+     a decimal or a float literal:
+     the extended fringe starts with the same digit as the decimal,
+     and identifiers and keywords cannot start with a digit
+     (nor can comments or string literals,
+     which start with a semicolon and a double quote).
+     Conversely, a decimal followed by
+     other identifier characters is not extensible,
+     and legitimately so:
+     e.g. @('(f 5x)') is the application of @('f')
+     to the number @('5') and the identifier @('x'),
+     since numbers have no trailing word boundary.")
+   (xdoc::p
+    "The extension may need to be longer than one character:
+     in @('(f 1.5)') above, the extension is the whole @('.5'),
+     since the intermediate @('1.') is not the fringe of any lexeme.
+     Applied to the decimal inside a signed number,
+     the restriction also keeps signs and digits together:
+     @('(f +51)') cannot be split into
+     the numbers @('+5') and @('1'),
+     because the decimal @('5') inside @('+5')
+     would be extensible by @('1')."))
+  (forall (path1 path2)
+          (implies (and (abnf::tree-pathp path1)
+                        (abnf::tree-pathp path2)
+                        (abnf::tree-path-validp path1 cst)
+                        (abnf::tree-path-validp path2 cst)
+                        (abnf::tree-paths-adjacentp path1 path2 cst))
+                   (b* ((cst1 (abnf::tree-at-path path1 cst))
+                        (cst2 (abnf::tree-at-path path2 cst)))
+                     (implies (cst-matchp cst1 "decimal")
+                              (not (extensible-to-cst-fringe-p
+                                    (abnf::tree->string cst1)
+                                    (abnf::tree->string cst2)
+                                    (list "decimal" "float-lit"))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; TODO: more predicates
