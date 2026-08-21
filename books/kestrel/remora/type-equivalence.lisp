@@ -546,10 +546,10 @@
                                                     maps.3rd
                                                     maps.4th)))
                  (type-equivp body1 body2))
-           :pin (b* (((when (endp type1.params))
-                      (and (endp type2.params)
-                           (type-equivp type1.body type2.body)))
-                     ((when (endp type2.params)) nil)
+           :pin (b* (((unless (and (>= (len type1.params) 2)
+                                   (>= (len type2.params) 2)))
+                      nil)
+                     ;; TODO: remove above checks when AST invariant is in
                      (used (set::union (type-all-ispace-vars type1)
                                        (type-all-ispace-vars type2)))
                      (maps (fresh-ispace-var-renaming
