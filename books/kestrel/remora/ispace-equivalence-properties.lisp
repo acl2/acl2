@@ -1103,7 +1103,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This serves to validate the intention of
+    "This validates the intention of
      rules @('mul0'), @('mul1'), and @('mul3m'),
      described in @(see dim-equiv-infrules)."))
   (implies (dimp dim)
