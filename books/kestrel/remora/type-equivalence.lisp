@@ -431,8 +431,7 @@
                                                          maps.3rd
                                                          maps.4th)))
                         (type-equivp body1 body2))
-              :foralln (b* (((unless (consp type2.params)) nil)
-                            (used (set::union (type-all-type-vars type1)
+              :foralln (b* ((used (set::union (type-all-type-vars type1)
                                               (type-all-type-vars type2)))
                             (maps (fresh-type-var-renaming
                                    (list type1.param)
