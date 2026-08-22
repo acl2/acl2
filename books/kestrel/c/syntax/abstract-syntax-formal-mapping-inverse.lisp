@@ -909,7 +909,17 @@
           to an optional initializer in the syntax for tools."
   (c::initer-option-case initer?
                          :some (ildm-initer initer?.val)
-                         :none nil))
+                         :none nil)
+
+  ///
+
+  (defrule ldm-initer-option-of-ildm-initer-option
+    (equal (ldm-initer-option (ildm-initer-option initer?))
+           (mv nil (c::initer-option-dec0-to-oct0 initer?)))
+    :enable (ldm-initer-option
+             initer-option-some->val
+             c::initer-option-some->val
+             c::initer-option-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
