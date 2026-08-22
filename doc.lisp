@@ -37700,6 +37700,9 @@ Subtopics
   [Illegal]
       Print an error message and stop execution
 
+  [Set-call-depth-overflow-advice]
+      Record a book-specific message about stack overflow
+
   [Set-inhibit-er]
       Control the error output
 
@@ -106945,6 +106948,13 @@ New Features
   symbol.  Thanks to Alessandro Coglio, Grant Jurgensen, and Eric
   Smith for a discussion on Zulip leading to this enhancement.
 
+  The new event [30m[47m[set-call-depth-overflow-advice][0m[0m allows the author or
+  expert users of a book to add some advice for how users of the book
+  might deal with stack overflow sometimes caused by rewrite rules in
+  the book.  The advice is printed when the [30m[47mHARD ACL2 ERROR [Call
+  depth] in REWRITE[0m[0m error occurs in sessions when the book has been
+  included.
+
 
 Heuristic and Efficiency Improvements
 
@@ -135724,6 +135734,67 @@ Subtopics
 
   The general command for setting any of the system evisc-tuples is
   [30m[47m[set-evisc-tuple][0m[0m.")
+ (SET-CALL-DEPTH-OVERFLOW-ADVICE
+  (ERRORS)
+  "Record a book-specific message about stack overflow
+
+    General Form:
+    (set-call-depth-overflow-advice str)
+
+  where [30m[47mstr[0m[0m is a [30m[47m[fmt][0m[0m string suitable for printing with, say, [30m[47m(cw
+  str)[0m[0m.  In particular, [30m[47mstr[0m[0m may not use any [30m[47mfmt[0m[0m directives that refer
+  to characters bound in an alist.
+
+  [30m[47m(set-call-depth-overflow-advice str)[0m[0m is an [event] and is a no-op
+  except when found in a book during [30m[47m[certify-book][0m[0m or
+  [30m[47m[include-book][0m[0m.  The event associates the string to the book name.
+  If multiple [30m[47mset-call-depth-overflow-advice[0m[0m events occur in a book,
+  only the last one is recorded.  Advice from other books, including
+  sub-books, is recorded.  The event gives the author or expert users
+  of a book the means to provide the other users of the book advice
+  for dealing with stack overflow possibly caused by the rules in the
+  book.  In particular, [30m[47mstr[0m[0m is printed, along with the associated
+  book name, when a stack overflow error signalled like this
+
+    HARD ACL2 ERROR [Call depth] in REWRITE:
+
+  occurs in a session in which the book has been included.
+
+  For example, if the book with full file name [30m[47m\"/u/jones/my-book.lisp\"[0m[0m
+  contains:
+
+    (set-call-depth-overflow-advice
+     \"If you see the lemma MY-DANGEROUS-RULE in the output of ~
+     the cw-gstack command mentioned above, you might try~%~%~
+     (in-theory (e/d (my-less-dangerous-rule) (my-dangerous-rule)))~%~%~
+     and retry the proof.\")
+
+  Then, in the event that a stack overflow occurs in a session in which
+  [30m[47m\"/u/jones/my-book.lisp\"[0m[0m has been included, the HARD ACL2 ERROR
+  above will occur and the generic advice will be printed, including
+  the advice to enable [30m[47m[brr][0m[0m and use [30m[47m[cw-gstack][0m[0m to see the
+  overflowing stack.  Then, a message like this will be printed:
+
+    FYI: The books named below offer the following advice about rewrite
+    loops attributable to rules in each individual book.
+
+    ...
+
+    \"/u/jones/my-book.lisp\":
+    If you see the lemma MY-DANGEROUS-RULE in the output of the cw-gstack
+    command mentioned above, you might try
+
+    (in-theory (e/d (my-less-dangerous-rule) (my-dangerous-rule)))
+
+    and retry the proof.
+
+    ...
+
+  where the elipses above denote the other books in the current session
+  that have a [30m[47mset-call-depth-overflow-advice[0m[0m event.  System books,
+  e.g., those included via [30m[47m(include-book \"misc/his-book\" :dir
+  :system)[0m[0m will be displayed like this [30m[47m(:SYSTEM . book-name)[0m[0m, e.g.,
+  [30m[47m(:SYSTEM . \"misc/his-book.lisp\")[0m[0m.")
  (SET-CASE-SPLIT-LIMITATIONS
   (MISCELLANEOUS)
   "Set the [case-split-limitations]
