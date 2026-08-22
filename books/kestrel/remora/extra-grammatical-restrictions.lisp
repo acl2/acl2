@@ -507,4 +507,72 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define-sk cst-longest-float-lits-p ((cst abnf::treep))
+  :guard (abnf::tree-terminatedp cst)
+  :returns (yes/no booleanp)
+  :short "Check if a CST does not contain any extensible @('float-lit') CST."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Float literals must extend as long as they can:
+     with more digits of the fractional part,
+     with an exponent,
+     or with more digits of the exponent.")
+   (xdoc::p
+    "Without this restriction,
+     an expression like @('(f 1.55)') would admit,
+     besides the CST with the float literal @('1.55'),
+     a CST with the float literal @('1.5')
+     followed by the number @('5')
+     (with an empty @('ws') CST between them);
+     @('(f 1.5e3)') would admit
+     a CST with @('1.5') followed by the identifier @('e3');
+     and @('(f 1.5e34)') would admit
+     a CST with @('1.5e3') followed by the number @('4').")
+   (xdoc::p
+    "We state the restriction by saying that
+     if we have a CST matching @('float-lit') at a path,
+     the fringes of the CSTs at
+     the consecutively adjacent paths that follow it (if any)
+     must not be usable to extend the float literal,
+     i.e. any extension within the concatenation of those fringes
+     must not be the fringe of any possible @('float-lit') CST.
+     As explained in @(tsee cst-longest-decimals-p),
+     a list of adjacent paths is needed
+     because an extension may span several adjacent CSTs:
+     e.g. @('(f 1.5e+3)') also admits a CST with @('1.5')
+     followed by the identifier @('e')
+     followed by the number @('+3'),
+     whose exclusion requires extending @('1.5') with @('e+3'),
+     taken from the two subsequent CSTs together;
+     @('1.5e') alone is not the fringe of any lexeme.")
+   (xdoc::p
+    "A @('float-lit') CST may occur only in @('num-val')
+     (including inside a signed number).
+     An extension of a float literal can only be a float literal:
+     the extended fringe starts with
+     the same digit as the float literal,
+     which excludes identifiers, keywords, comments, and string literals,
+     and it contains a dot or an exponent marker, which excludes decimals.
+     Conversely, a float literal followed by
+     other identifier characters is not extensible:
+     e.g. @('(f 1.5x)') is the application of @('f')
+     to the number @('1.5') and the identifier @('x'),
+     since numbers have no trailing word boundary."))
+  (forall (path paths)
+          (implies (and (abnf::tree-pathp path)
+                        (abnf::tree-path-listp paths)
+                        (abnf::tree-path-validp path cst)
+                        (abnf::tree-path-list-validp paths cst)
+                        (abnf::tree-path-list-adjacentp (cons path paths) cst))
+                   (b* ((cst1 (abnf::tree-at-path path cst))
+                        (csts2 (abnf::tree-list-at-path-list paths cst)))
+                     (implies (cst-matchp cst1 "float-lit")
+                              (not (extensible-to-cst-fringe-p
+                                    (abnf::tree->string cst1)
+                                    (abnf::tree-list->string csts2)
+                                    (list "float-lit"))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; TODO: more predicates
