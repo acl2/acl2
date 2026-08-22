@@ -13,7 +13,6 @@
 (include-book "ispace-equivalence-infrules")
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
-(include-book "std/util/defund-sk" :dir :system)
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -265,33 +264,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection dim-equiv-to-binadd-p
+(define-sk dim-equiv-to-binadd-p (dim)
+  :returns (yes/no booleanp)
   :short "Check whether a dimension is equivalent to
           one with only binary additions."
-  (defund-sk dim-equiv-to-binadd-p (dim)
-    (exists (dim1)
-            (and (dim= dim dim1)
-                 (dim-binaddp dim1)))))
+  (exists (dim1)
+          (and (dim= dim dim1)
+               (dim-binaddp dim1)))
+  :verify-guards nil) ; because DIM= is not guard-verified
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defsection dim-equiv-to-binmul-p
+(define-sk dim-equiv-to-binmul-p (dim)
+  :returns (yes/no booleanp)
   :short "Check whether a dimension is equivalent to
           one with only binary multiplications."
-  (defund-sk dim-equiv-to-binmul-p (dim)
-    (exists (dim1)
-            (and (dim= dim dim1)
-                 (dim-binmulp dim1)))))
+  (exists (dim1)
+          (and (dim= dim dim1)
+               (dim-binmulp dim1)))
+  :verify-guards nil) ; because DIM= is not guard-verified
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defsection dim-equiv-to-unisub-p
+(define-sk dim-equiv-to-unisub-p (dim)
+  :returns (yes/no booleanp)
   :short "Check whether a dimension is equivalent to
           one with only unary subtractions."
-  (defund-sk dim-equiv-to-unisub-p (dim)
-    (exists (dim1)
-            (and (dim= dim dim1)
-                 (dim-unisubp dim1)))))
+  (exists (dim1)
+          (and (dim= dim dim1)
+               (dim-unisubp dim1)))
+  :verify-guards nil) ; because DIM= is not guard-verified
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define-sk dim-equiv-to-binadd-binmul-unisub-p (dim)
+  :returns (yes/no booleanp)
+  :short "Check whether a dimension is equivalent to
+          one with only
+          binary additions,
+          binary multiplications,
+          and unary subtractions."
+  (exists (dim1)
+          (and (dim= dim dim1)
+               (dim-binaddp dim1)
+               (dim-binmulp dim1)
+               (dim-unisubp dim1)))
+  :verify-guards nil) ; because DIM= is not guard-verified
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1088,7 +1106,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This serves to validate the intention of
+    "This validates the intention of
      rules @('mul0'), @('mul1'), and @('mul3m'),
      described in @(see dim-equiv-infrules)."))
   (implies (dimp dim)
@@ -1123,3 +1141,59 @@
                    (proof (mv-nth 1 (unarize-sub-in-dim dim)))
                    (concl.dim1 dim)
                    (concl.dim2 (mv-nth 0 (unarize-sub-in-dim dim))))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled dim-equiv-to-binadd-binmul-unisub-p-when-dimp-and-nonullsubp
+  :short "Every dimension without nullary subtractions
+          is equivalent to one with only
+          binary additions,
+          binary multiplications,
+          and unary subtractions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a corollary of composing the three transformations,
+     in the order:
+     unarize subtractions, binarize additions, binarize multiplications.
+     Each transformation establishes its own status,
+     and preserves the statuses established by the preceding ones.
+     Unarizing subtractions must precede binarizing additions,
+     because the former introduces additions
+     (see @(tsee unarize-dims-in-sub));
+     binarizing multiplications could be otherwise reordered,
+     since the other two transformations preserve
+     the binary status of multiplications.")
+   (xdoc::p
+    "This is not the only sequence of transformations
+     that achieves the desired statuses of the dimension.
+     For instance,
+     we could swap the binarization of additions and multiplications.
+     But not all sequences work, as noted earlier.
+     In general, the sequences that work are exactly the ones where
+     the unarization of subtraction precedes the binarization of addition."))
+  (implies (and (dimp dim)
+                (dim-nonullsubp dim))
+           (dim-equiv-to-binadd-binmul-unisub-p dim))
+  :use ((:instance dim-equiv-to-binadd-binmul-unisub-p-suff
+                   (dim1 (mv-nth 0 (binarize-mul-in-dim
+                                    (binarize-add-in-dim
+                                     (mv-nth 0 (unarize-sub-in-dim dim)))))))
+        (:instance dim=-when-proof-validp
+                   (proof (mv-nth 1 (unarize-sub-in-dim dim)))
+                   (concl.dim1 dim)
+                   (concl.dim2 (mv-nth 0 (unarize-sub-in-dim dim))))
+        (:instance dim=-of-binarize-add-in-dim
+                   (dim (mv-nth 0 (unarize-sub-in-dim dim))))
+        (:instance dim=-when-proof-validp
+                   (proof (mv-nth 1 (binarize-mul-in-dim
+                                     (binarize-add-in-dim
+                                      (mv-nth 0 (unarize-sub-in-dim dim))))))
+                   (concl.dim1 (binarize-add-in-dim
+                                (mv-nth 0 (unarize-sub-in-dim dim))))
+                   (concl.dim2 (mv-nth 0 (binarize-mul-in-dim
+                                          (binarize-add-in-dim
+                                           (mv-nth 0 (unarize-sub-in-dim
+                                                      dim))))))))
+  :enable dim=-trans-swapped
+  :disable dim=-of-binarize-add-in-dim)
