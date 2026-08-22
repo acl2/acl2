@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "ispace-equivalence")
+(include-book "ispace-equivalence-derived-rules")
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 
@@ -27,37 +27,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We prove properties of the equivalence predicates
-     defined via inference rules in @(see ispace-equivalence).
-     These properties help validating the definition of the predicates,
-     and also provide reasoning tools for them.")
-   (xdoc::ul
-    (xdoc::li
-     "We prove some derived rules to help reason about the predicates.
-      Some of these rely on the properties described in the previous bullet
-      to shed hypotheses about types of values.")
-    (xdoc::li
-     "We prove that some of the rules in fact realize
-      the reductions claimed in @(see dim-equiv-infrules),
-      e.g. that @('add0'), @('add1'), and @('add3m')
-      reduce all variadic additions to binary ones
-      (while nullary and unary ones reduce to constants).
-      To do that, we introduce predicates to formalize these notions,
-      and functions to witness the ability to perform the reduction.")))
+    "We prove that some of the rules in fact realize
+     the reductions claimed in @(see dim-equiv-infrules),
+     e.g. that @('add0'), @('add1'), and @('add3m')
+     reduce all variadic additions to binary ones
+     (while nullary and unary ones reduce to constants).
+     To do that, we introduce predicates to formalize these notions,
+     and functions to witness the ability to perform the reduction."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection dim-equiv-derived-rules
-  :short "Some derived inference rules about dimension equivalence."
-
-  (defruled dim=-trans-swapped
-    (implies (and (dim= d2 d3)
-                  (dim= d1 d2))
-             (dim= d1 d3))
-    :use dim=-trans
-    :enable dimp-when-dim=))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

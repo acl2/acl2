@@ -15,6 +15,7 @@
 (include-book "type-equivalence-checker")
 (include-book "type-checker")
 (include-book "ispace-equivalence")
+(include-book "ispace-equivalence-derived-rules")
 (include-book "ispace-equivalence-properties")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -36,4 +37,5 @@
                     type-equivalence-checker
                     type-checker
                     ispace-equivalence
+                    ispace-equivalence-derived-rules
                     ispace-equivalence-properties))
