@@ -290,4 +290,176 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define-sk cst-longest-identifiers-p ((cst abnf::treep))
+  :guard (abnf::tree-terminatedp cst)
+  :returns (yes/no booleanp)
+  :short "Check if a CST does not contain any extensible @('identifier') CST."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Identifiers must extend as long as they can,
+     i.e. as long as there are identifier characters ahead.
+     Without this restriction,
+     wherever @('ws') may be empty between elements,
+     a text like @('xy') would admit, in expression position,
+     both a CST with the single identifier @('xy')
+     and a CST with the two adjacent identifiers @('x') and @('y')
+     (with an empty @('ws') CST between them):
+     e.g. @('(f xy)') would be
+     an application of @('f') to one or to two arguments.")
+   (xdoc::p
+    "We state the restriction by saying that
+     if we have a CST matching @('identifier') at a path,
+     the fringe of the CST at the adjacent path (if any)
+     must not be usable to extend the identifier,
+     i.e. any extension within the adjacent fringe
+     must not be the fringe of any possible @('identifier') CST.")
+   (xdoc::p
+    "An @('identifier') CST may occur in many contexts:
+     as an expression,
+     as the name in binders and signatures,
+     and just after the sigils
+     @('$'), @('@'), @('&'), and @('*') in variables.
+     The restriction we state here applies uniformly to all of them.")
+   (xdoc::p
+    "An extension of an identifier can only be another identifier:
+     the extended fringe starts with
+     the same @('id-start') character as the identifier,
+     which excludes decimals and float literals
+     (which start with a digit),
+     comments (which start with a semicolon),
+     and string literals (which start with a double quote);
+     and the spellings of keywords and of signed numbers
+     consist of identifier characters too,
+     so extensions forming those are
+     extensions to identifier fringes as well.
+     In particular, note that the extension targets are
+     hypothetical CSTs matching @('identifier'),
+     whose language includes the keyword spellings:
+     @(tsee cst-identifiers-not-keywords-p)
+     excludes identifier CSTs with keyword fringes
+     from the CST under examination,
+     not from these extension targets.
+     This matters: without keyword spellings as extension targets,
+     the text @('(array [2] x)') would admit,
+     besides the @('array-exp') CST,
+     an application CST of the identifier @('arra')
+     to @('y'), @('[2]'), and @('x'),
+     which contains no identifier CST with a keyword fringe.")
+   (xdoc::p
+    "Similarly, the identifier @('+') adjacent to @('5')
+     is extensible, to the identifier spelling of @('+5'),
+     so a signed number cannot be split into two adjacent expressions.
+     Like all the longest-match restrictions,
+     this one does not choose between
+     different readings of the same span
+     (e.g. the whole @('+5') as identifier or as number,
+     or a keyword spelling as keyword or as identifier):
+     those are choice restrictions
+     of the kind of @(tsee cst-identifiers-not-keywords-p)."))
+  (forall (path1 path2)
+          (implies (and (abnf::tree-pathp path1)
+                        (abnf::tree-pathp path2)
+                        (abnf::tree-path-validp path1 cst)
+                        (abnf::tree-path-validp path2 cst)
+                        (abnf::tree-paths-adjacentp path1 path2 cst))
+                   (b* ((cst1 (abnf::tree-at-path path1 cst))
+                        (cst2 (abnf::tree-at-path path2 cst)))
+                     (implies (cst-matchp cst1 "identifier")
+                              (not (extensible-to-cst-fringe-p
+                                    (abnf::tree->string cst1)
+                                    (abnf::tree->string cst2)
+                                    (list "identifier"))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk cst-longest-decimals-p ((cst abnf::treep))
+  :guard (abnf::tree-terminatedp cst)
+  :returns (yes/no booleanp)
+  :short "Check if a CST does not contain any extensible @('decimal') CST."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Decimals must extend as long as they can;
+     the extension may be not only a longer decimal,
+     but also a float literal that starts with the same digits:
+     the number as a whole is munched maximally,
+     across the two alternatives of @('num-val').")
+   (xdoc::p
+    "Without this restriction,
+     an expression like @('(f 23)') would admit
+     both a CST with the single number @('23')
+     and a CST with the two adjacent numbers @('2') and @('3')
+     (with an empty @('ws') CST between them),
+     and a shape literal @('[23]') would similarly admit
+     a CST with the two dimensions @('2') and @('3').
+     Furthermore, @('(f 1.5)') would admit,
+     besides the CST with the float literal @('1.5'),
+     a CST with the number @('1')
+     followed by the identifier @('.5')
+     (a legitimate identifier,
+     since @('.') may start one and @('5') may continue one),
+     and @('(f 5e3)') would admit
+     a CST with the number @('5') followed by the identifier @('e3'):
+     these are excluded just because
+     @('1.5') and @('5e3') are @('float-lit') fringes,
+     which is why this restriction has two target rule names.")
+   (xdoc::p
+    "We state the restriction by saying that
+     if we have a CST matching @('decimal') at a path,
+     the fringe of the CST at the adjacent path (if any)
+     must not be usable to extend the decimal,
+     i.e. any extension within the adjacent fringe
+     must not be the fringe of
+     any possible @('decimal') or @('float-lit') CST.")
+   (xdoc::p
+    "A @('decimal') CST may occur
+     as the digits of a number
+     (in @('num-val'), including inside a signed number)
+     and as a dimension (in @('shape-lit') and @('dim')).
+     There are no other occurrences:
+     the @('float-lit'), @('exponent'), and @('num-escape') rules
+     use @('DIGIT') repetitions directly,
+     so in particular a @('float-lit') CST
+     contains no @('decimal') CSTs.
+     The restriction applies uniformly to all the @('decimal') CSTs.")
+   (xdoc::p
+    "An extension of a decimal can only be
+     a decimal or a float literal:
+     the extended fringe starts with the same digit as the decimal,
+     and identifiers and keywords cannot start with a digit
+     (nor can comments or string literals,
+     which start with a semicolon and a double quote).
+     Conversely, a decimal followed by
+     other identifier characters is not extensible,
+     and legitimately so:
+     e.g. @('(f 5x)') is the application of @('f')
+     to the number @('5') and the identifier @('x'),
+     since numbers have no trailing word boundary.")
+   (xdoc::p
+    "The extension may need to be longer than one character:
+     in @('(f 1.5)') above, the extension is the whole @('.5'),
+     since the intermediate @('1.') is not the fringe of any lexeme.
+     Applied to the decimal inside a signed number,
+     the restriction also keeps signs and digits together:
+     @('(f +51)') cannot be split into
+     the numbers @('+5') and @('1'),
+     because the decimal @('5') inside @('+5')
+     would be extensible by @('1')."))
+  (forall (path1 path2)
+          (implies (and (abnf::tree-pathp path1)
+                        (abnf::tree-pathp path2)
+                        (abnf::tree-path-validp path1 cst)
+                        (abnf::tree-path-validp path2 cst)
+                        (abnf::tree-paths-adjacentp path1 path2 cst))
+                   (b* ((cst1 (abnf::tree-at-path path1 cst))
+                        (cst2 (abnf::tree-at-path path2 cst)))
+                     (implies (cst-matchp cst1 "decimal")
+                              (not (extensible-to-cst-fringe-p
+                                    (abnf::tree->string cst1)
+                                    (abnf::tree->string cst2)
+                                    (list "decimal" "float-lit"))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; TODO: more predicates
