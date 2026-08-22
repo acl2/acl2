@@ -65,7 +65,9 @@
      explicit object parameters (@('this') as first explicit parameter, C++23),
      the multidimensional subscript operator @('a[i,j]') (C++23),
      and nested-template @('>>') disambiguation (a lexer-level limitation).
-     Variadic templates/parameter packs (@('typename... T'), @('int... N'))
-     and default arguments in function and template parameters are now
-     supported, bringing the parser to C++11/14 conformance for these
+     Variadic templates/parameter packs (@('typename... T'), @('int... N')),
+     default arguments in function and template parameters, and
+     C++17 structured bindings (both the local form @('auto [a, b] = p;')
+     and the range-based-for form @('for (auto [k, v] : m) ...')) are now
+     supported, bringing the parser to C++17 conformance for these
      constructs.")))

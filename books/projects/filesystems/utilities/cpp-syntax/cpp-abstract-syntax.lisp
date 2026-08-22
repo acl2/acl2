@@ -668,6 +668,9 @@
             (name ident)
             (init-p bool)
             (init cpp-expr)))
+    (:binding ((type  cpp-type-spec)         ; C++17 structured binding
+               (names c$::ident-list)
+               (init  cpp-expr)))
     :pred cpp-block-item-p
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))
@@ -713,6 +716,9 @@
                 (body cpp-stmt)))
     (:for-range ((type cpp-type-spec) (name ident)
                  (range cpp-expr) (body cpp-stmt)))
+    (:for-range-binding ((type  cpp-type-spec)   ; C++17 structured binding
+                         (names c$::ident-list)
+                         (range cpp-expr) (body cpp-stmt)))
     (:goto ((label ident)))
     (:continue ())
     (:break ())
