@@ -31,9 +31,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ type-equivalence
+(defxdoc+ type-equivalence-checker
   :parents (static-semantics)
-  :short "Equivalence of types."
+  :short "A checker for the equivalence of types."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -42,9 +42,9 @@
      The latter is discussed in @(see ispace-equivalence).")
    (xdoc::p
     "Like for ispace equivalence,
-     we plan to define a high-level notion of type equivalence
+     we are defining a high-level notion of type equivalence
      that accommodates undecidability.
-     But we start with an executable version
+     But we start with an executable checker
      that has the same restriction as decidable ispace equivalence,
      namely that dimension arithmetic is confined to addition only."))
   :order-subtopics t

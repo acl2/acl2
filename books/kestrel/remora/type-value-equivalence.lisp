@@ -28,7 +28,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is similar to "
-    (xdoc::seetopic "type-equivalence" "type equivalence")
+    (xdoc::seetopic "type-equivalence-checker" "type equivalence")
     ", but for type values instead of types.
      Type value equivalence is used in our dynamic semantics
      to perform certain defensive checks.")

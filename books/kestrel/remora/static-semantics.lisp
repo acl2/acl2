@@ -33,7 +33,7 @@
      we plan to prove this equivalence."))
   :order-subtopics (static-environments
                     ispace-equivalence
-                    type-equivalence
+                    type-equivalence-checker
                     type-checker
                     ispace-equivalence-inference-rules
                     ispace-equivalence-properties))
