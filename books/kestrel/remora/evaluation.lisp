@@ -358,14 +358,12 @@
           :denv (type-denv-restrict (type-free-ispace-vars type)
                                     (type-free-type-vars type)
                                     denv))
-     :pin (b* (((unless (>= (len type.params) 2)) (reserr nil)))
-            ;; TODO: remove above check once it's an AST invariant
-            (make-type-value-pi
-             :param (car type.params)
-             :body (pi-curried-body type.params type.body)
-             :denv (type-denv-restrict (type-free-ispace-vars type)
-                                       (type-free-type-vars type)
-                                       denv)))
+     :pin (make-type-value-pi
+           :param (car type.params)
+           :body (pi-curried-body type.params type.body)
+           :denv (type-denv-restrict (type-free-ispace-vars type)
+                                     (type-free-type-vars type)
+                                     denv))
      :sigma (make-type-value-sigma
              :param type.param
              :body type.body

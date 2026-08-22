@@ -1282,7 +1282,8 @@
                        type-value-listp-when-result-not-error
                        type-denv-lookup-type
                        acl2::lt-len-const
-                       consp-of-cdr-of-type-foralln->params))
+                       consp-of-cdr-of-type-foralln->params
+                       consp-of-cdr-of-type-pin->params))
    (and acl2::stable-under-simplificationp
         '(:use ((:instance denv-type-vars-ispace-renamed-p-necc
                            (var (type-var->var type))))))))
@@ -2155,7 +2156,8 @@
                        type-denv-lookup-type
                        acl2::lt-len-const
                        acl2::equal-len-const
-                       consp-of-cdr-of-type-foralln->params))
+                       consp-of-cdr-of-type-foralln->params
+                       consp-of-cdr-of-type-pin->params))
    (and acl2::stable-under-simplificationp
         '(:use ((:instance denv-type-vars-renamed-p-necc
                            (var (type-var->var type))))))))
