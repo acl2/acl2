@@ -1387,6 +1387,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define ldm-dirabsdeclor-fun ((dirabsdeclor dirabsdeclorp))
+  :guard (dirabsdeclor-unambp dirabsdeclor)
+  :returns (mv erp (funadeclor c::fun-adeclorp))
+  :short "Map a direct abstract declarator to
+          an abstract function declarator in the language definition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The abstract syntax in the language definition
+     does not have a separate type for direct abstract function declarators,
+     so we return an abstract function declarator here.
+     The input direct abstract declarator must be a function declarator
+     with no nested direct abstract declarator."))
+  (b* (((reterr) (c::fun-adeclor-base nil))
+       ((unless (dirabsdeclor-case dirabsdeclor :function))
+        (reterr (msg "Unsupported direct abstract declarator ~x0 for function."
+                     (dirabsdeclor-fix dirabsdeclor))))
+       ((dirabsdeclor-function dirabsdeclor) dirabsdeclor)
+       ((when dirabsdeclor.declor?)
+        (reterr (msg "Unsupported direct abstract declarator ~x0 for function."
+                     (dirabsdeclor-fix dirabsdeclor))))
+       ((erp params1) (ldm-param-declon-list dirabsdeclor.params)))
+    (retok (c::fun-adeclor-base params1))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ldm-desiniter ((desiniter desiniterp))
   :guard (desiniter-unambp desiniter)
   :returns (mv erp (expr c::exprp))
