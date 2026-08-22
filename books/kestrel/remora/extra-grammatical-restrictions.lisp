@@ -373,6 +373,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; This lemma supports the guard verification of
+; the predicates below that use lists of adjacent paths.
+; It is a general fact about ABNF trees,
+; which should eventually be moved to the ABNF library.
+
+(local
+ (acl2::defrule tree-list-terminatedp-of-tree-list-at-path-list
+   (implies (and (abnf::tree-path-list-validp paths cst)
+                 (abnf::tree-terminatedp cst))
+            (abnf::tree-list-terminatedp
+             (abnf::tree-list-at-path-list paths cst)))
+   :induct t
+   :enable (abnf::tree-list-at-path-list
+            abnf::tree-path-list-validp
+            abnf::tree-list-terminatedp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define-sk cst-longest-decimals-p ((cst abnf::treep))
   :guard (abnf::tree-terminatedp cst)
   :returns (yes/no booleanp)
@@ -407,11 +425,38 @@
    (xdoc::p
     "We state the restriction by saying that
      if we have a CST matching @('decimal') at a path,
-     the fringe of the CST at the adjacent path (if any)
+     the fringes of the CSTs at
+     the consecutively adjacent paths that follow it (if any)
      must not be usable to extend the decimal,
-     i.e. any extension within the adjacent fringe
+     i.e. any extension within the concatenation of those fringes
      must not be the fringe of
      any possible @('decimal') or @('float-lit') CST.")
+   (xdoc::p
+    "Unlike other longest-match restrictions,
+     which consider one adjacent path at a time,
+     here we must consider a list of consecutively adjacent paths,
+     because an extension may span several adjacent CSTs:
+     e.g. @('(f 1.5)') also admits a CST with the number @('1')
+     followed by the identifier @('.')
+     followed by the number @('5'),
+     whose exclusion requires extending @('1') with @('.5'),
+     taken from the two subsequent CSTs together;
+     the fringe @('.') of the single adjacent CST does not suffice,
+     since @('1.') is not the fringe of any lexeme.
+     (That CST happens to be also excluded by
+     @(tsee cst-longest-identifiers-p),
+     via the identifier @('.') being extensible by @('5');
+     but each restriction should be adequate for its own lexeme,
+     without relying on the other restrictions.)
+     For the previous longest-match restrictions,
+     a single adjacent path suffices,
+     because any violation there has
+     a one-character witness extension,
+     provided by the fringe of the immediately adjacent CST:
+     e.g. any identifier character extends an identifier,
+     and any character other than line feed extends a comment.
+     The case of a single adjacent path is subsumed here,
+     as the case of a singleton list of paths.")
    (xdoc::p
     "A @('decimal') CST may occur
      as the digits of a number
@@ -446,18 +491,18 @@
      the numbers @('+5') and @('1'),
      because the decimal @('5') inside @('+5')
      would be extensible by @('1')."))
-  (forall (path1 path2)
-          (implies (and (abnf::tree-pathp path1)
-                        (abnf::tree-pathp path2)
-                        (abnf::tree-path-validp path1 cst)
-                        (abnf::tree-path-validp path2 cst)
-                        (abnf::tree-paths-adjacentp path1 path2 cst))
-                   (b* ((cst1 (abnf::tree-at-path path1 cst))
-                        (cst2 (abnf::tree-at-path path2 cst)))
+  (forall (path paths)
+          (implies (and (abnf::tree-pathp path)
+                        (abnf::tree-path-listp paths)
+                        (abnf::tree-path-validp path cst)
+                        (abnf::tree-path-list-validp paths cst)
+                        (abnf::tree-path-list-adjacentp (cons path paths) cst))
+                   (b* ((cst1 (abnf::tree-at-path path cst))
+                        (csts2 (abnf::tree-list-at-path-list paths cst)))
                      (implies (cst-matchp cst1 "decimal")
                               (not (extensible-to-cst-fringe-p
                                     (abnf::tree->string cst1)
-                                    (abnf::tree->string cst2)
+                                    (abnf::tree-list->string csts2)
                                     (list "decimal" "float-lit"))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
