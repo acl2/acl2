@@ -12,7 +12,7 @@
 
 (include-book "static-environments")
 (include-book "ispace-equivalence")
-(include-book "type-equivalence")
+(include-book "type-equivalence-checker")
 (include-book "type-checker")
 (include-book "ispace-equivalence-infrules")
 (include-book "ispace-equivalence-properties")

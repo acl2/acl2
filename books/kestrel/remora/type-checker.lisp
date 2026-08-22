@@ -15,7 +15,7 @@
 (include-book "abstract-syntax-structurals")
 (include-book "abstract-syntax-matching-operations")
 (include-book "abstract-syntax-variable-operations")
-(include-book "type-equivalence")
+(include-book "type-equivalence-checker")
 (include-book "static-environments")
 (include-book "nat-lists")
 

@@ -11,7 +11,7 @@
 (in-package "REMORA")
 
 (include-book "values-to-abstract-syntax")
-(include-book "type-equivalence")
+(include-book "type-equivalence-checker")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
