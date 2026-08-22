@@ -1010,7 +1010,16 @@
        ((mv yes/no tyspecs) (check-decl-spec-list-all-typespec (cdr declspecs))))
     (if yes/no
         (mv t (cons (decl-spec-typespec->spec declspec) tyspecs))
-      (mv nil nil))))
+      (mv nil nil)))
+
+  ///
+
+  (defrule check-decl-spec-list-all-typespec-of-decl-spec-typespec-list
+    (equal (check-decl-spec-list-all-typespec
+            (decl-spec-typespec-list tyspecs))
+           (mv t (type-spec-list-fix tyspecs)))
+    :induct t
+    :enable decl-spec-typespec-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -225,13 +225,7 @@
     floating, enumeration, and character constants.")
   (const-case c
               :int (pprint-iconst c.get)
-              :float (prog2$ (raise "Internal error: ~
-                                     floating constants not supported.")
-                             "")
-              :enum (pprint-ident c.get)
-              :char (prog2$ (raise "Internal error: ~
-                                    character constants not supported.")
-                            ""))
+              :enum (pprint-ident c.get))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

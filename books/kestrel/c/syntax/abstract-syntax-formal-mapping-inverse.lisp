@@ -152,18 +152,14 @@
           to a constant in the syntax for tools."
   (c::const-case
    const
-   :int (const-int (ildm-iconst (c::const-int->get const)))
-   :otherwise (prog2$ (raise "Unsupported non-integer constant ~x0."
-                             (c::const-fix const))
-                      (irr-const)))
-  :no-function nil
+   :int (const-int (ildm-iconst const.get))
+   :enum (const-enum (ildm-ident const.get)))
 
   ///
 
   (defrule ldm-const-of-ildm-const
-    (implies (c::const-case const :int)
-             (equal (ldm-const (ildm-const const))
-                    (mv nil (c::const-dec0-to-oct0 const))))
+    (equal (ldm-const (ildm-const const))
+           (mv nil (c::const-dec0-to-oct0 const)))
     :enable (ldm-const
              c::const-dec0-to-oct0)))
 
@@ -567,7 +563,25 @@
 
   ///
 
-  (fty::deffixequiv-mutual ildm-exprs))
+  (fty::deffixequiv-mutual ildm-exprs)
+
+  (defthm-ildm-exprs-flag
+    (defthm ldm-expr-of-ildm-expr
+      (equal (ldm-expr (ildm-expr expr))
+             (mv nil (c::expr-dec0-to-oct0 expr)))
+      :flag ildm-expr)
+    (defthm ldm-expr-list-of-ildm-expr-list
+      (equal (ldm-expr-list (ildm-expr-list exprs))
+             (mv nil (c::expr-list-dec0-to-oct0 exprs)))
+      :flag ildm-expr-list)
+    :hints (("Goal"
+             :in-theory (enable ldm-expr
+                                ildm-unop
+                                ldm-expr-list
+                                check-expr-ident
+                                expr-option-some->val
+                                c::expr-dec0-to-oct0
+                                c::expr-list-dec0-to-oct0)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -577,7 +591,17 @@
           to an optional expression in the syntax for tools."
   (c::expr-option-case expr?
                        :some (ildm-expr expr?.val)
-                       :none nil))
+                       :none nil)
+
+  ///
+
+  (defrule ldm-expr-option-of-ildm-expr-option
+    (equal (ldm-expr-option (ildm-expr-option expr?))
+           (mv nil (c::expr-option-dec0-to-oct0 expr?)))
+    :enable (ldm-expr-option
+             expr-option-some->val
+             c::expr-option-some->val
+             c::expr-option-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -593,7 +617,15 @@
     (make-struct-declon-member :extension nil
                                :specquals specquals
                                :declors (list sdeclor)
-                               :attribs nil)))
+                               :attribs nil))
+
+  ///
+
+  (defrule ldm-struct-declon-of-ildm-struct-declon
+    (equal (ldm-struct-declon (ildm-struct-declon sdeclon))
+           (mv nil (c::struct-declon-dec0-to-oct0 sdeclon)))
+    :enable (ldm-struct-declon
+             c::struct-declon-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -603,7 +635,16 @@
           to a list of structure declarations in the syntax for tools."
   (cond ((endp sdeclons) nil)
         (t (cons (ildm-struct-declon (car sdeclons))
-                 (ildm-struct-declon-list (cdr sdeclons))))))
+                 (ildm-struct-declon-list (cdr sdeclons)))))
+
+  ///
+
+  (defrule ldm-struct-declon-list-of-ildm-struct-declon-list
+    (equal (ldm-struct-declon-list (ildm-struct-declon-list sdeclons))
+           (mv nil (c::struct-declon-list-dec0-to-oct0 sdeclons)))
+    :induct t
+    :enable (ldm-struct-declon-list
+             c::struct-declon-list-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -619,7 +660,16 @@
   (cond ((endp enumers) nil)
         (t (cons (make-enumer :name (ildm-ident (car enumers)) :value? nil)
                  (ildm-enumer-list (cdr enumers)))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule ldm-enumer-list-of-ildm-enumer-list
+    (equal (ldm-enumer-list (ildm-enumer-list enumers))
+           (mv nil (c::ident-list-fix enumers)))
+    :induct t
+    :enable (ldm-enumer-list
+             ldm-enumer)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -652,20 +702,40 @@
        (declspec (decl-spec-typespec tyspec)))
     (make-declon-declon :extension nil
                         :specs (list declspec)
-                        :declors nil)))
+                        :declors nil))
+
+  ///
+
+  (defrule ldm-declon-tag-of-ildm-tag-declon
+    (equal (ldm-declon-tag (ildm-tag-declon declon))
+           (mv nil (c::tag-declon-dec0-to-oct0 declon)))
+    :enable (ldm-declon-tag
+             c::tag-declon-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ildm-param-declon ((pdeclon c::param-declonp))
   :returns (pdeclon1 param-declonp)
   :short "Map a parameter declaration in the language definition
-          to a parameter declaration in th syntax for tools."
+          to a parameter declaration in the syntax for tools."
   (b* (((c::param-declon pdeclon) pdeclon)
        (tyspecs (ildm-tyspecseq pdeclon.tyspec))
-       (declspecs (decl-spec-typespec-list tyspecs)))
+       (declspecs (decl-spec-typespec-list tyspecs))
+       (declor (ildm-obj-declor pdeclon.declor)))
     (make-param-declon :specs declspecs
-                       :declor (param-declor-none nil)
-                       :attribs nil)))
+                       :declor (make-param-declor-nonabstract
+                                :declor declor
+                                :info nil)
+                       :attribs nil))
+
+  ///
+
+  (defrule ldm-param-declon-of-ildm-param-declon
+    (equal (ldm-param-declon (ildm-param-declon pdeclon))
+           (mv nil (c::param-declon-dec0-to-oct0 pdeclon)))
+    :enable (ldm-param-declon
+             ldm-param-declor
+             c::param-declon-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -675,7 +745,16 @@
           to a list of parameter declarations in the syntax for tools."
   (cond ((endp pdeclons) nil)
         (t (cons (ildm-param-declon (car pdeclons))
-                 (ildm-param-declon-list (cdr pdeclons))))))
+                 (ildm-param-declon-list (cdr pdeclons)))))
+
+  ///
+
+  (defrule ldm-param-declon-list-of-ildm-param-declon-list
+    (equal (ldm-param-declon-list (ildm-param-declon-list pdeclons))
+           (mv nil (c::param-declon-list-dec0-to-oct0 pdeclons)))
+    :induct t
+    :enable (ldm-param-declon-list
+             c::param-declon-list-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -699,7 +778,18 @@
               (make-declor :pointers (cons nil declor1.pointers)
                            :direct declor1.direct)))
   :measure (c::fun-declor-count declor)
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule ldm-declor-fun-of-ildm-fun-declor
+    (equal (ldm-declor-fun (ildm-fun-declor declor))
+           (mv nil (c::fun-declor-dec0-to-oct0 declor)))
+    :induct t
+    :enable (ldm-declor-fun
+             ldm-declor-fun-loop
+             ldm-dirdeclor-fun
+             c::fun-declor-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -719,7 +809,19 @@
               (make-absdeclor :pointers (cons nil adeclor1.pointers)
                               :direct? adeclor1.direct?)))
   :measure (c::fun-adeclor-count adeclor)
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule ldm-absdeclor-fun-of-ildm-fun-adeclor
+    (equal (ldm-absdeclor-fun (ildm-fun-adeclor adeclor))
+           (mv nil (c::fun-adeclor-dec0-to-oct0 adeclor)))
+    :induct t
+    :enable (ldm-absdeclor-fun
+             ldm-absdeclor-fun-loop
+             ldm-dirabsdeclor-fun
+             dirabsdeclor-option-some->val
+             c::fun-adeclor-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

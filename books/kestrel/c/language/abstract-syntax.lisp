@@ -158,8 +158,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only capture integer and enumeration constants,
-     but we include placeholders for floating and character constants.")
+    "For now we only capture integer and enumeration constants.")
    (xdoc::p
     "The C grammar for enumeration constants [C17:6.4.4.3/1] [C17:6.4.4/1]
      is actually ambiguous in expressions [C17:6.5.1/1]:
@@ -181,9 +180,7 @@
      and just use identifiers in expressions,
      which may denote either enumeration constants or other things."))
   (:int ((get iconst)))
-  (:float ())
   (:enum ((get ident)))
-  (:char ())
   :pred constp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
