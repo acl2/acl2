@@ -1301,34 +1301,7 @@
   '(logtail-of-read-becomes-slice
     logapp-of-read-becomes-bvcat))
 
-;; Rules to introduce our BV operators (todo: move these):
-(defund bitops-to-bv-rules ()
-  (declare (xargs :guard t))
-  '(;; Rules to handle part-select-width-low:
-    ;; acl2::part-select-width-low-becomes-slice ; for when low and width are constants
-    acl2::part-select-width-low-becomes-slice-gen ; allows low and width to be non-constants (can happen with shifts)
 
-    ;; should we instead go to putbits?
-    ;; TODO: Think about the case when sizes/indices are not constant
-    acl2::slice-of-part-install-width-low ; introduces bvcat
-    acl2::bvchop-of-part-install-width-low-becomes-bvcat
-    ;; getbit rule?
-    acl2::part-install-width-low-becomes-bvcat ; gets the size of X from an assumption
-    acl2::part-install-width-low-becomes-bvcat-axe ; gets the size of X from the form of X
-    acl2::part-install-width-low-becomes-bvcat-32
-    acl2::part-install-width-low-becomes-bvcat-64
-    acl2::part-install-width-low-becomes-bvcat-128
-    acl2::part-install-width-low-becomes-bvcat-256
-    acl2::part-install-width-low-becomes-bvcat-512
-    acl2::integerp-of-part-install-width-low ; needed?
-
-    acl2::rotate-right-becomes-rightrotate
-    acl2::rotate-left-becomes-leftrotate
-    acl2::logbit-becomes-getbit
-    acl2::b-and-becomes-bitand
-    acl2::b-ior-becomes-bitor
-    acl2::b-xor-becomes-bitxor
-    acl2::b-not-becomes-bitnot))
 
 ;; See also bitops-to-bv-rules.
 ;; todo: add more constant openers
@@ -2322,7 +2295,7 @@
           (acl2::bv-of-logext-rules)
           (acl2::ash-rules)
           (arith-to-bv-rules)
-          (bitops-to-bv-rules)
+          (acl2::bitops-to-bv-rules)
           (x86-bv-rules)
           (acl2::reassemble-bv-rules) ; add to core-rules-bv?
           (acl2::array-reduction-rules)
@@ -6259,7 +6232,7 @@
 
             rflagsbits-fix$inline
             )
-          (bitops-to-bv-rules) ; should this be needed?
+          (acl2::bitops-to-bv-rules) ; should this be needed?
           ;; todo: this stuff is duplicated in the lifter-rules:
           *unsigned-choppers* ;; these are just logead, aka bvchop
           *signed-choppers* ;; these are just logext
