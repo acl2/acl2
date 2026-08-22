@@ -417,3 +417,69 @@
                               var type compst1))))
                (c::compustate-has-var-with-type-p var type compst2)))
     :enable c::exec-block-item-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled exec-ident-of-var-in-compustate
+  :short "Executing a variable in scope yields
+          a value of the expected type
+          and does not change the computation state,
+          if the execution limit is at least 1."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The difference between this and
+     @('expr-ident-compustate-vars') in @(see exec-compustate-vars-theorems)
+     is that the latter has the absence of errors as hypothesis,
+     while this one assumes the limit is not 0
+     and shows that there is no error in execution."))
+  (b* ((expr (c::expr-ident var))
+       ((mv eval compst1) (c::exec-expr expr compst fenv limit))
+       (val (c::expr-value->value eval)))
+    (implies (and (not (zp limit))
+                  (c::compustate-has-var-with-type-p var type compst))
+             (and (not (c::errorp eval))
+                  eval
+                  (equal (c::type-of-value val) (c::type-fix type))
+                  (equal compst1 (c::compustate-fix compst)))))
+  :enable (c::exec-expr
+           c::exec-ident
+           c::compustate-has-var-with-type-p
+           c::not-errorp-when-expr-valuep))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define c::compustate-has-static-var-with-type-p ((var c::identp)
+                                                  (type c::typep)
+                                                  (compst c::compustatep))
+  :returns (yes/no booleanp)
+  (and (c::compustate-has-var-with-type-p var type compst)
+       (equal (c::objdesign-kind (c::objdesign-of-var var compst)) :static))
+  :guard-hints (("Goal" :in-theory (enable c::compustate-has-var-with-type-p)))
+  :hooks (:fix)
+
+  ///
+
+  (defruled c::assoc-static-when-compustate-has-static-var-with-type-p
+    (implies (and (c::identp var)
+                  (c::compustate-has-static-var-with-type-p var type compst))
+             (omap::assoc var (c::compustate->static compst)))
+    :enable (c::objdesign-of-var
+             c::read-object
+             c::compustate-has-var-with-type-p))
+
+  (defruled c::objdesign-of-var-when-compustate-has-static-var-with-type-p
+    (implies (c::compustate-has-static-var-with-type-p var type compst)
+             (equal (c::objdesign-of-var var compst)
+                    (c::objdesign-static var)))
+    :enable (c::compustate-has-var-with-type-p
+             c::objdesign-of-var))
+
+  (defruled c::read-object-when-compustate-has-static-var-with-type-p
+    (implies (c::compustate-has-static-var-with-type-p var type compst)
+             (equal (c::read-object (c::objdesign-of-var var compst) compst)
+                    (cdr (omap::assoc (c::ident-fix var)
+                                      (c::compustate->static compst)))))
+    :enable (c::objdesign-of-var
+             c::read-object
+             c::compustate-has-var-with-type-p)))
