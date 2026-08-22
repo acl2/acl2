@@ -2098,11 +2098,7 @@
            (reserr nil))
           (type (if (consp bind.params)
                     (make-type-array
-                     :elem (if (endp (cdr bind.params))
-                               (make-type-pi :param (car bind.params)
-                                             :body ee.type)
-                             (make-type-pin :params bind.params
-                                            :body ee.type))
+                     :elem (make-type-pi/pin bind.params ee.type)
                      :ispace (ispace-shape (shape-dims nil)))
                   ee.type)))
        (make-senv+bind
@@ -2135,10 +2131,7 @@
                           (make-type-funn :in types :out btype))
                       ee.type))
           (fun-type (if (consp iparams)
-                        (if (endp (cdr iparams))
-                            (make-type-pi :param (car iparams)
-                                          :body fun-type)
-                          (make-type-pin :params iparams :body fun-type))
+                        (make-type-pi/pin iparams fun-type)
                       fun-type))
           (fun-type (if (consp tparams)
                         (make-type-forall/foralln tparams fun-type)

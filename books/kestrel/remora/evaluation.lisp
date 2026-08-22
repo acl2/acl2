@@ -358,7 +358,8 @@
           :denv (type-denv-restrict (type-free-ispace-vars type)
                                     (type-free-type-vars type)
                                     denv))
-     :pin (b* (((unless (consp type.params)) (reserr nil)))
+     :pin (b* (((unless (>= (len type.params) 2)) (reserr nil)))
+            ;; TODO: remove above check once it's an AST invariant
             (make-type-value-pi
              :param (car type.params)
              :body (pi-curried-body type.params type.body)
@@ -1526,13 +1527,8 @@
                   ((ok &) (type-option-case
                            bind.type?
                            :some (eval-type
-                                  (if (endp (cdr bind.params))
-                                      (make-type-pi
-                                       :param (car bind.params)
-                                       :body bind.type?.val)
-                                    (make-type-pin
-                                     :params bind.params
-                                     :body bind.type?.val))
+                                  (make-type-pi/pin bind.params
+                                                    bind.type?.val)
                                   (expr-denv->tenv denv))
                            :none nil)))
                (expr-denv-add-expr bind.var val denv))
@@ -1573,11 +1569,7 @@
                                       (make-atom-ilambdan
                                        :params iparams
                                        :body cfun-expr))))
-                           (if (endp (cdr iparams))
-                               (make-type-pi :param (car iparams)
-                                             :body cfun-type)
-                             (make-type-pin :params iparams
-                                            :body cfun-type)))
+                           (make-type-pi/pin iparams cfun-type))
                      (mv cfun-expr cfun-type)))
                   ((mv cfun-expr cfun-type)
                    (if (consp tparams)

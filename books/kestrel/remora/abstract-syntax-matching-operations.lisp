@@ -194,9 +194,7 @@
        ((unless (>= (len params) 2)) (reserr nil)))
     (make-ispacevar+type
      :var (car params)
-     :type (if (endp (cddr params))
-               (make-type-pi :param (cadr params) :body body)
-             (make-type-pin :params (cdr params) :body body))))
+     :type (make-type-pi/pin (cdr params) body)))
   :guard-hints (("Goal" :in-theory (enable acl2::lt-len-const))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
