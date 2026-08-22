@@ -18,9 +18,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ ispace-equivalence-inference-rules
+(defxdoc+ ispace-equivalence
   :parents (static-semantics)
-  :short "Inference rules for ispace equivalence."
+  :short "Equivalence of ispaces."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -39,7 +39,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (definductive dim-equiv-infrules
-  :short "Equivalence of dimensions and lists of dimensions."
+  :short "Inference rules for dimension equivalence."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -230,7 +230,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (definductive shape/ispace-equiv-infrules
-  :short "Equivalence of shapes, ispaces, and lists thereof."
+  :short "Inference rules for shape and ispace equivalence."
   :long
   (xdoc::topstring
    (xdoc::p

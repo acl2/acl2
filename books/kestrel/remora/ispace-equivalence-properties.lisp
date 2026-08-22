@@ -28,8 +28,7 @@
   (xdoc::topstring
    (xdoc::p
     "We prove properties of the equivalence predicates
-     defined via inference rules in
-     @(see ispace-equivalence-inference-rules).
+     defined via inference rules in @(see ispace-equivalence).
      These properties help validating the definition of the predicates,
      and also provide reasoning tools for them.")
    (xdoc::ul

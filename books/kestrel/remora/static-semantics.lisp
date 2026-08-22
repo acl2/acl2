@@ -35,5 +35,5 @@
                     ispace-equivalence-checker
                     type-equivalence-checker
                     type-checker
-                    ispace-equivalence-inference-rules
+                    ispace-equivalence
                     ispace-equivalence-properties))
