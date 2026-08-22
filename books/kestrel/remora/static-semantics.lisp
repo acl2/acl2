@@ -38,4 +38,4 @@
                     type-checker
                     ispace-equivalence
                     ispace-equivalence-derived-rules
-                    ispace-equivalence-properties))
+                    ispace-equivalence-normalizations))

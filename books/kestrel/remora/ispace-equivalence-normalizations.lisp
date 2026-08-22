@@ -21,7 +21,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ ispace-equivalence-properties
+(defxdoc+ ispace-equivalence-normalizations
   :parents (static-semantics)
   :short "Properties of ispace equivalence."
   :long
@@ -246,7 +246,7 @@
 
   (define binarize-add-in-dim ((dim dimp))
     :returns (new-dim dimp)
-    :parents (ispace-equivalence-properties binarize-add-in-dims)
+    :parents (ispace-equivalence-normalizations binarize-add-in-dims)
     :short "Turn a dimension into
             an equivalent one with only binary additions."
     (dim-case
@@ -260,7 +260,7 @@
 
   (define binarize-add-in-dim-list ((dims dim-listp))
     :returns (new-dims dim-listp)
-    :parents (ispace-equivalence-properties binarize-add-in-dims)
+    :parents (ispace-equivalence-normalizations binarize-add-in-dims)
     :short "Turn a list of dimensions into
             an equivalent one with only binary additions."
     (cond ((endp dims) nil)
@@ -511,7 +511,7 @@
   (define binarize-mul-in-dim ((dim dimp))
     :returns (mv (new-dim dimp)
                  (proof dim=-proofp))
-    :parents (ispace-equivalence-properties binarize-mul-in-dims)
+    :parents (ispace-equivalence-normalizations binarize-mul-in-dims)
     :short "Turn a dimension into
             an equivalent one with only binary multiplications,
             and construct a proof tree demonstrating the equivalence."
@@ -550,7 +550,7 @@
   (define binarize-mul-in-dim-list ((dims dim-listp))
     :returns (mv (new-dims dim-listp)
                  (proof dims=-proofp))
-    :parents (ispace-equivalence-properties binarize-mul-in-dims)
+    :parents (ispace-equivalence-normalizations binarize-mul-in-dims)
     :short "Turn a list of dimensions into
             an equivalent one with only binary multiplications,
             and construct a proof tree demonstrating the equivalence."
@@ -784,7 +784,7 @@
   (define unarize-sub-in-dim ((dim dimp))
     :returns (mv (new-dim dimp)
                  (proof dim=-proofp))
-    :parents (ispace-equivalence-properties unarize-sub-in-dims)
+    :parents (ispace-equivalence-normalizations unarize-sub-in-dims)
     :short "Turn a dimension into
             an equivalent one with only unary subtractions,
             and construct a proof tree demonstrating the equivalence."
@@ -823,7 +823,7 @@
   (define unarize-sub-in-dim-list ((dims dim-listp))
     :returns (mv (new-dims dim-listp)
                  (proof dims=-proofp))
-    :parents (ispace-equivalence-properties unarize-sub-in-dims)
+    :parents (ispace-equivalence-normalizations unarize-sub-in-dims)
     :short "Turn a list of dimensions into
             an equivalent one with only unary subtractions,
             and construct a proof tree demonstrating the equivalence."
