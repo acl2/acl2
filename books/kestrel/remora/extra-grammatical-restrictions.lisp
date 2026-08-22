@@ -296,7 +296,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk cst-longest-num-escapes-p ((cst abnf::treep))
+(define-sk cst-longest-numeric-escapes-p ((cst abnf::treep))
   :guard (abnf::tree-terminatedp cst)
   :returns (yes/no booleanp)
   :short "Check if a CST does not contain any extensible @('num-escape') CST."
