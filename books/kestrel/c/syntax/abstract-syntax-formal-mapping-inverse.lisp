@@ -809,7 +809,19 @@
               (make-absdeclor :pointers (cons nil adeclor1.pointers)
                               :direct? adeclor1.direct?)))
   :measure (c::fun-adeclor-count adeclor)
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule ldm-absdeclor-fun-of-ildm-fun-adeclor
+    (equal (ldm-absdeclor-fun (ildm-fun-adeclor adeclor))
+           (mv nil (c::fun-adeclor-dec0-to-oct0 adeclor)))
+    :induct t
+    :enable (ldm-absdeclor-fun
+             ldm-absdeclor-fun-loop
+             ldm-dirabsdeclor-fun
+             dirabsdeclor-option-some->val
+             c::fun-adeclor-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
