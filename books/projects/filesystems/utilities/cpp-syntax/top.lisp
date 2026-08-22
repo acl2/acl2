@@ -60,9 +60,12 @@
                @('static_assert'), and empty declarations"))
    (xdoc::p
     "Known remaining gaps (constructs not yet parsed):
-     @('friend') declarations,
-     @('decltype') in type specifiers,
-     @('concept')/@('requires'),
-     explicit template specializations,
-     namespace aliases,
-     and module/import/export declarations.")))
+     @('concept') definitions and @('requires') expressions/clauses (C++20),
+     the @('if consteval') statement form (C++23),
+     explicit object parameters (@('this') as first explicit parameter, C++23),
+     the multidimensional subscript operator @('a[i,j]') (C++23),
+     and nested-template @('>>') disambiguation (a lexer-level limitation).
+     Variadic templates/parameter packs (@('typename... T'), @('int... N'))
+     and default arguments in function and template parameters are now
+     supported, bringing the parser to C++11/14 conformance for these
+     constructs.")))

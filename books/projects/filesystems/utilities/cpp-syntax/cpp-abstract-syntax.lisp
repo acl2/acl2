@@ -519,10 +519,17 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "A function or lambda parameter: a type specifier and
-       an optional parameter name [C++23:9.3.4.6]."))
-    ((type cpp-type-spec)
-     (name ident-option))
+      "A function or lambda parameter: a type specifier, an optional name,
+       an optional pack marker @('...') (C++11 variadic templates),
+       and an optional default argument [C++23:9.3.4.6].
+       @('packp') is @('t') for pack-expanded parameters (e.g. @('T... args')).
+       @('default-p') is @('t') iff a default is present; the @('default') field
+       then holds a simple constant expression (boolean, integer, or identifier)."))
+    ((type      cpp-type-spec)
+     (name      ident-option)
+     (packp     bool)
+     (default-p bool)
+     (default   cpp-const-expr))
     :pred cpp-param-p
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 2))
@@ -793,7 +800,9 @@
 (defirrelevant irr-cpp-param
   :short "An irrelevant C++ typed parameter."
   :type cpp-param-p
-  :body (make-cpp-param :type (irr-cpp-type-spec) :name nil))
+  :body (make-cpp-param :type (irr-cpp-type-spec) :name nil
+                        :packp nil :default-p nil
+                        :default (irr-cpp-const-expr)))
 
 (defirrelevant irr-cpp-exception-handler
   :short "An irrelevant C++ exception handler header."
@@ -840,22 +849,34 @@
        or a template template parameter [C++23:13.2].")
      (xdoc::p
       "A @(':type') parameter is introduced by @('typename') or @('class'),
-       with an optional name.")
+       with an optional name, optional pack marker (@('typename... T'), C++11),
+       and optional default type (@('typename T = Foo'), C++11).")
      (xdoc::p
-      "A @(':nontype') parameter has a type specifier and a parameter name,
-       e.g., @('int N') or @('const T* ptr').")
+      "A @(':nontype') parameter has a type specifier and a parameter name
+       (e.g., @('int N')), optional pack marker (@('int... N'), C++11),
+       and optional default constant expression (@('int N = 0'), C++11).")
      (xdoc::p
-      "A @(':template-template') parameter is itself a template,
-       e.g., @('template<typename> class Container')."))
+      "A @(':template-template') parameter is itself a template
+       (e.g., @('template<typename> class C')), with optional pack marker
+       and optional default type."))
     (:type
      ((typenamep bool)
-      (name      ident-option)))
+      (name      ident-option)
+      (packp     bool)
+      (default-p bool)
+      (default   cpp-type-spec)))
     (:nontype
-     ((type      cpp-type-spec)
-      (param-name ident)))
+     ((type       cpp-type-spec)
+      (param-name ident)
+      (packp      bool)
+      (default-p  bool)
+      (default    cpp-const-expr)))
     (:template-template
-     ((params cpp-template-param-list)
-      (name   ident-option)))
+     ((params    cpp-template-param-list)
+      (name      ident-option)
+      (packp     bool)
+      (default-p bool)
+      (default   cpp-type-spec)))
     :pred cpp-template-param-p
     :measure (two-nats-measure (acl2-count x) 1))
 
@@ -877,7 +898,9 @@
 (defirrelevant irr-cpp-template-param
   :short "An irrelevant C++ template parameter."
   :type cpp-template-param-p
-  :body (make-cpp-template-param-type :typenamep t :name nil))
+  :body (make-cpp-template-param-type :typenamep t :name nil
+                                      :packp nil :default-p nil
+                                      :default (irr-cpp-type-spec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Member Names
