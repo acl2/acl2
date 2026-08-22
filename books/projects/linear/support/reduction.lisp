@@ -4877,6 +4877,108 @@
                   :use (lehc-10 solvablep-homogeneous
 		        (:instance linear-equations-solvable-case (b (flistn0 m)))))))
 
+;; We derive an alternative formulation of sol0-test, which will be useful in "vectors.lisp".
+
+;; If (sol0p x a), then the entry of x at each leading index may be computed from its entries at the
+;; free indices according to the following:
+
+(local-defthmd sol0-test-aux-necc
+  (implies (and (sol0-test-aux x aq l f k)
+                (natp k) (natp i) (< i k))
+	   (equal (nth (nth i l) x)
+                  (f- (fdot-select f (nth i aq) x))))
+  :hints (("Goal" :induct (sol0-test-aux x aq l f k))))
+
+(local-defthmd sol0-test-necc
+  (let* ((ar (row-reduce a))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+         (l (lead-inds aq))
+         (f (free-inds aq n)))
+    (implies (and (fmatp a m n) (posp m) (posp n)
+                  (sol0-test x a n)
+		  (natp k) (< k q))
+	     (equal (nth (nth k l) x)
+                    (f- (fdot-select f (nth k aq) x)))))
+  :hints (("Goal" :in-theory (enable sol0-test)
+                  :use ((:instance sol0-test-aux-necc (aq (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))
+		                                      (l (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a))))
+						      (f (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n))
+						      (i k)
+						      (k (num-nonzero-rows (row-reduce a))))))))
+
+(defthmd sol0p-necc
+  (let* ((ar (row-reduce a))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+         (l (lead-inds aq))
+         (f (free-inds aq n)))
+    (implies (and (fmatp a m n) (posp m) (posp n)
+                  (flistnp x n) (sol0p x a)
+		  (natp k) (< k q))
+	     (equal (nth (nth k l) x)
+                    (f- (fdot-select f (nth k aq) x)))))
+  :hints (("Goal" :use (sol0-test-necc linear-equations-homogeneous-case))))
+
+;; The converse of sol0p-necc states that if the equation given by sol0p-necc holds for each leading
+;; index, then (sol0p x a):
+
+(defun sol0-test-aux-witness (x aq l f k)
+  (if (zp k)
+      ()
+    (if (equal (nth (nth (1- k) l) x)
+               (f- (fdot-select f (nth (1- k) aq) x)))
+	(sol0-test-aux-witness x aq l f (1- k))
+      (1- k))))
+
+(local-defthmd sol0-test-aux-suff
+  (implies (not (sol0-test-aux x aq l f k))
+           (let ((i (sol0-test-aux-witness x aq l f k)))
+             (and (natp k) (natp i) (< i k)
+	          (not (equal (nth (nth i l) x)
+                       (f- (fdot-select f (nth i aq) x))))))))
+
+(defund sol0p-witness (x a n)
+  (let* ((ar (row-reduce a))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+         (l (lead-inds aq))
+         (f (free-inds aq n)))
+    (sol0-test-aux-witness x aq l f q)))
+
+(local-defthmd sol0-test-suff
+  (let* ((ar (row-reduce a))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+         (l (lead-inds aq))
+         (f (free-inds aq n)))
+    (implies (and (fmatp a m n) (posp m) (posp n)
+                  (flistnp x n) (not (sol0-test x a n)))
+	     (let ((k (sol0p-witness x a n)))
+	       (and (natp k) (< k q)
+	            (not (equal (nth (nth k l) x)
+                                (f- (fdot-select f (nth k aq) x))))))))
+  :hints (("Goal" :in-theory (enable sol0p-witness sol0-test)
+                  :use ((:instance sol0-test-aux-suff (aq (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))
+		                                      (l (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a))))
+						      (f (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n))
+						      (k (num-nonzero-rows (row-reduce a))))))))
+
+(defthmd sol0p-suff
+  (let* ((ar (row-reduce a))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+         (l (lead-inds aq))
+         (f (free-inds aq n)))
+    (implies (and (fmatp a m n) (posp m) (posp n)
+                  (flistnp x n) (not (sol0p x a)))
+	     (let ((k (sol0p-witness x a n)))
+	       (and (natp k) (< k q)
+	            (not (equal (nth (nth k l) x)
+                                (f- (fdot-select f (nth k aq) x))))))))
+  :hints (("Goal" :use (sol0-test-suff linear-equations-homogeneous-case))))
+
+;;-----------------------------------------
 ;; Eventually, we shall examine the solution set of a homogeneous system as a vector space.  Here we merely
 ;; observe the existence of a nontrivial solution in the case m < n, a result that is needed in our 
 ;; formalization of galois theory.
