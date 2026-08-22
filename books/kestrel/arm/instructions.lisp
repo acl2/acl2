@@ -4625,7 +4625,7 @@
                 arm))
          (arm (advance-pc arm)))
       arm)
-  :guard-hints (("Goal" :in-theory (enable uint))))
+  :guard-hints (("Goal" :in-theory (enable uint acl2::unsigned-byte-p-of-+-of-constant-strong))))
 
 (def-inst :strd-register
     (b* (;; EncodingSpecificOperations:
@@ -4674,7 +4674,7 @@
                 arm))
          (arm (advance-pc arm)))
       arm)
-  :guard-hints (("Goal" :in-theory (enable uint))))
+  :guard-hints (("Goal" :in-theory (enable uint acl2::unsigned-byte-p-of-+-of-constant-strong))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

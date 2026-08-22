@@ -777,7 +777,8 @@
       BVMINUS SBVLT ACL2::GETBIT-OF-+
       ACL2::EQUAL-OF-BITXOR-AND-1
       BVCAT LOGAPP LOGEXT
-      acl2::*-of---arg1-gen)
+      acl2::*-of---arg1-gen
+      acl2::unsigned-byte-p-of-+-of-constant-strong)
      (;;ACL2::REWRITE-<-WHEN-SIZES-DONT-MATCH2 ;looped
       ACL2::REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1 ;looped
       ;ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS

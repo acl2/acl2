@@ -197,7 +197,8 @@
                        (natp size))))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
-(defthm unsigned-byte-p-of-+-of-constant-strong
+;; unclear whether we'll usually want this
+(defthmd unsigned-byte-p-of-+-of-constant-strong
   (implies (and (syntaxp (and (quotep k)
                               (quotep n)))
                 (integerp x)
