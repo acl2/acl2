@@ -1102,7 +1102,8 @@
                                                               shape-all)))))
   :enable (pi-curried-body
            make-type-pi/pin
-           mergesort-when-singleton)
+           mergesort-when-singleton
+           acl2::equal-len-const)
   :use ((:instance dim/shape-rename-remove-bound-of-insert-then-rest
                    (var (car params))
                    (rest (cdr params)))))
