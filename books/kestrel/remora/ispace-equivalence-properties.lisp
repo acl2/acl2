@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "ispace-equivalence-infrules")
+(include-book "ispace-equivalence")
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 
