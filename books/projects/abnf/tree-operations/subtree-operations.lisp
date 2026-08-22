@@ -170,7 +170,17 @@
        ((unless (< step.rep (len subtrees))) nil)
        (subtree (nth step.rep subtrees)))
     (check-tree-path (cdr path) subtree))
-  :guard-hints (("Goal" :in-theory (enable true-listp-when-tree-listp))))
+  :guard-hints (("Goal" :in-theory (enable true-listp-when-tree-listp)))
+
+  ///
+
+  (defrule tree-terminatedp-of-check-tree-path
+    (b* ((tree? (check-tree-path path tree)))
+      (implies (and (tree-terminatedp tree)
+                    tree?)
+               (tree-terminatedp tree?)))
+    :induct t
+    :enable tree-terminatedp))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -201,7 +211,15 @@
   :returns (sub treep)
   :short "Subtree of a tree at a valid path."
   (tree-fix (check-tree-path path tree))
-  :guard-hints (("Goal" :in-theory (enable tree-path-validp))))
+  :guard-hints (("Goal" :in-theory (enable tree-path-validp)))
+
+  ///
+
+  (defrule tree-terminatedp-of-tree-at-path
+    (implies (and (tree-path-validp path tree)
+                  (tree-terminatedp tree))
+             (tree-terminatedp (tree-at-path path tree)))
+    :enable tree-path-validp))
 
 ;;;;;;;;;;
 

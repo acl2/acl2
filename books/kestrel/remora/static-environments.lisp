@@ -120,15 +120,21 @@
      function types between base types.
      The @('head'), @('tail'), @('length'),
      @('append'), @('reverse'), @('index'), @('index2d'),
-     @('reshape'), @('flatten'), @('transpose2d'), and @('reduce') operations
+     @('reshape'), @('flatten'), @('transpose2d'),
+     @('reduce'), and @('fold') operations
      have polymorphic types:
      a universal type of a product type of a function type, as in [impl].
-     The first input type of @('reduce') is itself a function type,
-     making @('reduce') a higher-order operation.
+     The first input types of @('reduce') and @('fold')
+     are themselves function types,
+     making them higher-order operations.
      The @('sum') operation is polymorphic only in the shape,
      not in the element type, which is always integer:
      its type is a product type of a function type,
      without an enclosing universal type, as in [impl].
+     The @('iota/static') operation is also polymorphic only in the shape:
+     its type is a product type of an array type,
+     without any function type, as in [impl],
+     since the single ispace application directly yields the array.
      All these types are atom-kinded, without zero-rank array type wrapping:
      as explained in @(see types),
      atom-kinded types are allowed wherever array-kinded types are expected,
@@ -226,7 +232,16 @@
                             (t[] "&t" "@s")
                             (t[] "&t" "@s"))
                        (t[] "&t" (shp[] (dim+ 1 "$d") "@s"))
-                       (t[] "&t" "@s"))))))
+                       (t[] "&t" "@s")))))
+       (fold-type
+        (tfa ("&t" "&t2")
+             (tpi ("$d" "@s" "@s2")
+                  (t-> (t-> (t[] "&t2" "@s2")
+                            (t[] "&t" "@s")
+                            (t[] "&t2" "@s2"))
+                       (t[] "&t2" "@s2")
+                       (t[] "&t" (shp[] (dim+ 1 "$d") "@s"))
+                       (t[] "&t2" "@s2"))))))
     (omap::from-alist
      (list (cons "+" int-binop-type)
            (cons "-" int-binop-type)
@@ -289,7 +304,8 @@
            (cons "flatten" flatten-type)
            (cons "transpose2d" transpose2d-type)
            (cons "iota/static" iota/static-type)
-           (cons "reduce" reduce-type)))))
+           (cons "reduce" reduce-type)
+           (cons "fold" fold-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

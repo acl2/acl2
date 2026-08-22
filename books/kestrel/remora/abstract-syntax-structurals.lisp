@@ -882,6 +882,30 @@
   :hooks ((:fix :hints (("Goal"
                          :in-theory (enable cdr-of-type-var-list-fix))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define make-type-pi/pin ((params ispace-var-listp) (body typep))
+  :guard (consp params)
+  :returns (type typep)
+  :short "Construct a unary or n-ary product type,
+          depending on the number of parameters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There must be at least one parameter, as required by the guard.
+     If there is exactly one parameter,
+     we construct a unary product type over that parameter;
+     if there are two or more parameters,
+     we construct an n-ary product type,
+     consistently with the requirement that
+     n-ary product types have two or more parameters
+     (see @(tsee type))."))
+  (if (endp (cdr params))
+      (make-type-pi :param (car params) :body body)
+    (make-type-pin :params params :body body))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-ispace-var-list-fix))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-binders-count ((type typep))
@@ -1001,7 +1025,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pi-curried-body ((params ispace-var-listp) (body typep))
-  :guard (consp params)
+  :guard (>= (len params) 2)
   :returns (new-body typep)
   :short "Peel the first parameter from a product type
           and return the remaining body type."
@@ -1009,10 +1033,8 @@
   (xdoc::topstring
    (xdoc::p
     "This is analogous to @(tsee forall-curried-body)."))
-  (cond ((endp (cdr params)) (type-fix body))
-        ((endp (cddr params))
-         (make-type-pi :param (cadr params) :body body))
-        (t (make-type-pin :params (cdr params) :body body)))
+  (cond ((endp (cdr params)) (prog2$ (impossible) (type-fix body)))
+        (t (make-type-pi/pin (cdr params) body)))
   :hooks ((:fix :hints (("Goal"
                          :in-theory (enable cdr-of-ispace-var-list-fix)))))
 
@@ -1024,7 +1046,8 @@
                                               (type-pin->body type)))
                  (type-count type)))
     :rule-classes :linear
-    :enable pi-curried-body
+    :enable (pi-curried-body
+             make-type-pi/pin)
     :expand ((type-count type)
              (type-count (type-pi (cadr (type-pin->params type))
                                   (type-pin->body type)))
@@ -1041,7 +1064,7 @@
                                              (type-pin->body type)))
         (type-binders-count type)))
     :rule-classes :linear
-    :enable (pi-curried-body type-binders-count len)
+    :enable (pi-curried-body type-binders-count make-type-pi/pin len)
     :expand ((type-count type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

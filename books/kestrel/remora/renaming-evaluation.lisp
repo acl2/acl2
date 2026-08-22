@@ -1101,6 +1101,7 @@
                                                               dim-all
                                                               shape-all)))))
   :enable (pi-curried-body
+           make-type-pi/pin
            mergesort-when-singleton)
   :use ((:instance dim/shape-rename-remove-bound-of-insert-then-rest
                    (var (car params))
@@ -1278,7 +1279,9 @@
                        not-reserrp-when-type-value-listp
                        type-valuep-when-result-not-error
                        type-value-listp-when-result-not-error
-                       type-denv-lookup-type))
+                       type-denv-lookup-type
+                       acl2::lt-len-const
+                       consp-of-cdr-of-type-foralln->params))
    (and acl2::stable-under-simplificationp
         '(:use ((:instance denv-type-vars-ispace-renamed-p-necc
                            (var (type-var->var type))))))))
@@ -1928,7 +1931,8 @@
                                    (type-rename-type-vars body
                                                           atom-renam
                                                           array-renam))))
-  :enable pi-curried-body)
+  :enable (pi-curried-body
+           make-type-pi/pin))
 
 (defrule type-rename-type-vars-of-sigma-curried-body
   (implies (and (ispace-var-listp params)

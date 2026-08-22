@@ -69,34 +69,47 @@
                              :to (make-type-pointer :to (type-sint))))
               "int **")
 
-(acl2::assert-equal (render-type (make-type-array :of (type-sint) :size 10))
+(acl2::assert-equal
+ (render-type (make-type-array
+                :of (type-sint)
+                :kind (make-type-array-kind-const-len :len 10)))
               "int [10]")
 
-;; An array of unknown size.
-(acl2::assert-equal (render-type (make-type-array :of (type-sint) :size nil))
+;; An incomplete array.
+(acl2::assert-equal
+ (render-type (make-type-array :of (type-sint)
+                               :kind (type-array-kind-incomplete)))
               "int []")
 
 ;; An array of pointers (no parentheses).
 (acl2::assert-equal (render-type (make-type-array
                              :of (make-type-pointer :to (type-sint))
-                             :size 3))
+                             :kind (make-type-array-kind-const-len :len 3)))
               "int *[3]")
 
 ;; A pointer to an array (parenthesized).
 (acl2::assert-equal (render-type (make-type-pointer
-                             :to (make-type-array :of (type-sint) :size 3)))
+                             :to (make-type-array
+                                   :of (type-sint)
+                                   :kind (make-type-array-kind-const-len
+                                           :len 3))))
               "int (*)[3]")
 
 ;; A two-dimensional array (outer dimension first).
 (acl2::assert-equal (render-type (make-type-array
-                             :of (make-type-array :of (type-sint) :size 4)
-                             :size 2))
+                             :of (make-type-array
+                                   :of (type-sint)
+                                   :kind (make-type-array-kind-const-len
+                                           :len 4))
+                             :kind (make-type-array-kind-const-len :len 2)))
               "int [2][4]")
 
 ;; A size larger than INT_MAX gets a length suffix
 ;; (2^32 fits in long for the default implementation environment).
 (acl2::assert-equal (render-type (make-type-array :of (type-sint)
-                                                  :size (expt 2 32)))
+                                                  :kind
+                                                  (make-type-array-kind-const-len
+                                                    :len (expt 2 32))))
               "int [4294967296l]")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -216,7 +229,40 @@
                  erp))
 
 (acl2::assert! (mv-let (erp tyname)
-                 (type-to-tyname (make-type-array :of (type-enum) :size 4)
+                 (type-to-tyname (make-type-array
+                                   :of (type-enum)
+                                   :kind (make-type-array-kind-const-len
+                                           :len 4))
                                  (ienv-default))
+                 (declare (ignore tyname))
+                 erp))
+
+;; Complete arrays whose size expression is not represented cannot be
+;; faithfully rendered as type names.
+
+(acl2::assert! (mv-let (erp tyname)
+                 (type-to-tyname
+                   (make-type-array
+                     :of (type-sint)
+                     :kind (make-type-array-kind-const-len :len nil))
+                   (ienv-default))
+                 (declare (ignore tyname))
+                 erp))
+
+(acl2::assert! (mv-let (erp tyname)
+                 (type-to-tyname
+                   (make-type-array
+                     :of (type-sint)
+                     :kind (type-array-kind-nonconst-len))
+                   (ienv-default))
+                 (declare (ignore tyname))
+                 erp))
+
+(acl2::assert! (mv-let (erp tyname)
+                 (type-to-tyname
+                   (make-type-array
+                     :of (type-sint)
+                     :kind (type-array-kind-unknown-complete))
+                   (ienv-default))
                  (declare (ignore tyname))
                  erp))

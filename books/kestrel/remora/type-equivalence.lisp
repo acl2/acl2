@@ -272,7 +272,7 @@
    (xdoc::p
     "If one type is a variable, the other type must be the same variable.
      Eventually we will need to generalize this so that
-     an array type variable @('*v') is equivalent to @('(A &v @v'),
+     an array type variable @('*v') is equivalent to @('(A &v @v)'),
      i.e. an array type with an atom type variable and a shape variable
      that have the same name as the original variable.")
    (xdoc::p
@@ -329,10 +329,17 @@
      Thus a unary type may be equivalent to an n-ary one,
      and two n-ary types may be equivalent
      even if they have different numbers of bound variables.
-     An n-ary type with no bound variables,
+     An n-ary sum type with no bound variables,
      which is not well-formed,
      is only equivalent to another one with no bound variables,
-     with equivalent bodies.")
+     with equivalent bodies.
+     An n-ary product type with fewer than two bound variables,
+     which is not well-formed,
+     is currently not equivalent to any type;
+     this interim treatment will go away
+     when the fixtype of types requires
+     n-ary product types to have two or more parameters,
+     as it already does for n-ary universal types.")
    (xdoc::p
     "Since we are renaming (ispace and type) variables to fresh ones,
      we do not call the predicates to check for variable capture.
@@ -431,8 +438,7 @@
                                                          maps.3rd
                                                          maps.4th)))
                         (type-equivp body1 body2))
-              :foralln (b* (((unless (consp type2.params)) nil)
-                            (used (set::union (type-all-type-vars type1)
+              :foralln (b* ((used (set::union (type-all-type-vars type1)
                                               (type-all-type-vars type2)))
                             (maps (fresh-type-var-renaming
                                    (list type1.param)
@@ -453,8 +459,7 @@
    :foralln (b* ((type2 (normalize-type type2)))
               (type-case
                type2
-               :forall (b* (((unless (consp type1.params)) nil)
-                            (used (set::union (type-all-type-vars type1)
+               :forall (b* ((used (set::union (type-all-type-vars type1)
                                               (type-all-type-vars type2)))
                             (maps (fresh-type-var-renaming
                                    (list (car type1.params))
@@ -471,11 +476,7 @@
                                                           maps.3rd
                                                           maps.4th)))
                          (type-equivp body1 body2))
-               :foralln (b* (((when (endp type1.params))
-                              (and (endp type2.params)
-                                   (type-equivp type1.body type2.body)))
-                             ((when (endp type2.params)) nil)
-                             (used (set::union (type-all-type-vars type1)
+               :foralln (b* ((used (set::union (type-all-type-vars type1)
                                                (type-all-type-vars type2)))
                              (maps (fresh-type-var-renaming
                                     (list (car type1.params))
@@ -512,7 +513,8 @@
                                                    maps.3rd
                                                    maps.4th)))
                 (type-equivp body1 body2))
-          :pin (b* (((unless (consp type2.params)) nil)
+          :pin (b* (((unless (>= (len type2.params) 2)) nil)
+                    ;; TODO: remove above check when AST invariant is in
                     (used (set::union (type-all-ispace-vars type1)
                                       (type-all-ispace-vars type2)))
                     (maps (fresh-ispace-var-renaming
@@ -533,7 +535,8 @@
    :pin (b* ((type2 (normalize-type type2)))
           (type-case
            type2
-           :pi (b* (((unless (consp type1.params)) nil)
+           :pi (b* (((unless (>= (len type1.params) 2)) nil)
+                    ;; TODO: remove above check when AST invariant is in
                     (used (set::union (type-all-ispace-vars type1)
                                       (type-all-ispace-vars type2)))
                     (maps (fresh-ispace-var-renaming
@@ -550,10 +553,10 @@
                                                     maps.3rd
                                                     maps.4th)))
                  (type-equivp body1 body2))
-           :pin (b* (((when (endp type1.params))
-                      (and (endp type2.params)
-                           (type-equivp type1.body type2.body)))
-                     ((when (endp type2.params)) nil)
+           :pin (b* (((unless (and (>= (len type1.params) 2)
+                                   (>= (len type2.params) 2)))
+                      nil)
+                     ;; TODO: remove above checks when AST invariant is in
                      (used (set::union (type-all-ispace-vars type1)
                                        (type-all-ispace-vars type2)))
                      (maps (fresh-ispace-var-renaming

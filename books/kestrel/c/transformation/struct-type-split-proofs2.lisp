@@ -12,6 +12,8 @@
 
 (include-book "struct-type-split-proofs0")
 
+(include-book "variables-in-computation-states")
+
 (include-book "kestrel/c/language/dynamic-semantics" :dir :system)
 
 (local (include-book "std/lists/top" :dir :system))
@@ -21,12 +23,104 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled exec-ident-of-var-in-compustate
+  (b* ((expr (c::expr-ident var))
+       ((mv eval compst1) (c::exec-expr expr compst fenv limit))
+       (val (c::expr-value->value eval)))
+    (implies (and (not (zp limit))
+                  (c::compustate-has-var-with-type-p var type compst))
+             (and (not (c::errorp eval))
+                  (equal (c::type-of-value val) (c::type-fix type))
+                  (equal compst1 (c::compustate-fix compst)))))
+  :enable (c::exec-expr
+           c::exec-ident
+           c::compustate-has-var-with-type-p
+           c::not-errorp-when-expr-valuep))
+
+; cf. expr-ident-compustate-vars, which has not errorp hyp
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define c::compustate-has-static-var-with-type-p ((var c::identp)
+                                                  (type c::typep)
+                                                  (compst c::compustatep))
+  :returns (yes/no booleanp)
+  (and (c::compustate-has-var-with-type-p var type compst)
+       (equal (c::objdesign-kind (c::objdesign-of-var var compst)) :static))
+  :guard-hints (("Goal" :in-theory (enable c::compustate-has-var-with-type-p)))
+
+  ///
+
+  (defruled c::assoc-static-when-compustate-has-static-var-with-type-p
+    (implies (and (c::identp var)
+                  (c::compustate-has-static-var-with-type-p var type compst))
+             (omap::assoc var (c::compustate->static compst)))
+    :enable (c::objdesign-of-var
+             c::read-object
+             c::compustate-has-var-with-type-p))
+
+  (defruled c::objdesign-of-var-when-compustate-has-static-var-with-type-p
+    (implies (c::compustate-has-static-var-with-type-p var type compst)
+             (equal (c::objdesign-of-var var compst)
+                    (c::objdesign-static var)))
+    :enable (c::compustate-has-var-with-type-p
+             c::objdesign-of-var))
+
+  (defruled c::read-object-when-compustate-has-static-var-with-type-p
+    (implies (c::compustate-has-static-var-with-type-p var type compst)
+             (equal (c::read-object (c::objdesign-of-var var compst) compst)
+                    (cdr (omap::assoc (c::ident-fix var)
+                                      (c::compustate->static compst)))))
+    :enable (c::objdesign-of-var
+             c::read-object
+             c::compustate-has-var-with-type-p)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; This file contains work in progress towards
 ; some general approach to generate proofs for the STS transformation.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; mapping between old and new struct values
+;; struct s {
+;;   unsigned int a;
+;;   unsigned int b;
+;; };
+
+;; struct s gso;
+
+;; unsigned int f(unsigned int x) {
+;;   return x + gso.a + gso.b;
+;; }
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; struct s {
+;;   unsigned int a;
+;; };
+
+;; struct s2 {
+;;   unsigned int b;
+;; };
+
+;; struct s gso;
+
+;; struct s2 gso_0;
+
+;; unsigned int f(unsigned int x) {
+;;   return x + gso.a + gso_0.b;
+;; }
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; old and new struct values
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; these should be just consequences of the values having those struct types,
+; given the known definitions of the struct types
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define struct-value-oldp ((sval c::valuep))
   :returns (yes/no booleanp)
@@ -43,9 +137,17 @@
        ((unless (c::value-case aval :uint)) nil)
        ((unless (c::value-case bval :uint)) nil)
        ((unless (not (c::value-struct->flexiblep sval))) nil))
-    t))
+    t)
 
-(define struct-value-new1p ((sval c::valuep))
+  ///
+
+  (defruled value-kind-when-struct-value-oldp
+    (implies (struct-value-oldp sval)
+             (equal (c::value-kind sval) :struct))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define struct-value-newlp ((sval c::valuep))
   :returns (yes/no booleanp)
   (b* (((unless (c::value-case sval :struct)) nil)
        ((unless (equal (c::value-struct->tag sval) (c::ident "s"))) nil)
@@ -56,9 +158,17 @@
        (aval (c::member-value->value amemval))
        ((unless (c::value-case aval :uint)) nil)
        ((unless (not (c::value-struct->flexiblep sval))) nil))
-    t))
+    t)
 
-(define struct-value-new2p ((sval c::valuep))
+  ///
+
+  (defruled value-kind-when-struct-value-newlp
+    (implies (struct-value-newlp sval)
+             (equal (c::value-kind sval) :struct))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define struct-value-newrp ((sval c::valuep))
   :returns (yes/no booleanp)
   (b* (((unless (c::value-case sval :struct)) nil)
        ((unless (equal (c::value-struct->tag sval) (c::ident "s2"))) nil)
@@ -69,7 +179,19 @@
        (bval (c::member-value->value bmemval))
        ((unless (c::value-case bval :uint)) nil)
        ((unless (not (c::value-struct->flexiblep sval))) nil))
-    t))
+    t)
+
+  ///
+
+  (defruled value-kind-when-struct-value-newrp
+    (implies (struct-value-newrp sval)
+             (equal (c::value-kind sval) :struct))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; accessors with unconditional return types
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define struct-value-old-a ((sval c::valuep))
   :guard (struct-value-oldp sval)
@@ -78,13 +200,26 @@
   :guard-hints (("Goal" :in-theory (enable struct-value-oldp
                                            c::value-struct-read
                                            c::value-struct-read-aux)))
+
   ///
+
   (defret value-kind-of-struct-value-old-a
     (equal (c::value-kind aval) :uint)
     :hyp (struct-value-oldp sval)
     :hints (("Goal" :in-theory (enable struct-value-oldp
                                        c::value-struct-read
-                                       c::value-struct-read-aux)))))
+                                       c::value-struct-read-aux))))
+
+  (defruled value-struct-read-a-when-struct-value-oldp
+    (implies (and (struct-value-oldp sval)
+                  (equal member (c::ident "a")))
+             (equal (c::value-struct-read member sval)
+                    (struct-value-old-a sval)))
+    :enable (struct-value-oldp
+             c::value-struct-read
+             c::value-struct-read-aux)))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define struct-value-old-b ((sval c::valuep))
   :guard (struct-value-oldp sval)
@@ -94,131 +229,350 @@
                                            c::value-struct-read
                                            c::value-struct-read-aux
                                            nth)))
+
   ///
+
   (defret value-kind-of-struct-value-old-b
     (equal (c::value-kind bval) :uint)
     :hyp (struct-value-oldp sval)
     :hints (("Goal" :in-theory (enable struct-value-oldp
                                        c::value-struct-read
                                        c::value-struct-read-aux
-                                       nth)))))
+                                       nth))))
 
-(define struct-value-new1-a ((sval c::valuep))
-  :guard (struct-value-new1p sval)
+  (defruled value-struct-read-b-when-struct-value-oldp
+    (implies (and (struct-value-oldp sval)
+                  (equal member (c::ident "b")))
+             (equal (c::value-struct-read member sval)
+                    (struct-value-old-b sval)))
+    :enable (struct-value-oldp
+             c::value-struct-read
+             c::value-struct-read-aux
+             nth)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define struct-value-newl-a ((sval c::valuep))
+  :guard (struct-value-newlp sval)
   :returns (aval c::valuep)
   (c::value-fix (c::value-struct-read (c::ident "a") sval))
-  :guard-hints (("Goal" :in-theory (enable struct-value-new1p
+  :guard-hints (("Goal" :in-theory (enable struct-value-newlp
                                            c::value-struct-read
                                            c::value-struct-read-aux)))
-  ///
-  (defret value-kind-of-struct-value-new1-a
-    (equal (c::value-kind aval) :uint)
-    :hyp (struct-value-new1p sval)
-    :hints (("Goal" :in-theory (enable struct-value-new1p
-                                       c::value-struct-read
-                                       c::value-struct-read-aux)))))
 
-(define struct-value-new2-b ((sval c::valuep))
-  :guard (struct-value-new2p sval)
+  ///
+
+  (defret value-kind-of-struct-value-newl-a
+    (equal (c::value-kind aval) :uint)
+    :hyp (struct-value-newlp sval)
+    :hints (("Goal" :in-theory (enable struct-value-newlp
+                                       c::value-struct-read
+                                       c::value-struct-read-aux))))
+
+  (defruled value-struct-read-a-when-struct-value-newlp
+    (implies (and (struct-value-newlp sval)
+                  (equal member (c::ident "a")))
+             (equal (c::value-struct-read member sval)
+                    (struct-value-newl-a sval)))
+    :enable (struct-value-newlp
+             c::value-struct-read
+             c::value-struct-read-aux)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define struct-value-newr-b ((sval c::valuep))
+  :guard (struct-value-newrp sval)
   :returns (bval c::valuep)
   (c::value-fix (c::value-struct-read (c::ident "b") sval))
-  :guard-hints (("Goal" :in-theory (enable struct-value-new2p
+  :guard-hints (("Goal" :in-theory (enable struct-value-newrp
                                            c::value-struct-read
                                            c::value-struct-read-aux)))
+
   ///
-  (defret value-kind-of-struct-value-new2-b
+
+  (defret value-kind-of-struct-value-newr-b
     (equal (c::value-kind bval) :uint)
-    :hyp (struct-value-new2p sval)
-    :hints (("Goal" :in-theory (enable struct-value-new2p
+    :hyp (struct-value-newrp sval)
+    :hints (("Goal" :in-theory (enable struct-value-newrp
                                        c::value-struct-read
-                                       c::value-struct-read-aux)))))
+                                       c::value-struct-read-aux))))
 
-(define struct-value-old-to-new ((sval c::valuep))
-  :guard (struct-value-oldp sval)
-  :returns (mv (sval1 c::valuep) (sval2 c::valuep))
-  (b* ((aval (struct-value-old-a sval))
-       (bval (struct-value-old-b sval)))
-    (mv (c::make-value-struct
-         :tag (c::ident "s")
-         :members (list (c::make-member-value :name (c::ident "a")
-                                              :value aval))
-         :flexiblep nil)
-        (c::make-value-struct
-         :tag (c::ident "s2")
-         :members (list (c::make-member-value :name (c::ident "b")
-                                              :value bval))
-         :flexiblep nil)))
-  ///
-  (defret struct-value-new1p-of-struct-value-old-to-new
-    (struct-value-new1p sval1)
-    :hyp (struct-value-oldp sval)
-    :hints (("Goal" :in-theory (enable struct-value-new1p))))
-  (defret struct-value-new2p-of-struct-value-old-to-new
-    (struct-value-new2p sval2)
-    :hyp (struct-value-oldp sval)
-    :hints (("Goal" :in-theory (enable struct-value-new2p)))))
+  (defruled value-struct-read-b-when-struct-value-newrp
+    (implies (and (struct-value-newrp sval)
+                  (equal member (c::ident "b")))
+             (equal (c::value-struct-read member sval)
+                    (struct-value-newr-b sval)))
+    :enable (struct-value-newrp
+             c::value-struct-read
+             c::value-struct-read-aux)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; equivalence of computation states
+
+; the computation states are the same except that
+; there is a global struct object that is split into two
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; mapping between old and new computation states
-
-(define compustate-oldp ((compst c::compustatep))
+(define struct-value-equivp ((old-val c::valuep)
+                             (newl-val c::valuep)
+                             (newr-val c::valuep))
   :returns (yes/no booleanp)
-  (b* (;; old struct value at gso:
-       (objdes (c::objdesign-of-var (c::ident "gso") compst))
-       ((unless objdes) nil)
-       ((unless (c::objdesign-case objdes :static)) nil)
-       (sval (c::read-object objdes compst))
-       ((unless (struct-value-oldp sval)) nil)
-       ;; no gso_0 (i.e. fresh name):
-       ((when (c::objdesign-of-var (c::ident "gso_0") compst)) nil))
-    t)
-  :guard-hints
-  (("Goal" :in-theory (enable c::valuep-of-read-object-of-objdesign-of-var))))
-
-(define compustate-newp ((compst c::compustatep))
-  :returns (yes/no booleanp)
-  (b* (;; new left struct at gso:
-       (objdes (c::objdesign-of-var (c::ident "gso") compst))
-       ((unless objdes) nil)
-       ((unless (c::objdesign-case objdes :static)) nil)
-       (sval (c::read-object objdes compst))
-       ((unless (struct-value-new1p sval)) nil)
-       ;; new right struct at gso_0:
-       (objdes (c::objdesign-of-var (c::ident "gso_0") compst))
-       ((unless objdes) nil)
-       ((unless (c::objdesign-case objdes :static)) nil)
-       (sval (c::read-object objdes compst))
-       ((unless (struct-value-new2p sval)) nil))
-    t)
-  :guard-hints
-  (("Goal" :in-theory (enable c::valuep-of-read-object-of-objdesign-of-var))))
-
-(define compustate-old-to-new ((compst c::compustatep))
-  :guard (compustate-oldp compst)
-  :returns (compst1 c::compustatep)
-  (b* ((static (c::compustate->static compst))
-       (sval (omap::lookup (c::ident "gso") static))
-       ((mv sval1 sval2) (struct-value-old-to-new sval))
-       (static (omap::delete (c::ident "gso") static))
-       (static (omap::update (c::ident "gso") sval1 static))
-       (static (omap::update (c::ident "gso_0") sval2 static)))
-    (c::change-compustate compst :static static))
-  :guard-hints (("Goal" :in-theory (enable compustate-oldp
-                                           c::objdesign-of-var
-                                           c::read-object
-                                           omap::lookup)))
-  ///
-  (defret compustate-newp-of-compustate-old-to-new
-    (compustate-newp compst1)
-    :hyp (compustate-oldp compst)
-    :hints (("Goal" :in-theory (enable compustate-oldp
-                                       compustate-newp
-                                       c::objdesign-of-var
-                                       c::top-frame
-                                       c::read-object
-                                       omap::lookup)))))
+  (and (struct-value-oldp old-val)
+       (struct-value-newlp newl-val)
+       (struct-value-newrp newr-val)
+       (equal (struct-value-old-a old-val)
+              (struct-value-newl-a newl-val))
+       (equal (struct-value-old-b old-val)
+              (struct-value-newr-b newr-val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define static-equivp ((old-static c::scopep)
+                       (new-static c::scopep))
+  :returns (yes/no booleanp)
+  (b* (((when (omap::emptyp (c::scope-fix old-static)))
+        (omap::emptyp (c::scope-fix new-static)))
+       ((mv var old-val) (omap::head old-static)))
+    (if (equal var (c::ident "gso"))
+        (b* ((newl-var (c::ident "gso"))
+             (newr-var (c::ident "gso_0"))
+             (newl-var+val (omap::assoc newl-var (c::scope-fix new-static)))
+             (newr-var+val (omap::assoc newr-var (c::scope-fix new-static)))
+             ((unless (and newl-var+val newr-var+val)) nil)
+             (newl-val (cdr newl-var+val))
+             (newr-val (cdr newr-var+val))
+             ((unless (struct-value-equivp old-val newl-val newr-val)) nil)
+             (old-static (omap::tail old-static))
+             (new-static (omap::delete newl-var (c::scope-fix new-static)))
+             (new-static (omap::delete newr-val (c::scope-fix new-static))))
+          (static-equivp old-static new-static))
+      (b* ((new-var+val (omap::assoc var (c::scope-fix new-static)))
+           ((unless new-var+val) nil)
+           (new-val (cdr new-var+val))
+           ((unless (equal old-val new-val)) nil)
+           (old-static (omap::tail old-static))
+           (new-static (omap::delete var (c::scope-fix new-static))))
+        (static-equivp old-static new-static))))
+
+  ///
+
+  (defruled struct-value-equivp-when-static-equivp
+    (b* ((old-var+val (omap::assoc (c::ident "gso") old-static))
+         (newl-var+val (omap::assoc (c::ident "gso") new-static))
+         (newr-var+val (omap::assoc (c::ident "gso_0") new-static)))
+      (implies (and (static-equivp old-static new-static)
+                    (c::scopep old-static)
+                    (c::scopep new-static)
+                    old-var+val)
+               (and newl-var+val
+                    newr-var+val
+                    (struct-value-equivp (cdr old-var+val)
+                                         (cdr newl-var+val)
+                                         (cdr newr-var+val)))))
+    :induct (static-equivp old-static new-static)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define compustate-equivp ((old-compst c::compustatep)
+                           (new-compst c::compustatep))
+  :returns (yes/no booleanp)
+  (and (static-equivp (c::compustate->static old-compst)
+                      (c::compustate->static new-compst))
+       (equal (c::compustate->frames old-compst)
+              (c::compustate->frames new-compst))
+       (equal (c::compustate->heap old-compst)
+              (c::compustate->heap new-compst))
+       (c::compustate-has-static-var-with-type-p (c::ident "gso")
+                                                 (c::type-struct
+                                                  (c::ident "s"))
+                                                 old-compst)
+       (c::compustate-has-static-var-with-type-p (c::ident "gso")
+                                                 (c::type-struct
+                                                  (c::ident "s"))
+                                                 new-compst)
+       (c::compustate-has-static-var-with-type-p (c::ident "gso_0")
+                                                 (c::type-struct
+                                                  (c::ident "s2"))
+                                                 new-compst))
+
+  ///
+
+  (defruled struct-value-equivp-when-compustate-equivp
+    (b* ((old-val
+          (c::read-object (c::objdesign-of-var (c::ident "gso") old-compst)
+                          old-compst))
+         (newl-val
+          (c::read-object (c::objdesign-of-var (c::ident "gso") new-compst)
+                          new-compst))
+         (newr-val
+          (c::read-object (c::objdesign-of-var (c::ident "gso_0") new-compst)
+                          new-compst)))
+      (implies (compustate-equivp old-compst new-compst)
+               (struct-value-equivp old-val newl-val newr-val)))
+    ;; TODO: try as rewrite rules
+    :use ((:instance c::read-object-when-compustate-has-static-var-with-type-p
+                     (var (c::ident "gso"))
+                     (type (c::type-struct (c::ident "s")))
+                     (compst old-compst))
+          (:instance c::read-object-when-compustate-has-static-var-with-type-p
+                     (var (c::ident "gso"))
+                     (type (c::type-struct (c::ident "s")))
+                     (compst new-compst))
+          (:instance c::read-object-when-compustate-has-static-var-with-type-p
+                     (var (c::ident "gso_0"))
+                     (type (c::type-struct (c::ident "s2")))
+                     (compst new-compst))
+          (:instance struct-value-equivp-when-static-equivp
+                     (old-static (c::compustate->static old-compst))
+                     (new-static (c::compustate->static new-compst))))
+    :enable c::assoc-static-when-compustate-has-static-var-with-type-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; equality of member accesses
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled exec-old-struct
+  (implies (and (compustate-equivp old-compst new-compst)
+                (equal expr (c::expr-ident (c::ident "gso")))
+                (not (zp limit)))
+           (equal (c::exec-expr expr old-compst old-fenv limit)
+                  (mv (c::expr-value
+                       (c::read-object (c::objdesign-of-var (c::ident "gso")
+                                                            old-compst)
+                                       old-compst)
+                       (c::objdesign-of-var (c::ident "gso") old-compst))
+                      (c::compustate-fix old-compst))))
+  :enable (c::exec-expr
+           c::exec-ident
+           compustate-equivp
+           c::objdesign-of-var-when-compustate-has-static-var-with-type-p))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled exec-newl-struct
+  (implies (and (compustate-equivp old-compst new-compst)
+                (equal expr (c::expr-ident (c::ident "gso")))
+                (not (zp limit)))
+           (equal (c::exec-expr expr new-compst new-fenv limit)
+                  (mv (c::expr-value
+                       (c::read-object (c::objdesign-of-var (c::ident "gso")
+                                                            new-compst)
+                                       new-compst)
+                       (c::objdesign-of-var (c::ident "gso") new-compst))
+                      (c::compustate-fix new-compst))))
+  :enable (c::exec-expr
+           c::exec-ident
+           compustate-equivp
+           c::objdesign-of-var-when-compustate-has-static-var-with-type-p))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled exec-newr-struct
+  (implies (and (compustate-equivp old-compst new-compst)
+                (equal expr (c::expr-ident (c::ident "gso_0")))
+                (not (zp limit)))
+           (equal (c::exec-expr expr new-compst new-fenv limit)
+                  (mv (c::expr-value
+                       (c::read-object (c::objdesign-of-var (c::ident "gso_0")
+                                                            new-compst)
+                                       new-compst)
+                       (c::objdesign-of-var (c::ident "gso_0") new-compst))
+                      (c::compustate-fix new-compst))))
+  :enable (c::exec-expr
+           c::exec-ident
+           compustate-equivp
+           c::objdesign-of-var-when-compustate-has-static-var-with-type-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled exec-member-a
+  (b* ((old-expr (c::expr-member (c::expr-ident (c::ident "gso"))
+                                 (c::ident "a")))
+       (new-expr (c::expr-member (c::expr-ident (c::ident "gso"))
+                                 (c::ident "a")))
+       ((mv old-eval old-compst1)
+        (c::exec-expr old-expr old-compst old-fenv limit))
+       ((mv new-eval new-compst1)
+        (c::exec-expr new-expr new-compst new-fenv limit))
+       (old-val (c::expr-value->value old-eval))
+       (new-val (c::expr-value->value new-eval)))
+    (implies (and (compustate-equivp old-compst new-compst)
+                  (integerp limit)
+                  (>= limit 2))
+             (and (not (c::errorp old-eval))
+                  (not (c::errorp new-eval))
+                  old-eval
+                  new-eval
+                  (equal old-val new-val)
+                  (equal old-compst1 (c::compustate-fix old-compst))
+                  (equal new-compst1 (c::compustate-fix new-compst)))))
+  :use struct-value-equivp-when-compustate-equivp
+  :expand ((c::exec-expr '(:member
+                           (:ident (:ident (c::name . "gso")))
+                           (:ident (c::name . "a")))
+                         old-compst old-fenv limit)
+           (c::exec-expr '(:member (:ident (:ident (c::name . "gso")))
+                           (:ident (c::name . "a")))
+                         new-compst new-fenv limit))
+  :enable (exec-old-struct
+           exec-newl-struct
+           c::not-errorp-when-expr-valuep
+           c::not-errorp-when-valuep
+           c::exec-member
+           c::apconvert-expr-value
+           struct-value-equivp
+           value-kind-when-struct-value-oldp
+           value-kind-when-struct-value-newlp
+           value-struct-read-a-when-struct-value-oldp
+           value-struct-read-a-when-struct-value-newlp))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled exec-member-b
+  (b* ((old-expr (c::expr-member (c::expr-ident (c::ident "gso"))
+                                 (c::ident "b")))
+       (new-expr (c::expr-member (c::expr-ident (c::ident "gso_0"))
+                                 (c::ident "b")))
+       ((mv old-eval old-compst1)
+        (c::exec-expr old-expr old-compst old-fenv limit))
+       ((mv new-eval new-compst1)
+        (c::exec-expr new-expr new-compst new-fenv limit))
+       (old-val (c::expr-value->value old-eval))
+       (new-val (c::expr-value->value new-eval)))
+    (implies (and (compustate-equivp old-compst new-compst)
+                  (integerp limit)
+                  (>= limit 2))
+             (and (not (c::errorp old-eval))
+                  (not (c::errorp new-eval))
+                  old-eval
+                  new-eval
+                  (equal old-val new-val)
+                  (equal old-compst1 (c::compustate-fix old-compst))
+                  (equal new-compst1 (c::compustate-fix new-compst)))))
+  :use struct-value-equivp-when-compustate-equivp
+  :expand ((c::exec-expr '(:member
+                           (:ident (:ident (c::name . "gso")))
+                           (:ident (c::name . "b")))
+                         old-compst old-fenv limit)
+           (c::exec-expr '(:member (:ident (:ident (c::name . "gso_0")))
+                           (:ident (c::name . "b")))
+                         new-compst new-fenv limit))
+  :enable (exec-old-struct
+           exec-newr-struct
+           c::not-errorp-when-expr-valuep
+           c::not-errorp-when-valuep
+           c::exec-member
+           c::apconvert-expr-value
+           struct-value-equivp
+           value-kind-when-struct-value-oldp
+           value-kind-when-struct-value-newrp
+           value-struct-read-b-when-struct-value-oldp
+           value-struct-read-b-when-struct-value-newrp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; TODO: continue

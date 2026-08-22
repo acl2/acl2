@@ -1099,3 +1099,96 @@
                                                       :dval 2
                                                       :sval nil
                                                       :fval *add-fun*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The polymorphic operation fold:
+; instantiation stage transitions and storage of
+; the function and initial values.
+; The application of the final stage executes Remora code,
+; so it is tested with the evaluator (see evaluation-tests.lisp).
+
+(acl2::assert-equal
+ (eval-primop-tfun (primop-value-fold) *tv-int*)
+ (expr-value-primop (primop-value-fold-t *tv-int*)))
+
+(acl2::assert-equal
+ (eval-primop-tfun (primop-value-fold-t *tv-int*) *tv-int*)
+ (expr-value-primop (make-primop-value-fold-t-t2 :tval *tv-int*
+                                                 :t2val *tv-int*)))
+
+(acl2::assert-event
+ (reserrp (eval-primop-tfun (primop-value-fold)
+                            (make-type-value-array :elem *tv-int*
+                                                   :dims (list 3)))))
+
+(acl2::assert-equal
+ (eval-primop-ifun (make-primop-value-fold-t-t2 :tval *tv-int*
+                                                :t2val *tv-int*)
+                   (ispace-value-dim 2))
+ (expr-value-primop (make-primop-value-fold-t-t2-d :tval *tv-int*
+                                                   :t2val *tv-int*
+                                                   :dval 2)))
+
+(acl2::assert-equal
+ (eval-primop-ifun (make-primop-value-fold-t-t2-d :tval *tv-int*
+                                                  :t2val *tv-int*
+                                                  :dval 2)
+                   (ispace-value-shape nil))
+ (expr-value-primop (make-primop-value-fold-t-t2-d-s :tval *tv-int*
+                                                     :t2val *tv-int*
+                                                     :dval 2
+                                                     :sval nil)))
+
+(acl2::assert-equal
+ (eval-primop-ifun (make-primop-value-fold-t-t2-d-s :tval *tv-int*
+                                                    :t2val *tv-int*
+                                                    :dval 2
+                                                    :sval nil)
+                   (ispace-value-shape nil))
+ (expr-value-primop (make-primop-value-fold-t-t2-d-s-s2 :tval *tv-int*
+                                                        :t2val *tv-int*
+                                                        :dval 2
+                                                        :sval nil
+                                                        :s2val nil)))
+
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (make-primop-value-fold-t-t2 :tval *tv-int*
+                                                         :t2val *tv-int*)
+                            (ispace-value-shape nil))))
+
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (make-primop-value-fold-t-t2-d :tval *tv-int*
+                                                           :t2val *tv-int*
+                                                           :dval 2)
+                            (ispace-value-dim 3))))
+
+(acl2::assert-equal
+ (eval-primop-fun-fo (make-primop-value-fold-t-t2-d-s-s2 :tval *tv-int*
+                                                         :t2val *tv-int*
+                                                         :dval 2
+                                                         :sval nil
+                                                         :s2val nil)
+                     *add-fun*)
+ (expr-value-primop (make-primop-value-fold-t-t2-d-s-s2-f :tval *tv-int*
+                                                          :t2val *tv-int*
+                                                          :dval 2
+                                                          :sval nil
+                                                          :s2val nil
+                                                          :fval *add-fun*)))
+
+(acl2::assert-equal
+ (eval-primop-fun-fo (make-primop-value-fold-t-t2-d-s-s2-f :tval *tv-int*
+                                                           :t2val *tv-int*
+                                                           :dval 2
+                                                           :sval nil
+                                                           :s2val nil
+                                                           :fval *add-fun*)
+                     (iv 10))
+ (expr-value-primop (make-primop-value-fold-t-t2-d-s-s2-f-z :tval *tv-int*
+                                                            :t2val *tv-int*
+                                                            :dval 2
+                                                            :sval nil
+                                                            :s2val nil
+                                                            :fval *add-fun*
+                                                            :zval (iv 10))))
