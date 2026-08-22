@@ -39,7 +39,7 @@
    (xdoc::p
     "The static semantics of Remora involves
      the equivalence of types, which involves the equivalence of ispaces.
-     The latter is discussed in @(see ispace-equivalence).")
+     The latter is discussed in @(see ispace-equivalence-checker).")
    (xdoc::p
     "Like for ispace equivalence,
      we are defining a high-level notion of type equivalence

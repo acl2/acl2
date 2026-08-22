@@ -32,7 +32,7 @@
      that is meant to be equivalent to those inference rules;
      we plan to prove this equivalence."))
   :order-subtopics (static-environments
-                    ispace-equivalence
+                    ispace-equivalence-checker
                     type-equivalence-checker
                     type-checker
                     ispace-equivalence-inference-rules
