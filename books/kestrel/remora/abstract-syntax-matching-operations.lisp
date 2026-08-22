@@ -189,6 +189,7 @@
        ((unless (type-case type :pin)) (reserr nil))
        (params (type-pin->params type))
        (body (type-pin->body type))
+       ;; TODO: remove the following check once the AST invariant is in
        ((unless (>= (len params) 2)) (reserr nil)))
     (make-ispacevar+type
      :var (car params)
