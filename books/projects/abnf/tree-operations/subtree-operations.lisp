@@ -228,7 +228,15 @@
   :guard (tree-path-list-validp x tree)
   :returns (subs tree-listp)
   :short "Lift @(tsee tree-at-path) to lists."
-  (tree-at-path x tree))
+  (tree-at-path x tree)
+
+  ///
+
+  (defrule tree-list-terminatedp-of-tree-list-at-path-list
+    (implies (and (tree-path-list-validp x tree)
+                  (tree-terminatedp tree))
+             (tree-list-terminatedp (tree-list-at-path-list x tree)))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
