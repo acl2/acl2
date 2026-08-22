@@ -17816,6 +17816,39 @@
         (and info
              (access certify-book-info info :full-book-name)))))
 
+(defun set-call-depth-overflow-advice-fn (str state)
+  (declare (xargs :mode :program))
+  (let ((book-name (active-book-name (w state) state)))
+    (cond
+     ((not (stringp str))
+      (er soft 'set-call-depth-overflow-advice
+          "The argument to set-call-depth-overflow-advice must be ~
+           a string and ~x0 is not."
+          str))
+     ((or (stringp book-name)
+          (sysfile-p book-name))
+      (value `(table call-depth-overflow-advice
+                     ',book-name
+                     ',str)))
+     (t (pprogn (warning$ 'set-call-depth-overflow-advice
+                          "set-call-depth-overflow-advice ignored"
+                          "Set-call-depth-overflow-advice has been ~
+                           encountered when there is no active book name ~
+                           being certified or included.  Thus, ~X01 is being ~
+                           ignored."
+                          `(set-call-depth-overflow-advice ,str)
+                          nil)
+                (value '(value-triple nil)))))))
+
+(defmacro set-call-depth-overflow-advice (str)
+  `(with-output
+     :off :all
+     :stack :push
+     (make-event
+      (with-output
+        :stack :pop
+        (set-call-depth-overflow-advice-fn ',str state)))))
+
 (defrec deferred-ttag-note
 
 ; Val is a keyword.  Active-book-name is a full-book-name.  Include-bookp is
