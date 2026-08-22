@@ -1527,13 +1527,8 @@
                   ((ok &) (type-option-case
                            bind.type?
                            :some (eval-type
-                                  (if (endp (cdr bind.params))
-                                      (make-type-pi
-                                       :param (car bind.params)
-                                       :body bind.type?.val)
-                                    (make-type-pin
-                                     :params bind.params
-                                     :body bind.type?.val))
+                                  (make-type-pi/pin bind.params
+                                                    bind.type?.val)
                                   (expr-denv->tenv denv))
                            :none nil)))
                (expr-denv-add-expr bind.var val denv))
@@ -1574,11 +1569,7 @@
                                       (make-atom-ilambdan
                                        :params iparams
                                        :body cfun-expr))))
-                           (if (endp (cdr iparams))
-                               (make-type-pi :param (car iparams)
-                                             :body cfun-type)
-                             (make-type-pin :params iparams
-                                            :body cfun-type)))
+                           (make-type-pi/pin iparams cfun-type))
                      (mv cfun-expr cfun-type)))
                   ((mv cfun-expr cfun-type)
                    (if (consp tparams)

@@ -1101,6 +1101,7 @@
                                                               dim-all
                                                               shape-all)))))
   :enable (pi-curried-body
+           make-type-pi/pin
            mergesort-when-singleton)
   :use ((:instance dim/shape-rename-remove-bound-of-insert-then-rest
                    (var (car params))
@@ -1930,7 +1931,8 @@
                                    (type-rename-type-vars body
                                                           atom-renam
                                                           array-renam))))
-  :enable pi-curried-body)
+  :enable (pi-curried-body
+           make-type-pi/pin))
 
 (defrule type-rename-type-vars-of-sigma-curried-body
   (implies (and (ispace-var-listp params)

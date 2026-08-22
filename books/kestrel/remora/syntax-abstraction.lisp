@@ -1386,9 +1386,7 @@
          ((okf body) (abs-type body-tree))
          ((unless (consp params))
           (reserrf (list :type-pi-no-params body))))
-      (if (endp (cdr params))
-          (make-type-pi :param (car params) :body body)
-        (make-type-pin :params params :body body)))
+      (make-type-pi/pin params body))
     :measure (abnf::tree-count tree))
 
   ;; sigma-type = ( "Sigma" / %x03A3 ) ws "(" *( ws ispace-var ) ws ")"
