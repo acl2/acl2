@@ -373,24 +373,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This lemma supports the guard verification of
-; the predicates below that use lists of adjacent paths.
-; It is a general fact about ABNF trees,
-; which should eventually be moved to the ABNF library.
-
-(local
- (acl2::defrule tree-list-terminatedp-of-tree-list-at-path-list
-   (implies (and (abnf::tree-path-list-validp paths cst)
-                 (abnf::tree-terminatedp cst))
-            (abnf::tree-list-terminatedp
-             (abnf::tree-list-at-path-list paths cst)))
-   :induct t
-   :enable (abnf::tree-list-at-path-list
-            abnf::tree-path-list-validp
-            abnf::tree-list-terminatedp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define-sk cst-longest-decimals-p ((cst abnf::treep))
   :guard (abnf::tree-terminatedp cst)
   :returns (yes/no booleanp)
