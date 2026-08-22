@@ -840,7 +840,15 @@
                                   :info nil)))
     (make-declon-declon :extension nil
                         :specs declspecs
-                        :declors (list ideclor))))
+                        :declors (list ideclor)))
+
+  ///
+
+  (defrule ldm-declon-fun-of-ildm-fun-declon
+    (equal (ldm-declon-fun (ildm-fun-declon declon))
+           (mv nil (c::fun-declon-dec0-to-oct0 declon)))
+    :enable (ldm-declon-fun
+             c::fun-declon-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -860,7 +868,17 @@
         (t (cons (make-desiniter
                   :designors nil
                   :initer (initer-single (ildm-expr (car exprs))))
-                 (ildm-desiniter-list (cdr exprs))))))
+                 (ildm-desiniter-list (cdr exprs)))))
+
+  ///
+
+  (defrule ldm-desiniter-list-of-ildm-desiniter-list
+    (equal (ldm-desiniter-list (ildm-desiniter-list exprs))
+           (mv nil (c::expr-list-dec0-to-oct0 exprs)))
+    :induct t
+    :enable (ldm-desiniter-list
+             ldm-desiniter
+             c::expr-list-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -873,7 +891,15 @@
    :single (initer-single (ildm-expr initer.get))
    :list (make-initer-list
           :elems (ildm-desiniter-list initer.get)
-          :final-comma nil)))
+          :final-comma nil))
+
+  ///
+
+  (defrule ldm-initer-of-ildm-initer
+    (equal (ldm-initer (ildm-initer initer))
+           (mv nil (c::initer-dec0-to-oct0 initer)))
+    :enable (ldm-initer
+             c::initer-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
