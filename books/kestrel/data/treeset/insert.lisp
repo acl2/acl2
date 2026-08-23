@@ -20,6 +20,7 @@
 (include-book "kestrel/data/utilities/total-order/min-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/max-defs" :dir :system)
 
+(include-book "internal/from-oset-defs")
 (include-book "internal/insert-defs")
 (include-book "hash-defs")
 (include-book "set-defs")
@@ -52,6 +53,7 @@
 (local (include-book "internal/bst"))
 (local (include-book "internal/heap-order"))
 (local (include-book "internal/heap"))
+(local (include-book "internal/from-oset"))
 (local (include-book "internal/insert"))
 (local (include-book "internal/in-order"))
 (local (include-book "hash"))
@@ -523,6 +525,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; The oset's elements arrive in strictly ascending order, so the treap may
+;; be built directly in linear time (see internal/from-oset.lisp), instead
+;; of via repeated insertion.
+
+(defruledl in-of-tree-from-oset
+  (equal (in x (tree-from-oset oset))
+         (set::in x oset))
+  :enable (in$inline
+           fix$inline
+           setp))
+
+(defruledl from-list-of-sfix-becomes-tree-from-oset
+  (equal (from-list (set::sfix oset))
+         (tree-from-oset oset))
+  :enable (extensionality
+           in-of-tree-from-oset
+           in-when-emptyp
+           setp
+           set::in-to-member
+           set::sfix
+           (:e emptyp$inline)))
+
 (define from-oset ((oset set::setp))
   (declare (xargs :type-prescription :none))
   :parents (insert)
@@ -530,12 +554,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-     "Time complexity: @($O(n\\log(n))$).")
+     "Time complexity: @($O(n)$).")
    (xdoc::p
      "This is the inverse of @(tsee to-oset). See @(tsee to-oset) for more
       information."))
   :returns (set setp)
-  (from-list (set::sfix oset)))
+  (mbe :logic (from-list (set::sfix oset))
+       :exec (tree-from-oset oset))
+  :guard-hints
+  (("Goal" :in-theory (enable from-list-of-sfix-becomes-tree-from-oset))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
