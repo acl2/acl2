@@ -363,3 +363,93 @@
   :enable (omap::equal-becomes-ext-equal-when-mapp
            omap::ext-equal
            omap::assoc-of-restrict))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tree-omap ((tree treep))
+  :returns (omap omap::mapp)
+  :verify-guards :after-returns
+  :parents (implementation)
+  :short "The entries of a tree, as an omap."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "Built with omap primitives, so the result is an @(tsee omap::mapp)
+      structurally, for any tree at all. Over a binary search tree this agrees
+      with @(tsee tree-in-order), which builds the same omap in @($O(n)$) by
+      reading the entries off in order; see
+      @('tree-omap-becomes-tree-in-order'). This function is the logical form:
+      definitions phrased over it face the mature omap theory rather than
+      facts about alists.")
+   (xdoc::p
+     "The head's binding is applied outermost, and so wins over both subtrees.
+      Over a search tree no key repeats, so the precedence is not observable;
+      it only settles what the fold means on a malformed tree. This mirrors
+      @(tsee tree-key-set), which inserts the head's key over the union of the
+      two subtrees' key sets."))
+  (if (tree-empty-p tree)
+      nil
+    (omap::update (tree-element->key (tree->head tree))
+                  (tree-element->val (tree->head tree))
+                  (omap::update* (tree-omap (tree->left tree))
+                                 (tree-omap (tree->right tree))))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t tree-omap) (:e tree-omap)))
+
+(defrule tree-omap-when-tree-equiv-congruence
+  (implies (tree-equiv tree0 tree1)
+           (equal (tree-omap tree0)
+                  (tree-omap tree1)))
+  :rule-classes :congruence
+  :expand ((tree-omap tree0)
+           (tree-omap tree1)))
+
+;; A key is bound exactly when it is a key of the tree, with no hypothesis:
+;; the fold binds exactly the keys of the tree, ordered or not. This is the
+;; mirror of `in-of-tree-oset' in TREESET, and holds for the same reason --
+;; both folds put the head over the two subtrees.
+;;
+;; The two sides live in different set representations: `omap::keys' yields an
+;; oset, while `tree-key-set' is a treeset. So the fact is stated as
+;; membership rather than as an equality of sets, which is also the form
+;; `in-of-tree-oset' takes.
+
+(defrule assoc-of-tree-omap-under-iff
+  (iff (omap::assoc key (tree-omap tree))
+       (treeset::in key (tree-key-set tree)))
+  :induct t
+  :enable tree-omap)
+
+(defrule omap-emptyp-of-tree-omap
+  (equal (omap::emptyp (tree-omap tree))
+         (tree-empty-p tree))
+  :expand ((tree-omap tree)))
+
+;; Over a search tree the fold binds each of its keys to the tree's lookup,
+;; the same characterization `assoc-of-tree-in-order-when-bstp' gives the
+;; alist builder. The hypothesis is needed for the values, not the keys: it is
+;; what rules out a key appearing in both subtrees, where the fold's
+;; precedence and the lookup's descent could disagree.
+
+(defrule assoc-of-tree-omap-when-bstp
+  (implies (bstp tree)
+           (equal (omap::assoc key (tree-omap tree))
+                  (if (treeset::in key (tree-key-set tree))
+                      (cons key (tree-lookup key tree))
+                    nil)))
+  :induct t
+  :enable tree-omap)
+
+;;;;;;;;;;;;;;;;;;;;
+
+;; Over a binary search tree the two builders agree exactly: both produce
+;; omaps, and they bind the same keys to the same values.
+
+(defruled tree-omap-becomes-tree-in-order
+  (implies (bstp tree)
+           (equal (tree-omap tree)
+                  (tree-in-order tree)))
+  :enable (omap::equal-becomes-ext-equal-when-mapp
+           omap::ext-equal))
