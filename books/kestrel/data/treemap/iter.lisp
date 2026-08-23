@@ -22,10 +22,12 @@
 (include-book "update-defs")
 (include-book "delete-defs")
 (include-book "size-defs")
+(include-book "submap-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
+(local (include-book "submap"))
 (local (include-book "kestrel/data/utilities/omap" :dir :system))
 (local (include-book "std/omaps/extensionality" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
@@ -643,6 +645,34 @@
            (:e empty)
            (:e tree-omap)))
 
+;; And dually, the side away from the end an iterator sits at is everything:
+;; a rewound iterator has the whole map ahead of it, an exhausted one has the
+;; whole map behind it.
+
+(defrule after-when-before-firstp
+  (implies (before-firstp iter)
+           (equal (after iter)
+                  (from-iter iter)))
+  :use (:instance tree-iter-tree-after-becomes-from-omap
+                  (iter (iter-fix iter)))
+  :enable (after
+           from-iter
+           before-firstp
+           tree-iter-tree-after
+           mapp-of-tree-iter-plug-of-iter-fix))
+
+(defrule before-when-after-lastp
+  (implies (after-lastp iter)
+           (equal (before iter)
+                  (from-iter iter)))
+  :use (:instance tree-iter-tree-before-becomes-from-omap
+                  (iter (iter-fix iter)))
+  :enable (before
+           from-iter
+           after-lastp
+           tree-iter-tree-before
+           mapp-of-tree-iter-plug-of-iter-fix))
+
 ;; At the constructors the same holds with no hypothesis, including over the
 ;; empty @(see treemap), where the iterator lands on the far end and the side
 ;; in question is empty for the other reason.
@@ -1021,11 +1051,52 @@
             tree-iter-plug-when-tree-iter-has-value-p
             tree-iter-plug-when-zipp))
 
-(defrule lookup-of-from-iter-when-in-of-keys-of-before
+;; Either slice sits inside the whole, so a key found in one is a key of the
+;; map the iterator walks. This is the membership half of the two bridges
+;; above, and unlike them it needs no disjointness: a key found in one slice of
+;; the append is a key of the append whichever slice it came from. The lookups
+;; below need it to discharge the `:default' argument, which falls away only
+;; where the key is known to be present.
+
+(defrulel in-of-tree-key-set-of-tree-iter-plug-when-assoc-equal-of-tree-iter-before
+  (implies (and (iterp iter)
+                (has-valuep iter)
+                (assoc-equal key (tree-iter-before iter)))
+           (treeset::in key (tree-key-set (tree-iter-plug iter))))
+  :use ((:instance assoc-equal-of-tree-in-order-when-bstp
+                   (tree (tree-iter-plug iter))))
+  :enable (tree-in-order-of-tree-iter-plug-becomes-append
+           acl2::assoc-equal-of-append
+           mapp-of-tree-iter-plug-when-iterp-forward-chaining
+           bstp-when-mapp-forward-chaining)
+  :disable (assoc-equal-of-tree-in-order-when-bstp
+            append-of-tree-iter-before-and-tree-iter-after-when-has-value
+            append-of-tree-iter-before-and-tree-iter-after-when-no-value
+            tree-iter-plug-when-tree-iter-has-value-p
+            tree-iter-plug-when-zipp))
+
+(defrulel in-of-tree-key-set-of-tree-iter-plug-when-assoc-equal-of-tree-iter-after
+  (implies (and (iterp iter)
+                (has-valuep iter)
+                (assoc-equal key (tree-iter-after iter)))
+           (treeset::in key (tree-key-set (tree-iter-plug iter))))
+  :use ((:instance assoc-equal-of-tree-in-order-when-bstp
+                   (tree (tree-iter-plug iter))))
+  :enable (tree-in-order-of-tree-iter-plug-becomes-append
+           acl2::assoc-equal-of-append
+           mapp-of-tree-iter-plug-when-iterp-forward-chaining
+           bstp-when-mapp-forward-chaining)
+  :disable (assoc-equal-of-tree-in-order-when-bstp
+            append-of-tree-iter-before-and-tree-iter-after-when-has-value
+            append-of-tree-iter-before-and-tree-iter-after-when-no-value
+            tree-iter-plug-when-tree-iter-has-value-p
+            tree-iter-plug-when-zipp))
+
+(defrulel lookup-of-from-iter-when-in-of-keys-of-before
   (implies (and (has-valuep iter)
                 (treeset::in key (keys (before iter))))
-           (equal (lookup key (from-iter iter))
-                  (lookup key (before iter))))
+           (equal (lookup key (from-iter iter) :default default)
+                  (lookup key (before iter) :default default)))
   :enable (from-iter
            lookup
            keys
@@ -1034,16 +1105,18 @@
            bstp-of-tree-iter-plug-of-iter-fix)
   :use ((:instance assoc-equal-of-tree-iter-before-becomes-tree-lookup
                    (iter (iter-fix iter)))
+        (:instance in-of-tree-key-set-of-tree-iter-plug-when-assoc-equal-of-tree-iter-before
+                   (iter (iter-fix iter)))
         (:instance in-of-keys-of-before-becomes-assoc-equal
                    (x key)))
   :disable (assoc-equal-of-tree-iter-before-becomes-tree-lookup
             in-of-keys-of-before-becomes-assoc-equal))
 
-(defrule lookup-of-from-iter-when-in-of-keys-of-after
+(defrulel lookup-of-from-iter-when-in-of-keys-of-after
   (implies (and (has-valuep iter)
                 (treeset::in key (keys (after iter))))
-           (equal (lookup key (from-iter iter))
-                  (lookup key (after iter))))
+           (equal (lookup key (from-iter iter) :default default)
+                  (lookup key (after iter) :default default)))
   :enable (from-iter
            lookup
            keys
@@ -1052,10 +1125,84 @@
            bstp-of-tree-iter-plug-of-iter-fix)
   :use ((:instance assoc-equal-of-tree-iter-after-becomes-tree-lookup
                    (iter (iter-fix iter)))
+        (:instance in-of-tree-key-set-of-tree-iter-plug-when-assoc-equal-of-tree-iter-after
+                   (iter (iter-fix iter)))
         (:instance in-of-keys-of-after-becomes-assoc-equal
                    (x key)))
   :disable (assoc-equal-of-tree-iter-after-becomes-tree-lookup
             in-of-keys-of-after-becomes-assoc-equal))
+
+;; Which is to say: each side is a submap of the map the iterator walks. That
+;; is the statement worth exporting -- it needs no hypothesis, and the library
+;; already draws the lookup and key-set consequences from it.
+
+(defrule submap-of-before-and-from-iter
+  (submap (before iter) (from-iter iter))
+  ;; Three positions, three reasons: at an element the pointwise lemma above
+  ;; applies; at the near end the side is empty, so the obligation is vacuous;
+  ;; at the far end the side is the whole map, so it is reflexivity.
+  :cases ((before-firstp iter) (after-lastp iter))
+  :enable (submap-becomes-submap-sk
+           submap-sk
+           before-when-before-firstp
+           after-when-after-lastp
+           after-when-before-firstp
+           before-when-after-lastp
+           submap-reflexivity
+           has-valuep-when-neither-end))
+
+(defrule submap-of-after-and-from-iter
+  (submap (after iter) (from-iter iter))
+  ;; Three positions, three reasons: at an element the pointwise lemma above
+  ;; applies; at the near end the side is empty, so the obligation is vacuous;
+  ;; at the far end the side is the whole map, so it is reflexivity.
+  :cases ((before-firstp iter) (after-lastp iter))
+  :enable (submap-becomes-submap-sk
+           submap-sk
+           before-when-before-firstp
+           after-when-after-lastp
+           after-when-before-firstp
+           before-when-after-lastp
+           submap-reflexivity
+           has-valuep-when-neither-end))
+
+;; And at the entry itself the lookup is that entry's own value. The default is
+;; immaterial here -- the entry-key is a key of the map, so nothing falls back
+;; to it -- but stating it with one anyway is what lets the rule fire against
+;; goals that carry a default, as the `submap' obligations above do.
+
+(defrule lookup-of-entry-key-and-from-iter
+  (implies (has-valuep iter)
+           (equal (lookup (entry-key iter) (from-iter iter) :default default)
+                  (entry-val iter)))
+  ;; The entry-key is absent from the earlier slice, so the append lands on the
+  ;; entry itself rather than on anything behind it.
+  :use ((:instance assoc-equal-of-tree-in-order-when-bstp
+                   (key (entry-key iter))
+                   (tree (tree-iter-plug (iter-fix iter))))
+        not-in-of-keys-of-entry-key-and-before
+        ;; Fed in rather than enabled: `keys' is unfolded below, leaving the
+        ;; term in a form this rule no longer matches.
+        (:instance in-of-keys-of-before-becomes-assoc-equal
+                   (x (entry-key iter))))
+  :enable (from-iter
+           lookup
+           keys
+           entry-key
+           entry-val
+           has-valuep
+           tree-in-order-of-tree-iter-plug-becomes-append
+           acl2::assoc-equal-of-append
+           bstp-of-tree-iter-plug-of-iter-fix
+           mapp-of-tree-iter-plug-when-iterp-forward-chaining
+           bstp-when-mapp-forward-chaining)
+  :disable (assoc-equal-of-tree-in-order-when-bstp
+            not-in-of-keys-of-entry-key-and-before
+            in-of-keys-of-before-becomes-assoc-equal
+            append-of-tree-iter-before-and-tree-iter-after-when-has-value
+            append-of-tree-iter-before-and-tree-iter-after-when-no-value
+            tree-iter-plug-when-tree-iter-has-value-p
+            tree-iter-plug-when-zipp))
 
 ;; The same split at the public layer: the two sides and the entry-key account for
 ;; the set, and since the sides exclude the entry-key they do so without overlap.
@@ -1330,6 +1477,26 @@
         (:instance treeset::in-when-emptyp
                    (treeset::x (car (car (tree-iter-after (iter-fix iter)))))
                    (treeset::set (keys (after iter))))))
+
+;; And the value it lands on, likewise. @(tsee min-val) is a lookup in the side
+;; map, while the value law above reads the same entry out of the whole map;
+;; `submap-of-after-and-from-iter' is what identifies the two.
+
+(defrule entry-val-of-next
+  (implies (has-valuep (next iter))
+           (equal (entry-val (next iter))
+                  (min-val (after iter))))
+  :use ((:instance lookup-of-entry-key-and-from-iter
+                   (iter (next iter))
+                   (default nil))
+        (:instance lookup-when-in-of-keys-and-submap
+                   (key (min-key (after iter)))
+                   (x (after iter))
+                   (y (from-iter iter))
+                   (default nil)))
+  :enable (treeset::in-of-min
+           emptyp-of-keys)
+  :disable lookup-of-entry-key-and-from-iter)
 
 
 ;; The step law again, phrased on the position stepped from rather than the
