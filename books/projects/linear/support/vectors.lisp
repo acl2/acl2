@@ -71,7 +71,7 @@
   (defthmd posp-vdim
     (posp (vdim)))
   (in-theory (disable (vdim) (vlistnp) (vcomb)))
-  (defthm vlistnp-basis
+  (defthm vlistnp-basis0
     (vlistnp (vbasis0) (vdim)))
   (defthm flistnp-vcoords0
     (implies (vp x) (flistnp (vcoords0 x) (vdim))))
@@ -104,6 +104,18 @@
   (implies (fp c) (equal (v* c (v0)) (v0)))
   :hints (("Goal" :use ((:instance vdistv (x (v0)) (y (v0)))
 			(:instance v+assoc (x (v- (v* c (v0)))) (y (v* c (v0))) (z (v* c (v0))))))))
+
+(defthmd v-unique
+  (implies (and (vp x) (vp y) (equal (v+ x y) (v0)))
+           (equal (v- x) y))
+  :hints (("Goal" :use ((:instance v+assoc (x (v- x)) (y x) (z y))))))
+
+(defthmd v*f-f1
+  (implies (vp x)
+           (equal (v* (f- (f1)) x)
+	          (v- x)))
+  :hints (("Goal" :use ((:instance v-unique (y (v* (f- (f1)) x)))
+                        (:instance vdistf (c (f1)) (d (f- (f1))))))))
 
 (defthm vp-vcomb
   (implies (and (flistnp c n) (vlistnp l n))
@@ -149,6 +161,14 @@
   :hints (("Subgoal *1/5" :use ((:instance v*assoc (d (car x)) (x (car l)))
 				(:instance vdistv (x (v* (car x) (car l))) (y (VCOMB (CDR X) (CDR L))))))))
 
+(defthmd vcomb-append
+  (implies (and (flistnp c n) (flistnp d m)
+                (vlistnp x n) (vlistnp y m)
+		(natp n) (natp m))
+	   (equal (vcomb (append c d) (append x y))
+	          (v+ (vcomb c x) (vcomb d y))))
+  :hints (("Subgoal *1/6" :use ((:instance v+assoc (x (V* (CAR C) (CAR X))) (y (VCOMB (CDR C) (CDR X))) (z (VCOMB D Y)))))))
+
 ;; The list of coordinates of a vector is unique:
 
 (local-defthmd vcoords0-unique-1
@@ -165,7 +185,7 @@
 	   (equal (flist-add x (flist-scalar-mul (f- (f1)) y))
 		  (flistn0 (vdim))))
   :hints (("Goal" :in-theory (enable vdim)
-                  :use (vlistnp-basis
+                  :use (vlistnp-basis0
 		        (:instance vcoords0-unique-1 (n (vdim)) (l (vbasis0)))
                         (:instance vbasis0-lin-indep (c (flist-add x (flist-scalar-mul (f- (f1)) y))))))))
 
@@ -430,8 +450,9 @@
 ;; This formula is the basis of our definition of linear independence:
 
 (defund vindepp (l)
-  (equal (row-rank (vcoord-mat l))
-         (len l)))
+  (or (null l)
+      (equal (row-rank (vcoord-mat l))
+             (len l))))
 
 (defund vdepp (l)
   (not (vindepp l)))
@@ -817,7 +838,7 @@
                         (:instance vindepp-vcomb-v0-8 (p (row-reduce-mat (vcoord-mat l))))))))
 
 (defthm vindepp-vcomb-v0
-  (implies (and (posp m)
+  (implies (and (natp m)
 		(vlistnp l m)
 		(vindepp l)
 		(flistnp c m)
@@ -836,7 +857,7 @@
 	          (nth j l))))
 
 (defthm nth-vindepp-not-v0
-  (implies (and (posp m)
+  (implies (and (natp m)
 		(vlistnp l m)
 		(vindepp l)
 		(natp j)
@@ -857,16 +878,45 @@
                         (:instance nth-vindepp-not-v0 (j (index (v0) l)))
                         (:instance ind<len (x (v0)))))))
 
+;; A list of length 1 is linearly dependent iff its member is v0:
+
+(local-defthmd vdepp-v0-1
+  (implies (and (vp x) (flistnp c 1) (equal (vcomb c (list x)) (v0)) (not (equal c (flistn0 1))))
+           (and (fp (car c))
+	        (not (equal (car c) (f0)))
+	        (equal (v* (car c) x) (v0)))))
+
+(local-defthmd vdepp-v0-2
+  (implies (and (vp x) (flistnp c 1) (equal (vcomb c (list x)) (v0)) (not (equal c (flistn0 1))))
+           (and (fp (car c))
+	        (not (equal (car c) (f0)))
+	        (equal (v0) x)))
+  :hints (("Goal" :use (vdepp-v0-1 (:instance v*assoc (c (f/ (car c))) (d (car c)))))))
+
+(local-defthmd vdepp-v0-3
+  (implies (and (vp x) (vdepp (list x)))
+           (equal (v0) x))
+  :hints (("Goal" :use ((:instance vdepp-vcomb-v0 (m 1) (l (list x)))
+                        (:instance vdepp-v0-2 (c (vdep-coeffs (list x))))))))
+
+(defthmd vdepp-v0
+  (implies (vp x)
+           (iff (vdepp (list x))
+                (equal (v0) x)))
+  :hints (("Goal" :in-theory (enable vdepp)
+                  :use (vdepp-v0-3
+                        (:instance v0-not-member-vindepp (m 1) (l (list x)))))))
+
 ;; If m > (vdim), then since (fmatp a m (vdim)), (row-rank a) <= (vdim) < m, i.e., (vdepp l):
 
-(defthmd vdep-if->-dim
+(defthmd vdepp-if->-dim
   (implies (and (natp m) (> m (vdim))
 		(vlistnp l m))
 	   (vdepp l))
   :hints (("Goal" :in-theory (enable vdepp vindepp)
                   :use (posp-vdim (:instance row-rank<=n (a (vcoord-mat l)) (n (vdim)))))))
 
-;; Combining vdepp-vcomb-v0 with vdep-if->-dim, we can construct a linear dependency of a list of more
+;; Combining vdepp-vcomb-v0 with vdepp-if->-dim, we can construct a linear dependency of a list of more
 ;; than(vdim) vectors:
 
 (defthmd vcomb-v0-if->-dim
@@ -875,7 +925,7 @@
 	     (and (flistnp c m)
 		  (not (equal c (flistn0 m)))
 		  (equal (vcomb c l) (v0)))))
-  :hints (("Goal" :use (vdepp-vcomb-v0 vdep-if->-dim))))
+  :hints (("Goal" :use (vdepp-vcomb-v0 vdepp-if->-dim))))
 
 ;; Let l be a list of vectors and let x be a vector.  Suppose l is linearly independent and (cons x l)
 ;; is linearly dependent.  We shall construct a list of scalars (vcoords x l) such that
@@ -890,8 +940,10 @@
 ;; Thus, we define
 
 (defund vcoords (x l)
-  (let ((c (vdep-coeffs (cons x l))))
-    (flist-scalar-mul (f- (f/ (car c))) (cdr c))))
+  (if (null l)
+      ()
+    (let ((c (vdep-coeffs (cons x l))))
+      (flist-scalar-mul (f- (f/ (car c))) (cdr c)))))
 
 ;; and we have
 
@@ -914,13 +966,20 @@
 			(:instance v+assoc (y (v* (f/ c) d)) (z (v* (f- (f/ c)) d)))
 			(:instance vdistf (c (f/ c)) (d (f- (f/ c))) (x d))))))
 
-(defthmd vdepp-vcomb
+(defthmd vdepp-vcomb-2
   (implies (and (vlistnp l n) (posp n) (vp x) (vindepp l) (vdepp (cons x l)))
            (and (flistnp (vcoords x l) n)
 	        (equal (vcomb (vcoords x l) l) x)))
   :hints (("Goal" :in-theory (enable vcomb-scalar-mul vcoords)
                   :use (vdepp-vcomb-1 posp-vdim
 		        (:instance hack-2 (c (CAR (VDEP-COEFFS (CONS X L)))) (d (VCOMB (CDR (VDEP-COEFFS (CONS X L))) L)))))))
+
+(defthmd vdepp-vcomb
+  (implies (and (vlistnp l n) (natp n) (vp x) (vindepp l) (vdepp (cons x l)))
+           (and (flistnp (vcoords x l) n)
+	        (equal (vcomb (vcoords x l) l) x)))
+  :hints (("Goal" :in-theory (enable vcomb-scalar-mul vcoords)
+                  :use (vdepp-v0 vdepp-vcomb-2))))
 
 ;; Conversely, suppose  x is a linear combination of l, say x = (vcomb c l).  Let c' = (cons (f- (f1)) c).
 ;; Then (vcomb c' (cons x l)) = (v+ (v* (f- (f1)) x) (vcomb c l)) = (v+ (v- x) x) = (v0), and by vindepp-vcomb-v0,
@@ -958,8 +1017,11 @@
 
 (in-theory (disable vindepp-sk))
 
+(defund vdepp-sk (l)
+  (not (vindepp-sk l)))
+
 (defthmd vindepp-equivalence
-  (implies (and (posp m) (vlistnp l m))
+  (implies (and (natp m) (vlistnp l m))
            (iff (vindepp-sk l)
 	        (vindepp l)))
   :hints (("Goal" :in-theory (enable vdepp)
@@ -967,12 +1029,18 @@
 		        (:instance vindepp-sk-lemma (c (vdep-coeffs l)))
 			(:instance vindepp-vcomb-v0 (c (vindepp-sk-witness l)))))))
 
-(defthmd not-vindepp-sk-if->-dim
+;; The main motivation for this equivalent formulation is that it will facilitate functional instantiation of lemmas
+;; pertaining to linear independence.  Functional instantiation of any lemma that refers to a function that depends
+;; on vindepp would require definitions analogous to those of vindepp and all of its supporting functions, including
+;; those pertaining to row reduction.  Functional instantiation of the following is much simpler (see, for example
+;; vdepp-sk-if->-sdim):
+
+(defthmd vdepp-sk-if->-dim
   (implies (and (natp m) (> m (vdim))
 		(vlistnp l m))
-	   (not (vindepp-sk l)))
-  :hints (("Goal" :in-theory (enable vdepp)
-                  :use (vindepp-equivalence vdep-if->-dim))))
+	   (vdepp-sk l))
+  :hints (("Goal" :in-theory (enable vdepp vdepp-sk)
+                  :use (vindepp-equivalence vdepp-if->-dim))))
 
 
 ;;---------------------------------------------------------------------------------------------------------------------
@@ -991,7 +1059,7 @@
   (vbasisp (vbasis0))
   :hints (("Goal" :in-theory (enable vbasisp)))) 
 
-;; By vdep-if->-dim, for any vector x, the list (cons x b) is linearly dependent, and therefore, by vdepp-vcomb,
+;; By vdepp-if->-dim, for any vector x, the list (cons x b) is linearly dependent, and therefore, by vdepp-vcomb,
 ;; b spans the space:
 
 (defthmd vbasis-spans
@@ -1000,7 +1068,7 @@
 	        (equal (vcomb (vcoords x b) b)
 	               x)))
   :hints (("Goal" :in-theory (enable vbasisp)
-                  :use ((:instance vdep-if->-dim (m (1+ (vdim))) (l (cons x b)))
+                  :use ((:instance vdepp-if->-dim (m (1+ (vdim))) (l (cons x b)))
 		        (:instance vdepp-vcomb (l b) (n (vdim)))))))
 
 ;; By functional instantiation of vcoords0-unique, this representation is unique:
@@ -1425,9 +1493,32 @@
            (vbasisp (extend-to-basis l)))	   
   :hints (("Goal" :induct (vbasisp-extend-to-basis-induct l n))
           ("Subgoal *1/2" :in-theory (enable vbasisp)
-                          :use ((:instance vdep-if->-dim (m n))))
+                          :use ((:instance vdepp-if->-dim (m n))))
 	  ("Subgoal *1/1" :in-theory (enable vp-vunspanned)
 	                  :use ((:instance vindepp-cons-vunspanned (m n))))))
+
+(local-defthmd cdr-nthcdr
+  (implies (natp n)
+           (equal (cdr (nthcdr n l))
+	          (nthcdr (1+ n) l))))
+
+(local-defthmd len-extend-to-basis
+  (<= (len l) (len (extend-to-basis l))))
+
+(local-defthmd nthcdr-extend-to-basis-1
+  (equal (nthcdr (- (len (extend-to-basis l)) (len l)) (extend-to-basis l))
+         l)
+  :hints (("Subgoal *1/1" :use ((:instance cdr-nthcdr (l (EXTEND-TO-BASIS (CONS (VUNSPANNED L) L)))
+                                                      (n (+ -1 (- (LEN L)) (LEN (EXTEND-TO-BASIS (CONS (VUNSPANNED L) L))))))
+				(:instance len-extend-to-basis (l (CONS (VUNSPANNED L) L)))))))
+
+(defthmd nthcdr-extend-to-basis
+  (implies (and (vlistnp l n) (posp n) (vindepp l))
+           (equal (nthcdr (- (vdim) (len l)) (extend-to-basis l))
+                  l))
+  :hints (("Goal" :in-theory (enable vbasisp)
+                  :use (vbasisp-extend-to-basis nthcdr-extend-to-basis-1
+		        (:instance len-vlistnp (x (extend-to-basis l)) (n (vdim)))))))
 
 
 ;;---------------------------------------------------------------------------------------------------------------------
@@ -1529,6 +1620,18 @@
   (implies (fp c) (equal (w* c (w0)) (w0)))
   :hints (("Goal" :use ((:instance wdistw (x (w0)) (y (w0)))
 			(:instance w+assoc (x (w- (w* c (w0)))) (y (w* c (w0))) (z (w* c (w0))))))))
+
+(defthmd w-unique
+  (implies (and (wp x) (wp y) (equal (w+ x y) (w0)))
+           (equal (w- x) y))
+  :hints (("Goal" :use ((:instance w+assoc (x (w- x)) (y x) (z y))))))
+
+(defthmd w*f-f1
+  (implies (wp x)
+           (equal (w* (f- (f1)) x)
+	          (w- x)))
+  :hints (("Goal" :use ((:instance w-unique (y (w* (f- (f1)) x)))
+                        (:instance wdistf (c (f1)) (d (f- (f1))))))))
 
 (defthm wp-wcomb
   (implies (and (flistnp c n) (wlistnp l n))
@@ -1840,8 +1943,9 @@
 ;; This formula is the basis of our definition of linear independence:
 
 (defund windepp (l)
-  (equal (row-rank (wcoord-mat l))
-         (len l)))
+  (or (null l)
+      (equal (row-rank (wcoord-mat l))
+             (len l))))
 
 (defund wdepp (l)
   (not (windepp l)))
@@ -2227,7 +2331,7 @@
                         (:instance windepp-wcomb-w0-8 (p (row-reduce-mat (wcoord-mat l))))))))
 
 (defthm windepp-wcomb-w0
-  (implies (and (posp m)
+  (implies (and (natp m)
 		(wlistnp l m)
 		(windepp l)
 		(flistnp c m)
@@ -2246,7 +2350,7 @@
 	          (nth j l))))
 
 (defthm nth-windepp-not-w0
-  (implies (and (posp m)
+  (implies (and (natp m)
 		(wlistnp l m)
 		(windepp l)
 		(natp j)
@@ -2267,6 +2371,35 @@
                         (:instance nth-windepp-not-w0 (j (index (w0) l)))
                         (:instance ind<len (x (w0)))))))
 
+;; A list of length 1 is linearly dependent iff its member is v0:
+
+(local-defthmd wdepp-w0-1
+  (implies (and (wp x) (flistnp c 1) (equal (wcomb c (list x)) (w0)) (not (equal c (flistn0 1))))
+           (and (fp (car c))
+	        (not (equal (car c) (f0)))
+	        (equal (w* (car c) x) (w0)))))
+
+(local-defthmd wdepp-w0-2
+  (implies (and (wp x) (flistnp c 1) (equal (wcomb c (list x)) (w0)) (not (equal c (flistn0 1))))
+           (and (fp (car c))
+	        (not (equal (car c) (f0)))
+	        (equal (w0) x)))
+  :hints (("Goal" :use (wdepp-w0-1 (:instance w*assoc (c (f/ (car c))) (d (car c)))))))
+
+(local-defthmd wdepp-w0-3
+  (implies (and (wp x) (wdepp (list x)))
+           (equal (w0) x))
+  :hints (("Goal" :use ((:instance wdepp-wcomb-w0 (m 1) (l (list x)))
+                        (:instance wdepp-w0-2 (c (wdep-coeffs (list x))))))))
+
+(defthmd wdepp-w0
+  (implies (wp x)
+           (iff (wdepp (list x))
+                (equal (w0) x)))
+  :hints (("Goal" :in-theory (enable wdepp)
+                  :use (wdepp-w0-3
+                        (:instance w0-not-member-windepp (m 1) (l (list x)))))))
+
 ;; If m > (wdim), then since (fmatp a m (wdim)), (row-rank a) <= (wdim) < m, i.e., (wdepp l):
 
 (defthmd wdep-if->-dim
@@ -2277,8 +2410,10 @@
                   :use (posp-wdim (:instance row-rank<=n (a (wcoord-mat l)) (n (wdim)))))))
 
 (defund wcoords (x l)
-  (let ((c (wdep-coeffs (cons x l))))
-    (flist-scalar-mul (f- (f/ (car c))) (cdr c))))
+  (if (null l)
+      ()
+    (let ((c (wdep-coeffs (cons x l))))
+      (flist-scalar-mul (f- (f/ (car c))) (cdr c)))))
 
 (in-theory (disable wdep-coeffs))
 
@@ -2299,13 +2434,20 @@
 			(:instance w+assoc (y (w* (f/ c) d)) (z (w* (f- (f/ c)) d)))
 			(:instance wdistf (c (f/ c)) (d (f- (f/ c))) (x d))))))
 
-(defthmd wdepp-wcomb
+(defthmd wdepp-wcomb-2
   (implies (and (wlistnp l n) (posp n) (wp x) (windepp l) (wdepp (cons x l)))
            (and (flistnp (wcoords x l) n)
 	        (equal (wcomb (wcoords x l) l) x)))
   :hints (("Goal" :in-theory (enable wcomb-scalar-mul wcoords)
                   :use (wdepp-wcomb-1 posp-wdim
 		        (:instance hack-4 (c (CAR (WDEP-COEFFS (CONS X L)))) (d (WCOMB (CDR (WDEP-COEFFS (CONS X L))) L)))))))
+
+(defthmd wdepp-wcomb
+  (implies (and (wlistnp l n) (natp n) (wp x) (windepp l) (wdepp (cons x l)))
+           (and (flistnp (wcoords x l) n)
+	        (equal (wcomb (wcoords x l) l) x)))
+  :hints (("Goal" :in-theory (enable wcomb-scalar-mul wcoords)
+                  :use (wdepp-wcomb-2 wdepp-w0))))
 
 ;; Conwersely, suppose  x is a linear combination of l, say x = (wcomb c l).  Let c' = (cons (f- (f1)) c).
 ;; Then (wcomb c' (cons x l)) = (w+ (w* (f- (f1)) x) (wcomb c l)) = (w+ (w- x) x) = (w0), and by windepp-wcomb-w0,
@@ -2343,8 +2485,11 @@
 
 (in-theory (disable windepp-sk))
 
+(defund wdepp-sk (l)
+  (not (windepp-sk l)))
+
 (defthmd windepp-equivalence
-  (implies (and (posp m) (wlistnp l m))
+  (implies (and (natp m) (wlistnp l m))
            (iff (windepp-sk l)
 	        (windepp l)))
   :hints (("Goal" :in-theory (enable wdepp)
@@ -2352,11 +2497,11 @@
 		        (:instance windepp-sk-lemma (c (wdep-coeffs l)))
 			(:instance windepp-wcomb-w0 (c (windepp-sk-witness l)))))))
 
-(defthmd not-windepp-sk-if->-dim
+(defthmd wdepp-sk-if->-dim
   (implies (and (natp m) (> m (wdim))
 		(wlistnp l m))
-	   (not (windepp-sk l)))
-  :hints (("Goal" :in-theory (enable wdepp)
+	   (wdepp-sk l))
+  :hints (("Goal" :in-theory (enable wdepp wdepp-sk)
                   :use (windepp-equivalence wdep-if->-dim))))
 
 
@@ -2883,7 +3028,7 @@
            (equal (wcoords0 (lin x))
                   (car (fmat* (list (vcoords0 x)) (lin-mat)))))
   :hints (("goal" :in-theory (enable lin-mat)
-                  :use (vbasis0-spans vlistnp-basis flistnp-vcoords0
+                  :use (vbasis0-spans vlistnp-basis0 flistnp-vcoords0
                         (:instance lin-vcomb (c (vcoords0 x)) (l (vbasis0)) (n (vdim)))
                         (:instance wcoords0-wcomb (m (vdim)) (c (vcoords0 x)) (l (lin-list (vbasis0))))))))
 
@@ -2955,7 +3100,7 @@
   (implies (lin-injective-p)
            (<= (vdim) (wdim)))
   :hints (("Goal" :in-theory (enable vdim)
-                  :use (vlistnp-basis
+                  :use (vlistnp-basis0
 		        (:instance wdep-if->-dim (l (lin-list (vbasis0))) (m (vdim)))
                         (:instance lin-injective-vindepp-windepp (n (vdim)) (l (vbasis0)))
 			(:instance wlistnp-lin-list (l (vbasis0)) (n (vdim)))))))
@@ -2970,7 +3115,7 @@
   (implies (and (lin-injective-p)
                 (equal (vdim) (wdim)))
 	   (lin-surjective-p))
-  :hints (("Goal" :use (vlistnp-basis lin-surjective-p-witness-lemma
+  :hints (("Goal" :use (vlistnp-basis0 lin-surjective-p-witness-lemma
                         (:instance lin-preimage (y (lin-surjective-p-witness))
 			                        (x (VCOMB (WCOORDS (LIN-SURJECTIVE-P-WITNESS) (LIN-LIST (VBASIS0))) (VBASIS0))))
                         (:instance wdep-if->-dim (m (1+ (vdim)))(l (cons (lin-surjective-p-witness) (lin-list (vbasis0)))))
@@ -2982,7 +3127,7 @@
   (implies (and (lin-injective-p)
                 (lin-surjective-p))
 	   (equal (vdim) (wdim)))
-  :hints (("Goal" :use (vlistnp-basis injection-dim-<=
+  :hints (("Goal" :use (vlistnp-basis0 injection-dim-<=
 			(:instance lin-injective-vindepp-windepp (n (vdim)) (l (vbasis0)))
 			(:instance wp-wunspanned (m (vdim)) (l (lin-list (vbasis0))))
 			(:instance lin-surjective-p-lemma (y (wunspanned (lin-list (vbasis0)))))
@@ -3432,68 +3577,1768 @@
                         (:instance wbasis0-spans (x y))
 			(:instance wbasis0-spans (x (lin (lin-inv y))))))))
 
-#|
+
 ;;---------------------------------------------------------------------------------------------------------------------
 ;;  Subspaces
 ;;---------------------------------------------------------------------------------------------------------------------
 
-;; Informally, a subspace of a vector space V is a subset of V that forms a vector space under the operations of V.
-;; In our formalization, in order to specify a subspace, we must define a recognizer that refines the predicate vp and,
-;; as usual, prove it is satisfied by (v0) and that the closure properties hold.  But we must also construct a basis,
-;; define the corresponding coordinate function, and verify the related axioms.
+;; Informally, a subspace of V is a subset of V that forms a vector space under the operations of V. In our
+;; formalization, in order to specify a subspace, we must define a recognizer that refines the predicate vp and prove
+;; that it is satisfied by v0 and that the closure properties hold.  
 
-(encapsulate (((sp *) => *) ((sbasis) => *))
+;; We constrain a predicate sp that recognizes a subspace of V.  Informally, we shall refer to this subspace as S:
+
+(encapsulate (((sp *) => *))
   (local (defun sp (x) (vp x)))
-  (local (defun sbasis () (vbasis0)))
   ;; Subset:
-  (defthm s-subset
-    (implies (sp x) (vp x)))
-  ;; Non-empty:
-  (defthm sp-v0
-    (sp (v0)))
+  (defthm sp-vp (implies (sp x) (vp x)))
+  ;; Zero vector:
+  (defthm sp-v0 (sp (v0)))
   ;; Closure:
-  (defthm s-closed
-    (implies (and (fp c) (sp x) (sp y))
-             (sp (v+ (v* c x) y))))
-  ;; List of s-vectors:
-  (defun slistnp (x n)
-    (if (zp n)
-        (null x)
-      (and (consp x)
-           (sp (car x))
-	   (slistnp (cdr x) (1- n)))))
-  ;; Basis:
-  (defun sdim () (len (sbasis)))
-  (in-theory (disable (sdim) (slistnp)))
-  (defthm slistnp-basis
-    (slistnp (sbasis) (sdim)))
-  (defthmd sbasis-lin-indep
-    (vindepp (sbasis)))
-  (defthm sbasis-spans
-    (implies (sp x)
-             (vdepp (cons x (sbasis)))))
-  (in-theory (disable sdim)))
+  (defthm sp-v- (implies (sp x) (sp (v- x))))    
+  (defthm s+closed (implies (and (sp x) (sp y)) (sp (v+ x y))))  
+  (defthm s*closed (implies (and (fp c) (sp x)) (sp (v* c x)))))
+
+;; We define a basis of S and verify the corresponding axioms:
+
+(defun slistnp (x n)
+  (if (zp n)
+      (null x)
+    (and (consp x)
+         (sp (car x))
+         (slistnp (cdr x) (1- n)))))
+
+(defthm slistnp-vlistnp
+  (implies (slistnp x n)
+           (vlistnp x n)))
+
+(defchoose sunspanned x (l)
+  (and (sp x) (vindepp (cons x l))))
+
+(defun sbasis0-aux (l)
+  (declare (xargs :measure (nfix (- (vdim) (len l)))
+                  :hints (("Goal" :in-theory (enable vdepp)
+		                  :use ((:instance vdepp-if->-dim
+				         (m (1+ (len l)))
+				         (l (cons (sunspanned l) l))))))))
+  (let ((x (sunspanned l)))
+    (if (and (slistnp l (len l)) (sp x) (vindepp (cons x l)))
+        (sbasis0-aux (cons x l))
+      l)))
+
+(defund sbasis0 ()
+  (sbasis0-aux ()))
+
+(defun sdim () (len (sbasis0)))
+
+(in-theory (disable (slistnp) (sbasis0-aux) (sbasis0) (sdim)))
+
+;; It follows from the definitions that sbasis0 is a linearly independent slist:
+
+(local-defthmd slistnp-sbasis0-aux
+  (implies (slistnp l (len l))
+           (let ((b (sbasis0-aux l)))
+	     (slistnp b (len b)))))
+
+(defthmd slistnp-sbasis0
+  (slistnp (sbasis0) (sdim))
+  :hints (("Goal" :in-theory (enable sbasis0)
+                  :use ((:instance slistnp-sbasis0-aux (l ()))))))
+
+(local-defthmd vindepp-sbasis0-aux
+  (implies (and (slistnp l (len l)) (vindepp l))
+           (let ((b (sbasis0-aux l)))
+             (and (slistnp b (len b))
+	          (vindepp b)))))
+
+(defthm vindepp-sbasis0
+  (and (slistnp (sbasis0) (sdim))
+       (vindepp (sbasis0)))
+  :hints (("Goal" :in-theory (enable sbasis0)
+                  :use ((:instance vindepp-sbasis0-aux (l ()))))))
+
+;; By vdepp-if->-dim, sdim <= vdim:
+
+(defthmd sdim-bound
+  (<= (sdim) (vdim))
+  :hints (("Goal" :in-theory (enable vdepp)
+                  :use (vindepp-sbasis0
+		        (:instance vdepp-if->-dim (l (sbasis0)) (m (sdim)))))))
+
+;; sbasis0 is a maximal linearly independent list:
+
+(local-defthmd vdepp-cons-sbasis0-aux-1
+  (implies (and (slistnp l (len l)) (vindepp l))
+           (let ((x (sunspanned (sbasis0-aux l))))
+	     (not (and (sp x) (vindepp (cons x (sbasis0-aux l))))))))
+
+(local-defthmd vdepp-cons-sbasis0-aux
+  (implies (and (slistnp l (len l)) (vindepp l) (sp x))
+           (vdepp (cons x (sbasis0-aux l))))
+  :hints (("Goal" :in-theory (enable vdepp)
+                  :use (vdepp-cons-sbasis0-aux-1
+		        (:instance sunspanned (l (sbasis0-aux l)))))))
+
+(defthmd vdepp-cons-sbasis0
+  (implies (sp x)
+           (vdepp (cons x (sbasis0))))
+  :hints (("Goal" :in-theory (enable sbasis0 vdepp)
+                  :use (:instance vdepp-cons-sbasis0-aux (l ())))))
+
+;; S contains a nonzero vector iff sdim > 0:
+
+(local-defthm true-listp-sbasis0-aux
+  (implies (true-listp l)
+           (true-listp (sbasis0-aux l))))
+
+(local-defthmd true-listp-sbasis0
+  (true-listp (sbasis0))
+  :hints (("Goal" :in-theory (enable sbasis0))))
+
+(local-defthmd hack-5
+  (implies (and (true-listp l) l)
+           (> (len l) 0)))
+
+(defthmd sdim-0-nil
+  (iff (null (sbasis0))
+       (equal (sdim) 0))           
+  :hints (("Goal" :use (true-listp-sbasis0
+                        (:instance hack-5 (l (sbasis0)))))))
+
+(local-defthmd consp-sbasis0-1
+  (implies (consp l)
+           (consp (sbasis0-aux l))))
+
+(local-defthmd consp-sbasis0-2
+  (iff (consp (sbasis0))
+       (let ((x (sunspanned ())))
+         (and (sp x) (vindepp (list x)))))
+  :hints (("Goal" :in-theory (enable sbasis0)
+                  :use ((:instance consp-sbasis0-1 (l (list (sunspanned ()))))))))
+
+(defthmd posp-sdim-not-v0
+  (implies (posp (sdim))
+           (let ((x (sunspanned ())))
+             (and (sp x) (not (equal x (v0))))))
+  :hints (("Goal" :in-theory (enable vdepp)
+                  :use (consp-sbasis0-2 (:instance vdepp-v0 (x (sunspanned ())))))))
+
+(defthmd not-v0-posp-sdim
+  (implies (and (sp x) (not (equal x (v0))))
+           (posp (sdim)))
+  :hints (("Goal" :use (vdepp-v0 sdim-0-nil consp-sbasis0-2
+                        (:instance sunspanned (l ()))))))
+
+(in-theory (disable sdim))
+
+;; It follows from vdepp-vcomb that sbasis0 spans the subspace:
+
+(defund scoords0 (x)
+  (vcoords x (sbasis0)))
+
+(defthm flistnp-scoords0
+  (implies (sp x)
+           (flistnp (scoords0 x) (sdim)))
+  :hints (("Goal" :in-theory (enable sdim scoords0)
+                  :use (vdepp-cons-sbasis0 vindepp-sbasis0
+		        (:instance vdepp-vcomb (l (sbasis0)) (n (sdim)))))))
+
+(defthm sbasis0-spans
+  (implies (sp x)
+           (equal (vcomb (scoords0 x) (sbasis0))
+                  x))
+  :hints (("Goal" :in-theory (enable sdim scoords0)
+                  :use (vdepp-cons-sbasis0 vindepp-sbasis0 not-v0-posp-sdim
+		        (:instance vdepp-vcomb (l (sbasis0)) (n (sdim)))))))
+
+;; Apply vindepp-vcomb-v0:
+
+(defthmd sbasis0-lin-indep
+  (implies (and (flistnp c (sdim))
+                (equal (vcomb c (sbasis0)) (v0)))
+           (equal (flistn0 (sdim)) c))
+  :hints (("Goal" :use ((:instance vindepp-vcomb-v0 (l (sbasis0)) (m (sdim)))))))
+
+;; Note that we have verified analogs of all of the axioms of V with the exception of sdim > 0.  Thus, any proven
+;; result for V may be instantiated for S under this assumption.
+
+;; For example, we shall prove an analog of vdepp-if->-dim: every list of vectors of S of length exceeding sdim is
+;; linearly dependent.  To prove this directly by functional instantiation of vdepp-if->-dim would be difficult because
+;; of the complicated definition of vindepp.  Instead, we functionally instantiate not-vindepp-sk-if->-dim:
+
+(defthmd vdepp-sk-if->-sdim
+  (implies (and (> (sdim) 0) (natp m) (> m (sdim))
+		(slistnp l m))
+	   (vdepp-sk l))
+  :hints (("Goal" :use ((:functional-instance vdepp-sk-if->-dim
+                         (vp (lambda (x) (if (> (sdim) 0) (sp x) (vp x))))
+			 (vbasis0 (lambda () (if (> (sdim) 0) (sbasis0) (vbasis0))))
+			 (vcoords0 (lambda (x) (if (> (sdim) 0) (scoords0 x) (vcoords0 x))))
+			 (vdim (lambda () (if (> (sdim) 0) (sdim) (vdim))))
+			 (vlistnp (lambda (x n) (if (> (sdim) 0) (slistnp x n) (vlistnp x n)))))))
+	  ("Subgoal 16" :use (sbasis0-lin-indep vbasis0-lin-indep))
+	  ("Subgoal 12" :use (vdistv))
+	  ("Subgoal 11" :use (vdistf))
+	  ("Subgoal 10" :use (v*assoc))
+	  ("Subgoal 5" :use (v+assoc))
+	  ("Subgoal 4" :use (v+comm))
+	  ("Subgoal 1" :use (vdim))))
+
+;; Combine this with vindepp-equivalence:
+
+(defthmd vdepp-if->-sdim
+  (implies (and (> (sdim) 0) (natp m) (> m (sdim))
+		(slistnp l m))
+	   (vdepp l))
+  :hints (("Goal" :use (vdepp-sk-if->-sdim vindepp-equivalence))))
+
+;; The dimension of a subspace is well-defined.  That is, suppose sbasis1 is another linearly independent spanning
+;; set:
+
+(encapsulate (((sbasis1) => *) ((scoords1 *) => *))
+  (local (defun sbasis1 () (sbasis0)))
+  (local (defun scoords1 (x) (scoords0 x)))
+  (defun sdim1 () (len (sbasis1)))
+  (defthmd slistnp-sbasis1
+    (slistnp (sbasis1) (sdim1))
+    :hints (("Goal" :in-theory (enable sdim) :use (slistnp-sbasis0))))
+  (defthmd flistnp-scoords1
+    (implies (and (posp (sdim)) (sp x)) (flistnp (scoords1 x) (sdim1)))
+    :hints (("Goal" :use (flistnp-scoords0))))
+  (defthmd sbasis1-spans
+    (implies (and (posp (sdim)) (sp x))
+             (equal (vcomb (scoords1 x) (sbasis1))
+                    x))
+    :hints (("Goal" :use (sbasis0-spans))))
+  (defthm vindepp-sbasis1
+    (vindepp (sbasis1))
+    :hints (("Goal" :use (vindepp-sbasis0)))))
+
+;; We shall show that sdim1 = sdim.
+
+;; First, it is easily shown that sdim1 = 0 iff sdim - 0:
+
+(local-defthmd sdim1-0-1
+  (implies (and (= (sdim) 0) (> (sdim1) 0))
+           (equal (car (sbasis1)) (v0)))
+  :hints (("Goal" :use (slistnp-sbasis1
+                        (:instance not-v0-posp-sdim (x (car (sbasis1))))))))
+
+(local-defthmd sdim1-0-2
+  (implies (and (= (sdim) 0) (> (sdim1) 0))
+           (let ((c (cons (f1) (flistn0 (1- (sdim1))))))
+	     (and (flistnp c (sdim1))
+	          (not (equal (flistn0 (sdim1)) c))
+		  (equal (vcomb c (sbasis1)) (v0)))))		  
+  :hints (("Goal" :use (slistnp-sbasis1 sdim1-0-1
+                        (:instance not-v0-posp-sdim (x (car (sbasis1))))))))
+
+(local-defthmd sdim1-0-3
+  (implies (= (sdim) 0) (= (sdim1) 0))
+  :hints (("Goal" :use (sdim1-0-2 slistnp-sbasis1
+                        (:instance vindepp-vcomb-v0 (l (sbasis1)) (m (sdim1)) (c (cons (f1) (flistn0 (1- (sdim1))))))))))
+
+(defthmd sdim-sdim1-0
+  (iff (= (sdim) 0) (= (sdim1) 0))
+  :hints (("Goal" :use (sdim1-0-3 posp-sdim-not-v0
+                        (:instance sbasis1-spans (x (sunspanned ())))
+			(:instance flistnp-scoords1 (x (sunspanned ())))))))
+
+;; We shal prove the analog of vdepp-if->-dim for sdim1 in the same way that we proved vdepp-if->-sdim.
+;; First we derive the following from vindepp-sbasis1 and vindepp-vcomb-v0:
+
+(defthmd sbasis1-lin-indep
+  (implies (and (flistnp c (sdim1))
+                (equal (vcomb c (sbasis1)) (v0)))
+           (equal (flistn0 (sdim1)) c))
+  :hints (("Goal" :use (slistnp-sbasis1
+                        (:instance vindepp-vcomb-v0 (l (sbasis1)) (m (sdim1)))))))
+
+;; Now functionally instantiate not-vindepp-sk-if->-dim:
+
+(defthmd vdepp-sk-if->-sdim1
+  (implies (and (> (sdim1) 0) (natp m) (> m (sdim1))
+		(slistnp l m))
+	   (vdepp-sk l))
+  :hints (("Goal" :use ((:functional-instance vdepp-sk-if->-dim
+                         (vp (lambda (x) (if (> (sdim1) 0) (sp x) (vp x))))
+			 (vbasis0 (lambda () (if (> (sdim1) 0) (sbasis1) (vbasis0))))
+			 (vcoords0 (lambda (x) (if (> (sdim1) 0) (scoords1 x) (vcoords0 x))))
+			 (vdim (lambda () (if (> (sdim1) 0) (sdim1) (vdim))))
+			 (vlistnp (lambda (x n) (if (> (sdim1) 0) (slistnp x n) (vlistnp x n)))))))
+	  ("Subgoal 16" :use (sbasis1-lin-indep vbasis0-lin-indep))
+	  ("Subgoal 15" :use (sdim-sdim1-0 sbasis1-spans))
+	  ("Subgoal 14" :use (sdim-sdim1-0 flistnp-scoords1))
+	  ("Subgoal 13" :use (sdim-sdim1-0 slistnp-sbasis1))
+	  ("Subgoal 12" :use (vdistv))
+	  ("Subgoal 11" :use (vdistf))
+	  ("Subgoal 10" :use (v*assoc))
+	  ("Subgoal 5" :use (v+assoc))
+	  ("Subgoal 4" :use (v+comm))
+	  ("Subgoal 1" :use (vdim))))
+
+;; Invoke vindepp-equivalence:
+
+(defthmd vdepp-if->-sdim1
+  (implies (and (> (sdim1) 0) (natp m) (> m (sdim1))
+		(slistnp l m))
+	   (vdepp l))
+  :hints (("Goal" :use (vdepp-sk-if->-sdim1 vindepp-equivalence))))
+
+;; Combine vdepp-if->-sdim, vdepp-if->-sdim1, vindepp-sbasis0, and vindepp-sbasis1:
+
+(defthmd sdim-well-defined
+  (= (sdim1) (sdim))
+  :hints (("Goal" :use (sdim-sdim1-0 slistnp-sbasis1
+                        (:instance vdepp-if->-sdim (l (sbasis1)) (m (sdim1)))
+                        (:instance vdepp-if->-sdim1 (l (sbasis0)) (m (sdim)))))))
+
+;; Thus, sdim1 <= vdim:
+
+(defthmd sdim1<=vdim
+  (<= (sdim1) (vdim))
+  :hints (("Goal" :use (sdim-well-defined sdim-bound))))
   
 
-(defthm sp-v- (implies (sp x) (sp (v- x))))
-    
-(defthm s+closed (implies (and (sp x) (sp y)) (sp (v+ x y))))
+;;---------------------------------------------------------------------------------------------------------------------
+;;  Kernel and Image of a Linear Transformation
+;;---------------------------------------------------------------------------------------------------------------------
+
+;; The kernel of a linear transformation is the subspace of vectors that are mapped to 0:
+
+(defund in-kernel-p (x)
+  (and (vp x)
+       (equal (lin x) (w0))))
+
+;; The subspace axioms are easily verified:
+
+(defthm in-kernel-p-vp
+  (implies (in-kernel-p x) (vp x))
+  :hints (("Goal" :in-theory (enable in-kernel-p))))
+
+(defthmd in-kernel-p-v0
+  (in-kernel-p (v0))
+  :hints (("Goal" :in-theory (enable in-kernel-p))))
+
+(defthm in-kernel-p-v+
+  (implies (and (in-kernel-p x) (in-kernel-p y))
+           (in-kernel-p (v+ x y)))
+  :hints (("Goal" :in-theory (enable in-kernel-p))))
+
+(defthm in-kernel-p-v*
+  (implies (and (fp c) (in-kernel-p x))
+           (in-kernel-p (v* c x)))
+  :hints (("Goal" :in-theory (enable in-kernel-p))))
+
+(defthm in-kernel-p-v-
+  (implies (in-kernel-p x) 
+           (in-kernel-p (v- x)))
+  :hints (("Goal" :in-theory (enable in-kernel-p)  
+                  :use (v*f-f1 (:instance in-kernel-p-v* (c (f- (f1))))))))
+
+;; List of kernel elements:
+
+(defun klistnp (x n)
+  (if (zp n)
+      (null x)
+    (and (consp x)
+         (in-kernel-p (car x))
+         (klistnp (cdr x) (1- n)))))
+
+(defthm klistnp-vlistnp
+  (implies (klistnp x n)
+           (vlistnp x n)))
+
+(defthm in-kernel-p-vcomb
+  (implies (and (klistnp x n) (flistnp c n))
+           (in-kernel-p (vcomb c x))))
+
+;; We shall construct a basis for the kernel, kbasis, based on a characterization of the kernel as the solution space
+;; of a homogeneous system of linear equations. 
+
+;; Let (vp x).  By lin-mat-lin, (in-kernel-p x) iff the following equation holds:
+
+;;   (fmat* (row-mat (vcoords0 x)) (lin-mat)) = (row-mat (flistn0 (wdim))).
+
+;; Let a = (transpose-mat (lin-mat)).  Taking the transpose of both sides of the above equation yields
+
+;;   (fmat* a (col-mat (vcoords0 x))) = (col-mat (flistn0 (wdim))).
+
+;; Thus, x is in the kernel iff (vcoords0 x) is a solution of the homogeneous system of linear equations with coordinate 
+;; matrix a.  See the discussion of the function sol0p at the end of the book "reduction".
+
+(local-defthmd in-kernel-p-sol0p-1
+  (implies (vp x)
+           (fmatp (fmat* (row-mat (vcoords0 x)) (lin-mat)) 1 (wdim)))
+  :hints (("Goal" :use ((:instance fmatp-fmat* (a (row-mat (vcoords0 x))) (b (lin-mat)) (m 1) (n (vdim)) (p (wdim)))
+                        (:instance fmatp-row-mat (x (vcoords0 x)) (n (vdim)))))))
+
+(local-defthmd in-kernel-p-sol0p-2
+  (implies (fmatp a 1 n)
+           (equal (list (car a)) a)))
+
+                  
+(local-defthmd in-kernel-p-sol0p-3
+  (implies (vp x)
+           (iff (in-kernel-p x)
+	        (equal (fmat* (row-mat (vcoords0 x)) (lin-mat))
+		       (row-mat (flistn0 (wdim))))))
+  :hints (("Goal" :in-theory (e/d (fmatp row-mat lin-mat-lin in-kernel-p) (wbasis0-spans))
+                  :use (in-kernel-p-sol0p-1
+		        (:instance in-kernel-p-sol0p-2 (a (fmat* (row-mat (vcoords0 x)) (lin-mat))) (n (wdim)))
+		        (:instance wcoords0-unique (x (lin x)) (c (flistn0 (wdim))))
+		        (:instance wbasis0-spans (x (lin x)))))))
+
+(local-defthmd in-kernel-p-sol0p-4
+  (implies (and (fmatp a 1 n) (fmatp b 1 n) (posp n))
+           (iff (equal (transpose-mat a) (transpose-mat b))
+	        (equal a b)))
+  :hints (("Goal" :use ((:instance transpose-fmat-2 (m 1))
+                        (:instance transpose-fmat-2 (m 1) (a b))))))
+
+(local-defthmd in-kernel-p-sol0p-5
+  (implies (vp x)
+           (equal (transpose-mat (fmat* (row-mat (vcoords0 x)) (lin-mat)))
+	          (fmat* (transpose-mat (lin-mat)) (col-mat (vcoords0 x)))))
+  :hints (("Goal" :in-theory (enable col-mat row-mat)
+                  :use (fmatp-lin-mat
+		        (:instance fmatp-row-mat (x (vcoords0 x)) (n (vdim)))
+                        (:instance transpose-fmat* (a (row-mat (vcoords0 x))) (b (lin-mat)) (m 1) (n (vdim)) (p (wdim)))))))
+
+(local-defthmd in-kernel-p-sol0p-6
+  (implies (vp x)
+           (iff (in-kernel-p x)
+	        (equal (fmat* (transpose-mat (lin-mat)) (col-mat (vcoords0 x)))
+		       (col-mat (flistn0 (wdim))))))
+  :hints (("Goal" :in-theory (enable col-mat)
+                  :use (in-kernel-p-sol0p-5 in-kernel-p-sol0p-1 in-kernel-p-sol0p-3
+		        (:instance in-kernel-p-sol0p-4 (a (fmat* (row-mat (vcoords0 x)) (lin-mat))) (b (row-mat (flistn0 (wdim)))) (n (wdim)))))))
+
+(defthmd fmatp-transpose-mat-lin-mat
+  (fmatp (transpose-mat (lin-mat)) (wdim) (vdim))
+  :hints (("Goal" :use (fmatp-lin-mat (:instance fmatp-transpose (a (lin-mat)) (m (vdim)) (n (wdim)))))))
+
+(local-defthmd in-kernel-p-sol0p-7
+  (implies (and (fmatp a m n) (posp m) (posp n))
+           (equal (len (car a)) n)))
+
+(defthmd in-kernel-p-sol0p
+  (implies (vp x)
+           (iff (in-kernel-p x)
+                (sol0p (vcoords0 x) (transpose-mat (lin-mat)))))
+  :hints (("Goal" :in-theory (enable sol0p solutionp)
+                  :use (fmatp-transpose-mat-lin-mat in-kernel-p-sol0p-6
+		        (:instance in-kernel-p-sol0p-7 (a (transpose-mat (lin-mat))) (m (wdim)) (n (vdim)))
+		        (:instance len-fmatp (a (transpose-mat (lin-mat))) (m (wdim)) (n (vdim)))))))
+
+;; Let ar = (row-reduce a), q = (num-nonzero-rows ar) = (row-rank a), l = (lead-inds ar) and f = (free-inds ar n).
+;; Then (len l) = q and (len f) = vdim - q.  The basis kbasis will be a list of length (len f), each member of which
+;; corresponds to a member of f.
+
+;; Given j in f, we first define the coordinate list c with respect to vbasis0 of the kbasis element corresponding to j.
+;; For 0 <= i < vdim, (nth i c) = (kbasis-coord i j), which is defined as follows:
+
+;; (a) If i is in l, let k = (index i l), i.e., i = (nth k l).  Then (nth i c)) = (f- (entry k j ar)).
+;; (b) If i = j, then (nth i c) = (f1).
+;; (c) If i is in f and i !+ j, then (nth i c) = (f0).
+
+(defund kbasis-coord (i j)
+  (let* ((ar (row-reduce (transpose-mat (lin-mat))))
+	 (l (lead-inds ar)))
+    (if (member i l)
+        (f- (entry (index i l) j ar))
+      (if (= i j)
+          (f1)
+        (f0)))))
+
+(local-defthmd fp-kbasis-coord-1
+  (let* ((ar (row-reduce (transpose-mat (lin-mat))))
+	 (l (lead-inds ar)))
+    (implies (member i l)
+             (and (natp (index i l))
+                  (< (index i l) (wdim)))))
+  :hints (("Goal" :in-theory (disable ind<len)
+                  :use (fmatp-transpose-mat-lin-mat
+                        (:instance fmatp-row-reduce (a (transpose-mat (lin-mat))) (m (wdim)) (n (vdim)))
+			(:instance len-lead-inds-bound (a (row-reduce (transpose-mat (lin-mat)))) (m (wdim)) (n (vdim)))			
+			(:instance ind<len (x i) (l (lead-inds (row-reduce (transpose-mat (lin-mat))))))))))
+
+(defthmd fp-kbasis-coord
+  (implies (and (natp j) (< j (vdim)))
+           (fp (kbasis-coord i j)))
+  :hints (("Goal" :in-theory (enable kbasis-coord)
+                  :use (fp-kbasis-coord-1 fmatp-transpose-mat-lin-mat
+                        (:instance fmatp-row-reduce (a (transpose-mat (lin-mat))) (m (wdim)) (n (vdim)))
+                        (:instance fp-entry (a (row-reduce (transpose-mat (lin-mat))))
+			                    (i (index i (lead-inds (row-reduce (transpose-mat (lin-mat))))))
+					    (m (wdim)) (n (vdim)))))))
+
+;; Thus, c = (kbasis-elt-coords j), defined as follows:
+
+(defun kbasis-coords-aux (i j)
+  (if (posp i)
+      (append (kbasis-coords-aux (1- i) j)
+              (list (kbasis-coord (1- i) j)))
+    ()))
+
+(defund kbasis-coords (j) (kbasis-coords-aux (vdim) j))
+
+(local-defthm nth-append
+  (implies (natp k)
+           (equal (nth k (append l m))
+	          (if (< k (len l))
+		      (nth k l)
+		    (nth (- k (len l)) m)))))
+
+(local-defthm len-kbasis-coords-aux
+  (equal (len (kbasis-coords-aux i j))
+         (nfix i)))
+
+(local-defthm nth-kbasis-coords-aux
+  (implies (and (natp i) (<= i (vdim))
+                (natp k) (< k i))
+	   (equal (nth k (kbasis-coords-aux i j))
+	          (kbasis-coord k j))))
+
+(defthmd nth-kbasis-coords
+  (implies (and (natp k) (< k (vdim)))
+           (equal (nth k (kbasis-coords j))
+	          (kbasis-coord k j)))
+  :hints (("Goal" :in-theory (enable kbasis-coords))))
+
+(defthm len-kbasis-coords
+  (equal (len (kbasis-coords j))
+         (vdim))
+  :hints (("Goal" :in-theory (enable kbasis-coords))))
+
+(local-defthmd fp-member-kbasis-coords
+  (implies (and (member x (kbasis-coords j)) (natp j) (< j (vdim)))
+           (fp x))
+  :hints (("Goal" :in-theory (e/d (fp-kbasis-coord) (ind<len))
+                  :use (len-kbasis-coords
+		        (:instance nth-kbasis-coords (k (index x (kbasis-coords j))))
+			(:instance ind<len (l (kbasis-coords j)))))))
+
+(local-defun non-fp-member (l)
+  (if (consp l)
+      (if (fp (car l))
+          (non-fp-member (cdr l))
+	(car l))
+    ()))
+
+(local-defthmd non-fp-member-or-flistnp
+  (implies (true-listp l)
+           (let ((x (non-fp-member l)))
+	     (or (and (member x l) (not (fp x)))
+	         (flistnp l (len l))))))
+
+(local-defthm true-listp-kbasis-coords-aux
+  (true-listp (kbasis-coords-aux i j)))
+
+(local-defthm true-listp-kbasis-coords
+  (true-listp (kbasis-coords j))
+  :hints (("Goal" :in-theory (enable kbasis-coords))))
+
+(defthm flistnp-kbasis-coords
+  (implies (and (natp j) (< j (vdim)))
+           (flistnp (kbasis-coords j) (vdim)))
+  :hints (("Goal" :use ((:instance non-fp-member-or-flistnp (l (kbasis-coords j)))
+                        (:instance fp-member-kbasis-coords (x (non-fp-member (kbasis-coords j))))))))
+
+;; The kbasis element corresponding to j is the vector (vcomb c (vbasis0)).  Thus, kbasis is defined as follows:
+
+(defun kbasis-aux (f)
+  (if (consp f)
+      (cons (vcomb (kbasis-coords (car f)) (vbasis0))
+            (kbasis-aux (cdr f)))
+    ()))
+
+(defund kbasis ()
+  (let ((ar (row-reduce (transpose-mat (lin-mat)))))
+    (kbasis-aux (free-inds ar (vdim)))))
+
+(local-defthm true-listnp-kbasis-aux
+  (true-listp (kbasis-aux f)))
+
+(local-defthm true-listnp-kbasis
+  (true-listp (kbasis))
+  :hints (("Goal" :in-theory (enable kbasis))))
+
+(in-theory (disable (kbasis)))
+
+(defund kdim () (len (kbasis)))
+
+(in-theory (disable (kdim)))
+
+(local-defthm len-kbasis-aux
+  (equal (len (kbasis-aux f))
+         (len f)))
+
+(defthmd kdim-val
+  (equal (kdim)
+         (len (free-inds (row-reduce (transpose-mat (lin-mat))) (vdim))))
+  :hints (("Goal" :in-theory (enable kdim kbasis))))
+
+;; We must show that kbasis is a linearly independent list of kernel vectors that spans the kernel.
+
+;; If i < kdim and j = (nth i f), then
+
+;;   (nth i (kbasis)) =  (vcomb (kbasis-coords j) (vbasis0)),
+
+(local-defun ar$ () (row-reduce (transpose-mat (lin-mat))))
+
+(local-defun f$ () (free-inds (ar$) (vdim)))
+
+(local-defun l$ () (lead-inds (ar$)))
+
+(local-defun q$ () (num-nonzero-rows (ar$)))
+
+(local-defun aq$ () (first-rows (q$) (ar$)))
+
+(local-defthmd fmatp-ar
+  (fmatp (ar$) (wdim) (vdim))
+  :hints (("Goal" :use (fmatp-transpose-mat-lin-mat
+                        (:instance fmatp-row-reduce (a (transpose-mat (lin-mat))) (m (wdim)) (n (vdim)))))))
+
+(local-defthmd row-echelon-p-ar
+  (row-echelon-p (ar$))
+  :hints (("Goal" :use (fmatp-transpose-mat-lin-mat
+                        (:instance row-echelon-p-row-reduce (a (transpose-mat (lin-mat))) (m (wdim)) (n (vdim)))))))
+
+(local-defthmd q<=wdim
+  (<= (q$) (wdim))
+  :hints (("Goal" :use (fmatp-ar
+                        (:instance num-nonzero-rows<=m (a (row-reduce (transpose-mat (lin-mat)))) (m (wdim)) (n (vdim)))))))
+
+(local-defthmd len-l
+  (equal (len (l$)) (q$))
+  :hints (("Goal" :use ((:instance len-lead-inds-num-nonzero-rows (a (ar$)))))))
+
+(local-defthmd dlistp-f
+  (dlistp (f$))
+  :hints (("Goal" :use (fmatp-ar row-echelon-p-ar
+                        (:instance dlistp-free-inds (a (ar$)) (m (wdim)) (n (vdim)))))))
+
+(local-defthmd dlistp-l
+  (dlistp (l$))
+  :hints (("Goal" :use (fmatp-ar row-echelon-p-ar
+                        (:instance dlistp-lead-inds (a (ar$)) (m (wdim)) (n (vdim)))))))
+
+(local-defthmd lead-inds-aq
+  (equal (lead-inds (aq$))
+         (l$))
+  :hints (("Goal" :use (fmatp-ar
+                        (:instance lead-inds-first-nonzero-rows (a (row-reduce (transpose-mat (lin-mat)))) (m (wdim)) (n (vdim)))))))
+
+(local-defthmd free-inds-aq
+  (equal (free-inds (aq$) (vdim))
+         (f$))
+  :hints (("Goal" :in-theory (enable free-inds)
+                  :use (lead-inds-aq))))
+
+(local-defthm nth-kbasis-aux
+  (implies (and (natp i) (< i (len f)))
+           (equal (nth i (kbasis-aux f))
+	          (vcomb (kbasis-coords (nth i f)) (vbasis0)))))
+
+(local-defthmd nth-kbasis
+  (implies (and (natp i) (< i (len (f$))))
+           (equal (nth i (kbasis))
+                  (vcomb (kbasis-coords (nth i (f$))) (vbasis0))))
+  :hints (("Goal" :in-theory (enable kbasis))))
+
+;; which implies (vp (nth i (kbasis))) and (vcoords0 (nth i (kbasis))) = (kbasis-coords j).
+
+(local-defthmd member-f
+  (iff (member x (f$))
+       (and (natp x)
+            (< x (vdim))
+            (not (member x (l$)))))
+  :hints (("Goal" :use (fmatp-transpose-mat-lin-mat
+                        (:instance member-free-inds (a (row-reduce (transpose-mat (lin-mat)))) (m (wdim)) (n (vdim)))
+			(:instance fmatp-row-reduce (a (transpose-mat (lin-mat))) (m (wdim)) (n (vdim)))
+			(:instance member-ninit (n (vdim)))
+			(:instance row-echelon-p-row-reduce (a (transpose-mat (lin-mat))) (m (wdim)) (n (vdim)))))))
+
+(local-defthmd vp-nth-kbasis
+  (implies (and (natp i) (< i (len (f$))))
+           (vp (nth i (kbasis))))
+  :hints (("Goal" :in-theory (disable FLISTNP-KBASIS-COORDS)
+                  :use (nth-kbasis
+                        (:instance member-f (x (nth i (free-inds (row-reduce (transpose-mat (lin-mat))) (vdim)))))
+			(:instance flistnp-kbasis-coords (j (nth i (free-inds (row-reduce (transpose-mat (lin-mat))) (vdim)))))))))
+
+(local-defthmd vcoords-nth-kbasis
+  (implies (and (natp i) (< i (len (f$))))
+           (equal (vcoords0 (nth i (kbasis)))
+                  (kbasis-coords (nth i (f$)))))
+  :hints (("Goal" :in-theory (disable FLISTNP-KBASIS-COORDS)
+                  :use (nth-kbasis vp-nth-kbasis
+                        (:instance member-f (x (nth i (free-inds (row-reduce (transpose-mat (lin-mat))) (vdim)))))
+			(:instance vcoords0-unique (c (kbasis-coords (nth i (free-inds (row-reduce (transpose-mat (lin-mat))) (vdim)))))
+			                           (x (nth i (kbasis))))
+			(:instance flistnp-kbasis-coords (j (nth i (free-inds (row-reduce (transpose-mat (lin-mat))) (vdim)))))))))
+
+;; Thus, to prove that every member of kbasis is in the kernel, it suffices to show that for all j in f,
+
+;;   (sol0p (kbasis-coords j) a).
+
+;; Let x = (kbasis-coords j).  According to the lemma sol0p-suff, it suffices to prove that for all k < q,
+
+;;   (nth (nth k l) x) = (f- (fdot-select f (nth k ar) x).
+
+;; But according to the definition of kbasis-coords, both sides of this equation reduce to (f- (entry k j ar)).
+;; Thus, we have
+
+(local-defthm nth-free-index-kbasis-coords
+  (implies (and (member j (f$)) (member k (f$)))
+           (equal (nth k (kbasis-coords j))
+	          (if (equal k j)
+		      (f1)
+		    (f0))))
+  :hints (("Goal" :in-theory (enable kbasis-coord)
+                  :use (nth-kbasis-coords
+                        (:instance member-f (x j))
+                        (:instance member-f (x k))))))
+
+(local-defthmd fp-nth-flistnp
+  (implies (and (natp n) (flistnp x n) (natp j) (< j n))
+           (fp (nth j x))))
+
+(local-defthmd fp-nth-free-flistnp
+  (implies (and (flistnp r (vdim)) (member j (f$)))
+           (fp (nth j r)))
+  :hints (("Goal" :use ((:instance member-f (x j))
+                        (:instance fp-nth-flistnp (n (vdim)) (x r))))))
+
+(local-defthmd fdot-select-sublist-f
+  (implies (and (dlistp f) (sublistp f (f$)) (member j (f$))
+                (flistnp r (vdim)))
+           (equal (fdot-select f r (kbasis-coords j))
+	          (if (member j f)
+		      (nth j r)
+		    (f0))))
+  :hints (("Goal" :induct (len f))
+          ("Subgoal *1/1" :use (fp-nth-free-flistnp (:instance fp-nth-free-flistnp (j (car f)))))))
+
+(local-defthmd flistnp-nth-ar
+  (implies (and (natp k) (< k (q$)))
+           (flistnp (nth k (ar$)) (vdim)))
+  :hints (("Goal" :use (fmatp-ar q<=wdim
+                        (:instance flistnp-row (a (ar$)) (i k) (m (wdim)) (n (vdim)))))))
+
+(local-defthmd fdot-select-f
+  (implies (and (member j (f$)) (natp k) (< k (q$)))
+           (equal (fdot-select (f$) (nth k (ar$)) (kbasis-coords j))
+	          (entry k j (ar$))))
+  :hints (("Goal" :use (flistnp-nth-ar dlistp-f
+                        (:instance fdot-select-sublist-f (r (nth k (ar$))) (f (f$)))))))
+
+(local-defthmd nth-lead-ind-kbasis-coords
+  (implies (and (member j (f$)) (natp k) (< k (q$)))
+           (equal (nth (nth k (l$)) (kbasis-coords j))
+                  (f- (entry k j (ar$)))))
+  :hints (("Goal" :in-theory (enable kbasis-coord)
+                  :use (len-l fmatp-ar row-echelon-p-ar dlistp-l
+		        (:instance nth-lead-inds-bound (a (ar$)) (m (wdim)) (n (vdim)))
+			(:instance ind-nth (i k) (l (l$)))
+		        (:instance nth-kbasis-coords (k (nth k (l$))))))))
+
+(local-defthmd nth-lead-ind-kbasis-coords-fdot-select
+  (implies (and (member j (f$)) (natp k) (< k (q$)))
+           (equal (nth (nth k (l$)) (kbasis-coords j))
+	          (f- (fdot-select (f$) (nth k (ar$)) (kbasis-coords j)))))
+  :hints (("Goal" :use (fdot-select-f nth-lead-ind-kbasis-coords))))
+
+(defthmd sol0p-kbasis-coords
+  (let* ((ar (row-reduce (transpose-mat (lin-mat))))
+          (f (free-inds ar (vdim))))
+    (implies (member j f)
+             (sol0p (kbasis-coords j) (transpose-mat (lin-mat)))))
+  :hints (("Goal" :use (lead-inds-aq free-inds-aq flistnp-kbasis-coords fmatp-transpose-mat-lin-mat fmatp-ar q<=wdim
+                        (:instance sol0p-suff (a (transpose-mat (lin-mat))) (m (wdim)) (n (vdim)) (x (kbasis-coords j)))
+			(:instance member-f (x j))
+			(:instance nth-first-rows (a (ar$)) (m (wdim)) (n (vdim)) (q (q$)) (i (sol0p-witness (kbasis-coords j) (transpose-mat (lin-mat)) (vdim))))
+			(:instance nth-lead-ind-kbasis-coords-fdot-select (k (sol0p-witness (kbasis-coords j) (transpose-mat (lin-mat)) (vdim))))))))
+
+(local-defthmd in-kernel-p-nth-kbasis
+  (implies (and (natp i) (< i (len (f$))))
+           (in-kernel-p (nth i (kbasis))))
+  :hints (("Goal" :use (vp-nth-kbasis vcoords-nth-kbasis
+                        (:instance in-kernel-p-sol0p (x (nth i (kbasis))))
+			(:instance sol0p-kbasis-coords (j (nth i (f$))))))))
+
+(local-defthmd in-kernel-p-member-kbasis
+  (implies (member x (kbasis))
+           (in-kernel-p x))
+  :hints (("Goal" :in-theory (e/d (kdim) (kdim-val))
+                  :use (kdim-val
+		        (:instance in-kernel-p-nth-kbasis (i (index x (kbasis))))))))
+
+(local-defthm klistnp-kbasis-1
+  (implies (and (true-listp l) (sublistp l (kbasis)))
+           (klistnp l (len l)))
+  :hints (("Subgoal *1/5" :use ((:instance in-kernel-p-member-kbasis (x (car l)))))))
+
+(defthm klistnp-kbasis
+  (klistnp (kbasis) (kdim))
+  :hints (("Goal" :in-theory (enable kdim))))
+
+(defthmd kbasis-nil
+  (implies (= (kdim) 0)
+           (null (kbasis)))
+  :hints (("Goal" :in-theory (e/d (kdim) (len-vlistnp))
+                  :use ((:instance len-vlistnp (x (kbasis)) (n 0))))))
+
+#|
+;; The kernel is trivial iff lin is injective:
+
+(defthm in-kernel-p-nontrivial
+  (iff (lin-injective-p)
+       (= (kdim) 0)))
+|#
+
+;; Next, we prove that kbasis is linearly independent.
+
+;; Given (flistnp c n), (vlistnp l n), and i < vdim, we derive a formula for (nth i (vcoords0 (vcomb c l))):
+
+(defun nth-vcomb (j c l)
+  (if (consp c)
+      (f+ (f* (car c) (nth j (vcoords0 (car l))))
+	  (nth-vcomb j (cdr c) (cdr l)))
+      (f0)))
+
+(defthmd nth-vcomb-val
+  (implies (and (flistnp c n) (vlistnp l n)
+                (natp j) (< j (vdim)))
+	   (equal (nth j (vcoords0 (vcomb c l)))
+	          (nth-vcomb j c l)))
+  :hints (("Subgoal *1/3" :in-theory (enable vcoords0-v+ vcoords0-v*)  
+                          :use ((:instance nth-flist-add (n (vdim)) (i j) (x (FLIST-SCALAR-MUL (CAR C) (VCOORDS0 (CAR L)))) (y (VCOORDS0 (VCOMB (CDR C) (CDR L)))))
+			        (:instance nth-flist-scalar-mul (n (vdim)) (i j) (c (car c)) (x (VCOORDS0 (CAR L))))))))
+
+;; We apply this result to the case l = (kbasis), n = kdim, and j = (nth i f), where i < kdim.  By construction of
+;; kbasis, (nth-vcomb j c (kbasis)) = (nth i c):
+
+(local-defthmd nth-nth-kbasis
+  (implies (and (natp i) (< i (len (f$))) (member j (f$)))
+           (equal (nth j (vcoords0 (nth i (kbasis))))
+	          (if (equal (nth i (f$)) j)
+		      (f1)
+		    (f0))))
+  :hints (("Goal" :use (vcoords-nth-kbasis
+                        (:instance nth-free-index-kbasis-coords (k (nth i (f$))))))))
+
+(local-defthmd nth-kbasis-distinct
+  (implies (and (natp i) (< i (len (f$))) (natp j) (< j (len (f$))) (not (= i j)))
+           (not (equal (nth i (kbasis)) (nth j (kbasis)))))
+  :hints (("Goal" :use (dlistp-f
+                        (:instance nth-nth-kbasis (j (nth i (f$))))
+                        (:instance nth-nth-kbasis (i j) (j (nth i (f$))))))))
+
+(defthm dlistp-kbasis
+  (dlistp (kbasis))
+  :hints (("Goal" :in-theory (disable dcex-lemma)
+                  :use (kdim-val kdim
+                        (:instance dcex-lemma (l (kbasis)))
+                        (:instance nth-kbasis-distinct (i (dcex1 (kbasis))) (j (dcex2 (kbasis))))))))
+
+(local-defthmd nth-vcomb-nth-c-1
+  (implies (and (true-listp l) (dlistp l) (sublistp l (kbasis)) (flistnp c (len l))
+                (natp i) (< i (len (f$))))
+           (equal (nth-vcomb (nth i (f$)) c l)
+	          (if (member (nth i (kbasis)) l)
+		      (nth (index (nth i (kbasis)) l) c)
+		    (f0))))
+  :hints (("Goal" :induct (vcomb c l))  
+          ("Subgoal *1/1.2" :use ((:instance nth-nth-kbasis (j (nth i (f$))))))	  
+	  ("Subgoal *1/1.1" :in-theory (disable ind<len)
+	                    :use (kdim kdim-val dlistp-f
+	                          (:instance nth-nth-kbasis (j (nth i (f$))) (i (index (car l) (kbasis))))	  
+	                          (:instance nth-dlist-distinct (l (f$)) (j (index (car l) (kbasis))))
+ 			  	  (:instance ind<len (x (car l)) (l (kbasis)))))
+	  ("Subgoal *1/1.4" ;:in-theory (disable ind<len)
+	                    :use (kdim kdim-val dlistp-f
+	                          (:instance nth-nth-kbasis (j (nth i (f$))) (i (index (car l) (kbasis))))	  
+	                          (:instance nth-dlist-distinct (l (f$)) (j (index (car l) (kbasis))))
+ 			  	  (:instance ind<len (x (car l)) (l (kbasis)))))))
+
+(defthmd nth-vcomb-nth-c
+  (let* ((ar (row-reduce (transpose-mat (lin-mat))))
+          (f (free-inds ar (vdim))))
+    (implies (and (flistnp c (len f)) (natp i) (< i (len f)))
+             (equal (nth-vcomb (nth i f) c (kbasis))
+	            (nth i c))))
+  :hints (("Goal" :use (kdim-val (:instance nth-vcomb-nth-c-1 (l (kbasis)))))))
+
+;; Combine nth-vcomb-val and nth-vcomb-val:
+
+(defthmd nth-vcomb-kbasis 
+  (let* ((ar (row-reduce (transpose-mat (lin-mat))))
+          (f (free-inds ar (vdim))))
+     (implies (and (flistnp c (kdim)) (natp i) (< i (kdim)))
+              (equal (nth (nth i f) (vcoords0 (vcomb c (kbasis))))
+	             (nth i c))))
+  :hints (("Goal" :use (kdim kdim-val nth-vcomb-nth-c klistnp-kbasis
+                        (:instance nth-vcomb-val (j (nth i (f$))) (l (kbasis)) (n (kdim)))
+			(:instance member-f (x (nth i (f$))))))))
+
+;; Now suppose (vcomb c (kbasis)) = 0. Then (vcoords0 (vcomb c (kbasis))) = (flistn0 (kbasis)).  It follows that
+;; (nth i c) = 0 for all i < kdim, and therefore c = (flistn0 (kdim):
+
+(local-defthmd vcomb-kbasis-v0-1
+  (implies (and (flistnp c (kdim)) (equal (vcomb c (kbasis)) (v0))
+                (natp i) (< i (kdim)))
+	   (equal (nth i c) (f0)))
+  :hints (("Goal" :use (kdim kdim-val nth-vcomb-kbasis
+			(:instance member-f (x (nth i (f$))))))))
+
+(local-defthmd vcomb-kbasis-v0-2
+  (implies (and (flistnp c (kdim)) (equal (vcomb c (kbasis)) (v0))
+                (true-listp l) (sublistp l c))
+	   (equal (flistn0 (len l)) l))
+  :hints (("Goal" :induct (len l))
+          ("Subgoal *1/1" :in-theory (disable ind<len)
+	                  :use ((:instance vcomb-kbasis-v0-1 (i (index (car l) c)))
+	                        (:instance ind<len (x (car l)) (l c))))))
   
-(defthm s*closed (implies (and (fp c) (sp x)) (sp (v* c x))))
+(defthmd vcomb-kbasis-v0
+  (implies (and (flistnp c (kdim)) (equal (vcomb c (kbasis)) (v0)))
+	   (equal (flistn0 (kdim)) c))
+  :hints (("Goal" :use ((:instance vcomb-kbasis-v0-2 (l c))
+                        (:instance len-flist (x c) (n (kdim)))))))
+
+;; Thus, kbasis is linearly independent:
+
+(local-defthmd vindepp-kbasis-0
+  (implies (= (kdim) 0)
+           (vindepp (kbasis)))
+  :hints (("Goal" :in-theory (e/d (vindepp) (klistnp-kbasis))
+                  :use (klistnp-kbasis))))
+
+(defthmd vindepp-kbasis
+  (vindepp (kbasis))
+  :hints (("Goal" :in-theory (enable vdepp)
+                  :use (vindepp-kbasis-0
+		        (:instance vdepp-vcomb-v0 (l (kbasis)) (m (kdim)))
+		        (:instance vcomb-kbasis-v0 (c (vdep-coeffs (kbasis))))))))
+
+;; To prove that kbasis spans the kernel, we define the following coordinate function:
+
+(defun kcoords-aux (x f)
+  (if (consp f)
+      (cons (nth (car f) (vcoords0 x))
+            (kcoords-aux x (cdr f)))
+    ()))
+
+(defund kcoords (x)
+   (let* ((ar (row-reduce (transpose-mat (lin-mat))))
+          (f (free-inds ar (vdim))))
+     (kcoords-aux x f)))
+
+;; The first requirement of this function is trivial:
+
+(local-defthm flistnp-kcoords-1
+  (implies (and (vp x) (sublistp f (ninit (vdim))))
+           (flistnp (kcoords-aux x f) (len f)))
+  :hints (("Goal" :induct (len f))
+          ("Subgoal *1/1" :use ((:instance member-ninit (x (car f)) (n (vdim)))
+	                        (:instance fp-flistnp (n (vdim)) (x (vcoords0 x)) (i (car f)))))))
+
+(local-defthm sublistp-set-difference-equal
+  (sublistp (set-difference-equal l m) l))
+
+(local-defthmd sublistp-f
+  (sublistp (f$) (ninit (vdim)))
+  :hints (("Goal" :in-theory (enable free-inds))))
+
+(defthmd kdim-bound
+  (<= (kdim) (vdim))
+  :hints (("Goal" :use (sublistp-f dlistp-f kdim-val
+                        (:instance sublistp-<=-len (l (f$)) (m (ninit (vdim))))))))
+
+(defthm flistnp-kcoords
+  (implies (in-kernel-p x) (flistnp (kcoords x) (kdim)))
+  :hints (("Goal" :in-theory (enable in-kernel-p kdim kcoords)
+                  :use (kdim-val sublistp-f))))
+
+;; Another immediate consequence of the definition:
+
+(local-defthm nth-kcoords-aux
+  (implies (and (natp i) (< i (len f)))
+           (equal (nth i (kcoords-aux x f))
+	          (nth (nth i f) (vcoords0 x)))))
+
+(defthmd nth-kcoords
+   (let* ((ar (row-reduce (transpose-mat (lin-mat))))
+          (f (free-inds ar (vdim))))
+    (implies (and (natp i) (< i (kdim)))
+             (equal (nth i (kcoords x))
+	            (nth (nth i f) (vcoords0 x)))))
+  :hints (("Goal" :in-theory (enable kcoords kdim)
+                  :use (kdim-val))))
+
+;; We must show that if (in-kernel-p x), then (vcomb (kcoords x) (kbasis)) = x.  Let y = (vcomb (kcoords x) (kbasis).
+;; By vbasis0-spans, it suffices to show that (vcoords0 y) = (vcoords0 x).  But since (sol0p x a) and (sol0p y a), it
+;; follows from sol0p-necc that each leading index coordinate of a kernel element is determined by the free index
+;; coordinates, and therefore it suffices to show that for all j in f, (nth j (vcoords0 y)) = (nth j (vcoords0 x)).
+;; To prove this, we instantiate nth-vcomb-kbasis with i = (index j f) and c = (kcoords x):
+
+;;    (nth j (vcoords0 y)) = (nth (nth i f) (vcoords0 (vcomb (kcoords x) (kbasis))))
+;;                         = (nth i (kcoords x))
+;;                         = (nth j (vcoords0 x)).
+
+(local-defthmd kbasis-spans-1
+  (implies (in-kernel-p x)
+           (in-kernel-p (vcomb (kcoords x) (kbasis)))))
+
+(local-defthmd kbasis-spans-2
+  (implies (in-kernel-p x)
+           (and (vp x)
+	        (vp (vcomb (kcoords x) (kbasis)))))
+  :hints (("Goal" :in-theory (enable in-kernel-p)
+                  :use (kbasis-spans-1))))
+
+(local-defthmd kbasis-spans-3
+  (implies (and (in-kernel-p x)
+                (equal (vcoords0 (vcomb (kcoords x) (kbasis))) (vcoords0 x)))
+           (equal (vcomb (kcoords x) (kbasis))
+	          x))
+  :hints (("Goal" :use (kbasis-spans-2  
+                        (:instance vbasis0-spans (x (vcomb (kcoords x) (kbasis))))))))
+
+(local-defthmd kbasis-spans-4
+  (implies (in-kernel-p x)
+           (and (sol0p (vcoords0 x) (transpose-mat (lin-mat)))
+	        (sol0p (vcoords0 (vcomb (kcoords x) (kbasis))) (transpose-mat (lin-mat)))))
+  :hints (("Goal" :use (kbasis-spans-1 in-kernel-p-sol0p
+                        (:instance in-kernel-p-sol0p (x (vcomb (kcoords x) (kbasis))))))))
+
+(local-defthmd kbasis-spans-5
+  (implies (and (in-kernel-p x) (member j (f$)))
+           (equal (nth j (vcoords0 x))
+	          (nth j (vcoords0 (vcomb (kcoords x) (kbasis))))))
+  :hints (("Goal" :in-theory (disable ind<len)
+                  :use (kdim kdim-val
+                        (:instance nth-vcomb-kbasis (i (index j (f$))) (c (kcoords x)))
+                        (:instance nth-kcoords (i (index j (f$))))
+			(:instance ind<len (x j) (l (f$)))))))
+
+(local-defthmd kbasis-spans-6
+  (implies (and (in-kernel-p x) (sublistp l (f$)))
+           (equal (fdot-select l r (vcoords0 x))
+	          (fdot-select l r (vcoords0 (vcomb (kcoords x) (kbasis))))))
+  :hints (("Goal" :induct (len l))
+          ("Subgoal *1/1" :use ((:instance kbasis-spans-5 (j (car l)))))))
+
+(local-defthmd kbasis-spans-7
+  (implies (in-kernel-p x)
+           (equal (fdot-select (f$) r (vcoords0 x))
+	          (fdot-select (f$) r (vcoords0 (vcomb (kcoords x) (kbasis))))))
+  :hints (("Goal" :use ((:instance kbasis-spans-6 (l (f$)))))))
+
+(local-defthmd kbasis-spans-8
+  (implies (and (in-kernel-p x) (natp k) (< k (q$)))
+           (equal (nth (nth k (l$)) (vcoords0 x))
+	          (nth (nth k (l$)) (vcoords0 (vcomb (kcoords x) (kbasis))))))
+  :hints (("Goal" :use (fmatp-transpose-mat-lin-mat kbasis-spans-2 kbasis-spans-4 lead-inds-aq free-inds-aq
+                        (:instance sol0p-necc (a (transpose-mat (lin-mat))) (m (wdim)) (n (vdim)) (x (vcoords0 x)))
+                        (:instance sol0p-necc (a (transpose-mat (lin-mat))) (m (wdim)) (n (vdim)) (x (vcoords0 (vcomb (kcoords x) (kbasis)))))
+			(:instance kbasis-spans-7 (r (nth k (aq$))))))))
+
+(local-defthmd kbasis-spans-9
+  (implies (and (in-kernel-p x) (member j (l$)))
+           (equal (nth j (vcoords0 x))
+	          (nth j (vcoords0 (vcomb (kcoords x) (kbasis))))))
+  :hints (("Goal" :use (len-l
+                        (:instance kbasis-spans-8 (k (index j (l$))))))))
+
+(local-defthmd kbasis-spans-10
+  (implies (and (in-kernel-p x) (natp j) (< j (vdim)))
+           (equal (nth j (vcoords0 x))
+	          (nth j (vcoords0 (vcomb (kcoords x) (kbasis))))))
+  :hints (("Goal" :use (len-l kbasis-spans-5 kbasis-spans-9
+                        (:instance member-f (x j))))))
+
+(local-defthmd kbasis-spans-11
+  (implies (in-kernel-p x)
+           (equal (vcoords0 x)
+	          (vcoords0 (vcomb (kcoords x) (kbasis)))))
+  :hints (("Goal" :in-theory (disable len-flist flistnp-vcoords0)
+                  :use (kbasis-spans-2 flistnp-vcoords0
+		        (:instance len-flist (x (vcoords0 x)) (n (vdim)))
+		        (:instance len-flist (x (vcoords0 (vcomb (kcoords x) (kbasis)))) (n (vdim)))
+                        (:instance flistnp-vcoords0 (x (vcomb (kcoords x) (kbasis))))
+                        (:instance nth-diff-diff (x (vcoords0 x)) (y (vcoords0 (vcomb (kcoords x) (kbasis)))))
+			(:instance kbasis-spans-10 (j (nth-diff (vcoords0 x) (vcoords0 (vcomb (kcoords x) (kbasis))))))))))
+
+(defthm kbasis-spans
+  (implies (in-kernel-p x)
+           (equal (vcomb (kcoords x) (kbasis))
+                  x))
+  :hints (("Goal" :use (kbasis-spans-3 kbasis-spans-11))))
 
 
-;; Zero subspace
+#|
+;; This is an alternative non-constructive definition of a kernel basis that I did before I did the above.
+;; I no longer need it, but here it is.
+
+;; A basis of the kernel may be defined by emulating the definition of sbasis0:
+
+(defchoose kunspanned x (l)
+  (and (in-kernel-p x) (vindepp (cons x l))))
+
+(defthmd kunspanned-lemma
+  (implies (and (in-kernel-p x) (vindepp (cons x l)))
+           (let ((y (kunspanned l)))
+	     (and (in-kernel-p y) (vindepp (cons y l)))))
+  :hints (("Goal" :use (kunspanned))))
+
+(defun kbasis-aux (l)
+  (declare (xargs :measure (nfix (- (vdim) (len l)))
+                  :hints (("Goal" :in-theory (enable vdepp)
+		                  :use ((:instance vdepp-if->-dim
+				         (m (1+ (len l)))
+				         (l (cons (kunspanned l) l))))))))
+  (let ((x (kunspanned l)))
+    (if (and (klistnp l (len l)) (in-kernel-p x) (vindepp (cons x l)))
+        (kbasis-aux (cons x l))
+      l)))
+
+(defun kbasis ()
+  (kbasis-aux ()))
+
+(defun kdim () (len (kbasis)))
+
+(in-theory (disable (kdim) (kbasis-aux) (kbasis)))
+
+(defun kcoords (x)
+  (vcoords x (kbasis)))
+
+;; The next 5 results are derived by functional instantiation of the properties of sbasis0:
+
+(defthm klistnp-kbasis
+  (klistnp (kbasis) (kdim))
+  :hints (("Goal" :use ((:functional-instance slistnp-sbasis0
+                         (sp in-kernel-p)
+			 (slistnp klistnp)
+			 (sunspanned kunspanned)
+			 (sbasis0-aux kbasis-aux)
+			 (sbasis0 kbasis)
+			 (sdim kdim))))
+	  ("Subgoal 4" :use (kunspanned))
+	  ("Subgoal 3" :use (kunspanned))))
+
+(defthmd vindepp-kbasis
+  (vindepp (kbasis))
+  :hints (("Goal" :use ((:functional-instance vindepp-sbasis0
+                         (sp in-kernel-p)
+			 (slistnp klistnp)
+			 (sunspanned kunspanned)
+			 (sbasis0-aux kbasis-aux)
+			 (sbasis0 kbasis)
+			 (sdim kdim))))
+	  ("Subgoal 4" :use (kunspanned))
+	  ("Subgoal 3" :use (kunspanned))))
+
+(defthm flistnp-kcoords
+  (implies (in-kernel-p x) (flistnp (kcoords x) (kdim)))
+  :hints (("Goal" :use ((:functional-instance flistnp-scoords0
+                         (sp in-kernel-p)
+			 (slistnp klistnp)
+			 (sunspanned kunspanned)
+			 (sbasis0-aux kbasis-aux)
+			 (sbasis0 kbasis)
+			 (sdim kdim)
+			 (scoords0 kcoords))))
+	  ("Subgoal 4" :use (kunspanned))
+	  ("Subgoal 3" :use (kunspanned))))
+
+(defthm kbasis-spans
+  (implies (in-kernel-p x)
+           (equal (vcomb (kcoords x) (kbasis))
+                  x))
+  :hints (("Goal" :use ((:functional-instance sbasis0-spans
+                         (sp in-kernel-p)
+			 (slistnp klistnp)
+			 (sunspanned kunspanned)
+			 (sbasis0-aux kbasis-aux)
+			 (sbasis0 kbasis)
+			 (sdim kdim)
+			 (scoords0 kcoords))))
+	  ("Subgoal 4" :use (kunspanned))
+	  ("Subgoal 3" :use (kunspanned))))
+
+(defthmd kdim-bound
+  (<= (kdim) (vdim))  
+  :hints (("Goal" :use ((:functional-instance sdim-bound
+                         (sp in-kernel-p)
+			 (slistnp klistnp)
+			 (sunspanned kunspanned)
+			 (sbasis0-aux kbasis-aux)
+			 (sbasis0 kbasis)
+			 (sdim kdim)
+			 (scoords0 kcoords))))))
+|#	  
+
+;; The image of lin is recognized by the predicate in-image-p:
+
+(defund in-image-p (x)
+  (let ((p (lin-preimage x)))
+    (and (vp p) (equal (lin p) x))))
+
+(defthmd in-image-p-lemma
+  (implies (and (vp p) (equal (lin p) x))
+           (in-image-p x))
+  :hints (("Goal" :in-theory (enable in-image-p)
+                  :use ((:instance lin-preimage (x p) (y x))))))
+  
+(defthm in-image-p-lin
+  (implies (vp x)
+           (in-image-p (lin x)))
+  :hints (("Goal" :use ((:instance in-image-p-lemma (p x) (x (lin x)))))))
+
+;; The subspace axioms are easily verified:
+
+(defthm in-image-p-wp
+  (implies (in-image-p x) (wp x))
+  :hints (("Goal" :in-theory (enable in-image-p)
+                  :use ((:instance lin-val (x (lin-preimage x)))))))
+
+(defthmd in-image-p-w0
+  (in-image-p (w0))
+  :hints (("Goal" :use ((:instance in-image-p-lemma (x (w0)) (p (v0)))))))
+
+(defthm in-image-p-w+
+  (implies (and (in-image-p x) (in-image-p y))
+           (in-image-p (w+ x y)))
+  :hints (("Goal" :in-theory (enable in-image-p)
+                  :use ((:instance in-image-p-lemma (x (w+ x y)) (p (v+ (lin-preimage x) (lin-preimage y))))))))
+
+(defthm in-image-p-w*
+  (implies (and (in-image-p x) (fp c))
+           (in-image-p (w* c x)))
+  :hints (("Goal" :in-theory (enable in-image-p)
+                  :use ((:instance in-image-p-lemma (x (w* c x)) (p (v* c (lin-preimage x))))))))
+
+(defthm in-image-p-w-
+  (implies (in-image-p x)
+           (in-image-p (w- x)))
+  :hints (("Goal" :use (w*f-f1 (:instance in-image-p-w* (c (f- (f1))))))))
+
+;; We shall show that the dimension of the image is the difference vdim - kdim:
+
+(defun idim () (- (vdim) (kdim)))
+
+(defthmd idim+kdim
+  (equal (+ (idim) (kdim))
+         (vdim))
+  :hints (("Goal" :in-theory (enable idim))))
+
+;; We must construct a basis for the image of length idim.  First we extend kbasis to a basis for V:
+;; First we extend kbasis to a basis of V:
+
+(defund extend-kbasis ()
+  (if (posp (kdim))
+      (extend-to-basis (kbasis))
+    (vbasis0)))
+
+(in-theory (disable (extend-kbasis)))
+
+(in-theory (disable kbasis))
+
+(defthmd vbasisp-extend-kbasis
+  (vbasisp (extend-kbasis))
+  :hints (("Goal" :in-theory (enable extend-kbasis kdim)
+                  :use (vindepp-kbasis klistnp-kbasis
+		        (:instance vbasisp-extend-to-basis (l (kbasis)) (n (kdim)))))))
+
+;; The image basis consists of the first idim members of the extended basis:
+
+(defun firstn (n l)
+  (if (zp n)
+      ()
+    (cons (car l) (firstn (1- n) (cdr l)))))
+
+(defthmd firstn-append
+  (implies (true-listp l)
+           (equal (firstn (len l) (append l m))
+	          l)))
+
+(defthmd append-firstn-nthcdr
+  (implies (and (natp n) (<= n (len l)))
+           (equal (append (firstn n l) (nthcdr n l))
+	          l)))
+
+(local-defun vlistnp-firstn-induct (k l n)
+  (declare (irrelevant k l))
+  (if (zp n)
+      t
+    (vlistnp-firstn-induct (1- k) (cdr l) (1- n))))
+
+(defthm vlistnp-firstn
+  (implies (and (natp n) (natp k) (<= k n) (vlistnp l n))
+           (vlistnp (firstn k l) k))
+  :hints (("Goal" :induct (vlistnp-firstn-induct k l n))))
+
+(defthm vlistnp-nthcdr
+  (implies (and (natp n) (natp k) (<= k n) (vlistnp l n))
+           (vlistnp (nthcdr k l) (- n k)))
+  :hints (("Goal" :induct (vlistnp-firstn-induct k l n))))
+
+(defthm flistnp-firstn
+  (implies (and (natp n) (natp k) (<= k n) (flistnp l n))
+           (flistnp (firstn k l) k))
+  :hints (("Goal" :induct (vlistnp-firstn-induct k l n))))
+
+(defthm flistnp-nthcdr
+  (implies (and (natp n) (natp k) (<= k n) (flistnp l n))
+           (flistnp (nthcdr k l) (- n k)))
+  :hints (("Goal" :induct (vlistnp-firstn-induct k l n))))
+
+(defund ibasis ()
+  (lin-list (firstn (idim) (extend-kbasis))))
+
+(in-theory (disable (ibasis)))
+
+;; We must show that ibasis is a linearly independent list of length idim that spans the image.
+;; We first note that the members of ibasis are in the image:
+
+(defun ilistnp (x n)
+  (if (zp n)
+      (null x)
+    (and (consp x)
+         (in-image-p (car x))
+         (ilistnp (cdr x) (1- n)))))
+
+(defthmd ilistnp-wlistnp
+  (implies (ilistnp x n)
+           (wlistnp x n)))
+
+(local-defthm ilistnp-lin-list
+  (implies (vlistnp l n)
+           (ilistnp (lin-list l) n))
+  :hints (("Goal" :induct (vlistnp-induct l n))))
+
+(defthm ilistnp-ibasis
+  (ilistnp (ibasis) (idim))
+  :hints (("Goal" :in-theory (enable kdim idim ibasis vbasisp)
+                  :use (kdim-bound vbasisp-extend-kbasis
+		        (:instance vlistnp-firstn (n (vdim)) (k (idim)) (l (extend-kbasis)))))))
+
+;; To show that ibasis is linearly dependent, suppose (flistnp c (idim)) and (wcomb c (ibasis)) = w0.
+;; Let l = (firstn (idim) (extend-kbasis)).  Then
+
+;;   (lin (vcomb c l)) = (wcomb c (lin-list l)) = (wcomb c (ibasis)) = w0,
+
+;; i.e., (in-kernel-p (vcomb c l).  Let d = (kcoords (vcomb c l)).  By kbasis-spans,
+
+;; (vcomb c l) = (vcomb d (kbasis)).  It follows that
+
+;;   (vcomb (append c (flist-minus d)) (extend-kbasis))
+;;     = (vcomb (append c (flist-minus d)) (append l (kbasis))
+;;     = (v+ (vcomb c l) (vcomb (flist-minus d) (kbasis)))
+;;     = (v+ (vcomb d (kbasis)) (vcomb (flist-minus d) (kbasis)))
+;;     = (vcomb (flist-add d (flist-minus d)) (kbasis))
+;;     = (vcomb (flistn0 kdim) (kbasis))
+;;     = v0.
+
+(local-defthmd ili-1
+  (implies (and (flistnp c (idim)) (equal (wcomb c (ibasis)) (w0)))
+           (vlistnp (firstn (idim) (extend-kbasis)) (idim)))
+  :hints (("Goal" :in-theory (enable kdim idim ibasis vbasisp)
+                  :use (kdim-bound vbasisp-extend-kbasis
+		        (:instance vlistnp-firstn (k (idim)) (n (vdim)) (l (extend-kbasis)))))))
+
+(local-defthmd ili-2
+  (implies (and (flistnp c (idim)) (equal (wcomb c (ibasis)) (w0)))
+           (equal (lin (vcomb c (firstn (idim) (extend-kbasis))))
+	          (w0)))
+  :hints (("Goal" :in-theory (enable kdim idim ibasis vbasisp)
+                  :use (kdim-bound vbasisp-extend-kbasis
+		        (:instance lin-vcomb (l (firstn (idim) (extend-kbasis))) (n (idim)))
+		        (:instance vlistnp-firstn (k (idim)) (n (vdim)) (l (extend-kbasis)))))))
+
+(local-defthmd ili-3
+  (implies (and (flistnp c (idim)) (equal (wcomb c (ibasis)) (w0)))
+           (in-kernel-p (vcomb c (firstn (idim) (extend-kbasis)))))
+  :hints (("Goal" :in-theory (enable in-kernel-p)
+                  :use (ili-1 ili-2))))
+
+(local-defthmd ili-4
+  (implies (and (flistnp c (idim)) (equal (wcomb c (ibasis)) (w0)))
+           (let* ((l (firstn (idim) (extend-kbasis)))
+	          (d (kcoords (vcomb c l))))
+             (and (flistnp d (kdim))
+	          (equal (vcomb c l)
+	                 (vcomb d (kbasis))))))
+  :hints (("Goal" :use (ili-3
+                        (:instance kbasis-spans (x (vcomb c (firstn (idim) (extend-kbasis)))))
+                        (:instance flistnp-kcoords (x (vcomb c (firstn (idim) (extend-kbasis)))))))))
+
+(local-defthmd true-listp-vlistnp
+  (implies (vlistnp l n)
+           (true-listp l))
+  :hints (("Goal" :induct (vlistnp-induct l n))))
+
+(local-defthmd ili-5
+  (equal (extend-kbasis)
+         (append (firstn (idim) (extend-kbasis))
+	         (kbasis)))
+  :hints (("Goal" :in-theory (enable vbasisp vdim idim extend-kbasis)
+                  :use (klistnp-kbasis vlistnp-basis0 kdim-bound vbasisp-extend-kbasis
+		        (:instance nthcdr-extend-to-basis (l (kbasis)) (n (kdim)))
+			(:instance firstn-append (l (vbasis0)) (m ()))
+			(:instance true-listp-vlistnp (l (vbasis0)) (n (vdim)))
+			(:instance len-vlistnp (x (extend-kbasis)) (n (vdim)))
+		        (:instance append-firstn-nthcdr (l (extend-kbasis)) (n (idim)))))
+	  ("Subgoal 1''" :use (kbasis-nil))))
+
+(local-defthmd ili-6
+  (implies (and (flistnp c (idim)) (equal (wcomb c (ibasis)) (w0)))
+           (let* ((l (firstn (idim) (extend-kbasis)))
+	          (d (kcoords (vcomb c l))))
+             (equal (vcomb (append c (flist-minus d)) (extend-kbasis))
+	            (v+ (vcomb d (kbasis)) (vcomb (flist-minus d) (kbasis))))))
+  :hints (("Goal" :in-theory (enable vbasisp)
+                  :use (ili-3 ili-4 ili-5 klistnp-kbasis kdim-bound vbasisp-extend-kbasis
+                        (:instance flistnp-kcoords (x (vcomb c (firstn (idim) (extend-kbasis)))))
+			(:instance vlistnp-firstn (n (vdim)) (k (idim)) (l (extend-kbasis)))
+                        (:instance vcomb-append (n (idim)) (m (kdim))
+			                        (d (flist-minus (kcoords (vcomb c (firstn (idim) (extend-kbasis))))))
+						(x (firstn (idim) (extend-kbasis)))
+						(y (kbasis)))))))
+
+(local-defthmd ili-7
+  (implies (and (flistnp c (idim)) (equal (wcomb c (ibasis)) (w0)))
+           (let* ((l (firstn (idim) (extend-kbasis)))
+	          (d (kcoords (vcomb c l))))
+             (equal (v+ (vcomb d (kbasis)) (vcomb (flist-minus d) (kbasis)))
+	            (vcomb (flistn0 (kdim)) (kbasis)))))
+  :hints (("Goal" :use (ili-4 klistnp-kbasis
+                        (:instance vcomb-add (x (kcoords (vcomb c (firstn (idim) (extend-kbasis)))))
+			                     (y (flist-minus (kcoords (vcomb c (firstn (idim) (extend-kbasis))))))
+					     (n (kdim))
+					     (l (kbasis)))))))
+
+(local-defthmd ili-8
+  (equal (vcomb (flistn0 (kdim)) (kbasis))
+         (v0))
+  :hints (("Goal" :use (klistnp-kbasis
+                        (:instance vcomb-flistn0 (n (kdim)) (l (kbasis)))))))
+
+(local-defthmd ili-9
+  (implies (and (flistnp c (idim)) (equal (wcomb c (ibasis)) (w0)))
+           (let* ((l (firstn (idim) (extend-kbasis)))
+	          (d (kcoords (vcomb c l))))
+             (equal (vcomb (append c (flist-minus d)) (extend-kbasis))
+	            (v0))))
+  :hints (("Goal" :use (ili-6 ili-7 ili-8))))
+
+;; Since kbasis is linearly independent, (append c (flist-minus d)) = (flistn0 (vdim)), which implies
+;; c = (flistn0 (idim)).  Thus, ibasis is linearly independent:
+
+(local-defthmd ili-10
+  (implies (and (flistnp c (idim)) (equal (wcomb c (ibasis)) (w0)))
+           (let* ((l (firstn (idim) (extend-kbasis)))
+	          (d (kcoords (vcomb c l))))
+             (flistnp (append c (flist-minus d)) (vdim))))
+  :hints (("Goal" :in-theory (enable idim)
+                  :use (ili-4 kdim-bound
+		        (:instance flistnp-append (x c) (y (flist-minus (kcoords (vcomb c (firstn (idim) (extend-kbasis))))))
+			                          (n (idim)) (m (kdim)))))))
+
+(local-defthmd ili-11
+  (implies (and (flistnp c (idim)) (equal (wcomb c (ibasis)) (w0)))
+           (let* ((l (firstn (idim) (extend-kbasis)))
+	          (d (kcoords (vcomb c l))))
+             (equal (append c (flist-minus d))
+	            (flistn0 (vdim)))))
+  :hints (("Goal" :in-theory (enable vbasisp)
+                  :use (ili-9 ili-10 vbasisp-extend-kbasis
+		        (:instance vindepp-vcomb-v0 (c (append c (flist-minus (kcoords (vcomb c (firstn (idim) (extend-kbasis)))))))
+			                            (l (extend-kbasis))
+						    (m (vdim)))))))
+
+(local-defthmd ili-12
+  (implies (and (flistnp c n) (flist0p (append c d)))
+           (equal (flistn0 n) c)))
+
+(local-defthmd ili-13
+  (implies (and (flistnp c (idim)) (equal (wcomb c (ibasis)) (w0)))
+           (equal (flistn0 (idim))
+	          c))
+  :hints (("Goal" :use (ili-11
+                        (:instance ili-12 (n (idim)) (d (flist-minus (kcoords (vcomb c (firstn (idim) (extend-kbasis)))))))))))
+
+(in-theory (disable idim (idim)))
+
+(local-defthmd ili-14
+  (implies (posp (idim))
+           (windepp (ibasis)))
+  :hints (("Goal" :use ((:instance ili-13 (c (wdep-coeffs (ibasis))))
+                        (:instance ilistnp-wlistnp (x (ibasis)) (n (idim)))
+                        (:instance wdepp-wcomb-w0 (l (ibasis)) (m (idim)))))))
+
+(local-defthmd ili-15
+  (implies (zp (idim))
+           (null (ibasis)))
+  :hints (("Goal" :in-theory (disable ilistnp-ibasis)
+                  :use (ilistnp-ibasis))))
+
+(defthmd ibasis-lin-indep
+  (windepp (ibasis))
+  :hints (("Goal" :in-theory (enable windepp)
+                  :use (ili-14 ili-15))))
+
+;; It remains to show that ibasis spans the image.  We define the coordinate function as follows:
+
+(defund icoords (x)
+  (firstn (idim) (vcoords (lin-preimage x) (extend-kbasis))))
+
+(local-defthmd flistnp-icoords-1
+  (implies (in-image-p x)
+           (flistnp (vcoords (lin-preimage x) (extend-kbasis)) (vdim)))
+  :hints (("Goal" :in-theory (enable in-image-p)
+                  :use (vbasisp-extend-kbasis
+		        (:instance vbasis-spans (b (extend-kbasis)) (x (lin-preimage x)))))))
+
+(local-defthm flistnp-icoords-2
+  (implies (and (flistnp l n) (natp n) (natp k) (<= k n))
+           (flistnp (firstn k l) k)))
+
+(defthm flistnp-icoords
+  (implies (in-image-p x)
+           (flistnp (icoords x) (idim)))
+  :hints (("Goal" :in-theory (enable icoords idim)
+                  :use (kdim-bound flistnp-icoords-1
+			 (:instance flistnp-icoords-2 (l (vcoords (lin-preimage x) (extend-kbasis))) (n (vdim)) (k (idim)))))))
+
+;; If (in-image-p x), then
+
+;;   x = (lin (lin-preimage x))
+;;     = (lin (vcomb (vcoords (lin-preimage x) (extend-kbasis)) (kbasis)))
+;;     = (lin (v+ (vcomb (firstn (idim) (vcoords (lin-preimage x) (extend-kbasis)))
+;;                       (firstn (idim) (extend-kbasis)))
+;;                (vcomb (nthcdr (idim) (vcoords (lin-preimage x) (extend-kbasis)))
+;;                       (nthcdr (idim) (extend-kbasis)))))
+;;     = (w+ (lin (vcomb (firstn (idim) (vcoords (lin-preimage x) (extend-kbasis)))
+;;                       (firstn (idim) (extend-kbasis))))
+;;           (lin (vcomb (nthcdr (idim) (vcoords (lin-preimage x) (extend-kbasis)))
+;;                       (nthcdr (idim) (extend-kbasis))))).
+
+;; The first term is
+
+;;   (lin (vcomb (firstn (idim) (vcoords (lin-preimage x) (extend-kbasis)))
+;;                       (firstn (idim) (extend-kbasis))))
+;;     = (lin (vcomb (icoords x) (firstn (idim) (extend-kbasis))))
+;;     = (wcomb (icoords x) (lin-list (firstn (idim) (extend-kbasis))))
+;;     = (wcomb (icoords x) (ibasis))
+
+;; and the second is
+
+;;   (lin (vcomb (nthcdr (idim) (vcoords (lin-preimage x) (extend-kbasis)))
+;;               (nthcdr (idim) (extend-kbasis))))
+;;     = (lin (vcomb (nthcdr (idim) (vcoords (lin-preimage x) (extend-kbasis)))
+;;                   (kbasis)))
+;;     = w0.
+
+;; Thus, x = (w+ (wcomb (icoords x) (ibasis)) (w0)) = (wcomb (icoords x) (ibasis)).
+
+(local-defthm len-flistnp
+  (implies (and (natp n) (flistnp x n))
+           (equal (len x) n))
+  :hints (("goal" :induct (nthcdr n x))))
+
+(local-defthmd is-1
+  (implies (in-image-p x)
+           (let* ((p (lin-preimage x)) (c (vcoords p (extend-kbasis))))
+	     (and (vp p)
+	          (flistnp c (vdim))
+		  (flistnp (firstn (idim) c) (idim))
+		  (flistnp (nthcdr (idim) c) (kdim))
+		  (vlistnp (firstn (idim) (extend-kbasis)) (idim))
+		  (vlistnp (nthcdr (idim) (extend-kbasis)) (kdim))
+		  (equal (lin (v+ (vcomb (firstn (idim) c) (firstn (idim) (extend-kbasis)))
+		                  (vcomb (nthcdr (idim) c) (nthcdr (idim) (extend-kbasis)))))
+		         x))))
+  :hints (("Goal" :in-theory (enable vbasisp idim in-image-p)
+                  :use (vbasisp-extend-kbasis kdim-bound
+		        (:instance vbasis-spans (b (extend-kbasis)) (x (lin-preimage x)))
+			(:instance vcomb-append (c (firstn (idim) (vcoords (lin-preimage x) (extend-kbasis))))
+			                        (d (nthcdr (idim) (vcoords (lin-preimage x) (extend-kbasis))))
+			                        (x (firstn (idim) (extend-kbasis)))
+						(y (nthcdr (idim) (extend-kbasis)))
+						(n (idim))
+						(m (kdim)))
+		        (:instance append-firstn-nthcdr (n (idim)) (l (extend-kbasis)))
+		        (:instance append-firstn-nthcdr (n (idim)) (l (vcoords (lin-preimage x) (extend-kbasis))))
+			(:instance len-vlistnp (n (vdim)) (x (extend-kbasis)))
+			(:instance len-flistnp (n (vdim)) (x (vcoords (lin-preimage x) (extend-kbasis))))
+			(:instance flistnp-firstn (k (idim)) (n (vdim)) (l (vcoords (lin-preimage x) (extend-kbasis))))
+			(:instance flistnp-nthcdr (k (idim)) (n (vdim)) (l (vcoords (lin-preimage x) (extend-kbasis))))
+			(:instance vlistnp-firstn (k (idim)) (n (vdim)) (l (extend-kbasis)))
+			(:instance vlistnp-nthcdr (k (idim)) (n (vdim)) (l (extend-kbasis)))))))
+
+(local-defthmd is-2
+  (implies (in-image-p x)
+           (let* ((p (lin-preimage x)) (c (vcoords p (extend-kbasis))))
+	     (and (vp p)
+	          (flistnp c (vdim))
+		  (flistnp (firstn (idim) c) (idim))
+		  (flistnp (nthcdr (idim) c) (kdim))
+		  (vlistnp (firstn (idim) (extend-kbasis)) (idim))
+		  (vlistnp (nthcdr (idim) (extend-kbasis)) (kdim))
+		  (equal (w+ (lin (vcomb (firstn (idim) c) (firstn (idim) (extend-kbasis))))
+		             (lin (vcomb (nthcdr (idim) c) (nthcdr (idim) (extend-kbasis)))))
+		         x))))
+  :hints (("Goal" :in-theory (enable idim)
+                  :use (kdim-bound is-1
+		        (:instance vp-vcomb (n (idim)) (c (firstn (idim) (vcoords (lin-preimage x) (extend-kbasis)))) (l (firstn (idim) (extend-kbasis))))
+		        (:instance vp-vcomb (n (idim)) (c (nthcdr (idim) (vcoords (lin-preimage x) (extend-kbasis)))) (l (nthcdr (idim) (extend-kbasis))))
+		        (:instance lin-v+ (x (vcomb (firstn (idim) c) (firstn (idim) (extend-kbasis))))
+			                  (y (vcomb (nthcdr (idim) c) (nthcdr (idim) (extend-kbasis)))))))))
+
+(local-defthmd is-3
+  (implies (in-image-p x)
+           (let* ((p (lin-preimage x)) (c (vcoords p (extend-kbasis))))
+             (equal (lin (vcomb (firstn (idim) c) (firstn (idim) (extend-kbasis))))
+	            (wcomb (icoords x) (ibasis)))))
+  :hints (("Goal" :in-theory (enable idim icoords ibasis)
+                  :use (is-2 flistnp-icoords kdim-bound		  
+		        (:instance lin-vcomb (n (idim)) (c (icoords x)) (l (firstn (idim) (extend-kbasis))))))))
+
+(local-defthmd nthcdr-append
+  (equal (nthcdr (len x) (append x y))
+         y))
+
+(local-defthmd is-4
+  (equal (nthcdr (len (firstn (idim) (extend-kbasis))) (extend-kbasis))
+         (kbasis))
+  :hints (("Goal" :in-theory (enable vbasisp idim)
+                  :use (kdim-bound ili-5 vbasisp-extend-kbasis
+		        (:instance nthcdr-append (x (firstn (idim) (extend-kbasis))) (y (kbasis)))))))
+
+(local-defthmd is-5
+  (equal (len (firstn (idim) (extend-kbasis)))
+         (idim))
+  :hints (("Goal" :in-theory (enable vbasisp idim)
+                  :use (kdim-bound is-4 vbasisp-extend-kbasis
+			(:instance len-vlistnp (x (firstn (idim) (extend-kbasis))) (n (idim)))
+			(:instance vlistnp-firstn (l (extend-kbasis)) (n (vdim)) (k (idim)))
+			(:instance len-vlistnp (n (idim)) (x (firstn (idim) (extend-kbasis))))))))
+
+(local-defthmd is-6
+  (equal (nthcdr (idim) (extend-kbasis))
+         (kbasis))
+  :hints (("Goal" :use (is-4 is-5))))
+
+(local-defthmd is-7
+  (implies (in-image-p x)
+           (let* ((p (lin-preimage x)) (c (vcoords p (extend-kbasis))))
+	     (and (flistnp (nthcdr (idim) c) (kdim))
+                  (equal (lin (vcomb (nthcdr (idim) c) (nthcdr (idim) (extend-kbasis))))
+	                 (lin (vcomb (nthcdr (idim) c) (kbasis)))))))
+  :hints (("Goal" :use (is-2 is-6))))
+
+(local-defthmd is-8
+  (implies (and (klistnp x n) (flistnp c n))
+           (equal (lin (vcomb c x))
+	          (w0)))
+  :hints (("Goal" :in-theory (enable in-kernel-p))))
+
+(local-defthmd is-9
+  (implies (in-image-p x)
+           (let* ((p (lin-preimage x)) (c (vcoords p (extend-kbasis))))
+             (equal (lin (vcomb (nthcdr (idim) c) (nthcdr (idim) (extend-kbasis))))
+	            (w0))))
+  :hints (("Goal" :use (is-7 klistnp-kbasis
+                        (:instance is-8 (n (kdim)) (c (nthcdr (idim) (vcoords (lin-preimage x) (extend-kbasis)))) (x (kbasis)))))))
+
+(defthm ibasis-spans
+  (implies (in-image-p x)
+           (equal (wcomb (icoords x) (ibasis))
+                  x))
+  :hints (("Goal" :use (is-2 is-3 is-9))))
 
 
-;; Any linearly independent list of vectors l determines a subspace with basis l.  An element
-;; of this subspace is recognized by the predicate
 
-(defund spannedp (x l)
-  (vdepp (cons x l)))
+#|
+;;-----------------------------------------------------
 
-;; Given any list of vectors l, we may construct a subspace whose elements are the linear
-;; combinations of l.  A basis for this subspace may be constructed as a maximal linearly
-;; independent sublist of l:
+;; A subspace may be specified as the span of a given list of vectors.  The subspace spanned by 
+;; a list l is recognized by the following predicate:
+
+(defun-sk spannedp (x l)
+  (exists (c)
+    (and (flistnp c (len l))
+         (equal (vcomb c l) x))))
+
+(defthmd spannedp-lemma
+  (implies (and (flistnp c (len l))
+                (equal (vcomb c l) x))
+	   (spannedp x l)))
+
+(defthmd spannedp-witness-lemma
+  (implies (spannedp x l)
+           (let ((c (spannedp-witness x l)))
+	     (and (flistnp c (len l))
+                  (equal (vcomb c l) x)))))
+
+(defun vlistnp-len-induct (l n)
+  (if (zp n)
+      l
+    (vlistnp-len-induct (cdr l) (1- n))))
+
+(defthm vlistnp-len
+  (implies (vlistnp l n)
+           (vlistnp l (len l)))
+  :hints (("Goal" :induct (vlistnp-len-induct l n))))
+
+(defthm spannedp-vp
+  (implies (and (vlistnp l n) (spannedp x l))
+           (vp x))
+  :hints (("Goal" :use (spannedp-witness-lemma
+                        (:instance vp-vcomb (n (len l)) (c (spannedp-witness x l)))))))
+
+(defthm spannedp-v0
+  (implies (vlistnp l n)
+           (spannedp (v0) l))
+  :hints (("Goal" :use ((:instance spannedp-lemma (x (v0)) (c (flistn0 (len l))))))))
+
+(defthm spannedp-v-
+  (implies (and (vlistnp l n) (spannedp x l))
+           (spannedp (v- x) l))
+  :hints (("Goal" :use (spannedp-witness-lemma v*f-f1
+                        (:instance spannedp-lemma (x (v- x)) (c (flist-scalar-mul (f- (f1)) (spannedp-witness x l))))
+			(:instance vcomb-scalar-mul (x (spannedp-witness x l)) (c (f- (f1))) (n (len l)))))))
+
+(defthm spannedp-v+
+  (implies (and (vlistnp l n) (spannedp x l) (spannedp y l))
+           (spannedp (v+ x y) l))
+  :hints (("Goal" :use (spannedp-witness-lemma
+                        (:instance spannedp-witness-lemma (x y))
+			(:instance spannedp-lemma (x (v+ x y))
+			                          (c (flist-add (spannedp-witness x l) (spannedp-witness y l))))
+			(:instance vcomb-add (x (spannedp-witness x l)) (y (spannedp-witness y l)) (n (len l)))))))
+
+(defthm spannedp-v*
+  (implies (and (vlistnp l n) (spannedp x l) (fp c))
+           (spannedp (v* c x) l))
+  :hints (("Goal" :use (spannedp-witness-lemma
+                        (:instance spannedp-lemma (x (v* c x)) (c (flist-scalar-mul c (spannedp-witness x l))))
+			(:instance vcomb-scalar-mul (x (spannedp-witness x l)) (n (len l)))))))
+
+(defthmd spannedp-spannedp
+  (implies (spannedp x l)
+           (let ((c (spannedp-witness x l)))
+             (and (flistnp c (len l))
+	          (equal (vcomb c l)
+	                 x)))))
+
+;; Thus, if l is linearly independent, then l is a basis for the span of l.
+
+;; A basis of the span of an arbitrary list of vectors l may be constructed as a sublist of l:
 
 (defun max-indep (l)
   (if (consp l)
@@ -3523,10 +5368,10 @@
   (implies (and (natp n) (vlistnp l n) (flistnp c n))
            (and (flistnp (contract-vcomb c l) (len (max-indep l)))
 	        (equal (vcomb (contract-vcomb c l) (max-indep l))
-		       (vcomb x l)))))
+		       (vcomb c l)))))
 
 ;; Given a list of scalars c' such that x = (vcomb c' l'), we construct a list of scalars
-;; c = (contract-vcomb c' l) such that x = (vcomb c l):
+;; c = (expand-vcomb c' l) such that x = (vcomb c l):
 
 (defun expand-vcomb (c l)
   (if (consp l)
@@ -3541,82 +5386,541 @@
 	        (equal (vcomb (expand-vcomb c l) l)
 	               (vcomb c (max-indep l))))))
 
+;; The claim follows:
+
+(defthmd vindepp-max-indep
+  (implies (and (vlistnp l n) (vp x))
+           (iff (spannedp x l)
+	        (spannedp x (max-indep l)))))
 
 
 ;;---------------------------------------------------------------------------------------------------------------------
 ;;  n-space
 ;;---------------------------------------------------------------------------------------------------------------------
 
-(defund fnp (x n)
-  (flistnp x n))
+;; The vector space Fn consists of all lists of field elements of length n:
 
-(defund fn+ (x y)
-  (flist-add x y))
+(defund fnp (x n) (flistnp x n))
 
-(defund fn0 (n)
-  (flistn0 n))
+;; The zero vector:
 
-(defund fn- (x)
-  (flist-scalar-mul (f- (f1)) x))
+(defund fn0 (n) (flistn0 n))
 
-(defund fn* (c x)
-  (flist-scalar-mul c x))
+;; Vector addition:
 
-(defund fnbasis (n)
-  (id-fmat n))
+(defund fn+ (x y) (flist-add x y))
 
-(defund fncoords (x)
-  x)
+;; Additive inverse:
 
-(defund fnlistmp (x m n)
-  (fmatp x m n))
+(defund fn- (x) (flist-minus x))
 
-(defund fncomb (c x)
-  (fmat* (list c) x))
-    
+;; Scalar multiplication:
 
+(defund fn* (c x) (flist-scalar-mul c x))
 
+;; A list of l of m vectors is recognized by (fmatp l m n).
 
+(defun fnlistp (x m n) (fmatp x m n))
 
-;; Solution space of a homogeneous system of linear equations with mxn coefficient matrix a:
+;; The canonical basis is the identity matrix:
 
-(defun sol-space-basis-elt (a lead-inds free-ind j n)
-  (if (and (natp j) (natp n) (< j n))
-      (cons (if (= j free-ind)
-	        (f1)
-	      (if (member-equal j lead-inds)
-	          (f- (entry j free-ind a))
-		(f0)))
-            (sol-space-basis-elt a lead-inds free-ind (1+ j) n))
+(defund fnbasis0 (n) (id-fmat n))
+
+;; A vector is its own coordinate list:
+
+(defun fncoords0 (x) x)
+
+;; Consequently, a list of vectors is its own coordinate matrix:
+
+(defun fncoord-mat (l)
+  (if (consp l)
+      (cons (fncoords0 (car l))
+	    (fncoord-mat (cdr l)))
     ()))
+  
+(defthmd fncoord-mat-id
+  (implies (fnlistp x m n)
+           (equal (fncoord-mat x)
+	          x)))
 
-(defun sol-space-basis (a lead-inds free-inds n)
-  (if (consp free-inds)
-      (cons (sol-space-basis-elt a lead-inds (car free-inds) 0 n)
-            (sol-space-basis a lead-inds (cdr free-inds) n)
+;; Linear combination:
 
-(defun sol-space-coords (free-inds x)
-  (if (consp free-inds)
-      (cons (nth (car free-inds) x)
-            (sol-space-coords (cdr free-inds) x))
-    ()))
+(defun fncomb (c l n)
+    (if (consp c)
+        (fn+ (fn* (car c) (car l))
+	     (fncomb (cdr c) (cdr l) n))
+      (fn0 n)))
 
 
+vp          fnp
+v+          fn+
+v0          fn0
+v-          fn-
+v*          fn*
+vbasis0     fnbasis0
+vcoords0    fncoords0
+vdim        n
+vlistnp     fmatp   
+vcomb       fncomb
 
-;; Row space of a matrix:
 
-Let a be an mxn matrix with row-rank r.  Let b be a basis for the row space of a.
-Then b is a list of r vectors in n-space, i.e., an rxn matrix.
-Every row of a is a linear combination of b.
-For some mxr matrix c, a = (fmat* c b).  Let a', b', and c' be the transposes of a, b,
-and c, of dimensions nxm, nxr, and rxm.
-Then a' = (fmat* b' c'), and hence every row of a' is a linear combination of c'.
-Therefore, (row-rank a') <= r = (row-rank a).
-Similarly, (row-rank a) <= (row-rank a').
+vp-v0       flistnp-flistn0
+vp-v-       flistnp-flist-minus
+v+closed    flistnp-flist-add
+v+comm      flist-add-comm
+v+assoc     flist-add-assoc
+v+id        flist-add-flistn0
+v+inv       flist-minus-inv
+v*closed    flistnp-flist-scalar-mul
+v*id        flist-scalar-mul-f1
+v*assoc     flist-scalar-mul-assoc
+vdistf      flist-scalar-mul-dist-1
+vdistv      flist-scalar-mul-dist-2
+
+posp-vdim           (posp n)
+vlistnp-basis0      fmatp-id-fmat
+flistnp-vcoords0    (fnp x n)
+vbasis0-spans
+vbasis0-lin-indep
+
+??		  
+;;-----------------------------------------------------
+
+;; An mxn matrix a is a list of m elements of Fn.  The row space of a is its span, which is
+;; recognized by the following predicate:
+
+(defun-sk fnspannedp (x a n)
+  (exists (c)
+    (and (flistnp c (len a))
+         (equal (fncomb c a n) x))))
+
+(defthm fnspannedp-fnp
+  (implies (and (fnlistp a m n) (fnspannedp x a n))
+           (fnp x n)))
+
+(defthm fnspannedp-fn0
+  (implies (fnlistp a m n)
+           (fnspannedp (fn0) a n)))
+
+(defthm fnspannedp-fn-
+  (implies (and (fnlistp a m n) (fnspannedp x a n))
+           (fnspannedp (fn- x n) a n)))
+
+(defthm fnspannedp-fn+
+  (implies (and (fnlistp a m n) (fnspannedp x a n) (fnspannedp y a n))
+           (fnspannedp (fn+ x y n) a n)))
+
+(defthm fnspannedp-fn*
+  (implies (and (fnlistp a m n) (fnspannedp x a n) (fp c))
+           (fnspannedp (fn* c x n) a n)))
+
+;; The nonzero rows of (row-reduce a) form a basis of the row space:
+
+(defun rbasis (a)
+  (firstn (row-rank a) (row-reduce a)))
+         
+(defund rdim (a)
+  (len (rbasis a)))
+
+(defthmd rdim-row-rank
+  (implies (and (fmatp a m n) (posp m) (posp n))
+           (equal (rdim a)
+	          (row-rank a))))
+
+(defthmd fnlistp-rbasis
+  (implies (and (fmatp a m n) (posp m) (posp n))
+           (fnlistp (rbasis a) (row-rank a))))
+
+
+(defthmd fnspannedp-rbasis
+  (implies (and (fmatp a m n) (posp m) (posp n) (fnp x n))
+           (iff (spannedp x a n)
+	        (spannedp x (rnasis a) n))))
+
+(defund rbasis-coords (x a n)
+  (fnspannedp-witness x (rbasis a) n))
+
+(defthmd fnspannedp-fnspannedp
+  (implies (and (fmatp a mn) (posp m) (posp n) (fnspanned x a n))
+           (let ((c (rbasis-coords x a n)))
+             (and (flistnp c (rdim a))
+	          (equal (fncomb c (rbasis a))
+	                 x)))))
+
+(defthmd rbasis-lin-indep
+  (implies (and (fmatp a mn) (posp m) (posp n)
+                (fnlistp c (rdim a) n)
+                (equal (fncomb c (rbasis a)) (fn0 n)))
+           (equal (flistn0 (rdim a)) c)))
+
+;; Thus, the dimension of the row space of a is the row rank of a.
+
+;; The column rank of a is defined as the row rank of (transpose-mat a).  We shall show that the row rank and the
+;; column rank of a are equal.
+
+;; Let b = (rbasis a).  Every row of a is a linear combination of b.  Consequently, for some m x rdim matrix p,
+;; a = (fmat* p b).  Let a', b', and p' be the transposes of a, b, and p, of dimensions n x m, n x rdim, and rdim x m.
+;; Then a' = (fmat* b' p').  we shall show that p' spans the row space of a'.  Let x be in the row space of a', i.e.,
+;; (spannedp x a').  Thenb for some c, (flistnp c rdim) and x = (fncomb c a'), which may be expressed as
+
+;;     x = (fncomb c a')
+;;       = (car (fmat* (list c) a'))
+;;       = (car (fmat* (list c) (fmat* b' p')))
+;;       = (car (fmat* (fmat* (list c) b') p'))
+;;       = (car (fmat* (list (car (fmat* (list c) b'))) p'))
+;;       = (fncomb (car (fmat* (list c) b')) p').
+
+;; Thus, (fnspannedp x p').  By exists-unspanned-len<vdim, since (rbasis a') is a basis of the row space of a' of length
+;; (row-rank a'), (row-rank a') <= (row-rank a).  Similarly, (row-rank a) <= (row-rank a').
 
 (defthmd row-column-rank
   (implies (and (fmatp a m n) (posp m) (posp n))
            (equal (row-rank (transpose-mat a))
 	          (row-rank a))))
+
+;;-----------------------------------------------------
+
+;; We have shown that the solutions of a homogeneous system of linear equations with mxn coefficient matrix a form a 
+;; subspace of Fn recognized by the predicate esol0.  We shall show that the dimension of this subspace is the 
+;; difference n - (row-rank a).
+
+;; This subspace may be viewed as the kernel of the linear transformation from Fn to Fm defined by a, the image of
+;; which is the subspace of Fm recognized by the following predicate:
+
+(defun-sk exists-solution (a b)
+  (exists (x)
+    (and (fnp x n)
+         (solutionp x a b))))
+
+;; This is the same subspace as the row space of the transpose of a:
+
+(defthmd exists-solution-spannedp
+  (implies (and (fmatp a m n) (posp m) (posp n))
+           (iff (exists-solution a b)
+	        (fnspannedp b (transpose-mat a)))))
+
+;; Thus, the dimension of the image is (row-rank a).  One way to compute the dimension of the kernel is by functional
+;; instantiation of idim+kdim.  We shall take a different approach, explicitly deriving a natural basis for the
+;; solution space.
+
+;; Let ar = (row-reduce a), q = (row-rank a), aq = (first-rows q ar), l = (lead-inds aq) and f = (free-inds aq n).
+;; Corresponding to each member j of f, we construct a basis element (c_0 ... c_n-1). The kth entry c_k is defined as
+;; follows:
+
+;;   (1) If k = j, then c_k = 1;
+;;   (2) If k is in f and k != j, then c_k = 0;
+;;   (3) If k is the ith member of l, then c_k = (f- (entry i j aq)):
+
+(defun solbasis-elt-aux (j l aq k n)
+  (if (and (natp k) (natp n) (< k n))
+      (cons (if (member-equal k l)
+		(f- (entry (index k l) j aq))
+	      (if (= k j)
+	          (f1)
+	        (f0)))		
+            (solbasis-elt-aux j l aq (1+ k) n))
+    ()))
+
+(defun solbasis-elt (j l aq n)
+  (solbasis-elt-aux j l aq 0 n))
+
+(defun solbasis-aux (a f l n)
+  (if (consp f)
+      (cons (solbasis-elt (car f) l a n)
+            (solbasis a (cdr f) l n))))
+
+(defund solbasis (a)
+  (let* ((ar (row-reduce a))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+         (l (lead-inds aq))
+         (f (free-inds aq n)))
+    (solbasis-aux aq f l (len (car a)))))
+
+(defund soldim (a)
+  (len (solbasis a)))
+
+(defthmd soldim-val
+  (implies (and (fmatp a m n) (posp m) (posp n))
+           (equal (soldim a)
+	          (- (len (car a)) (row-rank a)))))
+
+;; We shall prove that (solbasis a) is a basis of the solution space.  First we show that each basis element is indeed
+;; a solution:
+
+(defthmd sol0p-solbasis-elt
+  (let* ((ar (row-reduce a))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+         (l (lead-inds aq))
+         (f (free-inds aq n)))
+    (implies (and (fmatp a m n) (posp m) (posp n)
+                  (member j f))
+	     (sol0p (solbasis-elt j l aq k n) a))))
+
+;; Therefore, (solbasis a) is a list of solutions:
+
+(defun sol0listp (l n a)
+  (if (zp n)
+      (null l)
+    (and (consp l)
+         (sol0p (car l) a)
+	 (sol0listp (cdr l) (1- n) a))))
+
+(defthmd sol0listp-solbasis
+  (implies (and (fmatp a m n) (posp m) (posp n))
+           (sol0listp (solbasis a) (soldim a) a)))
+
+;; The ith entry of a linear combination of (solbasis a) is the coefficient of the ith free index: 
+
+(defthmd nth-fncomb-solbasis
+  (implies (and (fmatp a m n) (posp m) (posp n)
+                (flistnp c (soldim a))
+		(nat i) (< i n))
+	   (equal (nth (nth i (free-inds a n)) (fncomb c (solbasis a)))
+	          (nth i c))))
+
+;; It follows that (solbasis a) is linearly independent:
+
+(defthmd solbasis-lin-indep
+  (implies (and (fmatp a m n) (posp m) (posp n)
+                (flistnp c (soldim a))
+                (equal (fncomb c (solbasis a)) (fn0 n)))
+	   (equal (flistn0 (soldim a)) c)))
+ 
+;; The coordinates of a solution with respect to (solbasis a):
+
+(defun solcoords-aux (x f)
+  (if (consp f)
+      (cons (nth (car f) x)
+            (solcoords x (cdr f)))
+    ()))
+
+(defund solcoords (x a)
+  (let* ((ar (row-reduce a))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+         (f (free-inds aq (len (car a)))))
+    (solcoords-aux x d)))
+
+(defthmd nth-fncomb-solbasis
+  (implies (and (fmatp a m n) (posp m) (posp n)
+                (sol0p x a))
+	   (flistnp (solcoords x a) (soldim a))))
+
+;; Let x' = (fncomb (solcoords x a) (solbasis a)).  By nth-fncomb-solbasis, x and x' agree at every free index,
+;; and it follows that x' = x.  Thus, (solbasis a) spans the solution space:
+
+(defthmd solbasis-spans
+ (implies (and (fmatp a m n) (posp m) (posp n)
+               (sol0p x a))
+	  (equal (fncomb (solcoords x a) (solbasis a))
+	         x)))
+
+
+;;---------------------------------------------------------------------------------------------------------------------
+
+;; Let's try this again:
+
+;; Let (vp x).  By lin-mat-lin, (in-kernel-p x) iff the following equation holds:
+
+;;   (fmat* (row-mat (vcoords0 x)) (lin-mat)) = (row-mat (flistn0 (wdim))).
+
+;; Let a = (transpose-mat (lin-mat)).  Taking the transpose of both sides of the above equation yields
+
+;;   (fmat* a (col-mat (vcoords0 x))) = (col-mat (flistn0 (wdim))).
+
+;; Thus, x is in the kernel iff (vcoords0 x) is a solution of the homogeneous system of linear equations with coordinate 
+;; matrix a.  See the discussion of the function sol0p at the end of the book "reduction".
+
+(defthmd in-kernel-p-sol0p
+  (iff (in-kernel-p x)
+       (sol0p (vcoords0 x) (transpose-mat (lin-mat)))))
+
+;; We shall use this characterization to construct a basis of the kernel, kbasis.  Let ar = (row-reduce a),
+;; q = (num-nonzero-rows ar) = (row-rank a), l = (lead-inds ar) and f = (free-inds ar n).  Then (len l) = q and
+;; (len f) = vdim - q.  Each member of kbasis corresponds to a member of f.
+
+;; Given j in f, we first define the coordinate list c with respect to vbasis0 of the kbasis element corresponding to j.
+;; For 0 <= i < vdim, (nth i c) = (kbasis-coord i j), which is defined as follows:
+
+;; (a) If i is in l, let k = (index i l), i.e., i = (nth k l).  Then (nth i c)) = (f- (entry k j ar)).
+;; (b) If i = j, then (nth i c) = (f1).
+;; (c) If i is in f and i !+ j, then (nth i c) = (f0).
+
+(defun kbasis-coord (i j)
+  (let* ((ar (row-reduce (transpose-mat (lin-mat))))
+	 (l (lead-inds ar)))
+    (if (member i l)
+        (f- (entry (index i l) j ar))
+      (if (= i j)
+          (f1)
+        (f0)))))
+
+;; Thus, c = (kbasis-elt-coords j), defined as follows:
+
+(defun kbasis-coords-aux (i j)
+  (declare (xargs :measure (nfix (- (vdim) i))))
+  (if (and (natp i) (< i (vdim)))
+      (cons (kbasis-coord i j)
+            (kbasis-coords-aux (1+ i) j))
+    ()))
+
+(defund kbasis-coords (j) (kbasis-coords-aux 0 j))
+
+;; The kbasis element corresponding to j is the vector (vcomb c (vbasis0)).  Thus, kbasis is defined as follows:
+
+(defun kbasis-aux (f)
+  (if (consp f)
+      (cons (vcomb (kbasis-coords (car f)) (vbasis0))
+            (kbasis-aux (cdr f)))
+    ()))
+
+(defund kbasis ()
+  (let ((ar (row-reduce (transpose-mat (lin-mat)))))
+    (kbasis-aux (free-inds ar (vdim)))))
+
+(defund kdim () (len (kbasis)))
+
+;; We must show that kbasis is a linearly independent list of kernel vectors that spans the kernel.
+
+;; Given i < kdim, let j = (nth i f).  Then
+
+;;   (nth i (kbasis)) =  (vcomb (kbasis-coords j) (vbasis0)),
+
+;; which implies
+
+;;   (vcoords0 (nth i (kbasis))) = (kbasis-coords j).
+
+;; Thus, to prove that every member of kbasis is in the kernel, it suffices to show that for all j in f,
+
+;;   (sol0p (kbasis-coords j) a).
+
+;; Let x = (kbasis-coords j).  According to the lemma sol0p-suff, it suffices to prove that for all k < q,
+
+;;   (nth (nth k l) x) = (f- (fdot-select f (nth k aq) x).
+
+;; But according to the definition of kbasis-coords, both sides of this equation reduce to (f- (entry k j ar)).
+;; Thus, we have
+
+(defthm klistnp-kbasis
+  (klistnp (kbasis) (kdim)))
+
+;; Next, we prove that kbasis is linearly independent.
+
+;; Given (flistnp c n), (vlistnp l n), and i < vdim, we derive a formula for (nth i (vcoords0 (vcomb c l))):
+
+(defun nth-vcomb (j c l)
+  (if (consp c)
+      (v+ (v* (car c) (nth j (vcoords0 (car l))))
+	  (nth-vcomb j (cdr c) (cdr l)))
+      (f0)))
+
+(defthmd nth-vcomb-val
+  (implise (and (flistnp c n) (vlistnp l n)
+                (natp i) (< j (vdim)))
+	   (equal (nth j (vcoords0 (vcomb c l)))
+	          (nth-vcomb j c l))))
+
+;; We apply this result to the case l = (kbasis), n = kdim, and j = (nth i f), where i < kdim.  By construction of
+;; kbasis, (nth-vcomb j c (kbasis)) = (nth i c).  Instantiating nth-vcomb-val, we have
+
+(defthmd nth-vcomb-kbasis
+   (let* ((ar (row-reduce (transpose-mat (lin-mat))))
+          (f (free-inds ar (vdim))))
+     (implies (and (flistnp c (kdim)) (natp i) (< i (kdim)))
+              (equal (nth (nth i f) (vcoords0 (vcomb c (kbasis))))
+	             (nth i c)))))
+
+;; Now suppose (vcomb c (kbasis)) = 0. Then (vcoords0 (vcomb c (kbasis))) = (flistn0 (kbasis)).  It follows that
+;; (nth i c) = 0 for all i < kdim, and therefore c = (flistn0 (kdim):
+
+(defthmd vcomb-kbasis-v0
+  (implies (and (flistnp c (kdim)) (equal (vcomb c (kbasis)) (v0))
+                (natp i) (< i (kdim)))
+	   (equal (nth i c) (f0))))
+
+(defthmd vcomb-kbasis-v0
+  (implies (and (flistnp c (kdim)) (equal (vcomb c (kbasis)) (v0)))
+	   (equal (flistn0 (kdim)) c)))
+
+;; Thus, kbasis is linearly independent:
+
+(defthmd vindepp-kbasis
+  (vindepp (kbasis)))
+
+;; To prove that kbasis spans the kernel, we define the following coordinate function:
+
+(defun kcoords-aux (x f)
+  (if (consp f)
+      (cons (nth (car f) (vcoords0 x))
+            (kcoords-aux x (cdr f)))
+    ()))
+
+(defund kcoords (x)
+   (let* ((ar (row-reduce (transpose-mat (lin-mat))))
+          (f (free-inds ar (vdim))))
+     (kcoords-aux x f)))
+
+;; The first requirement of this function is trivial:
+
+(defthm flistnp-kcoords
+  (implies (in-kernel-p x) (flistnp (kcoords x) (kdim))))
+
+;; Another immediate consequence of the definition:
+
+(defthmd nth-kcoords
+   (let* ((ar (row-reduce (transpose-mat (lin-mat))))
+          (f (free-inds ar (vdim))))
+    (implies (and (natp i) (< i (kdim)))
+             (equal (nth i (kcoords x))
+	            (nth (nth i f) (vcoords0 x))))))
+
+;; We must show that if (in-kernel-p x), then (vcomb (kcoords x) (kbasis)) = x.  Let y = (vcomb (kcoords x) (kbasis).
+;; By vbasis0-spans, it suffices to show that (vcoords0 y) = (vcoords0 x).  But since (sol0p x a) and (sol0p y a), it
+;; follows from sol0p-necc that it suffices to show that for all j in f, (nth j (vcoords0 y)) = (nth j (vcoords0 x)).
+;; Instantiating nth-vcomb-kbasis with i = (index j f) and c = (kcoords x), we have
+
+;;    (nth j (vcoords0 y)) = (nth (nth i f) (vcoords0 (vcomb (kcoords x) (kbasis))))
+;;                         = (nth i (kcoords x))
+;;                         = (nth j (vcoords0 x)).
+
+(defthm kbasis-spans
+  (implies (in-kernel-p x)
+           (equal (vcomb (kcoords x) (kbasis))
+                  x)))
+
+
+
+
+
+
+;; Given k < kdim, let j = (nth k f).  Then
+
+;;   (nth k (kbasis)) =  (vcomb (kbasis-coords j) (vbasis0)),
+
+;; which implies
+
+;;   (vcoords0 (nth k (kbasis))) = (kbasis-coords j).
+
+;; To prove that (nth k (kbasis)) is in the kernel, we must show that for i < q,
+
+;;   (fdot (row i aq) (kbasis-coords j) = 0.
+
+;; Let r = (row i aq) and c = (kbasis-coords j).  There is only 1 leading index at which r is nonzero, nasmely
+
+;;   (nth (nth i l) r) = 1,
+
+;; and only 1 free index at which c is nonzero, namly
+
+;;   (nth j c) = 1.
+
+;; Therefore, (fdot r c) has at most 2 nonzero terms, the sum of which is
+
+;;   (nth (nth i l) r) * (nth (nth i l) c) + (nth j r) * (nth j c) = (nth (nth i l) c) + (nth j r).
+
+;; But according to the definition of kbasis-coords, (nth (nth i l) c) = (f- (nth j r)), and hence (fdot r c) = 0.
+;; Thus, every element of kbasis is in the kernel:
+
 
 |#

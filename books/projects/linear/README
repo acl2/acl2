@@ -29,7 +29,7 @@ An arbitrary field is defined by a separate encapsulation.  The only difference 
 
   * fdet
 
-The next book, which depends on the last 3, deals with topics that apply only to matrices over a field:
+The next two books, which depend on the last 3, deal with topics that apply only to matrices over a field:
 
   * reduction
     - Reduced row-echelon form
@@ -38,16 +38,12 @@ The next book, which depends on the last 3, deals with topics that apply only to
     - Invertibility
     - Systems of linear equations and Cramer's rule
 
-In the book "rational", which is incompatible with the other books, we replace the constrained functions in field.lisp with the corresponding rational functions and in this context, we reproduce the function definitions in field.lisp, fmat.lisp, fdet.lisp, and reduction.lisp.  The result is that these definitions are now executable and may be used for the purposes of testing and illustration.
+  * vectors
+    - Axioms of a finite-dimensional vector space
+    - Linear independence
+    - Bases
+    - Linear transformations
+    - Subspaces
+    - Kernel and image of a linear transformation
 
-Several additional books are planned.  The first 2 are based on the theory of matrices over a field:
-
-  * vector spaces
-
-  * linear transformations
-
-Finally, we shall address the topic of eigenvalues and the characteristic polynomial.  This will involve the theory of matrices over a field as well as that of matrices over a ring, applied to the ring of polynomials over a field:
-
-  * ring of polynomials over a field
-
-  * eigenvalues and the characteristic polynomial
+At least one additional book is planned, addressing the topic of eigenvalues and the characteristic polynomial.  This will involve the theory of matrices over a field as well as that of matrices over a ring, applied to the ring of polynomials over a field.

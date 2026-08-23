@@ -1250,6 +1250,55 @@
            (iff (sol0p x a)
                 (sol0-test x a n))))
 
+;; We derive an alternative formulation of sol0-test, which will be useful in "vectors.lisp".
+
+;; If (sol0p x a), then the entry of x at each leading index may be computed from its entries at the
+;; free indices according to the following:
+
+(defthmd sol0p-necc
+  (let* ((ar (row-reduce a))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+         (l (lead-inds aq))
+         (f (free-inds aq n)))
+    (implies (and (fmatp a m n) (posp m) (posp n)
+                  (flistnp x n) (sol0p x a)
+		  (natp k) (< k q))
+	     (equal (nth (nth k l) x)
+                    (f- (fdot-select f (nth k aq) x))))))
+
+;; The converse of sol0p-necc states that if the equation given by sol0p-necc holds for each leading
+;; index, then (sol0p x a):
+
+(defun sol0-test-aux-witness (x aq l f k)
+  (if (zp k)
+      ()
+    (if (equal (nth (nth (1- k) l) x)
+               (f- (fdot-select f (nth (1- k) aq) x)))
+	(sol0-test-aux-witness x aq l f (1- k))
+      (1- k))))
+
+(defund sol0p-witness (x a n)
+  (let* ((ar (row-reduce a))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+         (l (lead-inds aq))
+         (f (free-inds aq n)))
+    (sol0-test-aux-witness x aq l f q)))
+
+(defthmd sol0p-suff
+  (let* ((ar (row-reduce a))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+         (l (lead-inds aq))
+         (f (free-inds aq n)))
+    (implies (and (fmatp a m n) (posp m) (posp n)
+                  (flistnp x n) (not (sol0p x a)))
+	     (let ((k (sol0p-witness x a n)))
+	       (and (natp k) (< k q)
+	            (not (equal (nth (nth k l) x)
+                                (f- (fdot-select f (nth k aq) x)))))))))
+
 ;; Eventually, we shall examine the solution set of a homogeneous system as a vector space.  Here we merely
 ;; observe the existence of a nontrivial solution in the case m < n, a result that is needed in our 
 ;; formalization of galois theory.

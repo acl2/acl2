@@ -4,11 +4,11 @@
 (local (include-book "support/embeddings"))
 
 ;; Various results in subsequent books depends on the observation that if e is a field extension of f, then
-;; e is a vector space over f.  This allows us to apply the results of "../linear/" by functional instantiation.
-;; First we define analogs, in the context of field extensions, of the relevant functions of :../linear/fmat"
-;; and "../linear/reduction" pertaining to matrices and row reduction.  The we define analogs of the constrained
-;; vector space functions of "../vectors" and prove the they satisfy the vector space axioms.
-
+;; e is a vector space over f.  This allows us to apply the results of "../linear/" by functional 
+;; instantiation.  First we define analogs, in the context of field extensions, of the relevant functions of 
+;; "../linear/fmat" and "../linear/reduction" pertaining to matrices and row reduction.  The we define 
+;; analogs of the constrained vector space functions of "../vectors" and prove the they satisfy the vector
+;; space axioms.
 
 ;;----------------------------------------------------------------------------------------------------------
 ;;                                             Matrices over a Field
@@ -791,6 +791,7 @@
 ;; => (split n c) = (elistn0-list n m f)                                                  [ecomb-list-elistn0-listp]
 
 ;; => c = (elistn0 (* m n) f))
+;;----------------------------------------------------------------------------------------------------------
 
 
 (defthmd eindepp-sk-inductive-case
