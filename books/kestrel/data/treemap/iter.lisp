@@ -33,6 +33,7 @@
 (local (include-book "kestrel/data/treeset/insert" :dir :system))
 (local (include-book "kestrel/data/treeset/min-max" :dir :system))
 (local (include-book "kestrel/data/treeset/in" :dir :system))
+(local (include-book "kestrel/data/treeset/set" :dir :system))
 (local (include-book "std/omaps/inverse" :dir :system))
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
@@ -1177,13 +1178,6 @@
            has-valuep
            next))
 
-(defrulel consp-of-car-when-alistp
-  (implies (and (alistp l)
-                (consp l))
-           (consp (car l)))
-  :rule-classes :type-prescription
-  :enable alistp)
-
 ;; What a step forward lands on: the least of what lay ahead. This is TREESET's
 ;; proof, read on keys: `equal-of-min-becomes-sk' reduces the claim to
 ;; membership plus minimality, and the ordered alist supplies minimality
@@ -1203,12 +1197,11 @@
            has-valuep
            assoc-equal
            ;; The head of the side alist is a pair, hence non-nil.
-           consp-of-car-when-alistp
            data::<<-rules)
   :use ((:instance alistp-of-tree-iter-after
                    (iter (iter-fix iter)))
-        (:instance consp-of-car-when-alistp
-                   (l (tree-iter-after (iter-fix iter))))
+        (:instance acl2::consp-of-car-when-alistp-alt
+                   (x (tree-iter-after (iter-fix iter))))
         (:instance data::<<-of-caar-when-assoc-equal-of-cdr
                    (l (tree-iter-after (iter-fix iter)))
                    (x (treeset::not-<<-all-l-sk-witness
@@ -1273,9 +1266,8 @@
                   (max-key (before iter))))
   :enable (data::binary-max-<<
            data::<<-rules
-           ;; The empty-side case is vacuous once `(emptyp (empty))' computes.
-           (:e treeset::empty$inline)
-           (:e treeset::emptyp$inline))
+           ;; The empty-side case is vacuous once `(emptyp (empty))' resolves.
+           treeset::emptyp-of-empty)
   :use ((:instance <<-of-arg1-and-entry-key-when-in-of-keys-of-before
                    (iter (prev iter))
                    (x (max-key (before (prev iter))))))
@@ -1284,14 +1276,6 @@
 (theory-invariant
   (incompatible! (:rewrite entry-key-of-prev)
                  (:rewrite before-becomes-insert-of-before-of-prev)))
-
-(defrulel assoc-equal-of-tree-iter-before-becomes-in-of-keys
-  (iff (assoc-equal x (tree-iter-before (iter-fix iter)))
-       (treeset::in x (keys (before iter))))
-  :enable in-of-keys-of-before-becomes-assoc-equal)
-
-;; The same, for an iterator already known to be one: `iter-fix' has been
-;; simplified away by then, so the form above no longer matches.
 
 (defrulel assoc-equal-of-tree-iter-before-becomes-in-of-keys-when-iterp
   (implies (iterp iter)
@@ -1311,12 +1295,10 @@
   ;; disjointness instance discharges the delete of the absent maximum.
   :enable (extensionality
            lookup-of-before-becomes-assoc-equal
-           assoc-equal-of-tree-iter-before-becomes-in-of-keys
            treeset::in-when-emptyp
            assoc-equal
            entry-val
-           (:e treeset::empty$inline)
-           (:e treeset::emptyp$inline))
+           treeset::emptyp-of-empty)
   :use ((:instance entry-key-of-prev)
         (:instance not-in-of-keys-of-entry-key-and-before (iter (prev iter)))
         (:instance has-valuep-when-neither-end (iter (prev iter)))
