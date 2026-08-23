@@ -364,7 +364,12 @@
              c::iconst-option-dec0-to-oct0
              c::iconst-option-some->val
              mv-nth-0-ldm-dirdeclor-obj-of-declor-to-dirdeclor
-             mv-nth-1-ldm-dirdeclor-obj-of-declor-to-dirdeclor)))
+             mv-nth-1-ldm-dirdeclor-obj-of-declor-to-dirdeclor))
+
+  (defrule ldm-dirdeclor-fun-of-declor->direct-of-ildm-obj-declor-error
+    (mv-nth 0 (ldm-dirdeclor-fun (declor->direct (ildm-obj-declor declor))))
+    :induct t
+    :enable ldm-dirdeclor-fun))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -710,7 +715,15 @@
     (equal (ldm-declon-tag (ildm-tag-declon declon))
            (mv nil (c::tag-declon-dec0-to-oct0 declon)))
     :enable (ldm-declon-tag
-             c::tag-declon-dec0-to-oct0)))
+             c::tag-declon-dec0-to-oct0))
+
+  (defrule ldm-declon-fun-of-ildm-tag-declon-error
+    (mv-nth 0 (ldm-declon-fun (ildm-tag-declon declon)))
+    :enable ldm-declon-fun)
+
+  (defrule ldm-declon-obj-of-ildm-tag-declon-error
+    (mv-nth 0 (ldm-declon-obj (ildm-tag-declon declon)))
+    :enable ldm-declon-obj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1112,7 +1125,22 @@
    :fundef (ext-declon-fundef (ildm-fundef edeclon.get))
    :fun-declon (ext-declon-declon (ildm-fun-declon edeclon.get))
    :obj-declon (ext-declon-declon (ildm-obj-declon edeclon.get))
-   :tag-declon (ext-declon-declon (ildm-tag-declon edeclon.get))))
+   :tag-declon (ext-declon-declon (ildm-tag-declon edeclon.get)))
+
+  ///
+
+  (defrule ldm-ext-declon-of-ildm-ext-declon
+    (equal (ldm-ext-declon (ildm-ext-declon edeclon))
+           (mv nil (c::ext-declon-dec0-to-oct0 edeclon)))
+    :hints (("Goal"
+             :expand ((ldm-declon-fun
+                       (ildm-obj-declon
+                        (c::ext-declon-obj-declon->get edeclon))))
+             :in-theory (enable ldm-ext-declon
+                                c::ext-declon-dec0-to-oct0))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable ildm-obj-declon
+                                      ldm-declor-fun))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
