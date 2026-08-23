@@ -48,7 +48,7 @@
      with a Lisp-like notion of variadic subtraction,
      and with a homomorphic extension to lists.")
    (xdoc::p
-    "We start with the obligatory equivalence rules
+    "We start with the equivalence rules
      (reflexivity, symmetry, and transitivity),
      for both dimensions and lists of dimensions,
      with congruence rules for the arithmetic operations,
