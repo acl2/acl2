@@ -963,7 +963,13 @@
     (equal (ldm-declon-obj (ildm-obj-declon declon))
            (mv nil (c::obj-declon-dec0-to-oct0 declon)))
     :enable (ldm-declon-obj
-             c::obj-declon-dec0-to-oct0)))
+             c::obj-declon-dec0-to-oct0))
+
+  (defrule ldm-declon-fun-of-ildm-obj-declon-error
+    (mv-nth 0 (ldm-declon-fun (ildm-obj-declon declon)))
+    :enable (ldm-declon-fun
+             ldm-declor-fun
+             ildm-obj-declon)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1132,15 +1138,8 @@
   (defrule ldm-ext-declon-of-ildm-ext-declon
     (equal (ldm-ext-declon (ildm-ext-declon edeclon))
            (mv nil (c::ext-declon-dec0-to-oct0 edeclon)))
-    :hints (("Goal"
-             :expand ((ldm-declon-fun
-                       (ildm-obj-declon
-                        (c::ext-declon-obj-declon->get edeclon))))
-             :in-theory (enable ldm-ext-declon
-                                c::ext-declon-dec0-to-oct0))
-            (and stable-under-simplificationp
-                 '(:in-theory (enable ildm-obj-declon
-                                      ldm-declor-fun))))))
+    :enable (ldm-ext-declon
+             c::ext-declon-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
