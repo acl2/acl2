@@ -1072,6 +1072,15 @@
 	        (and (member x (ninit n))
 		     (not (member x (lead-inds a)))))))
 
+(defthmd disjointp-lead-free
+  (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a))
+           (disjointp (lead-inds a) (free-inds a n))))
+
+(defthmd len-lead+free
+  (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a))
+           (equal (+ (len (lead-inds a)) (len (free-inds a n)))
+	          n)))
+
 ;; Note that if q = n, then (free-inds aq n) = nil.  In general, given a sublist of (ninit n), a dot
 ;; product of 2 flists of length n may be split into 2 sums as follows:
 

@@ -4826,9 +4826,15 @@
            (in-image-p (w- x)))
   :hints (("Goal" :use (w*f-f1 (:instance in-image-p-w* (c (f- (f1))))))))
 
-;; We shall show that the dimension of the image is the difference vdim - kdim:
+;; We shall show that the dimension of the image is the difference vdim - kdim, which is the row rank of a:
 
 (defun idim () (- (vdim) (kdim)))
+
+(defthmd idim-row-rank
+  (equal (idim) (row-rank (transpose-mat (lin-mat))))
+  :hints (("Goal" :in-theory (enable row-rank idim)
+                  :use (kdim-val len-l fmatp-ar row-echelon-p-ar
+		        (:instance len-lead+free (a (ar$)) (m (wdim)) (n (vdim)))))))
 
 (defthmd idim+kdim
   (equal (+ (idim) (kdim))

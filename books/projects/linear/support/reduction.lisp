@@ -4176,7 +4176,7 @@
 	        (and (member x (ninit n))
 		     (not (member x (lead-inds a))))))
   :hints (("Goal" :in-theory (enable free-inds)
-                  :use ((:instance member-set-difference (l (ninit n)) (m (lead-inds a)))))))
+                  :use ((:instance member-set-difference (l (ninit n)) (m (lead-inds a)))))))  
 
 (defthmd consp-free-inds
   (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a) (< m n))
@@ -5308,3 +5308,46 @@
   :hints (("Goal" :use (sol0p-gen-sol0 gen-sol0-nontrivial
                         (:instance nontrivial-sol0p-suff (x (gen-sol0 a n)))))))
 
+;;-----------------------------------------------------------------------
+
+;; Afterthought:
+
+(local-defthm len-append
+  (equal (len (append l m))
+         (+ (len l) (len m))))
+
+(defthmd len-partition
+  (implies (and (dlistp l) (dlistp m) (dlistp g) (disjointp l m)
+                (sublistp l g) (sublistp m g) (sublistp g (append l m)))
+	   (equal (+ (len l) (len m))
+	          (len g)))
+  :hints (("Goal" :in-theory (enable permp)
+                  :use (dlistp-append sublistp-append
+				      (:instance eq-len-permp (l g) (m (append l m)))))))
+
+(defthmd disjointp-lead-free
+  (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a))
+           (disjointp (lead-inds a) (free-inds a n)))
+  :hints (("Goal" :use ((:instance common-member-shared (l (lead-inds a)) (m (free-inds a n)))
+                        (:instance member-free-inds (x (common-member (lead-inds a) (free-inds a n))))))))
+
+(defthmd sublistp-ninit-1
+  (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a)
+                (sublistp l (ninit n)))
+	   (sublistp l (append (lead-inds a) (free-inds a n))))
+  :hints (("Goal" :induct (len l))
+          ("Subgoal *1/1" :in-theory (enable member-append)
+	                  :use ((:instance member-free-inds (x (car l)))))))
+
+(defthmd sublistp-ninit
+  (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a))
+           (sublistp (ninit n) (append (lead-inds a) (free-inds a n))))
+  :hints (("Goal" :use ((:instance sublistp-ninit-1 (l (ninit n)))))))
+
+(defthmd len-lead+free
+  (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a))
+           (equal (+ (len (lead-inds a)) (len (free-inds a n)))
+	          n))
+  :hints (("Goal" :use (sublistp-ninit sublistp-lead-inds-ninit lehc-5 dlistp-lead-inds
+                        dlistp-free-inds disjointp-lead-free
+                        (:instance len-partition (l (lead-inds a)) (m (free-inds a n)) (g (ninit n)))))))

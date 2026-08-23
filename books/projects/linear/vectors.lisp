@@ -1,6 +1,6 @@
 (in-package "DM")
 
-(include-book "projects/linear/support/reduction" :dir :system)
+(include-book "projects/linear/reduction" :dir :system)
 (local (include-book "support/vectors"))
 
 ;; This formalization of vector spaces is not complete, but currently meets our first objective of providing the results
@@ -1729,6 +1729,9 @@
 ;; We shall show that the dimension of the image is the difference vdim - kdim:
 
 (defun idim () (- (vdim) (kdim)))
+
+(defthmd idim-row-rank
+  (equal (idim) (row-rank (transpose-mat (lin-mat)))))
 
 (defthmd idim+kdim
   (equal (+ (idim) (kdim))
