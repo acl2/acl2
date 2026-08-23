@@ -90,6 +90,73 @@
                   (consp dim.dims))))
   :name ast-nonullsubp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce unidimsp
+  :short "Check if all the dimension shapes in shapes and ispaces are unary."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, check if all the shapes built from lists of dimensions
+     are built from lists of exactly one dimension.
+     The dimensions themselves are not constrained."))
+  :types (shapes/ispaces)
+  :result booleanp
+  :default t
+  :combine and
+  :override
+  ((shape :dims (equal (len shape.dims) 1)))
+  :name ast-unidimsp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce nullbinappendp
+  :short "Check if all the shape concatenations in shapes and ispaces
+          are binary or empty."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Unlike additions and multiplications of dimensions,
+     whose nullary forms are reduced to constants by the rules,
+     the empty concatenation is itself a normal form,
+     playing the role of the identity of concatenation;
+     there is no rule to eliminate it.
+     Thus, this predicate allows empty concatenations,
+     besides binary ones."))
+  :types (shapes/ispaces)
+  :result booleanp
+  :default t
+  :combine and
+  :override
+  ((shape :append (and (shape-list-nullbinappendp shape.shapes)
+                       (or (endp shape.shapes)
+                           (equal (len shape.shapes) 2)))))
+  :name ast-nullbinappendp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce nosplicep
+  :short "Check if there are no shape splices in shapes and ispaces."
+  :types (shapes/ispaces)
+  :result booleanp
+  :default t
+  :combine and
+  :override
+  ((shape :splice nil))
+  :name ast-nosplicep)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce nodimispacep
+  :short "Check if there are no dimension ispaces in shapes and ispaces."
+  :types (shapes/ispaces)
+  :result booleanp
+  :default t
+  :combine and
+  :override
+  ((ispace :dim nil))
+  :name ast-nodimispacep)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk dim-equiv-to-binadd-p (dim)
