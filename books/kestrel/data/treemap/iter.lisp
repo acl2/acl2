@@ -937,6 +937,126 @@
             <<-of-arg1-and-entry-key-when-in-of-keys-of-before)
   :enable data::<<-rules)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Each side agrees with the whole map on the values of its own keys. This is
+;; the value counterpart of @(tsee in-of-keys-of-from-iter-when-has-valuep):
+;; that one says where a key of the map is, this one says a side binds it to
+;; what the map binds it to. TREESET needs nothing like it, because a set
+;; carries no values, but a walk over a map is only useful if what it reads is
+;; what the map holds.
+;;
+;; The sides are slices of the plug's in-order alist, so the argument opens
+;; that alist and picks out the slice the key falls in. Opening it is the
+;; inverse of the two rules which close it, so a proof picks one direction.
+
+(defruledl tree-in-order-of-tree-iter-plug-becomes-append
+  (equal (tree-in-order (tree-iter-plug iter))
+         (if (tree-iter-has-value-p iter)
+             (append (tree-iter-before iter)
+                     (cons (tree-iter-key+val iter)
+                           (tree-iter-after iter)))
+           (append (tree-iter-before iter)
+                   (tree-iter-after iter))))
+  :use (append-of-tree-iter-before-and-tree-iter-after-when-has-value
+        append-of-tree-iter-before-and-tree-iter-after-when-no-value)
+  :disable (append-of-tree-iter-before-and-tree-iter-after-when-has-value
+            append-of-tree-iter-before-and-tree-iter-after-when-no-value))
+
+(local
+  (theory-invariant
+    (incompatible! (:rewrite tree-in-order-of-tree-iter-plug-becomes-append)
+                   (:rewrite append-of-tree-iter-before-and-tree-iter-after-when-has-value))))
+
+(local
+  (theory-invariant
+    (incompatible! (:rewrite tree-in-order-of-tree-iter-plug-becomes-append)
+                   (:rewrite append-of-tree-iter-before-and-tree-iter-after-when-no-value))))
+
+(defrulel assoc-equal-of-tree-iter-before-becomes-tree-lookup
+  (implies (and (iterp iter)
+                (has-valuep iter)
+                (assoc-equal key (tree-iter-before iter)))
+           (equal (assoc-equal key (tree-iter-before iter))
+                  (cons key (tree-lookup key (tree-iter-plug iter)))))
+  :use ((:instance assoc-equal-of-tree-in-order-when-bstp
+                   (tree (tree-iter-plug iter))))
+  :enable (tree-in-order-of-tree-iter-plug-becomes-append
+           acl2::assoc-equal-of-append
+           mapp-of-tree-iter-plug-when-iterp-forward-chaining
+           bstp-when-mapp-forward-chaining)
+  :disable (assoc-equal-of-tree-in-order-when-bstp
+            append-of-tree-iter-before-and-tree-iter-after-when-has-value
+            append-of-tree-iter-before-and-tree-iter-after-when-no-value
+            tree-iter-plug-when-tree-iter-has-value-p
+            tree-iter-plug-when-zipp))
+
+(defrulel assoc-equal-of-tree-iter-after-becomes-tree-lookup
+  (implies (and (iterp iter)
+                (has-valuep iter)
+                (assoc-equal key (tree-iter-after iter)))
+           (equal (assoc-equal key (tree-iter-after iter))
+                  (cons key (tree-lookup key (tree-iter-plug iter)))))
+  ;; The sides are disjoint, which rules out the key being found in the
+  ;; earlier slice instead.
+  :use ((:instance assoc-equal-of-tree-in-order-when-bstp
+                   (tree (tree-iter-plug iter)))
+        (:instance not-in-of-keys-of-after-when-in-of-keys-of-before
+                   (x key))
+        not-in-of-keys-of-entry-key-and-after)
+  :enable (tree-in-order-of-tree-iter-plug-becomes-append
+           acl2::assoc-equal-of-append
+           in-of-keys-of-before-becomes-assoc-equal
+           in-of-keys-of-after-becomes-assoc-equal
+           mapp-of-tree-iter-plug-when-iterp-forward-chaining
+           bstp-when-mapp-forward-chaining
+           ;; With `iterp' the public and internal has-value tests coincide.
+           has-valuep
+           entry-key)
+  :disable (assoc-equal-of-tree-in-order-when-bstp
+            not-in-of-keys-of-after-when-in-of-keys-of-before
+            not-in-of-keys-of-entry-key-and-after
+            append-of-tree-iter-before-and-tree-iter-after-when-has-value
+            append-of-tree-iter-before-and-tree-iter-after-when-no-value
+            tree-iter-plug-when-tree-iter-has-value-p
+            tree-iter-plug-when-zipp))
+
+(defrule lookup-of-from-iter-when-in-of-keys-of-before
+  (implies (and (has-valuep iter)
+                (treeset::in key (keys (before iter))))
+           (equal (lookup key (from-iter iter))
+                  (lookup key (before iter))))
+  :enable (from-iter
+           lookup
+           keys
+           lookup-of-before-becomes-assoc-equal
+           in-of-keys-of-before-becomes-assoc-equal
+           bstp-of-tree-iter-plug-of-iter-fix)
+  :use ((:instance assoc-equal-of-tree-iter-before-becomes-tree-lookup
+                   (iter (iter-fix iter)))
+        (:instance in-of-keys-of-before-becomes-assoc-equal
+                   (x key)))
+  :disable (assoc-equal-of-tree-iter-before-becomes-tree-lookup
+            in-of-keys-of-before-becomes-assoc-equal))
+
+(defrule lookup-of-from-iter-when-in-of-keys-of-after
+  (implies (and (has-valuep iter)
+                (treeset::in key (keys (after iter))))
+           (equal (lookup key (from-iter iter))
+                  (lookup key (after iter))))
+  :enable (from-iter
+           lookup
+           keys
+           lookup-of-after-becomes-assoc-equal
+           in-of-keys-of-after-becomes-assoc-equal
+           bstp-of-tree-iter-plug-of-iter-fix)
+  :use ((:instance assoc-equal-of-tree-iter-after-becomes-tree-lookup
+                   (iter (iter-fix iter)))
+        (:instance in-of-keys-of-after-becomes-assoc-equal
+                   (x key)))
+  :disable (assoc-equal-of-tree-iter-after-becomes-tree-lookup
+            in-of-keys-of-after-becomes-assoc-equal))
+
 ;; The same split at the public layer: the two sides and the entry-key account for
 ;; the set, and since the sides exclude the entry-key they do so without overlap.
 ;;
