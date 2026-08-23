@@ -51,5 +51,6 @@
                  reterr
                  retmsg$
                  retok
+                 symbol-lfix
                  symbol-list
                  std::defret-mutual)))
