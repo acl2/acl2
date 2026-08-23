@@ -942,7 +942,15 @@
                  :info nil)))
     (make-declon-declon :extension nil
                         :specs declspecs
-                        :declors (list ideclor))))
+                        :declors (list ideclor)))
+
+  ///
+
+  (defrule ldm-declon-obj-of-ildm-obj-declon
+    (equal (ldm-declon-obj (ildm-obj-declon declon))
+           (mv nil (c::obj-declon-dec0-to-oct0 declon)))
+    :enable (ldm-declon-obj
+             c::obj-declon-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -956,7 +964,15 @@
                           :attribs nil)
    :cas (make-label-casexpr :expr (make-const-expr :expr (ildm-expr label.get))
                             :range? nil)
-   :default (label-default)))
+   :default (label-default))
+
+  ///
+
+  (defrule ldm-label-of-ildm-label
+    (equal (ldm-label (ildm-label label))
+           (mv nil (c::label-dec0-to-oct0 label)))
+    :enable (ldm-label
+             c::label-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1031,7 +1047,30 @@
 
   ///
 
-  (fty::deffixequiv-mutual ildm-stmts))
+  (fty::deffixequiv-mutual ildm-stmts)
+
+  (defthm-ildm-stmts-flag
+    (defthm ldm-stmt-of-ildm-stmt
+      (equal (ldm-stmt (ildm-stmt stmt))
+             (mv nil (c::stmt-dec0-to-oct0 stmt)))
+      :flag ildm-stmt)
+    (defthm ldm-block-item-of-ildm-block-item
+      (equal (ldm-block-item (ildm-block-item item))
+             (mv nil (c::block-item-dec0-to-oct0 item)))
+      :flag ildm-block-item)
+    (defthm ldm-block-item-list-of-ildm-block-item-list
+      (equal (ldm-block-item-list (ildm-block-item-list items))
+             (mv nil (c::block-item-list-dec0-to-oct0 items)))
+      :flag ildm-block-item-list)
+    :hints (("Goal"
+             :in-theory (enable ldm-stmt
+                                ldm-comp-stmt
+                                ldm-block-item
+                                ldm-block-item-list
+                                expr-option-some->val
+                                c::stmt-dec0-to-oct0
+                                c::block-item-dec0-to-oct0
+                                c::block-item-list-dec0-to-oct0)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1051,7 +1090,16 @@
                  :attribs nil
                  :declons nil
                  :body (make-comp-stmt :labels nil :items items)
-                 :info nil)))
+                 :info nil))
+
+  ///
+
+  (defrule ldm-fundef-of-ildm-fundef
+    (equal (ldm-fundef (ildm-fundef fundef))
+           (mv nil (c::fundef-dec0-to-oct0 fundef)))
+    :enable (ldm-fundef
+             ldm-comp-stmt
+             c::fundef-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
