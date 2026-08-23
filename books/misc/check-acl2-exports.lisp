@@ -213,6 +213,7 @@
 ; Symbols below should probably be added to *acl2-exports*.
 
     IN-LOGIC-MODE
+    SET-CALL-DEPTH-OVERFLOW-ADVICE
   ))
 
 (defconst *special-ops*

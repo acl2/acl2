@@ -4176,7 +4176,7 @@
 	        (and (member x (ninit n))
 		     (not (member x (lead-inds a))))))
   :hints (("Goal" :in-theory (enable free-inds)
-                  :use ((:instance member-set-difference (l (ninit n)) (m (lead-inds a)))))))
+                  :use ((:instance member-set-difference (l (ninit n)) (m (lead-inds a)))))))  
 
 (defthmd consp-free-inds
   (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a) (< m n))
@@ -4877,6 +4877,108 @@
                   :use (lehc-10 solvablep-homogeneous
 		        (:instance linear-equations-solvable-case (b (flistn0 m)))))))
 
+;; We derive an alternative formulation of sol0-test, which will be useful in "vectors.lisp".
+
+;; If (sol0p x a), then the entry of x at each leading index may be computed from its entries at the
+;; free indices according to the following:
+
+(local-defthmd sol0-test-aux-necc
+  (implies (and (sol0-test-aux x aq l f k)
+                (natp k) (natp i) (< i k))
+	   (equal (nth (nth i l) x)
+                  (f- (fdot-select f (nth i aq) x))))
+  :hints (("Goal" :induct (sol0-test-aux x aq l f k))))
+
+(local-defthmd sol0-test-necc
+  (let* ((ar (row-reduce a))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+         (l (lead-inds aq))
+         (f (free-inds aq n)))
+    (implies (and (fmatp a m n) (posp m) (posp n)
+                  (sol0-test x a n)
+		  (natp k) (< k q))
+	     (equal (nth (nth k l) x)
+                    (f- (fdot-select f (nth k aq) x)))))
+  :hints (("Goal" :in-theory (enable sol0-test)
+                  :use ((:instance sol0-test-aux-necc (aq (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))
+		                                      (l (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a))))
+						      (f (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n))
+						      (i k)
+						      (k (num-nonzero-rows (row-reduce a))))))))
+
+(defthmd sol0p-necc
+  (let* ((ar (row-reduce a))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+         (l (lead-inds aq))
+         (f (free-inds aq n)))
+    (implies (and (fmatp a m n) (posp m) (posp n)
+                  (flistnp x n) (sol0p x a)
+		  (natp k) (< k q))
+	     (equal (nth (nth k l) x)
+                    (f- (fdot-select f (nth k aq) x)))))
+  :hints (("Goal" :use (sol0-test-necc linear-equations-homogeneous-case))))
+
+;; The converse of sol0p-necc states that if the equation given by sol0p-necc holds for each leading
+;; index, then (sol0p x a):
+
+(defun sol0-test-aux-witness (x aq l f k)
+  (if (zp k)
+      ()
+    (if (equal (nth (nth (1- k) l) x)
+               (f- (fdot-select f (nth (1- k) aq) x)))
+	(sol0-test-aux-witness x aq l f (1- k))
+      (1- k))))
+
+(local-defthmd sol0-test-aux-suff
+  (implies (not (sol0-test-aux x aq l f k))
+           (let ((i (sol0-test-aux-witness x aq l f k)))
+             (and (natp k) (natp i) (< i k)
+	          (not (equal (nth (nth i l) x)
+                       (f- (fdot-select f (nth i aq) x))))))))
+
+(defund sol0p-witness (x a n)
+  (let* ((ar (row-reduce a))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+         (l (lead-inds aq))
+         (f (free-inds aq n)))
+    (sol0-test-aux-witness x aq l f q)))
+
+(local-defthmd sol0-test-suff
+  (let* ((ar (row-reduce a))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+         (l (lead-inds aq))
+         (f (free-inds aq n)))
+    (implies (and (fmatp a m n) (posp m) (posp n)
+                  (flistnp x n) (not (sol0-test x a n)))
+	     (let ((k (sol0p-witness x a n)))
+	       (and (natp k) (< k q)
+	            (not (equal (nth (nth k l) x)
+                                (f- (fdot-select f (nth k aq) x))))))))
+  :hints (("Goal" :in-theory (enable sol0p-witness sol0-test)
+                  :use ((:instance sol0-test-aux-suff (aq (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))
+		                                      (l (lead-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a))))
+						      (f (free-inds (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)) n))
+						      (k (num-nonzero-rows (row-reduce a))))))))
+
+(defthmd sol0p-suff
+  (let* ((ar (row-reduce a))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+         (l (lead-inds aq))
+         (f (free-inds aq n)))
+    (implies (and (fmatp a m n) (posp m) (posp n)
+                  (flistnp x n) (not (sol0p x a)))
+	     (let ((k (sol0p-witness x a n)))
+	       (and (natp k) (< k q)
+	            (not (equal (nth (nth k l) x)
+                                (f- (fdot-select f (nth k aq) x))))))))
+  :hints (("Goal" :use (sol0-test-suff linear-equations-homogeneous-case))))
+
+;;-----------------------------------------
 ;; Eventually, we shall examine the solution set of a homogeneous system as a vector space.  Here we merely
 ;; observe the existence of a nontrivial solution in the case m < n, a result that is needed in our 
 ;; formalization of galois theory.
@@ -5206,3 +5308,46 @@
   :hints (("Goal" :use (sol0p-gen-sol0 gen-sol0-nontrivial
                         (:instance nontrivial-sol0p-suff (x (gen-sol0 a n)))))))
 
+;;-----------------------------------------------------------------------
+
+;; Afterthought:
+
+(local-defthm len-append
+  (equal (len (append l m))
+         (+ (len l) (len m))))
+
+(defthmd len-partition
+  (implies (and (dlistp l) (dlistp m) (dlistp g) (disjointp l m)
+                (sublistp l g) (sublistp m g) (sublistp g (append l m)))
+	   (equal (+ (len l) (len m))
+	          (len g)))
+  :hints (("Goal" :in-theory (enable permp)
+                  :use (dlistp-append sublistp-append
+				      (:instance eq-len-permp (l g) (m (append l m)))))))
+
+(defthmd disjointp-lead-free
+  (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a))
+           (disjointp (lead-inds a) (free-inds a n)))
+  :hints (("Goal" :use ((:instance common-member-shared (l (lead-inds a)) (m (free-inds a n)))
+                        (:instance member-free-inds (x (common-member (lead-inds a) (free-inds a n))))))))
+
+(defthmd sublistp-ninit-1
+  (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a)
+                (sublistp l (ninit n)))
+	   (sublistp l (append (lead-inds a) (free-inds a n))))
+  :hints (("Goal" :induct (len l))
+          ("Subgoal *1/1" :in-theory (enable member-append)
+	                  :use ((:instance member-free-inds (x (car l)))))))
+
+(defthmd sublistp-ninit
+  (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a))
+           (sublistp (ninit n) (append (lead-inds a) (free-inds a n))))
+  :hints (("Goal" :use ((:instance sublistp-ninit-1 (l (ninit n)))))))
+
+(defthmd len-lead+free
+  (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a))
+           (equal (+ (len (lead-inds a)) (len (free-inds a n)))
+	          n))
+  :hints (("Goal" :use (sublistp-ninit sublistp-lead-inds-ninit lehc-5 dlistp-lead-inds
+                        dlistp-free-inds disjointp-lead-free
+                        (:instance len-partition (l (lead-inds a)) (m (free-inds a n)) (g (ninit n)))))))

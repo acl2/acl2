@@ -129,6 +129,11 @@
 	   (equal (f- (f* x y))
 		  (f* x (f- y)))))
 
+(defthmd f*f-f1
+  (implies (fp x)
+           (equal (f* (f- (f1)) x)
+	          (f- x))))
+
 
 ;;----------------------------------------------------------------------------------------
 ;; Lists of Field Elements
@@ -197,6 +202,10 @@
 (defthm fp-flistn-prod
   (implies (flistnp x n)
            (fp (flist-prod x))))
+
+(defthmd flistnp-append
+  (implies (and (flistnp x n) (flistnp y m) (natp n) (natp m))
+           (flistnp (append x y) (+ n m))))
 
 ;; Every member of x is (f0):
 
@@ -267,6 +276,22 @@
   (implies (and (flistnp x n) (flistnp y n) (flistnp z n))
 	   (equal (flist-add x (flist-add y z))
 		  (flist-add (flist-add x y) z))))
+
+;; Negative of a list:
+
+(defun flist-minus (x)
+  (if (consp x)
+      (cons (f- (car x)) (flist-minus (cdr x)))
+    ()))
+
+(defthm flistnp-flist-minus
+  (implies (flistnp x n)
+           (flistnp (flist-minus x) n)))
+
+(defthm flist-minus-inv
+  (implies (flistnp x n)
+           (equal (flist-add x (flist-minus x))
+	          (flistn0 n))))
 
 ;; List of products of corresponding members of x and y:
 
