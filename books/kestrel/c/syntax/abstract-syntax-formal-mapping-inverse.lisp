@@ -366,10 +366,15 @@
              mv-nth-0-ldm-dirdeclor-obj-of-declor-to-dirdeclor
              mv-nth-1-ldm-dirdeclor-obj-of-declor-to-dirdeclor))
 
-  (defrule ldm-dirdeclor-fun-of-declor->direct-of-ildm-obj-declor-error
+  (defruled ldm-dirdeclor-fun-of-declor->direct-of-ildm-obj-declor-error
     (mv-nth 0 (ldm-dirdeclor-fun (declor->direct (ildm-obj-declor declor))))
     :induct t
-    :enable ldm-dirdeclor-fun))
+    :enable ldm-dirdeclor-fun)
+
+  (defrule ldm-declor-fun-of-ildm-obj-declor-error
+    (mv-nth 0 (ldm-declor-fun (ildm-obj-declor declor)))
+    :enable (ldm-declor-fun
+             ldm-dirdeclor-fun-of-declor->direct-of-ildm-obj-declor-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -968,7 +973,6 @@
   (defrule ldm-declon-fun-of-ildm-obj-declon-error
     (mv-nth 0 (ldm-declon-fun (ildm-obj-declon declon)))
     :enable (ldm-declon-fun
-             ldm-declor-fun
              ildm-obj-declon)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
