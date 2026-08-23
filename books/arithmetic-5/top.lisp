@@ -22,13 +22,12 @@
   :parents (arithmetic-5)
   :short "motivation of Moore's mods to Krug's amazing arithmetic-5"
   :long "
-  <p>Arithmetic-5 sometimes gets into ``loops'' (where certain terms, under
+  <p>@('Arithmetic-5') sometimes gets into ``loops'' (where certain terms, under
   certain hypotheses, rewrite to themselves through a sequence of 2 or more
   rules).  This can produce an error like this:</p>
 
   @({
-  HARD ACL2 ERROR [Call depth] in REWRITE: The call depth limit of 1000 has
-  been exceeded in the ACL2 rewriter. ...
+  HARD ACL2 ERROR [Call depth] in REWRITE: The call depth limit ...
   })
 
   <p>In 2026, J Moore modified some of the rules in @('arithmetic-5') and added
@@ -36,22 +35,22 @@
   loop-stopping modifications to @('arithmetic-5') restrict certain lemmas from
   firing in circumstances that could cause loops.  But because
   @('arithmetic-5') had been in use for 17 years before the first of these
-  changes were made -- and because it is possible that the unrestricted use of
-  Robert's rules might sometimes fire without causing a loop -- it was decided
-  to give the @('arithmetic-5') user the option of using the original rules or
-  the new (modified) rules.</p>
+  changes were made &mdash; and because it is possible that the unrestricted
+  use of Robert's rules might sometimes fire productively without causing a
+  loop &mdash; it was decided to give the @('arithmetic-5') user the option of
+  using the original rules or the new (modified) rules.</p>
 
   <p>Aside: Moore attached his name to these modification because they're a
   hack glued onto a magnificent piece of engineering by Robert Krug.  The
   modifications weaken @('arithmetic-5').  Furthermore, Moore only stopped the
-  loops he encountered; more may be lurking.  Robert should not be blamed for
-  these inadequacies.</p>
+  loops he encountered; other loops may be lurking.  Robert should not be
+  blamed for these inadequacies.</p>
 
   <p>The modified and newly added rules are active only if the
   executable-counterpart of the dummy function @('use-new-arith-5-rules') is
-  enabled.  The rune in question can be written (:e use-new-arith-5-rules).  As
-  of August, 2026, that rune is DISABLED by default and so @('arithmetic-5')
-  behaves as it always has, by default.</p>
+  enabled.  The rune in question can be written @('(:e
+  use-new-arith-5-rules)').  As of August, 2026, that rune is DISABLED by
+  default and so @('arithmetic-5') behaves as it always has, by default.</p>
 
   <p>To allow the modified and newly added rules to fire (in addition to the
   unmodified versions of Robert's rules), enable that rune, as with</p>
@@ -163,9 +162,9 @@
   it was ``intercepted'' by a subterm like @('(expt 3 n)') and produced the new
   subterm @('(expt 3 (+ n 1))').  Then the rule fired again and, since @('(/ z
   3)') was still in the formula, chose to multiply by @('3') again, and
-  produced the new subterm (expt 3 (+ n 2)), etc.  Sometimes loops created ever
-  larger numbers, e.g., @('3'), @('9'), @('27'), @('81'), ..., without using
-  any rules besides ground evaluation.</p>
+  produced the new subterm @('(expt 3 (+ n 2))'), etc.  Sometimes loops created
+  ever larger numbers, e.g., @('3'), @('9'), @('27'), @('81'),
+  &ldquo;...&rdquo;, without using any rules besides ground evaluation.</p>
 
   <p>Below are all the rules in @('arithmetic-5') that find a factor and
   transform a term by multiplying subterms by that factor.</p>
@@ -203,21 +202,26 @@
   modified because Moore never encountered loops involving the others.</p>
 
   <p>You can find all the modification to @('arithmetic-5') books made by Moore
-  by recursively searching through the @('arithmetic-5') directory looking for
-  the string `@('; Moore Modification')'.</p>
+  by recursively searching through the @('arithmetic-5') directory looking
+  for</p>
+
+  @({
+  ; Moore Modification')
+  })
 
   <p>At the time that these modifications were first pushed to GitHub (in
   August, 2026), it was possible to process the standard
-  @('regression-everything') with @('(:e use-new-arith-5-rules)') enabled by
-  default in @('arithmetic-5/top').  But, of course, the regression did not
-  contain any books that caused rewrite stack overflows.  So this data point
-  does improve our confidence in the modifications' ability to avoid loops, but
-  it does indicate that the modifications don't weaken @('arithmetic-5/top')
-  too much.  Note however that if you want to try to do a full regression with
-  a modified @('arithmetic-5/top') in which the rune is enabled, you must do so
-  the first time with @('ACL2_USELESS_RUNES=write') since the modifications
-  require the participation of some rules not used by the original book.  See
-  @(tsee useless-runes).</p>
+  @('regression-everything') using the new rules, i.e., with @('(:e
+  use-new-arith-5-rules)') enabled by default in @('arithmetic-5/top').  But,
+  of course, the regression did not contain any books that caused rewrite stack
+  overflows.  So this data point does not improve our confidence in the
+  modifications' ability to avoid loops, but it does indicate that the
+  modifications don't weaken @('arithmetic-5/top') too much.  Note however that
+  if you want to try to do a full regression with a modified
+  @('arithmetic-5/top') in which the rune is enabled, you must do so the first
+  time with @('ACL2_USELESS_RUNES=write') since the modifications require the
+  participation of some rules not used by the original book.  See @(tsee
+  useless-runes).</p>
 
   <p>If you find loops in @('arithmetic-5/top') while @('(:e
   use-new-arith-5-rules)') is enabled, please try to make a simple script that
@@ -249,10 +253,12 @@
   configuration of @('arithmetic-5/top') and in isolation from other books and
   user-supplied arithmetic rules.  For example, the modifications have not been
   tested thoroughly if @('(scatter-exponents)') has been executed (as opposed
-  to the default setting of @('(gather-exponents)'), or when
+  to the default setting of @('(gather-exponents)')), or when
   @('(do-not-prefer-positive-addends)') has been executed (as opposed to the
   default @('(prefer-positive-addends)')) or when normally-enabled rules in the
-  original @('arithmetic-5/top') are selectively disabled by the user.</p>
+  original @('arithmetic-5/top') are selectively disabled by the user.  See the
+  file @('arithmetic-5/README') for details about these and other options
+  offered by Robert's original library.</p>
 
   <p>You can determine whether @('(:e use-new-arith-5-rules)') is disabled at
   the top-level by evaluating the following form at the top-level of the ACL2
