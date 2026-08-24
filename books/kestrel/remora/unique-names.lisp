@@ -1080,7 +1080,7 @@
 ; parameter); see the UNIQ-*-PARAMS functions above.
 
 (defines uniquify-names-impl
-  :verify-guards :after-returns
+  :verify-guards nil ; done below
   :ruler-extenders :all
   ; The flag function is used by the DEFRET-MUTUAL further below.
   :flag-local nil
@@ -1328,7 +1328,14 @@
         (mv used nil)
       (b* (((mv used new-a) (uniq-atom (car x) used r))
            ((mv used new-rest) (uniq-atom-list (cdr x) used r)))
-        (mv used (cons new-a new-rest)))))
+        (mv used (cons new-a new-rest))))
+
+    ///
+
+    (defret consp-of-uniq-atom-list
+      (equal (consp new-x)
+             (consp x))
+      :hints (("Goal" :expand ((uniq-atom-list x used r))))))
 
   (define uniq-bind ((x bindp) (used string-listp) (r var-renamings-p))
     :short "Uniquify binder names in a bind, renaming the bind itself
@@ -1497,6 +1504,10 @@
         (mv used (cons new-bind new-rest) r))))
 
   ///
+
+  ; Guard verification is deferred to here (:VERIFY-GUARDS NIL above) so that
+  ; CONSP-OF-UNIQ-ATOM-LIST, in UNIQ-ATOM-LIST's ///, is available to it.
+  (verify-guards uniq-expr)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1927,7 +1927,14 @@
       (implies (not (reserrp types+atoms))
                (iff (types+atoms->types types+atoms)
                     (not (zp (len atoms)))))
-      :hints (("Goal" :induct (len atoms) :in-theory (enable len)))))
+      :hints (("Goal" :induct (len atoms) :in-theory (enable len))))
+
+    (defret consp-of-atoms-of-check-atom-list
+      (implies (and (not (reserrp types+atoms))
+                    (consp atoms))
+               (consp (types+atoms->atoms types+atoms)))
+      :hints (("Goal" :expand ((check-atom-list atoms senv))))
+      :rule-classes ((:rewrite) (:type-prescription))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

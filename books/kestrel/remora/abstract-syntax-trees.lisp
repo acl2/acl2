@@ -935,9 +935,10 @@
        bracketed expressions,
        and @('let') expressions.")
      (xdoc::p
-      "This fixtype does not capture the non-emptiness of
-       the lists of atoms and expressions of
-       non-empty arrays and frames.
+      "This fixtype captures the non-emptiness of
+       the list of atoms of non-empty arrays,
+       but not the non-emptiness of
+       the list of expressions of non-empty frames yet.
        The naming of the summands is not completely symmetric,
        because the unqualified @(':array') and @(':frame') mean non-empty,
        while empty summands are @(':array-empty') and @(':frame-empty').
@@ -982,7 +983,11 @@
     (:var ((name string)))
     (:atom ((atom atom)))
     (:array ((dims nat-list)
-             (atoms atom-list))) ; one or more
+             (atoms atom-list
+                    :reqfix (if (consp atoms)
+                                atoms
+                              (list (atom-fix nil)))))
+     :require (consp atoms))
     (:array-empty ((dims nat-list)
                    (type type)))
     (:frame ((dims nat-list)
@@ -1019,7 +1024,15 @@
     (:bracket ((exprs expr-list))) ; one or more
     (:let ((binds bind-list) ; one or more
            (body expr)))
-    :pred exprp)
+    :pred exprp
+
+    ///
+
+    (defrule consp-of-expr-array->atoms
+      (consp (expr-array->atoms expr))
+      :rule-classes :type-prescription
+      :use (:instance expr-array-requirements (x expr))
+      :disable expr-array-requirements))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

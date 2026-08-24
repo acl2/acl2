@@ -694,7 +694,7 @@
 ; rules BIND-COUNT-OF-CAR and BIND-LIST-COUNT-OF-EXPR-LET->BINDS on its own.
 
 (defines monomorphize-impl
-  :verify-guards :after-returns
+  :verify-guards nil ; done below
   :ruler-extenders :all
   ; The flag function is used by the DEFRET-MUTUAL in monomorphize-properties.
   :flag-local nil
@@ -1013,7 +1013,16 @@
            ((when err) (mv err fn-info-map (list* new-a (atom-list-fix (cdr x)))))
            ((mv err fn-info-map new-rest)
             (mono-atom-list (cdr x) defs fn-info-map dim-var-map type-map)))
-        (mv err fn-info-map (cons new-a new-rest)))))
+        (mv err fn-info-map (cons new-a new-rest))))
+
+    ///
+
+    (defret consp-of-mono-atom-list
+      (equal (consp new-atoms)
+             (consp x))
+      :hints (("Goal"
+               :expand ((mono-atom-list
+                         x defs fn-info-map dim-var-map type-map))))))
 
   (define mono-bind ((x bindp) (defs bind-mapp) (fn-info-map fn-info-mapp) (dim-var-map acl2::string-nat-mapp) (type-map string-type-mapp))
     :short "Monomorphize a binding, registering @(':cfun') and @(':ifun')
@@ -1173,6 +1182,10 @@
       :otherwise
       ; Not an :ifun request: malformed call; fail loudly.
       (mv :bad-ifun-entry fn-info-map (bind-fix ifun-bind)))))
+
+; Guard verification is deferred to here (:VERIFY-GUARDS NIL above) so that
+; CONSP-OF-MONO-ATOM-LIST, in MONO-ATOM-LIST's ///, is available to it.
+(verify-guards mono-expr)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
