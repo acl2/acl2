@@ -59,7 +59,7 @@
     "Following [thesis] and [arxiv], we start with reflexivity.
      We do not state symmetry and transitivity as explicit rules,
      because they should be derivable from the others
-     (given that [thesis] and [arvix] do not include them),
+     (given that [thesis] and [arxiv] do not include them),
      but we will ensure this is the case by way of formal proof.")
    (xdoc::p
     "Next we have congruence for array types,
