@@ -27,7 +27,9 @@
 
 (local (include-book "std/lists/len" :dir :system))
 
-(in-theory (disable mv-nth member-equal binary-append member-equal))
+(in-theory
+ (disable mv-nth member-equal binary-append member-equal character-listp
+          acl2-number-listp rational-listp len))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ cpp-abstract-syntax
