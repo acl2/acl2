@@ -127,3 +127,18 @@
                   (slice (+ -1 size (- n)) (- n) x)))
   :hints (("Goal" :in-theory (e/d (trim) (ash
                                           bvchop-of-ash-when-negative-becomes-bvshr)))))
+
+(deftheory trim-elim-rules-non-bv
+  '(trim-of-logand-becomes-bvand
+    trim-of-logior-becomes-bvor
+    trim-of-logxor-becomes-bvxor
+    trim-of-lognot-becomes-bvnot
+    trim-of-+-becomes-bvplus
+    trim-of-unary---becomes-bvuminus
+    trim-of-*-becomes-bvmult
+    trim-of-logext-becomes-bvsx
+    trim-of-logtail-becomes-slice
+    trim-of-if-becomes-bvif
+    trim-of-ash-left-shift-becomes-bvcat
+    trim-of-ash-right-shift-becomes-slice)
+    :redundant-okp t)

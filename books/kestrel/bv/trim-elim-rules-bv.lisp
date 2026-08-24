@@ -229,3 +229,23 @@
 ;;   :hints (("Goal" :in-theory (enable trim
 ;;                                      bvshr
 ;;                                      ))))
+
+(deftheory trim-elim-rules-bv
+  '(trim-of-bvchop
+    trim-of-slice
+    trim-of-bvcat
+    trim-of-bvnot
+    trim-of-bvand
+    trim-of-bvor
+    trim-of-bvxor
+    trim-of-bvplus
+    trim-of-bvminus
+    trim-of-bvuminus
+    trim-of-bvmult
+    trim-of-bvsx
+    trim-of-leftrotate32
+    trim-of-1-and-leftrotate
+    trim-of-repeatbit
+    trim-of-bvif
+    trim-of-bvshl)
+  :redundant-okp t)
