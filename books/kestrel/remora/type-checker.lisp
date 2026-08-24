@@ -15,7 +15,7 @@
 (include-book "abstract-syntax-structurals")
 (include-book "abstract-syntax-matching-operations")
 (include-book "abstract-syntax-variable-operations")
-(include-book "type-equivalence")
+(include-book "type-equivalence-checker")
 (include-book "static-environments")
 (include-book "nat-lists")
 
@@ -53,9 +53,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ type-checking
+(defxdoc+ type-checker
   :parents (static-semantics)
-  :short "Type checking of Remora."
+  :short "A type checker for Remora."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -79,7 +79,7 @@
 
   (define check-dim ((dim dimp) (senv senvp))
     :returns (yes/no booleanp)
-    :parents (type-checking check-dims)
+    :parents (type-checker check-dims)
     :short "Check a dimension."
     :long
     (xdoc::topstring
@@ -110,7 +110,7 @@
 
   (define check-dim-list ((dims dim-listp) (senv senvp))
     :returns (yes/no booleanp)
-    :parents (type-checking check-dims)
+    :parents (type-checker check-dims)
     :short "Check a list of dimensions."
     :long
     (xdoc::topstring
@@ -137,7 +137,7 @@
 
   (define check-shape ((shape shapep) (senv senvp))
     :returns (yes/no booleanp)
-    :parents (type-checking check-shapes/ispaces)
+    :parents (type-checker check-shapes/ispaces)
     :short "Check a shape."
     :long
     (xdoc::topstring
@@ -167,7 +167,7 @@
 
   (define check-shape-list ((shapes shape-listp) (senv senvp))
     :returns (yes/no booleanp)
-    :parents (type-checking check-shapes/ispaces)
+    :parents (type-checker check-shapes/ispaces)
     :short "Check a list of shapes."
     :long
     (xdoc::topstring
@@ -183,7 +183,7 @@
 
   (define check-ispace ((ispace ispacep) (senv senvp))
     :returns (yes/no booleanp)
-    :parents (type-checking check-shapes/ispaces)
+    :parents (type-checker check-shapes/ispaces)
     :short "Check an ispace."
     :long
     (xdoc::topstring
@@ -203,7 +203,7 @@
 
   (define check-ispace-list ((ispaces ispace-listp) (senv senvp))
     :returns (yes/no booleanp)
-    :parents (type-checking check-shapes/ispaces)
+    :parents (type-checker check-shapes/ispaces)
     :short "Check a list of ispaces."
     :long
     (xdoc::topstring
@@ -230,7 +230,7 @@
 
   (define check-type ((type typep) (senv senvp))
     :returns (yes/no booleanp)
-    :parents (type-checking check-types)
+    :parents (type-checker check-types)
     :short "Check a type."
     :long
     (xdoc::topstring
@@ -293,7 +293,7 @@
 
   (define check-type-list ((types type-listp) (senv senvp))
     :returns (yes/no booleanp)
-    :parents (type-checking check-types)
+    :parents (type-checker check-types)
     :short "Check a list of types."
     :long
     (xdoc::topstring
@@ -1253,7 +1253,7 @@
 
   (define check-expr ((expr exprp) (senv senvp))
     :returns (type+expr type+expr-resultp)
-    :parents (type-checking check-exprs/atoms/binds)
+    :parents (type-checker check-exprs/atoms/binds)
     :short "Check an expression; if successful,
             return its type and the type-augmented expression."
     :long
@@ -1615,7 +1615,7 @@
 
   (define check-expr-list ((exprs expr-listp) (senv senvp))
     :returns (types+exprs types+exprs-resultp)
-    :parents (type-checking check-exprs/atoms/binds)
+    :parents (type-checker check-exprs/atoms/binds)
     :short "Check a list of expressions; if successful,
             return their types and the type-augmented expressions."
     :long
@@ -1648,7 +1648,7 @@
 
   (define check-atom ((atom atomp) (senv senvp))
     :returns (type+atom type+atom-resultp)
-    :parents (type-checking check-exprs/atoms/binds)
+    :parents (type-checker check-exprs/atoms/binds)
     :short "Check an atom; if successful,
             return its type and the type-augmented atom."
     :long
@@ -1780,7 +1780,8 @@
         :type (make-type-pi :param atom.param :body be.type)
         :atom (make-atom-ilambda :param atom.param :body be.expr)))
      :ilambdan
-     (b* (((unless (no-duplicatesp-equal atom.params)) (reserr nil))
+     (b* (((unless (>= (len atom.params) 2)) (reserr nil))
+          ((unless (no-duplicatesp-equal atom.params)) (reserr nil))
           (senv (senv-add-ispace-vars atom.params senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
@@ -1842,7 +1843,7 @@
 
   (define check-box-inner ((type typep) (body exprp) (senv senvp))
     :returns (type+expr type+expr-resultp)
-    :parents (type-checking check-exprs/atoms/binds)
+    :parents (type-checker check-exprs/atoms/binds)
     :short "Check the array expression of a unary boxing atom
             against the expected type."
     :long
@@ -1901,7 +1902,7 @@
 
   (define check-atom-list ((atoms atom-listp) (senv senvp))
     :returns (types+atoms types+atoms-resultp)
-    :parents (type-checking check-exprs/atoms/binds)
+    :parents (type-checker check-exprs/atoms/binds)
     :short "Check a list of atoms; if successful,
             return their types and the type-augmented atoms."
     :long
@@ -1934,7 +1935,7 @@
 
   (define check-bind ((bind bindp) (senv senvp))
     :returns (senv+bind senv+bind-resultp)
-    :parents (type-checking check-exprs/atoms/binds)
+    :parents (type-checker check-exprs/atoms/binds)
     :short "Check a binding; if successful,
             extend the static environment
             and return the type-augmented binding."
@@ -2155,7 +2156,7 @@
 
   (define check-bind-list ((binds bind-listp) (senv senvp))
     :returns (senv+binds senv+binds-resultp)
-    :parents (type-checking check-exprs/atoms/binds)
+    :parents (type-checker check-exprs/atoms/binds)
     :short "Check a list of bindings; if successful,
             extend the static environment
             and return the type-augmented bindings."

@@ -165,8 +165,8 @@
 ;;---------------------------
 
 ;; Let e be an extension of d and d an extension of f.  Let phi be a automorphism of e over f.
-;; If the restriction of phi to d is the trivial embedding of d in e, then phi naturally corresponds 
-;; to an automorphism of e over d:
+;; If the restriction of phi to d is the trivial embedding of d in e, then phi naturally corresponds to an
+;; automorphism of e over d:
 
 (defun trunc-embedding (phi e d)
   (firstn (- (len e) (len d)) phi))
@@ -310,7 +310,7 @@
 ;; The next 3 results are proved by functional instantiation of corresponding results in
 ;; "../linear/reduction".
 
-;; The solution set is closed un addition and scalar multiplication:
+;; The solution set is closed under addition and scalar multiplication:
 
 (defthmd esol0p-fadd
   (implies (and (fieldp e) (posp m) (posp n) (ematp a m n e)
@@ -337,8 +337,8 @@
 
 ;;-------------------------------------------
 
-;; Proof of Artin's Lemma:  Let (order h) = m and let v be a list of elements of e of length n > m.  We
-;; shall show that l is linearly dependent over k.
+;; Let (order h) = m and let v be a list of elements of e of length n > m.  We shall show that l is
+;; linearly dependent over k.
 
 ;; We define an mxn matrix, the ith row of which is the result of applying the ith element of h to each
 ;; member of v:
@@ -462,9 +462,9 @@
 
 ;; Let x be a nontrivial solution.  We shall by show by induction on the number of nonzero entries of x that 
 ;; there exists a nontrivial solution that is lifted from k.  Let x' = (coerce-entry-to-1 x e).  We may
-;; assume that  x' is not lifted from k.  The first nonzero entry of x' is 1.  We shall construct a nontrivial
-;; solution with more zeroes than x as follows.  Let (nth j x') be the first entry of x' that is not lifted 
-;; from k.  For some phi in h, (embed (nth j x') phi e f) != (nth j x').  Let
+;; assume that  x' is not lifted from k.  The first nonzero entry of x' is 1.  We shall construct a 
+;; nontrivial solution with more zeroes than x as follows.  Let (nth j x') be the first entry of x' that is 
+;; not lifted from k.  For some phi in h, (embed (nth j x') phi e f) != (nth j x').  Let
 
 ;;     x" = (elist-add x' (elist-scalar-mul (fneg (fone e) e) (pembed x' phi e f)) e).
 
@@ -621,8 +621,8 @@
            (equal (fnat (* n m) f)
 	          (fmul (fnat n f) (fnat m f) f))))
 
-;; The characteristic of f is the minimal positive n such that (fnat n f) = (fzero f), or 0 if
-;; no such n exists.  We use defchoose to formalize this notion:
+;; The characteristic of f is the minimal positive n such that (fnat n f) = (fzero f), or 0 if no such n
+;; exists.  We use defchoose to formalize this notion:
 
 (defchoose n0 n (f)
   (and (posp n)
@@ -772,8 +772,8 @@
            (equal (len (derivative-aux p f))
 		  (1- (len p)))))
 
-;; If (degree p) is not divisible by the characteristic of the field, then the degree of its
-;; derivative is (degree p) - 1:
+;; If (degree p) is not divisible by the characteristic of the field, then the degree of its derivative is
+;; (degree p) - 1:
 
 (defthmd derivative-max-degree
   (implies (and (fieldp f) (polyp p f) (not (pconstp p))
@@ -834,8 +834,7 @@
   :hints (("Goal" :in-theory (enable derivative pconstp monomial-rewrite)
                   :use (derivative-monomial-4 derivative-monomial-7))))
 
-;; The following function is useful for expressing a formula for the derivative of a
-;; shifted polynomial:
+;; The following function is useful for expressing a formula for the derivative of a shifted polynomial:
 
 (defund pshift$ (p k f)
   (if (equal p (pzero f))

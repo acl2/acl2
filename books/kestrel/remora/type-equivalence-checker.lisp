@@ -11,7 +11,7 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-variable-operations")
-(include-book "ispace-equivalence")
+(include-book "ispace-equivalence-checker")
 (include-book "fresh-variable-operations")
 
 (include-book "kestrel/fty/string-string-map-quadruple-result" :dir :system)
@@ -31,20 +31,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ type-equivalence
+(defxdoc+ type-equivalence-checker
   :parents (static-semantics)
-  :short "Equivalence of types."
+  :short "A checker for the equivalence of types."
   :long
   (xdoc::topstring
    (xdoc::p
     "The static semantics of Remora involves
      the equivalence of types, which involves the equivalence of ispaces.
-     The latter is discussed in @(see ispace-equivalence).")
+     The latter is discussed in @(see ispace-equivalence-checker).")
    (xdoc::p
     "Like for ispace equivalence,
-     we plan to define a high-level notion of type equivalence
+     we are defining a high-level notion of type equivalence
      that accommodates undecidability.
-     But we start with an executable version
+     But we start with an executable checker
      that has the same restriction as decidable ispace equivalence,
      namely that dimension arithmetic is confined to addition only."))
   :order-subtopics t
@@ -332,14 +332,7 @@
      An n-ary sum type with no bound variables,
      which is not well-formed,
      is only equivalent to another one with no bound variables,
-     with equivalent bodies.
-     An n-ary product type with fewer than two bound variables,
-     which is not well-formed,
-     is currently not equivalent to any type;
-     this interim treatment will go away
-     when the fixtype of types requires
-     n-ary product types to have two or more parameters,
-     as it already does for n-ary universal types.")
+     with equivalent bodies.")
    (xdoc::p
     "Since we are renaming (ispace and type) variables to fresh ones,
      we do not call the predicates to check for variable capture.
@@ -513,9 +506,7 @@
                                                    maps.3rd
                                                    maps.4th)))
                 (type-equivp body1 body2))
-          :pin (b* (((unless (>= (len type2.params) 2)) nil)
-                    ;; TODO: remove above check when AST invariant is in
-                    (used (set::union (type-all-ispace-vars type1)
+          :pin (b* ((used (set::union (type-all-ispace-vars type1)
                                       (type-all-ispace-vars type2)))
                     (maps (fresh-ispace-var-renaming
                            (list type1.param)
@@ -535,9 +526,7 @@
    :pin (b* ((type2 (normalize-type type2)))
           (type-case
            type2
-           :pi (b* (((unless (>= (len type1.params) 2)) nil)
-                    ;; TODO: remove above check when AST invariant is in
-                    (used (set::union (type-all-ispace-vars type1)
+           :pi (b* ((used (set::union (type-all-ispace-vars type1)
                                       (type-all-ispace-vars type2)))
                     (maps (fresh-ispace-var-renaming
                            (list (car type1.params))
@@ -553,11 +542,7 @@
                                                     maps.3rd
                                                     maps.4th)))
                  (type-equivp body1 body2))
-           :pin (b* (((unless (and (>= (len type1.params) 2)
-                                   (>= (len type2.params) 2)))
-                      nil)
-                     ;; TODO: remove above checks when AST invariant is in
-                     (used (set::union (type-all-ispace-vars type1)
+           :pin (b* ((used (set::union (type-all-ispace-vars type1)
                                        (type-all-ispace-vars type2)))
                      (maps (fresh-ispace-var-renaming
                             (list (car type1.params))

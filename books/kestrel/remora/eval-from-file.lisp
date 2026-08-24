@@ -12,7 +12,7 @@
 
 (include-book "evaluation")
 (include-book "parser-interface")
-(include-book "type-checking")
+(include-book "type-checker")
 (include-book "utility-transforms")
 (include-book "value-printing")
 
