@@ -26,14 +26,16 @@
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/bvminus" :dir :system)
 (include-book "kestrel/bv/getbit" :dir :system)
+;(include-book "kestrel/bv/getbit-rules" :dir :system) ; for getbit-of-+-new
 (include-book "kestrel/bv/bvchop" :dir :system)
 (include-book "kestrel/bv/trim-intro-rules" :dir :system)
 (include-book "kestrel/bv/trim-elim-rules-bv" :dir :system)
 (include-book "kestrel/bv/bvlt" :dir :system) ; drop?
 (include-book "kestrel/bv/bvcount" :dir :system)
-(include-book "kestrel/bv/bitops" :dir :system) ; for ACL2::PART-SELECT-WIDTH-LOW-BECOMES-SLICE-GEN -- or build that into the lifter
-;; todo: reduce this?:
+;; todo: drop:
+(include-book "kestrel/bv/bitops" :dir :system)
 (include-book "kestrel/x86/read-and-write" :dir :system)
+(include-book "kestrel/bv/rules" :dir :system) ;for acl2::bvxor-with-smaller-arg-1, which gets disabled in some proofs
 
 (in-theory (e/d (x::cf-spec8-becomes-getbit ; todo: gather these into Axe rule-lists
                  x::cf-spec16-becomes-getbit
@@ -67,11 +69,12 @@
                  slice-becomes-getbit
                  x::read-of-+-arg2)
                 ;;todo:
-                (x::read-of-bvplus
-                 x::read-of-bvplus-normalize
-                 x::bvcat-of-read-and-read-combine ; loops with the blasting rules
-                 acl2::unsigned-byte-p-of-+-of-constant-strong ; turns unsigned-byte-p claims into < claims
+                (;x::read-of-bvplus
+                 ;x::read-of-bvplus-normalize
+                 ;x::bvcat-of-read-and-read-combine ; loops with the blasting rules
+                 ;acl2::unsigned-byte-p-of-+-of-constant-strong ; turns unsigned-byte-p claims into < claims
+                 evenp ; used in some proofs
                  )))
 
 (make-event `(in-theory (enable ,@(x::register-aliases64)
-                                ,@(x::bitops-to-bv-rules))))
+                                ,@(acl2::bitops-to-bv-rules))))
