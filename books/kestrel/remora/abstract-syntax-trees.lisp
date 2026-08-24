@@ -486,7 +486,7 @@
        (because there must have at least one parameter,
        and if there is just one we use the unary forms),
        but this fixtype does not capture this requirement
-       for @(':pi') and @(':sigma') summands yet.
+       for the @(':sigman') summand yet.
        Note the slight difference with function types,
        where singleton lists are allowed as explained above.")
      (xdoc::p
@@ -517,8 +517,13 @@
      :require (>= (len params) 2))
     (:pi ((param ispace-var)
           (body type)))
-    (:pin ((params ispace-var-list) ; two or more
-           (body type)))
+    (:pin ((params ispace-var-list
+                   :reqfix (if (>= (len params) 2)
+                               params
+                             (list (ispace-var-fix nil)
+                                   (ispace-var-fix nil))))
+           (body type))
+     :require (>= (len params) 2))
     (:sigma ((param ispace-var)
              (body type)))
     (:sigman ((params ispace-var-list) ; two or more
@@ -538,6 +543,19 @@
       :rule-classes :type-prescription
       :use (:instance type-foralln-requirements (x type))
       :disable type-foralln-requirements
+      :enable len)
+
+    (defrule consp-of-type-pin->params
+      (consp (type-pin->params type))
+      :rule-classes :type-prescription
+      :use (:instance type-pin-requirements (x type))
+      :disable type-pin-requirements)
+
+    (defruled consp-of-cdr-of-type-pin->params
+      (consp (cdr (type-pin->params type)))
+      :rule-classes :type-prescription
+      :use (:instance type-pin-requirements (x type))
+      :disable type-pin-requirements
       :enable len))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

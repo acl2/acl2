@@ -188,13 +188,12 @@
                              :type (type-pi->body type)))
        ((unless (type-case type :pin)) (reserr nil))
        (params (type-pin->params type))
-       (body (type-pin->body type))
-       ;; TODO: remove the following check once the AST invariant is in
-       ((unless (>= (len params) 2)) (reserr nil)))
+       (body (type-pin->body type)))
     (make-ispacevar+type
      :var (car params)
      :type (make-type-pi/pin (cdr params) body)))
-  :guard-hints (("Goal" :in-theory (enable acl2::lt-len-const))))
+  :guard-hints
+  (("Goal" :in-theory (enable consp-of-cdr-of-type-pin->params))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
