@@ -1192,3 +1192,66 @@
                                                             :s2val nil
                                                             :fval *add-fun*
                                                             :zval (iv 10))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The polymorphic operation reify-dim:
+; a single ispace application directly yields the integer scalar.
+
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-reify-dim)
+                   (ispace-value-dim 3))
+ (iv 3))
+
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-reify-dim)
+                   (ispace-value-dim 0))
+ (iv 0))
+
+; A shape where a dimension is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (primop-value-reify-dim)
+                            (ispace-value-shape (list 3)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The polymorphic operation reify-shape:
+; a single ispace application directly yields a boxed integer vector.
+
+(defconst *reify-shape-sigma*
+  (make-type-value-sigma
+   :param (ispace-var-dim "r")
+   :body (t[] :int (shp "$r"))
+   :denv (make-type-denv :ienv (make-ispace-denv :ispaces nil)
+                         :types nil)))
+
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-reify-shape)
+                   (ispace-value-shape (list 2 3)))
+ (make-expr-value-box
+  :ispace (ispace-value-dim 2)
+  :array (expr-value-vector (list (iv 2) (iv 3)))
+  :type *reify-shape-sigma*))
+
+; The empty shape reifies to a box of the empty vector, with rank 0.
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-reify-shape)
+                   (ispace-value-shape nil))
+ (make-expr-value-box
+  :ispace (ispace-value-dim 0)
+  :array (expr-value-with-empty-dim (list 0) *tv-int*)
+  :type *reify-shape-sigma*))
+
+; A shape with zero dimensions still reifies to their vector.
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-reify-shape)
+                   (ispace-value-shape (list 0 3)))
+ (make-expr-value-box
+  :ispace (ispace-value-dim 2)
+  :array (expr-value-vector (list (iv 0) (iv 3)))
+  :type *reify-shape-sigma*))
+
+; A dimension where a shape is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (primop-value-reify-shape)
+                            (ispace-value-dim 3))))
