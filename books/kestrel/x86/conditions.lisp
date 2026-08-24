@@ -19,9 +19,10 @@
 (include-book "kestrel/bv/defs" :dir :system) ;for bvplus, etc.
 (include-book "kestrel/bv/sbvlt-def" :dir :system)
 (include-book "kestrel/bv/bool-to-bit-def" :dir :system)
-(include-book "kestrel/bv/bvcount" :dir :system) ; reduce?
+(include-book "kestrel/bv/bvcount-def" :dir :system)
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(local (include-book "kestrel/bv/bvcount" :dir :system))
 (local (include-book "kestrel/bv/rules10" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
@@ -39,7 +40,6 @@
                            ;acl2::getbit-when-<-of-constant
                            acl2::unsigned-byte-p-from-bounds
                            acl2::unsigned-byte-p-of-bvchop-bigger)))
-
 
 (defthm acl2::equal-of-bvchops-when-equal-of-getbits-8
   (implies (and (syntaxp (acl2::want-to-strengthen (equal (bvchop 7 x) (bvchop 7 y))))
@@ -2006,19 +2006,12 @@
              (equal (bvchop size (+ x (- (logext size2 y))))
                     (bvchop size (+ x (- y)))))))
 
-(defthmd bvcount-convert-to-bv
-  (implies (and (syntaxp (acl2::convertible-to-bvp x))
-                (natp size))
-           (equal (bvcount size x)
-                  (bvcount size (trim size x))))
-  :hints (("Goal" :in-theory (enable trim))))
-
 (local (include-book "kestrel/bv/trim-elim-rules-non-bv" :dir :system))
 (local (include-book "kestrel/bv/convert-to-bv-rules" :dir :system))
 (local (include-book "kestrel/bv/bvuminus" :dir :system))
 
 ;; todo: theories for the trim and convert rules:
-(defthm sub-pf-spec8-becomes-bvcount (equal (sub-pf-spec8 dst src) (bitnot (getbit 0 (bvcount 8 (bvminus 8 dst src))))) :hints (("Goal" :in-theory (enable sub-pf-spec8 bvcount-convert-to-bv acl2::trim-of-+-becomes-bvplus acl2::trim-of-unary---becomes-bvuminus acl2::bvplus-convert-arg3-to-bv bvminus ifix))))
-(defthm sub-pf-spec16-becomes-bvcount (equal (sub-pf-spec16 dst src) (bitnot (getbit 0 (bvcount 8 (bvminus 8 dst src))))) :hints (("Goal" :in-theory (enable sub-pf-spec16 bvcount-convert-to-bv acl2::trim-of-+-becomes-bvplus acl2::trim-of-unary---becomes-bvuminus acl2::bvplus-convert-arg3-to-bv bvminus ifix))))
-(defthm sub-pf-spec32-becomes-bvcount (equal (sub-pf-spec32 dst src) (bitnot (getbit 0 (bvcount 8 (bvminus 8 dst src))))) :hints (("Goal" :in-theory (enable sub-pf-spec32 bvcount-convert-to-bv acl2::trim-of-+-becomes-bvplus acl2::trim-of-unary---becomes-bvuminus acl2::bvplus-convert-arg3-to-bv bvminus ifix))))
-(defthm sub-pf-spec64-becomes-bvcount (equal (sub-pf-spec64 dst src) (bitnot (getbit 0 (bvcount 8 (bvminus 8 dst src))))) :hints (("Goal" :in-theory (enable sub-pf-spec64 bvcount-convert-to-bv acl2::trim-of-+-becomes-bvplus acl2::trim-of-unary---becomes-bvuminus acl2::bvplus-convert-arg3-to-bv bvminus ifix))))
+(defthm sub-pf-spec8-becomes-bvcount (equal (sub-pf-spec8 dst src) (bitnot (getbit 0 (bvcount 8 (bvminus 8 dst src))))) :hints (("Goal" :in-theory (enable sub-pf-spec8 acl2::bvcount-convert-to-bv acl2::trim-of-+-becomes-bvplus acl2::trim-of-unary---becomes-bvuminus acl2::bvplus-convert-arg3-to-bv bvminus ifix))))
+(defthm sub-pf-spec16-becomes-bvcount (equal (sub-pf-spec16 dst src) (bitnot (getbit 0 (bvcount 8 (bvminus 8 dst src))))) :hints (("Goal" :in-theory (enable sub-pf-spec16 acl2::bvcount-convert-to-bv acl2::trim-of-+-becomes-bvplus acl2::trim-of-unary---becomes-bvuminus acl2::bvplus-convert-arg3-to-bv bvminus ifix))))
+(defthm sub-pf-spec32-becomes-bvcount (equal (sub-pf-spec32 dst src) (bitnot (getbit 0 (bvcount 8 (bvminus 8 dst src))))) :hints (("Goal" :in-theory (enable sub-pf-spec32 acl2::bvcount-convert-to-bv acl2::trim-of-+-becomes-bvplus acl2::trim-of-unary---becomes-bvuminus acl2::bvplus-convert-arg3-to-bv bvminus ifix))))
+(defthm sub-pf-spec64-becomes-bvcount (equal (sub-pf-spec64 dst src) (bitnot (getbit 0 (bvcount 8 (bvminus 8 dst src))))) :hints (("Goal" :in-theory (enable sub-pf-spec64 acl2::bvcount-convert-to-bv acl2::trim-of-+-becomes-bvplus acl2::trim-of-unary---becomes-bvuminus acl2::bvplus-convert-arg3-to-bv bvminus ifix))))
