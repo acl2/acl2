@@ -52,6 +52,10 @@
               x::cf-spec16-becomes-getbit
               x::cf-spec32-becomes-getbit
               x::cf-spec64-becomes-getbit
+              x::pf-spec8-becomes-bvcount
+              x::pf-spec16-becomes-bvcount
+              x::pf-spec32-becomes-bvcount
+              x::pf-spec64-becomes-bvcount
               x::sf-spec8-becomes-getbit
               x::sf-spec16-becomes-getbit
               x::sf-spec32-becomes-getbit
@@ -72,6 +76,10 @@
               x86isa::sub-cf-spec16-opener
               x86isa::sub-cf-spec32-opener
               x86isa::sub-cf-spec64-opener
+              x::sub-pf-spec8-becomes-bvcount
+              x::sub-pf-spec16-becomes-bvcount
+              x::sub-pf-spec32-becomes-bvcount
+              x::sub-pf-spec64-becomes-bvcount
               x::sbb-af-spec8-becomes-bvlt
               x::sbb-af-spec16-becomes-bvlt
               x::sbb-af-spec32-becomes-bvlt
