@@ -33,3 +33,15 @@
              (dim= d1 d3))
     :use dim=-trans
     :enable dimp-when-dim=))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection shape-equiv-derived-rules
+  :short "Some derived inference rules about shape equivalence."
+
+  (defruled shp=-trans-swapped
+    (implies (and (shp= s2 s3)
+                  (shp= s1 s2))
+             (shp= s1 s3))
+    :use shp=-trans
+    :enable shapep-when-shp=))
