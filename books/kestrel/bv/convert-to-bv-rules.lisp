@@ -29,6 +29,7 @@
 (include-book "bitand")
 (include-book "bitor")
 (include-book "bitxor")
+(include-book "bvcount-def")
 (include-book "trim-elim-rules-non-bv") ; to get rid of the TRIMs introduced by these rules
 (local (include-book "bvand"))
 (local (include-book "bvminus"))
@@ -40,6 +41,7 @@
 (local (include-book "bvsx"))
 (local (include-book "bvlt"))
 (local (include-book "bvuminus"))
+(local (include-book "bvcount"))
 
 ;; The rules in this book convert certain arguments of BV functions to be calls
 ;; of BV operators.  The approach has 2 steps:
@@ -281,4 +283,13 @@
                 (natp n))
            (equal (getbit n x)
                   (getbit n (trim (+ 1 n) x))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvcount-convert-to-bv
+  (implies (and (syntaxp (convertible-to-bvp x))
+                (natp size))
+           (equal (bvcount size x)
+                  (bvcount size (trim size x))))
   :hints (("Goal" :in-theory (enable trim))))
