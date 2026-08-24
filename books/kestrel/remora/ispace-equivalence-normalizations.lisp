@@ -228,6 +228,16 @@
                (shape-nullbinappendp shape1)))
   :verify-guards nil) ; because SHP= is not guard-verified
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define-sk shape-equiv-to-nosplice-p (shape)
+  :returns (yes/no booleanp)
+  :short "Check whether a shape is equivalent to one without splices."
+  (exists (shape1)
+          (and (shp= shape shape1)
+               (shape-nosplicep shape1)))
+  :verify-guards nil) ; because SHP= is not guard-verified
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define binarize-add-dims ((dims dim-listp))
@@ -1755,6 +1765,451 @@
              :in-theory (enable* ast-nodimispacep-rules))
             '(:expand ((ispace-nodimispacep ispace))))))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define unsplice-ispaces ((ispaces ispace-listp))
+  :returns (mv (new-shape shapep)
+               (proof shp=-proofp))
+  :short "Turn a list of ispaces in a splice
+          into a shape without splices at the top level,
+          and construct a proof tree demonstrating equivalence."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called on the ispace arguments of a splice shape.")
+   (xdoc::p
+    "A splice of no ispaces is turned into the empty concatenation,
+     according to the rule @('splice0').
+     A splice of one or more ispaces is turned into
+     the concatenation of a shape corresponding to the first ispace
+     and the unsplicing of the splice of the remaining ispaces:
+     if the first ispace is a dimension,
+     the shape is the unary dimension shape of that dimension,
+     according to the rule @('splice1m-dim');
+     if the first ispace is a shape,
+     the shape is that very shape,
+     according to the rule @('splice1m-shape').
+     These two cases are exhaustive on the kinds of ispaces.")
+   (xdoc::p
+    "The proof tree proves the equivalence of
+     @('(shape-splice ispaces)') and the new shape.
+     Like @(tsee unarize-shape-dims),
+     the recursion continues inside a component of the constructed shape,
+     so the proof tree for the case of one or more ispaces
+     chains, via the rule @('trans'),
+     an instance of the rule @('splice1m-dim') or @('splice1m-shape')
+     with a congruence that wraps the recursively built proof tree.")
+   (xdoc::p
+    "We use the constructed proof tree to show the equivalence.")
+   (xdoc::p
+    "We show that the resulting shape has no splices
+     if the argument ispaces have none inside;
+     the splices at the top level are eliminated by this function.
+     This function is called after unsplicing
+     the ispaces passed as arguments to this function (see caller);
+     that establishes the hypothesis of the theorem.")
+   (xdoc::p
+    "We also show that this function preserves
+     the unary status of dimension shapes,
+     the binary or empty status of concatenations,
+     and the absence of dimension ispaces,
+     which this function does not affect."))
+  (b* (((when (endp ispaces)) (mv (shape-append nil)
+                                  (shp=-proof-splice0)))
+       (ispace (ispace-fix (car ispaces)))
+       (is (ispace-list-fix (cdr ispaces)))
+       ((mv new-shape2 proof2) (unsplice-ispaces (cdr ispaces))))
+    (ispace-case
+     ispace
+     :dim (b* ((shape1 (shape-dims (list ispace.dim)))
+               (mid-shape (shape-append (list shape1 (shape-splice is))))
+               (new-shape (shape-append (list shape1 new-shape2))))
+            (mv new-shape
+                (make-shp=-proof-trans
+                 :s1 (shape-splice (cons ispace is))
+                 :s2 mid-shape
+                 :s3 new-shape
+                 :premise1-proof (make-shp=-proof-splice1m-dim
+                                  :d ispace.dim
+                                  :is is)
+                 :premise2-proof
+                 (make-shp=-proof-cong-append
+                  :ss1 (list shape1 (shape-splice is))
+                  :ss2 (list shape1 new-shape2)
+                  :premise1-proof
+                  (make-shps=-proof-cong-cons
+                   :s1 shape1
+                   :s2 shape1
+                   :ss1 (list (shape-splice is))
+                   :ss2 (list new-shape2)
+                   :premise1-proof (shp=-proof-refl shape1)
+                   :premise2-proof
+                   (make-shps=-proof-cong-cons
+                    :s1 (shape-splice is)
+                    :s2 new-shape2
+                    :ss1 nil
+                    :ss2 nil
+                    :premise1-proof proof2
+                    :premise2-proof (shps=-proof-refl nil)))))))
+     :shape (b* ((shape1 ispace.shape)
+                 (mid-shape (shape-append (list shape1 (shape-splice is))))
+                 (new-shape (shape-append (list shape1 new-shape2))))
+              (mv new-shape
+                  (make-shp=-proof-trans
+                   :s1 (shape-splice (cons ispace is))
+                   :s2 mid-shape
+                   :s3 new-shape
+                   :premise1-proof (make-shp=-proof-splice1m-shape
+                                    :s ispace.shape
+                                    :is is)
+                   :premise2-proof
+                   (make-shp=-proof-cong-append
+                    :ss1 (list shape1 (shape-splice is))
+                    :ss2 (list shape1 new-shape2)
+                    :premise1-proof
+                    (make-shps=-proof-cong-cons
+                     :s1 shape1
+                     :s2 shape1
+                     :ss1 (list (shape-splice is))
+                     :ss2 (list new-shape2)
+                     :premise1-proof (shp=-proof-refl shape1)
+                     :premise2-proof
+                     (make-shps=-proof-cong-cons
+                      :s1 (shape-splice is)
+                      :s2 new-shape2
+                      :ss1 nil
+                      :ss2 nil
+                      :premise1-proof proof2
+                      :premise2-proof (shps=-proof-refl nil)))))))))
+  :measure (len ispaces)
+  :verify-guards :after-returns
+
+  ///
+
+  (defret shp=-proof-validp-of-unsplice-ispaces
+    (implies (ispace-listp ispaces)
+             (shp=-proof-validp proof
+                                (shape-splice ispaces)
+                                new-shape))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable shp=-proof-validp
+                                shps=-proof-validp
+                                shp=-refl-validp
+                                shp=-trans-validp
+                                shp=-splice0-validp
+                                shp=-splice1m-dim-validp
+                                shp=-splice1m-shape-validp
+                                shp=-cong-append-validp
+                                shps=-refl-validp
+                                shps=-cong-cons-validp))))
+
+  (defret shape-nosplicep-of-unsplice-ispaces
+    (implies (ispace-list-nosplicep ispaces)
+             (shape-nosplicep new-shape))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* ast-nosplicep-rules))
+            '(:expand ((ispace-nosplicep (car ispaces))))))
+
+  (defret shape-unidimsp-of-unsplice-ispaces
+    (implies (ispace-list-unidimsp ispaces)
+             (shape-unidimsp new-shape))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* ast-unidimsp-rules))
+            '(:expand ((shape-unidimsp
+                        (shape-dims (list (ispace-dim->dim
+                                           (car ispaces)))))))))
+
+  (defret shape-nullbinappendp-of-unsplice-ispaces
+    (implies (ispace-list-nullbinappendp ispaces)
+             (shape-nullbinappendp new-shape))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* ast-nullbinappendp-rules))
+            '(:expand ((shape-nullbinappendp
+                        (shape-append
+                         (list (shape-dims (list (ispace-dim->dim
+                                                  (car ispaces))))
+                               (mv-nth 0 (unsplice-ispaces
+                                          (cdr ispaces))))))
+                       (shape-nullbinappendp
+                        (shape-append
+                         (list (ispace-shape->shape (car ispaces))
+                               (mv-nth 0 (unsplice-ispaces
+                                          (cdr ispaces))))))))))
+
+  (defret shape-nodimispacep-of-unsplice-ispaces
+    (implies (ispace-list-nodimispacep ispaces)
+             (shape-nodimispacep new-shape))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* ast-nodimispacep-rules))
+            '(:expand ((ispace-nodimispacep (car ispaces)))))))
+
+;;;;;;;;;;
+
+(defines unsplice-in-shapes/ispaces
+  :short "Turn shapes and ispaces into equivalent ones without splices,
+          and construct proof trees demonstrating the equivalence."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We show that the resulting shapes and ispaces are equivalent to
+     the argument ones.
+     This is done via the constructed proof trees.")
+   (xdoc::p
+    "We show that the resulting shapes and ispaces have no splices.")
+   (xdoc::p
+    "We also show that these functions preserve
+     the unary status of dimension shapes,
+     the binary or empty status of concatenations,
+     and the absence of dimension ispaces,
+     which these functions do not affect."))
+
+  (define unsplice-in-shape ((shape shapep))
+    :returns (mv (new-shape shapep)
+                 (proof shp=-proofp))
+    :parents (ispace-equivalence-normalizations unsplice-in-shapes/ispaces)
+    :short "Turn a shape into
+            an equivalent one without splices,
+            and construct a proof tree demonstrating the equivalence."
+    (shape-case
+     shape
+     :var (mv (shape-var shape.name)
+              (shp=-proof-refl (shape-var shape.name)))
+     :dims (mv (shape-dims shape.dims)
+               (shp=-proof-refl (shape-dims shape.dims)))
+     :append (b* (((mv new-shapes proof)
+                   (unsplice-in-shape-list shape.shapes)))
+               (mv (shape-append new-shapes)
+                   (make-shp=-proof-cong-append
+                    :ss1 shape.shapes
+                    :ss2 new-shapes
+                    :premise1-proof proof)))
+     :splice (b* (((mv new-ispaces proof)
+                   (unsplice-in-ispace-list shape.ispaces))
+                  ((mv new-shape proof1)
+                   (unsplice-ispaces new-ispaces)))
+               (mv new-shape
+                   (make-shp=-proof-trans
+                    :s1 (shape-splice shape.ispaces)
+                    :s2 (shape-splice new-ispaces)
+                    :s3 new-shape
+                    :premise1-proof (make-shp=-proof-cong-splice
+                                     :is1 shape.ispaces
+                                     :is2 new-ispaces
+                                     :premise1-proof proof)
+                    :premise2-proof proof1))))
+    :measure (shape-count shape))
+
+  (define unsplice-in-shape-list ((shapes shape-listp))
+    :returns (mv (new-shapes shape-listp)
+                 (proof shps=-proofp))
+    :parents (ispace-equivalence-normalizations unsplice-in-shapes/ispaces)
+    :short "Turn a list of shapes into
+            an equivalent one without splices,
+            and construct a proof tree demonstrating the equivalence."
+    (b* (((when (endp shapes)) (mv nil (shps=-proof-refl nil)))
+         ((mv new-shape proof1) (unsplice-in-shape (car shapes)))
+         ((mv new-shapes proof2) (unsplice-in-shape-list (cdr shapes))))
+      (mv (cons new-shape new-shapes)
+          (make-shps=-proof-cong-cons
+           :s1 (shape-fix (car shapes))
+           :s2 new-shape
+           :ss1 (shape-list-fix (cdr shapes))
+           :ss2 new-shapes
+           :premise1-proof proof1
+           :premise2-proof proof2)))
+    :measure (shape-list-count shapes)
+
+    ///
+
+    (defret len-of-unsplice-in-shape-list
+      (equal (len new-shapes)
+             (len shapes))
+      :hints (("Goal"
+               :induct (len shapes)
+               :in-theory (enable (:induction len)))))
+
+    (defret consp-of-unsplice-in-shape-list
+      (equal (consp new-shapes)
+             (consp shapes))
+      :hints (("Goal" :expand ((unsplice-in-shape-list shapes))))))
+
+  (define unsplice-in-ispace ((ispace ispacep))
+    :returns (mv (new-ispace ispacep)
+                 (proof isp=-proofp))
+    :parents (ispace-equivalence-normalizations unsplice-in-shapes/ispaces)
+    :short "Turn an ispace into
+            an equivalent one without splices,
+            and construct a proof tree demonstrating the equivalence."
+    (ispace-case
+     ispace
+     :dim (mv (ispace-dim ispace.dim)
+              (isp=-proof-refl (ispace-dim ispace.dim)))
+     :shape (b* (((mv new-shape proof) (unsplice-in-shape ispace.shape)))
+              (mv (ispace-shape new-shape)
+                  (make-isp=-proof-cong-shape
+                   :s1 ispace.shape
+                   :s2 new-shape
+                   :premise1-proof proof))))
+    :measure (ispace-count ispace))
+
+  (define unsplice-in-ispace-list ((ispaces ispace-listp))
+    :returns (mv (new-ispaces ispace-listp)
+                 (proof isps=-proofp))
+    :parents (ispace-equivalence-normalizations unsplice-in-shapes/ispaces)
+    :short "Turn a list of ispaces into
+            an equivalent one without splices,
+            and construct a proof tree demonstrating the equivalence."
+    (b* (((when (endp ispaces)) (mv nil (isps=-proof-refl nil)))
+         ((mv new-ispace proof1) (unsplice-in-ispace (car ispaces)))
+         ((mv new-ispaces proof2) (unsplice-in-ispace-list (cdr ispaces))))
+      (mv (cons new-ispace new-ispaces)
+          (make-isps=-proof-cong-cons
+           :i1 (ispace-fix (car ispaces))
+           :i2 new-ispace
+           :is1 (ispace-list-fix (cdr ispaces))
+           :is2 new-ispaces
+           :premise1-proof proof1
+           :premise2-proof proof2)))
+    :measure (ispace-list-count ispaces))
+
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv-mutual unsplice-in-shapes/ispaces)
+
+  (defret-mutual shp=-proof-validp-of-unsplice-in-shapes/ispaces
+    (defret shp=-proof-validp-of-unsplice-in-shape
+      (implies (shapep shape)
+               (shp=-proof-validp proof
+                                  shape
+                                  new-shape))
+      :fn unsplice-in-shape)
+    (defret shps=-proof-validp-of-unsplice-in-shape-list
+      (implies (shape-listp shapes)
+               (shps=-proof-validp proof
+                                   shapes
+                                   new-shapes))
+      :fn unsplice-in-shape-list)
+    (defret isp=-proof-validp-of-unsplice-in-ispace
+      (implies (ispacep ispace)
+               (isp=-proof-validp proof
+                                  ispace
+                                  new-ispace))
+      :fn unsplice-in-ispace)
+    (defret isps=-proof-validp-of-unsplice-in-ispace-list
+      (implies (ispace-listp ispaces)
+               (isps=-proof-validp proof
+                                   ispaces
+                                   new-ispaces))
+      :fn unsplice-in-ispace-list)
+    :hints (("Goal"
+             :in-theory (enable shp=-proof-validp
+                                shps=-proof-validp
+                                isp=-proof-validp
+                                isps=-proof-validp
+                                shp=-refl-validp
+                                shp=-trans-validp
+                                shp=-cong-append-validp
+                                shp=-cong-splice-validp
+                                isp=-refl-validp
+                                isp=-cong-shape-validp
+                                shps=-refl-validp
+                                shps=-cong-cons-validp
+                                isps=-refl-validp
+                                isps=-cong-cons-validp))))
+
+  (defret-mutual shape-nosplicep-of-unsplice-in-shapes/ispaces
+    (defret shape-nosplicep-of-unsplice-in-shape
+      (shape-nosplicep new-shape)
+      :fn unsplice-in-shape)
+    (defret shape-list-nosplicep-of-unsplice-in-shape-list
+      (shape-list-nosplicep new-shapes)
+      :fn unsplice-in-shape-list)
+    (defret ispace-nosplicep-of-unsplice-in-ispace
+      (ispace-nosplicep new-ispace)
+      :fn unsplice-in-ispace)
+    (defret ispace-list-nosplicep-of-unsplice-in-ispace-list
+      (ispace-list-nosplicep new-ispaces)
+      :fn unsplice-in-ispace-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-nosplicep-rules))
+            '(:expand ((shape-nosplicep shape)
+                       (ispace-nosplicep ispace)))))
+
+  (defret-mutual shape-unidimsp-of-unsplice-in-shapes/ispaces
+    (defret shape-unidimsp-of-unsplice-in-shape
+      (implies (shape-unidimsp shape)
+               (shape-unidimsp new-shape))
+      :fn unsplice-in-shape)
+    (defret shape-list-unidimsp-of-unsplice-in-shape-list
+      (implies (shape-list-unidimsp shapes)
+               (shape-list-unidimsp new-shapes))
+      :fn unsplice-in-shape-list)
+    (defret ispace-unidimsp-of-unsplice-in-ispace
+      (implies (ispace-unidimsp ispace)
+               (ispace-unidimsp new-ispace))
+      :fn unsplice-in-ispace)
+    (defret ispace-list-unidimsp-of-unsplice-in-ispace-list
+      (implies (ispace-list-unidimsp ispaces)
+               (ispace-list-unidimsp new-ispaces))
+      :fn unsplice-in-ispace-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-unidimsp-rules))
+            '(:expand ((shape-unidimsp shape)
+                       (ispace-unidimsp ispace)))))
+
+  (defret-mutual shape-nullbinappendp-of-unsplice-in-shapes/ispaces
+    (defret shape-nullbinappendp-of-unsplice-in-shape
+      (implies (shape-nullbinappendp shape)
+               (shape-nullbinappendp new-shape))
+      :fn unsplice-in-shape)
+    (defret shape-list-nullbinappendp-of-unsplice-in-shape-list
+      (implies (shape-list-nullbinappendp shapes)
+               (shape-list-nullbinappendp new-shapes))
+      :fn unsplice-in-shape-list)
+    (defret ispace-nullbinappendp-of-unsplice-in-ispace
+      (implies (ispace-nullbinappendp ispace)
+               (ispace-nullbinappendp new-ispace))
+      :fn unsplice-in-ispace)
+    (defret ispace-list-nullbinappendp-of-unsplice-in-ispace-list
+      (implies (ispace-list-nullbinappendp ispaces)
+               (ispace-list-nullbinappendp new-ispaces))
+      :fn unsplice-in-ispace-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-nullbinappendp-rules))
+            '(:expand ((shape-nullbinappendp shape)
+                       (shape-nullbinappendp
+                        (shape-append (mv-nth 0 (unsplice-in-shape-list
+                                                 (shape-append->shapes
+                                                  shape)))))))))
+
+  (defret-mutual shape-nodimispacep-of-unsplice-in-shapes/ispaces
+    (defret shape-nodimispacep-of-unsplice-in-shape
+      (implies (shape-nodimispacep shape)
+               (shape-nodimispacep new-shape))
+      :fn unsplice-in-shape)
+    (defret shape-list-nodimispacep-of-unsplice-in-shape-list
+      (implies (shape-list-nodimispacep shapes)
+               (shape-list-nodimispacep new-shapes))
+      :fn unsplice-in-shape-list)
+    (defret ispace-nodimispacep-of-unsplice-in-ispace
+      (implies (ispace-nodimispacep ispace)
+               (ispace-nodimispacep new-ispace))
+      :fn unsplice-in-ispace)
+    (defret ispace-list-nodimispacep-of-unsplice-in-ispace-list
+      (implies (ispace-list-nodimispacep ispaces)
+               (ispace-list-nodimispacep new-ispaces))
+      :fn unsplice-in-ispace-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-nodimispacep-rules))
+            '(:expand ((ispace-nodimispacep ispace))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled dim-equiv-to-binadd-p-when-dimp
@@ -1910,3 +2365,22 @@
                    (concl.shp1 shape)
                    (concl.shp2 (mv-nth 0 (nullbinarize-append-in-shape
                                           shape))))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled shape-equiv-to-nosplice-p-when-shapep
+  :short "Every shape is equivalent to one without splices."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This validates the intention of
+     rules @('splice0'), @('splice1m-dim'), and @('splice1m-shape'),
+     described in @(see shape/ispace-equiv-infrules)."))
+  (implies (shapep shape)
+           (shape-equiv-to-nosplice-p shape))
+  :use ((:instance shape-equiv-to-nosplice-p-suff
+                   (shape1 (mv-nth 0 (unsplice-in-shape shape))))
+        (:instance shp=-when-proof-validp
+                   (proof (mv-nth 1 (unsplice-in-shape shape)))
+                   (concl.shp1 shape)
+                   (concl.shp2 (mv-nth 0 (unsplice-in-shape shape))))))
