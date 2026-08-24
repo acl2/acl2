@@ -972,8 +972,7 @@
        the type of the whole unboxing expression;
        this type is absent after parsing, calculated by the type checker.")
      (xdoc::p
-      "A bracketed expression must have at least one sub-expression,
-       but this is not enforced in this fixtype.")
+      "A bracketed expression must have at least one sub-expression.")
      (xdoc::p
       "A @('let') expressions must have at least one bind,
        but this is not enforced in this fixtype.")
@@ -1024,7 +1023,11 @@
               (target expr)
               (body expr)
               (type? type-option)))
-    (:bracket ((exprs expr-list))) ; one or more
+    (:bracket ((exprs expr-list
+                      :reqfix (if (consp exprs)
+                                  exprs
+                                (list (expr-fix nil)))))
+     :require (consp exprs))
     (:let ((binds bind-list) ; one or more
            (body expr)))
     :pred exprp
@@ -1041,7 +1044,13 @@
       (consp (expr-frame->exprs expr))
       :rule-classes :type-prescription
       :use (:instance expr-frame-requirements (x expr))
-      :disable expr-frame-requirements))
+      :disable expr-frame-requirements)
+
+    (defrule consp-of-expr-bracket->exprs
+      (consp (expr-bracket->exprs expr))
+      :rule-classes :type-prescription
+      :use (:instance expr-bracket-requirements (x expr))
+      :disable expr-bracket-requirements))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

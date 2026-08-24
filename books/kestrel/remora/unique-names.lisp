@@ -1079,6 +1079,22 @@
 ; entry when a name is kept, so the outer renamings do not capture the
 ; parameter); see the UNIQ-*-PARAMS functions above.
 
+; Bridge rule for the :BRACKET case of the traversal facts/identity proofs
+; below.  With the non-emptiness invariant on :BRACKET (see EXPR), the
+; generated EXPR-BRACKET->EXPRS-of-EXPR-BRACKET accessor rule rewrites to the
+; reqfix IF-term rather than the argument, so opening EXPR-BINDER-NAMES on a
+; freshly built (EXPR-BRACKET ES) leaves an unresolved IF that blocks the fold.
+; This rule rewrites the binder names of a non-empty bracket directly; the
+; hypothesis is discharged from CONSP-OF-UNIQ-EXPR-LIST at the use sites.  The
+; two-field :FRAME and :ARRAY summands do not need this (their accessor rules
+; simplify under the surrounding APPEND normalization).
+(defruledl expr-binder-names-of-expr-bracket-when-consp
+  (implies (consp exprs)
+           (equal (expr-binder-names (expr-bracket exprs))
+                  (expr-list-binder-names exprs)))
+  :enable (expr-binder-names-of-expr-bracket
+           consp-of-expr-list-fix))
+
 (defines uniquify-names-impl
   :verify-guards nil ; done below
   :ruler-extenders :all
@@ -1612,6 +1628,7 @@
                                           atom-binder-names atom-list-binder-names
                                           bind-binder-names bind-list-binder-names
                                           bind-list-names bind-name
+                                          expr-binder-names-of-expr-bracket-when-consp
                                           type-var->name ispace-var->name
                                           intersectp-equal
                                           no-duplicatesp-equal
@@ -1724,6 +1741,7 @@
                                         atom-binder-names atom-list-binder-names
                                         bind-binder-names bind-list-binder-names
                                         bind-list-names bind-name
+                                        expr-binder-names-of-expr-bracket-when-consp
                                         expr-list-fix atom-list-fix bind-list-fix
                                         ispace-var-list-fix
                                         type-var->name ispace-var->name

@@ -136,8 +136,6 @@
                       (expr-wfp expr.body)
                       (type-option-wfp expr.type?)
                       (>= (len expr.ispaces) 2)))
-   (expr :bracket (and (expr-list-wfp expr.exprs)
-                       (>= (len expr.exprs) 1)))
    (expr :let (and (bind-list-wfp expr.binds)
                    (expr-wfp expr.body)
                    (>= (len expr.binds) 1)))
