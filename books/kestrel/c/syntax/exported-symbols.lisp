@@ -27,6 +27,7 @@
     ident->unwrap
 
     ident-listp
+    ident-list-of
 
     ident-list-listp
 
@@ -551,6 +552,7 @@
 
     ;; irrelevants:
 
+    irr-ident
     irr-expr
     irr-const-expr
     irr-type-spec

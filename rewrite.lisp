@@ -13813,8 +13813,29 @@ its attachment is ignored during proofs"))))
   #-acl2-rewrite-meter ; normal stats (no stats)
   `(eql (the-fixnum ,depth) 0))
 
+(defun tilde-@-call-depth-overflow-advice-phrase1 (alist)
+  (cond ((endp alist) nil)
+        (t (cons (msg "~x0:~%~@1~%~%"
+                      (car (car alist))
+                      (cdr (car alist)))
+                 (tilde-@-call-depth-overflow-advice-phrase1 (cdr alist))))))
+
+(defun tilde-@-call-depth-overflow-advice-phrase (alist)
+  (msg "~#0~[~/~%~%FYI: The book~#1~[~/s~] named below ~#1~[offers~/offer~] ~
+        the following advice about rewrite loops attributable to rules in ~
+        ~#1~[that~/each individual~] book.~%~%~*2~]~%"
+       (if (endp alist) 0 1)
+       alist
+       `("" "~@*" "~@*" "~@*" ,(tilde-@-call-depth-overflow-advice-phrase1 alist))))
+
 (defmacro rdepth-error (form &optional preprocess-p)
   (if preprocess-p
+
+; If we're in the preprocessor no gstack information is available, so it's
+; unlikely the user could attributed the loop to any particular rewrite rule or
+; book.  Therefore, we just tell the user to turn off preprocessing and follow
+; the directions (from the rewriter) when the loop occurs again.
+
       (let ((ctx ''preprocess))
         `(prog2$ (er-hard
                   ,ctx "Call depth"
@@ -13834,17 +13855,20 @@ its attachment is ignored during proofs"))))
       `(prog2$ (er-hard
                 ,ctx "Call depth"
                 "The call depth limit of ~x0 has been exceeded in the ACL2 ~
-                 rewriter.  To see why the limit was exceeded, ~@1execute the ~
-                 form (cw-gstack) or, for less verbose output, instead try ~
-                 (cw-gstack :frames 30).  You may then notice a loop caused ~
-                 by some set of enabled rules, some of which you can then ~
-                 disable; see :DOC disable.  For a possible solution when ~
-                 there is not a loop, see :DOC rewrite-stack-limit."
+                   rewriter.  To see why the limit was exceeded, ~@1execute ~
+                   the form (cw-gstack) or, for less verbose output, instead ~
+                   try (cw-gstack :frames 30).  You may then notice a loop ~
+                   caused by some set of enabled rules, some of which you ~
+                   might then disable; see :DOC disable.  For a possible ~
+                   solution when there is not a loop, see :DOC ~
+                   rewrite-stack-limit.~@2"
                 (rewrite-stack-limit wrld)
                 (if (f-get-global 'gstackp state)
                     ""
                   "first execute~%  :brr t~%and then try the proof again, and ~
-                   then "))
+                   then ")
+                (tilde-@-call-depth-overflow-advice-phrase
+                 (table-alist 'call-depth-overflow-advice wrld)))
                ,form))))
 
 (defun bad-synp-hyp-msg1 (hyp bound-vars all-vars-bound-p wrld)

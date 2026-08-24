@@ -23,60 +23,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled exec-ident-of-var-in-compustate
-  (b* ((expr (c::expr-ident var))
-       ((mv eval compst1) (c::exec-expr expr compst fenv limit))
-       (val (c::expr-value->value eval)))
-    (implies (and (not (zp limit))
-                  (c::compustate-has-var-with-type-p var type compst))
-             (and (not (c::errorp eval))
-                  (equal (c::type-of-value val) (c::type-fix type))
-                  (equal compst1 (c::compustate-fix compst)))))
-  :enable (c::exec-expr
-           c::exec-ident
-           c::compustate-has-var-with-type-p
-           c::not-errorp-when-expr-valuep))
-
-; cf. expr-ident-compustate-vars, which has not errorp hyp
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define c::compustate-has-static-var-with-type-p ((var c::identp)
-                                                  (type c::typep)
-                                                  (compst c::compustatep))
-  :returns (yes/no booleanp)
-  (and (c::compustate-has-var-with-type-p var type compst)
-       (equal (c::objdesign-kind (c::objdesign-of-var var compst)) :static))
-  :guard-hints (("Goal" :in-theory (enable c::compustate-has-var-with-type-p)))
-
-  ///
-
-  (defruled c::assoc-static-when-compustate-has-static-var-with-type-p
-    (implies (and (c::identp var)
-                  (c::compustate-has-static-var-with-type-p var type compst))
-             (omap::assoc var (c::compustate->static compst)))
-    :enable (c::objdesign-of-var
-             c::read-object
-             c::compustate-has-var-with-type-p))
-
-  (defruled c::objdesign-of-var-when-compustate-has-static-var-with-type-p
-    (implies (c::compustate-has-static-var-with-type-p var type compst)
-             (equal (c::objdesign-of-var var compst)
-                    (c::objdesign-static var)))
-    :enable (c::compustate-has-var-with-type-p
-             c::objdesign-of-var))
-
-  (defruled c::read-object-when-compustate-has-static-var-with-type-p
-    (implies (c::compustate-has-static-var-with-type-p var type compst)
-             (equal (c::read-object (c::objdesign-of-var var compst) compst)
-                    (cdr (omap::assoc (c::ident-fix var)
-                                      (c::compustate->static compst)))))
-    :enable (c::objdesign-of-var
-             c::read-object
-             c::compustate-has-var-with-type-p)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; This file contains work in progress towards
 ; some general approach to generate proofs for the STS transformation.
 

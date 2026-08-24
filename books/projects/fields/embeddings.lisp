@@ -13,9 +13,9 @@
 ;;                                      Embeddings of an Extension Field
 ;;----------------------------------------------------------------------------------------------------------
 
-;; Let e and k be extensions of a field f.  An embedding of e in k over f is conceptually a field homomorphism
-;; from e into k that fixes f, i.e., for each element x of f, the image of (flift x f e) is (flift x f k).
-;; To formalize this notion, We shall define 3 functions:
+;; Let e and k be extensions of a field f.  An embedding of e in k over f is conceptually a field 
+;; homomorphism from e into k that fixes f, i.e., for each element x of f, the image of (flift x f e) is 
+;; (flift x f k).  To formalize this notion, We shall define 3 functions:
 
 ;; (1) (embed x phi k f): If x is an element of e and phi is an embedding of e in k over f, then this is the
 ;;     image of x in k under phi.
@@ -24,8 +24,8 @@
 ;;     i.e, the generalized polynomial over k constructed by replacing each coefficient of p with its image
 ;;     under phi.
 
-;; (3) (embeddingp phi e k f): This is the predicate that recognizes phi as a well-formed embedding of e in k
-;;     over f.
+;; (3) (embeddingp phi e k f): This is the predicate that recognizes phi as a well-formed embedding of e in 
+;;     k over f.
 
 ;; Such an embedding phi is represented by a list of elements of k of length (len e) - (len f), constructed
 ;; recursively as follows:
@@ -172,8 +172,8 @@
 		(equal (embed (fone e) phi k f)
 	               (fone k)))))
 
-;; If an embedding phi satistfies the above properties, then it is a homomorphism and inherits
-;; the properties of hom, e.g.,
+;; If an embedding phi satistfies the above properties, then it is a homomorphism and inherits the
+;; properties of hom, e.g.,
 
 (defthmd embed-fzero-*
   (implies (and (fieldp e) (fieldp k) (embed-props phi e k f)
@@ -246,8 +246,8 @@
 
 ;; Inductive step:
 
-;; Let e' = (cdr e) and phi' = (cdr phi).  We must prove that if the properties hold for
-;; e' and phi', then they hold for e and phi.
+;; Let e' = (cdr e) and phi' = (cdr phi).  We must prove that if the properties hold for e' and phi', then
+;; they hold for e and phi.
 
 (defthmd embed-image-*
   (implies (and (extensionp e f) (extensionp k f) (not (equal e f)) (embeddingp phi e k f)
@@ -333,24 +333,24 @@
 
 ;; Proof:
 
-;;   (pembed (fadd x y e) phi k f) = (pembed (padd x y e') phi k f)                      [definition of fadd]
+;;   (pembed (fadd x y e) phi k f) = (pembed (padd x y e') phi k f)                      [def of fadd]
 ;;                                   (padd (pembed x phi k f) (pembed y phi k f) k)      [pembed-padd-*]
 ;; 
-;;   (embed (fadd x y e) phi k f) = (peval (pembed (fadd x y e) phi' k f) (car phi) k)   [definition of embed]
+;;   (embed (fadd x y e) phi k f) = (peval (pembed (fadd x y e) phi' k f) (car phi) k)   [def of embed]
 ;;                                = (peval (padd (pembed x phi k f)                      [proved above]   
 ;;                                               (pembed y phi k f)
 ;;                                               k)
 ;;                                         (car phi) k)
-;;                                = (fadd (peval (pembed x phi' k f) (car phi) k)        [peval-padd, polyp-pembed-*]
-;;                                        (peval (pembed y phi' k f) (car phi) k)
+;;                                = (fadd (peval (pembed x phi' k f) (car phi) k)        [peval-padd, 
+;;                                        (peval (pembed y phi' k f) (car phi) k)         polyp-pembed-*]
 ;;                                        k)
-;;                                = (fadd (embed x phi k f) (embed y phi k f) k)         [definition of embed]
+;;                                = (fadd (embed x phi k f) (embed y phi k f) k)         [def of embed]
 
 ;; For the second equation, we invoke peval-pembed-prem with e <- e', phi <- phi',
 ;; x <- (pmul x y e'), y <- (car e), and a <- (car phi):
 
-;;   (embed (fmul x y e) phi k f) = (peval (pembed (fmul x y e) phi k f) (car phi) k)    [definition of embed]
-;;                                = (peval (pembed (prem (pmul x y e') (car e) e')       [definition of fmul]
+;;   (embed (fmul x y e) phi k f) = (peval (pembed (fmul x y e) phi k f) (car phi) k)    [def of embed]
+;;                                = (peval (pembed (prem (pmul x y e') (car e) e')       [def of fmul]
 ;;                                                 phi' k f)
 ;;                                         (car phi) k)
 ;;                                = (peval (pembed (pmul x y e') phi' k f) (car phi) k)  [peval-pembed-prem]
@@ -358,10 +358,10 @@
 ;;                                               (pembed y phi' k f)
 ;;                                               k)
 ;;                                         (car phi) k)
-;;                                = (fmul (peval (pembed x phi' k f) (car phi) k)        [peval-pmul, polyp-pembed-*]
-;;                                        (peval (pembed y phi' k f) (car phi) k)
+;;                                = (fmul (peval (pembed x phi' k f) (car phi) k)        [peval-pmul, 
+;;                                        (peval (pembed y phi' k f) (car phi) k)         polyp-pembed-*]
 ;;                                        k)
-;;                                = (fmul (embed x phi k f)                              [definition of embed]
+;;                                = (fmul (embed x phi k f)                              [def of embed]
 ;;                                        (embed y phi k f)
 ;;                                        y)
 
@@ -549,8 +549,8 @@
 
 ;;-------------------------------------------------------
 
-;; If e != f, there is no embedding of e in f over f.  First suppose e is a simple extension of f.
-;; If phi is an embedding of e in f over f, then (prootp (car phi) (pembed (car e) () f f) f), where
+;; If e != f, there is no embedding of e in f over f.  First suppose e is a simple extension of f. If phi is
+;; an embedding of e in f over f, then (prootp (car phi) (pembed (car e) () f f) f), where
 ;; (pembed (car e) () f f) = (car e), contradicting irreduciblep-no-root.  The general case follows by
 ;; induction:
 
@@ -560,9 +560,9 @@
 
 ;;-------------------------------------------------------
 
-;; The car of an embedding phi of an extension field e is the image under phi of (primitive e).
-;; Thus an embedding is constructed by specifying the image of the primitive element of each of the
-;; simple extensions that compose the extension:
+;; The car of an embedding phi of an extension field e is the image under phi of (primitive e).  Thus an
+;; embedding is constructed by specifying the image of the primitive element of each of the simple
+;;extensions that compose the extension:
 
 (defthmd embed-primitive
   (implies (and (extensionp e f) (extensionp k f) (not (equal e f))
@@ -580,8 +580,8 @@
 
 ;;-------------------------------------------------------
 
-;; Let phi and psi be embeddings of e in k over f.  If (embed x phi k f) = (embed x psi k f) for all
-;; x in e, then phi = psi:
+;; Let phi and psi be embeddings of e in k over f.  If (embed x phi k f) = (embed x psi k f) for all x in e,
+;; then phi = psi:
 
 (defun embed-cex (phi psi e f)
   (if (and (extensionp e f) (not (equal e f)) (consp phi))
@@ -601,8 +601,8 @@
 ;;-------------------------------------------------------
 
 ;; We shall construct a list of all embeddings of e in k over f.
-;; First, given an embedding phi of (cdr e) in k over f, construct a list of all embeddings of e in
-;; k that extend phi:
+;; First, given an embedding phi of (cdr e) in k over f, construct a list of all embeddings of e in k that
+;; extend phi:
 
 (defun consl (l x)
   (if (consp l)
@@ -614,8 +614,8 @@
   (consl (proots (pembed (car e) phi k f) k)
          phi))
 
-;; Given a list l of embeddings of (cdr e) in k over f, construct a list of all embeddings of e in
-;; k that extend a member of l:
+;; Given a list l of embeddings of (cdr e) in k over f, construct a list of all embeddings of e in k that
+;;extend a member of l:
 
 (defun simple-embeddings-extensions (l e k f)
   (if (consp l)
@@ -640,9 +640,9 @@
 	   (iff (member phi (embeddings e k f))
 	        (embeddingp phi e k f))))
 
-;; The number of embeddings of e in k over f that extend a given embedding of phi of (cdr e) is 
-;; the number of roots of (pembed (car e) phi k f) in k, which is bounded by (degree (car e)).
-;; By induction, the number of embeddings of e in k over f is at most the degree of e over f:
+;; The number of embeddings of e in k over f that extend a given embedding of phi of (cdr e) is the number of
+;; roots of (pembed (car e) phi k f) in k, which is bounded by (degree (car e)).  By induction, the number of
+;; embeddings of e in k over f is at most the degree of e over f:
 
 (defthmd len-embeddings
   (implies (and (extensionp e f) (extensionp k f))
@@ -654,9 +654,9 @@
 ;;----------------------------------------------------------------------------------------------------------
 
 ;; The following encapsulation introduces 2 arbitrary extensions, e0 and k0, of a field b0 and a function
-;; phi0 that satisfies each of the essential properties of an embedding of e0 in k0 over b0.  Such a function
-;; might be termed a "meta-embedding" of e0 in k0 over b0.  Our objective is to define an embedding phi1 of
-;; e0 in k0 over b0 that reifies phi0, i.e., with the following property:
+;; phi0 that satisfies each of the essential properties of an embedding of e0 in k0 over b0.  Such a
+;; function might be termed a "meta-embedding" of e0 in k0 over b0.  Our objective is to define an embedding 
+;; phi1 of e0 in k0 over b0 that reifies phi0, i.e., with the following property:
 
 ;; (defthmd phi1-phi0
 ;;   (and (embeddingp (phi1) (e0) (k0) (b0))
@@ -1055,7 +1055,7 @@
              (and (vp x)
                   (equal (lin x) y)))))
 
-;; The following defining emulates that of lin-inv and is similarly constructive:
+;; The definition of embedding-inv emulates that of lin-inv and is similarly constructive:
 
 (defun embedding-mat (phi e k f)
   (ecoord-mat (pembed (ebasis0 e f) phi k f) k f))
@@ -1144,7 +1144,7 @@
                          (equal (embed x (inv-embedding phi e k f) e f)
 	                        (embedding-inv x phi e k f))))))
 
-;; The following are simple consequences of the preceding results:
+;; Some simple consequences of the preceding results:
 
 (defthmd comp-inv-embedding
   (implies (and (extensionp e f) (extensionp k f) (iso-embeddingp phi e k f))
@@ -1203,8 +1203,8 @@
      (implies (and (m$ x) (m$ y))
               (and (m$ (fadd x y (e$))) (m$ (fmul x y (e$)))))))
 
-;; Informally, we shall refer to m$ as an intermediate metafield between e$ and f$. We would like to identify 
-;; an intermediate field k$ between e$ and f$ that corresponds to m$, i.e., that satisfies
+;; Informally, we shall refer to m$ as an intermediate metafield between e$ and f$. We would like to 
+;; identify an intermediate field k$ between e$ and f$ that corresponds to m$, i.e., that satisfies
 
 ;;     (iff (m$ x) (fliftedp x (k$) (e$))).
 
@@ -1415,8 +1415,8 @@
 		  (iso-embeddingp phi1 d1 (e$) (f$))
 		  (equal (restrict-embedding phi1 d1 d) phi)))))
 
-;; The desired extension and isomorphism are constructed in 2 steps.  First, the intermediate 
-;; field is constructed by applying extend-range-to-m$ to f$ and the null embedding:
+;; The desired extension and isomorphism are constructed in 2 steps.  First, the intermediate field is
+;; constructed by applying extend-range-to-m$ to f$ and the null embedding:
 
 (defund k$ () (mv-nth 0 (mv-list 2 (extend-range-to-m$ (f$) ()))))
 
@@ -1431,8 +1431,8 @@
        (embeddingp (psi$) (k$) (e$) (f$))
        (iff (in-range-p y (psi$) (k$) (e$) (f$)) (m$ y))))
 
-;; Next we construct the extension d$ and the isomorphism phi$ by applying extend-to-isomorphism to
-;; k$ and psi$:
+;; Next we construct the extension d$ and the isomorphism phi$ by applying extend-to-isomorphism to k$ and
+;; psi$:
 
 (defund d$ () (mv-nth 0 (mv-list 2 (extend-to-isomorphism (k$) (psi$)))))
 
@@ -1446,9 +1446,11 @@
   (and (extensionp (d$) (k$))
        (iso-embeddingp (phi$) (d$) (e$) (f$))
        (equal (restrict-embedding (phi$) (d$) (k$)) (psi$))))
+;;----------------------------------------------------------------------------------------------------------
 
-;; Let x be an element of d$ and let y = (embed x (phi$) (e$) (f$)).  We must show (m$ y) iff x is lifted from k$.
-;; Suppose x is lifted from k$.  Let z = (fdrop x (d$) (k$)).  By fdrop-flift, embed-flift-gen, and d$-phi$-lemma,
+;; Let x be an element of d$ and let y = (embed x (phi$) (e$) (f$)).  We must show (m$ y) iff x is lifted 
+;; from k$.  Suppose x is lifted from k$.  Let z = (fdrop x (d$) (k$)).  By fdrop-flift, embed-flift-gen, 
+;; and d$-phi$-lemma,
 
 ;;     y = (embed (flift z (k$) (d$)) (phi$) (e$) (f$))
 ;;       = (embed z (restrict-embedding (phi$) (d$) (k$)) (e$) (f$))
@@ -1458,10 +1460,11 @@
 ;; On the other hand, suppose (m$ y).  Let x' = (preembed y (psi$) (k$) (e$) (f$)).  By k$-psi$-lemma,
 ;; (feltp x' (k$)) and y = (embed x' (psi$) (e$) (f$)).  By embed-flift-gen and d$-phi$-lemma,
 
-;;   (embed (flift x' (k$) (d$)) (phi$) (e$) (f$)) = (embed x' (restrict-embedding (phi$) (d$) (k$)) (e$) (f$))
-;;                                                 = (embed x' (psi$) (e$) (f$))
-;;                                                 = y
-;;                                                 = (embed x (phi$) (e$) (f$))
+;;   (embed (flift x' (k$) (d$)) (phi$) (e$) (f$))
+;;     = (embed x' (restrict-embedding (phi$) (d$) (k$)) (e$) (f$))
+;;     = (embed x' (psi$) (e$) (f$))
+;;     = y
+;;     = (embed x (phi$) (e$) (f$))
 
 ;; and by embedding-1-1, x = (flift x' (k$) (d$)).
 
