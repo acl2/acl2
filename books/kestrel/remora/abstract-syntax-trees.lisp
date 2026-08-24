@@ -936,9 +936,8 @@
        and @('let') expressions.")
      (xdoc::p
       "This fixtype captures the non-emptiness of
-       the list of atoms of non-empty arrays,
-       but not the non-emptiness of
-       the list of expressions of non-empty frames yet.
+       the list of atoms of non-empty arrays
+       and the list of expressions of non-empty frames.
        The naming of the summands is not completely symmetric,
        because the unqualified @(':array') and @(':frame') mean non-empty,
        while empty summands are @(':array-empty') and @(':frame-empty').
@@ -991,7 +990,11 @@
     (:array-empty ((dims nat-list)
                    (type type)))
     (:frame ((dims nat-list)
-             (exprs expr-list))) ; one or more
+             (exprs expr-list
+                    :reqfix (if (consp exprs)
+                                exprs
+                              (list (expr-fix nil)))))
+     :require (consp exprs))
     (:frame-empty ((dims nat-list)
                    (type type)))
     (:string ((chars char-lit-list)))
@@ -1032,7 +1035,13 @@
       (consp (expr-array->atoms expr))
       :rule-classes :type-prescription
       :use (:instance expr-array-requirements (x expr))
-      :disable expr-array-requirements))
+      :disable expr-array-requirements)
+
+    (defrule consp-of-expr-frame->exprs
+      (consp (expr-frame->exprs expr))
+      :rule-classes :type-prescription
+      :use (:instance expr-frame-requirements (x expr))
+      :disable expr-frame-requirements))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -93,10 +93,6 @@
        "Atom expressions,
         because [impl] has no corresponding constructor.")
       (xdoc::li
-       "Frame expressions with empty lists of expressions
-        (will be removed once length invariant is in place).")
-; Todo: remove above once invariant is in place
-      (xdoc::li
        "String expressions,
         because [impl] has no corresponding constructor.")
       (xdoc::li
@@ -177,8 +173,6 @@
                   (and (type-option-hip var+type?.type?)
                        (type-option-case var+type?.type? :some))))
      (expr :atom nil)
-     (expr :frame (and (expr-list-hip expr.exprs)
-                       (consp expr.exprs))) ; Todo: remove once invariant is in place
      (expr :string nil)
      (expr :appn nil)
      (expr :tappn nil)

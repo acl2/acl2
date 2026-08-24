@@ -1208,7 +1208,14 @@
         (mv used nil)
       (b* (((mv used new-e) (uniq-expr (car x) used r))
            ((mv used new-rest) (uniq-expr-list (cdr x) used r)))
-        (mv used (cons new-e new-rest)))))
+        (mv used (cons new-e new-rest))))
+
+    ///
+
+    (defret consp-of-uniq-expr-list
+      (equal (consp new-x)
+             (consp x))
+      :hints (("Goal" :expand ((uniq-expr-list x used r))))))
 
   (define uniq-atom ((x atomp) (used string-listp) (r var-renamings-p))
     :short "Uniquify binder names in an atom."

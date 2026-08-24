@@ -966,7 +966,16 @@
            ((when err) (mv err fn-info-map (list* new-e (expr-list-fix (cdr x)))))
            ((mv err fn-info-map new-rest)
             (mono-expr-list (cdr x) defs fn-info-map dim-var-map type-map)))
-        (mv err fn-info-map (cons new-e new-rest)))))
+        (mv err fn-info-map (cons new-e new-rest))))
+
+    ///
+
+    (defret consp-of-mono-expr-list
+      (equal (consp new-exprs)
+             (consp x))
+      :hints (("Goal"
+               :expand ((mono-expr-list
+                         x defs fn-info-map dim-var-map type-map))))))
 
   (define mono-atom ((x atomp) (defs bind-mapp) (fn-info-map fn-info-mapp) (dim-var-map acl2::string-nat-mapp) (type-map string-type-mapp))
     :short "Monomorphize an atom."

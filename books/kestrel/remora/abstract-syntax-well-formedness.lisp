@@ -116,8 +116,6 @@
                 (and (valid-identifier-string-p var+type?.var)
                      (type-option-wfp var+type?.type?))))
    (expr :var (valid-identifier-string-p expr.name))
-   (expr :frame (and (expr-list-wfp expr.exprs)
-                     (>= (len expr.exprs) 1)))
    (expr :appn (and (expr-wfp expr.fun)
                     (expr-list-wfp expr.args)
                     (>= (len expr.args) 2)))

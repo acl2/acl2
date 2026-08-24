@@ -1975,7 +1975,7 @@
          (reserrf (list :array-exp-shape (len treess))))))
     :measure (abnf::tree-count tree))
 
-  ;; frame-exp = "frame" ws shape-lit *( ws exp )
+  ;; frame-exp = "frame" ws shape-lit 1*( ws exp )
   ;;           / "frame" ws shape-lit ws type
   (define abs-frame-exp ((tree abnf::treep))
     :returns (e expr-resultp)
@@ -1994,7 +1994,9 @@
                  (abnf::check-tree-nonleaf-4 tree "frame-exp"))
                 ((okf sl-tree) (abnf::check-tree-list-1 sub.3rd))
                 ((okf dims) (abs-shape-lit sl-tree))
-                ((okf exprs) (abs-*-ws-exp sub.4th)))
+                ((okf exprs) (abs-*-ws-exp sub.4th))
+                ((unless (consp exprs))
+                 (reserrf (list :frame-exp-no-exprs dims))))
              (make-expr-frame :dims dims :exprs exprs)))
         (5 (b* (((okf (abnf::tree-list-tuple5 sub))
                  (abnf::check-tree-nonleaf-5 tree "frame-exp"))

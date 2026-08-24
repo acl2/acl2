@@ -1642,7 +1642,14 @@
       (implies (not (reserrp types+exprs))
                (iff (types+exprs->types types+exprs)
                     (not (zp (len exprs)))))
-      :hints (("Goal" :induct (len exprs) :in-theory (enable len)))))
+      :hints (("Goal" :induct (len exprs) :in-theory (enable len))))
+
+    (defret consp-of-exprs-of-check-expr-list
+      (implies (and (not (reserrp types+exprs))
+                    (consp exprs))
+               (consp (types+exprs->exprs types+exprs)))
+      :hints (("Goal" :expand ((check-expr-list exprs senv))))
+      :rule-classes ((:rewrite) (:type-prescription))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
