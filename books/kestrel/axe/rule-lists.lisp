@@ -503,7 +503,7 @@
     repeatbit-of-if-becomes-repeatbit-of-bvif-arg2))
 
 ;; These are needed only when operations like logxor or + may appear
-(defun convert-to-bv-rules ()
+(defun convert-to-bv-rules-axe ()
   (declare (xargs :guard t))
   '(bvchop-convert-arg2-to-bv-axe
     bvplus-convert-arg2-to-bv-axe-restricted ; todo: use the unrestricted ones
@@ -1843,7 +1843,7 @@
     bvchop-list-of-bvchop-list))
 
 ;; are these all for when the logext is too big?
-;; todo: can we rely on the convert-to-bv-rules instead (make sure those are always included)?
+;; todo: can we rely on the convert-to-bv-rules-axe instead (make sure those are always included)?
 (defun bv-of-logext-rules ()
   (declare (xargs :guard t))
   '(bvplus-of-logext-arg2
@@ -3164,7 +3164,7 @@
           (bvchop-list-rules)
           (lookup-rules) ;Sat Dec 25 23:52:09 2010
           (list-rules)
-          (convert-to-bv-rules)
+          (convert-to-bv-rules-axe)
           (logext-rules) ;move to parent? ; drop?
           (list-rules3)
           (alist-rules)
@@ -3767,7 +3767,7 @@
              integerp-of-myif-strong
 
              ;bvchop-of-minus-trim
-             ;bvchop-convert-arg2-to-bv-axe ; need the rest of the convert-to-bv-rules...
+             ;bvchop-convert-arg2-to-bv-axe ; need the rest of the convert-to-bv-rules-axe...
 
              sha1-hack-a-million
              subrange-of-take
