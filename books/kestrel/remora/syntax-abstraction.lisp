@@ -1410,9 +1410,7 @@
          ((okf body) (abs-type body-tree))
          ((unless (consp params))
           (reserrf (list :type-sigma-no-params body))))
-      (if (endp (cdr params))
-          (make-type-sigma :param (car params) :body body)
-        (make-type-sigman :params params :body body)))
+      (make-type-sigma/sigman params body))
     :measure (abnf::tree-count tree))
 
   (define abs-ws-type ((tree abnf::treep))

@@ -1124,6 +1124,7 @@
                                                                  dim-all
                                                                  shape-all)))))
   :enable (sigma-curried-body
+           make-type-sigma/sigman
            mergesort-when-singleton)
   :use ((:instance dim/shape-rename-remove-bound-of-insert-then-rest
                    (var (car params))
@@ -1945,7 +1946,8 @@
                                       (type-rename-type-vars body
                                                              atom-renam
                                                              array-renam))))
-  :enable sigma-curried-body)
+  :enable (sigma-curried-body
+           make-type-sigma/sigman))
 
 ; The type-variable commutation for the currying of universal types
 ; mirrors the ispace-variable one for the currying of product types:
