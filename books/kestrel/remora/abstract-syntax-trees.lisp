@@ -484,9 +484,7 @@
        are sugar for a nesting of the unary forms;
        they always contain two or more parameters
        (because there must have at least one parameter,
-       and if there is just one we use the unary forms),
-       but this fixtype does not capture this requirement
-       for the @(':sigman') summand yet.
+       and if there is just one we use the unary forms).
        Note the slight difference with function types,
        where singleton lists are allowed as explained above.")
      (xdoc::p
@@ -526,8 +524,13 @@
      :require (>= (len params) 2))
     (:sigma ((param ispace-var)
              (body type)))
-    (:sigman ((params ispace-var-list) ; two or more
-              (body type)))
+    (:sigman ((params ispace-var-list
+                      :reqfix (if (>= (len params) 2)
+                                  params
+                                (list (ispace-var-fix nil)
+                                      (ispace-var-fix nil))))
+              (body type))
+     :require (>= (len params) 2))
     :pred typep
 
     ///
@@ -556,6 +559,19 @@
       :rule-classes :type-prescription
       :use (:instance type-pin-requirements (x type))
       :disable type-pin-requirements
+      :enable len)
+
+    (defrule consp-of-type-sigman->params
+      (consp (type-sigman->params type))
+      :rule-classes :type-prescription
+      :use (:instance type-sigman-requirements (x type))
+      :disable type-sigman-requirements)
+
+    (defruled consp-of-cdr-of-type-sigman->params
+      (consp (cdr (type-sigman->params type)))
+      :rule-classes :type-prescription
+      :use (:instance type-sigman-requirements (x type))
+      :disable type-sigman-requirements
       :enable len))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
