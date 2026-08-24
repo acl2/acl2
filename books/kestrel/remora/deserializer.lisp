@@ -523,13 +523,8 @@
                                 ((acl2::erp body)
                                  (type-fromJSON body-j)))
                              (if (consp params)
-                                 (if (endp (cdr params))
-                                     (acl2::retok (make-type-forall
-                                                   :param (car params)
-                                                   :body body))
-                                   (acl2::retok (make-type-foralln
-                                                 :params params
-                                                 :body body)))
+                                 (acl2::retok
+                                  (make-type-forall/foralln params body))
                                (acl2::reterr (msg "The \"params\" member of a TEForall object must be a nonempty list, but ~x0 is not." params))))
                          (acl2::reterr (msg "The \"params\" member of a TEForall object must be a JSON array, but ~x0 is not." params-j)))))
                     ((equal tag "TEPi")

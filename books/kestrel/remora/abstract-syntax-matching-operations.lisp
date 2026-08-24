@@ -153,14 +153,12 @@
                            :type (type-forall->body type)))
        ((unless (type-case type :foralln)) (reserr nil))
        (params (type-foralln->params type))
-       (body (type-foralln->body type))
-       ((unless (>= (len params) 2)) (reserr nil)))
+       (body (type-foralln->body type)))
     (make-typevar+type
      :var (car params)
-     :type (if (endp (cddr params))
-               (make-type-forall :param (cadr params) :body body)
-             (make-type-foralln :params (cdr params) :body body))))
-  :guard-hints (("Goal" :in-theory (enable acl2::lt-len-const))))
+     :type (make-type-forall/foralln (cdr params) body)))
+  :guard-hints
+  (("Goal" :in-theory (enable consp-of-cdr-of-type-foralln->params))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -191,6 +189,7 @@
        ((unless (type-case type :pin)) (reserr nil))
        (params (type-pin->params type))
        (body (type-pin->body type))
+       ;; TODO: remove the following check once the AST invariant is in
        ((unless (>= (len params) 2)) (reserr nil)))
     (make-ispacevar+type
      :var (car params)

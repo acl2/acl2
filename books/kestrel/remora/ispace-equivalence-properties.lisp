@@ -806,8 +806,9 @@
     :hints (("Goal"
              :in-theory (enable* ast-binaddp-rules))
             '(:expand ((dim-binaddp dim)
-                       (dim-binaddp (dim-add (mv-nth 0 (binarize-mul-in-dim-list
-                                                        (dim-add->dims dim)))))))))
+                       (dim-binaddp
+                        (dim-add (mv-nth 0 (binarize-mul-in-dim-list
+                                            (dim-add->dims dim)))))))))
 
   (defret-mutual dim-unisubp-of-binarize-mul-in-dims
     (defret dim-unisubp-of-binarize-mul-in-dim
@@ -821,8 +822,9 @@
     :hints (("Goal"
              :in-theory (enable* ast-unisubp-rules))
             '(:expand ((dim-unisubp dim)
-                       (dim-unisubp (dim-sub (mv-nth 0 (binarize-mul-in-dim-list
-                                                        (dim-sub->dims dim)))))))))
+                       (dim-unisubp
+                        (dim-sub (mv-nth 0 (binarize-mul-in-dim-list
+                                            (dim-sub->dims dim)))))))))
 
   (defret-mutual dim-nonullsubp-of-binarize-mul-in-dims
     (defret dim-nonullsubp-of-binarize-mul-in-dim
@@ -836,8 +838,9 @@
     :hints (("Goal"
              :in-theory (enable* ast-nonullsubp-rules))
             '(:expand ((dim-nonullsubp dim)
-                       (dim-nonullsubp (dim-sub (mv-nth 0 (binarize-mul-in-dim-list
-                                                           (dim-sub->dims dim))))))))))
+                       (dim-nonullsubp
+                        (dim-sub (mv-nth 0 (binarize-mul-in-dim-list
+                                            (dim-sub->dims dim))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1080,8 +1083,9 @@
     :hints (("Goal"
              :in-theory (enable* ast-binmulp-rules))
             '(:expand ((dim-binmulp dim)
-                       (dim-binmulp (dim-mul (mv-nth 0 (unarize-sub-in-dim-list
-                                                        (dim-mul->dims dim))))))))))
+                       (dim-binmulp
+                        (dim-mul (mv-nth 0 (unarize-sub-in-dim-list
+                                            (dim-mul->dims dim))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
