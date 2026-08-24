@@ -1278,7 +1278,10 @@
         (mv nil (file-fix file)))
        (entry-names (decl-list-entry-names file.decls))
        (binds (decl-list-to-binds file.decls))
-       (expr (nest-let-binds binds (expr-array nil nil)))
+       (expr (nest-let-binds binds
+                             (make-expr-array-empty
+                              :dims nil
+                              :type (type-base (base-type-int)))))
        ((mv err & new-expr) (monomorphize-top-expr expr))
        ((when err) (mv err (file-fix file)))
        ((unless (expr-case new-expr :let))
