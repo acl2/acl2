@@ -230,7 +230,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define binarize-dims-in-add ((dims dim-listp))
+(define binarize-add-dims ((dims dim-listp))
   :returns (new-dim dimp)
   :short "Turn a list of dimensions in an addition
           into a dimension with only binary additions."
@@ -263,27 +263,27 @@
   (cond ((endp dims) (dim-const 0))
         ((endp (cdr dims)) (dim-fix (car dims)))
         ((endp (cddr dims)) (dim-add dims))
-        (t (binarize-dims-in-add (cons (dim-add (list (car dims)
-                                                      (cadr dims)))
-                                       (cddr dims)))))
+        (t (binarize-add-dims (cons (dim-add (list (car dims)
+                                                   (cadr dims)))
+                                    (cddr dims)))))
   :measure (len dims)
   :verify-guards :after-returns
 
   ///
 
-  (defret dim=-of-binarize-dims-in-add
+  (defret dim=-of-binarize-add-dims
     (implies (dim-listp dims)
              (dim= (dim-add dims) new-dim))
     :hints (("Goal"
              :induct t
-             :in-theory (enable binarize-dims-in-add
+             :in-theory (enable binarize-add-dims
                                 dim=-refl
                                 dim=-add1
                                 dim=-add3m
                                 dim=-trans-swapped))
             '(:use (dim=-add0))))
 
-  (defret dim-binaddp-of-binarize-dims-in-add
+  (defret dim-binaddp-of-binarize-add-dims
     (implies (dim-list-binaddp dims)
              (dim-binaddp new-dim))
     :hints (("Goal"
@@ -293,21 +293,21 @@
                        (dim-binaddp (dim-add (list (car dims)
                                                    (cadr dims))))))))
 
-  (defret dim-binmulp-of-binarize-dims-in-add
+  (defret dim-binmulp-of-binarize-add-dims
     (implies (dim-list-binmulp dims)
              (dim-binmulp new-dim))
     :hints (("Goal"
              :induct t
              :in-theory (enable* ast-binmulp-rules))))
 
-  (defret dim-unisubp-of-binarize-dims-in-add
+  (defret dim-unisubp-of-binarize-add-dims
     (implies (dim-list-unisubp dims)
              (dim-unisubp new-dim))
     :hints (("Goal"
              :induct t
              :in-theory (enable* ast-unisubp-rules))))
 
-  (defret dim-nonullsubp-of-binarize-dims-in-add
+  (defret dim-nonullsubp-of-binarize-add-dims
     (implies (dim-list-nonullsubp dims)
              (dim-nonullsubp new-dim))
     :hints (("Goal"
@@ -342,7 +342,7 @@
      dim
      :var (dim-var dim.name)
      :const (dim-const dim.val)
-     :add (binarize-dims-in-add (binarize-add-in-dim-list dim.dims))
+     :add (binarize-add-dims (binarize-add-in-dim-list dim.dims))
      :mul (dim-mul (binarize-add-in-dim-list dim.dims))
      :sub (dim-sub (binarize-add-in-dim-list dim.dims)))
     :measure (dim-count dim))
@@ -391,8 +391,8 @@
                               dim=-trans-swapped
                               dims=-refl
                               dims=-cong-cons)
-                             (dim=-of-binarize-dims-in-add)))
-            '(:use ((:instance dim=-of-binarize-dims-in-add
+                             (dim=-of-binarize-add-dims)))
+            '(:use ((:instance dim=-of-binarize-add-dims
                                (dims (binarize-add-in-dim-list
                                       (dim-add->dims dim))))
                     (:instance dim=-cong-add
@@ -466,7 +466,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define binarize-dims-in-mul ((dims dim-listp))
+(define binarize-mul-dims ((dims dim-listp))
   :returns (mv (new-dim dimp)
                (proof dim=-proofp))
   :short "Turn a list of dimensions in a multiplication
@@ -514,7 +514,7 @@
         (t (b* ((dims1 (cons (dim-mul (list (car dims)
                                             (cadr dims)))
                              (cddr dims)))
-                ((mv new-dim proof) (binarize-dims-in-mul dims1)))
+                ((mv new-dim proof) (binarize-mul-dims dims1)))
              (mv new-dim
                  (make-dim=-proof-trans
                   :d1 (dim-mul dims)
@@ -530,7 +530,7 @@
 
   ///
 
-  (defret dim=-proof-validp-of-binarize-dims-in-mul
+  (defret dim=-proof-validp-of-binarize-mul-dims
     (implies (dim-listp dims)
              (dim=-proof-validp proof
                                 (dim-mul dims)
@@ -544,7 +544,7 @@
                                 dim=-mul1-validp
                                 dim=-mul3m-validp))))
 
-  (defret dim-binmulp-of-binarize-dims-in-mul
+  (defret dim-binmulp-of-binarize-mul-dims
     (implies (dim-list-binmulp dims)
              (dim-binmulp new-dim))
     :hints (("Goal"
@@ -554,21 +554,21 @@
                        (dim-binmulp (dim-mul (list (car dims)
                                                    (cadr dims))))))))
 
-  (defret dim-binaddp-of-binarize-dims-in-mul
+  (defret dim-binaddp-of-binarize-mul-dims
     (implies (dim-list-binaddp dims)
              (dim-binaddp new-dim))
     :hints (("Goal"
              :induct t
              :in-theory (enable* ast-binaddp-rules))))
 
-  (defret dim-unisubp-of-binarize-dims-in-mul
+  (defret dim-unisubp-of-binarize-mul-dims
     (implies (dim-list-unisubp dims)
              (dim-unisubp new-dim))
     :hints (("Goal"
              :induct t
              :in-theory (enable* ast-unisubp-rules))))
 
-  (defret dim-nonullsubp-of-binarize-dims-in-mul
+  (defret dim-nonullsubp-of-binarize-mul-dims
     (implies (dim-list-nonullsubp dims)
              (dim-nonullsubp new-dim))
     :hints (("Goal"
@@ -617,7 +617,7 @@
                  :ds2 new-dims
                  :premise1-proof proof)))
      :mul (b* (((mv new-dims proof) (binarize-mul-in-dim-list dim.dims))
-               ((mv new-dim proof1) (binarize-dims-in-mul new-dims)))
+               ((mv new-dim proof1) (binarize-mul-dims new-dims)))
             (mv new-dim
                 (make-dim=-proof-trans
                  :d1 (dim-mul dim.dims)
@@ -761,7 +761,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define unarize-dims-in-sub ((dims dim-listp))
+(define unarize-sub-dims ((dims dim-listp))
   :returns (mv (new-dim dimp)
                (proof dim=-proofp))
   :short "Turn a list of dimensions in a subtraction
@@ -781,7 +781,7 @@
      A subtraction of no dimensions is illegal and cannot be reduced
      (see @(see dim-equiv-infrules)),
      so it is also left unchanged.
-     Unlike @(tsee binarize-dims-in-add) and @(tsee binarize-dims-in-mul),
+     Unlike @(tsee binarize-add-dims) and @(tsee binarize-mul-dims),
      this function is not recursive,
      because one application of @('sub2m') suffices.")
    (xdoc::p
@@ -823,7 +823,7 @@
 
   ///
 
-  (defret dim=-proof-validp-of-unarize-dims-in-sub
+  (defret dim=-proof-validp-of-unarize-sub-dims
     (implies (dim-listp dims)
              (dim=-proof-validp proof
                                 (dim-sub dims)
@@ -832,7 +832,7 @@
                                        dim=-refl-validp
                                        dim=-sub2m-validp))))
 
-  (defret dim-unisubp-of-unarize-dims-in-sub
+  (defret dim-unisubp-of-unarize-sub-dims
     (implies (and (dim-list-unisubp dims)
                   (consp dims))
              (dim-unisubp new-dim))
@@ -842,7 +842,7 @@
                        (dim-unisubp (dim-sub (list (dim-add
                                                     (cdr dims)))))))))
 
-  (defret dim-binmulp-of-unarize-dims-in-sub
+  (defret dim-binmulp-of-unarize-sub-dims
     (implies (dim-list-binmulp dims)
              (dim-binmulp new-dim))
     :hints (("Goal" :in-theory (enable* ast-binmulp-rules)))))
@@ -868,7 +868,7 @@
      which these functions do not affect.
      They do not preserve the binary status of additions,
      because of the additions introduced by the rule @('sub2m')
-     (see @(tsee unarize-dims-in-sub))."))
+     (see @(tsee unarize-sub-dims))."))
 
   (define unarize-sub-in-dim ((dim dimp))
     :returns (mv (new-dim dimp)
@@ -896,7 +896,7 @@
                  :ds2 new-dims
                  :premise1-proof proof)))
      :sub (b* (((mv new-dims proof) (unarize-sub-in-dim-list dim.dims))
-               ((mv new-dim proof1) (unarize-dims-in-sub new-dims)))
+               ((mv new-dim proof1) (unarize-sub-dims new-dims)))
             (mv new-dim
                 (make-dim=-proof-trans
                  :d1 (dim-sub dim.dims)
@@ -1504,7 +1504,7 @@
 
 ;;;;;;;;;;
 
-(defines nullbinarize-appends-in-shapes/ispaces
+(defines nullbinarize-append-in-shapes/ispaces
   :short "Turn shapes and ispaces into equivalent ones
           with only binary or empty concatenations,
           and construct proof trees demonstrating the equivalence."
@@ -1524,11 +1524,11 @@
      and the absence of dimension ispaces,
      which these functions do not affect."))
 
-  (define nullbinarize-appends-in-shape ((shape shapep))
+  (define nullbinarize-append-in-shape ((shape shapep))
     :returns (mv (new-shape shapep)
                  (proof shp=-proofp))
     :parents (ispace-equivalence-normalizations
-              nullbinarize-appends-in-shapes/ispaces)
+              nullbinarize-append-in-shapes/ispaces)
     :short "Turn a shape into
             an equivalent one with only binary or empty concatenations,
             and construct a proof tree demonstrating the equivalence."
@@ -1539,7 +1539,7 @@
      :dims (mv (shape-dims shape.dims)
                (shp=-proof-refl (shape-dims shape.dims)))
      :append (b* (((mv new-shapes proof)
-                   (nullbinarize-appends-in-shape-list shape.shapes))
+                   (nullbinarize-append-in-shape-list shape.shapes))
                   ((mv new-shape proof1)
                    (nullbinarize-shape-append new-shapes)))
                (mv new-shape
@@ -1553,7 +1553,7 @@
                                      :premise1-proof proof)
                     :premise2-proof proof1)))
      :splice (b* (((mv new-ispaces proof)
-                   (nullbinarize-appends-in-ispace-list shape.ispaces)))
+                   (nullbinarize-append-in-ispace-list shape.ispaces)))
                (mv (shape-splice new-ispaces)
                    (make-shp=-proof-cong-splice
                     :is1 shape.ispaces
@@ -1561,18 +1561,18 @@
                     :premise1-proof proof))))
     :measure (shape-count shape))
 
-  (define nullbinarize-appends-in-shape-list ((shapes shape-listp))
+  (define nullbinarize-append-in-shape-list ((shapes shape-listp))
     :returns (mv (new-shapes shape-listp)
                  (proof shps=-proofp))
     :parents (ispace-equivalence-normalizations
-              nullbinarize-appends-in-shapes/ispaces)
+              nullbinarize-append-in-shapes/ispaces)
     :short "Turn a list of shapes into
             an equivalent one with only binary or empty concatenations,
             and construct a proof tree demonstrating the equivalence."
     (b* (((when (endp shapes)) (mv nil (shps=-proof-refl nil)))
-         ((mv new-shape proof1) (nullbinarize-appends-in-shape (car shapes)))
+         ((mv new-shape proof1) (nullbinarize-append-in-shape (car shapes)))
          ((mv new-shapes proof2)
-          (nullbinarize-appends-in-shape-list (cdr shapes))))
+          (nullbinarize-append-in-shape-list (cdr shapes))))
       (mv (cons new-shape new-shapes)
           (make-shps=-proof-cong-cons
            :s1 (shape-fix (car shapes))
@@ -1583,11 +1583,11 @@
            :premise2-proof proof2)))
     :measure (shape-list-count shapes))
 
-  (define nullbinarize-appends-in-ispace ((ispace ispacep))
+  (define nullbinarize-append-in-ispace ((ispace ispacep))
     :returns (mv (new-ispace ispacep)
                  (proof isp=-proofp))
     :parents (ispace-equivalence-normalizations
-              nullbinarize-appends-in-shapes/ispaces)
+              nullbinarize-append-in-shapes/ispaces)
     :short "Turn an ispace into
             an equivalent one with only binary or empty concatenations,
             and construct a proof tree demonstrating the equivalence."
@@ -1596,7 +1596,7 @@
      :dim (mv (ispace-dim ispace.dim)
               (isp=-proof-refl (ispace-dim ispace.dim)))
      :shape (b* (((mv new-shape proof)
-                  (nullbinarize-appends-in-shape ispace.shape)))
+                  (nullbinarize-append-in-shape ispace.shape)))
               (mv (ispace-shape new-shape)
                   (make-isp=-proof-cong-shape
                    :s1 ispace.shape
@@ -1604,18 +1604,18 @@
                    :premise1-proof proof))))
     :measure (ispace-count ispace))
 
-  (define nullbinarize-appends-in-ispace-list ((ispaces ispace-listp))
+  (define nullbinarize-append-in-ispace-list ((ispaces ispace-listp))
     :returns (mv (new-ispaces ispace-listp)
                  (proof isps=-proofp))
     :parents (ispace-equivalence-normalizations
-              nullbinarize-appends-in-shapes/ispaces)
+              nullbinarize-append-in-shapes/ispaces)
     :short "Turn a list of ispaces into
             an equivalent one with only binary or empty concatenations,
             and construct a proof tree demonstrating the equivalence."
     (b* (((when (endp ispaces)) (mv nil (isps=-proof-refl nil)))
-         ((mv new-ispace proof1) (nullbinarize-appends-in-ispace (car ispaces)))
+         ((mv new-ispace proof1) (nullbinarize-append-in-ispace (car ispaces)))
          ((mv new-ispaces proof2)
-          (nullbinarize-appends-in-ispace-list (cdr ispaces))))
+          (nullbinarize-append-in-ispace-list (cdr ispaces))))
       (mv (cons new-ispace new-ispaces)
           (make-isps=-proof-cong-cons
            :i1 (ispace-fix (car ispaces))
@@ -1630,33 +1630,33 @@
 
   ///
 
-  (fty::deffixequiv-mutual nullbinarize-appends-in-shapes/ispaces)
+  (fty::deffixequiv-mutual nullbinarize-append-in-shapes/ispaces)
 
-  (defret-mutual shp=-proof-validp-of-nullbinarize-appends-in-shapes/ispaces
-    (defret shp=-proof-validp-of-nullbinarize-appends-in-shape
+  (defret-mutual shp=-proof-validp-of-nullbinarize-append-in-shapes/ispaces
+    (defret shp=-proof-validp-of-nullbinarize-append-in-shape
       (implies (shapep shape)
                (shp=-proof-validp proof
                                   shape
                                   new-shape))
-      :fn nullbinarize-appends-in-shape)
-    (defret shps=-proof-validp-of-nullbinarize-appends-in-shape-list
+      :fn nullbinarize-append-in-shape)
+    (defret shps=-proof-validp-of-nullbinarize-append-in-shape-list
       (implies (shape-listp shapes)
                (shps=-proof-validp proof
                                    shapes
                                    new-shapes))
-      :fn nullbinarize-appends-in-shape-list)
-    (defret isp=-proof-validp-of-nullbinarize-appends-in-ispace
+      :fn nullbinarize-append-in-shape-list)
+    (defret isp=-proof-validp-of-nullbinarize-append-in-ispace
       (implies (ispacep ispace)
                (isp=-proof-validp proof
                                   ispace
                                   new-ispace))
-      :fn nullbinarize-appends-in-ispace)
-    (defret isps=-proof-validp-of-nullbinarize-appends-in-ispace-list
+      :fn nullbinarize-append-in-ispace)
+    (defret isps=-proof-validp-of-nullbinarize-append-in-ispace-list
       (implies (ispace-listp ispaces)
                (isps=-proof-validp proof
                                    ispaces
                                    new-ispaces))
-      :fn nullbinarize-appends-in-ispace-list)
+      :fn nullbinarize-append-in-ispace-list)
     :hints (("Goal"
              :in-theory (enable shp=-proof-validp
                                 shps=-proof-validp
@@ -1673,84 +1673,84 @@
                                 isps=-refl-validp
                                 isps=-cong-cons-validp))))
 
-  (defret-mutual shape-nullbinappendp-of-nullbinarize-appends-in-shapes/ispaces
-    (defret shape-nullbinappendp-of-nullbinarize-appends-in-shape
+  (defret-mutual shape-nullbinappendp-of-nullbinarize-append-in-shapes/ispaces
+    (defret shape-nullbinappendp-of-nullbinarize-append-in-shape
       (shape-nullbinappendp new-shape)
-      :fn nullbinarize-appends-in-shape)
-    (defret shape-list-nullbinappendp-of-nullbinarize-appends-in-shape-list
+      :fn nullbinarize-append-in-shape)
+    (defret shape-list-nullbinappendp-of-nullbinarize-append-in-shape-list
       (shape-list-nullbinappendp new-shapes)
-      :fn nullbinarize-appends-in-shape-list)
-    (defret ispace-nullbinappendp-of-nullbinarize-appends-in-ispace
+      :fn nullbinarize-append-in-shape-list)
+    (defret ispace-nullbinappendp-of-nullbinarize-append-in-ispace
       (ispace-nullbinappendp new-ispace)
-      :fn nullbinarize-appends-in-ispace)
-    (defret ispace-list-nullbinappendp-of-nullbinarize-appends-in-ispace-list
+      :fn nullbinarize-append-in-ispace)
+    (defret ispace-list-nullbinappendp-of-nullbinarize-append-in-ispace-list
       (ispace-list-nullbinappendp new-ispaces)
-      :fn nullbinarize-appends-in-ispace-list)
+      :fn nullbinarize-append-in-ispace-list)
     :hints (("Goal"
              :in-theory (enable* ast-nullbinappendp-rules))
             '(:expand ((shape-nullbinappendp shape)
                        (ispace-nullbinappendp ispace)))))
 
-  (defret-mutual shape-unidimsp-of-nullbinarize-appends-in-shapes/ispaces
-    (defret shape-unidimsp-of-nullbinarize-appends-in-shape
+  (defret-mutual shape-unidimsp-of-nullbinarize-append-in-shapes/ispaces
+    (defret shape-unidimsp-of-nullbinarize-append-in-shape
       (implies (shape-unidimsp shape)
                (shape-unidimsp new-shape))
-      :fn nullbinarize-appends-in-shape)
-    (defret shape-list-unidimsp-of-nullbinarize-appends-in-shape-list
+      :fn nullbinarize-append-in-shape)
+    (defret shape-list-unidimsp-of-nullbinarize-append-in-shape-list
       (implies (shape-list-unidimsp shapes)
                (shape-list-unidimsp new-shapes))
-      :fn nullbinarize-appends-in-shape-list)
-    (defret ispace-unidimsp-of-nullbinarize-appends-in-ispace
+      :fn nullbinarize-append-in-shape-list)
+    (defret ispace-unidimsp-of-nullbinarize-append-in-ispace
       (implies (ispace-unidimsp ispace)
                (ispace-unidimsp new-ispace))
-      :fn nullbinarize-appends-in-ispace)
-    (defret ispace-list-unidimsp-of-nullbinarize-appends-in-ispace-list
+      :fn nullbinarize-append-in-ispace)
+    (defret ispace-list-unidimsp-of-nullbinarize-append-in-ispace-list
       (implies (ispace-list-unidimsp ispaces)
                (ispace-list-unidimsp new-ispaces))
-      :fn nullbinarize-appends-in-ispace-list)
+      :fn nullbinarize-append-in-ispace-list)
     :hints (("Goal"
              :in-theory (enable* ast-unidimsp-rules))
             '(:expand ((shape-unidimsp shape)
                        (ispace-unidimsp ispace)))))
 
-  (defret-mutual shape-nosplicep-of-nullbinarize-appends-in-shapes/ispaces
-    (defret shape-nosplicep-of-nullbinarize-appends-in-shape
+  (defret-mutual shape-nosplicep-of-nullbinarize-append-in-shapes/ispaces
+    (defret shape-nosplicep-of-nullbinarize-append-in-shape
       (implies (shape-nosplicep shape)
                (shape-nosplicep new-shape))
-      :fn nullbinarize-appends-in-shape)
-    (defret shape-list-nosplicep-of-nullbinarize-appends-in-shape-list
+      :fn nullbinarize-append-in-shape)
+    (defret shape-list-nosplicep-of-nullbinarize-append-in-shape-list
       (implies (shape-list-nosplicep shapes)
                (shape-list-nosplicep new-shapes))
-      :fn nullbinarize-appends-in-shape-list)
-    (defret ispace-nosplicep-of-nullbinarize-appends-in-ispace
+      :fn nullbinarize-append-in-shape-list)
+    (defret ispace-nosplicep-of-nullbinarize-append-in-ispace
       (implies (ispace-nosplicep ispace)
                (ispace-nosplicep new-ispace))
-      :fn nullbinarize-appends-in-ispace)
-    (defret ispace-list-nosplicep-of-nullbinarize-appends-in-ispace-list
+      :fn nullbinarize-append-in-ispace)
+    (defret ispace-list-nosplicep-of-nullbinarize-append-in-ispace-list
       (implies (ispace-list-nosplicep ispaces)
                (ispace-list-nosplicep new-ispaces))
-      :fn nullbinarize-appends-in-ispace-list)
+      :fn nullbinarize-append-in-ispace-list)
     :hints (("Goal"
              :in-theory (enable* ast-nosplicep-rules))
             '(:expand ((shape-nosplicep shape)))))
 
-  (defret-mutual shape-nodimispacep-of-nullbinarize-appends-in-shapes/ispaces
-    (defret shape-nodimispacep-of-nullbinarize-appends-in-shape
+  (defret-mutual shape-nodimispacep-of-nullbinarize-append-in-shapes/ispaces
+    (defret shape-nodimispacep-of-nullbinarize-append-in-shape
       (implies (shape-nodimispacep shape)
                (shape-nodimispacep new-shape))
-      :fn nullbinarize-appends-in-shape)
-    (defret shape-list-nodimispacep-of-nullbinarize-appends-in-shape-list
+      :fn nullbinarize-append-in-shape)
+    (defret shape-list-nodimispacep-of-nullbinarize-append-in-shape-list
       (implies (shape-list-nodimispacep shapes)
                (shape-list-nodimispacep new-shapes))
-      :fn nullbinarize-appends-in-shape-list)
-    (defret ispace-nodimispacep-of-nullbinarize-appends-in-ispace
+      :fn nullbinarize-append-in-shape-list)
+    (defret ispace-nodimispacep-of-nullbinarize-append-in-ispace
       (implies (ispace-nodimispacep ispace)
                (ispace-nodimispacep new-ispace))
-      :fn nullbinarize-appends-in-ispace)
-    (defret ispace-list-nodimispacep-of-nullbinarize-appends-in-ispace-list
+      :fn nullbinarize-append-in-ispace)
+    (defret ispace-list-nodimispacep-of-nullbinarize-append-in-ispace-list
       (implies (ispace-list-nodimispacep ispaces)
                (ispace-list-nodimispacep new-ispaces))
-      :fn nullbinarize-appends-in-ispace-list)
+      :fn nullbinarize-append-in-ispace-list)
     :hints (("Goal"
              :in-theory (enable* ast-nodimispacep-rules))
             '(:expand ((ispace-nodimispacep ispace))))))
@@ -1832,7 +1832,7 @@
      and preserves the statuses established by the preceding ones.
      Unarizing subtractions must precede binarizing additions,
      because the former introduces additions
-     (see @(tsee unarize-dims-in-sub));
+     (see @(tsee unarize-sub-dims));
      binarizing multiplications could be otherwise reordered,
      since the other two transformations preserve
      the binary status of multiplications.")
@@ -1904,9 +1904,9 @@
   (implies (shapep shape)
            (shape-equiv-to-nullbinappend-p shape))
   :use ((:instance shape-equiv-to-nullbinappend-p-suff
-                   (shape1 (mv-nth 0 (nullbinarize-appends-in-shape shape))))
+                   (shape1 (mv-nth 0 (nullbinarize-append-in-shape shape))))
         (:instance shp=-when-proof-validp
-                   (proof (mv-nth 1 (nullbinarize-appends-in-shape shape)))
+                   (proof (mv-nth 1 (nullbinarize-append-in-shape shape)))
                    (concl.shp1 shape)
-                   (concl.shp2 (mv-nth 0 (nullbinarize-appends-in-shape
+                   (concl.shp2 (mv-nth 0 (nullbinarize-append-in-shape
                                           shape))))))
