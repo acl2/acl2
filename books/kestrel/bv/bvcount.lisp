@@ -32,15 +32,7 @@
 
 (local (in-theory (disable expt)))
 
-;; Count the number of 1 bits in X, which should be SIZE bits wide.  The result
-;; fits in B bits where B is (integer-length SIZE).
-(defund bvcount (size x)
-  (declare (xargs :guard (and (natp size)
-                              (integerp x))))
-  (if (zp size)
-      0
-    (+ (getbit (+ -1 size) x)
-       (bvcount (+ -1 size) x))))
+(include-book "bvcount-def")
 
 (defthm bvcount-of-0-arg1
   (equal (bvcount 0 x)
