@@ -543,8 +543,12 @@
      boxes become box atoms;
      non-empty vectors become bracket expressions;
      and empty vectors become empty array expressions.
-     Conversion fails only for float values with no literal syntax
-     (see @(tsee float-value-to-float-lit))."))
+     Conversion fails for float values with no literal syntax
+     (see @(tsee float-value-to-float-lit)),
+     and for vectors with no elements,
+     which are not well-formed
+     (an empty vector must carry its element type;
+     see @(tsee expr-value))."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -585,7 +589,11 @@
                   :ispace (ispace-value-to-ispace val.ispace)
                   :array array
                   :type? (type-value-to-type val.type)))))
-     :vector (b* (((mv err exprs) (expr-value-list-to-exprs val.elems)))
+     :vector (b* (((mv err exprs) (expr-value-list-to-exprs val.elems))
+                  ((unless (consp exprs))
+                   (mv t (make-expr-array-empty
+                          :dims (list 0)
+                          :type (type-base (base-type-int))))))
                (mv err (expr-bracket exprs)))
      :vector-empty (mv nil
                        (expr-array-empty (cons 0 val.dims)
