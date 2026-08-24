@@ -1070,7 +1070,26 @@
                                     declspecs))
                          nil)))
     :induct t
-    :enable check-decl-spec-list-all-typespec))
+    :enable check-decl-spec-list-all-typespec)
+
+  (defrule
+    check-decl-spec-list-all-typespec/stoclass-of-decl-spec-typespec-list
+    (equal (check-decl-spec-list-all-typespec/stoclass
+            (decl-spec-typespec-list tyspecs))
+           (mv t (type-spec-list-fix tyspecs) nil))
+    :induct t
+    :enable decl-spec-typespec-list)
+
+  (defrule
+    check-decl-spec-list-all-typespec/stoclass-of-stoclass-and-typespec-append-lists
+    (equal (check-decl-spec-list-all-typespec/stoclass
+            (append (decl-spec-stoclass-list stor-specs)
+                    (decl-spec-typespec-list tyspecs)))
+           (mv t
+               (type-spec-list-fix tyspecs)
+               (stor-spec-list-fix stor-specs)))
+    :induct t
+    :enable decl-spec-stoclass-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

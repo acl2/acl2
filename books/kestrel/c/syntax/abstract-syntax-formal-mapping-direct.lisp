@@ -1544,6 +1544,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define ldm-initer-option ((initer? initer-optionp))
+  :guard (initer-option-unambp initer?)
+  :returns (mv erp (initer?1 c::initer-optionp
+                             :hints
+                             (("Goal"
+                               :in-theory
+                               (enable c::initer-optionp)))))
+  :short "Map an optional initializer to
+          an optional initializer in the language definition."
+  (initer-option-case
+   initer?
+   :some (ldm-initer initer?.val)
+   :none (retok nil))
+
+  ///
+
+  (defret ldm-initer-option-ok-when-initer-option-formalp
+    (not erp)
+    :hyp (or (not initer?)
+             (initer-formalp initer?))
+    :hints (("Goal" :in-theory (enable initer-option-some->val)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ldm-declon-obj ((declon declonp))
   :guard (declon-unambp declon)
   :returns (mv erp (objdeclon c::obj-declonp))
@@ -1596,16 +1620,11 @@
         (reterr (msg "Unsupported attribute specifiers ~x0 ~
                       for function declaration."
                      initdeclor.attribs)))
-       ((when (not initdeclor.initer?))
-        (retok (c::make-obj-declon :scspec scspecseq
-                                   :tyspec tyspecseq
-                                   :declor objdeclor
-                                   :init? nil)))
-       ((erp initer) (ldm-initer initdeclor.initer?)))
+       ((erp initer?) (ldm-initer-option initdeclor.initer?)))
     (retok (c::make-obj-declon :scspec scspecseq
                                :tyspec tyspecseq
                                :declor objdeclor
-                               :init? initer)))
+                               :init? initer?)))
 
   ///
 

@@ -672,3 +672,28 @@
 (test-parse-cpp
  parse-cpp-expr
  "[ * this ] ( ) { return x ; }")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Test 51: C++17 structured bindings.
+
+; 51a: simple local structured binding.
+(test-parse-cpp
+ parse-cpp-block-item
+ "auto [ x , y ] = p ;")
+
+; 51b: structured binding with a qualified/reference type.
+(test-parse-cpp
+ parse-cpp-block-item
+ "auto [ a , b , c ] = make_tuple ( 1 , 2 , 3 ) ;")
+
+; 51c: structured binding in a range-based for header.
+(test-parse-cpp
+ parse-cpp-stmt
+ "for ( auto [ key , val ] : m ) { use ( key , val ) ; }")
+
+; 51d: single-name structured binding.
+(test-parse-cpp
+ parse-cpp-block-item
+ "auto [ only ] = wrap ( z ) ;")
+

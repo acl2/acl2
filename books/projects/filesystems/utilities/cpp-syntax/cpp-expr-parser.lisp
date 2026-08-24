@@ -214,6 +214,159 @@
                                        parsize-of-parse-cpp-one-capture-cond
                                        parsize-of-parse-cpp-captures-rest-uncond)))))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; C++17 structured-binding name list parser (standalone: only reads tokens).
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-cpp-binding-names-rest ((parstate parstatep))
+  :returns (mv erp
+               (names c$::ident-listp)
+               (close-span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :measure (parsize parstate)
+  :parents nil
+  :short "Parse the @(', b, c ]') tail of a structured-binding name list."
+  (b* (((reterr) nil (irr-span) parstate)
+       ((erp sep? sep-span parstate) (read-token parstate))
+       ((when (token-punctuatorp sep? "]"))
+        (retok nil sep-span parstate))
+       ((unless (token-punctuatorp sep? ","))
+        (reterr-msg :where (span->start sep-span)
+                    :expected "',' or ']' in structured binding"
+                    :found sep?
+                    :extra nil))
+       ((erp name? name-span parstate) (read-token parstate))
+       ((unless (and name? (token-case name? :ident)))
+        (reterr-msg :where (span->start name-span)
+                    :expected "identifier in structured binding"
+                    :found name?
+                    :extra nil))
+       ((erp rest close-span parstate) (parse-cpp-binding-names-rest parstate)))
+    (retok (cons (token-ident->ident name?) rest) close-span parstate))
+  ///
+  (defret parsize-of-parse-cpp-binding-names-rest-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct (parse-cpp-binding-names-rest parstate))))
+  (defret parsize-of-parse-cpp-binding-names-rest-cond
+    (implies (not erp)
+             (< (parsize new-parstate)
+                (parsize parstate)))
+    :rule-classes :linear
+    :hints (("Goal" :induct (parse-cpp-binding-names-rest parstate)))))
+
+(define parse-cpp-binding-names ((parstate parstatep))
+  :returns (mv erp
+               (names c$::ident-listp)
+               (close-span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse the @('[a, b, c]') name list of a C++17 structured binding.
+          Expects the opening @('[') to have been already consumed."
+  (b* (((reterr) nil (irr-span) parstate)
+       ((erp name? name-span parstate) (read-token parstate))
+       ((unless (and name? (token-case name? :ident)))
+        (reterr-msg :where (span->start name-span)
+                    :expected "identifier in structured binding"
+                    :found name?
+                    :extra nil))
+       ((erp rest close-span parstate) (parse-cpp-binding-names-rest parstate)))
+    (retok (cons (token-ident->ident name?) rest) close-span parstate))
+  ///
+  (defret parsize-of-parse-cpp-binding-names-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable parsize-of-parse-cpp-binding-names-rest-uncond))))
+  (defret parsize-of-parse-cpp-binding-names-cond
+    (implies (not erp)
+             (< (parsize new-parstate)
+                (parsize parstate)))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable parsize-of-parse-cpp-binding-names-rest-uncond)))))
+
+;; Lookahead: detect an 'auto'-based structured-binding decl-specifier
+;; sequence ([const|volatile]? auto [&|&&]?) immediately followed by '['.
+;; On a match, consume through the '[' and return the binding's type; on no
+;; match, restore every token read (net-zero effect on parsize).
+(define parse-cpp-try-binding-prefix ((parstate parstatep))
+  :returns (mv erp
+               (bindingp booleanp)
+               (type cpp-type-spec-p)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Recognize the @('auto [') prefix of a C++17 structured binding."
+  (b* (((reterr) nil (irr-cpp-type-spec) parstate)
+       (auto-type (make-cpp-type-spec-name
+                   :id (c$::make-ident :unwrap "auto")))
+       ((erp t1? & parstate) (read-token parstate))
+       ((when (or (token-keywordp t1? "const")
+                  (token-keywordp t1? "volatile")))
+        (b* ((constp (token-keywordp t1? "const"))
+             ((erp t2? & parstate) (read-token parstate))
+             ((unless (token-keywordp t2? "auto"))
+              (b* ((parstate (if t2? (unread-token parstate) parstate))
+                   (parstate (unread-token parstate)))
+                (retok nil (irr-cpp-type-spec) parstate)))
+             ((erp t3? & parstate) (read-token parstate))
+             ((when (token-punctuatorp t3? "["))
+              (retok t
+                     (if constp
+                         (make-cpp-type-spec-const-qual :base auto-type)
+                       (make-cpp-type-spec-volatile-qual :base auto-type))
+                     parstate))
+             ((when (or (token-punctuatorp t3? "&") (token-punctuatorp t3? "&&")))
+              (b* ((rrefp (token-punctuatorp t3? "&&"))
+                   ((erp t4? & parstate) (read-token parstate))
+                   ((when (token-punctuatorp t4? "["))
+                    (b* ((refty (if rrefp
+                                    (make-cpp-type-spec-rref :base auto-type)
+                                  (make-cpp-type-spec-lref :base auto-type))))
+                      (retok t
+                             (if constp
+                                 (make-cpp-type-spec-const-qual :base refty)
+                               (make-cpp-type-spec-volatile-qual :base refty))
+                             parstate)))
+                   (parstate (if t4? (unread-token parstate) parstate))
+                   (parstate (unread-token parstate))
+                   (parstate (unread-token parstate))
+                   (parstate (unread-token parstate)))
+                (retok nil (irr-cpp-type-spec) parstate)))
+             (parstate (if t3? (unread-token parstate) parstate))
+             (parstate (unread-token parstate))
+             (parstate (unread-token parstate)))
+          (retok nil (irr-cpp-type-spec) parstate)))
+       ((when (token-keywordp t1? "auto"))
+        (b* (((erp t2? & parstate) (read-token parstate))
+             ((when (token-punctuatorp t2? "["))
+              (retok t auto-type parstate))
+             ((when (or (token-punctuatorp t2? "&") (token-punctuatorp t2? "&&")))
+              (b* ((rrefp (token-punctuatorp t2? "&&"))
+                   ((erp t3? & parstate) (read-token parstate))
+                   ((when (token-punctuatorp t3? "["))
+                    (retok t
+                           (if rrefp
+                               (make-cpp-type-spec-rref :base auto-type)
+                             (make-cpp-type-spec-lref :base auto-type))
+                           parstate))
+                   (parstate (if t3? (unread-token parstate) parstate))
+                   (parstate (unread-token parstate))
+                   (parstate (unread-token parstate)))
+                (retok nil (irr-cpp-type-spec) parstate)))
+             (parstate (if t2? (unread-token parstate) parstate))
+             (parstate (unread-token parstate)))
+          (retok nil (irr-cpp-type-spec) parstate)))
+       (parstate (if t1? (unread-token parstate) parstate)))
+    (retok nil (irr-cpp-type-spec) parstate))
+  ///
+  (defret parsize-of-parse-cpp-try-binding-prefix-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-cond
+                                       c$::parsize-of-read-token-uncond
+                                       c$::parsize-of-unread-token)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Mutual recursion for C++ expressions, statements, and lambda bodies
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -243,6 +396,9 @@
                                      parsize-of-parse-cpp-type-spec-uncond
                                      parsize-of-parse-cpp-type-spec-cond
                                      parsize-of-parse-cpp-type-spec-suffix-uncond
+                                     parsize-of-parse-cpp-binding-names-uncond
+                                     parsize-of-parse-cpp-binding-names-cond
+                                     parsize-of-parse-cpp-try-binding-prefix-uncond
                                      parsize-of-parse-cpp-exception-handler-header-uncond
                                      parsize-of-parse-cpp-exception-handler-header-cond
                                      parsize-of-parse-cpp-param-list-uncond
@@ -1608,7 +1764,42 @@
                       (mv nil parstate)))))
                ((when declp)
                 ;; for ( type name [: range | [= init] ; test ; next ] ) body
-                (b* (((erp type & parstate) (parse-cpp-type-spec-full parstate))
+                (b* (;; C++17 structured binding: for ( auto '[' a, b ']' : range ) body
+                     ((erp bindingp bind-type parstate)
+                      (parse-cpp-try-binding-prefix parstate))
+                     ((when bindingp)
+                      (b* (((erp names & parstate)
+                            (parse-cpp-binding-names parstate))
+                           ((erp colon? colon-span parstate) (read-token parstate))
+                           ((unless (token-punctuatorp colon? ":"))
+                            (reterr-msg
+                             :where (span->start colon-span)
+                             :expected "':' in structured binding for-range"
+                             :found colon?
+                             :extra nil))
+                           ((unless (< (parsize parstate) psize))
+                            (reterr :impossible))
+                           ((erp range & parstate) (parse-cpp-expr parstate))
+                           ((erp rp? rp-span parstate) (read-token parstate))
+                           ((unless (token-punctuatorp rp? ")"))
+                            (reterr-msg
+                             :where (span->start rp-span)
+                             :expected "')' after for-range initializer"
+                             :found rp?
+                             :extra nil))
+                           ((unless (< (parsize parstate) psize))
+                            (reterr :impossible))
+                           ((erp body body-span parstate)
+                            (parse-cpp-stmt parstate))
+                           ((unless (<= (parsize parstate) psize))
+                            (reterr :impossible))
+                           (span (make-span :start (span->start tok-span)
+                                            :end   (span->end body-span))))
+                        (retok (make-cpp-stmt-for-range-binding
+                                :type bind-type :names names
+                                :range range :body body)
+                               span parstate)))
+                     ((erp type & parstate) (parse-cpp-type-spec-full parstate))
                      ((erp name? name-span parstate) (read-token parstate))
                      ((unless (and name? (token-case name? :ident)))
                       (reterr-msg :where (span->start name-span)
@@ -1847,6 +2038,31 @@
          ((when declp)
           ;; Parse a local declaration: type-spec ident [= init] ';'
           (b* ((psize (parsize parstate))
+               ;; C++17 structured binding: auto '[' a, b ']' '=' init ';'
+               ((erp bindingp bind-type parstate)
+                (parse-cpp-try-binding-prefix parstate))
+               ((when bindingp)
+                (b* (((erp names & parstate) (parse-cpp-binding-names parstate))
+                     ((erp eq? eq-span parstate) (read-token parstate))
+                     ((unless (token-punctuatorp eq? "="))
+                      (reterr-msg :where (span->start eq-span)
+                                  :expected "'=' in structured binding declaration"
+                                  :found eq?
+                                  :extra nil))
+                     ((unless (< (parsize parstate) psize))
+                      (reterr :impossible))
+                     ((erp init & parstate) (parse-cpp-assign-or-cond parstate))
+                     ((erp semi? semi-span parstate) (read-token parstate))
+                     ((unless (token-punctuatorp semi? ";"))
+                      (reterr-msg :where (span->start semi-span)
+                                  :expected "';' after structured binding"
+                                  :found semi?
+                                  :extra nil))
+                     (span (make-span :start (span->start t1-span)
+                                      :end   (span->end semi-span))))
+                  (retok (make-cpp-block-item-binding
+                          :type bind-type :names names :init init)
+                         span parstate)))
                ((erp type & parstate) (parse-cpp-type-spec-full parstate))
                ((erp name? name-span parstate) (read-token parstate))
                ((unless (and name? (token-case name? :ident)))
@@ -2389,6 +2605,9 @@
                                 c$::parsize-of-unread-token
                                 parsize-of-parse-cpp-type-spec-uncond
                                 parsize-of-parse-cpp-type-spec-suffix-uncond
+                                parsize-of-parse-cpp-binding-names-uncond
+                                parsize-of-parse-cpp-binding-names-cond
+                                parsize-of-parse-cpp-try-binding-prefix-uncond
                                 parsize-of-parse-cpp-exception-handler-header-uncond
                                 parsize-of-parse-cpp-param-list-uncond)
              :expand ((parse-cpp-primary parstate)
@@ -2526,6 +2745,9 @@
                                 parsize-of-parse-cpp-type-spec-uncond
                                 parsize-of-parse-cpp-type-spec-cond
                                 parsize-of-parse-cpp-type-spec-suffix-uncond
+                                parsize-of-parse-cpp-binding-names-uncond
+                                parsize-of-parse-cpp-binding-names-cond
+                                parsize-of-parse-cpp-try-binding-prefix-uncond
                                 parsize-of-parse-cpp-exception-handler-header-uncond
                                 parsize-of-parse-cpp-exception-handler-header-cond
                                 parsize-of-parse-cpp-param-list-uncond
@@ -2553,6 +2775,9 @@
   (verify-guards parse-cpp-primary
     :hints (("Goal" :in-theory (enable token-to-cpp-infix-prec
                                        c$::parsize-of-unread-token
+                                       parsize-of-parse-cpp-binding-names-uncond
+                                       parsize-of-parse-cpp-binding-names-cond
+                                       parsize-of-parse-cpp-try-binding-prefix-uncond
                                        parsize-of-parse-cpp-type-spec-uncond
                                        parsize-of-parse-cpp-type-spec-cond
                                        parsize-of-parse-cpp-type-spec-full-uncond

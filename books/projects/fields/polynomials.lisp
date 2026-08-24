@@ -338,8 +338,8 @@
            (equal (pmul-list (append l m) f)
 	          (pmul (pmul-list l f) (pmul-list m f) f))))
 
-;; The factorization of a non-constant monic polynomial is a list of monic irreducible 
-;; polynomials with product p:
+;; The factorization of a non-constant monic polynomial is a list of monic irreducible polynomials with
+;; product p:
 
 (defthmd pmul-list-irreduciblep-factorization
   (implies (and (fieldp f) (polyp p f)
@@ -514,7 +514,7 @@
 |#
 
 ;;----------------------------------------------------------------------------------------------------------
-;;                     Algrbraic Nature of Finite Field Extensions: Minimal Polynomials
+;;                     Algebraic Nature of Finite Field Extensions: Minimal Polynomials
 ;;----------------------------------------------------------------------------------------------------------
 
 ;; We shall show that every extension e of f (under our definition) is algebraic over f, i.e, every element
@@ -592,9 +592,9 @@
 	          (equal (ecomb c (fpowers x n e) e f)
 	                 (peval (plift p f e) x e))))))
 
-;; This produces a nonzero polynomial over f of degree at most d of which x is a root.  We multiply 
-;; this polynomial by the reciprocal of its leading coefficient to produce a monic polynomial with
-;; the same property:
+;; This produces a nonzero polynomial over f of degree at most d of which x is a root.  We multiply this
+;; polynomial by the reciprocal of its leading coefficient to produce a monic polynomial with the same
+;; property:
 
 (defund zero-poly (x e f)
   (if (equal e f)
@@ -644,10 +644,11 @@
   (implies (and (fieldp f) (feltp x f))
            (equal (min-poly x f f)
 	          (root-poly x f))))
+;;----------------------------------------------------------------------------------------------------------
 
 ;; Let q be a polynomial over f.  If q is divisible by (min-poly x e f), then clearly x is a root of q.  
-;; The converse is also true.  The proof requires the following deceptively simple property of the 
-;; greatest common divisor:
+;; The converse is also true.  The proof requires the following deceptively simple property of the greatest
+;; common divisor:
 
 (defthmd plift-pgcd
   (implies (and (extensionp e f)
@@ -657,8 +658,8 @@
            (equal (pgcd (plift p f e) (plift q f e) e)
 	          (plift (pgcd p q f) f e))))
 
-;; If p is a polynomial over f, let p' denote (plift p f e).  Thus, if p = (min-poly x e f), then x is 
-;; a root of p'.  Let q be another polynomial over f such that x is a root of q' and suppose p does not 
+;; If p is a polynomial over f, let p' denote (plift p f e).  Thus, if p = (min-poly x e f), then x is a
+;; root of p'.  Let q be another polynomial over f such that x is a root of q' and suppose p does not
 ;; divide q.  Then (pgcd p q f) = 1, which implies (pgcd p' q' e) = 1.  Thus, we can find r and s such 
 ;; that rp' + sq' = 1.  Since x is not a root of 1, we have a contradiction:
 
