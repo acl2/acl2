@@ -1938,7 +1938,7 @@
         (make-expr-appn :fun fun :args args)))
     :measure (abnf::tree-count tree))
 
-  ;; array-exp = "array" ws shape-lit *( ws atom )
+  ;; array-exp = "array" ws shape-lit 1*( ws atom )
   ;;           / "array" ws shape-lit ws type
   (define abs-array-exp ((tree abnf::treep))
     :returns (e expr-resultp)
@@ -1960,7 +1960,9 @@
                  (abnf::check-tree-nonleaf-4 tree "array-exp"))
                 ((okf sl-tree) (abnf::check-tree-list-1 sub.3rd))
                 ((okf dims) (abs-shape-lit sl-tree))
-                ((okf atoms) (abs-*-ws-atom sub.4th)))
+                ((okf atoms) (abs-*-ws-atom sub.4th))
+                ((unless (consp atoms))
+                 (reserrf (list :array-exp-no-atoms dims))))
              (make-expr-array :dims dims :atoms atoms)))
         (5 (b* (((okf (abnf::tree-list-tuple5 sub))
                  (abnf::check-tree-nonleaf-5 tree "array-exp"))
