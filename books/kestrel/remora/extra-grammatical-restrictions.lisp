@@ -14,6 +14,10 @@
 
 (include-book "projects/abnf/tree-operations/subtree-operations" :dir :system)
 
+(include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)
+(include-book "kestrel/utilities/strings/strings-codes" :dir :system)
+(include-book "std/util/defval" :dir :system)
+
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (acl2::controlled-configuration)
@@ -637,6 +641,273 @@
                                     (abnf::tree->string cst1)
                                     (abnf::tree-list->string csts2)
                                     (list "float-lit"))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *rule-leading-keywords*
+  :short "Keywords that start the fringes of the CSTs of certain rules."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This alist associates rule names to the possible spellings
+     (as lists of code points) of the keyword
+     that begins the fringe of every CST matching the rule:
+     e.g. every @('array-exp') CST starts with @('array'),
+     and every @('lambda') CST starts with
+     either @('fn') or @('&lambda;') (U+03BB).
+     The spellings associated to each rule
+     are not prefixes of one another
+     (e.g. @('t-fn') vs. @('t&lambda;')),
+     so at most one of them can be
+     a prefix of a given CST's fringe.")
+   (xdoc::p
+    "Besides the spellings from the @('keyword') rule,
+     the table also includes the base type names
+     @('Bool'), @('Int'), and @('Float'),
+     which are not reserved keywords,
+     but are keyword-like words,
+     subject to the same boundary requirement
+     (see @(tsee cst-longest-keywords-p)):
+     e.g. @('Int3') is a single word,
+     never @('Int') followed by @('3').
+     Here and in the related functions and restriction,
+     we use `keyword' loosely, to cover these as well.")
+   (xdoc::p
+    "The @('shape-paren') entry lists only @('dims'):
+     the CSTs for the @('++') alternative of that rule
+     do not start with @('dims'),
+     and the lookup in @(tsee cst-leading-keyword)
+     simply finds no leading keyword for them.
+     The @('import') keyword has no entry at all,
+     because it does not start its rule's fringe
+     (an open parenthesis does);
+     it is the only keyword occurrence not covered,
+     and harmlessly so,
+     since it is always followed by
+     the double quote of a string literal
+     (possibly after whitespace),
+     which cannot extend it."))
+  (list (cons "def-decl" (list (string=>nats "def")))
+        (cons "entry-decl" (list (string=>nats "entry")))
+        (cons "array-exp" (list (string=>nats "array")))
+        (cons "frame-exp" (list (string=>nats "frame")))
+        (cons "tapp-exp" (list (string=>nats "t-app")))
+        (cons "iapp-exp" (list (string=>nats "i-app")))
+        (cons "unbox-exp" (list (string=>nats "unbox")))
+        (cons "let-exp" (list (string=>nats "let")))
+        (cons "box-expr" (list (string=>nats "box")))
+        (cons "lambda" (list (string=>nats "fn")
+                             (list #x03BB)))
+        (cons "type-lambda" (list (string=>nats "t-fn")
+                                  (list (char-code #\t) #x03BB)))
+        (cons "ispace-lambda" (list (string=>nats "i-fn")
+                                    (list (char-code #\i) #x03BB)))
+        (cons "val-bind" (list (string=>nats "val")))
+        (cons "fun-bind" (list (string=>nats "fun")))
+        (cons "tfun-bind" (list (string=>nats "t-fun")))
+        (cons "ifun-bind" (list (string=>nats "i-fun")))
+        (cons "at-fun-bind" (list (string=>nats "fun")))
+        (cons "type-bind" (list (string=>nats "type")))
+        (cons "ispace-bind" (list (string=>nats "ispace")))
+        (cons "array-type" (list (string=>nats "A")))
+        (cons "arrow-type" (list (string=>nats "->")
+                                 (list #x2192)))
+        (cons "forall-type" (list (string=>nats "Forall")
+                                  (list #x2200)))
+        (cons "pi-type" (list (string=>nats "Pi")
+                              (list #x03A0)))
+        (cons "sigma-type" (list (string=>nats "Sigma")
+                                 (list #x03A3)))
+        (cons "shape-paren" (list (string=>nats "dims")))
+        (cons "base-type" (list (string=>nats "Bool")
+                                (string=>nats "Int")
+                                (string=>nats "Float"))))
+
+  ///
+
+  (defrule nat-list-listp-of-cdr-of-assoc-equal-rule-leading-keywords
+    (nat-list-listp (cdr (assoc-equal name *rule-leading-keywords*)))
+    :enable assoc-equal))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define leading-keyword-of-string ((keywords nat-list-listp)
+                                   (string nat-listp))
+  :returns (keyword? nat-listp)
+  :short "Find the keyword spelling, among a list of candidates,
+          that a given string starts with."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We return the first candidate that is a prefix of the string,
+     or @('nil') if there is none.
+     In our use, the candidates are the spellings associated to
+     a rule name in @(tsee *rule-leading-keywords*),
+     which are never prefixes of one another,
+     so at most one of them can be a prefix of the string.")
+   (xdoc::p
+    "We fix each candidate before using and returning it,
+     so that the return type theorem holds
+     without assuming the guard;
+     under the guard, the fixing is a no-op."))
+  (b* (((unless (consp keywords)) nil)
+       (keyword (nat-list-fix (car keywords)))
+       ((when (prefixp keyword (nat-list-fix string)))
+        keyword))
+    (leading-keyword-of-string (cdr keywords) string)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define cst-leading-keyword ((cst abnf::treep))
+  :returns (keyword? nat-listp)
+  :short "Leading keyword of a CST, if any."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the CST is a terminated non-leaf tree
+     whose rule name is in the table @(tsee *rule-leading-keywords*),
+     we return the keyword spelling that its fringe starts with, if any;
+     otherwise we return @('nil')."))
+  (b* (((unless (and (abnf::tree-case cst :nonleaf)
+                     (abnf::tree-terminatedp cst)))
+        nil)
+       (rulename? (abnf::tree-nonleaf->rulename? cst))
+       ((unless rulename?) nil)
+       (name (abnf::rulename->get rulename?))
+       (pair (assoc-equal name *rule-leading-keywords*))
+       ((unless pair) nil))
+    (leading-keyword-of-string (cdr pair) (abnf::tree->string cst)))
+  :guard-hints (("Goal" :in-theory (enable abnf::rulename-optionp))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define-sk cst-longest-keywords-p ((cst abnf::treep))
+  :guard (abnf::tree-terminatedp cst)
+  :returns (yes/no booleanp)
+  :short "Check if a CST does not contain any extensible leading keyword."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Keywords must not run into the text that follows them:
+     a keyword that starts a construct
+     must not be immediately followed by an identifier character,
+     since in that case the keyword and the following character(s)
+     read as a single longer word:
+     e.g. @('fn2') is one identifier,
+     never the keyword @('fn') followed by @('2').")
+   (xdoc::p
+    "Keywords occur in CSTs as leaves,
+     notated via character value notations
+     in the rules that use them,
+     not as @('keyword') CSTs
+     (the @('keyword') rule is not referenced by other rules).
+     A leaf carries no indication of
+     which grammar element it matched:
+     e.g. a leaf containing just the code point U+03BB
+     may arise from the @('%x03BB') notation
+     in the @('lambda') rule (a keyword),
+     or from a character range inside
+     an identifier, a comment, or a string literal (not a keyword),
+     and only in the former case
+     there is a boundary requirement.
+     Thus we anchor the restriction to the rules that use the keywords:
+     the table @(tsee *rule-leading-keywords*) associates
+     each such rule to the possible spellings of its leading keyword.")
+   (xdoc::p
+    "We state the restriction by saying that
+     if the CST at a path starts with a keyword
+     (see @(tsee cst-leading-keyword)),
+     the keyword must not be usable to form a longer word,
+     using the rest of that CST's own fringe,
+     followed by the fringe of the CST at the adjacent path (if any):
+     any extension within that material
+     must not be the fringe of any possible @('identifier') CST.
+     As in @(tsee cst-longest-identifiers-p),
+     @('identifier') is the only rule name
+     to check extensions against,
+     since keyword spellings are identifier spellings.")
+   (xdoc::p
+    "The rest of the construct's own fringe
+     is part of the extension material
+     because in most rules more material follows the keyword
+     within the same construct:
+     e.g. in a @('tapp-exp') CST with fringe @('t-app$x &y'),
+     the offending character @('$')
+     follows the keyword within the construct itself.
+     The fringe at the adjacent path is needed for @('base-type'),
+     whose keyword is the whole fringe of the construct:
+     e.g. in the bracket type @('[Int3]'),
+     the @('3') that extends @('Int') into a single word
+     is an adjacent dimension, outside the @('base-type') CST.
+     A single adjacent path suffices,
+     because one identifier character is enough to witness a violation,
+     and these constructs always occur in
+     parenthesized or bracketed contexts,
+     so a CST (at worst, a closing delimiter leaf)
+     always follows adjacently.")
+   (xdoc::p
+    "Most keywords are followed, in their rules,
+     by parentheses, brackets, or double quotes,
+     which cannot start an extension,
+     so for them the restriction cannot be violated
+     in a CST that matches the grammar;
+     it can for
+     @('t-app'), @('i-app'), and @('dims')
+     (which may be immediately followed by expressions and dimensions),
+     @('val'), @('type'), and @('ispace')
+     (immediately followed by names and sigiled variables),
+     @('A') and @('->')
+     (immediately followed by types),
+     and the base type names
+     (immediately followed by dimensions).
+     We include all the keyword-headed rules in the table nonetheless,
+     for uniformity and robustness.")
+   (xdoc::p
+    "This restriction is deliberately stronger than
+     the treatment in the Haskell reference implementation.
+     There, a keyword fails to be recognized
+     only when immediately followed by
+     a Unicode alphanumeric character
+     (@('notFollowedBy (satisfy isAlphaNum)') in @('lKeyword')),
+     and the base type names have no boundary requirement at all
+     (they are parsed as plain symbols).
+     The two treatments agree when the following character is alphanumeric:
+     e.g. @('fn2') and @('AInt') are single words in both.
+     But the implementation accepts abutments with
+     non-alphanumeric identifier characters,
+     e.g. @('ispace$d'), @('val_x'), @('type&x'),
+     @('->&x'), and @('A&x'),
+     as well as, for base types,
+     even @('[Bool3]') (as @('[Bool 3]')):
+     this restriction rejects all of those.
+     The divergence is one-directional:
+     an input accepted by both receives the same reading
+     (e.g. @('(t-app$x Int)') is, in both,
+     an application of the identifier @('t-app$x')
+     to the identifier @('Int')),
+     while the abutted inputs rejected here
+     are repaired by adding whitespace.
+     We regard the implementation's weaker treatment as
+     an accident of its lexing library
+     rather than as language design,
+     and we expect the implementation to eventually change
+     to match this restriction."))
+  (forall (path1 path2)
+          (implies (and (abnf::tree-pathp path1)
+                        (abnf::tree-pathp path2)
+                        (abnf::tree-path-validp path1 cst)
+                        (abnf::tree-path-validp path2 cst)
+                        (abnf::tree-paths-adjacentp path1 path2 cst))
+                   (b* ((cst1 (abnf::tree-at-path path1 cst))
+                        (cst2 (abnf::tree-at-path path2 cst))
+                        (keyword (cst-leading-keyword cst1)))
+                     (implies keyword
+                              (not (extensible-to-cst-fringe-p
+                                    keyword
+                                    (append (nthcdr (len keyword)
+                                                    (abnf::tree->string cst1))
+                                            (abnf::tree->string cst2))
+                                    (list "identifier"))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
