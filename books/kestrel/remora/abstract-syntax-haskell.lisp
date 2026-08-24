@@ -87,10 +87,6 @@
        "N-ary function types with non-singleton lists of input types,
         because [impl]'s @('TEArrow') holds exactly one input type.")
       (xdoc::li
-       "Sum types with empty lists of parameters
-        (will be removed once length invariant is in place).")
-; Todo: remove above once invariant is in place
-      (xdoc::li
        "Variables with optional types that have no type,
         because [impl]'s @('PatId') holds a required type.")
       (xdoc::li
@@ -181,8 +177,6 @@
                       (type-hip type.out)
                       (consp type.in)
                       (endp (cdr type.in))))
-     (type :sigman (and (type-hip type.body)
-                        (consp type.params))) ; Todo: remove once invariant is in place
      (var+type? (b* (((var+type? var+type?)))
                   (and (type-option-hip var+type?.type?)
                        (type-option-case var+type?.type? :some))))
