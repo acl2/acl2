@@ -90,7 +90,7 @@
                   (consp dim.dims))))
   :name ast-nonullsubp)
 
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce unidimsp
   :short "Check if all the dimension shapes in shapes and ispaces are unary."
@@ -157,7 +157,7 @@
   ((ispace :dim nil))
   :name ast-nodimispacep)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk dim-equiv-to-binadd-p (dim)
   :returns (yes/no booleanp)
@@ -217,7 +217,7 @@
                (shape-unidimsp shape1)))
   :verify-guards nil) ; because SHP= is not guard-verified
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define binarize-dims-in-add ((dims dim-listp))
   :returns (new-dim dimp)
@@ -303,7 +303,7 @@
              :induct t
              :in-theory (enable* ast-nonullsubp-rules)))))
 
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;
 
 (defines binarize-add-in-dims
   :short "Turn dimensions into equivalent ones with only binary additions."
@@ -453,7 +453,7 @@
                        (dim-nonullsubp (dim-sub (binarize-add-in-dim-list
                                                  (dim-sub->dims dim)))))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (define binarize-dims-in-mul ((dims dim-listp))
   :returns (mv (new-dim dimp)
@@ -564,7 +564,7 @@
              :induct t
              :in-theory (enable* ast-nonullsubp-rules)))))
 
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;
 
 (defines binarize-mul-in-dims
   :short "Turn dimensions into equivalent ones
@@ -748,7 +748,7 @@
                         (dim-sub (mv-nth 0 (binarize-mul-in-dim-list
                                             (dim-sub->dims dim))))))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (define unarize-dims-in-sub ((dims dim-listp))
   :returns (mv (new-dim dimp)
@@ -836,7 +836,7 @@
              (dim-binmulp new-dim))
     :hints (("Goal" :in-theory (enable* ast-binmulp-rules)))))
 
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;
 
 (defines unarize-sub-in-dims
   :short "Turn dimensions into equivalent ones
@@ -1124,7 +1124,7 @@
              :induct t
              :in-theory (enable* ast-nodimispacep-rules)))))
 
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;
 
 (defines unarize-dims-in-shapes/ispaces
   :short "Turn shapes and ispaces into equivalent ones
@@ -1381,7 +1381,7 @@
              :in-theory (enable* ast-nodimispacep-rules))
             '(:expand ((ispace-nodimispacep ispace))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled dim-equiv-to-binadd-p-when-dimp
   :short "Every dimension is equivalent to one with only binary additions."
