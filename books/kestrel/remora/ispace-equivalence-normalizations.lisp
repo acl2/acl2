@@ -217,6 +217,17 @@
                (shape-unidimsp shape1)))
   :verify-guards nil) ; because SHP= is not guard-verified
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define-sk shape-equiv-to-nullbinappend-p (shape)
+  :returns (yes/no booleanp)
+  :short "Check whether a shape is equivalent to
+          one with only binary or empty concatenations."
+  (exists (shape1)
+          (and (shp= shape shape1)
+               (shape-nullbinappendp shape1)))
+  :verify-guards nil) ; because SHP= is not guard-verified
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define binarize-dims-in-add ((dims dim-listp))
@@ -1381,6 +1392,369 @@
              :in-theory (enable* ast-nodimispacep-rules))
             '(:expand ((ispace-nodimispacep ispace))))))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define nullbinarize-shape-append ((shapes shape-listp))
+  :returns (mv (new-shape shapep)
+               (proof shp=-proofp))
+  :short "Turn a list of shapes in a concatenation
+          into a shape with only binary or empty concatenations,
+          and construct a proof tree demonstrating equivalence."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called on the shape arguments of a concatenation shape.")
+   (xdoc::p
+    "A concatenation of no shapes is itself a normal form,
+     and is left unchanged;
+     so is a concatenation of two shapes.
+     A concatenation of one shape is turned into that shape,
+     according to the rule @('append1').
+     A concatenation of three or more shapes is turned into
+     a left-associated nest of binary concatenations,
+     according to the rule @('append3m'),
+     whose instances are chained, via the rule @('trans'),
+     with the recursively built proof trees,
+     analogously to the multiplication of dimensions.")
+   (xdoc::p
+    "We use the constructed proof tree to show the equivalence.")
+   (xdoc::p
+    "We show that the resulting shape
+     only has binary or empty concatenations
+     if the argument shapes do.
+     This function is called after normalizing the concatenations
+     in the shapes passed as arguments to this function (see caller);
+     that establishes the hypothesis of the theorem.")
+   (xdoc::p
+    "We also show that this function preserves
+     the unary status of dimension shapes,
+     the absence of splices,
+     and the absence of dimension ispaces,
+     which this function does not affect."))
+  (cond ((endp shapes) (mv (shape-append nil)
+                           (shp=-proof-refl (shape-append nil))))
+        ((endp (cdr shapes)) (mv (shape-fix (car shapes))
+                                 (shp=-proof-append1
+                                  (shape-fix (car shapes)))))
+        ((endp (cddr shapes)) (mv (shape-append shapes)
+                                  (shp=-proof-refl (shape-append shapes))))
+        (t (b* ((shapes1 (cons (shape-append (list (car shapes)
+                                                   (cadr shapes)))
+                               (cddr shapes)))
+                ((mv new-shape proof) (nullbinarize-shape-append shapes1)))
+             (mv new-shape
+                 (make-shp=-proof-trans
+                  :s1 (shape-append shapes)
+                  :s2 (shape-append shapes1)
+                  :s3 new-shape
+                  :premise1-proof (make-shp=-proof-append3m
+                                   :s1 (shape-fix (car shapes))
+                                   :s2 (shape-fix (cadr shapes))
+                                   :ss (shape-list-fix (cddr shapes)))
+                  :premise2-proof proof)))))
+  :measure (len shapes)
+  :verify-guards :after-returns
+
+  ///
+
+  (defret shp=-proof-validp-of-nullbinarize-shape-append
+    (implies (shape-listp shapes)
+             (shp=-proof-validp proof
+                                (shape-append shapes)
+                                new-shape))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable shp=-proof-validp
+                                shp=-refl-validp
+                                shp=-trans-validp
+                                shp=-append1-validp
+                                shp=-append3m-validp))))
+
+  (defret shape-nullbinappendp-of-nullbinarize-shape-append
+    (implies (shape-list-nullbinappendp shapes)
+             (shape-nullbinappendp new-shape))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* ast-nullbinappendp-rules))
+            '(:expand ((shape-nullbinappendp (shape-append shapes))
+                       (shape-nullbinappendp
+                        (shape-append (list (car shapes)
+                                            (cadr shapes))))))))
+
+  (defret shape-unidimsp-of-nullbinarize-shape-append
+    (implies (shape-list-unidimsp shapes)
+             (shape-unidimsp new-shape))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* ast-unidimsp-rules))))
+
+  (defret shape-nosplicep-of-nullbinarize-shape-append
+    (implies (shape-list-nosplicep shapes)
+             (shape-nosplicep new-shape))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* ast-nosplicep-rules))))
+
+  (defret shape-nodimispacep-of-nullbinarize-shape-append
+    (implies (shape-list-nodimispacep shapes)
+             (shape-nodimispacep new-shape))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* ast-nodimispacep-rules)))))
+
+;;;;;;;;;;
+
+(defines nullbinarize-appends-in-shapes/ispaces
+  :short "Turn shapes and ispaces into equivalent ones
+          with only binary or empty concatenations,
+          and construct proof trees demonstrating the equivalence."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We show that the resulting shapes and ispaces are equivalent to
+     the argument ones.
+     This is done via the constructed proof trees.")
+   (xdoc::p
+    "We show that the resulting shapes and ispaces
+     only have binary or empty concatenations.")
+   (xdoc::p
+    "We also show that these functions preserve
+     the unary status of dimension shapes,
+     the absence of splices,
+     and the absence of dimension ispaces,
+     which these functions do not affect."))
+
+  (define nullbinarize-appends-in-shape ((shape shapep))
+    :returns (mv (new-shape shapep)
+                 (proof shp=-proofp))
+    :parents (ispace-equivalence-normalizations
+              nullbinarize-appends-in-shapes/ispaces)
+    :short "Turn a shape into
+            an equivalent one with only binary or empty concatenations,
+            and construct a proof tree demonstrating the equivalence."
+    (shape-case
+     shape
+     :var (mv (shape-var shape.name)
+              (shp=-proof-refl (shape-var shape.name)))
+     :dims (mv (shape-dims shape.dims)
+               (shp=-proof-refl (shape-dims shape.dims)))
+     :append (b* (((mv new-shapes proof)
+                   (nullbinarize-appends-in-shape-list shape.shapes))
+                  ((mv new-shape proof1)
+                   (nullbinarize-shape-append new-shapes)))
+               (mv new-shape
+                   (make-shp=-proof-trans
+                    :s1 (shape-append shape.shapes)
+                    :s2 (shape-append new-shapes)
+                    :s3 new-shape
+                    :premise1-proof (make-shp=-proof-cong-append
+                                     :ss1 shape.shapes
+                                     :ss2 new-shapes
+                                     :premise1-proof proof)
+                    :premise2-proof proof1)))
+     :splice (b* (((mv new-ispaces proof)
+                   (nullbinarize-appends-in-ispace-list shape.ispaces)))
+               (mv (shape-splice new-ispaces)
+                   (make-shp=-proof-cong-splice
+                    :is1 shape.ispaces
+                    :is2 new-ispaces
+                    :premise1-proof proof))))
+    :measure (shape-count shape))
+
+  (define nullbinarize-appends-in-shape-list ((shapes shape-listp))
+    :returns (mv (new-shapes shape-listp)
+                 (proof shps=-proofp))
+    :parents (ispace-equivalence-normalizations
+              nullbinarize-appends-in-shapes/ispaces)
+    :short "Turn a list of shapes into
+            an equivalent one with only binary or empty concatenations,
+            and construct a proof tree demonstrating the equivalence."
+    (b* (((when (endp shapes)) (mv nil (shps=-proof-refl nil)))
+         ((mv new-shape proof1) (nullbinarize-appends-in-shape (car shapes)))
+         ((mv new-shapes proof2)
+          (nullbinarize-appends-in-shape-list (cdr shapes))))
+      (mv (cons new-shape new-shapes)
+          (make-shps=-proof-cong-cons
+           :s1 (shape-fix (car shapes))
+           :s2 new-shape
+           :ss1 (shape-list-fix (cdr shapes))
+           :ss2 new-shapes
+           :premise1-proof proof1
+           :premise2-proof proof2)))
+    :measure (shape-list-count shapes))
+
+  (define nullbinarize-appends-in-ispace ((ispace ispacep))
+    :returns (mv (new-ispace ispacep)
+                 (proof isp=-proofp))
+    :parents (ispace-equivalence-normalizations
+              nullbinarize-appends-in-shapes/ispaces)
+    :short "Turn an ispace into
+            an equivalent one with only binary or empty concatenations,
+            and construct a proof tree demonstrating the equivalence."
+    (ispace-case
+     ispace
+     :dim (mv (ispace-dim ispace.dim)
+              (isp=-proof-refl (ispace-dim ispace.dim)))
+     :shape (b* (((mv new-shape proof)
+                  (nullbinarize-appends-in-shape ispace.shape)))
+              (mv (ispace-shape new-shape)
+                  (make-isp=-proof-cong-shape
+                   :s1 ispace.shape
+                   :s2 new-shape
+                   :premise1-proof proof))))
+    :measure (ispace-count ispace))
+
+  (define nullbinarize-appends-in-ispace-list ((ispaces ispace-listp))
+    :returns (mv (new-ispaces ispace-listp)
+                 (proof isps=-proofp))
+    :parents (ispace-equivalence-normalizations
+              nullbinarize-appends-in-shapes/ispaces)
+    :short "Turn a list of ispaces into
+            an equivalent one with only binary or empty concatenations,
+            and construct a proof tree demonstrating the equivalence."
+    (b* (((when (endp ispaces)) (mv nil (isps=-proof-refl nil)))
+         ((mv new-ispace proof1) (nullbinarize-appends-in-ispace (car ispaces)))
+         ((mv new-ispaces proof2)
+          (nullbinarize-appends-in-ispace-list (cdr ispaces))))
+      (mv (cons new-ispace new-ispaces)
+          (make-isps=-proof-cong-cons
+           :i1 (ispace-fix (car ispaces))
+           :i2 new-ispace
+           :is1 (ispace-list-fix (cdr ispaces))
+           :is2 new-ispaces
+           :premise1-proof proof1
+           :premise2-proof proof2)))
+    :measure (ispace-list-count ispaces))
+
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv-mutual nullbinarize-appends-in-shapes/ispaces)
+
+  (defret-mutual shp=-proof-validp-of-nullbinarize-appends-in-shapes/ispaces
+    (defret shp=-proof-validp-of-nullbinarize-appends-in-shape
+      (implies (shapep shape)
+               (shp=-proof-validp proof
+                                  shape
+                                  new-shape))
+      :fn nullbinarize-appends-in-shape)
+    (defret shps=-proof-validp-of-nullbinarize-appends-in-shape-list
+      (implies (shape-listp shapes)
+               (shps=-proof-validp proof
+                                   shapes
+                                   new-shapes))
+      :fn nullbinarize-appends-in-shape-list)
+    (defret isp=-proof-validp-of-nullbinarize-appends-in-ispace
+      (implies (ispacep ispace)
+               (isp=-proof-validp proof
+                                  ispace
+                                  new-ispace))
+      :fn nullbinarize-appends-in-ispace)
+    (defret isps=-proof-validp-of-nullbinarize-appends-in-ispace-list
+      (implies (ispace-listp ispaces)
+               (isps=-proof-validp proof
+                                   ispaces
+                                   new-ispaces))
+      :fn nullbinarize-appends-in-ispace-list)
+    :hints (("Goal"
+             :in-theory (enable shp=-proof-validp
+                                shps=-proof-validp
+                                isp=-proof-validp
+                                isps=-proof-validp
+                                shp=-refl-validp
+                                shp=-trans-validp
+                                shp=-cong-append-validp
+                                shp=-cong-splice-validp
+                                isp=-refl-validp
+                                isp=-cong-shape-validp
+                                shps=-refl-validp
+                                shps=-cong-cons-validp
+                                isps=-refl-validp
+                                isps=-cong-cons-validp))))
+
+  (defret-mutual shape-nullbinappendp-of-nullbinarize-appends-in-shapes/ispaces
+    (defret shape-nullbinappendp-of-nullbinarize-appends-in-shape
+      (shape-nullbinappendp new-shape)
+      :fn nullbinarize-appends-in-shape)
+    (defret shape-list-nullbinappendp-of-nullbinarize-appends-in-shape-list
+      (shape-list-nullbinappendp new-shapes)
+      :fn nullbinarize-appends-in-shape-list)
+    (defret ispace-nullbinappendp-of-nullbinarize-appends-in-ispace
+      (ispace-nullbinappendp new-ispace)
+      :fn nullbinarize-appends-in-ispace)
+    (defret ispace-list-nullbinappendp-of-nullbinarize-appends-in-ispace-list
+      (ispace-list-nullbinappendp new-ispaces)
+      :fn nullbinarize-appends-in-ispace-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-nullbinappendp-rules))
+            '(:expand ((shape-nullbinappendp shape)
+                       (ispace-nullbinappendp ispace)))))
+
+  (defret-mutual shape-unidimsp-of-nullbinarize-appends-in-shapes/ispaces
+    (defret shape-unidimsp-of-nullbinarize-appends-in-shape
+      (implies (shape-unidimsp shape)
+               (shape-unidimsp new-shape))
+      :fn nullbinarize-appends-in-shape)
+    (defret shape-list-unidimsp-of-nullbinarize-appends-in-shape-list
+      (implies (shape-list-unidimsp shapes)
+               (shape-list-unidimsp new-shapes))
+      :fn nullbinarize-appends-in-shape-list)
+    (defret ispace-unidimsp-of-nullbinarize-appends-in-ispace
+      (implies (ispace-unidimsp ispace)
+               (ispace-unidimsp new-ispace))
+      :fn nullbinarize-appends-in-ispace)
+    (defret ispace-list-unidimsp-of-nullbinarize-appends-in-ispace-list
+      (implies (ispace-list-unidimsp ispaces)
+               (ispace-list-unidimsp new-ispaces))
+      :fn nullbinarize-appends-in-ispace-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-unidimsp-rules))
+            '(:expand ((shape-unidimsp shape)
+                       (ispace-unidimsp ispace)))))
+
+  (defret-mutual shape-nosplicep-of-nullbinarize-appends-in-shapes/ispaces
+    (defret shape-nosplicep-of-nullbinarize-appends-in-shape
+      (implies (shape-nosplicep shape)
+               (shape-nosplicep new-shape))
+      :fn nullbinarize-appends-in-shape)
+    (defret shape-list-nosplicep-of-nullbinarize-appends-in-shape-list
+      (implies (shape-list-nosplicep shapes)
+               (shape-list-nosplicep new-shapes))
+      :fn nullbinarize-appends-in-shape-list)
+    (defret ispace-nosplicep-of-nullbinarize-appends-in-ispace
+      (implies (ispace-nosplicep ispace)
+               (ispace-nosplicep new-ispace))
+      :fn nullbinarize-appends-in-ispace)
+    (defret ispace-list-nosplicep-of-nullbinarize-appends-in-ispace-list
+      (implies (ispace-list-nosplicep ispaces)
+               (ispace-list-nosplicep new-ispaces))
+      :fn nullbinarize-appends-in-ispace-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-nosplicep-rules))
+            '(:expand ((shape-nosplicep shape)))))
+
+  (defret-mutual shape-nodimispacep-of-nullbinarize-appends-in-shapes/ispaces
+    (defret shape-nodimispacep-of-nullbinarize-appends-in-shape
+      (implies (shape-nodimispacep shape)
+               (shape-nodimispacep new-shape))
+      :fn nullbinarize-appends-in-shape)
+    (defret shape-list-nodimispacep-of-nullbinarize-appends-in-shape-list
+      (implies (shape-list-nodimispacep shapes)
+               (shape-list-nodimispacep new-shapes))
+      :fn nullbinarize-appends-in-shape-list)
+    (defret ispace-nodimispacep-of-nullbinarize-appends-in-ispace
+      (implies (ispace-nodimispacep ispace)
+               (ispace-nodimispacep new-ispace))
+      :fn nullbinarize-appends-in-ispace)
+    (defret ispace-list-nodimispacep-of-nullbinarize-appends-in-ispace-list
+      (implies (ispace-list-nodimispacep ispaces)
+               (ispace-list-nodimispacep new-ispaces))
+      :fn nullbinarize-appends-in-ispace-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-nodimispacep-rules))
+            '(:expand ((ispace-nodimispacep ispace))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled dim-equiv-to-binadd-p-when-dimp
@@ -1515,3 +1889,24 @@
                    (proof (mv-nth 1 (unarize-dims-in-shape shape)))
                    (concl.shp1 shape)
                    (concl.shp2 (mv-nth 0 (unarize-dims-in-shape shape))))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled shape-equiv-to-nullbinappend-p-when-shapep
+  :short "Every shape is equivalent to one
+          with only binary or empty concatenations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This validates the intention of
+     rules @('append1') and @('append3m'),
+     described in @(see shape/ispace-equiv-infrules)."))
+  (implies (shapep shape)
+           (shape-equiv-to-nullbinappend-p shape))
+  :use ((:instance shape-equiv-to-nullbinappend-p-suff
+                   (shape1 (mv-nth 0 (nullbinarize-appends-in-shape shape))))
+        (:instance shp=-when-proof-validp
+                   (proof (mv-nth 1 (nullbinarize-appends-in-shape shape)))
+                   (concl.shp1 shape)
+                   (concl.shp2 (mv-nth 0 (nullbinarize-appends-in-shape
+                                          shape))))))
