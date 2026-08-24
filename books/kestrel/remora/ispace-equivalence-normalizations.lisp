@@ -1394,7 +1394,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define nullbinarize-shape-append ((shapes shape-listp))
+(define nullbinarize-append-shapes ((shapes shape-listp))
   :returns (mv (new-shape shapep)
                (proof shp=-proofp))
   :short "Turn a list of shapes in a concatenation
@@ -1441,7 +1441,7 @@
         (t (b* ((shapes1 (cons (shape-append (list (car shapes)
                                                    (cadr shapes)))
                                (cddr shapes)))
-                ((mv new-shape proof) (nullbinarize-shape-append shapes1)))
+                ((mv new-shape proof) (nullbinarize-append-shapes shapes1)))
              (mv new-shape
                  (make-shp=-proof-trans
                   :s1 (shape-append shapes)
@@ -1457,7 +1457,7 @@
 
   ///
 
-  (defret shp=-proof-validp-of-nullbinarize-shape-append
+  (defret shp=-proof-validp-of-nullbinarize-append-shapes
     (implies (shape-listp shapes)
              (shp=-proof-validp proof
                                 (shape-append shapes)
@@ -1470,7 +1470,7 @@
                                 shp=-append1-validp
                                 shp=-append3m-validp))))
 
-  (defret shape-nullbinappendp-of-nullbinarize-shape-append
+  (defret shape-nullbinappendp-of-nullbinarize-append-shapes
     (implies (shape-list-nullbinappendp shapes)
              (shape-nullbinappendp new-shape))
     :hints (("Goal"
@@ -1481,21 +1481,21 @@
                         (shape-append (list (car shapes)
                                             (cadr shapes))))))))
 
-  (defret shape-unidimsp-of-nullbinarize-shape-append
+  (defret shape-unidimsp-of-nullbinarize-append-shapes
     (implies (shape-list-unidimsp shapes)
              (shape-unidimsp new-shape))
     :hints (("Goal"
              :induct t
              :in-theory (enable* ast-unidimsp-rules))))
 
-  (defret shape-nosplicep-of-nullbinarize-shape-append
+  (defret shape-nosplicep-of-nullbinarize-append-shapes
     (implies (shape-list-nosplicep shapes)
              (shape-nosplicep new-shape))
     :hints (("Goal"
              :induct t
              :in-theory (enable* ast-nosplicep-rules))))
 
-  (defret shape-nodimispacep-of-nullbinarize-shape-append
+  (defret shape-nodimispacep-of-nullbinarize-append-shapes
     (implies (shape-list-nodimispacep shapes)
              (shape-nodimispacep new-shape))
     :hints (("Goal"
@@ -1541,7 +1541,7 @@
      :append (b* (((mv new-shapes proof)
                    (nullbinarize-append-in-shape-list shape.shapes))
                   ((mv new-shape proof1)
-                   (nullbinarize-shape-append new-shapes)))
+                   (nullbinarize-append-shapes new-shapes)))
                (mv new-shape
                    (make-shp=-proof-trans
                     :s1 (shape-append shape.shapes)
