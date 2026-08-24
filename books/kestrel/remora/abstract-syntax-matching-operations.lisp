@@ -221,7 +221,15 @@
                                    :type (type-sigma->body type))
    :sigman (make-ispacevarlist+type :vars (type-sigman->params type)
                                     :type (type-sigman->body type))
-   :otherwise (reserr nil)))
+   :otherwise (reserr nil))
+
+  ///
+
+  (defret consp-of-vars-of-type-match-sum
+    (implies (not (reserrp vars+type))
+             (consp (ispacevarlist+type->vars vars+type)))
+    :hints (("Goal" :in-theory (enable type-match-sum)))
+    :rule-classes ((:rewrite) (:type-prescription))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -241,8 +249,7 @@
   (b* (((unless (expr-case expr :array)) (reserr nil))
        ((expr-array expr) expr)
        ((unless (endp expr.dims)) (reserr nil))
-       ((unless (and (consp expr.atoms)
-                     (endp (cdr expr.atoms))))
+       ((unless (endp (cdr expr.atoms)))
         (reserr nil))
        (atom (car expr.atoms))
        ((unless (atom-case atom :box)) (reserr nil))

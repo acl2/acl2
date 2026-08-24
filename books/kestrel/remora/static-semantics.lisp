@@ -17,6 +17,7 @@
 (include-book "ispace-equivalence")
 (include-book "ispace-equivalence-derived-rules")
 (include-book "ispace-equivalence-normalizations")
+(include-book "type-equivalence")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -38,4 +39,5 @@
                     type-checker
                     ispace-equivalence
                     ispace-equivalence-derived-rules
-                    ispace-equivalence-normalizations))
+                    ispace-equivalence-normalizations
+                    type-equivalence))
