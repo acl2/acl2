@@ -221,7 +221,15 @@
                                    :type (type-sigma->body type))
    :sigman (make-ispacevarlist+type :vars (type-sigman->params type)
                                     :type (type-sigman->body type))
-   :otherwise (reserr nil)))
+   :otherwise (reserr nil))
+
+  ///
+
+  (defret consp-of-vars-of-type-match-sum
+    (implies (not (reserrp vars+type))
+             (consp (ispacevarlist+type->vars vars+type)))
+    :hints (("Goal" :in-theory (enable type-match-sum)))
+    :rule-classes ((:rewrite) (:type-prescription))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
