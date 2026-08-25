@@ -2038,7 +2038,7 @@
             (t (make-expr-tappn :fun fun :args args))))
     :measure (abnf::tree-count tree))
 
-  ;; iapp-exp = "i-app" ws exp *( ws ispace )
+  ;; iapp-exp = "i-app" ws exp 1*( ws ispace )
   (define abs-iapp-exp ((tree abnf::treep))
     :returns (e expr-resultp)
     :short "Abstract an @('iapp-exp') to
@@ -2056,10 +2056,11 @@
          ((okf fun-tree) (abnf::check-tree-list-1 sub.3rd))
          ((okf fun) (abs-exp fun-tree))
          ((okf args) (abs-*-ws-ispace sub.4th)))
-      (if (and (consp args)
-               (endp (cdr args)))
-          (make-expr-iapp :fun fun :arg (car args))
-        (make-expr-iappn :fun fun :args args)))
+      (cond ((endp args)
+             (reserrf (list :iapp-exp-no-args fun)))
+            ((endp (cdr args))
+             (make-expr-iapp :fun fun :arg (car args)))
+            (t (make-expr-iappn :fun fun :args args))))
     :measure (abnf::tree-count tree))
 
   ;; unbox-exp = "unbox" ws "(" ws unbox-spec ws ")" ws exp

@@ -1545,11 +1545,14 @@
 
   ; Guard verification is deferred to here (:VERIFY-GUARDS NIL above) so that
   ; CONSP-OF-UNIQ-ATOM-LIST, in UNIQ-ATOM-LIST's ///, is available to it.
-  ; The :APPN and :TAPPN cases need the two-or-more-ness of the rebuilt argument
-  ; lists; both follow (through LEN->=-2-OF-UNIQ-EXPR-LIST and
-  ; LEN-OF-TYPE-LIST-RENAME-ALL-VARS, all enabled) from the respective
-  ; EXPR-APPN-REQUIREMENTS / EXPR-TAPPN-REQUIREMENTS, so no hints are needed.
-  (verify-guards uniq-expr)
+  ; The :APPN, :TAPPN, and :IAPPN cases need the two-or-more-ness of the rebuilt
+  ; argument lists, each following from the respective
+  ; EXPR-{APPN,TAPPN,IAPPN}-REQUIREMENTS through a length-preservation rule:
+  ; LEN->=-2-OF-UNIQ-EXPR-LIST and LEN-OF-TYPE-LIST-RENAME-ALL-VARS are enabled,
+  ; but LEN-OF-ISPACE-LIST-RENAME-ISPACE-VARS (deffold-map-generated) is disabled,
+  ; so we enable it here.
+  (verify-guards uniq-expr
+    :hints (("Goal" :in-theory (enable len-of-ispace-list-rename-ispace-vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

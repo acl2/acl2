@@ -954,8 +954,7 @@
        they always contain two or more arguments
        (because there must be at least one argument,
        and if there is just one we use the unary forms);
-       this fixtype captures this requirement for @(':appn') and @(':tappn'),
-       but not yet for @(':iappn').")
+       this fixtype captures this requirement.")
      (xdoc::p
       "The @(':capp') summand is sugar,
        but it allows zero arguments (expressions, types, or ispaces),
@@ -1017,7 +1016,11 @@
     (:iapp ((fun expr)
             (arg ispace)))
     (:iappn ((fun expr)
-             (args ispace-list))) ; two or more
+             (args ispace-list
+                   :reqfix (if (>= (len args) 2)
+                               args
+                             (list (ispace-fix nil) (ispace-fix nil)))))
+     :require (>= (len args) 2))
     (:capp ((fun expr)
             (targs type-list-option)
             (iargs ispace-list-option)
@@ -1085,6 +1088,19 @@
       :rule-classes :type-prescription
       :use (:instance expr-tappn-requirements (x expr))
       :disable expr-tappn-requirements
+      :enable len)
+
+    (defrule consp-of-expr-iappn->args
+      (consp (expr-iappn->args expr))
+      :rule-classes :type-prescription
+      :use (:instance expr-iappn-requirements (x expr))
+      :disable expr-iappn-requirements)
+
+    (defruled consp-of-cdr-of-expr-iappn->args
+      (consp (cdr (expr-iappn->args expr)))
+      :rule-classes :type-prescription
+      :use (:instance expr-iappn-requirements (x expr))
+      :disable expr-iappn-requirements
       :enable len))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
