@@ -35,6 +35,7 @@
 (include-book "std/util/defprojection" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 (include-book "system/pseudo-event-form-listp" :dir :system)
+(include-book "tools/rulesets" :dir :system)
 
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/utilities/msgp" :dir :system))
@@ -1615,11 +1616,34 @@
 
 ;;;;;;;;;;
 
+(define defind-irule-valid-fn-names ((infos defind-irule-info-listp)
+                                     (name symbolp))
+  :returns (fn-names symbol-listp)
+  :short "Names of the @('p[l[k]]-rule[k]-validp') functions
+          for a list of rules."
+  (b* (((when (endp infos)) nil)
+       ((defind-irule-info info) (car infos)))
+    (cons (defind-irule-valid-fn-name
+            (defind-conclusion-info->name info.conclusion) info.name name)
+          (defind-irule-valid-fn-names (cdr infos) name))))
+
+;;;;;;;;;;
+
 (define defind-proof-valid-fn-name ((pred-name symbolp) (name symbolp))
   :returns (fn-name symbolp)
   :short "Name of a @('p[i]-proof-validp')."
   (packn-pos (list (defind-proof-type-name pred-name name) '-validp)
              (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-valid-fn-names ((pred-names symbol-listp) (name symbolp))
+  :returns (fn-names symbol-listp)
+  :short "Names of the @('p[i]-proof-validp') functions
+          for a list of predicates."
+  (cond ((endp pred-names) nil)
+        (t (cons (defind-proof-valid-fn-name (car pred-names) name)
+                 (defind-proof-valid-fn-names (cdr pred-names) name)))))
 
 ;;;;;;;;;;
 
@@ -2192,7 +2216,7 @@
           the @('p[l[k]]-rule[k]') theorems."
   (packn-pos (list (symbol-lfix name) '-rules) (symbol-lfix name)))
 
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;
 
 (define defind-minimality-section-name ((name symbolp))
   :returns (topic symbolp)
@@ -2200,6 +2224,14 @@
           the constrained functions, constraints, and theorems
           for the minimality of the predicates."
   (packn-pos (list (symbol-lfix name) '-minimal) (symbol-lfix name)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define defind-validp-ruleset-name ((name symbolp))
+  :returns (ruleset-name symbolp)
+  :short "Name of the ruleset with the @('p[l[k]]-rule[k]-validp')
+          and @('p[i]-proof-validp') functions."
+  (packn-pos (list (symbol-lfix name) '-validp-defs) (symbol-lfix name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4015,6 +4047,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-gen-validp-ruleset ((pred-infos defind-pred-info-listp)
+                                   (irule-infos defind-irule-info-listp)
+                                   (name symbolp)
+                                   (print evmac-input-print-p))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate the ruleset with the @('p[l[k]]-rule[k]-validp')
+          and @('p[i]-proof-validp') functions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @(tsee def-ruleset) event checks that
+     the names designate existing rules,
+     so it must come after the definitions of the functions."))
+  (b* ((ruleset-name (defind-validp-ruleset-name name))
+       (fn-names (append (defind-irule-valid-fn-names irule-infos name)
+                         (defind-proof-valid-fn-names
+                           (defind-pred-info-list->name pred-infos) name)))
+       (ruleset-event `(def-ruleset ,ruleset-name ',fn-names))
+       (print-event?
+        (and (evmac-input-print->= print :result)
+             `((cw-event "Ruleset ~x0.~%" ',ruleset-name)))))
+    (cons ruleset-event print-event?)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-gen-pred ((pred-info defind-pred-infop)
                          (irule-infos defind-irule-info-listp)
                          (standalonep booleanp)
@@ -5666,6 +5723,8 @@
        (proof-valid-events
         (defind-gen-proof-valid-fns
           pred-infos irule-infos leveled-cliques name xdocp print))
+       (validp-ruleset-events
+        (defind-gen-validp-ruleset pred-infos irule-infos name print))
        ((mv pred-events pred-thm-events pred-print-events)
         (defind-gen-preds
           pred-infos irule-infos leveled-cliques name xdocp print))
@@ -5694,6 +5753,7 @@
                            proof-type-events
                            irule-valid-events
                            proof-valid-events
+                           validp-ruleset-events
                            pred-events
                            pred-thms-events
                            pred-print-events
