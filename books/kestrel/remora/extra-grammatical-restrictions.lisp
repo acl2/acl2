@@ -918,21 +918,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define unbox-spec-value-binder ((cst abnf::treep))
+(define unbox-spec-expr-binder ((cst abnf::treep))
   :returns (ident? abnf::tree-optionp)
-  :short "Value binder of an @('unbox-spec') CST, if any."
+  :short "Expression binder of an @('unbox-spec') CST, if any."
   :long
   (xdoc::topstring
    (xdoc::p
     "The rule @('unbox-spec') is defined by
      one concatenation of four repetitions,
      the second of which consists of
-     the identifier that binds the unboxed value.
+     the identifier that binds the unboxed expression value.
      If the CST is a non-leaf tree with four lists of branches,
      the second of which contains exactly one tree,
      we return that tree,
      which for a CST matching @('unbox-spec')
-     is the value binder identifier CST;
+     is the expression binder identifier CST;
      otherwise we return @('nil')."))
   (b* (((unless (abnf::tree-case cst :nonleaf)) nil)
        (branchess (abnf::tree-nonleaf->branches cst))
@@ -943,37 +943,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define-sk cst-unbox-value-binders-not-dollar-initial-p ((cst abnf::treep))
+(define-sk cst-unbox-expr-binders-not-dollar-initial-p ((cst abnf::treep))
   :returns (yes/no booleanp)
   :short "Check if a CST does not contain any @('unbox-spec') CSTs
-          whose value binder identifiers start with @('$')."
+          whose expression binder identifiers start with @('$')."
   :long
   (xdoc::topstring
    (xdoc::p
     "An identifier may begin with @('$'),
-     so the value binder of an @('unbox-spec')
+     so the expression binder of an @('unbox-spec')
      may look like a dimension @('ispace-var'),
      or like the beginning of one.
      A parser must match the @('1*( ispace-var ws )') repetition
      of @('unbox-spec') greedily, without backtracking:
      every @('$')-initial token is consumed by the repetition,
-     so an @('unbox-spec') whose value binder starts with @('$')
+     so an @('unbox-spec') whose expression binder starts with @('$')
      is rejected.")
    (xdoc::p
     "This matches [impl],
-     whose parser parses one or more ispace binders and then the value binder,
+     whose parser parses one or more ispace binders and then the expression binder,
      with no backtracking between the two:
      e.g. @('($i $x e)') fails there,
      with both @('$i') and @('$x') consumed as ispace binders
      and then no identifier found.
-     Note that [impl] rejects every @('$')-initial value binder,
+     Note that [impl] rejects every @('$')-initial expression binder,
      not just the ispace-var-shaped ones:
      e.g. a binder @('$5x') (which is not an @('ispace-var'),
      since @('5') cannot start an identifier)
      also fails there,
      because the @('$') is consumed as the start of a further ispace binder,
      with no backtracking when the rest fails.
-     Thus the restriction excludes exactly the @('$')-initial value binders.")
+     Thus the restriction excludes exactly the @('$')-initial expression binders.")
    (xdoc::p
     "Binders starting with @('@'),
      which is the other sigil of @('ispace-var'),
@@ -987,12 +987,12 @@
      (the numbers of binders and expressions must add up).
      The restriction just removes, from the language,
      the strings whose (unique) CSTs
-     have @('$')-initial value binders,
+     have @('$')-initial expression binders,
      which [impl] rejects."))
   (forall (cst-unbox)
           (implies (and (set::in cst-unbox (abnf::trees-in-tree cst))
                         (cst-matchp cst-unbox "unbox-spec"))
-                   (b* ((cst-ident (unbox-spec-value-binder cst-unbox)))
+                   (b* ((cst-ident (unbox-spec-expr-binder cst-unbox)))
                      (implies cst-ident
                               (not (prefixp
                                     (list (char-code #\$))
