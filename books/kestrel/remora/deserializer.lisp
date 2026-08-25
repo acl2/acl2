@@ -25,15 +25,18 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "[impl] serializes its internal ASTs to JSON
-     (currently, only post-parse ASTs).
+    "[impl] serializes its internal ASTs to JSON.
      Here we define the inverse mapping, from "
     (xdoc::seetopic "json::json" "JSON values")
     " to the ASTs defined as "
     (xdoc::seetopic "abstract-syntax-trees" "fixtypes")
     ", so that ASTs produced by [impl] can be recreated in ACL2.")
    (xdoc::p
-    "Currently, TERecord, Struct, and FieldProj ASTs from [impl]
+    "We currently deserialize only "
+    (xdoc::seetopic "ast-huncheckedp" "[impl]'s unchecked ASTs")
+    ".")
+   (xdoc::p
+    "TERecord, Struct, and FieldProj ASTs from [impl]
      are not yet supported in ACL2.")
    (xdoc::p
     "Each conversion function is named @('X-fromJSON'),
@@ -45,8 +48,10 @@
      does not correspond to a valid AST,
      in which case @('x') is an irrelevant placeholder value of the
      fixtype;
-     otherwise @('erp') is @('nil') and @('x') is the resulting AST.
-     JSON objects are dispatched on their @('\"tag\"') member,
+     otherwise @('erp') is @('nil') and @('x') is the resulting AST,
+     which is in the "
+    (xdoc::seetopic "abstract-syntax-haskell" "subset corresponding to [impl]")
+    ". JSON objects are dispatched on their @('\"tag\"') member,
      whose string value names the [impl] AST node being decoded."))
   :order-subtopics t
   :default-parent t)
@@ -282,7 +287,18 @@
   :verify-guards nil
   :hints (("Goal" :in-theory (enable value-count-of-object-member-value)))
   ///
-  (verify-guards shape-fromJSON))
+  (verify-guards shape-fromJSON)
+
+  (defret-mutual ast-huncheckedp-of-shape-fromJSON
+    (defret shape-huncheckedp-of-shape-fromJSON
+        (implies (not erp)
+                 (shape-huncheckedp x))
+      :fn shape-fromJSON)
+    (defret shape-list-huncheckedp-of-shape-list-fromJSON
+        (implies (not erp)
+                 (shape-list-huncheckedp x))
+      :fn shape-list-fromJSON)
+    :hints (("Goal" :in-theory (enable* ast-huncheckedp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -317,7 +333,14 @@
                   (t
                    (acl2::reterr (msg "~x0 is not a recognized tag for an ISpace." tag)))))
             (acl2::reterr (msg "The \"tag\" member of an ISpace object must be a string, but ~x0 is not." tag-j))))
-      (acl2::reterr (msg "A JSON value representing an ISpace must be a JSON object, but ~x0 is not." j)))))
+      (acl2::reterr (msg "A JSON value representing an ISpace must be a JSON object, but ~x0 is not." j))))
+
+  ///
+
+  (defret ispace-huncheckedp-of-ispace-fromJSON
+      (implies (not erp)
+               (ispace-huncheckedp x))
+    :hints (("Goal" :in-theory (enable* ast-huncheckedp-rules)))))
 
 (define ispace-list-fromJSON ((js json::value-listp))
   :returns (mv erp (x ispace-listp))
@@ -330,7 +353,14 @@
              ((acl2::erp tl)
               (ispace-list-fromJSON (cdr js))))
           (acl2::retok (cons hd tl)))
-      (acl2::retok nil))))
+      (acl2::retok nil)))
+
+  ///
+
+  (defret ispace-list-huncheckedp-of-ispace-list-fromJSON
+      (implies (not erp)
+               (ispace-list-huncheckedp x))
+    :hints (("Goal" :in-theory (enable* ast-huncheckedp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -604,7 +634,21 @@
 
   (verify-guards type-fromJSON
       :hints (("Goal" :in-theory (enable not-cdr-when-not-consp-cdr-and-type-var-listp
-                                         not-cdr-when-not-consp-cdr-and-ispace-var-listp)))))
+                                         not-cdr-when-not-consp-cdr-and-ispace-var-listp))))
+
+  (defret-mutual ast-huncheckedp-of-type-fromJSON
+    (defret type-huncheckedp-of-type-fromJSON
+        (implies (not erp)
+                 (type-huncheckedp x))
+      :fn type-fromJSON)
+    (defret type-list-huncheckedp-of-type-list-fromJSON
+        (implies (not erp)
+                 (type-list-huncheckedp x))
+      :fn type-list-fromJSON)
+    :hints (("Goal" :in-theory (enable* ast-huncheckedp-rules
+                                        make-type-forall/foralln
+                                        make-type-pi/pin
+                                        make-type-sigma/sigman)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -699,7 +743,14 @@
                   (t
                    (acl2::reterr (msg "~x0 is not a recognized tag for a PatBase." tag)))))
             (acl2::reterr (msg "The \"tag\" member of a PatBase object must be a string, but ~x0 is not." tag-j))))
-      (acl2::reterr (msg "A JSON value representing a PatBase must be a JSON object, but ~x0 is not." j)))))
+      (acl2::reterr (msg "A JSON value representing a PatBase must be a JSON object, but ~x0 is not." j))))
+
+  ///
+
+  (defret var+type?-huncheckedp-of-var+type?-fromJSON
+      (implies (not erp)
+               (var+type?-huncheckedp x))
+    :hints (("Goal" :in-theory (enable* ast-huncheckedp-rules)))))
 
 (define var+type?-list-fromJSON ((js json::value-listp))
   :returns (mv erp (x var+type?-listp))
@@ -712,7 +763,14 @@
              ((acl2::erp tl)
               (var+type?-list-fromJSON (cdr js))))
           (acl2::retok (cons hd tl)))
-      (acl2::retok nil))))
+      (acl2::retok nil)))
+
+  ///
+
+  (defret var+type?-list-huncheckedp-of-var+type?-list-fromJSON
+      (implies (not erp)
+               (var+type?-list-huncheckedp x))
+    :hints (("Goal" :in-theory (enable* ast-huncheckedp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1228,7 +1286,35 @@
   :verify-guards nil
   :hints (("Goal" :in-theory (enable value-count-of-object-member-value)))
   ///
-  (verify-guards expr-fromJSON))
+  (verify-guards expr-fromJSON)
+
+  (defret-mutual ast-huncheckedp-of-expr-fromJSON
+    (defret atom-huncheckedp-of-atom-fromJSON
+        (implies (not erp)
+                 (atom-huncheckedp x))
+      :fn atom-fromJSON)
+    (defret atom-list-huncheckedp-of-atom-list-fromJSON
+        (implies (not erp)
+                 (atom-list-huncheckedp x))
+      :fn atom-list-fromJSON)
+    (defret bind-huncheckedp-of-bind-fromJSON
+      (implies (not erp)
+               (bind-huncheckedp x))
+      :fn bind-fromJSON)
+    (defret bind-list-huncheckedp-of-bind-list-fromJSON
+      (implies (not erp)
+               (bind-list-huncheckedp x))
+      :fn bind-list-fromJSON)
+    (defret expr-huncheckedp-of-expr-fromJSON
+      (implies (not erp)
+               (expr-huncheckedp x))
+      :fn expr-fromJSON)
+    (defret expr-list-huncheckedp-of-expr-list-fromJSON
+      (implies (not erp)
+               (expr-list-huncheckedp x))
+      :fn expr-list-fromJSON)
+    :skip-others t
+    :hints (("Goal" :in-theory (enable* ast-huncheckedp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1296,7 +1382,14 @@
                   (t
                    (acl2::reterr (msg "~x0 is not a recognized tag for a DeclBase." tag)))))
             (acl2::reterr (msg "The \"tag\" member of a DeclBase object must be a string, but ~x0 is not." tag-j))))
-      (acl2::reterr (msg "A JSON value representing a DeclBase must be a JSON object, but ~x0 is not." j)))))
+      (acl2::reterr (msg "A JSON value representing a DeclBase must be a JSON object, but ~x0 is not." j))))
+
+  ///
+
+  (defret decl-huncheckedp-of-decl-fromJSON
+      (implies (not erp)
+               (decl-huncheckedp x))
+    :hints (("Goal" :in-theory (enable* ast-huncheckedp-rules)))))
 
 (define decl-list-fromJSON ((js json::value-listp))
   :returns (mv erp (x decl-listp))
@@ -1309,7 +1402,14 @@
              ((acl2::erp tl)
               (decl-list-fromJSON (cdr js))))
           (acl2::retok (cons hd tl)))
-      (acl2::retok nil))))
+      (acl2::retok nil)))
+
+  ///
+
+  (defret decl-list-huncheckedp-of-decl-list-fromJSON
+      (implies (not erp)
+               (decl-list-huncheckedp x))
+    :hints (("Goal" :in-theory (enable* ast-huncheckedp-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1344,4 +1444,11 @@
                   (t
                    (acl2::reterr (msg "~x0 is not a recognized tag for a ProgBase." tag)))))
             (acl2::reterr (msg "The \"tag\" member of a ProgBase object must be a string, but ~x0 is not." tag-j))))
-      (acl2::reterr (msg "A JSON value representing a ProgBase must be a JSON object, but ~x0 is not." j)))))
+      (acl2::reterr (msg "A JSON value representing a ProgBase must be a JSON object, but ~x0 is not." j))))
+
+  ///
+
+  (defret file-huncheckedp-of-file-fromJSON
+      (implies (not erp)
+               (file-huncheckedp x))
+    :hints (("Goal" :in-theory (enable* ast-huncheckedp-rules)))))
