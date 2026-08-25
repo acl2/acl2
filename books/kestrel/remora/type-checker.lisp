@@ -1590,8 +1590,7 @@
                                 :body be.expr
                                 :type? type)))
      :bracket
-     (b* (((unless (consp expr.exprs)) (reserr nil))
-          ((ok (types+exprs es)) (check-expr-list expr.exprs senv))
+     (b* (((ok (types+exprs es)) (check-expr-list expr.exprs senv))
           ((unless (type-list-all-equivp es.types)) (reserr nil))
           (type (car es.types))
           ((ok (type+ispace array)) (type-match-array type)))
