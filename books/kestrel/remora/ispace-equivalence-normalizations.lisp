@@ -1297,8 +1297,8 @@
                                    new-ispaces))
       :fn unarize-dims-in-ispace-list)
     :hints (("Goal"
-             :in-theory (acl2::e/d* (shape/ispace-equiv-infrules-validp-defs)
-                                    (shp=-proof-validp-of-unarize-shape-dims)))
+             :in-theory (e/d* (shape/ispace-equiv-infrules-validp-defs)
+                              (shp=-proof-validp-of-unarize-shape-dims)))
             '(:use ((:instance shp=-proof-validp-of-unarize-shape-dims
                                (dims (shape-dims->dims shape)))))))
 
