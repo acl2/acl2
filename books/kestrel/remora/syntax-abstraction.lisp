@@ -2013,7 +2013,7 @@
          (reserrf (list :frame-exp-shape (len treess))))))
     :measure (abnf::tree-count tree))
 
-  ;; tapp-exp = "t-app" ws exp *( ws type )
+  ;; tapp-exp = "t-app" ws exp 1*( ws type )
   (define abs-tapp-exp ((tree abnf::treep))
     :returns (e expr-resultp)
     :short "Abstract a @('tapp-exp') to
@@ -2031,10 +2031,11 @@
          ((okf fun-tree) (abnf::check-tree-list-1 sub.3rd))
          ((okf fun) (abs-exp fun-tree))
          ((okf args) (abs-*-ws-type sub.4th)))
-      (if (and (consp args)
-               (endp (cdr args)))
-          (make-expr-tapp :fun fun :arg (car args))
-        (make-expr-tappn :fun fun :args args)))
+      (cond ((endp args)
+             (reserrf (list :tapp-exp-no-args fun)))
+            ((endp (cdr args))
+             (make-expr-tapp :fun fun :arg (car args)))
+            (t (make-expr-tappn :fun fun :args args))))
     :measure (abnf::tree-count tree))
 
   ;; iapp-exp = "i-app" ws exp *( ws ispace )

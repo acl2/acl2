@@ -990,7 +990,13 @@
   (b* (((var-renamings r) r))
     (type-list-rename-type-vars
      (type-list-rename-ispace-vars tys r.dim r.shape)
-     r.atom r.array)))
+     r.atom r.array))
+  ///
+  (defret len-of-type-list-rename-all-vars
+    (equal (len new-tys)
+           (len tys))
+    :hints (("Goal" :in-theory (enable len-of-type-list-rename-type-vars
+                                       len-of-type-list-rename-ispace-vars)))))
 
 (define type-list-option-rename-all-vars ((tys? type-list-optionp)
                                           (r var-renamings-p))
@@ -1539,9 +1545,10 @@
 
   ; Guard verification is deferred to here (:VERIFY-GUARDS NIL above) so that
   ; CONSP-OF-UNIQ-ATOM-LIST, in UNIQ-ATOM-LIST's ///, is available to it.
-  ; The :APPN case needs the two-or-more-ness of the uniquified argument list;
-  ; that follows from EXPR-APPN-REQUIREMENTS through the (linear, enabled)
-  ; LEN->=-2-OF-UNIQ-EXPR-LIST, both on by default, so no hints are needed.
+  ; The :APPN and :TAPPN cases need the two-or-more-ness of the rebuilt argument
+  ; lists; both follow (through LEN->=-2-OF-UNIQ-EXPR-LIST and
+  ; LEN-OF-TYPE-LIST-RENAME-ALL-VARS, all enabled) from the respective
+  ; EXPR-APPN-REQUIREMENTS / EXPR-TAPPN-REQUIREMENTS, so no hints are needed.
   (verify-guards uniq-expr)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
