@@ -2722,49 +2722,57 @@
      the statuses established by the other three."))
   (implies (shapep shape)
            (shape-equiv-to-unidims-nullbinappend-nosplice-nodimispace-p shape))
-  :use ((:instance shape-equiv-to-unidims-nullbinappend-nosplice-nodimispace-p-suff
-                   (shape1 (mv-nth 0 (undim-in-shape
-                                      (mv-nth 0 (unsplice-in-shape
-                                                 (mv-nth 0 (nullbinarize-append-in-shape
-                                                            (mv-nth 0 (unarize-dims-in-shape
-                                                                       shape))))))))))
-        (:instance shp=-when-proof-validp
-                   (proof (mv-nth 1 (unarize-dims-in-shape shape)))
-                   (concl.shp1 shape)
-                   (concl.shp2 (mv-nth 0 (unarize-dims-in-shape shape))))
-        (:instance shp=-when-proof-validp
-                   (proof (mv-nth 1 (nullbinarize-append-in-shape
-                                     (mv-nth 0 (unarize-dims-in-shape
-                                                shape)))))
-                   (concl.shp1 (mv-nth 0 (unarize-dims-in-shape shape)))
-                   (concl.shp2 (mv-nth 0 (nullbinarize-append-in-shape
-                                          (mv-nth 0 (unarize-dims-in-shape
-                                                     shape))))))
-        (:instance shp=-when-proof-validp
-                   (proof (mv-nth 1 (unsplice-in-shape
-                                     (mv-nth 0 (nullbinarize-append-in-shape
-                                                (mv-nth 0 (unarize-dims-in-shape
-                                                           shape)))))))
-                   (concl.shp1 (mv-nth 0 (nullbinarize-append-in-shape
-                                          (mv-nth 0 (unarize-dims-in-shape
-                                                     shape)))))
-                   (concl.shp2 (mv-nth 0 (unsplice-in-shape
-                                          (mv-nth 0 (nullbinarize-append-in-shape
-                                                     (mv-nth 0 (unarize-dims-in-shape
-                                                                shape))))))))
-        (:instance shp=-when-proof-validp
-                   (proof (mv-nth 1 (undim-in-shape
-                                     (mv-nth 0 (unsplice-in-shape
-                                                (mv-nth 0 (nullbinarize-append-in-shape
-                                                           (mv-nth 0 (unarize-dims-in-shape
-                                                                      shape)))))))))
-                   (concl.shp1 (mv-nth 0 (unsplice-in-shape
-                                          (mv-nth 0 (nullbinarize-append-in-shape
-                                                     (mv-nth 0 (unarize-dims-in-shape
-                                                                shape)))))))
-                   (concl.shp2 (mv-nth 0 (undim-in-shape
-                                          (mv-nth 0 (unsplice-in-shape
-                                                     (mv-nth 0 (nullbinarize-append-in-shape
-                                                                (mv-nth 0 (unarize-dims-in-shape
-                                                                           shape)))))))))))
+  :use ((:instance
+         shape-equiv-to-unidims-nullbinappend-nosplice-nodimispace-p-suff
+         (shape1
+          (mv-nth 0 (undim-in-shape
+                     (mv-nth 0 (unsplice-in-shape
+                                (mv-nth 0 (nullbinarize-append-in-shape
+                                           (mv-nth 0 (unarize-dims-in-shape
+                                                      shape))))))))))
+        (:instance
+         shp=-when-proof-validp
+         (proof (mv-nth 1 (unarize-dims-in-shape shape)))
+         (concl.shp1 shape)
+         (concl.shp2 (mv-nth 0 (unarize-dims-in-shape shape))))
+        (:instance
+         shp=-when-proof-validp
+         (proof
+          (mv-nth 1 (nullbinarize-append-in-shape
+                     (mv-nth 0 (unarize-dims-in-shape shape)))))
+         (concl.shp1 (mv-nth 0 (unarize-dims-in-shape shape)))
+         (concl.shp2
+          (mv-nth 0 (nullbinarize-append-in-shape
+                     (mv-nth 0 (unarize-dims-in-shape shape))))))
+        (:instance
+         shp=-when-proof-validp
+         (proof
+          (mv-nth 1 (unsplice-in-shape
+                     (mv-nth 0 (nullbinarize-append-in-shape
+                                (mv-nth 0 (unarize-dims-in-shape shape)))))))
+         (concl.shp1
+          (mv-nth 0 (nullbinarize-append-in-shape
+                     (mv-nth 0 (unarize-dims-in-shape shape)))))
+         (concl.shp2
+          (mv-nth 0 (unsplice-in-shape
+                     (mv-nth 0 (nullbinarize-append-in-shape
+                                (mv-nth 0 (unarize-dims-in-shape shape))))))))
+        (:instance
+         shp=-when-proof-validp
+         (proof
+          (mv-nth 1 (undim-in-shape
+                     (mv-nth 0 (unsplice-in-shape
+                                (mv-nth 0 (nullbinarize-append-in-shape
+                                           (mv-nth 0 (unarize-dims-in-shape
+                                                      shape)))))))))
+         (concl.shp1
+          (mv-nth 0 (unsplice-in-shape
+                     (mv-nth 0 (nullbinarize-append-in-shape
+                                (mv-nth 0 (unarize-dims-in-shape shape)))))))
+         (concl.shp2
+          (mv-nth 0 (undim-in-shape
+                     (mv-nth 0 (unsplice-in-shape
+                                (mv-nth 0 (nullbinarize-append-in-shape
+                                           (mv-nth 0 (unarize-dims-in-shape
+                                                      shape)))))))))))
   :enable shp=-trans-swapped)

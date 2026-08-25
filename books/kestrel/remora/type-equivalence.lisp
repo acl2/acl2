@@ -51,12 +51,15 @@
      some additional inference rules are needed.")
    (xdoc::p
     "All the inference rules start with type premises about the variables,
-     for the same reason explained in @see dim-equiv-infrules).")
+     for the same reason explained in @(see dim-equiv-infrules),
+     except for the ispaces in the congruence rules for array types,
+     since they are known consequences of ispace equivalence
+     (see @(see shape/ispace-equiv-holds-only-on-shapes/ispaces)).")
    (xdoc::p
     "Following [thesis] and [arxiv], we start with reflexivity.
      We do not state symmetry and transitivity as explicit rules,
      because they should be derivable from the others
-     (given that [thesis] and [arvix] do not include them),
+     (given that [thesis] and [arxiv] do not include them),
      but we will ensure this is the case by way of formal proof.")
    (xdoc::p
     "Next we have congruence for array types,
