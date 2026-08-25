@@ -1234,8 +1234,62 @@ int main(void) {
   :with-output-off nil)
 
 (acl2::must-succeed*
-  ;; A self-referential struct type.
+  ;; A self-referential member is duplicated across the two struct types.
+  ;; Its initializer and accesses split into parallel left and right forms.
+  ;; Listing it in :right-members produces a warning but does not change that
+  ;; forced routing.
   (c$::input-files :files '("self-ref.c")
+                   :const *old*)
+
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z" "next")
+                     :new-tag "point_right")
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/self-ref.c"
+    :content "struct point {
+  int x;
+  struct point *next;
+  struct point **indirect;
+  struct point *children[2];
+};
+
+struct point_right {
+  int z;
+  struct point_right *next;
+  struct point_right **indirect;
+  struct point_right *children[2];
+};
+
+static struct point p = {.x = 1, .next = &p};
+
+static struct point_right p_0 = {.z = 2, .next = &p_0};
+
+int main(void) {
+  return p.next->x + p_0.next->z;
+}
+")
+
+  ;; A forced self-referential member may be the only name listed in
+  ;; :right-members; its right component still populates the right type.
+  (struct-type-split *old*
+                     *new-only-recursive*
+                     :struct-tag "point"
+                     :right-members ("next")
+                     :new-tag "point_right_only")
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; A splittable self-referential member promoted from an anonymous struct
+  ;; is rejected until the anonymous struct can be split across the target
+  ;; struct types.
+  (c$::input-files :files '("self-ref-anon.c")
                    :const *old*)
 
   (must-fail
@@ -1243,6 +1297,20 @@ int main(void) {
                        *new*
                        :struct-tag "point"
                        :right-members ("z")))
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; A named nonsplittable member type that refers to the target struct is
+  ;; handled by the existing in-place member splitting for that named type.
+  (c$::input-files :files '("self-ref-nested.c")
+                   :const *old*)
+
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "node"
+                     :right-members ("z")
+                     :new-tag "node_right")
 
   :with-output-off nil)
 

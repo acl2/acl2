@@ -297,6 +297,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define sts-direct-splittable-member-names
+  ((members c$::type-struni-member-listp)
+   (struct-uid c$::uidp))
+  :returns (names ident-setp)
+  :short "Names of directly splittable struct members."
+  :long
+  (xdoc::topstring-p
+   "Collect the names of members whose types
+    are splittable with respect to @('struct-uid').
+    We inspect only direct named members,
+    not members promoted from anonymous structs.")
+  (b* (((when (endp members)) nil)
+       ((c$::type-struni-member member) (first members))
+       (names (sts-direct-splittable-member-names
+                (rest members) struct-uid)))
+    (if (and member.name?
+             (eq (sts-splittablep member.type struct-uid) t))
+        (insert member.name? names)
+      names))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines type/type-list-struct-occurs-unsupported-p
   :short "Check whether the split struct type occurs
           in an unsupported context within types."
@@ -521,7 +544,7 @@
 (define sts-check-completion-members
   ((members c$::type-struni-member-listp)
    (struct-uid c$::uidp)
-   (entry-uid c$::uidp))
+   (targetp booleanp))
   :returns (er? maybe-msgp)
   :short "Check that the split struct type occurs in the members of a
           struct or union type only as a directly splittable member."
@@ -531,20 +554,37 @@
     or behind pointers) is supported: it is split in place when the enclosing type
     is a struct (see @(tsee struct-declon-sts-split)), and rejected later
     when the enclosing type is a union.
-    The exception is when the enclosing type is the split struct type
-    itself (@('entry-uid') equals @('struct-uid')),
-    i.e. a self-referential struct type, which is not supported.
-    A directly splittable member of an anonymous struct member
-    is also supported (split in place, registered under the enclosing
-    struct type); other occurrences of the split struct type within a member
-    (e.g. in a union or function type) are rejected.")
+    This includes the split struct type itself:
+    a directly splittable self-referential member is duplicated
+    across the left and right struct types.
+    In a non-target struct type, a directly splittable member
+    of an anonymous struct member is also supported
+    (split in place, registered under the enclosing struct type).
+    In the target type,
+    an occurrence promoted from an anonymous struct is rejected here.
+    Other occurrences of the split struct type within a member
+    (e.g. in a union or function type)
+    are rejected.")
   (b* (((when (endp members)) nil)
        ((c$::type-struni-member member) (first members))
-       ((when (eq (sts-splittablep member.type struct-uid) t))
-        (if (c$::uid-equal entry-uid struct-uid)
-            (msg$ "The split struct type may not contain itself as a member; ~
-                   self-referential struct types are not supported.")
-          (sts-check-completion-members (rest members) struct-uid entry-uid)))
+       (anonymous-occurs
+         (and targetp
+              (not member.name?)
+              (type-case
+                member.type
+                :struct
+                (c$::type-struni-tag/members-case
+                  member.type.tag/members
+                  :tagged nil
+                  :untagged
+                  (type-member-list-struct-occurs-unsupported-p
+                    member.type.tag/members.members struct-uid nil))
+                :otherwise nil)))
+       ((when anonymous-occurs)
+        (msg$ "A self-reference promoted from an anonymous struct ~
+               is not supported."))
+       ((when (sts-splittablep member.type struct-uid))
+        (sts-check-completion-members (rest members) struct-uid targetp))
        (occurs (type-struct-occurs-unsupported-p member.type struct-uid t))
        ((when (eq occurs :unknown))
         (msg$ "It cannot be determined whether the split struct type ~
@@ -554,7 +594,7 @@
                of a struct or union type only directly ~
                (possibly within arrays or behind pointers) as a member of a ~
                struct type, not e.g. in a union or function type.")))
-    (sts-check-completion-members (rest members) struct-uid entry-uid)))
+    (sts-check-completion-members (rest members) struct-uid targetp)))
 
 (define sts-check-completions
   ((completions c$::type-completions-p)
@@ -572,7 +612,10 @@
         (sts-check-completions (rest completions) struct-uid))
        (entry-uid (c$::uid-fix (car entry)))
        (members (c$::type-struni-member-list-fix (cdr entry)))
-       (msg? (sts-check-completion-members members struct-uid entry-uid))
+       (msg? (sts-check-completion-members
+               members
+               struct-uid
+               (c$::uid-equal entry-uid struct-uid)))
        ((when msg?) msg?))
     (sts-check-completions (rest completions) struct-uid)))
 
@@ -1174,9 +1217,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sts-split-inplace-member-declors
+(define sts-split-member-declors
   ((struct-declors struct-declor-listp)
    (enclosing-uid c$::uidp)
+   (freshenp booleanp)
    (member-names ident-setp)
    (st sts-split-statep))
   :guard (struct-declor-list-annop struct-declors)
@@ -1185,14 +1229,18 @@
                (right-declors struct-declor-listp)
                (member-names$ ident-setp)
                (st$ sts-split-statep))
-  :short "Split, in place, the declarators of a struct member
+  :short "Split the declarators of a struct member
           whose type is the split struct type."
   :long
   (xdoc::topstring-p
    "Each declarator stays on the left with its original name,
-    and is duplicated on the right with a fresh name
+    and is duplicated on the right.
+    When @('freshenp') is @('t'), the right declarator is given a fresh name
     (chosen to avoid the struct type's member names
     and the right names assigned so far, in @('member-names')).
+    When @('freshenp') is @('nil'), the name is preserved;
+    this is used for a self-referential member of the split struct type,
+    because the two declarations are placed in different struct types.
     The mapping from each original member name to its right name
     is recorded in the @('member-map') of the state,
     keyed by the unique identifier of the enclosing struct type.
@@ -1228,7 +1276,9 @@
                    sd
                    (sts-split-state->dialect st))))
        (name (declor->ident sd.declor?))
-       (right-name (fresh-ident name member-names))
+       (right-name (if freshenp
+                       (fresh-ident name member-names)
+                     name))
        (member-names (insert right-name member-names))
        (st (change-sts-split-state
              st
@@ -1237,14 +1287,18 @@
                                          right-name
                                          (sts-split-state->member-map st))))
        (left-declor (struct-declor-fix (car struct-declors)))
-       (right-declor (c$::change-struct-declor
-                       left-declor
-                       :declor? (c$::declor-rename sd.declor? right-name)))
+       (right-declor
+         (if freshenp
+             (c$::change-struct-declor
+               left-declor
+               :declor? (c$::declor-rename sd.declor? right-name))
+           left-declor))
        ((erp left-rest right-rest member-names st)
-        (sts-split-inplace-member-declors (cdr struct-declors)
-                                          enclosing-uid
-                                          member-names
-                                          st)))
+        (sts-split-member-declors (cdr struct-declors)
+                                  enclosing-uid
+                                  freshenp
+                                  member-names
+                                  st)))
     (retok (cons left-declor left-rest)
            (cons right-declor right-rest)
            member-names
@@ -1437,10 +1491,20 @@
         :member
         (b* (((erp left-arg right-arg? st)
               (expr-sts-split expr.arg st))
+             (result-splitp
+               (sts-splittablep
+                 (sts-expr-type expr)
+                 (sts-split-state->target-struct-uid st)))
              ((when right-arg?)
               ;; The argument is a split struct object/expression;
-              ;; select the member from the appropriate side.
-              (b* ((rightp (in expr.name (sts-split-state->right-set st)))
+              ;; a self-referential member is present in both sides and
+              ;; itself splits, while an ordinary member is selected from
+              ;; the appropriate side.
+              (b* (((when result-splitp)
+                    (retok (make-expr-member :arg left-arg :name expr.name)
+                           (make-expr-member :arg right-arg? :name expr.name)
+                           st))
+                   (rightp (in expr.name (sts-split-state->right-set st)))
                    (expr (if rightp
                            (b* ((member-expr (make-expr-member :arg right-arg?
                                                                :name expr.name)))
@@ -1455,9 +1519,7 @@
                                (make-expr-comma :first right-arg?
                                                 :next member-expr))))))
                 (retok expr nil st)))
-             ((when (eq (sts-splittablep (sts-expr-type expr)
-                                         (sts-split-state->target-struct-uid st))
-                        t))
+             ((when result-splitp)
               ;; The argument is not split, but this member access has
               ;; splittable type: it is a member of splittable type of a
               ;; (non-split) struct type, split in place.
@@ -1481,8 +1543,16 @@
         :memberp
         (b* (((erp left-arg right-arg? st)
               (expr-sts-split expr.arg st))
+             (result-splitp
+               (sts-splittablep
+                 (sts-expr-type expr)
+                 (sts-split-state->target-struct-uid st)))
              ((when right-arg?)
-              (b* ((rightp (in expr.name (sts-split-state->right-set st)))
+              (b* (((when result-splitp)
+                    (retok (make-expr-memberp :arg left-arg :name expr.name)
+                           (make-expr-memberp :arg right-arg? :name expr.name)
+                           st))
+                   (rightp (in expr.name (sts-split-state->right-set st)))
                    (expr (if rightp
                              (b* ((memberp-expr
                                     (make-expr-memberp :arg right-arg?
@@ -1498,9 +1568,7 @@
                                (make-expr-comma :first right-arg?
                                                 :next memberp-expr))))))
                 (retok expr nil st)))
-             ((when (eq (sts-splittablep (sts-expr-type expr)
-                                         (sts-split-state->target-struct-uid st))
-                        t))
+             ((when result-splitp)
               (b* ((right-name? (sts-split-member-right-name
                                   (sts-expr-type expr.arg) t expr.name st))
                    ((unless right-name?)
@@ -2526,12 +2594,7 @@
       (cond
         ;; A whole member of splittable type is initialized: split it in place.
         ((eq action :inplace)
-         (b* (((when splitp)
-               (retmsg$ "INTERNAL ERROR. ~
-                         A member of splittable type is initialized within ~
-                         the initializer of the split struct type itself.~%~@0"
-                        (context-msg-desiniter desiniter dialect)))
-              (split-subobjectp
+         (b* ((split-subobjectp
                 (and sub-type?
                      (eq (sts-splittablep
                            sub-type?
@@ -3507,6 +3570,8 @@
        based on the member names
        (unnamed members always go left;
        see @(tsee struct-declor-sts-rightp));
+       a self-referential member of splittable type is instead duplicated,
+       with its left and right types, across the two struct types;
        either side may end up with no declarators,
        in which case it should be discarded by the caller,
        except that a member declaration
@@ -3549,28 +3614,26 @@
                 st))
              ((when specquals-splitp)
               ;; The member has the split struct type (possibly within arrays
-              ;; or behind pointers); split it in place.
-              (b* (((when splitp)
-                    (retmsg$ "The split struct type may not contain ~
-                              itself as a member.~%~@0"
-                             (context-msg-struct-declon
-                               struct-declon
-                               (sts-split-state->dialect st))))
-                   ((unless enclosing-uid?)
+              ;; or behind pointers).  In an ordinary containing struct,
+              ;; split it in place and freshen the right member name.  In the
+              ;; target struct itself, put one copy (with the same member
+              ;; name) in each of the two resulting struct types.
+              (b* (((unless enclosing-uid?)
                     (retmsg$ "The split struct type may not be ~
                               a member of a union.~%~@0"
                              (context-msg-struct-declon
                                struct-declon
                                (sts-split-state->dialect st))))
                    ((erp left-declors right-declors member-names st)
-                    (sts-split-inplace-member-declors struct-declon.declors
-                                                      enclosing-uid?
-                                                      member-names
-                                                      st))
+                    (sts-split-member-declors struct-declon.declors
+                                              enclosing-uid?
+                                              (not splitp)
+                                              member-names
+                                              st))
                    ((erp attribs st)
                     (attrib-spec-list-sts-split struct-declon.attribs st)))
-                (retok nil
-                       t
+                (retok (mbe :logic (and splitp t) :exec splitp)
+                       (not splitp)
                        (c$::make-struct-declon-member
                          :extension struct-declon.extension
                          :specquals left-specquals
@@ -4949,6 +5012,20 @@
        ;; so they must be a fast alist.
        (completions (make-fast-alist
                       (c$::trans-ensemble-vinfo->completions info)))
+       (right-set (mergesort right-members))
+       ((mv - primary-members)
+        (c$::type-struni-tag/members->members
+          (c$::type-struct->tag/members primary-type)
+          primary-uid
+          completions))
+       (direct-splittable-members
+         (sts-direct-splittable-member-names primary-members primary-uid))
+       (selected-splittable-members
+         (intersect right-set direct-splittable-members))
+       ;; Directly splittable members of the target are forced into both
+       ;; output struct types, so they do not participate in ordinary member
+       ;; routing even when the user lists them in :right-members.
+       (right-set (difference right-set selected-splittable-members))
        (map (trans-ensemble->units code.trans-units))
        (blacklist (filepath-trans-unit-map-collect-idents map))
        (right-name
@@ -4957,7 +5034,7 @@
            (c$::irr-ident)))
        (st (make-sts-split-state
              :target-struct-uid primary-uid
-             :right-set (mergesort right-members)
+             :right-set right-set
              :right-name right-name
              :dialect (c$::ienv->dialect code.ienv)
              :ienv code.ienv
@@ -4969,6 +5046,14 @@
              :filepath (c$::irr-filepath)
              :member-map nil
              :completions completions))
+       (st (if (emptyp selected-splittable-members)
+               st
+             (sts-split-state-add-warning
+               (msg$ "The splittable self-referential members ~x0 were ~
+                      listed in :RIGHT-MEMBERS, but are forced into both ~
+                      output struct types."
+                     (map-ident->unwrap selected-splittable-members))
+               st)))
        ((erp map st)
         (sts-split-trans-units
           tag? typedef-name? primary-type completions code.ienv safety-checks map st))
