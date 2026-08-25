@@ -15,7 +15,7 @@
 (include-book "bvand-def")
 (include-book "bvor-def")
 (include-book "bvxor-def")
-(include-book "bvplus")
+(include-book "bvplus-def")
 (include-book "bvminus-def")
 (include-book "bvnot")
 (include-book "bvshr-def")
@@ -41,6 +41,7 @@
 (local (include-book "bvsx"))
 (local (include-book "bvlt"))
 (local (include-book "bvuminus"))
+(local (include-book "bvmult"))
 (local (include-book "bvcount"))
 
 ;; The rules in this book convert certain arguments of BV functions to be calls
@@ -297,6 +298,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; These are the non-Axe rules
+;; TODO: Always include trim-elim-rules-non-bv with these?
 (deftheory convert-to-bv-rules
   '(bvplus-convert-arg2-to-bv
     bvplus-convert-arg3-to-bv

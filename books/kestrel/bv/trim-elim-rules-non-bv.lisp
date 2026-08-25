@@ -18,7 +18,7 @@
 (include-book "trim")
 (include-book "bvnot")
 (include-book "bvplus-def")
-(include-book "bvmult")
+(include-book "bvmult-def")
 (include-book "bvuminus-def")
 (include-book "bvand-def")
 (include-book "bvor-def")
@@ -32,6 +32,7 @@
 (local (include-book "logext"))
 (local (include-book "ash"))
 (local (include-book "bvsx"))
+(local (include-book "bvchop"))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
 ;; WARNING: Keep these in sync with *functions-convertible-to-bv*.

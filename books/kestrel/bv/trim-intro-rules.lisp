@@ -35,6 +35,8 @@
 (local (include-book "getbit"))
 (local (include-book "bvcat"))
 (local (include-book "bvminus"))
+(local (include-book "bvmult"))
+(local (include-book "bvsx"))
 
 ;; TODO: Should we only trim when the sizes involved are constants?
 

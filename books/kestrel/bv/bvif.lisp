@@ -1,7 +1,7 @@
 ; An if-then-else function over bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,10 +11,11 @@
 
 (in-package "ACL2")
 
-(include-book "bvchop")
+(include-book "bvchop-def")
 (include-book "kestrel/booleans/bool-fix-def" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
 (local (include-book "unsigned-byte-p"))
+(local (include-book "bvchop"))
 (local (include-book "kestrel/booleans/bool-fix" :dir :system))
 
 ;note that the test is a boolean, not a bit vector
