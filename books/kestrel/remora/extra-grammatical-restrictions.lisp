@@ -165,7 +165,12 @@
      since the number reading @('+5') never extends into @('+5x'),
      the identifier reading must lose
      also when it is longer than the number,
-     not just at equal length.")
+     not just at equal length.
+     This matches [impl],
+     whose expression parser tries atoms (numbers) before variables,
+     and whose number parser succeeds precisely when
+     the expression text starts with a number,
+     regardless of what follows.")
    (xdoc::p
     "We anchor the restriction at the @('exp') CSTs
      formed via the @('identifier') alternative,
@@ -181,6 +186,8 @@
      i.e. as names in binders and signatures
      and after the sigils in variables,
      are deliberately not restricted:
+     in those positions the grammar allows identifiers but not numbers,
+     so there is no competing numeric reading to choose against;
      e.g. @('(val +5 7)') is a grammatical binding
      of the name @('+5'),
      although expressions cannot reference that name,
@@ -864,7 +871,7 @@
      for uniformity and robustness.")
    (xdoc::p
     "This restriction is deliberately stronger than
-     the treatment in the Haskell reference implementation.
+     the treatment in [impl].
      There, a keyword fails to be recognized
      only when immediately followed by
      a Unicode alphanumeric character
