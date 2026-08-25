@@ -486,9 +486,14 @@
        Each takes a proof and the arguments of the conclusion,
        and universally quantifies over the other proof trees.")
      (xdoc::p
+      "Each predicate is defined by a @(tsee define-sk).")
+     (xdoc::p
       "These predicates are currently not guard-verified,
        because they call the non-guard-verified
-       @('p[i]-proof-validp') predicates."))
+       @('p[i]-proof-validp') predicates.")
+     (xdoc::p
+      "These predicates are disabled,
+       and so are their associated @('-necc') theorems."))
 
     (xdoc::desc
      (list
@@ -502,7 +507,8 @@
        there is a proof that is valid for those arguments,
        which are passed to @('p[i]-proof-validp').")
      (xdoc::p
-      "The witness function backing the existential
+      "Each predicate is defined by a @(tsee define-sk).
+       The witness function backing the existential
        is given the name @('p[i]-proof').")
      (xdoc::p
       "The proof whose existence is asserted is also required to be minimal,
@@ -521,7 +527,10 @@
        because they call the non-guard-verified
        @('p[i]-proof-validp') predicates.
        The @('p[i]') predicates do not have fixing theorems,
-       because the formals are currently untyped."))
+       because the formals are currently untyped.")
+     (xdoc::p
+      "These predicates are disabled,
+       and so are their associated @('-suff') theorems."))
 
     (xdoc::desc
      (list
@@ -536,10 +545,7 @@
       "Because of the minimality requirement described above,
        the @('p[i]-suff') theorems that @(tsee defun-sk) generates
        require the proof tree to be minimal.
-       These theorems drop that requirement.
-       They are disabled, like the rule theorems;
-       so are the @('p[i]-suff') theorems,
-       which @(tsee std::define-sk) disables.")
+       These theorems drop that requirement.")
      (xdoc::p
       "The validity hypothesis precedes the recognizer hypothesis,
        so that, when the theorem is used as a rewrite rule,
@@ -549,7 +555,9 @@
       "If XDOC is generated,
        these theorems and the @('p[i]-proof-count-bound') theorems below
        are put in a @(tsee defsection) whose name is obtained by
-       extending the @('name') input with the suffix @('-valid-proofs')."))
+       extending the @('name') input with the suffix @('-valid-proofs').")
+     (xdoc::p
+      "These theorems are enabled."))
 
     (xdoc::desc
      (list
@@ -575,7 +583,9 @@
      (xdoc::p
       "These are generated only for the recursive predicates.
        If XDOC is generated, they go in the @(tsee defsection)
-       mentioned just above."))
+       mentioned just above.")
+     (xdoc::p
+      "These theorems are disabled."))
 
     (xdoc::desc
      (list
@@ -607,7 +617,9 @@
        described just below.")
      (xdoc::p
       "These are generated only for the recursive predicates:
-       a non-recursive predicate admits no induction scheme."))
+       a non-recursive predicate admits no induction scheme.")
+     (xdoc::p
+      "These functions are disabled."))
 
     (xdoc::desc
      (list
@@ -639,7 +651,9 @@
        @('-induction-rules'):
        the suffix is not just @('-induction'),
        because that is the name of one of these very rules
-       when a predicate is named as the @('name') input."))
+       when a predicate is named as the @('name') input.")
+     (xdoc::p
+      "These theorems are enabled."))
 
     (xdoc::desc
      (list
@@ -657,7 +671,9 @@
      (xdoc::p
       "If XDOC is generated, all these theorems are put
        in a @(tsee defsection) whose name is obtained by
-       extending the @('name') input with the suffix @('-rules')."))
+       extending the @('name') input with the suffix @('-rules').")
+     (xdoc::p
+      "These theorems are disabled."))
 
     (xdoc::p
      "The following items serve as validation,
@@ -696,8 +712,9 @@
        and with the conclusion as consequent,
        with the @('p[i]-alt') functions in place of the predicates.
        For a rule without premises,
-       the theorem is just the conclusion, without implication.
-       These theorems are disabled, like the rule theorems."))
+       the theorem is just the conclusion, without implication.")
+     (xdoc::p
+      "These theorems are disabled."))
 
     (xdoc::desc
      (list
@@ -718,7 +735,9 @@
        while the theorems of the preceding cliques
        play, for the premises that call predicates of those cliques,
        the role that the induction hypothesis plays
-       for the premises that call predicates of the same clique."))
+       for the premises that call predicates of the same clique.")
+     (xdoc::p
+      "These theorems are disabled."))
 
     (xdoc::desc
      (list
@@ -729,4 +748,6 @@
       "Theorems saying that the alternate predicates hold
        whenever the defined ones do.
        That is, the defined predicates are the smallest ones
-       among those that satisfy the inference rules.")))))
+       among those that satisfy the inference rules.")
+     (xdoc::p
+      "These theorems are disabled.")))))
