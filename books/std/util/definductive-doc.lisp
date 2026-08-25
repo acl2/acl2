@@ -486,7 +486,7 @@
        Each takes a proof and the arguments of the conclusion,
        and universally quantifies over the other proof trees.")
      (xdoc::p
-      "Each predicate is defined by a @(tsee define-sk).")
+      "Each predicate is defined by a @(tsee std::define-sk).")
      (xdoc::p
       "These predicates are currently not guard-verified,
        because they call the non-guard-verified
@@ -507,7 +507,7 @@
        there is a proof that is valid for those arguments,
        which are passed to @('p[i]-proof-validp').")
      (xdoc::p
-      "Each predicate is defined by a @(tsee define-sk).
+      "Each predicate is defined by a @(tsee std::define-sk).
        The witness function backing the existential
        is given the name @('p[i]-proof').")
      (xdoc::p
