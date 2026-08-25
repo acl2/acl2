@@ -41,6 +41,7 @@
                     defmacro+
                     defund-sk
                     defxdoc+
+                    e/d*
                     enable*
                     explode
                     impossible
