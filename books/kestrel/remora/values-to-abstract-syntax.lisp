@@ -1069,7 +1069,9 @@
                           :arg (ispace-shape
                                 (shape-dims (dim-const-list pval.s2val))))
                     :arg fexpr)
-              :arg zexpr)))))
+              :arg zexpr)))
+       :reify-dim (mv nil opvar)
+       :reify-shape (mv nil opvar)))
     :measure (primop-value-count pval))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1176,4 +1178,6 @@
                                  primop-value-fix-when-transpose2d
                                  primop-value-fix-when-iota/static
                                  primop-value-fix-when-reduce
-                                 primop-value-fix-when-fold)))))
+                                 primop-value-fix-when-fold
+                                 primop-value-fix-when-reify-dim
+                                 primop-value-fix-when-reify-shape)))))

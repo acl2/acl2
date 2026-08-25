@@ -531,6 +531,8 @@
                             (s2val nat-list)
                             (fval expr-value)
                             (zval expr-value)))
+    (:reify-dim ())
+    (:reify-shape ())
     :pred primop-valuep
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -2188,7 +2190,9 @@
                      :fold-t-t2-d-s nil
                      :fold-t-t2-d-s-s2 t
                      :fold-t-t2-d-s-s2-f t
-                     :fold-t-t2-d-s-s2-f-z t))
+                     :fold-t-t2-d-s-s2-f-z t
+                     :reify-dim nil
+                     :reify-shape nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2288,7 +2292,9 @@
                      :fold-t-t2-d-s nil
                      :fold-t-t2-d-s-s2 nil
                      :fold-t-t2-d-s-s2-f nil
-                     :fold-t-t2-d-s-s2-f-z nil))
+                     :fold-t-t2-d-s-s2-f-z nil
+                     :reify-dim nil
+                     :reify-shape nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2387,7 +2393,9 @@
                      :fold-t-t2-d-s t
                      :fold-t-t2-d-s-s2 nil
                      :fold-t-t2-d-s-s2-f nil
-                     :fold-t-t2-d-s-s2-f-z nil))
+                     :fold-t-t2-d-s-s2-f-z nil
+                     :reify-dim t
+                     :reify-shape t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2578,6 +2586,8 @@
                      :fold-t-t2-d-s-s2 (primop-value-fold)
                      :fold-t-t2-d-s-s2-f (primop-value-fold)
                      :fold-t-t2-d-s-s2-f-z (primop-value-fold)
+                     :reify-dim (primop-value-reify-dim)
+                     :reify-shape (primop-value-reify-shape)
                      :otherwise (primop-value-fix op)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2940,7 +2950,9 @@
              (list (make-type-value-array :elem op.tval
                                           :dims (cons (1+ op.dval) op.sval)))
              (make-type-value-array :elem op.t2val :dims op.s2val))
-      :dims nil)))
+      :dims nil)
+     :reify-dim (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :reify-shape (prog2$ (impossible) (type-value-base (base-type-bool)))))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
 
   ///
@@ -3637,7 +3649,9 @@
          (cons "transpose2d" (expr-value-primop (primop-value-transpose2d)))
          (cons "iota/static" (expr-value-primop (primop-value-iota/static)))
          (cons "reduce" (expr-value-primop (primop-value-reduce)))
-         (cons "fold" (expr-value-primop (primop-value-fold))))))
+         (cons "fold" (expr-value-primop (primop-value-fold)))
+         (cons "reify-dim" (expr-value-primop (primop-value-reify-dim)))
+         (cons "reify-shape" (expr-value-primop (primop-value-reify-shape))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
