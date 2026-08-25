@@ -2300,7 +2300,7 @@
           (acl2::reassemble-bv-rules) ; add to core-rules-bv?
           (acl2::array-reduction-rules)
           (if-lifting-rules)
-          (acl2::convert-to-bv-rules) ; turns things like logxor into things like bvxor
+          (acl2::convert-to-bv-rules-axe) ; turns things like logxor into things like bvxor
           '(acl2::boolor-of-non-nil)
           (segment-base-and-bounds-rules-general)
           (float-rules)
@@ -6252,7 +6252,7 @@
           ;; (separate-rules) ; i am seeing some read-over-write reasoning persist into the proof stage
           (float-rules) ; i need booleanp-of-isnan, at least
           (extra-tester-rules)
-          (acl2::convert-to-bv-rules) ; turns things like logxor into things like bvxor
+          (acl2::convert-to-bv-rules-axe) ; turns things like logxor into things like bvxor
           (acl2::booleanp-rules)
           (acl2::boolean-rules-safe)
           (acl2::type-rules)

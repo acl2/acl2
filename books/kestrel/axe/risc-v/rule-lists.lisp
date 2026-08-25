@@ -73,7 +73,7 @@
    (acl2::unsigned-byte-p-forced-rules)
    (acl2::type-rules) ; rename
    (acl2::bvchop-of-bv-rules)
-   (acl2::convert-to-bv-rules) ; todo: may just need the trim-elim rules
+   (acl2::convert-to-bv-rules-axe) ; todo: may just need the trim-elim rules
    (acl2::boolean-rules-safe)
    (acl2::list-to-bv-array-rules) ;; unrolling seemed bad for large sections?
    '(;acl2::list-to-bv-array-constant-opener
@@ -353,7 +353,7 @@
 
      ;acl2::bvcat-of-if-arg2
      ;acl2::bvcat-of-if-arg4
-     acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg2 ; these could be convert-to-bv rules
+     acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg2 ; these could be convert-to-bv-axe rules
      acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg4
 
      ubyte5-fix

@@ -138,6 +138,7 @@
 (include-book "bvashr")
 
 ;; Counting one bits:
+(include-book "bvcount-def")
 (include-book "bvcount")
 
 ;; Trim (only for rewriting)
