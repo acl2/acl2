@@ -47,13 +47,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the semantics of the instantiated @('iota/static') operation:
+    "This is the semantics of the @('iota/static') operation:
      the single ispace application supplies the shape @('s'),
      and the result is the array of that shape
      whose atoms are the naturals below the number of elements,
      in row-major order.
-     Unlike all other operations, no argument cell is involved:
-     the ispace application directly yields the final array.")
+     Unlike most other operations, no argument cell is involved:
+     the ispace application directly yields the final array,
+     as with @('reify-dim') and @('reify-shape').")
    (xdoc::p
     "If the shape has a zero dimension, the result is empty;
      the element type is always the integer atom type."))
@@ -89,13 +90,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the semantics of the instantiated @('reify-dim') operation:
+    "This is the semantics of the @('reify-dim') operation:
      the single ispace application supplies the dimension @('d'),
      and the result is the integer scalar with that value.
      Unlike most other operations, no argument cell is involved:
      the ispace application directly yields the final scalar,
-     as with @('iota/static').
-     Also unlike the other operations, no error is possible,
+     as with @('iota/static') and @('reify-shape').
+     Also unlike most other operations, no error is possible,
+     as with @('reify-shape'),
      so the result type is @(tsee expr-valuep),
      not @(tsee expr-value-resultp)."))
   (expr-value-base (base-value-int (int-value (lnfix d))))
@@ -113,7 +115,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the semantics of the instantiated @('reify-shape') operation:
+    "This is the semantics of the @('reify-shape') operation:
      the single ispace application supplies the shape @('s'),
      and the result is a box whose array value is
      the vector of the dimensions of the shape, as integers,
@@ -190,10 +192,11 @@
      a dimension for the stages that store just a type value
      (except @(':reshape-t'), which expects the first of two shapes),
      a shape for the stages that also store a dimension or a shape;
-     the uninstantiated stages of
-     @('sum'), @('iota/static'), @('reify-dim'), and @('reify-shape'),
-     which have no type parameters,
-     store nothing and expect
+     the uninstantiated stage of @('sum'), which has no type parameter,
+     stores nothing and expects a shape directly;
+     the @('iota/static'), @('reify-dim'), and @('reify-shape') operations,
+     which consist of a single stage,
+     also store nothing and expect
      a shape (a dimension, for @('reify-dim')) directly.
      We check that the ispace value has the expected sort;
      then we construct the next instantiation stage of the operation,
