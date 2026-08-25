@@ -108,8 +108,8 @@ unbox-exp       = %s"unbox" ws "(" ws unbox-spec ws ")" ws exp
 
 unbox-spec      = 1*( ispace-var ws ) identifier ws exp   ; [SC4]
                   ; binders for the unboxed ispaces (at least one) and
-                  ; the value, plus the expression that yields the box
-                  ; being unboxed.
+                  ; the expression value, plus the expression that yields
+                  ; the box being unboxed.
 
 let-exp         = %s"let" ws "(" 1*( ws bind ) ws ")" ws exp
 
@@ -201,7 +201,7 @@ at-fun-bind     = %s"fun" ws "(" ws at-fun-sig ws ")" ws exp
 at-fun-sig      = "@" ws identifier ws type-vars ws ispace-vars
                   *( ws pat ) ws colon-type
                   ; inner of at-fun-bind: name, type/ispace parameter
-                  ; lists, value parameters, mandatory return type
+                  ; lists, expression parameters, mandatory return type
 
 type-vars       = "(" *( ws type-var ) ws ")"
                 / "_"
@@ -606,14 +606,14 @@ HEXDIG = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
 ;
 ; [SC4] unbox-spec greedy ispace-var repetition (tagged on: unbox-spec)
 ;
-;   An identifier may begin with "$" (see id-start), so the value binder
-;   of an unbox-spec can be indistinguishable from a dimension ispace-var
-;   at the token level (e.g. "$x").  A parser must match the
+;   An identifier may begin with "$" (see id-start), so the expression
+;   binder of an unbox-spec can be indistinguishable from a dimension
+;   ispace-var at the token level (e.g. "$x").  A parser must match the
 ;   1*( ispace-var ws ) repetition greedily, without backtracking:
 ;   every ispace-var-shaped token is consumed by the repetition, so the
 ;   identifier that follows must not be ispace-var-shaped.  Consequently
 ;   a few strings derivable from this rule as written -- those whose
-;   value binder starts with "$" -- are rejected by the parser.
+;   expression binder starts with "$" -- are rejected by the parser.
 ;   The Haskell reference implementation behaves identically: its
 ;   unbox parser is (someNE pISpaceParam) followed by lId, with no
 ;   backtracking between them, so for example ($d $x e) fails there
