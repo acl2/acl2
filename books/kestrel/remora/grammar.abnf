@@ -553,12 +553,24 @@ HEXDIG = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
 ;   adjacent identifiers).  Max-munch at the token level resolves the
 ;   ambiguity by having the first token consume all available characters.
 ;
-;   As a corollary, keyword literals in the grammar (e.g. "fn", "array",
+;   As a corollary, keywords in the grammar (e.g. "fn", "array",
 ;   "let") must not match when followed immediately by an id-continue
 ;   character: "fn2" is one identifier, not the keyword "fn" followed
-;   by "2".  The Haskell reference implementation enforces this with
-;   notFollowedBy (satisfy isAlphaNum) in lKeyword; a parser using
-;   max-munch gets the same effect automatically.
+;   by "2".  This applies also to the base type names (Bool, Int,
+;   Float), which are not reserved keywords but are keyword-like
+;   words: "Int3" is a single word, never "Int" followed by "3".
+;   The Haskell reference implementation only approximates this rule:
+;   lKeyword rejects a keyword just when the next character is
+;   alphanumeric (notFollowedBy (satisfy isAlphaNum)), so it accepts
+;   abutments with non-alphanumeric identifier characters (e.g.
+;   "ispace$d", "val_x", "type&x", "->&x", "A&x"), and the base type
+;   names, parsed as plain symbols, have no boundary check at all
+;   ("[Bool3]" parses as "[Bool 3]").  This grammar adopts full
+;   max-munch, rejecting all such abutments, which are repaired by
+;   adding whitespace; on inputs accepted by both, the two treatments
+;   agree.  We regard the implementation's weaker treatment as an
+;   accident of its lexing library rather than as language design,
+;   and expect the implementation to eventually change to match.
 ;
 ;   The Haskell reference implementation achieves max-munch via
 ;   Megaparsec's greedy "many" combinator in lId (src/Parser.hs).
