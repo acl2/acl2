@@ -28,7 +28,7 @@
    (xdoc::p
     "We characterize the subset of the ASTs
      that corresponds exactly to the ASTs of [impl].
-     We specifically target [impl]'s unchecked ASTs,
+     We currently target [impl]'s unchecked ASTs,
      @('ProgBase TypeExp TypeParamExp NoInfo Text')
      (aliased as @('UncheckedProg'))
      along with its constituent AST types.
@@ -63,9 +63,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deffold-reduce hip
+(fty::deffold-reduce huncheckedp
     :short "Predicates on ASTs that characterize the subset
-            corresponding to [impl]."
+            corresponding to [impl]'s unchecked ASTs."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -140,7 +140,6 @@
       (xdoc::li
        "Combined function bindings,
         because [impl] has no corresponding constructor.")
-; Todo: remove above once invariant is in place
       (xdoc::li
        "Files with non-empty lists of imports,
         because [impl]'s @('ProgBase') has no imports field")
@@ -161,16 +160,16 @@
     ((shape :dims (and (consp shape.dims)
                        (endp (cdr shape.dims))))
      (shape :splice nil)
-     (type :array (and (type-hip type.elem)
-                       (ispace-hip type.ispace)
+     (type :array (and (type-huncheckedp type.elem)
+                       (ispace-huncheckedp type.ispace)
                        (ispace-case type.ispace :shape)))
      (type :bracket nil)
-     (type :funn (and (type-list-hip type.in)
-                      (type-hip type.out)
+     (type :funn (and (type-list-huncheckedp type.in)
+                      (type-huncheckedp type.out)
                       (consp type.in)
                       (endp (cdr type.in))))
      (var+type? (b* (((var+type? var+type?)))
-                  (and (type-option-hip var+type?.type?)
+                  (and (type-option-huncheckedp var+type?.type?)
                        (type-option-case var+type?.type? :some))))
      (expr :atom nil)
      (expr :string nil)
@@ -180,217 +179,308 @@
      (expr :capp nil)
      (expr :unboxn nil)
      (expr :bracket nil)
-     (expr :let (and (bind-list-hip expr.binds)
-                     (expr-hip expr.body)
+     (expr :let (and (bind-list-huncheckedp expr.binds)
+                     (expr-huncheckedp expr.body)
                      (consp expr.binds))) ; Todo: remove once invariant is in place
      (atom :lambdan nil)
      (atom :tlambdan nil)
      (atom :ilambdan nil)
      (atom :boxn nil)
-     (bind :fun (and (var+type?-list-hip bind.params)
-                     (type-option-hip bind.type?)
-                     (expr-hip bind.expr)
+     (bind :fun (and (var+type?-list-huncheckedp bind.params)
+                     (type-option-huncheckedp bind.type?)
+                     (expr-huncheckedp bind.expr)
                      (consp bind.params)))
-     (bind :tfun (and (type-option-hip bind.type?)
-                      (expr-hip bind.expr)
+     (bind :tfun (and (type-option-huncheckedp bind.type?)
+                      (expr-huncheckedp bind.expr)
                       (consp bind.params)))
-     (bind :ifun (and (type-option-hip bind.type?)
-                      (expr-hip bind.expr)
+     (bind :ifun (and (type-option-huncheckedp bind.type?)
+                      (expr-huncheckedp bind.expr)
                       (consp bind.params)))
      (bind :cfun nil)
      (file (b* (((file file)))
-             (and (decl-list-hip file.decls)
+             (and (decl-list-huncheckedp file.decls)
                   (endp file.imports)))))
-    :name ast-hip)
+    :name ast-huncheckedp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection ast-hip-additional-theorems
+(defsection ast-huncheckedp-additional-theorems
     :short "Additional theorems about
-            the Haskell implementation AST predicates."
+            the Haskell implementation unchecked AST predicates."
 
-    (defruled shape-hip-when-var
+    (defruled shape-huncheckedp-when-var
         (implies (shape-case shape :var)
-                 (shape-hip shape))
-      :enable shape-hip)
+                 (shape-huncheckedp shape))
+      :enable shape-huncheckedp)
 
-    (defruled shape-hip-when-dims
+    (defruled shape-huncheckedp-when-dims
         (implies (shape-case shape :dims)
-                 (equal (shape-hip shape)
+                 (equal (shape-huncheckedp shape)
                         (and (consp (shape-dims->dims shape))
                              (endp (cdr (shape-dims->dims shape))))))
-      :enable shape-hip)
+      :enable shape-huncheckedp)
 
-    (defruled not-shape-hip-when-splice
+    (defruled not-shape-huncheckedp-when-splice
         (implies (equal (shape-kind shape) :splice)
-                 (not (shape-hip shape)))
-      :enable shape-hip)
+                 (not (shape-huncheckedp shape)))
+      :enable shape-huncheckedp)
 
-    (defruled ispace-hip-when-dim
+    (defruled ispace-huncheckedp-when-dim
         (implies (ispace-case ispace :dim)
-                 (ispace-hip ispace))
-      :enable ispace-hip)
+                 (ispace-huncheckedp ispace))
+      :enable ispace-huncheckedp)
 
-    (defruled type-hip-when-var
+    (defruled type-huncheckedp-when-var
         (implies (type-case type :var)
-                 (type-hip type))
-      :enable type-hip)
+                 (type-huncheckedp type))
+      :enable type-huncheckedp)
 
-    (defruled type-hip-when-base
+    (defruled type-huncheckedp-when-base
         (implies (type-case type :base)
-                 (type-hip type))
-      :enable type-hip)
+                 (type-huncheckedp type))
+      :enable type-huncheckedp)
 
-    (defruled not-type-hip-when-array-with-dim
+    (defruled type-huncheckedp-when-array
+        (implies (type-case type :array)
+                 (equal (type-huncheckedp type)
+                        (and (type-huncheckedp (type-array->elem type))
+                             (ispace-huncheckedp (type-array->ispace type))
+                             (ispace-case (type-array->ispace type) :shape))))
+      :enable type-huncheckedp)
+
+    (defruled not-type-huncheckedp-when-array-with-dim
         (implies (and (equal (type-kind type) :array)
                       (equal (ispace-kind (type-array->ispace type)) :dim))
-                 (not (type-hip type)))
-      :enable type-hip)
+                 (not (type-huncheckedp type)))
+      :enable type-huncheckedp)
 
-    (defruled not-type-hip-when-bracket
+    (defruled not-type-huncheckedp-when-bracket
         (implies (equal (type-kind type) :bracket)
-                 (not (type-hip type)))
-      :enable type-hip)
+                 (not (type-huncheckedp type)))
+      :enable type-huncheckedp)
 
-    (defruled type-hip-when-funn
+    (defruled type-huncheckedp-when-funn
         (implies (type-case type :funn)
-                 (equal (type-hip type)
-                        (and (type-list-hip (type-funn->in type))
-                             (type-hip (type-funn->out type))
+                 (equal (type-huncheckedp type)
+                        (and (type-list-huncheckedp (type-funn->in type))
+                             (type-huncheckedp (type-funn->out type))
                              (consp (type-funn->in type))
                              (endp (cdr (type-funn->in type))))))
-      :enable type-hip)
+      :enable type-huncheckedp)
 
-    (defruled not-var+type?-hip-when-no-type
+    (defruled type-huncheckedp-when-sigman
+        (implies (type-case type :sigman)
+                 (equal (type-huncheckedp type)
+                        (and (type-huncheckedp (type-sigman->body type))
+                             (consp (type-sigman->params type)))))
+      :enable type-huncheckedp)
+
+    (defruled type-option-huncheckedp-when-some
+        (implies (type-option-case type? :some)
+                 (equal (type-option-huncheckedp type?)
+                        (type-huncheckedp (type-option-some->val type?))))
+      :enable type-option-huncheckedp)
+
+    (defruled var+type?-huncheckedp-when-type
+        (implies (type-option-case (var+type?->type? vt) :some)
+                 (equal (var+type?-huncheckedp vt)
+                        (type-option-huncheckedp (var+type?->type? vt))))
+      :enable var+type?-huncheckedp)
+
+    (defruled not-var+type?-huncheckedp-when-no-type
         (implies (type-option-case (var+type?->type? vt) :none)
-                 (not (var+type?-hip vt)))
-      :enable var+type?-hip)
+                 (not (var+type?-huncheckedp vt)))
+      :enable var+type?-huncheckedp)
 
-    (defruled expr-hip-when-var
+    (defruled expr-huncheckedp-when-var
         (implies (expr-case expr :var)
-                 (expr-hip expr))
-      :enable expr-hip)
+                 (expr-huncheckedp expr))
+      :enable expr-huncheckedp)
 
-    (defruled not-expr-hip-when-atom
+    (defruled not-expr-huncheckedp-when-atom
         (implies (equal (expr-kind expr) :atom)
-                 (not (expr-hip expr)))
-      :enable expr-hip)
+                 (not (expr-huncheckedp expr)))
+      :enable expr-huncheckedp)
 
-    (defruled not-expr-hip-when-string
+    (defruled expr-huncheckedp-when-array
+        (implies (expr-case expr :array)
+                 (equal (expr-huncheckedp expr)
+                        (and (atom-list-huncheckedp (expr-array->atoms expr))
+                             (consp (expr-array->atoms expr)))))
+      :enable expr-huncheckedp)
+
+    (defruled expr-huncheckedp-when-frame
+        (implies (expr-case expr :frame)
+                 (equal (expr-huncheckedp expr)
+                        (and (expr-list-huncheckedp (expr-frame->exprs expr))
+                             (consp (expr-frame->exprs expr)))))
+      :enable expr-huncheckedp)
+
+    (defruled not-expr-huncheckedp-when-string
         (implies (equal (expr-kind expr) :string)
-                 (not (expr-hip expr)))
-      :enable expr-hip)
+                 (not (expr-huncheckedp expr)))
+      :enable expr-huncheckedp)
 
-    (defruled not-expr-hip-when-appn
+    (defruled not-expr-huncheckedp-when-appn
         (implies (equal (expr-kind expr) :appn)
-                 (not (expr-hip expr)))
-      :enable expr-hip)
+                 (not (expr-huncheckedp expr)))
+      :enable expr-huncheckedp)
 
-    (defruled not-expr-hip-when-tappn
+    (defruled not-expr-huncheckedp-when-tappn
         (implies (equal (expr-kind expr) :tappn)
-                 (not (expr-hip expr)))
-      :enable expr-hip)
+                 (not (expr-huncheckedp expr)))
+      :enable expr-huncheckedp)
 
-    (defruled not-expr-hip-when-iappn
+    (defruled not-expr-huncheckedp-when-iappn
         (implies (equal (expr-kind expr) :iappn)
-                 (not (expr-hip expr)))
-      :enable expr-hip)
+                 (not (expr-huncheckedp expr)))
+      :enable expr-huncheckedp)
 
-    (defruled not-expr-hip-when-capp
+    (defruled not-expr-huncheckedp-when-capp
         (implies (equal (expr-kind expr) :capp)
-                 (not (expr-hip expr)))
-      :enable expr-hip)
+                 (not (expr-huncheckedp expr)))
+      :enable expr-huncheckedp)
 
-    (defruled not-expr-hip-when-unboxn
+    (defruled not-expr-huncheckedp-when-unboxn
         (implies (equal (expr-kind expr) :unboxn)
-                 (not (expr-hip expr)))
-      :enable expr-hip)
+                 (not (expr-huncheckedp expr)))
+      :enable expr-huncheckedp)
 
-    (defruled not-expr-hip-when-bracket
+    (defruled not-expr-huncheckedp-when-bracket
         (implies (equal (expr-kind expr) :bracket)
-                 (not (expr-hip expr)))
-      :enable expr-hip)
+                 (not (expr-huncheckedp expr)))
+      :enable expr-huncheckedp)
 
-    (defruled atom-hip-when-base
+    (defruled expr-huncheckedp-when-let
+        (implies (expr-case expr :let)
+                 (equal (expr-huncheckedp expr)
+                        (and (bind-list-huncheckedp (expr-let->binds expr))
+                             (expr-huncheckedp (expr-let->body expr))
+                             (consp (expr-let->binds expr)))))
+      :enable expr-huncheckedp)
+
+    (defruled atom-huncheckedp-when-base
         (implies (atom-case atom :base)
-                 (atom-hip atom))
-      :enable atom-hip)
+                 (atom-huncheckedp atom))
+      :enable atom-huncheckedp)
 
-    (defruled not-atom-hip-when-lambdan
+    (defruled not-atom-huncheckedp-when-lambdan
         (implies (equal (atom-kind atom) :lambdan)
-                 (not (atom-hip atom)))
-      :enable atom-hip)
+                 (not (atom-huncheckedp atom)))
+      :enable atom-huncheckedp)
 
-    (defruled not-atom-hip-when-tlambdan
+    (defruled not-atom-huncheckedp-when-tlambdan
         (implies (equal (atom-kind atom) :tlambdan)
-                 (not (atom-hip atom)))
-      :enable atom-hip)
+                 (not (atom-huncheckedp atom)))
+      :enable atom-huncheckedp)
 
-    (defruled not-atom-hip-when-ilambdan
+    (defruled not-atom-huncheckedp-when-ilambdan
         (implies (equal (atom-kind atom) :ilambdan)
-                 (not (atom-hip atom)))
-      :enable atom-hip)
+                 (not (atom-huncheckedp atom)))
+      :enable atom-huncheckedp)
 
-    (defruled not-atom-hip-when-boxn
+    (defruled not-atom-huncheckedp-when-boxn
         (implies (equal (atom-kind atom) :boxn)
-                 (not (atom-hip atom)))
-      :enable atom-hip)
+                 (not (atom-huncheckedp atom)))
+      :enable atom-huncheckedp)
 
-    (defruled not-bind-hip-when-fun-without-params
+    (defruled bind-huncheckedp-when-fun
+        (implies (bind-case bind :fun)
+                 (equal (bind-huncheckedp bind)
+                        (and (var+type?-list-huncheckedp (bind-fun->params bind))
+                             (type-option-huncheckedp (bind-fun->type? bind))
+                             (expr-huncheckedp (bind-fun->expr bind))
+                             (consp (bind-fun->params bind)))))
+      :enable bind-huncheckedp)
+
+    (defruled not-bind-huncheckedp-when-fun-without-params
         (implies (and (equal (bind-kind bind) :fun)
                       (endp (bind-fun->params bind)))
-                 (not (bind-hip bind)))
-      :enable bind-hip)
+                 (not (bind-huncheckedp bind)))
+      :enable bind-huncheckedp)
 
-    (defruled not-bind-hip-when-tfun-without-params
+    (defruled bind-huncheckedp-when-tfun
+        (implies (bind-case bind :tfun)
+                 (equal (bind-huncheckedp bind)
+                        (and (type-option-huncheckedp (bind-tfun->type? bind))
+                             (expr-huncheckedp (bind-tfun->expr bind))
+                             (consp (bind-tfun->params bind)))))
+      :enable bind-huncheckedp)
+
+    (defruled not-bind-huncheckedp-when-tfun-without-params
         (implies (and (equal (bind-kind bind) :tfun)
                       (endp (bind-tfun->params bind)))
-                 (not (bind-hip bind)))
-      :enable bind-hip)
+                 (not (bind-huncheckedp bind)))
+      :enable bind-huncheckedp)
 
-    (defruled not-bind-hip-when-ifun-without-params
+    (defruled bind-huncheckedp-when-ifun
+        (implies (bind-case bind :ifun)
+                 (equal (bind-huncheckedp bind)
+                        (and (type-option-huncheckedp (bind-ifun->type? bind))
+                             (expr-huncheckedp (bind-ifun->expr bind))
+                             (consp (bind-ifun->params bind)))))
+      :enable bind-huncheckedp)
+
+    (defruled not-bind-huncheckedp-when-ifun-without-params
         (implies (and (equal (bind-kind bind) :ifun)
                       (endp (bind-ifun->params bind)))
-                 (not (bind-hip bind)))
-      :enable bind-hip)
+                 (not (bind-huncheckedp bind)))
+      :enable bind-huncheckedp)
 
-    (defruled not-bind-hip-when-cfun
+    (defruled not-bind-huncheckedp-when-cfun
         (implies (equal (bind-kind bind) :cfun)
-                 (not (bind-hip bind)))
-      :enable bind-hip)
+                 (not (bind-huncheckedp bind)))
+      :enable bind-huncheckedp)
 
-    (defruled not-file-hip-when-imports
+    (defruled file-huncheckedp-when-no-imports
+        (implies (endp (file->imports file))
+                 (equal (file-huncheckedp file)
+                        (decl-list-huncheckedp (file->decls file))))
+      :enable file-huncheckedp)
+
+    (defruled not-file-huncheckedp-when-imports
         (implies (consp (file->imports file))
-                 (not (file-hip file)))
-      :enable file-hip)
+                 (not (file-huncheckedp file)))
+      :enable file-huncheckedp)
 
-    (add-to-ruleset ast-hip-rules
-                    '(shape-hip-when-var
-                      shape-hip-when-dims
-                      not-shape-hip-when-splice
-                      ispace-hip-when-dim
-                      type-hip-when-var
-                      type-hip-when-base
-                      not-type-hip-when-array-with-dim
-                      not-type-hip-when-bracket
-                      type-hip-when-funn
-                      not-var+type?-hip-when-no-type
-                      expr-hip-when-var
-                      not-expr-hip-when-atom
-                      not-expr-hip-when-string
-                      not-expr-hip-when-appn
-                      not-expr-hip-when-tappn
-                      not-expr-hip-when-iappn
-                      not-expr-hip-when-capp
-                      not-expr-hip-when-unboxn
-                      not-expr-hip-when-bracket
-                      atom-hip-when-base
-                      not-atom-hip-when-lambdan
-                      not-atom-hip-when-tlambdan
-                      not-atom-hip-when-ilambdan
-                      not-atom-hip-when-boxn
-                      not-bind-hip-when-fun-without-params
-                      not-bind-hip-when-tfun-without-params
-                      not-bind-hip-when-ifun-without-params
-                      not-bind-hip-when-cfun
-                      not-file-hip-when-imports)))
+    (add-to-ruleset ast-huncheckedp-rules
+                    '(shape-huncheckedp-when-var
+                      shape-huncheckedp-when-dims
+                      not-shape-huncheckedp-when-splice
+                      ispace-huncheckedp-when-dim
+                      type-huncheckedp-when-var
+                      type-huncheckedp-when-base
+                      type-huncheckedp-when-array
+                      not-type-huncheckedp-when-array-with-dim
+                      not-type-huncheckedp-when-bracket
+                      type-huncheckedp-when-funn
+                      type-huncheckedp-when-sigman
+                      type-option-huncheckedp-when-some
+                      var+type?-huncheckedp-when-type
+                      not-var+type?-huncheckedp-when-no-type
+                      expr-huncheckedp-when-var
+                      not-expr-huncheckedp-when-atom
+                      expr-huncheckedp-when-array
+                      expr-huncheckedp-when-frame
+                      not-expr-huncheckedp-when-string
+                      not-expr-huncheckedp-when-appn
+                      not-expr-huncheckedp-when-tappn
+                      not-expr-huncheckedp-when-iappn
+                      not-expr-huncheckedp-when-capp
+                      not-expr-huncheckedp-when-unboxn
+                      not-expr-huncheckedp-when-bracket
+                      expr-huncheckedp-when-let
+                      atom-huncheckedp-when-base
+                      not-atom-huncheckedp-when-lambdan
+                      not-atom-huncheckedp-when-tlambdan
+                      not-atom-huncheckedp-when-ilambdan
+                      not-atom-huncheckedp-when-boxn
+                      bind-huncheckedp-when-fun
+                      not-bind-huncheckedp-when-fun-without-params
+                      bind-huncheckedp-when-tfun
+                      not-bind-huncheckedp-when-tfun-without-params
+                      bind-huncheckedp-when-ifun
+                      not-bind-huncheckedp-when-ifun-without-params
+                      not-bind-huncheckedp-when-cfun
+                      file-huncheckedp-when-no-imports
+                      not-file-huncheckedp-when-imports)))

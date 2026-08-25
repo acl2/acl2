@@ -36,7 +36,10 @@
      and converts that to an @(tsee expr) via @(tsee expr-fromJSON).
      Returns @('(mv erp x state)'), where @('erp') is non-@('nil')
      (an error message) if any of these steps fails, in which case
-     @('x') is an irrelevant placeholder @(tsee expr)."))
+     @('x') is an irrelevant placeholder @(tsee expr).
+     When @('erp') is @('nil'), the returned @(tsee expr) is in the "
+    (xdoc::seetopic "abstract-syntax-haskell" "subset corresponding to [impl]")
+    "."))
   (b* (((mv erp parsed state)
         (acl2::parse-file-as-json filename state))
        ((when erp)
@@ -53,7 +56,13 @@
         (b* ((- (cw "Error converting the JSON value from ~s0 ~
                      to a Remora expression: ~@1~%" filename erp)))
           (mv erp (make-expr-var :name "") state))))
-    (mv nil exp state)))
+    (mv nil exp state))
+
+  ///
+
+  (defret expr-huncheckedp-of-deserialize-expr-from-file
+      (implies (not erp)
+               (expr-huncheckedp x))))
 
 (define deserialize-file-from-file ((filename stringp) state)
   :parents (deserializer)
@@ -69,7 +78,10 @@
      and converts that to a @(tsee file) via @(tsee file-fromJSON).
      Returns @('(mv erp x state)'), where @('erp') is non-@('nil')
      (an error message) if any of these steps fails, in which case
-     @('x') is an irrelevant placeholder @(tsee file)."))
+     @('x') is an irrelevant placeholder @(tsee file).
+     When @('erp') is @('nil'), the returned @(tsee file) is in the "
+    (xdoc::seetopic "abstract-syntax-haskell" "subset corresponding to [impl]")
+    "."))
   (b* (((mv erp parsed state)
         (acl2::parse-file-as-json filename state))
        ((when erp)
@@ -86,4 +98,10 @@
         (b* ((- (cw "Error converting the JSON value from ~s0 ~
                      to a Remora file: ~@1~%" filename erp)))
           (mv erp (make-file :imports nil :decls nil) state))))
-    (mv nil exp state)))
+    (mv nil exp state))
+
+  ///
+
+  (defret file-huncheckedp-of-deserialize-file-from-file
+      (implies (not erp)
+               (file-huncheckedp x))))
