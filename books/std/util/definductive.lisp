@@ -14,6 +14,7 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
+(include-book "kestrel/event-macros/event-generation" :dir :system)
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/event-macros/restore-output" :dir :system)
 (include-book "kestrel/event-macros/screen-printing" :dir :system)
@@ -4797,7 +4798,8 @@
                               (name symbolp)
                               (print evmac-input-print-p))
   :guard (defind-pred-names-unambp pred-infos)
-  :returns (mv (thm-event pseudo-event-formp)
+  :returns (mv (local-event pseudo-event-formp)
+               (exported-event pseudo-event-formp)
                (print-event? pseudo-event-form-listp))
   :short "Generate a @('p[l[k]]-rule[k]') theorem."
   :long
@@ -4824,7 +4826,13 @@
      gives both the recognizer and the kind of the constructed proof.
      For a rule with premises that are calls of the predicates being defined
      we also need @(tsee defind-proof-fix-id-thm-name);
-     see that function."))
+     see that function.")
+   (xdoc::p
+    "The hints mention theorems internal to the generated events.
+     So we generate the theorem twice, via @(tsee evmac-generate-defthm):
+     first as a local event with the hints,
+     then as a redundant non-local event without hints,
+     which is the one shown, e.g. by @(tsee pe), after the events."))
   (b* (((defind-irule-info info))
        ((defind-conclusion-info cinfo) info.conclusion)
        (concl-args (defind-term-info-list->uterm cinfo.args))
@@ -4843,7 +4851,7 @@
        (pinfo (defind-lookup-pred cinfo.name pred-infos))
        ((unless pinfo)
         (raise "Internal error: predicate ~x0 not found." cinfo.name)
-        (mv '(_) nil))
+        (mv '(_) '(_) nil))
        (formals (defind-pred-info->formals pinfo))
        (concl-vars (defind-proof-concl-var-names formals name))
        (formals-inst (alist-to-doublets (pairlis$ concl-vars concl-args)))
@@ -4854,24 +4862,28 @@
         (defind-proof-constr-return-thm cinfo.name info.name name))
        (var-of-constr-thms
         (defind-proof-var-of-constr-thm-names cinfo.name info.name vars name))
-       (thm-event
-        `(defruled ,thm-name
-           ,(defind-gen-implication (append pred-hyps other-hyps) concl)
-           ,@(and pred-hyps
-                  (list :expand pred-hyps))
-           :use (:instance ,pred-when-valid-proof
-                           (,proof-var ,proofcall)
-                           ,@formals-inst)
-           :in-theory '(,proof-validp
-                        ,irule-validp
-                        ,constr-return-thm
-                        ,@var-of-constr-thms
-                        ,@prem-of-constr-thms
-                        ,@fix-id-thms)))
+       (hints `(("Goal"
+                 ,@(and pred-hyps
+                        (list :expand pred-hyps))
+                 :use (:instance ,pred-when-valid-proof
+                                 (,proof-var ,proofcall)
+                                 ,@formals-inst)
+                 :in-theory '(,proof-validp
+                              ,irule-validp
+                              ,constr-return-thm
+                              ,@var-of-constr-thms
+                              ,@prem-of-constr-thms
+                              ,@fix-id-thms))))
+       ((mv local-event exported-event)
+        (evmac-generate-defthm
+          thm-name
+          :formula (defind-gen-implication (append pred-hyps other-hyps) concl)
+          :enable nil
+          :hints hints))
        (print-event?
         (and (evmac-input-print->= print :result)
              `((cw-event "Theorem ~x0.~%" ',thm-name)))))
-    (mv thm-event print-event?))
+    (mv local-event exported-event print-event?))
   :no-function nil
   :guard-hints (("Goal" :in-theory (enable set::sets-are-true-lists
                                            symbol-listp-when-symbol-setp))))
@@ -4884,15 +4896,17 @@
                                (print evmac-input-print-p))
   :guard (and (defind-pred-names-unambp pred-infos)
               (defind-irule-names-unambp irule-infos))
-  :returns (mv (thm-events pseudo-event-form-listp)
+  :returns (mv (local-events pseudo-event-form-listp)
+               (exported-events pseudo-event-form-listp)
                (print-events pseudo-event-form-listp))
   :short "Generate all the @('p[l[k]]-rule[k]') theorems."
-  (b* (((when (endp irule-infos)) (mv nil nil))
-       ((mv thm-event print-event?)
+  (b* (((when (endp irule-infos)) (mv nil nil nil))
+       ((mv local-event exported-event print-event?)
         (defind-gen-irule-thm (car irule-infos) pred-infos name print))
-       ((mv thm-events print-events)
+       ((mv local-events exported-events print-events)
         (defind-gen-irule-thms (cdr irule-infos) pred-infos name print)))
-    (mv (cons thm-event thm-events)
+    (mv (cons local-event local-events)
+        (cons exported-event exported-events)
         (append print-event? print-events))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4911,14 +4925,23 @@
   :short "Generate a @(tsee defsection) or @(tsee encapsulate) with
           all the @('p[l[k]]-rule[k]') theorems,
           depending on whether XDOC is to be generated."
-  (b* (((mv thm-events print-events)
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The local theorems with hints precede
+     the redundant non-local theorems without hints;
+     see @(tsee defind-gen-irule-thm).
+     A @(tsee defsection) wraps its events into an @(tsee encapsulate),
+     so in both cases the local theorems disappear after the section."))
+  (b* (((mv local-events exported-events print-events)
         (defind-gen-irule-thms irule-infos pred-infos name print))
+       (events (append local-events exported-events))
        (defsection-event
          (if xdocp
              `(defsection ,(defind-rule-thm-section-name name)
                 :short "Theorems corresponding to the inference rules."
-                ,@thm-events)
-           `(encapsulate () ,@thm-events))))
+                ,@events)
+           `(encapsulate () ,@events))))
     (mv defsection-event print-events))
 
   ///
