@@ -2107,7 +2107,7 @@
       (make-unbox-spec-info :ispaces ispaces :var name :target target))
     :measure (abnf::tree-count tree))
 
-  ;; let-exp = "let" ws "(" *( ws bind ) ws ")" ws exp
+  ;; let-exp = "let" ws "(" 1*( ws bind ) ws ")" ws exp
   (define abs-let-exp ((tree abnf::treep))
     :returns (e expr-resultp)
     :short "Abstract a @('let-exp') to an @(tsee expr) @(':let')."
@@ -2115,7 +2115,9 @@
           (abnf::check-tree-nonleaf-8 tree "let-exp"))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf binds) (abs-*-ws-bind sub.4th))
-         ((okf body) (abs-exp body-tree)))
+         ((okf body) (abs-exp body-tree))
+         ((unless (consp binds))
+          (reserrf (list :let-exp-no-binds body))))
       (make-expr-let :binds binds :body body))
     :measure (abnf::tree-count tree))
 
