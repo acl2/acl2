@@ -1914,7 +1914,7 @@
                               (abnf::tree-info-for-error inner))))))
     :measure (abnf::tree-count tree))
 
-  ;; app-exp = exp *( ws exp )
+  ;; app-exp = exp 1*( ws exp )
   (define abs-app-exp ((tree abnf::treep))
     :returns (e expr-resultp)
     :short "Abstract an @('app-exp') to
@@ -1932,10 +1932,11 @@
          ((okf fun-tree) (abnf::check-tree-list-1 sub.1st))
          ((okf fun) (abs-exp fun-tree))
          ((okf args) (abs-*-ws-exp sub.2nd)))
-      (if (and (consp args)
-               (endp (cdr args)))
-          (make-expr-app :fun fun :arg (car args))
-        (make-expr-appn :fun fun :args args)))
+      (cond ((endp args)
+             (reserrf (list :app-exp-no-args fun)))
+            ((endp (cdr args))
+             (make-expr-app :fun fun :arg (car args)))
+            (t (make-expr-appn :fun fun :args args))))
     :measure (abnf::tree-count tree))
 
   ;; array-exp = "array" ws shape-lit 1*( ws atom )
