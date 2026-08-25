@@ -86,7 +86,12 @@
      and we may use them here to simplify the rules.
      We do not have premises saying that
      the renaming maps are string-to-string maps,
-     because other premises set them to be equal to string-to-string maps."))
+     because other premises set them to be equal to string-to-string maps.")
+   (xdoc::p
+    "An array type variable @('*<name>') is sugar for
+     an array type @('(A &<name> @<name>)') consisting of
+     an atom type variable and a shape variable with the same name.
+     Rule @('array-var') lets us perform this reduction."))
 
   :preds ((type= type1 type2))
 
@@ -198,6 +203,13 @@
            (type= (type-rename-ispace-vars t1 dren1 sren1)
                   (type-rename-ispace-vars t2 dren2 sren2)))
           (type= (type-sigma p1 t1) (type-sigma p2 t2)))
+
+   ;; normalization of array type variables:
+
+   (array-var ((stringp name))
+              (type= (type-var (type-var-array name))
+                     (type-array (type-var-atom name)
+                                 (ispace-var-shape name))))
 
    ;; TODO: normalization rules
 
