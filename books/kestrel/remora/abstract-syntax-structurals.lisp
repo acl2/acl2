@@ -906,6 +906,30 @@
   :hooks ((:fix :hints (("Goal"
                          :in-theory (enable cdr-of-ispace-var-list-fix))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define make-type-sigma/sigman ((params ispace-var-listp) (body typep))
+  :guard (consp params)
+  :returns (type typep)
+  :short "Construct a unary or n-ary sum type,
+          depending on the number of parameters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There must be at least one parameter, as required by the guard.
+     If there is exactly one parameter,
+     we construct a unary sum type over that parameter;
+     if there are two or more parameters,
+     we construct an n-ary sum type,
+     consistently with the requirement that
+     n-ary sum types have two or more parameters
+     (see @(tsee type))."))
+  (if (endp (cdr params))
+      (make-type-sigma :param (car params) :body body)
+    (make-type-sigman :params params :body body))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-ispace-var-list-fix))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-binders-count ((type typep))
@@ -1079,9 +1103,7 @@
    (xdoc::p
     "This is analogous to @(tsee pi-curried-body)."))
   (cond ((endp (cdr params)) (type-fix body))
-        ((endp (cddr params))
-         (make-type-sigma :param (cadr params) :body body))
-        (t (make-type-sigman :params (cdr params) :body body)))
+        (t (make-type-sigma/sigman (cdr params) body)))
   :hooks ((:fix :hints (("Goal"
                          :in-theory (enable cdr-of-ispace-var-list-fix)))))
 
@@ -1093,7 +1115,8 @@
                                                  (type-sigman->body type)))
                  (type-count type)))
     :rule-classes :linear
-    :enable sigma-curried-body
+    :enable (sigma-curried-body
+             make-type-sigma/sigman)
     :expand ((type-count type)
              (type-count (type-sigma (cadr (type-sigman->params type))
                                      (type-sigman->body type)))
@@ -1110,7 +1133,7 @@
                                                 (type-sigman->body type)))
         (type-binders-count type)))
     :rule-classes :linear
-    :enable (sigma-curried-body type-binders-count len)
+    :enable (sigma-curried-body type-binders-count make-type-sigma/sigman len)
     :expand ((type-count type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

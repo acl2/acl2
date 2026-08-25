@@ -370,13 +370,12 @@
              :denv (type-denv-restrict (type-free-ispace-vars type)
                                        (type-free-type-vars type)
                                        denv))
-     :sigman (b* (((unless (consp type.params)) (reserr nil)))
-               (make-type-value-sigma
-                :param (car type.params)
-                :body (sigma-curried-body type.params type.body)
-                :denv (type-denv-restrict (type-free-ispace-vars type)
-                                          (type-free-type-vars type)
-                                          denv))))
+     :sigman (make-type-value-sigma
+              :param (car type.params)
+              :body (sigma-curried-body type.params type.body)
+              :denv (type-denv-restrict (type-free-ispace-vars type)
+                                        (type-free-type-vars type)
+                                        denv)))
     :measure (type-count type))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

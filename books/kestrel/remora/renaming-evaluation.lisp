@@ -1124,7 +1124,9 @@
                                                                  dim-all
                                                                  shape-all)))))
   :enable (sigma-curried-body
-           mergesort-when-singleton)
+           make-type-sigma/sigman
+           mergesort-when-singleton
+           acl2::equal-len-const)
   :use ((:instance dim/shape-rename-remove-bound-of-insert-then-rest
                    (var (car params))
                    (rest (cdr params)))))
@@ -1283,7 +1285,8 @@
                        type-denv-lookup-type
                        acl2::lt-len-const
                        consp-of-cdr-of-type-foralln->params
-                       consp-of-cdr-of-type-pin->params))
+                       consp-of-cdr-of-type-pin->params
+                       consp-of-cdr-of-type-sigman->params))
    (and acl2::stable-under-simplificationp
         '(:use ((:instance denv-type-vars-ispace-renamed-p-necc
                            (var (type-var->var type))))))))
@@ -1945,7 +1948,8 @@
                                       (type-rename-type-vars body
                                                              atom-renam
                                                              array-renam))))
-  :enable sigma-curried-body)
+  :enable (sigma-curried-body
+           make-type-sigma/sigman))
 
 ; The type-variable commutation for the currying of universal types
 ; mirrors the ispace-variable one for the currying of product types:
@@ -2157,7 +2161,8 @@
                        acl2::lt-len-const
                        acl2::equal-len-const
                        consp-of-cdr-of-type-foralln->params
-                       consp-of-cdr-of-type-pin->params))
+                       consp-of-cdr-of-type-pin->params
+                       consp-of-cdr-of-type-sigman->params))
    (and acl2::stable-under-simplificationp
         '(:use ((:instance denv-type-vars-renamed-p-necc
                            (var (type-var->var type))))))))

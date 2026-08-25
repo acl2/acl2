@@ -160,21 +160,30 @@
     (cond ((endp exprs) nil)
           (t (cons (flatten-frames-in-expr (car exprs))
                    (flatten-frames-in-expr-list (cdr exprs)))))
-    :measure (expr-list-count exprs))
+    :measure (expr-list-count exprs)
+
+    ///
+
+    (defret consp-of-flatten-frames-in-expr-list
+      (equal (consp flat-exprs)
+             (consp exprs))
+      :hints (("Goal" :expand ((flatten-frames-in-expr-list exprs))))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :verify-guards :after-returns
-
-  :guard-hints (("Goal" :in-theory (enable
-                                    true-list-listp-when-expr-list-listp
-                                    true-list-listp-when-atom-list-listp)))
+  :verify-guards nil ; done below
 
   :flag-local nil
 
   ///
 
-  (fty::deffixequiv-mutual flatten-frames-in-exprs))
+  (fty::deffixequiv-mutual flatten-frames-in-exprs)
+
+  (verify-guards flatten-frames-in-expr
+    :hints (("Goal" :in-theory (enable
+                                true-list-listp-when-expr-list-listp
+                                true-list-listp-when-atom-list-listp
+                                consp-of-append-all-when-consp-of-car)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -192,4 +201,5 @@
       :fn flatten-frames-in-expr-list)
     :mutual-recursion flatten-frames-in-exprs
     :hints (("Goal" :in-theory (enable flatten-frames-in-expr
-                                       flatten-frames-in-expr-list)))))
+                                       flatten-frames-in-expr-list
+                                       consp-of-append-all-when-consp-of-car)))))
