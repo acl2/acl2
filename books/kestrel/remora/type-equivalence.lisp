@@ -208,8 +208,8 @@
 
    (array-var ((stringp name))
               (type= (type-var (type-var-array name))
-                     (type-array (type-var-atom name)
-                                 (ispace-var-shape name))))
+                     (type-array (type-var (type-var-atom name))
+                                 (ispace-shape (shape-var name)))))
 
    ;; TODO: normalization rules
 
