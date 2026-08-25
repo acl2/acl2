@@ -16,6 +16,9 @@
 
 (include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
+(include-book "std/strings/dec-digit-char-listp" :dir :system)
+(include-book "std/strings/hex-digit-char-listp" :dir :system)
+(include-book "std/strings/oct-digit-char-listp" :dir :system)
 (include-book "std/util/defval" :dir :system)
 
 (local (include-book "std/typed-lists/string-listp" :dir :system))
@@ -121,6 +124,59 @@
                      (equal (len (nth 1 branchess)) 1)))
         nil))
     (abnf::tree-fix (nth 0 (nth 1 branchess)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define num-escape-cst-code ((cst abnf::treep))
+  :returns (code natp :rule-classes (:rewrite :type-prescription))
+  :short "Code denoted by a @('num-escape') CST."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The fringe of a @('num-escape') CST consists of
+     either decimal digits,
+     or an @('o') or @('O') followed by octal digits,
+     or an @('x') or @('X') followed by hexadecimal digits.
+     We compute the value of the digits in the base
+     indicated by the presence and kind of the initial marker,
+     using the digit value functions from the @('std/strings') library,
+     which operate on characters:
+     so we first convert the fringe to a list of characters.
+     The conversion requires the codes to be below 256,
+     which is the case for CSTs that match the grammar,
+     since the markers and digits are all ASCII.")
+   (xdoc::p
+    "If the CST is not terminated,
+     or if its fringe is empty or has codes not below 256,
+     or if the (purported) digits are not digits of the right kind,
+     we return 0: this keeps the function total;
+     none of that happens on CSTs that match the grammar.")
+   (xdoc::p
+    "For a CST matching @('num-escape'),
+     this should return the same code as @('num-escape-code')
+     on the corresponding abstract syntax,
+     which uses the same digit value functions;
+     proving that is future work."))
+  (b* (((unless (abnf::tree-terminatedp cst)) 0)
+       (fringe (abnf::tree->string cst))
+       ((unless (acl2::unsigned-byte-listp 8 fringe)) 0)
+       (chars (acl2::nats=>chars fringe))
+       ((unless (consp chars)) 0)
+       (marker (car chars))
+       (digits (cdr chars)))
+    (cond ((or (eql marker #\o)
+               (eql marker #\O))
+           (if (str::oct-digit-char-listp digits)
+               (str::oct-digit-chars-value digits)
+             0))
+          ((or (eql marker #\x)
+               (eql marker #\X))
+           (if (str::hex-digit-char-listp digits)
+               (str::hex-digit-chars-value digits)
+             0))
+          (t (if (str::dec-digit-char-listp chars)
+                 (str::dec-digit-chars-value chars)
+               0)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1001,6 +1057,58 @@
                               (not (prefixp
                                     (list (char-code #\$))
                                     (abnf::tree->string cst-ident))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk cst-numeric-escapes-unicode-scalar-values-p ((cst abnf::treep))
+  :returns (yes/no booleanp)
+  :short "Check if a CST does not contain any @('num-escape') CSTs
+          whose codes are not Unicode scalar values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A numeric escape in a string literal denotes a character code,
+     but the grammar puts no bound on the digits of @('num-escape'):
+     e.g. @('\"\\1114112\"') is derivable from the grammar,
+     although 1114112 (i.e. @('#x110000')) exceeds
+     the largest Unicode code point @('#x10FFFF').
+     Unlike the longest-match restrictions and the choice restrictions,
+     this restriction is about the value denoted by a CST:
+     the code denoted by every @('num-escape') CST
+     (see @(tsee num-escape-cst-code))
+     must be a Unicode scalar value,
+     i.e. at most @('#x10FFFF') and not a surrogate
+     (i.e. not in the range from @('#xD800') to @('#xDFFF')).")
+   (xdoc::p
+    "The bound matches [impl],
+     where numeric escapes above @('#x10FFFF') are parse errors,
+     in all three bases:
+     e.g. @('\"\\1114112\"'), @('\"\\x110000\"'), and @('\"\\o4200000\"')
+     fail to parse, while @('\"\\1114111\"') parses.
+     The exclusion of surrogates does not match [impl],
+     which accepts e.g. @('\"\\55296\"') (i.e. U+D800),
+     because Haskell's character type admits surrogate codes.
+     We exclude them for consistency with the rest of the syntax:
+     the grammar's input alphabet excludes surrogates,
+     so without this exclusion a string literal could denote
+     code points that cannot be written directly,
+     and that cannot be encoded in UTF-8.
+     This is a deliberate, one-directional divergence
+     (we reject some inputs that [impl] accepts,
+     on a corner that no actual program uses),
+     and we expect [impl] to eventually change accordingly.")
+   (xdoc::p
+    "Like @(tsee cst-unbox-expr-binders-not-dollar-initial-p),
+     this restriction does not resolve any ambiguity:
+     it just removes from the language the string literals
+     whose CSTs contain out-of-range numeric escapes."))
+  (forall (cst-esc)
+          (implies (and (set::in cst-esc (abnf::trees-in-tree cst))
+                        (cst-matchp cst-esc "num-escape"))
+                   (b* ((code (num-escape-cst-code cst-esc)))
+                     (and (<= code #x10FFFF)
+                          (not (and (<= #xD800 code)
+                                    (<= code #xDFFF))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
