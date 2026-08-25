@@ -249,7 +249,12 @@
              (equal (len (append-all lists))
                     (* (len lists) (len (car lists)))))
     :use (:instance len-of-append-all-when-all-of-len-p
-                    (n (len (car lists))))))
+                    (n (len (car lists)))))
+
+  (defruled consp-of-append-all-when-consp-of-car
+    (implies (consp (car lists))
+             (consp (append-all lists)))
+    :expand ((append-all lists))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

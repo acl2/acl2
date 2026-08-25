@@ -328,11 +328,7 @@
      for an n-ary type.
      Thus a unary type may be equivalent to an n-ary one,
      and two n-ary types may be equivalent
-     even if they have different numbers of bound variables.
-     An n-ary sum type with no bound variables,
-     which is not well-formed,
-     is only equivalent to another one with no bound variables,
-     with equivalent bodies.")
+     even if they have different numbers of bound variables.")
    (xdoc::p
     "Since we are renaming (ispace and type) variables to fresh ones,
      we do not call the predicates to check for variable capture.
@@ -577,8 +573,7 @@
                                                          maps.3rd
                                                          maps.4th)))
                       (type-equivp body1 body2))
-             :sigman (b* (((unless (consp type2.params)) nil)
-                          (used (set::union (type-all-ispace-vars type1)
+             :sigman (b* ((used (set::union (type-all-ispace-vars type1)
                                             (type-all-ispace-vars type2)))
                           (maps (fresh-ispace-var-renaming
                                  (list type1.param)
@@ -599,8 +594,7 @@
    :sigman (b* ((type2 (normalize-type type2)))
              (type-case
               type2
-              :sigma (b* (((unless (consp type1.params)) nil)
-                          (used (set::union (type-all-ispace-vars type1)
+              :sigma (b* ((used (set::union (type-all-ispace-vars type1)
                                             (type-all-ispace-vars type2)))
                           (maps (fresh-ispace-var-renaming
                                  (list (car type1.params))
@@ -617,11 +611,7 @@
                                                           maps.3rd
                                                           maps.4th)))
                        (type-equivp body1 body2))
-              :sigman (b* (((when (endp type1.params))
-                            (and (endp type2.params)
-                                 (type-equivp type1.body type2.body)))
-                           ((when (endp type2.params)) nil)
-                           (used (set::union (type-all-ispace-vars type1)
+              :sigman (b* ((used (set::union (type-all-ispace-vars type1)
                                              (type-all-ispace-vars type2)))
                            (maps (fresh-ispace-var-renaming
                                   (list (car type1.params))

@@ -1590,8 +1590,7 @@
                                 :body be.expr
                                 :type? type)))
      :bracket
-     (b* (((unless (consp expr.exprs)) (reserr nil))
-          ((ok (types+exprs es)) (check-expr-list expr.exprs senv))
+     (b* (((ok (types+exprs es)) (check-expr-list expr.exprs senv))
           ((unless (type-list-all-equivp es.types)) (reserr nil))
           (type (car es.types))
           ((ok (type+ispace array)) (type-match-array type)))
@@ -1642,7 +1641,14 @@
       (implies (not (reserrp types+exprs))
                (iff (types+exprs->types types+exprs)
                     (not (zp (len exprs)))))
-      :hints (("Goal" :induct (len exprs) :in-theory (enable len)))))
+      :hints (("Goal" :induct (len exprs) :in-theory (enable len))))
+
+    (defret consp-of-exprs-of-check-expr-list
+      (implies (and (not (reserrp types+exprs))
+                    (consp exprs))
+               (consp (types+exprs->exprs types+exprs)))
+      :hints (("Goal" :expand ((check-expr-list exprs senv))))
+      :rule-classes ((:rewrite) (:type-prescription))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1799,7 +1805,6 @@
           ((ok vars+type) (type-match-sum box-type))
           (vars (ispacevarlist+type->vars vars+type))
           (body-type (ispacevarlist+type->type vars+type))
-          ((unless (consp vars)) (reserr nil))
           ((ok (stringdimmap+stringshapemap maps))
            (check-ispace-params-and-args (list (car vars)) (list ispace)))
           (rest-type (sigma-curried-body vars body-type))
@@ -1876,7 +1881,6 @@
          ((ok vars+type) (type-match-sum type))
          (vars (ispacevarlist+type->vars vars+type))
          (body-type (ispacevarlist+type->type vars+type))
-         ((unless (consp vars)) (reserr nil))
          ((unless (check-ispace ie.ispace senv)) (reserr nil))
          (ispace (senv-expand-ispace ie.ispace senv))
          ((ok (stringdimmap+stringshapemap maps))
@@ -1929,7 +1933,14 @@
       (implies (not (reserrp types+atoms))
                (iff (types+atoms->types types+atoms)
                     (not (zp (len atoms)))))
-      :hints (("Goal" :induct (len atoms) :in-theory (enable len)))))
+      :hints (("Goal" :induct (len atoms) :in-theory (enable len))))
+
+    (defret consp-of-atoms-of-check-atom-list
+      (implies (and (not (reserrp types+atoms))
+                    (consp atoms))
+               (consp (types+atoms->atoms types+atoms)))
+      :hints (("Goal" :expand ((check-atom-list atoms senv))))
+      :rule-classes ((:rewrite) (:type-prescription))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

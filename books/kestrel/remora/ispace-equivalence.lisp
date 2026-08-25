@@ -443,35 +443,7 @@
                (and (dim-listp concl.dims1)
                     (dim-listp concl.dims2)))
       :flag dims=-proof-validp)
-    :hints (("Goal" :in-theory (enable dim=-proof-validp
-                                       dims=-proof-validp
-                                       dim=-refl-validp
-                                       dim=-symm-validp
-                                       dim=-trans-validp
-                                       dims=-refl-validp
-                                       dims=-symm-validp
-                                       dims=-trans-validp
-                                       dim=-cong-add-validp
-                                       dim=-cong-sub-validp
-                                       dim=-cong-mul-validp
-                                       dims=-cong-cons-validp
-                                       dim=-add0-validp
-                                       dim=-add1-validp
-                                       dim=-add3m-validp
-                                       dim=-mul0-validp
-                                       dim=-mul1-validp
-                                       dim=-mul3m-validp
-                                       dim=-sub2m-validp
-                                       dim=-add-comm-validp
-                                       dim=-add-assoc-validp
-                                       dim=-add-id-validp
-                                       dim=-add-inv-validp
-                                       dim=-add-const-validp
-                                       dim=-mul-comm-validp
-                                       dim=-mul-assoc-validp
-                                       dim=-mul-id-validp
-                                       dim=-mul-const-validp
-                                       dim=-distrib-validp))))
+    :hints (("Goal" :in-theory (enable* dim-equiv-infrules-validp-defs))))
 
   (defruled dimp-when-dim=
     (implies (dim= dim1 dim2)
@@ -512,40 +484,8 @@
                (and (ispace-listp concl.isps1)
                     (ispace-listp concl.isps2)))
       :flag isps=-proof-validp)
-    :hints (("Goal" :in-theory (enable shp=-proof-validp
-                                       shps=-proof-validp
-                                       isp=-proof-validp
-                                       isps=-proof-validp
-                                       shp=-refl-validp
-                                       shp=-symm-validp
-                                       shp=-trans-validp
-                                       shps=-refl-validp
-                                       shps=-symm-validp
-                                       shps=-trans-validp
-                                       isp=-refl-validp
-                                       isp=-symm-validp
-                                       isp=-trans-validp
-                                       isps=-refl-validp
-                                       isps=-symm-validp
-                                       isps=-trans-validp
-                                       shp=-cong-dims-validp
-                                       shp=-cong-append-validp
-                                       shp=-cong-splice-validp
-                                       isp=-cong-dim-validp
-                                       isp=-cong-shape-validp
-                                       shps=-cong-cons-validp
-                                       isps=-cong-cons-validp
-                                       shp=-dims0-validp
-                                       shp=-dims2m-validp
-                                       shp=-append1-validp
-                                       shp=-append3m-validp
-                                       shp=-splice0-validp
-                                       shp=-splice1m-dim-validp
-                                       shp=-splice1m-shape-validp
-                                       shp=-append-assoc-validp
-                                       shp=-append-id-left-validp
-                                       shp=-append-id-right-validp
-                                       isp=-ispace-dim-shape-validp))))
+    :hints (("Goal"
+             :in-theory (enable* shape/ispace-equiv-infrules-validp-defs))))
 
   (defruled shapep-when-shp=
     (implies (shp= shp1 shp2)

@@ -11109,7 +11109,7 @@
                 (all-unsigned-byte-p 32 data))
            (equal (equal (bv-array-write 32 (bvplus 5 1 n) n 0 data) (repeat (bvplus 5 1 n) 0))
                   (equal (firstn n data) (repeat n 0))))
-  :hints (("Goal" :in-theory (e/d (BV-ARRAY-WRITE update-nth2 bvplus ceiling-of-lg equal-of-append repeat)
+  :hints (("Goal" :in-theory (e/d (BV-ARRAY-WRITE update-nth2 bvplus ceiling-of-lg equal-of-append repeat unsigned-byte-p-of-+-of-constant-strong)
                                   (equal-of-cons)))))
 
 ;gen
@@ -11166,9 +11166,9 @@
                 )
            (equal (equal (repeat (bvplus 5 1 x) 0) (bv-array-write 32 (bvplus 5 1 x) x 0 data))
                   (equal (repeat x 0) (firstn x data))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write UPDATE-NTH2 bvplus ceiling-of-lg equal-of-append equal-of-update-nth-new)
-                                  (
-                                   equal-of-cons)))))
+  :hints (("Goal" :in-theory (e/d (bv-array-write UPDATE-NTH2 bvplus ceiling-of-lg equal-of-append equal-of-update-nth-new
+                                                  unsigned-byte-p-of-+-of-constant-strong)
+                                  (equal-of-cons)))))
 
 (defthm equal-of-repeat-and-bv-array-write-hack-alt
   (implies (and (true-listp data)

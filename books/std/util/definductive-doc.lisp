@@ -172,7 +172,8 @@
      (xdoc::p
       "It must be a symbol.")
      (xdoc::p
-      "It is used as name of the generated XDOC topic (if any, see below).
+      "It is used as name of the generated XDOC topic (if any, see below),
+       and as prefix of the name of the generated ruleset (see below).
        In the future, it may be used to identify this inductive definition.")
      (xdoc::p
       "The names of all the generated events,
@@ -421,7 +422,10 @@
        are the ones that the rule derives.")
      (xdoc::p
       "These predicates are currently not guard-verified,
-       because they may involve arbitrary user-supplied terms."))
+       because they may involve arbitrary user-supplied terms.")
+     (xdoc::p
+      "These predicates are disabled;
+       they are added to the ruleset described below."))
 
     (xdoc::desc
      (list
@@ -450,7 +454,25 @@
      (xdoc::p
       "These predicates are currently not guard-verified,
        because they may involve arbitrary user-supplied terms.
-       The @('p[i]-proof-validp') predicates have fixing theorems."))
+       The @('p[i]-proof-validp') predicates have fixing theorems.")
+     (xdoc::p
+      "These predicates are disabled;
+       they are added to the ruleset described below."))
+
+    (xdoc::desc
+     "@('name-validp-defs')"
+     (xdoc::p
+      "A "
+      (xdoc::seetopic "rulesets" "ruleset")
+      ", whose name is obtained by
+       extending the @('name') input with the suffix @('-validp-defs'),
+       with the definitions of
+       the @('p[l[k]]-rule[k]-validp') and @('p[i]-proof-validp') predicates.")
+     (xdoc::p
+      "Since those predicates are disabled,
+       this ruleset provides a way to enable all of them at once,
+       e.g. via @(tsee enable*),
+       when reasoning about proof trees."))
 
     (xdoc::desc
      (list

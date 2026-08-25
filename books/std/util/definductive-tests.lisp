@@ -71,6 +71,12 @@
     (implies (r* a b)
              (r*-alt a b))))
 
+ ; The ruleset has the validity predicates, in order.
+
+ (assert-event
+  (equal (get-ruleset 'refl-trans-closure-validp-defs (w state))
+         '(r*-base-validp r*-refl-validp r*-trans-validp r*-proof-validp)))
+
  ; The generated induction scheme supports rule induction.
 
  (encapsulate
@@ -451,6 +457,16 @@
     (implies (odd n)
              (odd-alt n))))
 
+ ; The ruleset has the validity predicates, in order.
+
+ (assert-event
+  (equal (get-ruleset 'evenodd-validp-defs (w state))
+         '(even-even-0-validp
+           even-even-step-validp
+           odd-odd-step-validp
+           even-proof-validp
+           odd-proof-validp)))
+
  ; The predicates hold on some of the expected numbers.
 
  (defthm even-4
@@ -471,6 +487,7 @@
  ; rule induction is via the flag macro:
  ; both predicates are proved together,
  ; with no proof tree mentioned in either statement.
+ ; The validity predicates are enabled via the generated ruleset.
 
  (defthm-even-induction
    (defthm natp-when-even
@@ -483,13 +500,11 @@
      :flag odd-induct)
    :hints (("Goal" :expand ((even-proof-validp (even-proof n) n)
                             (odd-proof-validp (odd-proof n) n))
-                   :in-theory (enable even
-                                      odd
-                                      even-even-0-validp
-                                      even-even-step-validp
-                                      odd-odd-step-validp
-                                      even-when-proof-validp
-                                      odd-when-proof-validp)))))
+                   :in-theory (enable* even
+                                       odd
+                                       evenodd-validp-defs
+                                       even-when-proof-validp
+                                       odd-when-proof-validp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

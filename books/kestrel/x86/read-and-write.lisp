@@ -1111,7 +1111,7 @@
   :hints (("Goal" :in-theory (enable read-when-bvchops-agree))))
 
 ;; we use logext so that negative constants are nice
-(defthm read-of-bvplus-normalize
+(defthmd read-of-bvplus-normalize
   (implies (and (syntaxp (quotep k))
                 (integerp k)
                 (integerp addr))
@@ -1122,7 +1122,7 @@
 
 
 ;; or do we want bvplus?
-(defthm read-of-bvplus
+(defthmd read-of-bvplus
   (implies (and (integerp x)
                 (integerp y))
            (equal (read n (bvplus 48 x y) x86)
@@ -1136,9 +1136,10 @@
                 (integerp y))
            (equal (read n (+ x y) x86)
                   (read n (bvplus 48 x y) x86)))
-  :hints (("Goal" :in-theory (e/d (read) (READ-OF-BVPLUS-TIGHTEN ; todo loop
-                                          ;ACL2::BVPLUS-COMMUTATIVE-2-SIZES-DIFFER
-                                          )))))
+  :hints (("Goal" :in-theory (e/d (read read-of-bvplus)
+                                  (READ-OF-BVPLUS-TIGHTEN ; todo loop
+                                   ;;ACL2::BVPLUS-COMMUTATIVE-2-SIZES-DIFFER
+                                   )))))
 
 (theory-invariant (incompatible (:rewrite read-of-+-arg2) (:rewrite read-of-bvplus)))
 
@@ -1781,7 +1782,7 @@
                 (unsigned-byte-p 48 addr2))
            (equal (xr :mem addr1 (write n addr2 val x86))
                   (xr :mem addr1 x86)))
-  :hints (("Goal" :in-theory (enable write write-byte))))
+  :hints (("Goal" :in-theory (enable write write-byte acl2::unsigned-byte-p-of-+-of-constant-strong))))
 
 (defthm xr-of-write-too-high-alt
   (implies (and (< (+ n addr2) addr1)
@@ -3053,8 +3054,11 @@
                                   (j (read n2 addr x86)))
            :in-theory (e/d (unsigned-byte-p-forced) (acl2::logapp-becomes-bvcat-when-bv)))))
 
-;move up
-(defthm bvcat-of-read-and-read-combine
+;can loop with the blasting rules, and we may need to blast reads into bytes
+;because the SMT solver won't know about read (unless we model memory as a
+;giant array).
+; move up
+(defthmd bvcat-of-read-and-read-combine
   (implies (and (equal (bvchop 48 ad1) (bvplus 48 n2 ad2))
                 (equal size1 (* 8 n1))
                 (equal size2 (* 8 n2))

@@ -777,7 +777,8 @@
       BVMINUS SBVLT ACL2::GETBIT-OF-+
       ACL2::EQUAL-OF-BITXOR-AND-1
       BVCAT LOGAPP LOGEXT
-      acl2::*-of---arg1-gen)
+      acl2::*-of---arg1-gen
+      acl2::unsigned-byte-p-of-+-of-constant-strong)
      (;;ACL2::REWRITE-<-WHEN-SIZES-DONT-MATCH2 ;looped
       ACL2::REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1 ;looped
       ;ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
@@ -1973,7 +1974,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;(defthm pf-spec8-becomes-bvcount (equal (pf-spec8 result) (acl2::bvcount 8 result)) :hints (("Goal" :in-theory (enable pf-spec8 acl2::bvcount))))
+;; The hyp is needed because pf-spec8 does not properly chop its argument.
+(defthm pf-spec8-becomes-bvcount (implies (unsigned-byte-p 8 result) (equal (pf-spec8 result) (bitnot (getbit 0 (bvcount 8 result))))) :hints (("Goal" :in-theory (enable pf-spec8 acl2::bvcount-becomes-logcount))))
+;; These only look at the low byte of the argument:
+(defthm pf-spec16-becomes-bvcount (equal (pf-spec16 result) (bitnot (getbit 0 (bvcount 8 result)))) :hints (("Goal" :in-theory (enable pf-spec16 acl2::bvcount-becomes-logcount))))
+(defthm pf-spec32-becomes-bvcount (equal (pf-spec32 result) (bitnot (getbit 0 (bvcount 8 result)))) :hints (("Goal" :in-theory (enable pf-spec32 acl2::bvcount-becomes-logcount))))
+(defthm pf-spec64-becomes-bvcount (equal (pf-spec64 result) (bitnot (getbit 0 (bvcount 8 result)))) :hints (("Goal" :in-theory (enable pf-spec64 acl2::bvcount-becomes-logcount))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1987,3 +1993,32 @@
 (defthm sbb-af-spec16-becomes-bvlt (implies (bitp cf) (equal (sbb-af-spec16 dst src cf) (if (bvlt 6 15 (bvplus 6 (bvuminus 6 cf) (bvminus 6 (bvchop 4 dst) (bvchop 4 src)))) 1 0))) :hints (("Goal" :in-theory (enable sbb-af-spec16 bvlt bvminus bvplus))))
 (defthm sbb-af-spec32-becomes-bvlt (implies (bitp cf) (equal (sbb-af-spec32 dst src cf) (if (bvlt 6 15 (bvplus 6 (bvuminus 6 cf) (bvminus 6 (bvchop 4 dst) (bvchop 4 src)))) 1 0))) :hints (("Goal" :in-theory (enable sbb-af-spec32 bvlt bvminus bvplus))))
 (defthm sbb-af-spec64-becomes-bvlt (implies (bitp cf) (equal (sbb-af-spec64 dst src cf) (if (bvlt 6 15 (bvplus 6 (bvuminus 6 cf) (bvminus 6 (bvchop 4 dst) (bvchop 4 src)))) 1 0))) :hints (("Goal" :in-theory (enable sbb-af-spec64 bvlt bvminus bvplus))))
+
+;move
+(local
+  (defthm bvchop-of-+-of---of-logext-arg2
+    (implies (and (<= size size2)
+                  (integerp x)
+                  (integerp y)
+                  (integerp size2)
+                  ;(integerp size)
+                  )
+             (equal (bvchop size (+ x (- (logext size2 y))))
+                    (bvchop size (+ x (- y)))))))
+
+(defthmd bvcount-convert-to-bv
+  (implies (and (syntaxp (acl2::convertible-to-bvp x))
+                (natp size))
+           (equal (bvcount size x)
+                  (bvcount size (trim size x))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(local (include-book "kestrel/bv/trim-elim-rules-non-bv" :dir :system))
+(local (include-book "kestrel/bv/convert-to-bv-rules" :dir :system))
+(local (include-book "kestrel/bv/bvuminus" :dir :system))
+
+;; todo: theories for the trim and convert rules:
+(defthm sub-pf-spec8-becomes-bvcount (equal (sub-pf-spec8 dst src) (bitnot (getbit 0 (bvcount 8 (bvminus 8 dst src))))) :hints (("Goal" :in-theory (enable sub-pf-spec8 bvcount-convert-to-bv acl2::trim-of-+-becomes-bvplus acl2::trim-of-unary---becomes-bvuminus acl2::bvplus-convert-arg3-to-bv bvminus ifix))))
+(defthm sub-pf-spec16-becomes-bvcount (equal (sub-pf-spec16 dst src) (bitnot (getbit 0 (bvcount 8 (bvminus 8 dst src))))) :hints (("Goal" :in-theory (enable sub-pf-spec16 bvcount-convert-to-bv acl2::trim-of-+-becomes-bvplus acl2::trim-of-unary---becomes-bvuminus acl2::bvplus-convert-arg3-to-bv bvminus ifix))))
+(defthm sub-pf-spec32-becomes-bvcount (equal (sub-pf-spec32 dst src) (bitnot (getbit 0 (bvcount 8 (bvminus 8 dst src))))) :hints (("Goal" :in-theory (enable sub-pf-spec32 bvcount-convert-to-bv acl2::trim-of-+-becomes-bvplus acl2::trim-of-unary---becomes-bvuminus acl2::bvplus-convert-arg3-to-bv bvminus ifix))))
+(defthm sub-pf-spec64-becomes-bvcount (equal (sub-pf-spec64 dst src) (bitnot (getbit 0 (bvcount 8 (bvminus 8 dst src))))) :hints (("Goal" :in-theory (enable sub-pf-spec64 bvcount-convert-to-bv acl2::trim-of-+-becomes-bvplus acl2::trim-of-unary---becomes-bvuminus acl2::bvplus-convert-arg3-to-bv bvminus ifix))))

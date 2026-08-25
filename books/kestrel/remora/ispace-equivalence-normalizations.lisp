@@ -575,12 +575,7 @@
                                 new-dim))
     :hints (("Goal"
              :induct t
-             :in-theory (enable dim=-proof-validp
-                                dim=-refl-validp
-                                dim=-trans-validp
-                                dim=-mul0-validp
-                                dim=-mul1-validp
-                                dim=-mul3m-validp))))
+             :in-theory (enable* dim-equiv-infrules-validp-defs))))
 
   (defret dim-binmulp-of-binarize-mul-dims
     (implies (dim-list-binmulp dims)
@@ -728,15 +723,7 @@
                                    new-dims))
       :fn binarize-mul-in-dim-list)
     :hints (("Goal"
-             :in-theory (enable dim=-proof-validp
-                                dims=-proof-validp
-                                dim=-refl-validp
-                                dim=-trans-validp
-                                dim=-cong-add-validp
-                                dim=-cong-mul-validp
-                                dim=-cong-sub-validp
-                                dims=-refl-validp
-                                dims=-cong-cons-validp))))
+             :in-theory (enable* dim-equiv-infrules-validp-defs))))
 
   (defret-mutual dim-binmulp-of-binarize-mul-in-dims
     (defret dim-binmulp-of-binarize-mul-in-dim
@@ -866,9 +853,7 @@
              (dim=-proof-validp proof
                                 (dim-sub dims)
                                 new-dim))
-    :hints (("Goal" :in-theory (enable dim=-proof-validp
-                                       dim=-refl-validp
-                                       dim=-sub2m-validp))))
+    :hints (("Goal" :in-theory (enable* dim-equiv-infrules-validp-defs))))
 
   (defret dim-unisubp-of-unarize-sub-dims
     (implies (and (dim-list-unisubp dims)
@@ -1001,15 +986,7 @@
                                    new-dims))
       :fn unarize-sub-in-dim-list)
     :hints (("Goal"
-             :in-theory (enable dim=-proof-validp
-                                dims=-proof-validp
-                                dim=-refl-validp
-                                dim=-trans-validp
-                                dim=-cong-add-validp
-                                dim=-cong-mul-validp
-                                dim=-cong-sub-validp
-                                dims=-refl-validp
-                                dims=-cong-cons-validp))))
+             :in-theory (enable* dim-equiv-infrules-validp-defs))))
 
   (defret-mutual dim-unisubp-of-unarize-sub-in-dims
     (defret dim-unisubp-of-unarize-sub-in-dim
@@ -1132,15 +1109,7 @@
                                 new-shape))
     :hints (("Goal"
              :induct t
-             :in-theory (enable shp=-proof-validp
-                                shps=-proof-validp
-                                shp=-refl-validp
-                                shp=-trans-validp
-                                shp=-dims0-validp
-                                shp=-dims2m-validp
-                                shp=-cong-append-validp
-                                shps=-refl-validp
-                                shps=-cong-cons-validp))))
+             :in-theory (enable* shape/ispace-equiv-infrules-validp-defs))))
 
   (defret shape-unidimsp-of-unarize-shape-dims
     (shape-unidimsp new-shape)
@@ -1328,20 +1297,8 @@
                                    new-ispaces))
       :fn unarize-dims-in-ispace-list)
     :hints (("Goal"
-             :in-theory (e/d (shp=-proof-validp
-                              shps=-proof-validp
-                              isp=-proof-validp
-                              isps=-proof-validp
-                              shp=-refl-validp
-                              shp=-cong-append-validp
-                              shp=-cong-splice-validp
-                              isp=-refl-validp
-                              isp=-cong-shape-validp
-                              shps=-refl-validp
-                              shps=-cong-cons-validp
-                              isps=-refl-validp
-                              isps=-cong-cons-validp)
-                             (shp=-proof-validp-of-unarize-shape-dims)))
+             :in-theory (e/d* (shape/ispace-equiv-infrules-validp-defs)
+                              (shp=-proof-validp-of-unarize-shape-dims)))
             '(:use ((:instance shp=-proof-validp-of-unarize-shape-dims
                                (dims (shape-dims->dims shape)))))))
 
@@ -1502,11 +1459,7 @@
                                 new-shape))
     :hints (("Goal"
              :induct t
-             :in-theory (enable shp=-proof-validp
-                                shp=-refl-validp
-                                shp=-trans-validp
-                                shp=-append1-validp
-                                shp=-append3m-validp))))
+             :in-theory (enable* shape/ispace-equiv-infrules-validp-defs))))
 
   (defret shape-nullbinappendp-of-nullbinarize-append-shapes
     (implies (shape-list-nullbinappendp shapes)
@@ -1696,20 +1649,7 @@
                                    new-ispaces))
       :fn nullbinarize-append-in-ispace-list)
     :hints (("Goal"
-             :in-theory (enable shp=-proof-validp
-                                shps=-proof-validp
-                                isp=-proof-validp
-                                isps=-proof-validp
-                                shp=-refl-validp
-                                shp=-trans-validp
-                                shp=-cong-append-validp
-                                shp=-cong-splice-validp
-                                isp=-refl-validp
-                                isp=-cong-shape-validp
-                                shps=-refl-validp
-                                shps=-cong-cons-validp
-                                isps=-refl-validp
-                                isps=-cong-cons-validp))))
+             :in-theory (enable* shape/ispace-equiv-infrules-validp-defs))))
 
   (defret-mutual shape-nullbinappendp-of-nullbinarize-append-in-shapes/ispaces
     (defret shape-nullbinappendp-of-nullbinarize-append-in-shape
@@ -1921,16 +1861,7 @@
                                 new-shape))
     :hints (("Goal"
              :induct t
-             :in-theory (enable shp=-proof-validp
-                                shps=-proof-validp
-                                shp=-refl-validp
-                                shp=-trans-validp
-                                shp=-splice0-validp
-                                shp=-splice1m-dim-validp
-                                shp=-splice1m-shape-validp
-                                shp=-cong-append-validp
-                                shps=-refl-validp
-                                shps=-cong-cons-validp))))
+             :in-theory (enable* shape/ispace-equiv-infrules-validp-defs))))
 
   (defret shape-nosplicep-of-unsplice-ispaces
     (implies (ispace-list-nosplicep ispaces)
@@ -2137,20 +2068,7 @@
                                    new-ispaces))
       :fn unsplice-in-ispace-list)
     :hints (("Goal"
-             :in-theory (enable shp=-proof-validp
-                                shps=-proof-validp
-                                isp=-proof-validp
-                                isps=-proof-validp
-                                shp=-refl-validp
-                                shp=-trans-validp
-                                shp=-cong-append-validp
-                                shp=-cong-splice-validp
-                                isp=-refl-validp
-                                isp=-cong-shape-validp
-                                shps=-refl-validp
-                                shps=-cong-cons-validp
-                                isps=-refl-validp
-                                isps=-cong-cons-validp))))
+             :in-theory (enable* shape/ispace-equiv-infrules-validp-defs))))
 
   (defret-mutual shape-nosplicep-of-unsplice-in-shapes/ispaces
     (defret shape-nosplicep-of-unsplice-in-shape
@@ -2398,19 +2316,7 @@
                                    new-ispaces))
       :fn undim-in-ispace-list)
     :hints (("Goal"
-             :in-theory (enable shp=-proof-validp
-                                shps=-proof-validp
-                                isp=-proof-validp
-                                isps=-proof-validp
-                                shp=-refl-validp
-                                shp=-cong-append-validp
-                                shp=-cong-splice-validp
-                                isp=-ispace-dim-shape-validp
-                                isp=-cong-shape-validp
-                                shps=-refl-validp
-                                shps=-cong-cons-validp
-                                isps=-refl-validp
-                                isps=-cong-cons-validp))))
+             :in-theory (enable* shape/ispace-equiv-infrules-validp-defs))))
 
   (defret-mutual shape-nodimispacep-of-undim-in-shapes/ispaces
     (defret shape-nodimispacep-of-undim-in-shape

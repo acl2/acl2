@@ -1079,8 +1079,24 @@
 ; entry when a name is kept, so the outer renamings do not capture the
 ; parameter); see the UNIQ-*-PARAMS functions above.
 
+; Bridge rule for the :BRACKET case of the traversal facts/identity proofs
+; below.  With the non-emptiness invariant on :BRACKET (see EXPR), the
+; generated EXPR-BRACKET->EXPRS-of-EXPR-BRACKET accessor rule rewrites to the
+; reqfix IF-term rather than the argument, so opening EXPR-BINDER-NAMES on a
+; freshly built (EXPR-BRACKET ES) leaves an unresolved IF that blocks the fold.
+; This rule rewrites the binder names of a non-empty bracket directly; the
+; hypothesis is discharged from CONSP-OF-UNIQ-EXPR-LIST at the use sites.  The
+; two-field :FRAME and :ARRAY summands do not need this (their accessor rules
+; simplify under the surrounding APPEND normalization).
+(defruledl expr-binder-names-of-expr-bracket-when-consp
+  (implies (consp exprs)
+           (equal (expr-binder-names (expr-bracket exprs))
+                  (expr-list-binder-names exprs)))
+  :enable (expr-binder-names-of-expr-bracket
+           consp-of-expr-list-fix))
+
 (defines uniquify-names-impl
-  :verify-guards :after-returns
+  :verify-guards nil ; done below
   :ruler-extenders :all
   ; The flag function is used by the DEFRET-MUTUAL further below.
   :flag-local nil
@@ -1208,7 +1224,14 @@
         (mv used nil)
       (b* (((mv used new-e) (uniq-expr (car x) used r))
            ((mv used new-rest) (uniq-expr-list (cdr x) used r)))
-        (mv used (cons new-e new-rest)))))
+        (mv used (cons new-e new-rest))))
+
+    ///
+
+    (defret consp-of-uniq-expr-list
+      (equal (consp new-x)
+             (consp x))
+      :hints (("Goal" :expand ((uniq-expr-list x used r))))))
 
   (define uniq-atom ((x atomp) (used string-listp) (r var-renamings-p))
     :short "Uniquify binder names in an atom."
@@ -1328,7 +1351,14 @@
         (mv used nil)
       (b* (((mv used new-a) (uniq-atom (car x) used r))
            ((mv used new-rest) (uniq-atom-list (cdr x) used r)))
-        (mv used (cons new-a new-rest)))))
+        (mv used (cons new-a new-rest))))
+
+    ///
+
+    (defret consp-of-uniq-atom-list
+      (equal (consp new-x)
+             (consp x))
+      :hints (("Goal" :expand ((uniq-atom-list x used r))))))
 
   (define uniq-bind ((x bindp) (used string-listp) (r var-renamings-p))
     :short "Uniquify binder names in a bind, renaming the bind itself
@@ -1498,6 +1528,10 @@
 
   ///
 
+  ; Guard verification is deferred to here (:VERIFY-GUARDS NIL above) so that
+  ; CONSP-OF-UNIQ-ATOM-LIST, in UNIQ-ATOM-LIST's ///, is available to it.
+  (verify-guards uniq-expr)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Freshness and USED-growth facts for the main traversal, in the same
@@ -1594,6 +1628,7 @@
                                           atom-binder-names atom-list-binder-names
                                           bind-binder-names bind-list-binder-names
                                           bind-list-names bind-name
+                                          expr-binder-names-of-expr-bracket-when-consp
                                           type-var->name ispace-var->name
                                           intersectp-equal
                                           no-duplicatesp-equal
@@ -1706,6 +1741,7 @@
                                         atom-binder-names atom-list-binder-names
                                         bind-binder-names bind-list-binder-names
                                         bind-list-names bind-name
+                                        expr-binder-names-of-expr-bracket-when-consp
                                         expr-list-fix atom-list-fix bind-list-fix
                                         ispace-var-list-fix
                                         type-var->name ispace-var->name

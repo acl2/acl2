@@ -484,9 +484,7 @@
        are sugar for a nesting of the unary forms;
        they always contain two or more parameters
        (because there must have at least one parameter,
-       and if there is just one we use the unary forms),
-       but this fixtype does not capture this requirement
-       for the @(':sigman') summand yet.
+       and if there is just one we use the unary forms).
        Note the slight difference with function types,
        where singleton lists are allowed as explained above.")
      (xdoc::p
@@ -526,8 +524,13 @@
      :require (>= (len params) 2))
     (:sigma ((param ispace-var)
              (body type)))
-    (:sigman ((params ispace-var-list) ; two or more
-              (body type)))
+    (:sigman ((params ispace-var-list
+                      :reqfix (if (>= (len params) 2)
+                                  params
+                                (list (ispace-var-fix nil)
+                                      (ispace-var-fix nil))))
+              (body type))
+     :require (>= (len params) 2))
     :pred typep
 
     ///
@@ -556,6 +559,19 @@
       :rule-classes :type-prescription
       :use (:instance type-pin-requirements (x type))
       :disable type-pin-requirements
+      :enable len)
+
+    (defrule consp-of-type-sigman->params
+      (consp (type-sigman->params type))
+      :rule-classes :type-prescription
+      :use (:instance type-sigman-requirements (x type))
+      :disable type-sigman-requirements)
+
+    (defruled consp-of-cdr-of-type-sigman->params
+      (consp (cdr (type-sigman->params type)))
+      :rule-classes :type-prescription
+      :use (:instance type-sigman-requirements (x type))
+      :disable type-sigman-requirements
       :enable len))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -919,9 +935,9 @@
        bracketed expressions,
        and @('let') expressions.")
      (xdoc::p
-      "This fixtype does not capture the non-emptiness of
-       the lists of atoms and expressions of
-       non-empty arrays and frames.
+      "This fixtype captures the non-emptiness of
+       the list of atoms of non-empty arrays
+       and the list of expressions of non-empty frames.
        The naming of the summands is not completely symmetric,
        because the unqualified @(':array') and @(':frame') mean non-empty,
        while empty summands are @(':array-empty') and @(':frame-empty').
@@ -956,8 +972,7 @@
        the type of the whole unboxing expression;
        this type is absent after parsing, calculated by the type checker.")
      (xdoc::p
-      "A bracketed expression must have at least one sub-expression,
-       but this is not enforced in this fixtype.")
+      "A bracketed expression must have at least one sub-expression.")
      (xdoc::p
       "A @('let') expressions must have at least one bind,
        but this is not enforced in this fixtype.")
@@ -966,11 +981,19 @@
     (:var ((name string)))
     (:atom ((atom atom)))
     (:array ((dims nat-list)
-             (atoms atom-list))) ; one or more
+             (atoms atom-list
+                    :reqfix (if (consp atoms)
+                                atoms
+                              (list (atom-fix nil)))))
+     :require (consp atoms))
     (:array-empty ((dims nat-list)
                    (type type)))
     (:frame ((dims nat-list)
-             (exprs expr-list))) ; one or more
+             (exprs expr-list
+                    :reqfix (if (consp exprs)
+                                exprs
+                              (list (expr-fix nil)))))
+     :require (consp exprs))
     (:frame-empty ((dims nat-list)
                    (type type)))
     (:string ((chars char-lit-list)))
@@ -1000,10 +1023,34 @@
               (target expr)
               (body expr)
               (type? type-option)))
-    (:bracket ((exprs expr-list))) ; one or more
+    (:bracket ((exprs expr-list
+                      :reqfix (if (consp exprs)
+                                  exprs
+                                (list (expr-fix nil)))))
+     :require (consp exprs))
     (:let ((binds bind-list) ; one or more
            (body expr)))
-    :pred exprp)
+    :pred exprp
+
+    ///
+
+    (defrule consp-of-expr-array->atoms
+      (consp (expr-array->atoms expr))
+      :rule-classes :type-prescription
+      :use (:instance expr-array-requirements (x expr))
+      :disable expr-array-requirements)
+
+    (defrule consp-of-expr-frame->exprs
+      (consp (expr-frame->exprs expr))
+      :rule-classes :type-prescription
+      :use (:instance expr-frame-requirements (x expr))
+      :disable expr-frame-requirements)
+
+    (defrule consp-of-expr-bracket->exprs
+      (consp (expr-bracket->exprs expr))
+      :rule-classes :type-prescription
+      :use (:instance expr-bracket-requirements (x expr))
+      :disable expr-bracket-requirements))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
