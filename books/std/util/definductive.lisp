@@ -4172,7 +4172,7 @@
        (suff (defind-pred-suff-thm-name pred-info.name name))
        (concl-vars (defind-proof-concl-var-names pred-info.formals name))
        (minimalp-event
-        `(define-sk ,minimalp (,proof ,@concl-vars)
+        `(define-sk ,minimalp ((,proof ,proofp) ,@concl-vars)
            ,@(and xdocp
                   `(:parents (,(symbol-lfix name))
                     :short ,(str::cat "Minimality of a proof for predicate @('"
