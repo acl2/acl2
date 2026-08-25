@@ -953,8 +953,9 @@
        are sugar for a nesting of the unary forms;
        they always contain two or more arguments
        (because there must be at least one argument,
-       and if there is just one we use the unary forms),
-       but this fixtype does not capture this requirement.")
+       and if there is just one we use the unary forms);
+       this fixtype captures this requirement for @(':appn'),
+       but not yet for @(':tappn') and @(':iappn').")
      (xdoc::p
       "The @(':capp') summand is sugar,
        but it allows zero arguments (expressions, types, or ispaces),
@@ -1000,7 +1001,11 @@
     (:app ((fun expr)
            (arg expr)))
     (:appn ((fun expr)
-            (args expr-list))) ; two or more
+            (args expr-list
+                  :reqfix (if (>= (len args) 2)
+                              args
+                            (list (expr-fix nil) (expr-fix nil)))))
+     :require (>= (len args) 2))
     (:tapp ((fun expr)
             (arg type)))
     (:tappn ((fun expr)
@@ -1050,7 +1055,20 @@
       (consp (expr-bracket->exprs expr))
       :rule-classes :type-prescription
       :use (:instance expr-bracket-requirements (x expr))
-      :disable expr-bracket-requirements))
+      :disable expr-bracket-requirements)
+
+    (defrule consp-of-expr-appn->args
+      (consp (expr-appn->args expr))
+      :rule-classes :type-prescription
+      :use (:instance expr-appn-requirements (x expr))
+      :disable expr-appn-requirements)
+
+    (defruled consp-of-cdr-of-expr-appn->args
+      (consp (cdr (expr-appn->args expr)))
+      :rule-classes :type-prescription
+      :use (:instance expr-appn-requirements (x expr))
+      :disable expr-appn-requirements
+      :enable len))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

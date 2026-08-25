@@ -23,6 +23,9 @@
 (include-book "projects/abnf/tree-operations/tree-utilities" :dir :system)
 (include-book "unicode/utf8-encode" :dir :system)
 
+(local (include-book "std/lists/len" :dir :system))
+(local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))
+
 (local
  (in-theory (enable abnf::treep-when-result-not-error
                     abnf::tree-listp-when-result-not-error
@@ -2464,7 +2467,8 @@
 
   ///
 
-  (verify-guards abs-exp)
+  (verify-guards abs-exp
+    :hints (("Goal" :in-theory (enable len))))
 
   (fty::deffixequiv-mutual abs-exprs/atoms/binds))
 

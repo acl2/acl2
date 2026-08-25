@@ -22,6 +22,8 @@
 (include-book "portcullis")
 (local (include-book "std/omaps/top" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
+(local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))
 
 ; The SUBSETP-EQUAL reasoning used below is supplied by KESTREL/LISTS-LIGHT
 ; rather than proved here.  That book carries some fifty rules, all enabled,
@@ -1231,7 +1233,14 @@
     (defret consp-of-uniq-expr-list
       (equal (consp new-x)
              (consp x))
-      :hints (("Goal" :expand ((uniq-expr-list x used r))))))
+      :hints (("Goal" :expand ((uniq-expr-list x used r)))))
+
+    (defret len->=-2-of-uniq-expr-list
+      (implies (<= 2 (len x))
+               (<= 2 (len new-x)))
+      :rule-classes :linear
+      :hints (("Goal" :expand ((uniq-expr-list x used r))
+                      :in-theory (enable len consp-of-uniq-expr-list)))))
 
   (define uniq-atom ((x atomp) (used string-listp) (r var-renamings-p))
     :short "Uniquify binder names in an atom."
@@ -1530,6 +1539,9 @@
 
   ; Guard verification is deferred to here (:VERIFY-GUARDS NIL above) so that
   ; CONSP-OF-UNIQ-ATOM-LIST, in UNIQ-ATOM-LIST's ///, is available to it.
+  ; The :APPN case needs the two-or-more-ness of the uniquified argument list;
+  ; that follows from EXPR-APPN-REQUIREMENTS through the (linear, enabled)
+  ; LEN->=-2-OF-UNIQ-EXPR-LIST, both on by default, so no hints are needed.
   (verify-guards uniq-expr)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
