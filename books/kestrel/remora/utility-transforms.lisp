@@ -67,10 +67,18 @@
   :returns (new-expr exprp)
   :short "Merge @('binds') into a @(':let') body, coalescing when the body is
           itself a @(':let')."
-  (expr-case body
-    :let (expr-let (bind-list-fix (append (bind-list-fix binds) body.binds))
-                   body.body)
-    :otherwise (expr-let (bind-list-fix binds) (expr-fix body))))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "With no binds, there is nothing to merge and the result is just the body:
+     this avoids building a bindless @(':let'),
+     consistently with the requirement that
+     @(':let') expressions have at least one bind (see @(tsee expr))."))
+  (b* (((when (endp binds)) (expr-fix body)))
+    (expr-case body
+      :let (expr-let (bind-list-fix (append (bind-list-fix binds) body.binds))
+                     body.body)
+      :otherwise (expr-let (bind-list-fix binds) (expr-fix body)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
