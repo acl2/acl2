@@ -83,7 +83,11 @@
               x::sbb-af-spec8-becomes-bvlt
               x::sbb-af-spec16-becomes-bvlt
               x::sbb-af-spec32-becomes-bvlt
-              x::sbb-af-spec64-becomes-bvlt)))
+              x::sbb-af-spec64-becomes-bvlt
+              read-2-blast ; since this is disabled in many ndsu proofs
+              ;; used for proofs about lifted code:
+              read-1-of-write-irrel
+              getbit-of-read-too-high)))
 
 ;; To support proofs about lifted code
 (in-theory (disable ;; rgfi ; rgfi may be used when the register name is not constant.  let's open it to XR
