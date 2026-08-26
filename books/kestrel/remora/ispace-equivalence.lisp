@@ -590,20 +590,12 @@
   (xdoc::topstring
    (xdoc::p
     "This is analogous to @(see dim-equiv-guard-verification),
-     including the current inability to guard-verify
-     the minimality predicates and the equivalence predicates.")
-   (xdoc::p
-    "There is an additional obstruction here:
+     which must precede this:
      the rules @('cong-dims') and @('cong-dim') have premises
      that call @(tsee dims=) and @(tsee dim=),
-     which cannot be guard-verified for now,
-     as explained in @(see dim-equiv-guard-verification);
-     so the validity functions for those two rules,
-     as well as the proof validity functions, which call them,
-     cannot be guard-verified either for now."))
+     whose guards are verified there."))
 
-  ;; rule validity functions
-  ;; (except the ones for the rules cong-dims and cong-dim):
+  ;; rule validity functions:
 
   (verify-guards shp=-refl-validp)
   (verify-guards shp=-symm-validp)
@@ -617,8 +609,10 @@
   (verify-guards isps=-refl-validp)
   (verify-guards isps=-symm-validp)
   (verify-guards isps=-trans-validp)
+  (verify-guards shp=-cong-dims-validp)
   (verify-guards shp=-cong-append-validp)
   (verify-guards shp=-cong-splice-validp)
+  (verify-guards isp=-cong-dim-validp)
   (verify-guards isp=-cong-shape-validp)
   (verify-guards shps=-cong-cons-validp)
   (verify-guards isps=-cong-cons-validp)
@@ -632,4 +626,22 @@
   (verify-guards shp=-append-assoc-validp)
   (verify-guards shp=-append-id-left-validp)
   (verify-guards shp=-append-id-right-validp)
-  (verify-guards isp=-ispace-dim-shape-validp))
+  (verify-guards isp=-ispace-dim-shape-validp)
+
+  ;; proof validity functions:
+
+  (verify-guards shp=-proof-validp)
+
+  ;; minimality predicates:
+
+  (verify-guards shp=-proof-minimalp)
+  (verify-guards shps=-proof-minimalp)
+  (verify-guards isp=-proof-minimalp)
+  (verify-guards isps=-proof-minimalp)
+
+  ;; equivalence predicates:
+
+  (verify-guards shp=)
+  (verify-guards shps=)
+  (verify-guards isp=)
+  (verify-guards isps=))
