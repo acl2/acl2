@@ -117,7 +117,20 @@
      whose body is the n-ary universal type of the remaining parameters
      (rule @('forall3m')).
      The two rules are separate because
-     an n-ary universal type cannot have just one parameter."))
+     an n-ary universal type cannot have just one parameter.")
+   (xdoc::p
+    "An n-ary product type, which has two or more parameters,
+     is sugar for a nesting of unary product types:
+     one with exactly two parameters stands for
+     a unary product type of the first parameter
+     whose body is the unary product type of the second parameter
+     (rule @('pi2')),
+     and one with three or more parameters stands for
+     a unary product type of the first parameter
+     whose body is the n-ary product type of the remaining parameters
+     (rule @('pi3m')).
+     The two rules are separate because
+     an n-ary product type cannot have just one parameter."))
 
   :preds ((type= type1 type2))
 
@@ -264,6 +277,17 @@
              (type= (type-foralln (list* p1 p2 ps) ty)
                     (type-forall p1 (type-foralln (cons p2 ps) ty))))
 
+   ;; normalization of n-ary product types:
+
+   (pi2 ((ispace-varp p1) (ispace-varp p2) (typep ty))
+        (type= (type-pin (list p1 p2) ty)
+               (type-pi p1 (type-pi p2 ty))))
+
+   (pi3m ((ispace-varp p1) (ispace-varp p2) (ispace-var-listp ps) (consp ps)
+          (typep ty))
+         (type= (type-pin (list* p1 p2 ps) ty)
+                (type-pi p1 (type-pin (cons p2 ps) ty))))
+
    ;; TODO: more normalization rules
 
   ))
@@ -312,4 +336,6 @@
   (verify-guards type=-fun0-validp)
   (verify-guards type=-fun1m-validp)
   (verify-guards type=-forall2-validp)
-  (verify-guards type=-forall3m-validp))
+  (verify-guards type=-forall3m-validp)
+  (verify-guards type=-pi2-validp)
+  (verify-guards type=-pi3m-validp))
