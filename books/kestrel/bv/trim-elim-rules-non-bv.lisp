@@ -13,7 +13,7 @@
 ;; The file includes rules about TRIM applied to non-BV functions.  These rules
 ;; finish the conversion after other rules (from convert-to-bv-rules.lisp or
 ;; ../axe/convert-to-bv-rules-axe.lisp) introduce trim.  See also
-;; trim-elim-rules-bv.lisp, which covers trim applied to BV functions.
+;; trim-elim-rules-bv.lisp, which covers TRIM applied to BV functions.
 
 (include-book "trim")
 (include-book "bvnot-def")

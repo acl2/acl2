@@ -3472,7 +3472,8 @@
                 (not (unsigned-byte-p free k)))
            (not (equal k x))))
 
-(defthm not-equal-constant-when-unsigned-byte-p-alt
+;; Disabled for ACL2, may be needed for Axe
+(defthmd not-equal-constant-when-unsigned-byte-p-alt
   (implies (and (syntaxp (quotep k))
                 (unsigned-byte-p free x)
                 (syntaxp (quotep free))
