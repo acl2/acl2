@@ -35,6 +35,9 @@
       (possibly within arrays or behind pointers)
       as their type are likewise split in place into a left and a right member,
       while the containing struct types are otherwise left unchanged.
+      A self-referential member of the target struct type is duplicated across
+      the two resulting struct types, with its type adjusted to refer to the
+      corresponding left or right type.
       Struct types with the same tag in other translation units
       which are compatible with the targeted struct type
       are also split, consistently,
@@ -93,7 +96,10 @@
       "A non-empty string list denoting the members of the struct type
        which should be split out into the new right struct type.
        The remaining members stay in the left struct type,
-       which keeps the original tag, if any."))
+       which keeps the original tag, if any.
+       A directly splittable self-referential member is forced into both
+       output struct types; listing its name here produces a warning and does
+       not change that routing."))
     (xdoc::desc
      "@(':struct-tag')"
      (xdoc::p
@@ -178,12 +184,7 @@
        Flexible array members are not supported, because splitting one would
        produce two flexible array members in the containing struct.
        The check for flexible array members is currently overapproximate
-       and may erroneously flag fixed-size arrays.
-       The struct type may not, however,
-       be a member of a union type
-       (whether directly or as an anonymous union member),
-       or be a member of itself (i.e. be self-referential);
-       such occurrences are detected and reported as errors.")
+       and may erroneously flag fixed-size arrays.")
      (xdoc::li
       "Typedefs whose denoted type is splittable
        (the struct type itself, possibly within arrays or behind pointers)

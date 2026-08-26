@@ -32,9 +32,8 @@
 (include-book "kestrel/bv/trim-elim-rules-bv" :dir :system)
 (include-book "kestrel/bv/bvlt" :dir :system) ; drop?
 (include-book "kestrel/bv/bvcount" :dir :system)
-;; todo: drop:
 (include-book "kestrel/bv/bitops" :dir :system)
-(include-book "kestrel/x86/read-and-write" :dir :system)
+;; todo: drop?:
 (include-book "kestrel/bv/rules" :dir :system) ;for acl2::bvxor-with-smaller-arg-1, which gets disabled in some proofs
 
 (in-theory (e/d (x::cf-spec8-becomes-getbit ; todo: gather these into Axe rule-lists
