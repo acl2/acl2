@@ -239,6 +239,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Extend type-map by pairing up type vars with the types they are instantiated
+; at.  We use the library string-type-map omap so that the type-variable
+; substitution operations from @(see variable-substitution-operations) can be
+; applied directly to the type arguments (see the :CAPP case below).
+
+(define extend-type-var-map ((tvars type-var-listp)
+                             (tys type-listp)
+                             (type-map string-type-mapp))
+  :returns (new-type-map string-type-mapp)
+  :short "Extend @('type-map') with @('tvars[i] -> tys[i]') for each index."
+  (if (or (endp tvars) (endp tys))
+      (string-type-map-fix type-map)
+    (b* ((name (type-var->name (car tvars)))
+         (ty   (type-fix (car tys))))
+      (extend-type-var-map (cdr tvars) (cdr tys)
+                           (omap::update name ty
+                                         (string-type-map-fix type-map))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Extend dim-var-map by pairing up ispace vars with nat values.  We use the
 ; library acl2::string-nat-map omap so that this map is handled the same way
 ; as the string-type-map used for type arguments.
