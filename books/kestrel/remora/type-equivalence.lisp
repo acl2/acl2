@@ -14,6 +14,8 @@
 (include-book "all-variable-operations")
 (include-book "variable-renaming-operations")
 
+(local (include-book "std/lists/len" :dir :system))
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -102,7 +104,20 @@
      and a function type with one or more inputs stands for
      a unary function type from the first input
      to the function type with the remaining inputs
-     (rule @('fun1m'))."))
+     (rule @('fun1m')).")
+   (xdoc::p
+    "An n-ary universal type, which has two or more parameters,
+     is sugar for a nesting of unary universal types:
+     one with exactly two parameters stands for
+     a unary universal type of the first parameter
+     whose body is the unary universal type of the second parameter
+     (rule @('forall2')),
+     and one with three or more parameters stands for
+     a unary universal type of the first parameter
+     whose body is the n-ary universal type of the remaining parameters
+     (rule @('forall3m')).
+     The two rules are separate because
+     an n-ary universal type cannot have just one parameter."))
 
   :preds ((type= type1 type2))
 
@@ -238,6 +253,17 @@
           (type= (type-funn (cons in ins) out)
                  (t-> in (type-funn ins out))))
 
+   ;; normalization of n-ary universal types:
+
+   (forall2 ((type-varp p1) (type-varp p2) (typep ty))
+            (type= (type-foralln (list p1 p2) ty)
+                   (type-forall p1 (type-forall p2 ty))))
+
+   (forall3m ((type-varp p1) (type-varp p2) (type-var-listp ps) (consp ps)
+              (typep ty))
+             (type= (type-foralln (list* p1 p2 ps) ty)
+                    (type-forall p1 (type-foralln (cons p2 ps) ty))))
+
    ;; TODO: more normalization rules
 
   ))
@@ -284,4 +310,6 @@
   (verify-guards type=-array-var-validp)
   (verify-guards type=-bracket-validp)
   (verify-guards type=-fun0-validp)
-  (verify-guards type=-fun1m-validp))
+  (verify-guards type=-fun1m-validp)
+  (verify-guards type=-forall2-validp)
+  (verify-guards type=-forall3m-validp))
