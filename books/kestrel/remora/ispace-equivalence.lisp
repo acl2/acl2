@@ -529,22 +529,13 @@
      the typing premises at the start of each rule discharge
      the guards of the terms in the rest of the rule.")
    (xdoc::p
-    "The minimality predicates (e.g. @('dim=-proof-minimalp'))
-     cannot be guard-verified as currently generated:
-     their proof formal is unguarded,
-     but their body applies the proof count function,
-     whose guard is the proof recognizer, to that formal;
-     the resulting guard obligation is unprovable for an arbitrary formal.
-     Consequently, the equivalence predicates (e.g. @('dim=')),
-     whose bodies call the minimality predicates,
-     cannot be guard-verified either.
-     We should extend @(tsee definductive)
-     to guard the proof formal of each generated minimality predicate
-     with the proof recognizer:
-     the only call of the minimality predicate,
-     in the body of the equivalence predicate,
-     occurs after a recognizer conjunct in a lazy conjunction,
-     so the equivalence predicate would then also guard-verify."))
+    "The minimality predicates must be verified after
+     the proof validity functions, which they call;
+     the equivalence predicates must be verified after
+     the minimality predicates, which they call.
+     In both, the calls occur after the proof recognizer,
+     in a lazy conjunction or as a hypothesis,
+     which discharges the guards of those calls."))
 
   ;; rule validity functions:
 
@@ -578,7 +569,17 @@
 
   ;; proof validity functions:
 
-  (verify-guards dim=-proof-validp))
+  (verify-guards dim=-proof-validp)
+
+  ;; minimality predicates:
+
+  (verify-guards dim=-proof-minimalp)
+  (verify-guards dims=-proof-minimalp)
+
+  ;; equivalence predicates:
+
+  (verify-guards dim=)
+  (verify-guards dims=))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
