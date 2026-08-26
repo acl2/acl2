@@ -24,12 +24,23 @@
   (xdoc::topstring
    (xdoc::p
     "This is a declarative, non-executable specification.
-     It relates sequences of Unicode characters to CST,
+     It relates sequences of Unicode characters to CSTs,
      putting together the grammar and the extra-grammatical restrictions.")
    (xdoc::p
     "We formulate two specifications,
      one for top-level expressions,
-     and one for files."))
+     and one for files.
+     Both are predicates that relate
+     a list of Unicode character codes with a CST:
+     each predicate holds exactly when
+     the CST matches the applicable grammar rule,
+     its fringe is the list of Unicode character codes,
+     and the CST satisfies all the extra-grammatical restrictions.")
+   (xdoc::p
+    "It remains to prove that this specification makes parsing unambiguous.
+     That is, for each predicate,
+     given two CSTs that satisfy the predicate for the same Unicode sequence,
+     the two CSTs must be equal."))
   :order-subtopics t
   :default-parent t)
 
@@ -39,16 +50,6 @@
   :returns (yes/no booleanp)
   :short "Check whether a list of Unicode character codes
           corresponds to a top-level expression CST."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The CST must match @('top-exp'),
-     its fringe must be the list of Unicode character codes,
-     and all the extra-grammatical restrictions must be satisfied.")
-   (xdoc::p
-    "It remains to prove that this predicate makes parsing unambiguous:
-     given two CSTs that satisfy this predicate for the same Unicode sequence,
-     the two CSTs must be equal."))
   (and (cst-matchp cst "top-exp")
        (equal ucodes (abnf::tree->string cst))
        (cst-extra-grammatical-restrictions-p cst))
@@ -60,16 +61,6 @@
   :returns (yes/no booleanp)
   :short "Check whether a list of Unicode character codes
           corresponds to a file CST."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The CST must match @('file'),
-     its fringe must be the list of Unicode character codes,
-     and all the extra-grammatical restrictions must be satisfied.")
-   (xdoc::p
-    "It remains to prove that this predicate makes parsing unambiguous:
-     given two CSTs that satisfy this predicate for the same Unicode sequence,
-     the two CSTs must be equal."))
   (and (cst-matchp cst "file")
        (equal ucodes (abnf::tree->string cst))
        (cst-extra-grammatical-restrictions-p cst))
