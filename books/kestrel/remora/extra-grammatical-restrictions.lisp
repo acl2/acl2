@@ -18,6 +18,7 @@
 (include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "std/strings/dec-digit-char-listp" :dir :system)
+(include-book "std/strings/eqv" :dir :system)
 (include-book "std/strings/hex-digit-char-listp" :dir :system)
 (include-book "std/strings/oct-digit-char-listp" :dir :system)
 (include-book "std/util/defval" :dir :system)
@@ -95,13 +96,14 @@
                (consp ext)
                (prefixp ext (nat-list-fix rest))
                (equal (abnf::tree->string cst)
-                      (append (nat-list-fix current) ext)))))
+                      (append (nat-list-fix current) ext))))
 
-; No DEFFIXEQUIV-SK for the function above:
-; it would have to cover all the formals, including RULENAMES,
-; but STRING-LISTP has no associated fixtype.
-; This is not a problem, because the fixing theorems of that function
-; are not needed by the predicates below.
+  ///
+
+  (fty::deffixequiv-sk extensible-to-cst-fringe-p
+    :args ((current nat-listp)
+           (rest nat-listp)
+           (rulenames string-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1218,40 +1220,7 @@
     "Together with the @(see grammar),
      this predicate provides the complete specification of
      the syntactic validity of Remora code:
-     a sequence of Unicode characters is syntactically valid iff
-     it is the fringe of a CST that
-     matches the top-level rule for the kind of code
-     (@('file') or @('top-exp'))
-     and satisfies this predicate.
-     Each restriction is stated so that it applies to
-     a CST that covers the whole input,
-     since e.g. the longest-match restrictions look at
-     what follows each lexeme;
-     the predicate does not presuppose that the CST matches the grammar,
-     but its intended use is in conjunction with that condition.
-     The guard requires the CST to be terminated,
-     as some of the restrictions do.")
-   (xdoc::p
-    "Some of the side conditions mentioned in the grammar
-     do not correspond to restrictions here,
-     because they are consequences of the grammar and of
-     the restrictions above:
-     e.g. the maximality of whitespace
-     (a @('ws') CST must extend as far as it can)
-     is implied by @(tsee cst-longest-comments-p),
-     given the structure of the grammar.
-     Such consequences are to be proved as theorems,
-     rather than assumed as restrictions.")
-   (xdoc::p
-    "The main property expected of this predicate,
-     to be proved as future work,
-     is that it resolves all the ambiguities of the grammar:
-     every sequence of Unicode characters is the fringe of
-     at most one CST that matches a top-level rule
-     and satisfies this predicate.
-     Related expected properties concern the @(see parser):
-     it returns a CST iff one satisfying these conditions exists,
-     and then it returns that CST."))
+     see @(see parsing)."))
   (and (cst-identifiers-not-keywords-p cst)
        (cst-identifier-expressions-not-numbers-p cst)
        (cst-longest-comments-p cst)
