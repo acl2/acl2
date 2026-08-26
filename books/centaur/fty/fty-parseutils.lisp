@@ -108,7 +108,8 @@
      defmap
      defset
      defomap
-     deftreeset))
+     deftreeset
+     deftreemap))
 
 (define flextype-form->fixtype (user-level-form)
   "Create the new fixtype binding for a new type we're going to introduce."
