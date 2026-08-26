@@ -102,7 +102,7 @@
      and a function type with one or more inputs stands for
      a unary function type from the first input
      to the function type with the remaining inputs
-     (rule @('fun1'))."))
+     (rule @('fun1m'))."))
 
   :preds ((type= type1 type2))
 
