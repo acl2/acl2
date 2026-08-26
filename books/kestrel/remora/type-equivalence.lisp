@@ -234,9 +234,9 @@
    (fun0 ((typep out))
          (type= (type-funn nil out) out))
 
-   (fun1m ((typep in) (type-listp ins) (typep out) (typep ty)
-           (type= (type-funn ins out) ty))
-          (type= (type-funn (cons in ins) out) (t-> in ty)))
+   (fun1 ((typep in) (type-listp ins) (typep out))
+         (type= (type-funn (cons in ins) out)
+                (t-> in (type-funn ins out))))
 
    ;; TODO: more normalization rules
 
@@ -284,4 +284,4 @@
   (verify-guards type=-array-var-validp)
   (verify-guards type=-bracket-validp)
   (verify-guards type=-fun0-validp)
-  (verify-guards type=-fun1m-validp))
+  (verify-guards type=-fun1-validp))
