@@ -14,6 +14,7 @@
 
 (include-book "projects/abnf/tree-operations/subtree-operations" :dir :system)
 
+(include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 (include-book "std/strings/dec-digit-char-listp" :dir :system)
@@ -95,6 +96,12 @@
                (prefixp ext (nat-list-fix rest))
                (equal (abnf::tree->string cst)
                       (append (nat-list-fix current) ext)))))
+
+; No DEFFIXEQUIV-SK for the function above:
+; it would have to cover all the formals, including RULENAMES,
+; but STRING-LISTP has no associated fixtype.
+; This is not a problem, because the fixing theorems of that function
+; are not needed by the predicates below.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -189,7 +196,12 @@
           (and (abnf::treep cst-keywd)
                (cst-matchp cst-keywd "keyword")
                (equal (abnf::tree->string cst-keywd)
-                      (abnf::tree->string cst-ident)))))
+                      (abnf::tree->string cst-ident))))
+
+  ///
+
+  (fty::deffixequiv-sk cst-identifier-like-keyword-p
+    :args ((cst-ident abnf::treep))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -200,7 +212,12 @@
   (forall (cst-ident)
           (implies (and (set::in cst-ident (abnf::trees-in-tree cst))
                         (cst-matchp cst-ident "identifier"))
-                   (not (cst-identifier-like-keyword-p cst-ident)))))
+                   (not (cst-identifier-like-keyword-p cst-ident))))
+
+  ///
+
+  (fty::deffixequiv-sk cst-identifiers-not-keywords-p
+    :args ((cst abnf::treep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -213,7 +230,12 @@
           (and (abnf::treep cst-num)
                (cst-matchp cst-num "num-val")
                (prefixp (abnf::tree->string cst-num)
-                        (abnf::tree->string cst-exp)))))
+                        (abnf::tree->string cst-exp))))
+
+  ///
+
+  (fty::deffixequiv-sk cst-expression-starts-with-number-p
+    :args ((cst-exp abnf::treep))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -290,7 +312,12 @@
           (implies (and (set::in cst-exp (abnf::trees-in-tree cst))
                         (cst-matchp cst-exp "exp")
                         (equal (cst-exp-conc? cst-exp) 3))
-                   (not (cst-expression-starts-with-number-p cst-exp)))))
+                   (not (cst-expression-starts-with-number-p cst-exp))))
+
+  ///
+
+  (fty::deffixequiv-sk cst-identifier-expressions-not-numbers-p
+    :args ((cst abnf::treep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -324,7 +351,12 @@
                               (not (extensible-to-cst-fringe-p
                                     (abnf::tree->string cst1)
                                     (abnf::tree->string cst2)
-                                    (list "comment"))))))))
+                                    (list "comment")))))))
+
+  ///
+
+  (fty::deffixequiv-sk cst-longest-comments-p
+    :args ((cst abnf::treep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -388,7 +420,12 @@
                               (not (extensible-to-cst-fringe-p
                                     (abnf::tree->string cst1)
                                     (abnf::tree->string cst2)
-                                    (list "ascii-escape"))))))))
+                                    (list "ascii-escape")))))))
+
+  ///
+
+  (fty::deffixequiv-sk cst-longest-ascii-escapes-p
+    :args ((cst abnf::treep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -465,7 +502,12 @@
                               (not (extensible-to-cst-fringe-p
                                     (abnf::tree->string cst1)
                                     (abnf::tree->string cst2)
-                                    (list "num-escape"))))))))
+                                    (list "num-escape")))))))
+
+  ///
+
+  (fty::deffixequiv-sk cst-longest-numeric-escapes-p
+    :args ((cst abnf::treep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -548,7 +590,12 @@
                               (not (extensible-to-cst-fringe-p
                                     (abnf::tree->string cst1)
                                     (abnf::tree->string cst2)
-                                    (list "identifier"))))))))
+                                    (list "identifier")))))))
+
+  ///
+
+  (fty::deffixequiv-sk cst-longest-identifiers-p
+    :args ((cst abnf::treep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -664,7 +711,12 @@
                               (not (extensible-to-cst-fringe-p
                                     (abnf::tree->string cst1)
                                     (abnf::tree-list->string csts2)
-                                    (list "decimal" "float-lit"))))))))
+                                    (list "decimal" "float-lit")))))))
+
+  ///
+
+  (fty::deffixequiv-sk cst-longest-decimals-p
+    :args ((cst abnf::treep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -732,7 +784,12 @@
                               (not (extensible-to-cst-fringe-p
                                     (abnf::tree->string cst1)
                                     (abnf::tree-list->string csts2)
-                                    (list "float-lit"))))))))
+                                    (list "float-lit")))))))
+
+  ///
+
+  (fty::deffixequiv-sk cst-longest-float-lits-p
+    :args ((cst abnf::treep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -999,7 +1056,12 @@
                                     (append (nthcdr (len keyword)
                                                     (abnf::tree->string cst1))
                                             (abnf::tree->string cst2))
-                                    (list "identifier"))))))))
+                                    (list "identifier")))))))
+
+  ///
+
+  (fty::deffixequiv-sk cst-longest-keywords-p
+    :args ((cst abnf::treep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1056,7 +1118,12 @@
                      (implies cst-ident
                               (not (prefixp
                                     (list (char-code #\$))
-                                    (abnf::tree->string cst-ident))))))))
+                                    (abnf::tree->string cst-ident)))))))
+
+  ///
+
+  (fty::deffixequiv-sk cst-unbox-expr-binders-not-dollar-initial-p
+    :args ((cst abnf::treep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1108,7 +1175,12 @@
                    (b* ((code (num-escape-cst-code cst-esc)))
                      (and (<= code #x10FFFF)
                           (not (and (<= #xD800 code)
-                                    (<= code #xDFFF))))))))
+                                    (<= code #xDFFF)))))))
+
+  ///
+
+  (fty::deffixequiv-sk cst-numeric-escapes-unicode-scalar-values-p
+    :args ((cst abnf::treep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1190,5 +1262,4 @@
        (cst-longest-float-lits-p cst)
        (cst-longest-keywords-p cst)
        (cst-unbox-expr-binders-not-dollar-initial-p cst)
-       (cst-numeric-escapes-unicode-scalar-values-p cst))
-  :hooks nil)
+       (cst-numeric-escapes-unicode-scalar-values-p cst)))
