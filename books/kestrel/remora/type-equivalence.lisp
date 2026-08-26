@@ -93,7 +93,16 @@
     "A bracket type is sugar for an array type
      with the same element type and with the splice of the bracket's ispaces.
      The rule @('bracket') supports this reduction,
-     but allows any ispace equivalent to the ispace splice."))
+     but allows any ispace equivalent to the ispace splice.")
+   (xdoc::p
+    "An n-ary function type is sugar for
+     a nesting of unary function types:
+     a nullary function type stands for just its output type
+     (rule @('fun0')),
+     and a function type with one or more inputs stands for
+     a unary function type from the first input
+     to the function type with the remaining inputs
+     (rule @('fun1'))."))
 
   :preds ((type= type1 type2))
 
@@ -220,7 +229,16 @@
             (type= (type-bracket ty is)
                    (type-array ty i)))
 
-   ;; TODO: normalization rules
+   ;; normalization of n-ary function types:
+
+   (fun0 ((typep out))
+         (type= (type-funn nil out) out))
+
+   (fun1m ((typep in) (type-listp ins) (typep out) (typep ty)
+           (type= (type-funn ins out) ty))
+          (type= (type-funn (cons in ins) out) (t-> in ty)))
+
+   ;; TODO: more normalization rules
 
   ))
 
@@ -264,4 +282,6 @@
   (verify-guards type=-pi-validp)
   (verify-guards type=-sigma-validp)
   (verify-guards type=-array-var-validp)
-  (verify-guards type=-bracket-validp))
+  (verify-guards type=-bracket-validp)
+  (verify-guards type=-fun0-validp)
+  (verify-guards type=-fun1m-validp))
