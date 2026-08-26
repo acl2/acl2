@@ -11,25 +11,18 @@
 
 (in-package "ACL2")
 
-(include-book "bvchop-def")
+(include-book "bvif-def")
 (include-book "kestrel/booleans/bool-fix-def" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
 (local (include-book "unsigned-byte-p"))
 (local (include-book "bvchop"))
 (local (include-book "kestrel/booleans/bool-fix" :dir :system))
 
-;note that the test is a boolean, not a bit vector
-(defund bvif (size test thenpart elsepart)
-  (declare (xargs :guard (and (natp size)
-                              (integerp thenpart)
-                              (integerp elsepart))))
-  (if test
-      (bvchop size thenpart)
-    (bvchop size elsepart)))
-
+;move to axe
 (defthmd integerp-of-bvif
   (integerp (bvif size test thenpart elsepart)))
 
+;move to axe
 (defthmd natp-of-bvif
   (natp (bvif size test thenpart elsepart)))
 

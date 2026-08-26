@@ -20,9 +20,9 @@
 (include-book "trim")
 (include-book "bvsx-def")
 (include-book "leftrotate32")
-(include-book "bvnot")
+(include-book "bvnot-def")
 (include-book "bvcat-def")
-(include-book "bvif")
+(include-book "bvif-def")
 (include-book "bvplus-def")
 (include-book "bvmult-def")
 (include-book "bvminus-def")
@@ -37,6 +37,7 @@
 (local (include-book "bvminus"))
 (local (include-book "bvmult"))
 (local (include-book "bvsx"))
+(local (include-book "bvnot"))
 
 ;; TODO: Should we only trim when the sizes involved are constants?
 

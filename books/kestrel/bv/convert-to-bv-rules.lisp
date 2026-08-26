@@ -17,7 +17,7 @@
 (include-book "bvxor-def")
 (include-book "bvplus-def")
 (include-book "bvminus-def")
-(include-book "bvnot")
+(include-book "bvnot-def")
 (include-book "bvshr-def")
 (include-book "bvmult-def")
 (include-book "bvcat-def")
