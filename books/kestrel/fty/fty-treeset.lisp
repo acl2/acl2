@@ -490,12 +490,17 @@
         :rule-classes :type-prescription
         ;; Not settleable by type reasoning (the automatic type prescriptions
         ;; are only as strong as the ambient theory at admission).
-        :hints (("Goal" :induct (,alt ,x.xvar)
+        :hints (("Goal"
+                 :use ((:instance
+                        (:functional-instance
+                         treeset::set-all-genericp-type-prescription
+                         (treeset::genericp ,x.elt-type)
+                         (treeset::set-all-genericp ,alt))
+                        (treeset::set ,x.xvar)))
                  :in-theory (enable ,pred-def ,bridge ,alt
-                                    (:induction ,alt)
                                     treeset::fix-when-setp
-                                    treeset::emptyp-type-prescription
-                                    acl2::booleanp-compound-recognizer))))
+                                    acl2::booleanp-compound-recognizer)
+                 :do-not-induct t)))
       (local
        (defthm ,alt-equiv-congruence
          (implies (treeset::equiv ,x.xvar ,yv)
