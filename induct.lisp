@@ -5986,9 +5986,88 @@
                 :subset))
        nil)))
 
+(defrec induction-record
+
+; The :runes field excludes information about splitters and forcing rounds.  If
+; we want that additional information, consider changing the field to :ttree --
+; though that might be huge in some cases -- and see the call of
+; tilde-*-simp-phrase for how to obtain that additional information.  See
+; tilde-*-simp-phrase.
+
+; The :scheme field corresponds to the "induction scheme we'll use" printed in
+; the induction message, based on the :p-formula field an example of which is (:P
+; X Y Z).
+
+  ((pool-name suggested . accommodating)
+   . 
+   (runes p-formula . scheme))
+  nil)
+
+(defun make-induction-record (winning-candidate pool-name p-formula scheme
+                              wrld)
+  (make induction-record
+        :pool-name pool-name
+        :suggested (untranslate (access candidate winning-candidate
+                                        :xinduction-term)
+                                nil
+                                wrld)
+        :accommodating (untranslate-lst (access candidate winning-candidate
+                                                :xother-terms)
+                                        nil
+                                        wrld)
+        :runes (tagged-objects 'lemma (access candidate winning-candidate
+                                              :ttree))
+        :p-formula p-formula
+        :scheme scheme))
+
+(defun acl2-induction-scheme (p winning-candidate cl-set wrld state)
+
+; As of the function's introduction in August 2026, the community book
+; projects/filesystems/l-models/file-system-1.lisp already defined a function
+; named induction-scheme (in the "ACL2" package).  Perhaps others would want to
+; use that name as well.  We simply avoid that name, even though it would
+; probably be more natural here.
+
+  (prettyify-clause-set
+
+; We create the induction scheme by using induction-formula on the clause set
+; consisting of the singleton clause ((:P x1 x2 ...)).  However, if this is do$
+; induction, we have to add the Q literals to the clause so that
+; induction-formula finds them and includes them in the termination theorem.
+
+   (induction-formula
+    (list
+     (cond
+      ((eq (ffn-symb (access candidate winning-candidate
+                             :induction-term))
+           *do$-induction-fn*)
+       (append
+        (select-do$-induction-q ; compute actual Q
+         cl-set
+         (cons (access candidate winning-candidate
+                       :xinduction-term)
+               (access candidate winning-candidate
+                       :xother-terms))
+         (access justification
+                 (access candidate winning-candidate
+                         :justification)
+                 :measure))
+        (list p)))
+      (t (list p))))
+    (access candidate winning-candidate
+            :induction-term)
+    (list p) ; ignore (:p x1 x2 ...)
+    (access justification
+            (access candidate winning-candidate
+                    :justification)
+            :measure)
+    (access candidate winning-candidate
+            :tests-and-alists-lst))
+   (let*-abstractionp state)
+   wrld))
+
 (defun induct-msg/continue (pool-lst
                             forcing-round
-                            cl-set
                             induct-hint-val
                             len-candidates
                             len-flushed-candidates
@@ -5999,6 +6078,8 @@
                             winning-candidate
                             estimated-size
                             clauses
+                            p-formula
+                            scheme
                             wrld
                             state)
 
@@ -6038,8 +6119,6 @@
      (increment-timer 'prove-time state)
      (let* ((pool-name
              (tilde-@-pool-name-phrase forcing-round pool-lst))
-            (p (cons :p
-                     (merge-sort-term-order (all-vars1-lst-lst cl-set nil))))
             (measured-variables (measured-variables winning-candidate wrld))
             (unmeasured-variables (unmeasured-variables measured-variables
                                                         winning-candidate))
@@ -6142,44 +6221,8 @@
                                       1)
                                 0 1))
                   (cons #\f (if (int= len-high-scoring-candidates 1) 0 1))
-                  (cons #\p p)
-                  (cons #\s (prettyify-clause-set
-
-; We create the induction scheme by using induction-formula on the clause set
-; consisting of the singleton clause ((:P x1 x2 ...)).  However, if this is do$
-; induction, we have to add the Q literals to the clause so that
-; induction-formula finds them and includes them in the termination theorem.
-
-                             (induction-formula
-                              (list
-                               (cond
-                                ((eq (ffn-symb (access candidate winning-candidate
-                                                       :induction-term))
-                                     *do$-induction-fn*)
-                                 (append
-                                  (select-do$-induction-q ; compute actual Q
-                                   cl-set
-                                   (cons (access candidate winning-candidate
-                                                 :xinduction-term)
-                                         (access candidate winning-candidate
-                                                 :xother-terms))
-                                   (access justification
-                                           (access candidate winning-candidate
-                                                   :justification)
-                                           :measure))
-                                  (list p)))
-                                (t (list p))))
-                              (access candidate winning-candidate
-                                      :induction-term)
-                              (list p) ; ignore (:p x1 x2 ...)
-                              (access justification
-                                      (access candidate winning-candidate
-                                              :justification)
-                                      :measure)
-                              (access candidate winning-candidate
-                                      :tests-and-alists-lst))
-                             (let*-abstractionp state)
-                             wrld))
+                  (cons #\p p-formula)
+                  (cons #\s scheme)
                   (cons #\g (untranslate (access candidate winning-candidate
                                                  :xinduction-term)
                                          nil
@@ -6669,23 +6712,16 @@
               (winning-candidate (car high-scoring-candidates)))
          (cond
           (winning-candidate
-           (mv-let
-            (erp candidate-ttree state)
-            (accumulate-ttree-and-step-limit-into-state
-             (access candidate winning-candidate :ttree)
-             :skip
-             state)
-            (declare (ignore erp))
-            (let (
+           (let (
 
 ; First, we estimate the size of the answer if we persist in using cl-set.
 
-                   (estimated-size
-                    (induction-formula-size cl-set
-                                            (access candidate
-                                                    winning-candidate
-                                                    :tests-and-alists-lst))))
-              (mv-let (step-limit00 clauses00 ttree00)
+                 (estimated-size
+                  (induction-formula-size cl-set
+                                          (access candidate
+                                                  winning-candidate
+                                                  :tests-and-alists-lst))))
+             (mv-let (step-limit00 clauses00 ttree00)
 
 ; Next we create clauses, the set of clauses we wish to prove.
 ; Observe that if the estimated size is greater than
@@ -6704,16 +6740,16 @@
 ; ttree), so we make all branches of this cond return those three.  But we
 ; ignore step-limit.
 
-                (cond ((and (> estimated-size *maximum-induct-size*)
-                            (not (and (equal (len cl-set) 1)
-                                      (equal (len (car cl-set)) 1))))
-                       (mv nil (list (list (termify-clause-set cl-set))) nil))
-                      ((and (eq (ffn-symb (access candidate
-                                                  winning-candidate
-                                                  :induction-term))
-                                *do$-induction-fn*)
-                            (equal (len cl-set) 1)
-                            (equal (len (car cl-set)) 1))
+                     (cond ((and (> estimated-size *maximum-induct-size*)
+                                 (not (and (equal (len cl-set) 1)
+                                           (equal (len (car cl-set)) 1))))
+                            (mv nil (list (list (termify-clause-set cl-set))) nil))
+                           ((and (eq (ffn-symb (access candidate
+                                                       winning-candidate
+                                                       :induction-term))
+                                     *do$-induction-fn*)
+                                 (equal (len cl-set) 1)
+                                 (equal (len (car cl-set)) 1))
 
 ; We went into a do$ induction and the clause-set is {{term}}.  It's
 ; possible that term is just the original input, e.g., because there was an
@@ -6723,105 +6759,122 @@
 ; (It is, of course, also possible that term is a much-simplified literal that
 ; won't clausify to anything else.)
 
-                       (clausify-input
-                        (car (car cl-set))
-                        (access rewrite-constant
-                                (access prove-spec-var new-pspv
-                                        :rewrite-constant)
-                                :fns-to-be-ignored-by-rewrite)
-                        (ens-from-pspv new-pspv)
-                        wrld
-                        state
-                        nil
-                        (initial-step-limit wrld state)))
-                      (t (mv nil cl-set nil)))
-                (declare (ignore step-limit00))
-                (let* ((termifiedp (and (> estimated-size *maximum-induct-size*)
-                                        (not (and (equal (len cl-set) 1)
-                                                  (equal (len (car cl-set)) 1)))))
-                       (clauses0
-                        (induction-formula
-                         clauses00
-                         (access candidate winning-candidate :induction-term)
-                         (if (and induct-hint-val
-                                  (not (equal induct-hint-val *t*)))
-                             :DO$
-                             (cons (access candidate winning-candidate
-                                           :xinduction-term)
-                                   (access candidate winning-candidate
-                                           :xother-terms)))
-                         (access justification
-                                 (access candidate winning-candidate
-                                         :justification)
-                                 :measure)
-                         (access candidate winning-candidate
-                                 :tests-and-alists-lst)))
-                       (clauses1
-                        #+:non-standard-analysis
-                        (trap-non-standard-vector cl-set
-                                                  winning-candidate
-                                                  clauses0
-                                                  wrld)
-                        #-:non-standard-analysis
-                        clauses0)
-                       (clauses
-                        (cond ((> estimated-size *maximum-induct-size*)
-                               clauses1)
-                              (t (remove-trivial-clauses clauses1 wrld))))
+                            (clausify-input
+                             (car (car cl-set))
+                             (access rewrite-constant
+                                     (access prove-spec-var new-pspv
+                                             :rewrite-constant)
+                                     :fns-to-be-ignored-by-rewrite)
+                             (ens-from-pspv new-pspv)
+                             wrld
+                             state
+                             nil
+                             (initial-step-limit wrld state)))
+                           (t (mv nil cl-set nil)))
+                     (declare (ignore step-limit00))
+                     (let* ((termifiedp (and (> estimated-size *maximum-induct-size*)
+                                             (not (and (equal (len cl-set) 1)
+                                                       (equal (len (car cl-set)) 1)))))
+                            (clauses0
+                             (induction-formula
+                              clauses00
+                              (access candidate winning-candidate :induction-term)
+                              (if (and induct-hint-val
+                                       (not (equal induct-hint-val *t*)))
+                                  :DO$
+                                (cons (access candidate winning-candidate
+                                              :xinduction-term)
+                                      (access candidate winning-candidate
+                                              :xother-terms)))
+                              (access justification
+                                      (access candidate winning-candidate
+                                              :justification)
+                                      :measure)
+                              (access candidate winning-candidate
+                                      :tests-and-alists-lst)))
+                            (clauses1
+                             #+:non-standard-analysis
+                              (trap-non-standard-vector cl-set
+                                                        winning-candidate
+                                                        clauses0
+                                                        wrld)
+                              #-:non-standard-analysis
+                              clauses0)
+                            (clauses
+                             (cond ((> estimated-size *maximum-induct-size*)
+                                    clauses1)
+                                   (t (remove-trivial-clauses clauses1 wrld))))
+                            (p-formula
+                             (cons :p (merge-sort-term-order
+                                       (all-vars1-lst-lst clauses nil))))
+                            (scheme (acl2-induction-scheme p-formula
+                                                           winning-candidate
+                                                           clauses wrld state))
 
 ; Now we inform the simplifier of this induction and store the ttree of the
 ; winning candidate (and the ttree produced by our extra clausify-input above)
 ; into the tag-tree of the pspv.
 
-                       (newer-pspv
-                        (inform-simplify
-                         (access candidate winning-candidate :tests-and-alists-lst)
-                         (add-to-set-equal
-                          (access candidate winning-candidate
-                                  :xinduction-term)
-                          (access candidate winning-candidate :xother-terms))
-                         (change prove-spec-var new-pspv
-                                 :tag-tree
-                                 (cons-tag-trees
-                                  ttree00
-                                  (cons-tag-trees
-                                   candidate-ttree
-                                   (access prove-spec-var new-pspv :tag-tree)))))))
+                            (new-ttree
+                             (add-to-tag-tree-new
+                              'induction-record
+                              (make-induction-record
+                               winning-candidate pool-name p-formula scheme wrld)
+                              (cons-tag-trees
+                               ttree00
+                               (cons-tag-trees
+                                (access candidate winning-candidate :ttree)
+                                (access prove-spec-var new-pspv :tag-tree)))))
+                            (newer-pspv
+                             (inform-simplify
+                              (access candidate winning-candidate :tests-and-alists-lst)
+                              (add-to-set-equal
+                               (access candidate winning-candidate
+                                       :xinduction-term)
+                               (access candidate winning-candidate :xother-terms))
+                              (change prove-spec-var new-pspv
+                                      :tag-tree
+                                      new-ttree))))
 
 ; Now we print out the induct message.
 
-              (let ((state
-                     (io? prove nil state
-                          (wrld clauses termifiedp estimated-size
-                                winning-candidate
-                                high-scoring-candidates complicated-candidates
-                                unvetoed-candidates merged-candidates
-                                flushed-candidates candidates induct-hint-val
-                                ;cl-set
-                                forcing-round pool-lst)
+                       (mv-let (erp new-ttree state)
+                               (accumulate-ttree-and-step-limit-into-state
+                                new-ttree :skip state)
+                               (declare (ignore erp new-ttree))
+                               (pprogn
+                                (io? prove nil state
+                                     (wrld clauses p-formula scheme
+                                           termifiedp estimated-size
+                                           winning-candidate
+                                           high-scoring-candidates complicated-candidates
+                                           unvetoed-candidates merged-candidates
+                                           flushed-candidates candidates induct-hint-val
+                                           forcing-round pool-lst)
 
-                          (induct-msg/continue
-                           pool-lst
-                           forcing-round
-                           clauses ; cl-set
-                           induct-hint-val
-                           (length candidates)
-                           (length flushed-candidates)
-                           (length merged-candidates)
-                           (length unvetoed-candidates)
-                           (length complicated-candidates)
-                           (length high-scoring-candidates)
-                           winning-candidate
-                           (if termifiedp
-                               estimated-size
-                               nil)
-                           clauses
-                           wrld
-                           state))))
-                (mv 'continue
-                    clauses
-                    newer-pspv
-                    state)))))))
+                                     (induct-msg/continue
+                                      pool-lst
+                                      forcing-round
+                                      induct-hint-val
+                                      (length candidates)
+                                      (length flushed-candidates)
+                                      (length merged-candidates)
+                                      (length unvetoed-candidates)
+                                      (length complicated-candidates)
+                                      (length high-scoring-candidates)
+                                      winning-candidate
+                                      (if termifiedp
+                                          estimated-size
+                                        nil)
+                                      clauses
+                                      p-formula
+                                      scheme
+                                      wrld
+                                      state))
+                                (mv 'continue
+                                    clauses
+                                    newer-pspv
+                                    state)))))))
           (t
 
 ; Otherwise, we report our failure to find an induction and return the
