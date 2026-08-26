@@ -1112,4 +1112,83 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: more predicates
+(define cst-extra-grammatical-restrictions-p ((cst abnf::treep))
+  :guard (abnf::tree-terminatedp cst)
+  :returns (yes/no booleanp)
+  :short "Check if a CST satisfies all the extra-grammatical restrictions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the conjunction of all the restrictions defined above,
+     which are of three kinds:")
+   (xdoc::ul
+    (xdoc::li
+     "Choice restrictions,
+      which choose between different readings of the same text:
+      @(tsee cst-identifiers-not-keywords-p) and
+      @(tsee cst-identifier-expressions-not-numbers-p).")
+    (xdoc::li
+     "Longest-match restrictions,
+      which require lexemes to extend as far as they can:
+      @(tsee cst-longest-comments-p),
+      @(tsee cst-longest-ascii-escapes-p),
+      @(tsee cst-longest-numeric-escapes-p),
+      @(tsee cst-longest-identifiers-p),
+      @(tsee cst-longest-decimals-p),
+      @(tsee cst-longest-float-lits-p), and
+      @(tsee cst-longest-keywords-p).")
+    (xdoc::li
+     "Restrictions that do not resolve ambiguities,
+      but just exclude certain CSTs from the language:
+      @(tsee cst-unbox-expr-binders-not-dollar-initial-p) and
+      @(tsee cst-numeric-escapes-unicode-scalar-values-p)."))
+   (xdoc::p
+    "Together with the @(see grammar),
+     this predicate provides the complete specification of
+     the syntactic validity of Remora code:
+     a sequence of Unicode characters is syntactically valid iff
+     it is the fringe of a CST that
+     matches the top-level rule for the kind of code
+     (@('file') or @('top-exp'))
+     and satisfies this predicate.
+     Each restriction is stated so that it applies to
+     a CST that covers the whole input,
+     since e.g. the longest-match restrictions look at
+     what follows each lexeme;
+     the predicate does not presuppose that the CST matches the grammar,
+     but its intended use is in conjunction with that condition.
+     The guard requires the CST to be terminated,
+     as some of the restrictions do.")
+   (xdoc::p
+    "Some of the side conditions mentioned in the grammar
+     do not correspond to restrictions here,
+     because they are consequences of the grammar and of
+     the restrictions above:
+     e.g. the maximality of whitespace
+     (a @('ws') CST must extend as far as it can)
+     is implied by @(tsee cst-longest-comments-p),
+     given the structure of the grammar.
+     Such consequences are to be proved as theorems,
+     rather than assumed as restrictions.")
+   (xdoc::p
+    "The main property expected of this predicate,
+     to be proved as future work,
+     is that it resolves all the ambiguities of the grammar:
+     every sequence of Unicode characters is the fringe of
+     at most one CST that matches a top-level rule
+     and satisfies this predicate.
+     Related expected properties concern the @(see parser):
+     it returns a CST iff one satisfying these conditions exists,
+     and then it returns that CST."))
+  (and (cst-identifiers-not-keywords-p cst)
+       (cst-identifier-expressions-not-numbers-p cst)
+       (cst-longest-comments-p cst)
+       (cst-longest-ascii-escapes-p cst)
+       (cst-longest-numeric-escapes-p cst)
+       (cst-longest-identifiers-p cst)
+       (cst-longest-decimals-p cst)
+       (cst-longest-float-lits-p cst)
+       (cst-longest-keywords-p cst)
+       (cst-unbox-expr-binders-not-dollar-initial-p cst)
+       (cst-numeric-escapes-unicode-scalar-values-p cst))
+  :hooks nil)
