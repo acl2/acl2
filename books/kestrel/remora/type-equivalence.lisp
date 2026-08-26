@@ -91,7 +91,12 @@
     "An array type variable @('*<name>') is sugar for
      an array type @('(A &<name> @<name>)') consisting of
      an atom type variable and a shape variable with the same name.
-     Rule @('array-var') lets us perform this reduction."))
+     Rule @('array-var') lets us perform this reduction.")
+   (xdoc::p
+    "A bracket type is sugar for an array type
+     with the same element type and with the splice of the bracket's ispaces.
+     The rule @('bracket') supports this reduction,
+     but allows any ispace equivalent to the ispace splice."))
 
   :preds ((type= type1 type2))
 
@@ -210,6 +215,13 @@
               (type= (type-var (type-var-array name))
                      (type-array (type-var (type-var-atom name))
                                  (ispace-shape (shape-var name)))))
+
+   ;; normalization of bracket types:
+
+   (bracket ((typep ty) (ispace-listp is) (ispacep i)
+             (isp= i (ispace-shape (shape-splice is))))
+            (type= (type-bracket ty is)
+                   (type-array ty i)))
 
    ;; TODO: normalization rules
 
