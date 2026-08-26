@@ -54,7 +54,7 @@
      But we include them for greater clarity
      and also to support possible guard verification
      in future versions of @(tsee definductive):
-     currently the predicates the defined by the rules are not guard-verified,
+     currently the predicates defined by the rules are not guard-verified,
      but to have them guard-verified,
      we would need the type premises in the inference rules.
      The fact that the rules start with type premises
