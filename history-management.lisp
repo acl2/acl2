@@ -3189,6 +3189,11 @@
                                (car (get-timer 'proof-tree-time state))
                                (car (get-timer 'other-time state)))
                          state)
+         (put-event-data 'induction-records
+                         (tagged-objects 'induction-record
+                                         (f-get-global 'accumulated-ttree
+                                                       state))
+                         state)
          (let ((abort-causes
                 (tagged-objects 'abort-cause
                                 (f-get-global 'accumulated-ttree state))))
