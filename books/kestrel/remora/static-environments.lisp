@@ -135,6 +135,11 @@
      its type is a product type of an array type,
      without any function type, as in [impl],
      since the single ispace application directly yields the array.
+     The @('iota') operation is polymorphic only in a dimension:
+     its type is a product type of a function type
+     whose output is an existential type, as in [impl],
+     since the shape of the result depends on the argument's value,
+     and is thus not known statically.
      The @('reify-dim') and @('reify-shape') operations are polymorphic
      only in a dimension and only in a shape, respectively:
      their types are product types of, respectively,
@@ -254,9 +259,14 @@
        (reify-shape-type
         (tpi "@s"
              (tsi "$r"
-                  (t[] :int (shp "$r"))))))
+                  (t[] :int (shp "$r")))))
+       (iota-type
+        (tpi "$d"
+             (t-> (t[] :int (shp "$d"))
+                  (tsi "@s"
+                       (t[] :int "@s"))))))
     (omap::from-alist
-     (list (cons "+" int-binop-type)
+     (list$ (cons "+" int-binop-type)
            (cons "-" int-binop-type)
            (cons "*" int-binop-type)
            (cons "/" int-binop-type)
@@ -320,7 +330,8 @@
            (cons "reduce" reduce-type)
            (cons "fold" fold-type)
            (cons "reify-dim" reify-dim-type)
-           (cons "reify-shape" reify-shape-type)))))
+           (cons "reify-shape" reify-shape-type)
+           (cons "iota" iota-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
