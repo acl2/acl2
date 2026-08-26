@@ -22,6 +22,8 @@
 (include-book "portcullis")
 (local (include-book "std/omaps/top" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
+(local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))
 
 ; The SUBSETP-EQUAL reasoning used below is supplied by KESTREL/LISTS-LIGHT
 ; rather than proved here.  That book carries some fifty rules, all enabled,
@@ -988,7 +990,13 @@
   (b* (((var-renamings r) r))
     (type-list-rename-type-vars
      (type-list-rename-ispace-vars tys r.dim r.shape)
-     r.atom r.array)))
+     r.atom r.array))
+  ///
+  (defret len-of-type-list-rename-all-vars
+    (equal (len new-tys)
+           (len tys))
+    :hints (("Goal" :in-theory (enable len-of-type-list-rename-type-vars
+                                       len-of-type-list-rename-ispace-vars)))))
 
 (define type-list-option-rename-all-vars ((tys? type-list-optionp)
                                           (r var-renamings-p))
@@ -1231,7 +1239,14 @@
     (defret consp-of-uniq-expr-list
       (equal (consp new-x)
              (consp x))
-      :hints (("Goal" :expand ((uniq-expr-list x used r))))))
+      :hints (("Goal" :expand ((uniq-expr-list x used r)))))
+
+    (defret len->=-2-of-uniq-expr-list
+      (implies (<= 2 (len x))
+               (<= 2 (len new-x)))
+      :rule-classes :linear
+      :hints (("Goal" :expand ((uniq-expr-list x used r))
+                      :in-theory (enable len consp-of-uniq-expr-list)))))
 
   (define uniq-atom ((x atomp) (used string-listp) (r var-renamings-p))
     :short "Uniquify binder names in an atom."
@@ -1530,7 +1545,14 @@
 
   ; Guard verification is deferred to here (:VERIFY-GUARDS NIL above) so that
   ; CONSP-OF-UNIQ-ATOM-LIST, in UNIQ-ATOM-LIST's ///, is available to it.
-  (verify-guards uniq-expr)
+  ; The :APPN, :TAPPN, and :IAPPN cases need the two-or-more-ness of the rebuilt
+  ; argument lists, each following from the respective
+  ; EXPR-{APPN,TAPPN,IAPPN}-REQUIREMENTS through a length-preservation rule:
+  ; LEN->=-2-OF-UNIQ-EXPR-LIST and LEN-OF-TYPE-LIST-RENAME-ALL-VARS are enabled,
+  ; but LEN-OF-ISPACE-LIST-RENAME-ISPACE-VARS (deffold-map-generated) is disabled,
+  ; so we enable it here.
+  (verify-guards uniq-expr
+    :hints (("Goal" :in-theory (enable len-of-ispace-list-rename-ispace-vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

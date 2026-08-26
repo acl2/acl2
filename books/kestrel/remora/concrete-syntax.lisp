@@ -14,6 +14,7 @@
 (include-book "grammar")
 (include-book "concrete-syntax-trees")
 (include-book "extra-grammatical-restrictions")
+(include-book "parsing")
 (include-book "parser")
 (include-book "post-parsing")
 
@@ -46,5 +47,6 @@
                     grammar
                     concrete-syntax-trees
                     extra-grammatical-restrictions
+                    parsing
                     parser
                     post-parsing))
