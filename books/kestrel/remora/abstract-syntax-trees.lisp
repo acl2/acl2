@@ -953,8 +953,8 @@
        are sugar for a nesting of the unary forms;
        they always contain two or more arguments
        (because there must be at least one argument,
-       and if there is just one we use the unary forms),
-       but this fixtype does not capture this requirement.")
+       and if there is just one we use the unary forms);
+       this fixtype captures this requirement.")
      (xdoc::p
       "The @(':capp') summand is sugar,
        but it allows zero arguments (expressions, types, or ispaces),
@@ -1000,15 +1000,27 @@
     (:app ((fun expr)
            (arg expr)))
     (:appn ((fun expr)
-            (args expr-list))) ; two or more
+            (args expr-list
+                  :reqfix (if (>= (len args) 2)
+                              args
+                            (list (expr-fix nil) (expr-fix nil)))))
+     :require (>= (len args) 2))
     (:tapp ((fun expr)
             (arg type)))
     (:tappn ((fun expr)
-             (args type-list))) ; two or more
+             (args type-list
+                   :reqfix (if (>= (len args) 2)
+                               args
+                             (list (type-fix nil) (type-fix nil)))))
+     :require (>= (len args) 2))
     (:iapp ((fun expr)
             (arg ispace)))
     (:iappn ((fun expr)
-             (args ispace-list))) ; two or more
+             (args ispace-list
+                   :reqfix (if (>= (len args) 2)
+                               args
+                             (list (ispace-fix nil) (ispace-fix nil)))))
+     :require (>= (len args) 2))
     (:capp ((fun expr)
             (targs type-list-option)
             (iargs ispace-list-option)
@@ -1050,7 +1062,46 @@
       (consp (expr-bracket->exprs expr))
       :rule-classes :type-prescription
       :use (:instance expr-bracket-requirements (x expr))
-      :disable expr-bracket-requirements))
+      :disable expr-bracket-requirements)
+
+    (defrule consp-of-expr-appn->args
+      (consp (expr-appn->args expr))
+      :rule-classes :type-prescription
+      :use (:instance expr-appn-requirements (x expr))
+      :disable expr-appn-requirements)
+
+    (defruled consp-of-cdr-of-expr-appn->args
+      (consp (cdr (expr-appn->args expr)))
+      :rule-classes :type-prescription
+      :use (:instance expr-appn-requirements (x expr))
+      :disable expr-appn-requirements
+      :enable len)
+
+    (defrule consp-of-expr-tappn->args
+      (consp (expr-tappn->args expr))
+      :rule-classes :type-prescription
+      :use (:instance expr-tappn-requirements (x expr))
+      :disable expr-tappn-requirements)
+
+    (defruled consp-of-cdr-of-expr-tappn->args
+      (consp (cdr (expr-tappn->args expr)))
+      :rule-classes :type-prescription
+      :use (:instance expr-tappn-requirements (x expr))
+      :disable expr-tappn-requirements
+      :enable len)
+
+    (defrule consp-of-expr-iappn->args
+      (consp (expr-iappn->args expr))
+      :rule-classes :type-prescription
+      :use (:instance expr-iappn-requirements (x expr))
+      :disable expr-iappn-requirements)
+
+    (defruled consp-of-cdr-of-expr-iappn->args
+      (consp (cdr (expr-iappn->args expr)))
+      :rule-classes :type-prescription
+      :use (:instance expr-iappn-requirements (x expr))
+      :disable expr-iappn-requirements
+      :enable len))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -630,6 +630,29 @@ binder.</p>")
             :no-override t))
         state)))
 
+(defun flextreemap->defxdoc (x parents kwd-alist state)
+  ;; Returns (mv events state)
+  (declare (ignorable state))
+  (b* (((flextreemap x) x)
+       (parents (getarg :parents parents kwd-alist))
+       (key-link (if x.key-type
+                     (cat "@(see? " (xdoc::full-escape-symbol x.key-type) ")")
+                   "anything"))
+       (val-link (if x.val-type
+                     (cat "@(see? " (xdoc::full-escape-symbol x.val-type) ")")
+                   "anything"))
+       (short   (or (getarg :short nil kwd-alist)
+                    (cat "A @(see treemap::treemap) mapping " key-link " to " val-link ".")))
+       (long    (or (getarg :long nil kwd-alist)
+                    (cat "<p>This is an ordinary @(see fty::deftreemap), mapping " key-link " to "
+                         val-link ".</p>"))))
+    (mv `((defxdoc ,x.name
+            :parents ,parents
+            :short ,short
+            :long ,long
+            :no-override t))
+        state)))
+
 (defun flexomap->defxdoc (x parents kwd-alist state)
   ;; Returns (mv events state)
   (declare (ignorable state))

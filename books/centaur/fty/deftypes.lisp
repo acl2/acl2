@@ -39,6 +39,7 @@
 (include-book "kestrel/fty/fty-set" :dir :system)
 (include-book "kestrel/fty/fty-omap" :dir :system)
 (include-book "kestrel/fty/fty-treeset" :dir :system)
+(include-book "kestrel/fty/fty-treemap" :dir :system)
 (include-book "fty-sugar")
 (include-book "std/util/deflist-base" :dir :system)
 (include-book "std/util/defalist-base" :dir :system)
@@ -230,6 +231,7 @@
             (defset      (parse-flexset (cdar x) xvar our-fixtypes fixtypes state))
             (defomap     (parse-flexomap (cdar x) xvar our-fixtypes fixtypes state))
             (deftreeset  (parse-flextreeset (cdar x) xvar our-fixtypes fixtypes state))
+            (deftreemap  (parse-flextreemap (cdar x) xvar our-fixtypes fixtypes state))
             (otherwise (er hard? 'parse-flextypelist
                            "Recognized flextypes are ~x0, not ~x1~%"
                            *known-flextype-generators* (caar x))))
@@ -292,7 +294,7 @@
 
 (defun flextypelist-predicate-defs (types)
   ;; Each kind's flex*-predicate-def returns a LIST of defines (a treeset
-  ;; member contributes two mutually recursive ones).
+  ;; member contributes two mutually recursive ones, a treemap member three).
   (if (atom types)
       nil
     (append (with-flextype-bindings (x (car types))
@@ -1206,6 +1208,30 @@
 (defmacro deftreeset (&whole form &rest args)
   (declare (ignore args))
   `(make-event (deftreeset-fn ',form state)))
+
+(defun deftreemap-fn (whole state)
+  (b* ((our-fixtypes (list (flextype-form->fixtype whole)))
+       (fixtype-al (append our-fixtypes
+                           (get-fixtypes-alist (w state))))
+       (x (parse-flextreemap (cdr whole) nil our-fixtypes fixtype-al state))
+       (x (if (member :count (cdr whole))
+              x
+            (change-flextreemap x
+                                :count nil
+                                :kwd-alist (remove1-assoc-eq
+                                            :post-acc-events
+                                            (flextreemap->kwd-alist x)))))
+       ((flextreemap x) x)
+       (flextypes (make-flextypes :name x.name
+                                  :types (list x)
+                                  :no-count (not x.count)
+                                  :kwd-alist (flextypes-kwd-alist-from-specialized-kwd-alist x.kwd-alist)
+                                  :recp x.recp)))
+    (deftypes-events flextypes state)))
+
+(defmacro deftreemap (&whole form &rest args)
+  (declare (ignore args))
+  `(make-event (deftreemap-fn ',form state)))
 
 
 (defun defomap-fn (whole state)

@@ -77,6 +77,10 @@
   (equal (get-ruleset 'refl-trans-closure-validp-defs (w state))
          '(r*-base-validp r*-refl-validp r*-trans-validp r*-proof-validp)))
 
+ ; The rule theorems are stored without hints.
+
+ (assert-event (not (member-eq :hints (get-event 'r*-base (w state)))))
+
  ; The generated induction scheme supports rule induction.
 
  (encapsulate
@@ -466,6 +470,10 @@
            odd-odd-step-validp
            even-proof-validp
            odd-proof-validp)))
+
+ ; The rule theorems are stored without hints.
+
+ (assert-event (not (member-eq :hints (get-event 'even-even-step (w state)))))
 
  ; The predicates hold on some of the expected numbers.
 

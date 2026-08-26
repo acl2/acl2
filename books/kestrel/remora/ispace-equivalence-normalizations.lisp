@@ -166,7 +166,7 @@
   (exists (dim1)
           (and (dim= dim dim1)
                (dim-binaddp dim1)))
-  :verify-guards nil) ; because DIM= is not guard-verified
+  :guard-hints (("Goal" :in-theory (enable dimp-when-dim=))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -177,7 +177,7 @@
   (exists (dim1)
           (and (dim= dim dim1)
                (dim-binmulp dim1)))
-  :verify-guards nil) ; because DIM= is not guard-verified
+  :guard-hints (("Goal" :in-theory (enable dimp-when-dim=))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -188,7 +188,7 @@
   (exists (dim1)
           (and (dim= dim dim1)
                (dim-unisubp dim1)))
-  :verify-guards nil) ; because DIM= is not guard-verified
+  :guard-hints (("Goal" :in-theory (enable dimp-when-dim=))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -204,7 +204,7 @@
                (dim-binaddp dim1)
                (dim-binmulp dim1)
                (dim-unisubp dim1)))
-  :verify-guards nil) ; because DIM= is not guard-verified
+  :guard-hints (("Goal" :in-theory (enable dimp-when-dim=))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -215,7 +215,7 @@
   (exists (shape1)
           (and (shp= shape shape1)
                (shape-unidimsp shape1)))
-  :verify-guards nil) ; because SHP= is not guard-verified
+  :guard-hints (("Goal" :in-theory (enable shapep-when-shp=))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -226,7 +226,7 @@
   (exists (shape1)
           (and (shp= shape shape1)
                (shape-nullbinappendp shape1)))
-  :verify-guards nil) ; because SHP= is not guard-verified
+  :guard-hints (("Goal" :in-theory (enable shapep-when-shp=))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -236,7 +236,7 @@
   (exists (shape1)
           (and (shp= shape shape1)
                (shape-nosplicep shape1)))
-  :verify-guards nil) ; because SHP= is not guard-verified
+  :guard-hints (("Goal" :in-theory (enable shapep-when-shp=))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -247,7 +247,7 @@
   (exists (shape1)
           (and (shp= shape shape1)
                (shape-nodimispacep shape1)))
-  :verify-guards nil) ; because SHP= is not guard-verified
+  :guard-hints (("Goal" :in-theory (enable shapep-when-shp=))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -264,7 +264,7 @@
                (shape-nullbinappendp shape1)
                (shape-nosplicep shape1)
                (shape-nodimispacep shape1)))
-  :verify-guards nil) ; because SHP= is not guard-verified
+  :guard-hints (("Goal" :in-theory (enable shapep-when-shp=))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
