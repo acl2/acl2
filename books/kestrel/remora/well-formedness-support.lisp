@@ -127,15 +127,6 @@
                      (key (type-map-wfp-witness
                            (omap::delete* keys (string-type-map-fix tmap)))))))
 
-  (defrule type-map-wfp-of-extend-type-var-map
-    :short "Binding the type parameters of an instantiated definition
-            preserves the invariant."
-    (implies (and (type-list-wfp tys)
-                  (type-map-wfp type-map))
-             (type-map-wfp (extend-type-var-map tvars tys type-map)))
-    :induct (extend-type-var-map tvars tys type-map)
-    :enable (extend-type-var-map type-list-wfp))
-
   (defrule type-map-wfp-of-atom/array-subst-remove-bound
     :short "Reducing the substitutions at a binder preserves the invariant."
     (implies (and (type-map-wfp atom-subst)

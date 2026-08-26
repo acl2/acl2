@@ -84,7 +84,9 @@
      type-map-wfp), the analogue of @(tsee renaming-wfp) in @(see
      unique-names-well-formedness); since it mentions nothing of
      monomorphization, it and its preservation lemmas are in @(see
-     well-formedness-support).")
+     well-formedness-support), and only @(tsee
+     type-map-wfp-of-extend-type-var-map), about the one map operation
+     that monomorphization itself performs, is here.")
    (xdoc::p
     "The last invariant is on the registration map that the traversal
      threads: an instance is created from a request recorded earlier, so
@@ -159,6 +161,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The type-substitution invariant, at the one operation on these maps that
+; monomorphization itself performs.  The invariant and its preservation by
+; the generic map operations are in WELL-FORMEDNESS-SUPPORT.
+
+(defrule type-map-wfp-of-extend-type-var-map
+  :short "Binding the type parameters of an instantiated definition
+          preserves the invariant."
+  (implies (and (type-list-wfp tys)
+                (type-map-wfp type-map))
+           (type-map-wfp (extend-type-var-map tvars tys type-map)))
+  :induct t
+  :enable (extend-type-var-map type-list-wfp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Dimension partial evaluation preserves well-formedness.  No invariant is
 ; needed: a dim :VAR is either kept, with its name, or replaced by a
