@@ -421,12 +421,8 @@
            len-of-var+type?-list-rename-ispace-vars
            len-of-var+type?-list-rename-type-vars))
 
-(defrule len-of-type-list-rename-all-vars
-  (equal (len (type-list-rename-all-vars tys r))
-         (len tys))
-  :enable (type-list-rename-all-vars
-           len-of-type-list-rename-ispace-vars
-           len-of-type-list-rename-type-vars))
+; LEN-OF-TYPE-LIST-RENAME-ALL-VARS is now proved in UNIQUE-NAMES (in
+; TYPE-LIST-RENAME-ALL-VARS's ///), since the :TAPPN guard there needs it.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

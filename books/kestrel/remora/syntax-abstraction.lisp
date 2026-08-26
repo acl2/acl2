@@ -23,6 +23,9 @@
 (include-book "projects/abnf/tree-operations/tree-utilities" :dir :system)
 (include-book "unicode/utf8-encode" :dir :system)
 
+(local (include-book "std/lists/len" :dir :system))
+(local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))
+
 (local
  (in-theory (enable abnf::treep-when-result-not-error
                     abnf::tree-listp-when-result-not-error
@@ -1914,7 +1917,7 @@
                               (abnf::tree-info-for-error inner))))))
     :measure (abnf::tree-count tree))
 
-  ;; app-exp = exp *( ws exp )
+  ;; app-exp = exp 1*( ws exp )
   (define abs-app-exp ((tree abnf::treep))
     :returns (e expr-resultp)
     :short "Abstract an @('app-exp') to
@@ -1932,10 +1935,11 @@
          ((okf fun-tree) (abnf::check-tree-list-1 sub.1st))
          ((okf fun) (abs-exp fun-tree))
          ((okf args) (abs-*-ws-exp sub.2nd)))
-      (if (and (consp args)
-               (endp (cdr args)))
-          (make-expr-app :fun fun :arg (car args))
-        (make-expr-appn :fun fun :args args)))
+      (cond ((endp args)
+             (reserrf (list :app-exp-no-args fun)))
+            ((endp (cdr args))
+             (make-expr-app :fun fun :arg (car args)))
+            (t (make-expr-appn :fun fun :args args))))
     :measure (abnf::tree-count tree))
 
   ;; array-exp = "array" ws shape-lit 1*( ws atom )
@@ -2009,7 +2013,7 @@
          (reserrf (list :frame-exp-shape (len treess))))))
     :measure (abnf::tree-count tree))
 
-  ;; tapp-exp = "t-app" ws exp *( ws type )
+  ;; tapp-exp = "t-app" ws exp 1*( ws type )
   (define abs-tapp-exp ((tree abnf::treep))
     :returns (e expr-resultp)
     :short "Abstract a @('tapp-exp') to
@@ -2027,13 +2031,14 @@
          ((okf fun-tree) (abnf::check-tree-list-1 sub.3rd))
          ((okf fun) (abs-exp fun-tree))
          ((okf args) (abs-*-ws-type sub.4th)))
-      (if (and (consp args)
-               (endp (cdr args)))
-          (make-expr-tapp :fun fun :arg (car args))
-        (make-expr-tappn :fun fun :args args)))
+      (cond ((endp args)
+             (reserrf (list :tapp-exp-no-args fun)))
+            ((endp (cdr args))
+             (make-expr-tapp :fun fun :arg (car args)))
+            (t (make-expr-tappn :fun fun :args args))))
     :measure (abnf::tree-count tree))
 
-  ;; iapp-exp = "i-app" ws exp *( ws ispace )
+  ;; iapp-exp = "i-app" ws exp 1*( ws ispace )
   (define abs-iapp-exp ((tree abnf::treep))
     :returns (e expr-resultp)
     :short "Abstract an @('iapp-exp') to
@@ -2051,10 +2056,11 @@
          ((okf fun-tree) (abnf::check-tree-list-1 sub.3rd))
          ((okf fun) (abs-exp fun-tree))
          ((okf args) (abs-*-ws-ispace sub.4th)))
-      (if (and (consp args)
-               (endp (cdr args)))
-          (make-expr-iapp :fun fun :arg (car args))
-        (make-expr-iappn :fun fun :args args)))
+      (cond ((endp args)
+             (reserrf (list :iapp-exp-no-args fun)))
+            ((endp (cdr args))
+             (make-expr-iapp :fun fun :arg (car args)))
+            (t (make-expr-iappn :fun fun :args args))))
     :measure (abnf::tree-count tree))
 
   ;; unbox-exp = "unbox" ws "(" ws unbox-spec ws ")" ws exp
@@ -2463,7 +2469,8 @@
 
   ///
 
-  (verify-guards abs-exp)
+  (verify-guards abs-exp
+    :hints (("Goal" :in-theory (enable len))))
 
   (fty::deffixequiv-mutual abs-exprs/atoms/binds))
 

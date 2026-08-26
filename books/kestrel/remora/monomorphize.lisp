@@ -28,6 +28,8 @@
 
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 (local (include-book "std/omaps/top" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
+(local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -578,7 +580,9 @@
                                              atom-partial-eval-dims
                                              atom-list-partial-eval-dims
                                              bind-partial-eval-dims
-                                             bind-list-partial-eval-dims)))))
+                                             bind-list-partial-eval-dims
+                                             len-of-expr-list-partial-eval-dims
+                                             expr-appn-requirements)))))
 
 (local
  (defthm-exprs/atoms/binds-subst-type-vars-flag
@@ -612,7 +616,9 @@
                                              atom-subst-type-vars
                                              atom-list-subst-type-vars
                                              bind-subst-type-vars
-                                             bind-list-subst-type-vars)))))
+                                             bind-list-subst-type-vars
+                                             len-of-expr-list-subst-type-vars
+                                             expr-appn-requirements)))))
 
 ; Scope environment operations.
 
@@ -975,7 +981,16 @@
              (consp x))
       :hints (("Goal"
                :expand ((mono-expr-list
-                         x defs fn-info-map dim-var-map type-map))))))
+                         x defs fn-info-map dim-var-map type-map)))))
+
+    (defret len->=-2-of-mono-expr-list
+      (implies (<= 2 (len x))
+               (<= 2 (len new-exprs)))
+      :rule-classes :linear
+      :hints (("Goal"
+               :expand ((mono-expr-list
+                         x defs fn-info-map dim-var-map type-map))
+               :in-theory (enable len consp-of-mono-expr-list)))))
 
   (define mono-atom ((x atomp) (defs bind-mapp) (fn-info-map fn-info-mapp) (dim-var-map acl2::string-nat-mapp) (type-map string-type-mapp))
     :short "Monomorphize an atom."
@@ -1194,6 +1209,9 @@
 
 ; Guard verification is deferred to here (:VERIFY-GUARDS NIL above) so that
 ; CONSP-OF-MONO-ATOM-LIST, in MONO-ATOM-LIST's ///, is available to it.
+; The :APPN case needs the two-or-more-ness of the monomorphized argument list;
+; that follows from EXPR-APPN-REQUIREMENTS through the (linear, enabled)
+; LEN->=-2-OF-MONO-EXPR-LIST, both on by default, so no hints are needed.
 (verify-guards mono-expr)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
