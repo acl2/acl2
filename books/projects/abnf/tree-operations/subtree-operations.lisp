@@ -202,7 +202,12 @@
               (treep tree))
   :short "Lift @(tsee tree-path-validp) to lists."
   (tree-path-validp x tree)
-  :elementp-of-nil t)
+  :elementp-of-nil t
+
+  ///
+
+  (fty::deffixequiv tree-path-list-validp
+    :args ((tree treep))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -236,7 +241,10 @@
     (implies (and (tree-path-list-validp x tree)
                   (tree-terminatedp tree))
              (tree-list-terminatedp (tree-list-at-path-list x tree)))
-    :induct t))
+    :induct t)
+
+  (fty::deffixequiv tree-list-at-path-list
+    :args ((tree treep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
