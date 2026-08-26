@@ -557,7 +557,7 @@
        are put in a @(tsee defsection) whose name is obtained by
        extending the @('name') input with the suffix @('-valid-proofs').")
      (xdoc::p
-      "These theorems are enabled."))
+      "These theorems are disabled."))
 
     (xdoc::desc
      (list
@@ -585,7 +585,7 @@
        If XDOC is generated, they go in the @(tsee defsection)
        mentioned just above.")
      (xdoc::p
-      "These theorems are disabled."))
+      "These theorems are enabled."))
 
     (xdoc::desc
      (list

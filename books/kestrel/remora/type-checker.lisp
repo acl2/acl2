@@ -1648,7 +1648,13 @@
                     (consp exprs))
                (consp (types+exprs->exprs types+exprs)))
       :hints (("Goal" :expand ((check-expr-list exprs senv))))
-      :rule-classes ((:rewrite) (:type-prescription))))
+      :rule-classes ((:rewrite) (:type-prescription)))
+
+    (defret len-of-exprs-of-check-expr-list
+      (implies (not (reserrp types+exprs))
+               (equal (len (types+exprs->exprs types+exprs))
+                      (len exprs)))
+      :hints (("Goal" :induct (len exprs) :in-theory (enable len)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
