@@ -135,6 +135,13 @@
      its type is a product type of an array type,
      without any function type, as in [impl],
      since the single ispace application directly yields the array.
+     The @('reify-dim') and @('reify-shape') operations are polymorphic
+     only in a dimension and only in a shape, respectively:
+     their types are product types of, respectively,
+     the integer base type
+     and an existential type of an integer array type,
+     without any function type, as in [impl],
+     since the single ispace application directly yields the result.
      All these types are atom-kinded, without zero-rank array type wrapping:
      as explained in @(see types),
      atom-kinded types are allowed wherever array-kinded types are expected,
@@ -241,7 +248,13 @@
                             (t[] "&t2" "@s2"))
                        (t[] "&t2" "@s2")
                        (t[] "&t" (shp[] (dim+ 1 "$d") "@s"))
-                       (t[] "&t2" "@s2"))))))
+                       (t[] "&t2" "@s2")))))
+       (reify-dim-type
+        (tpi "$d" :int))
+       (reify-shape-type
+        (tpi "@s"
+             (tsi "$r"
+                  (t[] :int (shp "$r"))))))
     (omap::from-alist
      (list (cons "+" int-binop-type)
            (cons "-" int-binop-type)
@@ -305,7 +318,9 @@
            (cons "transpose2d" transpose2d-type)
            (cons "iota/static" iota/static-type)
            (cons "reduce" reduce-type)
-           (cons "fold" fold-type)))))
+           (cons "fold" fold-type)
+           (cons "reify-dim" reify-dim-type)
+           (cons "reify-shape" reify-shape-type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

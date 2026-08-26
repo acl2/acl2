@@ -413,6 +413,14 @@
                   (natp size)))
   :hints (("Goal" :in-theory (enable read))))
 
+(defthm getbit-of-read-too-high
+  (implies (and (<= (* 8 n) m)
+                (natp n)
+                (natp m))
+           (equal (getbit m (read n addr x86))
+                  0))
+  :hints (("Goal" :in-theory (enable acl2::getbit-too-high))))
+
 (defthm <=-of-read-linear
   (implies (natp size)
            (<= (read size addr x86) (+ -1 (expt 2 (* 8 size)))))
