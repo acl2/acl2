@@ -1234,3 +1234,123 @@
            data::cardinality-becomes-len-when-osetp
            tree-iter-oset-before-becomes-tree-iter-before
            bstp-of-tree-iter-plug-of-iter-fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Uniqueness. Two iterators are equal exactly when they walk the same set and
+;; sit at the same position: both before the first, both after the last, or
+;; both at an element and at the same element. At an element this is the
+;; zipper's own uniqueness; the two positions past the ends carry nothing but
+;; their tree, so each is recovered from that tree alone.
+
+(defrule iter-uniqueness-when-before-firstp
+  (implies (and (iterp iter1)
+                (iterp iter2)
+                (before-firstp iter1)
+                (before-firstp iter2)
+                (equal (from-iter iter1) (from-iter iter2)))
+           (equal iter1 iter2))
+  :rule-classes nil
+  :enable (before-firstp from-iter break-abstraction)
+  :use ((:instance tree-iter-fix-when-tree-iter-before-first-p (iter iter1))
+        (:instance tree-iter-fix-when-tree-iter-before-first-p (iter iter2))))
+
+(defrule iter-uniqueness-when-after-lastp
+  (implies (and (iterp iter1)
+                (iterp iter2)
+                (after-lastp iter1)
+                (after-lastp iter2)
+                (equal (from-iter iter1) (from-iter iter2)))
+           (equal iter1 iter2))
+  :rule-classes nil
+  :enable (after-lastp from-iter break-abstraction)
+  :use ((:instance tree-iter-fix-when-tree-iter-after-last-p (iter iter1))
+        (:instance tree-iter-fix-when-tree-iter-after-last-p (iter iter2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule iter-uniqueness
+  (implies (and (iterp iter1)
+                (iterp iter2)
+                (equal (from-iter iter1) (from-iter iter2))
+                (or (and (before-firstp iter1) (before-firstp iter2))
+                    (and (after-lastp iter1) (after-lastp iter2))
+                    (and (has-valuep iter1)
+                         (has-valuep iter2)
+                         (equal (value iter1) (value iter2)))))
+           (equal iter1 iter2))
+  :rule-classes nil
+  :use (iter-uniqueness-when-before-firstp
+        iter-uniqueness-when-after-lastp
+        (:instance zip-uniqueness-when-same-value (zip1 iter1) (zip2 iter2)))
+  :enable (from-iter
+           value
+           has-valuep
+           tree-iter-value
+           iterp
+           setp
+           tree-iter-plug-when-tree-iter-has-value-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled equal-of-iters-no-double-rewrite
+  (implies (and (iterp iter1)
+                (iterp iter2))
+           (equal (equal iter1 iter2)
+                  (and (equal (from-iter iter1)
+                              (from-iter iter2))
+                       (or (and (before-firstp iter1)
+                                (before-firstp iter2))
+                           (and (after-lastp iter1)
+                                (after-lastp iter2))
+                           (and (has-valuep iter1)
+                                (has-valuep iter2)
+                                (equal (value iter1)
+                                       (value iter2)))))))
+  :use iter-uniqueness)
+
+(defruled equal-of-iters
+  (implies (and (iterp iter1)
+                (iterp iter2)
+                (iter-equiv iter1$ (double-rewrite iter1))
+                (iter-equiv iter2$ (double-rewrite iter2)))
+           (equal (equal iter1 iter2)
+                  (and (equal (from-iter iter1$)
+                              (from-iter iter2$))
+                       (or (and (before-firstp iter1$)
+                                (before-firstp iter2$))
+                           (and (after-lastp iter1$)
+                                (after-lastp iter2$))
+                           (and (has-valuep iter1$)
+                                (has-valuep iter2$)
+                                (equal (value iter1$)
+                                       (value iter2$)))))))
+  :use equal-of-iters-no-double-rewrite)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled equal-of-iters-when-has-valuep-no-double-rewrite
+  (implies (and (iterp iter1)
+                (iterp iter2)
+                (has-valuep iter1)
+                (has-valuep iter2))
+           (equal (equal iter1 iter2)
+                  (and (equal (from-iter iter1)
+                              (from-iter iter2))
+                       (equal (value iter1)
+                              (value iter2)))))
+  :enable equal-of-iters)
+
+(defruled equal-of-iters-when-has-valuep
+  (implies (and (iterp iter1)
+                (iterp iter2)
+                (iter-equiv iter1$ (double-rewrite iter1))
+                (iter-equiv iter2$ (double-rewrite iter2))
+                (has-valuep iter1)
+                (has-valuep iter2))
+           (equal (equal iter1 iter2)
+                  (and (equal (from-iter iter1)
+                              (from-iter iter2))
+                       (equal (value iter1)
+                              (value iter2)))))
+  :use equal-of-iters-when-has-valuep-no-double-rewrite)
