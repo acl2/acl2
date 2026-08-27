@@ -307,7 +307,8 @@ WARNING: Iteration limit of ~p0 is reached. Will not parse again for ~s1 pattern
          (new-svex-alist
           (and careful-look-for-ha-c
                (b* ((- (cw "- Now will look  more carefully if we missed any ha-c/ha+1-c pattern that  has a found counterpart ha-s/ha+1-s patterns...~%"
-                           adder-str))
+                           ;; adder-str ; Matt K. commented this out -- unused cw arg
+                           ))
                     (exploded-args-and-args-alist (process-fa/ha-c-chain-pattern-args
                                                    pattern-alist
                                                    'exploded-args-and-args-alist

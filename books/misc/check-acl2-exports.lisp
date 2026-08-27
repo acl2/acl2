@@ -67,7 +67,8 @@
                               allp
                               nil))
           (t (er hard? 'raw-acl2-exports
-                 "Expected ~x0 to be an alistp!")))))
+                 "Expected ~x0 to be an alistp!"
+                 '*acl2-system-documentation*)))))
 
 (defthm symbol-listp-revappend
   (implies (and (symbol-listp x)

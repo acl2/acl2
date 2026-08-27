@@ -6086,7 +6086,7 @@
                             (er hard ctx
                                 "The compiled file for ~x0 was not loaded ~
                                  because ~@1."
-                                reason))
+                                full-book-string reason))
                            (t (let* ((efile (expansion-filename os-file))
                                      (efile-date (and (probe-file efile)
                                                       (file-write-date efile)))
