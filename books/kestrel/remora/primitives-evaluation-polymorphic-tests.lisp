@@ -1310,3 +1310,90 @@
   :ispace (ispace-value-shape (list 3))
   :array (expr-value-vector (list (iv 0) (iv 1) (iv 2)))
   :type *iota-sigma*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The polymorphic operation trace:
+; instantiation stage transitions and application of the final stage.
+
+(acl2::assert-equal
+ (eval-primop-tfun (primop-value-trace) *tv-int*)
+ (expr-value-primop (primop-value-trace-t *tv-int*)))
+
+(acl2::assert-equal
+ (eval-primop-tfun (primop-value-trace-t *tv-int*) *tv-int*)
+ (expr-value-primop (make-primop-value-trace-t-r :tval *tv-int*
+                                                 :rval *tv-int*)))
+
+(acl2::assert-equal
+ (eval-primop-ifun (make-primop-value-trace-t-r :tval *tv-int*
+                                                :rval *tv-int*)
+                   (ispace-value-shape (list 3)))
+ (expr-value-primop (make-primop-value-trace-t-r-s :tval *tv-int*
+                                                   :rval *tv-int*
+                                                   :sval (list 3))))
+
+(acl2::assert-equal
+ (eval-primop-ifun (make-primop-value-trace-t-r-s :tval *tv-int*
+                                                  :rval *tv-int*
+                                                  :sval (list 3))
+                   (ispace-value-shape nil))
+ (expr-value-primop (make-primop-value-trace-t-r-s-q :tval *tv-int*
+                                                     :rval *tv-int*
+                                                     :sval (list 3)
+                                                     :qval nil)))
+
+; A dimension where a shape is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (make-primop-value-trace-t-r :tval *tv-int*
+                                                         :rval *tv-int*)
+                            (ispace-value-dim 3))))
+
+; The first argument cell is stored, the second one is returned.
+(acl2::assert-equal
+ (eval-primop-fun-fo (make-primop-value-trace-t-r-s-q :tval *tv-int*
+                                                      :rval *tv-int*
+                                                      :sval (list 3)
+                                                      :qval nil)
+                     *vec3*)
+ (expr-value-primop (make-primop-value-trace-t-r-s-q-x :tval *tv-int*
+                                                       :rval *tv-int*
+                                                       :sval (list 3)
+                                                       :qval nil
+                                                       :xval *vec3*)))
+
+(acl2::assert-equal
+ (prim-trace *tv-int* *tv-int* (list 3) nil *vec3* (iv 7))
+ (iv 7))
+
+; Cell dimensions not matching the instantiation.
+(acl2::assert-event
+ (reserrp (prim-trace *tv-int* *tv-int* (list 2) nil *vec3* (iv 7))))
+(acl2::assert-event
+ (reserrp (prim-trace *tv-int* *tv-int* (list 3) (list 3) *vec3* (iv 7))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The polymorphic operation undefined:
+; the last ispace application always fails.
+
+(acl2::assert-equal
+ (eval-primop-tfun (primop-value-undefined) *tv-int*)
+ (expr-value-primop (primop-value-undefined-t *tv-int*)))
+
+(acl2::assert-event
+ (reserrp (eval-primop-tfun (primop-value-undefined)
+                            (make-type-value-array :elem *tv-int*
+                                                   :dims (list 3)))))
+
+; The shape application yields an error, as in [impl].
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (primop-value-undefined-t *tv-int*)
+                            (ispace-value-shape (list 3)))))
+
+; A dimension where a shape is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (primop-value-undefined-t *tv-int*)
+                            (ispace-value-dim 3))))
+
+(acl2::assert-event (reserrp (prim-undefined)))
