@@ -632,8 +632,8 @@
        the nesting of unary ispace applications
        to the dimensions and shapes in the stage, in order,
        of that type application,
-       or of the variable directly for @('sum'),
-       which has no type parameter:
+       or of the variable directly for @('sum') and @('iota'),
+       which have no type parameters:
        a left-nested chain of the core unary form (see @(tsee expr)).")
      (xdoc::p
       "A stage that stores an argument value
@@ -1071,7 +1071,12 @@
                     :arg fexpr)
               :arg zexpr)))
        :reify-dim (mv nil opvar)
-       :reify-shape (mv nil opvar)))
+       :reify-shape (mv nil opvar)
+       :iota (mv nil opvar)
+       :iota-d (mv nil
+                   (make-expr-iapp
+                    :fun opvar
+                    :arg (ispace-dim (dim-const pval.dval))))))
     :measure (primop-value-count pval))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1180,4 +1185,5 @@
                                  primop-value-fix-when-reduce
                                  primop-value-fix-when-fold
                                  primop-value-fix-when-reify-dim
-                                 primop-value-fix-when-reify-shape)))))
+                                 primop-value-fix-when-reify-shape
+                                 primop-value-fix-when-iota)))))

@@ -13,6 +13,7 @@
 (include-book "ispace-values-and-environments")
 (include-book "type-values-and-environments")
 (include-book "abstract-syntax-structurals")
+(include-book "abstract-syntax-constructors")
 (include-book "base-values")
 
 (include-book "unit-types")
@@ -371,7 +372,11 @@
        @('reshape') has no dimension stage,
        but has two shape stages,
        @(':reshape-t-s1') and @(':reshape-t-s1-s2'),
-       for its two shape parameters."))
+       for its two shape parameters.
+       An operation may also have no expression stage at all:
+       @('iota/static'), @('reify-dim'), and @('reify-shape')
+       consist of a single stage,
+       whose ispace application directly yields the final value."))
     (:int-unary ((op int-unary-primop)))
     (:int-binary ((op int-binary-primop)))
     (:int-binary-x ((op int-binary-primop)
@@ -533,6 +538,8 @@
                             (zval expr-value)))
     (:reify-dim ())
     (:reify-shape ())
+    (:iota ())
+    (:iota-d ((dval nat)))
     :pred primop-valuep
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -2192,7 +2199,9 @@
                      :fold-t-t2-d-s-s2-f t
                      :fold-t-t2-d-s-s2-f-z t
                      :reify-dim nil
-                     :reify-shape nil))
+                     :reify-shape nil
+                     :iota nil
+                     :iota-d t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2294,7 +2303,9 @@
                      :fold-t-t2-d-s-s2-f nil
                      :fold-t-t2-d-s-s2-f-z nil
                      :reify-dim nil
-                     :reify-shape nil))
+                     :reify-shape nil
+                     :iota nil
+                     :iota-d nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2395,7 +2406,9 @@
                      :fold-t-t2-d-s-s2-f nil
                      :fold-t-t2-d-s-s2-f-z nil
                      :reify-dim t
-                     :reify-shape t))
+                     :reify-shape t
+                     :iota t
+                     :iota-d nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2517,6 +2530,7 @@
                      :fold-t-t2-d-s-s2 t
                      :fold-t-t2-d-s-s2-f t
                      :fold-t-t2-d-s-s2-f-z nil
+                     :iota-d t
                      :otherwise (impossible))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp))))
 
@@ -2588,6 +2602,8 @@
                      :fold-t-t2-d-s-s2-f-z (primop-value-fold)
                      :reify-dim (primop-value-reify-dim)
                      :reify-shape (primop-value-reify-shape)
+                     :iota (primop-value-iota)
+                     :iota-d (primop-value-iota)
                      :otherwise (primop-value-fix op)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2952,7 +2968,20 @@
              (make-type-value-array :elem op.t2val :dims op.s2val))
       :dims nil)
      :reify-dim (prog2$ (impossible) (type-value-base (base-type-bool)))
-     :reify-shape (prog2$ (impossible) (type-value-base (base-type-bool)))))
+     :reify-shape (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :iota (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :iota-d (make-type-value-array
+              :elem (nest-function-type-values
+                     (list (make-type-value-array
+                            :elem (type-value-base (base-type-int))
+                            :dims (list op.dval)))
+                     (make-type-value-sigma
+                      :param (ispace-var-shape "s")
+                      :body (t[] :int "@s")
+                      :denv (make-type-denv
+                             :ienv (make-ispace-denv :ispaces nil)
+                             :types nil)))
+              :dims nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
 
   ///
@@ -3505,7 +3534,7 @@
      A polymorphic operation like @('head'), @('tail'), or @('length')
      is associated to its uninstantiated stage."))
   (omap::from-alist
-   (list (cons "+" (expr-value-primop
+   (list$ (cons "+" (expr-value-primop
                     (primop-value-int-binary
                      (int-binary-primop-add))))
          (cons "-" (expr-value-primop
@@ -3651,7 +3680,8 @@
          (cons "reduce" (expr-value-primop (primop-value-reduce)))
          (cons "fold" (expr-value-primop (primop-value-fold)))
          (cons "reify-dim" (expr-value-primop (primop-value-reify-dim)))
-         (cons "reify-shape" (expr-value-primop (primop-value-reify-shape))))))
+         (cons "reify-shape" (expr-value-primop (primop-value-reify-shape)))
+         (cons "iota" (expr-value-primop (primop-value-iota))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

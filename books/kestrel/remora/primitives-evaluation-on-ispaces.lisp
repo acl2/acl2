@@ -197,7 +197,9 @@
      the @('iota/static'), @('reify-dim'), and @('reify-shape') operations,
      which consist of a single stage,
      also store nothing and expect
-     a shape (a dimension, for @('reify-dim')) directly.
+     a shape (a dimension, for @('reify-dim')) directly;
+     the uninstantiated stage of @('iota'), which has no type parameter,
+     stores nothing and expects a dimension directly.
      We check that the ispace value has the expected sort;
      then we construct the next instantiation stage of the operation,
      which stores the ispace values received
@@ -209,7 +211,8 @@
      two dimensions for @('index2d');
      a shape for @('sum');
      two shapes for @('reshape');
-     two dimensions for @('transpose2d')),
+     two dimensions for @('transpose2d');
+     a dimension for @('iota')),
      along with the previously received type values (if any);
      for @('iota/static'), @('reify-dim'), and @('reify-shape'),
      the application instead directly yields the final result.
@@ -410,6 +413,12 @@
                  ival
                  :dim (reserr nil)
                  :shape (prim-reify-shape ival.val))
+   :iota (ispace-value-case
+          ival
+          :dim (expr-value-primop
+                (make-primop-value-iota-d
+                 :dval ival.val))
+          :shape (reserr nil))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-ifunp)))
 
