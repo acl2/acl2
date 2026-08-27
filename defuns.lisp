@@ -12560,10 +12560,9 @@
 
            (getpropc (caar lst) 'constrainedp nil wrld))
       (er soft ctx
-          "The :LOGIC mode function symbol ~x0 was originally introduced ~
-           introduced not with DEFUN, but ~#1~[as a constrained ~
-           function~/with DEFCHOOSE~].  So VERIFY-TERMINATION does not make ~
-           sense for this function symbol."
+          "The :LOGIC mode function symbol ~x0 was originally introduced not ~
+           with DEFUN, but ~#1~[as a constrained function~/with DEFCHOOSE~].  ~
+           So VERIFY-TERMINATION does not make sense for this function symbol."
           (caar lst)
           (cond ((getpropc (caar lst) 'defchoose-axiom nil wrld)
                  1)

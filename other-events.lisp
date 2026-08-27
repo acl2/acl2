@@ -12366,9 +12366,10 @@
                 (equal-modulo-hidden-defpkgs cmds1 (cdr cmds2)))
                (& nil))))))
 
-(defun cert-obj-for-convert (full-book-string dir pre-alist fixed-cmds
-                                            suspect-book-action-alist
-                                            ctx state)
+(defun cert-obj-for-convert (full-book-string dir full-book-name pre-alist
+                                              fixed-cmds
+                                              suspect-book-action-alist
+                                              ctx state)
 
 ; Here we check that the pre-alists and portcullis commands correspond, as
 ; explained in the error messages below.  See also certify-book-finish-convert
@@ -12402,6 +12403,7 @@
                 current ACL2 world:~|~y2"
                `(er-let* ((cert-obj
                            (chk-certificate-file ,full-book-string ,dir
+                                                 ,full-book-name
                                                  'convert-pcert ',ctx state
                                                  ',suspect-book-action-alist
                                                  nil)))
@@ -12512,9 +12514,9 @@
                                              wrld ctx state)))))
         (cond
          ((eq cert-op :convert-pcert)
-          (cert-obj-for-convert full-book-string dir pre-alist-cert-wrld
-                                fixed-cmds suspect-book-action-alist ctx
-                                state))
+          (cert-obj-for-convert full-book-string dir full-book-name
+                                pre-alist-cert-wrld fixed-cmds
+                                suspect-book-action-alist ctx state))
          (t
           (value
            (make cert-obj
