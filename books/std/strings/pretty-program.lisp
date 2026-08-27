@@ -36,6 +36,8 @@
 (local (include-book "std/omaps/portcullis" :dir :system))
 ;; bring in the TREESET package (read by centaur/fty/deftypes):
 (local (include-book "kestrel/data/treeset/portcullis" :dir :system))
+;; bring in the TREEMAP package (read by centaur/fty/deftypes):
+(local (include-book "kestrel/data/treemap/portcullis" :dir :system))
 
 ; cert_param (acl2x)
 ; cert_param (acl2xskip)

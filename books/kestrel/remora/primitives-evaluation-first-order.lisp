@@ -12,6 +12,7 @@
 (in-package "REMORA")
 
 (include-book "expression-values-and-environments")
+(include-book "primitives-evaluation-on-ispaces")
 
 (include-book "integer-lists")
 
@@ -2129,6 +2130,54 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define prim-iota ((d natp) (val1 expr-valuep))
+  :guard (expr-value-wfp val1)
+  :returns (val expr-value-resultp)
+  :short "Evaluation of the dynamic index enumeration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the @('iota') operation
+     (see the @(':iota-d') summand of @(tsee primop-value)):
+     @('d') is the instantiation value,
+     and @('val1') is the argument cell.
+     According to the instantiated type of the operation,
+     the argument cell is a vector of @('d') integers,
+     which are the dimensions of the shape of the result;
+     since that shape is not known statically,
+     the result is a box, whose witness is the shape
+     and whose type is the existential type in
+     the operation's type in @(tsee primop-types).
+     The guard requires the argument cell to be well-formed;
+     we defensively check that it has the expected dimensions,
+     that its atoms are integers,
+     and that they are non-negative
+     (which the interpreter in [impl] does not check).
+     The boxed array is the one that @(tsee prim-iota/static)
+     builds for the same shape.")) 
+  (b* ((d (lnfix d))
+       ((unless (equal (dims-of-expr-value val1) (list d))) (reserr nil))
+       ((ok ints) (check-expr-value-list-int (expr-value-atoms val1)))
+       ((unless (nat-listp ints)) (reserr nil))
+       ((ok array) (prim-iota/static ints)))
+    (make-expr-value-box
+     :ispace (ispace-value-shape ints)
+     :array array
+     :type (make-type-value-sigma
+            :param (ispace-var-shape "s")
+            :body (t[] :int "@s")
+            :denv (make-type-denv :ienv (make-ispace-denv :ispaces nil)
+                                  :types nil))))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-iota
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (expr-value-wfp val1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define eval-primop-fun-fo ((op primop-valuep) (arg expr-valuep))
   :guard (and (primop-value-funp op)
               (primop-value-fun-fo-p op)
@@ -2311,6 +2360,7 @@
                            :s2val op.s2val
                            :fval op.fval
                            :zval arg))
+     :iota-d (prim-iota op.dval arg)
      :otherwise (prog2$ (impossible) (reserr nil))))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp
                                            primop-value-fun-fo-p)))

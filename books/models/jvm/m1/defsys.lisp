@@ -1154,7 +1154,7 @@ QED!
                 replaced all the recursive calls at the end of output CLK+ ~
                 nests by recursive calls of the ~x0.  But the original ~
                 clock function name, ~x0, still occurs in the purported ~
-                induction hint function body, ~x1, contrary to what we ~
+                induction hint function body, ~x2, contrary to what we ~
                 thought was possible!"
                hint fn hint-body))
           (t

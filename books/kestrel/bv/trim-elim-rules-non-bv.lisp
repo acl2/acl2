@@ -13,18 +13,18 @@
 ;; The file includes rules about TRIM applied to non-BV functions.  These rules
 ;; finish the conversion after other rules (from convert-to-bv-rules.lisp or
 ;; ../axe/convert-to-bv-rules-axe.lisp) introduce trim.  See also
-;; trim-elim-rules-bv.lisp, which covers trim applied to BV functions.
+;; trim-elim-rules-bv.lisp, which covers TRIM applied to BV functions.
 
 (include-book "trim")
-(include-book "bvnot")
+(include-book "bvnot-def")
 (include-book "bvplus-def")
-(include-book "bvmult")
+(include-book "bvmult-def")
 (include-book "bvuminus-def")
 (include-book "bvand-def")
 (include-book "bvor-def")
 (include-book "bvxor-def")
 (include-book "bvsx-def")
-(include-book "bvif")
+(include-book "bvif-def")
 (include-book "logext-def")
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
@@ -32,6 +32,8 @@
 (local (include-book "logext"))
 (local (include-book "ash"))
 (local (include-book "bvsx"))
+(local (include-book "bvchop"))
+(local (include-book "bvif"))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
 ;; WARNING: Keep these in sync with *functions-convertible-to-bv*.

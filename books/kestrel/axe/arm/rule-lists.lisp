@@ -683,8 +683,6 @@
      acl2::unsigned-byte-listp-constant-opener
 
      ;;bv-array-read-shorten-8
-     acl2::not-equal-of-constant-and-bv-term-axe
-     acl2::not-equal-of-constant-and-bv-term-alt-axe
      acl2::equal-of-bvchop-and-bvplus-of-same
      acl2::equal-of-bvchop-and-bvplus-of-same-alt
      acl2::logext-identity-when-usb-smaller-axe
