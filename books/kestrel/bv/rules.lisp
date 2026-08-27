@@ -26,10 +26,10 @@
 (include-book "bitand")
 (include-book "logapp")
 (include-book "bvcat2")
-(include-book "bvif")
+(include-book "bvif-def")
 (include-book "logext") ;; todo: this and the next include (of sbvlt) cannot be reordered without breaking the android proofs -- why?
 (include-book "sbvlt")
-(include-book "bvnot")
+(include-book "bvnot-def")
 (include-book "bitxor")
 (include-book "bvmult")
 (include-book "bvmod")
@@ -3472,7 +3472,8 @@
                 (not (unsigned-byte-p free k)))
            (not (equal k x))))
 
-(defthm not-equal-constant-when-unsigned-byte-p-alt
+;; Disabled for ACL2, may be needed for Axe
+(defthmd not-equal-constant-when-unsigned-byte-p-alt
   (implies (and (syntaxp (quotep k))
                 (unsigned-byte-p free x)
                 (syntaxp (quotep free))
