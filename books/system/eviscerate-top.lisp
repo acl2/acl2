@@ -38,4 +38,3 @@
 (verify-termination iprint-oracle-updates?) ; and guards
 (verify-termination eviscerate-top-state-p) ; and guards
 (verify-termination eviscerate-top) ; and guards
-
