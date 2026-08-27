@@ -109798,8 +109798,8 @@ it."
 ; Fixed a minor efficiency issue (incorrect hint in cons-with-hint) in
 ; fix-export-updaters1.
 
-; Fixed some bugs in fmt strings/args found passed along by Eric Smith from
-; Claude AI.
+; Fixed some bugs in fmt strings/args found by Claude AI and passed along by
+; Eric Smith.
 
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
