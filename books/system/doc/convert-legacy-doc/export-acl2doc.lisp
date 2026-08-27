@@ -346,7 +346,8 @@
                  (fixup (cdr tokens)
                         (write-opentok (car tokens) acc)
                         state))))))
-    (cw "*** FIXUP: bad token ~x0.~%")
+    (cw "*** FIXUP: bad token ~x0.~%"
+        (car tokens))
     (mv acc state)))
 
 (defun fixup-str (tokens state)
