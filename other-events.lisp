@@ -24505,7 +24505,7 @@
        (t
         (cons-with-hint field-old
                         (fix-export-updaters1 (cdr old) old-to-new)
-                        (cdr old))))))))
+                        old)))))))
 
 (defun export-names (exports)
   (cond ((endp exports) nil)
