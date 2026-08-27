@@ -368,15 +368,7 @@
   :hints (("Goal" :use (:instance sbvlt-becomes-bvlt-cheap)
            :in-theory (e/d (unsigned-byte-p-forced) (sbvlt-becomes-bvlt-cheap)))))
 
-(defthm not-equal-constant-when-unsigned-byte-p-bind-free-axe
-  (implies (and (syntaxp (quotep k))
-                (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (syntaxp (quotep xsize))
-                (not (unsigned-byte-p xsize k))
-                (unsigned-byte-p-forced xsize x))
-           (not (equal k x)))
-  :rule-classes nil ; since in ACL2, xsize not is bound when used
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
+
 
 ;a cheap case of logext-identity
 (defthmd logext-identity-when-usb-smaller-axe

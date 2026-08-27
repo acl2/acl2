@@ -768,7 +768,10 @@
    (trim-helper-rules) ; in case some rule introduces trim (harmless if no rule does)
    (bv-function-of-bvchop-rules)
    (unsigned-byte-p-forced-rules) ; needed for some rules below
-   '(;; our normal form is to let these open up to calls to bvlt and sbvlt:
+   '(not-equal-of-constant-and-bv-term-axe
+     not-equal-of-constant-and-bv-term-alt-axe
+
+     ;; our normal form is to let these open up to calls to bvlt and sbvlt:
      bvle ;Thu Jan 19 16:35:59 2017
      bvge ;Thu Jan 19 16:35:59 2017
      bvgt ;Thu Jan 19 16:35:59 2017
@@ -854,6 +857,8 @@
      bvplus-of-ifix-arg3
      equal-of-constant-and-bvplus-of-constant
      equal-of-bvplus-of-constant-and-constant
+     equal-of-bvchop-and-bvplus-of-same ; todo: remove these 2 from downstream rule-lists
+     equal-of-bvchop-and-bvplus-of-same-alt
 
      bvand-of-0-arg2
      bvand-of-0-arg3 ; could drop if commuting constants forward
@@ -3393,7 +3398,6 @@
              boolor-of-equal-and-not-of-equal-constants
              boolor-of-equal-and-not-of-equal-constants-alt
              booland-of-booland-of-boolif
-             not-equal-constant-when-unsigned-byte-p-bind-free-axe ;was just in prover-rules ;Wed Mar 17 04:03:01 2010
              sha1-context-hack ;Wed Mar 17 03:54:02 2010 (how much does this help?)
              boolor-of-booland-same-2 ;Wed Mar 17 03:06:45 2010
              bvlt-of-constant-when-unsigned-byte-p-tighter

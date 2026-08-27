@@ -21,6 +21,7 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
+(local (include-book "kestrel/bv/bvchop" :dir :system))
 
 ;; See also bv-array-conversions2.lisp and bv-array-conversions-gen.lisp.
 
