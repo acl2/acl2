@@ -1038,7 +1038,7 @@
           (mv 3 (nthcdr 3 args) (msg "TO~@0" unusual-var-msg)))
          (t (mv 3
                 (nthcdr 1 args)
-                (msg "OF-TYPE, IN, ON, or FROM~0@"
+                (msg "OF-TYPE, IN, ON, or FROM~@0"
                      unusual-var-msg))))))))))
 
 (defun parse-loop$-vsts (stmt args vsts ans)
@@ -16537,7 +16537,7 @@
                            (t ; (not (and (symbolp stobj0) stobj0))
                             (mv "TOP-ST" stobj0)))
                           (msg "For a binding of the form~|(STOBJ-TBL-GET ST ~
-                                TOP-ST ST-CREATOR)), ~a0 must be a non-nil ~
+                                TOP-ST ST-CREATOR)), ~s0 must be a non-nil ~
                                 symbol, but ~x1 is not."
                                str sym))))
                    (mv binding msg nil nil nil nil)))

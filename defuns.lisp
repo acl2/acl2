@@ -12574,8 +12574,7 @@
            so ~x1 is not legal for this symbol.  Such functions are intended ~
            only for hacking with defattach; see :DOC defproxy."
           (caar lst)
-          'verify-termination
-          'defun))
+          'verify-termination))
      (t
       (let ((clique (get-clique (caar lst) wrld)))
         (assert$
