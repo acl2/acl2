@@ -121,26 +121,6 @@
   :pred fn-info-mapp
   :true-listp t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Map from type-variable name strings to types, used to resolve type arguments.
-; We use the library @(tsee string-type-map) omap so that the type-variable
-; substitution operations from @(see variable-substitution-operations) can be
-; applied directly to the type arguments (see the @(':capp') case below).
-
-(define extend-type-var-map ((tvars type-var-listp)
-                             (tys type-listp)
-                             (type-map string-type-mapp))
-  :returns (new-type-map string-type-mapp)
-  :short "Extend @('type-map') with @('tvars[i] -> tys[i]') for each index."
-  (if (or (endp tvars) (endp tys))
-      (string-type-map-fix type-map)
-    (b* ((name (type-var->name (car tvars)))
-         (ty   (type-fix (car tys))))
-      (extend-type-var-map (cdr tvars) (cdr tys)
-                           (omap::update name ty
-                                         (string-type-map-fix type-map))))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Logic-mode helpers for instance-name construction.
@@ -256,6 +236,26 @@
            ascii-id-continue-string-p-of-string-list-dash-suffix
            acl2::string=>nats-of-string-append)
   :disable string-append)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Extend type-map by pairing up type vars with the types they are instantiated
+; at.  We use the library string-type-map omap so that the type-variable
+; substitution operations from @(see variable-substitution-operations) can be
+; applied directly to the type arguments (see the :CAPP case below).
+
+(define extend-type-var-map ((tvars type-var-listp)
+                             (tys type-listp)
+                             (type-map string-type-mapp))
+  :returns (new-type-map string-type-mapp)
+  :short "Extend @('type-map') with @('tvars[i] -> tys[i]') for each index."
+  (if (or (endp tvars) (endp tys))
+      (string-type-map-fix type-map)
+    (b* ((name (type-var->name (car tvars)))
+         (ty   (type-fix (car tys))))
+      (extend-type-var-map (cdr tvars) (cdr tys)
+                           (omap::update name ty
+                                         (string-type-map-fix type-map))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
