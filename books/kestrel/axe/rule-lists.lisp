@@ -857,6 +857,8 @@
      bvplus-of-ifix-arg3
      equal-of-constant-and-bvplus-of-constant
      equal-of-bvplus-of-constant-and-constant
+     equal-of-bvchop-and-bvplus-of-same ; todo: remove these 2 from downstream rule-lists
+     equal-of-bvchop-and-bvplus-of-same-alt
 
      bvand-of-0-arg2
      bvand-of-0-arg3 ; could drop if commuting constants forward
