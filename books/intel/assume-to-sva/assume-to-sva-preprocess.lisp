@@ -189,7 +189,7 @@
         (raise "Unexpected atom: ~x0" x)))
      ((quotep x)
       (b* (((unless (conspn x 2))
-            (raise "Quote expects one argument: ~x1" x)))
+            (raise "Quote expects one argument: ~x0" x)))
         x))
      (t (b* ((fn (car x))
              ((unless (symbolp fn))
@@ -488,7 +488,7 @@
   (b* ((- "1. Extract LHS and RHS of the thm")
        ((unless (and (conspn thm 3)
                      (equal (first thm) 'implies)))
-        (prog2$ (raise "Expected input to be a theorem of the form (implies lhs rhs): "
+        (prog2$ (raise "Expected input to be a theorem of the form (implies lhs rhs): ~x0"
                        thm)
                 (mv nil nil nil nil state)))
        (lhs (second thm))
@@ -531,4 +531,3 @@
        ((mv rhs-clean arrays member-calls ?array-count ?var-count)
         (assume-to-sva-preprocess-member rhs-smpl "SVA_arr" "SVA_member_call")))
     (mv lhs-smpl rhs-clean arrays member-calls state)))
-

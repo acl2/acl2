@@ -576,7 +576,7 @@ calls.
          (b* ((val (sva-rhs-to-sva arg1))
               ((unless (symbolp array))
                (raise "Expected the second argument to be a name of an
-                  array: ~x1" form))
+                  array: ~x0" form))
               (result (list (str::cat var-name " = 0,")
                             ;; `member(val,array,var) ;; assigns var the result
                             (str::cat
@@ -1010,4 +1010,3 @@ generated filename."
                                              ,xmr-override
                                              )))
                  (value '(value-triple t)))))
-
