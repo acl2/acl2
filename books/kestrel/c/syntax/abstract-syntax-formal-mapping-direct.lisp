@@ -1142,7 +1142,7 @@
                       with abstract declarator."
                      (param-declor-fix paramdeclor))))
        ((when (param-declor-case paramdeclor :none))
-        (reterr (msg "Unsupported absent parameter declarator ~x0.")))
+        (reterr (msg "Unsupported absent parameter declarator.")))
        ((when (param-declor-case paramdeclor :ambig))
         (prog2$ (impossible) (reterr t)))
        (declor (param-declor-nonabstract->declor paramdeclor)))
