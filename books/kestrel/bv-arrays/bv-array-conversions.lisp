@@ -20,6 +20,7 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(local (include-book "kestrel/bv/bvchop" :dir :system))
 
 ;; See also bv-array-conversions2.lisp and bv-array-conversions-gen.lisp.
 
