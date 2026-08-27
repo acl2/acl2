@@ -834,6 +834,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule after-of-iter-min
+  (equal (after (iter-min set))
+         (delete (min set) set))
+  :cases ((emptyp set))
+  :enable extensionality
+  :use ((:instance in-of-from-iter-when-has-valuep
+                   (iter (iter-min set))
+                   (x (ext-equal-witness (after (iter-min set))
+                                         (delete (min set) set))))
+        (:instance not-in-of-value-and-after
+                   (iter (iter-min set))))
+  :disable (in-of-from-iter-when-has-valuep
+            not-in-of-value-and-after))
+
+(defrule before-of-iter-max
+  (equal (before (iter-max set))
+         (delete (max set) set))
+  :cases ((emptyp set))
+  :enable extensionality
+  :use ((:instance in-of-from-iter-when-has-valuep
+                   (iter (iter-max set))
+                   (x (ext-equal-witness (before (iter-max set))
+                                         (delete (max set) set))))
+        (:instance not-in-of-value-and-before
+                   (iter (iter-max set))))
+  :disable (in-of-from-iter-when-has-valuep
+            not-in-of-value-and-before))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define next ((iter iterp))
   :guard (not (after-lastp iter))
   :returns (iter$ iterp
