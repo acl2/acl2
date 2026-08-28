@@ -1538,14 +1538,8 @@
                    (if (consp iparams)
                        (mv (make-expr-array
                             :dims nil
-                            :atoms (list
-                                    (if (endp (cdr iparams))
-                                        (make-atom-ilambda
-                                         :param (car iparams)
-                                         :body cfun-expr)
-                                      (make-atom-ilambdan
-                                       :params iparams
-                                       :body cfun-expr))))
+                            :atoms (list (make-atom-ilambda/ilambdan
+                                          iparams cfun-expr)))
                            (make-type-pi/pin iparams cfun-type))
                      (mv cfun-expr cfun-type)))
                   ((mv cfun-expr cfun-type)
