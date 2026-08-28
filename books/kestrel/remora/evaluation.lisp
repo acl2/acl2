@@ -1172,11 +1172,10 @@
        a unary type lambda value.
        For the unary form, the value binds the parameter,
        and its body is the body of the abstraction.
-       The n-ary form must have at least one parameter:
+       For the n-ary form, which has two or more parameters,
        the value binds the first parameter,
        and its body is the type lambda abstraction
-       over the remaining parameters if there are any,
-       or otherwise the body of the given type lambda abstraction
+       over the remaining parameters
        (see @(tsee tlambda-curried-body)):
        a type lambda abstraction with two or more parameters
        stands for the nesting of unary ones, in curried style.
@@ -1246,16 +1245,14 @@
                         (atom-free-type-vars atom)
                         (expr-free-expr-vars atom.body)
                         denv))
-       :tlambdan
-       (b* (((unless (consp atom.params)) (reserr nil)))
-         (make-expr-value-tlambda
-          :param (car atom.params)
-          :body (tlambda-curried-body atom.params atom.body)
-          :denv (expr-denv-restrict
-                 (expr-free-ispace-vars atom.body)
-                 (atom-free-type-vars atom)
-                 (expr-free-expr-vars atom.body)
-                 denv)))
+       :tlambdan (make-expr-value-tlambda
+                  :param (car atom.params)
+                  :body (tlambda-curried-body atom.params atom.body)
+                  :denv (expr-denv-restrict
+                         (expr-free-ispace-vars atom.body)
+                         (atom-free-type-vars atom)
+                         (expr-free-expr-vars atom.body)
+                         denv))
        :ilambda (make-expr-value-ilambda
                  :param atom.param
                  :body atom.body
