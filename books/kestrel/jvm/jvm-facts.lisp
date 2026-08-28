@@ -219,7 +219,7 @@
         (if (equal 'jvm::bind (car (cadr term)))
             (get-pc-from-thread-table-term (cadr term))
 ;this doesn't actually seem to be firing...
-          (er hard 'get-pcs-from-state-term "Found a state term we don't yet handle, ~s0." term))))))
+          (er hard 'get-pcs-from-state-term "Found a state term we don't yet handle, ~x0." term))))))
 
 ;TERM may include calls to myif
 ;returns a list of the PCS for all the suitable branches
