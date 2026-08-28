@@ -55,11 +55,14 @@
     "All the inference rules start with type premises about the variables,
      for the same reason explained in @(see dim-equiv-infrules).")
    (xdoc::p
-    "Following [thesis] and [arxiv], we start with reflexivity.
-     We do not state symmetry and transitivity as explicit rules,
-     because they should be derivable from the others
-     (given that [thesis] and [arxiv] do not include them),
-     but we will ensure this is the case by way of formal proof.")
+    "We start with the equivalence rules
+     (reflexivity, symmetry, and transitivity).
+     [thesis] and [arxiv] only include reflexivity,
+     because symmetry and transitivity should be derivable
+     from the other rules, via suitable inductions.
+     But here we have a richer set of rules,
+     including the normalization ones,
+     and thus neither symmetry nor transitivity is derivable.")
    (xdoc::p
     "Next we have congruence for array types,
      which relies on ispace equivalence.
@@ -149,10 +152,18 @@
 
   :irules
 
-  (;; reflexivity:
+  (;; equivalence:
 
    (refl ((typep type))
          (type= type type))
+
+   (symm ((typep t1) (typep t2)
+          (type= t1 t2))
+         (type= t2 t1))
+
+   (trans ((typep t1) (typep t2) (typep t3)
+           (type= t1 t2) (type= t2 t3))
+          (type= t1 t3))
 
    ;; array type congruence:
 
@@ -310,9 +321,27 @@
    (sigma3m ((ispace-varp p1) (ispace-varp p2) (ispace-var-listp ps) (consp ps)
              (typep ty))
             (type= (type-sigman (list* p1 p2 ps) ty)
-                   (type-sigma p1 (type-sigman (cons p2 ps) ty))))
+                   (type-sigma p1 (type-sigman (cons p2 ps) ty))))))
 
-  ))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection type-equiv-holds-only-on-types
+  :short "The equivalence of types holds only on types."
+
+  (defruled typep-when-type=-proof-validp
+    (implies (type=-proof-validp proof concl.type1 concl.type2)
+             (and (typep concl.type1)
+                  (typep concl.type2)))
+    :hints (("Goal"
+             :induct (type=-proof-validp proof concl.type1 concl.type2)
+             :in-theory (enable* type-equiv-infrules-validp-defs
+                                 (:induction type=-proof-validp)))))
+
+  (defruled typep-when-type=
+    (implies (type= type1 type2)
+             (and (typep type1)
+                  (typep type2)))
+    :enable (type= typep-when-type=-proof-validp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -325,29 +354,24 @@
     "This is analogous to @(see dim-equiv-guard-verification)
      and @(see shape/ispace-equiv-guard-verification).")
    (xdoc::p
-    "The proof validity function cannot be guard-verified
-     as currently generated.
+    "Unlike for dimension, shape, and ispace equivalence,
+     the guard verification of the proof validity function needs hints.
      The rules @('forall'), @('pi'), and @('sigma') have premises
      that apply the predicate to non-variable arguments
-     (the calls of the renaming operations);
-     these arguments occur in the cases of the proof validity function,
-     as arguments of the recursive calls,
-     whose conjuncts precede the rule validity conjunct,
-     which is thus unavailable to discharge
-     the guard obligations of those arguments,
-     which are unprovable from the untyped fields of the proofs.
-     This does not arise for dimension, shape, and ispace equivalence,
-     whose rules apply the predicates only to variables.
-     We should extend @(tsee definductive) to generate
-     the rule validity conjunct before the premise proof conjuncts:
-     the guard obligations would then follow from that conjunct.
-     Consequently, the minimality predicate and the equivalence predicate,
-     which call the proof validity function,
-     cannot be guard-verified either for now."))
+     (the calls of the renaming operations),
+     which occur in the cases of the proof validity function
+     as arguments of the recursive calls.
+     Their guard obligations follow from
+     the rule validity conjuncts that precede
+     the premise proof conjuncts in those cases,
+     but the rule validity functions must be enabled
+     for their conjuncts to be usable."))
 
   ;; rule validity functions:
 
   (verify-guards type=-refl-validp)
+  (verify-guards type=-symm-validp)
+  (verify-guards type=-trans-validp)
   (verify-guards type=-array-validp)
   (verify-guards type=-fun-validp)
   (verify-guards type=-forall-validp)
@@ -362,4 +386,17 @@
   (verify-guards type=-pi2-validp)
   (verify-guards type=-pi3m-validp)
   (verify-guards type=-sigma2-validp)
-  (verify-guards type=-sigma3m-validp))
+  (verify-guards type=-sigma3m-validp)
+
+  ;; proof validity function:
+
+  (verify-guards type=-proof-validp
+    :hints (("Goal" :in-theory (enable* type-equiv-infrules-validp-defs))))
+
+  ;; minimality predicate:
+
+  (verify-guards type=-proof-minimalp)
+
+  ;; equivalence predicate:
+
+  (verify-guards type=))
