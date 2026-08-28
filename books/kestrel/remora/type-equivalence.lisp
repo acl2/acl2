@@ -354,25 +354,18 @@
     "This is analogous to @(see dim-equiv-guard-verification)
      and @(see shape/ispace-equiv-guard-verification).")
    (xdoc::p
-    "The proof validity function cannot be guard-verified
-     as currently generated.
+    "Unlike for dimension, shape, and ispace equivalence,
+     the guard verification of the proof validity function needs hints.
      The rules @('forall'), @('pi'), and @('sigma') have premises
      that apply the predicate to non-variable arguments
-     (the calls of the renaming operations);
-     these arguments occur in the cases of the proof validity function,
-     as arguments of the recursive calls,
-     whose conjuncts precede the rule validity conjunct,
-     which is thus unavailable to discharge
-     the guard obligations of those arguments,
-     which are unprovable from the untyped fields of the proofs.
-     This does not arise for dimension, shape, and ispace equivalence,
-     whose rules apply the predicates only to variables.
-     We should extend @(tsee definductive) to generate
-     the rule validity conjunct before the premise proof conjuncts:
-     the guard obligations would then follow from that conjunct.
-     Consequently, the minimality predicate and the equivalence predicate,
-     which call the proof validity function,
-     cannot be guard-verified either for now."))
+     (the calls of the renaming operations),
+     which occur in the cases of the proof validity function
+     as arguments of the recursive calls.
+     Their guard obligations follow from
+     the rule validity conjuncts that precede
+     the premise proof conjuncts in those cases,
+     but the rule validity functions must be enabled
+     for their conjuncts to be usable."))
 
   ;; rule validity functions:
 
@@ -393,4 +386,17 @@
   (verify-guards type=-pi2-validp)
   (verify-guards type=-pi3m-validp)
   (verify-guards type=-sigma2-validp)
-  (verify-guards type=-sigma3m-validp))
+  (verify-guards type=-sigma3m-validp)
+
+  ;; proof validity function:
+
+  (verify-guards type=-proof-validp
+    :hints (("Goal" :in-theory (enable* type-equiv-infrules-validp-defs))))
+
+  ;; minimality predicate:
+
+  (verify-guards type=-proof-minimalp)
+
+  ;; equivalence predicate:
+
+  (verify-guards type=))
