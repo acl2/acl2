@@ -1555,14 +1555,8 @@
                    (if (consp tparams)
                        (mv (make-expr-array
                             :dims nil
-                            :atoms (list
-                                    (if (endp (cdr tparams))
-                                        (make-atom-tlambda
-                                         :param (car tparams)
-                                         :body cfun-expr)
-                                      (make-atom-tlambdan
-                                       :params tparams
-                                       :body cfun-expr))))
+                            :atoms (list (make-atom-tlambda/tlambdan
+                                          tparams cfun-expr)))
                            (make-type-forall/foralln tparams cfun-type))
                      (mv cfun-expr cfun-type)))
                   ((ok val) (eval-expr cfun-expr denv (1- limit)))
