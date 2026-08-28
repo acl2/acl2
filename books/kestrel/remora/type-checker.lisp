@@ -1765,9 +1765,7 @@
           ((ok senv) (senv-add-vars+types atom.params senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
-        :type (if (and (consp types) (endp (cdr types)))
-                  (make-type-fun :in (car types) :out be.type)
-                (make-type-funn :in types :out be.type))
+        :type (make-type-funn :in types :out be.type)
         :atom (make-atom-lambdan :params atom.params
                                  :body be.expr
                                  :type? be.type)))
