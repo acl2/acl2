@@ -434,7 +434,14 @@
        ((when (endp vars)) (var+type?-list-fix var+types))
        (vt (car var+types)))
     (cons (make-var+type? :var (car vars) :type? (var+type?->type? vt))
-          (var+type?-list-set-vars (cdr vars) (cdr var+types)))))
+          (var+type?-list-set-vars (cdr vars) (cdr var+types))))
+
+  ///
+
+  (defret len-of-var+type?-list-set-vars
+    (equal (len new-var+types)
+           (len var+types))
+    :hints (("Goal" :induct t :in-theory (enable len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -399,7 +399,14 @@
         (uniq-expr-params (cdr params) used avoid renam)))
     (mv used
         (cons (make-var+type? :var new-name :type? p.type?) new-rest)
-        renam)))
+        renam))
+
+  ///
+
+  (defret len-of-uniq-expr-params
+    (equal (len new-params)
+           (len params))
+    :hints (("Goal" :induct t :in-theory (enable len)))))
 
 (define uniq-type-var-params ((params type-var-listp)
                               (used string-listp)
@@ -1015,7 +1022,15 @@
   (b* (((var-renamings r) r))
     (var+type?-list-rename-type-vars
      (var+type?-list-rename-ispace-vars params r.dim r.shape)
-     r.atom r.array)))
+     r.atom r.array))
+
+  ///
+
+  (defret len-of-var+type?-list-rename-all-vars
+    (equal (len new-params)
+           (len params))
+    :hints (("Goal" :in-theory (enable len-of-var+type?-list-rename-type-vars
+                                       len-of-var+type?-list-rename-ispace-vars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

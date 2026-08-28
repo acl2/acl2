@@ -393,13 +393,6 @@
 ; stay well formed (the parameter helpers below), and the lists that
 ; AST-WFP constrains the length of keep their length (the LEN facts).
 
-(defrule len-of-uniq-expr-params
-  :short "Freshening expression parameters preserves their number."
-  (equal (len (mv-nth 1 (uniq-expr-params params used avoid renam)))
-         (len params))
-  :induct (uniq-expr-params params used avoid renam)
-  :enable (uniq-expr-params len))
-
 (defrule len-of-uniq-type-var-params
   :short "Freshening type parameters preserves their number."
   (equal (len (mv-nth 1 (uniq-type-var-params params used avoid atom-renam array-renam)))
@@ -414,15 +407,10 @@
   :induct (uniq-name-list names used avoid)
   :enable (uniq-name-list len))
 
-(defrule len-of-var+type?-list-rename-all-vars
-  (equal (len (var+type?-list-rename-all-vars ps r))
-         (len ps))
-  :enable (var+type?-list-rename-all-vars
-           len-of-var+type?-list-rename-ispace-vars
-           len-of-var+type?-list-rename-type-vars))
-
-; LEN-OF-TYPE-LIST-RENAME-ALL-VARS is now proved in UNIQUE-NAMES (in
-; TYPE-LIST-RENAME-ALL-VARS's ///), since the :TAPPN guard there needs it.
+; LEN-OF-UNIQ-EXPR-PARAMS, LEN-OF-VAR+TYPE?-LIST-RENAME-ALL-VARS, and
+; LEN-OF-TYPE-LIST-RENAME-ALL-VARS are now proved in UNIQUE-NAMES (in the
+; respective functions' ///), since the :LAMBDAN and :TAPPN guards there
+; need them.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
