@@ -158,6 +158,7 @@
     (RUN-SCRIPT "[books]/tools/run-script.lisp")
     (SATLINK::SAT-SOLVER-OPTIONS "[books]/centaur/satlink/top.lisp")
     (SATLINK "[books]/centaur/satlink/top.lisp")
+    (SHOW-INDUCTION-RECORDS  "[books]/tools/show-induction-records.lisp")
     (XDOC::SAVE "[books]/xdoc/topics.lisp")
     (XDOC::SAVE-RENDERED "[books]/xdoc/topics.lisp")
     (XDOC::SAVE-RENDERED-EVENT "[books]/xdoc/topics.lisp")
@@ -45653,7 +45654,7 @@ current fast alists."
 
 (defxdoc get-event-data
   :parents (system-utilities output-controls)
-  :short "Obtain data stored after at the conclusion of an event"
+  :short "Obtain data from the most recent event's evaluation"
   :long "<p>Warning: This is a low-level system utility that may change
  somewhat over time.  For more details, see the ACL2 source code.</p>
 
@@ -45679,6 +45680,9 @@ current fast alists."
 
  <li>@('HINT-EVENTS'): @('VAL') is as in the corresponding field of the event
  summary.</li>
+
+ <li>@('INDUCTION-RECORDS'): @('VAL') contains information about inductions
+ performed during the proof.  See @(see show-induction-records).</li>
 
  <li>@('NAMEX'): @('VAL') is 0, a single name, or a list of names; see
  comments in ACL2 source function @('access-event-tuple-namex').</li>
@@ -109791,6 +109795,15 @@ it."
 ; Removed duplicate commands (defpointer double-float df) in
 ; books/system/doc/acl2-doc.lisp.
 
+; Fixed a minor efficiency issue (incorrect hint in cons-with-hint) in
+; fix-export-updaters1.
+
+; Fixed some bugs found by Claude AI and passed along by Eric Smith.
+; - bugs in fmt strings/args
+; - a bug involving defchoose in tools/with-supporters.lisp
+; - minor bugs in a couple of error messages in source functions
+; - guards in source functions that were too strong
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -109879,6 +109892,11 @@ it."
  with stack overflow sometimes caused by rewrite rules in the book.  The advice
  is printed when the @('HARD ACL2 ERROR [Call depth] in REWRITE') error occurs
  in sessions when the book has been included.</p>
+
+ <p>A new result is obtained by @(tsee get-event-data): a field named
+ @('INDUCTION-RECORDS') contains information on inductions performed during the
+ proof attempt.  See @(see get-event-data) and @(see show-induction-records).
+ Thanks to Grant Jurgensen for requesting such an enhancement.</p>
 
  <h3>Heuristic and Efficiency Improvements</h3>
 

@@ -15893,6 +15893,8 @@ Subtopics
        (run-script \"[books]/tools/run-script.lisp\")
        (satlink::sat-solver-options \"[books]/centaur/satlink/top.lisp\")
        (satlink \"[books]/centaur/satlink/top.lisp\")
+       (show-induction-records
+            \"[books]/tools/show-induction-records.lisp\")
        (xdoc::save \"[books]/xdoc/topics.lisp\")
        (xdoc::save-rendered \"[books]/xdoc/topics.lisp\")
        (xdoc::save-rendered-event \"[books]/xdoc/topics.lisp\")
@@ -48995,7 +48997,7 @@ Conclusion
             "See [system-utilities].")
  (GET-EVENT-DATA
   (SYSTEM-UTILITIES OUTPUT-CONTROLS)
-  "Obtain data stored after at the conclusion of an event
+  "Obtain data from the most recent event's evaluation
 
   Warning: This is a low-level system utility that may change somewhat
   over time.  For more details, see the ACL2 source code.
@@ -49021,6 +49023,9 @@ Conclusion
 
     * [30m[47mHINT-EVENTS[0m[0m: [30m[47mVAL[0m[0m is as in the corresponding field of the event
       summary.
+
+    * [30m[47mINDUCTION-RECORDS[0m[0m: [30m[47mVAL[0m[0m contains information about inductions
+      performed during the proof.  See [show-induction-records].
 
     * [30m[47mNAMEX[0m[0m: [30m[47mVAL[0m[0m is 0, a single name, or a list of names; see comments in
       ACL2 source function [30m[47maccess-event-tuple-namex[0m[0m.
@@ -106955,6 +106960,12 @@ New Features
   depth] in REWRITE[0m[0m error occurs in sessions when the book has been
   included.
 
+  A new result is obtained by [30m[47m[get-event-data][0m[0m: a field named
+  [30m[47mINDUCTION-RECORDS[0m[0m contains information on inductions performed
+  during the proof attempt.  See [get-event-data] and
+  [show-induction-records].  Thanks to Grant Jurgensen for requesting
+  such an enhancement.
+
 
 Heuristic and Efficiency Improvements
 
@@ -111833,7 +111844,7 @@ Subtopics
       Verbosity of proof output
 
   [Get-event-data]
-      Obtain data stored after at the conclusion of an event
+      Obtain data from the most recent event's evaluation
 
   [Goal-spec]
       To indicate where a hint is to be used
@@ -148507,7 +148518,7 @@ Subtopics
       Obtaining the [constraint] on a function symbol
 
   [Get-event-data]
-      Obtain data stored after at the conclusion of an event
+      Obtain data from the most recent event's evaluation
 
   [Saving-event-data]
       Save data stored for subsidiary [events]

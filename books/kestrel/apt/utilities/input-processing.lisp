@@ -1,10 +1,10 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -76,7 +76,7 @@
            ((when (member-eq new-name names-to-avoid))
             (er-soft+ ctx t nil
                       "The name ~x0 specified by :NEW-NAME ~
-                       must be distinct form the names ~&1 ~
+                       must be distinct from the names ~&1 ~
                        that are also being generated."
                       new-name names-to-avoid)))
         (value (list new-name
@@ -156,7 +156,7 @@
                     ((when (member-eq wrapper-name names-to-avoid))
                      (er-soft+ ctx t nil
                                "The name ~x0 specified by :WRAPPER-NAME ~
-                                must be distinct form the names ~&1 ~
+                                must be distinct from the names ~&1 ~
                                 that are also being generated."
                                wrapper-name names-to-avoid))
                     ((mv new-name$ names-to-avoid)
@@ -180,7 +180,7 @@
                     ((when (member-eq new-name names-to-avoid))
                      (er-soft+ ctx t nil
                                "The name ~x0 specified by :NEW-NAME ~
-                                must be distinct form the names ~&1 ~
+                                must be distinct from the names ~&1 ~
                                 that are also being generated."
                                new-name names-to-avoid))
                     ((mv wrapper-name$ names-to-avoid)
@@ -212,13 +212,13 @@
                     ((when (member-eq new-name names-to-avoid))
                      (er-soft+ ctx t nil
                                "The name ~x0 specified by :NEW-NAME ~
-                                must be distinct form the names ~&1 ~
+                                must be distinct from the names ~&1 ~
                                 that are also being generated."
                                new-name names-to-avoid))
                     ((when (member-eq wrapper-name names-to-avoid))
                      (er-soft+ ctx t nil
                                "The name ~x0 specified by :WRAPPER-NAME ~
-                                must be distinct form the names ~&1 ~
+                                must be distinct from the names ~&1 ~
                                 that are also being generated."
                                wrapper-name names-to-avoid))
                     ((when (eq new-name wrapper-name))
@@ -252,8 +252,9 @@
                ((when (member-eq new-name names-to-avoid))
                 (er-soft+ ctx t nil
                           "The name ~x0 specified by :NEW-NAME ~
-                           must be distinct form the names ~&1 ~
-                           that are also being generated.")))
+                           must be distinct from the names ~&1 ~
+                           that are also being generated."
+                          new-name names-to-avoid)))
             (value (list new-name nil (cons new-name names-to-avoid)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

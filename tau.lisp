@@ -800,7 +800,7 @@
            ((splitter-if-intro
              splitter-case-split
              splitter-immed-forced)
-; Shape: rune (Note: objects are a subset 'lemmas objects.)
+; Shape: rune (Note: objects are a subset of 'lemmas objects.)
             ans)
            (elim-sequence
 ; Shape: ((rune rhs lhs alist restricted-vars var-to-runes-alist ttree) ...)
@@ -845,6 +845,12 @@
 ; ttree, the ttree from that bddnote is also added to the same given ttree.
 ; So, we don't really think of a bddnote as containing a "ttree" per se, but
 ; rather, a sort of data structure that is isomorphic to a ttree.
+
+            ans)
+           (induction-record
+
+; As with bddnote tags, the runes in an induction-record are recorded
+; elsewhere.
 
             ans)
            (case-limit
