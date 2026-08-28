@@ -1736,7 +1736,7 @@ property of @('(/ x y)').</p>"
   :short "Rewrite: @('(FLOOR (+ x (* i k)) (* i j)) = (FLOOR k j)'), when
   i,j &gt; 0 and 0 &lt;= x &lt; i."
   :long "<p>This is a crucial lemma for certain kinds of reasoning about hardware
-  specifications, and is used to prove @(see MOD-x+i*j-i*k).</p>"
+  specifications, and is used to prove @(see MOD-x+i*k-i*j).</p>"
   (implies (and (force (real/rationalp x))
                 (force (rationalp i))
                 (force (integerp j))
