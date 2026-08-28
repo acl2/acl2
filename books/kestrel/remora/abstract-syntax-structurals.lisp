@@ -941,6 +941,30 @@
   :hooks ((:fix :hints (("Goal"
                          :in-theory (enable cdr-of-var+type?-list-fix))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define make-atom-tlambda/tlambdan ((params type-var-listp) (body exprp))
+  :guard (consp params)
+  :returns (atom atomp)
+  :short "Construct a unary or n-ary type lambda abstraction,
+          depending on the number of parameters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There must be at least one parameter, as required by the guard.
+     If there is exactly one parameter,
+     we construct a unary type lambda abstraction over that parameter;
+     if there are two or more parameters,
+     we construct an n-ary type lambda abstraction,
+     consistently with the requirement that
+     n-ary type lambda abstractions have two or more parameters
+     (see @(tsee atom))."))
+  (if (endp (cdr params))
+      (make-atom-tlambda :param (car params) :body body)
+    (make-atom-tlambdan :params params :body body))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-type-var-list-fix))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-binders-count ((type typep))
@@ -1185,9 +1209,7 @@
    (xdoc::p
     "This is analogous to @(tsee forall-curried-body)."))
   (cond ((endp (cdr params)) (expr-fix body))
-        ((endp (cddr params))
-         (expr-atom (atom-tlambda (cadr params) body)))
-        (t (expr-atom (atom-tlambdan (cdr params) body))))
+        (t (expr-atom (make-atom-tlambda/tlambdan (cdr params) body))))
   :hooks ((:fix :hints (("Goal"
                          :in-theory (enable cdr-of-type-var-list-fix))))))
 
