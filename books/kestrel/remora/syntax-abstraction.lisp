@@ -2205,7 +2205,7 @@
       (make-atom-lambda/lambdan params body nil))
     :measure (abnf::tree-count tree))
 
-  ;; type-lambda = ( "t-fn" / "tλ" ) ws "(" *( ws type-var ) ws ")" ws exp
+  ;; type-lambda = ( "t-fn" / "tλ" ) ws "(" 1*( ws type-var ) ws ")" ws exp
   (define abs-type-lambda ((tree abnf::treep))
     :returns (a atom-resultp)
     :short "Abstract a @('type-lambda') to
@@ -2222,11 +2222,10 @@
           (abnf::check-tree-nonleaf-8 tree "type-lambda"))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf params) (abs-*-ws-type-var sub.4th))
-         ((okf body) (abs-exp body-tree)))
-      (if (and (consp params)
-               (endp (cdr params)))
-          (make-atom-tlambda :param (car params) :body body)
-        (make-atom-tlambdan :params params :body body)))
+         ((okf body) (abs-exp body-tree))
+         ((unless (consp params))
+          (reserrf (list :type-lambda-no-params body))))
+      (make-atom-tlambda/tlambdan params body))
     :measure (abnf::tree-count tree))
 
   ;; ispace-lambda = ( "i-fn" / "iλ" ) ws "(" *( ws ispace-var ) ws ")" ws exp
