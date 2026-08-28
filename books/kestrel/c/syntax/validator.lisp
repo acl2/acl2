@@ -3787,9 +3787,9 @@
                           ((when info?)
                            (b* (((unless (equal (valid-tag-info->kind info?)
                                                 (tag-kind-struct)))
-                                 (retmsg$ "The tag is expected ~
-                                           to be of kind 'union', ~
-                                           but it is of kind 'struct'. ~
+                                 (retmsg$ "The tag ~x0 is expected ~
+                                           to be of kind 'struct', ~
+                                           but it is of kind 'union'. ~
                                            This occurred ~
                                            in the type specifier ~x1."
                                           tyspec.spec.name?
@@ -3910,9 +3910,9 @@
                                        nil
                                        types
                                        vstate))
-                            (retmsg$ "The tag is expected ~
-                                      to be of kind 'struct', ~
-                                      but it is of kind 'union'. ~
+                            (retmsg$ "The tag ~x0 is expected ~
+                                      to be of kind 'union', ~
+                                      but it is of kind 'struct'. ~
                                       This occurred in the type specifier ~x1."
                                      tyspec.spec.name?
                                      (type-spec-fix tyspec))))
@@ -4306,7 +4306,7 @@
              (valid-tyname align.type vstate))
             ((when (type-case type :function))
              (retmsg$ "In the alignment specifier ~x0, ~
-                       the argument ~x2 is a function type."
+                       the argument ~x1 is a function type."
                       (align-spec-fix align) type)))
          (retok (align-spec-alignas-type new-type) types vstate))
        :alignas-expr
@@ -5121,7 +5121,8 @@
               (const-expr-vinfo->value (const-expr->info new-index))))
             ((when (and index-nat? (not (natp index-nat?))))
              (retmsg$ "The first or only index of the designator ~x0 ~
-                       is negative."))
+                       is negative."
+                      (designor-fix designor)))
             ((unless index-nat?)
              (retok (make-designor-sub :index new-index :range? new-range?)
                     (initer-subobjects-stack-unknown)
@@ -5142,7 +5143,8 @@
                     (const-expr-vinfo->value (const-expr->info new-range))))
                   ((when (and range-nat? (not (natp range-nat?))))
                    (retmsg$ "The second index of the designator ~x0 ~
-                             is negative.")))
+                             is negative."
+                            (designor-fix designor))))
                (retok range-nat?)))
             (new-subobjects-stack
              (initer-subobjects-stack-case

@@ -21041,7 +21041,8 @@
 ; known-dfs may be '? on recursive calls, signifying that we must compute an
 ; answer without information about which variables are known to be dfs.
 
-  (declare (xargs :guard (and (symbol-listp known-stobjs)
+  (declare (xargs :guard (and (or (symbol-listp known-stobjs)
+                                  (eq known-stobjs t))
                               (symbol-listp known-dfs)
                               (plist-worldp wrld))))
   (cond
@@ -21144,7 +21145,8 @@
 ; whose corresponding form returns a df.  Otherwise we return '?.
 
   (declare (xargs :guard (and (doublet-listp bindings)
-                              (symbol-listp known-stobjs)
+                              (or (symbol-listp known-stobjs)
+                                  (eq known-stobjs t))
                               (symbol-listp known-dfs)
                               (plist-worldp wrld)
                               (symbol-listp df-vars))))
@@ -21206,7 +21208,8 @@
 
   (declare (xargs :guard (and (doublet-listp doublets)
                               (symbol-listp declared-known-dfs)
-                              (symbol-listp known-stobjs)
+                              (or (symbol-listp known-stobjs)
+                                  (eq known-stobjs t))
                               (symbol-listp known-dfs)
                               (plist-worldp w))))
   (cond ((endp doublets) nil)
@@ -27458,7 +27461,8 @@
 
 (defun filter-known-stobjs (vars known-stobjs wrld)
   (declare (xargs :guard (and (symbol-listp vars)
-                              (symbol-listp known-stobjs)
+                              (or (symbol-listp known-stobjs)
+                                  (eq known-stobjs t))
                               (plist-worldp wrld))))
   (cond ((endp vars) nil)
         ((stobjp (car vars) known-stobjs wrld)

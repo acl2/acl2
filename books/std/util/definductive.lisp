@@ -2113,6 +2113,31 @@
 
 ;;;;;;;;;;
 
+(define defind-proof-valid-return-thm-names ((preds symbol-setp)
+                                             (irule-infos defind-irule-info-listp)
+                                             (name symbolp))
+  :returns (thm-names symbol-listp)
+  :short "Names of the return theorems of the @('p[i]-proof-validp') functions
+          for a set of predicates."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The function of a predicate is standalone exactly when
+     the clique of the predicate is the singleton of the predicate
+     (see @(tsee defind-pred-clique))."))
+  (b* (((when (set::emptyp (symbol-sfix preds))) nil)
+       (pred (set::head preds))
+       (standalonep (equal (defind-pred-clique pred irule-infos)
+                           (set::insert pred nil)))
+       (thm-names
+        (defind-proof-valid-return-thm-names
+          (set::tail preds) irule-infos name)))
+    (cons (defind-proof-valid-return-thm-name pred standalonep name)
+          thm-names))
+  :prepwork ((local (in-theory (enable emptyp-of-symbol-sfix)))))
+
+;;;;;;;;;;
+
 (define defind-pred-irule-thm-name ((pred-name symbolp)
                                     (irule-name symbolp)
                                     (name symbolp))
@@ -3567,9 +3592,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The conjuncts for the proofs of the premises come first,
-     followed by a call of the @('p[l[k]]-rule[k]-validp') function
+    "The conjuncts for the proofs of the premises
+     are preceded by a call of the @('p[l[k]]-rule[k]-validp') function
      on the arguments of the conclusion and on the variables of the rule.
+     The reason for that ordering is to facilitate guard verification,
+     even though we currently do not generate guard verification.
      If the rule has premises that are calls of the predicates being defined,
      the variables of the rule are bound around the whole conjunction
      and passed as such to that call;
@@ -3591,8 +3618,7 @@
        (irule-conjunct `(,valid-irule-fn
                          ,@(symbol-list-fix concl-vars)
                          ,@var-args))
-       (term (defind-gen-conjunction
-              (append prem-conjuncts (list irule-conjunct))))
+       (term (defind-gen-conjunction (cons irule-conjunct prem-conjuncts)))
        (bindings (and recursivep
                       (defind-gen-proof-valid-fn-case-bindings vars name)))
        (term (if bindings `(let ,bindings ,term) term))
@@ -3602,7 +3628,8 @@
                          cinfo.name info.name vars name)))
     (mv `(,tag ,term)
         return-thm count-thms prem-fixing-thms var-fixing-thms))
-  :guard-hints (("Goal" :in-theory (enable symbol-listp-when-symbol-setp))))
+  :guard-hints (("Goal" :in-theory (enable symbol-listp-when-symbol-setp
+                                           true-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3689,7 +3716,12 @@
      see @(tsee defind-proof-concl-var-names).")
    (xdoc::p
     "The @(':returns') theorem is also a type prescription rule,
-     which @(tsee defind-gen-pred) uses."))
+     which @(tsee defind-gen-pred) uses.
+     For a standalone function,
+     the hints for this theorem include the return theorems of
+     the proof validity functions of the premise predicates
+     of the rules of the predicate, other than the predicate itself,
+     which are in preceding cliques."))
   (b* (((defind-pred-info pred-info))
        (fn-name (defind-proof-valid-fn-name pred-info.name name))
        (fn-formal (defind-proof-var-name name))
@@ -3723,7 +3755,14 @@
        (recursivep (defind-pred-recursivep pred-info.name infos))
        (poss-thm (defind-proof-kind-poss-thm-name pred-info.name name))
        (kind-fixing-thm (defind-proof-kind-fixing-thm-name
-                         pred-info.name name)))
+                          pred-info.name name))
+       (prem-preds (defind-preds-in-premises-of-irules
+                     (defind-irules-of-pred pred-info.name infos)))
+       (prem-return-thms
+        (defind-proof-valid-return-thm-names
+          (set::difference prem-preds (set::insert pred-info.name nil))
+          infos
+          name)))
     (mv `(define ,fn-name ((,fn-formal ,proof-recog) ,@concl-vars)
            :returns (yes/no booleanp
                             :rule-classes (:rewrite :type-prescription)
@@ -3731,7 +3770,8 @@
                                      ,@(and recursivep '(:induct t))
                                      :in-theory '(,fn-name
                                                   (:e booleanp)
-                                                  ,@return-thms))))
+                                                  ,@return-thms
+                                                  ,@prem-return-thms))))
            ,@(and xdocp
                   `(:parents (,(symbol-lfix name))
                     :short ,(str::cat "Validity of proofs for predicate @('"

@@ -167,6 +167,32 @@
                                        nfix
                                        fix)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-undefined ()
+  :returns (val expr-value-resultp)
+  :short "Evaluation of the undefined operation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the @('undefined') operation:
+     it always fails.
+     In [impl] this operation is Haskell's @('undefined'),
+     i.e. its evaluation raises an error;
+     here we return an error value.
+     The instantiation values are irrelevant,
+     so this function takes no arguments:
+     the type and the shape only matter statically,
+     to let the operation be used
+     where a value of any type and shape is expected."))
+  (reserr nil)
+
+  ///
+
+  (defret expr-value-wfp-of-prim-undefined
+    (implies (not (reserrp val))
+             (expr-value-wfp val))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eval-primop-ifun ((op primop-valuep) (ival ispace-valuep))
@@ -212,10 +238,12 @@
      a shape for @('sum');
      two shapes for @('reshape');
      two dimensions for @('transpose2d');
-     a dimension for @('iota')),
+     a dimension for @('iota');
+     two shapes for @('trace')),
      along with the previously received type values (if any);
      for @('iota/static'), @('reify-dim'), and @('reify-shape'),
-     the application instead directly yields the final result.
+     the application instead directly yields the final result,
+     and for @('undefined') it yields an error.
      Anything else is an error."))
   (primop-value-case
    op
@@ -419,6 +447,25 @@
                 (make-primop-value-iota-d
                  :dval ival.val))
           :shape (reserr nil))
+   :trace-t-r (ispace-value-case
+               ival
+               :dim (reserr nil)
+               :shape (expr-value-primop
+                       (make-primop-value-trace-t-r-s :tval op.tval
+                                                      :rval op.rval
+                                                      :sval ival.val)))
+   :trace-t-r-s (ispace-value-case
+                 ival
+                 :dim (reserr nil)
+                 :shape (expr-value-primop
+                         (make-primop-value-trace-t-r-s-q :tval op.tval
+                                                          :rval op.rval
+                                                          :sval op.sval
+                                                          :qval ival.val)))
+   :undefined-t (ispace-value-case
+                 ival
+                 :dim (reserr nil)
+                 :shape (prim-undefined))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-ifunp)))
 

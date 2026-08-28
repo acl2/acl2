@@ -540,6 +540,17 @@
     (:reify-shape ())
     (:iota ())
     (:iota-d ((dval nat)))
+    (:trace ())
+    (:trace-t ((tval type-value)))
+    (:trace-t-r ((tval type-value) (rval type-value)))
+    (:trace-t-r-s ((tval type-value) (rval type-value) (sval nat-list)))
+    (:trace-t-r-s-q ((tval type-value) (rval type-value)
+                     (sval nat-list) (qval nat-list)))
+    (:trace-t-r-s-q-x ((tval type-value) (rval type-value)
+                       (sval nat-list) (qval nat-list)
+                       (xval expr-value)))
+    (:undefined ())
+    (:undefined-t ((tval type-value)))
     :pred primop-valuep
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -889,6 +900,8 @@
      :fold-t-t2-d-s-s2-f-z (b* (((ok &) (check-dims-of-expr-value val.fval))
                                 ((ok &) (check-dims-of-expr-value val.zval)))
                              :unit)
+     :trace-t-r-s-q-x (b* (((ok &) (check-dims-of-expr-value val.xval)))
+                        :unit)
      :otherwise :unit)
     :measure (primop-value-count val))
 
@@ -1093,7 +1106,11 @@
                   (and (expr-value-wfp
                         (primop-value-fold-t-t2-d-s-s2-f-z->fval op))
                        (expr-value-wfp
-                        (primop-value-fold-t-t2-d-s-s2-f-z->zval op)))))
+                        (primop-value-fold-t-t2-d-s-s2-f-z->zval op))))
+         (implies (primop-value-case op :trace-t-r-s-q-x)
+                  (equal (expr-value-wfp
+                          (primop-value-trace-t-r-s-q-x->xval op))
+                         (primop-value-wfp op))))
     :enable (primop-value-wfp expr-value-wfp)
     :expand ((check-dims-of-primop-value op)))
 
@@ -1129,7 +1146,10 @@
                  (primop-value-fold-t-t2-d-s-s2-f-z tval t2val dval sval
                                                     s2val fval zval))
                 (and (expr-value-wfp fval)
-                     (expr-value-wfp zval))))
+                     (expr-value-wfp zval)))
+         (equal (primop-value-wfp
+                 (primop-value-trace-t-r-s-q-x tval rval sval qval xval))
+                (expr-value-wfp xval)))
     :enable (primop-value-wfp expr-value-wfp)
     :expand ((check-dims-of-primop-value (primop-value-int-binary-x op xval))
              (check-dims-of-primop-value (primop-value-int-rel-x op xval))
@@ -1150,7 +1170,9 @@
                                                s2val fval))
              (check-dims-of-primop-value
               (primop-value-fold-t-t2-d-s-s2-f-z tval t2val dval sval
-                                                 s2val fval zval)))))
+                                                 s2val fval zval))
+             (check-dims-of-primop-value
+              (primop-value-trace-t-r-s-q-x tval rval sval qval xval)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2201,7 +2223,15 @@
                      :reify-dim nil
                      :reify-shape nil
                      :iota nil
-                     :iota-d t))
+                     :iota-d t
+                     :trace nil
+                     :trace-t nil
+                     :trace-t-r nil
+                     :trace-t-r-s nil
+                     :trace-t-r-s-q t
+                     :trace-t-r-s-q-x t
+                     :undefined nil
+                     :undefined-t nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2305,7 +2335,15 @@
                      :reify-dim nil
                      :reify-shape nil
                      :iota nil
-                     :iota-d nil))
+                     :iota-d nil
+                     :trace t
+                     :trace-t t
+                     :trace-t-r nil
+                     :trace-t-r-s nil
+                     :trace-t-r-s-q nil
+                     :trace-t-r-s-q-x nil
+                     :undefined t
+                     :undefined-t nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2408,7 +2446,15 @@
                      :reify-dim t
                      :reify-shape t
                      :iota t
-                     :iota-d nil))
+                     :iota-d nil
+                     :trace nil
+                     :trace-t nil
+                     :trace-t-r t
+                     :trace-t-r-s t
+                     :trace-t-r-s-q nil
+                     :trace-t-r-s-q-x nil
+                     :undefined nil
+                     :undefined-t t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2531,6 +2577,8 @@
                      :fold-t-t2-d-s-s2-f t
                      :fold-t-t2-d-s-s2-f-z nil
                      :iota-d t
+                     :trace-t-r-s-q t
+                     :trace-t-r-s-q-x t
                      :otherwise (impossible))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp))))
 
@@ -2604,6 +2652,12 @@
                      :reify-shape (primop-value-reify-shape)
                      :iota (primop-value-iota)
                      :iota-d (primop-value-iota)
+                     :trace-t (primop-value-trace)
+                     :trace-t-r (primop-value-trace)
+                     :trace-t-r-s (primop-value-trace)
+                     :trace-t-r-s-q (primop-value-trace)
+                     :trace-t-r-s-q-x (primop-value-trace)
+                     :undefined-t (primop-value-undefined)
                      :otherwise (primop-value-fix op)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2981,7 +3035,26 @@
                       :denv (make-type-denv
                              :ienv (make-ispace-denv :ispaces nil)
                              :types nil)))
-              :dims nil)))
+              :dims nil)
+     :trace (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :trace-t (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :trace-t-r (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :trace-t-r-s (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :trace-t-r-s-q
+     (make-type-value-array
+      :elem (nest-function-type-values
+             (list (make-type-value-array :elem op.tval :dims op.sval)
+                   (make-type-value-array :elem op.rval :dims op.qval))
+             (make-type-value-array :elem op.rval :dims op.qval))
+      :dims nil)
+     :trace-t-r-s-q-x
+     (make-type-value-array
+      :elem (nest-function-type-values
+             (list (make-type-value-array :elem op.rval :dims op.qval))
+             (make-type-value-array :elem op.rval :dims op.qval))
+      :dims nil)
+     :undefined (prog2$ (impossible) (type-value-base (base-type-bool)))
+     :undefined-t (prog2$ (impossible) (type-value-base (base-type-bool)))))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp)))
 
   ///
@@ -3681,7 +3754,9 @@
          (cons "fold" (expr-value-primop (primop-value-fold)))
          (cons "reify-dim" (expr-value-primop (primop-value-reify-dim)))
          (cons "reify-shape" (expr-value-primop (primop-value-reify-shape)))
-         (cons "iota" (expr-value-primop (primop-value-iota))))))
+         (cons "iota" (expr-value-primop (primop-value-iota)))
+         (cons "trace" (expr-value-primop (primop-value-trace)))
+         (cons "undefined" (expr-value-primop (primop-value-undefined))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

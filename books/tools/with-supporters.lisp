@@ -289,13 +289,11 @@
                 acc)))
         (collect-constants-and-macros-1 (car (last ev)) acc wrld state-vars)))
      (defchoose
-      (collect-constants-and-macros-1 (car (last ev)) acc wrld state-vars))
+      (collect-constants-and-macros-1 (nth 4 ev) acc wrld state-vars))
      (mutual-recursion
       (collect-constants-and-macros-ev-lst (cdr ev) acc wrld state-vars))
      ((defthm defaxiom defconst deftheory)
       (collect-constants-and-macros-1 (caddr ev) acc wrld state-vars))
-     (defchoose
-       (collect-constants-and-macros-1 (nth 4 ev) acc wrld state-vars))
      (table (collect-constants-and-macros-lst (cddr ev) acc wrld state-vars))
      (otherwise acc))))
 
