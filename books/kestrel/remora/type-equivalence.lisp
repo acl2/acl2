@@ -14,6 +14,8 @@
 (include-book "all-variable-operations")
 (include-book "variable-renaming-operations")
 
+(local (include-book "std/lists/len" :dir :system))
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -93,7 +95,55 @@
     "A bracket type is sugar for an array type
      with the same element type and with the splice of the bracket's ispaces.
      The rule @('bracket') supports this reduction,
-     but allows any ispace equivalent to the ispace splice."))
+     but allows any ispace equivalent to the ispace splice.")
+   (xdoc::p
+    "An n-ary function type is sugar for
+     a nesting of unary function types:
+     a nullary function type stands for just its output type
+     (rule @('fun0')),
+     and a function type with one or more inputs stands for
+     a unary function type from the first input
+     to the function type with the remaining inputs
+     (rule @('fun1m')).")
+   (xdoc::p
+    "An n-ary universal type, which has two or more parameters,
+     is sugar for a nesting of unary universal types:
+     one with exactly two parameters stands for
+     a unary universal type of the first parameter
+     whose body is the unary universal type of the second parameter
+     (rule @('forall2')),
+     and one with three or more parameters stands for
+     a unary universal type of the first parameter
+     whose body is the n-ary universal type of the remaining parameters
+     (rule @('forall3m')).
+     The two rules are separate because
+     an n-ary universal type cannot have just one parameter.")
+   (xdoc::p
+    "An n-ary product type, which has two or more parameters,
+     is sugar for a nesting of unary product types:
+     one with exactly two parameters stands for
+     a unary product type of the first parameter
+     whose body is the unary product type of the second parameter
+     (rule @('pi2')),
+     and one with three or more parameters stands for
+     a unary product type of the first parameter
+     whose body is the n-ary product type of the remaining parameters
+     (rule @('pi3m')).
+     The two rules are separate because
+     an n-ary product type cannot have just one parameter.")
+   (xdoc::p
+    "An n-ary sum type, which has two or more parameters,
+     is sugar for a nesting of unary sum types:
+     one with exactly two parameters stands for
+     a unary sum type of the first parameter
+     whose body is the unary sum type of the second parameter
+     (rule @('sigma2')),
+     and one with three or more parameters stands for
+     a unary sum type of the first parameter
+     whose body is the n-ary sum type of the remaining parameters
+     (rule @('sigma3m')).
+     The two rules are separate because
+     an n-ary sum type cannot have just one parameter."))
 
   :preds ((type= type1 type2))
 
@@ -220,7 +270,47 @@
             (type= (type-bracket ty is)
                    (type-array ty i)))
 
-   ;; TODO: normalization rules
+   ;; normalization of n-ary function types:
+
+   (fun0 ((typep out))
+         (type= (type-funn nil out) out))
+
+   (fun1m ((typep in) (type-listp ins) (typep out))
+          (type= (type-funn (cons in ins) out)
+                 (t-> in (type-funn ins out))))
+
+   ;; normalization of n-ary universal types:
+
+   (forall2 ((type-varp p1) (type-varp p2) (typep ty))
+            (type= (type-foralln (list p1 p2) ty)
+                   (type-forall p1 (type-forall p2 ty))))
+
+   (forall3m ((type-varp p1) (type-varp p2) (type-var-listp ps) (consp ps)
+              (typep ty))
+             (type= (type-foralln (list* p1 p2 ps) ty)
+                    (type-forall p1 (type-foralln (cons p2 ps) ty))))
+
+   ;; normalization of n-ary product types:
+
+   (pi2 ((ispace-varp p1) (ispace-varp p2) (typep ty))
+        (type= (type-pin (list p1 p2) ty)
+               (type-pi p1 (type-pi p2 ty))))
+
+   (pi3m ((ispace-varp p1) (ispace-varp p2) (ispace-var-listp ps) (consp ps)
+          (typep ty))
+         (type= (type-pin (list* p1 p2 ps) ty)
+                (type-pi p1 (type-pin (cons p2 ps) ty))))
+
+   ;; normalization of n-ary sum types:
+
+   (sigma2 ((ispace-varp p1) (ispace-varp p2) (typep ty))
+           (type= (type-sigman (list p1 p2) ty)
+                  (type-sigma p1 (type-sigma p2 ty))))
+
+   (sigma3m ((ispace-varp p1) (ispace-varp p2) (ispace-var-listp ps) (consp ps)
+             (typep ty))
+            (type= (type-sigman (list* p1 p2 ps) ty)
+                   (type-sigma p1 (type-sigman (cons p2 ps) ty))))
 
   ))
 
@@ -264,4 +354,12 @@
   (verify-guards type=-pi-validp)
   (verify-guards type=-sigma-validp)
   (verify-guards type=-array-var-validp)
-  (verify-guards type=-bracket-validp))
+  (verify-guards type=-bracket-validp)
+  (verify-guards type=-fun0-validp)
+  (verify-guards type=-fun1m-validp)
+  (verify-guards type=-forall2-validp)
+  (verify-guards type=-forall3m-validp)
+  (verify-guards type=-pi2-validp)
+  (verify-guards type=-pi3m-validp)
+  (verify-guards type=-sigma2-validp)
+  (verify-guards type=-sigma3m-validp))
