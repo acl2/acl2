@@ -59,8 +59,8 @@
      i.e. the one in the operation's type in @(tsee primop-types);
      then we construct the next instantiation stage of the operation,
      which stores the type values received so far
-     (just one, except for the second stage of @('fold'),
-     which has two type parameters).
+     (just one, except for the second stages of @('fold') and @('trace'),
+     which have two type parameters).
      Anything else is an error."))
   (primop-value-case
    op
@@ -130,6 +130,22 @@
                  (reserr nil)))
              (expr-value-primop (make-primop-value-fold-t-t2 :tval op.tval
                                                              :t2val tval)))
+   :trace (b* (((unless (type-values-match-type-vars-p
+                         (list tval)
+                         (list (type-var-atom "t"))))
+                (reserr nil)))
+            (expr-value-primop (primop-value-trace-t tval)))
+   :trace-t (b* (((unless (type-values-match-type-vars-p
+                           (list tval)
+                           (list (type-var-atom "r"))))
+                  (reserr nil)))
+              (expr-value-primop (make-primop-value-trace-t-r :tval op.tval
+                                                              :rval tval)))
+   :undefined (b* (((unless (type-values-match-type-vars-p
+                             (list tval)
+                             (list (type-var-atom "t"))))
+                    (reserr nil)))
+                (expr-value-primop (primop-value-undefined-t tval)))
    :otherwise (prog2$ (impossible) (reserr nil)))
   :guard-hints (("Goal" :in-theory (enable primop-value-tfunp
                                            type-values-match-type-vars-p)))

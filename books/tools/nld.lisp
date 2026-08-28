@@ -114,5 +114,5 @@ ACL2 !>
                       (value (prepend-ld-result
                               (ld-history state))))))
         (t (er hard 'nld
-               "Bad call of nld, since this is not a keyword-value-listp:~&~s"
+               "Bad call of nld, since this is not a keyword-value-listp:~|~x0"
                args))))

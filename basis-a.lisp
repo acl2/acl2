@@ -1644,11 +1644,11 @@
 
   (declare (xargs :guard
                   (and (iprint-alistp1 iprint-alist)
-                       (consp iprint-alist)
                        (iprint-falp (f-get-global 'iprint-fal state))
                        (array1p 'iprint-ar (f-get-global 'iprint-ar state))
                        (posp last-index)
-                       (equal last-index (caar iprint-alist))
+                       (or (null iprint-alist)
+                           (eql last-index (caar iprint-alist)))
                        (iprint-array-p (f-get-global 'iprint-ar state)
                                        last-index)
                        (natp (f-get-global 'iprint-hard-bound state))

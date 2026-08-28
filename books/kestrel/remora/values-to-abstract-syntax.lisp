@@ -632,14 +632,15 @@
        the nesting of unary ispace applications
        to the dimensions and shapes in the stage, in order,
        of that type application,
-       or of the variable directly for @('sum'),
-       which has no type parameter:
+       or of the variable directly for @('sum') and @('iota'),
+       which have no type parameters:
        a left-nested chain of the core unary form (see @(tsee expr)).")
      (xdoc::p
       "A stage that stores an argument value
        (the @('-x') summands, for the binary operations,
        the @('-f') summand, for @('reduce'),
-       and the @('-f') and @('-f-z') summands, for @('fold'))
+       the @('-f') and @('-f-z') summands, for @('fold'),
+       and the @('-x') summand, for @('trace'))
        becomes a unary term application (see @(tsee expr))
        of the operation, at the stage before that argument was stored,
        to the expression converted from the stored argument value.
@@ -1071,7 +1072,67 @@
                     :arg fexpr)
               :arg zexpr)))
        :reify-dim (mv nil opvar)
-       :reify-shape (mv nil opvar)))
+       :reify-shape (mv nil opvar)
+       :iota (mv nil opvar)
+       :iota-d (mv nil
+                   (make-expr-iapp
+                    :fun opvar
+                    :arg (ispace-dim (dim-const pval.dval))))
+       :trace (mv nil opvar)
+       :trace-t (mv nil
+                    (make-expr-tapp
+                     :fun opvar
+                     :arg (type-value-to-type pval.tval)))
+       :trace-t-r (mv nil
+                      (make-expr-tapp
+                       :fun (make-expr-tapp
+                             :fun opvar
+                             :arg (type-value-to-type pval.tval))
+                       :arg (type-value-to-type pval.rval)))
+       :trace-t-r-s (mv nil
+                        (make-expr-iapp
+                         :fun (make-expr-tapp
+                               :fun (make-expr-tapp
+                                     :fun opvar
+                                     :arg (type-value-to-type pval.tval))
+                               :arg (type-value-to-type pval.rval))
+                         :arg (ispace-shape
+                               (shape-dims (dim-const-list pval.sval)))))
+       :trace-t-r-s-q (mv nil
+                          (make-expr-iapp
+                           :fun (make-expr-iapp
+                                 :fun (make-expr-tapp
+                                       :fun (make-expr-tapp
+                                             :fun opvar
+                                             :arg (type-value-to-type
+                                                   pval.tval))
+                                       :arg (type-value-to-type pval.rval))
+                                 :arg (ispace-shape
+                                       (shape-dims
+                                        (dim-const-list pval.sval))))
+                           :arg (ispace-shape
+                                 (shape-dims (dim-const-list pval.qval)))))
+       :trace-t-r-s-q-x
+       (b* (((mv err2 argexpr) (expr-value-to-expr pval.xval)))
+         (mv err2
+             (make-expr-app
+              :fun (make-expr-iapp
+                    :fun (make-expr-iapp
+                          :fun (make-expr-tapp
+                                :fun (make-expr-tapp
+                                      :fun opvar
+                                      :arg (type-value-to-type pval.tval))
+                                :arg (type-value-to-type pval.rval))
+                          :arg (ispace-shape
+                                (shape-dims (dim-const-list pval.sval))))
+                    :arg (ispace-shape
+                          (shape-dims (dim-const-list pval.qval))))
+              :arg argexpr)))
+       :undefined (mv nil opvar)
+       :undefined-t (mv nil
+                        (make-expr-tapp
+                         :fun opvar
+                         :arg (type-value-to-type pval.tval)))))
     :measure (primop-value-count pval))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1180,4 +1241,7 @@
                                  primop-value-fix-when-reduce
                                  primop-value-fix-when-fold
                                  primop-value-fix-when-reify-dim
-                                 primop-value-fix-when-reify-shape)))))
+                                 primop-value-fix-when-reify-shape
+                                 primop-value-fix-when-iota
+                                 primop-value-fix-when-trace
+                                 primop-value-fix-when-undefined)))))

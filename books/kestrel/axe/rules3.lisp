@@ -12263,19 +12263,6 @@
   :hints (("Goal" :use (:instance <-of-+-of-minus-and-constant)
            :in-theory (disable <-of-+-of-minus-and-constant))))
 
-(defthm equal-of-bvchop-and-bvplus-of-same
-  (implies (natp size)
-           (equal (equal (bvchop size x) (bvplus size k x))
-                  (equal 0 (bvchop size k))))
-  :hints (("Goal" :in-theory (enable bvplus))))
-
-(defthm equal-of-bvchop-and-bvplus-of-same-alt
-  (implies (natp size)
-           (equal (equal (bvplus size k x) (bvchop size x))
-                  (equal 0 (bvchop size k))))
-  :hints (("Goal" :use (:instance equal-of-bvchop-and-bvplus-of-same)
-           :in-theory (disable equal-of-bvchop-and-bvplus-of-same))))
-
 (defthm bvcat-of-constant-when-equal-of-constant-and-bvchop
   (implies (and (syntaxp (quotep k2))
                 (equal k (bvchop size x))
