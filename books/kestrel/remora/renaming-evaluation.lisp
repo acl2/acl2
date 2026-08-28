@@ -1170,6 +1170,7 @@
                                                    dim-renam
                                                    shape-renam))))
   :enable (lambda-curried-body
+           make-atom-lambda/lambdan
            var+type?-list-rename-ispace-vars))
 
 ; Phase 1: evaluating a renamed type errs exactly when evaluating the
@@ -2024,6 +2025,7 @@
                                                  atom-renam
                                                  array-renam))))
   :enable (lambda-curried-body
+           make-atom-lambda/lambdan
            var+type?-list-rename-type-vars))
 
 ; The expression-variable analogue for the currying of
@@ -2052,6 +2054,7 @@
                      (string-string-map-fix renam)))
                    type?)))
   :enable (lambda-curried-body
+           make-atom-lambda/lambdan
            delete*-of-delete*-fuse
            mergesort-of-cons
            mergesort-when-singleton))

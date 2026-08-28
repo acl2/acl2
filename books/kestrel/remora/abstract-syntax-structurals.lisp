@@ -908,6 +908,32 @@
   :hooks ((:fix :hints (("Goal"
                          :in-theory (enable cdr-of-ispace-var-list-fix))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define make-atom-lambda/lambdan ((params var+type?-listp)
+                                  (body exprp)
+                                  (type? type-optionp))
+  :guard (consp params)
+  :returns (atom atomp)
+  :short "Construct a unary or n-ary expression lambda abstraction,
+          depending on the number of parameters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There must be at least one parameter, as required by the guard.
+     If there is exactly one parameter,
+     we construct a unary lambda abstraction over that parameter;
+     if there are two or more parameters,
+     we construct an n-ary lambda abstraction,
+     consistently with the requirement that
+     n-ary lambda abstractions have two or more parameters
+     (see @(tsee atom))."))
+  (if (endp (cdr params))
+      (make-atom-lambda :param (car params) :body body :type? type?)
+    (make-atom-lambdan :params params :body body :type? type?))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-var+type?-list-fix))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-binders-count ((type typep))
@@ -1136,13 +1162,7 @@
      the annotation pertains to the returned body,
      and it is up to the caller to use it as appropriate."))
   (cond ((endp (cdr params)) (expr-fix body))
-        ((endp (cddr params))
-         (expr-atom (make-atom-lambda :param (cadr params)
-                                      :body body
-                                      :type? type?)))
-        (t (expr-atom (make-atom-lambdan :params (cdr params)
-                                         :body body
-                                         :type? type?))))
+        (t (expr-atom (make-atom-lambda/lambdan (cdr params) body type?))))
   :hooks ((:fix :hints (("Goal"
                          :in-theory (enable cdr-of-var+type?-list-fix))))))
 

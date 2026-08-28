@@ -1536,16 +1536,8 @@
                   (cfun-expr (if (consp bind.params)
                                  (make-expr-array
                                   :dims nil
-                                  :atoms (list
-                                          (if (endp (cdr bind.params))
-                                              (make-atom-lambda
-                                               :param (car bind.params)
-                                               :body bind.expr
-                                               :type? bind.type)
-                                            (make-atom-lambdan
-                                             :params bind.params
-                                             :body bind.expr
-                                             :type? bind.type))))
+                                  :atoms (list (make-atom-lambda/lambdan
+                                                bind.params bind.expr bind.type)))
                                bind.expr))
                   ((ok in) (var+type?-list->type-list-or-err bind.params))
                   (cfun-type (if (consp in)
