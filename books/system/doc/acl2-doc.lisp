@@ -109795,6 +109795,15 @@ it."
 ; Removed duplicate commands (defpointer double-float df) in
 ; books/system/doc/acl2-doc.lisp.
 
+; Fixed a minor efficiency issue (incorrect hint in cons-with-hint) in
+; fix-export-updaters1.
+
+; Fixed some bugs found by Claude AI and passed along by Eric Smith.
+; - bugs in fmt strings/args
+; - a bug involving defchoose in tools/with-supporters.lisp
+; - minor bugs in a couple of error messages in source functions
+; - guards in source functions that were too strong
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see

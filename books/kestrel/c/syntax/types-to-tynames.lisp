@@ -90,6 +90,7 @@
 
   (define push-pointer-absdeclor ((absdeclor absdeclorp))
     :returns (new-absdeclor absdeclorp)
+    :parents nil
     (b* (((absdeclor absdeclor) absdeclor))
       (if (dirabsdeclor-option-case absdeclor.direct? :none)
           (change-absdeclor absdeclor
@@ -101,6 +102,7 @@
 
   (define push-pointer-dirabsdeclor-option ((dirabsdeclor? dirabsdeclor-optionp))
     :returns (new-dirabsdeclor dirabsdeclorp)
+    :parents nil
     (if (dirabsdeclor-option-case dirabsdeclor? :none)
         (dirabsdeclor-paren (make-absdeclor :pointers (list nil)
                                             :direct? nil))

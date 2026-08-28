@@ -18688,8 +18688,7 @@
 ; figure that out.
 
   (msg "The attempt to change the :badge-userfn-structure of the badge-table ~
-        failed because "
-       nil))
+        failed because "))
 
 (defun chk-table-guard (name key val ctx wrld ens state)
 

@@ -3159,16 +3159,28 @@
                    (make-span :start first-pos :end first-pos)
                    parstate))))))
 
-     ((utf8-= char (char-code #\#))
+     ((utf8-= char (char-code #\#)) ; #
       (if (parstate->skip-control-lines parstate)
           (if (only-whitespace-backward-through-line parstate)
               (lex-control-line first-pos parstate)
             (reterr-msg :where first-pos
                         :expected "not a #"
                         :found "a #"))
-        (retok (lexeme-token (token-punctuator "#"))
-               (make-span :start first-pos :end first-pos)
-               parstate)))
+        (b* (((erp char2 pos2 parstate) (read-char parstate)))
+          (cond
+           ((not char2) ; # EOF
+            (retok (lexeme-token (token-punctuator "#"))
+                   (make-span :start first-pos :end first-pos)
+                   parstate))
+           ((utf8-= char2 (char-code #\#)) ; # #
+            (retok (lexeme-token (token-punctuator "##"))
+                   (make-span :start first-pos :end pos2)
+                   parstate))
+           (t ; # other
+            (b* ((parstate (unread-char parstate)))
+              (retok (lexeme-token (token-punctuator "#"))
+                     (make-span :start first-pos :end first-pos)
+                     parstate)))))))
 
      ((or (utf8-= char (char-code #\[)) ; [
           (utf8-= char (char-code #\])) ; ]
@@ -3267,23 +3279,6 @@
          (t ; : other
           (b* ((parstate (unread-char parstate)))
             (retok (lexeme-token (token-punctuator ":"))
-                   (make-span :start first-pos :end first-pos)
-                   parstate))))))
-
-     ((utf8-= char (char-code #\#)) ; #
-      (b* (((erp char2 pos2 parstate) (read-char parstate)))
-        (cond
-         ((not char2) ; # EOF
-          (retok (lexeme-token (token-punctuator "#"))
-                 (make-span :start first-pos :end first-pos)
-                 parstate))
-         ((utf8-= char2 (char-code #\#)) ; # #
-          (retok (lexeme-token (token-punctuator "##"))
-                 (make-span :start first-pos :end pos2)
-                 parstate))
-         (t ; # other
-          (b* ((parstate (unread-char parstate)))
-            (retok (lexeme-token (token-punctuator "#"))
                    (make-span :start first-pos :end first-pos)
                    parstate))))))
 

@@ -1155,17 +1155,16 @@
        the body of the value is the body of the abstraction,
        and the optional body type, if present,
        is evaluated to a type value and stored in the value.
-       The n-ary form must have at least one parameter:
+       For the n-ary form, which has two or more parameters,
        the value binds the first parameter,
        and its body is the term lambda abstraction
-       over the remaining parameters if there are any,
-       or otherwise the body of the given term lambda abstraction
+       over the remaining parameters
        (see @(tsee lambda-curried-body)),
        so a term lambda abstraction with two or more parameters
        stands for the nesting of unary ones, in curried style.
        The optional body type travels with the innermost abstraction,
-       so it is stored in the value only when
-       the value binds the innermost parameter.
+       so it is not stored in the value,
+       which does not bind the innermost parameter.
        The body is not evaluated here,
        but only when the abstraction is applied.")
      (xdoc::p
@@ -1173,11 +1172,10 @@
        a unary type lambda value.
        For the unary form, the value binds the parameter,
        and its body is the body of the abstraction.
-       The n-ary form must have at least one parameter:
+       For the n-ary form, which has two or more parameters,
        the value binds the first parameter,
        and its body is the type lambda abstraction
-       over the remaining parameters if there are any,
-       or otherwise the body of the given type lambda abstraction
+       over the remaining parameters
        (see @(tsee tlambda-curried-body)):
        a type lambda abstraction with two or more parameters
        stands for the nesting of unary ones, in curried style.
@@ -1188,11 +1186,10 @@
        a unary ispace lambda value.
        For the unary form, the value binds the parameter,
        and its body is the body of the abstraction.
-       The n-ary form must have at least one parameter:
+       For the n-ary form, which has two or more parameters,
        the value binds the first parameter,
        and its body is the ispace lambda abstraction
-       over the remaining parameters if there are any,
-       or otherwise the body of the given ispace lambda abstraction
+       over the remaining parameters
        (see @(tsee ilambda-curried-body)):
        an ispace lambda abstraction with two or more parameters
        stands for the nesting of unary ones, in curried style.")
@@ -1228,20 +1225,12 @@
                          (expr-free-type-vars atom.body)
                          (atom-free-expr-vars atom)
                          denv)))
-       :lambdan (b* (((unless (consp atom.params)) (reserr nil))
-                     ((ok param) (eval-var+type? (car atom.params)
-                                                 (expr-denv->tenv denv)))
-                     ((ok type?) (if (consp (cdr atom.params))
-                                     nil
-                                   (type-option-case
-                                    atom.type?
-                                    :none nil
-                                    :some (eval-type atom.type?.val
-                                                     (expr-denv->tenv denv))))))
+       :lambdan (b* (((ok param) (eval-var+type? (car atom.params)
+                                                 (expr-denv->tenv denv))))
                   (make-expr-value-lambda
                    :param param
                    :body (lambda-curried-body atom.params atom.body atom.type?)
-                   :type? type?
+                   :type? nil
                    :denv (expr-denv-restrict
                           (expr-free-ispace-vars atom.body)
                           (expr-free-type-vars atom.body)
@@ -1255,16 +1244,14 @@
                         (atom-free-type-vars atom)
                         (expr-free-expr-vars atom.body)
                         denv))
-       :tlambdan
-       (b* (((unless (consp atom.params)) (reserr nil)))
-         (make-expr-value-tlambda
-          :param (car atom.params)
-          :body (tlambda-curried-body atom.params atom.body)
-          :denv (expr-denv-restrict
-                 (expr-free-ispace-vars atom.body)
-                 (atom-free-type-vars atom)
-                 (expr-free-expr-vars atom.body)
-                 denv)))
+       :tlambdan (make-expr-value-tlambda
+                  :param (car atom.params)
+                  :body (tlambda-curried-body atom.params atom.body)
+                  :denv (expr-denv-restrict
+                         (expr-free-ispace-vars atom.body)
+                         (atom-free-type-vars atom)
+                         (expr-free-expr-vars atom.body)
+                         denv))
        :ilambda (make-expr-value-ilambda
                  :param atom.param
                  :body atom.body
@@ -1273,16 +1260,14 @@
                         (expr-free-type-vars atom.body)
                         (expr-free-expr-vars atom.body)
                         denv))
-       :ilambdan
-       (b* (((unless (consp atom.params)) (reserr nil)))
-         (make-expr-value-ilambda
-          :param (car atom.params)
-          :body (ilambda-curried-body atom.params atom.body)
-          :denv (expr-denv-restrict
-                 (atom-free-ispace-vars atom)
-                 (expr-free-type-vars atom.body)
-                 (expr-free-expr-vars atom.body)
-                 denv)))
+       :ilambdan (make-expr-value-ilambda
+                  :param (car atom.params)
+                  :body (ilambda-curried-body atom.params atom.body)
+                  :denv (expr-denv-restrict
+                         (atom-free-ispace-vars atom)
+                         (expr-free-type-vars atom.body)
+                         (expr-free-expr-vars atom.body)
+                         denv))
        :box (b* (((ok ival) (eval-ispace atom.ispace
                                          (type-denv->ienv
                                           (expr-denv->tenv denv))))
@@ -1536,16 +1521,8 @@
                   (cfun-expr (if (consp bind.params)
                                  (make-expr-array
                                   :dims nil
-                                  :atoms (list
-                                          (if (endp (cdr bind.params))
-                                              (make-atom-lambda
-                                               :param (car bind.params)
-                                               :body bind.expr
-                                               :type? bind.type)
-                                            (make-atom-lambdan
-                                             :params bind.params
-                                             :body bind.expr
-                                             :type? bind.type))))
+                                  :atoms (list (make-atom-lambda/lambdan
+                                                bind.params bind.expr bind.type)))
                                bind.expr))
                   ((ok in) (var+type?-list->type-list-or-err bind.params))
                   (cfun-type (if (consp in)
@@ -1558,28 +1535,16 @@
                    (if (consp iparams)
                        (mv (make-expr-array
                             :dims nil
-                            :atoms (list
-                                    (if (endp (cdr iparams))
-                                        (make-atom-ilambda
-                                         :param (car iparams)
-                                         :body cfun-expr)
-                                      (make-atom-ilambdan
-                                       :params iparams
-                                       :body cfun-expr))))
+                            :atoms (list (make-atom-ilambda/ilambdan
+                                          iparams cfun-expr)))
                            (make-type-pi/pin iparams cfun-type))
                      (mv cfun-expr cfun-type)))
                   ((mv cfun-expr cfun-type)
                    (if (consp tparams)
                        (mv (make-expr-array
                             :dims nil
-                            :atoms (list
-                                    (if (endp (cdr tparams))
-                                        (make-atom-tlambda
-                                         :param (car tparams)
-                                         :body cfun-expr)
-                                      (make-atom-tlambdan
-                                       :params tparams
-                                       :body cfun-expr))))
+                            :atoms (list (make-atom-tlambda/tlambdan
+                                          tparams cfun-expr)))
                            (make-type-forall/foralln tparams cfun-type))
                      (mv cfun-expr cfun-type)))
                   ((ok val) (eval-expr cfun-expr denv (1- limit)))

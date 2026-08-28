@@ -2128,7 +2128,7 @@
              :expand ((nat-list-product (dims-of-expr-value val1))
                       (member-equal 0 (dims-of-expr-value val1)))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define prim-iota ((d natp) (val1 expr-valuep))
   :guard (expr-value-wfp val1)
@@ -2175,6 +2175,48 @@
     (implies (not (reserrp val))
              (expr-value-wfp val))
     :hyp (expr-value-wfp val1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prim-trace ((tval type-valuep)
+                    (rval type-valuep)
+                    (s nat-listp)
+                    (q nat-listp)
+                    (val1 expr-valuep)
+                    (val2 expr-valuep))
+  :guard (and (expr-value-wfp val1) (expr-value-wfp val2))
+  :returns (val expr-value-resultp)
+  :short "Evaluation of tracing."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the semantics of the @('trace') operation
+     (see the @(':trace-t-r-s-q-x') summand of @(tsee primop-value)):
+     @('tval'), @('rval'), @('s'), and @('q') are the instantiation values,
+     and @('val1') and @('val2') are the argument cells.
+     According to the instantiated type of the operation,
+     the first argument cell has dimensions @('s'),
+     the second one has dimensions @('q'),
+     and the result is the second argument cell.
+     The interpreter in [impl] prints the first argument cell,
+     but that is a side effect that we do not model:
+     here the operation is the second projection.
+     The guard requires the argument cells to be well-formed;
+     we defensively check that they have the expected dimensions
+     (which the interpreter in [impl] does not do)."))
+  (declare (ignore tval rval))
+  (b* ((s (nat-list-fix s))
+       (q (nat-list-fix q))
+       ((unless (equal (dims-of-expr-value val1) s)) (reserr nil))
+       ((unless (equal (dims-of-expr-value val2) q)) (reserr nil)))
+    (expr-value-fix val2))
+
+  ///
+
+  (defret expr-value-wfp-of-prim-trace
+    (implies (not (reserrp val))
+             (expr-value-wfp val))
+    :hyp (expr-value-wfp val2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2361,6 +2403,15 @@
                            :fval op.fval
                            :zval arg))
      :iota-d (prim-iota op.dval arg)
+     :trace-t-r-s-q (expr-value-primop
+                     (make-primop-value-trace-t-r-s-q-x
+                      :tval op.tval
+                      :rval op.rval
+                      :sval op.sval
+                      :qval op.qval
+                      :xval arg))
+     :trace-t-r-s-q-x (prim-trace op.tval op.rval op.sval op.qval
+                                  op.xval arg)
      :otherwise (prog2$ (impossible) (reserr nil))))
   :guard-hints (("Goal" :in-theory (enable primop-value-funp
                                            primop-value-fun-fo-p)))

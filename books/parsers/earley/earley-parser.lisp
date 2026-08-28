@@ -163,13 +163,15 @@
                        (cons new-pstate new-pstates)
                        chart-list)))))
 
-(defmacro assert-type (type-p default-value form)
-  `(let ((val ,form))
-     (if (,type-p val)
-         val
-       (prog2$ (er hard? 'assert-type
-                   "~x0 is not of type ~x1")
-               ,default-value))))
+; Matt K. mod: This macro is not used, so since its error message is missing
+; arguments and I don't know what to use for ~x1, I am commenting this out.
+;; (defmacro assert-type (type-p default-value form)
+;;   `(let ((val ,form))
+;;      (if (,type-p val)
+;;          val
+;;        (prog2$ (er hard? 'assert-type
+;;                    "~x0 is not of type ~x1")
+;;                ,default-value))))
 
 
 (define predictor ((pstate pstate-p)
