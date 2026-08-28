@@ -302,7 +302,7 @@
           (t `(type-fun ,(type-term-from-var/base/other (car type-terms))
                         ,(t->-fn (cdr type-terms))))))
 
-  (defmacro+ t-> (type-term1 type-term2 &rest type-terms) ; two or more
+  (defmacro t-> (type-term1 type-term2 &rest type-terms) ; two or more
     (t->-fn (list* type-term1 type-term2 type-terms))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
