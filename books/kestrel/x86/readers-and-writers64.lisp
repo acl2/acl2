@@ -18,6 +18,7 @@
 (include-book "projects/x86isa/machine/state" :dir :system) ;for xr
 (include-book "kestrel/bv/bvchop-def" :dir :system)
 (include-book "canonical-unsigned") ; todo: split out the def
+(local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/bv/logext" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

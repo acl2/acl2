@@ -1,10 +1,10 @@
 ; SOFT (Second-Order Functions and Theorems) Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -127,17 +127,12 @@
   "@(def show-defunvar)
    @(def acl2::show-defunvar)"
 
-  (defmacro show-defunvar (&whole call
-                                  funvar arguments arrow result &key print)
+  (defmacro show-defunvar (&whole call &rest inputs)
     `(defunvar-fn
-       ',funvar
-       ',arguments
-       ',arrow
-       ',result
-       ',print
+       ',inputs
        ',call
-       (cons 'defunvar ',funvar)
+       (cons 'defunvar ',(if (consp inputs) (car inputs) nil))
        state))
 
-  (defmacro acl2::show-defunvar (&rest args)
-    `(show-defunvar ,@args)))
+  (defmacro acl2::show-defunvar (&rest inputs)
+    `(show-defunvar ,@inputs)))

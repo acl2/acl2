@@ -1,0 +1,19 @@
+; FTY Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Grant Jurgensen (grant@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(include-book "centaur/fty/portcullis" :dir :system)
+
+; The TREEMAP and TREESET packages, so the generator functions can build event
+; forms that mention treemap and treeset symbols.  These are defpkg-only
+; dependencies: the book itself deliberately includes no treemap books.
+(include-book "kestrel/data/treemap/portcullis" :dir :system)
+(include-book "kestrel/data/treeset/portcullis" :dir :system)
+
+; cert-flags: ? t :ttags ()

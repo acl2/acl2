@@ -129,14 +129,16 @@
     (tactic.increment-world-index
      (if theory
          (ACL2::prog2$
-          (ACL2::cw "Warning: theory ~s0 is already defined.  Not doing anything.~%")
+          (ACL2::cw "Warning: theory ~s0 is already defined.  Not doing anything.~%"
+                     newtheoryname)
           world)
        (change-tactic.world
         world
         :theories (clean-update newtheoryname
                                 (ACL2::prog2$
                                  (if (and copyofname (not copy))
-                                     (ACL2::cw "Warning: theory ~s0 is not defined; not importing anything.~%")
+                                     (ACL2::cw "Warning: theory ~s0 is not defined; not importing anything.~%"
+                                               copyofname)
                                    nil)
                                  (cdr copy))
                                 (tactic.world->theories world)))))))

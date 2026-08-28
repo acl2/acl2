@@ -351,7 +351,7 @@
               (mv nil nil nil))
              (vars (cadr uterm))
              ((unless (symbol-listp vars))
-              (raise "Internal error: MV-LET bound variables not symbols." vars)
+              (raise "Internal error: MV-LET bound variables ~x0 not symbols." vars)
               (mv nil nil nil))
              (vars-uterms (caddr uterm))
              (body-uterm (cadddr uterm))

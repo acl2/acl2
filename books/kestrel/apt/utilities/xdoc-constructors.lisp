@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -562,7 +562,7 @@
     "@(':verify-guards') &mdash; default @(':auto')"
     (xdoc::p
      "Determines whether the guards of the generated "
-     ,(if plural-functions "functions" "functions")
+     ,(if plural-functions "functions" "function")
      " are verified or not.")
     (xdoc::p
      "It must be one of the following:")
