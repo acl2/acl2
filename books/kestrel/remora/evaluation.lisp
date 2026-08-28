@@ -1186,11 +1186,10 @@
        a unary ispace lambda value.
        For the unary form, the value binds the parameter,
        and its body is the body of the abstraction.
-       The n-ary form must have at least one parameter:
+       For the n-ary form, which has two or more parameters,
        the value binds the first parameter,
        and its body is the ispace lambda abstraction
-       over the remaining parameters if there are any,
-       or otherwise the body of the given ispace lambda abstraction
+       over the remaining parameters
        (see @(tsee ilambda-curried-body)):
        an ispace lambda abstraction with two or more parameters
        stands for the nesting of unary ones, in curried style.")
@@ -1261,16 +1260,14 @@
                         (expr-free-type-vars atom.body)
                         (expr-free-expr-vars atom.body)
                         denv))
-       :ilambdan
-       (b* (((unless (consp atom.params)) (reserr nil)))
-         (make-expr-value-ilambda
-          :param (car atom.params)
-          :body (ilambda-curried-body atom.params atom.body)
-          :denv (expr-denv-restrict
-                 (atom-free-ispace-vars atom)
-                 (expr-free-type-vars atom.body)
-                 (expr-free-expr-vars atom.body)
-                 denv)))
+       :ilambdan (make-expr-value-ilambda
+                  :param (car atom.params)
+                  :body (ilambda-curried-body atom.params atom.body)
+                  :denv (expr-denv-restrict
+                         (atom-free-ispace-vars atom)
+                         (expr-free-type-vars atom.body)
+                         (expr-free-expr-vars atom.body)
+                         denv))
        :box (b* (((ok ival) (eval-ispace atom.ispace
                                          (type-denv->ienv
                                           (expr-denv->tenv denv))))
