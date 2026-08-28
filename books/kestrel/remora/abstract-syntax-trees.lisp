@@ -1139,8 +1139,9 @@
        they always contain two or more parameters
        (because there must be at least one parameter,
        and if there is just one we use the unary forms);
-       this fixtype captures this requirement for @(':lambdan'),
-       but not yet for @(':tlambdan') and @(':ilambdan').")
+       this fixtype captures this requirement
+       for @(':lambdan') and @(':tlambdan'),
+       but not yet for @(':ilambdan').")
      (xdoc::p
       "The optional type of the body of a lambda abstraction
        is calculated and stored by the type checker.
@@ -1176,8 +1177,12 @@
      :require (>= (len params) 2))
     (:tlambda ((param type-var)
                (body expr)))
-    (:tlambdan ((params type-var-list) ; two or more
-                (body expr)))
+    (:tlambdan ((params type-var-list
+                        :reqfix (if (>= (len params) 2)
+                                    params
+                                  (list (type-var-fix nil) (type-var-fix nil))))
+                (body expr))
+     :require (>= (len params) 2))
     (:ilambda ((param ispace-var)
                (body expr)))
     (:ilambdan ((params ispace-var-list) ; two or more
@@ -1203,6 +1208,19 @@
       :rule-classes :type-prescription
       :use (:instance atom-lambdan-requirements (x atom))
       :disable atom-lambdan-requirements
+      :enable len)
+
+    (defrule consp-of-atom-tlambdan->params
+      (consp (atom-tlambdan->params atom))
+      :rule-classes :type-prescription
+      :use (:instance atom-tlambdan-requirements (x atom))
+      :disable atom-tlambdan-requirements)
+
+    (defruled consp-of-cdr-of-atom-tlambdan->params
+      (consp (cdr (atom-tlambdan->params atom)))
+      :rule-classes :type-prescription
+      :use (:instance atom-tlambdan-requirements (x atom))
+      :disable atom-tlambdan-requirements
       :enable len))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
