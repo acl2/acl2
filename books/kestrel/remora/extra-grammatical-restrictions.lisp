@@ -363,99 +363,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk cst-expression-like-type-p ((cst-exp abnf::treep))
-  :guard (cst-matchp cst-exp "exp")
-  :returns (yes/no booleanp)
-  :short "Check if an @('exp') CST
-          has the same fringe as some @('type') CST."
-  (exists (cst-type)
-          (and (abnf::treep cst-type)
-               (cst-matchp cst-type "type")
-               (equal (abnf::tree->string cst-type)
-                      (abnf::tree->string cst-exp))))
-
-  ///
-
-  (fty::deffixequiv-sk cst-expression-like-type-p
-    :args ((cst-exp abnf::treep))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define-sk cst-frame-expressions-not-types-p ((cst abnf::treep))
-  :returns (yes/no booleanp)
-  :short "Check if a CST does not contain any @('frame-exp') CSTs
-          with a single expression
-          that has the same fringe as some @('type') CST."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The rule @('frame-exp') has two alternatives:
-     a frame with one or more expressions,
-     and a frame with a type (and no expressions).
-     Several texts are both expressions and types:
-     the type variables @('&x') and @('*x'),
-     because their sigils are identifier characters;
-     the base type names @('Int'), @('Bool'), and @('Float'),
-     because they are not reserved keywords;
-     and some bracketed texts, e.g. @('[Int 3]'),
-     which are both @('bracket-type')s and @('bracket-frame')s.
-     Thus a text like @('(frame [1] &x)') would have two CSTs,
-     one via each alternative.
-     Unlike for the similar rule @('array-exp'),
-     whose first alternative has atoms instead of expressions
-     (and no atom is a type),
-     a restriction is needed:
-     this restriction, of the same kind as
-     @(tsee cst-identifiers-not-keywords-p),
-     makes the type reading win.")
-   (xdoc::p
-    "We anchor the restriction at the @('frame-exp') CSTs
-     formed via the first alternative with exactly one expression
-     (see @(tsee frame-exp-single-expr)):
-     the fringe of that expression must not be
-     the fringe of any @('type') CST.
-     The hypothesis that the expression CST matches @('exp')
-     is always satisfied for a CST matching @('frame-exp'),
-     but it is stated explicitly to satisfy the guard of
-     @(tsee cst-expression-like-type-p).
-     A frame with two or more expressions is never also a frame with a type,
-     because a type is a single token or a single bracketed or parenthesized text,
-     while two or more adjacent expressions, given the other restrictions,
-     never form such a text;
-     so no restriction is needed on those.")
-   (xdoc::p
-    "This matches [impl] when it accepts the text:
-     its parser of @('frame') tries the type alternative first,
-     so e.g. @('(frame [1] &x)') and @('(frame [1] [Int 3])')
-     are frames with types.
-     However, [impl]'s parser commits to the type alternative
-     as soon as a type is parsed, without backtracking,
-     so a text like @('(frame [2] Int 3)') is rejected by [impl],
-     with a parse error at @('3'):
-     under this restriction, that text is instead
-     a frame with the two expressions @('Int') and @('3'),
-     since a frame with two expressions is never also a frame with a type.
-     We regard [impl]'s rejection as an accident of its parser
-     rather than as language design,
-     and we expect [impl] to eventually change accordingly.
-     Note that this divergence goes in the opposite direction
-     of the ones for keywords and numeric escapes:
-     here we accept a text that [impl] rejects."))
-  (forall (cst-frame)
-          (implies (and (set::in cst-frame (abnf::trees-in-tree cst))
-                        (cst-matchp cst-frame "frame-exp"))
-                   (b* ((cst-exp (frame-exp-single-expr cst-frame)))
-                     (implies (and cst-exp
-                                   (cst-matchp cst-exp "exp"))
-                              (not (cst-expression-like-type-p cst-exp))))))
-
-  ///
-
-  (fty::deffixequiv-sk cst-frame-expressions-not-types-p
-    :args ((cst abnf::treep))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define-sk cst-longest-comments-p ((cst abnf::treep))
   :guard (abnf::tree-terminatedp cst)
   :returns (yes/no booleanp)
@@ -1319,6 +1226,176 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define cst-restrictions-except-frame-expressions-p ((cst abnf::treep))
+  :guard (abnf::tree-terminatedp cst)
+  :returns (yes/no booleanp)
+  :short "Check if a CST satisfies all the extra-grammatical restrictions
+          except the one on frame expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the conjunction of all the restrictions defined above.
+     It is used to define the remaining restriction,
+     @(tsee cst-frame-expressions-not-types-p),
+     whose witnesses must satisfy these restrictions
+     (see the documentation of that restriction).
+     The conjunction of all the restrictions,
+     including that one,
+     is @(tsee cst-extra-grammatical-restrictions-p)."))
+  (and (cst-identifiers-not-keywords-p cst)
+       (cst-identifier-expressions-not-numbers-p cst)
+       (cst-longest-comments-p cst)
+       (cst-longest-ascii-escapes-p cst)
+       (cst-longest-numeric-escapes-p cst)
+       (cst-longest-identifiers-p cst)
+       (cst-longest-decimals-p cst)
+       (cst-longest-float-lits-p cst)
+       (cst-longest-keywords-p cst)
+       (cst-unbox-expr-binders-not-dollar-initial-p cst)
+       (cst-numeric-escapes-unicode-scalar-values-p cst)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk cst-expression-like-type-p ((cst-exp abnf::treep))
+  :guard (cst-matchp cst-exp "exp")
+  :returns (yes/no booleanp)
+  :short "Check if an @('exp') CST
+          has the same fringe as some @('type') CST
+          that satisfies all the other restrictions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Unlike @(tsee cst-identifier-like-keyword-p),
+     which is analogous,
+     here the witness CST must satisfy the extra-grammatical restrictions
+     (all the ones except the one on frame expressions,
+     for which this predicate is used):
+     see the explanation in @(tsee cst-frame-expressions-not-types-p)."))
+  (exists (cst-type)
+          (and (abnf::treep cst-type)
+               (cst-matchp cst-type "type")
+               (cst-restrictions-except-frame-expressions-p cst-type)
+               (equal (abnf::tree->string cst-type)
+                      (abnf::tree->string cst-exp))))
+  :guard-hints (("Goal" :in-theory (enable cst-matchp$)))
+
+  ///
+
+  (fty::deffixequiv-sk cst-expression-like-type-p
+    :args ((cst-exp abnf::treep))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define-sk cst-frame-expressions-not-types-p ((cst abnf::treep))
+  :returns (yes/no booleanp)
+  :short "Check if a CST does not contain any @('frame-exp') CSTs
+          with a single expression
+          that has the same fringe as some @('type') CST
+          that satisfies all the other restrictions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The rule @('frame-exp') has two alternatives:
+     a frame with one or more expressions,
+     and a frame with a type (and no expressions).
+     Several texts are both expressions and types:
+     the type variables @('&x') and @('*x'),
+     because their sigils are identifier characters;
+     the base type names @('Int'), @('Bool'), and @('Float'),
+     because they are not reserved keywords;
+     and some bracketed texts, e.g. @('[Int 3]'),
+     which are both @('bracket-type')s and @('bracket-frame')s.
+     Thus a text like @('(frame [1] &x)') would have two CSTs,
+     one via each alternative.
+     Unlike for the similar rule @('array-exp'),
+     whose first alternative has atoms instead of expressions
+     (and no atom is a type),
+     a restriction is needed:
+     this restriction, of the same kind as
+     @(tsee cst-identifiers-not-keywords-p),
+     makes the type reading win.")
+   (xdoc::p
+    "We anchor the restriction at the @('frame-exp') CSTs
+     formed via the first alternative with exactly one expression
+     (see @(tsee frame-exp-single-expr)):
+     the fringe of that expression must not be
+     the fringe of any @('type') CST that satisfies
+     all the other restrictions
+     (see @(tsee cst-expression-like-type-p)).
+     The hypothesis that the expression CST matches @('exp')
+     is always satisfied for a CST matching @('frame-exp'),
+     but it is stated explicitly to satisfy the guard of
+     @(tsee cst-expression-like-type-p).
+     A frame with two or more expressions is never also a frame with a type,
+     because a type is a single token or a single bracketed or parenthesized text,
+     while two or more adjacent expressions, given the other restrictions,
+     never form such a text;
+     so no restriction is needed on those.")
+   (xdoc::p
+    "The requirement that the witness type CST
+     satisfy the other restrictions is essential.
+     A type CST that merely matches the grammar may violate them,
+     in which case the type reading of the frame is not actually available,
+     and the expression reading must remain available.
+     For example, the text @('[Int32]') is the fringe of
+     a @('bracket-type') CST with the type @('Int') and the dimension @('32'),
+     which violates @(tsee cst-longest-keywords-p)
+     (the keyword @('Int') runs into the digits);
+     without the requirement on the witness,
+     the expression reading of @('(frame [1] [Int32])'),
+     i.e. a frame whose element is the variable @('Int32'),
+     would be excluded too,
+     leaving the text with no valid CST at all.
+     The same happens with @('(frame [1] [&x$n])'),
+     whose type reading violates @(tsee cst-longest-identifiers-p),
+     and with @('(frame [1] (A&x [1]))'),
+     whose type reading violates @(tsee cst-longest-keywords-p).
+     Since the witness must satisfy the other restrictions,
+     this restriction is defined after all the other ones,
+     and their conjunction is
+     @(tsee cst-restrictions-except-frame-expressions-p);
+     the conjunction of all the restrictions, including this one,
+     is @(tsee cst-extra-grammatical-restrictions-p).
+     Note that the other restrictions are applied to
+     the witness type CST in isolation,
+     without the context of the frame:
+     this is adequate because the element of a frame is
+     preceded and followed by delimiters
+     (whitespace or brackets or parentheses)
+     that cannot interact with the restrictions.")
+   (xdoc::p
+    "This matches [impl] when it accepts the text:
+     its parser of @('frame') tries the type alternative first,
+     so e.g. @('(frame [1] &x)') and @('(frame [1] [Int 3])')
+     are frames with types.
+     However, [impl]'s parser commits to the type alternative
+     as soon as a type is parsed, without backtracking,
+     so a text like @('(frame [2] Int 3)') is rejected by [impl],
+     with a parse error at @('3'):
+     under this restriction, that text is instead
+     a frame with the two expressions @('Int') and @('3'),
+     since a frame with two expressions is never also a frame with a type.
+     We regard [impl]'s rejection as an accident of its parser
+     rather than as language design,
+     and we expect [impl] to eventually change accordingly.
+     Note that this divergence goes in the opposite direction
+     of the ones for keywords and numeric escapes:
+     here we accept a text that [impl] rejects."))
+  (forall (cst-frame)
+          (implies (and (set::in cst-frame (abnf::trees-in-tree cst))
+                        (cst-matchp cst-frame "frame-exp"))
+                   (b* ((cst-exp (frame-exp-single-expr cst-frame)))
+                     (implies (and cst-exp
+                                   (cst-matchp cst-exp "exp"))
+                              (not (cst-expression-like-type-p cst-exp))))))
+
+  ///
+
+  (fty::deffixequiv-sk cst-frame-expressions-not-types-p
+    :args ((cst abnf::treep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define cst-extra-grammatical-restrictions-p ((cst abnf::treep))
   :guard (abnf::tree-terminatedp cst)
   :returns (yes/no booleanp)
@@ -1351,19 +1428,16 @@
       @(tsee cst-unbox-expr-binders-not-dollar-initial-p) and
       @(tsee cst-numeric-escapes-unicode-scalar-values-p)."))
    (xdoc::p
+    "The conjunction is formed in two steps:
+     @(tsee cst-restrictions-except-frame-expressions-p)
+     conjoins all the restrictions except
+     @(tsee cst-frame-expressions-not-types-p),
+     which is defined in terms of that conjunction,
+     and is conjoined here.")
+   (xdoc::p
     "Together with the @(see grammar),
      this predicate provides the complete specification of
      the syntactic validity of Remora code:
      see @(see parsing)."))
-  (and (cst-identifiers-not-keywords-p cst)
-       (cst-identifier-expressions-not-numbers-p cst)
-       (cst-frame-expressions-not-types-p cst)
-       (cst-longest-comments-p cst)
-       (cst-longest-ascii-escapes-p cst)
-       (cst-longest-numeric-escapes-p cst)
-       (cst-longest-identifiers-p cst)
-       (cst-longest-decimals-p cst)
-       (cst-longest-float-lits-p cst)
-       (cst-longest-keywords-p cst)
-       (cst-unbox-expr-binders-not-dollar-initial-p cst)
-       (cst-numeric-escapes-unicode-scalar-values-p cst)))
+  (and (cst-restrictions-except-frame-expressions-p cst)
+       (cst-frame-expressions-not-types-p cst)))
