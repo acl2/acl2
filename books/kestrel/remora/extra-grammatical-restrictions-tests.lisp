@@ -165,3 +165,65 @@
                    (rulenames (list "identifier"))
                    (cst (identifier-cst (string=>nats "Int3")))
                    (ext (list 51)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Example 3: a frame-exp with a single expression &y,
+; which is also a type: the frame-exp CST via the expression alternative
+; is excluded by CST-FRAME-EXPRESSIONS-NOT-TYPES-P,
+; in favor of the frame-exp CST via the type alternative.
+
+(defval *shape-lit-cst-1*
+  :short "CST for the shape literal @('[1]')."
+  (abnf::tree-nonleaf
+   (abnf::rulename "shape-lit")
+   (list (list (abnf::tree-leafterm (list 91)))
+         (list (abnf::tree-nonleaf
+                nil
+                (list (list *ws-cst-empty*)
+                      (list (abnf::tree-nonleaf
+                             (abnf::rulename "decimal")
+                             (list (list (char-rule-cst "digit" 49))))))))
+         (list *ws-cst-empty*)
+         (list (abnf::tree-leafterm (list 93))))))
+
+(defrule shape-lit-cst-1-is-grammatical
+  (cst-matchp *shape-lit-cst-1* "shape-lit"))
+
+(defval *frame-exp-cst-single-expr*
+  :short "A grammatical @('frame-exp') CST with fringe @('frame [1] &y'),
+          via the expression alternative,
+          whose single expression is the identifier @('&y')."
+  (abnf::tree-nonleaf
+   (abnf::rulename "frame-exp")
+   (list (list (abnf::tree-leafterm (string=>nats "frame")))
+         (list *ws-cst-space*)
+         (list *shape-lit-cst-1*)
+         (list (abnf::tree-nonleaf
+                nil
+                (list (list *ws-cst-space*)
+                      (list (abnf::tree-nonleaf
+                             (abnf::rulename "exp")
+                             (list (list (identifier-cst
+                                          (string=>nats "&y"))))))))))))
+
+(defrule frame-exp-cst-single-expr-is-grammatical
+  (cst-matchp *frame-exp-cst-single-expr* "frame-exp"))
+
+(defrule frame-exp-single-expr-of-frame-exp-cst-single-expr
+  (equal (frame-exp-single-expr *frame-exp-cst-single-expr*)
+         (abnf::tree-nonleaf
+          (abnf::rulename "exp")
+          (list (list (identifier-cst (string=>nats "&y")))))))
+
+(defrule cst-frame-expressions-not-types-p-counterexample
+  (not (cst-frame-expressions-not-types-p *frame-exp-cst-single-expr*))
+  :use ((:instance cst-frame-expressions-not-types-p-necc
+                   (cst *frame-exp-cst-single-expr*)
+                   (cst-frame *frame-exp-cst-single-expr*))
+        (:instance cst-expression-like-type-p-suff
+                   (cst-exp (abnf::tree-nonleaf
+                             (abnf::rulename "exp")
+                             (list (list (identifier-cst
+                                          (string=>nats "&y"))))))
+                   (cst-type *type-cst-&y*))))
