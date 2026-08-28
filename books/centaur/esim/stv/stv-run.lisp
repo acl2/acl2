@@ -183,8 +183,8 @@ output is X.</p>"
                (car x)))
        ((cons key val) (car x))
        ((unless (symbolp key))
-        (raise "Malformed alist: name is not a symbolp.~%"
-               (car x)))
+        (raise "Malformed alist: name ~x0 is not a symbolp.~%"
+               key))
        (- (cw "  ~s0:~t1~s2~%" key 20 (str::hexify val))))
     (stv-print-alist (cdr x))))
 
