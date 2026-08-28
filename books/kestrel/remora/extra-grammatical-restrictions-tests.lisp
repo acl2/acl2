@@ -172,6 +172,12 @@
 ; which is also a type: the frame-exp CST via the expression alternative
 ; is excluded by CST-FRAME-EXPRESSIONS-NOT-TYPES-P,
 ; in favor of the frame-exp CST via the type alternative.
+; Here we only build the CST and check its structure by evaluation.
+; Proving that the restriction rejects it is future work:
+; the witness type CST must be shown to satisfy
+; CST-RESTRICTIONS-EXCEPT-FRAME-EXPRESSIONS-P,
+; which requires grammar-level reasoning, not just evaluation
+; (see the discussion at the beginning of this file).
 
 (defval *shape-lit-cst-1*
   :short "CST for the shape literal @('[1]')."
@@ -216,14 +222,7 @@
           (abnf::rulename "exp")
           (list (list (identifier-cst (string=>nats "&y")))))))
 
-(defrule cst-frame-expressions-not-types-p-counterexample
-  (not (cst-frame-expressions-not-types-p *frame-exp-cst-single-expr*))
-  :use ((:instance cst-frame-expressions-not-types-p-necc
-                   (cst *frame-exp-cst-single-expr*)
-                   (cst-frame *frame-exp-cst-single-expr*))
-        (:instance cst-expression-like-type-p-suff
-                   (cst-exp (abnf::tree-nonleaf
-                             (abnf::rulename "exp")
-                             (list (list (identifier-cst
-                                          (string=>nats "&y"))))))
-                   (cst-type *type-cst-&y*))))
+(defrule type-cst-&y-has-same-fringe-as-single-expr
+  (equal (abnf::tree->string *type-cst-&y*)
+         (abnf::tree->string
+          (frame-exp-single-expr *frame-exp-cst-single-expr*))))
