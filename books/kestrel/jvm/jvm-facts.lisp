@@ -144,7 +144,7 @@
 ;;            ;;(equal 'jvm::make-thread (car (caddr term)))
 ;;            )
 ;;       (caddr term)
-;;     (er hard 'get-call-stack-term-from-thread-table-term "Found a thread table term we don't yet handle, ~s0." term)))
+;;     (er hard 'get-call-stack-term-from-thread-table-term "Found a thread table term we don't yet handle, ~x0." term)))
 
 ;; ;seems to return a list!
 ;; ;computes heuristic information only?
@@ -158,7 +158,7 @@
 ;;   (if (equal 'jvm::bind (car (cadr term)))
 ;;             (get-call-stack-term-from-thread-table-term (cadr term))
 ;;     ;;this doesn't actually seem to be firing...
-;;     (er hard 'get-call-stack-term-from-state-term "Found a state term we don't yet handle, ~s0." term)))
+;;     (er hard 'get-call-stack-term-from-state-term "Found a state term we don't yet handle, ~x0." term)))
 
 (defun get-height-of-stack-term (term)
   (if (and (consp term)
@@ -198,7 +198,7 @@
       (if (<= 0 (get-height-of-stack-term (caddr term))) ;(single-pop-around-call-stackp (caddr (cadr (caddr term)))) ;the state hasn't already returned
           (list (cadr (cadr (cadr (caddr term)))))
         nil)
-    (er hard 'get-pc-from-thread-table-term "Found a thread table term we don't yet handle, ~s0." term)))
+    (er hard 'get-pc-from-thread-table-term "Found a thread table term we don't yet handle, ~x0." term)))
 
 ;seems to return a list!
 ;computes heuristic information only?
@@ -384,12 +384,12 @@
            (equal 'jvm::make-frame (car (cadr (caddr term))))
            )
       (equal 'jvm::push-frame (car (caddr (caddr term)))) ;is the stack to which we are pushing on a frame also a push?
-    (er hard 'get-pc-from-thread-table-term "Found a thread table term we don't yet handle, ~s0." term)))
+    (er hard 'get-pc-from-thread-table-term "Found a thread table term we don't yet handle, ~x0." term)))
 
 (defun this-branch-is-at-a-subroutine-call (term)
   (if (equal 'jvm::bind (car (cadr term)))
       (this-threadtable-is-at-a-subroutine-call (cadr term))
-    (er hard? 'this-branch-is-at-a-subroutine-call "Found a state term we don't yet handle, ~s0." term)))
+    (er hard? 'this-branch-is-at-a-subroutine-call "Found a state term we don't yet handle, ~x0." term)))
 
 ;; ;term is a nest of myifs with states at the leaves
 ;; (defun some-branch-is-at-a-subroutine-call (term)
