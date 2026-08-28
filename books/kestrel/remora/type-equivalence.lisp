@@ -55,11 +55,14 @@
     "All the inference rules start with type premises about the variables,
      for the same reason explained in @(see dim-equiv-infrules).")
    (xdoc::p
-    "Following [thesis] and [arxiv], we start with reflexivity.
-     We do not state symmetry and transitivity as explicit rules,
-     because they should be derivable from the others
-     (given that [thesis] and [arxiv] do not include them),
-     but we will ensure this is the case by way of formal proof.")
+    "We start with the equivalence rules
+     (reflexivity, symmetry, and transitivity).
+     [thesis] and [arxiv] only include reflexivity,
+     because symmetry and transitivity should be derivable
+     from the other rules, via suitable inductions.
+     But here we have a richer set of rules,
+     including the normalization ones,
+     and thus neither symmetry nor transitivity is derivable.")
    (xdoc::p
     "Next we have congruence for array types,
      which relies on ispace equivalence.
@@ -149,10 +152,18 @@
 
   :irules
 
-  (;; reflexivity:
+  (;; equivalence:
 
    (refl ((typep type))
          (type= type type))
+
+   (symm ((typep t1) (typep t2)
+          (type= t1 t2))
+         (type= t2 t1))
+
+   (trans ((typep t1) (typep t2) (typep t3)
+           (type= t1 t2) (type= t2 t3))
+          (type= t1 t3))
 
    ;; array type congruence:
 
@@ -348,6 +359,8 @@
   ;; rule validity functions:
 
   (verify-guards type=-refl-validp)
+  (verify-guards type=-symm-validp)
+  (verify-guards type=-trans-validp)
   (verify-guards type=-array-validp)
   (verify-guards type=-fun-validp)
   (verify-guards type=-forall-validp)
