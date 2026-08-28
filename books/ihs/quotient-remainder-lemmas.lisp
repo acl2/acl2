@@ -33,9 +33,9 @@
 
 (local (in-theory (enable basic-boot-strap ; From ihs-theories
                           ;; From math-lemmas
-			  ihs-math
-			  rationalp-algebra
-			  ifix nfix)))
+                          ihs-math
+                          rationalp-algebra
+                          ifix nfix)))
 
 (defxdoc ihs/quotient-remainder-lemmas
   :parents (ihs)
@@ -183,19 +183,19 @@ rationals (forced)."
 (local
  (defthm cancel-<-+-3
    (equal (< (+ x y z) y)
-	  (< (+ x z) 0))
+          (< (+ x z) 0))
    :hints (("Goal" :in-theory (enable rewrite-linear-equalities-to-iff)))))
 
 (local
  (defthm cancel-equal-+-3
    (implies (acl2-numberp y)
-	    (equal (equal (+ x y z) y)
-		   (equal (fix x) (- z))))))
+            (equal (equal (+ x y z) y)
+                   (equal (fix x) (- z))))))
 
 (local
  (defthm cancel-equal-+-right
    (equal (equal (+ y x) (+ z x))
-	  (equal (fix y) (fix z)))))
+          (equal (fix y) (fix z)))))
 
 ;  This theory is useful for proving certain types of bounds properties, but
 ;  will cause thrashing in linear arithmetic unless the hypotheses e.g.
@@ -243,18 +243,18 @@ rationals (forced)."
 ;;;****************************************************************************
 
 (local (defthm niq-bounds-help-1
-	 (implies (and (real/rationalp i)
-		       (< 0 j)
-		       (real/rationalp j)
-		       (real/rationalp x))
-		  (equal (< (+ -1 (* i (/ j))) x)
-			 (< i (+ j (* j x)))))
-	 :hints (("Goal" :in-theory (set-difference-theories
+         (implies (and (real/rationalp i)
+                       (< 0 j)
+                       (real/rationalp j)
+                       (real/rationalp x))
+                  (equal (< (+ -1 (* i (/ j))) x)
+                         (< i (+ j (* j x)))))
+         :hints (("Goal" :in-theory (set-difference-theories
                                      (enable rewrite-linear-equalities-to-iff)
                                      '(<-*-left-cancel))
-		  :use (:instance <-*-left-cancel
+                  :use (:instance <-*-left-cancel
                         (z j) (y x) (x (/ (+ i (- j)) j)))))
-	 :rule-classes nil))
+         :rule-classes nil))
 
 (defrule niq-bounds
   :parents (niq-lemmas)
@@ -511,20 +511,20 @@ decide the inequalities of X and Y the :LINEAR forms may thrash.</p>"
 ;; (defthm truncate-truncate-integer
 ;;   (implies
 ;;    (and (integerp i)
-;; 	(integerp j)
-;; 	(integerp k)
-;; 	(force (not (equal j 0)))
-;; 	(force (not (equal k 0))))
+;;      (integerp j)
+;;      (integerp k)
+;;      (force (not (equal j 0)))
+;;      (force (not (equal k 0))))
 ;;    (equal (truncate (truncate i j) k)
-;; 	  (truncate i (* j k))))
+;;        (truncate i (* j k))))
 ;;   :hints
 ;;   (("Goal"
 ;;     :in-theory (enable truncate))))
 ;;   :hints
 ;;   (("Goal"
 ;;     :in-theory (e/d (integer-truncate-as-niq niq-type niq-i/j-<-k
-;; 					     prefer-*-to-/)
-;; 		    (x-<-y*z))
+;;                                           prefer-*-to-/)
+;;                  (x-<-y*z))
 ;;     :use ((:instance x-<-y*z (x (abs i)) (y (abs j)) (z (abs k))))))
 ;;     Rewrite: (TRUNCATE (TRUNCATE i j) k) = (TRUNCATE i (* j k))
 ;;     for integers i,j,k.~/~/~/")
@@ -703,7 +703,7 @@ exported DISABLED.</p>"
   ;; [Jared] modified on 2014-07-29 to not forcibly assume acl2-numberp, to
   ;; avoid name clash with arithmetic-5.
   (implies (acl2-numberp x)
-	   (equal (+ (mod x y) (* y (floor x y))) x))
+           (equal (+ (mod x y) (* y (floor x y))) x))
   :rule-classes (:rewrite :elim)
   :enable mod)
 
@@ -742,7 +742,7 @@ exported DISABLED.</p>"
                  (:rewrite :corollary (implies (integerp (/ x y))
                                                (equal (floor x y)
                                                       (/ x y))))
-		 (:rewrite :corollary (implies (equal (* x (/ y)) z)
+                 (:rewrite :corollary (implies (equal (* x (/ y)) z)
                                                (equal (equal (floor x y) z)
                                                       (integerp z)))))
   :in-theory (set-difference-theories (enable floor equal-*-x-y-x)
@@ -785,7 +785,7 @@ property of @('(/ x y)').</p>"
   :TYPE-PRESCRIPTION, and :GENERALIZE as appropriate.  Note that unless we
   can decide the inequalities of x and y the :LINEAR forms may thrash.</p>"
   (implies (qr-guard x y)
-	   (iff (< (floor x y) 0)
+           (iff (< (floor x y) 0)
                 (or (and (< x 0) (> y 0))
                     (and (> x 0) (< y 0)))))
   :cases ((< (/ x y) 0) (> (/ x y) 0))
@@ -819,16 +819,16 @@ property of @('(/ x y)').</p>"
   :TYPE-PRESCRIPTION, and :GENERALIZE as appropriate.  Note that unless we
   can decide the inequalities of x and y the :LINEAR forms may thrash.</p>"
   (implies (qr-guard x y)
-	   (equal (> (floor x y) 0)
-		  (or (and (>= x 0) (> y 0) (<= y x))
-		      (and (<= x 0) (< y 0) (>= y x)))))
+           (equal (> (floor x y) 0)
+                  (or (and (>= x 0) (> y 0) (<= y x))
+                      (and (<= x 0) (< y 0) (>= y x)))))
   :rule-classes ((:rewrite)
-		 (:generalize)
-		 (:linear :corollary
+                 (:generalize)
+                 (:linear :corollary
                   (implies (and (>= x 0) (> y 0) (<= y x)
                                 (qr-guard x y))
                            (> (floor x y) 0)))
-		 (:linear :corollary
+                 (:linear :corollary
                   (implies (and (<= x 0) (< y 0) (>= y x)
                                 (qr-guard x y))
                            (> (floor x y) 0))))
@@ -842,24 +842,24 @@ property of @('(/ x y)').</p>"
   :TYPE-PRESCRIPTION, and :GENERALIZE as appropriate.  Note that unless we
   can decide the inequalities of x and y the :LINEAR forms may thrash.</p>"
   (implies (qr-guard x y)
-	   (equal (equal (floor x y) 0)
-		  (or (and (>= x 0) (> y 0) (< x y))
-		      (and (<= x 0) (< y 0) (> x y)))))
+           (equal (equal (floor x y) 0)
+                  (or (and (>= x 0) (> y 0) (< x y))
+                      (and (<= x 0) (< y 0) (> x y)))))
   :rule-classes ((:rewrite)
-		 (:generalize)
-		 (:rewrite :corollary
+                 (:generalize)
+                 (:rewrite :corollary
                   (implies (and (>= x 0) (> y 0) (< x y)
                                 (qr-guard x y))
                            (equal (floor x y) 0)))
-		 (:rewrite :corollary
+                 (:rewrite :corollary
                   (implies (and (<= x 0) (< y 0) (> x y)
                                 (qr-guard x y))
                            (equal (floor x y) 0)))
-		 (:type-prescription :corollary
+                 (:type-prescription :corollary
                   (implies (and (>= x 0) (> y 0)
                                 (qr-guard x y))
                            (>= (floor x y) 0)))
-		 (:type-prescription :corollary
+                 (:type-prescription :corollary
                   (implies (and (<= x 0) (< y 0)
                                 (qr-guard x y))
                            (>= (floor x y) 0))))
@@ -872,26 +872,26 @@ property of @('(/ x y)').</p>"
   :TYPE-PRESCRIPTION, and :GENERALIZE as appropriate.  Note that unless we
   can decide the inequalities of x and y the :LINEAR forms may thrash.</p>"
   (implies (qr-guard x y)
-	   (equal (equal (floor x y) -1)
-		  (or (and (< x 0) (> y 0) (<= (- x) y))
-		      (and (> x 0) (< y 0) (<= x (- y))))))
+           (equal (equal (floor x y) -1)
+                  (or (and (< x 0) (> y 0) (<= (- x) y))
+                      (and (> x 0) (< y 0) (<= x (- y))))))
   :rule-classes ((:rewrite)
-		 (:generalize)
-		 (:rewrite :corollary
+                 (:generalize)
+                 (:rewrite :corollary
                   (implies (and (> x 0) (< y 0) (<= x (- y))
                                 (qr-guard x y))
                            (equal (floor x y) -1)))
-		 (:rewrite :corollary
+                 (:rewrite :corollary
                   (implies (and (< x 0) (> y 0) (<= (- x) y)
                                 (qr-guard x y))
                            (equal (floor x y) -1))))
   :hints (("Goal" :cases ((< (/ x y) 0) (> (/ x y) 0)))
-	  ("Subgoal 2"
-	   :in-theory (set-difference-theories (enable <-+-negative-0-1
-						       <-+-negative-0-2
-						       normalize-<-/-to-*-3)
-					       '(floor-bounded-by-/))
-	   :use (:instance floor-bounded-by-/ (x x) (y y)))))
+          ("Subgoal 2"
+           :in-theory (set-difference-theories (enable <-+-negative-0-1
+                                                       <-+-negative-0-2
+                                                       normalize-<-/-to-*-3)
+                                               '(floor-bounded-by-/))
+           :use (:instance floor-bounded-by-/ (x x) (y y)))))
 
 (defsection floor-type-linear
   :parents (floor-lemmas)
@@ -998,7 +998,7 @@ property of @('(/ x y)').</p>"
               (<= (* x y) (+ x x)))
      :rule-classes :linear
      :hints (("Goal" :in-theory (disable <-*-left-cancel (binary-+))
-	      :use (:instance <-*-left-cancel (z x) (x 2) (y y))))))
+              :use (:instance <-*-left-cancel (z x) (x 2) (y y))))))
 
   (local
    (defthm crock2
@@ -1253,7 +1253,7 @@ property of @('(/ x y)').</p>"
 ;FLOOR and MOD, so we DISABLE the key :LINEAR lemmas to avoid thrashing.
 
 (local (in-theory (disable floor-bounded-by-/ floor-type-1 floor-type-2
-			   floor-type-3 floor-type-4 mod-bounded-by-modulus mod-type)))
+                           floor-type-3 floor-type-4 mod-bounded-by-modulus mod-type)))
 
 ;  These LOCAL theorems will be superceded by CANCEL-FLOOR-+-BASIC,
 ;  CANCEL-FLOOR-+-3, CANCEL-MOD-+-BASIC, and CANCEL-MOD-+-3.
@@ -1262,37 +1262,37 @@ property of @('(/ x y)').</p>"
  (defthm floor-x+i*y-y
    (implies
     (and (integerp i)
-	 (qr-guard x y))
+         (qr-guard x y))
     (and
      (equal (floor (+ x (* i y)) y)
-	    (+ i (floor x y)))
+            (+ i (floor x y)))
      (equal (floor (+ x (* y i)) y)
-	    (+ i (floor x y)))
+            (+ i (floor x y)))
      (equal (floor (- x (* i y)) y)
-	    (- (floor x y) i))
+            (- (floor x y) i))
      (equal (floor (- x (* y i)) y)
-	    (- (floor x y) i))))
+            (- (floor x y) i))))
    :hints
    (("Goal"
      :use ((:instance floor-bounded-by-/ (x (+ x (* i y))) (y y))
-	   (:instance floor-bounded-by-/ (x (- x (* i y))) (y y))
-	   (:instance floor-bounded-by-/ (x x) (y y)))))))
+           (:instance floor-bounded-by-/ (x (- x (* i y))) (y y))
+           (:instance floor-bounded-by-/ (x x) (y y)))))))
 
 (local
  (defthm floor-x+y+i*z-z
    (implies
     (and (integerp i)
-	 (force (real/rationalp x))
-	 (qr-guard y z))
+         (force (real/rationalp x))
+         (qr-guard y z))
     (and
      (equal (floor (+ x y (* i z)) z)
-	    (+ i (floor (+ x y) z)))
+            (+ i (floor (+ x y) z)))
      (equal (floor (+ x y (* z i)) z)
-	    (+ i (floor (+ x y) z)))
+            (+ i (floor (+ x y) z)))
      (equal (floor (+ x y (- (* z i))) z)
-	    (- (floor (+ x y) z) i))
+            (- (floor (+ x y) z) i))
      (equal (floor (+ x y (- (* i z))) z)
-	    (- (floor (+ x y) z) i))))
+            (- (floor (+ x y) z) i))))
    :hints
    (("Goal"
      :in-theory (disable floor-x+i*y-y)
@@ -1302,16 +1302,16 @@ property of @('(/ x y)').</p>"
  (defthm mod-x+i*y-y
    (implies
     (and (integerp i)
-	 (qr-guard x y))
+         (qr-guard x y))
     (and
      (equal (mod (+ x (* i y)) y)
-	    (mod x y))
+            (mod x y))
      (equal (mod (+ x (* y i)) y)
-	    (mod x y))
+            (mod x y))
      (equal (mod (+ x (- (* i y))) y)
-	    (mod x y))
+            (mod x y))
      (equal (mod (+ x (- (* y i))) y)
-	    (mod x y))))
+            (mod x y))))
    :hints
    (("Goal"
      :in-theory (enable mod)))))
@@ -1320,17 +1320,17 @@ property of @('(/ x y)').</p>"
  (defthm mod-x+y+i*z-z
    (implies
     (and (integerp i)
-	 (force (real/rationalp x))
-	 (qr-guard y z))
+         (force (real/rationalp x))
+         (qr-guard y z))
     (and
      (equal (mod (+ x y (* i z)) z)
-	    (mod (+ x y) z))
+            (mod (+ x y) z))
      (equal (mod (+ x y (* z i)) z)
-	    (mod (+ x y) z))
+            (mod (+ x y) z))
      (equal (mod (+ x y (- (* i z))) z)
-	    (mod (+ x y) z))
+            (mod (+ x y) z))
      (equal (mod (+ x y (- (* z i))) z)
-	    (mod (+ x y) z))))
+            (mod (+ x y) z))))
    :hints
    (("Goal"
      :in-theory (disable mod-x+i*y-y)
@@ -1342,12 +1342,12 @@ property of @('(/ x y)').</p>"
    (defthm floor-+-crock
      (implies
       (and (real/rationalp x)
-	   (real/rationalp y)
-	   (real/rationalp z)
-	   (syntaxp (and (eq x 'x) (eq y 'y) (eq z 'z))))
+           (real/rationalp y)
+           (real/rationalp z)
+           (syntaxp (and (eq x 'x) (eq y 'y) (eq z 'z))))
       (equal (floor (+ x y) z)
-	     (floor (+ (+ (mod x z) (mod y z))
-		       (* (+ (floor x z) (floor y z)) z)) z)))
+             (floor (+ (+ (mod x z) (mod y z))
+                       (* (+ (floor x z) (floor y z)) z)) z)))
      :hints(("Goal" :in-theory (disable mod-x-y-=-x+y-for-rationals
                                         mod-x-y-=-x-for-rationals)))))
 
@@ -1380,13 +1380,13 @@ property of @('(/ x y)').</p>"
    (defthm mod-+-crock
      (implies
       (and (real/rationalp x)
-	   (real/rationalp y)
-	   (real/rationalp z)
-	   (not (equal z 0))
-	   (syntaxp (and (eq x 'x) (eq y 'y) (eq z 'z))))
+           (real/rationalp y)
+           (real/rationalp z)
+           (not (equal z 0))
+           (syntaxp (and (eq x 'x) (eq y 'y) (eq z 'z))))
       (equal (mod (+ x y) z)
-	     (mod (+ (+ (mod x z) (mod y z))
-		     (* (+ (floor x z) (floor y z)) z)) z)))
+             (mod (+ (+ (mod x z) (mod y z))
+                     (* (+ (floor x z) (floor y z)) z)) z)))
      :hints(("Goal" :in-theory (disable mod-x-y-=-x+y-for-rationals
                                         mod-x-y-=-x-for-rationals)))))
 
@@ -1418,7 +1418,7 @@ property of @('(/ x y)').</p>"
    (defthm crock0
      (implies
       (and (integerp i)
-	   (integerp (* x y)))
+           (integerp (* x y)))
       (integerp (* x y i)))))
 
   (defrule rewrite-floor-mod
@@ -1585,7 +1585,7 @@ property of @('(/ x y)').</p>"
   :expand ((mod (+ x y) z)))
 
 (local (in-theory (enable floor-type-1 floor-type-2 floor-type-3 floor-type-4
-			  floor-bounded-by-/ mod-type mod-bounded-by-modulus)))
+                          floor-bounded-by-/ mod-type mod-bounded-by-modulus)))
 
 
 ;;;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1603,7 +1603,7 @@ property of @('(/ x y)').</p>"
 ;;;            (< 0 j)
 ;;;            (real/rationalp x))
 ;;;       (equal (floor (floor x i) j)
-;;;      	 (floor x (* i j))))).
+;;;              (floor x (* i j))))).
 ;;;
 ;;;    I believe that this is the most general, or at least the most
 ;;;    generally useful form of this result. E.g., it's not true for negative
@@ -1626,8 +1626,8 @@ property of @('(/ x y)').</p>"
 #+non-standard-analysis
 (defthm rationalp-mod
   (implies (and (rationalp x)
-		(rationalp y))
-	   (rationalp (mod x y)))
+                (rationalp y))
+           (rationalp (mod x y)))
   :hints (("Goal" :in-theory (enable mod rationalp-+)))
   :rule-classes (:rewrite :type-prescription))
 
@@ -1636,7 +1636,7 @@ property of @('(/ x y)').</p>"
 ; Matt K. trivial mod for consistency with
 ; books/arithmetic-3/floor-mod/floor-mod.lisp
   (implies (realp x)
-	   (realp (mod x y)))
+           (realp (mod x y)))
   :cases ((not (acl2-numberp y))
           (realp y))
   :enable (mod floor realp-+)
@@ -1653,7 +1653,7 @@ property of @('(/ x y)').</p>"
   ;;FLOOR and MOD, so we DISABLE the key :LINEAR lemmas to avoid thrashing.
 
   (local (in-theory (disable floor-type-1 floor-type-2 floor-type-3
-			     floor-type-4 floor-bounded-by-/ mod-type mod-bounded-by-modulus)))
+                             floor-type-4 floor-bounded-by-/ mod-type mod-bounded-by-modulus)))
 
   ;; First, write x as a quotient and remainder of i*j.
 
@@ -1661,18 +1661,18 @@ property of @('(/ x y)').</p>"
    (defthm floor-floor-integer-crock0
      (implies
       (and (real/rationalp x)
-	   (rationalp i)
-	   (not (equal i 0))
-	   (rationalp j)
-	   (not (equal j 0))
-	   (syntaxp (and (eq x 'x) (eq i 'i) (eq j 'j))))
+           (rationalp i)
+           (not (equal i 0))
+           (rationalp j)
+           (not (equal j 0))
+           (syntaxp (and (eq x 'x) (eq i 'i) (eq j 'j))))
       (equal (floor (floor x i) j)
-	     (floor (floor (+ (mod x (* i j))
-			      (* (* i j) (floor x (* i j)))) i)
-		    j)))
+             (floor (floor (+ (mod x (* i j))
+                              (* (* i j) (floor x (* i j)))) i)
+                    j)))
      :hints (("Goal" :in-theory (disable commutativity-2-of-+
-					 commutativity-2-of-*
-					 associativity-of-*)))))
+                                         commutativity-2-of-*
+                                         associativity-of-*)))))
 
   ;;  Next, divide out i and j through the sums.
 
@@ -1680,13 +1680,13 @@ property of @('(/ x y)').</p>"
    (defthm floor-floor-integer-crock1
      (implies
       (and (real/rationalp x)
-	   (rationalp i)
-	   (not (equal i 0))
-	   (integerp j)
-	   (not (equal j 0))
-	   (syntaxp (and (eq x 'x) (eq i 'i) (eq j 'j))))
+           (rationalp i)
+           (not (equal i 0))
+           (integerp j)
+           (not (equal j 0))
+           (syntaxp (and (eq x 'x) (eq i 'i) (eq j 'j))))
       (equal (floor (floor x i) j)
-	     (+ (floor x (* i j)) (floor (floor (mod x (* i j)) i) j))))
+             (+ (floor x (* i j)) (floor (floor (mod x (* i j)) i) j))))
      :hints
      (("Goal"
        :in-theory (disable floor-mod-elim)))))
@@ -1699,24 +1699,24 @@ property of @('(/ x y)').</p>"
    (defthm floor-floor-integer-crock2
      (implies
       (and (real/rationalp x)
-	   (rationalp i)
-	   (< 0 i)
-	   (rationalp j)
-	   (< 0 j))
+           (rationalp i)
+           (< 0 i)
+           (rationalp j)
+           (< 0 j))
       (equal (floor (floor (mod x (* i j)) i) j)
-	     0))
+             0))
      :hints (("Goal" :in-theory
-	      (set-difference-theories (enable floor-type-1
-					       floor-type-2
-					       floor-type-3
-					       mod-type)
-				       '(floor-bounded-by-/ mod-bounded-by-modulus
-						      <-*-left-cancel
-						      <-*-/-left-commuted))
+              (set-difference-theories (enable floor-type-1
+                                               floor-type-2
+                                               floor-type-3
+                                               mod-type)
+                                       '(floor-bounded-by-/ mod-bounded-by-modulus
+                                                      <-*-left-cancel
+                                                      <-*-/-left-commuted))
        :use ((:instance floor-bounded-by-/ (x (mod x (* i j))) (y i))
-	     (:instance mod-bounded-by-modulus (x x) (y (* i j)))
-	     (:instance <-*-left-cancel
-			(z (/ i)) (x (mod x (* i j))) (y (* i j))))))))
+             (:instance mod-bounded-by-modulus (x x) (y (* i j)))
+             (:instance <-*-left-cancel
+                        (z (/ i)) (x (mod x (* i j))) (y (* i j))))))))
 
   ;; Voila!
 
@@ -1778,18 +1778,18 @@ property of @('(/ x y)').</p>"
 (encapsulate ()
 
   (local (in-theory (disable floor-type-1 floor-type-2 floor-type-3
-			     floor-type-4 floor-bounded-by-/)))
+                             floor-type-4 floor-bounded-by-/)))
 
   (local
    (defthm mod-x-i*j-crock
      (implies
       (and (> i 0)
-	   (> j 0)
-	   (force (integerp i))
-	   (force (integerp j))
-	   (force (real/rationalp x)))
+           (> j 0)
+           (force (integerp i))
+           (force (integerp j))
+           (force (real/rationalp x)))
       (equal (mod (+ (mod x i) (* i (floor x i))) (* i j))
-	     (+ (mod x i) (* i (mod (floor x i) j)))))
+             (+ (mod x i) (* i (mod (floor x i) j)))))
      :rule-classes nil
      :hints (("Goal" :in-theory (disable floor-mod-elim)))))
 
@@ -1821,9 +1821,9 @@ property of @('(/ x y)').</p>"
    (defthm crock0
      (implies
       (and (integerp (/ i j))
-	   (real/rationalp i)
-	   (integerp j)
-	   (not (equal 0 j)))
+           (real/rationalp i)
+           (integerp j)
+           (not (equal 0 j)))
       (integerp (+ (* j (floor i j)) (mod i j))))
      :rule-classes nil
      :hints
