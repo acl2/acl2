@@ -2055,6 +2055,7 @@
                    type?)))
   :enable (lambda-curried-body
            make-atom-lambda/lambdan
+           acl2::equal-len-const
            delete*-of-delete*-fuse
            mergesort-of-cons
            mergesort-when-singleton))

@@ -1136,10 +1136,11 @@
        which is unary, i.e. it has exactly one parameter.
        The n-ary @(':lambdan'), @(':tlambdan'), and @(':ilambdan') summands
        are sugar for a nesting of the unary forms;
-       they always contains two or more parameters
-       (because there must have at least one parameter,
-       and if there is just one we use the unary forms),
-       but this fixtype does not capture this requirement.")
+       they always contain two or more parameters
+       (because there must be at least one parameter,
+       and if there is just one we use the unary forms);
+       this fixtype captures this requirement for @(':lambdan'),
+       but not yet for @(':tlambdan') and @(':ilambdan').")
      (xdoc::p
       "The optional type of the body of a lambda abstraction
        is calculated and stored by the type checker.
@@ -1165,9 +1166,14 @@
     (:lambda ((param var+type?)
               (body expr)
               (type? type-option)))
-    (:lambdan ((params var+type?-list) ; two or more
+    (:lambdan ((params var+type?-list
+                       :reqfix (if (>= (len params) 2)
+                                   params
+                                 (list (var+type?-fix nil)
+                                       (var+type?-fix nil))))
                (body expr)
-               (type? type-option)))
+               (type? type-option))
+     :require (>= (len params) 2))
     (:tlambda ((param type-var)
                (body expr)))
     (:tlambdan ((params type-var-list) ; two or more
@@ -1182,7 +1188,22 @@
     (:boxn ((ispaces ispace-list) ; two or more
             (array expr)
             (type type)))
-    :pred atomp)
+    :pred atomp
+
+    ///
+
+    (defrule consp-of-atom-lambdan->params
+      (consp (atom-lambdan->params atom))
+      :rule-classes :type-prescription
+      :use (:instance atom-lambdan-requirements (x atom))
+      :disable atom-lambdan-requirements)
+
+    (defruled consp-of-cdr-of-atom-lambdan->params
+      (consp (cdr (atom-lambdan->params atom)))
+      :rule-classes :type-prescription
+      :use (:instance atom-lambdan-requirements (x atom))
+      :disable atom-lambdan-requirements
+      :enable len))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
