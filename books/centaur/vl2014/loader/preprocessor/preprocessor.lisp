@@ -1908,7 +1908,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
        (char1  (vl-echar->char echar1))
        ((when (zp n))
         (mv (cw "Preprocessor error (~s0): ran out of steps. Macro expansion ~
-                 or file inclusion loop?" (vl-echar->loc echar1))
+                 or file inclusion loop?" (vl-location-string (vl-echar->loc echar1)))
             defines filemap acc echars state))
 
 ; Preliminaries.  We need to be sure to treat strings, escaped identifiers, and
