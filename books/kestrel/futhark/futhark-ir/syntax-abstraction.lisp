@@ -492,8 +492,7 @@
                   ((okf elem-tree) (first-direct-rulename children "type"))
                   ((okf elem) (abs-type elem-tree)))
                (make-fut-type-array :size size :elem elem)))
-            (t (reserrf (list :unexpected-type-child rulename?)))))
-    :measure-debug t)
+            (t (reserrf (list :unexpected-type-child rulename?))))))
 
   (define abs-entry-type ((tree abnf::treep))
     :returns (type fut-type-resultp)
