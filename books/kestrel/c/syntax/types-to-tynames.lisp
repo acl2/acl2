@@ -71,7 +71,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines push-pointer
+(defines push-pointer-absdeclor/dirabsdeclor-option
   :short "Push a pointer layer onto an abstract declarator."
   :long
   (xdoc::topstring
