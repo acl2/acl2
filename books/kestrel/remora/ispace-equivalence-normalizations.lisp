@@ -23,7 +23,7 @@
 
 (defxdoc+ ispace-equivalence-normalizations
   :parents (static-semantics)
-  :short "Properties of ispace equivalence."
+  :short "Normalizations in ispace equivalence."
   :long
   (xdoc::topstring
    (xdoc::p

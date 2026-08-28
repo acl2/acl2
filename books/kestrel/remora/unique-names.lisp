@@ -399,7 +399,14 @@
         (uniq-expr-params (cdr params) used avoid renam)))
     (mv used
         (cons (make-var+type? :var new-name :type? p.type?) new-rest)
-        renam)))
+        renam))
+
+  ///
+
+  (defret len-of-uniq-expr-params
+    (equal (len new-params)
+           (len params))
+    :hints (("Goal" :induct t :in-theory (enable len)))))
 
 (define uniq-type-var-params ((params type-var-listp)
                               (used string-listp)
@@ -430,7 +437,14 @@
        ((mv used new-rest atom-renam array-renam)
         (uniq-type-var-params (cdr params) used avoid
                               atom-renam array-renam)))
-    (mv used (cons new-var new-rest) atom-renam array-renam)))
+    (mv used (cons new-var new-rest) atom-renam array-renam))
+
+  ///
+
+  (defret len-of-uniq-type-var-params
+    (equal (len new-params)
+           (len params))
+    :hints (("Goal" :induct t :in-theory (enable len)))))
 
 (define uniq-ispace-var-params ((params ispace-var-listp)
                                 (used string-listp)
@@ -1015,7 +1029,15 @@
   (b* (((var-renamings r) r))
     (var+type?-list-rename-type-vars
      (var+type?-list-rename-ispace-vars params r.dim r.shape)
-     r.atom r.array)))
+     r.atom r.array))
+
+  ///
+
+  (defret len-of-var+type?-list-rename-all-vars
+    (equal (len new-params)
+           (len params))
+    :hints (("Goal" :in-theory (enable len-of-var+type?-list-rename-type-vars
+                                       len-of-var+type?-list-rename-ispace-vars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1785,6 +1807,7 @@
                                         acl2::member-equal-when-subsetp-equal-1
                                         len
                                         len-of-uniq-ispace-var-params
+                                        consp-of-cdr-of-atom-ilambdan->params
                                         list-of-car-when-len-1)
                      ((:executable-counterpart type-var-list-option-none)
                       (:executable-counterpart ispace-var-list-option-none)

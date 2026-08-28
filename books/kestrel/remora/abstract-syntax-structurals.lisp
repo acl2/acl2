@@ -434,7 +434,14 @@
        ((when (endp vars)) (var+type?-list-fix var+types))
        (vt (car var+types)))
     (cons (make-var+type? :var (car vars) :type? (var+type?->type? vt))
-          (var+type?-list-set-vars (cdr vars) (cdr var+types)))))
+          (var+type?-list-set-vars (cdr vars) (cdr var+types))))
+
+  ///
+
+  (defret len-of-var+type?-list-set-vars
+    (equal (len new-var+types)
+           (len var+types))
+    :hints (("Goal" :induct t :in-theory (enable len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -516,28 +523,6 @@
            (dim-list-listp (list-to-singletons dims)))
   :induct t
   :enable list-to-singletons)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define shape-from-ispace ((ispace ispacep))
-  :returns (shape shapep)
-  :short "Turn an ispace into a shape."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the ispace is already a shape, it is unchanged.
-     Otherwise, we turn the dimension into a singleton shape."))
-  (ispace-case
-   ispace
-   :dim (shape-dims (list ispace.dim))
-   :shape ispace.shape))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::defprojection shape-list-from-ispace-list ((x ispace-listp))
-  :returns (shapes shape-listp)
-  :short "Lift @(tsee shape-from-ispace) to lists."
-  (shape-from-ispace x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -930,6 +915,80 @@
   :hooks ((:fix :hints (("Goal"
                          :in-theory (enable cdr-of-ispace-var-list-fix))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define make-atom-lambda/lambdan ((params var+type?-listp)
+                                  (body exprp)
+                                  (type? type-optionp))
+  :guard (consp params)
+  :returns (atom atomp)
+  :short "Construct a unary or n-ary expression lambda abstraction,
+          depending on the number of parameters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There must be at least one parameter, as required by the guard.
+     If there is exactly one parameter,
+     we construct a unary lambda abstraction over that parameter;
+     if there are two or more parameters,
+     we construct an n-ary lambda abstraction,
+     consistently with the requirement that
+     n-ary lambda abstractions have two or more parameters
+     (see @(tsee atom))."))
+  (if (endp (cdr params))
+      (make-atom-lambda :param (car params) :body body :type? type?)
+    (make-atom-lambdan :params params :body body :type? type?))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-var+type?-list-fix))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define make-atom-tlambda/tlambdan ((params type-var-listp) (body exprp))
+  :guard (consp params)
+  :returns (atom atomp)
+  :short "Construct a unary or n-ary type lambda abstraction,
+          depending on the number of parameters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There must be at least one parameter, as required by the guard.
+     If there is exactly one parameter,
+     we construct a unary type lambda abstraction over that parameter;
+     if there are two or more parameters,
+     we construct an n-ary type lambda abstraction,
+     consistently with the requirement that
+     n-ary type lambda abstractions have two or more parameters
+     (see @(tsee atom))."))
+  (if (endp (cdr params))
+      (make-atom-tlambda :param (car params) :body body)
+    (make-atom-tlambdan :params params :body body))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-type-var-list-fix))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define make-atom-ilambda/ilambdan ((params ispace-var-listp) (body exprp))
+  :guard (consp params)
+  :returns (atom atomp)
+  :short "Construct a unary or n-ary ispace lambda abstraction,
+          depending on the number of parameters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There must be at least one parameter, as required by the guard.
+     If there is exactly one parameter,
+     we construct a unary ispace lambda abstraction over that parameter;
+     if there are two or more parameters,
+     we construct an n-ary ispace lambda abstraction,
+     consistently with the requirement that
+     n-ary ispace lambda abstractions have two or more parameters
+     (see @(tsee atom))."))
+  (if (endp (cdr params))
+      (make-atom-ilambda :param (car params) :body body)
+    (make-atom-ilambdan :params params :body body))
+  :hooks ((:fix :hints (("Goal"
+                         :in-theory (enable cdr-of-ispace-var-list-fix))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-binders-count ((type typep))
@@ -1158,13 +1217,7 @@
      the annotation pertains to the returned body,
      and it is up to the caller to use it as appropriate."))
   (cond ((endp (cdr params)) (expr-fix body))
-        ((endp (cddr params))
-         (expr-atom (make-atom-lambda :param (cadr params)
-                                      :body body
-                                      :type? type?)))
-        (t (expr-atom (make-atom-lambdan :params (cdr params)
-                                         :body body
-                                         :type? type?))))
+        (t (expr-atom (make-atom-lambda/lambdan (cdr params) body type?))))
   :hooks ((:fix :hints (("Goal"
                          :in-theory (enable cdr-of-var+type?-list-fix))))))
 
@@ -1180,9 +1233,7 @@
    (xdoc::p
     "This is analogous to @(tsee forall-curried-body)."))
   (cond ((endp (cdr params)) (expr-fix body))
-        ((endp (cddr params))
-         (expr-atom (atom-tlambda (cadr params) body)))
-        (t (expr-atom (atom-tlambdan (cdr params) body))))
+        (t (expr-atom (make-atom-tlambda/tlambdan (cdr params) body))))
   :hooks ((:fix :hints (("Goal"
                          :in-theory (enable cdr-of-type-var-list-fix))))))
 
@@ -1198,9 +1249,7 @@
    (xdoc::p
     "This is analogous to @(tsee forall-curried-body)."))
   (cond ((endp (cdr params)) (expr-fix body))
-        ((endp (cddr params))
-         (expr-atom (atom-ilambda (cadr params) body)))
-        (t (expr-atom (atom-ilambdan (cdr params) body))))
+        (t (expr-atom (make-atom-ilambda/ilambdan (cdr params) body))))
   :hooks ((:fix :hints (("Goal"
                          :in-theory (enable cdr-of-ispace-var-list-fix))))))
 

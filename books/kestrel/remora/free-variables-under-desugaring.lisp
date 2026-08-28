@@ -205,6 +205,8 @@
                                        bind-list-wfp
                                        type-option-some->val
                                        acl2::consp-of-cdr
+                                       consp-of-cdr-of-atom-lambdan->params
+                                       len->=-2-when-consp-of-cdr
                                        union-of-differences
                                        mergesort-when-consp
                                        set::union-symmetric
@@ -315,6 +317,8 @@
                                        bind-list-wfp
                                        type-option-some->val
                                        acl2::consp-of-cdr
+                                       consp-of-cdr-of-atom-lambdan->params
+                                       len->=-2-when-consp-of-cdr
                                        union-of-differences
                                        mergesort-when-consp
                                        set::union-symmetric
@@ -377,4 +381,6 @@
                                        bind-list-wfp
                                        var+type?-list->var
                                        acl2::consp-of-cdr
+                                       consp-of-cdr-of-atom-lambdan->params
+                                       len->=-2-when-consp-of-cdr
                                        mergesort-when-consp)))))
