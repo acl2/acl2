@@ -1138,10 +1138,7 @@
        are sugar for a nesting of the unary forms;
        they always contain two or more parameters
        (because there must be at least one parameter,
-       and if there is just one we use the unary forms);
-       this fixtype captures this requirement
-       for @(':lambdan') and @(':tlambdan'),
-       but not yet for @(':ilambdan').")
+       and if there is just one we use the unary forms).")
      (xdoc::p
       "The optional type of the body of a lambda abstraction
        is calculated and stored by the type checker.
@@ -1185,8 +1182,13 @@
      :require (>= (len params) 2))
     (:ilambda ((param ispace-var)
                (body expr)))
-    (:ilambdan ((params ispace-var-list) ; two or more
-                (body expr)))
+    (:ilambdan ((params ispace-var-list
+                        :reqfix (if (>= (len params) 2)
+                                    params
+                                  (list (ispace-var-fix nil)
+                                        (ispace-var-fix nil))))
+                (body expr))
+     :require (>= (len params) 2))
     (:box ((ispace ispace)
            (array expr)
            (type? type-option)))
@@ -1221,6 +1223,19 @@
       :rule-classes :type-prescription
       :use (:instance atom-tlambdan-requirements (x atom))
       :disable atom-tlambdan-requirements
+      :enable len)
+
+    (defrule consp-of-atom-ilambdan->params
+      (consp (atom-ilambdan->params atom))
+      :rule-classes :type-prescription
+      :use (:instance atom-ilambdan-requirements (x atom))
+      :disable atom-ilambdan-requirements)
+
+    (defruled consp-of-cdr-of-atom-ilambdan->params
+      (consp (cdr (atom-ilambdan->params atom)))
+      :rule-classes :type-prescription
+      :use (:instance atom-ilambdan-requirements (x atom))
+      :disable atom-ilambdan-requirements
       :enable len))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

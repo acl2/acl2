@@ -1807,6 +1807,7 @@
                                         acl2::member-equal-when-subsetp-equal-1
                                         len
                                         len-of-uniq-ispace-var-params
+                                        consp-of-cdr-of-atom-ilambdan->params
                                         list-of-car-when-len-1)
                      ((:executable-counterpart type-var-list-option-none)
                       (:executable-counterpart ispace-var-list-option-none)
