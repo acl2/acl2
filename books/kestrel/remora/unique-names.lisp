@@ -437,7 +437,14 @@
        ((mv used new-rest atom-renam array-renam)
         (uniq-type-var-params (cdr params) used avoid
                               atom-renam array-renam)))
-    (mv used (cons new-var new-rest) atom-renam array-renam)))
+    (mv used (cons new-var new-rest) atom-renam array-renam))
+
+  ///
+
+  (defret len-of-uniq-type-var-params
+    (equal (len new-params)
+           (len params))
+    :hints (("Goal" :induct t :in-theory (enable len)))))
 
 (define uniq-ispace-var-params ((params ispace-var-listp)
                                 (used string-listp)
