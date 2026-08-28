@@ -321,9 +321,27 @@
    (sigma3m ((ispace-varp p1) (ispace-varp p2) (ispace-var-listp ps) (consp ps)
              (typep ty))
             (type= (type-sigman (list* p1 p2 ps) ty)
-                   (type-sigma p1 (type-sigman (cons p2 ps) ty))))
+                   (type-sigma p1 (type-sigman (cons p2 ps) ty))))))
 
-  ))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection type-equiv-holds-only-on-types
+  :short "The equivalence of types holds only on types."
+
+  (defruled typep-when-type=-proof-validp
+    (implies (type=-proof-validp proof concl.type1 concl.type2)
+             (and (typep concl.type1)
+                  (typep concl.type2)))
+    :hints (("Goal"
+             :induct (type=-proof-validp proof concl.type1 concl.type2)
+             :in-theory (enable* type-equiv-infrules-validp-defs
+                                 (:induction type=-proof-validp)))))
+
+  (defruled typep-when-type=
+    (implies (type= type1 type2)
+             (and (typep type1)
+                  (typep type2)))
+    :enable (type= typep-when-type=-proof-validp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
