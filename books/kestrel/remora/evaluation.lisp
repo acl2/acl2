@@ -1155,17 +1155,16 @@
        the body of the value is the body of the abstraction,
        and the optional body type, if present,
        is evaluated to a type value and stored in the value.
-       The n-ary form must have at least one parameter:
+       For the n-ary form, which has two or more parameters,
        the value binds the first parameter,
        and its body is the term lambda abstraction
-       over the remaining parameters if there are any,
-       or otherwise the body of the given term lambda abstraction
+       over the remaining parameters
        (see @(tsee lambda-curried-body)),
        so a term lambda abstraction with two or more parameters
        stands for the nesting of unary ones, in curried style.
        The optional body type travels with the innermost abstraction,
-       so it is stored in the value only when
-       the value binds the innermost parameter.
+       so it is not stored in the value,
+       which does not bind the innermost parameter.
        The body is not evaluated here,
        but only when the abstraction is applied.")
      (xdoc::p
@@ -1228,20 +1227,12 @@
                          (expr-free-type-vars atom.body)
                          (atom-free-expr-vars atom)
                          denv)))
-       :lambdan (b* (((unless (consp atom.params)) (reserr nil))
-                     ((ok param) (eval-var+type? (car atom.params)
-                                                 (expr-denv->tenv denv)))
-                     ((ok type?) (if (consp (cdr atom.params))
-                                     nil
-                                   (type-option-case
-                                    atom.type?
-                                    :none nil
-                                    :some (eval-type atom.type?.val
-                                                     (expr-denv->tenv denv))))))
+       :lambdan (b* (((ok param) (eval-var+type? (car atom.params)
+                                                 (expr-denv->tenv denv))))
                   (make-expr-value-lambda
                    :param param
                    :body (lambda-curried-body atom.params atom.body atom.type?)
-                   :type? type?
+                   :type? nil
                    :denv (expr-denv-restrict
                           (expr-free-ispace-vars atom.body)
                           (expr-free-type-vars atom.body)
