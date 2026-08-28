@@ -2000,7 +2000,7 @@
         (- (cw "Done.)~%"))
 
         ;; Add params for any additional read-only values read in the exit-test-term:
-        (- (cw "(Making params for read-only values in the exit-term term:~%"))
+        (- (cw "(Making params for read-only values in the exit-test term:~%"))
         ((mv & ;next-param-number
               paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
          (make-read-only-parameters-for-expr exit-test-term next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var ;; nil
