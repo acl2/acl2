@@ -2410,7 +2410,7 @@
                          (+ -1 (integer-length k))
                          0))))
 
-;; This is helpful when we have things like (equal 0 (bitand 8 128 x))
+;; This is helpful when we have things like (equal 0 (bvand 8 128 x))
 (defthm bvand-of-constant-when-power-of-2p
   (implies (and (syntaxp (quotep k))
                 (power-of-2p k)
