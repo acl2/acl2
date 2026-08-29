@@ -53,7 +53,7 @@
 (include-book "../logops-rules-axe")
 ;(include-book "../basic-rules")
 (include-book "../rewriter-basic") ; for simplify-conjunction-basic
-(include-book "rewriter-x86")
+(include-book "rewriter")
 (include-book "../rules-in-rule-lists")
 (include-book "../dagify0") ; for compose-dags
 ;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.

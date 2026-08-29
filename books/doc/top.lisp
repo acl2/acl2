@@ -84,6 +84,7 @@
 ; stripped away when they're loaded redundantly later.
   (include-book "ihs/logops-lemmas" :dir :system)
   (include-book "ihs/math-lemmas" :dir :system)
+  ;; (include-book "ihs/quotient-remainder-lemmas" :dir :system) ; name clash on integerp-mod
 
 ; Matt K. comment, July 2021.  I considered using xdoc::archive-matching-topics
 ; to create an analogue of centaur/bitops/top-doc.lisp to include in
