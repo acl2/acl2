@@ -71,6 +71,7 @@
    (include-book "utilities/show-books-doc")
    (include-book "utilities/ubi-doc")
    (include-book "utilities/checkpoints-doc")
+   (include-book "utilities/defstobj-plus-doc")
    (include-book "yul/top")
    (include-book "zcash/top")
 
