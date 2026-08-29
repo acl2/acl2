@@ -296,6 +296,11 @@
 
 (defun default-key-classes ()
   (list (keyclass "u60" #'random-u60 :tests '(equal = eql))
+        ;; Note this class caps out at 256 distinct keys, so its set is
+        ;; that size whatever cardinality is asked for. That makes it
+        ;; unusable as a point on a speedup-against-key-size plot -- the
+        ;; n differs from every other class -- though it stays valid in
+        ;; the :test variant report, where both sides share the n.
         (keyclass "char" #'random-character :tests '(equal eql))
         (keyclass "string8" (lambda () (random-string 8)))
         (keyclass "string64" (lambda () (random-string 64)))
@@ -307,6 +312,28 @@
         (keyclass "bignum512" (lambda () (random-bignum 512))
                   :tests '(equal = eql))
         (keyclass "mixed" (lambda () (random-acl2-object)))))
+
+;; Size sweeps: one type, many sizes. The default classes above vary type
+;; and size together, which is good coverage but leaves no controlled
+;; variable -- a speedup plotted against size across them confounds the
+;; two, and the resulting scatter has no trend to read. These hold the
+;; type fixed so size is the only thing moving. Two families, because the
+;; mechanism should be type-independent: comparisons exit at the first
+;; differing byte while the hash walks the whole key, so the lookup ratio
+;; should be flat in size and the insert ratio should decay.
+
+(defun bignum-sweep-classes (&optional (bits '(64 256 1024 4096 16384)))
+  (loop for b in bits
+        collect (let ((b b))
+                  (keyclass (format nil "nat~D" b)
+                            (lambda () (random-bignum b))
+                            :tests '(equal = eql)))))
+
+(defun string-sweep-classes (&optional (lens '(8 32 128 512 2048)))
+  (loop for n in lens
+        collect (let ((n n))
+                  (keyclass (format nil "str~D" n)
+                            (lambda () (random-string n))))))
 
 (defun serialized-size (x)
   (length (hash::to-bytes x)))
@@ -437,15 +464,70 @@
         (values (+ depth ls rs)
                 (+ 1 lc rc))))))
 
-(defun depth-report (&key (cardinalities '(1000 10000 100000 1000000)))
-  "Treap depth statistics for random and sequential keys, against the
-   ~1.39*log2(n) expected average node depth of a random binary search
-   tree. Sequential keys exercise the consecutive-integer hash stream,
-   whose 32-bit collision counts looked slightly high; excess depth here
-   would mean those collisions cluster enough to hurt balance."
-  (format t "~&Treap depth (expected average ~~1.39*log2(n)):~%")
-  (format t "  ~10@A ~12A ~10A ~10A ~12A~%"
-          "n" "keys" "avg" "max" "1.39log2n")
+;; A random BST reference for the depth report. The measured rows are
+;; treaps over hashed keys; the question they answer is whether the hash
+;; behaves like a random priority, which is only meaningful against the
+;; distribution being claimed. With distinct random priorities a treap
+;; has exactly the shape distribution of a BST built by inserting a
+;; uniformly random permutation, so we build such trees and measure them
+;; the same way rather than plotting an asymptotic formula. The expected
+;; mean depth does have a closed form, but the expected height does not
+;; -- it is alpha*ln(n) - beta*ln(ln(n)) + O(1) with the O(1) unknown,
+;; and over this range that constant is worth about five levels.
+
+(defun random-permutation (n)
+  (let ((v (make-array n :element-type 'fixnum)))
+    (dotimes (i n) (setf (aref v i) i))
+    (loop for i from (1- n) downto 1
+          do (rotatef (aref v i) (aref v (random (1+ i)))))
+    v))
+
+(defun bst-insert (root key)
+  "Destructively insert KEY into the cons-shaped BST ROOT, returning the
+   root. The shape is the treap's own -- head in the car, left and right
+   in the cdr -- so the depth functions above apply unchanged."
+  (if (null root)
+      (cons key (cons nil nil))
+    (let ((node root))
+      (loop
+        (if (< key (car node))
+            (if (cadr node)
+                (setf node (cadr node))
+              (progn (setf (cadr node) (cons key (cons nil nil)))
+                     (return root)))
+          (if (cddr node)
+              (setf node (cddr node))
+            (progn (setf (cddr node) (cons key (cons nil nil)))
+                   (return root))))))))
+
+(defun random-bst (n)
+  (let ((root nil))
+    (loop for key across (random-permutation n)
+          do (setf root (bst-insert root key)))
+    root))
+
+(defun random-bst-depth-stats (n trials)
+  "(values mean-depth height), each averaged over TRIALS random BSTs.
+   Height is a max statistic and scatters by about two levels between
+   trials, which is why it is averaged rather than sampled once."
+  (let ((avg 0d0) (height 0d0))
+    (dotimes (i trials)
+      (let ((tree (random-bst n)))
+        (multiple-value-bind (sum count) (tree-depth-sum tree 1)
+          (incf avg (/ (float sum 1d0) (max 1 count))))
+        (incf height (float (tree-max-depth tree) 1d0))))
+    (values (/ avg trials) (/ height trials))))
+
+(defun depth-report (&key (cardinalities '(1000 10000 100000 1000000))
+                          (trials 10))
+  "Treap depth statistics for random and sequential keys, against random
+   BSTs of the same size. Sequential keys exercise the consecutive-integer
+   hash stream, whose 32-bit collision counts looked slightly high; excess
+   depth here would mean those collisions cluster enough to hurt balance.
+   Depth counts nodes, with the root at 1."
+  (format t "~&Treap depth (random-bst rows averaged over ~D trials):~%"
+          trials)
+  (format t "  ~10@A ~12A ~10A ~10A~%" "n" "keys" "avg" "height")
   (dolist (n cardinalities)
     (dolist (entry
               (list (cons "random" (getf (containers n) :treeset))
@@ -453,12 +535,13 @@
                           (treeset::from-list
                             (loop for i below n collect i)))))
       (multiple-value-bind (sum count) (tree-depth-sum (cdr entry) 1)
-        (format t "  ~10:D ~12A ~10,2F ~10D ~12,2F~%"
+        (format t "  ~10:D ~12A ~10,2F ~10,2F~%"
                 n
                 (car entry)
                 (float (/ sum (max 1 count)))
-                (tree-max-depth (cdr entry))
-                (* 1.39 (log n 2))))))
+                (float (tree-max-depth (cdr entry))))))
+    (multiple-value-bind (avg height) (random-bst-depth-stats n trials)
+      (format t "  ~10:D ~12A ~10,2F ~10,2F~%" n "random-bst" avg height)))
   (values))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -530,7 +613,12 @@
 
 (defun run-suite (&key (seed 1)
                        (cardinalities '(1000 10000 100000 1000000))
-                       (in-probs '(0 1))
+                       ;; One hit rate for every operation, so in,
+                       ;; insert and delete are all reported on the same
+                       ;; footing. Cost is linear in this, so the
+                       ;; endpoints are still available by running
+                       ;; :in-probs '(0 1).
+                       (in-probs '(1/2))
                        (mixed-prob 1/2)
                        (pair-cardinalities '(1000 10000 100000))
                        (overlaps '(0 1/2 1))
