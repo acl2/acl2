@@ -1164,9 +1164,8 @@
        which is unary, i.e. it has exactly one ispace.
        The n-ary @(':boxn') summand is sugar for a nesting of the unary form;
        it always contains two or more ispaces
-       (because there must have at least one ispace,
-       and if there is just one we use the unary form),
-       but this fixtype does not capture this requirement.
+       (because there must be at least one ispace,
+       and if there is just one we use the unary form).
        The type of a unary box is optional:
        it is always present in the concrete syntax,
        but it is absent in the inner boxes of
@@ -1208,9 +1207,13 @@
     (:box ((ispace ispace)
            (array expr)
            (type? type-option)))
-    (:boxn ((ispaces ispace-list) ; two or more
+    (:boxn ((ispaces ispace-list
+                     :reqfix (if (>= (len ispaces) 2)
+                                 ispaces
+                               (list (ispace-fix nil) (ispace-fix nil))))
             (array expr)
-            (type type)))
+            (type type))
+     :require (>= (len ispaces) 2))
     :pred atomp
 
     ///
@@ -1252,6 +1255,19 @@
       :rule-classes :type-prescription
       :use (:instance atom-ilambdan-requirements (x atom))
       :disable atom-ilambdan-requirements
+      :enable len)
+
+    (defrule consp-of-atom-boxn->ispaces
+      (consp (atom-boxn->ispaces atom))
+      :rule-classes :type-prescription
+      :use (:instance atom-boxn-requirements (x atom))
+      :disable atom-boxn-requirements)
+
+    (defruled consp-of-cdr-of-atom-boxn->ispaces
+      (consp (cdr (atom-boxn->ispaces atom)))
+      :rule-classes :type-prescription
+      :use (:instance atom-boxn-requirements (x atom))
+      :disable atom-boxn-requirements
       :enable len))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
