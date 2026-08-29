@@ -109972,6 +109972,10 @@ it."
  Aakash Koneru and Grant Jurgensen for pointing this out and providing a
  fix.</p>
 
+ <p>Made a @(see guard) fix for calls of the macro @(tsee fmx-cw) that use
+ @(tsee fmt) directive @('~_'), for example, @('(fmx-cw \"~_0\" x)').  Thanks
+ to Eric Smith for pointing out this bug using that example.</p>
+
  <h3>Changes at the System Level</h3>
 
  <p>The built-in @(see events) @('Integer-1') and @('cons-equal') are now
