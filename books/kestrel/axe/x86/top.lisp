@@ -1,6 +1,6 @@
 ; Top file for axe/x86 directory
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,7 +18,7 @@
 (include-book "evaluator-x86")
 (include-book "syntaxp-evaluator-x86")
 (include-book "bind-free-evaluator-x86")
-(include-book "rewriter-x86")
+(include-book "rewriter")
 (include-book "lifter-support")
 
 ;;Lifters:
