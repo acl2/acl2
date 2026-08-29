@@ -21,23 +21,16 @@
 ;  - parse-cpp-member-decl-list-body-full
 ;  - parse-cpp-class-specifier-full
 ;
-; Limitations (constructs supported by the AST but not yet by the parser):
-;  - lambda expressions with bodies (the AST :lambda variant is unused;
-;    the parser does not recognize "[ ] ( ) { ... }")
-;  - C++ named casts: static_cast<T>(e), dynamic_cast, reinterpret_cast,
-;    const_cast, typeid
-;  - C-style casts: (keyword)e always cast; (ident)e cast only when
-;    followed by ident/literal/(/++/--)~!/; * + - & are treated as binary
-;  - new, delete expressions
-;  - sizeof, alignof expressions
-;  - try-catch statements (the parser produces a generic statement instead);
-;    catch-clause parsing is still provided for use by ad-hoc clients
-;  - for-decl, for-range (for-loop with declaration init or range-based)
-;  - switch, case, default labels, goto labels
-;  - co_await, co_yield, co_return prefix
-;
-; These limitations are tracked by leaving the corresponding AST variants
-; reachable but not produced.
+; Limitations (constructs with partial or no parser support):
+;  - Nested-template '>>' disambiguation: the C$ lexer produces ">>" as a
+;    single shift token; vector<vector<int>> does not parse correctly
+;  - 'concept' definitions and 'requires' expressions/clauses (C++20)
+;  - 'if consteval' statement form (C++23)
+;  - Explicit object parameters ('this' as first explicit parameter, C++23)
+;  - Multidimensional subscript operator a[i,j] (C++23)
+;  - Spaceship operator <=> is parsed as a binary op but mapped to the C$
+;    'binop-ge' AST node (no dedicated spaceship binop variant in C$ AST)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
