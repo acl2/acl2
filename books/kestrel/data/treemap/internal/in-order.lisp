@@ -385,7 +385,7 @@
      "The head's binding is applied outermost, and so wins over both subtrees.
       Over a search tree no key repeats, so the precedence is not observable;
       it only settles what the fold means on a malformed tree. This mirrors
-      @(tsee tree-key-set), which inserts the head's key over the union of the
+      @('tree-key-set'), which inserts the head's key over the union of the
       two subtrees' key sets."))
   (if (tree-empty-p tree)
       nil
