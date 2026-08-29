@@ -1,6 +1,6 @@
 ; Recognizing lists of alists
 ;
-; Copyright (C) 2023-2025 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -34,13 +34,13 @@
            (alistp (nth n alists)))
   :hints (("Goal" :in-theory (enable alist-listp))))
 
-(defthm alistp-listp-of-cons
+(defthm alist-listp-of-cons
   (equal (alist-listp (cons item lst))
          (and (alistp item)
               (alist-listp lst)))
   :hints (("Goal" :in-theory (enable alist-listp))))
 
-(defthm alistp-listp-of-cdr
+(defthm alist-listp-of-cdr
   (implies (alist-listp lst)
            (alist-listp (cdr lst)))
   :hints (("Goal" :in-theory (enable alist-listp))))
