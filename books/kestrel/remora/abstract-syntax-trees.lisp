@@ -953,8 +953,7 @@
        are sugar for a nesting of the unary forms;
        they always contain two or more arguments
        (because there must be at least one argument,
-       and if there is just one we use the unary forms);
-       this fixtype captures this requirement.")
+       and if there is just one we use the unary forms).")
      (xdoc::p
       "The @(':capp') summand is sugar,
        but it allows zero arguments (expressions, types, or ispaces),
@@ -964,10 +963,9 @@
        which is unary, i.e. it has one ispace parameter,
        consistently with other constructs.
        The n-ary @(':unboxn') is sugar for a nesting of the unary form;
-       it always has two or more ispace variables,
-       because there must be at least one,
-       but a single one is represented as the unary @(':unbox'),
-       but this fixtype does not capture that constraint.
+       it always has two or more ispace variables
+       (because there must be at least one,
+       and if there is just one we use the unary form).
        Both forms of unboxing are optionally annotated by
        the type of the whole unboxing expression;
        this type is absent after parsing, calculated by the type checker.")
@@ -1030,11 +1028,16 @@
              (target expr)
              (body expr)
              (type? type-option)))
-    (:unboxn ((ispaces ispace-var-list) ; two or more
+    (:unboxn ((ispaces ispace-var-list
+                       :reqfix (if (>= (len ispaces) 2)
+                                   ispaces
+                                 (list (ispace-var-fix nil)
+                                       (ispace-var-fix nil))))
               (var string)
               (target expr)
               (body expr)
-              (type? type-option)))
+              (type? type-option))
+     :require (>= (len ispaces) 2))
     (:bracket ((exprs expr-list
                       :reqfix (if (consp exprs)
                                   exprs
@@ -1101,6 +1104,19 @@
       :rule-classes :type-prescription
       :use (:instance expr-iappn-requirements (x expr))
       :disable expr-iappn-requirements
+      :enable len)
+
+    (defrule consp-of-expr-unboxn->ispaces
+      (consp (expr-unboxn->ispaces expr))
+      :rule-classes :type-prescription
+      :use (:instance expr-unboxn-requirements (x expr))
+      :disable expr-unboxn-requirements)
+
+    (defruled consp-of-cdr-of-expr-unboxn->ispaces
+      (consp (cdr (expr-unboxn->ispaces expr)))
+      :rule-classes :type-prescription
+      :use (:instance expr-unboxn-requirements (x expr))
+      :disable expr-unboxn-requirements
       :enable len))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
