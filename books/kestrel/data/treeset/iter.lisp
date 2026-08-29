@@ -20,6 +20,7 @@
 (include-book "insert-defs")
 (include-book "delete-defs")
 (include-book "cardinality-defs")
+(include-book "subset-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -38,6 +39,7 @@
 (local (include-book "insert"))
 (local (include-book "in"))
 (local (include-book "delete"))
+(local (include-book "subset"))
 (local (include-book "extensionality"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -615,6 +617,34 @@
            tree-iter-tree-after
            (:e empty)))
 
+;; And dually, the side away from the end an iterator sits at is everything:
+;; a rewound iterator has the whole set ahead of it, an exhausted one has the
+;; whole set behind it.
+
+(defrule after-when-before-firstp
+  (implies (before-firstp iter)
+           (equal (after iter)
+                  (from-iter iter)))
+  :use (:instance tree-iter-tree-after-becomes-from-oset
+                  (iter (iter-fix iter)))
+  :enable (after
+           from-iter
+           before-firstp
+           tree-iter-tree-after
+           setp-of-tree-iter-plug-of-iter-fix))
+
+(defrule before-when-after-lastp
+  (implies (after-lastp iter)
+           (equal (before iter)
+                  (from-iter iter)))
+  :use (:instance tree-iter-tree-before-becomes-from-oset
+                  (iter (iter-fix iter)))
+  :enable (before
+           from-iter
+           after-lastp
+           tree-iter-tree-before
+           setp-of-tree-iter-plug-of-iter-fix))
+
 ;; At the constructors the same holds with no hypothesis, including over the
 ;; empty @(see treeset), where the iterator lands on the far end and the side
 ;; in question is empty for the other reason.
@@ -831,6 +861,42 @@
            tree-in-of-tree-iter-plug-split
            value
            has-valuep))
+
+;; Which is to say: each side is a subset of the set the iterator walks. That
+;; is the statement worth exporting -- it needs no hypothesis, and the library
+;; already draws the membership consequences from it.
+
+(defrule subset-of-before-and-from-iter
+  (subset (before iter) (from-iter iter))
+  ;; Three positions, three reasons: at an element membership in the whole
+  ;; follows from membership in the side; at the near end the side is empty,
+  ;; so the obligation is vacuous; at the far end the side is the whole set,
+  ;; so it is reflexivity.
+  :cases ((before-firstp iter) (after-lastp iter))
+  :enable (subset-becomes-subset-sk
+           subset-sk
+           before-when-before-firstp
+           after-when-after-lastp
+           after-when-before-firstp
+           before-when-after-lastp
+           subset-reflexivity
+           has-valuep-when-neither-end))
+
+(defrule subset-of-after-and-from-iter
+  (subset (after iter) (from-iter iter))
+  ;; Three positions, three reasons: at an element membership in the whole
+  ;; follows from membership in the side; at the near end the side is empty,
+  ;; so the obligation is vacuous; at the far end the side is the whole set,
+  ;; so it is reflexivity.
+  :cases ((before-firstp iter) (after-lastp iter))
+  :enable (subset-becomes-subset-sk
+           subset-sk
+           before-when-before-firstp
+           after-when-after-lastp
+           after-when-before-firstp
+           before-when-after-lastp
+           subset-reflexivity
+           has-valuep-when-neither-end))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
