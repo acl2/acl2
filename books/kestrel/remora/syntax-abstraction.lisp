@@ -2085,21 +2085,22 @@
          (ispaces (unbox-spec-info->ispaces info))
          (var (unbox-spec-info->var info))
          (target (unbox-spec-info->target info)))
-      (if (and (consp ispaces)
-               (endp (cdr ispaces)))
-          (make-expr-unbox :ispace (car ispaces)
-                           :var var
-                           :target target
-                           :body body
-                           :type? nil)
-        (make-expr-unboxn :ispaces ispaces
-                          :var var
-                          :target target
-                          :body body
-                          :type? nil)))
+      (cond ((endp ispaces)
+             (reserrf (list :unbox-exp-no-ispaces var)))
+            ((endp (cdr ispaces))
+             (make-expr-unbox :ispace (car ispaces)
+                              :var var
+                              :target target
+                              :body body
+                              :type? nil))
+            (t (make-expr-unboxn :ispaces ispaces
+                                 :var var
+                                 :target target
+                                 :body body
+                                 :type? nil))))
     :measure (abnf::tree-count tree))
 
-  ;; unbox-spec = *( ispace-var ws ) identifier ws exp
+  ;; unbox-spec = 1*( ispace-var ws ) identifier ws exp
   (define abs-unbox-spec ((tree abnf::treep))
     :returns (info unbox-spec-info-resultp)
     :short "Abstract an @('unbox-spec') to an @(tsee unbox-spec-info)."
