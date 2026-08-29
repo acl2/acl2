@@ -107043,6 +107043,10 @@ Bug Fixes
   Aakash Koneru and Grant Jurgensen for pointing this out and
   providing a fix.
 
+  Made a [guard] fix for calls of the macro [30m[47m[fmx-cw][0m[0m that use [30m[47m[fmt][0m[0m
+  directive [30m[47m~_[0m[0m, for example, [30m[47m(fmx-cw \"~_0\" x)[0m[0m.  Thanks to Eric Smith
+  for pointing out this bug using that example.
+
 
 Changes at the System Level
 
