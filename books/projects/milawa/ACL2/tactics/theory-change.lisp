@@ -325,7 +325,7 @@
                       (ACL2::prog2$
                        (ACL2::er hard? 'tactic.collect-rules "The valid forms are (gather <criteria>) and ~
                             (gather from <theoryname> <criteria>).  Hence, a call to gather ~
-                            with with ~n0 arguments, such as ~x1, is invalid.~%" length (car x))
+                            with ~n0 arguments, such as ~x1, is invalid.~%" length (car x))
                        acc))
 
                       (t
@@ -1112,4 +1112,3 @@
                   t))
   :hints(("Goal" :in-theory (enable tactic.cheapen-compile-world
                                     tactic.cheapen-okp))))
-
