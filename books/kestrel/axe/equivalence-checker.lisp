@@ -12453,7 +12453,7 @@
                                rand state))
                  ;;they didn't all prove, so do them one at a time to see which ones failed:
                  ;;if there is only one, don't try that one again
-                 (prog2$ (cw "At least one failed.  Trying them one at at time:)~%")
+                 (prog2$ (cw "At least one failed.  Trying them one at a time:)~%")
                          (mv-let (erp invariants-that-failed defthm-names rand state)
                            (find-failed-invariants invars (append hyps invars) base-theorem-name formal-update-expr-alist
                                                    invar-set-num 0 rewriter-rule-alist prover-rule-alist

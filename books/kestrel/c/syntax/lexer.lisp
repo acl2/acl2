@@ -2857,7 +2857,6 @@
                (lexeme? lexeme-optionp)
                (span spanp)
                (new-parstate parstatep :hyp (parstatep parstate)))
-  :guard-debug t
   :short "Lex a lexeme."
   :long
   (xdoc::topstring
