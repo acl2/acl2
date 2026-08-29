@@ -2252,7 +2252,7 @@
       (make-atom-ilambda/ilambdan params body))
     :measure (abnf::tree-count tree))
 
-  ;; box-expr = "box" ws "(" *( ws ispace ) ws ")" ws exp ws type
+  ;; box-expr = "box" ws "(" 1*( ws ispace ) ws ")" ws exp ws type
   (define abs-box-expr ((tree abnf::treep))
     :returns (a atom-resultp)
     :short "Abstract a @('box-expr') to
@@ -2272,10 +2272,11 @@
          ((okf ispaces) (abs-*-ws-ispace sub.4th))
          ((okf array) (abs-exp e-tree))
          ((okf ty) (abs-type te-tree)))
-      (if (and (consp ispaces)
-               (endp (cdr ispaces)))
-          (make-atom-box :ispace (car ispaces) :array array :type? ty)
-        (make-atom-boxn :ispaces ispaces :array array :type ty)))
+      (cond ((endp ispaces)
+             (reserrf (list :box-expr-no-ispaces array)))
+            ((endp (cdr ispaces))
+             (make-atom-box :ispace (car ispaces) :array array :type? ty))
+            (t (make-atom-boxn :ispaces ispaces :array array :type ty))))
     :measure (abnf::tree-count tree))
 
   ;; ------------------------------------------------------------------
