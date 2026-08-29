@@ -5875,14 +5875,14 @@
                                 i x s)))))
                           (#\_
                            (cond
-                            ((and (natp c2)
-                                  (<= c2
+                            ((and (natp val2)
+                                  (<= val2
                                       (floor (fixnum-bound) 2)))
                              (fmx-cw-msg-1 s alist i+3 maximum clk-1))
                             (t
                              (illegal-fmt-msg
                               bad-tilde-_-arg
-                              i c2 (floor (fixnum-bound) 2) s))))
+                              i val2 (floor (fixnum-bound) 2) s))))
                           ((#\Newline #\| #\% #\~ #\-)
                            (fmx-cw-msg-1 s alist i+2 maximum clk-1))
                           (otherwise
