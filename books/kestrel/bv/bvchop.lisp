@@ -455,6 +455,9 @@
                   (bvchop 2 i)))
   :hints (("Goal" :in-theory (enable bvchop))))
 
+(theory-invariant (incompatible (:rewrite mod-by-4-becomes-bvchop)
+                                (:definition bvchop)))
+
 ;(in-theory (disable BVCHOP-+-CANCEL))
 
 (defthm bvchop-of-+-cancel-1-1

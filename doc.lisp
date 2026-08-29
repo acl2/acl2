@@ -18501,7 +18501,10 @@ Subtopics
   uses a particular relationship that extends the usual ASCII coding
   of characters.  We also check that Space, Tab, Newline, Page,
   Rubout, and Return correspond to characters with respective
-  [30m[47m[char-code][0m[0ms [30m[47m32[0m[0m, [30m[47m9[0m[0m, [30m[47m10[0m[0m, [30m[47m12[0m[0m, [30m[47m127[0m[0m, and [30m[47m13[0m[0m.
+  [30m[47m[char-code][0m[0ms [30m[47m32[0m[0m, [30m[47m9[0m[0m, [30m[47m10[0m[0m, [30m[47m12[0m[0m, [30m[47m127[0m[0m, and [30m[47m13[0m[0m.  (Starting in 2026 or
+  2027, some versions of Allegro CL might not recogize the Page
+  character as the value of [30m[47m(code-char 12)[0m[0m, but ACL2 arranges this to
+  be the case inside the ACL2 read-eval-print loop.)
 
   [30m[47m[Code-char][0m[0m has an inverse, [30m[47m[char-code][0m[0m.  Thus, when [30m[47m[char-code][0m[0m is
   applied to an ACL2 character, [30m[47mc[0m[0m, it returns a number [30m[47mn[0m[0m between [30m[47m0[0m[0m
@@ -107100,6 +107103,16 @@ Changes at the System Level
 
           ; Disable entering raw-mode:
           (push-untouchable set-raw-mode-on t)
+
+  Future Common Lisp implementations might not recognize [30m[47m#\\Page[0m[0m as the
+  traditional ``Page'' character (with character-code 12), for
+  compatibility with Unicode.  We made updates to accommodate such a
+  change that is probably coming to Allegro CL, so that [30m[47m#\\Page[0m[0m
+  continues to be suitable input for character 12 inside the ACL2
+  read-eval-print loop.  Moreover, when the host Lisp is Allegro CL,
+  [30m[47m#\\Formfeed[0m[0m is accepted as input since that representation of
+  character 12 may be printed by [30m[47m[print-object$][0m[0m.  Thanks to Duane
+  Rettig for bringing this issue to our attention.
 
 
 EMACS Support

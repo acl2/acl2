@@ -30,7 +30,7 @@
 (include-book "kestrel/lists-light/contains-anyp-eq" :dir :system)
 (include-book "std/system/untranslate-dollar" :dir :system)
 (include-book "../make-term-into-dag-basic")
-(include-book "rewriter-jvm")
+(include-book "rewriter")
 (include-book "../make-evaluator") ; for make-acons-nest, todo
 (include-book "../supporting-functions")
 ;(include-book "../rewriter") ; for simp-dag

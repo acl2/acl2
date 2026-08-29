@@ -1,6 +1,6 @@
 ; Tests of the x86 Rewriter
 ;
-; Copyright (C) 2024-2025 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,7 @@
 
 (in-package "X")
 
-(include-book "rewriter-x86")
+(include-book "rewriter")
 (include-book "x86-rules")
 ;(include-book "std/testing/assert-bang" :dir :system)
 (include-book "kestrel/utilities/assert-with-stobjs" :dir :system)

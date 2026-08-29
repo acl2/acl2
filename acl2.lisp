@@ -1834,8 +1834,19 @@ ACL2 from scratch.")
 ;  the simpler solution of putting the defconstant in this file, which is
 ;  loaded only once (there is no compiled version of this file to load).
 
+(defconstant *acl2-page-char*
+
+; Starting sometime after 2025, Allegro CL might not recognize #\Page as
+; (code-char 12), recognizing #\Formfeed (and printing it with prin1) instead.
+; Some such situation might eventually be the case for other Common Lisps.  So
+; we introduce this constant to use as that character
+
+; Note however that ACL2 supports #\Page in its read-eval-print loop.
+
+  (code-char 12))
+
 (defconstant *acl2-read-character-terminators*
-  '(#\Tab #\Newline #\Page #\Space #\" #\' #\( #\) #\; #\` #\,))
+  '(#\Tab #\Newline #.*acl2-page-char* #\Space #\" #\' #\( #\) #\; #\` #\,))
 
 (our-with-compilation-unit
 
@@ -2381,6 +2392,7 @@ which is saved just in case it's needed later.")
 ; So, we manage this simply by modifying the character reader so that
 ; the #\ notation only works for single characters and for Space, Tab,
 ; Newline, Page, Rubout, and Return; an error is caused otherwise.
+; (See the comment about Page in *acl2-page-char* above.)
 
 ; Our algorithm for reading character objects starting with #\ is
 ; quite simple.  We accumulate characters until encountering a
@@ -2390,8 +2402,9 @@ which is saved just in case it's needed later.")
 ; which we ignore in the multiple-character case) SPACE, TAB, NEWLINE,
 ; PAGE, RUBOUT, and RETURN.  Otherwise we cause an error.  Note that
 ; if we do NOT cause an error, then any dpANS-compliant Common Lisp
-; implementation's character reader would behave the same way, because
-; dpANS says (in the section ``Sharpsign Backslash'') the following.
+; implementation's character reader would behave the same way (but
+; note the remark about Page in *acl2-page-char*), because dpANS says
+; (in the section ``Sharpsign Backslash'') the following.
 
 ;    .....  After #\ is read, the reader backs up
 ;    over the slash and then reads a token, treating the initial slash

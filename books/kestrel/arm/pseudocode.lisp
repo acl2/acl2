@@ -762,7 +762,6 @@
                                    )))))
 
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
-(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 
 ;; ;gen
 ;; (local

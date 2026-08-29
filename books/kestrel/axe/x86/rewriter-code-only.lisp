@@ -1,6 +1,6 @@
 ; Use with-supporters to just get the code of the x86 Axe Rewriter
 ;
-; Copyright (C) 2022-2025 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,7 +21,7 @@
 ;; :known-booleans-table.
 
 (with-supporters
- (local (include-book "rewriter-x86"))
+ (local (include-book "rewriter"))
  :names (simplify-terms-to-terms-x86
           simplify-dag-x86
           ;; make-rule-alist!
