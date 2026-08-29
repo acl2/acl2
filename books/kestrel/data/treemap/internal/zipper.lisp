@@ -3261,3 +3261,104 @@
                   (zip-after zip)))
   :use (:instance tree-omap-becomes-tree-in-order
                   (tree (zip-tree-after zip))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Uniqueness by key. The in-order entries of the plug split at the cursor
+;; (@(tsee tree-in-order-of-zip-plug-split-at-cursor)), and over a search tree
+;; the split entries have strictly increasing keys, so the split lands at a
+;; given key at most one way. The key therefore fixes the tail, and the tail
+;; already fixes the zipper.
+;;
+;; TREESET reaches the corresponding fact through its oset flank by double
+;; containment, but that route settles only the keys; here the values must
+;; agree too, so the treemap route goes through the uniqueness of the split
+;; instead.
+
+;; An entry list without repeated keys splits around a given key in only one
+;; way, so equal splits have equal tails.
+
+(defrulel assoc-equal-of-append-of-cons-same-when-omapp
+  (implies (omap::mapp (append x (cons (cons key v) y)))
+           (assoc-equal key (append x (cons (cons key v) y))))
+  :induct (len x)
+  :enable ((:i len)
+           assoc-equal
+           append
+           omap::mapp))
+
+;; The mismatched base case refutes itself through the key: it heads one
+;; side's remainder while the other side buries it deeper, and an omap holds
+;; each key once.
+
+(defrulel equal-of-append-split-at-key-base
+  (implies (and (not (consp a))
+                (omap::mapp (append a (cons (cons key v1) b)))
+                (equal (append a (cons (cons key v1) b))
+                       (append c (cons (cons key v2) d))))
+           (equal b d))
+  :rule-classes nil
+  :hints (("Goal" :cases ((consp c))
+                  :expand ((append c (cons (cons key v2) d)))
+                  :in-theory (enable omap::mapp
+                                     data::<<-rules)
+                  :use ((:instance data::<<-of-caar-when-assoc-equal-of-cdr
+                                   (l (append a (cons (cons key v1) b)))
+                                   (x key))))))
+
+(local
+ (defun split-at-key-induction (a c)
+   (if (or (atom a) (atom c))
+       (list a c)
+     (split-at-key-induction (cdr a) (cdr c)))))
+
+(defrulel equal-of-append-split-at-key
+  (implies (and (omap::mapp (append a (cons (cons key v1) b)))
+                (equal (append a (cons (cons key v1) b))
+                       (append c (cons (cons key v2) d))))
+           (equal b d))
+  :rule-classes nil
+  :hints (("Goal" :induct (split-at-key-induction a c)
+                  :in-theory (enable omap::mapp))
+          ;; The two mismatched base cases are the base lemma and its mirror
+          ;; image, which no rewrite can supply: each must be named at this
+          ;; goal's own operands.
+          (and stable-under-simplificationp
+               '(:use (equal-of-append-split-at-key-base
+                       (:instance equal-of-append-split-at-key-base
+                                  (a c) (c a) (v1 v2) (v2 v1)
+                                  (b d) (d b)))))))
+
+(defruled zip-after-when-same-key
+  (implies (and (bstp (zip-plug zip1))
+                (equal (zip-plug zip1) (zip-plug zip2))
+                (equal (zip-key zip1) (zip-key zip2)))
+           (equal (zip-after zip1) (zip-after zip2)))
+  :enable (zip-key
+           zip-val
+           zip-key+val)
+  ;; Keep the plug's in-order list in its at-the-cursor form: the whole-tree
+  ;; decomposition would rewrite it out from under the :use instances.
+  :disable tree-in-order-of-zip-plug
+  :use ((:instance tree-in-order-of-zip-plug-split-at-cursor (zip zip1))
+        (:instance tree-in-order-of-zip-plug-split-at-cursor (zip zip2))
+        (:instance omapp-of-tree-in-order-when-bstp (tree (zip-plug zip1)))
+        (:instance equal-of-append-split-at-key
+                   (a (zip-before zip1))
+                   (key (zip-key zip1))
+                   (v1 (zip-val zip1))
+                   (b (zip-after zip1))
+                   (c (zip-before zip2))
+                   (v2 (zip-val zip2))
+                   (d (zip-after zip2)))))
+
+(defrule zip-uniqueness-when-same-key
+  (implies (and (zipp zip1)
+                (zipp zip2)
+                (bstp (zip-plug zip1))
+                (equal (zip-plug zip1) (zip-plug zip2))
+                (equal (zip-key zip1) (zip-key zip2)))
+           (equal zip1 zip2))
+  :rule-classes nil
+  :use (zip-uniqueness-when-zip-after-equal
+        zip-after-when-same-key))
