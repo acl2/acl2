@@ -714,7 +714,7 @@
                           (cadr (fargn (car hyps) 1)))))
                (union-eq (cadr (fargn (car hyps) 1))
                          vars))
-              (t (er hard 'free-vars-in-hyps-considering-bind-free
+              (t (er hard 'all-vars-in-hyps
                      "We thought the first argument of synp in this context ~
                       was either 'NIL, 'T, or else a quoted true list of ~
                       variables, but ~x0 is not!"
