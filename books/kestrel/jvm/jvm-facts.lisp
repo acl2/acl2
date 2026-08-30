@@ -219,7 +219,7 @@
         (if (equal 'jvm::bind (car (cadr term)))
             (get-pc-from-thread-table-term (cadr term))
 ;this doesn't actually seem to be firing...
-          (er hard 'get-pcs-from-state-term "Found a state term we don't yet handle, ~x0." term))))))
+          (er hard 'get-pc-from-state-term "Found a state term we don't yet handle, ~x0." term))))))
 
 ;TERM may include calls to myif
 ;returns a list of the PCS for all the suitable branches
@@ -384,7 +384,7 @@
            (equal 'jvm::make-frame (car (cadr (caddr term))))
            )
       (equal 'jvm::push-frame (car (caddr (caddr term)))) ;is the stack to which we are pushing on a frame also a push?
-    (er hard 'get-pc-from-thread-table-term "Found a thread table term we don't yet handle, ~x0." term)))
+    (er hard 'this-threadtable-is-at-a-subroutine-call "Found a thread table term we don't yet handle, ~x0." term)))
 
 (defun this-branch-is-at-a-subroutine-call (term)
   (if (equal 'jvm::bind (car (cadr term)))
