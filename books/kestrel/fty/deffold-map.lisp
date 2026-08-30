@@ -484,9 +484,16 @@
      (one for a product type, several for a sum type)
      via @(tsee deffold-map-gen-prod-require-rules).
      We skip the type altogether if it is overridden as a whole,
-     and we skip each summand of a sum type that is overridden,
-     because in those cases the map function does not include
+     because in that case the map function does not include
      the boilerplate constructor calls.
+     We do not skip the summands of a sum type that are overridden,
+     because an override may well call the constructor of the summand
+     (e.g. to rebuild the summand from the mapped fields
+     after threading an extra argument through them in a non-boilerplate way),
+     in which case the guard verification of the map function
+     needs the same rules as for the boilerplate constructor call;
+     if the override does not call the constructor,
+     the extra rules are simply unused.
      We also skip option types,
      whose map functions do not call the constructors
      (and which cannot have dependent requirements)."))
@@ -514,11 +521,8 @@
      :parents nil
      (b* (((when (endp prods)) nil)
           (prod (car prods))
-          (kind (flexprod->kind prod))
-          (rules (if (assoc-equal (cons type kind) overrides)
-                     nil
-                   (deffold-map-gen-prod-require-rules
-                     prod suffix targets overrides fty-table)))
+          (rules (deffold-map-gen-prod-require-rules
+                   prod suffix targets overrides fty-table))
           (more-rules (deffold-map-gen-sum-require-rules-loop
                         type (cdr prods) suffix targets overrides fty-table)))
        (append rules more-rules)))))
