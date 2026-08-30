@@ -76,7 +76,7 @@
 
   (include-book \"arithmetic-5/top\" :dir :system)
 
-  ; The following causes a hard error under the original rules:
+  ; Example 1: The following causes a hard error under the original rules:
 
   (thm
    (implies (natp n)
@@ -91,29 +91,55 @@
                    (expt 3/2 n)))
    :hints ((\"Goal\" :in-theory (enable (:e use-new-arith-5-rules)))))
 
-  ; If we enable non-linear reasoning with
+  ; Example 2: If we enable non-linear reasoning with
 
   (set-default-hints '((nonlinearp-default-hint stable-under-simplificationp
                                                 hist pspv)))
 
-  ; this causes a hard error under the original rules:
+  ; the following causes a hard error under the original rules:
 
   (thm (implies (natp n)
                 (<= (* (expt 3 n) (expt 10 (- n))) 1)))
 
-  ; But succeeds under the new rules:
+  ; But the proof succeeds under the new rules:
 
   (thm (implies (natp n)
                 (<= (* (expt 3 n) (expt 10 (- n))) 1))
        :hints ((\"Goal\" :in-theory (enable (:e use-new-arith-5-rules)))))
 
+  ; Example 3:  The following causes a hard error under the original rules:
+
+  (thm
+   (implies (and (integerp a) (not (equal a 0)))
+            (not (equal (* (expt 3 a) (expt 2 (- a)))
+                        (* (expt 2 a) (expt 3 (- a)))))))
+
+  ; But the proof succeeds under the new rules:
+
+  (thm
+   (implies (and (integerp a) (not (equal a 0)))
+            (not (equal (* (expt 3 a) (expt 2 (- a)))
+                        (* (expt 2 a) (expt 3 (- a))))))
+   :hints ((\"Goal\" :in-theory (enable (:e use-new-arith-5-rules)))))
+
   ; --- end script ---
   })
 
-  <p>The ``cause'' of many such loops come from a very clever trick carried out
-  by Robert's original rules: heuristically select a term, @('x'), and multiply
-  other terms by @('x') in order to cancel out certain subterms.  An example
-  such rule is</p>
+  <p>Example 1 leads to a stack overflow because of a simple typo in one of the
+  original rules that allows @('(expt 3/2 n)') to rewrite to @('(expt 2/3 n)')
+  and back again.</p>
+
+  <p>Example 2 leads to a stack overflow because the lemma
+  @('ARITH-NORMALIZE-FACTORS-SCATTER-EXPONENTS') sets off a chain of rewrites
+  on @('(* (expt 3 n) (expt 10 (- n)))') that ultimately lead back to that same
+  term, giving @('ARITH-NORMALIZE-FACTORS-SCATTER-EXPONENTS') the opportunity
+  to fire again.  In fact, this loop exemplifies the dangers of a very clever
+  trick Robert uses to do many simplifications.</p>
+
+  <p>That trick heuristically selects a term, @('x'), to multiply into other
+  such terms, intending to cancel out certain subterms and thus simplify the
+  target.  But it can sometimes reproduce the target, as in Example 2, or
+  produce an even larger term, as in Example 3.  An example such rule is</p>
 
   @({
   (defthm simplify-products-gather-exponents-equal
@@ -143,28 +169,41 @@
   @('bind-free') hypothesis used to justify the choice of @('x'), and perform a
   cancellation to produce a smaller equation.</p>
 
-  <p>Note: The ``examples'' sketched below are meant to suggest how some loops
-  are formed.  Each example corresponds to behavior Moore has witnessed but
-  failed to record the actual terms involved.  Thus, these ``examples'' are
-  just suggestive of more complicated loops.</p>
+  <p>Consider Example 3 above.  The conclusion is</p>
 
-  <p>For example, suppose @('lhs') is @('(* a (/ z b) (foo c))') and the
-  @('bind-free') hypothesis chooses to multiply by @('b').  The bubble down
-  process is designed to consider the factors @('a'), @('(/ z b)'), and @('(foo
-  c)'), in that order, and find the one used by the bind-free hypothesis to
-  justify the choice of @('b').  If @('b') bubbles down to @('(/ z b)') then
-  all is well, <i>provided</i> there's a rule like @('(* b (/ z b))') @('=')
-  @('z') (under appropriate conditions).  But if such a cancellation rule is
-  missing the equation gets bigger.  Another possibility is that some earlier
-  subterm, e.g., @('a') in this example, somehow absorbs @('b') before bubbling
-  gets to the intended target.  Indeed, one loop witnessed in the original
-  system repeatedly multiplied by @('3'), intending to cancel @('(/ z 3)'), but
-  it was ``intercepted'' by a subterm like @('(expt 3 n)') and produced the new
-  subterm @('(expt 3 (+ n 1))').  Then the rule fired again and, since @('(/ z
-  3)') was still in the formula, chose to multiply by @('3') again, and
-  produced the new subterm @('(expt 3 (+ n 2))'), etc.  Sometimes loops created
-  ever larger numbers, e.g., @('3'), @('9'), @('27'), @('81'),
-  &ldquo;...&rdquo;, without using any rules besides ground evaluation.</p>
+  @({
+  (not (equal (* (expt 3 a) (expt 2 (- a)))   ; lhs
+              (* (expt 2 a) (expt 3 (- a))))) ; rhs
+  })
+
+  <p>which can be rewritten with @('simplify-products-gather-exponents-equal').
+  That lemma chooses to multiply both sides by @('(expt 2 (- a))').  That might
+  be expected to cancel the @('(expt 2 a)') on the @('rhs').  Unfortunately,
+  commutativity intervenes and the opportunity is missed.  Instead, the new
+  factor is absorbed by the last term on the @('lhs') and the last term on the
+  @('rhs').  The result is</p>
+
+  @({
+  (not (equal (* (expt 3 a) (expt 4 (- a)))
+              (* (expt 2 a) (expt 6 (- a)))))
+  })
+
+  <p>Since @('(expt 2 a)') is still in the problem the next application of
+  @('simplify-products-gather-exponents-equal') chooses, again, to multiply
+  by @('(expt 2 (- a))'), misses the cancellation, and produces</p>
+
+  @({
+  (not (equal (* (expt 3 a) (expt 8 (- a)))
+              (* (expt 2 a) (expt 12 (- a)))))
+  })
+
+  <p>This process continues until we get a stack overflow (and some very large
+  numbers, like @('(expt 2 494)')).</p>
+
+  <p>Some of the loops were fixed by adding lemmas that were missing from the
+  original rules.  Other loops were fixed by tightening the conditions under
+  which the @('bind-free') hypotheses succeed in finding the new factor
+  @('x').</p>
 
   <p>Below are all the rules in @('arithmetic-5') that find a factor and
   transform a term by multiplying subterms by that factor.</p>
@@ -199,7 +238,7 @@
 
   <p>All of these appear to raise the possibility of the sort of loops
   described above, but only the ones marked with `@('*')' above have been
-  modified because Moore never encountered loops involving the others.</p>
+  modified because Moore never encountered loops ``caused by'' the others.</p>
 
   <p>You can find all the modification to @('arithmetic-5') books made by Moore
   by recursively searching through the @('arithmetic-5') directory looking

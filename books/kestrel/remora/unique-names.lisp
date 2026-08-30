@@ -1808,6 +1808,7 @@
                                         len
                                         len-of-uniq-ispace-var-params
                                         consp-of-cdr-of-atom-ilambdan->params
+                                        consp-of-cdr-of-expr-unboxn->ispaces
                                         list-of-car-when-len-1)
                      ((:executable-counterpart type-var-list-option-none)
                       (:executable-counterpart ispace-var-list-option-none)
