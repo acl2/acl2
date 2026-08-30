@@ -1368,7 +1368,6 @@
                           ;;check-for-var-subst-literal2
                           find-var-and-expr-to-subst2
                           check-for-var
-                          consp-of-cdr
                           integerp-when-dargp
                           <=-of-0-when-dargp
                           <-when-dargp-less-than

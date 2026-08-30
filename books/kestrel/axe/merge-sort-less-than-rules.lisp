@@ -213,7 +213,6 @@
            (sortedp-<= (merge-< l1 l2 acc)))
   :hints (("Goal" :in-theory (enable merge-<
                                      sortedp-<=
-                                     SORTEDP-<=
                                      <=-all
                                      revappend-becomes-append-of-reverse-list
                                      ))))

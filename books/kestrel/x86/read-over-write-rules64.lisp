@@ -1113,8 +1113,7 @@
                                      rb-1
                                      rml128
                                      rml48
-                                     rml80
-                                     rb-1))))
+                                     rml80))))
 
 (encapsulate ()
   (local (in-theory (enable rml80

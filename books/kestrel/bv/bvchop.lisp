@@ -310,7 +310,6 @@
   :hints (("Goal" :use ((:instance bvchop-when-not-natp-arg1-cheap (x (- x)))
                         bvchop-of-minus-helper)
            :in-theory (disable bvchop-when-size-is-not-posp
-                               bvchop-when-size-is-not-posp
                                expt))))
 
 ;i guess this one is an abbreviation rule
