@@ -337,6 +337,8 @@
     doublets-to-alist
     translate-term
     translate-terms
+    translate-term-in-logic-mode
+    translate-terms-in-logic-mode
     variablep
     empty-alist
     empty-acc
