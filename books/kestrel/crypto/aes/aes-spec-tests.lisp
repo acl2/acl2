@@ -14,14 +14,23 @@
 (include-book "aes-spec")
 (include-book "kestrel/utilities/deftest" :dir :system)
 
-;;
-;; Tests - TODO: add the rest of the tests from the standard.
-;;
+;; Tests from FIPS-197 (the Advanced Encryption Standard):
+;; - the finite field multiplication example from Section 4.2,
+;; - the key expansions of Appendix A,
+;; - the cipher example of Appendix B,
+;;   including its complete round-by-round trace,
+;; - and the example vectors of Appendix C of the original (2001)
+;;   edition (the 2023 update, FIPS-197-upd1, replaced that appendix
+;;   with a pointer to the example vectors on the NIST website).
+
+;; Test from Section 4.2:
 
 (acl2::assert-equal (gf256mult #x57 #x13) #xfe)
 
-;; These tests are from the Appendix of FIPS-197.
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Tests from Appendix A (key expansions)
+;;
 (defconst *aes-128-example-key* '(#x2b #x7e #x15 #x16 #x28 #xae #xd2 #xa6 #xab #xf7 #x15 #x88 #x09 #xcf #x4f #x3c))
 
 (defconst *aes-128-example-expanded-key*
@@ -198,7 +207,10 @@
 
 (acl2::assert-equal (keyexpansion *aes-256-example-key* 8) *aes-256-example-expanded-key*)
 
-;; Tests from Appendix B
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Tests from Appendix B (cipher example)
+;;
 
 (defconst *aes-128-example-plaintext* '(#x32 #x43 #xf6 #xa8 #x88 #x5a #x30 #x8d #x31 #x31 #x98 #xa2 #xe0 #x37 #x07 #x34))
 
@@ -211,8 +223,199 @@
 (acl2::assert-equal (aes-128-decrypt (aes-128-encrypt *aes-128-example-plaintext* *aes-128-example-key*) *aes-128-example-key*)
                     *aes-128-example-plaintext*)
 
+;;
+;; The round-by-round trace of the Appendix B cipher example.
+;;
+;; For each round, Appendix B gives the state at the start of the
+;; round, after SubBytes, after ShiftRows, and after MixColumns
+;; (except in the final round, which has no MixColumns), along with
+;; the round key.  The 4x4 state arrays shown in the appendix are
+;; listed here as 16-byte sequences in column-major order (the order
+;; of the corresponding byte arrays).  The round keys are words
+;; 4r..4r+3 of the expanded key, already checked in the Appendix A
+;; test above.
+;;
 
-;; Tests from Appendix C
+;; The state after the initial AddRoundKey (the start of round 1):
+
+(defconst *aes-128-round1-start* '(#x19 #x3d #xe3 #xbe #xa0 #xf4 #xe2 #x2b #x9a #xc6 #x8d #x2a #xe9 #xf8 #x48 #x08))
+
+(acl2::assert-equal
+ (addroundkey (copyarraytostate *aes-128-example-plaintext*)
+              (subrange 0 3 *aes-128-example-expanded-key*))
+ (copyarraytostate *aes-128-round1-start*))
+
+;; Round 1:
+
+(defconst *aes-128-round1-after-subbytes* '(#xd4 #x27 #x11 #xae #xe0 #xbf #x98 #xf1 #xb8 #xb4 #x5d #xe5 #x1e #x41 #x52 #x30))
+(defconst *aes-128-round1-after-shiftrows* '(#xd4 #xbf #x5d #x30 #xe0 #xb4 #x52 #xae #xb8 #x41 #x11 #xf1 #x1e #x27 #x98 #xe5))
+(defconst *aes-128-round1-after-mixcolumns* '(#x04 #x66 #x81 #xe5 #xe0 #xcb #x19 #x9a #x48 #xf8 #xd3 #x7a #x28 #x06 #x26 #x4c))
+(defconst *aes-128-round2-start* '(#xa4 #x9c #x7f #xf2 #x68 #x9f #x35 #x2b #x6b #x5b #xea #x43 #x02 #x6a #x50 #x49))
+
+(acl2::assert-equal (subbytes (copyarraytostate *aes-128-round1-start*))
+                    (copyarraytostate *aes-128-round1-after-subbytes*))
+(acl2::assert-equal (shiftrows (copyarraytostate *aes-128-round1-after-subbytes*))
+                    (copyarraytostate *aes-128-round1-after-shiftrows*))
+(acl2::assert-equal (mixcolumns (copyarraytostate *aes-128-round1-after-shiftrows*))
+                    (copyarraytostate *aes-128-round1-after-mixcolumns*))
+(acl2::assert-equal (addroundkey (copyarraytostate *aes-128-round1-after-mixcolumns*)
+                                 (subrange 4 7 *aes-128-example-expanded-key*))
+                    (copyarraytostate *aes-128-round2-start*))
+
+;; Round 2:
+
+(defconst *aes-128-round2-after-subbytes* '(#x49 #xde #xd2 #x89 #x45 #xdb #x96 #xf1 #x7f #x39 #x87 #x1a #x77 #x02 #x53 #x3b))
+(defconst *aes-128-round2-after-shiftrows* '(#x49 #xdb #x87 #x3b #x45 #x39 #x53 #x89 #x7f #x02 #xd2 #xf1 #x77 #xde #x96 #x1a))
+(defconst *aes-128-round2-after-mixcolumns* '(#x58 #x4d #xca #xf1 #x1b #x4b #x5a #xac #xdb #xe7 #xca #xa8 #x1b #x6b #xb0 #xe5))
+(defconst *aes-128-round3-start* '(#xaa #x8f #x5f #x03 #x61 #xdd #xe3 #xef #x82 #xd2 #x4a #xd2 #x68 #x32 #x46 #x9a))
+
+(acl2::assert-equal (subbytes (copyarraytostate *aes-128-round2-start*))
+                    (copyarraytostate *aes-128-round2-after-subbytes*))
+(acl2::assert-equal (shiftrows (copyarraytostate *aes-128-round2-after-subbytes*))
+                    (copyarraytostate *aes-128-round2-after-shiftrows*))
+(acl2::assert-equal (mixcolumns (copyarraytostate *aes-128-round2-after-shiftrows*))
+                    (copyarraytostate *aes-128-round2-after-mixcolumns*))
+(acl2::assert-equal (addroundkey (copyarraytostate *aes-128-round2-after-mixcolumns*)
+                                 (subrange 8 11 *aes-128-example-expanded-key*))
+                    (copyarraytostate *aes-128-round3-start*))
+
+;; Round 3:
+
+(defconst *aes-128-round3-after-subbytes* '(#xac #x73 #xcf #x7b #xef #xc1 #x11 #xdf #x13 #xb5 #xd6 #xb5 #x45 #x23 #x5a #xb8))
+(defconst *aes-128-round3-after-shiftrows* '(#xac #xc1 #xd6 #xb8 #xef #xb5 #x5a #x7b #x13 #x23 #xcf #xdf #x45 #x73 #x11 #xb5))
+(defconst *aes-128-round3-after-mixcolumns* '(#x75 #xec #x09 #x93 #x20 #x0b #x63 #x33 #x53 #xc0 #xcf #x7c #xbb #x25 #xd0 #xdc))
+(defconst *aes-128-round4-start* '(#x48 #x6c #x4e #xee #x67 #x1d #x9d #x0d #x4d #xe3 #xb1 #x38 #xd6 #x5f #x58 #xe7))
+
+(acl2::assert-equal (subbytes (copyarraytostate *aes-128-round3-start*))
+                    (copyarraytostate *aes-128-round3-after-subbytes*))
+(acl2::assert-equal (shiftrows (copyarraytostate *aes-128-round3-after-subbytes*))
+                    (copyarraytostate *aes-128-round3-after-shiftrows*))
+(acl2::assert-equal (mixcolumns (copyarraytostate *aes-128-round3-after-shiftrows*))
+                    (copyarraytostate *aes-128-round3-after-mixcolumns*))
+(acl2::assert-equal (addroundkey (copyarraytostate *aes-128-round3-after-mixcolumns*)
+                                 (subrange 12 15 *aes-128-example-expanded-key*))
+                    (copyarraytostate *aes-128-round4-start*))
+
+;; Round 4:
+
+(defconst *aes-128-round4-after-subbytes* '(#x52 #x50 #x2f #x28 #x85 #xa4 #x5e #xd7 #xe3 #x11 #xc8 #x07 #xf6 #xcf #x6a #x94))
+(defconst *aes-128-round4-after-shiftrows* '(#x52 #xa4 #xc8 #x94 #x85 #x11 #x6a #x28 #xe3 #xcf #x2f #xd7 #xf6 #x50 #x5e #x07))
+(defconst *aes-128-round4-after-mixcolumns* '(#x0f #xd6 #xda #xa9 #x60 #x31 #x38 #xbf #x6f #xc0 #x10 #x6b #x5e #xb3 #x13 #x01))
+(defconst *aes-128-round5-start* '(#xe0 #x92 #x7f #xe8 #xc8 #x63 #x63 #xc0 #xd9 #xb1 #x35 #x50 #x85 #xb8 #xbe #x01))
+
+(acl2::assert-equal (subbytes (copyarraytostate *aes-128-round4-start*))
+                    (copyarraytostate *aes-128-round4-after-subbytes*))
+(acl2::assert-equal (shiftrows (copyarraytostate *aes-128-round4-after-subbytes*))
+                    (copyarraytostate *aes-128-round4-after-shiftrows*))
+(acl2::assert-equal (mixcolumns (copyarraytostate *aes-128-round4-after-shiftrows*))
+                    (copyarraytostate *aes-128-round4-after-mixcolumns*))
+(acl2::assert-equal (addroundkey (copyarraytostate *aes-128-round4-after-mixcolumns*)
+                                 (subrange 16 19 *aes-128-example-expanded-key*))
+                    (copyarraytostate *aes-128-round5-start*))
+
+;; Round 5:
+
+(defconst *aes-128-round5-after-subbytes* '(#xe1 #x4f #xd2 #x9b #xe8 #xfb #xfb #xba #x35 #xc8 #x96 #x53 #x97 #x6c #xae #x7c))
+(defconst *aes-128-round5-after-shiftrows* '(#xe1 #xfb #x96 #x7c #xe8 #xc8 #xae #x9b #x35 #x6c #xd2 #xba #x97 #x4f #xfb #x53))
+(defconst *aes-128-round5-after-mixcolumns* '(#x25 #xd1 #xa9 #xad #xbd #x11 #xd1 #x68 #xb6 #x3a #x33 #x8e #x4c #x4c #xc0 #xb0))
+(defconst *aes-128-round6-start* '(#xf1 #x00 #x6f #x55 #xc1 #x92 #x4c #xef #x7c #xc8 #x8b #x32 #x5d #xb5 #xd5 #x0c))
+
+(acl2::assert-equal (subbytes (copyarraytostate *aes-128-round5-start*))
+                    (copyarraytostate *aes-128-round5-after-subbytes*))
+(acl2::assert-equal (shiftrows (copyarraytostate *aes-128-round5-after-subbytes*))
+                    (copyarraytostate *aes-128-round5-after-shiftrows*))
+(acl2::assert-equal (mixcolumns (copyarraytostate *aes-128-round5-after-shiftrows*))
+                    (copyarraytostate *aes-128-round5-after-mixcolumns*))
+(acl2::assert-equal (addroundkey (copyarraytostate *aes-128-round5-after-mixcolumns*)
+                                 (subrange 20 23 *aes-128-example-expanded-key*))
+                    (copyarraytostate *aes-128-round6-start*))
+
+;; Round 6:
+
+(defconst *aes-128-round6-after-subbytes* '(#xa1 #x63 #xa8 #xfc #x78 #x4f #x29 #xdf #x10 #xe8 #x3d #x23 #x4c #xd5 #x03 #xfe))
+(defconst *aes-128-round6-after-shiftrows* '(#xa1 #x4f #x3d #xfe #x78 #xe8 #x03 #xfc #x10 #xd5 #xa8 #xdf #x4c #x63 #x29 #x23))
+(defconst *aes-128-round6-after-mixcolumns* '(#x4b #x86 #x8d #x6d #x2c #x4a #x89 #x80 #x33 #x9d #xf4 #xe8 #x37 #xd2 #x18 #xd8))
+(defconst *aes-128-round7-start* '(#x26 #x0e #x2e #x17 #x3d #x41 #xb7 #x7d #xe8 #x64 #x72 #xa9 #xfd #xd2 #x8b #x25))
+
+(acl2::assert-equal (subbytes (copyarraytostate *aes-128-round6-start*))
+                    (copyarraytostate *aes-128-round6-after-subbytes*))
+(acl2::assert-equal (shiftrows (copyarraytostate *aes-128-round6-after-subbytes*))
+                    (copyarraytostate *aes-128-round6-after-shiftrows*))
+(acl2::assert-equal (mixcolumns (copyarraytostate *aes-128-round6-after-shiftrows*))
+                    (copyarraytostate *aes-128-round6-after-mixcolumns*))
+(acl2::assert-equal (addroundkey (copyarraytostate *aes-128-round6-after-mixcolumns*)
+                                 (subrange 24 27 *aes-128-example-expanded-key*))
+                    (copyarraytostate *aes-128-round7-start*))
+
+;; Round 7:
+
+(defconst *aes-128-round7-after-subbytes* '(#xf7 #xab #x31 #xf0 #x27 #x83 #xa9 #xff #x9b #x43 #x40 #xd3 #x54 #xb5 #x3d #x3f))
+(defconst *aes-128-round7-after-shiftrows* '(#xf7 #x83 #x40 #x3f #x27 #x43 #x3d #xf0 #x9b #xb5 #x31 #xff #x54 #xab #xa9 #xd3))
+(defconst *aes-128-round7-after-mixcolumns* '(#x14 #x15 #xb5 #xbf #x46 #x16 #x15 #xec #x27 #x46 #x56 #xd7 #x34 #x2a #xd8 #x43))
+(defconst *aes-128-round8-start* '(#x5a #x41 #x42 #xb1 #x19 #x49 #xdc #x1f #xa3 #xe0 #x19 #x65 #x7a #x8c #x04 #x0c))
+
+(acl2::assert-equal (subbytes (copyarraytostate *aes-128-round7-start*))
+                    (copyarraytostate *aes-128-round7-after-subbytes*))
+(acl2::assert-equal (shiftrows (copyarraytostate *aes-128-round7-after-subbytes*))
+                    (copyarraytostate *aes-128-round7-after-shiftrows*))
+(acl2::assert-equal (mixcolumns (copyarraytostate *aes-128-round7-after-shiftrows*))
+                    (copyarraytostate *aes-128-round7-after-mixcolumns*))
+(acl2::assert-equal (addroundkey (copyarraytostate *aes-128-round7-after-mixcolumns*)
+                                 (subrange 28 31 *aes-128-example-expanded-key*))
+                    (copyarraytostate *aes-128-round8-start*))
+
+;; Round 8:
+
+(defconst *aes-128-round8-after-subbytes* '(#xbe #x83 #x2c #xc8 #xd4 #x3b #x86 #xc0 #x0a #xe1 #xd4 #x4d #xda #x64 #xf2 #xfe))
+(defconst *aes-128-round8-after-shiftrows* '(#xbe #x3b #xd4 #xfe #xd4 #xe1 #xf2 #xc8 #x0a #x64 #x2c #xc0 #xda #x83 #x86 #x4d))
+(defconst *aes-128-round8-after-mixcolumns* '(#x00 #x51 #x2f #xd1 #xb1 #xc8 #x89 #xff #x54 #x76 #x6d #xcd #xfa #x1b #x99 #xea))
+(defconst *aes-128-round9-start* '(#xea #x83 #x5c #xf0 #x04 #x45 #x33 #x2d #x65 #x5d #x98 #xad #x85 #x96 #xb0 #xc5))
+
+(acl2::assert-equal (subbytes (copyarraytostate *aes-128-round8-start*))
+                    (copyarraytostate *aes-128-round8-after-subbytes*))
+(acl2::assert-equal (shiftrows (copyarraytostate *aes-128-round8-after-subbytes*))
+                    (copyarraytostate *aes-128-round8-after-shiftrows*))
+(acl2::assert-equal (mixcolumns (copyarraytostate *aes-128-round8-after-shiftrows*))
+                    (copyarraytostate *aes-128-round8-after-mixcolumns*))
+(acl2::assert-equal (addroundkey (copyarraytostate *aes-128-round8-after-mixcolumns*)
+                                 (subrange 32 35 *aes-128-example-expanded-key*))
+                    (copyarraytostate *aes-128-round9-start*))
+
+;; Round 9:
+
+(defconst *aes-128-round9-after-subbytes* '(#x87 #xec #x4a #x8c #xf2 #x6e #xc3 #xd8 #x4d #x4c #x46 #x95 #x97 #x90 #xe7 #xa6))
+(defconst *aes-128-round9-after-shiftrows* '(#x87 #x6e #x46 #xa6 #xf2 #x4c #xe7 #x8c #x4d #x90 #x4a #xd8 #x97 #xec #xc3 #x95))
+(defconst *aes-128-round9-after-mixcolumns* '(#x47 #x37 #x94 #xed #x40 #xd4 #xe4 #xa5 #xa3 #x70 #x3a #xa6 #x4c #x9f #x42 #xbc))
+(defconst *aes-128-round10-start* '(#xeb #x40 #xf2 #x1e #x59 #x2e #x38 #x84 #x8b #xa1 #x13 #xe7 #x1b #xc3 #x42 #xd2))
+
+(acl2::assert-equal (subbytes (copyarraytostate *aes-128-round9-start*))
+                    (copyarraytostate *aes-128-round9-after-subbytes*))
+(acl2::assert-equal (shiftrows (copyarraytostate *aes-128-round9-after-subbytes*))
+                    (copyarraytostate *aes-128-round9-after-shiftrows*))
+(acl2::assert-equal (mixcolumns (copyarraytostate *aes-128-round9-after-shiftrows*))
+                    (copyarraytostate *aes-128-round9-after-mixcolumns*))
+(acl2::assert-equal (addroundkey (copyarraytostate *aes-128-round9-after-mixcolumns*)
+                                 (subrange 36 39 *aes-128-example-expanded-key*))
+                    (copyarraytostate *aes-128-round10-start*))
+
+;; Round 10 (the final round, with no MixColumns):
+
+(defconst *aes-128-round10-after-subbytes* '(#xe9 #x09 #x89 #x72 #xcb #x31 #x07 #x5f #x3d #x32 #x7d #x94 #xaf #x2e #x2c #xb5))
+(defconst *aes-128-round10-after-shiftrows* '(#xe9 #x31 #x7d #xb5 #xcb #x32 #x2c #x72 #x3d #x2e #x89 #x5f #xaf #x09 #x07 #x94))
+
+(acl2::assert-equal (subbytes (copyarraytostate *aes-128-round10-start*))
+                    (copyarraytostate *aes-128-round10-after-subbytes*))
+(acl2::assert-equal (shiftrows (copyarraytostate *aes-128-round10-after-subbytes*))
+                    (copyarraytostate *aes-128-round10-after-shiftrows*))
+(acl2::assert-equal (addroundkey (copyarraytostate *aes-128-round10-after-shiftrows*)
+                                 (subrange 40 43 *aes-128-example-expanded-key*))
+                    (copyarraytostate *aes-128-example-ciphertext*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Tests from Appendix C of the original (2001) FIPS-197
+;; (example vectors for all three key lengths)
+;;
 
 ;The same plaintext for all key lengths.
 (defconst *aes-test-plaintext* '(#x00 #x11 #x22 #x33 #x44 #x55 #x66 #x77 #x88 #x99 #xaa #xbb #xcc #xdd #xee #xff))
