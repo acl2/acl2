@@ -30,21 +30,6 @@
 ;  - Multidimensional subscript operator a[i,j] (C++23)
 ;  - Spaceship operator <=> is parsed as a binary op but mapped to the C$
 ;    'binop-ge' AST node (no dedicated spaceship binop variant in C$ AST)
-;
-; Everything else, including lambda expressions, all named casts, new/delete,
-; sizeof/alignof, try/catch, all for variants (including range-based for and
-; C++17 structured-binding for), switch/case/default, goto, co_yield/co_return,
-; and C++17 structured bindings (auto [a,b]=p; and for (auto [k,v]:m)), is
-; implemented and verified.
-;
-; C-style casts are fully handled: (keyword)e is always a cast, and the
-; pointer/reference forms (ident*)e, (ident* const)e, (ident&)e, and (ident&&)e
-; are always casts (the suffix before ')' makes them unambiguous).  A bare
-; (ident)e is a cast when e begins with ident/literal/(/++/--/~/!/+/-/&, and
-; is binary multiplication when the operator is a bare '*' with no suffix
-; (e.g. (x)*y).  That last case is genuinely ambiguous in a context-free
-; grammar -- it needs a symbol table of type names to resolve -- so treating
-; it as multiplication is a deliberate default, not a parser limitation.
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

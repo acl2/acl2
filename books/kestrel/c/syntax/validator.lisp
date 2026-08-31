@@ -7252,7 +7252,7 @@
                         (not (type-case type? :unknown-builtin))
                         (not (type-case type? :unknown-scalar))
                         (not (type-case type? :unknown-arithmetic))))
-             (retmsg$ "The second 'case' expression~
+             (retmsg$ "The second 'case' expression ~
                        in the label ~x0 has type ~x1."
                       (label-fix label) type?)))
          (retok (make-label-casexpr :expr new-expr :range? new-range?)
