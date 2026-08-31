@@ -31,6 +31,7 @@
 (set-induction-depth-limit 0)
 
 (local (include-book "std/alists/top" :dir :system))
+(local (include-book "std/lists/append" :dir :system))
 (local (include-book "std/lists/true-listp" :dir :system))
 (local (include-book "std/system/partition-rest-and-keyword-args" :dir :system))
 (local (include-book "std/system/pseudo-event-formp" :dir :system))
@@ -689,7 +690,6 @@
 (define deffold-map-gen-prod-map
   ((sum flexsum-p)
    (mutrecp booleanp)
-   (defer-guards-p booleanp)
    (suffix symbolp)
    (targets symbol-listp)
    (extra-args true-listp)
@@ -719,12 +719,7 @@
      in case the overriding term does not mention some of them.")
    (xdoc::p
     "The @('mutrecp') flag says whether
-     this product type is part of a mutually recursive clique.")
-   (xdoc::p
-    "The @('defer-guards-p') flag says whether
-     guard verification must be deferred to
-     a separate @(tsee verify-guards) event:
-     see @(tsee deffold-map-gen-clique-map/maps)."))
+     this product type is part of a mutually recursive clique."))
   (b* ((type (flexsum->name sum))
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
@@ -759,8 +754,7 @@
        ,@(and (or mutrecp recp)
               `(:measure (,type-count ,type)
                 :hints (("Goal" :in-theory (enable o-p o< o-finp)))))
-       ,@(and (not mutrecp)
-              `(:verify-guards ,(if defer-guards-p nil :after-returns)))
+       ,@(and (not mutrecp) '(:verify-guards nil))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -770,7 +764,6 @@
 (define deffold-map-gen-sum-map
   ((sum flexsum-p)
    (mutrecp booleanp)
-   (defer-guards-p booleanp)
    (suffix symbolp)
    (targets symbol-listp)
    (extra-args true-listp)
@@ -798,12 +791,7 @@
      in case the overriding term does not mention some of them.")
    (xdoc::p
     "The @('mutrecp') flag says whether
-     this sum type is part of a mutually recursive clique.")
-   (xdoc::p
-    "The @('defer-guards-p') flag says whether
-     guard verification must be deferred to
-     a separate @(tsee verify-guards) event:
-     see @(tsee deffold-map-gen-clique-map/maps)."))
+     this sum type is part of a mutually recursive clique."))
   (b* ((type (flexsum->name sum))
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
@@ -837,8 +825,7 @@
        ,@(and (or mutrecp recp)
               `(:measure (,type-count ,type)
                 :hints (("Goal" :in-theory (enable o-p o< o-finp)))))
-       ,@(and (not mutrecp)
-              `(:verify-guards ,(if defer-guards-p nil :after-returns)))
+       ,@(and (not mutrecp) '(:verify-guards nil))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -913,7 +900,7 @@
        ,@(and (or mutrecp recp)
               `(:measure (,type-count ,type)
                 :hints (("Goal" :in-theory (enable o-p o< o-finp)))))
-       ,@(and (not mutrecp) '(:verify-guards :after-returns))
+       ,@(and (not mutrecp) '(:verify-guards nil))
        ,@(and (not mutrecp) '(:hooks (:fix)))
        ///
        ,@thm-events
@@ -924,7 +911,6 @@
 (define deffold-map-gen-prod/sum/option-map
   ((sum flexsum-p)
    (mutrecp booleanp)
-   (defer-guards-p booleanp)
    (suffix symbolp)
    (targets symbol-listp)
    (extra-args true-listp)
@@ -942,12 +928,10 @@
     (cond
      ((eq typemacro 'defprod)
       (deffold-map-gen-prod-map
-        sum mutrecp defer-guards-p
-        suffix targets extra-args overrides name fty-table))
+        sum mutrecp suffix targets extra-args overrides name fty-table))
      ((eq typemacro 'deftagsum)
       (deffold-map-gen-sum-map
-        sum mutrecp defer-guards-p
-        suffix targets extra-args overrides name fty-table))
+        sum mutrecp suffix targets extra-args overrides name fty-table))
      ((eq typemacro 'defoption)
       (deffold-map-gen-option-map sum mutrecp suffix extra-args name fty-table))
      (t (prog2$
@@ -1104,7 +1088,7 @@
        ,@(and (or mutrecp recp)
               `(:measure (,type-count ,type)
                 :hints (("Goal" :in-theory (enable o-p o< o-finp)))))
-       ,@(and (not mutrecp) '(:verify-guards :after-returns))
+       ,@(and (not mutrecp) '(:verify-guards nil))
        ,@(and (not mutrecp) '(:hooks (:fix)))
        ///
        ,@thm-events
@@ -1225,7 +1209,7 @@
        ,@(and (or mutrecp recp)
               `(:measure (,type-count ,type)
                 :hints (("Goal" :in-theory (enable o-p o< o-finp)))))
-       ,@(and (not mutrecp) '(:verify-guards :after-returns))
+       ,@(and (not mutrecp) '(:verify-guards nil))
        ,@(and (not mutrecp) '(:hooks (:fix)))
        ///
        ,@thm-events
@@ -1236,7 +1220,6 @@
 (define deffold-map-gen-type-map
   (flex
    (mutrecp booleanp)
-   (defer-guards-p booleanp)
    (suffix symbolp)
    (targets symbol-listp)
    (extra-args true-listp)
@@ -1245,19 +1228,9 @@
    (fty-table alistp))
   :returns (event acl2::pseudo-event-formp)
   :short "Generate a map function for a type, with accompanying theorems."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The @('defer-guards-p') flag says whether
-     guard verification must be deferred to
-     a separate @(tsee verify-guards) event:
-     see @(tsee deffold-map-gen-clique-map/maps).
-     It is relevant only to product and sum types,
-     which are the only ones whose map functions
-     may call constructors with dependent requirements."))
   (cond ((flexsum-p flex)
          (deffold-map-gen-prod/sum/option-map
-           flex mutrecp defer-guards-p
+           flex mutrecp
            suffix targets extra-args overrides name fty-table))
         ((flexlist-p flex)
          (deffold-map-gen-list-map
@@ -1287,13 +1260,11 @@
    (xdoc::p
     "This is used for the members of a mutually recursive clique,
      whose @(tsee define)s carry no @(':verify-guards') option
-     (guard verification is controlled at the @(tsee defines) level):
-     thus, we pass @('nil') as the @('defer-guards-p') flag
-     to @(tsee deffold-map-gen-type-map)."))
+     (guard verification is controlled at the @(tsee defines) level)."))
   (b* (((when (endp flexs)) nil)
        (event
         (deffold-map-gen-type-map
-          (car flexs) mutrecp nil suffix targets extra-args overrides name
+          (car flexs) mutrecp suffix targets extra-args overrides name
           fty-table))
        (more-events
         (deffold-map-gen-types-maps
@@ -1338,24 +1309,22 @@
      since we have no control on how the user overrides the boilerplate.
      Note that this form is automatically local to the @(tsee defines).")
    (xdoc::p
-    "If any product or summand of the types in the clique
+    "The guards of the generated function(s) are always verified
+     via a separate @(tsee verify-guards) event,
+     generated as the last event of the @('///') section
+     of the @(tsee define) or @(tsee defines)
+     (adding the @('///') if the generated form has none),
+     whose own guard verification is deferred:
+     this way, guard verification can make use of
+     the theorems generated after the @('///')
+     (e.g. the theorems that accompany the list map functions,
+     which guard verification needs when
+     a product or summand of the types in the clique
      has a dependent requirement (i.e. a @(':require'))
-     and at least one field with a map function,
-     the guards of the generated functions
-     cannot be verified via @(':guard-hints')
-     in the @(tsee define) or @(tsee defines),
-     because guard verification needs some of the theorems
-     that accompany the list map functions,
-     which are proved after using the @(':guard-hints').
-     Thus, in this case we generate the function(s)
-     without guard verification,
-     followed by a separate @(tsee verify-guards) event
-     whose hints enable the rules collected by
-     @(tsee deffold-map-gen-types-require-rules).
-     If instead no product or summand of the types in the clique
-     has both a dependent requirement and a field with a map function,
-     we verify the guards as part of the @(tsee define) or @(tsee defines),
-     as usual.")
+     and at least one field with a map function).
+     In that case, the @(tsee verify-guards) event includes hints
+     that enable the rules collected by
+     @(tsee deffold-map-gen-types-require-rules).")
    (xdoc::p
     "Although the @('...-requirements') rules generated by FTY
      are enabled by default,
@@ -1373,17 +1342,22 @@
                        (deffold-map-gen-types-require-rules
                          members suffix targets overrides fty-table)))
        (verify-guards-events
-        (and require-rules
-             `((verify-guards
-                 ,(deffold-map-gen-map-name (flextype->name (car members))
-                                            suffix)
-                 :hints
-                 (("Goal" :in-theory (enable ,@require-rules)))))))
+        `((verify-guards
+            ,(deffold-map-gen-map-name (flextype->name (car members))
+                                       suffix)
+            ,@(and require-rules
+                   `(:hints
+                     (("Goal" :in-theory (enable ,@require-rules))))))))
        ((when (endp (cdr members)))
-        (cons (deffold-map-gen-type-map
-                (car members) nil (and require-rules t)
-                suffix targets extra-args overrides name fty-table)
-              verify-guards-events))
+        (b* ((event (deffold-map-gen-type-map
+                      (car members) nil
+                      suffix targets extra-args overrides name fty-table))
+             ((unless (true-listp event))
+              (raise "Internal error: malformed event ~x0." event))
+             (event (if (member-eq '/// event)
+                        (append event verify-guards-events)
+                      (append event (cons '/// verify-guards-events)))))
+          (list event)))
        (clique-name (flextypes->name clique))
        ((unless (symbolp clique-name))
         (raise "Internal error: malformed clique name ~x0." clique-name))
@@ -1391,18 +1365,25 @@
        (events
         (deffold-map-gen-types-maps
           members t suffix targets extra-args overrides name fty-table)))
-    (cons
+    (list
      `(defines ,clique-name-suffix
         :parents (,name)
         ,@events
         :hints (("Goal" :in-theory (enable o-p o< o-finp)))
-        :verify-guards ,(if require-rules nil :after-returns)
+        :verify-guards nil
         :flag-local nil
         :prepwork ((set-bogus-mutual-recursion-ok t))
         ///
         (deffixequiv-mutual ,clique-name-suffix
-          :hints (("Goal" :in-theory (disable (tau-system))))))
-     verify-guards-events)))
+          :hints (("Goal" :in-theory (disable (tau-system)))))
+        ,@verify-guards-events)))
+  :prepwork
+  ((local
+    (defthm pseudo-event-formp-of-append
+      (implies (and (acl2::pseudo-event-formp event)
+                    (true-listp rest))
+               (acl2::pseudo-event-formp (append event rest)))
+      :hints (("Goal" :in-theory (enable acl2::pseudo-event-formp)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
