@@ -6034,7 +6034,7 @@
   :hints (("Goal" :in-theory (e/d (bvplus slice-of-sum-cases
                                           bvlt
                                           bvchop-of-sum-cases
-                                          bvuminus bvplus bvminus
+                                          bvuminus bvminus
                                           bvchop-when-i-is-not-an-integer
                                           slice-when-val-is-not-an-integer)
                                   (bvminus-becomes-bvplus-of-bvuminus)))))

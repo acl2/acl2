@@ -262,7 +262,7 @@
                 (intern-table-okp intern-table heap))
            (equal (acl2::get-field (get-interned-string string intern-table) '(:special-data . :class) heap)
                   "java.lang.String"))
-  :hints (("Goal" :in-theory (enable lookup-equal intern-table-okp intern-table-okp acl2::get-class))))
+  :hints (("Goal" :in-theory (enable lookup-equal intern-table-okp acl2::get-class))))
 
 (defthm intern-table-okp-of-acons
   (implies (and (intern-table-okp intern-table heap)

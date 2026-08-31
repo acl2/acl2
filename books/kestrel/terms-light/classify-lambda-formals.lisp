@@ -1,6 +1,6 @@
 ; Substituting lambda vars that only appear once
 ;
-; Copyright (C) 2024-2025 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -219,7 +219,7 @@
 (defthm set-helper1
   (equal (subsetp-equal (set-difference-equal x this) (append (set-difference-equal y this) z))
          (subsetp-equal (set-difference-equal x this) (append y z)))
-  :hints (("Goal" :in-theory (enable set-difference-equal set-difference-equal))))
+  :hints (("Goal" :in-theory (enable set-difference-equal))))
 
 ;; (thm
 ;;   (equal (subsetp-equal (set-difference-equal x this) (append (set-difference-equal y this) z))
@@ -229,7 +229,7 @@
 (defthm set-helper2
   (implies (subsetp-equal (set-difference-equal oformals-to-maybe-subst formals-to-maybe-subst) formals-to-keep)
            (subsetp-equal (set-difference-equal oformals-to-maybe-subst xxx) (append formals-to-maybe-subst formals-to-keep)))
-  :hints (("Goal" :in-theory (enable set-difference-equal set-difference-equal))))
+  :hints (("Goal" :in-theory (enable set-difference-equal))))
 
 ;; ;; the final formals-to-keep should include all the formals-to-maybe-subst that we had to drop:
 ;; (thm

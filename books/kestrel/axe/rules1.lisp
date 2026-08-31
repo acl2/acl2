@@ -1433,7 +1433,6 @@
                               bvcat logapp)
                              (BVCAT-OF-GETBIT-AND-X-ADJACENT
                               TIMES-4-BECOMES-LOGAPP
-                              BVCAT-OF-GETBIT-AND-X-ADJACENT
                               BVCAT-EQUAL-REWRITE BVCAT-EQUAL-REWRITE-alt
                               LOGAPP-EQUAL-REWRITE
                               BVCAT-OF-0-arg2
