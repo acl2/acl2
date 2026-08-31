@@ -204,13 +204,15 @@
                                          kind)))
                            (prods (flexsum->prods info))
                            ((unless (flexprod-listp prods))
-                            (raise "Internal error: malformed summands ~x0." prods)
+                            (raise "Internal error: malformed summands ~x0."
+                                   prods)
                             (reterr t))
                            ((unless (member-eq kind
                                                (flexprod-list->kind-list prods)))
                             (reterr (msg "The kind ~x0 that accompanies ~
                                           the type ~x1 in the :OVERRIDE list ~
-                                          is not one of the kinds of that sum type."
+                                          is not one of ~
+                                          the kinds of that sum type."
                                          kind type))))
                         (retok (cons type kind) term))))
                    ((flexlist-p info)
@@ -230,11 +232,69 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define deffold-map-process-guard-hints (guard-hints
+                                         (types symbol-listp))
+  :returns (mv erp (guard-hints-alist alistp))
+  :short "Process the @(':guard-hints') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If successful, we return an alist
+     from (some of the) names in the @(':types') input
+     to lists of hints."))
+  (b* (((reterr) nil)
+       ((unless (true-listp guard-hints))
+        (reterr (msg "The :GUARD-HINTS input must be a list, ~
+                      but it is ~x0 instead."
+                     guard-hints))))
+    (deffold-map-process-guard-hints-loop guard-hints types))
+  :prepwork
+  ((define deffold-map-process-guard-hints-loop ((guard-hints true-listp)
+                                                 (types symbol-listp))
+     :returns (mv erp (guard-hints-alist alistp))
+     :parents nil
+     (b* (((reterr) nil)
+          ((when (endp guard-hints)) (retok nil))
+          (ghints (car guard-hints))
+          ((unless (std::tuplep 2 ghints))
+           (reterr (msg "Every element of the :GUARD-HINTS list ~
+                         must be a list of 2 elements, ~
+                         but the element ~x0 is not."
+                        ghints)))
+          (clique (first ghints))
+          (hints (second ghints))
+          ((unless (and (symbolp clique)
+                        (member-eq clique types)))
+           (reterr (msg "The first element of ~
+                         every element of the :GUARD-HINTS list ~
+                         must be the name of one of the cliques ~
+                         passed to the :TYPES input, ~
+                         but ~x0 is not."
+                        clique)))
+          ((unless (true-listp hints))
+           (reterr (msg "The second element of ~
+                         every element of the :GUARD-HINTS list ~
+                         must be a list of hints, ~
+                         but ~x0 is not."
+                        hints)))
+          ((erp alist)
+           (deffold-map-process-guard-hints-loop (cdr guard-hints) types))
+          ((when (assoc-eq clique alist))
+           (reterr (msg "The :GUARD-HINTS list contains ~
+                         more than one element for the clique ~x0."
+                        clique))))
+       (retok (acons clique hints alist)))
+     :prepwork ((local (in-theory (enable acons))))
+     :verify-guards :after-returns)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defval *deffold-map-allowed-options*
   :short "Keyword options accepted by @(tsee deffold-map)."
   '(:types
     :extra-args
     :override
+    :guard-hints
     :name
     :parents
     :short
@@ -252,6 +312,7 @@
                (targets symbol-listp)
                (extra-args true-listp)
                (overrides alistp)
+               (guard-hints-alist alistp)
                (name symbolp)
                (parents-presentp booleanp)
                parents
@@ -261,7 +322,7 @@
                long
                (print acl2::evmac-input-print-p))
   :short "Process all the inputs."
-  (b* (((reterr) nil nil nil nil nil nil nil nil nil nil nil nil nil)
+  (b* (((reterr) nil nil nil nil nil nil nil nil nil nil nil nil nil nil)
        ((mv erp suffix options)
         (partition-rest-and-keyword-args args *deffold-map-allowed-options*))
        ((when (or erp
@@ -293,6 +354,12 @@
                      (cdr override-option)
                    nil))
        ((erp overrides) (deffold-map-process-override override fty-table))
+       (guard-hints-option (assoc-eq :guard-hints options))
+       (guard-hints (if guard-hints-option
+                        (cdr guard-hints-option)
+                      nil))
+       ((erp guard-hints-alist)
+        (deffold-map-process-guard-hints guard-hints types))
        (name-option (assoc-eq :name options))
        ((unless name-option)
         (reterr (msg "The :NAME input must be supplied.")))
@@ -324,6 +391,7 @@
            targets
            extra-args
            overrides
+           guard-hints-alist
            name
            parents-presentp
            parents
@@ -1029,13 +1097,18 @@
                (equal (,type-suffix (append x y) ,@extra-args-names)
                       (append (,type-suffix x ,@extra-args-names)
                               (,type-suffix y ,@extra-args-names)))
-               :hints (("Goal" :in-theory '(append ,type-suffix car-cons cdr-cons)
+               :hints (("Goal" :in-theory '(append
+                                            ,type-suffix
+                                            car-cons
+                                            cdr-cons)
                                :induct (append x y))))
              (defruled ,consp-of-type-suffix
                (equal (consp (,type-suffix ,type ,@extra-args-names))
                       (consp ,type))
                :hints (("Goal" :in-theory nil
-                               :expand ((,type-suffix ,type ,@extra-args-names)))))
+                        :expand ((,type-suffix
+                                  ,type
+                                  ,@extra-args-names)))))
              (defruled ,len-of-type-suffix
                (equal (len (,type-suffix ,type ,@extra-args-names))
                       (len ,type))
@@ -1057,7 +1130,10 @@
                (equal (,type-suffix (revappend x y) ,@extra-args-names)
                       (revappend (,type-suffix x ,@extra-args-names)
                                  (,type-suffix y ,@extra-args-names)))
-               :hints (("Goal" :in-theory '(revappend ,type-suffix car-cons cdr-cons)
+               :hints (("Goal" :in-theory '(revappend
+                                            ,type-suffix
+                                            car-cons
+                                            cdr-cons)
                                :induct (revappend x y))))
              (defruled ,type-suffix-of-reverse
                (equal (,type-suffix (reverse ,type) ,@extra-args-names)
@@ -1280,6 +1356,7 @@
    (targets symbol-listp)
    (extra-args true-listp)
    (overrides alistp)
+   (guard-hints-alist alistp)
    (name symbolp)
    (fty-table alistp))
   :returns (events acl2::pseudo-event-form-listp)
@@ -1326,6 +1403,11 @@
      that enable the rules collected by
      @(tsee deffold-map-gen-types-require-rules).")
    (xdoc::p
+    "However, if the @(':guard-hints') input includes an entry for the clique,
+     the @(tsee verify-guards) event uses
+     exactly the hints from that entry,
+     instead of the hints described just above.")
+   (xdoc::p
     "Although the @('...-requirements') rules generated by FTY
      are enabled by default,
      we enable them explicitly in the proofs generated here
@@ -1338,16 +1420,22 @@
         (raise "Internal error: malformed members of type clique ~x0." clique))
        ((when (endp members))
         (raise "Internal error: empty type clique ~x0." clique))
+       (clique-name (flextypes->name clique))
+       ((unless (symbolp clique-name))
+        (raise "Internal error: malformed clique name ~x0." clique-name))
        (require-rules (remove-duplicates-eq
                        (deffold-map-gen-types-require-rules
                          members suffix targets overrides fty-table)))
+       (hints-assoc (assoc-eq clique-name guard-hints-alist))
+       (hints (if hints-assoc
+                  (cdr hints-assoc)
+                (and require-rules
+                     `(("Goal" :in-theory (enable ,@require-rules))))))
        (verify-guards-events
         `((verify-guards
             ,(deffold-map-gen-map-name (flextype->name (car members))
                                        suffix)
-            ,@(and require-rules
-                   `(:hints
-                     (("Goal" :in-theory (enable ,@require-rules))))))))
+            ,@(and hints `(:hints ,hints)))))
        ((when (endp (cdr members)))
         (b* ((event (deffold-map-gen-type-map
                       (car members) nil
@@ -1358,9 +1446,6 @@
                         (append event verify-guards-events)
                       (append event (cons '/// verify-guards-events)))))
           (list event)))
-       (clique-name (flextypes->name clique))
-       ((unless (symbolp clique-name))
-        (raise "Internal error: malformed clique name ~x0." clique-name))
        (clique-name-suffix (deffold-map-gen-map-name clique-name suffix))
        (events
         (deffold-map-gen-types-maps
@@ -1393,6 +1478,7 @@
    (targets symbol-listp)
    (extra-args true-listp)
    (overrides alistp)
+   (guard-hints-alist alistp)
    (name symbolp)
    (fty-table alistp))
   :returns (events acl2::pseudo-event-form-listp)
@@ -1406,10 +1492,11 @@
        ((unless (flextypes-p clique))
         (raise "Internal error: malformed type clique ~x0." clique))
        (events (deffold-map-gen-clique-map/maps
-                 clique suffix targets extra-args overrides name fty-table))
+                 clique suffix targets extra-args overrides guard-hints-alist
+                 name fty-table))
        (more-events (deffold-map-gen-cliques-maps
                       (cdr clique-names) suffix targets
-                      extra-args overrides name fty-table)))
+                      extra-args overrides guard-hints-alist name fty-table)))
     (append events more-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1420,6 +1507,7 @@
    (targets symbol-listp)
    (extra-args true-listp)
    (overrides alistp)
+   (guard-hints-alist alistp)
    (name symbolp)
    (parents-presentp booleanp)
    parents
@@ -1433,7 +1521,8 @@
   :short "Generate all the events."
   (b* ((map-events
         (deffold-map-gen-cliques-maps
-          types suffix targets extra-args overrides name fty-table))
+          types suffix targets extra-args overrides guard-hints-alist
+          name fty-table))
        (xdoc-event
         `(acl2::defxdoc+ ,name
            ,@(and parents-presentp `(:parents ,parents))
@@ -1473,6 +1562,7 @@
              targets
              extra-args
              overrides
+             guard-hints-alist
              name
              parents-presentp
              parents
@@ -1488,6 +1578,7 @@
              targets
              extra-args
              overrides
+             guard-hints-alist
              name
              parents-presentp
              parents
