@@ -144,6 +144,38 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c::language" "C Formalization"))
+
+   (xdoc::p
+    "We have added a formal notion of implementation environment,
+     which describes things like the format of the various integer types.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c$::syntax-for-tools" "Tool-Oriented C Syntax"))
+
+   (xdoc::p
+    "We have made several extensions and improvements,
+     including more support for C23,
+     more precise validation.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5
+    (xdoc::seetopic "c2c::transformation-tools" "C Transformation Tools"))
+
+   (xdoc::p
+    "We have improved and added transformations,
+     in particular one to split struct types,
+     which is more general than the previous one that splits struct object.
+     We have also started working out proof generation for struct splitting.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "data::data-lib" "Data-lib"))
 
    (xdoc::p
