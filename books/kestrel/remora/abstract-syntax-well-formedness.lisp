@@ -158,7 +158,7 @@
 (defsection ast-wfp-additional-theorems
   :short "Additional theorems about the AST well-formedness predicates."
 
-  (defruled dim-list-list-wfp-of-lists-to-singletons
+  (defruled dim-list-list-wfp-of-list-to-singletons
     (equal (dim-list-list-wfp (list-to-singletons dims))
            (dim-list-wfp dims))
     :induct t
@@ -166,4 +166,4 @@
              ast-wfp-rules))
 
   (add-to-ruleset ast-wfp-rules
-                  '(dim-list-list-wfp-of-lists-to-singletons)))
+                  '(dim-list-list-wfp-of-list-to-singletons)))
