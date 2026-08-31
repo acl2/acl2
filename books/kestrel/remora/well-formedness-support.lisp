@@ -212,6 +212,14 @@
     :mutual-recursion exprs/atoms/binds-subst-type-vars
     :hints (("Goal" :in-theory (enable bind-list-subst-type-vars len))))
 
+  (defret-mutual consp-of-bind-list-subst-type-vars
+    (defret consp-of-bind-list-subst-type-vars
+      (equal (consp result) (consp bind-list))
+      :fn bind-list-subst-type-vars)
+    :skip-others t
+    :mutual-recursion exprs/atoms/binds-subst-type-vars
+    :hints (("Goal" :in-theory (enable bind-list-subst-type-vars))))
+
   (defret-mutual exprs/atoms/binds-wfp-of-exprs/atoms/binds-subst-type-vars
     (defret expr-wfp-of-expr-subst-type-vars
       (implies (and (expr-wfp expr)
@@ -263,6 +271,7 @@
                                        len-of-expr-list-subst-type-vars
                                        len-of-atom-list-subst-type-vars
                                        len-of-bind-list-subst-type-vars
+                                       consp-of-bind-list-subst-type-vars
                                        len-of-type-list-subst-type-vars
                                        len-of-var+type?-list-subst-type-vars)))))
 

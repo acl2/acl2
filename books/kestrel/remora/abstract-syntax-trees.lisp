@@ -972,8 +972,7 @@
      (xdoc::p
       "A bracketed expression must have at least one sub-expression.")
      (xdoc::p
-      "A @('let') expressions must have at least one bind,
-       but this is not enforced in this fixtype.")
+      "A @('let') expression must have at least one bind.")
      (xdoc::p
       "[impl] has only unary ASTs for applications and unboxing."))
     (:var ((name string)))
@@ -1043,8 +1042,12 @@
                                   exprs
                                 (list (expr-fix nil)))))
      :require (consp exprs))
-    (:let ((binds bind-list) ; one or more
-           (body expr)))
+    (:let ((binds bind-list
+                  :reqfix (if (consp binds)
+                              binds
+                            (list (bind-fix nil))))
+           (body expr))
+     :require (consp binds))
     :pred exprp
 
     ///
@@ -1117,7 +1120,13 @@
       :rule-classes :type-prescription
       :use (:instance expr-unboxn-requirements (x expr))
       :disable expr-unboxn-requirements
-      :enable len))
+      :enable len)
+
+    (defrule consp-of-expr-let->binds
+      (consp (expr-let->binds expr))
+      :rule-classes :type-prescription
+      :use (:instance expr-let-requirements (x expr))
+      :disable expr-let-requirements))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
