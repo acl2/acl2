@@ -121,6 +121,14 @@
 
    (xdoc::h3 "New Libraries")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Remora")
+
+   (xdoc::p
+    "A formalization of, and tools for, Remora,
+     a rank-polymorphic higher-order programming language.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
