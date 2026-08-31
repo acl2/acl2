@@ -196,6 +196,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA Library"))
+
+   (xdoc::p
+    "We have added support for several instructions.")
+
+   (xdoc::p
+    "We have made various fixed and updates to code and documentation.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "zfc" "Set Theory Library"))
 
    (xdoc::p
