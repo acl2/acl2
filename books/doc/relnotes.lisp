@@ -121,6 +121,14 @@
 
    (xdoc::h3 "New Libraries")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Remora")
+
+   (xdoc::p
+    "A formalization of, and tools for, Remora,
+     a rank-polymorphic higher-order programming language.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
@@ -133,6 +141,38 @@
     "The @(see arithmetic-5) library has been improved.  See the new section of
      @('arithmetic-5/README') entitled, &ldquo;1.D. The Moore Modifications to
      Prevent Some Rewrite Loops&rdquo;.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c::language" "C Formalization"))
+
+   (xdoc::p
+    "We have added a formal notion of implementation environment,
+     which describes things like the format of the various integer types.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c$::syntax-for-tools" "Tool-Oriented C Syntax"))
+
+   (xdoc::p
+    "We have made several extensions and improvements,
+     including more support for C23,
+     more precise validation.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5
+    (xdoc::seetopic "c2c::transformation-tools" "C Transformation Tools"))
+
+   (xdoc::p
+    "We have improved and added transformations,
+     in particular one to split struct types,
+     which is more general than the previous one that splits struct object.
+     We have also started working out proof generation for struct splitting.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -153,6 +193,16 @@
      it was mistakenly failing to disable, and to avoid dropping suitable
      macro-aliases (see @(see macro-aliases-table)).  Eliminated support for
      unused utility ('with-supporters-after').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA Library"))
+
+   (xdoc::p
+    "We have added support for several instructions.")
+
+   (xdoc::p
+    "We have made various fixed and updates to code and documentation.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

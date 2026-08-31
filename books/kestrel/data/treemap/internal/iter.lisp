@@ -6,25 +6,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREESET")
+(in-package "TREEMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
-(include-book "kestrel/data/utilities/oset-defs" :dir :system)
+(include-book "kestrel/data/utilities/omap-defs" :dir :system)
 
 (include-book "tree-defs")
 (include-book "zipper")
-(include-book "in-defs")
+(include-book "keys-defs")
+(include-book "lookup-defs")
+(include-book "in-order-defs")
 (include-book "min-max-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/utilities/oset" :dir :system))
+(local (include-book "kestrel/data/utilities/omap" :dir :system))
+(local (include-book "std/omaps/extensionality" :dir :system))
 (local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
+
+(local (include-book "kestrel/alists-light/alistp" :dir :system))
+(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
+
+(local (include-book "kestrel/data/treeset/in" :dir :system))
+(local (include-book "kestrel/data/treeset/insert" :dir :system))
+(local (include-book "kestrel/data/treeset/union" :dir :system))
 
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
@@ -33,9 +43,11 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
 (local (include-book "tree"))
+(local (include-book "bst"))
 (local (include-book "in-order"))
 (local (include-book "min-max"))
-(local (include-book "in"))
+(local (include-book "keys"))
+(local (include-book "lookup"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -602,7 +614,7 @@
       leaves the elements behind.")
    (xdoc::p
      "Time complexity: @($O(d)$) in the worst case -- @($O(\\log(n))$) over a
-      @(see treeset) -- but @($O(1)$) amortized over a traversal."))
+      @(see treemap) -- but @($O(1)$) amortized over a traversal."))
   ;; Logically the move saturates at the far end, which is what @(tsee
   ;; next-identity-iff-after-lastp) reports. The guard rules that case out for
   ;; execution only, so the executable form need not test for it: one keyword
@@ -776,24 +788,70 @@
   :enable (tree-iter-prev
            tree-iter-fix-when-tree-iter-after-last-p))
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define tree-iter-value ((iter tree-iter-p))
+(define tree-iter-key ((iter tree-iter-p))
   :guard (tree-iter-has-value-p iter)
-  :short "The value at the iterator."
-  (zip-value (tree-iter->zip iter))
+  :short "The key at the iterator."
+  (zip-key (tree-iter->zip iter))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t tree-iter-value)))
+(in-theory (disable (:t tree-iter-key)))
 
-(defrule tree-iter-value-when-tree-iter-equiv-congruence
+(defrule tree-iter-key-when-tree-iter-equiv-congruence
   (implies (tree-iter-equiv iter0 iter1)
-           (equal (tree-iter-value iter0)
-                  (tree-iter-value iter1)))
+           (equal (tree-iter-key iter0)
+                  (tree-iter-key iter1)))
   :rule-classes :congruence
-  :enable tree-iter-value)
+  :enable tree-iter-key)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tree-iter-val ((iter tree-iter-p))
+  :guard (tree-iter-has-value-p iter)
+  :short "The value at the iterator."
+  (zip-val (tree-iter->zip iter))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t tree-iter-val)))
+
+(defrule tree-iter-val-when-tree-iter-equiv-congruence
+  (implies (tree-iter-equiv iter0 iter1)
+           (equal (tree-iter-val iter0)
+                  (tree-iter-val iter1)))
+  :rule-classes :congruence
+  :enable tree-iter-val)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tree-iter-key+val ((iter tree-iter-p))
+  :guard (tree-iter-has-value-p iter)
+  :short "The entry at the iterator, as a key-value pair."
+  (zip-key+val (tree-iter->zip iter))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t tree-iter-key+val)))
+
+(defrule tree-iter-key+val-when-tree-iter-equiv-congruence
+  (implies (tree-iter-equiv iter0 iter1)
+           (equal (tree-iter-key+val iter0)
+                  (tree-iter-key+val iter1)))
+  :rule-classes :congruence
+  :enable tree-iter-key+val)
+
+(defrule tree-iter-key+val-becomes-cons-of-tree-iter-key-and-tree-iter-val
+  (equal (tree-iter-key+val iter)
+         (cons (tree-iter-key iter) (tree-iter-val iter)))
+  :enable (tree-iter-key+val
+           tree-iter-key
+           tree-iter-val))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -845,9 +903,15 @@
 
 ;; The extrema of a side tree are the ends of its sequence.
 
+;; Unlike the TREESET originals, these carry a non-empty hypothesis. TREEMAP's
+;; `car-of-tree-in-order' splits on the empty tree, because `tree-leftmost' of
+;; the empty tree is an irrelevant pair rather than nil, so the unconditional
+;; forms would be false at the empty side.
+
 (defrule tree-leftmost-of-zip-tree-before
-  (equal (tree-leftmost (zip-tree-before zip))
-         (car (zip-before zip)))
+  (implies (not (tree-empty-p (zip-tree-before zip)))
+           (equal (tree-leftmost (zip-tree-before zip))
+                  (car (zip-before zip))))
   :enable (zip-before
            zip-tree-before)
   :use (:instance car-of-tree-in-order
@@ -856,8 +920,9 @@
   :disable (car-of-tree-in-order))
 
 (defrule tree-leftmost-of-zip-tree-after
-  (equal (tree-leftmost (zip-tree-after zip))
-         (car (zip-after zip)))
+  (implies (not (tree-empty-p (zip-tree-after zip)))
+           (equal (tree-leftmost (zip-tree-after zip))
+                  (car (zip-after zip))))
   :enable (zip-after
            zip-tree-after)
   :use (:instance car-of-tree-in-order
@@ -866,8 +931,9 @@
   :disable (car-of-tree-in-order))
 
 (defrule tree-rightmost-of-zip-tree-before
-  (equal (tree-rightmost (zip-tree-before zip))
-         (car (last (zip-before zip))))
+  (implies (not (tree-empty-p (zip-tree-before zip)))
+           (equal (tree-rightmost (zip-tree-before zip))
+                  (car (last (zip-before zip)))))
   :enable (zip-before
            zip-tree-before)
   :use (:instance car-of-last-of-tree-in-order
@@ -876,8 +942,9 @@
   :disable (car-of-last-of-tree-in-order))
 
 (defrule tree-rightmost-of-zip-tree-after
-  (equal (tree-rightmost (zip-tree-after zip))
-         (car (last (zip-after zip))))
+  (implies (not (tree-empty-p (zip-tree-after zip)))
+           (equal (tree-rightmost (zip-tree-after zip))
+                  (car (last (zip-after zip)))))
   :enable (zip-after
            zip-tree-after)
   :use (:instance car-of-last-of-tree-in-order
@@ -887,13 +954,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The list and oset sides are views of the side trees, exactly as at the
+;; The list and omap sides are views of the side trees, exactly as at the
 ;; zipper level.
 
 (define tree-iter-before ((iter tree-iter-p))
   (declare (xargs :type-prescription :none))
-  :returns (list true-listp :rule-classes :type-prescription)
-  :short "The values to the left of the iterator, in order."
+  :returns (alist alistp)
+  :short "The entries to the left of the iterator, in order."
   (tree-in-order (tree-iter-tree-before iter))
   :inline t)
 
@@ -901,12 +968,22 @@
 
 (define tree-iter-after ((iter tree-iter-p))
   (declare (xargs :type-prescription :none))
-  :returns (list true-listp :rule-classes :type-prescription)
-  :short "The values to the right of the iterator, in order."
+  :returns (alist alistp)
+  :short "The entries to the right of the iterator, in order."
   (tree-in-order (tree-iter-tree-after iter))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
+
+(defrule tree-iter-before-type-prescription
+  (true-listp (tree-iter-before iter))
+  :rule-classes :type-prescription
+  :enable tree-iter-before)
+
+(defrule tree-iter-after-type-prescription
+  (true-listp (tree-iter-after iter))
+  :rule-classes :type-prescription
+  :enable tree-iter-after)
 
 (defrule tree-iter-before-when-tree-iter-equiv-congruence
   (implies (tree-iter-equiv iter0 iter1)
@@ -987,30 +1064,32 @@
 (defrule append-of-tree-iter-before-and-tree-iter-after-when-has-value
   (implies (tree-iter-has-value-p iter)
            (equal (append (tree-iter-before iter)
-                          (cons (tree-iter-value iter)
+                          (cons (tree-iter-key+val iter)
                                 (tree-iter-after iter)))
                   (tree-in-order (tree-iter-plug iter))))
   :enable (tree-iter-before
            tree-iter-tree-before
            tree-iter-after
            tree-iter-tree-after
-           tree-iter-value
+           tree-iter-key+val
            tree-in-order-of-zip-plug-split-at-cursor))
 
 ;; The whole sequence is the two sides with the value between them, so an
 ;; element of the tree is on one side, on the other, or is the value itself.
 ;; Stated over @(tsee tree-iter-plug), where every function is still folded.
 
-(defruled tree-in-of-tree-iter-plug-split
+(defruled in-of-tree-key-set-of-tree-iter-plug-split
   (implies (tree-iter-has-value-p iter)
-           (equal (tree-in x (tree-iter-plug iter))
-                  (or (and (member-equal x (tree-iter-before iter)) t)
-                      (equal x (tree-iter-value iter))
-                      (and (member-equal x (tree-iter-after iter)) t))))
-  :use ((:instance member-equal-of-tree-in-order-under-iff
+           (iff (treeset::in key (tree-key-set (tree-iter-plug iter)))
+                (or (assoc-equal key (tree-iter-before iter))
+                    (equal key (tree-iter-key iter))
+                    (assoc-equal key (tree-iter-after iter)))))
+  :use ((:instance assoc-equal-of-tree-in-order-under-iff
+                   (x key)
                    (tree (tree-iter-plug iter)))
         append-of-tree-iter-before-and-tree-iter-after-when-has-value)
-  :disable (member-equal-of-tree-in-order-under-iff
+  :enable tree-iter-key+val-becomes-cons-of-tree-iter-key-and-tree-iter-val
+  :disable (assoc-equal-of-tree-in-order-under-iff
             append-of-tree-iter-before-and-tree-iter-after-when-has-value
             tree-in-order-of-zip-plug))
 
@@ -1045,7 +1124,7 @@
 (defruledl tree-in-order-becomes-value-and-after-of-zip-first
   (implies (not (tree-empty-p tree))
            (equal (tree-in-order tree)
-                  (cons (zip-value (zip-first tree))
+                  (cons (zip-key+val (zip-first tree))
                         (zip-after (zip-first tree)))))
   :use (:instance tree-in-order-of-zip-plug-split-at-cursor
                   (zip (zip-first tree))))
@@ -1056,7 +1135,7 @@
   (implies (not (tree-empty-p tree))
            (equal (tree-in-order tree)
                   (append (zip-before (zip-last tree))
-                          (list (zip-value (zip-last tree))))))
+                          (list (zip-key+val (zip-last tree))))))
   :use (:instance tree-in-order-of-zip-plug-split-at-cursor
                   (zip (zip-last tree))))
 
@@ -1100,11 +1179,11 @@
   (implies (tree-iter-has-value-p iter)
            (equal (tree-iter-before (tree-iter-next iter))
                   (append (tree-iter-before iter)
-                          (list (tree-iter-value iter)))))
+                          (list (tree-iter-key+val iter)))))
   :enable (tree-iter-before
            tree-iter-tree-before
            tree-iter-next
-           tree-iter-value
+           tree-iter-key+val
            tree-in-order-of-zip-plug-split-at-cursor))
 
 ;; The mirror, which cannot be stated the same way: a step back drops the LAST
@@ -1117,11 +1196,11 @@
   (implies (tree-iter-has-value-p (tree-iter-prev iter))
            (equal (tree-iter-before iter)
                   (append (tree-iter-before (tree-iter-prev iter))
-                          (list (tree-iter-value (tree-iter-prev iter))))))
+                          (list (tree-iter-key+val (tree-iter-prev iter))))))
   :enable (tree-iter-before
            tree-iter-tree-before
            tree-iter-prev
-           tree-iter-value)
+           tree-iter-key+val)
   :use (:instance tree-in-order-becomes-before-and-value-of-zip-last
                   (tree (tree-iter-plug iter))))
 
@@ -1131,12 +1210,12 @@
 (defrule tree-iter-after-of-tree-iter-prev
   (implies (tree-iter-has-value-p iter)
            (equal (tree-iter-after (tree-iter-prev iter))
-                  (cons (tree-iter-value iter)
+                  (cons (tree-iter-key+val iter)
                         (tree-iter-after iter))))
   :enable (tree-iter-after
            tree-iter-tree-after
            tree-iter-prev
-           tree-iter-value
+           tree-iter-key+val
            tree-in-order-of-zip-plug-split-at-cursor))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1223,154 +1302,157 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Both sides are ordered, whenever the tree is. An oset is just an ordered
-;; list, and each side is a contiguous slice of the tree's in-order sequence,
-;; which is an oset by @(tsee osetp-of-tree-in-order-when-bstp). So the sets to
+;; Both sides are ordered, whenever the tree is. An omap is just an ordered
+;; alist, and each side is a contiguous slice of the tree's in-order alist,
+;; which is an omap by @(tsee omapp-of-tree-in-order-when-bstp). So the maps to
 ;; either side of the iterator are available without building anything.
 
-(defrule osetp-of-tree-iter-before-when-bstp
+(defrule omapp-of-tree-iter-before-when-bstp
   (implies (bstp (tree-iter-plug iter))
-           (set::setp (tree-iter-before iter)))
+           (omap::mapp (tree-iter-before iter)))
   :enable (tree-iter-before
            tree-iter-tree-before))
 
-(defrule osetp-of-tree-iter-after-when-bstp
+(defrule omapp-of-tree-iter-after-when-bstp
   (implies (bstp (tree-iter-plug iter))
-           (set::setp (tree-iter-after iter)))
+           (omap::mapp (tree-iter-after iter)))
   :enable (tree-iter-after
            tree-iter-tree-after))
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The two sides as osets, lifted through the three shapes: nothing lies
+;; The two sides as omaps, lifted through the three shapes: nothing lies
 ;; behind the left end or ahead of the right one, and at either end the whole
-;; tree lies on the other side. Structurally @(tsee set::setp), like the
+;; tree lies on the other side. Structurally @(tsee omap::mapp), like the
 ;; zipper versions they wrap.
 
-(define tree-iter-oset-before ((iter tree-iter-p))
-  :returns (oset set::setp)
-  :short "The elements to the left of the iterator, as an oset."
-  (tree-oset (tree-iter-tree-before iter)))
+(define tree-iter-omap-before ((iter tree-iter-p))
+  :returns (omap omap::mapp)
+  :short "The entries to the left of the iterator, as an omap."
+  (tree-omap (tree-iter-tree-before iter)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define tree-iter-oset-after ((iter tree-iter-p))
-  :returns (oset set::setp)
-  :short "The elements to the right of the iterator, as an oset."
-  (tree-oset (tree-iter-tree-after iter)))
+(define tree-iter-omap-after ((iter tree-iter-p))
+  :returns (omap omap::mapp)
+  :short "The entries to the right of the iterator, as an omap."
+  (tree-omap (tree-iter-tree-after iter)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t tree-iter-oset-before) (:t tree-iter-oset-after)))
+(in-theory (disable (:t tree-iter-omap-before) (:t tree-iter-omap-after)))
 
-(defrule tree-iter-oset-before-when-tree-iter-equiv-congruence
+(defrule tree-iter-omap-before-when-tree-iter-equiv-congruence
   (implies (tree-iter-equiv iter0 iter1)
-           (equal (tree-iter-oset-before iter0)
-                  (tree-iter-oset-before iter1)))
+           (equal (tree-iter-omap-before iter0)
+                  (tree-iter-omap-before iter1)))
   :rule-classes :congruence
-  :expand ((tree-iter-oset-before iter0)
-           (tree-iter-oset-before iter1)))
+  :expand ((tree-iter-omap-before iter0)
+           (tree-iter-omap-before iter1)))
 
-(defrule tree-iter-oset-after-when-tree-iter-equiv-congruence
+(defrule tree-iter-omap-after-when-tree-iter-equiv-congruence
   (implies (tree-iter-equiv iter0 iter1)
-           (equal (tree-iter-oset-after iter0)
-                  (tree-iter-oset-after iter1)))
+           (equal (tree-iter-omap-after iter0)
+                  (tree-iter-omap-after iter1)))
   :rule-classes :congruence
-  :expand ((tree-iter-oset-after iter0)
-           (tree-iter-oset-after iter1)))
+  :expand ((tree-iter-omap-after iter0)
+           (tree-iter-omap-after iter1)))
 
-;; Membership in each oset is membership in the corresponding sequence, with
+;; Membership in each omap is membership in the corresponding sequence, with
 ;; no hypothesis.
 
-(defrule in-of-tree-iter-oset-before
-  (iff (set::in x (tree-iter-oset-before iter))
-       (member-equal x (tree-iter-before iter)))
-  :enable (tree-iter-oset-before
-           tree-iter-before))
+(defrule assoc-of-tree-iter-omap-before
+  (iff (omap::assoc key (tree-iter-omap-before iter))
+       (assoc-equal key (tree-iter-before iter)))
+  :enable (tree-iter-omap-before
+           tree-iter-before
+           assoc-equal-of-tree-in-order-under-iff))
 
-(defrule in-of-tree-iter-oset-after
-  (iff (set::in x (tree-iter-oset-after iter))
-       (member-equal x (tree-iter-after iter)))
-  :enable (tree-iter-oset-after
-           tree-iter-after))
+(defrule assoc-of-tree-iter-omap-after
+  (iff (omap::assoc key (tree-iter-omap-after iter))
+       (assoc-equal key (tree-iter-after iter)))
+  :enable (tree-iter-omap-after
+           tree-iter-after
+           assoc-equal-of-tree-in-order-under-iff))
 
-;; Each oset is empty exactly when its sequence is.
+;; Each omap is empty exactly when its sequence is.
 
-(defrule emptyp-of-tree-iter-oset-before
-  (equal (set::emptyp (tree-iter-oset-before iter))
+(defrule omap-emptyp-of-tree-iter-omap-before
+  (equal (omap::emptyp (tree-iter-omap-before iter))
          (not (consp (tree-iter-before iter))))
-  :enable (tree-iter-oset-before
+  :enable (tree-iter-omap-before
            tree-empty-p-of-tree-iter-tree-before))
 
-(defrule emptyp-of-tree-iter-oset-after
-  (equal (set::emptyp (tree-iter-oset-after iter))
+(defrule omap-emptyp-of-tree-iter-omap-after
+  (equal (omap::emptyp (tree-iter-omap-after iter))
          (not (consp (tree-iter-after iter))))
-  :enable (tree-iter-oset-after
+  :enable (tree-iter-omap-after
            tree-empty-p-of-tree-iter-tree-after))
 
-;; An empty sequence means an empty oset on the same side, since the oset is
+;; An empty sequence means an empty omap on the same side, since the omap is
 ;; the sequence's members.
 
-(defruled tree-iter-oset-before-when-not-consp-of-tree-iter-before
+(defruled tree-iter-omap-before-when-not-consp-of-tree-iter-before
   (implies (not (consp (tree-iter-before iter)))
-           (equal (tree-iter-oset-before iter)
+           (equal (tree-iter-omap-before iter)
                   nil))
-  :use emptyp-of-tree-iter-oset-before
-  :enable set::emptyp
-  :disable emptyp-of-tree-iter-oset-before)
+  :use omap-emptyp-of-tree-iter-omap-before
+  :enable omap::emptyp
+  :disable omap-emptyp-of-tree-iter-omap-before)
 
-(defruled tree-iter-oset-after-when-not-consp-of-tree-iter-after
+(defruled tree-iter-omap-after-when-not-consp-of-tree-iter-after
   (implies (not (consp (tree-iter-after iter)))
-           (equal (tree-iter-oset-after iter)
+           (equal (tree-iter-omap-after iter)
                   nil))
-  :use emptyp-of-tree-iter-oset-after
-  :enable set::emptyp
-  :disable emptyp-of-tree-iter-oset-after)
+  :use omap-emptyp-of-tree-iter-omap-after
+  :enable omap::emptyp
+  :disable omap-emptyp-of-tree-iter-omap-after)
 
-;; Over a search tree the oset and sequence versions are the same object.
+;; Over a search tree the omap and sequence versions are the same object.
 
-(defruled tree-iter-oset-before-becomes-tree-iter-before
+(defruled tree-iter-omap-before-becomes-tree-iter-before
   (implies (bstp (tree-iter-plug iter))
-           (equal (tree-iter-oset-before iter)
+           (equal (tree-iter-omap-before iter)
                   (tree-iter-before iter)))
-  :enable (tree-iter-oset-before
+  :enable (tree-iter-omap-before
            tree-iter-tree-before
            tree-iter-before
-           tree-oset-becomes-tree-in-order
-           zip-oset-before-becomes-zip-before))
+           tree-omap-becomes-tree-in-order
+           zip-omap-before-becomes-zip-before))
 
-(defruled tree-iter-oset-after-becomes-tree-iter-after
+(defruled tree-iter-omap-after-becomes-tree-iter-after
   (implies (bstp (tree-iter-plug iter))
-           (equal (tree-iter-oset-after iter)
+           (equal (tree-iter-omap-after iter)
                   (tree-iter-after iter)))
-  :enable (tree-iter-oset-after
+  :enable (tree-iter-omap-after
            tree-iter-tree-after
            tree-iter-after
-           tree-oset-becomes-tree-in-order
-           zip-oset-after-becomes-zip-after))
+           tree-omap-becomes-tree-in-order
+           zip-omap-after-becomes-zip-after))
 
-;; The order filters, lifted: at an element, each side holds exactly the
-;; elements of the tree on that side of the value in the @(tsee <<) order.
+;; The order filters, lifted: at an entry, each side holds exactly the keys of
+;; the tree on that side of the cursor's key in the @(tsee <<) order.
 
-(defrule in-of-tree-iter-oset-before-when-bstp
+(defrule assoc-of-tree-iter-omap-before-when-bstp
   (implies (and (bstp (tree-iter-plug iter))
                 (tree-iter-has-value-p iter))
-           (equal (set::in x (tree-iter-oset-before iter))
-                  (and (tree-in x (tree-iter-plug iter))
-                       (<< x (tree-iter-value iter)))))
-  :enable (tree-iter-oset-before
+           (iff (omap::assoc key (tree-iter-omap-before iter))
+                (and (treeset::in key (tree-key-set (tree-iter-plug iter)))
+                     (<< key (tree-iter-key iter)))))
+  :enable (tree-iter-omap-before
            tree-iter-tree-before
-           tree-iter-value))
+           tree-iter-key))
 
-(defrule in-of-tree-iter-oset-after-when-bstp
+(defrule assoc-of-tree-iter-omap-after-when-bstp
   (implies (and (bstp (tree-iter-plug iter))
                 (tree-iter-has-value-p iter))
-           (equal (set::in x (tree-iter-oset-after iter))
-                  (and (tree-in x (tree-iter-plug iter))
-                       (<< (tree-iter-value iter) x))))
-  :enable (tree-iter-oset-after
+           (iff (omap::assoc key (tree-iter-omap-after iter))
+                (and (treeset::in key (tree-key-set (tree-iter-plug iter)))
+                     (<< (tree-iter-key iter) key))))
+  :enable (tree-iter-omap-after
            tree-iter-tree-after
-           tree-iter-value))
+           tree-iter-key))
 
 ;; A step forward can never land before the first element, whichever
 ;; position it began at. This is what lets a forward walk know it may read
@@ -1390,21 +1472,22 @@
 ;; first element, and the head of a tree's in-order sequence is its leftmost
 ;; node, so the two agree.
 
-(defrule zip-value-of-zip-first
+(defrule zip-key+val-of-zip-first
   (implies (not (tree-empty-p tree))
-           (equal (zip-value (zip-first tree))
+           (equal (zip-key+val (zip-first tree))
                   (tree-leftmost tree)))
   :use (tree-in-order-becomes-value-and-after-of-zip-first
         car-of-tree-in-order)
   :disable car-of-tree-in-order)
 
-(defrule zip-value-of-zip-last
+(defrule zip-key+val-of-zip-last
   (implies (not (tree-empty-p tree))
-           (equal (zip-value (zip-last tree))
+           (equal (zip-key+val (zip-last tree))
                   (tree-rightmost tree)))
   :use (tree-in-order-becomes-before-and-value-of-zip-last
         car-of-last-of-tree-in-order)
   :disable car-of-last-of-tree-in-order)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1496,51 +1579,101 @@
 
 ;; What each walk reads first: the extremum on its own side.
 
-(defrule tree-iter-value-of-tree-iter-min
+(defrule tree-iter-key+val-of-tree-iter-min
   (implies (not (tree-empty-p tree))
-           (equal (tree-iter-value (tree-iter-min tree))
+           (equal (tree-iter-key+val (tree-iter-min tree))
                   (tree-leftmost tree)))
   :enable (tree-iter-min
            tree-iter-next
-           tree-iter-value))
+           tree-iter-key+val))
 
-(defrule tree-iter-value-of-tree-iter-max
+(defrule tree-iter-key+val-of-tree-iter-max
   (implies (not (tree-empty-p tree))
-           (equal (tree-iter-value (tree-iter-max tree))
+           (equal (tree-iter-key+val (tree-iter-max tree))
                   (tree-rightmost tree)))
   :enable (tree-iter-max
            tree-iter-prev
-           tree-iter-value))
+           tree-iter-key+val))
+
+;; The projections of the same fact. TREEMAP splits what TREESET reads as a
+;; single value, and the public `min-key'/`min-val' pairs need each half on
+;; its own.
+
+(defrule tree-iter-key-of-tree-iter-min
+  (implies (not (tree-empty-p tree))
+           (equal (tree-iter-key (tree-iter-min tree))
+                  (car (tree-leftmost tree))))
+  :use tree-iter-key+val-of-tree-iter-min
+  :enable tree-iter-key+val-becomes-cons-of-tree-iter-key-and-tree-iter-val
+  :disable tree-iter-key+val-of-tree-iter-min)
+
+(defrule tree-iter-val-of-tree-iter-min
+  (implies (not (tree-empty-p tree))
+           (equal (tree-iter-val (tree-iter-min tree))
+                  (cdr (tree-leftmost tree))))
+  :use tree-iter-key+val-of-tree-iter-min
+  :enable tree-iter-key+val-becomes-cons-of-tree-iter-key-and-tree-iter-val
+  :disable tree-iter-key+val-of-tree-iter-min)
+
+(defrule tree-iter-key-of-tree-iter-max
+  (implies (not (tree-empty-p tree))
+           (equal (tree-iter-key (tree-iter-max tree))
+                  (car (tree-rightmost tree))))
+  :use tree-iter-key+val-of-tree-iter-max
+  :enable tree-iter-key+val-becomes-cons-of-tree-iter-key-and-tree-iter-val
+  :disable tree-iter-key+val-of-tree-iter-max)
+
+(defrule tree-iter-val-of-tree-iter-max
+  (implies (not (tree-empty-p tree))
+           (equal (tree-iter-val (tree-iter-max tree))
+                  (cdr (tree-rightmost tree))))
+  :use tree-iter-key+val-of-tree-iter-max
+  :enable tree-iter-key+val-becomes-cons-of-tree-iter-key-and-tree-iter-val
+  :disable tree-iter-key+val-of-tree-iter-max)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The value an iterator is at belongs to the tree it walks. This is what ties
-;; the values a traversal produces to the contents of the tree, rather than
+;; The key an iterator is at belongs to the tree it walks. This is what ties
+;; the entries a traversal produces to the contents of the tree, rather than
 ;; merely to its shape.
 
-(defrule tree-in-of-tree-iter-value
+(defrule in-of-tree-key-set-of-tree-iter-key
   (implies (tree-iter-has-value-p iter)
-           (tree-in (tree-iter-value iter)
-                    (tree-iter-plug iter)))
-  :enable (tree-iter-value
-           tree-in-order-of-zip-plug-split-at-cursor)
-  :use (:instance member-equal-of-tree-in-order-under-iff
-                  (x (zip-value (tree-iter->zip iter)))
-                  (tree (zip-plug (tree-iter->zip iter))))
-  :disable (member-equal-of-tree-in-order-under-iff))
+           (treeset::in (tree-iter-key iter)
+                        (tree-key-set (tree-iter-plug iter))))
+  :enable (tree-iter-key
+           in-of-tree-key-set-of-zip-plug-split))
 
 ;; The value a step lands on is the one that was at the head of what lay ahead.
 ;; With @(tsee tree-iter-after-of-tree-iter-next), which drops that same head,
 ;; this says a walk reads exactly the values to its right, in order.
 
-(defrule tree-iter-value-of-tree-iter-next
+(defrule tree-iter-key+val-of-tree-iter-next
   (implies (not (tree-iter-after-last-p (tree-iter-next iter)))
-           (equal (tree-iter-value (tree-iter-next iter))
+           (equal (tree-iter-key+val (tree-iter-next iter))
                   (car (tree-iter-after iter))))
-  :enable (tree-iter-value
+  :enable (tree-iter-key+val
            tree-iter-next
            tree-iter-after
            tree-iter-tree-after))
+
+;; The projections, as for the extreme constructors above.
+
+(defrule tree-iter-key-of-tree-iter-next
+  (implies (not (tree-iter-after-last-p (tree-iter-next iter)))
+           (equal (tree-iter-key (tree-iter-next iter))
+                  (car (car (tree-iter-after iter)))))
+  :use tree-iter-key+val-of-tree-iter-next
+  :enable tree-iter-key+val-becomes-cons-of-tree-iter-key-and-tree-iter-val
+  :disable tree-iter-key+val-of-tree-iter-next)
+
+(defrule tree-iter-val-of-tree-iter-next
+  (implies (not (tree-iter-after-last-p (tree-iter-next iter)))
+           (equal (tree-iter-val (tree-iter-next iter))
+                  (cdr (car (tree-iter-after iter)))))
+  :use tree-iter-key+val-of-tree-iter-next
+  :enable tree-iter-key+val-becomes-cons-of-tree-iter-key-and-tree-iter-val
+  :disable tree-iter-key+val-of-tree-iter-next)
 
 ;; A step lands on a value exactly when there was something ahead to land on.
 ;; This is what makes @(tsee tree-iter-after-of-tree-iter-next) usable: that
@@ -1575,20 +1708,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The built trees hold exactly the elements of the oset sides.
+;; The built trees hold exactly the entries of the omap sides.
 
-(defrule tree-in-of-tree-iter-tree-before
-  (equal (tree-in x (tree-iter-tree-before iter))
-         (set::in x (tree-iter-oset-before iter)))
-  :enable tree-iter-oset-before)
+(defrule in-of-tree-key-set-of-tree-iter-tree-before
+  (iff (treeset::in key (tree-key-set (tree-iter-tree-before iter)))
+       (omap::assoc key (tree-iter-omap-before iter)))
+  :enable tree-iter-omap-before)
 
-(defrule tree-in-of-tree-iter-tree-after
-  (equal (tree-in x (tree-iter-tree-after iter))
-         (set::in x (tree-iter-oset-after iter)))
-  :enable tree-iter-oset-after)
+(defrule in-of-tree-key-set-of-tree-iter-tree-after
+  (iff (treeset::in key (tree-key-set (tree-iter-tree-after iter)))
+       (omap::assoc key (tree-iter-omap-after iter)))
+  :enable tree-iter-omap-after)
 
 ;; Both invariants pass from the plug, so over a search tree the built sides
-;; are proper treesets.
+;; are proper treemaps.
 
 (defrule bstp-of-tree-iter-tree-before-when-bstp
   (implies (bstp (tree-iter-plug iter))
@@ -1596,7 +1729,8 @@
   :enable (tree-iter-tree-before))
 
 (defrule heapp-of-tree-iter-tree-before-when-heapp
-  (implies (heapp (tree-iter-plug iter))
+  (implies (and (bstp (tree-iter-plug iter))
+                (heapp (tree-iter-plug iter)))
            (heapp (tree-iter-tree-before iter)))
   :enable (tree-iter-tree-before))
 
@@ -1606,14 +1740,15 @@
   :enable (tree-iter-tree-after))
 
 (defrule heapp-of-tree-iter-tree-after-when-heapp
-  (implies (heapp (tree-iter-plug iter))
+  (implies (and (bstp (tree-iter-plug iter))
+                (heapp (tree-iter-plug iter)))
            (heapp (tree-iter-tree-after iter)))
   :enable (tree-iter-tree-after))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The views lift through the three shapes: reading the built side back out as
-;; a sequence or as an oset recovers the corresponding side directly.
+;; a sequence or as an omap recovers the corresponding side directly.
 
 (defruled tree-in-order-of-tree-iter-tree-before
   (equal (tree-in-order (tree-iter-tree-before iter))
@@ -1633,22 +1768,22 @@
   (incompatible! (:rewrite tree-in-order-of-tree-iter-tree-after)
                  (:definition tree-iter-after$inline)))
 
-(defruled tree-oset-of-tree-iter-tree-before
-  (equal (tree-oset (tree-iter-tree-before iter))
-         (tree-iter-oset-before iter))
-  :enable tree-iter-oset-before)
+(defruled tree-omap-of-tree-iter-tree-before
+  (equal (tree-omap (tree-iter-tree-before iter))
+         (tree-iter-omap-before iter))
+  :enable tree-iter-omap-before)
 
 (theory-invariant
-  (incompatible! (:rewrite tree-oset-of-tree-iter-tree-before)
-                 (:definition tree-iter-oset-before)))
+  (incompatible! (:rewrite tree-omap-of-tree-iter-tree-before)
+                 (:definition tree-iter-omap-before)))
 
-(defruled tree-oset-of-tree-iter-tree-after
-  (equal (tree-oset (tree-iter-tree-after iter))
-         (tree-iter-oset-after iter))
-  :enable tree-iter-oset-after)
+(defruled tree-omap-of-tree-iter-tree-after
+  (equal (tree-omap (tree-iter-tree-after iter))
+         (tree-iter-omap-after iter))
+  :enable tree-iter-omap-after)
 
 (theory-invariant
-  (incompatible! (:rewrite tree-oset-of-tree-iter-tree-after)
-                 (:definition tree-iter-oset-after)))
+  (incompatible! (:rewrite tree-omap-of-tree-iter-tree-after)
+                 (:definition tree-iter-omap-after)))
 
 

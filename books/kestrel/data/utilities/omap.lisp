@@ -220,3 +220,81 @@
          (mergesort (strip-cdrs (omap::mfix map))))
   :enable (set::expensive-rules
            in-of-omap-values-becomes-member-equal-of-strip-cdrs))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The omap mirrors of the oset splitting laws in @(see oset). An omap is a
+;; strictly increasing alist, so the same three facts hold of it, read on the
+;; @(tsee car)s of its pairs.
+
+(defruled omapp-of-cdr-when-omapp
+  (implies (omap::mapp l)
+           (omap::mapp (cdr l)))
+  :enable omap::mapp)
+
+;; Splitting an omap: both halves of an append are omaps themselves.
+
+(defruled omapp-of-prefix-when-omapp-of-append
+  (implies (and (true-listp x)
+                (omap::mapp (append x y)))
+           (omap::mapp x))
+  :induct t
+  :enable (omap::mapp
+           append))
+
+(defruled omapp-of-suffix-when-omapp-of-append
+  (implies (omap::mapp (append x y))
+           (omap::mapp y))
+  :induct (append x y)
+  :enable (omap::mapp
+           append))
+
+;; An omap is strictly increasing on keys, so its first key is below every
+;; later key, and every key of a prefix is below the first key of what
+;; follows.
+
+(defruled <<-of-caar-when-assoc-equal-of-cdr
+  (implies (and (omap::mapp l)
+                (assoc-equal x (cdr l)))
+           (<< (caar l) x))
+  :induct t
+  :enable (omap::mapp
+           assoc-equal
+           <<-rules))
+
+(defruled <<-of-caars-when-omapp-of-append
+  (implies (and (omap::mapp (append a b))
+                (consp a)
+                (consp b))
+           (<< (caar a) (caar b)))
+  :induct (append a b)
+  :enable (omap::mapp
+           append
+           <<-rules))
+
+(defruled <<-across-append-when-omapp
+  (implies (and (omap::mapp (append a b))
+                (assoc-equal x a)
+                (consp b))
+           (<< x (caar b)))
+  :induct (append a b)
+  :enable (omap::mapp
+           append
+           assoc-equal
+           <<-rules
+           <<-of-caars-when-omapp-of-append))
+
+;; An omap has no duplicate keys, so a key is bound in the tail exactly when it
+;; is bound somewhere and is not the first key. The omap mirror of
+;; @(tsee member-equal-of-cdr-when-osetp).
+
+(defruled assoc-equal-of-cdr-when-omapp
+  (implies (omap::mapp l)
+           (iff (assoc-equal x (cdr l))
+                (and (not (equal x (caar l)))
+                     (assoc-equal x l))))
+  :use (:instance <<-of-caar-when-assoc-equal-of-cdr
+                  (x (caar l)))
+  :enable (omap::mapp
+           assoc-equal
+           <<-rules))
