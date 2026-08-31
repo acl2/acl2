@@ -114,9 +114,6 @@
        "Bracket expressions,
         because [impl] has no corresponding constructor.")
       (xdoc::li
-       "Let expressions with empty lists of binds
-        (will be removed once length invariant is in place).")
-      (xdoc::li
        "N-ary lambda abstractions,
         because [impl]'s @('Lambda') holds exactly one parameter.")
       (xdoc::li
@@ -179,9 +176,6 @@
      (expr :capp nil)
      (expr :unboxn nil)
      (expr :bracket nil)
-     (expr :let (and (bind-list-huncheckedp expr.binds)
-                     (expr-huncheckedp expr.body)
-                     (consp expr.binds))) ; Todo: remove once invariant is in place
      (atom :lambdan nil)
      (atom :tlambdan nil)
      (atom :ilambdan nil)
@@ -355,8 +349,7 @@
         (implies (expr-case expr :let)
                  (equal (expr-huncheckedp expr)
                         (and (bind-list-huncheckedp (expr-let->binds expr))
-                             (expr-huncheckedp (expr-let->body expr))
-                             (consp (expr-let->binds expr)))))
+                             (expr-huncheckedp (expr-let->body expr)))))
       :enable expr-huncheckedp)
 
     (defruled atom-huncheckedp-when-base
