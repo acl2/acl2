@@ -82,7 +82,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is analogous to @(tsee dim=-proof-trans-swapped)."))
+    "This is analogous to @(tsee dim=-trans-swapped)."))
 
   (defruled shp=-trans-swapped
     (implies (and (shp= s2 s3)
