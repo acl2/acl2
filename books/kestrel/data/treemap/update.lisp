@@ -19,6 +19,7 @@
 (include-book "kestrel/data/utilities/fixed-size-words/u32-defs" :dir :system)
 (include-book "kestrel/data/utilities/omap-defs" :dir :system)
 
+(include-book "internal/from-omap-defs")
 (include-book "internal/update-defs")
 (include-book "map-defs")
 (include-book "to-omap-defs")
@@ -62,6 +63,7 @@
 (local (include-book "internal/bst"))
 (local (include-book "internal/heap"))
 (local (include-book "internal/keys"))
+(local (include-book "internal/from-omap"))
 (local (include-book "internal/update"))
 (local (include-book "internal/in-order"))
 (local (include-book "map"))
@@ -638,6 +640,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; The omap's entries arrive in strictly ascending key order, so the treap
+;; may be built directly in linear time (see internal/from-omap.lisp),
+;; instead of via repeated update.
+
+(defrulel mapp-of-tree-from-omap
+  (mapp (tree-from-omap omap))
+  :enable mapp)
+
+(defrulel lookup-of-tree-from-omap
+  (equal (lookup key (tree-from-omap omap) :default default)
+         (if (omap::assoc key omap)
+             (cdr (omap::assoc key omap))
+           default))
+  :enable (lookup
+           keys
+           fix)
+  :use ((:instance assoc-of-tree-omap-of-tree-from-omap (x key))
+        (:instance assoc-of-tree-omap-when-bstp
+                   (tree (tree-from-omap omap))))
+  :disable (assoc-of-tree-omap-of-tree-from-omap
+            assoc-of-tree-omap-when-bstp))
+
+(defruledl update-from-omap-of-empty-becomes-tree-from-omap
+  (equal (update-from-omap omap (empty))
+         (tree-from-omap omap))
+  :enable extensionality)
+
 (define from-omap
   ((omap omap::mapp))
   (declare (xargs :type-prescription :none))
@@ -646,12 +675,18 @@
   :long
   (xdoc::topstring
    (xdoc::p
-     "This is just a wrapper around @(tsee update-from-omap).")
+     "Logically just a wrapper around @(tsee update-from-omap). In execution
+      the entries arrive in ascending key order, so the treap is built
+      directly in a single linear pass.")
    (xdoc::p
-     "Time complexity: @($O(n\\log(n))$)."))
+     "Time complexity: @($O(n)$)."))
   :returns (map$ mapp)
-  (update-from-omap omap (empty))
-  :inline t)
+  (mbe :logic (update-from-omap omap (empty))
+       :exec (tree-from-omap omap))
+  :inline t
+  :guard-hints
+  (("Goal"
+    :in-theory (enable update-from-omap-of-empty-becomes-tree-from-omap))))
 
 ;;;;;;;;;;;;;;;;;;;;
 

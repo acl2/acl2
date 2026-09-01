@@ -26,6 +26,7 @@
           tree-element->hash
           tree-element->key+val
           tree-element
+          tree-element$
           treep
           tree-fix
           tree-equiv

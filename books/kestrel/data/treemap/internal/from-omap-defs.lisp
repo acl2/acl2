@@ -9,15 +9,18 @@
 (in-package "TREEMAP")
 
 (include-book "kestrel/data/utilities/omap-defs" :dir :system)
+(include-book "kestrel/data/treeset/internal/heap-order-defs" :dir :system)
 
 (include-book "tree-defs")
+(include-book "heap-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
-(local (include-book "in-order"))
+(local (include-book "from-omap"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defredundant
-  :names (tree-in-order-acc
-          tree-in-order
-          tree-omap))
+  :names (tree-from-omap-below
+          tree-from-omap-acc
+          tree-from-omap
+          ))
