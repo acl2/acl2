@@ -1110,7 +1110,7 @@
 ;; ;                            SEGMENT-IS-32-BITSP
 ;;                             )
 ;;                            ( ;ACL2::BVCHOP-IDENTITY
-;; ;                            ACL2::BVCHOP-IDENTITY-cheap
+;; ;                            ACL2::bvchop-identity-free
 ;;                             x86isa::!memi$inline
 ;; ;
 ;;                             stack-segment-assumptions32

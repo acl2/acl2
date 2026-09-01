@@ -6434,7 +6434,7 @@
                                  bvchop-when-top-bit-1
                                  ceiling-in-terms-of-floor-alt)
                            (;bvchop-identity
-                            ;bvchop-identity-cheap
+                            ;bvchop-identity-free
                             plus-1-and-bvchop-becomes-bvplus ;fixme
                             bvminus-becomes-bvplus-of-bvuminus
                             ;COLLECT-CONSTANTS-OVER-<
@@ -7772,7 +7772,7 @@
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1
                             bvcat logapp)
-                           (BVCHOP-IDENTITY-CHEAP
+                           (BVCHOP-IDENTITY-FREE
                             BVLT-OF-*-ARG3
                              PLUS-OF-MINUS-3-BV-5
                             BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE LOGAPP-EQUAL-REWRITE

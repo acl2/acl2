@@ -631,6 +631,14 @@
                   i))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
+(defthm bvchop-identity-free
+  (implies (and (unsigned-byte-p freesize i)
+                (<= freesize size)
+                (integerp size))
+           (equal (bvchop size i)
+                  i))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
 (defthm bvchop-of-mod-of-expt
   (implies (and (<= size j)
                 (integerp j)
@@ -753,13 +761,7 @@
                   0))
   :hints (("Goal" :cases ((natp size)))))
 
-(defthm bvchop-identity-cheap
-  (implies (and (unsigned-byte-p freesize i)
-                (<= freesize size)
-                (integerp size))
-           (equal (bvchop size i)
-                  i))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
 
 (defthm bvchop-of-both-sides
   (implies (equal x y)

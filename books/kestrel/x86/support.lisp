@@ -489,7 +489,7 @@
                                    acl2::getbit-of-+
                                    acl2::bvchop-when-top-bit-1-cheap
                                    bvchop-when-signed-byte-p-one-more-and-negative-linear)
-                                  (acl2::bvchop-identity-cheap
+                                  (acl2::bvchop-identity-free
                                    acl2::bvchop-identity
                                    acl2::bvcat-of-bvchop-low ;looped
                                    acl2::slice-of-bvchop-low ;looped
@@ -540,7 +540,7 @@
                                                 acl2::bvcat ACL2::LOGAPP
                                                 ACL2::LOGEXT-OF-PLUS
                                                 acl2::getbit)
-                                  (ACL2::BVCHOP-IDENTITY-CHEAP
+                                  (ACL2::BVCHOP-IDENTITY-free
                                    ACL2::BVCHOP-IDENTITY
                                    ACL2::BVCAT-OF-BVCHOP-LOW ;looped
                                    ))

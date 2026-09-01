@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function unsigned-byte-p.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; For unsigned-byte-p-forward and unsigned-byte-p-from-bounds,
 ; see the copyrights on the ihs and coi libraries.
 ;
@@ -222,14 +222,15 @@
                   t))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
-(defthm unsigned-byte-p-when-<=-cheap
-  (implies (and (<= I free) ; i is bounded
-                (syntaxp (quotep free))
-                (syntaxp (quotep size))
+(defthm unsigned-byte-p-when-<=-free
+  (implies (and (<= i free) ; i is bounded
+                (syntaxp (and (quotep free)
+                              (quotep size)))
                 (< free (expt 2 size)) ;gets computed
-                (natp i) ; i is a natural
-                (natp size))
-           (unsigned-byte-p size i))
+                )
+           (equal (unsigned-byte-p size i)
+                  (and (natp i)
+                       (natp size))))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
 ;; The BV library doesn't use bitp, so we rewrite it using this rule to our

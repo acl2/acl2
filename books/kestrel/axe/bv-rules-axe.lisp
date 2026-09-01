@@ -380,8 +380,8 @@
            (equal (logext n x)
                   x))
   :hints (("Goal"
-           :use (:instance logext-when-usb-cheap (i x) (free size2) (size n))
-           :in-theory (e/d (UNSIGNED-BYTE-P-FORCED) (logext-when-usb-cheap)))))
+           :use (:instance logext-when-unsigned-byte-p-free (i x) (free size2) (size n))
+           :in-theory (e/d (UNSIGNED-BYTE-P-FORCED) (logext-when-unsigned-byte-p-free)))))
 
 ;rename axe-
 (defthmd rationalp-when-bv-operator

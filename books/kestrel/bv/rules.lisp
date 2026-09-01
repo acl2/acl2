@@ -2033,10 +2033,9 @@
   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvminus-gen-better (size size) (size1 size) (i x) (j y))
            :in-theory (disable unsigned-byte-p-of-bvminus-gen-better))))
 
-(defthm getbit-too-high-cheap-free
-  (implies (and (unsigned-byte-p free x) ;free variable
-                (<= free n)
-                (natp free)
+(defthm getbit-too-high-when-unsigned-byte-p-free
+  (implies (and (unsigned-byte-p freesize x) ; free variable
+                (<= freesize n)
                 (integerp n))
            (equal (getbit n x)
                   0))
@@ -2644,14 +2643,11 @@
                            (;bozo add t-i
                             )))))
 
-(defthm getbit-too-high-cheap
-  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
-                ;;make sure it's not nil:
-                ;drop this hyp:
-                (natp newsize) ;newsize continues to be a bad name for uses like this...
-                (<= newsize n)
+(defthm getbit-too-high-bind-free
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
+                (<= xsize n)
                 (integerp n)
-                (force (unsigned-byte-p-forced newsize x)))
+                (force (unsigned-byte-p-forced xsize x)))
            (equal (getbit n x)
                   0))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced)
@@ -3563,7 +3559,7 @@
 
 ;fixme move
 ;restrict to constants?
-(defthm logext-when-usb-cheap
+(defthm logext-when-unsigned-byte-p-free
   (implies (and (unsigned-byte-p free i)
                 (<= free (+ -1 size))
                 (natp size))
