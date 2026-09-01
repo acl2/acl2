@@ -34978,7 +34978,7 @@
     `(set-check-invariant-risk-fn ,x state))
    (t `(cond
         ((not (member-eq ,x '(t nil :ERROR :WARNING)))
-         (er soft 'check-invariant-risk
+         (er soft 'set-check-invariant-risk
              "Illegal value for ~x0: ~x1"
              'check-invariant-risk
              ',x))

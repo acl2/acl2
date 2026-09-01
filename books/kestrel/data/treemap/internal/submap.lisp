@@ -601,3 +601,35 @@
     tree-submap-p-of-tree->left-when-tree-submap-p
     tree-submap-p-of-tree->right-when-tree-submap-p
     tree-submap-p-when-not-tree-assoc-of-tree->head))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Bounds are monotone under submap: what bounds every key of a tree bounds
+;; every key of any submap. These mirror the subset versions in TREESET.
+
+(defruled <<-all-r-when-tree-submap-p
+  (implies (and (<<-all-r x tree)
+                (tree-submap-p acc tree))
+           (<<-all-r x acc))
+  :induct (tree-submap-p acc tree)
+  :enable (tree-submap-p
+           <<-all-r
+           <<-when-<<-all-r-and-in-of-tree-key-set))
+
+(defruled <<-all-l-when-tree-submap-p
+  (implies (and (<<-all-l tree x)
+                (tree-submap-p acc tree))
+           (<<-all-l acc x))
+  :induct (tree-submap-p acc tree)
+  :enable (tree-submap-p
+           <<-all-l
+           <<-when-<<-all-l-and-in-of-tree-key-set))
+
+(defruled heap<-all-l-when-tree-submap-p
+  (implies (and (heap<-all-l tree x)
+                (tree-submap-p acc tree))
+           (heap<-all-l acc x))
+  :induct (tree-submap-p acc tree)
+  :enable (tree-submap-p
+           heap<-all-l
+           heap<-when-heap-<-all-l-and-in-of-tree-key-set))

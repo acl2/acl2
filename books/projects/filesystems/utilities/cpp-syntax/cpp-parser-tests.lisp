@@ -144,6 +144,51 @@
    (and (equal (cpp-expr-binary->op ast) (c$::binop-add))
         (cpp-expr-case (cpp-expr-binary->lhs ast) :c-cast))))
 
+; Test 8d: (T)+5, (T)-5, (T)&v — ident-type cast with unary +/- and address-of.
+
+(test-parse-cpp-expr-assert
+ "( T ) + 5"
+ (cpp-expr-case ast :c-cast))
+
+(test-parse-cpp-expr-assert
+ "( T ) - 5"
+ (cpp-expr-case ast :c-cast))
+
+(test-parse-cpp-expr-assert
+ "( T ) & v"
+ (cpp-expr-case ast :c-cast))
+
+; Test 8e: (T*)x, (T&)x, (T&&)x — pointer/reference casts with an ident type.
+
+(test-parse-cpp-expr-assert
+ "( T * ) x"
+ (b* (((unless (cpp-expr-case ast :c-cast)) nil)
+      (type (cpp-expr-c-cast->type ast)))
+   (and (cpp-type-spec-case type :pointer)
+        (not (cpp-type-spec-pointer->constp type))
+        (cpp-type-spec-case (cpp-type-spec-pointer->pointee type) :name))))
+
+(test-parse-cpp-expr-assert
+ "( T & ) x"
+ (b* (((unless (cpp-expr-case ast :c-cast)) nil))
+   (cpp-type-spec-case (cpp-expr-c-cast->type ast) :lref)))
+
+(test-parse-cpp-expr-assert
+ "( T && ) x"
+ (b* (((unless (cpp-expr-case ast :c-cast)) nil))
+   (cpp-type-spec-case (cpp-expr-c-cast->type ast) :rref)))
+
+; Test 8f: (T*)*p — pointer cast of a dereference; the '*' after ')' is unary
+; dereference, unambiguously distinct from test 8b's binary multiplication.
+
+(test-parse-cpp-expr-assert
+ "( T * ) * p"
+ (b* (((unless (cpp-expr-case ast :c-cast)) nil)
+      (arg (cpp-expr-c-cast->arg ast)))
+   (and (cpp-type-spec-case (cpp-expr-c-cast->type ast) :pointer)
+        (cpp-expr-case arg :unary)
+        (equal (cpp-expr-unary->op arg) (c$::unop-indir)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test 9a: static_assert in class body (inline / full-parser version).
@@ -696,3 +741,4 @@
 (test-parse-cpp
  parse-cpp-block-item
  "auto [ only ] = wrap ( z ) ;")
+

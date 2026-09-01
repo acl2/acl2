@@ -369,7 +369,6 @@
                                      !rflagsbits->tf
                                      !rflagsbits->intf
                                      !rflagsbits->df
-                                     !rflagsbits->of
                                      !rflagsbits->iopl
                                      !rflagsbits->nt
                                      !rflagsbits->rf

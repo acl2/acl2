@@ -20,6 +20,7 @@
 (include-book "insert-defs")
 (include-book "delete-defs")
 (include-book "cardinality-defs")
+(include-book "subset-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -38,6 +39,7 @@
 (local (include-book "insert"))
 (local (include-book "in"))
 (local (include-book "delete"))
+(local (include-book "subset"))
 (local (include-book "extensionality"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -615,6 +617,34 @@
            tree-iter-tree-after
            (:e empty)))
 
+;; And dually, the side away from the end an iterator sits at is everything:
+;; a rewound iterator has the whole set ahead of it, an exhausted one has the
+;; whole set behind it.
+
+(defrule after-when-before-firstp
+  (implies (before-firstp iter)
+           (equal (after iter)
+                  (from-iter iter)))
+  :use (:instance tree-iter-tree-after-becomes-from-oset
+                  (iter (iter-fix iter)))
+  :enable (after
+           from-iter
+           before-firstp
+           tree-iter-tree-after
+           setp-of-tree-iter-plug-of-iter-fix))
+
+(defrule before-when-after-lastp
+  (implies (after-lastp iter)
+           (equal (before iter)
+                  (from-iter iter)))
+  :use (:instance tree-iter-tree-before-becomes-from-oset
+                  (iter (iter-fix iter)))
+  :enable (before
+           from-iter
+           after-lastp
+           tree-iter-tree-before
+           setp-of-tree-iter-plug-of-iter-fix))
+
 ;; At the constructors the same holds with no hypothesis, including over the
 ;; empty @(see treeset), where the iterator lands on the far end and the side
 ;; in question is empty for the other reason.
@@ -831,6 +861,72 @@
            tree-in-of-tree-iter-plug-split
            value
            has-valuep))
+
+;; Which is to say: each side is a subset of the set the iterator walks. That
+;; is the statement worth exporting -- it needs no hypothesis, and the library
+;; already draws the membership consequences from it.
+
+(defrule subset-of-before-and-from-iter
+  (subset (before iter) (from-iter iter))
+  ;; Three positions, three reasons: at an element membership in the whole
+  ;; follows from membership in the side; at the near end the side is empty,
+  ;; so the obligation is vacuous; at the far end the side is the whole set,
+  ;; so it is reflexivity.
+  :cases ((before-firstp iter) (after-lastp iter))
+  :enable (subset-becomes-subset-sk
+           subset-sk
+           before-when-before-firstp
+           after-when-after-lastp
+           after-when-before-firstp
+           before-when-after-lastp
+           subset-reflexivity
+           has-valuep-when-neither-end))
+
+(defrule subset-of-after-and-from-iter
+  (subset (after iter) (from-iter iter))
+  ;; Three positions, three reasons: at an element membership in the whole
+  ;; follows from membership in the side; at the near end the side is empty,
+  ;; so the obligation is vacuous; at the far end the side is the whole set,
+  ;; so it is reflexivity.
+  :cases ((before-firstp iter) (after-lastp iter))
+  :enable (subset-becomes-subset-sk
+           subset-sk
+           before-when-before-firstp
+           after-when-after-lastp
+           after-when-before-firstp
+           before-when-after-lastp
+           subset-reflexivity
+           has-valuep-when-neither-end))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule after-of-iter-min
+  (equal (after (iter-min set))
+         (delete (min set) set))
+  :cases ((emptyp set))
+  :enable extensionality
+  :use ((:instance in-of-from-iter-when-has-valuep
+                   (iter (iter-min set))
+                   (x (ext-equal-witness (after (iter-min set))
+                                         (delete (min set) set))))
+        (:instance not-in-of-value-and-after
+                   (iter (iter-min set))))
+  :disable (in-of-from-iter-when-has-valuep
+            not-in-of-value-and-after))
+
+(defrule before-of-iter-max
+  (equal (before (iter-max set))
+         (delete (max set) set))
+  :cases ((emptyp set))
+  :enable extensionality
+  :use ((:instance in-of-from-iter-when-has-valuep
+                   (iter (iter-max set))
+                   (x (ext-equal-witness (before (iter-max set))
+                                         (delete (max set) set))))
+        (:instance not-in-of-value-and-before
+                   (iter (iter-max set))))
+  :disable (in-of-from-iter-when-has-valuep
+            not-in-of-value-and-before))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1234,3 +1330,123 @@
            data::cardinality-becomes-len-when-osetp
            tree-iter-oset-before-becomes-tree-iter-before
            bstp-of-tree-iter-plug-of-iter-fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Uniqueness. Two iterators are equal exactly when they walk the same set and
+;; sit at the same position: both before the first, both after the last, or
+;; both at an element and at the same element. At an element this is the
+;; zipper's own uniqueness; the two positions past the ends carry nothing but
+;; their tree, so each is recovered from that tree alone.
+
+(defrule iter-uniqueness-when-before-firstp
+  (implies (and (iterp iter1)
+                (iterp iter2)
+                (before-firstp iter1)
+                (before-firstp iter2)
+                (equal (from-iter iter1) (from-iter iter2)))
+           (equal iter1 iter2))
+  :rule-classes nil
+  :enable (before-firstp from-iter break-abstraction)
+  :use ((:instance tree-iter-fix-when-tree-iter-before-first-p (iter iter1))
+        (:instance tree-iter-fix-when-tree-iter-before-first-p (iter iter2))))
+
+(defrule iter-uniqueness-when-after-lastp
+  (implies (and (iterp iter1)
+                (iterp iter2)
+                (after-lastp iter1)
+                (after-lastp iter2)
+                (equal (from-iter iter1) (from-iter iter2)))
+           (equal iter1 iter2))
+  :rule-classes nil
+  :enable (after-lastp from-iter break-abstraction)
+  :use ((:instance tree-iter-fix-when-tree-iter-after-last-p (iter iter1))
+        (:instance tree-iter-fix-when-tree-iter-after-last-p (iter iter2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule iter-uniqueness
+  (implies (and (iterp iter1)
+                (iterp iter2)
+                (equal (from-iter iter1) (from-iter iter2))
+                (or (and (before-firstp iter1) (before-firstp iter2))
+                    (and (after-lastp iter1) (after-lastp iter2))
+                    (and (has-valuep iter1)
+                         (has-valuep iter2)
+                         (equal (value iter1) (value iter2)))))
+           (equal iter1 iter2))
+  :rule-classes nil
+  :use (iter-uniqueness-when-before-firstp
+        iter-uniqueness-when-after-lastp
+        (:instance zip-uniqueness-when-same-value (zip1 iter1) (zip2 iter2)))
+  :enable (from-iter
+           value
+           has-valuep
+           tree-iter-value
+           iterp
+           setp
+           tree-iter-plug-when-tree-iter-has-value-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled equal-of-iters-no-double-rewrite
+  (implies (and (iterp iter1)
+                (iterp iter2))
+           (equal (equal iter1 iter2)
+                  (and (equal (from-iter iter1)
+                              (from-iter iter2))
+                       (or (and (before-firstp iter1)
+                                (before-firstp iter2))
+                           (and (after-lastp iter1)
+                                (after-lastp iter2))
+                           (and (has-valuep iter1)
+                                (has-valuep iter2)
+                                (equal (value iter1)
+                                       (value iter2)))))))
+  :use iter-uniqueness)
+
+(defruled equal-of-iters
+  (implies (and (iterp iter1)
+                (iterp iter2)
+                (iter-equiv iter1$ (double-rewrite iter1))
+                (iter-equiv iter2$ (double-rewrite iter2)))
+           (equal (equal iter1 iter2)
+                  (and (equal (from-iter iter1$)
+                              (from-iter iter2$))
+                       (or (and (before-firstp iter1$)
+                                (before-firstp iter2$))
+                           (and (after-lastp iter1$)
+                                (after-lastp iter2$))
+                           (and (has-valuep iter1$)
+                                (has-valuep iter2$)
+                                (equal (value iter1$)
+                                       (value iter2$)))))))
+  :use equal-of-iters-no-double-rewrite)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled equal-of-iters-when-has-valuep-no-double-rewrite
+  (implies (and (iterp iter1)
+                (iterp iter2)
+                (has-valuep iter1)
+                (has-valuep iter2))
+           (equal (equal iter1 iter2)
+                  (and (equal (from-iter iter1)
+                              (from-iter iter2))
+                       (equal (value iter1)
+                              (value iter2)))))
+  :enable equal-of-iters)
+
+(defruled equal-of-iters-when-has-valuep
+  (implies (and (iterp iter1)
+                (iterp iter2)
+                (iter-equiv iter1$ (double-rewrite iter1))
+                (iter-equiv iter2$ (double-rewrite iter2))
+                (has-valuep iter1)
+                (has-valuep iter2))
+           (equal (equal iter1 iter2)
+                  (and (equal (from-iter iter1)
+                              (from-iter iter2))
+                       (equal (value iter1)
+                              (value iter2)))))
+  :use equal-of-iters-when-has-valuep-no-double-rewrite)

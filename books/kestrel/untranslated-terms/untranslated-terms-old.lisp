@@ -1190,7 +1190,7 @@
   :hints (("Goal" :in-theory (enable rename-fns-in-untranslated-term-list (:i len)))))
 
 (verify-guards clean-up-0ary-lambdas-in-untranslated-term-list
-  :hints (("Goal" :in-theory (enable untranslated-termp untranslated-termp)
+  :hints (("Goal" :in-theory (enable untranslated-termp)
            :expand ((untranslated-termp term)
                     (untranslated-lambda-exprp (car term))))))
 
@@ -1292,7 +1292,7 @@
   :hints (("Goal" :in-theory (enable rename-fns-in-untranslated-term-list (:i len)))))
 
 (verify-guards clean-up-implies-of-t-in-untranslated-term-list
-  :hints (("Goal" :in-theory (enable untranslated-termp untranslated-termp)
+  :hints (("Goal" :in-theory (enable untranslated-termp)
            :expand ((untranslated-termp term)
                     (untranslated-lambda-exprp (car term))))))
 

@@ -490,8 +490,7 @@
             chart))
        ((run-when (> *debug* 4))
         (cw "---- Here's the associated chart-list for chart #~x0 ----~%"
-            chart-index
-            chart))
+            chart-index))
        ((run-when (> *debug* 4))
         (cw "~%~x1~%---- End of associated chart-list for chart #~x0 ----~%"
             chart-index

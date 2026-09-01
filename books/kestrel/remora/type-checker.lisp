@@ -2183,7 +2183,16 @@
          ((ok (senv+bind sb)) (check-bind (car binds) senv))
          ((ok (senv+binds sbs)) (check-bind-list (cdr binds) sb.senv)))
       (make-senv+binds :senv sbs.senv :binds (cons sb.bind sbs.binds)))
-    :measure (bind-list-count binds))
+    :measure (bind-list-count binds)
+
+    ///
+
+    (defret consp-of-binds-of-check-bind-list
+      (implies (and (not (reserrp senv+binds))
+                    (consp binds))
+               (consp (senv+binds->binds senv+binds)))
+      :hints (("Goal" :expand ((check-bind-list binds senv))))
+      :rule-classes ((:rewrite) (:type-prescription))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

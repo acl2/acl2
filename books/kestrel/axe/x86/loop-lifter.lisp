@@ -53,7 +53,7 @@
 (include-book "../logops-rules-axe")
 ;(include-book "../basic-rules")
 (include-book "../rewriter-basic") ; for simplify-conjunction-basic
-(include-book "rewriter-x86")
+(include-book "rewriter")
 (include-book "../rules-in-rule-lists")
 (include-book "../dagify0") ; for compose-dags
 ;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
@@ -2594,7 +2594,7 @@
           ;; it's already a parsed-executable:
           (mv nil executable state)))
        ((when erp)
-        (er hard? 'def-unrolled-fn "Error parsing executable: ~s0." executable)
+        (er hard? 'lift-subroutine-fn "Error parsing executable: ~s0." executable)
         (mv t nil state))
        ;; Check the inputs argument:
        ((when (not (or (eq :skip inputs) (names-and-typesp inputs))))

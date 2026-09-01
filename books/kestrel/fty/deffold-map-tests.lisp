@@ -461,3 +461,102 @@
     (ty-many (list (aexpr-var "z") (aexpr-var "y")) (ty-base)))
 
   :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Summand of a sum type with a dependent requirement (:require)
+; whose override calls the constructor of the summand on the mapped field
+; (here to rename the function according to the extra argument).
+; The guard verification of the map function needs
+; the same list theorems as for the boilerplate constructor call,
+; so the rules must be collected also for overridden summands.
+
+(acl2::must-succeed*
+  (deftypes exprs
+    (deftagsum expr
+      (:const ((val acl2::nat)))
+      (:call ((fn string)
+              (args expr-list :reqfix (if (consp args)
+                                          args
+                                        (list (expr-fix nil)))))
+       :require (consp args))
+      :pred exprp)
+    (deflist expr-list
+      :elt-type expr
+      :true-listp t
+      :pred expr-listp))
+
+  (deffold-map rename-fns
+    :types (exprs)
+    :extra-args ((alist alistp))
+    :override ((expr :call (let ((lookup (assoc-equal expr.fn alist)))
+                             (expr-call (if (and lookup
+                                                 (stringp (cdr lookup)))
+                                            (cdr lookup)
+                                          expr.fn)
+                                        (expr-list-rename-fns expr.args
+                                                              alist)))))
+    :name test)
+
+  (acl2::assert-equal
+    (expr-rename-fns (expr-call "f" (list (expr-const 1)
+                                          (expr-call "g" (list (expr-const 2)))))
+                     (acons "f" "h" nil))
+    (expr-call "h" (list (expr-const 1)
+                         (expr-call "g" (list (expr-const 2))))))
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Whole-type override of a list type
+; (threading the extra argument through the elements
+; in a non-boilerplate way),
+; together with a summand with a dependent requirement (:require)
+; whose override calls the constructor of the summand
+; on the result of the overridden list map.
+; No consp/len theorems are generated for an overridden list map,
+; so guard verification needs the :GUARD-HINTS input:
+; the hints expand the overridden list map,
+; exposing the CONS under the (ENDP ...) test,
+; which the requirement theorem decides.
+
+(acl2::must-succeed*
+  (deftypes exprs
+    (deftagsum expr
+      (:const ((val acl2::nat)))
+      (:block ((exprs expr-list :reqfix (if (consp exprs)
+                                            exprs
+                                          (list (expr-fix nil)))))
+       :require (consp exprs))
+      :pred exprp)
+    (deflist expr-list
+      :elt-type expr
+      :true-listp t
+      :pred expr-listp))
+
+  (deffold-map add-depth
+    :types (exprs)
+    :extra-args ((stack alistp))
+    :override
+    ((expr :const (expr-const (+ (expr-const->val expr) (len stack))))
+     (expr :block (expr-block (expr-list-add-depth expr.exprs
+                                                   (acons nil nil stack))))
+     (expr-list (if (endp expr-list)
+                    nil
+                  (cons (expr-add-depth (car expr-list) stack)
+                        (expr-list-add-depth (cdr expr-list)
+                                             (acons nil nil stack))))))
+    :guard-hints
+    ((exprs (("Goal"
+              :in-theory (enable expr-block-requirements)
+              :expand ((:free (stack) (expr-list-add-depth
+                                       (expr-block->exprs expr)
+                                       stack)))))))
+    :name test)
+
+  (acl2::assert-equal
+    (expr-add-depth (expr-block (list (expr-const 1) (expr-const 2))) nil)
+    (expr-block (list (expr-const 2) (expr-const 4))))
+
+  :with-output-off nil)

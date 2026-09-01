@@ -64,7 +64,7 @@
 (include-book "../make-evaluator") ; for make-acons-nest ; todo: split out
 (include-book "../supporting-functions") ; for get-non-built-in-supporting-fns-list
 (include-book "../evaluator-support") ; for *axe-evaluator-functions* and to support making defuns
-(include-book "rewriter-x86")
+(include-book "rewriter")
 (include-book "lifter-support")
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)

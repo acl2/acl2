@@ -3119,3 +3119,48 @@
            zip-oset-after))
 
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Uniqueness by value. What follows the cursor is an order filter of the tree
+;; (@(tsee in-of-zip-oset-after-when-bstp)), so the value fixes the tail, and
+;; the tail already fixes the zipper.
+
+;; What follows the cursor, as an oset, is an order filter of the tree, so it
+;; is fixed by the tree and the value.
+
+(defruled zip-oset-after-when-same-value
+  (implies (and (bstp (zip-plug zip1))
+                (equal (zip-plug zip1) (zip-plug zip2))
+                (equal (zip-value zip1) (zip-value zip2)))
+           (equal (zip-oset-after zip1) (zip-oset-after zip2)))
+  :enable (set::double-containment
+           set::pick-a-point-subset-strategy)
+  ;; in-of-zip-oset-after rewrites membership into member-equal on the
+  ;; sequence, which gets in ahead of the order-filter rule and hides the
+  ;; value. The bstp version is the one that matters here.
+  :disable in-of-zip-oset-after)
+
+;; Over a search tree the oset and the sequence are the same object, so the
+;; sequences agree too. Pure equality chaining -- kept apart from the step
+;; above so that double-containment is not fighting the conversion.
+
+(defruled zip-after-when-same-value
+  (implies (and (bstp (zip-plug zip1))
+                (equal (zip-plug zip1) (zip-plug zip2))
+                (equal (zip-value zip1) (zip-value zip2)))
+           (equal (zip-after zip1) (zip-after zip2)))
+  :use ((:instance zip-oset-after-becomes-zip-after (zip zip1))
+        (:instance zip-oset-after-becomes-zip-after (zip zip2))
+        zip-oset-after-when-same-value))
+
+(defrule zip-uniqueness-when-same-value
+  (implies (and (zipp zip1)
+                (zipp zip2)
+                (bstp (zip-plug zip1))
+                (equal (zip-plug zip1) (zip-plug zip2))
+                (equal (zip-value zip1) (zip-value zip2)))
+           (equal zip1 zip2))
+  :rule-classes nil
+  :use (zip-uniqueness-when-zip-after-equal
+        zip-after-when-same-value))

@@ -864,6 +864,13 @@
             (bind-list-subst-ispace-vars (cdr bind-list)
                                          dim-subst
                                          shape-subst)))))
+  :guard-hints
+  ((exprs/atoms/binds
+    (("Goal"
+      :in-theory (enable* ast-subst-ispace-vars-rules)
+      :expand ((bind-list-subst-ispace-vars (expr-let->binds expr)
+                                            dim-subst
+                                            shape-subst))))))
   :name ast-subst-ispace-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1013,6 +1020,13 @@
             (bind-list-subst-type-vars (cdr bind-list)
                                        atom-subst
                                        array-subst)))))
+  :guard-hints
+  ((exprs/atoms/binds
+    (("Goal"
+      :in-theory (enable* ast-subst-type-vars-rules)
+      :expand ((bind-list-subst-type-vars (expr-let->binds expr)
+                                          atom-subst
+                                          array-subst))))))
   :name ast-subst-type-vars)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1101,4 +1115,9 @@
          (subst (omap::delete* bound (string-expr-map-fix subst))))
       (cons new-bind
             (bind-list-subst-expr-vars (cdr bind-list) subst)))))
+  :guard-hints
+  ((exprs/atoms/binds
+    (("Goal"
+      :in-theory (enable* ast-subst-expr-vars-rules)
+      :expand ((bind-list-subst-expr-vars (expr-let->binds expr) subst))))))
   :name ast-subst-expr-vars)

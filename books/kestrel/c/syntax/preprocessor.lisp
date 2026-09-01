@@ -2314,7 +2314,7 @@
        If the parenthesis level is not 0,
        we just decrement the level and continue.
        In the @(':arg-nonlast') mode, if the parenthesis level is 0,
-       it it an error, because the macro call is ending prematurely:
+       it is an error, because the macro call is ending prematurely:
        we are expecting a comma to end the current argument.
        If the parenthesis level is not 0 in the @(':arg-nonlast') mode,
        we just decrement the level and continue.

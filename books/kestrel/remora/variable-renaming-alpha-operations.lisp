@@ -677,6 +677,15 @@
                                                     dim-renam
                                                     shape-renam
                                                     avoid)))))
+  :guard-hints
+  ((exprs/atoms/binds
+    (("Goal"
+      :in-theory (enable* ast-rename-ispace-vars-alpha-aux-rules)
+      :expand ((:free (avoid)
+                (bind-list-rename-ispace-vars-alpha-aux (expr-let->binds expr)
+                                                        dim-renam
+                                                        shape-renam
+                                                        avoid)))))))
   :name ast-rename-ispace-vars-alpha-aux)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -919,6 +928,15 @@
                                                   atom-renam
                                                   array-renam
                                                   avoid)))))
+  :guard-hints
+  ((exprs/atoms/binds
+    (("Goal"
+      :in-theory (enable* ast-rename-type-vars-alpha-aux-rules)
+      :expand ((:free (avoid)
+                (bind-list-rename-type-vars-alpha-aux (expr-let->binds expr)
+                                                      atom-renam
+                                                      array-renam
+                                                      avoid)))))))
   :name ast-rename-type-vars-alpha-aux)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1098,6 +1116,14 @@
             (bind-list-rename-expr-vars-alpha-aux (cdr bind-list)
                                                   renam
                                                   avoid)))))
+  :guard-hints
+  ((exprs/atoms/binds
+    (("Goal"
+      :in-theory (enable* ast-rename-expr-vars-alpha-aux-rules)
+      :expand ((:free (avoid)
+                (bind-list-rename-expr-vars-alpha-aux (expr-let->binds expr)
+                                                      renam
+                                                      avoid)))))))
   :name ast-rename-expr-vars-alpha-aux)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -16,7 +16,10 @@
   (:export "RUN-QUICK"
            "RUN-FULL"
            "DEPTH-REPORT"
-           "HASH-SHARE-REPORT"))
+           "HASH-SHARE-REPORT"
+           "CLASS-SIZE-REPORT"
+           "TEST-VARIANT-REPORT"
+           "SERIALIZED-SIZE"))
 
 (in-package "TREESET-BENCH")
 
@@ -143,16 +146,17 @@
       (spec "oset-delete" class n setup
             (lambda (x) (set::delete x oset))))))
 
-(defun union-key-lists (n overlap)
-  "A pair of key lists, each of length n, sharing floor(overlap*n)
-   random keys. Random keys replace the old generator's consecutive
-   naturals, whose blockwise key ranges made union's merge pattern
-   degenerate."
-  (let* ((nshared (floor (* n overlap)))
+(defun union-key-lists (n m overlap)
+  "A pair of key lists of lengths n and m, sharing floor(overlap*m)
+   random keys -- the overlap is a fraction of the SMALLER set, so that
+   it stays meaningful when m < n. Random keys replace the old
+   generator's consecutive naturals, whose blockwise key ranges made
+   union's merge pattern degenerate."
+  (let* ((nshared (floor (* (min n m) overlap)))
          (shared (loop repeat nshared collect (random-u60))))
     (cons (append (loop repeat (- n nshared) collect (random-u60))
                   shared)
-          (append (loop repeat (- n nshared) collect (random-u60))
+          (append (loop repeat (- m nshared) collect (random-u60))
                   shared))))
 
 (defun memo-setup (thunk)
@@ -161,12 +165,19 @@
     (lambda ()
       (or cache (setq cache (funcall thunk))))))
 
-(defun binary-specs (n overlap)
+(defun binary-specs (n overlap &optional (m n))
   ;; union, intersect, and diff, all on the same prebuilt set pairs.
-  (let* ((class (format nil "overlap~A" overlap))
-         (pairs (corpus (format nil "union-keys/~A/~A" n overlap)
+  ;; m defaults to n (the equal-cardinality case). The advantage the
+  ;; complexity table claims, O(m log(n/m)) against O(n+m), only shows
+  ;; when m is much smaller than n; at m = n the bound degenerates to
+  ;; O(n) and osets win outright, so the asymmetric case is the one that
+  ;; tests the claim.
+  (let* ((class (if (eql m n)
+                    (format nil "overlap~A" overlap)
+                  (format nil "m~A/overlap~A" m overlap)))
+         (pairs (corpus (format nil "union-keys/~A/~A/~A" n m overlap)
                         *union-pairs*
-                        (lambda () (union-key-lists n overlap))))
+                        (lambda () (union-key-lists n m overlap))))
          (setup-tree
            (memo-setup
              (lambda ()
@@ -209,6 +220,230 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Key classes. The specs above draw u60 keys, which is the cheapest
+;; case for both << and hash: the complexity table's entries count
+;; comparisons, and a comparison is O(k) in the size of the element.
+;; These generators widen that to keys of a controlled size, so the
+;; margin over osets can be plotted against element size rather than
+;; asserted at one point of it.
+;;
+;; Size is reported as serialized byte length, (len (to-bytes x)): that
+;; is what the hash actually walks, and it is comparable across types,
+;; so strings, conses and bignums share one x axis. The generators aim
+;; at a target size rather than hitting it exactly, so the sweep reports
+;; the size the corpus actually has (class-size-report).
+;;
+;; Every class here uses the default :test (equal), including the u60
+;; baseline, so the classes are compared on equal footing. The specs
+;; further up use :test = for u60, which is a different (faster) path;
+;; the two sets of numbers are not interchangeable.
+
+(defun random-string (nchars)
+  (let ((s (make-string nchars)))
+    (dotimes (i nchars s)
+      (setf (char s i) (code-char (+ 32 (random 95)))))))
+
+(defun random-symbol (nchars)
+  ;; Interned in this package rather than ACL2, to avoid filling the
+  ;; ACL2 package with junk. Note the package name is part of a symbol's
+  ;; encoding, so it contributes a fixed overhead to the serialized size.
+  (intern (random-string nchars) "TREESET-BENCH"))
+
+(defun random-character ()
+  (code-char (random 256)))
+
+(defun random-bignum (nbits)
+  (random (expt 2 nbits)))
+
+(defun random-cons (nleaves)
+  "A balanced binary tree with nleaves u60 leaves."
+  (if (<= nleaves 1)
+      (random-u60)
+    (let ((half (floor nleaves 2)))
+      (cons (random-cons half)
+            (random-cons (- nleaves half))))))
+
+(defun random-acl2-atom ()
+  "Weighted toward the types ACL2 data actually contains, but covering
+   every one of to-bytes' constructible tag paths: integer, string,
+   symbol, character, rational and complex rational. (Bad atoms are the
+   seventh tag and cannot be built from the logic.) Rationals may reduce
+   to integers, which is harmless -- the object is still arbitrary."
+  (let ((r (random 100)))
+    (cond ((< r 30) (random-u60))
+          ((< r 40) (- (random-u60)))
+          ((< r 60) (random-string (+ 1 (random 16))))
+          ((< r 85) (random-symbol (+ 1 (random 16))))
+          ((< r 92) (random-character))
+          ((< r 98) (/ (- (random-u60) (expt 2 59))
+                       (+ 1 (random (expt 2 20)))))
+          ;; A non-zero imaginary part, or complex would return a real.
+          (t (complex (- (random 1000) 500) (+ 1 (random 1000)))))))
+
+(defun random-acl2-object (&optional (depth 3))
+  "An arbitrary ACL2 object: an atom of some type, or a cons of two."
+  (if (or (<= depth 0) (< (random 1.0) 0.5))
+      (random-acl2-atom)
+    (cons (random-acl2-object (1- depth))
+          (random-acl2-object (1- depth)))))
+
+(defun keyclass (name gen &key (tests '(equal)))
+  "tests are the :test variants the class's keys admit. The guards are
+   on the whole set, not just the probe: in-= wants an acl2-number-setp,
+   in-eq a symbol set, in-eql an eqlable one, so which variants apply is
+   a property of the class."
+  (list :name name :gen gen :tests tests))
+
+(defun default-key-classes ()
+  (list (keyclass "u60" #'random-u60 :tests '(equal = eql))
+        ;; Note this class caps out at 256 distinct keys, so its set is
+        ;; that size whatever cardinality is asked for. That makes it
+        ;; unusable as a point on a speedup-against-key-size plot -- the
+        ;; n differs from every other class -- though it stays valid in
+        ;; the :test variant report, where both sides share the n.
+        (keyclass "char" #'random-character :tests '(equal eql))
+        (keyclass "string8" (lambda () (random-string 8)))
+        (keyclass "string64" (lambda () (random-string 64)))
+        (keyclass "string512" (lambda () (random-string 512)))
+        (keyclass "symbol8" (lambda () (random-symbol 8))
+                  :tests '(equal eq eql))
+        (keyclass "cons8" (lambda () (random-cons 8)))
+        (keyclass "cons64" (lambda () (random-cons 64)))
+        (keyclass "bignum512" (lambda () (random-bignum 512))
+                  :tests '(equal = eql))
+        (keyclass "mixed" (lambda () (random-acl2-object)))))
+
+;; Size sweeps: one type, many sizes. The default classes above vary type
+;; and size together, which is good coverage but leaves no controlled
+;; variable -- a speedup plotted against size across them confounds the
+;; two, and the resulting scatter has no trend to read. These hold the
+;; type fixed so size is the only thing moving. Two families, because the
+;; mechanism should be type-independent: comparisons exit at the first
+;; differing byte while the hash walks the whole key, so the lookup ratio
+;; should be flat in size and the insert ratio should decay.
+
+(defun bignum-sweep-classes (&optional (bits '(64 256 1024 4096 16384)))
+  (loop for b in bits
+        collect (let ((b b))
+                  (keyclass (format nil "nat~D" b)
+                            (lambda () (random-bignum b))
+                            :tests '(equal = eql)))))
+
+(defun string-sweep-classes (&optional (lens '(8 32 128 512 2048)))
+  (loop for n in lens
+        collect (let ((n n))
+                  (keyclass (format nil "str~D" n)
+                            (lambda () (random-string n))))))
+
+(defun serialized-size (x)
+  (length (hash::to-bytes x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Containers and probes for a key class. Only treesets and osets are
+;; built: the fast alist and hash table rows exist to place the two
+;; libraries on a scale, which one cardinality already does, and an eql
+;; hash table would not even accept the non-atomic classes.
+
+(defvar *class-containers* (make-hash-table :test #'equal))
+
+(defun class-containers (kc n)
+  (let ((ckey (list (getf kc :name) n)))
+    (or (gethash ckey *class-containers*)
+        (setf (gethash ckey *class-containers*)
+              (let* ((keys (corpus (format nil "class-keys/~A/~A"
+                                           (getf kc :name) n)
+                                   n (getf kc :gen)))
+                     (lst (coerce keys 'list)))
+                (format t "; building ~A cardinality-~:D containers~%"
+                        (getf kc :name) n)
+                (finish-output)
+                (list :keys keys
+                      :treeset (treeset::from-list lst)
+                      :oset (set::mergesort lst)))))))
+
+(defun class-probes-vector (kc n hit-prob)
+  (let ((keys (getf (class-containers kc n) :keys))
+        (p (float hit-prob))
+        (gen (getf kc :gen)))
+    (corpus (format nil "class-probes/~A/~A/~A" (getf kc :name) n hit-prob)
+            *probes-per-spec*
+            (lambda ()
+              (if (< (random 1.0) p)
+                  (svref keys (random (length keys)))
+                (funcall gen))))))
+
+(defun size-specs (kc n hit-prob)
+  ;; in and insert only: they are the operations whose cost is dominated
+  ;; by the element, and insert is the only one that hashes.
+  (let* ((c (class-containers kc n))
+         (tset (getf c :treeset))
+         (oset (getf c :oset))
+         (class (getf kc :name))
+         (setup (lambda () (class-probes-vector kc n hit-prob))))
+    (list
+      (spec "treeset-in" class n setup
+            (lambda (x) (treeset::in x tset)))
+      (spec "oset-in" class n setup
+            (lambda (x) (set::in x oset)))
+      (spec "treeset-insert" class n setup
+            (lambda (x) (treeset::insert x tset)))
+      (spec "oset-insert" class n setup
+            (lambda (x) (set::insert x oset))))))
+
+(defun test-in-op (test tset)
+  ;; :test is a macro keyword and must be literal, so each variant is
+  ;; its own lambda rather than a parameter.
+  (ecase test
+    (equal (lambda (x) (treeset::in x tset)))
+    (=     (lambda (x) (treeset::in x tset :test =)))
+    (eq    (lambda (x) (treeset::in x tset :test eq)))
+    (eql   (lambda (x) (treeset::in x tset :test eql)))))
+
+(defun test-insert-op (test tset)
+  (ecase test
+    (equal (lambda (x) (treeset::insert x tset)))
+    (=     (lambda (x) (treeset::insert x tset :test =)))
+    (eq    (lambda (x) (treeset::insert x tset :test eq)))
+    (eql   (lambda (x) (treeset::insert x tset :test eql)))))
+
+(defun test-specs (kc n hit-prob)
+  "in and insert under each :test the class admits, so the cost of the
+   specialized guards and hashes can be read off against the default."
+  (let* ((c (class-containers kc n))
+         (tset (getf c :treeset))
+         (class (getf kc :name))
+         (setup (lambda () (class-probes-vector kc n hit-prob))))
+    (loop for test in (getf kc :tests)
+          append
+          (list
+            (spec (format nil "treeset-in-~(~A~)" test) class n setup
+                  (test-in-op test tset))
+            (spec (format nil "treeset-insert-~(~A~)" test) class n setup
+                  (test-insert-op test tset))))))
+
+(defparameter *size-report-sample* 1000)
+
+(defun class-size-report (classes n)
+  "The serialized size the corpora actually have, which is the x axis
+   the timing rows should be plotted against."
+  (format t "~&Serialized key size by class (bytes, over ~:D sampled keys):~%"
+          *size-report-sample*)
+  (format t "  ~12A ~10A ~10A ~10A~%" "class" "mean" "min" "max")
+  (dolist (kc classes)
+    (let* ((keys (getf (class-containers kc n) :keys))
+           (sample (min *size-report-sample* (length keys)))
+           (sizes (loop for i below sample
+                        collect (serialized-size (svref keys i)))))
+      (format t "  ~12A ~10,1F ~10D ~10D~%"
+              (getf kc :name)
+              (float (/ (reduce #'+ sizes) sample))
+              (reduce #'min sizes)
+              (reduce #'max sizes))))
+  (values))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Treap shape statistics (untimed). The raw treeset representation is
 ;; nil for the empty tree and (head . (left . right)) otherwise; the
 ;; walkers traverse the conses directly. Depth is O(log n) with high
@@ -229,15 +464,70 @@
         (values (+ depth ls rs)
                 (+ 1 lc rc))))))
 
-(defun depth-report (&key (cardinalities '(1000 10000 100000 1000000)))
-  "Treap depth statistics for random and sequential keys, against the
-   ~1.39*log2(n) expected average node depth of a random binary search
-   tree. Sequential keys exercise the consecutive-integer hash stream,
-   whose 32-bit collision counts looked slightly high; excess depth here
-   would mean those collisions cluster enough to hurt balance."
-  (format t "~&Treap depth (expected average ~~1.39*log2(n)):~%")
-  (format t "  ~10@A ~12A ~10A ~10A ~12A~%"
-          "n" "keys" "avg" "max" "1.39log2n")
+;; A random BST reference for the depth report. The measured rows are
+;; treaps over hashed keys; the question they answer is whether the hash
+;; behaves like a random priority, which is only meaningful against the
+;; distribution being claimed. With distinct random priorities a treap
+;; has exactly the shape distribution of a BST built by inserting a
+;; uniformly random permutation, so we build such trees and measure them
+;; the same way rather than plotting an asymptotic formula. The expected
+;; mean depth does have a closed form, but the expected height does not
+;; -- it is alpha*ln(n) - beta*ln(ln(n)) + O(1) with the O(1) unknown,
+;; and over this range that constant is worth about five levels.
+
+(defun random-permutation (n)
+  (let ((v (make-array n :element-type 'fixnum)))
+    (dotimes (i n) (setf (aref v i) i))
+    (loop for i from (1- n) downto 1
+          do (rotatef (aref v i) (aref v (random (1+ i)))))
+    v))
+
+(defun bst-insert (root key)
+  "Destructively insert KEY into the cons-shaped BST ROOT, returning the
+   root. The shape is the treap's own -- head in the car, left and right
+   in the cdr -- so the depth functions above apply unchanged."
+  (if (null root)
+      (cons key (cons nil nil))
+    (let ((node root))
+      (loop
+        (if (< key (car node))
+            (if (cadr node)
+                (setf node (cadr node))
+              (progn (setf (cadr node) (cons key (cons nil nil)))
+                     (return root)))
+          (if (cddr node)
+              (setf node (cddr node))
+            (progn (setf (cddr node) (cons key (cons nil nil)))
+                   (return root))))))))
+
+(defun random-bst (n)
+  (let ((root nil))
+    (loop for key across (random-permutation n)
+          do (setf root (bst-insert root key)))
+    root))
+
+(defun random-bst-depth-stats (n trials)
+  "(values mean-depth height), each averaged over TRIALS random BSTs.
+   Height is a max statistic and scatters by about two levels between
+   trials, which is why it is averaged rather than sampled once."
+  (let ((avg 0d0) (height 0d0))
+    (dotimes (i trials)
+      (let ((tree (random-bst n)))
+        (multiple-value-bind (sum count) (tree-depth-sum tree 1)
+          (incf avg (/ (float sum 1d0) (max 1 count))))
+        (incf height (float (tree-max-depth tree) 1d0))))
+    (values (/ avg trials) (/ height trials))))
+
+(defun depth-report (&key (cardinalities '(1000 10000 100000 1000000))
+                          (trials 10))
+  "Treap depth statistics for random and sequential keys, against random
+   BSTs of the same size. Sequential keys exercise the consecutive-integer
+   hash stream, whose 32-bit collision counts looked slightly high; excess
+   depth here would mean those collisions cluster enough to hurt balance.
+   Depth counts nodes, with the root at 1."
+  (format t "~&Treap depth (random-bst rows averaged over ~D trials):~%"
+          trials)
+  (format t "  ~10@A ~12A ~10A ~10A~%" "n" "keys" "avg" "height")
   (dolist (n cardinalities)
     (dolist (entry
               (list (cons "random" (getf (containers n) :treeset))
@@ -245,12 +535,13 @@
                           (treeset::from-list
                             (loop for i below n collect i)))))
       (multiple-value-bind (sum count) (tree-depth-sum (cdr entry) 1)
-        (format t "  ~10:D ~12A ~10,2F ~10D ~12,2F~%"
+        (format t "  ~10:D ~12A ~10,2F ~10,2F~%"
                 n
                 (car entry)
                 (float (/ sum (max 1 count)))
-                (tree-max-depth (cdr entry))
-                (* 1.39 (log n 2))))))
+                (float (tree-max-depth (cdr entry))))))
+    (multiple-value-bind (avg height) (random-bst-depth-stats n trials)
+      (format t "  ~10:D ~12A ~10,2F ~10,2F~%" n "random-bst" avg height)))
   (values))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -294,14 +585,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun test-variant-report (classes n)
+  "What the specialized :tests buy, as a percentage of the default
+   equal. Only classes admitting more than one test appear."
+  (format t "~&:test variants, as a percentage of the default equal:~%")
+  (format t "  ~12A ~8A ~8A ~12A ~10A~%"
+          "class" "op" "test" "median-ns" "vs equal")
+  (dolist (kc classes)
+    (let ((class (getf kc :name)))
+      (when (cdr (getf kc :tests))
+        (dolist (op '("in" "insert"))
+          (let ((base (median-of (format nil "treeset-~A-equal" op)
+                                 class n)))
+            (when (and base (plusp base))
+              (dolist (test (getf kc :tests))
+                (let ((v (median-of (format nil "treeset-~A-~(~A~)" op test)
+                                    class n)))
+                  (when v
+                    (format t "  ~12A ~8A ~8A ~12,1F ~9,1F%~%"
+                            class op (string-downcase (symbol-name test))
+                            v (* 100 (/ v base))))))))))))
+  (values))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Suites
 
 (defun run-suite (&key (seed 1)
                        (cardinalities '(1000 10000 100000 1000000))
-                       (in-probs '(0 1))
+                       ;; One hit rate for every operation, so in,
+                       ;; insert and delete are all reported on the same
+                       ;; footing. Cost is linear in this, so the
+                       ;; endpoints are still available by running
+                       ;; :in-probs '(0 1).
+                       (in-probs '(1/2))
                        (mixed-prob 1/2)
                        (pair-cardinalities '(1000 10000 100000))
                        (overlaps '(0 1/2 1))
+                       ;; Ratios m/n for the binary operations. 1 is the
+                       ;; equal-cardinality case; the smaller ratios are
+                       ;; where the O(m log(n/m)) bound is supposed to pay.
+                       (pair-ratios '(1 1/10 1/100))
+                       ;; Key classes for the element-size sweep, run at a
+                       ;; single cardinality rather than crossed with the
+                       ;; sweep above, which would multiply the runtime.
+                       (key-classes nil)
+                       (key-class-cardinality 10000)
+                       ;; Adds in/insert rows under each :test a class
+                       ;; admits, alongside the default-equal rows.
+                       (test-variants nil)
                        (construction t)
                        ;; Per-sample GC would dominate the run at this
                        ;; spec count and live-heap size; interleaving
@@ -324,15 +656,28 @@
                      (insert-specs n mixed-prob)
                      (delete-specs n mixed-prob)))
       (loop for n in pair-cardinalities
-            append (loop for ov in overlaps append (binary-specs n ov)))
+            append (loop for ov in overlaps
+                         append (loop for r in pair-ratios
+                                      append (binary-specs
+                                               n ov (max 1 (floor (* n r)))))))
       (and construction
-           (loop for n in cardinalities append (construction-specs n))))
+           (loop for n in cardinalities append (construction-specs n)))
+      (loop for kc in key-classes
+            append (size-specs kc key-class-cardinality mixed-prob))
+      (and test-variants
+           (loop for kc in key-classes
+                 when (cdr (getf kc :tests))
+                   append (test-specs kc key-class-cardinality mixed-prob))))
     :gc gc)
   (print-results)
   (when depth
     (depth-report :cardinalities cardinalities))
   (when hash-share
     (hash-share-report :cardinalities cardinalities :hit-prob mixed-prob))
+  (when key-classes
+    (class-size-report key-classes key-class-cardinality))
+  (when (and key-classes test-variants)
+    (test-variant-report key-classes key-class-cardinality))
   (when out
     (let ((path (write-results out :notes notes)))
       (format t "~&Results written to ~A~%" path)))
@@ -348,11 +693,23 @@
         (bench::*target-region-ms* 5))
     (run-suite :cardinalities '(1000 10000)
                :pair-cardinalities '(1000)
-               :overlaps '(1/2))))
+               :overlaps '(1/2)
+               :pair-ratios '(1 1/100)
+               :key-classes (list (keyclass "u60" #'random-u60
+                                            :tests '(equal = eql))
+                                  (keyclass "symbol8"
+                                            (lambda () (random-symbol 8))
+                                            :tests '(equal eq eql))
+                                  (keyclass "string512"
+                                            (lambda () (random-string 512))))
+               :key-class-cardinality 1000
+               :test-variants t)))
 
 (defun run-full ()
   (let ((stamp (substitute #\- #\: (bench::timestamp))))
-    (run-suite :out (format nil "results/treeset-bench-~A.csv" stamp)
+    (run-suite :key-classes (default-key-classes)
+               :test-variants t
+               :out (format nil "results/treeset-bench-~A.csv" stamp)
                :samples-out
                (format nil "results/treeset-bench-~A-samples.csv" stamp))))
 

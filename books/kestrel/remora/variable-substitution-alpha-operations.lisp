@@ -777,6 +777,15 @@
                                                    dim-subst
                                                    shape-subst
                                                    avoid)))))
+  :guard-hints
+  ((exprs/atoms/binds
+    (("Goal"
+      :in-theory (enable* ast-subst-ispace-vars-alpha-aux-rules)
+      :expand ((:free (avoid)
+                (bind-list-subst-ispace-vars-alpha-aux (expr-let->binds expr)
+                                                       dim-subst
+                                                       shape-subst
+                                                       avoid)))))))
   :name ast-subst-ispace-vars-alpha-aux)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1102,6 +1111,15 @@
                                                  atom-subst
                                                  array-subst
                                                  avoid)))))
+  :guard-hints
+  ((exprs/atoms/binds
+    (("Goal"
+      :in-theory (enable* ast-subst-type-vars-alpha-aux-rules)
+      :expand ((:free (avoid)
+                (bind-list-subst-type-vars-alpha-aux (expr-let->binds expr)
+                                                     atom-subst
+                                                     array-subst
+                                                     avoid)))))))
   :name ast-subst-type-vars-alpha-aux)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1367,6 +1385,14 @@
             (bind-list-subst-expr-vars-alpha-aux (cdr bind-list)
                                                  subst
                                                  avoid)))))
+  :guard-hints
+  ((exprs/atoms/binds
+    (("Goal"
+      :in-theory (enable* ast-subst-expr-vars-alpha-aux-rules)
+      :expand ((:free (avoid)
+                (bind-list-subst-expr-vars-alpha-aux (expr-let->binds expr)
+                                                     subst
+                                                     avoid)))))))
   :name ast-subst-expr-vars-alpha-aux)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
