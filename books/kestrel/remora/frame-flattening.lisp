@@ -51,7 +51,30 @@
      @(tsee flatten-frames-in-expr) does the merging at each
      one it finds following only frame and bracket spines.
      So a frame written explicitly with @('frame') is merged
-     into its parent only when an enclosing bracket reaches it."))
+     into its parent only when an enclosing bracket reaches it.")
+   (xdoc::p
+    "The general idea is that @(tsee flatten-frames-in-expr)
+     turns an expression of the form")
+   (xdoc::codeblock
+    "(frame [a1 ... aN] (frame [b1 ... bM] x11 ... x1P)"
+    "                   (frame [b1 ... bM] x21 ... x2P)"
+    "                   ..."
+    "                   (frame [b1 ... bM] xQ1 ... xQP))")
+   (xdoc::p
+    "into")
+   (xdoc::codeblock
+    "(frame [a1 ... aN b1 ... bM] x11 ... xQP)")
+   (xdoc::p
+    "and an expression of the form")
+   (xdoc::codeblock
+    "(frame [a1 ... aN] (array [b1 ... bM] x11 ... x1P)"
+    "                   (array [b1 ... bM] x21 ... x2P)"
+    "                   ..."
+    "                   (array [b1 ... bM] xQ1 ... xQP))")
+   (xdoc::p
+    "into")
+   (xdoc::codeblock
+    "(array [a1 ... aN b1 ... bM] x11 ... xQP)"))
   :order-subtopics t
   :default-parent t)
 
@@ -80,7 +103,7 @@
    (xdoc::p
     "An expression is array-like if it "
      (xdoc::seetopic "desugaring" "desugars")
-     " to a non-empty array.")
+     " to a non-empty @(':array') expression.")
    (xdoc::p
     "This matches [impl], whose parser turns atoms and strings
      into arrays as it parses, so its flattening sees arrays
@@ -96,7 +119,14 @@
 (std::deflist expr-array-like-listp (x)
   :guard (expr-listp x)
   :short "Recognizer for a true list of array-like expressions."
-  (expr-array-likep x))
+  (expr-array-likep x)
+
+  ///
+
+  (defrule expr-array-like-listp-of-expr-list-fix
+    (equal (expr-array-like-listp (expr-list-fix x))
+           (expr-array-like-listp x))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -108,7 +138,7 @@
              :array expr.dims
              :atom nil
              :string (list (len expr.chars))
-             :otherwise nil)
+             :otherwise (impossible))
   :guard-hints (("Goal" :in-theory (enable expr-array-likep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -137,7 +167,7 @@
              :string (atom-base-list
                       (base-lit-int-list
                        (char-lit-list-desugar expr.chars)))
-             :otherwise nil)
+             :otherwise (impossible))
   :guard-hints (("Goal" :in-theory (enable expr-array-likep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -158,7 +188,7 @@
    (xdoc::p
     "An expression is frame-like if it "
      (xdoc::seetopic "desugaring" "desugars")
-     " to a non-empty frame.")
+     " to a non-empty @(':frame') expression.")
    (xdoc::p
     "This matches [impl], whose parser builds the frame that
      bracket notation denotes as it parses, so its flattening
@@ -173,7 +203,14 @@
 (std::deflist expr-frame-like-listp (x)
   :guard (expr-listp x)
   :short "Recognizer for a true list of frame-like expressions."
-  (expr-frame-likep x))
+  (expr-frame-likep x)
+
+  ///
+
+  (defrule expr-frame-like-listp-of-expr-list-fix
+    (equal (expr-frame-like-listp (expr-list-fix x))
+           (expr-frame-like-listp x))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -184,7 +221,7 @@
   (expr-case expr
              :bracket (list (len expr.exprs))
              :frame expr.dims
-             :otherwise nil)
+             :otherwise (impossible))
   :guard-hints (("Goal" :in-theory (enable expr-frame-likep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -204,7 +241,7 @@
   (expr-case expr
              :bracket expr.exprs
              :frame expr.exprs
-             :otherwise nil)
+             :otherwise (impossible))
   :guard-hints (("Goal" :in-theory (enable expr-frame-likep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -222,7 +259,6 @@
                        (bracketp booleanp))
   :guard (consp exprs)
   :returns (expr exprp)
-  :hooks nil
   :short "Merge already-flattened sub-expressions into their parent."
   :long
   (xdoc::topstring
@@ -351,12 +387,7 @@
        has no override here, so it is not merged into its parent;
        it is only merged if some enclosing bracket expression
        reaches it via @(tsee flatten-frames-in-expr)."))
-  :types (shapes/ispaces
-          types
-          type-option
-          var+type?
-          var+type?-list
-          exprs/atoms/binds)
+  :types (exprs/atoms/binds)
   :override
   ((expr :bracket (b* ((exprs (expr-list-flatten-brackets expr.exprs)))
                     (flatten-frames-in-expr
@@ -368,7 +399,7 @@
 (defsection corep-of-flatten-frames
   :short "Frame flattening core ASTs yields core ASTs."
 
-  (defrulel atom-list-list-corep-of-expr-array-like-list->atoms
+  (defrule atom-list-list-corep-of-expr-array-like-list->atoms
     (implies (and (expr-list-corep exprs)
                   (expr-array-like-listp exprs))
              (atom-list-list-corep (expr-array-like-list->atoms exprs)))
@@ -378,7 +409,7 @@
              expr-array-like-listp
              expr-array-likep))
 
-  (defrulel expr-list-list-corep-of-expr-frame-like-list->exprs
+  (defrule expr-list-list-corep-of-expr-frame-like-list->exprs
     (implies (and (expr-list-corep exprs)
                   (expr-frame-like-listp exprs))
              (expr-list-list-corep (expr-frame-like-list->exprs exprs)))
@@ -388,7 +419,7 @@
              expr-frame-like-listp
              expr-frame-likep))
 
-  (defrulel expr-corep-of-flatten-merge
+  (defrule expr-corep-of-flatten-merge
     (implies (and (expr-list-corep exprs)
                   (consp exprs)
                   (not bracketp))
