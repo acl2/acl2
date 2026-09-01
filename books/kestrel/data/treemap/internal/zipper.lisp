@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREESET")
+(in-package "TREEMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -17,7 +17,8 @@
 (include-book "bst-defs")
 (include-book "heap-defs")
 (include-book "count-defs")
-(include-book "in-defs")
+(include-book "keys-defs")
+(include-book "lookup-defs")
 (include-book "in-order-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -27,6 +28,16 @@
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 (local (include-book "kestrel/data/utilities/oset" :dir :system))
+
+(local (include-book "kestrel/data/treeset/in" :dir :system))
+(local (include-book "kestrel/data/treeset/insert" :dir :system))
+(local (include-book "kestrel/data/treeset/union" :dir :system))
+
+(local (include-book "kestrel/data/utilities/omap" :dir :system))
+(local (include-book "std/omaps/extensionality" :dir :system))
+
+(local (include-book "kestrel/alists-light/alistp" :dir :system))
+(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -38,9 +49,10 @@
 (local (include-book "bst"))
 (local (include-book "heap"))
 (local (include-book "count"))
-(local (include-book "in"))
+(local (include-book "keys"))
+(local (include-book "lookup"))
 (local (include-book "in-order"))
-(local (include-book "subset"))
+(local (include-book "submap"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -63,7 +75,7 @@
       "Costs below are given as @($O(d)$), where @($d$) is a depth within the
        tree. That is the honest bound here, since a zipper is over an arbitrary
        @(see tree) and nothing at this level constrains its shape. Over a
-       @(see treeset), which is practically balanced, @($d$) is
+       @(see treemap), which is practically balanced, @($d$) is
        @($O(\\log(n))$)."))
   :order-subtopics t
   :default-parent t)
@@ -461,7 +473,7 @@
       empty tree, where there is only one gap to be found.")
    (xdoc::p
      "This recognizer is structural only. Whether the tree recovered from a
-      zipper satisfies the @(see treeset) invariants is a separate question."))
+      zipper satisfies the @(see treemap) invariants is a separate question."))
   (and (consp x)
        (consp (cdr x))
        (consp (cddr x))
@@ -915,7 +927,7 @@
   (xdoc::topstring
    (xdoc::p
      "Time complexity: @($O(d)$), where @($d$) is the depth of the focus, and
-      so @($O(\\log(n))$) over a @(see treeset)."))
+      so @($O(\\log(n))$) over a @(see treemap)."))
   (zip-path-plug (zip->path zip)
                  (zip->focus zip))
   :inline t)
@@ -1194,7 +1206,7 @@
   (xdoc::topstring
    (xdoc::p
      "Time complexity: @($O(d)$), where @($d$) is the depth descended, and so
-      @($O(\\log(n))$) over a @(see treeset)."))
+      @($O(\\log(n))$) over a @(see treemap)."))
   (if (tree-empty-p (tree->left (zip->focus zip)))
       (zip-fix zip)
     (zip-descend-leftmost (zip-descend-left zip)))
@@ -1227,7 +1239,7 @@
   (xdoc::topstring
    (xdoc::p
      "Time complexity: @($O(d)$), where @($d$) is the depth descended, and so
-      @($O(\\log(n))$) over a @(see treeset)."))
+      @($O(\\log(n))$) over a @(see treemap)."))
   (if (tree-empty-p (tree->right (zip->focus zip)))
       (zip-fix zip)
     (zip-descend-rightmost (zip-descend-right zip)))
@@ -1265,7 +1277,7 @@
       and we ascend all the way to the root.")
    (xdoc::p
      "Time complexity: @($O(d)$), where @($d$) is the depth ascended, and so
-      @($O(\\log(n))$) over a @(see treeset)."))
+      @($O(\\log(n))$) over a @(see treemap)."))
   (cond ((endp (zip->path zip))
          (zip-fix zip))
         ((zip-frame->from-left (car (zip->path zip)))
@@ -1384,7 +1396,7 @@
       position past the end.")
    (xdoc::p
      "Time complexity: @($O(d)$) in the worst case -- @($O(\\log(n))$) over a
-      @(see treeset) -- but @($O(1)$) amortized over a traversal, since each
+      @(see treemap) -- but @($O(1)$) amortized over a traversal, since each
       edge of the tree is crossed twice."))
   ;; Logically the move saturates at the last element, which is what @(tsee
   ;; zip-next-identity-iff-zip-at-last-p) reports. The guard rules that case
@@ -1886,26 +1898,74 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define zip-value ((zip zipp))
+
+(define zip-key ((zip zipp))
+  :short "The key at the focus."
+  (tree-element->key (tree->head (zip->focus zip)))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule zip-key-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-key zip0)
+                  (zip-key zip1)))
+  :rule-classes :congruence
+  :enable zip-key)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-val ((zip zipp))
   :short "The value at the focus."
   (tree-element->val (tree->head (zip->focus zip)))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule zip-value-when-zip-equiv-congruence
+(defrule zip-val-when-zip-equiv-congruence
   (implies (zip-equiv zip0 zip1)
-           (equal (zip-value zip0)
-                  (zip-value zip1)))
+           (equal (zip-val zip0)
+                  (zip-val zip1)))
   :rule-classes :congruence
-  :enable zip-value)
+  :enable zip-val)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-key+val ((zip zipp))
+  :short "The key and value at the focus, as a pair."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "This is the entry the cursor is at, in the form @(tsee tree-in-order)
+      builds its alist from."))
+  (tree-element->key+val (tree->head (zip->focus zip)))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule zip-key+val-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-key+val zip0)
+                  (zip-key+val zip1)))
+  :rule-classes :congruence
+  :enable zip-key+val)
+
+(defrule zip-key+val-becomes-cons-of-zip-key-and-zip-val
+  (equal (zip-key+val zip)
+         (cons (zip-key zip) (zip-val zip)))
+  :enable (zip-key+val
+           zip-key
+           zip-val
+           tree-element->key+val
+           tree-element->key
+           tree-element->val))
 
 ;; The focus of a zipper occupies a contiguous run of the in-order sequence of
 ;; the whole tree, and what flanks that run is fixed by the path alone. The two
 ;; functions below name those flanks, cutting the sequence in three.
 ;;
 ;; The tree fold below is the one primitive; the list and oset flanks are
-;; views of it, read off with @(tsee tree-in-order) and @(tsee tree-oset).
+;; views of it, read off with @(tsee tree-in-order) and @(tsee tree-omap).
 
 ;; The sides as trees, built directly. A frame whose focus hangs as the right
 ;; child holds an element and a sibling subtree which precede the focus, and
@@ -1977,7 +2037,7 @@
   (xdoc::topstring
    (xdoc::p
      "Time complexity: @($O(d)$), where @($d$) is the depth of the focus, and
-      so @($O(\\log(n))$) over a @(see treeset). One node is built per
+      so @($O(\\log(n))$) over a @(see treemap). One node is built per
       contributing frame; every subtree hangs off the original tree
       unchanged."))
   (zip-path-tree-before (zip->path zip)
@@ -1992,7 +2052,7 @@
   (xdoc::topstring
    (xdoc::p
      "Time complexity: @($O(d)$), where @($d$) is the depth of the focus, and
-      so @($O(\\log(n))$) over a @(see treeset). One node is built per
+      so @($O(\\log(n))$) over a @(see treemap). One node is built per
       contributing frame; every subtree hangs off the original tree
       unchanged."))
   (zip-path-tree-after (zip->path zip)
@@ -2024,7 +2084,7 @@
 
 (local
   (define zip-path-before-rec ((path zip-frame-listp))
-    :returns (list true-listp :rule-classes :type-prescription)
+    :returns (alist alistp)
     :verify-guards nil
     (if (endp path)
         nil
@@ -2032,17 +2092,17 @@
               (if (zip-frame->from-left (car path))
                   nil
                 (append (tree-in-order (zip-frame->sibling (car path)))
-                        (list (tree-element->val
+                        (list (tree-element->key+val
                                 (zip-frame->elem (car path))))))))))
 
 (local
   (define zip-path-after-rec ((path zip-frame-listp))
-    :returns (list true-listp :rule-classes :type-prescription)
+    :returns (alist alistp)
     :verify-guards nil
     (if (endp path)
         nil
       (append (if (zip-frame->from-left (car path))
-                  (cons (tree-element->val (zip-frame->elem (car path)))
+                  (cons (tree-element->key+val (zip-frame->elem (car path)))
                         (tree-in-order (zip-frame->sibling (car path))))
                 nil)
               (zip-path-after-rec (cdr path))))))
@@ -2069,8 +2129,8 @@
 
 (define zip-path-before ((path zip-frame-listp))
   (declare (xargs :type-prescription :none))
-  :returns (list true-listp :rule-classes :type-prescription)
-  :short "The values which precede the focus subtree, in order."
+  :returns (alist alistp)
+  :short "The entries which precede the focus subtree, in order."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2082,13 +2142,29 @@
 
 (define zip-path-after ((path zip-frame-listp))
   (declare (xargs :type-prescription :none))
-  :returns (list true-listp :rule-classes :type-prescription)
-  :short "The values which follow the focus subtree, in order."
+  :returns (alist alistp)
+  :short "The entries which follow the focus subtree, in order."
   :long
   (xdoc::topstring
    (xdoc::p
      "The mirror of @(tsee zip-path-before)."))
   (tree-in-order (zip-path-tree-after path nil)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+;; The `:returns' spec above gives alistp; these restore the true-listp
+;; type-prescription, which the append laws below need in order to collapse
+;; an append against nil.
+
+(defrule zip-path-before-type-prescription
+  (true-listp (zip-path-before path))
+  :rule-classes :type-prescription
+  :enable zip-path-before)
+
+(defrule zip-path-after-type-prescription
+  (true-listp (zip-path-after path))
+  :rule-classes :type-prescription
+  :enable zip-path-after)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2160,7 +2236,7 @@
                  (if (zip-frame->from-left frame)
                      nil
                    (append (tree-in-order (zip-frame->sibling frame))
-                           (list (tree-element->val
+                           (list (tree-element->key+val
                                    (zip-frame->elem frame)))))))
   :enable (zip-path-before-becomes-rec
            zip-path-before-rec))
@@ -2168,7 +2244,7 @@
 (defrule zip-path-after-of-cons
   (equal (zip-path-after (cons frame path))
          (append (if (zip-frame->from-left frame)
-                     (cons (tree-element->val (zip-frame->elem frame))
+                     (cons (tree-element->key+val (zip-frame->elem frame))
                            (tree-in-order (zip-frame->sibling frame)))
                    nil)
                  (zip-path-after path)))
@@ -2200,11 +2276,20 @@
                  (tree-in-order tree)
                  (zip-path-after path)))
   :induct (zip-path-plug path tree)
+  ;; The two flanks go through their recursive forms here: the goal carries
+  ;; them applied to `path' itself, which the `-of-cons' rules cannot reach,
+  ;; while the recursions unfold on `(consp path)' directly.
   :enable (zip-path-plug
+           zip-path-before-becomes-rec
+           zip-path-after-becomes-rec
            zip-path-before-rec
            zip-path-after-rec
            zip-frame-plug
-           tree-in-order))
+           tree-in-order)
+  ;; Keep the entry opaque. It is a pair, and letting it open turns the
+  ;; append normalization into a `cons-equal' case split which then asks for
+  ;; a second induction.
+  :disable tree-element->key+val)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2215,8 +2300,8 @@
 
 (define zip-before ((zip zipp))
   (declare (xargs :type-prescription :none))
-  :returns (list true-listp :rule-classes :type-prescription)
-  :short "The values which precede the cursor, in order."
+  :returns (alist alistp)
+  :short "The entries which precede the cursor, in order."
   (tree-in-order (zip-path-tree-before (zip->path zip)
                                        (tree->left (zip->focus zip))))
   :inline t)
@@ -2225,11 +2310,25 @@
 
 (define zip-after ((zip zipp))
   (declare (xargs :type-prescription :none))
-  :returns (list true-listp :rule-classes :type-prescription)
-  :short "The values which follow the cursor, in order."
+  :returns (alist alistp)
+  :short "The entries which follow the cursor, in order."
   (tree-in-order (zip-path-tree-after (zip->path zip)
                                       (tree->right (zip->focus zip))))
   :inline t)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule zip-before-type-prescription
+  (true-listp (zip-before zip))
+  :rule-classes :type-prescription
+  :enable zip-before
+  :disable tree-in-order-of-zip-path-tree-before)
+
+(defrule zip-after-type-prescription
+  (true-listp (zip-after zip))
+  :rule-classes :type-prescription
+  :enable zip-after
+  :disable tree-in-order-of-zip-path-tree-after)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2294,16 +2393,16 @@
   :enable zip-plug)
 
 ;; The same sequence, cut at the cursor instead: since a zipper is always at an
-;; element, the cut always splits the sequence around one value.
+;; element, the cut always splits the sequence around one entry.
 
 (defruled tree-in-order-of-zip-plug-split-at-cursor
   (equal (tree-in-order (zip-plug zip))
          (append (zip-before zip)
-                 (cons (zip-value zip)
+                 (cons (zip-key+val zip)
                        (zip-after zip))))
   :enable (zip-before
            zip-after
-           zip-value
+           zip-key+val
            tree-in-order))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -2327,222 +2426,219 @@
   :use (:instance len-of-tree-in-order (tree (zip-plug zip)))
   :enable tree-in-order-of-zip-plug-split-at-cursor
   :disable len-of-tree-in-order)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The two sides as osets, built with oset primitives. Unlike @(tsee
+;; The two sides as omaps, built with omap primitives. Unlike @(tsee
 ;; zip-before) and @(tsee zip-after), which read the two sides off as slices
-;; of the in-order sequence and are only osets when the tree is a search tree,
-;; these are @(tsee set::setp) structurally, for any zipper at all. Over a
+;; of the in-order alist and are only omaps when the tree is a search tree,
+;; these are @(tsee omap::mapp) structurally, for any zipper at all. Over a
 ;; search tree the two versions are the same object; see @(tsee
-;; zip-oset-before-becomes-zip-before). The oset versions are the logical
-;; form: statements phrased over them face the mature oset theory.
+;; zip-omap-before-becomes-zip-before). The omap versions are the logical
+;; form: statements phrased over them face the mature omap theory.
 
-(define zip-path-oset-before ((path zip-frame-listp))
-  :returns (oset set::setp)
-  :short "The elements which precede the focus subtree, as an oset."
-  (tree-oset (zip-path-tree-before path nil)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define zip-path-oset-after ((path zip-frame-listp))
-  :returns (oset set::setp)
-  :short "The elements which follow the focus subtree, as an oset."
-  (tree-oset (zip-path-tree-after path nil)))
+(define zip-path-omap-before ((path zip-frame-listp))
+  :returns (omap omap::mapp)
+  :short "The entries which precede the focus subtree, as an omap."
+  (tree-omap (zip-path-tree-before path nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define zip-oset-before ((zip zipp))
-  :returns (oset set::setp)
-  :short "The elements which precede the cursor, as an oset."
-  (tree-oset (zip-path-tree-before (zip->path zip)
+(define zip-path-omap-after ((path zip-frame-listp))
+  :returns (omap omap::mapp)
+  :short "The entries which follow the focus subtree, as an omap."
+  (tree-omap (zip-path-tree-after path nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-omap-before ((zip zipp))
+  :returns (omap omap::mapp)
+  :short "The entries which precede the cursor, as an omap."
+  (tree-omap (zip-path-tree-before (zip->path zip)
                                    (tree->left (zip->focus zip)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define zip-oset-after ((zip zipp))
-  :returns (oset set::setp)
-  :short "The elements which follow the cursor, as an oset."
-  (tree-oset (zip-path-tree-after (zip->path zip)
+(define zip-omap-after ((zip zipp))
+  :returns (omap omap::mapp)
+  :short "The entries which follow the cursor, as an omap."
+  (tree-omap (zip-path-tree-after (zip->path zip)
                                   (tree->right (zip->focus zip)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t zip-path-oset-before) (:t zip-path-oset-after)
-                    (:t zip-oset-before) (:t zip-oset-after)))
+(in-theory (disable (:t zip-path-omap-before) (:t zip-path-omap-after)
+                    (:t zip-omap-before) (:t zip-omap-after)))
 
-(defrule zip-oset-before-when-zip-equiv-congruence
+(defrule zip-omap-before-when-zip-equiv-congruence
   (implies (zip-equiv zip0 zip1)
-           (equal (zip-oset-before zip0)
-                  (zip-oset-before zip1)))
+           (equal (zip-omap-before zip0)
+                  (zip-omap-before zip1)))
   :rule-classes :congruence
-  :enable zip-oset-before)
+  :enable zip-omap-before)
 
-(defrule zip-oset-after-when-zip-equiv-congruence
+(defrule zip-omap-after-when-zip-equiv-congruence
   (implies (zip-equiv zip0 zip1)
-           (equal (zip-oset-after zip0)
-                  (zip-oset-after zip1)))
+           (equal (zip-omap-after zip0)
+                  (zip-omap-after zip1)))
   :rule-classes :congruence
-  :enable zip-oset-after)
+  :enable zip-omap-after)
 
-;; Membership in each oset is membership in the corresponding sequence, with
-;; no hypothesis: the fold inserts exactly the elements the sequence reads
-;; off, whether or not the tree is ordered.
+;; A key is bound in each omap exactly when it is bound in the corresponding
+;; alist, with no hypothesis: the fold binds exactly the keys the alist reads
+;; off, whether or not the tree is ordered. Both sides go through the tree's
+;; key set.
 
-(defrule in-of-zip-path-oset-before
-  (iff (set::in x (zip-path-oset-before path))
-       (member-equal x (zip-path-before path)))
-  :enable (zip-path-oset-before
-           zip-path-before)
+(defrule assoc-of-zip-path-omap-before
+  (iff (omap::assoc key (zip-path-omap-before path))
+       (assoc-equal key (zip-path-before path)))
+  :enable (zip-path-omap-before
+           zip-path-before
+           assoc-equal-of-tree-in-order-under-iff)
   :disable tree-in-order-of-zip-path-tree-before)
 
-(defrule in-of-zip-path-oset-after
-  (iff (set::in x (zip-path-oset-after path))
-       (member-equal x (zip-path-after path)))
-  :enable (zip-path-oset-after
-           zip-path-after)
+(defrule assoc-of-zip-path-omap-after
+  (iff (omap::assoc key (zip-path-omap-after path))
+       (assoc-equal key (zip-path-after path)))
+  :enable (zip-path-omap-after
+           zip-path-after
+           assoc-equal-of-tree-in-order-under-iff)
   :disable tree-in-order-of-zip-path-tree-after)
 
-(defrule in-of-zip-oset-before
-  (iff (set::in x (zip-oset-before zip))
-       (member-equal x (zip-before zip)))
-  :enable (zip-oset-before
-           zip-before)
+(defrule assoc-of-zip-omap-before
+  (iff (omap::assoc key (zip-omap-before zip))
+       (assoc-equal key (zip-before zip)))
+  :enable (zip-omap-before
+           zip-before
+           assoc-equal-of-tree-in-order-under-iff)
   :disable tree-in-order-of-zip-path-tree-before)
 
-(defrule in-of-zip-oset-after
-  (iff (set::in x (zip-oset-after zip))
-       (member-equal x (zip-after zip)))
-  :enable (zip-oset-after
-           zip-after)
+(defrule assoc-of-zip-omap-after
+  (iff (omap::assoc key (zip-omap-after zip))
+       (assoc-equal key (zip-after zip)))
+  :enable (zip-omap-after
+           zip-after
+           assoc-equal-of-tree-in-order-under-iff)
   :disable tree-in-order-of-zip-path-tree-after)
 
-;; Each oset is empty exactly when its sequence is: a member of one is a
-;; member of the other, and an oset with no members is nil.
+;; Each omap is empty exactly when its alist is. Unlike the oset case in
+;; TREESET, which argues through the head, this reads straight off the side
+;; tree: the fold is empty exactly when that tree is.
 
-(defrule emptyp-of-zip-oset-before
-  (equal (set::emptyp (zip-oset-before zip))
+(defrule omap-emptyp-of-zip-omap-before
+  (equal (omap::emptyp (zip-omap-before zip))
          (not (consp (zip-before zip))))
-  :use ((:instance in-of-zip-oset-before
-                   (x (set::head (zip-oset-before zip))))
-        (:instance in-of-zip-oset-before
-                   (x (car (zip-before zip))))
-        (:instance set::in-head
-                   (set::x (zip-oset-before zip))))
-  :disable (in-of-zip-oset-before
-            set::in-head))
+  ;; `tree-empty-p' is enabled only to supply its own booleanp, which the
+  ;; double negation on the right needs and which the disabled
+  ;; type-prescription would otherwise have given.
+  :enable (zip-omap-before
+           zip-tree-before
+           zip-before
+           tree-empty-p)
+  :disable tree-in-order-of-zip-path-tree-before)
 
-(defrule emptyp-of-zip-oset-after
-  (equal (set::emptyp (zip-oset-after zip))
+(defrule omap-emptyp-of-zip-omap-after
+  (equal (omap::emptyp (zip-omap-after zip))
          (not (consp (zip-after zip))))
-  :use ((:instance in-of-zip-oset-after
-                   (x (set::head (zip-oset-after zip))))
-        (:instance in-of-zip-oset-after
-                   (x (car (zip-after zip))))
-        (:instance set::in-head
-                   (set::x (zip-oset-after zip))))
-  :disable (in-of-zip-oset-after
-            set::in-head))
+  :enable (zip-omap-after
+           zip-tree-after
+           zip-after
+           tree-empty-p)
+  :disable tree-in-order-of-zip-path-tree-after)
 
-;; Over a search tree the sequences are osets themselves: each is a
-;; contiguous slice of the in-order sequence, which is then ordered and
-;; duplicate-free.
+;; Over a search tree the alists are omaps themselves: each is a contiguous
+;; slice of the in-order alist, which is then ordered and duplicate-free on
+;; its keys.
 
-(defrule osetp-of-zip-before-when-bstp
+(defrule omapp-of-zip-before-when-bstp
   (implies (bstp (zip-plug zip))
-           (set::setp (zip-before zip)))
+           (omap::mapp (zip-before zip)))
   :enable tree-in-order-of-zip-plug-split-at-cursor
-  :use ((:instance osetp-of-tree-in-order-when-bstp (tree (zip-plug zip)))
-        (:instance data::setp-of-prefix-when-osetp-of-append
-                   (data::x (zip-before zip))
-                   (data::y (cons (zip-value zip) (zip-after zip)))))
-  :disable (osetp-of-tree-in-order-when-bstp))
+  :use ((:instance omapp-of-tree-in-order-when-bstp (tree (zip-plug zip)))
+        (:instance data::omapp-of-prefix-when-omapp-of-append
+                   (x (zip-before zip))
+                   (y (cons (zip-key+val zip) (zip-after zip)))))
+  :disable (omapp-of-tree-in-order-when-bstp))
 
-(defrule osetp-of-zip-after-when-bstp
+(defrule omapp-of-zip-after-when-bstp
   (implies (bstp (zip-plug zip))
-           (set::setp (zip-after zip)))
+           (omap::mapp (zip-after zip)))
   :enable tree-in-order-of-zip-plug-split-at-cursor
-  :use ((:instance osetp-of-tree-in-order-when-bstp (tree (zip-plug zip)))
-        (:instance data::setp-of-suffix-when-osetp-of-append
-                   (data::x (zip-before zip))
-                   (data::y (cons (zip-value zip) (zip-after zip))))
-        (:instance data::setp-of-cdr-when-osetp
-                   (data::l (cons (zip-value zip) (zip-after zip)))))
-  :disable (osetp-of-tree-in-order-when-bstp))
+  :use ((:instance omapp-of-tree-in-order-when-bstp (tree (zip-plug zip)))
+        (:instance data::omapp-of-suffix-when-omapp-of-append
+                   (x (zip-before zip))
+                   (y (cons (zip-key+val zip) (zip-after zip))))
+        (:instance data::omapp-of-cdr-when-omapp
+                   (l (cons (zip-key+val zip) (zip-after zip)))))
+  :disable (omapp-of-tree-in-order-when-bstp))
 
-;; So over a search tree the two versions are not merely equivalent but the
-;; same object: both are osets, and they have the same members. This is the
-;; bridge a proof crosses to trade sequence facts for set facts.
+;; The two bridges between these and the alist sides need the side tree to be
+;; a search tree in its own right, so they come after the invariants, at the
+;; end of this book.
 
-(defruled zip-oset-before-becomes-zip-before
-  (implies (bstp (zip-plug zip))
-           (equal (zip-oset-before zip)
-                  (zip-before zip)))
-  :enable (set::in-to-member
-           set::double-containment
-           set::pick-a-point-subset-strategy))
+;;;;;;;;;;;;;;;;;;;;
 
-(defruled zip-oset-after-becomes-zip-after
-  (implies (bstp (zip-plug zip))
-           (equal (zip-oset-after zip)
-                  (zip-after zip)))
-  :enable (set::in-to-member
-           set::double-containment
-           set::pick-a-point-subset-strategy))
+;; The two omaps as order filters of the whole map: over a search tree, what
+;; lies on each side of the cursor is exactly the keys on that side of the
+;; cursor's key in the @(tsee <<) order. This ties the geometry of a zipper to
+;; the order of the map, and every ordering law downstream is a consequence.
 
-;; The two osets as order filters of the whole set: over a search tree, what
-;; lies on each side of the cursor is exactly the elements on that side of the
-;; value in the @(tsee <<) order. This is what ties the geometry of a zipper
-;; to the order of the set, and every ordering law downstream is a
-;; consequence.
-
-(defrule in-of-zip-oset-before-when-bstp
-  (implies (bstp (zip-plug zip))
-           (equal (set::in x (zip-oset-before zip))
-                  (and (tree-in x (zip-plug zip))
-                       (<< x (zip-value zip)))))
+(defruled in-of-tree-key-set-of-zip-plug-split
+  (iff (treeset::in key (tree-key-set (zip-plug zip)))
+       (or (assoc-equal key (zip-before zip))
+           (equal key (zip-key zip))
+           (assoc-equal key (zip-after zip))))
+  :use (:instance assoc-equal-of-tree-in-order-under-iff
+                  (x key)
+                  (tree (zip-plug zip)))
   :enable (tree-in-order-of-zip-plug-split-at-cursor
-           data::<<-rules)
-  :use ((:instance member-equal-of-tree-in-order-under-iff
-                   (tree (zip-plug zip)))
-        (:instance osetp-of-tree-in-order-when-bstp
-                   (tree (zip-plug zip)))
-        (:instance data::<<-across-append-when-osetp
-                   (data::a (zip-before zip))
-                   (data::b (cons (zip-value zip) (zip-after zip)))
-                   (data::x x))
-        (:instance data::<<-of-car-when-member-equal-of-cdr
-                   (data::l (cons (zip-value zip) (zip-after zip)))
-                   (data::x x))
-        (:instance data::setp-of-suffix-when-osetp-of-append
-                   (data::x (zip-before zip))
-                   (data::y (cons (zip-value zip) (zip-after zip)))))
-  :disable (member-equal-of-tree-in-order-under-iff
-            osetp-of-tree-in-order-when-bstp))
+           zip-key+val-becomes-cons-of-zip-key-and-zip-val)
+  :disable assoc-equal-of-tree-in-order-under-iff)
 
-(defrule in-of-zip-oset-after-when-bstp
+(defrule assoc-of-zip-omap-before-when-bstp
   (implies (bstp (zip-plug zip))
-           (equal (set::in x (zip-oset-after zip))
-                  (and (tree-in x (zip-plug zip))
-                       (<< (zip-value zip) x))))
-  :enable (tree-in-order-of-zip-plug-split-at-cursor
+           (iff (omap::assoc key (zip-omap-before zip))
+                (and (treeset::in key (tree-key-set (zip-plug zip)))
+                     (<< key (zip-key zip)))))
+  :enable (in-of-tree-key-set-of-zip-plug-split
+           tree-in-order-of-zip-plug-split-at-cursor
            data::<<-rules)
-  :use ((:instance member-equal-of-tree-in-order-under-iff
+  :use ((:instance omapp-of-tree-in-order-when-bstp
                    (tree (zip-plug zip)))
-        (:instance osetp-of-tree-in-order-when-bstp
+        (:instance data::<<-across-append-when-omapp
+                   (a (zip-before zip))
+                   (b (cons (zip-key+val zip) (zip-after zip)))
+                   (x key))
+        (:instance data::<<-of-caar-when-assoc-equal-of-cdr
+                   (l (cons (zip-key+val zip) (zip-after zip)))
+                   (x key))
+        (:instance data::omapp-of-suffix-when-omapp-of-append
+                   (x (zip-before zip))
+                   (y (cons (zip-key+val zip) (zip-after zip)))))
+  :disable (omapp-of-tree-in-order-when-bstp
+            tree-in-order-of-zip-plug))
+
+(defrule assoc-of-zip-omap-after-when-bstp
+  (implies (bstp (zip-plug zip))
+           (iff (omap::assoc key (zip-omap-after zip))
+                (and (treeset::in key (tree-key-set (zip-plug zip)))
+                     (<< (zip-key zip) key))))
+  :enable (in-of-tree-key-set-of-zip-plug-split
+           tree-in-order-of-zip-plug-split-at-cursor
+           data::<<-rules)
+  :use ((:instance omapp-of-tree-in-order-when-bstp
                    (tree (zip-plug zip)))
-        (:instance data::<<-across-append-when-osetp
-                   (data::a (zip-before zip))
-                   (data::b (cons (zip-value zip) (zip-after zip)))
-                   (data::x x))
-        (:instance data::<<-of-car-when-member-equal-of-cdr
-                   (data::l (cons (zip-value zip) (zip-after zip)))
-                   (data::x x))
-        (:instance data::setp-of-suffix-when-osetp-of-append
-                   (data::x (zip-before zip))
-                   (data::y (cons (zip-value zip) (zip-after zip)))))
-  :disable (member-equal-of-tree-in-order-under-iff
-            osetp-of-tree-in-order-when-bstp))
+        (:instance data::<<-across-append-when-omapp
+                   (a (zip-before zip))
+                   (b (cons (zip-key+val zip) (zip-after zip)))
+                   (x key))
+        (:instance data::<<-of-caar-when-assoc-equal-of-cdr
+                   (l (cons (zip-key+val zip) (zip-after zip)))
+                   (x key))
+        (:instance data::omapp-of-suffix-when-omapp-of-append
+                   (x (zip-before zip))
+                   (y (cons (zip-key+val zip) (zip-after zip)))))
+  :disable (omapp-of-tree-in-order-when-bstp
+            tree-in-order-of-zip-plug))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2567,9 +2663,9 @@
 (defruledl zip-path-before-of-path-of-zip-descend-right
   (equal (zip-path-before (zip->path (zip-descend-right zip)))
          (append (zip-before zip)
-                 (list (zip-value zip))))
+                 (list (zip-key+val zip))))
   :enable (zip-before
-           zip-value))
+           zip-key+val))
 
 (defruledl zip-before-of-zip-ascend-to-left-frame
   (implies (not (equal (zip-count-lefts (zip->path zip)) 0))
@@ -2591,12 +2687,12 @@
   (implies (not (zip-at-last-p zip))
            (equal (zip-before (zip-next zip))
                   (append (zip-before zip)
-                          (list (zip-value zip)))))
+                          (list (zip-key+val zip)))))
   :expand ((tree-in-order (zip->focus zip)))
   :enable (zip-next
            zip-at-last-p
            zip-before
-           zip-value
+           zip-key+val
            zip-before-of-zip-descend-leftmost
            zip-before-of-zip-ascend-to-left-frame))
 
@@ -2612,9 +2708,9 @@
         (:instance tree-in-order-of-zip-plug-split-at-cursor
                    (zip (zip-next zip)))))
 
-(defrule zip-value-of-zip-next
+(defrule zip-key+val-of-zip-next
   (implies (not (zip-at-last-p zip))
-           (equal (zip-value (zip-next zip))
+           (equal (zip-key+val (zip-next zip))
                   (car (zip-after zip))))
   :use (tree-in-order-of-zip-plug-split-at-cursor
         (:instance tree-in-order-of-zip-plug-split-at-cursor
@@ -2711,7 +2807,7 @@
   (implies (not (zip-at-first-p zip))
            (equal (zip-before zip)
                   (append (zip-before (zip-prev zip))
-                          (list (zip-value (zip-prev zip))))))
+                          (list (zip-key+val (zip-prev zip))))))
   :use (:instance zip-before-of-zip-next
                   (zip (zip-prev zip)))
   :disable zip-before-of-zip-next)
@@ -2723,14 +2819,14 @@
 (defrule zip-after-of-zip-prev
   (implies (not (zip-at-first-p zip))
            (equal (zip-after (zip-prev zip))
-                  (cons (zip-value zip)
+                  (cons (zip-key+val zip)
                         (zip-after zip))))
   :use ((:instance zip-after-of-zip-next (zip (zip-prev zip)))
-        (:instance zip-value-of-zip-next (zip (zip-prev zip)))
+        (:instance zip-key+val-of-zip-next (zip (zip-prev zip)))
         (:instance zip-at-last-p-when-not-consp-of-zip-after
                    (zip (zip-prev zip))))
   :disable (zip-after-of-zip-next
-            zip-value-of-zip-next
+            zip-key+val-of-zip-next
             zip-at-last-p-when-not-consp-of-zip-after
             acl2::cons-car-cdr))
 
@@ -2812,51 +2908,60 @@
   :use zip-before-of-zip-prev
   :disable zip-before-of-zip-prev)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The built trees hold exactly the elements of the oset sides.
+;; The built trees hold exactly the entries of the omap sides.
 
-(defrule tree-in-of-zip-path-tree-before
-  (equal (tree-in x (zip-path-tree-before path acc))
-         (or (set::in x (zip-path-oset-before path))
-             (tree-in x acc)))
-  :use ((:instance member-equal-of-tree-in-order-under-iff
+(defrule in-of-tree-key-set-of-zip-path-tree-before
+  (iff (treeset::in key (tree-key-set (zip-path-tree-before path acc)))
+       (or (omap::assoc key (zip-path-omap-before path))
+           (treeset::in key (tree-key-set acc))))
+  :use ((:instance assoc-equal-of-tree-in-order-under-iff
+                   (x key)
                    (tree (zip-path-tree-before path acc)))
-        (:instance member-equal-of-tree-in-order-under-iff
+        (:instance assoc-equal-of-tree-in-order-under-iff
+                   (x key)
                    (tree (zip-path-tree-before path nil)))
-        (:instance member-equal-of-tree-in-order-under-iff
+        (:instance assoc-equal-of-tree-in-order-under-iff
+                   (x key)
                    (tree acc)))
-  :disable member-equal-of-tree-in-order-under-iff)
+  :disable assoc-equal-of-tree-in-order-under-iff)
 
-(defrule tree-in-of-zip-path-tree-after
-  (equal (tree-in x (zip-path-tree-after path acc))
-         (or (set::in x (zip-path-oset-after path))
-             (tree-in x acc)))
-  :use ((:instance member-equal-of-tree-in-order-under-iff
+(defrule in-of-tree-key-set-of-zip-path-tree-after
+  (iff (treeset::in key (tree-key-set (zip-path-tree-after path acc)))
+       (or (omap::assoc key (zip-path-omap-after path))
+           (treeset::in key (tree-key-set acc))))
+  :use ((:instance assoc-equal-of-tree-in-order-under-iff
+                   (x key)
                    (tree (zip-path-tree-after path acc)))
-        (:instance member-equal-of-tree-in-order-under-iff
+        (:instance assoc-equal-of-tree-in-order-under-iff
+                   (x key)
                    (tree (zip-path-tree-after path nil)))
-        (:instance member-equal-of-tree-in-order-under-iff
+        (:instance assoc-equal-of-tree-in-order-under-iff
+                   (x key)
                    (tree acc)))
-  :disable member-equal-of-tree-in-order-under-iff)
+  :disable assoc-equal-of-tree-in-order-under-iff)
 
-(defrule tree-in-of-zip-tree-before
-  (equal (tree-in x (zip-tree-before zip))
-         (set::in x (zip-oset-before zip)))
+(defrule in-of-tree-key-set-of-zip-tree-before
+  (iff (treeset::in key (tree-key-set (zip-tree-before zip)))
+       (omap::assoc key (zip-omap-before zip)))
   :enable (zip-tree-before
-           zip-oset-before))
+           zip-omap-before
+           zip-before
+           assoc-equal-of-tree-in-order-under-iff))
 
-(defrule tree-in-of-zip-tree-after
-  (equal (tree-in x (zip-tree-after zip))
-         (set::in x (zip-oset-after zip)))
+(defrule in-of-tree-key-set-of-zip-tree-after
+  (iff (treeset::in key (tree-key-set (zip-tree-after zip)))
+       (omap::assoc key (zip-omap-after zip)))
   :enable (zip-tree-after
-           zip-oset-after))
+           zip-omap-after
+           zip-after
+           assoc-equal-of-tree-in-order-under-iff))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Both invariants pass to the built trees. Each fact an added node needs is
 ;; inherited from the plug: the frame element bounds its sibling directly, and
-;; bounds the accumulator because the accumulator stays a subset of the
+;; bounds the accumulator because the accumulator stays a submap of the
 ;; subtree the focus came from.
 
 ;; What the plug knows about a plugged node, in the syntactic form the
@@ -2866,8 +2971,8 @@
   (implies (bstp (zip-path-plug path (tree-node head left right)))
            (and (bstp left)
                 (bstp right)
-                (<<-all-l left (tree-element->val head))
-                (<<-all-r (tree-element->val head) right)))
+                (<<-all-l left (tree-element->key head))
+                (<<-all-r (tree-element->key head) right)))
   :use (:instance bstp-of-arg2-when-bstp-of-zip-path-plug
                   (tree (tree-node head left right)))
   :disable bstp-of-arg2-when-bstp-of-zip-path-plug)
@@ -2876,74 +2981,82 @@
   (implies (heapp (zip-path-plug path (tree-node head left right)))
            (and (heapp left)
                 (heapp right)
-                (heap<-all-l left (tree-element->val head))
-                (heap<-all-l right (tree-element->val head))))
+                (heap<-all-l left (tree-element->key head))
+                (heap<-all-l right (tree-element->key head))))
   :use (:instance heapp-of-arg2-when-heapp-of-zip-path-plug
                   (tree (tree-node head left right)))
   :disable heapp-of-arg2-when-heapp-of-zip-path-plug)
 
-(defruledl <<-all-r-of-elem-when-subset-of-right
-  (implies (and (tree-subset-p acc right)
+(defruledl <<-all-r-of-elem-when-submap-of-right
+  (implies (and (tree-submap-p acc right)
                 (bstp (zip-path-plug path (tree-node head left right))))
-           (<<-all-r (tree-element->val head) acc))
-  :use ((:instance <<-all-r-when-tree-subset-p
-                   (x (tree-element->val head))
+           (<<-all-r (tree-element->key head) acc))
+  :use ((:instance <<-all-r-when-tree-submap-p
+                   (x (tree-element->key head))
                    (tree right))
         (:instance bstp-of-arg2-when-bstp-of-zip-path-plug
                    (tree (tree-node head left right))))
   :disable bstp-of-arg2-when-bstp-of-zip-path-plug)
 
-(defruledl <<-all-l-of-elem-when-subset-of-left
-  (implies (and (tree-subset-p acc left)
+(defruledl <<-all-l-of-elem-when-submap-of-left
+  (implies (and (tree-submap-p acc left)
                 (bstp (zip-path-plug path (tree-node head left right))))
-           (<<-all-l acc (tree-element->val head)))
-  :use ((:instance <<-all-l-when-tree-subset-p
-                   (x (tree-element->val head))
+           (<<-all-l acc (tree-element->key head)))
+  :use ((:instance <<-all-l-when-tree-submap-p
+                   (x (tree-element->key head))
                    (tree left))
         (:instance bstp-of-arg2-when-bstp-of-zip-path-plug
                    (tree (tree-node head left right))))
   :disable bstp-of-arg2-when-bstp-of-zip-path-plug)
 
-(defruledl heap<-all-l-when-subset-of-right
-  (implies (and (tree-subset-p acc right)
+(defruledl heap<-all-l-when-submap-of-right
+  (implies (and (tree-submap-p acc right)
                 (heapp (zip-path-plug path (tree-node head left right))))
-           (heap<-all-l acc (tree-element->val head)))
-  :use ((:instance heap<-all-l-when-tree-subset-p
-                   (x (tree-element->val head))
+           (heap<-all-l acc (tree-element->key head)))
+  :use ((:instance heap<-all-l-when-tree-submap-p
+                   (x (tree-element->key head))
                    (tree right))
         (:instance heapp-of-arg2-when-heapp-of-zip-path-plug
                    (tree (tree-node head left right))))
   :disable heapp-of-arg2-when-heapp-of-zip-path-plug)
 
-(defruledl heap<-all-l-when-subset-of-left
-  (implies (and (tree-subset-p acc left)
+(defruledl heap<-all-l-when-submap-of-left
+  (implies (and (tree-submap-p acc left)
                 (heapp (zip-path-plug path (tree-node head left right))))
-           (heap<-all-l acc (tree-element->val head)))
-  :use ((:instance heap<-all-l-when-tree-subset-p
-                   (x (tree-element->val head))
+           (heap<-all-l acc (tree-element->key head)))
+  :use ((:instance heap<-all-l-when-tree-submap-p
+                   (x (tree-element->key head))
                    (tree left))
         (:instance heapp-of-arg2-when-heapp-of-zip-path-plug
                    (tree (tree-node head left right))))
   :disable heapp-of-arg2-when-heapp-of-zip-path-plug)
 
-;; The accumulator stays a subset as both it and the reference subtree are
+;; The accumulator stays a submap as both it and the reference subtree are
 ;; wrapped under the same frame.
 
-(defruledl tree-subset-p-of-tree-nodes-sharing-left
-  (implies (tree-subset-p acc tree)
-           (tree-subset-p (tree-node head sibling acc)
-                          (tree-node head sibling tree)))
-  :enable (tree-subset-p
-           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->left
-           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->right))
+;; Unlike the TREESET original, these need the wrapping node to be a search
+;; tree. `tree-subset-p' is pure membership, so wrapping preserves it
+;; unconditionally; `tree-submap-p' also demands the values agree under
+;; `tree-lookup', which descends by key order, so it is only preserved when
+;; that order is right.
 
-(defruledl tree-subset-p-of-tree-nodes-sharing-right
-  (implies (tree-subset-p acc tree)
-           (tree-subset-p (tree-node head acc sibling)
+(defruledl tree-submap-p-of-tree-nodes-sharing-left
+  (implies (and (bstp (tree-node head sibling tree))
+                (tree-submap-p acc tree))
+           (tree-submap-p (tree-node head sibling acc)
+                          (tree-node head sibling tree)))
+  :enable (tree-submap-p
+           tree-submap-p-when-tree-submap-p-of-arg1-and-tree->left
+           tree-submap-p-when-tree-submap-p-of-arg1-and-tree->right))
+
+(defruledl tree-submap-p-of-tree-nodes-sharing-right
+  (implies (and (bstp (tree-node head tree sibling))
+                (tree-submap-p acc tree))
+           (tree-submap-p (tree-node head acc sibling)
                           (tree-node head tree sibling)))
-  :enable (tree-subset-p
-           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->left
-           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->right))
+  :enable (tree-submap-p
+           tree-submap-p-when-tree-submap-p-of-arg1-and-tree->left
+           tree-submap-p-when-tree-submap-p-of-arg1-and-tree->right))
 
 ;; The builders and the plug ascend the path together.
 
@@ -2984,35 +3097,36 @@
 (defruledl bstp-of-zip-path-tree-before
   (implies (and (bstp (zip-path-plug path tree))
                 (bstp acc)
-                (tree-subset-p acc tree))
+                (tree-submap-p acc tree))
            (bstp (zip-path-tree-before path acc)))
   :induct (zip-path-tree-before-induction path tree acc)
   :enable (zip-path-tree-before
            zip-path-plug
            zip-frame-plug
            bstp-parts-of-zip-path-plug-of-tree-node
-           <<-all-r-of-elem-when-subset-of-right
-           tree-subset-p-of-tree-nodes-sharing-left
-           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->left
-           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->right)
+           <<-all-r-of-elem-when-submap-of-right
+           tree-submap-p-of-tree-nodes-sharing-left
+           tree-submap-p-when-tree-submap-p-of-arg1-and-tree->left
+           tree-submap-p-when-tree-submap-p-of-arg1-and-tree->right)
   :disable (tree-element-elim
             zip-frame-elim
             tree-node-elim))
 
 (defruledl heapp-of-zip-path-tree-before
-  (implies (and (heapp (zip-path-plug path tree))
+  (implies (and (bstp (zip-path-plug path tree))
+                (heapp (zip-path-plug path tree))
                 (heapp acc)
-                (tree-subset-p acc tree))
+                (tree-submap-p acc tree))
            (heapp (zip-path-tree-before path acc)))
   :induct (zip-path-tree-before-induction path tree acc)
   :enable (zip-path-tree-before
            zip-path-plug
            zip-frame-plug
            heapp-parts-of-zip-path-plug-of-tree-node
-           heap<-all-l-when-subset-of-right
-           tree-subset-p-of-tree-nodes-sharing-left
-           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->left
-           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->right)
+           heap<-all-l-when-submap-of-right
+           tree-submap-p-of-tree-nodes-sharing-left
+           tree-submap-p-when-tree-submap-p-of-arg1-and-tree->left
+           tree-submap-p-when-tree-submap-p-of-arg1-and-tree->right)
   :disable (tree-element-elim
             zip-frame-elim
             tree-node-elim))
@@ -3020,35 +3134,36 @@
 (defruledl bstp-of-zip-path-tree-after
   (implies (and (bstp (zip-path-plug path tree))
                 (bstp acc)
-                (tree-subset-p acc tree))
+                (tree-submap-p acc tree))
            (bstp (zip-path-tree-after path acc)))
   :induct (zip-path-tree-after-induction path tree acc)
   :enable (zip-path-tree-after
            zip-path-plug
            zip-frame-plug
            bstp-parts-of-zip-path-plug-of-tree-node
-           <<-all-l-of-elem-when-subset-of-left
-           tree-subset-p-of-tree-nodes-sharing-right
-           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->left
-           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->right)
+           <<-all-l-of-elem-when-submap-of-left
+           tree-submap-p-of-tree-nodes-sharing-right
+           tree-submap-p-when-tree-submap-p-of-arg1-and-tree->left
+           tree-submap-p-when-tree-submap-p-of-arg1-and-tree->right)
   :disable (tree-element-elim
             zip-frame-elim
             tree-node-elim))
 
 (defruledl heapp-of-zip-path-tree-after
-  (implies (and (heapp (zip-path-plug path tree))
+  (implies (and (bstp (zip-path-plug path tree))
+                (heapp (zip-path-plug path tree))
                 (heapp acc)
-                (tree-subset-p acc tree))
+                (tree-submap-p acc tree))
            (heapp (zip-path-tree-after path acc)))
   :induct (zip-path-tree-after-induction path tree acc)
   :enable (zip-path-tree-after
            zip-path-plug
            zip-frame-plug
            heapp-parts-of-zip-path-plug-of-tree-node
-           heap<-all-l-when-subset-of-left
-           tree-subset-p-of-tree-nodes-sharing-right
-           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->left
-           tree-subset-p-when-tree-subset-p-of-arg1-and-tree->right)
+           heap<-all-l-when-submap-of-left
+           tree-submap-p-of-tree-nodes-sharing-right
+           tree-submap-p-when-tree-submap-p-of-arg1-and-tree->left
+           tree-submap-p-when-tree-submap-p-of-arg1-and-tree->right)
   :disable (tree-element-elim
             zip-frame-elim
             tree-node-elim))
@@ -3064,7 +3179,8 @@
            bstp-of-tree->left-when-bstp))
 
 (defrule heapp-of-zip-tree-before-when-heapp-of-zip-plug
-  (implies (heapp (zip-plug zip))
+  (implies (and (bstp (zip-plug zip))
+                (heapp (zip-plug zip)))
            (heapp (zip-tree-before zip)))
   :enable (zip-tree-before
            zip-plug
@@ -3080,7 +3196,8 @@
            bstp-of-tree->right-when-bstp))
 
 (defrule heapp-of-zip-tree-after-when-heapp-of-zip-plug
-  (implies (heapp (zip-plug zip))
+  (implies (and (bstp (zip-plug zip))
+                (heapp (zip-plug zip)))
            (heapp (zip-tree-after zip)))
   :enable (zip-tree-after
            zip-plug
@@ -3091,7 +3208,7 @@
 
 ;; One fold, three views: reading a built side back out recovers the other two
 ;; representations exactly. The in-order sequence of the tree side is the list
-;; side, and its element set is the oset side, with no hypotheses -- the fold
+;; side, and its element set is the omap side, with no hypotheses -- the fold
 ;; is structural, whether or not the zipper's tree is a search tree.
 
 (defrule tree-in-order-of-zip-tree-before
@@ -3106,61 +3223,142 @@
   :enable (zip-tree-after
            zip-after))
 
-(defrule tree-oset-of-zip-tree-before
-  (equal (tree-oset (zip-tree-before zip))
-         (zip-oset-before zip))
+(defrule tree-omap-of-zip-tree-before
+  (equal (tree-omap (zip-tree-before zip))
+         (zip-omap-before zip))
   :enable (zip-tree-before
-           zip-oset-before))
+           zip-omap-before
+           zip-before
+           assoc-equal-of-tree-in-order-under-iff))
 
-(defrule tree-oset-of-zip-tree-after
-  (equal (tree-oset (zip-tree-after zip))
-         (zip-oset-after zip))
+(defrule tree-omap-of-zip-tree-after
+  (equal (tree-omap (zip-tree-after zip))
+         (zip-omap-after zip))
   :enable (zip-tree-after
-           zip-oset-after))
+           zip-omap-after
+           zip-after
+           assoc-equal-of-tree-in-order-under-iff))
 
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Uniqueness by value. What follows the cursor is an order filter of the tree
-;; (@(tsee in-of-zip-oset-after-when-bstp)), so the value fixes the tail, and
-;; the tail already fixes the zipper.
+;; Over a search tree the omap and alist sides are not merely equivalent but
+;; the same object. Unlike the oset versions in TREESET, which double
+;; containment settles from membership alone, omap extensionality compares the
+;; values too, so these rest on the side tree being a search tree itself.
 
-;; What follows the cursor, as an oset, is an order filter of the tree, so it
-;; is fixed by the tree and the value.
+(defruled zip-omap-before-becomes-zip-before
+  (implies (bstp (zip-plug zip))
+           (equal (zip-omap-before zip)
+                  (zip-before zip)))
+  :use (:instance tree-omap-becomes-tree-in-order
+                  (tree (zip-tree-before zip))))
 
-(defruled zip-oset-after-when-same-value
+(defruled zip-omap-after-becomes-zip-after
+  (implies (bstp (zip-plug zip))
+           (equal (zip-omap-after zip)
+                  (zip-after zip)))
+  :use (:instance tree-omap-becomes-tree-in-order
+                  (tree (zip-tree-after zip))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Uniqueness by key. The in-order entries of the plug split at the cursor
+;; (@(tsee tree-in-order-of-zip-plug-split-at-cursor)), and over a search tree
+;; the split entries have strictly increasing keys, so the split lands at a
+;; given key at most one way. The key therefore fixes the tail, and the tail
+;; already fixes the zipper.
+;;
+;; TREESET reaches the corresponding fact through its oset flank by double
+;; containment, but that route settles only the keys; here the values must
+;; agree too, so the treemap route goes through the uniqueness of the split
+;; instead.
+
+;; An entry list without repeated keys splits around a given key in only one
+;; way, so equal splits have equal tails.
+
+(defrulel assoc-equal-of-append-of-cons-same-when-omapp
+  (implies (omap::mapp (append x (cons (cons key v) y)))
+           (assoc-equal key (append x (cons (cons key v) y))))
+  :induct (len x)
+  :enable ((:i len)
+           assoc-equal
+           append
+           omap::mapp))
+
+;; The mismatched base case refutes itself through the key: it heads one
+;; side's remainder while the other side buries it deeper, and an omap holds
+;; each key once.
+
+(defrulel equal-of-append-split-at-key-base
+  (implies (and (not (consp a))
+                (omap::mapp (append a (cons (cons key v1) b)))
+                (equal (append a (cons (cons key v1) b))
+                       (append c (cons (cons key v2) d))))
+           (equal b d))
+  :rule-classes nil
+  :hints (("Goal" :cases ((consp c))
+                  :expand ((append c (cons (cons key v2) d)))
+                  :in-theory (enable omap::mapp
+                                     data::<<-rules)
+                  :use ((:instance data::<<-of-caar-when-assoc-equal-of-cdr
+                                   (l (append a (cons (cons key v1) b)))
+                                   (x key))))))
+
+(local
+ (defun split-at-key-induction (a c)
+   (if (or (atom a) (atom c))
+       (list a c)
+     (split-at-key-induction (cdr a) (cdr c)))))
+
+(defrulel equal-of-append-split-at-key
+  (implies (and (omap::mapp (append a (cons (cons key v1) b)))
+                (equal (append a (cons (cons key v1) b))
+                       (append c (cons (cons key v2) d))))
+           (equal b d))
+  :rule-classes nil
+  :hints (("Goal" :induct (split-at-key-induction a c)
+                  :in-theory (enable omap::mapp))
+          ;; The two mismatched base cases are the base lemma and its mirror
+          ;; image, which no rewrite can supply: each must be named at this
+          ;; goal's own operands.
+          (and stable-under-simplificationp
+               '(:use (equal-of-append-split-at-key-base
+                       (:instance equal-of-append-split-at-key-base
+                                  (a c) (c a) (v1 v2) (v2 v1)
+                                  (b d) (d b)))))))
+
+(defruled zip-after-when-same-key
   (implies (and (bstp (zip-plug zip1))
                 (equal (zip-plug zip1) (zip-plug zip2))
-                (equal (zip-value zip1) (zip-value zip2)))
-           (equal (zip-oset-after zip1) (zip-oset-after zip2)))
-  :enable (set::double-containment
-           set::pick-a-point-subset-strategy)
-  ;; in-of-zip-oset-after rewrites membership into member-equal on the
-  ;; sequence, which gets in ahead of the order-filter rule and hides the
-  ;; value. The bstp version is the one that matters here.
-  :disable in-of-zip-oset-after)
-
-;; Over a search tree the oset and the sequence are the same object, so the
-;; sequences agree too. Pure equality chaining -- kept apart from the step
-;; above so that double-containment is not fighting the conversion.
-
-(defruled zip-after-when-same-value
-  (implies (and (bstp (zip-plug zip1))
-                (equal (zip-plug zip1) (zip-plug zip2))
-                (equal (zip-value zip1) (zip-value zip2)))
+                (equal (zip-key zip1) (zip-key zip2)))
            (equal (zip-after zip1) (zip-after zip2)))
-  :use ((:instance zip-oset-after-becomes-zip-after (zip zip1))
-        (:instance zip-oset-after-becomes-zip-after (zip zip2))
-        zip-oset-after-when-same-value))
+  :enable (zip-key
+           zip-val
+           zip-key+val)
+  ;; Keep the plug's in-order list in its at-the-cursor form: the whole-tree
+  ;; decomposition would rewrite it out from under the :use instances.
+  :disable tree-in-order-of-zip-plug
+  :use ((:instance tree-in-order-of-zip-plug-split-at-cursor (zip zip1))
+        (:instance tree-in-order-of-zip-plug-split-at-cursor (zip zip2))
+        (:instance omapp-of-tree-in-order-when-bstp (tree (zip-plug zip1)))
+        (:instance equal-of-append-split-at-key
+                   (a (zip-before zip1))
+                   (key (zip-key zip1))
+                   (v1 (zip-val zip1))
+                   (b (zip-after zip1))
+                   (c (zip-before zip2))
+                   (v2 (zip-val zip2))
+                   (d (zip-after zip2)))))
 
-(defrule zip-uniqueness-when-same-value
+(defrule zip-uniqueness-when-same-key
   (implies (and (zipp zip1)
                 (zipp zip2)
                 (bstp (zip-plug zip1))
                 (equal (zip-plug zip1) (zip-plug zip2))
-                (equal (zip-value zip1) (zip-value zip2)))
+                (equal (zip-key zip1) (zip-key zip2)))
            (equal zip1 zip2))
   :rule-classes nil
   :use (zip-uniqueness-when-zip-after-equal
-        zip-after-when-same-value))
+        zip-after-when-same-key))

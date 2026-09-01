@@ -6,18 +6,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TREESET")
 
-(include-book "kestrel/data/utilities/omap-defs" :dir :system)
+(include-book "kestrel/data/utilities/oset-defs" :dir :system)
 
 (include-book "tree-defs")
+(include-book "heap-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
-(local (include-book "in-order"))
+(local (include-book "from-oset"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defredundant
-  :names (tree-in-order-acc
-          tree-in-order
-          tree-omap))
+  :names (tree-from-oset-below
+          tree-from-oset-acc
+          tree-from-oset
+          ))

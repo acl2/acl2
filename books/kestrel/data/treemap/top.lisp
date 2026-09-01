@@ -27,6 +27,7 @@
 (include-book "delete")
 (include-book "update-star")
 (include-book "restrict")
+(include-book "iter")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

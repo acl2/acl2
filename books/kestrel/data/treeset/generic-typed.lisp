@@ -387,7 +387,10 @@
   :enable (genericp-when-in-of-after
            genericp-of-min-when-iter-all-genericp-of-iter-min
            not-emptyp-when-in)
-  :disable in-of-from-iter-when-has-valuep)
+  ;; after-of-iter-min would rewrite the `after' term away before
+  ;; genericp-when-in-of-after, which is keyed on it, could fire.
+  :disable (in-of-from-iter-when-has-valuep
+            after-of-iter-min))
 
 ;; So a walk that starts at the beginning reads every element, and the two
 ;; checks agree.
