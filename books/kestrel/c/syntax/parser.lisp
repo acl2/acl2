@@ -1037,7 +1037,7 @@
       (token-punctuatorp token? ":"))
   ///
 
-  (defrule non-nil-when-token-strut-declarator-start-p
+  (defrule non-nil-when-token-struct-declarator-start-p
     (implies (token-struct-declarator-start-p token?)
              token?)
     :rule-classes :compound-recognizer))
@@ -1071,7 +1071,7 @@
       (and gcc/clang (token-punctuatorp token? ";")))
   ///
 
-  (defrule non-nil-when-token-strut-declaration-start-p
+  (defrule non-nil-when-token-struct-declaration-start-p
     (implies (token-struct-declaration-start-p token? gcc/clang)
              token?)
     :rule-classes :forward-chaining))

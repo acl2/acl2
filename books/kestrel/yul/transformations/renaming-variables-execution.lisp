@@ -2679,7 +2679,7 @@
                                     soutcome-result-renamevarp
                                     funenv-renamevarp-of-add-funs
                                     exec-when-renamevar-restrict-vars-lemma-1
-                                    fundef-list-renamevar-of-statement-to-fundefs)
+                                    fundef-list-renamevar-of-statements-to-fundefs)
                  :use (:instance same-add-funs-error-when-renamevar
                        (old-funs (statements-to-fundefs (block->statements
                                                          old-block)))
@@ -2715,7 +2715,7 @@
                   funenv-renamevarp-of-add-funs
                   exec-when-renamevar-restrict-vars-lemma-1
                   exec-when-renamevar-restrict-vars-lemma-2
-                  fundef-list-renamevar-of-statement-to-fundefs
+                  fundef-list-renamevar-of-statements-to-fundefs
                   not-reserr-limitp-of-const
                   not-reserr-limitp-of-paths-to-vars
                   not-reserr-limitp-of-write-vars-values

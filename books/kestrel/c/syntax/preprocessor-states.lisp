@@ -533,7 +533,7 @@
 
   ;; writers over readers:
 
-  (defrule update-ppstate->chars-index-of-ppstate->chars-index
+  (defrule update-ppstate->char-index-of-ppstate->char-index
     (equal (update-ppstate->char-index (ppstate->char-index ppstate)
                                        ppstate)
            (ppstate-fix ppstate))
