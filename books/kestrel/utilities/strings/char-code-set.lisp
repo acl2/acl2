@@ -35,4 +35,25 @@
                   (set::in ch chs))
              (set::in (char-code ch) (char-code-set chs)))
     :induct t
-    :enable char-code-set))
+    :enable char-code-set)
+
+  (defruled not-in-char-code-set-when-not-in-char-set
+    (implies (and (character-setp chars)
+                  (characterp char)
+                  (not (set::in char chars)))
+             (not (set::in (char-code char)
+                           (char-code-set chars))))
+    :induct t
+    :enable str::equal-of-char-codes)
+
+  (defruled char-code-set-monotone
+    (implies (and (character-setp chars1)
+                  (character-setp chars2)
+                  (set::subset chars1 chars2))
+             (set::subset (char-code-set chars1)
+                          (char-code-set chars2)))
+    :induct t
+    :enable (code-in-char-code-set-when-char-in-char-set
+             set::in-head
+             set::subset-in
+             set::subset-transitive)))
