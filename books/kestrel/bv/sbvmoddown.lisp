@@ -77,7 +77,6 @@
                                           bvchop-of-sum-cases
                                           BVCHOP-WHEN-TOP-BIT-NOT-1 BVCHOP-WHEN-TOP-BIT-1 ;BVCHOP-REDUCE-WHEN-TOP-BIT-KNOWN
                                           bvcat
-                                          logapp
                                           rem-becomes-mod)
                                   (BVCHOP-UPPER-BOUND ;for speed
                                    ;MOD-BOUNDED-BY-MODULUS

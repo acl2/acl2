@@ -841,7 +841,6 @@
                   (pseudo-dag-arrayp 'dag-array dag-array dag-len))
              (all-< (get-nodenums-of-negations-of-disjuncts disjuncts dag-array dag-len) dag-len))
     :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp get-nodenums-of-negations-of-disjuncts
-                                       possibly-negated-nodenumsp
                                        strip-nots-from-possibly-negated-nodenums
                                        strip-not-from-possibly-negated-nodenum
                                        car-becomes-nth-of-0

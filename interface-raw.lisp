@@ -11444,7 +11444,7 @@ such that feature :acl2-loop-only is true."))
                           #+gcl).")
            :c-file t :h-file t)
           #-gcl
-          (er hard 'compile-uncompiled-defuns
+          (er hard 'compile-uncompiled-*1*-defuns
               "The gcl-flg argument to compile-uncompiled-*1*-defuns is only ~
                legal when running under GCL."))
          (t

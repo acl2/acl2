@@ -2288,14 +2288,7 @@
                   (equal (types+vartab->variables result)
                          (var-table-fix vartab))))
        :flag check-stmt)
-     (defthm check-block-item-var-table
-       t
-       :rule-classes nil
-       :flag check-block-item)
-     (defthm check-block-item-list-var-table
-       t
-       :rule-classes nil
-       :flag check-block-item-list)
+     :skip-others t
      :hints (("Goal"
               :in-theory (enable (:e tau-system))
               :expand ((check-stmt s funtab vartab tagenv))))))

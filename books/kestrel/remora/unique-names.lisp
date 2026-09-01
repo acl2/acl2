@@ -1561,7 +1561,14 @@
         (mv used nil (var-renamings-fix r))
       (b* (((mv used new-bind r) (uniq-bind (car x) used r))
            ((mv used new-rest r) (uniq-bind-list (cdr x) used r)))
-        (mv used (cons new-bind new-rest) r))))
+        (mv used (cons new-bind new-rest) r)))
+
+    ///
+
+    (defret consp-of-uniq-bind-list
+      (equal (consp new-x)
+             (consp x))
+      :hints (("Goal" :expand ((uniq-bind-list x used r))))))
 
   ///
 
@@ -1808,6 +1815,7 @@
                                         len
                                         len-of-uniq-ispace-var-params
                                         consp-of-cdr-of-atom-ilambdan->params
+                                        consp-of-cdr-of-expr-unboxn->ispaces
                                         list-of-car-when-len-1)
                      ((:executable-counterpart type-var-list-option-none)
                       (:executable-counterpart ispace-var-list-option-none)

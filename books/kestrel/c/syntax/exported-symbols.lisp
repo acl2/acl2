@@ -27,6 +27,7 @@
     ident->unwrap
 
     ident-listp
+    ident-list-fix
     ident-list-of
 
     ident-list-listp
@@ -168,6 +169,7 @@
     type-spec-case
     type-spec-atomic
     type-spec-struct
+    type-spec-struct->spec
     type-spec-union
     type-spec-enum
     make-type-spec-typeof-expr
@@ -204,6 +206,7 @@
     decl-spec-count
     decl-spec-case
     decl-spec-typespec
+    decl-spec-typespec->spec
     decl-spec-align
     decl-spec-attrib
 
@@ -343,6 +346,7 @@
     struct-declon-fix
     struct-declon-count
     struct-declon-case
+    struct-declon-member
     make-struct-declon-member
     struct-declon-statassert
     struct-declon-empty
@@ -412,6 +416,8 @@
     declon-declon->specs
     declon-declon->declors
     declon-statassert
+
+    declon-optionp
 
     declon-listp
     declon-list-count
@@ -497,7 +503,10 @@
     ext-declon-fundef
     ext-declon-fundef->fundef
     ext-declon-declon
+    ext-declon-declon->declon
     ext-declon-empty
+
+    ext-declon-optionp
 
     ext-declon-listp
     ext-declon-list-fix
@@ -507,8 +516,10 @@
     trans-item
     trans-itemp
     trans-item-fix
+    trans-item-equiv
     trans-item-case
     trans-item-declon
+    trans-item-declon->declon
     trans-item-line-comment
 
     trans-item-listp
@@ -708,6 +719,7 @@
 
     ident-formalp
     const-formalp
+    type-spec-list-integer-formalp
     type-spec-list-formalp
     stor-spec-list-formalp
     tyname-formalp
@@ -916,6 +928,7 @@
 
     expr-zerop
     check-decl-spec-list-all-typespec
+    check-spec/qual-list-all-typespec
     declor->ident
 
    ))

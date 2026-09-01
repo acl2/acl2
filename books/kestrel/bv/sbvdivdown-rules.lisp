@@ -98,7 +98,6 @@
                                           bvchop-of-sum-cases
                                           BVCHOP-REDUCE-WHEN-TOP-BIT-KNOWN
                                           bvcat
-                                          logapp
                                           TRUNCATE-BECOMES-FLOOR-GEN
                                           )
                                   (;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS

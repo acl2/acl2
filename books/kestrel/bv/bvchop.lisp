@@ -310,7 +310,6 @@
   :hints (("Goal" :use ((:instance bvchop-when-not-natp-arg1-cheap (x (- x)))
                         bvchop-of-minus-helper)
            :in-theory (disable bvchop-when-size-is-not-posp
-                               bvchop-when-size-is-not-posp
                                expt))))
 
 ;i guess this one is an abbreviation rule
@@ -454,6 +453,9 @@
            (equal (mod i 4)
                   (bvchop 2 i)))
   :hints (("Goal" :in-theory (enable bvchop))))
+
+(theory-invariant (incompatible (:rewrite mod-by-4-becomes-bvchop)
+                                (:definition bvchop)))
 
 ;(in-theory (disable BVCHOP-+-CANCEL))
 

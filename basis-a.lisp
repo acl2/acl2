@@ -5488,7 +5488,7 @@
    #.*fixnat-type*
    (cond
     ((not (character-alistp alist))
-     (mv (prog2$ (er hard! 'fmt0
+     (mv (prog2$ (er hard! 'fmt1
                      "The second argument of any of the FMT family of ~
                       functions must satisfy ~x0, but ~x1 does not."
                      'character-alistp
@@ -8157,7 +8157,7 @@
                                       (symbolp size0)
                                       (symbol-value size0)))
                         #+acl2-loop-only
-                        (er hard 'fix-stobj-hash-table-type
+                        (er hard 'fix-stobj-table-type
                             "Implementation error: Attempted to get logical ~
                              result for fix-stobj-table-type when the world ~
                              is empty.")))))
@@ -10236,7 +10236,7 @@
                          *print-readably*)
          t)
         (otherwise
-         (hard-error 'print-control-p
+         (hard-error 'print-control-alistp
                      "The symbol ~x0 is not a legal print control variable."
                      (list (cons #\0 key))))))
     (print-control-alistp (cdr alist)))

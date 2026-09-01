@@ -37,7 +37,6 @@
 (local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/bv/convert-to-bv-rules" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system)) ; for bvchop-plus-1-split
-(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 

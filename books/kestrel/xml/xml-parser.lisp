@@ -491,7 +491,6 @@
 ;; Parse attributes of the form foo="bar" until > or /> is seen
 (defund parse-xml-attribs (chars)
   (declare (xargs :guard (character-listp chars)
-                  :guard-debug t
                   :measure (len chars)))
   (if (endp chars) ;for termination (think about this)
       (mv nil nil chars)

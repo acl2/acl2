@@ -1205,8 +1205,7 @@
                        (equal (slice (+ -1 x-size) y-size x)
                               0))))
   :hints (("Goal" :use (:instance bvcat-of-slice-and-x-adjacent (x x) (high1 (+ -1 x-size)) (low1 y-size) (size1 (+ x-size (- y-size))))
-           :in-theory (disable bvcat-of-slice-and-x-adjacent bvcat-equal-rewrite-alt bvcat-equal-rewrite BVCAT-OF-SLICE-AND-X-ADJACENT
-                               ))))
+           :in-theory (disable bvcat-of-slice-and-x-adjacent bvcat-equal-rewrite-alt bvcat-equal-rewrite))))
 
 ;can loop?
 (defthmd rewrite-<-when-sizes-dont-match2
@@ -1225,7 +1224,7 @@
                       (not (equal (slice (+ -1 y-size) x-size y)
                                   0)))))
   :hints (("Goal" :use (:instance bvcat-of-slice-and-x-adjacent (x y) (high1 (+ -1 y-size)) (low1 x-size) (size1 (+ y-size (- x-size))))
-           :in-theory (disable bvcat-of-slice-and-x-adjacent BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-OF-SLICE-AND-X-ADJACENT))))
+           :in-theory (disable bvcat-of-slice-and-x-adjacent BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE))))
 
 (local (in-theory (enable bvchop-identity))) ;sigh
 
@@ -4606,7 +4605,6 @@
            (equal (BVLT 8 132 (+ -1 x))
                   (bvlt 8 133 x)))
   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p bvplus bvuminus bvminus bvchop-of-sum-cases sbvlt
-                                        bvchop-of-sum-cases
                                         bvchop-when-i-is-not-an-integer
                                         BVCHOP-WHEN-TOP-BIT-1)
                                   (PLUS-1-AND-BVCHOP-BECOMES-BVPLUS ;fixme
@@ -4673,7 +4671,6 @@
            (equal (UNSIGNED-BYTE-P 5 (BVPLUS 6 1 x))
                   (not (equal x 31))))
   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p bvplus bvuminus bvminus bvchop-of-sum-cases sbvlt
-                                        bvchop-of-sum-cases
                                         bvchop-when-i-is-not-an-integer
                                         BVCHOP-WHEN-TOP-BIT-1)
                                   (PLUS-1-AND-BVCHOP-BECOMES-BVPLUS ;fixme
@@ -4686,7 +4683,6 @@
            (equal (BVLT 5 20 (BVPLUS 5 31 x))
                   (BVLT 5 21 x)))
   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p bvplus bvuminus bvminus bvchop-of-sum-cases sbvlt
-                                        bvchop-of-sum-cases
                                         bvchop-when-i-is-not-an-integer
                                         BVCHOP-WHEN-TOP-BIT-1)
                                   (PLUS-1-AND-BVCHOP-BECOMES-BVPLUS ;fixme
@@ -4805,7 +4801,6 @@
   (equal (BVPLUS 7 1 (BVMULT 6 2 x))
          (BVPLUS 6 1 (BVMULT 6 2 x)))
   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p bvplus bvuminus bvminus bvchop-of-sum-cases sbvlt
-                                        bvchop-of-sum-cases
                                         bvchop-when-i-is-not-an-integer
                                         bvmult
                                         BVCHOP-WHEN-TOP-BIT-1)
@@ -4819,7 +4814,7 @@
            (equal (BVLT 6 (BVPLUS 6 1 x) 44)
                   (BVLT 6 x 43)))
   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p bvplus bvuminus bvminus bvchop-of-sum-cases sbvlt
-                                        bvchop-of-sum-cases
+
                                         bvchop-when-i-is-not-an-integer
                                         bvmult
                                         BVCHOP-WHEN-TOP-BIT-1)
@@ -8891,10 +8886,10 @@
             (and (equal 0 (GETBIT (DIFFERING-BIT (+ -1 size) 0 (BVAND size X Y)) y))
                  (equal 1 (GETBIT (DIFFERING-BIT (+ -1 size) 0 (BVAND size X Y)) X))
                  )
-            (and (equal 0 (GETBIT (DIFFERING-BIT (+ -1 size) 0 (BVAND size X Y)) y))
+            (and (equal 1 (GETBIT (DIFFERING-BIT (+ -1 size) 0 (BVAND size X Y)) y))
                  (equal 0 (GETBIT (DIFFERING-BIT (+ -1 size) 0 (BVAND size X Y)) X))
                  )
-            (and (equal 0 (GETBIT (DIFFERING-BIT (+ -1 size) 0 (BVAND size X Y)) y))
+            (and (equal 1 (GETBIT (DIFFERING-BIT (+ -1 size) 0 (BVAND size X Y)) y))
                  (equal 1 (GETBIT (DIFFERING-BIT (+ -1 size) 0 (BVAND size X Y)) X))
                  ))
            :in-theory (e/d (BVOR-1-BECOMES-BITOR GETBIT-OF-BVXOR-CORE not-equal-bvxor-and-bvor)
@@ -10792,7 +10787,6 @@
   :hints (("Goal" :in-theory (e/d (bvcat logapp)
                                   (BVCAT-EQUAL-REWRITE-ALT
                                    BVCAT-EQUAL-REWRITE
-                                   LOGAPP-EQUAL-REWRITE
                                    LOGAPP-EQUAL-REWRITE))
            :use (:instance split-bv (x (bvchop size k)) (n size) (m lowsize)))))
 

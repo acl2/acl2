@@ -34,8 +34,7 @@
   :hints (("Goal" :in-theory (enable open-output-channel-p
                                      print-object$-fn
                                      ;todo:
-                                     open-output-channel-p1
-                                     open-output-channel-p))))
+                                     open-output-channel-p1))))
 
 (defthm state-p1-of-print-object$-fn
   (implies (and (state-p1 state)

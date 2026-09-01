@@ -314,16 +314,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled heapp-of-tree->left-when-tree-orderdp
+(defruled heapp-of-tree->left-when-heapp
   (implies (heapp tree)
            (heapp (tree->left tree)))
   :enable heapp)
 
-(defrule heapp-of-tree->left-when-tree-orderdp-cheap
+(defrule heapp-of-tree->left-when-heapp-cheap
   (implies (heapp tree)
            (heapp (tree->left tree)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by heapp-of-tree->left-when-tree-orderdp)
+  :by heapp-of-tree->left-when-heapp)
 
 (defruled heapp-of-tree->right-when-heapp
   (implies (heapp tree)
@@ -411,7 +411,7 @@
     heap<-of-tree->head-when-heap<-all-l))
 
 (defthy heapp-extra-rules
-  '(heapp-of-tree->left-when-tree-orderdp
+  '(heapp-of-tree->left-when-heapp
     heapp-of-tree->right-when-heapp
     heapp-when-tree-empty-p
     heapp-when-not-tree-empty-p

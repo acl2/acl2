@@ -21,23 +21,16 @@
 ;  - parse-cpp-member-decl-list-body-full
 ;  - parse-cpp-class-specifier-full
 ;
-; Limitations (constructs supported by the AST but not yet by the parser):
-;  - lambda expressions with bodies (the AST :lambda variant is unused;
-;    the parser does not recognize "[ ] ( ) { ... }")
-;  - C++ named casts: static_cast<T>(e), dynamic_cast, reinterpret_cast,
-;    const_cast, typeid
-;  - C-style casts: (keyword)e always cast; (ident)e cast only when
-;    followed by ident/literal/(/++/--)~!/; * + - & are treated as binary
-;  - new, delete expressions
-;  - sizeof, alignof expressions
-;  - try-catch statements (the parser produces a generic statement instead);
-;    catch-clause parsing is still provided for use by ad-hoc clients
-;  - for-decl, for-range (for-loop with declaration init or range-based)
-;  - switch, case, default labels, goto labels
-;  - co_await, co_yield, co_return prefix
-;
-; These limitations are tracked by leaving the corresponding AST variants
-; reachable but not produced.
+; Limitations (constructs with partial or no parser support):
+;  - Nested-template '>>' disambiguation: the C$ lexer produces ">>" as a
+;    single shift token; vector<vector<int>> does not parse correctly
+;  - 'concept' definitions and 'requires' expressions/clauses (C++20)
+;  - 'if consteval' statement form (C++23)
+;  - Explicit object parameters ('this' as first explicit parameter, C++23)
+;  - Multidimensional subscript operator a[i,j] (C++23)
+;  - Spaceship operator <=> is parsed as a binary op but mapped to the C$
+;    'binop-ge' AST node (no dedicated spaceship binop variant in C$ AST)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -367,6 +360,71 @@
                                        c$::parsize-of-read-token-uncond
                                        c$::parsize-of-unread-token)))))
 
+;; Lookahead: after an identifier already consumed as a candidate cast type,
+;; recognize a pointer/reference suffix immediately followed by ')', i.e.
+;; (T*), (T* const), (T&), or (T&&).  These are unambiguous C-style casts: the
+;; ')' right after the suffix cannot be anything but the close of a cast type.
+;; On a match, consume through the ')' and return the suffixed type; on no
+;; match, restore every token read (net-zero effect on parsize).
+(define parse-cpp-try-ident-cast-suffix ((id c$::identp)
+                                         (parstate parstatep))
+  :returns (mv erp
+               (matchp booleanp)
+               (type cpp-type-spec-p)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Recognize a @('(T*)'), @('(T&)'), or @('(T&&)') pointer/reference
+          cast suffix after the type identifier has been consumed."
+  (b* (((reterr) nil (irr-cpp-type-spec) parstate)
+       (base (make-cpp-type-spec-name :id id))
+       ((erp s1? & parstate) (read-token parstate))
+       ;; '*' [const] ')'
+       ((when (token-punctuatorp s1? "*"))
+        (b* (((erp s2? & parstate) (read-token parstate))
+             (constp (token-keywordp s2? "const"))
+             ((when constp)
+              (b* (((erp s3? & parstate) (read-token parstate))
+                   ((when (token-punctuatorp s3? ")"))
+                    (retok t
+                           (make-cpp-type-spec-pointer :pointee base :constp t)
+                           parstate))
+                   (parstate (if s3? (unread-token parstate) parstate))
+                   (parstate (unread-token parstate))   ; 'const'
+                   (parstate (unread-token parstate)))   ; '*'
+                (retok nil (irr-cpp-type-spec) parstate)))
+             ((when (token-punctuatorp s2? ")"))
+              (retok t
+                     (make-cpp-type-spec-pointer :pointee base :constp nil)
+                     parstate))
+             (parstate (if s2? (unread-token parstate) parstate))
+             (parstate (unread-token parstate)))          ; '*'
+          (retok nil (irr-cpp-type-spec) parstate)))
+       ;; '&&' ')'
+       ((when (token-punctuatorp s1? "&&"))
+        (b* (((erp s2? & parstate) (read-token parstate))
+             ((when (token-punctuatorp s2? ")"))
+              (retok t (make-cpp-type-spec-rref :base base) parstate))
+             (parstate (if s2? (unread-token parstate) parstate))
+             (parstate (unread-token parstate)))          ; '&&'
+          (retok nil (irr-cpp-type-spec) parstate)))
+       ;; '&' ')'
+       ((when (token-punctuatorp s1? "&"))
+        (b* (((erp s2? & parstate) (read-token parstate))
+             ((when (token-punctuatorp s2? ")"))
+              (retok t (make-cpp-type-spec-lref :base base) parstate))
+             (parstate (if s2? (unread-token parstate) parstate))
+             (parstate (unread-token parstate)))          ; '&'
+          (retok nil (irr-cpp-type-spec) parstate)))
+       (parstate (if s1? (unread-token parstate) parstate)))
+    (retok nil (irr-cpp-type-spec) parstate))
+  ///
+  (defret parsize-of-parse-cpp-try-ident-cast-suffix-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-cond
+                                       c$::parsize-of-read-token-uncond
+                                       c$::parsize-of-unread-token)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Mutual recursion for C++ expressions, statements, and lambda bodies
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -399,6 +457,7 @@
                                      parsize-of-parse-cpp-binding-names-uncond
                                      parsize-of-parse-cpp-binding-names-cond
                                      parsize-of-parse-cpp-try-binding-prefix-uncond
+                                     parsize-of-parse-cpp-try-ident-cast-suffix-uncond
                                      parsize-of-parse-cpp-exception-handler-header-uncond
                                      parsize-of-parse-cpp-exception-handler-header-cond
                                      parsize-of-parse-cpp-param-list-uncond
@@ -1118,9 +1177,22 @@
                                       :end   (span->end arg-span))))
                   (retok (make-cpp-expr-c-cast :type type :arg arg)
                          span parstate)))
-               ;; Case 2: single ident followed by ')' then primary-start -> cast
+               ;; Case 2: ident type.  An unambiguous pointer/reference cast
+               ;; suffix -- (T*), (T* const), (T&), (T&&) -- is always a cast.
                ((when (and inner? (token-case inner? :ident)))
-                (b* (((erp after? & parstate) (read-token parstate))
+                (b* (((erp suffixp suffix-type parstate)
+                      (parse-cpp-try-ident-cast-suffix
+                       (token-ident->ident inner?) parstate))
+                     ((when suffixp)
+                      (b* ((psize (parsize parstate))
+                           ((erp arg arg-span parstate) (parse-cpp-unary parstate))
+                           ((unless (mbt (<= (parsize parstate) psize)))
+                            (reterr :impossible))
+                           (span (make-span :start (span->start tok-span)
+                                            :end   (span->end arg-span))))
+                        (retok (make-cpp-expr-c-cast :type suffix-type :arg arg)
+                               span parstate)))
+                     ((erp after? & parstate) (read-token parstate))
                      ((unless (token-punctuatorp after? ")"))
                       (b* ((parstate (if after? (unread-token parstate) parstate))
                            (parstate (unread-token parstate)) ; ident
@@ -1131,8 +1203,9 @@
                             (reterr :impossible)))
                         (parse-cpp-postfix-rest prim prim-span parstate)))
                      ((erp next? & parstate) (read-token parstate))
-                     ;; Excluded from cast context: * + - & (also binary ops).
-                     ;; (x) * y stays as multiplication, not a cast of x.
+                     ;; Excluded from cast context: * only (binary multiply).
+                     ;; (x)*y stays as multiplication (test 8b); +, -, & are
+                     ;; unary-only in cast position so (T)+x, (T)-x, (T)&x work.
                      (is-cast-context
                       (or (and next? (token-case next? :ident))
                           (and next? (token-case next? :const))
@@ -1141,7 +1214,10 @@
                           (token-punctuatorp next? "++")
                           (token-punctuatorp next? "--")
                           (token-punctuatorp next? "~")
-                          (token-punctuatorp next? "!")))
+                          (token-punctuatorp next? "!")
+                          (token-punctuatorp next? "+")
+                          (token-punctuatorp next? "-")
+                          (token-punctuatorp next? "&")))
                      ((unless is-cast-context)
                       (b* ((parstate (if next? (unread-token parstate) parstate))
                            (parstate (unread-token parstate)) ; ')'
@@ -2608,6 +2684,7 @@
                                 parsize-of-parse-cpp-binding-names-uncond
                                 parsize-of-parse-cpp-binding-names-cond
                                 parsize-of-parse-cpp-try-binding-prefix-uncond
+                                parsize-of-parse-cpp-try-ident-cast-suffix-uncond
                                 parsize-of-parse-cpp-exception-handler-header-uncond
                                 parsize-of-parse-cpp-param-list-uncond)
              :expand ((parse-cpp-primary parstate)
@@ -2748,6 +2825,7 @@
                                 parsize-of-parse-cpp-binding-names-uncond
                                 parsize-of-parse-cpp-binding-names-cond
                                 parsize-of-parse-cpp-try-binding-prefix-uncond
+                                parsize-of-parse-cpp-try-ident-cast-suffix-uncond
                                 parsize-of-parse-cpp-exception-handler-header-uncond
                                 parsize-of-parse-cpp-exception-handler-header-cond
                                 parsize-of-parse-cpp-param-list-uncond
@@ -2778,6 +2856,7 @@
                                        parsize-of-parse-cpp-binding-names-uncond
                                        parsize-of-parse-cpp-binding-names-cond
                                        parsize-of-parse-cpp-try-binding-prefix-uncond
+                                       parsize-of-parse-cpp-try-ident-cast-suffix-uncond
                                        parsize-of-parse-cpp-type-spec-uncond
                                        parsize-of-parse-cpp-type-spec-cond
                                        parsize-of-parse-cpp-type-spec-full-uncond

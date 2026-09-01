@@ -2410,7 +2410,7 @@
                          (+ -1 (integer-length k))
                          0))))
 
-;; This is helpful when we have things like (equal 0 (bitand 8 128 x))
+;; This is helpful when we have things like (equal 0 (bvand 8 128 x))
 (defthm bvand-of-constant-when-power-of-2p
   (implies (and (syntaxp (quotep k))
                 (power-of-2p k)
@@ -6034,7 +6034,7 @@
   :hints (("Goal" :in-theory (e/d (bvplus slice-of-sum-cases
                                           bvlt
                                           bvchop-of-sum-cases
-                                          bvuminus bvplus bvminus
+                                          bvuminus bvminus
                                           bvchop-when-i-is-not-an-integer
                                           slice-when-val-is-not-an-integer)
                                   (bvminus-becomes-bvplus-of-bvuminus)))))
