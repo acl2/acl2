@@ -124,7 +124,7 @@
            tree-empty-p
            acl2::fix))
 
-(defrule tree-nodes-count-when-tree-emptyp-forward-chaining
+(defrule tree-nodes-count-when-tree-empty-p-forward-chaining
   (implies (tree-empty-p tree)
            (equal (tree-nodes-count tree)
                   0))
