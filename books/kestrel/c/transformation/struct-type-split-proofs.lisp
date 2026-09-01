@@ -686,7 +686,7 @@
                       (new-static
                        (omap::delete newl-var (c::scope-fix new-static)))
                       (new-static
-                       (omap::delete newr-val (c::scope-fix new-static))))
+                       (omap::delete newr-var (c::scope-fix new-static))))
                    (static-equivp old-static new-static))
                (b* ((new-var+val
                      (omap::assoc var (c::scope-fix new-static)))
