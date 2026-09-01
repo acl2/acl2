@@ -73,6 +73,9 @@
     "We require the values of the execution basic characters
      to fit in a byte [C17:5.2.1.2/1] [C23:5.3.2].")
    (xdoc::p
+    "We require the null character to have value zero
+     [C17:5.2.1/2] [C23:5.3.1].")
+   (xdoc::p
     "Here we do not model anything about shift states
      [C17:5.2.1.2/1] [C23:5.3.2].
      These have to do with encoding,
@@ -159,6 +162,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-charset-null-char-zero-p ((chars-with-values any-nat-mapp)
+                                       (basic-chars character-any-mapp))
+  :guard (and (set::in (code-char 0) (omap::keys basic-chars))
+              (set::in (omap::lookup (code-char 0) basic-chars)
+                       (omap::keys chars-with-values)))
+  :returns (yes/no booleanp)
+  :short "Check if the null character of an execution character set
+          has value zero."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use the map from ACL2 characters to execution characters
+     to retrieve the null execution character,
+     and then the map from execution characters to values
+     to check its value."))
+  (equal (omap::lookup (omap::lookup (code-char 0)
+                                     (character-any-mfix basic-chars))
+                       (any-nat-mfix chars-with-values))
+         0))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define-sk exec-charset-digits-in-order-p ((chars-with-values any-nat-mapp)
                                            (basic-chars character-any-mapp))
   :guard (and (set::subset '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
@@ -210,6 +235,7 @@
     "The map from characters to values must be injective.
      The character set must include the basic characters,
      whose values must all fit in a byte.
+     The null character must have value zero.
      The digit values must be in order.
      The map from ASCII characters to execution characters must be injective."))
   (b* (((exec-charset charset)))
@@ -220,11 +246,16 @@
          (exec-charset-basic-chars-byte-p charset.chars-with-values
                                           charset.basic-chars
                                           uchar-format)
+         (exec-charset-null-char-zero-p charset.chars-with-values
+                                        charset.basic-chars)
          (exec-charset-digits-in-order-p charset.chars-with-values
                                          charset.basic-chars)
          (omap::injectivep charset.basic-chars)))
   :guard-hints (("Goal" :in-theory (enable exec-charset-has-basic-chars-p
-                                           digits-in-ascii-basic-exec-chars))))
+                                           digits-in-ascii-basic-exec-chars
+                                           null-in-ascii-basic-exec-chars
+                                           omap::lookup-in-values-when-in-keys
+                                           set::subset-in))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -371,6 +402,14 @@
                 (set::in x (ascii-basic-exec-chars std)))
        :enable (digits-in-ascii-basic-exec-chars
                 set::expensive-rules))))
+
+  (defrulel null-char-zero-p-lemma
+    (exec-charset-null-char-zero-p (exec-charset-ascii-loop 0)
+                                   (omap::identity
+                                    (ascii-basic-exec-chars std)))
+    :enable (exec-charset-null-char-zero-p
+             null-in-ascii-basic-exec-chars
+             omap::lookup-when-identityp))
 
   (defrule exec-charset-wfp-of-exec-charset-ascii
     (exec-charset-wfp (exec-charset-ascii std) std uchar-format)
