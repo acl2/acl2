@@ -276,7 +276,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule heap<-when-heap-<-all-l-and-in-of-tree-key-set
+(defrule heap<-when-heap<-all-l-and-in-of-tree-key-set
   (implies (and (heap<-all-l tree x)
                 (treeset::in key (tree-key-set tree)))
            (heap< key x))
@@ -284,11 +284,11 @@
   :enable (tree-key-set
            heap<-rules))
 
-(defrule heap<-when-in-of-tree-key-set-and-heap-<-all-l
+(defrule heap<-when-in-of-tree-key-set-and-heap<-all-l
   (implies (and (treeset::in key (tree-key-set tree))
                 (heap<-all-l tree x))
            (heap< key x))
-  :by heap<-when-heap-<-all-l-and-in-of-tree-key-set)
+  :by heap<-when-heap<-all-l-and-in-of-tree-key-set)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -481,7 +481,7 @@
   :induct t
   :enable tree-key-tree)
 
-(defrule heap<-all-l-of-tree-key-tree-when-<<-all-r
+(defrule heap<-all-l-of-tree-key-tree-when-heap<-all-l
   (implies (heap<-all-l tree x)
            (treeset::heap<-all-l (tree-key-tree tree) x))
   :induct t
