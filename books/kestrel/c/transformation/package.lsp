@@ -39,6 +39,7 @@
                  erp
                  impossible
                  index-of
+                 lnfix
                  packn-pos
                  maybe-msgp
                  maybe-pseudo-event-formp
