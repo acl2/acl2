@@ -1,7 +1,7 @@
 ; Tracking equalities involving nodenums
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -35,11 +35,13 @@
 (defthm node-replacement-alistp-forward-to-eqlable-alistp
   (implies (node-replacement-alistp pairs dag-len)
            (eqlable-alistp pairs))
+  :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable node-replacement-alistp))))
 
 (defthm node-replacement-alistp-forward-to-alistp
   (implies (node-replacement-alistp pairs dag-len)
            (alistp pairs))
+  :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable node-replacement-alistp))))
 
 (defthm node-replacement-alistp-monotone
