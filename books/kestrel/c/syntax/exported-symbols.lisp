@@ -27,6 +27,7 @@
     ident->unwrap
 
     ident-listp
+    ident-list-fix
     ident-list-of
 
     ident-list-listp
