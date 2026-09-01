@@ -1354,7 +1354,6 @@
                                                 state)
   :returns (mv (erp maybe-msgp)
                (event pseudo-event-formp))
-  :parents (simpadd0-implementation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
        ((erp old-code
