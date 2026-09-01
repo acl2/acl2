@@ -998,7 +998,9 @@
                                                  tag
                                                  tag2
                                                  rmems)))
-       (retok (stsp-stage-types) (trans-item-list-fix (cdr new-items)) events))
+       (retok (stsp-stage-types)
+              (trans-item-list-fix (cdr new-items))
+              events))
      :types
      (b* ((new-item (car new-items))
           (new-declon (check-trans-item-declon new-item))
@@ -1028,7 +1030,9 @@
                                                    new-declon2
                                                    tag
                                                    tag2)))
-       (retok (stsp-stage-types) (trans-item-list-fix (cdr new-items)) events))
+       (retok (stsp-stage-objects)
+              (trans-item-list-fix (cdr new-items))
+              events))
      :objects (retmsg$ "Unsupported proof generation for ~
                         declaration after the ones of ~
                         the struct type and struct object.")))
