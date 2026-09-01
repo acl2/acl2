@@ -568,7 +568,7 @@
                         :assumptions assumptions
                         :check-inputs nil))
        ((when erp)
-        (er hard? 'unroll-java-code-fn "Error in unrolling.")
+        (er hard? 'unroll-java-code2-fn "Error in unrolling.")
         (mv erp nil state))
        (- (cw "  Done simplifying term.)~%"))
        ;; TODO: Handle a result-dag that is a quotep.

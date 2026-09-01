@@ -2085,21 +2085,22 @@
          (ispaces (unbox-spec-info->ispaces info))
          (var (unbox-spec-info->var info))
          (target (unbox-spec-info->target info)))
-      (if (and (consp ispaces)
-               (endp (cdr ispaces)))
-          (make-expr-unbox :ispace (car ispaces)
-                           :var var
-                           :target target
-                           :body body
-                           :type? nil)
-        (make-expr-unboxn :ispaces ispaces
-                          :var var
-                          :target target
-                          :body body
-                          :type? nil)))
+      (cond ((endp ispaces)
+             (reserrf (list :unbox-exp-no-ispaces var)))
+            ((endp (cdr ispaces))
+             (make-expr-unbox :ispace (car ispaces)
+                              :var var
+                              :target target
+                              :body body
+                              :type? nil))
+            (t (make-expr-unboxn :ispaces ispaces
+                                 :var var
+                                 :target target
+                                 :body body
+                                 :type? nil))))
     :measure (abnf::tree-count tree))
 
-  ;; unbox-spec = *( ispace-var ws ) identifier ws exp
+  ;; unbox-spec = 1*( ispace-var ws ) identifier ws exp
   (define abs-unbox-spec ((tree abnf::treep))
     :returns (info unbox-spec-info-resultp)
     :short "Abstract an @('unbox-spec') to an @(tsee unbox-spec-info)."
@@ -2251,7 +2252,7 @@
       (make-atom-ilambda/ilambdan params body))
     :measure (abnf::tree-count tree))
 
-  ;; box-expr = "box" ws "(" *( ws ispace ) ws ")" ws exp ws type
+  ;; box-expr = "box" ws "(" 1*( ws ispace ) ws ")" ws exp ws type
   (define abs-box-expr ((tree abnf::treep))
     :returns (a atom-resultp)
     :short "Abstract a @('box-expr') to
@@ -2271,10 +2272,11 @@
          ((okf ispaces) (abs-*-ws-ispace sub.4th))
          ((okf array) (abs-exp e-tree))
          ((okf ty) (abs-type te-tree)))
-      (if (and (consp ispaces)
-               (endp (cdr ispaces)))
-          (make-atom-box :ispace (car ispaces) :array array :type? ty)
-        (make-atom-boxn :ispaces ispaces :array array :type ty)))
+      (cond ((endp ispaces)
+             (reserrf (list :box-expr-no-ispaces array)))
+            ((endp (cdr ispaces))
+             (make-atom-box :ispace (car ispaces) :array array :type? ty))
+            (t (make-atom-boxn :ispaces ispaces :array array :type ty))))
     :measure (abnf::tree-count tree))
 
   ;; ------------------------------------------------------------------

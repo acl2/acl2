@@ -820,6 +820,13 @@
             (bind-list-rename-ispace-vars (cdr bind-list)
                                           dim-renam
                                           shape-renam)))))
+  :guard-hints
+  ((exprs/atoms/binds
+    (("Goal"
+      :in-theory (enable* ast-rename-ispace-vars-rules)
+      :expand ((bind-list-rename-ispace-vars (expr-let->binds expr)
+                                             dim-renam
+                                             shape-renam))))))
   :name ast-rename-ispace-vars)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -996,6 +1003,13 @@
             (bind-list-rename-type-vars (cdr bind-list)
                                         atom-renam
                                         array-renam)))))
+  :guard-hints
+  ((exprs/atoms/binds
+    (("Goal"
+      :in-theory (enable* ast-rename-type-vars-rules)
+      :expand ((bind-list-rename-type-vars (expr-let->binds expr)
+                                           atom-renam
+                                           array-renam))))))
   :name ast-rename-type-vars)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -1111,4 +1125,9 @@
          (renam (omap::delete* bound (string-string-map-fix renam))))
       (cons new-bind
             (bind-list-rename-expr-vars (cdr bind-list) renam)))))
+  :guard-hints
+  ((exprs/atoms/binds
+    (("Goal"
+      :in-theory (enable* ast-rename-expr-vars-rules)
+      :expand ((bind-list-rename-expr-vars (expr-let->binds expr) renam))))))
   :name ast-rename-expr-vars)

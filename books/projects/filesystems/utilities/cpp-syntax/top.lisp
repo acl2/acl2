@@ -27,6 +27,25 @@
      It is organized as certifiable ACL2 books in the @('CPP') package,
      mirroring the pattern used by the @('C2C') transformation package.")
    (xdoc::p
+    "The parser covers all C++ expression forms (lambda expressions, all
+     named casts, C-style casts, @('new')/@('delete'),
+     @('sizeof')/@('alignof'), @('co_await'), @('throw'), and the full
+     Pratt-based binary/ternary/assignment hierarchy), all statement forms
+     (@('try')/@('catch'), @('co_yield')/@('co_return'), all @('for')
+     variants including range-based for, @('switch'), @('goto'), and
+     labeled statements), variadic templates and parameter packs, default
+     arguments in function and template parameters, and C++17 structured
+     bindings (@('auto [a,b]=p;') and @('for (auto [k,v]:m)')).  C-style
+     casts with an identifier type are unambiguous when a pointer or
+     reference suffix precedes the closing @(')'): @('(ident*)e'),
+     @('(ident* const)e'), @('(ident&)e'), and @('(ident&&)e') are always
+     casts.  A bare @('(ident)e') is a cast when the operand begins with
+     an identifier, literal, @('('), @('++'), @('--'), @('~'), @('!'),
+     @('+'), @('-'), or @('&'), and is treated as binary multiplication
+     when the operand begins with a bare @('*') — that case is genuinely
+     ambiguous without a symbol table of type names, so multiplication is
+     the deliberate default.")
+   (xdoc::p
     "The library consists of the following books, in dependency order:")
    (xdoc::ul
     (xdoc::li "@(see cpp-keywords): the list of C++-only keyword strings
@@ -64,10 +83,4 @@
      the @('if consteval') statement form (C++23),
      explicit object parameters (@('this') as first explicit parameter, C++23),
      the multidimensional subscript operator @('a[i,j]') (C++23),
-     and nested-template @('>>') disambiguation (a lexer-level limitation).
-     Variadic templates/parameter packs (@('typename... T'), @('int... N')),
-     default arguments in function and template parameters, and
-     C++17 structured bindings (both the local form @('auto [a, b] = p;')
-     and the range-based-for form @('for (auto [k, v] : m) ...')) are now
-     supported, bringing the parser to C++17 conformance for these
-     constructs.")))
+     and nested-template @('>>') disambiguation (a lexer-level limitation).")))

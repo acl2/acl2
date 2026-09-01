@@ -1111,7 +1111,7 @@
 
   ///
 
-  (defrule parsize-of-initparstate
+  (defrule parsize-of-init-parstate
     (equal (parsize
             (init-parstate file nil dialect skip-control-lines parstate))
            0)

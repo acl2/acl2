@@ -78,7 +78,6 @@
                         ALL-<-TRANSITIVE-FREE
                         NOT-<-OF-NTH-OF-DARGS-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-2
                         <=-of-nth-when-all-<= ;disable globally?
-                        rational-listp
                         strip-cdrs
                         ifix ; avoid case splits
                         RATIONAL-LISTP MAXELEM ;prevent inductions

@@ -2594,7 +2594,7 @@
           ;; it's already a parsed-executable:
           (mv nil executable state)))
        ((when erp)
-        (er hard? 'def-unrolled-fn "Error parsing executable: ~s0." executable)
+        (er hard? 'lift-subroutine-fn "Error parsing executable: ~s0." executable)
         (mv t nil state))
        ;; Check the inputs argument:
        ((when (not (or (eq :skip inputs) (names-and-typesp inputs))))

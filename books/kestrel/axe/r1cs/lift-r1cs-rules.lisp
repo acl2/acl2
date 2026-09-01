@@ -708,8 +708,7 @@
   :hints (("Goal" :in-theory (e/d (ACL2::BVCAT acl2::logapp ADD mul power-of-2p)
                                   (ACL2::UNSIGNED-BYTE-P-OF-+-WHEN-<-OF-LOGTAIL-AND-EXPT
                                    PFIELD::MOD-WHEN-FEP
-                                   ACL2::<-OF-*-SAME-LINEAR-SPECIAL
-                                   PFIELD::MOD-WHEN-FEP)))))
+                                   ACL2::<-OF-*-SAME-LINEAR-SPECIAL)))))
 
 (defthm add-of-mul-and-mul-combine-extra
   (implies (and (syntaxp (and (quotep k1)
@@ -836,7 +835,6 @@
                            (ACL2::UNSIGNED-BYTE-P-OF-+-WHEN-<-OF-LOGTAIL-AND-EXPT
                             PFIELD::MOD-WHEN-FEP
                             ACL2::<-OF-*-SAME-LINEAR-SPECIAL
-                            PFIELD::MOD-WHEN-FEP
                             acl2::expt-of-lg-when-power-of-2p)))))
 
 (defthm add-of-mul-and-mul-combine-negated-special-case-for-bitp

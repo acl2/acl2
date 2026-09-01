@@ -530,8 +530,11 @@
 ;; An end carries nothing but its tree, so it is recovered from that tree
 ;; alone. This is what makes the two ends unique, and so what the round trips
 ;; come down to once a move has landed on one.
+;;
+;; Exported rather than local: iter-uniqueness needs exactly this fact for its
+;; two end cases. Still disabled, so nothing downstream changes.
 
-(defruledl tree-iter-fix-when-tree-iter-before-first-p
+(defruled tree-iter-fix-when-tree-iter-before-first-p
   (implies (tree-iter-before-first-p iter)
            (equal (tree-iter-fix iter)
                   (tree-iter-before-first (tree-iter-plug iter))))
@@ -540,7 +543,7 @@
            tree-iter-plug
            tree-iter-fix))
 
-(defruledl tree-iter-fix-when-tree-iter-after-last-p
+(defruled tree-iter-fix-when-tree-iter-after-last-p
   (implies (tree-iter-after-last-p iter)
            (equal (tree-iter-fix iter)
                   (tree-iter-after-last (tree-iter-plug iter))))

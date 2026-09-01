@@ -95,9 +95,9 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
   :enabled t
   (or (integerp @)
       (and (consp @)
-	   (integerp (@@d @))
-	   (integerp (@@i @))
-	   (not (= (@@i @) 0)))))
+           (integerp (@@d @))
+           (integerp (@@i @))
+           (not (= (@@i @) 0)))))
 
 (defthm @integerp-integerp
   (implies
@@ -106,9 +106,9 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
 
 (defthm @integerp-cons
   (equal (@integerp (cons d i))
-	 (and (integerp d)
-	      (integerp i)
-	      (not (= i 0))))
+         (and (integerp d)
+              (integerp i)
+              (not (= i 0))))
   :hints (("Goal" :in-theory (enable @integerp))))
 
 ;;;  Constants
@@ -134,7 +134,7 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
   (implies
    (integerp i)
    (equal (@bitp i)
-	  (bitp i))))
+          (bitp i))))
 
 (defthm @bitp-@integerp-forward
   (implies
@@ -175,9 +175,9 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
 (defthm @+-integer
   (implies
    (and (integerp i)
-	(integerp j))
+        (integerp j))
    (equal (@+ i j)
-	  (+ i j))))
+          (+ i j))))
 
 (defmacro @1+ (i) (mlambda (i) (@+ 1 i)))
 
@@ -199,32 +199,32 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
   (implies
    (integerp i)
    (equal (@unary-- i)
-	  (- i))))
+          (- i))))
 
 ;  Modified from ACL2.
 
 (defmacro @- (x &optional (y 'nil binary-casep))
   (if binary-casep
       (let ((y (if (and (consp y)
-			(eq (car y) 'quote)
-			(consp (cdr y))
-			(@integerp (car (cdr y)))
-			(eq (cdr (cdr y)) nil))
-		   (car (cdr y))
-		 y)))
-	(if (@integerp y)
-	    (cons '@+ (cons (@unary-- y) (cons x nil)))
-	  (cons '@+ (cons x (cons (cons '@unary-- (cons y nil)) nil)))))
+                        (eq (car y) 'quote)
+                        (consp (cdr y))
+                        (@integerp (car (cdr y)))
+                        (eq (cdr (cdr y)) nil))
+                   (car (cdr y))
+                 y)))
+        (if (@integerp y)
+            (cons '@+ (cons (@unary-- y) (cons x nil)))
+          (cons '@+ (cons x (cons (cons '@unary-- (cons y nil)) nil)))))
     (let ((x (if (and (consp x)
-		      (eq (car x) 'quote)
-		      (consp (cdr x))
-		      (@integerp (car (cdr x)))
-		      (eq (cdr (cdr x)) nil))
-		 (car (cdr x))
-	       x)))
+                      (eq (car x) 'quote)
+                      (consp (cdr x))
+                      (@integerp (car (cdr x)))
+                      (eq (cdr (cdr x)) nil))
+                 (car (cdr x))
+               x)))
       (if (@integerp x)
-	  (@unary-- x)
-	(cons '@unary-- (cons x nil))))))
+          (@unary-- x)
+        (cons '@unary-- (cons x nil))))))
 
 (define @* ((i @integerp)
             (j @integerp))
@@ -240,9 +240,9 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
 (defthm @*-integer
   (implies
    (and (integerp i)
-	(integerp j))
+        (integerp j))
    (equal (@* i j)
-	  (* i j))))
+          (* i j))))
 
 ;;  @UNSIGNED-BYTE-P
 
@@ -257,7 +257,7 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
   (implies
    (integerp i)
    (equal (@unsigned-byte-p size i)
-	  (unsigned-byte-p size i)))
+          (unsigned-byte-p size i)))
   :hints
   (("Goal"
     :in-theory (enable unsigned-byte-p))))
@@ -270,9 +270,9 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
 
 (defthm @unsigned-byte-p-cons
   (equal (@unsigned-byte-p size (cons d i))
-	 (and (unsigned-byte-p size d)
-	      (unsigned-byte-p size i)
-	      (not (= i 0))))
+         (and (unsigned-byte-p size d)
+              (unsigned-byte-p size i)
+              (not (= i 0))))
   :hints (("Goal" :in-theory (enable @unsigned-byte-p unsigned-byte-p))))
 
 ;;;  @SIGNED-BYTE-P
@@ -299,9 +299,9 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
 
 (defthm @signed-byte-p-cons
   (equal (@signed-byte-p size (cons d i))
-	 (and (signed-byte-p size d)
-	      (signed-byte-p size i)
-	      (not (= i 0))))
+         (and (signed-byte-p size d)
+              (signed-byte-p size i)
+              (not (= i 0))))
   :hints (("Goal" :in-theory (enable @signed-byte-p signed-byte-p))))
 
 ;;; @ASH
@@ -311,13 +311,13 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
 
 (defun ash! (i c)
   (declare (xargs :guard (and (integerp i)
-			      (integerp c))))
+                              (integerp c))))
   (floor (* i (expt 2 c)) 1))
 
 (defthm ash!-works-NOT
   (implies
    (and (integerp i)
-	(integerp c))
+        (integerp c))
    (equal (ash! i c) (ash i c)))
   :hints
   (("Goal"
@@ -327,11 +327,11 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
 
 (defun @ash (i count)
   (declare (xargs :guard (and (@integerp i)
-			      (@integerp count))))
+                              (@integerp count))))
   (cond
    ((integerp count) (cond
-		      ((integerp i) (ash! i count))
-		      (t (@cons (ash! (@@d i) count) (ash! (@@i i) count)))))
+                      ((integerp i) (ash! i count))
+                      (t (@cons (ash! (@@d i) count) (ash! (@@i i) count)))))
    (t *@x*)))
 ||#
 
@@ -343,8 +343,8 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
   :enabled t
   (cond
    ((integerp count) (cond
-		      ((integerp i) (ash i count))
-		      (t (@cons (ash (@@d i) count) (ash (@@i i) count)))))
+                      ((integerp i) (ash i count))
+                      (t (@cons (ash (@@d i) count) (ash (@@i i) count)))))
    (t *@x*))
   ///
   (defthm type-of-@ash (@integerp (@ash i count)))
@@ -432,22 +432,22 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
   :long "@({
  i&j = ?  ii di ij dj  ians/dans
 
- 0 0   0   0  0  0  0  	 0 0
- 0 1   0   0  0  0  1  	 0 0
- 0 x   0   0  0  1  0  	 0 0
- 0 z   0   0  0  1  1  	 0 0
- 1 0   0   0  1  0  0  	 0 0
- 1 1   1   0  1  0  1  	 0 1
- 1 x   x   0  1  1  0  	 1 0
- 1 z   x   0  1  1  1  	 1 0
- x 0   0   1  0  0  0  	 0 0
- x 1   x   1  0  0  1  	 1 0
- x x   x   1  0  1  0  	 1 0
- x z   x   1  0  1  1  	 1 0
- z 0   0   1  1  0  0  	 0 0
- z 1   x   1  1  0  1  	 1 0
- z x   x   1  1  1  0  	 1 0
- z z   x   1  1  1  1  	 1 0
+ 0 0   0   0  0  0  0            0 0
+ 0 1   0   0  0  0  1            0 0
+ 0 x   0   0  0  1  0            0 0
+ 0 z   0   0  0  1  1            0 0
+ 1 0   0   0  1  0  0            0 0
+ 1 1   1   0  1  0  1            0 1
+ 1 x   x   0  1  1  0            1 0
+ 1 z   x   0  1  1  1            1 0
+ x 0   0   1  0  0  0            0 0
+ x 1   x   1  0  0  1            1 0
+ x x   x   1  0  1  0            1 0
+ x z   x   1  0  1  1            1 0
+ z 0   0   1  1  0  0            0 0
+ z 1   x   1  1  0  1            1 0
+ z x   x   1  1  1  0            1 0
+ z z   x   1  1  1  1            1 0
 })"
   :enabled t
   (cond ((and (integerp i) (integerp j)) (logand i j))
@@ -474,33 +474,33 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
   :long "@({
  i|j = ?  ii di ij dj  ians/dans
 
- 0 0   0   0  0  0  0  	 0 0
- 0 1   1   0  0  0  1  	 0 1
- 0 x   x   0  0  1  0  	 1 0
- 0 z   x   0  0  1  1  	 1 0
- 1 0   1   0  1  0  0  	 0 1
- 1 1   1   0  1  0  1  	 0 1
- 1 x   1   0  1  1  0  	 0 1
- 1 z   1   0  1  1  1  	 0 1
- x 0   x   1  0  0  0  	 1 0
- x 1   1   1  0  0  1  	 0 1
- x x   x   1  0  1  0  	 1 0
- x z   x   1  0  1  1  	 1 0
- z 0   x   1  1  0  0  	 1 0
- z 1   1   1  1  0  1  	 0 1
- z x   x   1  1  1  0  	 1 0
- z z   x   1  1  1  1  	 1 0
+ 0 0   0   0  0  0  0            0 0
+ 0 1   1   0  0  0  1            0 1
+ 0 x   x   0  0  1  0            1 0
+ 0 z   x   0  0  1  1            1 0
+ 1 0   1   0  1  0  0            0 1
+ 1 1   1   0  1  0  1            0 1
+ 1 x   1   0  1  1  0            0 1
+ 1 z   1   0  1  1  1            0 1
+ x 0   x   1  0  0  0            1 0
+ x 1   1   1  0  0  1            0 1
+ x x   x   1  0  1  0            1 0
+ x z   x   1  0  1  1            1 0
+ z 0   x   1  1  0  0            1 0
+ z 1   1   1  1  0  1            0 1
+ z x   x   1  1  1  0            1 0
+ z z   x   1  1  1  1            1 0
 })"
   :enabled t
   (cond
    ((and (integerp i) (integerp j)) (logior i j))
    (t
     (let* ((di (@d i))
-	   (ii (@i i))
-	   (dj (@d j))
-	   (ij (@i j))
-	   (ians (logior (logand ii (logorc2 ij dj)) (logandc1 di ij)))
-	   (dans (logandc2 (logior di dj) ians)))
+           (ii (@i i))
+           (dj (@d j))
+           (ij (@i j))
+           (ians (logior (logand ii (logorc2 ij dj)) (logandc1 di ij)))
+           (dans (logandc2 (logior di dj) ians)))
       (@cons dans ians))))
   ///
   (defthm type-of-@logior (@integerp (@logior i j)))
@@ -517,32 +517,32 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
   :long "@({
  i.j = ?  ii di ij dj  ians/dans
 
- 0 0   0   0  0  0  0  	 0 0
- 0 1   x   0  0  0  1  	 1 0
- 0 x   x   0  0  1  0  	 1 0
- 0 z   0   0  0  1  1  	 0 0
- 1 0   x   0  1  0  0  	 1 0
- 1 1   1   0  1  0  1  	 0 1
- 1 x   x   0  1  1  0  	 1 0
- 1 z   1   0  1  1  1  	 0 1
- x 0   x   1  0  0  0  	 1 0
- x 1   x   1  0  0  1  	 1 0
- x x   x   1  0  1  0  	 1 0
- x z   x   1  0  1  1  	 1 0
- z 0   0   1  1  0  0  	 0 0
- z 1   1   1  1  0  1  	 0 1
- z x   x   1  1  1  0  	 1 0
- z z   z   1  1  1  1  	 1 1
+ 0 0   0   0  0  0  0            0 0
+ 0 1   x   0  0  0  1            1 0
+ 0 x   x   0  0  1  0            1 0
+ 0 z   0   0  0  1  1            0 0
+ 1 0   x   0  1  0  0            1 0
+ 1 1   1   0  1  0  1            0 1
+ 1 x   x   0  1  1  0            1 0
+ 1 z   1   0  1  1  1            0 1
+ x 0   x   1  0  0  0            1 0
+ x 1   x   1  0  0  1            1 0
+ x x   x   1  0  1  0            1 0
+ x z   x   1  0  1  1            1 0
+ z 0   0   1  1  0  0            0 0
+ z 1   1   1  1  0  1            0 1
+ z x   x   1  1  1  0            1 0
+ z z   z   1  1  1  1            1 1
 })"
   :enabled t
   (let* ((di (@d i))
-	 (ii (@i i))
-	 (dj (@d j))
-	 (ij (@i j))
-	 (ians (logior (logand ii (logorc1 di ij))
-		       (logior (logandc2 ij dj)
-			       (logandc1 ii (logandc1 ij (logxor di dj))))))
-	 (dans (logand di dj)))
+         (ii (@i i))
+         (dj (@d j))
+         (ij (@i j))
+         (ians (logior (logand ii (logorc1 di ij))
+                       (logior (logandc2 ij dj)
+                               (logandc1 ii (logandc1 ij (logxor di dj))))))
+         (dans (logand di dj)))
     (@cons dans ians))
   ///
   (defthm type-of-@t-wire (@integerp (@t-wire i j))))
@@ -853,7 +853,7 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
   (cond
    ((and (integerp i) (integerp j)) (logapp size i j))
    (t (@cons (logapp size (@d i) (@d j))
-	     (logapp size (@i i) (@i j)))))
+             (logapp size (@i i) (@i j)))))
   ///
   (defthm type-of-@logapp (@integerp (@logapp size i j)))
 
@@ -1236,8 +1236,8 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
                               ;; How to say that SIZE is a constant expression?
                               (or (eq s/u :SIGNED) (eq s/u :UNSIGNED))
                               (implies saturating-coercion
-				       (and (symbolp saturating-coercion)
-					    (eq s/u :SIGNED)))
+                                       (and (symbolp saturating-coercion)
+                                            (eq s/u :SIGNED)))
                               (implies doc (stringp doc)))))
 
   `(PROGN
@@ -1247,87 +1247,87 @@ defined with the prefix character `@', e.g., @+, @LOGAND, etc..</p>")
 
     ,(let*
        ((integer-name name)
-	(integer-predicate (pack-intern name name "-P"))
-	(integer-saturating-coercion saturating-coercion)
-	(name (pack-intern name "@" name))
-	(saturating-coercion
-	 (when$cl saturating-coercion
-	   (pack-intern saturating-coercion "@" saturating-coercion)))
-	(predicate (pack-intern name name "-P"))
-	(predicate-lemma (pack-intern name predicate "-" name))
-	(coercion-lemma (pack-intern name "REDUCE-" name))
-	(forward-lemma (pack-intern predicate predicate "-FORWARD"))
-	(type-lemma (pack-intern name "TYPE-OF-" name))
-	(integer-lemma (pack-intern name name "-INTEGER"))
-	(integer-predicate-lemma (pack-intern name predicate "-INTEGER"))
-	(sat-lemma (pack-intern name predicate "-" saturating-coercion))
-	(sat-type-lemma (pack-intern name "TYPE-OF-" saturating-coercion))
-	(sat-integer-lemma (pack-intern name name "-SATURATING-INTEGER"))
-	(x-constant (pack-intern name "*@X-" integer-name "*"))
-	(theory (pack-intern name name "-THEORY")))
+        (integer-predicate (pack-intern name name "-P"))
+        (integer-saturating-coercion saturating-coercion)
+        (name (pack-intern name "@" name))
+        (saturating-coercion
+         (when$cl saturating-coercion
+           (pack-intern saturating-coercion "@" saturating-coercion)))
+        (predicate (pack-intern name name "-P"))
+        (predicate-lemma (pack-intern name predicate "-" name))
+        (coercion-lemma (pack-intern name "REDUCE-" name))
+        (forward-lemma (pack-intern predicate predicate "-FORWARD"))
+        (type-lemma (pack-intern name "TYPE-OF-" name))
+        (integer-lemma (pack-intern name name "-INTEGER"))
+        (integer-predicate-lemma (pack-intern name predicate "-INTEGER"))
+        (sat-lemma (pack-intern name predicate "-" saturating-coercion))
+        (sat-type-lemma (pack-intern name "TYPE-OF-" saturating-coercion))
+        (sat-integer-lemma (pack-intern name name "-SATURATING-INTEGER"))
+        (x-constant (pack-intern name "*@X-" integer-name "*"))
+        (theory (pack-intern name name "-THEORY")))
 
        `(ENCAPSULATE ()
-	  (LOCAL (IN-THEORY (ENABLE ,integer-name ,integer-predicate
-				    ,@(when$cl saturating-coercion
-					(list integer-saturating-coercion)))))
-	  (DEFUN ,predicate (X)
-	    (DECLARE (XARGS :GUARD T))
-	    ,(case s/u
-	       (:SIGNED `(@SIGNED-BYTE-P ,size X))
-	       (:UNSIGNED `(@UNSIGNED-BYTE-P ,size X))))
-	  (DEFUN ,name (I)
-	    ,@(when$cl doc (list doc))
-	    (DECLARE (XARGS :GUARD (@INTEGERP I)))
-	    ,(case s/u
-	       (:SIGNED `(@LOGEXT ,size I))
-	       (:UNSIGNED `(@LOGHEAD ,size I))))
-	  (DEFCONST ,x-constant (,name *@X*))
-	  (DEFTHM ,predicate-lemma
-	    (,predicate (,name I)))
-	  (DEFTHM ,coercion-lemma
-	    (IMPLIES
-	     (,predicate I)
-	     (EQUAL (,name I) I)))
-	  (DEFTHM ,forward-lemma
-	    (IMPLIES
-	     (,predicate X)
-	     (@INTEGERP X))
-	    :RULE-CLASSES :FORWARD-CHAINING)
-	  (DEFTHM ,type-lemma
-	    (@INTEGERP (,name X)))
-	  (DEFTHM ,integer-lemma
-	    (IMPLIES
-	     (INTEGERP I)
-	     (EQUAL (,name I) (,integer-name I))))
-	  (DEFTHM ,integer-predicate-lemma
-	    (IMPLIES
-	     (INTEGERP I)
-	     (EQUAL (,predicate I) (,integer-predicate I))))
-	  ,@(when$cl saturating-coercion
-	      (list
-	       `(DEFUN ,saturating-coercion (I)
-		  (DECLARE (XARGS :GUARD (@INTEGERP I)))
-		  (@LOGSAT ,size I))
-	       `(DEFTHM ,sat-lemma
-		  (,predicate (,saturating-coercion I)))
-	       `(DEFTHM ,sat-type-lemma
-		  (@INTEGERP (,saturating-coercion X)))
-	       `(DEFTHM ,sat-integer-lemma
-		  (IMPLIES
-		   (INTEGERP I)
-		   (EQUAL (,saturating-coercion I)
-			  (,integer-saturating-coercion I))))))
-	  (IN-THEORY
-	   (DISABLE ,predicate ,name
-		    ,@(when$cl saturating-coercion
-			(list saturating-coercion))))
-	  (DEFTHEORY ,theory
-	    (UNION-THEORIES
-	     (DEFUN-TYPE/EXEC-THEORY
-	       '(,predicate ,name ,@(when$cl saturating-coercion
-				      (list saturating-coercion))))
-	     '(,predicate-lemma ,coercion-lemma ,forward-lemma
-				,type-lemma ,integer-lemma
-				,@(when$cl saturating-coercion
-				    (list sat-lemma sat-type-lemma
-					  sat-integer-lemma)))))))))
+          (LOCAL (IN-THEORY (ENABLE ,integer-name ,integer-predicate
+                                    ,@(when$cl saturating-coercion
+                                        (list integer-saturating-coercion)))))
+          (DEFUN ,predicate (X)
+            (DECLARE (XARGS :GUARD T))
+            ,(case s/u
+               (:SIGNED `(@SIGNED-BYTE-P ,size X))
+               (:UNSIGNED `(@UNSIGNED-BYTE-P ,size X))))
+          (DEFUN ,name (I)
+            ,@(when$cl doc (list doc))
+            (DECLARE (XARGS :GUARD (@INTEGERP I)))
+            ,(case s/u
+               (:SIGNED `(@LOGEXT ,size I))
+               (:UNSIGNED `(@LOGHEAD ,size I))))
+          (DEFCONST ,x-constant (,name *@X*))
+          (DEFTHM ,predicate-lemma
+            (,predicate (,name I)))
+          (DEFTHM ,coercion-lemma
+            (IMPLIES
+             (,predicate I)
+             (EQUAL (,name I) I)))
+          (DEFTHM ,forward-lemma
+            (IMPLIES
+             (,predicate X)
+             (@INTEGERP X))
+            :RULE-CLASSES :FORWARD-CHAINING)
+          (DEFTHM ,type-lemma
+            (@INTEGERP (,name X)))
+          (DEFTHM ,integer-lemma
+            (IMPLIES
+             (INTEGERP I)
+             (EQUAL (,name I) (,integer-name I))))
+          (DEFTHM ,integer-predicate-lemma
+            (IMPLIES
+             (INTEGERP I)
+             (EQUAL (,predicate I) (,integer-predicate I))))
+          ,@(when$cl saturating-coercion
+              (list
+               `(DEFUN ,saturating-coercion (I)
+                  (DECLARE (XARGS :GUARD (@INTEGERP I)))
+                  (@LOGSAT ,size I))
+               `(DEFTHM ,sat-lemma
+                  (,predicate (,saturating-coercion I)))
+               `(DEFTHM ,sat-type-lemma
+                  (@INTEGERP (,saturating-coercion X)))
+               `(DEFTHM ,sat-integer-lemma
+                  (IMPLIES
+                   (INTEGERP I)
+                   (EQUAL (,saturating-coercion I)
+                          (,integer-saturating-coercion I))))))
+          (IN-THEORY
+           (DISABLE ,predicate ,name
+                    ,@(when$cl saturating-coercion
+                        (list saturating-coercion))))
+          (DEFTHEORY ,theory
+            (UNION-THEORIES
+             (DEFUN-TYPE/EXEC-THEORY
+               '(,predicate ,name ,@(when$cl saturating-coercion
+                                      (list saturating-coercion))))
+             '(,predicate-lemma ,coercion-lemma ,forward-lemma
+                                ,type-lemma ,integer-lemma
+                                ,@(when$cl saturating-coercion
+                                    (list sat-lemma sat-type-lemma
+                                          sat-integer-lemma)))))))))

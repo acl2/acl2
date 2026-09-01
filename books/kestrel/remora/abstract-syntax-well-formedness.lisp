@@ -125,15 +125,7 @@
                       (valid-identifier-string-p expr.var)
                       (expr-wfp expr.target)
                       (expr-wfp expr.body)
-                      (type-option-wfp expr.type?)
-                      (>= (len expr.ispaces) 2)))
-   (expr :let (and (bind-list-wfp expr.binds)
-                   (expr-wfp expr.body)
-                   (>= (len expr.binds) 1)))
-   (atom :boxn (and (ispace-list-wfp atom.ispaces)
-                    (expr-wfp atom.array)
-                    (type-wfp atom.type)
-                    (>= (len atom.ispaces) 2)))
+                      (type-option-wfp expr.type?)))
    (bind :val (and (valid-identifier-string-p bind.var)
                    (type-option-wfp bind.type?)
                    (expr-wfp bind.expr)))
@@ -166,7 +158,7 @@
 (defsection ast-wfp-additional-theorems
   :short "Additional theorems about the AST well-formedness predicates."
 
-  (defruled dim-list-list-wfp-of-lists-to-singletons
+  (defruled dim-list-list-wfp-of-list-to-singletons
     (equal (dim-list-list-wfp (list-to-singletons dims))
            (dim-list-wfp dims))
     :induct t
@@ -174,4 +166,4 @@
              ast-wfp-rules))
 
   (add-to-ruleset ast-wfp-rules
-                  '(dim-list-list-wfp-of-lists-to-singletons)))
+                  '(dim-list-list-wfp-of-list-to-singletons)))

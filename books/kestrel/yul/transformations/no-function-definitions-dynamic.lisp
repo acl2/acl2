@@ -89,7 +89,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule funscope-funp-of-funscope-for-fundefs
+(defrule funscope-nofunp-of-funscope-for-fundefs
   (implies (and (fundef-list-nofunp fundefs)
                 (not (reserrp (funscope-for-fundefs fundefs))))
            (funscope-nofunp (funscope-for-fundefs fundefs)))

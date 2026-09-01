@@ -2183,7 +2183,8 @@
                       (type type-valuep)
                       (denv expr-denvp)
                       (limit natp))
-    :guard (and (expr-value-wfp target)
+    :guard (and (consp ispaces)
+                (expr-value-wfp target)
                 (expr-denv-wfp denv))
     :returns (val expr-value-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
@@ -2194,7 +2195,8 @@
       "This is called by @(tsee eval-expr) for an unboxing expression,
        after the target expression has been evaluated to @('target');
        @('ispaces'), @('var'), and @('body') are
-       the ispace variables, the term variable, and the body
+       the ispace variables (at least one, as required by the guard),
+       the term variable, and the body
        of the unboxing expression,
        while @('type') is the result type of the body,
        already evaluated to a type value.
@@ -2232,8 +2234,7 @@
       (expr-value-case
        target
        :box
-       (b* (((unless (consp ispaces)) (reserr nil))
-            ;; TODO: eliminate the sort check via a well-formedness invariant
+       (b* (;; TODO: eliminate the sort check via a well-formedness invariant
             ((unless (ispace-values-match-ispace-vars-p
                       (list target.ispace) (list (car ispaces))))
              (reserr nil))
@@ -2276,7 +2277,8 @@
                            (type type-valuep)
                            (denv expr-denvp)
                            (limit natp))
-    :guard (and (expr-value-list-wfp targets)
+    :guard (and (consp ispaces)
+                (expr-value-list-wfp targets)
                 (expr-denv-wfp denv))
     :returns (vals expr-value-list-resultp)
     :parents (evaluation eval-exprs/atoms/binds)
@@ -2591,7 +2593,7 @@
                       (prim-fold tval t2val d s s2 (expr-value-fix fval) zval arg limit)
                       (prim-fold tval t2val d s s2 fval (expr-value-fix zval) arg limit)
                       (prim-fold tval t2val d s s2 fval zval (expr-value-fix arg) limit))
-             :in-theory (enable nfix zp))))
+             :in-theory (enable nfix zp cdr-of-ispace-var-list-fix))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

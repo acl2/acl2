@@ -470,9 +470,7 @@
                           (and (not (integerp lowval)) (integerp highval)))
            :do-not '(preprocess)
            :in-theory (e/d (bvcat getbit slice logtail-of-bvchop logtail-logapp)
-                           (bvchop-of-logtail
-                             bvchop-of-logtail
-                            )))))
+                           (bvchop-of-logtail)))))
 
 ;keeping this disabled, since it causes case splits
 (defthmd getbit-of-bvcat-low-better-all-cases
