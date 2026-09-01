@@ -296,10 +296,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define source-charset-noext-lf ((std standardp))
+(define source-charset-basic+lf ((std standardp))
   :returns (charset source-charsetp)
   :short "The source character set defined by
-          LF as its only extended character and its only line ending."
+          the basic characters plus
+          LF as the only extended character and the only line ending."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -307,27 +308,27 @@
      that correspond to the basic source characters,
      together with LF so that it can represent the line ending."))
   (b* ((chars-with-codes
-        (source-charset-noext-lf-loop
+        (source-charset-basic+lf-loop
          (set::insert #\Newline (ascii-basic-source-chars std))))
        (end-of-lines (set::insert (list #\Newline) nil)))
     (make-source-charset :chars-with-codes chars-with-codes
                          :end-of-lines end-of-lines))
 
   :prepwork
-  ((define source-charset-noext-lf-loop ((chars character-setp))
+  ((define source-charset-basic+lf-loop ((chars character-setp))
      :returns (map any-nat-mapp)
      :parents nil
      (b* (((when (set::emptyp (character-sfix chars))) nil)
           (char (set::head chars)))
        (omap::update char
                      (char-code char)
-                     (source-charset-noext-lf-loop (set::tail chars))))
+                     (source-charset-basic+lf-loop (set::tail chars))))
      :prepwork ((local (in-theory (enable acl2::emptyp-of-character-sfix))))
      :verify-guards :after-returns
 
      ///
 
-     (defret keys-of-source-charset-noext-lf-loop
+     (defret keys-of-source-charset-basic+lf-loop
        (equal (omap::keys map)
               (character-sfix chars))
        :hints (("Goal"
@@ -335,7 +336,7 @@
                 :in-theory (enable set::emptyp
                                    character-sfix))))
 
-     (defret values-of-source-charset-noext-lf-loop
+     (defret values-of-source-charset-basic+lf-loop
        (equal (omap::values map)
               (acl2::char-code-set chars))
        :hints (("Goal"
@@ -343,7 +344,7 @@
                 :in-theory (enable acl2::char-code-set
                                    omap::assoc-to-in-of-keys))))
 
-     (defret injectivep-of-source-charset-noext-lf-loop
+     (defret injectivep-of-source-charset-basic+lf-loop
        (omap::injectivep map)
        :hints (("Goal"
                 :induct t
@@ -352,8 +353,8 @@
 
   ///
 
-  (defrule source-charset-wfp-of-source-charset-noext-lf
-    (source-charset-wfp (source-charset-noext-lf std) std)
+  (defrule source-charset-wfp-of-source-charset-basic+lf
+    (source-charset-wfp (source-charset-basic+lf std) std)
     :enable (source-charset-wfp
              source-charset-has-basic-chars-p
              source-charset-end-of-lines-wfp
