@@ -2388,8 +2388,7 @@
          ;; end EncodingSpecificOperations
          (carry 0) ;; Irrelevant since setflags is FALSE
          )
-      (mov-common d setflags imm32 carry arm))
-  :guard-debug t)
+      (mov-common d setflags imm32 carry arm)))
 
 (def-inst :mov-register
     (mov-register-core s rd rm arm))
