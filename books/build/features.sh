@@ -141,13 +141,37 @@ EXPORTED_VARS += OS_HAS_ABC
 EOF
 fi
 
-echo "Determining whether Z3 is installed, for use by SMTLink" 1>&2
+echo "Determining whether Z3 is installed (e.g., for use by SMTLink):" 1>&2
 if z3 --version 2>/dev/null;
 then
+    echo "  Z3 is installed." 1>&2
+    Z3_AVAILABLE=1
+else
+    echo "  Z3 is not installed." 1>&2
+    Z3_AVAILABLE=0
+fi
+
+# SMTLink seems to use 'python' not 'python2' or 'python3'
+echo "Determining whether python command is available (e.g., for use by SMTLink):" 1>&2
+if python --version 2>/dev/null;
+then
+    echo "  python command is available." 1>&2
+    PYTHON_AVAILABLE=1
+else
+    echo "  python command is not available." 1>&2
+    PYTHON_AVAILABLE=0
+fi
+
+echo "Determining whether SMTLink is available:" 1>&2
+if (( Z3_AVAILABLE && PYTHON_AVAILABLE ));
+then
+    echo "  SMTLink is available." 1>&2
     cat >> Makefile-features <<EOF
 export OS_HAS_SMTLINK ?= 1
 EXPORTED_VARS += OS_HAS_SMTLINK
 EOF
+else
+    echo "  SMTLink is not available (needs both Z3 and python)." 1>&2
 fi
 
 echo "Determining whether STP is installed" 1>&2
