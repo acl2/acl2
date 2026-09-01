@@ -512,6 +512,7 @@
              ,@b*-bindings
              ((unless (not (c::value-struct->flexiblep sval))) nil))
           t)
+        :guard-hints (("Goal" :in-theory (enable len)))
         ///
         (defruled ,value-kind-when-struct-value-onlrp
           (implies (,struct-value-onlrp sval)
@@ -629,7 +630,7 @@
                  ((member-equal (ident-fix mem) (ident-list-fix rmems))
                   (retok
                    (cons
-                    (packn-pos (list 'struct-value-nerl- (c::ident->name cmem))
+                    (packn-pos (list 'struct-value-newr- (c::ident->name cmem))
                                'struct-value-)
                     'newr-val)))
                  (t (retmsg$ "Member ~x0 is neither in ~x1 nor in ~x2."
@@ -669,35 +670,33 @@
            (b* (((when (omap::emptyp (c::scope-fix old-static)))
                  (omap::emptyp (c::scope-fix new-static)))
                 ((mv var old-val) (omap::head old-static)))
-             (if (equal var ',old-cname
-                        (b* ((newl-var ',newl-cname)
-                             (newr-var ',newr-cname)
-                             (newl-var+val
-                              (omap::assoc newl-var (c::scope-fix new-static)))
-                             (newr-var+val
-                              (omap::assoc newr-var (c::scope-fix new-static)))
-                             ((unless (and newl-var+val newr-var+val)) nil)
-                             (newl-val (cdr newl-var+val))
-                             (newr-val (cdr newr-var+val))
-                             ((unless (struct-value-equivp old-val
-                                                           newl-val
-                                                           newr-val))
-                              nil)
-                             (old-static (omap::tail old-static))
-                             (new-static
-                              (omap::delete newl-var (c::scope-fix new-static)))
-                             (new-static
-                              (omap::delete newr-val (c::scope-fix new-static))))
-                          (static-equivp old-static new-static))
-                        (b* ((new-var+val
-                              (omap::assoc var (c::scope-fix new-static)))
-                             ((unless new-var+val) nil)
-                             (new-val (cdr new-var+val))
-                             ((unless (equal old-val new-val)) nil)
-                             (old-static (omap::tail old-static))
-                             (new-static
-                              (omap::delete var (c::scope-fix new-static))))
-                          (static-equivp old-static new-static)))))
+             (if (equal var ',old-cname)
+                 (b* ((newl-var ',newl-cname)
+                      (newr-var ',newr-cname)
+                      (newl-var+val
+                       (omap::assoc newl-var (c::scope-fix new-static)))
+                      (newr-var+val
+                       (omap::assoc newr-var (c::scope-fix new-static)))
+                      ((unless (and newl-var+val newr-var+val)) nil)
+                      (newl-val (cdr newl-var+val))
+                      (newr-val (cdr newr-var+val))
+                      ((unless (struct-value-equivp old-val newl-val newr-val))
+                       nil)
+                      (old-static (omap::tail old-static))
+                      (new-static
+                       (omap::delete newl-var (c::scope-fix new-static)))
+                      (new-static
+                       (omap::delete newr-val (c::scope-fix new-static))))
+                   (static-equivp old-static new-static))
+               (b* ((new-var+val
+                     (omap::assoc var (c::scope-fix new-static)))
+                    ((unless new-var+val) nil)
+                    (new-val (cdr new-var+val))
+                    ((unless (equal old-val new-val)) nil)
+                    (old-static (omap::tail old-static))
+                    (new-static
+                     (omap::delete var (c::scope-fix new-static))))
+                 (static-equivp old-static new-static))))
            ///
            (defruled struct-value-equivp-when-static-equivp
              (b* ((old-var+val (omap::assoc ',old-cname old-static))
@@ -754,11 +753,11 @@
                 (equal (c::compustate->heap old-compst)
                        (c::compustate->heap new-compst))
                 (c::compustate-has-static-var-with-type-p
-                 ',old-cname ',old-ctag old-compst)
+                 ',old-cname (c::type-struct ',old-ctag) old-compst)
                 (c::compustate-has-static-var-with-type-p
-                 ',newl-cname ',newl-ctag new-compst)
+                 ',newl-cname (c::type-struct ',newl-ctag) new-compst)
                 (c::compustate-has-static-var-with-type-p
-                 ',newr-cname ',newr-ctag new-compst))
+                 ',newr-cname (c::type-struct ',newr-ctag) new-compst))
            ///
            (defruled struct-value-equivp-when-compustate-equivp
              (b* ((old-val
@@ -1063,9 +1062,9 @@
   :returns (mv (erp maybe-msgp)
                (events pseudo-event-form-listp))
   :short "Generate events for a function definition."
-  (declare (ignore old-fundef new-fundef tag tag2 rmems))
+  (declare (ignore new-fundef tag tag2 rmems))
   (retok
-   `((acl2::cw-event "TODO: theorems for ~x0~%" (fundef-fix old-fundef)))))
+   `((acl2::cw-event "TODO: theorems for ~x0~%" ',(fundef-fix old-fundef)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1336,7 +1335,11 @@
        (old-tunit (omap::head-val old-tunits))
        (new-tunit (omap::head-val new-tunits))
        ((erp events) (stsp-trans-unit old-tunit new-tunit tag tag2 rmems)))
-    (retok `(encapsulate () ,@events)))
+    (retok `(encapsulate
+              ()
+              (local (include-book "std/lists/top" :dir :system))
+              (local (include-book "std/omaps/delete" :dir :system))
+              ,@events)))
   :guard-hints (("Goal"
                  :expand
                  ((:free (tens) (omap::size (trans-ensemble->units tens)))))))
