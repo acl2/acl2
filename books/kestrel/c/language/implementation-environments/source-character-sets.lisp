@@ -21,6 +21,7 @@
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
+(local (include-book "std/strings/char-fix" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -292,3 +293,70 @@
              source-charset-has-basic-chars-p
              ascii-basic-source-chars
              acl2::char-code-set)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define source-charset-noext-lf ((std standardp))
+  :returns (charset source-charsetp)
+  :short "The source character set defined by
+          LF as its only extended character and its only line ending."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use the ACL2 ASCII characters
+     that correspond to the basic source characters,
+     together with LF so that it can represent the line ending."))
+  (b* ((chars-with-codes
+        (source-charset-noext-lf-loop
+         (set::insert #\Newline (ascii-basic-source-chars std))))
+       (end-of-lines (set::insert (list #\Newline) nil)))
+    (make-source-charset :chars-with-codes chars-with-codes
+                         :end-of-lines end-of-lines))
+
+  :prepwork
+  ((define source-charset-noext-lf-loop ((chars character-setp))
+     :returns (map any-nat-mapp)
+     :parents nil
+     (b* (((when (set::emptyp (character-sfix chars))) nil)
+          (char (set::head chars)))
+       (omap::update char
+                     (char-code char)
+                     (source-charset-noext-lf-loop (set::tail chars))))
+     :prepwork ((local (in-theory (enable acl2::emptyp-of-character-sfix))))
+     :verify-guards :after-returns
+
+     ///
+
+     (defret keys-of-source-charset-noext-lf-loop
+       (equal (omap::keys map)
+              (character-sfix chars))
+       :hints (("Goal"
+                :induct t
+                :in-theory (enable set::emptyp
+                                   character-sfix))))
+
+     (defret values-of-source-charset-noext-lf-loop
+       (equal (omap::values map)
+              (acl2::char-code-set chars))
+       :hints (("Goal"
+                :induct t
+                :in-theory (enable acl2::char-code-set
+                                   omap::assoc-to-in-of-keys))))
+
+     (defret injectivep-of-source-charset-noext-lf-loop
+       (omap::injectivep map)
+       :hints (("Goal"
+                :induct t
+                :in-theory
+                (enable acl2::not-in-char-code-set-when-not-in-char-set))))))
+
+  ///
+
+  (defrule source-charset-wfp-of-source-charset-noext-lf
+    (source-charset-wfp (source-charset-noext-lf std) std)
+    :enable (source-charset-wfp
+             source-charset-has-basic-chars-p
+             source-charset-end-of-lines-wfp
+             acl2::char-code-set-monotone
+             set::in
+             set::expensive-rules)))
