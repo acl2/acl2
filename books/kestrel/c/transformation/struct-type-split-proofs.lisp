@@ -565,7 +565,7 @@
         `(define ,struct-value-onlr-mem ((sval c::valuep))
            :guard (,struct-value-onlrp sval)
            :returns (mval c::valuep)
-           (c::value-fix (c::struct-value-read ',cmem sval))
+           (c::value-fix (c::value-struct-read ',cmem sval))
            :prepwork ((local (in-theory (enable ,struct-value-onlrp
                                                 c::value-struct-read
                                                 c::value-struct-read-aux))))
