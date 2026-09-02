@@ -765,3 +765,15 @@
   (implies (state-p state)
            (print-base-p (get-global 'print-base state)))
   :hints (("Goal" :in-theory (e/d (state-p) (get-global)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm w-of-update-file-clock
+  (equal (w (update-file-clock x state))
+         (w state))
+  :hints (("Goal" :in-theory (enable update-file-clock w global-table))))
+
+(defthm w-of-update-open-input-channels
+  (equal (w (update-open-input-channels x state))
+         (w state))
+  :hints (("Goal" :in-theory (enable update-open-input-channels w global-table))))

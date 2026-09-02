@@ -134,6 +134,10 @@
               (mv erp nil state)
             (mv nil (cons translated-first translated-rest) state)))))))
 
+(defthm pseudo-term-listp-of-mv-nth-1-of-translate-terms-in-logic-mode
+  (pseudo-term-listp (mv-nth 1 (translate-terms-in-logic-mode terms ctx state)))
+  :hints (("Goal" :in-theory (enable translate-terms-in-logic-mode))))
+
 (defthm w-of-mv-nth-1-of-translate-terms-in-logic-mode
   (equal (w (mv-nth 2 (translate-terms-in-logic-mode terms ctx state)))
          (w state))
