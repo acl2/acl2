@@ -536,6 +536,10 @@
      acl2::mod-becomes-bvchop-when-power-of-2p
      )))
 
+;; Useful if we've disabled (:e lifter-rules32) to avoid big constant lists in proofs.
+(defthm symbol-listp-of-lifter-rules32
+  (symbol-listp (lifter-rules32)))
+
 (in-theory (disable (:e lifter-rules32)))
 
  ;todo: add more?

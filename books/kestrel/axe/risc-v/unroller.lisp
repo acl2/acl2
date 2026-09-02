@@ -66,6 +66,7 @@
 (local (include-book "kestrel/utilities/w" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -101,9 +102,8 @@
   ;; Returns (mv erp result state)
   (defund wrap-in-output-extractor (output-indicator term state) ; reorder args?
     (declare (xargs :guard (and (pseudo-termp term)
-                                ;; see above comment on output-indicator
-                             ;(plist-worldp wrld)
-                             )
+                                ;; output-indicator may be untranslated
+                                )
                     :verify-guards nil ; done below
                     :stobjs state))
     (if (symbolp output-indicator)
@@ -219,9 +219,7 @@
   ;; Returns (mv erp result state)
   (defund wrap-in-output-extractors (output-indicators term state)
     (declare (xargs :guard (and (true-listp output-indicators)
-                                (pseudo-termp term)
-                                ;(plist-worldp wrld)
-                                )
+                                (pseudo-termp term))
                     :stobjs state))
     (if (endp output-indicators)
         (mv (erp-nil) nil state)
@@ -295,14 +293,13 @@
 
 (local (in-theory (disable acl2::member-of-cons)))
 
-;; 10 seconds
 (acl2::make-repeatedly-run-function repeatedly-run acl2::simplify-dag-risc-v)
 
 ;; Returns (mv erp result-dag-or-quotep
 ;;                 ; assumptions input-assumption-vars lifter-rules-used assumption-rules-used term-to-simulate
 ;;                state).
 ;; This will also be called by the formal unit tester.
-(defun unroll-risc-v-code-core (target
+(defund unroll-risc-v-code-core (target
                                 parsed-executable
                                 extra-assumptions ; todo: can these introduce vars for state components?  now we have :inputs for that.  could also replace register expressions with register names (vars) -- see what do do for the Tester.
                                 ;;suppress-assumptions
@@ -339,7 +336,8 @@
                               (natp stack-slots)
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
-                              (member-eq position-independent '(t nil :auto))
+                              (or (booleanp position-independent)
+                                  (eq position-independent :auto))
                               ;; (or (eq :skip inputs) (names-and-typesp inputs))
                               ;; (booleanp type-assumptions-for-array-varsp)
                               ;; no recognizer for output-indicator, we just call maybe-wrap-in-output-extractor and see if it returns an error
@@ -364,11 +362,10 @@
                               (print-levelp print)
                               (member print-base '(10 16))
                               (natp max-printed-term-size)
-                              (booleanp untranslate))
-                  :guard-hints (("Goal" :do-not-induct t :in-theory (disable quotep)))
-                  :stobjs state
-                  :verify-guards nil ; todo
-                  ))
+                              (booleanp untranslate)
+                              (plist-worldp-with-formals (w state)))
+                  :guard-hints (("Goal" :do-not-induct t :in-theory (e/d (acl2::true-listp-when-pseudo-term-listp-2) (quotep member-equal))))
+                  :stobjs state))
   (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name, also handle non-string targets better
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (state (widen-margins state))
@@ -447,10 +444,9 @@
                                     `(bvplus '32 ',target-offset ,base-address-var)))
                               ;; Not position-independent, so the target is a concrete address:
                               (enquote target-offset)))
-       (assumptions (append  `((equal (pc stat) ,target-address-term)
-                               (stat32p stat)
-                               )
-                          assumptions))
+       (assumptions (append `((equal (pc stat) ,target-address-term)
+                              (stat32p stat))
+                            assumptions))
        (assumptions (union-equal extra-assumptions assumptions))
        ;; (assumptions (set-difference-equal assumptions remove-assumptions))
 
@@ -578,6 +574,83 @@
     (mv (erp-nil) result-dag-or-quotep ; untranslated-assumptions input-assumption-vars lifter-rules assumption-rules term-to-simulate
         state)))
 
+;; We use myquotep as the normal form
+(defthm pseudo-dagp-of-unroll-risc-v-code-core
+  (implies (and (lifter-targetp target)
+                (parsed-executablep parsed-executable)
+                (pseudo-term-listp extra-assumptions)
+                ;;(booleanp suppress-assumptions)
+                ;; (member-eq inputs-disjoint-from '(nil :code :all))
+                (natp stack-slots)
+                (or (natp existing-stack-slots)
+                    (eq :auto existing-stack-slots))
+                (or (booleanp position-independent)
+                    (eq position-independent :auto))
+                ;; (or (eq :skip inputs) (names-and-typesp inputs))
+                ;; (booleanp type-assumptions-for-array-varsp)
+                ;; no recognizer for output-indicator, we just call maybe-wrap-in-output-extractor and see if it returns an error
+                (or (eq nil prune-precise)
+                    (eq t prune-precise)
+                    (natp prune-precise))
+                (or (eq nil prune-approx)
+                    (eq t prune-approx)
+                    (natp prune-approx))
+                (symbol-listp extra-rules)
+                (symbol-listp remove-rules)
+                (symbol-listp extra-assumption-rules)
+                (symbol-listp remove-assumption-rules)
+                (natp step-limit)
+                (step-incrementp step-increment)
+                ;; (nat-listp stop-pcs)
+                (booleanp memoizep)
+                (or (symbol-listp monitor)
+                    (eq :debug monitor))
+                (normalize-xors-optionp normalize-xors)
+                (count-hits-argp count-hits)
+                (print-levelp print)
+                (member print-base '(10 16))
+                (natp max-printed-term-size)
+                (booleanp untranslate)
+                (plist-worldp-with-formals (w state)))
+           (mv-let (erp result state)
+             (unroll-risc-v-code-core target
+                                      parsed-executable
+                                      extra-assumptions
+                                      ;;suppress-assumptions
+                                      ;;inputs-disjoint-from
+                                      stack-slots
+                                      existing-stack-slots
+                                      position-independent
+                                      ;;inputs
+                                      ;;type-assumptions-for-array-varsp
+                                      output-indicator
+                                      prune-precise
+                                      prune-approx
+                                      extra-rules
+                                      remove-rules
+                                      extra-assumption-rules
+                                      remove-assumption-rules
+                                      step-limit
+                                      step-increment
+                                      ;; stop-pcs
+                                      memoizep
+                                      monitor
+                                      normalize-xors
+                                      count-hits
+                                      print
+                                      print-base
+                                      max-printed-term-size
+                                      untranslate
+                                      state)
+             (declare (ignore state))
+             (implies (not erp)
+                      (equal (pseudo-dagp result)
+                             (not (myquotep result))))))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (e/d (acl2::true-listp-when-pseudo-term-listp-2 unroll-risc-v-code-core) (quotep member-equal)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp event state)
 ;; TODO: Consider using the current print-base (:auto value) by default.
 (defun def-unrolled-fn (lifted-name
@@ -619,16 +692,19 @@
                         state)
   (declare (xargs :guard (and (symbolp lifted-name)
                               (lifter-targetp target)
-                              ;; executable
+                              (or (stringp executable)
+                                  (eq :none executable)
+                                  (parsed-executablep executable))
                               ;; (or (eq :skip inputs) (names-and-typesp inputs))
                               ;; (output-indicatorp output-indicator) ; no recognizer for this, we just call maybe-wrap-in-output-extractor and see if it returns an error
-                              ;; extra-assumptions ; untranslated-terms
+                              (true-listp extra-assumptions) ; untranslated-terms
 ;;                              (booleanp suppress-assumptions)
                               ;; (member-eq inputs-disjoint-from '(nil :code :all))
                               (natp stack-slots)
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
-                              (member-eq position-independent '(t nil :auto))
+                              (or (booleanp position-independent)
+                                  (eq position-independent :auto))
                               ;; (booleanp type-assumptions-for-array-varsp)
                               (or (eq nil prune-precise)
                                   (eq t prune-precise)
@@ -658,7 +734,12 @@
                               ;; (booleanp prove-theorem)
                               (natp max-result-term-size)
                               ;; (booleanp restrict-theory)
-                              )
+                              (consp whole-form)
+                              (symbolp (car whole-form))
+                              (plist-worldp-with-formals (w state)))
+                  :guard-debug t
+                  :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
+                                 :in-theory (e/d (acl2::rationalp-when-natp) (quotep))))
                   :stobjs state
                   :verify-guards nil ; todo
                   ))
@@ -702,6 +783,10 @@
                                  ;;stop-pcs
                                  memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslate state))
        ((when erp) (mv erp nil state))
+       ((when (and (not (quotep result-dag-or-quotep))
+                   (< acl2::*max-1d-array-length* (len result-dag-or-quotep))))
+        (mv :dag-to-big nil state))
+
        ;; Extract info from the result:
        (result-size (dag-or-quotep-size result-dag-or-quotep))
        (- (cw "Result DAG size: ~x0.~%" result-size))
@@ -713,7 +798,7 @@
        ;; Check for incomplete run:
        ;; Do we want a check like this?
        ;; ((when (not (subsetp-eq result-vars '(risc-v text-offset))))
-       ;;  (mv t (er hard 'lifter "Unexpected vars, ~x0, in result DAG!" (set-difference-eq result-vars '(risc-v text-offset))) state))
+       ;;  (mv t (er hard? 'lifter "Unexpected vars, ~x0, in result DAG!" (set-difference-eq result-vars '(risc-v text-offset))) state))
        ;; TODO: Maybe move some of this to the -core function:
        ;; (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
        ;;            (set-print-base-radix print-base state)
@@ -722,7 +807,7 @@
         (print-as-term-or-dag result-dag-or-quotep
                               100000 ; todo: make customizable.  since there was an error, we want to print as a term if at all possible
                               result-size nil "Error result" t state)
-        (er hard 'lifter "Lifter error: The run did not finish.")
+        (er hard? 'lifter "Lifter error: The run did not finish.")
         (mv :incomplete-run nil state))
        (termp (or (quotep result-dag-or-quotep)
                   (<= result-size max-result-term-size)))
