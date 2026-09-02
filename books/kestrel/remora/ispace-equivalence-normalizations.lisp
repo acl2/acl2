@@ -28,7 +28,8 @@
   (xdoc::topstring
    (xdoc::p
     "We prove that some of the rules in fact realize
-     the reductions claimed in @(see dim-equivalence),
+     the reductions claimed in @(see dim-equivalence-definition)
+     and @(see shape/ispace-equivalence-definition),
      e.g. that @('add0'), @('add1'), and @('add3m')
      reduce all variadic additions to binary ones
      (while nullary and unary ones reduce to constants).
