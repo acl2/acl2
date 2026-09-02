@@ -33,7 +33,8 @@
     "Since our ASTs include sort information as part of the syntax,
      our inference rules prove judgements (i.e. define predicates)
      that omit explicit sort information,
-     i.e. just include @($\\Theta$) and @($\\iota$):
+     i.e. just include @($\\Theta$) and @($\\iota$),
+     but not @($\\gamma$):
      they say that the ispace satisfies all the static validity conditions
      in the context of the sort environment.
      Since ispace variables carry their own sorts,
