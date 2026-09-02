@@ -51,7 +51,7 @@
   (xdoc::topstring
    (xdoc::p
     "Besides the predicate for individual dimensions,
-     we introduce one for lists of dimensions,
+     we define one for lists of dimensions,
      defined via the two rules @('empty') and @('cons');
      this corresponds to the use of @($\\cdots$) in [thesis] [arxiv] [esop].
      The rules for individual dimensions follow [thesis] [arxiv] [esop],
@@ -63,7 +63,9 @@
 
   :irules
 
-  ((var ((ispace-var-setp ivars)
+  (;; dimensions:
+
+   (var ((ispace-var-setp ivars)
          (stringp name)
          (set::in (ispace-var-dim name) ivars))
         (dim-ok ivars (dim-var name)))
@@ -84,6 +86,8 @@
          (dims-ok ivars dims))
         (dim-ok ivars (dim-sub dims)))
 
+   ;; lists of dimensions:
+
    (empty ((ispace-var-setp ivars))
           (dims-ok ivars nil))
 
@@ -96,4 +100,80 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: shapes & ispaces
+(definductive shape/ispace-sort-checking-infrules
+  :short "Inference rules for sort checking of shapes and ispaces."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Similarly to @(see dim-sort-checking-infrules),
+     besides predicates for individual shapes and ispaces,
+     we define predicates for lists of shapes and lists of ispaces.")
+   (xdoc::p
+    "The rules for individual shapes and ispaces follow [thesis] [arxiv] [esop],
+     with the necessary structural adaptations to our ASTs,
+     and with additional rules for the richer forms of our ASTs."))
+
+  :preds ((shape-ok ivars shp)
+          (shapes-ok ivars shps)
+          (ispace-ok ivars isp)
+          (ispaces-ok ivars isps))
+
+  :irules
+
+  (;; shapes:
+
+   (var ((ispace-var-setp ivars)
+         (stringp name)
+         (set::in (ispace-var-shape name) ivars))
+        (shape-ok ivars (shape-var name)))
+
+   (dims ((ispace-var-setp ivars)
+          (dim-listp dims)
+          (dims-ok ivars dims))
+         (shape-ok ivars (shape-dims dims)))
+
+   (append ((ispace-var-setp ivars)
+            (shape-listp shps)
+            (shapes-ok ivars shps))
+           (shape-ok ivars (shape-append shps)))
+
+   (splice ((ispace-var-setp ivars)
+            (ispace-listp isps)
+            (ispaces-ok ivars isps))
+           (shape-ok ivars (shape-splice shps)))
+
+   ;; lists of shapes:
+
+   (empty ((ispace-var-setp ivars))
+          (shapes-ok ivars nil))
+
+   (cons ((ispace-var-setp ivars)
+          (shapep shp)
+          (shape-listp shps)
+          (shape-ok ivars shp)
+          (shapes-ok ivars shps))
+         (shapes-ok ivars (cons shp shps)))
+
+   ;; ispaces:
+
+   (dim ((ispace-var-setp ivars)
+         (dimp dim)
+         (dim-ok ivars dim))
+        (ispace-ok ivars (ispace-dim dim)))
+
+   (shape ((ispace-var-setp ivars)
+           (shapep shp)
+           (shape-ok ivars shp))
+          (ispace-ok ivars (ispace-shape shp)))
+
+   ;; lists of ispaces:
+
+   (empty ((ispace-var-setp ivars))
+          (ispaces-ok ivars nil))
+
+   (cons ((ispace-var-setp ivars)
+          (ispacep isp)
+          (ispace-listp isps)
+          (ispace-ok ivars isp)
+          (ispaces-ok ivars isps))
+         (ispaces-ok ivars (cons isp isps)))))
