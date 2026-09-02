@@ -18,32 +18,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ ispace-checking
+(defxdoc+ sort-checking
   :parents (static-semantics)
-  :short "Ispace checking."
+  :short "Sort checking."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We formalize Remora ispace checking via inference rules
-     that correspond to the sorting rules in [thesis] [arxiv] [esop].
-     Those sorting rules assign sorts to ispaces,
-     via judgements of the form
-     @($\\Theta \\vdash \\iota :: \\gamma$),
+    "This applies to ispaces, because the static correctness of ispaces
+     involves assigning sorts to ispaces [thesis] [arvix] [esop].")
+   (xdoc::p
+    "The inference rules for ispaces in [thesis] [arxiv] [esop]
+     prove judgements of the form @($\\Theta \\vdash \\iota :: \\gamma$),
      where @($\\Theta$) is a sort environment that assigns sorts to variables,
      @($\\iota$) is an ispace,
      and @($\\gamma$) is a sort.
-     Our ASTs have the sort information already in the syntax,
-     and thus the predicates (i.e. judgements) defined by our inference rules
-     omit the explicit sort
-     and model isort environments as sets of ispace variables.
-     We formulate rules and judgements for dimensions, shapes, and ispaces."))
+     Since our ASTs include sort information as part of the syntax,
+     our inference rules prove judgements (i.e. define predicates)
+     that omit explicity sort information.
+     For the same reason,
+     our sort environment is just a set of ispace variables in scope,
+     each of which carries its own sort.")
+   (xdoc::p
+    "We formulate inference rules for dimension, shape, and ispace ASTs."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(definductive dim-check-infrules
-  :short "Inference rules for dimension checking."
+(definductive dim-ok-infrules
+  :short "Inference rules for sort checking of dimensions."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -55,41 +58,41 @@
      with the addition of rules for multiplication and subtraction,
      which are analogous the one for addition."))
 
-  :preds ((dim-chk ivars dim)
-          (dims-chk ivars dims))
+  :preds ((dim-ok ivars dim)
+          (dims-ok ivars dims))
 
   :irules
 
   ((var ((ispace-var-setp ivars)
          (stringp name)
          (set::in (ispace-var-dim name) ivars))
-        (dim-chk ivars (dim-var name)))
+        (dim-ok ivars (dim-var name)))
 
    (const ((ispace-var-setp ivars)
            (natp val))
-          (dim-chk ivars (dim-const val)))
+          (dim-ok ivars (dim-const val)))
 
    (add ((ispace-var-setp ivars)
-         (dims-chk ivars dims))
-        (dim-chk ivars (dim-add dims)))
+         (dims-ok ivars dims))
+        (dim-ok ivars (dim-add dims)))
 
    (mul ((ispace-var-setp ivars)
-         (dims-chk ivars dims))
-        (dim-chk ivars (dim-mul dims)))
+         (dims-ok ivars dims))
+        (dim-ok ivars (dim-mul dims)))
 
    (sub ((ispace-var-setp ivars)
-         (dims-chk ivars dims))
-        (dim-chk ivars (dim-sub dims)))
+         (dims-ok ivars dims))
+        (dim-ok ivars (dim-sub dims)))
 
    (empty ((ispace-var-setp ivars))
-          (dims-chk ivars nil))
+          (dims-ok ivars nil))
 
    (cons ((ispace-var-setp ivars)
           (dimp dim)
           (dim-listp dims)
-          (dim-chk ivars dim)
-          (dims-chk ivars dims))
-         (dims-chk ivars (cons dim dims)))))
+          (dim-ok ivars dim)
+          (dims-ok ivars dims))
+         (dims-ok ivars (cons dim dims)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
