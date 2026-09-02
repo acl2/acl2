@@ -53,9 +53,9 @@
     (implies (unsigned-byte-p 32 x)
              (integerp x))))
 
-(local (in-theory (disable symbol-alistp))) ; prevent induction
-
-(local (in-theory (enable shift))) ; todo
+(local (in-theory (disable symbol-alistp ; prevent induction
+                           acl2::unsigned-byte-p-from-bounds ; for speed
+                           )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -763,8 +763,7 @@
                                             acl2::bvuminus-becomes-bvplus-of-bvnot-and-1
                                             acl2::getbit-convert-arg2-to-bv
                                             acl2::trim-of-+-becomes-bvplus
-                                            acl2::bvplus-convert-arg3-to-bv
-                                            )
+                                            acl2::bvplus-convert-arg3-to-bv)
                                            (acl2::signed-addition-underflowsp-correct ;  todo
                                             acl2::signed-addition-overflowsp-correct ; todo
                                             ;;mv-nth-2-of-addwithcarry
@@ -806,7 +805,7 @@
                                             ;acl2::getbit-convert-arg2-to-bv
                                             acl2::trim-of-+-becomes-bvplus
                                             acl2::bvplus-convert-arg3-to-bv
-                                            )
+                                            shift)
                                            (acl2::signed-addition-underflowsp-correct ;  todo
                                             acl2::signed-addition-overflowsp-correct ; todo
                                             ;;mv-nth-2-of-addwithcarry
@@ -857,8 +856,7 @@
                                             cmn-zero
                                             cmn-carry
                                             acl2::trim-of-+-becomes-bvplus
-                                            acl2::bvplus-convert-arg3-to-bv
-                                            )
+                                            acl2::bvplus-convert-arg3-to-bv)
                                            (acl2::signed-addition-underflowsp-correct ;  todo
                                             acl2::signed-addition-overflowsp-correct ; todo
                                             ;;mv-nth-2-of-addwithcarry
@@ -1138,7 +1136,7 @@
 
 ;; Returns (mv address arm).
 ;; also used for ldmib
-(defun ldm-loop (i registers address arm)
+(defund ldm-loop (i registers address arm)
   (declare (xargs :guard (and (natp i)
                               (<= i 15)
                               (unsigned-byte-p 16 registers)
@@ -1157,7 +1155,8 @@
 
 (defthm ldm-loop-return-type
   (implies (addressp address)
-           (addressp (mv-nth 0 (ldm-loop i registers address arm)))))
+           (addressp (mv-nth 0 (ldm-loop i registers address arm))))
+  :hints (("Goal" :in-theory (enable ldm-loop))))
 
 ;; Also called by POP
 (defun ldm-core (w rn register_list arm)
