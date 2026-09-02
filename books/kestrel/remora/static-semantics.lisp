@@ -30,7 +30,7 @@
    (xdoc::p
     "The static semantics of Remora is defined via inference rules,
      in the Remora publications [thesis] [arxiv] [esop].
-     While we are woking on formalizing those inference rules,
+     While we are working on formalizing those inference rules,
      we also provide an executable type checker,
      that is meant to be equivalent to those inference rules;
      we plan to prove this equivalence."))
