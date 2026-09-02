@@ -28,7 +28,7 @@
   (xdoc::topstring
    (xdoc::p
     "We prove that some of the rules in fact realize
-     the reductions claimed in @(see dim-equiv-infrules),
+     the reductions claimed in @(see dim-equiv-definition),
      e.g. that @('add0'), @('add1'), and @('add3m')
      reduce all variadic additions to binary ones
      (while nullary and unary ones reduce to constants).
@@ -575,7 +575,7 @@
                                 new-dim))
     :hints (("Goal"
              :induct t
-             :in-theory (enable* dim-equiv-infrules-validp-defs))))
+             :in-theory (enable* dim-equiv-definition-validp-defs))))
 
   (defret dim-binmulp-of-binarize-mul-dims
     (implies (dim-list-binmulp dims)
@@ -723,7 +723,7 @@
                                    new-dims))
       :fn binarize-mul-in-dim-list)
     :hints (("Goal"
-             :in-theory (enable* dim-equiv-infrules-validp-defs))))
+             :in-theory (enable* dim-equiv-definition-validp-defs))))
 
   (defret-mutual dim-binmulp-of-binarize-mul-in-dims
     (defret dim-binmulp-of-binarize-mul-in-dim
@@ -804,7 +804,7 @@
      A subtraction of one dimension is already unary,
      and is left unchanged.
      A subtraction of no dimensions is illegal and cannot be reduced
-     (see @(see dim-equiv-infrules)),
+     (see @(see dim-equiv-definition)),
      so it is also left unchanged.
      Unlike @(tsee binarize-add-dims) and @(tsee binarize-mul-dims),
      this function is not recursive,
@@ -853,7 +853,7 @@
              (dim=-proof-validp proof
                                 (dim-sub dims)
                                 new-dim))
-    :hints (("Goal" :in-theory (enable* dim-equiv-infrules-validp-defs))))
+    :hints (("Goal" :in-theory (enable* dim-equiv-definition-validp-defs))))
 
   (defret dim-unisubp-of-unarize-sub-dims
     (implies (and (dim-list-unisubp dims)
@@ -986,7 +986,7 @@
                                    new-dims))
       :fn unarize-sub-in-dim-list)
     :hints (("Goal"
-             :in-theory (enable* dim-equiv-infrules-validp-defs))))
+             :in-theory (enable* dim-equiv-definition-validp-defs))))
 
   (defret-mutual dim-unisubp-of-unarize-sub-in-dims
     (defret dim-unisubp-of-unarize-sub-in-dim
@@ -1109,7 +1109,7 @@
                                 new-shape))
     :hints (("Goal"
              :induct t
-             :in-theory (enable* shape/ispace-equiv-infrules-validp-defs))))
+             :in-theory (enable* shape/ispace-equiv-definition-validp-defs))))
 
   (defret shape-unidimsp-of-unarize-shape-dims
     (shape-unidimsp new-shape)
@@ -1297,7 +1297,7 @@
                                    new-ispaces))
       :fn unarize-dims-in-ispace-list)
     :hints (("Goal"
-             :in-theory (e/d* (shape/ispace-equiv-infrules-validp-defs)
+             :in-theory (e/d* (shape/ispace-equiv-definition-validp-defs)
                               (shp=-proof-validp-of-unarize-shape-dims)))
             '(:use ((:instance shp=-proof-validp-of-unarize-shape-dims
                                (dims (shape-dims->dims shape)))))))
@@ -1459,7 +1459,7 @@
                                 new-shape))
     :hints (("Goal"
              :induct t
-             :in-theory (enable* shape/ispace-equiv-infrules-validp-defs))))
+             :in-theory (enable* shape/ispace-equiv-definition-validp-defs))))
 
   (defret shape-nullbinappendp-of-nullbinarize-append-shapes
     (implies (shape-list-nullbinappendp shapes)
@@ -1649,7 +1649,7 @@
                                    new-ispaces))
       :fn nullbinarize-append-in-ispace-list)
     :hints (("Goal"
-             :in-theory (enable* shape/ispace-equiv-infrules-validp-defs))))
+             :in-theory (enable* shape/ispace-equiv-definition-validp-defs))))
 
   (defret-mutual shape-nullbinappendp-of-nullbinarize-append-in-shapes/ispaces
     (defret shape-nullbinappendp-of-nullbinarize-append-in-shape
@@ -1861,7 +1861,7 @@
                                 new-shape))
     :hints (("Goal"
              :induct t
-             :in-theory (enable* shape/ispace-equiv-infrules-validp-defs))))
+             :in-theory (enable* shape/ispace-equiv-definition-validp-defs))))
 
   (defret shape-nosplicep-of-unsplice-ispaces
     (implies (ispace-list-nosplicep ispaces)
@@ -2068,7 +2068,7 @@
                                    new-ispaces))
       :fn unsplice-in-ispace-list)
     :hints (("Goal"
-             :in-theory (enable* shape/ispace-equiv-infrules-validp-defs))))
+             :in-theory (enable* shape/ispace-equiv-definition-validp-defs))))
 
   (defret-mutual shape-nosplicep-of-unsplice-in-shapes/ispaces
     (defret shape-nosplicep-of-unsplice-in-shape
@@ -2316,7 +2316,7 @@
                                    new-ispaces))
       :fn undim-in-ispace-list)
     :hints (("Goal"
-             :in-theory (enable* shape/ispace-equiv-infrules-validp-defs))))
+             :in-theory (enable* shape/ispace-equiv-definition-validp-defs))))
 
   (defret-mutual shape-nodimispacep-of-undim-in-shapes/ispaces
     (defret shape-nodimispacep-of-undim-in-shape
@@ -2416,7 +2416,7 @@
    (xdoc::p
     "This validates the intention of
      rules @('add0'), @('add1'), and @('add3m'),
-     described in @(see dim-equiv-infrules)."))
+     described in @(see dim-equiv-definition)."))
   (implies (dimp dim)
            (dim-equiv-to-binadd-p dim))
   :use (:instance dim-equiv-to-binadd-p-suff
@@ -2432,7 +2432,7 @@
    (xdoc::p
     "This validates the intention of
      rules @('mul0'), @('mul1'), and @('mul3m'),
-     described in @(see dim-equiv-infrules)."))
+     described in @(see dim-equiv-definition)."))
   (implies (dimp dim)
            (dim-equiv-to-binmul-p dim))
   :use ((:instance dim-equiv-to-binmul-p-suff
@@ -2451,7 +2451,7 @@
   (xdoc::topstring
    (xdoc::p
     "This validates the intention of rule @('sub2m'),
-     described in @(see dim-equiv-infrules):
+     described in @(see dim-equiv-definition):
      variadic subtractions are reduced to unary ones.
      Since nullary subtractions are illegal and cannot be reduced
      (each one is only equivalent to itself, via reflexivity),
@@ -2532,7 +2532,7 @@
    (xdoc::p
     "This validates the intention of
      rules @('dims0') and @('dims2m'),
-     described in @(see shape/ispace-equiv-infrules)."))
+     described in @(see shape/ispace-equiv-definition)."))
   (implies (shapep shape)
            (shape-equiv-to-unidims-p shape))
   :use ((:instance shape-equiv-to-unidims-p-suff
@@ -2552,7 +2552,7 @@
    (xdoc::p
     "This validates the intention of
      rules @('append1') and @('append3m'),
-     described in @(see shape/ispace-equiv-infrules)."))
+     described in @(see shape/ispace-equiv-definition)."))
   (implies (shapep shape)
            (shape-equiv-to-nullbinappend-p shape))
   :use ((:instance shape-equiv-to-nullbinappend-p-suff
@@ -2572,7 +2572,7 @@
    (xdoc::p
     "This validates the intention of
      rules @('splice0'), @('splice1m-dim'), and @('splice1m-shape'),
-     described in @(see shape/ispace-equiv-infrules)."))
+     described in @(see shape/ispace-equiv-definition)."))
   (implies (shapep shape)
            (shape-equiv-to-nosplice-p shape))
   :use ((:instance shape-equiv-to-nosplice-p-suff
@@ -2591,7 +2591,7 @@
    (xdoc::p
     "This validates the intention of
      rule @('ispace-dim-shape'),
-     described in @(see shape/ispace-equiv-infrules)."))
+     described in @(see shape/ispace-equiv-definition)."))
   (implies (shapep shape)
            (shape-equiv-to-nodimispace-p shape))
   :use ((:instance shape-equiv-to-nodimispace-p-suff
