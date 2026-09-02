@@ -18,7 +18,8 @@
 
 (local (in-theory (disable assoc-equal
                            channel-contents
-                           open-input-channels)))
+                           open-input-channels
+                           w)))
 
 ;; Returns (mv bytes state).
 (defund read-bytes-from-channel (channel acc state)
@@ -70,3 +71,8 @@
            (open-input-channel-p1 channel typ (mv-nth 1 (read-bytes-from-channel channel2 acc state))))
   :hints (("Goal" :induct t
 :in-theory (enable read-bytes-from-channel))))
+
+(defthm w-of-mv-nth-1-of-read-bytes-from-channel
+  (equal (w (mv-nth 1 (read-bytes-from-channel channel acc state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable read-bytes-from-channel))))
