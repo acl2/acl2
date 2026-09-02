@@ -25,7 +25,7 @@
   (xdoc::topstring
    (xdoc::p
     "This applies to ispaces, because the static correctness of ispaces
-     involves assigning sorts to ispaces [thesis] [arvix] [esop].")
+     involves assigning sorts to ispaces [thesis] [arxiv] [esop].")
    (xdoc::p
     "The inference rules for ispaces in [thesis] [arxiv] [esop]
      prove judgements of the form @($\\Theta \\vdash \\iota :: \\gamma$),
@@ -34,7 +34,7 @@
      and @($\\gamma$) is a sort.
      Since our ASTs include sort information as part of the syntax,
      our inference rules prove judgements (i.e. define predicates)
-     that omit explicity sort information.
+     that omit explicit sort information.
      For the same reason,
      our sort environment is just a set of ispace variables in scope,
      each of which carries its own sort.")
@@ -45,7 +45,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(definductive dim-ok-infrules
+(definductive dim-sort-checking-infrules
   :short "Inference rules for sort checking of dimensions."
   :long
   (xdoc::topstring
@@ -56,7 +56,7 @@
      this corresponds to the use of @($\\cdots$) in [thesis] [arxiv] [esop].
      The rules for individual dimensions follow [thesis] [arxiv] [esop],
      with the addition of rules for multiplication and subtraction,
-     which are analogous the one for addition."))
+     which are analogous to the one for addition."))
 
   :preds ((dim-ok ivars dim)
           (dims-ok ivars dims))
