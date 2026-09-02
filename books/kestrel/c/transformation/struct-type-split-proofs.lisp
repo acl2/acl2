@@ -39,13 +39,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defret declon-unambp-of-check-ext-declon-declon
-  (implies c$::declon?
-           (declon-unambp c$::declon?))
-  :hyp (ext-declon-unambp c$::edeclon)
-  :fn c$::check-ext-declon-declon
-  :hints (("Goal" :in-theory (enable c$::check-ext-declon-declon))))
-
 (defret declon-annop-of-check-ext-declon-declon
   (implies c$::declon?
            (declon-annop c$::declon?))
@@ -54,13 +47,6 @@
   :hints (("Goal" :in-theory (enable c$::check-ext-declon-declon))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defret fundef-unambp-of-check-ext-declon-fundef
-  (implies c$::fundef?
-           (fundef-unambp c$::fundef?))
-  :hyp (ext-declon-unambp c$::edeclon)
-  :fn c$::check-ext-declon-fundef
-  :hints (("Goal" :in-theory (enable c$::check-ext-declon-fundef))))
 
 (defret fundef-annop-of-check-ext-declon-fundef
   (implies c$::fundef?
@@ -71,13 +57,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defret ext-declon-unambp-of-check-trans-item-ext-declon
-  (implies c$::edeclon?
-           (ext-declon-unambp c$::edeclon?))
-  :hyp (trans-item-unambp c$::item)
-  :fn c$::check-trans-item-ext-declon
-  :hints (("Goal" :in-theory (enable c$::check-trans-item-ext-declon))))
-
 (defret ext-declon-annop-of-check-trans-item-ext-declon
   (implies c$::edeclon?
            (ext-declon-annop c$::edeclon?))
@@ -87,13 +66,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defret declon-unambp-of-check-trans-item-declon
-  (implies c$::declon?
-           (declon-unambp c$::declon?))
-  :hyp (trans-item-unambp c$::item)
-  :fn c$::check-trans-item-declon
-  :hints (("Goal" :in-theory (enable c$::check-trans-item-declon))))
-
 (defret declon-annop-of-check-trans-item-declon
   (implies c$::declon?
            (declon-annop c$::declon?))
@@ -102,13 +74,6 @@
   :hints (("Goal" :in-theory (enable c$::check-trans-item-declon))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defret fundef-unambp-of-check-trans-item-fundef
-  (implies c$::fundef?
-           (fundef-unambp c$::fundef?))
-  :hyp (trans-item-unambp c$::item)
-  :fn c$::check-trans-item-fundef
-  :hints (("Goal" :in-theory (enable c$::check-trans-item-fundef))))
 
 (defret fundef-annop-of-check-trans-item-fundef
   (implies c$::fundef?
