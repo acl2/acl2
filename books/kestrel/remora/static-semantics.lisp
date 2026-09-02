@@ -14,7 +14,7 @@
 (include-book "ispace-equivalence-checker")
 (include-book "type-equivalence-checker")
 (include-book "type-checker")
-(include-book "sort-checking")
+(include-book "ispace-validity")
 (include-book "ispace-equivalence")
 (include-book "ispace-equivalence-derived-rules")
 (include-book "ispace-equivalence-normalizations")
