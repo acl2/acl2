@@ -234,7 +234,7 @@
   :induct t
   :enable tree-split)
 
-(defruled <<-all-r-when-<<-all-l-of-arg1-and-tree-split.left-and-tree-split.right
+(defruled <<-all-r-when-<<-all-r-of-arg1-and-tree-split.left-and-tree-split.right
   (implies (and (<<-all-r x (mv-nth 1 (tree-split y tree)))
                 (<<-all-r x (mv-nth 2 (tree-split y tree)))
                 (<< x y))
@@ -463,7 +463,7 @@
   :induct t
   :enable tree-split)
 
-(defrule tree-empty-p-of-tree-split.right-when-<<-all-r
+(defrule tree-empty-p-of-tree-split.right-when-<<-all-l
   (implies (<<-all-l tree x)
            (tree-empty-p (mv-nth 2 (tree-split x tree))))
   :induct t
@@ -730,7 +730,7 @@
     <<-all-r-of-arg1-and-tree-split.left-when-<<-all-r
     <<-all-r-of-arg1-and-tree-split.right-when-<<-all-r
     <<-all-l-when-<<-all-l-of-tree-split.left-and-tree-split.right
-    <<-all-r-when-<<-all-l-of-arg1-and-tree-split.left-and-tree-split.right
+    <<-all-r-when-<<-all-r-of-arg1-and-tree-split.left-and-tree-split.right
     heap<-all-l-of-tree-split.left-when-heap<-all-l
     heap<-all-l-of-tree-split.right-when-heap<-all-l
     heap<-all-l-when-heap<-all-l-of-tree-split.left-and-tree-split.right

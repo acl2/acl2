@@ -286,7 +286,7 @@
            )
   ;; TODO: disable this rule by default?
   ;; Or, I think preferably, make non-definition.
-  :disable tree-node-count-when-bstp)
+  :disable tree-nodes-count-when-bstp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

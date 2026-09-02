@@ -140,7 +140,7 @@
            tree-empty-p
            acl2::fix))
 
-(defrule tree-nodes-count-when-tree-emptyp-forward-chaining
+(defrule tree-nodes-count-when-tree-empty-p-forward-chaining
   (implies (tree-empty-p tree)
            (equal (tree-nodes-count tree)
                   0))
@@ -156,7 +156,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled tree-node-count-becomes-tree-nodes-count-of-tree-key-tree
+(defruled tree-nodes-count-becomes-tree-nodes-count-of-tree-key-tree
   (equal (tree-nodes-count tree)
          (treeset::tree-nodes-count (tree-key-tree tree)))
   :rule-classes :definition
@@ -165,11 +165,11 @@
            treeset::tree-nodes-count
            tree-key-tree))
 
-(defrule tree-node-count-when-bstp
+(defrule tree-nodes-count-when-bstp
   (implies (and (bstp tree)
                 (heapp tree))
            (equal (tree-nodes-count tree)
                   (treeset::cardinality (tree-key-set tree))))
   :rule-classes :definition
-  :use tree-node-count-becomes-tree-nodes-count-of-tree-key-tree
+  :use tree-nodes-count-becomes-tree-nodes-count-of-tree-key-tree
   :enable treeset::cardinality)

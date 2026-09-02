@@ -632,4 +632,4 @@
   :induct (tree-submap-p acc tree)
   :enable (tree-submap-p
            heap<-all-l
-           heap<-when-heap-<-all-l-and-in-of-tree-key-set))
+           heap<-when-heap<-all-l-and-in-of-tree-key-set))
