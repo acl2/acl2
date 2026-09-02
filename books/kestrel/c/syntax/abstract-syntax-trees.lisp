@@ -3520,6 +3520,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption ext-declon-option
+  ext-declon
+  :short "Fixtype of optional external declarations."
+  :pred ext-declon-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist ext-declon-list
   :short "Fixtype of lists of external declarations."
   :long
