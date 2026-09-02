@@ -96,136 +96,136 @@
      Technically the one for multiplication could be derived via induction,
      but we prefer to have it explicit."))
 
-  :preds ((dim= dim1 dim2)
-          (dims= dims1 dims2))
+  :preds ((dim-eq dim1 dim2)
+          (dims-eq dims1 dims2))
 
   :irules
 
   (;; equivalence of dimensions:
 
    (refl ((dimp dim))
-         (dim= dim dim))
+         (dim-eq dim dim))
 
    (symm ((dimp dim1) (dimp dim2)
-          (dim= dim1 dim2))
-         (dim= dim2 dim1))
+          (dim-eq dim1 dim2))
+         (dim-eq dim2 dim1))
 
    (trans ((dimp dim1) (dimp dim2) (dimp dim3)
-           (dim= dim1 dim2) (dim= dim2 dim3))
-          (dim= dim1 dim3))
+           (dim-eq dim1 dim2) (dim-eq dim2 dim3))
+          (dim-eq dim1 dim3))
 
    ;; equivalence of lists of dimensions:
 
    (refl ((dim-listp dims))
-         (dims= dims dims))
+         (dims-eq dims dims))
 
    (symm ((dim-listp dims1) (dim-listp dims2)
-          (dims= dims1 dims2))
-         (dims= dims2 dims1))
+          (dims-eq dims1 dims2))
+         (dims-eq dims2 dims1))
 
    (trans ((dim-listp dims1) (dim-listp dims2) (dim-listp dims3)
-           (dims= dims1 dims2) (dims= dims2 dims3))
-          (dims= dims1 dims3))
+           (dims-eq dims1 dims2) (dims-eq dims2 dims3))
+          (dims-eq dims1 dims3))
 
    ;; congruence of dimensions:
 
    (cong-add ((dim-listp dims1) (dim-listp dims2)
-              (dims= dims1 dims2))
-             (dim= (dim-add dims1) (dim-add dims2)))
+              (dims-eq dims1 dims2))
+             (dim-eq (dim-add dims1) (dim-add dims2)))
 
    (cong-sub ((dim-listp dims1) (dim-listp dims2)
-              (dims= dims1 dims2))
-             (dim= (dim-sub dims1) (dim-sub dims2)))
+              (dims-eq dims1 dims2))
+             (dim-eq (dim-sub dims1) (dim-sub dims2)))
 
    (cong-mul ((dim-listp dims1) (dim-listp dims2)
-              (dims= dims1 dims2))
-             (dim= (dim-mul dims1) (dim-mul dims2)))
+              (dims-eq dims1 dims2))
+             (dim-eq (dim-mul dims1) (dim-mul dims2)))
 
    ;; congruence of lists of dimensions:
 
    (cong-cons ((dimp dim1) (dimp dim2)
                (dim-listp dims1) (dim-listp dims2)
-               (dim= dim1 dim2)
-               (dims= dims1 dims2))
-              (dims= (cons dim1 dims1) (cons dim2 dims2)))
+               (dim-eq dim1 dim2)
+               (dims-eq dims1 dims2))
+              (dims-eq (cons dim1 dims1) (cons dim2 dims2)))
 
    ;; normalization of addition:
 
    (add0 ()
-         (dim= (dim+) (dim-const 0)))
+         (dim-eq (dim+) (dim-const 0)))
 
    (add1 ((dimp dim))
-         (dim= (dim+ dim) dim))
+         (dim-eq (dim+ dim) dim))
 
    (add3m ((dimp dim1) (dimp dim2) (dim-listp dims) (consp dims))
-          (dim= (dim-add (list* dim1 dim2 dims))
-                (dim-add (cons (dim+ dim1 dim2) dims))))
+          (dim-eq (dim-add (list* dim1 dim2 dims))
+                  (dim-add (cons (dim+ dim1 dim2) dims))))
 
    ;; normalization of multiplication:
 
    (mul0 ()
-         (dim= (dim*) (dim-const 1)))
+         (dim-eq (dim*) (dim-const 1)))
 
    (mul1 ((dimp dim))
-         (dim= (dim* dim) dim))
+         (dim-eq (dim* dim) dim))
 
    (mul3m ((dimp dim1) (dimp dim2) (dim-listp dims) (consp dims))
-          (dim= (dim-mul (list* dim1 dim2 dims))
-                (dim-mul (cons (dim* dim1 dim2) dims))))
+          (dim-eq (dim-mul (list* dim1 dim2 dims))
+                  (dim-mul (cons (dim* dim1 dim2) dims))))
 
    ;; normalization of subtraction:
 
    (sub2m ((dimp dim) (dim-listp dims) (consp dims))
-          (dim= (dim-sub (cons dim dims))
-                (dim+ dim (dim- (dim-add dims)))))
+          (dim-eq (dim-sub (cons dim dims))
+                  (dim+ dim (dim- (dim-add dims)))))
 
    ;; abelian group properties of addition:
 
    (add-comm ((dimp dim1) (dimp dim2))
-             (dim= (dim+ dim1 dim2)
-                   (dim+ dim2 dim1)))
+             (dim-eq (dim+ dim1 dim2)
+                     (dim+ dim2 dim1)))
 
    (add-assoc ((dimp dim1) (dimp dim2) (dimp dim3))
-              (dim= (dim+ (dim+ dim1 dim2) dim3)
-                    (dim+ dim1 (dim+ dim2 dim3))))
+              (dim-eq (dim+ (dim+ dim1 dim2) dim3)
+                      (dim+ dim1 (dim+ dim2 dim3))))
 
    (add-id ((dimp dim))
-           (dim= (dim+ 0 dim) dim))
+           (dim-eq (dim+ 0 dim) dim))
 
    (add-inv ((dimp dim))
-            (dim= (dim+ dim (dim- dim))
-                  (dim-const 0)))
+            (dim-eq (dim+ dim (dim- dim))
+                    (dim-const 0)))
 
    ;; addition of constants:
 
    (add-const ((natp n1) (natp n2))
-              (dim= (dim+ (dim-const n1) (dim-const n2))
-                    (dim-const (+ n1 n2))))
+              (dim-eq (dim+ (dim-const n1) (dim-const n2))
+                      (dim-const (+ n1 n2))))
 
    ;; commutative monoid properties of multiplication:
 
    (mul-comm ((dimp dim1) (dimp dim2))
-             (dim= (dim* dim1 dim2)
-                   (dim* dim2 dim1)))
+             (dim-eq (dim* dim1 dim2)
+                     (dim* dim2 dim1)))
 
    (mul-assoc ((dimp dim1) (dimp dim2) (dimp dim3))
-              (dim= (dim* (dim* dim1 dim2) dim3)
-                    (dim* dim1 (dim* dim2 dim3))))
+              (dim-eq (dim* (dim* dim1 dim2) dim3)
+                      (dim* dim1 (dim* dim2 dim3))))
 
    (mul-id ((dimp dim))
-           (dim= (dim* 1 dim) dim))
+           (dim-eq (dim* 1 dim) dim))
 
    ;; multiplication of constants:
 
    (mul-const ((natp n1) (natp n2))
-              (dim= (dim* (dim-const n1) (dim-const n2))
-                    (dim-const (* n1 n2))))
+              (dim-eq (dim* (dim-const n1) (dim-const n2))
+                      (dim-const (* n1 n2))))
 
    ;; distributivity of multiplication over addition:
 
    (distrib ((dimp dim) (dimp dim1) (dimp dim2))
-            (dim= (dim* dim (dim+ dim1 dim2))
-                  (dim+ (dim* dim dim1) (dim* dim dim2))))))
+            (dim-eq (dim* dim (dim+ dim1 dim2))
+                    (dim+ (dim* dim dim1) (dim* dim dim2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -342,7 +342,7 @@
    ;; congruence of shapes:
 
    (cong-dims ((dim-listp dims1) (dim-listp dims2)
-               (dims= dims1 dims2))
+               (dims-eq dims1 dims2))
               (shp= (shape-dims dims1) (shape-dims dims2)))
 
    (cong-append ((shape-listp shapes1) (shape-listp shapes2)
@@ -356,7 +356,7 @@
    ;; congruence of ispaces:
 
    (cong-dim ((dimp dim1) (dimp dim2)
-              (dim= dim1 dim2))
+              (dim-eq dim1 dim2))
              (isp= (ispace-dim dim1) (ispace-dim dim2)))
 
    (cong-shape ((shapep shape1) (shapep shape2)
@@ -434,31 +434,31 @@
   :short "The equivalence of dimensions and lists of dimensions
           holds only on dimensions and lists of dimensions."
 
-  (defthm-dim=-proof-validp-clique-flag
-    (defthmd dimp-when-dim=-proof-validp
-      (implies (dim=-proof-validp proof concl.dim1 concl.dim2)
+  (defthm-dim-eq-proof-validp-clique-flag
+    (defthmd dimp-when-dim-eq-proof-validp
+      (implies (dim-eq-proof-validp proof concl.dim1 concl.dim2)
                (and (dimp concl.dim1)
                     (dimp concl.dim2)))
-      :flag dim=-proof-validp)
-    (defthmd dim-listp-when-dims=-proof-validp
-      (implies (dims=-proof-validp proof concl.dims1 concl.dims2)
+      :flag dim-eq-proof-validp)
+    (defthmd dim-listp-when-dims-eq-proof-validp
+      (implies (dims-eq-proof-validp proof concl.dims1 concl.dims2)
                (and (dim-listp concl.dims1)
                     (dim-listp concl.dims2)))
-      :flag dims=-proof-validp)
+      :flag dims-eq-proof-validp)
     :hints
     (("Goal" :in-theory (enable* dim-equivalence-definition-validp-defs))))
 
-  (defruled dimp-when-dim=
-    (implies (dim= dim1 dim2)
+  (defruled dimp-when-dim-eq
+    (implies (dim-eq dim1 dim2)
              (and (dimp dim1)
                   (dimp dim2)))
-    :enable (dim= dimp-when-dim=-proof-validp))
+    :enable (dim-eq dimp-when-dim-eq-proof-validp))
 
-  (defruled dim-listp-when-dims=
-    (implies (dims= dims1 dims2)
+  (defruled dim-listp-when-dims-eq
+    (implies (dims-eq dims1 dims2)
              (and (dim-listp dims1)
                   (dim-listp dims2)))
-    :enable (dims= dim-listp-when-dims=-proof-validp)))
+    :enable (dims-eq dim-listp-when-dims-eq-proof-validp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -543,47 +543,47 @@
 
   ;; rule validity functions:
 
-  (verify-guards dim=-refl-validp)
-  (verify-guards dim=-symm-validp)
-  (verify-guards dim=-trans-validp)
-  (verify-guards dims=-refl-validp)
-  (verify-guards dims=-symm-validp)
-  (verify-guards dims=-trans-validp)
-  (verify-guards dim=-cong-add-validp)
-  (verify-guards dim=-cong-sub-validp)
-  (verify-guards dim=-cong-mul-validp)
-  (verify-guards dims=-cong-cons-validp)
-  (verify-guards dim=-add0-validp)
-  (verify-guards dim=-add1-validp)
-  (verify-guards dim=-add3m-validp)
-  (verify-guards dim=-mul0-validp)
-  (verify-guards dim=-mul1-validp)
-  (verify-guards dim=-mul3m-validp)
-  (verify-guards dim=-sub2m-validp)
-  (verify-guards dim=-add-comm-validp)
-  (verify-guards dim=-add-assoc-validp)
-  (verify-guards dim=-add-id-validp)
-  (verify-guards dim=-add-inv-validp)
-  (verify-guards dim=-add-const-validp)
-  (verify-guards dim=-mul-comm-validp)
-  (verify-guards dim=-mul-assoc-validp)
-  (verify-guards dim=-mul-id-validp)
-  (verify-guards dim=-mul-const-validp)
-  (verify-guards dim=-distrib-validp)
+  (verify-guards dim-eq-refl-validp)
+  (verify-guards dim-eq-symm-validp)
+  (verify-guards dim-eq-trans-validp)
+  (verify-guards dims-eq-refl-validp)
+  (verify-guards dims-eq-symm-validp)
+  (verify-guards dims-eq-trans-validp)
+  (verify-guards dim-eq-cong-add-validp)
+  (verify-guards dim-eq-cong-sub-validp)
+  (verify-guards dim-eq-cong-mul-validp)
+  (verify-guards dims-eq-cong-cons-validp)
+  (verify-guards dim-eq-add0-validp)
+  (verify-guards dim-eq-add1-validp)
+  (verify-guards dim-eq-add3m-validp)
+  (verify-guards dim-eq-mul0-validp)
+  (verify-guards dim-eq-mul1-validp)
+  (verify-guards dim-eq-mul3m-validp)
+  (verify-guards dim-eq-sub2m-validp)
+  (verify-guards dim-eq-add-comm-validp)
+  (verify-guards dim-eq-add-assoc-validp)
+  (verify-guards dim-eq-add-id-validp)
+  (verify-guards dim-eq-add-inv-validp)
+  (verify-guards dim-eq-add-const-validp)
+  (verify-guards dim-eq-mul-comm-validp)
+  (verify-guards dim-eq-mul-assoc-validp)
+  (verify-guards dim-eq-mul-id-validp)
+  (verify-guards dim-eq-mul-const-validp)
+  (verify-guards dim-eq-distrib-validp)
 
   ;; proof validity functions:
 
-  (verify-guards dim=-proof-validp)
+  (verify-guards dim-eq-proof-validp)
 
   ;; minimality predicates:
 
-  (verify-guards dim=-proof-minimalp)
-  (verify-guards dims=-proof-minimalp)
+  (verify-guards dim-eq-proof-minimalp)
+  (verify-guards dims-eq-proof-minimalp)
 
   ;; equivalence predicates:
 
-  (verify-guards dim=)
-  (verify-guards dims=))
+  (verify-guards dim-eq)
+  (verify-guards dims-eq))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -596,7 +596,7 @@
     "This is analogous to @(see dim-equiv-guard-verification),
      which must precede this:
      the rules @('cong-dims') and @('cong-dim') have premises
-     that call @(tsee dims=) and @(tsee dim=),
+     that call @(tsee dims-eq) and @(tsee dim-eq),
      whose guards are verified there."))
 
   ;; rule validity functions:

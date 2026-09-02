@@ -35,7 +35,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection dim=-trans-swapped
+(defsection dim-eq-trans-swapped
   :short "Transitivity of dimension equivalence with the premises swapped."
   :long
   (xdoc::topstring
@@ -43,46 +43,46 @@
     "The proof constructor just swaps the premise proofs
      in a proof tree for the transitivity defining rule."))
 
-  (defruled dim=-trans-swapped
-    (implies (and (dim= dim2 dim3)
-                  (dim= dim1 dim2))
-             (dim= dim1 dim3))
-    :use dim=-trans
-    :enable dimp-when-dim=)
+  (defruled dim-eq-trans-swapped
+    (implies (and (dim-eq dim2 dim3)
+                  (dim-eq dim1 dim2))
+             (dim-eq dim1 dim3))
+    :use dim-eq-trans
+    :enable dimp-when-dim-eq)
 
-  (define dim=-proof-trans-swapped (dim1
-                                    dim2
-                                    dim3
-                                    (premise1-proof dim=-proofp)
-                                    (premise2-proof dim=-proofp))
-    :returns (proof dim=-proofp)
+  (define dim-eq-proof-trans-swapped (dim1
+                                      dim2
+                                      dim3
+                                      (premise1-proof dim-eq-proofp)
+                                      (premise2-proof dim-eq-proofp))
+    :returns (proof dim-eq-proofp)
     :parents nil
-    (make-dim=-proof-trans :dim1 dim1
-                           :dim2 dim2
-                           :dim3 dim3
-                           :premise1-proof premise2-proof
-                           :premise2-proof premise1-proof)
+    (make-dim-eq-proof-trans :dim1 dim1
+                             :dim2 dim2
+                             :dim3 dim3
+                             :premise1-proof premise2-proof
+                             :premise2-proof premise1-proof)
 
     ///
 
-    (defret dim=-proof-validp-of-dim=-proof-trans-swapped
-      (implies (and (dim=-proof-validp premise1-proof dim2 dim3)
-                    (dim=-proof-validp premise2-proof dim1 dim2))
-               (dim=-proof-validp proof dim1 dim3))
+    (defret dim-eq-proof-validp-of-dim-eq-proof-trans-swapped
+      (implies (and (dim-eq-proof-validp premise1-proof dim2 dim3)
+                    (dim-eq-proof-validp premise2-proof dim1 dim2))
+               (dim-eq-proof-validp proof dim1 dim3))
       :hints (("Goal"
-               :expand ((dim=-proof-validp
-                         (dim=-proof-trans dim1 dim2 dim3
-                                           premise2-proof premise1-proof)
+               :expand ((dim-eq-proof-validp
+                         (dim-eq-proof-trans dim1 dim2 dim3
+                                             premise2-proof premise1-proof)
                          dim1 dim3))
-               :in-theory (enable dim=-trans-validp
-                                  dimp-when-dim=-proof-validp)))))
+               :in-theory (enable dim-eq-trans-validp
+                                  dimp-when-dim-eq-proof-validp)))))
 
-  (defmacro make-dim=-proof-trans-swapped (&key dim1
-                                                dim2
-                                                dim3
-                                                premise1-proof
-                                                premise2-proof)
-    `(dim=-proof-trans-swapped
+  (defmacro make-dim-eq-proof-trans-swapped (&key dim1
+                                                  dim2
+                                                  dim3
+                                                  premise1-proof
+                                                  premise2-proof)
+    `(dim-eq-proof-trans-swapped
       ,dim1 ,dim2 ,dim3 ,premise1-proof ,premise2-proof)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -92,7 +92,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is analogous to @(tsee dim=-trans-swapped)."))
+    "This is analogous to @(tsee dim-eq-trans-swapped)."))
 
   (defruled shp=-trans-swapped
     (implies (and (shp= shape2 shape3)
