@@ -1065,10 +1065,10 @@
                          (shp=-proof-dims0)))
         ((endp (cdr dims)) (mv (shape-dims dims)
                                (shp=-proof-refl (shape-dims dims))))
-        (t (b* (((mv shape2 proof2) (unarize-shape-dims (cdr dims)))
-                (dim (dim-fix (car dims)))
-                (dims (dim-list-fix (cdr dims)))
+        (t (b* ((dim (car dims))
+                (dims (cdr dims))
                 (shape1 (shape-dims (list dim)))
+                ((mv shape2 proof2) (unarize-shape-dims dims))
                 (mid-shape (shape-append (list shape1 (shape-dims dims))))
                 (new-shape (shape-append (list shape1 shape2))))
              (mv new-shape
@@ -1077,8 +1077,8 @@
                   :shape2 mid-shape
                   :shape3 new-shape
                   :premise1-proof (make-shp=-proof-dims2m
-                                   :dim dim
-                                   :dims dims)
+                                   :dim (dim-fix dim)
+                                   :dims (dim-list-fix dims))
                   :premise2-proof
                   (make-shp=-proof-cong-append
                    :shapes1 (list shape1 (shape-dims dims))
