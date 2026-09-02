@@ -148,36 +148,36 @@
      The two rules are separate because
      an n-ary sum type cannot have just one parameter."))
 
-  :preds ((type= type1 type2))
+  :preds ((type-eq type1 type2))
 
   :irules
 
   (;; equivalence:
 
    (refl ((typep type))
-         (type= type type))
+         (type-eq type type))
 
    (symm ((typep t1) (typep t2)
-          (type= t1 t2))
-         (type= t2 t1))
+          (type-eq t1 t2))
+         (type-eq t2 t1))
 
    (trans ((typep t1) (typep t2) (typep t3)
-           (type= t1 t2) (type= t2 t3))
-          (type= t1 t3))
+           (type-eq t1 t2) (type-eq t2 t3))
+          (type-eq t1 t3))
 
    ;; array type congruence:
 
    (array ((typep t1) (typep t2) (ispacep i1) (ispacep i2)
-           (type= t1 t2)
+           (type-eq t1 t2)
            (ispace-eq i1 i2))
-          (type= (tarr t1 i1) (tarr t2 i2)))
+          (type-eq (tarr t1 i1) (tarr t2 i2)))
 
    ;; function type congruence:
 
    (fun ((typep in1) (typep in2) (typep out1) (typep out2)
-         (type= in1 in2)
-         (type= out1 out2))
-        (type= (t-> in1 out1) (t-> in2 out2)))
+         (type-eq in1 in2)
+         (type-eq out1 out2))
+        (type-eq (t-> in1 out1) (t-> in2 out2)))
 
    ;; universal type congruence:
 
@@ -204,9 +204,9 @@
                          (omap::update (type-var-array->name p1) p.name nil))
                   (equal arren2
                          (omap::update (type-var-array->name p2) p.name nil))))
-            (type= (type-rename-type-vars t1 atren1 arren1)
-                   (type-rename-type-vars t2 atren2 arren2)))
-           (type= (type-forall p1 t1) (type-forall p2 t2)))
+            (type-eq (type-rename-type-vars t1 atren1 arren1)
+                     (type-rename-type-vars t2 atren2 arren2)))
+           (type-eq (type-forall p1 t1) (type-forall p2 t2)))
 
    ;; product type congruence:
 
@@ -233,9 +233,9 @@
                      (omap::update (ispace-var-shape->name p1) p.name nil))
               (equal sren2
                      (omap::update (ispace-var-shape->name p2) p.name nil))))
-        (type= (type-rename-ispace-vars t1 dren1 sren1)
-               (type-rename-ispace-vars t2 dren2 sren2)))
-       (type= (type-pi p1 t1) (type-pi p2 t2)))
+        (type-eq (type-rename-ispace-vars t1 dren1 sren1)
+                 (type-rename-ispace-vars t2 dren2 sren2)))
+       (type-eq (type-pi p1 t1) (type-pi p2 t2)))
 
    ;; sum type congruence:
 
@@ -263,85 +263,85 @@
                         (omap::update (ispace-var-shape->name p1) p.name nil))
                  (equal sren2
                         (omap::update (ispace-var-shape->name p2) p.name nil))))
-           (type= (type-rename-ispace-vars t1 dren1 sren1)
-                  (type-rename-ispace-vars t2 dren2 sren2)))
-          (type= (type-sigma p1 t1) (type-sigma p2 t2)))
+           (type-eq (type-rename-ispace-vars t1 dren1 sren1)
+                    (type-rename-ispace-vars t2 dren2 sren2)))
+          (type-eq (type-sigma p1 t1) (type-sigma p2 t2)))
 
    ;; normalization of array type variables:
 
    (array-var ((stringp name))
-              (type= (type-var (type-var-array name))
-                     (type-array (type-var (type-var-atom name))
-                                 (ispace-shape (shape-var name)))))
+              (type-eq (type-var (type-var-array name))
+                       (type-array (type-var (type-var-atom name))
+                                   (ispace-shape (shape-var name)))))
 
    ;; normalization of bracket types:
 
    (bracket ((typep ty) (ispace-listp is) (ispacep i)
              (ispace-eq i (ispace-shape (shape-splice is))))
-            (type= (type-bracket ty is)
-                   (type-array ty i)))
+            (type-eq (type-bracket ty is)
+                     (type-array ty i)))
 
    ;; normalization of n-ary function types:
 
    (fun0 ((typep out))
-         (type= (type-funn nil out) out))
+         (type-eq (type-funn nil out) out))
 
    (fun1m ((typep in) (type-listp ins) (typep out))
-          (type= (type-funn (cons in ins) out)
-                 (t-> in (type-funn ins out))))
+          (type-eq (type-funn (cons in ins) out)
+                   (t-> in (type-funn ins out))))
 
    ;; normalization of n-ary universal types:
 
    (forall2 ((type-varp p1) (type-varp p2) (typep ty))
-            (type= (type-foralln (list p1 p2) ty)
-                   (type-forall p1 (type-forall p2 ty))))
+            (type-eq (type-foralln (list p1 p2) ty)
+                     (type-forall p1 (type-forall p2 ty))))
 
    (forall3m ((type-varp p1) (type-varp p2) (type-var-listp ps) (consp ps)
               (typep ty))
-             (type= (type-foralln (list* p1 p2 ps) ty)
-                    (type-forall p1 (type-foralln (cons p2 ps) ty))))
+             (type-eq (type-foralln (list* p1 p2 ps) ty)
+                      (type-forall p1 (type-foralln (cons p2 ps) ty))))
 
    ;; normalization of n-ary product types:
 
    (pi2 ((ispace-varp p1) (ispace-varp p2) (typep ty))
-        (type= (type-pin (list p1 p2) ty)
-               (type-pi p1 (type-pi p2 ty))))
+        (type-eq (type-pin (list p1 p2) ty)
+                 (type-pi p1 (type-pi p2 ty))))
 
    (pi3m ((ispace-varp p1) (ispace-varp p2) (ispace-var-listp ps) (consp ps)
           (typep ty))
-         (type= (type-pin (list* p1 p2 ps) ty)
-                (type-pi p1 (type-pin (cons p2 ps) ty))))
+         (type-eq (type-pin (list* p1 p2 ps) ty)
+                  (type-pi p1 (type-pin (cons p2 ps) ty))))
 
    ;; normalization of n-ary sum types:
 
    (sigma2 ((ispace-varp p1) (ispace-varp p2) (typep ty))
-           (type= (type-sigman (list p1 p2) ty)
-                  (type-sigma p1 (type-sigma p2 ty))))
+           (type-eq (type-sigman (list p1 p2) ty)
+                    (type-sigma p1 (type-sigma p2 ty))))
 
    (sigma3m ((ispace-varp p1) (ispace-varp p2) (ispace-var-listp ps) (consp ps)
              (typep ty))
-            (type= (type-sigman (list* p1 p2 ps) ty)
-                   (type-sigma p1 (type-sigman (cons p2 ps) ty))))))
+            (type-eq (type-sigman (list* p1 p2 ps) ty)
+                     (type-sigma p1 (type-sigman (cons p2 ps) ty))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection type-equiv-holds-only-on-types
   :short "The equivalence of types holds only on types."
 
-  (defruled typep-when-type=-proof-validp
-    (implies (type=-proof-validp proof concl.type1 concl.type2)
+  (defruled typep-when-type-eq-proof-validp
+    (implies (type-eq-proof-validp proof concl.type1 concl.type2)
              (and (typep concl.type1)
                   (typep concl.type2)))
     :hints (("Goal"
-             :induct (type=-proof-validp proof concl.type1 concl.type2)
+             :induct (type-eq-proof-validp proof concl.type1 concl.type2)
              :in-theory (enable* type-equivalence-definition-validp-defs
-                                 (:induction type=-proof-validp)))))
+                                 (:induction type-eq-proof-validp)))))
 
-  (defruled typep-when-type=
-    (implies (type= type1 type2)
+  (defruled typep-when-type-eq
+    (implies (type-eq type1 type2)
              (and (typep type1)
                   (typep type2)))
-    :enable (type= typep-when-type=-proof-validp)))
+    :enable (type-eq typep-when-type-eq-proof-validp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -369,34 +369,34 @@
 
   ;; rule validity functions:
 
-  (verify-guards type=-refl-validp)
-  (verify-guards type=-symm-validp)
-  (verify-guards type=-trans-validp)
-  (verify-guards type=-array-validp)
-  (verify-guards type=-fun-validp)
-  (verify-guards type=-forall-validp)
-  (verify-guards type=-pi-validp)
-  (verify-guards type=-sigma-validp)
-  (verify-guards type=-array-var-validp)
-  (verify-guards type=-bracket-validp)
-  (verify-guards type=-fun0-validp)
-  (verify-guards type=-fun1m-validp)
-  (verify-guards type=-forall2-validp)
-  (verify-guards type=-forall3m-validp)
-  (verify-guards type=-pi2-validp)
-  (verify-guards type=-pi3m-validp)
-  (verify-guards type=-sigma2-validp)
-  (verify-guards type=-sigma3m-validp)
+  (verify-guards type-eq-refl-validp)
+  (verify-guards type-eq-symm-validp)
+  (verify-guards type-eq-trans-validp)
+  (verify-guards type-eq-array-validp)
+  (verify-guards type-eq-fun-validp)
+  (verify-guards type-eq-forall-validp)
+  (verify-guards type-eq-pi-validp)
+  (verify-guards type-eq-sigma-validp)
+  (verify-guards type-eq-array-var-validp)
+  (verify-guards type-eq-bracket-validp)
+  (verify-guards type-eq-fun0-validp)
+  (verify-guards type-eq-fun1m-validp)
+  (verify-guards type-eq-forall2-validp)
+  (verify-guards type-eq-forall3m-validp)
+  (verify-guards type-eq-pi2-validp)
+  (verify-guards type-eq-pi3m-validp)
+  (verify-guards type-eq-sigma2-validp)
+  (verify-guards type-eq-sigma3m-validp)
 
   ;; proof validity function:
 
-  (verify-guards type=-proof-validp
+  (verify-guards type-eq-proof-validp
     :hints (("Goal" :in-theory (enable* type-equivalence-definition-validp-defs))))
 
   ;; minimality predicate:
 
-  (verify-guards type=-proof-minimalp)
+  (verify-guards type-eq-proof-minimalp)
 
   ;; equivalence predicate:
 
-  (verify-guards type=))
+  (verify-guards type-eq))
