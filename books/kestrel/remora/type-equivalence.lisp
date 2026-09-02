@@ -171,10 +171,10 @@
 
    ;; function type congruence:
 
-   (fun ((typep in1) (typep in2) (typep out1) (typep out2)
-         (type-eq in1 in2)
-         (type-eq out1 out2))
-        (type-eq (t-> in1 out1) (t-> in2 out2)))
+   (fun ((typep type-in1) (typep type-in2) (typep type-out1) (typep type-out2)
+         (type-eq type-in1 type-in2)
+         (type-eq type-out1 type-out2))
+        (type-eq (t-> type-in1 type-out1) (t-> type-in2 type-out2)))
 
    ;; universal type congruence:
 
@@ -294,12 +294,12 @@
 
    ;; normalization of n-ary function types:
 
-   (fun0 ((typep out))
-         (type-eq (type-funn nil out) out))
+   (fun0 ((typep type-out))
+         (type-eq (type-funn nil type-out) type-out))
 
-   (fun1m ((typep in) (type-listp ins) (typep out))
-          (type-eq (type-funn (cons in ins) out)
-                   (t-> in (type-funn ins out))))
+   (fun1m ((typep type-in) (type-listp types-in) (typep type-out))
+          (type-eq (type-funn (cons type-in types-in) type-out)
+                   (t-> type-in (type-funn types-in type-out))))
 
    ;; normalization of n-ary universal types:
 
