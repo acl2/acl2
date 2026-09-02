@@ -93,6 +93,18 @@
     :hyp (ident-formalp ident)
     :hints (("Goal" :in-theory (enable ident-formalp)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ldm-ident-list ((idents ident-listp))
+  :returns (mv erp (idents1 c::ident-listp))
+  :short "Map a list of identifiers
+          to a list of identifiers in the language definition."
+  (b* (((reterr) nil)
+       ((when (endp idents)) (retok nil))
+       ((erp ident1) (ldm-ident (car idents)))
+       ((erp idents1) (ldm-ident-list (cdr idents))))
+    (retok (cons ident1 idents1))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ldm-lsuffix ((lsuffix lsuffixp))
