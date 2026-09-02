@@ -56,4 +56,11 @@
     :enable (code-in-char-code-set-when-char-in-char-set
              set::in-head
              set::subset-in
-             set::subset-transitive)))
+             set::subset-transitive))
+
+  (defruled char-code-set-upper-bound
+    (implies (set::in code (char-code-set chars))
+             (<= code 255))
+    :induct (char-code-set chars)
+    :enable (char-code-set
+             set::in)))
