@@ -451,6 +451,17 @@
     :enable (exec-charset-wfp
              exec-charset-basic)))
 
+  (defruled basic-exec-char-of-exec-charset-basic
+    (implies (set::in bchar (ascii-basic-exec-chars std))
+             (equal (basic-exec-char bchar
+                                     (exec-charset-basic std)
+                                     std
+                                     uchar-format)
+                    bchar))
+    :enable (basic-exec-char
+             exec-charset-basic
+             omap::lookup-when-identityp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-charset-ascii ((std standardp))
