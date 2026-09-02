@@ -302,6 +302,15 @@
                 :in-theory (enable acl2::char-code-set
                                    omap::assoc-to-in-of-keys))))
 
+     (defret lookup-of-source-charset-basic+lf-loop
+       (implies (and (character-setp chars)
+                     (set::in char chars))
+                (equal (omap::lookup char map)
+                       (char-code char)))
+       :hints (("Goal"
+                :induct t
+                :in-theory (enable omap::lookup-of-update))))
+
      (defret injectivep-of-source-charset-basic+lf-loop
        (omap::injectivep map)
        :hints (("Goal"
@@ -319,6 +328,25 @@
              acl2::char-code-set-monotone
              set::in
              set::expensive-rules)))
+
+  (defruled basic-source-char-of-source-charset-basic+lf
+    (implies (set::in bchar (ascii-basic-source-chars std))
+             (equal (basic-source-char bchar
+                                       (source-charset-basic+lf std)
+                                       std)
+                    bchar))
+    :use (:instance omap::lookup-of-lookup-of-inverse
+                    (omap::map
+                     (omap::inverse
+                      (source-charset-basic+lf-loop
+                       (set::insert #\Newline
+                                    (ascii-basic-source-chars std)))))
+                    (omap::val bchar))
+    :enable (basic-source-char
+             source-charset-basic+lf
+             omap::inverse-inverse-when-injectivep
+             lookup-of-source-charset-basic+lf-loop
+             set::expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
