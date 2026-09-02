@@ -90,6 +90,13 @@
      So we may revisit this in the future."))
   (stringp (ident->unwrap ident)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist ident-list-formalp (x)
+  :guard (ident-listp x)
+  :short "Lift @(tsee ident-formalp) to lists."
+  (ident-formalp x))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define const-formalp ((const constp))
