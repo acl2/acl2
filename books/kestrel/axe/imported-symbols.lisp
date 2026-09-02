@@ -337,6 +337,8 @@
     doublets-to-alist
     translate-term
     translate-terms
+    translate-term-in-logic-mode
+    translate-terms-in-logic-mode
     variablep
     empty-alist
     empty-acc
@@ -410,7 +412,8 @@
     strings-starting-with
     add-prefix-to-strings
     merge-sort-string<
-    ))
+
+    plist-worldp-with-formals))
 
 (defconst *arithmetic-symbols*
   '(ceiling-of-lg

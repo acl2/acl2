@@ -1,6 +1,6 @@
 ; Rules about the ACL2 state
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -755,3 +755,25 @@
   (implies (state-p1 state)
            (global-table-p (global-table state)))
   :hints (("Goal" :in-theory (enable global-table-p global-table))))
+
+(defthm print-base-p-of-get-global-of-print-base-when-state-p1
+  (implies (state-p1 state)
+           (print-base-p (get-global 'print-base state)))
+  :hints (("Goal" :in-theory (enable state-p1))))
+
+(defthm print-base-p-of-get-global-of-print-base-when-state-p
+  (implies (state-p state)
+           (print-base-p (get-global 'print-base state)))
+  :hints (("Goal" :in-theory (e/d (state-p) (get-global)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm w-of-update-file-clock
+  (equal (w (update-file-clock x state))
+         (w state))
+  :hints (("Goal" :in-theory (enable update-file-clock w global-table))))
+
+(defthm w-of-update-open-input-channels
+  (equal (w (update-open-input-channels x state))
+         (w state))
+  :hints (("Goal" :in-theory (enable update-open-input-channels w global-table))))

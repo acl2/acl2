@@ -509,6 +509,20 @@
                                     (myquotep ; loop on simplify-dag-basic-return-type-corollary-2 without this
                                      ))))))
 
+;uses quotep as the normal form
+(local
+  (defthm myquotep-of-mv-nth-1-of-prune-dag-approximately
+    (implies (and (not (mv-nth 0 (prune-dag-approximately dag assumptions no-warn-ground-functions print max-conflicts state))) ; no error
+                  (pseudo-dagp dag)
+                  ;; (<= (len dag) *max-1d-array-length*)
+                  (pseudo-term-listp assumptions)
+                  )
+             (equal (myquotep (mv-nth 1 (prune-dag-approximately dag assumptions no-warn-ground-functions print max-conflicts state)))
+                    (quotep (mv-nth 1 (prune-dag-approximately dag assumptions no-warn-ground-functions print max-conflicts state)))))
+    :hints (("Goal" :in-theory (e/d (prune-dag-approximately car-of-car-when-pseudo-dagp)
+                                    (myquotep ; loop on simplify-dag-basic-return-type-corollary-2 without this
+                                     quotep))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Disabled to speed up later guard proofs
@@ -557,15 +571,22 @@
          (w state))
   :hints (("Goal" :in-theory (enable maybe-prune-dag-approximately))))
 
+;; uses quotep as the normal form
 (defthm pseudo-dagp-of-mv-nth-1-of-maybe-prune-dag-approximately
   (implies (and (not (mv-nth 0 (maybe-prune-dag-approximately prune-branches dag assumptions no-warn-ground-functions print max-conflicts state))) ; no error
-                (not (quotep (mv-nth 1 (maybe-prune-dag-approximately prune-branches dag assumptions no-warn-ground-functions print max-conflicts state))))
-                ;; (prune-approx-optionp prune-branches)
                 (pseudo-dagp dag)
                 ;; (<= (len dag) *max-1d-array-length*)
-                (pseudo-term-listp assumptions)
-                ;; (print-levelp print)
-                (or (null max-conflicts)
-                    (natp max-conflicts)))
-           (pseudo-dagp (mv-nth 1 (maybe-prune-dag-approximately prune-branches dag assumptions no-warn-ground-functions print max-conflicts state))))
+                (pseudo-term-listp assumptions))
+           (equal (pseudo-dagp (mv-nth 1 (maybe-prune-dag-approximately prune-branches dag assumptions no-warn-ground-functions print max-conflicts state)))
+                  (not (quotep (mv-nth 1 (maybe-prune-dag-approximately prune-branches dag assumptions no-warn-ground-functions print max-conflicts state))))))
+  :hints (("Goal" :in-theory (e/d (maybe-prune-dag-approximately) (quotep)))))
+
+;; uses quotep as the normal form
+(defthm myquotep-of-mv-nth-1-of-maybe-prune-dag-approximately
+  (implies (and (not (mv-nth 0 (maybe-prune-dag-approximately prune-branches dag assumptions no-warn-ground-functions print max-conflicts state))) ; no error
+                (pseudo-dagp dag)
+                ;; (<= (len dag) *max-1d-array-length*)
+                (pseudo-term-listp assumptions))
+           (equal (myquotep (mv-nth 1 (maybe-prune-dag-approximately prune-branches dag assumptions no-warn-ground-functions print max-conflicts state)))
+                  (quotep (mv-nth 1 (maybe-prune-dag-approximately prune-branches dag assumptions no-warn-ground-functions print max-conflicts state)))))
   :hints (("Goal" :in-theory (e/d (maybe-prune-dag-approximately) (quotep)))))
