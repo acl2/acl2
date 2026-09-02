@@ -45,7 +45,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(definductive ispace-validity-definition
+(definductive dim-validity-definition
   :short "Inference rules that define dimension validity."
   :long
   (xdoc::topstring
@@ -108,7 +108,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Similarly to @(see dim-sort-checking-infrules),
+    "Similarly to @(see dim-validity-definition),
      besides predicates for individual shapes and ispaces,
      we define predicates for lists of shapes and lists of ispaces.")
    (xdoc::p
