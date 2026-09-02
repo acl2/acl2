@@ -21,7 +21,6 @@
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
-(local (include-book "std/strings/char-fix" :dir :system))
 
 (acl2::controlled-configuration)
 
