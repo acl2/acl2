@@ -169,7 +169,7 @@
 
    (array ((typep t1) (typep t2) (ispacep i1) (ispacep i2)
            (type= t1 t2)
-           (isp= i1 i2))
+           (ispace-eq i1 i2))
           (type= (tarr t1 i1) (tarr t2 i2)))
 
    ;; function type congruence:
@@ -277,7 +277,7 @@
    ;; normalization of bracket types:
 
    (bracket ((typep ty) (ispace-listp is) (ispacep i)
-             (isp= i (ispace-shape (shape-splice is))))
+             (ispace-eq i (ispace-shape (shape-splice is))))
             (type= (type-bracket ty is)
                    (type-array ty i)))
 

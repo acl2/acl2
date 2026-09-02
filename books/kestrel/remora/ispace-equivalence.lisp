@@ -279,154 +279,154 @@
     "Finally, the rule @('ispace-dim-shape') states the equivalence of
      a dimension ispace and a shape ispace that consists of that dimension."))
 
-  :preds ((shp= shape1 shape2)
-          (shps= shapes1 shapes2)
-          (isp= ispace1 ispace2)
-          (isps= ispaces1 ispaces2))
+  :preds ((shape-eq shape1 shape2)
+          (shapes-eq shapes1 shapes2)
+          (ispace-eq ispace1 ispace2)
+          (ispaces-eq ispaces1 ispaces2))
 
   :irules
 
   (;; equivalence of shapes:
 
    (refl ((shapep shape))
-         (shp= shape shape))
+         (shape-eq shape shape))
 
    (symm ((shapep shape1) (shapep shape2)
-          (shp= shape1 shape2))
-         (shp= shape2 shape1))
+          (shape-eq shape1 shape2))
+         (shape-eq shape2 shape1))
 
    (trans ((shapep shape1) (shapep shape2) (shapep shape3)
-           (shp= shape1 shape2) (shp= shape2 shape3))
-          (shp= shape1 shape3))
+           (shape-eq shape1 shape2) (shape-eq shape2 shape3))
+          (shape-eq shape1 shape3))
 
    ;; equivalence of lists of shapes:
 
    (refl ((shape-listp shapes))
-         (shps= shapes shapes))
+         (shapes-eq shapes shapes))
 
    (symm ((shape-listp shapes1) (shape-listp shapes2)
-          (shps= shapes1 shapes2))
-         (shps= shapes2 shapes1))
+          (shapes-eq shapes1 shapes2))
+         (shapes-eq shapes2 shapes1))
 
    (trans ((shape-listp shapes1) (shape-listp shapes2) (shape-listp shapes3)
-           (shps= shapes1 shapes2) (shps= shapes2 shapes3))
-          (shps= shapes1 shapes3))
+           (shapes-eq shapes1 shapes2) (shapes-eq shapes2 shapes3))
+          (shapes-eq shapes1 shapes3))
 
    ;; equivalence of ispaces:
 
    (refl ((ispacep ispace))
-         (isp= ispace ispace))
+         (ispace-eq ispace ispace))
 
    (symm ((ispacep ispace1) (ispacep ispace2)
-          (isp= ispace1 ispace2))
-         (isp= ispace2 ispace1))
+          (ispace-eq ispace1 ispace2))
+         (ispace-eq ispace2 ispace1))
 
    (trans ((ispacep ispace1) (ispacep ispace2) (ispacep ispace3)
-           (isp= ispace1 ispace2) (isp= ispace2 ispace3))
-          (isp= ispace1 ispace3))
+           (ispace-eq ispace1 ispace2) (ispace-eq ispace2 ispace3))
+          (ispace-eq ispace1 ispace3))
 
    ;; equivalence of lists of ispaces:
 
    (refl ((ispace-listp ispaces))
-         (isps= ispaces ispaces))
+         (ispaces-eq ispaces ispaces))
 
    (symm ((ispace-listp ispaces1) (ispace-listp ispaces2)
-          (isps= ispaces1 ispaces2))
-         (isps= ispaces2 ispaces1))
+          (ispaces-eq ispaces1 ispaces2))
+         (ispaces-eq ispaces2 ispaces1))
 
    (trans ((ispace-listp ispaces1) (ispace-listp ispaces2)
            (ispace-listp ispaces3)
-           (isps= ispaces1 ispaces2) (isps= ispaces2 ispaces3))
-          (isps= ispaces1 ispaces3))
+           (ispaces-eq ispaces1 ispaces2) (ispaces-eq ispaces2 ispaces3))
+          (ispaces-eq ispaces1 ispaces3))
 
    ;; congruence of shapes:
 
    (cong-dims ((dim-listp dims1) (dim-listp dims2)
                (dims-eq dims1 dims2))
-              (shp= (shape-dims dims1) (shape-dims dims2)))
+              (shape-eq (shape-dims dims1) (shape-dims dims2)))
 
    (cong-append ((shape-listp shapes1) (shape-listp shapes2)
-                 (shps= shapes1 shapes2))
-                (shp= (shape-append shapes1) (shape-append shapes2)))
+                 (shapes-eq shapes1 shapes2))
+                (shape-eq (shape-append shapes1) (shape-append shapes2)))
 
    (cong-splice ((ispace-listp ispaces1) (ispace-listp ispaces2)
-                 (isps= ispaces1 ispaces2))
-                (shp= (shape-splice ispaces1) (shape-splice ispaces2)))
+                 (ispaces-eq ispaces1 ispaces2))
+                (shape-eq (shape-splice ispaces1) (shape-splice ispaces2)))
 
    ;; congruence of ispaces:
 
    (cong-dim ((dimp dim1) (dimp dim2)
               (dim-eq dim1 dim2))
-             (isp= (ispace-dim dim1) (ispace-dim dim2)))
+             (ispace-eq (ispace-dim dim1) (ispace-dim dim2)))
 
    (cong-shape ((shapep shape1) (shapep shape2)
-                (shp= shape1 shape2))
-               (isp= (ispace-shape shape1) (ispace-shape shape2)))
+                (shape-eq shape1 shape2))
+               (ispace-eq (ispace-shape shape1) (ispace-shape shape2)))
 
    ;; congruence of lists of shapes:
 
    (cong-cons ((shapep shape1) (shapep shape2)
                (shape-listp shapes1) (shape-listp shapes2)
-               (shp= shape1 shape2)
-               (shps= shapes1 shapes2))
-              (shps= (cons shape1 shapes1) (cons shape2 shapes2)))
+               (shape-eq shape1 shape2)
+               (shapes-eq shapes1 shapes2))
+              (shapes-eq (cons shape1 shapes1) (cons shape2 shapes2)))
 
    ;; congruence of lists of ispaces:
 
    (cong-cons ((ispacep ispace1) (ispacep ispace2)
                (ispace-listp ispaces1) (ispace-listp ispaces2)
-               (isp= ispace1 ispace2)
-               (isps= ispaces1 ispaces2))
-              (isps= (cons ispace1 ispaces1) (cons ispace2 ispaces2)))
+               (ispace-eq ispace1 ispace2)
+               (ispaces-eq ispaces1 ispaces2))
+              (ispaces-eq (cons ispace1 ispaces1) (cons ispace2 ispaces2)))
 
    ;; normalization of shapes built from dimensions:
 
    (dims0 ()
-          (shp= (shp) (shp++)))
+          (shape-eq (shp) (shp++)))
 
    (dims2m ((dimp dim) (dim-listp dims) (consp dims))
-           (shp= (shape-dims (cons dim dims))
-                 (shp++ (shp dim) (shape-dims dims))))
+           (shape-eq (shape-dims (cons dim dims))
+                     (shp++ (shp dim) (shape-dims dims))))
 
    ;; normalization of non-empty and non-binary concatenations:
 
    (append1 ((shapep shape))
-            (shp= (shp++ shape) shape))
+            (shape-eq (shp++ shape) shape))
 
    (append3m ((shapep shape1) (shapep shape2)
               (shape-listp shapes) (consp shapes))
-             (shp= (shape-append (list* shape1 shape2 shapes))
-                   (shape-append (cons (shp++ shape1 shape2) shapes))))
+             (shape-eq (shape-append (list* shape1 shape2 shapes))
+                       (shape-append (cons (shp++ shape1 shape2) shapes))))
 
    ;; normalization of splices:
 
    (splice0 ()
-            (shp= (shp[]) (shp++)))
+            (shape-eq (shp[]) (shp++)))
 
    (splice1m-dim ((dimp dim) (ispace-listp ispaces))
-                 (shp= (shape-splice (cons (ispace-dim dim) ispaces))
-                       (shp++ (shp dim) (shape-splice ispaces))))
+                 (shape-eq (shape-splice (cons (ispace-dim dim) ispaces))
+                           (shp++ (shp dim) (shape-splice ispaces))))
 
    (splice1m-shape ((shapep shape) (ispace-listp ispaces))
-                   (shp= (shape-splice (cons (ispace-shape shape) ispaces))
-                         (shp++ shape (shape-splice ispaces))))
+                   (shape-eq (shape-splice (cons (ispace-shape shape) ispaces))
+                             (shp++ shape (shape-splice ispaces))))
 
    ;; monoid properties of concatenation:
 
    (append-assoc ((shapep shape1) (shapep shape2) (shapep shape3))
-                 (shp= (shp++ (shp++ shape1 shape2) shape3)
-                       (shp++ shape1 (shp++ shape2 shape3))))
+                 (shape-eq (shp++ (shp++ shape1 shape2) shape3)
+                           (shp++ shape1 (shp++ shape2 shape3))))
 
    (append-id-left ((shapep shape))
-                   (shp= (shp++ (shp++) shape) shape))
+                   (shape-eq (shp++ (shp++) shape) shape))
 
    (append-id-right ((shapep shape))
-                    (shp= (shp++ shape (shp++)) shape))
+                    (shape-eq (shp++ shape (shp++)) shape))
 
    ;; equivalence of dimension ispace and singleton shape ispace:
 
    (ispace-dim-shape ((dimp dim))
-                     (isp= (ispace-dim dim) (ispace-shape (shp dim))))))
+                     (ispace-eq (ispace-dim dim) (ispace-shape (shp dim))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -466,54 +466,54 @@
   :short "The equivalence of shapes, ispaces, and lists thereof
           holds only on shapes, ispaces, and lists thereof."
 
-  (defthm-shp=-proof-validp-clique-flag
-    (defthmd shapep-when-shp=-proof-validp
-      (implies (shp=-proof-validp proof concl.shape1 concl.shape2)
+  (defthm-shape-eq-proof-validp-clique-flag
+    (defthmd shapep-when-shape-eq-proof-validp
+      (implies (shape-eq-proof-validp proof concl.shape1 concl.shape2)
                (and (shapep concl.shape1)
                     (shapep concl.shape2)))
-      :flag shp=-proof-validp)
-    (defthmd shape-listp-when-shps=-proof-validp
-      (implies (shps=-proof-validp proof concl.shapes1 concl.shapes2)
+      :flag shape-eq-proof-validp)
+    (defthmd shape-listp-when-shapes-eq-proof-validp
+      (implies (shapes-eq-proof-validp proof concl.shapes1 concl.shapes2)
                (and (shape-listp concl.shapes1)
                     (shape-listp concl.shapes2)))
-      :flag shps=-proof-validp)
-    (defthmd ispacep-when-isp=-proof-validp
-      (implies (isp=-proof-validp proof concl.ispace1 concl.ispace2)
+      :flag shapes-eq-proof-validp)
+    (defthmd ispacep-when-ispace-eq-proof-validp
+      (implies (ispace-eq-proof-validp proof concl.ispace1 concl.ispace2)
                (and (ispacep concl.ispace1)
                     (ispacep concl.ispace2)))
-      :flag isp=-proof-validp)
-    (defthmd ispace-listp-when-isps=-proof-validp
-      (implies (isps=-proof-validp proof concl.ispaces1 concl.ispaces2)
+      :flag ispace-eq-proof-validp)
+    (defthmd ispace-listp-when-ispaces-eq-proof-validp
+      (implies (ispaces-eq-proof-validp proof concl.ispaces1 concl.ispaces2)
                (and (ispace-listp concl.ispaces1)
                     (ispace-listp concl.ispaces2)))
-      :flag isps=-proof-validp)
+      :flag ispaces-eq-proof-validp)
     :hints (("Goal"
              :in-theory
              (enable* shape/ispace-equivalence-definition-validp-defs))))
 
-  (defruled shapep-when-shp=
-    (implies (shp= shp1 shp2)
+  (defruled shapep-when-shape-eq
+    (implies (shape-eq shp1 shp2)
              (and (shapep shp1)
                   (shapep shp2)))
-    :enable (shp= shapep-when-shp=-proof-validp))
+    :enable (shape-eq shapep-when-shape-eq-proof-validp))
 
-  (defruled shape-listp-when-shps=
-    (implies (shps= shps1 shps2)
+  (defruled shape-listp-when-shapes-eq
+    (implies (shapes-eq shps1 shps2)
              (and (shape-listp shps1)
                   (shape-listp shps2)))
-    :enable (shps= shape-listp-when-shps=-proof-validp))
+    :enable (shapes-eq shape-listp-when-shapes-eq-proof-validp))
 
-  (defruled ispacep-when-isp=
-    (implies (isp= isp1 isp2)
+  (defruled ispacep-when-ispace-eq
+    (implies (ispace-eq isp1 isp2)
              (and (ispacep isp1)
                   (ispacep isp2)))
-    :enable (isp= ispacep-when-isp=-proof-validp))
+    :enable (ispace-eq ispacep-when-ispace-eq-proof-validp))
 
-  (defruled ispace-listp-when-isps=
-    (implies (isps= isps1 isps2)
+  (defruled ispace-listp-when-ispaces-eq
+    (implies (ispaces-eq isps1 isps2)
              (and (ispace-listp isps1)
                   (ispace-listp isps2)))
-    :enable (isps= ispace-listp-when-isps=-proof-validp)))
+    :enable (ispaces-eq ispace-listp-when-ispaces-eq-proof-validp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -601,51 +601,51 @@
 
   ;; rule validity functions:
 
-  (verify-guards shp=-refl-validp)
-  (verify-guards shp=-symm-validp)
-  (verify-guards shp=-trans-validp)
-  (verify-guards shps=-refl-validp)
-  (verify-guards shps=-symm-validp)
-  (verify-guards shps=-trans-validp)
-  (verify-guards isp=-refl-validp)
-  (verify-guards isp=-symm-validp)
-  (verify-guards isp=-trans-validp)
-  (verify-guards isps=-refl-validp)
-  (verify-guards isps=-symm-validp)
-  (verify-guards isps=-trans-validp)
-  (verify-guards shp=-cong-dims-validp)
-  (verify-guards shp=-cong-append-validp)
-  (verify-guards shp=-cong-splice-validp)
-  (verify-guards isp=-cong-dim-validp)
-  (verify-guards isp=-cong-shape-validp)
-  (verify-guards shps=-cong-cons-validp)
-  (verify-guards isps=-cong-cons-validp)
-  (verify-guards shp=-dims0-validp)
-  (verify-guards shp=-dims2m-validp)
-  (verify-guards shp=-append1-validp)
-  (verify-guards shp=-append3m-validp)
-  (verify-guards shp=-splice0-validp)
-  (verify-guards shp=-splice1m-dim-validp)
-  (verify-guards shp=-splice1m-shape-validp)
-  (verify-guards shp=-append-assoc-validp)
-  (verify-guards shp=-append-id-left-validp)
-  (verify-guards shp=-append-id-right-validp)
-  (verify-guards isp=-ispace-dim-shape-validp)
+  (verify-guards shape-eq-refl-validp)
+  (verify-guards shape-eq-symm-validp)
+  (verify-guards shape-eq-trans-validp)
+  (verify-guards shapes-eq-refl-validp)
+  (verify-guards shapes-eq-symm-validp)
+  (verify-guards shapes-eq-trans-validp)
+  (verify-guards ispace-eq-refl-validp)
+  (verify-guards ispace-eq-symm-validp)
+  (verify-guards ispace-eq-trans-validp)
+  (verify-guards ispaces-eq-refl-validp)
+  (verify-guards ispaces-eq-symm-validp)
+  (verify-guards ispaces-eq-trans-validp)
+  (verify-guards shape-eq-cong-dims-validp)
+  (verify-guards shape-eq-cong-append-validp)
+  (verify-guards shape-eq-cong-splice-validp)
+  (verify-guards ispace-eq-cong-dim-validp)
+  (verify-guards ispace-eq-cong-shape-validp)
+  (verify-guards shapes-eq-cong-cons-validp)
+  (verify-guards ispaces-eq-cong-cons-validp)
+  (verify-guards shape-eq-dims0-validp)
+  (verify-guards shape-eq-dims2m-validp)
+  (verify-guards shape-eq-append1-validp)
+  (verify-guards shape-eq-append3m-validp)
+  (verify-guards shape-eq-splice0-validp)
+  (verify-guards shape-eq-splice1m-dim-validp)
+  (verify-guards shape-eq-splice1m-shape-validp)
+  (verify-guards shape-eq-append-assoc-validp)
+  (verify-guards shape-eq-append-id-left-validp)
+  (verify-guards shape-eq-append-id-right-validp)
+  (verify-guards ispace-eq-ispace-dim-shape-validp)
 
   ;; proof validity functions:
 
-  (verify-guards shp=-proof-validp)
+  (verify-guards shape-eq-proof-validp)
 
   ;; minimality predicates:
 
-  (verify-guards shp=-proof-minimalp)
-  (verify-guards shps=-proof-minimalp)
-  (verify-guards isp=-proof-minimalp)
-  (verify-guards isps=-proof-minimalp)
+  (verify-guards shape-eq-proof-minimalp)
+  (verify-guards shapes-eq-proof-minimalp)
+  (verify-guards ispace-eq-proof-minimalp)
+  (verify-guards ispaces-eq-proof-minimalp)
 
   ;; equivalence predicates:
 
-  (verify-guards shp=)
-  (verify-guards shps=)
-  (verify-guards isp=)
-  (verify-guards isps=))
+  (verify-guards shape-eq)
+  (verify-guards shapes-eq)
+  (verify-guards ispace-eq)
+  (verify-guards ispaces-eq))
