@@ -18,41 +18,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ sort-checking
+(defxdoc+ ispace-validity
   :parents (static-semantics)
-  :short "Sort checking."
+  :short "Validity of ispaces."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "This applies to ispaces, because the static correctness of ispaces
-     involves assigning sorts to ispaces [thesis] [arxiv] [esop].")
    (xdoc::p
     "The inference rules for ispaces in [thesis] [arxiv] [esop]
      prove judgements of the form @($\\Theta \\vdash \\iota :: \\gamma$),
      where @($\\Theta$) is a sort environment that assigns sorts to variables,
-     @($\\iota$) is an ispace,
-     and @($\\gamma$) is a sort.
-     Since our ASTs include sort information as part of the syntax,
-     our inference rules prove judgements (i.e. define predicates)
-     that omit explicit sort information.
-     For the same reason,
-     our sort environment is just a set of ispace variables in scope,
-     each of which carries its own sort.")
+     @($\\iota$) is an ispace (called `index' in those publications),
+     and @($\\gamma$) is a sort (`dimension' or `shape').")
    (xdoc::p
-    "We formulate inference rules for dimension, shape, and ispace ASTs."))
+    "Since our ASTs include sort information as part of the syntax,
+     our inference rules prove judgements (i.e. define predicates)
+     that omit explicit sort information,
+     i.e. just include @($\\Theta$) and @($\\iota$):
+     they say that the ispace satisfies all the static validity conditions
+     in the context of the sort environment.
+     Since ispace variables carry their own sorts,
+     our sort environment is just a set of ispace variables in scope.")
+   (xdoc::p
+    "We define validity predicates for dimension, shape, and ispace ASTs."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(definductive dim-sort-checking-infrules
-  :short "Inference rules for sort checking of dimensions."
+(definductive ispace-validity-definition
+  :short "Inference rules that define dimension validity."
   :long
   (xdoc::topstring
    (xdoc::p
     "Besides the predicate for individual dimensions,
      we define one for lists of dimensions,
-     defined via the two rules @('empty') and @('cons');
+     via the two rules @('empty') and @('cons');
      this corresponds to the use of @($\\cdots$) in [thesis] [arxiv] [esop].
      The rules for individual dimensions follow [thesis] [arxiv] [esop],
      with the addition of rules for multiplication and subtraction,
@@ -103,8 +103,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(definductive shape/ispace-sort-checking-infrules
-  :short "Inference rules for sort checking of shapes and ispaces."
+(definductive shape/ispace-validity-definition
+  :short "Inference rules that define shape and ispace validity."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -114,7 +114,7 @@
    (xdoc::p
     "The rules for individual shapes and ispaces follow [thesis] [arxiv] [esop],
      with the necessary structural adaptations to our ASTs,
-     and with additional rules for the richer forms of our ASTs."))
+     and with additional rules for splices."))
 
   :preds ((shape-ok ivars shp)
           (shapes-ok ivars shps)

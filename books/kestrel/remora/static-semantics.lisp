@@ -38,7 +38,7 @@
                     ispace-equivalence-checker
                     type-equivalence-checker
                     type-checker
-                    sort-checking
+                    ispace-validity
                     ispace-equivalence
                     ispace-equivalence-derived-rules
                     ispace-equivalence-normalizations
