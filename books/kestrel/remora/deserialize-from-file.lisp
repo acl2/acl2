@@ -62,7 +62,7 @@
 
   ///
 
-  (defret expr-huncheckedp-of-deserialize-expr-from-file
+  (defret expr-huncheckedp-of-deserialize-top-exp-from-file
       (implies (not erp)
                (expr-huncheckedp x))))
 
@@ -106,6 +106,6 @@
 
   ///
 
-  (defret file-huncheckedp-of-deserialize-file-from-file
+  (defret file-huncheckedp-of-deserialize-from-file
       (implies (not erp)
                (file-huncheckedp x))))
