@@ -30,7 +30,7 @@
      @($\\iota$) is an ispace (called `index' in those publications),
      and @($\\gamma$) is a sort (`dimension' or `shape').")
    (xdoc::p
-    "Since our ispace ASTs include sort information as part of the syntax,
+    "Since our ASTs include sort information as part of the syntax,
      our inference rules prove judgements (i.e. define predicates)
      that omit explicit sort information,
      i.e. just include @($\\Theta$) and @($\\iota$):
