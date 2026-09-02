@@ -4092,4 +4092,3 @@
 (verify-termination fmt1!) ; and guards
 (verify-termination fmt!) ; and guards
 (verify-termination fms!) ; and guards
-
