@@ -64,7 +64,7 @@
     "Next we have congruence for array types,
      which relies on ispace equivalence.
      The rule in [thesis] and [arxiv] includes a premise for ispace equivalence,
-     but, as noted in @(tsee ispace-equivalence),
+     but, as noted in @(see ispace-equivalence),
      [thesis] and [arxiv] do not provide
      explicit inference rules for ispace equivalence.
      We do, and we refer to the predicate defined by those rules.")
@@ -154,20 +154,20 @@
    (refl ((typep type))
          (type-eq type type))
 
-   (symm ((typep t1) (typep t2)
-          (type-eq t1 t2))
-         (type-eq t2 t1))
+   (symm ((typep type1) (typep type2)
+          (type-eq type1 type2))
+         (type-eq type2 type1))
 
-   (trans ((typep t1) (typep t2) (typep t3)
-           (type-eq t1 t2) (type-eq t2 t3))
-          (type-eq t1 t3))
+   (trans ((typep type1) (typep type2) (typep type3)
+           (type-eq type1 type2) (type-eq type2 type3))
+          (type-eq type1 type3))
 
    ;; array type congruence:
 
-   (array ((typep t1) (typep t2) (ispacep i1) (ispacep i2)
-           (type-eq t1 t2)
-           (ispace-eq i1 i2))
-          (type-eq (tarr t1 i1) (tarr t2 i2)))
+   (array ((typep type1) (typep type2) (ispacep ispace1) (ispacep ispace2)
+           (type-eq type1 type2)
+           (ispace-eq ispace1 ispace2))
+          (type-eq (tarr type1 ispace1) (tarr type2 ispace2)))
 
    ;; function type congruence:
 
@@ -178,105 +178,119 @@
 
    ;; universal type congruence:
 
-   (forall ((type-varp p1) (type-varp p2) (type-varp p) (typep t1) (typep t2)
-            (not (equal p p1))
-            (not (equal p p2))
-            (not (set::in p (type-all-type-vars t1)))
-            (not (set::in p (type-all-type-vars t2)))
-            (equal (type-var-kind p) (type-var-kind p1))
-            (equal (type-var-kind p) (type-var-kind p2))
+   (forall ((type-varp param1) (type-varp param2) (type-varp param)
+            (typep type1) (typep type2)
+            (not (equal param param1))
+            (not (equal param param2))
+            (not (set::in param (type-all-type-vars type1)))
+            (not (set::in param (type-all-type-vars type2)))
+            (equal (type-var-kind param) (type-var-kind param1))
+            (equal (type-var-kind param) (type-var-kind param2))
             (type-var-case
-             p
+             param
              :atom
-             (and (equal atren1
-                         (omap::update (type-var-atom->name p1) p.name nil))
-                  (equal atren2
-                         (omap::update (type-var-atom->name p2) p.name nil))
-                  (equal arren1 nil)
-                  (equal arren2 nil))
+             (and (equal atom-ren1
+                         (omap::update (type-var-atom->name param1)
+                                       param.name nil))
+                  (equal atom-ren2
+                         (omap::update (type-var-atom->name param2)
+                                       param.name nil))
+                  (equal array-ren1 nil)
+                  (equal array-ren2 nil))
              :array
-             (and (equal atren1 nil)
-                  (equal atren2 nil)
-                  (equal arren1
-                         (omap::update (type-var-array->name p1) p.name nil))
-                  (equal arren2
-                         (omap::update (type-var-array->name p2) p.name nil))))
-            (type-eq (type-rename-type-vars t1 atren1 arren1)
-                     (type-rename-type-vars t2 atren2 arren2)))
-           (type-eq (type-forall p1 t1) (type-forall p2 t2)))
+             (and (equal atom-ren1 nil)
+                  (equal atom-ren2 nil)
+                  (equal array-ren1
+                         (omap::update (type-var-array->name param1)
+                                       param.name nil))
+                  (equal array-ren2
+                         (omap::update (type-var-array->name param2)
+                                       param.name nil))))
+            (type-eq (type-rename-type-vars type1 atom-ren1 array-ren1)
+                     (type-rename-type-vars type2 atom-ren2 array-ren2)))
+           (type-eq (type-forall param1 type1) (type-forall param2 type2)))
 
    ;; product type congruence:
 
-   (pi ((ispace-varp p1) (ispace-varp p2) (ispace-varp p) (typep t1) (typep t2)
-        (not (equal p p1))
-        (not (equal p p2))
-        (not (set::in p (type-all-ispace-vars t1)))
-        (not (set::in p (type-all-ispace-vars t2)))
-        (equal (ispace-var-kind p) (ispace-var-kind p1))
-        (equal (ispace-var-kind p) (ispace-var-kind p2))
+   (pi ((ispace-varp param1) (ispace-varp param2) (ispace-varp param)
+        (typep type1) (typep type2)
+        (not (equal param param1))
+        (not (equal param param2))
+        (not (set::in param (type-all-ispace-vars type1)))
+        (not (set::in param (type-all-ispace-vars type2)))
+        (equal (ispace-var-kind param) (ispace-var-kind param1))
+        (equal (ispace-var-kind param) (ispace-var-kind param2))
         (ispace-var-case
-         p
+         param
          :dim
-         (and (equal dren1
-                     (omap::update (ispace-var-dim->name p1) p.name nil))
-              (equal dren2
-                     (omap::update (ispace-var-dim->name p2) p.name nil))
-              (equal sren1 nil)
-              (equal sren2 nil))
+         (and (equal dim-ren1
+                     (omap::update (ispace-var-dim->name param1)
+                                   param.name nil))
+              (equal dim-ren2
+                     (omap::update (ispace-var-dim->name param2)
+                                   param.name nil))
+              (equal shape-ren1 nil)
+              (equal shape-ren2 nil))
          :shape
-         (and (equal dren1 nil)
-              (equal dren2 nil)
-              (equal sren1
-                     (omap::update (ispace-var-shape->name p1) p.name nil))
-              (equal sren2
-                     (omap::update (ispace-var-shape->name p2) p.name nil))))
-        (type-eq (type-rename-ispace-vars t1 dren1 sren1)
-                 (type-rename-ispace-vars t2 dren2 sren2)))
-       (type-eq (type-pi p1 t1) (type-pi p2 t2)))
+         (and (equal dim-ren1 nil)
+              (equal dim-ren2 nil)
+              (equal shape-ren1
+                     (omap::update (ispace-var-shape->name param1)
+                                   param.name nil))
+              (equal shape-ren2
+                     (omap::update (ispace-var-shape->name param2)
+                                   param.name nil))))
+        (type-eq (type-rename-ispace-vars type1 dim-ren1 shape-ren1)
+                 (type-rename-ispace-vars type2 dim-ren2 shape-ren2)))
+       (type-eq (type-pi param1 type1) (type-pi param2 type2)))
 
    ;; sum type congruence:
 
-   (sigma ((ispace-varp p1) (ispace-varp p2) (ispace-varp p)
-           (typep t1) (typep t2)
-           (not (equal p p1))
-           (not (equal p p2))
-           (not (set::in p (type-all-ispace-vars t1)))
-           (not (set::in p (type-all-ispace-vars t2)))
-           (equal (ispace-var-kind p) (ispace-var-kind p1))
-           (equal (ispace-var-kind p) (ispace-var-kind p2))
+   (sigma ((ispace-varp param1) (ispace-varp param2) (ispace-varp param)
+           (typep type1) (typep type2)
+           (not (equal param param1))
+           (not (equal param param2))
+           (not (set::in param (type-all-ispace-vars type1)))
+           (not (set::in param (type-all-ispace-vars type2)))
+           (equal (ispace-var-kind param) (ispace-var-kind param1))
+           (equal (ispace-var-kind param) (ispace-var-kind param2))
            (ispace-var-case
-            p
+            param
             :dim
-            (and (equal dren1
-                        (omap::update (ispace-var-dim->name p1) p.name nil))
-                 (equal dren2
-                        (omap::update (ispace-var-dim->name p2) p.name nil))
-                 (equal sren1 nil)
-                 (equal sren2 nil))
+            (and (equal dim-ren1
+                        (omap::update (ispace-var-dim->name param1)
+                                      param.name nil))
+                 (equal dim-ren2
+                        (omap::update (ispace-var-dim->name param2)
+                                      param.name nil))
+                 (equal shape-ren1 nil)
+                 (equal shape-ren2 nil))
             :shape
-            (and (equal dren1 nil)
-                 (equal dren2 nil)
-                 (equal sren1
-                        (omap::update (ispace-var-shape->name p1) p.name nil))
-                 (equal sren2
-                        (omap::update (ispace-var-shape->name p2) p.name nil))))
-           (type-eq (type-rename-ispace-vars t1 dren1 sren1)
-                    (type-rename-ispace-vars t2 dren2 sren2)))
-          (type-eq (type-sigma p1 t1) (type-sigma p2 t2)))
+            (and (equal dim-ren1 nil)
+                 (equal dim-ren2 nil)
+                 (equal shape-ren1
+                        (omap::update (ispace-var-shape->name param1)
+                                      param.name nil))
+                 (equal shape-ren2
+                        (omap::update (ispace-var-shape->name param2)
+                                      param.name nil))))
+           (type-eq (type-rename-ispace-vars type1 dim-ren1 shape-ren1)
+                    (type-rename-ispace-vars type2 dim-ren2 shape-ren2)))
+          (type-eq (type-sigma param1 type1) (type-sigma param2 type2)))
 
    ;; normalization of array type variables:
 
    (array-var ((stringp name))
               (type-eq (type-var (type-var-array name))
-                       (type-array (type-var (type-var-atom name))
-                                   (ispace-shape (shape-var name)))))
+                       (tarr (type-var (type-var-atom name))
+                             (ispace-shape (shape-var name)))))
 
    ;; normalization of bracket types:
 
-   (bracket ((typep ty) (ispace-listp is) (ispacep i)
-             (ispace-eq i (ispace-shape (shape-splice is))))
-            (type-eq (type-bracket ty is)
-                     (type-array ty i)))
+   (bracket ((typep type) (ispace-listp ispaces) (ispacep ispace)
+             (ispace-eq ispace (ispace-shape (shape-splice ispaces))))
+            (type-eq (type-bracket type ispaces)
+                     (tarr type ispace)))
 
    ;; normalization of n-ary function types:
 
@@ -289,36 +303,38 @@
 
    ;; normalization of n-ary universal types:
 
-   (forall2 ((type-varp p1) (type-varp p2) (typep ty))
-            (type-eq (type-foralln (list p1 p2) ty)
-                     (type-forall p1 (type-forall p2 ty))))
+   (forall2 ((type-varp param1) (type-varp param2) (typep type))
+            (type-eq (type-foralln (list param1 param2) type)
+                     (type-forall param1 (type-forall param2 type))))
 
-   (forall3m ((type-varp p1) (type-varp p2) (type-var-listp ps) (consp ps)
-              (typep ty))
-             (type-eq (type-foralln (list* p1 p2 ps) ty)
-                      (type-forall p1 (type-foralln (cons p2 ps) ty))))
+   (forall3m ((type-varp param1) (type-varp param2) (type-var-listp params)
+              (consp params) (typep type))
+             (type-eq (type-foralln (list* param1 param2 params) type)
+                      (type-forall param1
+                                   (type-foralln (cons param2 params) type))))
 
    ;; normalization of n-ary product types:
 
-   (pi2 ((ispace-varp p1) (ispace-varp p2) (typep ty))
-        (type-eq (type-pin (list p1 p2) ty)
-                 (type-pi p1 (type-pi p2 ty))))
+   (pi2 ((ispace-varp param1) (ispace-varp param2) (typep type))
+        (type-eq (type-pin (list param1 param2) type)
+                 (type-pi param1 (type-pi param2 type))))
 
-   (pi3m ((ispace-varp p1) (ispace-varp p2) (ispace-var-listp ps) (consp ps)
-          (typep ty))
-         (type-eq (type-pin (list* p1 p2 ps) ty)
-                  (type-pi p1 (type-pin (cons p2 ps) ty))))
+   (pi3m ((ispace-varp param1) (ispace-varp param2) (ispace-var-listp params)
+          (consp params) (typep type))
+         (type-eq (type-pin (list* param1 param2 params) type)
+                  (type-pi param1 (type-pin (cons param2 params) type))))
 
    ;; normalization of n-ary sum types:
 
-   (sigma2 ((ispace-varp p1) (ispace-varp p2) (typep ty))
-           (type-eq (type-sigman (list p1 p2) ty)
-                    (type-sigma p1 (type-sigma p2 ty))))
+   (sigma2 ((ispace-varp param1) (ispace-varp param2) (typep type))
+           (type-eq (type-sigman (list param1 param2) type)
+                    (type-sigma param1 (type-sigma param2 type))))
 
-   (sigma3m ((ispace-varp p1) (ispace-varp p2) (ispace-var-listp ps) (consp ps)
-             (typep ty))
-            (type-eq (type-sigman (list* p1 p2 ps) ty)
-                     (type-sigma p1 (type-sigman (cons p2 ps) ty))))))
+   (sigma3m ((ispace-varp param1) (ispace-varp param2)
+             (ispace-var-listp params) (consp params) (typep type))
+            (type-eq (type-sigman (list* param1 param2 params) type)
+                     (type-sigma param1
+                                 (type-sigman (cons param2 params) type))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
