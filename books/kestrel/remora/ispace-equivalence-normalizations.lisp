@@ -28,7 +28,7 @@
   (xdoc::topstring
    (xdoc::p
     "We prove that some of the rules in fact realize
-     the reductions claimed in @(see dim-equivalence-definition),
+     the reductions claimed in @(see dim-equivalence),
      e.g. that @('add0'), @('add1'), and @('add3m')
      reduce all variadic additions to binary ones
      (while nullary and unary ones reduce to constants).
