@@ -39,7 +39,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (definductive dim-equivalence-definition
-  :short "Inference rules for dimension equivalence."
+  :short "Inference rules that define dimension equivalence."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -230,7 +230,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (definductive shape/ispace-equivalence-definition
-  :short "Inference rules for shape and ispace equivalence."
+  :short "Inference rules that define shape and ispace equivalence."
   :long
   (xdoc::topstring
    (xdoc::p
