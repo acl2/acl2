@@ -399,6 +399,41 @@
                     (expr-unambp arg2))))
     :enable check-expr-mul)
 
+  (defrule declon-unambp-of-check-ext-declon-declon
+    (b* ((declon? (check-ext-declon-declon edeclon)))
+      (implies (and (ext-declon-unambp edeclon)
+                    declon?)
+               (declon-unambp declon?)))
+    :enable check-ext-declon-declon)
+
+  (defrule fundef-unambp-of-check-ext-declon-fundef
+    (b* ((fundef? (check-ext-declon-fundef edeclon)))
+      (implies (and (ext-declon-unambp edeclon)
+                    fundef?)
+               (fundef-unambp fundef?)))
+    :enable check-ext-declon-fundef)
+
+  (defrule ext-declon-unambp-of-check-trans-item-ext-declon
+    (b* ((edeclon? (check-trans-item-ext-declon item)))
+      (implies (and (trans-item-unambp item)
+                    edeclon?)
+               (ext-declon-unambp edeclon?)))
+    :enable check-trans-item-ext-declon)
+
+  (defrule declon-unambp-of-check-trans-item-declon
+    (b* ((declon? (check-trans-item-declon item)))
+      (implies (and (trans-item-unambp item)
+                    declon?)
+               (declon-unambp declon?)))
+    :enable check-trans-item-declon)
+
+  (defrule fundef-unambp-of-check-trans-item-fundef
+    (b* ((fundef? (check-trans-item-fundef item)))
+      (implies (and (trans-item-unambp item)
+                    fundef?)
+               (fundef-unambp fundef?)))
+    :enable check-trans-item-fundef)
+
   (defrule type-spec-list-unambp-of-check-decl-spec-list-all-typespec
     (b* (((mv okp tyspecs) (check-decl-spec-list-all-typespec specquals)))
       (implies (and (decl-spec-list-unambp specquals)
