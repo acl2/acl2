@@ -40,7 +40,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (definductive type-equivalence-definition
-  :short "Inference rules for type equivalence."
+  :short "Inference rules that define type equivalence."
   :long
   (xdoc::topstring
    (xdoc::p
