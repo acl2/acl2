@@ -388,7 +388,8 @@
   ;; proof validity function:
 
   (verify-guards type-eq-proof-validp
-    :hints (("Goal" :in-theory (enable* type-equivalence-definition-validp-defs))))
+    :hints
+    (("Goal" :in-theory (enable* type-equivalence-definition-validp-defs))))
 
   ;; minimality predicate:
 
