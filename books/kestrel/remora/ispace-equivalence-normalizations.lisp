@@ -159,7 +159,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk dim-equiv-to-binadd-p (dim)
+(define-sk dim-eq-to-binadd-p (dim)
   :returns (yes/no booleanp)
   :short "Check whether a dimension is equivalent to
           one with only binary additions."
@@ -170,7 +170,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define-sk dim-equiv-to-binmul-p (dim)
+(define-sk dim-eq-to-binmul-p (dim)
   :returns (yes/no booleanp)
   :short "Check whether a dimension is equivalent to
           one with only binary multiplications."
@@ -181,7 +181,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define-sk dim-equiv-to-unisub-p (dim)
+(define-sk dim-eq-to-unisub-p (dim)
   :returns (yes/no booleanp)
   :short "Check whether a dimension is equivalent to
           one with only unary subtractions."
@@ -192,7 +192,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define-sk dim-equiv-to-binadd-binmul-unisub-p (dim)
+(define-sk dim-eq-to-binadd-binmul-unisub-p (dim)
   :returns (yes/no booleanp)
   :short "Check whether a dimension is equivalent to
           one with only
@@ -208,7 +208,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk shape-equiv-to-unidims-p (shape)
+(define-sk shape-eq-to-unidims-p (shape)
   :returns (yes/no booleanp)
   :short "Check whether a shape is equivalent to
           one with only unary dimension shapes."
@@ -219,7 +219,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define-sk shape-equiv-to-nullbinappend-p (shape)
+(define-sk shape-eq-to-nullbinappend-p (shape)
   :returns (yes/no booleanp)
   :short "Check whether a shape is equivalent to
           one with only binary or empty concatenations."
@@ -230,7 +230,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define-sk shape-equiv-to-nosplice-p (shape)
+(define-sk shape-eq-to-nosplice-p (shape)
   :returns (yes/no booleanp)
   :short "Check whether a shape is equivalent to one without splices."
   (exists (shape1)
@@ -240,7 +240,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define-sk shape-equiv-to-nodimispace-p (shape)
+(define-sk shape-eq-to-nodimispace-p (shape)
   :returns (yes/no booleanp)
   :short "Check whether a shape is equivalent to
           one without dimension ispaces."
@@ -251,7 +251,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define-sk shape-equiv-to-unidims-nullbinappend-nosplice-nodimispace-p (shape)
+(define-sk shape-eq-to-unidims-nullbinappend-nosplice-nodimispace-p (shape)
   :returns (yes/no booleanp)
   :short "Check whether a shape is equivalent to one
           with only unary dimension shapes,
@@ -2416,7 +2416,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled dim-equiv-to-binadd-p-when-dimp
+(defruled dim-eq-to-binadd-p-when-dimp
   :short "Every dimension is equivalent to one with only binary additions."
   :long
   (xdoc::topstring
@@ -2425,13 +2425,13 @@
      rules @('add0'), @('add1'), and @('add3m'),
      described in @(see dim-equivalence-definition)."))
   (implies (dimp dim)
-           (dim-equiv-to-binadd-p dim))
-  :use (:instance dim-equiv-to-binadd-p-suff
+           (dim-eq-to-binadd-p dim))
+  :use (:instance dim-eq-to-binadd-p-suff
                   (dim1 (binarize-add-in-dim dim))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled dim-equiv-to-binmul-p-when-dimp
+(defruled dim-eq-to-binmul-p-when-dimp
   :short "Every dimension is equivalent to one
           with only binary multiplications."
   :long
@@ -2441,8 +2441,8 @@
      rules @('mul0'), @('mul1'), and @('mul3m'),
      described in @(see dim-equivalence-definition)."))
   (implies (dimp dim)
-           (dim-equiv-to-binmul-p dim))
-  :use ((:instance dim-equiv-to-binmul-p-suff
+           (dim-eq-to-binmul-p dim))
+  :use ((:instance dim-eq-to-binmul-p-suff
                    (dim1 (mv-nth 0 (binarize-mul-in-dim dim))))
         (:instance dim-eq-when-proof-validp
                    (proof (mv-nth 1 (binarize-mul-in-dim dim)))
@@ -2451,7 +2451,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled dim-equiv-to-unisub-p-when-dimp-and-nonullsubp
+(defruled dim-eq-to-unisub-p-when-dimp-and-nonullsubp
   :short "Every dimension without nullary subtractions
           is equivalent to one with only unary subtractions."
   :long
@@ -2465,8 +2465,8 @@
      the theorem assumes that the dimension has no nullary subtractions."))
   (implies (and (dimp dim)
                 (dim-nonullsubp dim))
-           (dim-equiv-to-unisub-p dim))
-  :use ((:instance dim-equiv-to-unisub-p-suff
+           (dim-eq-to-unisub-p dim))
+  :use ((:instance dim-eq-to-unisub-p-suff
                    (dim1 (mv-nth 0 (unarize-sub-in-dim dim))))
         (:instance dim-eq-when-proof-validp
                    (proof (mv-nth 1 (unarize-sub-in-dim dim)))
@@ -2475,7 +2475,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled dim-equiv-to-binadd-binmul-unisub-p-when-dimp-and-nonullsubp
+(defruled dim-eq-to-binadd-binmul-unisub-p-when-dimp-and-nonullsubp
   :short "Every dimension without nullary subtractions
           is equivalent to one with only
           binary additions,
@@ -2505,8 +2505,8 @@
      the unarization of subtraction precedes the binarization of addition."))
   (implies (and (dimp dim)
                 (dim-nonullsubp dim))
-           (dim-equiv-to-binadd-binmul-unisub-p dim))
-  :use ((:instance dim-equiv-to-binadd-binmul-unisub-p-suff
+           (dim-eq-to-binadd-binmul-unisub-p dim))
+  :use ((:instance dim-eq-to-binadd-binmul-unisub-p-suff
                    (dim1 (mv-nth 0 (binarize-mul-in-dim
                                     (binarize-add-in-dim
                                      (mv-nth 0 (unarize-sub-in-dim dim)))))))
@@ -2531,7 +2531,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled shape-equiv-to-unidims-p-when-shapep
+(defruled shape-eq-to-unidims-p-when-shapep
   :short "Every shape is equivalent to one
           with only unary dimension shapes."
   :long
@@ -2541,8 +2541,8 @@
      rules @('dims0') and @('dims2m'),
      described in @(see shape/ispace-equivalence-definition)."))
   (implies (shapep shape)
-           (shape-equiv-to-unidims-p shape))
-  :use ((:instance shape-equiv-to-unidims-p-suff
+           (shape-eq-to-unidims-p shape))
+  :use ((:instance shape-eq-to-unidims-p-suff
                    (shape1 (mv-nth 0 (unarize-dims-in-shape shape))))
         (:instance shape-eq-when-proof-validp
                    (proof (mv-nth 1 (unarize-dims-in-shape shape)))
@@ -2551,7 +2551,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled shape-equiv-to-nullbinappend-p-when-shapep
+(defruled shape-eq-to-nullbinappend-p-when-shapep
   :short "Every shape is equivalent to one
           with only binary or empty concatenations."
   :long
@@ -2561,8 +2561,8 @@
      rules @('append1') and @('append3m'),
      described in @(see shape/ispace-equivalence-definition)."))
   (implies (shapep shape)
-           (shape-equiv-to-nullbinappend-p shape))
-  :use ((:instance shape-equiv-to-nullbinappend-p-suff
+           (shape-eq-to-nullbinappend-p shape))
+  :use ((:instance shape-eq-to-nullbinappend-p-suff
                    (shape1 (mv-nth 0 (nullbinarize-append-in-shape shape))))
         (:instance shape-eq-when-proof-validp
                    (proof (mv-nth 1 (nullbinarize-append-in-shape shape)))
@@ -2572,7 +2572,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled shape-equiv-to-nosplice-p-when-shapep
+(defruled shape-eq-to-nosplice-p-when-shapep
   :short "Every shape is equivalent to one without splices."
   :long
   (xdoc::topstring
@@ -2581,8 +2581,8 @@
      rules @('splice0'), @('splice1m-dim'), and @('splice1m-shape'),
      described in @(see shape/ispace-equivalence-definition)."))
   (implies (shapep shape)
-           (shape-equiv-to-nosplice-p shape))
-  :use ((:instance shape-equiv-to-nosplice-p-suff
+           (shape-eq-to-nosplice-p shape))
+  :use ((:instance shape-eq-to-nosplice-p-suff
                    (shape1 (mv-nth 0 (unsplice-in-shape shape))))
         (:instance shape-eq-when-proof-validp
                    (proof (mv-nth 1 (unsplice-in-shape shape)))
@@ -2591,7 +2591,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled shape-equiv-to-nodimispace-p-when-shapep
+(defruled shape-eq-to-nodimispace-p-when-shapep
   :short "Every shape is equivalent to one without dimension ispaces."
   :long
   (xdoc::topstring
@@ -2600,8 +2600,8 @@
      rule @('ispace-dim-shape'),
      described in @(see shape/ispace-equivalence-definition)."))
   (implies (shapep shape)
-           (shape-equiv-to-nodimispace-p shape))
-  :use ((:instance shape-equiv-to-nodimispace-p-suff
+           (shape-eq-to-nodimispace-p shape))
+  :use ((:instance shape-eq-to-nodimispace-p-suff
                    (shape1 (mv-nth 0 (undim-in-shape shape))))
         (:instance shape-eq-when-proof-validp
                    (proof (mv-nth 1 (undim-in-shape shape)))
@@ -2610,7 +2610,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled shape-equiv-to-unidims-nullbinappend-nosplice-nodimispace-p-when-shapep
+(defruled shape-eq-to-unidims-nullbinappend-nosplice-nodimispace-p-when-shapep
   :short "Every shape is equivalent to one
           with only unary dimension shapes,
           with only binary or empty concatenations,
@@ -2629,14 +2629,14 @@
      and preserves the statuses established by the preceding ones.")
    (xdoc::p
     "Unlike the analogous corollary for dimensions
-     (see @(tsee dim-equiv-to-binadd-binmul-unisub-p-when-dimp-and-nonullsubp)),
+     (see @(tsee dim-eq-to-binadd-binmul-unisub-p-when-dimp-and-nonullsubp)),
      any order of the four transformations works,
      because each transformation preserves
      the statuses established by the other three."))
   (implies (shapep shape)
-           (shape-equiv-to-unidims-nullbinappend-nosplice-nodimispace-p shape))
+           (shape-eq-to-unidims-nullbinappend-nosplice-nodimispace-p shape))
   :use ((:instance
-         shape-equiv-to-unidims-nullbinappend-nosplice-nodimispace-p-suff
+         shape-eq-to-unidims-nullbinappend-nosplice-nodimispace-p-suff
          (shape1
           (mv-nth 0 (undim-in-shape
                      (mv-nth 0 (unsplice-in-shape
