@@ -22,18 +22,20 @@
 ; logic does not have to depend on (and pay the certification-load cost of)
 ; the JSON parser.
 
-(define deserialize-expr-from-file ((filename stringp) state)
+(define deserialize-top-exp-from-file ((filename stringp) (mode ast-modep) state)
   :parents (deserializer)
   :returns (mv erp (x exprp) state)
-  :short "Parse a JSON file and convert its contents to a @(tsee expr)."
+  :short "Parse a JSON file encoding a standalone Remora expression
+          and convert its contents to an @(tsee expr)."
   :long
   (xdoc::topstring
    (xdoc::p
     "Reads and parses @('filename') as JSON
-     (via @('parse-file-as-json')),
-     converts the parsed result to a @(tsee json::valuep)
-     (via @(tsee json::parsed-to-value)),
-     and converts that to an @(tsee expr) via @(tsee expr-fromJSON).
+     via @('parse-file-as-json'),
+     converts the parsed result to a @(tsee json::value)
+     via @(tsee json::parsed-to-value),
+     and converts that to an @(tsee expr) via @(tsee expr-fromJSON)
+     in the given @(tsee ast-mode).
      Returns @('(mv erp x state)'), where @('erp') is non-@('nil')
      (an error message) if any of these steps fails, in which case
      @('x') is an irrelevant placeholder @(tsee expr).
@@ -51,7 +53,7 @@
         (b* ((- (cw "The JSON parsed from ~s0 is malformed.~%" filename)))
           (mv erp (make-expr-var :name "") state)))
        ((mv erp exp)
-        (expr-fromJSON value))
+        (expr-fromJSON value mode))
        ((when erp)
         (b* ((- (cw "Error converting the JSON value from ~s0 ~
                      to a Remora expression: ~@1~%" filename erp)))
@@ -64,18 +66,20 @@
       (implies (not erp)
                (expr-huncheckedp x))))
 
-(define deserialize-file-from-file ((filename stringp) state)
+(define deserialize-from-file ((filename stringp) (mode ast-modep) state)
   :parents (deserializer)
   :returns (mv erp (x filep) state)
-  :short "Parse a JSON file and convert its contents to a @(tsee file)."
+  :short "Parse a JSON file encoding a Remora source file
+          and convert its contents to a @(tsee file)."
   :long
   (xdoc::topstring
    (xdoc::p
     "Reads and parses @('filename') as JSON
-     (via @('parse-file-as-json')),
-     converts the parsed result to a @(tsee json::valuep)
-     (via @(tsee json::parsed-to-value)),
-     and converts that to a @(tsee file) via @(tsee file-fromJSON).
+     via @('parse-file-as-json'),
+     converts the parsed result to a @(tsee json::value)
+     via @(tsee json::parsed-to-value),
+     and converts that to a @(tsee file) via @(tsee file-fromJSON)
+     in the given @(tsee ast-mode).
      Returns @('(mv erp x state)'), where @('erp') is non-@('nil')
      (an error message) if any of these steps fails, in which case
      @('x') is an irrelevant placeholder @(tsee file).
@@ -93,7 +97,7 @@
         (b* ((- (cw "The JSON parsed from ~s0 is malformed.~%" filename)))
           (mv erp (make-file :imports nil :decls nil) state)))
        ((mv erp exp)
-        (file-fromJSON value))
+        (file-fromJSON value mode))
        ((when erp)
         (b* ((- (cw "Error converting the JSON value from ~s0 ~
                      to a Remora file: ~@1~%" filename erp)))
