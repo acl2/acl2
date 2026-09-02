@@ -471,27 +471,27 @@
              (enable* shape/ispace-equivalence-definition-validp-defs))))
 
   (defruled shapep-when-shape-eq
-    (implies (shape-eq shp1 shp2)
-             (and (shapep shp1)
-                  (shapep shp2)))
+    (implies (shape-eq shape1 shape2)
+             (and (shapep shape1)
+                  (shapep shape2)))
     :enable (shape-eq shapep-when-shape-eq-proof-validp))
 
   (defruled shape-listp-when-shapes-eq
-    (implies (shapes-eq shps1 shps2)
-             (and (shape-listp shps1)
-                  (shape-listp shps2)))
+    (implies (shapes-eq shapes1 shapes2)
+             (and (shape-listp shapes1)
+                  (shape-listp shapes2)))
     :enable (shapes-eq shape-listp-when-shapes-eq-proof-validp))
 
   (defruled ispacep-when-ispace-eq
-    (implies (ispace-eq isp1 isp2)
-             (and (ispacep isp1)
-                  (ispacep isp2)))
+    (implies (ispace-eq ispace1 ispace2)
+             (and (ispacep ispace1)
+                  (ispacep ispace2)))
     :enable (ispace-eq ispacep-when-ispace-eq-proof-validp))
 
   (defruled ispace-listp-when-ispaces-eq
-    (implies (ispaces-eq isps1 isps2)
-             (and (ispace-listp isps1)
-                  (ispace-listp isps2)))
+    (implies (ispaces-eq ispaces1 ispaces2)
+             (and (ispace-listp ispaces1)
+                  (ispace-listp ispaces2)))
     :enable (ispaces-eq ispace-listp-when-ispaces-eq-proof-validp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

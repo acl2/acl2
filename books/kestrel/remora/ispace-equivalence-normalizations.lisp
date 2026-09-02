@@ -1788,66 +1788,66 @@
      which this function does not affect."))
   (b* (((when (endp ispaces)) (mv (shape-append nil)
                                   (shape-eq-proof-splice0)))
-       (ispace (ispace-fix (car ispaces)))
-       (is (ispace-list-fix (cdr ispaces)))
-       ((mv new-shape2 proof2) (unsplice-ispaces (cdr ispaces))))
+       (ispace (car ispaces))
+       (ispaces (cdr ispaces))
+       ((mv new-shape2 proof2) (unsplice-ispaces ispaces)))
     (ispace-case
      ispace
      :dim (b* ((shape1 (shape-dims (list ispace.dim)))
-               (mid-shape (shape-append (list shape1 (shape-splice is))))
+               (mid-shape (shape-append (list shape1 (shape-splice ispaces))))
                (new-shape (shape-append (list shape1 new-shape2))))
             (mv new-shape
                 (make-shape-eq-proof-trans
-                 :shape1 (shape-splice (cons ispace is))
+                 :shape1 (shape-splice (cons ispace ispaces))
                  :shape2 mid-shape
                  :shape3 new-shape
                  :premise1-proof (make-shape-eq-proof-splice1m-dim
                                   :dim ispace.dim
-                                  :ispaces is)
+                                  :ispaces (ispace-list-fix ispaces))
                  :premise2-proof
                  (make-shape-eq-proof-cong-append
-                  :shapes1 (list shape1 (shape-splice is))
+                  :shapes1 (list shape1 (shape-splice ispaces))
                   :shapes2 (list shape1 new-shape2)
                   :premise1-proof
                   (make-shapes-eq-proof-cong-cons
                    :shape1 shape1
                    :shape2 shape1
-                   :shapes1 (list (shape-splice is))
+                   :shapes1 (list (shape-splice ispaces))
                    :shapes2 (list new-shape2)
                    :premise1-proof (shape-eq-proof-refl shape1)
                    :premise2-proof
                    (make-shapes-eq-proof-cong-cons
-                    :shape1 (shape-splice is)
+                    :shape1 (shape-splice ispaces)
                     :shape2 new-shape2
                     :shapes1 nil
                     :shapes2 nil
                     :premise1-proof proof2
                     :premise2-proof (shapes-eq-proof-refl nil)))))))
      :shape (b* ((shape1 ispace.shape)
-                 (mid-shape (shape-append (list shape1 (shape-splice is))))
+                 (mid-shape (shape-append (list shape1 (shape-splice ispaces))))
                  (new-shape (shape-append (list shape1 new-shape2))))
               (mv new-shape
                   (make-shape-eq-proof-trans
-                   :shape1 (shape-splice (cons ispace is))
+                   :shape1 (shape-splice (cons ispace ispaces))
                    :shape2 mid-shape
                    :shape3 new-shape
                    :premise1-proof (make-shape-eq-proof-splice1m-shape
                                     :shape ispace.shape
-                                    :ispaces is)
+                                    :ispaces (ispace-list-fix ispaces))
                    :premise2-proof
                    (make-shape-eq-proof-cong-append
-                    :shapes1 (list shape1 (shape-splice is))
+                    :shapes1 (list shape1 (shape-splice ispaces))
                     :shapes2 (list shape1 new-shape2)
                     :premise1-proof
                     (make-shapes-eq-proof-cong-cons
                      :shape1 shape1
                      :shape2 shape1
-                     :shapes1 (list (shape-splice is))
+                     :shapes1 (list (shape-splice ispaces))
                      :shapes2 (list new-shape2)
                      :premise1-proof (shape-eq-proof-refl shape1)
                      :premise2-proof
                      (make-shapes-eq-proof-cong-cons
-                      :shape1 (shape-splice is)
+                      :shape1 (shape-splice ispaces)
                       :shape2 new-shape2
                       :shapes1 nil
                       :shapes2 nil
