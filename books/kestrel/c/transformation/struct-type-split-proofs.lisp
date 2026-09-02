@@ -39,13 +39,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption ext-declon-option
-  ext-declon
-  :short "Fixtype of optional external declarators."
-  :pred ext-declon-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defruled cdr-of-trans-item-list-fix
   (equal (cdr (trans-item-list-fix items))
          (trans-item-list-fix (cdr items)))
