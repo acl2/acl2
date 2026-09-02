@@ -35,55 +35,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; move
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defret declon-annop-of-check-ext-declon-declon
-  (implies c$::declon?
-           (declon-annop c$::declon?))
-  :hyp (ext-declon-annop c$::edeclon)
-  :fn c$::check-ext-declon-declon
-  :hints (("Goal" :in-theory (enable c$::check-ext-declon-declon))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defret fundef-annop-of-check-ext-declon-fundef
-  (implies c$::fundef?
-           (fundef-annop c$::fundef?))
-  :hyp (ext-declon-annop c$::edeclon)
-  :fn c$::check-ext-declon-fundef
-  :hints (("Goal" :in-theory (enable c$::check-ext-declon-fundef))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defret ext-declon-annop-of-check-trans-item-ext-declon
-  (implies c$::edeclon?
-           (ext-declon-annop c$::edeclon?))
-  :hyp (trans-item-annop c$::item)
-  :fn c$::check-trans-item-ext-declon
-  :hints (("Goal" :in-theory (enable c$::check-trans-item-ext-declon))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defret declon-annop-of-check-trans-item-declon
-  (implies c$::declon?
-           (declon-annop c$::declon?))
-  :hyp (trans-item-annop c$::item)
-  :fn c$::check-trans-item-declon
-  :hints (("Goal" :in-theory (enable c$::check-trans-item-declon))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defret fundef-annop-of-check-trans-item-fundef
-  (implies c$::fundef?
-           (fundef-annop c$::fundef?))
-  :hyp (trans-item-annop c$::item)
-  :fn c$::check-trans-item-fundef
-  :hints (("Goal" :in-theory (enable c$::check-trans-item-fundef))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defxdoc+ struct-type-split-proofs
   :parents (struct-type-split)
   :short "Proof generation for the struct type split (STS) transformation."
