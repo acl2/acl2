@@ -24,7 +24,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The inference rules for ispaces in [thesis] [arxiv] [esop]
+    "The sorting rules for ispaces in [thesis] [arxiv] [esop]
      prove judgements of the form @($\\Theta \\vdash \\iota :: \\gamma$),
      where @($\\Theta$) is a sort environment that assigns sorts to variables,
      @($\\iota$) is an ispace (called `index' in those publications),
