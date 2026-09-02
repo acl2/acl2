@@ -75,14 +75,17 @@
           (dim-ok ivars (dim-const val)))
 
    (add ((ispace-var-setp ivars)
+         (dim-listp dims)
          (dims-ok ivars dims))
         (dim-ok ivars (dim-add dims)))
 
    (mul ((ispace-var-setp ivars)
+         (dim-listp dims)
          (dims-ok ivars dims))
         (dim-ok ivars (dim-mul dims)))
 
    (sub ((ispace-var-setp ivars)
+         (dim-listp dims)
          (dims-ok ivars dims))
         (dim-ok ivars (dim-sub dims)))
 
@@ -140,7 +143,7 @@
    (splice ((ispace-var-setp ivars)
             (ispace-listp isps)
             (ispaces-ok ivars isps))
-           (shape-ok ivars (shape-splice shps)))
+           (shape-ok ivars (shape-splice isps)))
 
    ;; lists of shapes:
 
