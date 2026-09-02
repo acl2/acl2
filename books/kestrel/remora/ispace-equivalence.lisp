@@ -103,97 +103,97 @@
 
   (;; equivalence of dimensions:
 
-   (refl ((dimp d))
-         (dim= d d))
+   (refl ((dimp dim))
+         (dim= dim dim))
 
-   (symm ((dimp d1) (dimp d2)
-          (dim= d1 d2))
-         (dim= d2 d1))
+   (symm ((dimp dim1) (dimp dim2)
+          (dim= dim1 dim2))
+         (dim= dim2 dim1))
 
-   (trans ((dimp d1) (dimp d2) (dimp d3)
-           (dim= d1 d2) (dim= d2 d3))
-          (dim= d1 d3))
+   (trans ((dimp dim1) (dimp dim2) (dimp dim3)
+           (dim= dim1 dim2) (dim= dim2 dim3))
+          (dim= dim1 dim3))
 
    ;; equivalence of lists of dimensions:
 
-   (refl ((dim-listp ds))
-         (dims= ds ds))
+   (refl ((dim-listp dims))
+         (dims= dims dims))
 
-   (symm ((dim-listp ds1) (dim-listp ds2)
-          (dims= ds1 ds2))
-         (dims= ds2 ds1))
+   (symm ((dim-listp dims1) (dim-listp dims2)
+          (dims= dims1 dims2))
+         (dims= dims2 dims1))
 
-   (trans ((dim-listp ds1) (dim-listp ds2) (dim-listp ds3)
-           (dims= ds1 ds2) (dims= ds2 ds3))
-          (dims= ds1 ds3))
+   (trans ((dim-listp dims1) (dim-listp dims2) (dim-listp dims3)
+           (dims= dims1 dims2) (dims= dims2 dims3))
+          (dims= dims1 dims3))
 
    ;; congruence of dimensions:
 
-   (cong-add ((dim-listp ds1) (dim-listp ds2)
-              (dims= ds1 ds2))
-             (dim= (dim-add ds1) (dim-add ds2)))
+   (cong-add ((dim-listp dims1) (dim-listp dims2)
+              (dims= dims1 dims2))
+             (dim= (dim-add dims1) (dim-add dims2)))
 
-   (cong-sub ((dim-listp ds1) (dim-listp ds2)
-              (dims= ds1 ds2))
-             (dim= (dim-sub ds1) (dim-sub ds2)))
+   (cong-sub ((dim-listp dims1) (dim-listp dims2)
+              (dims= dims1 dims2))
+             (dim= (dim-sub dims1) (dim-sub dims2)))
 
-   (cong-mul ((dim-listp ds1) (dim-listp ds2)
-              (dims= ds1 ds2))
-             (dim= (dim-mul ds1) (dim-mul ds2)))
+   (cong-mul ((dim-listp dims1) (dim-listp dims2)
+              (dims= dims1 dims2))
+             (dim= (dim-mul dims1) (dim-mul dims2)))
 
    ;; congruence of lists of dimensions:
 
-   (cong-cons ((dimp d1) (dimp d2)
-               (dim-listp ds1) (dim-listp ds2)
-               (dim= d1 d2)
-               (dims= ds1 ds2))
-              (dims= (cons d1 ds1) (cons d2 ds2)))
+   (cong-cons ((dimp dim1) (dimp dim2)
+               (dim-listp dims1) (dim-listp dims2)
+               (dim= dim1 dim2)
+               (dims= dims1 dims2))
+              (dims= (cons dim1 dims1) (cons dim2 dims2)))
 
    ;; normalization of addition:
 
    (add0 ()
          (dim= (dim+) (dim-const 0)))
 
-   (add1 ((dimp d))
-         (dim= (dim+ d) d))
+   (add1 ((dimp dim))
+         (dim= (dim+ dim) dim))
 
-   (add3m ((dimp d1) (dimp d2) (dim-listp ds) (consp ds))
-          (dim= (dim-add (list* d1 d2 ds))
-                (dim-add (cons (dim+ d1 d2) ds))))
+   (add3m ((dimp dim1) (dimp dim2) (dim-listp dims) (consp dims))
+          (dim= (dim-add (list* dim1 dim2 dims))
+                (dim-add (cons (dim+ dim1 dim2) dims))))
 
    ;; normalization of multiplication:
 
    (mul0 ()
          (dim= (dim*) (dim-const 1)))
 
-   (mul1 ((dimp d))
-         (dim= (dim* d) d))
+   (mul1 ((dimp dim))
+         (dim= (dim* dim) dim))
 
-   (mul3m ((dimp d1) (dimp d2) (dim-listp ds) (consp ds))
-          (dim= (dim-mul (list* d1 d2 ds))
-                (dim-mul (cons (dim* d1 d2) ds))))
+   (mul3m ((dimp dim1) (dimp dim2) (dim-listp dims) (consp dims))
+          (dim= (dim-mul (list* dim1 dim2 dims))
+                (dim-mul (cons (dim* dim1 dim2) dims))))
 
    ;; normalization of subtraction:
 
-   (sub2m ((dimp d) (dim-listp ds) (consp ds))
-          (dim= (dim-sub (cons d ds))
-                (dim+ d (dim- (dim-add ds)))))
+   (sub2m ((dimp dim) (dim-listp dims) (consp dims))
+          (dim= (dim-sub (cons dim dims))
+                (dim+ dim (dim- (dim-add dims)))))
 
    ;; abelian group properties of addition:
 
-   (add-comm ((dimp d1) (dimp d2))
-             (dim= (dim+ d1 d2)
-                   (dim+ d2 d1)))
+   (add-comm ((dimp dim1) (dimp dim2))
+             (dim= (dim+ dim1 dim2)
+                   (dim+ dim2 dim1)))
 
-   (add-assoc ((dimp d1) (dimp d2) (dimp d3))
-              (dim= (dim+ (dim+ d1 d2) d3)
-                    (dim+ d1 (dim+ d2 d3))))
+   (add-assoc ((dimp dim1) (dimp dim2) (dimp dim3))
+              (dim= (dim+ (dim+ dim1 dim2) dim3)
+                    (dim+ dim1 (dim+ dim2 dim3))))
 
-   (add-id ((dimp d))
-           (dim= (dim+ 0 d) d))
+   (add-id ((dimp dim))
+           (dim= (dim+ 0 dim) dim))
 
-   (add-inv ((dimp d))
-            (dim= (dim+ d (dim- d))
+   (add-inv ((dimp dim))
+            (dim= (dim+ dim (dim- dim))
                   (dim-const 0)))
 
    ;; addition of constants:
@@ -204,16 +204,16 @@
 
    ;; commutative monoid properties of multiplication:
 
-   (mul-comm ((dimp d1) (dimp d2))
-             (dim= (dim* d1 d2)
-                   (dim* d2 d1)))
+   (mul-comm ((dimp dim1) (dimp dim2))
+             (dim= (dim* dim1 dim2)
+                   (dim* dim2 dim1)))
 
-   (mul-assoc ((dimp d1) (dimp d2) (dimp d3))
-              (dim= (dim* (dim* d1 d2) d3)
-                    (dim* d1 (dim* d2 d3))))
+   (mul-assoc ((dimp dim1) (dimp dim2) (dimp dim3))
+              (dim= (dim* (dim* dim1 dim2) dim3)
+                    (dim* dim1 (dim* dim2 dim3))))
 
-   (mul-id ((dimp d))
-           (dim= (dim* 1 d) d))
+   (mul-id ((dimp dim))
+           (dim= (dim* 1 dim) dim))
 
    ;; multiplication of constants:
 
@@ -223,9 +223,9 @@
 
    ;; distributivity of multiplication over addition:
 
-   (distrib ((dimp d) (dimp d1) (dimp d2))
-            (dim= (dim* d (dim+ d1 d2))
-                  (dim+ (dim* d d1) (dim* d d2))))))
+   (distrib ((dimp dim) (dimp dim1) (dimp dim2))
+            (dim= (dim* dim (dim+ dim1 dim2))
+                  (dim+ (dim* dim dim1) (dim* dim dim2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

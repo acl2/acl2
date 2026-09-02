@@ -44,45 +44,46 @@
      in a proof tree for the transitivity defining rule."))
 
   (defruled dim=-trans-swapped
-    (implies (and (dim= d2 d3)
-                  (dim= d1 d2))
-             (dim= d1 d3))
+    (implies (and (dim= dim2 dim3)
+                  (dim= dim1 dim2))
+             (dim= dim1 dim3))
     :use dim=-trans
     :enable dimp-when-dim=)
 
-  (define dim=-proof-trans-swapped (d1
-                                    d2
-                                    d3
+  (define dim=-proof-trans-swapped (dim1
+                                    dim2
+                                    dim3
                                     (premise1-proof dim=-proofp)
                                     (premise2-proof dim=-proofp))
     :returns (proof dim=-proofp)
     :parents nil
-    (make-dim=-proof-trans :d1 d1
-                           :d2 d2
-                           :d3 d3
+    (make-dim=-proof-trans :dim1 dim1
+                           :dim2 dim2
+                           :dim3 dim3
                            :premise1-proof premise2-proof
                            :premise2-proof premise1-proof)
 
     ///
 
     (defret dim=-proof-validp-of-dim=-proof-trans-swapped
-      (implies (and (dim=-proof-validp premise1-proof d2 d3)
-                    (dim=-proof-validp premise2-proof d1 d2))
-               (dim=-proof-validp proof d1 d3))
+      (implies (and (dim=-proof-validp premise1-proof dim2 dim3)
+                    (dim=-proof-validp premise2-proof dim1 dim2))
+               (dim=-proof-validp proof dim1 dim3))
       :hints (("Goal"
                :expand ((dim=-proof-validp
-                         (dim=-proof-trans d1 d2 d3
+                         (dim=-proof-trans dim1 dim2 dim3
                                            premise2-proof premise1-proof)
-                         d1 d3))
+                         dim1 dim3))
                :in-theory (enable dim=-trans-validp
                                   dimp-when-dim=-proof-validp)))))
 
-  (defmacro make-dim=-proof-trans-swapped (&key d1
-                                                d2
-                                                d3
+  (defmacro make-dim=-proof-trans-swapped (&key dim1
+                                                dim2
+                                                dim3
                                                 premise1-proof
                                                 premise2-proof)
-    `(dim=-proof-trans-swapped ,d1 ,d2 ,d3 ,premise1-proof ,premise2-proof)))
+    `(dim=-proof-trans-swapped
+      ,dim1 ,dim2 ,dim3 ,premise1-proof ,premise2-proof)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

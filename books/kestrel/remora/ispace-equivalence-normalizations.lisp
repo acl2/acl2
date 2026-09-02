@@ -434,17 +434,17 @@
                                (dims (binarize-add-in-dim-list
                                       (dim-add->dims dim))))
                     (:instance dim=-cong-add
-                               (ds1 (dim-add->dims dim))
-                               (ds2 (binarize-add-in-dim-list
-                                     (dim-add->dims dim))))
+                               (dims1 (dim-add->dims dim))
+                               (dims2 (binarize-add-in-dim-list
+                                       (dim-add->dims dim))))
                     (:instance dim=-cong-mul
-                               (ds1 (dim-mul->dims dim))
-                               (ds2 (binarize-add-in-dim-list
-                                     (dim-mul->dims dim))))
+                               (dims1 (dim-mul->dims dim))
+                               (dims2 (binarize-add-in-dim-list
+                                       (dim-mul->dims dim))))
                     (:instance dim=-cong-sub
-                               (ds1 (dim-sub->dims dim))
-                               (ds2 (binarize-add-in-dim-list
-                                     (dim-sub->dims dim))))))))
+                               (dims1 (dim-sub->dims dim))
+                               (dims2 (binarize-add-in-dim-list
+                                       (dim-sub->dims dim))))))))
 
   (defret-mutual dim-binaddp-of-binarize-add-in-dims
     (defret dim-binaddp-of-binarize-add-in-dim
@@ -555,13 +555,13 @@
                 ((mv new-dim proof) (binarize-mul-dims dims1)))
              (mv new-dim
                  (make-dim=-proof-trans
-                  :d1 (dim-mul dims)
-                  :d2 (dim-mul dims1)
-                  :d3 new-dim
+                  :dim1 (dim-mul dims)
+                  :dim2 (dim-mul dims1)
+                  :dim3 new-dim
                   :premise1-proof (make-dim=-proof-mul3m
-                                   :d1 (dim-fix (car dims))
-                                   :d2 (dim-fix (cadr dims))
-                                   :ds (dim-list-fix (cddr dims)))
+                                   :dim1 (dim-fix (car dims))
+                                   :dim2 (dim-fix (cadr dims))
+                                   :dims (dim-list-fix (cddr dims)))
                   :premise2-proof proof)))))
   :measure (len dims)
   :verify-guards :after-returns
@@ -646,26 +646,26 @@
      :add (b* (((mv new-dims proof) (binarize-mul-in-dim-list dim.dims)))
             (mv (dim-add new-dims)
                 (make-dim=-proof-cong-add
-                 :ds1 dim.dims
-                 :ds2 new-dims
+                 :dims1 dim.dims
+                 :dims2 new-dims
                  :premise1-proof proof)))
      :mul (b* (((mv new-dims proof) (binarize-mul-in-dim-list dim.dims))
                ((mv new-dim proof1) (binarize-mul-dims new-dims)))
             (mv new-dim
                 (make-dim=-proof-trans
-                 :d1 (dim-mul dim.dims)
-                 :d2 (dim-mul new-dims)
-                 :d3 new-dim
+                 :dim1 (dim-mul dim.dims)
+                 :dim2 (dim-mul new-dims)
+                 :dim3 new-dim
                  :premise1-proof (make-dim=-proof-cong-mul
-                                  :ds1 dim.dims
-                                  :ds2 new-dims
+                                  :dims1 dim.dims
+                                  :dims2 new-dims
                                   :premise1-proof proof)
                  :premise2-proof proof1)))
      :sub (b* (((mv new-dims proof) (binarize-mul-in-dim-list dim.dims)))
             (mv (dim-sub new-dims)
                 (make-dim=-proof-cong-sub
-                 :ds1 dim.dims
-                 :ds2 new-dims
+                 :dims1 dim.dims
+                 :dims2 new-dims
                  :premise1-proof proof))))
     :measure (dim-count dim))
 
@@ -681,10 +681,10 @@
          ((mv new-dims proof2) (binarize-mul-in-dim-list (cdr dims))))
       (mv (cons new-dim new-dims)
           (make-dims=-proof-cong-cons
-           :d1 (dim-fix (car dims))
-           :d2 new-dim
-           :ds1 (dim-list-fix (cdr dims))
-           :ds2 new-dims
+           :dim1 (dim-fix (car dims))
+           :dim2 new-dim
+           :dims1 (dim-list-fix (cdr dims))
+           :dims2 new-dims
            :premise1-proof proof1
            :premise2-proof proof2)))
     :measure (dim-list-count dims)
@@ -843,8 +843,8 @@
                               (dim-sub (list (dim-add
                                               (dim-list-fix (cdr dims)))))))
                (make-dim=-proof-sub2m
-                :d (dim-fix (car dims))
-                :ds (dim-list-fix (cdr dims))))))
+                :dim (dim-fix (car dims))
+                :dims (dim-list-fix (cdr dims))))))
 
   ///
 
@@ -909,25 +909,25 @@
      :add (b* (((mv new-dims proof) (unarize-sub-in-dim-list dim.dims)))
             (mv (dim-add new-dims)
                 (make-dim=-proof-cong-add
-                 :ds1 dim.dims
-                 :ds2 new-dims
+                 :dims1 dim.dims
+                 :dims2 new-dims
                  :premise1-proof proof)))
      :mul (b* (((mv new-dims proof) (unarize-sub-in-dim-list dim.dims)))
             (mv (dim-mul new-dims)
                 (make-dim=-proof-cong-mul
-                 :ds1 dim.dims
-                 :ds2 new-dims
+                 :dims1 dim.dims
+                 :dims2 new-dims
                  :premise1-proof proof)))
      :sub (b* (((mv new-dims proof) (unarize-sub-in-dim-list dim.dims))
                ((mv new-dim proof1) (unarize-sub-dims new-dims)))
             (mv new-dim
                 (make-dim=-proof-trans
-                 :d1 (dim-sub dim.dims)
-                 :d2 (dim-sub new-dims)
-                 :d3 new-dim
+                 :dim1 (dim-sub dim.dims)
+                 :dim2 (dim-sub new-dims)
+                 :dim3 new-dim
                  :premise1-proof (make-dim=-proof-cong-sub
-                                  :ds1 dim.dims
-                                  :ds2 new-dims
+                                  :dims1 dim.dims
+                                  :dims2 new-dims
                                   :premise1-proof proof)
                  :premise2-proof proof1))))
     :measure (dim-count dim))
@@ -944,10 +944,10 @@
          ((mv new-dims proof2) (unarize-sub-in-dim-list (cdr dims))))
       (mv (cons new-dim new-dims)
           (make-dims=-proof-cong-cons
-           :d1 (dim-fix (car dims))
-           :d2 new-dim
-           :ds1 (dim-list-fix (cdr dims))
-           :ds2 new-dims
+           :dim1 (dim-fix (car dims))
+           :dim2 new-dim
+           :dims1 (dim-list-fix (cdr dims))
+           :dims2 new-dims
            :premise1-proof proof1
            :premise2-proof proof2)))
     :measure (dim-list-count dims)
