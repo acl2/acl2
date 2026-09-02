@@ -1065,34 +1065,34 @@
                          (shp=-proof-dims0)))
         ((endp (cdr dims)) (mv (shape-dims dims)
                                (shp=-proof-refl (shape-dims dims))))
-        (t (b* ((d (dim-fix (car dims)))
-                (ds (dim-list-fix (cdr dims)))
-                (shape1 (shape-dims (list d)))
-                ((mv shape2 proof2) (unarize-shape-dims (cdr dims)))
-                (mid-shape (shape-append (list shape1 (shape-dims ds))))
+        (t (b* (((mv shape2 proof2) (unarize-shape-dims (cdr dims)))
+                (dim (dim-fix (car dims)))
+                (dims (dim-list-fix (cdr dims)))
+                (shape1 (shape-dims (list dim)))
+                (mid-shape (shape-append (list shape1 (shape-dims dims))))
                 (new-shape (shape-append (list shape1 shape2))))
              (mv new-shape
                  (make-shp=-proof-trans
-                  :shape1 (shape-dims (cons d ds))
+                  :shape1 (shape-dims (cons dim dims))
                   :shape2 mid-shape
                   :shape3 new-shape
                   :premise1-proof (make-shp=-proof-dims2m
-                                   :dim d
-                                   :dims ds)
+                                   :dim dim
+                                   :dims dims)
                   :premise2-proof
                   (make-shp=-proof-cong-append
-                   :shapes1 (list shape1 (shape-dims ds))
+                   :shapes1 (list shape1 (shape-dims dims))
                    :shapes2 (list shape1 shape2)
                    :premise1-proof
                    (make-shps=-proof-cong-cons
                     :shape1 shape1
                     :shape2 shape1
-                    :shapes1 (list (shape-dims ds))
+                    :shapes1 (list (shape-dims dims))
                     :shapes2 (list shape2)
                     :premise1-proof (shp=-proof-refl shape1)
                     :premise2-proof
                     (make-shps=-proof-cong-cons
-                     :shape1 (shape-dims ds)
+                     :shape1 (shape-dims dims)
                      :shape2 shape2
                      :shapes1 nil
                      :shapes2 nil
