@@ -957,6 +957,58 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-ext-declon-declon ((edeclon ext-declonp))
+  :returns (declon? declon-optionp)
+  :short "Check if an external declaration is a declaration,
+          return the declaration if successful."
+  (if (ext-declon-case edeclon :declon)
+      (ext-declon-declon->declon edeclon)
+    nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-ext-declon-fundef ((edeclon ext-declonp))
+  :returns (fundef? fundef-optionp)
+  :short "Check if an external declaration is a function definition,
+          return the function definition if successful."
+  (if (ext-declon-case edeclon :fundef)
+      (ext-declon-fundef->fundef edeclon)
+    nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-trans-item-ext-declon ((item trans-itemp))
+  :returns (edeclon? ext-declon-optionp)
+  :short "Check if a translation item is an external declaration,
+          returning the external declaration if successful."
+  (if (trans-item-case item :declon)
+      (trans-item-declon->declon item)
+    nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-trans-item-declon ((item trans-itemp))
+  :returns (declon? declon-optionp)
+  :short "Check if a translation item is a declaration,
+          returning the declaration if successful."
+  (b* ((edeclon (check-trans-item-ext-declon item)))
+    (if edeclon
+        (check-ext-declon-declon edeclon)
+      nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-trans-item-fundef ((item trans-itemp))
+  :returns (fundef? fundef-optionp)
+  :short "Check if a translation item is a function definition,
+          returning the function definition if successful."
+  (b* ((edeclon (check-trans-item-ext-declon item)))
+    (if edeclon
+        (check-ext-declon-fundef edeclon)
+      nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-struni-spec-no-members ((struni-spec struni-specp))
   :returns (ident? ident-optionp)
   :short "Check if a structure or union specifier has no members,

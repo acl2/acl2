@@ -254,6 +254,102 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define source-charset-basic+lf ((std standardp))
+  :returns (charset source-charsetp)
+  :short "The source character set defined by
+          the basic characters plus
+          LF as the only extended character and the only line ending."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use the ACL2 ASCII characters
+     that correspond to the basic source characters,
+     together with LF so that it can represent the line ending."))
+  (b* ((chars-with-codes
+        (source-charset-basic+lf-loop
+         (set::insert #\Newline (ascii-basic-source-chars std))))
+       (end-of-lines (set::insert (list #\Newline) nil)))
+    (make-source-charset :chars-with-codes chars-with-codes
+                         :end-of-lines end-of-lines))
+
+  :prepwork
+  ((define source-charset-basic+lf-loop ((chars character-setp))
+     :returns (map any-nat-mapp)
+     :parents nil
+     (b* (((when (set::emptyp (character-sfix chars))) nil)
+          (char (set::head chars)))
+       (omap::update char
+                     (char-code char)
+                     (source-charset-basic+lf-loop (set::tail chars))))
+     :prepwork ((local (in-theory (enable acl2::emptyp-of-character-sfix))))
+     :verify-guards :after-returns
+
+     ///
+
+     (defret keys-of-source-charset-basic+lf-loop
+       (equal (omap::keys map)
+              (character-sfix chars))
+       :hints (("Goal"
+                :induct t
+                :in-theory (enable set::emptyp
+                                   character-sfix))))
+
+     (defret values-of-source-charset-basic+lf-loop
+       (equal (omap::values map)
+              (acl2::char-code-set chars))
+       :hints (("Goal"
+                :induct t
+                :in-theory (enable acl2::char-code-set
+                                   omap::assoc-to-in-of-keys))))
+
+     (defret lookup-of-source-charset-basic+lf-loop
+       (implies (and (character-setp chars)
+                     (set::in char chars))
+                (equal (omap::lookup char map)
+                       (char-code char)))
+       :hints (("Goal"
+                :induct t
+                :in-theory (enable omap::lookup-of-update))))
+
+     (defret injectivep-of-source-charset-basic+lf-loop
+       (omap::injectivep map)
+       :hints (("Goal"
+                :induct t
+                :in-theory
+                (enable acl2::not-in-char-code-set-when-not-in-char-set))))))
+
+  ///
+
+  (defrule source-charset-wfp-of-source-charset-basic+lf
+    (source-charset-wfp (source-charset-basic+lf std) std)
+    :enable (source-charset-wfp
+             source-charset-has-basic-chars-p
+             source-charset-end-of-lines-wfp
+             acl2::char-code-set-monotone
+             set::in
+             set::expensive-rules)))
+
+  (defruled basic-source-char-of-source-charset-basic+lf
+    (implies (set::in bchar (ascii-basic-source-chars std))
+             (equal (basic-source-char bchar
+                                       (source-charset-basic+lf std)
+                                       std)
+                    bchar))
+    :use (:instance omap::lookup-of-lookup-of-inverse
+                    (omap::map
+                     (omap::inverse
+                      (source-charset-basic+lf-loop
+                       (set::insert #\Newline
+                                    (ascii-basic-source-chars std)))))
+                    (omap::val bchar))
+    :enable (basic-source-char
+             source-charset-basic+lf
+             omap::inverse-inverse-when-injectivep
+             lookup-of-source-charset-basic+lf-loop
+             set::expensive-rules))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define source-charset-ascii ()
   :returns (charset source-charsetp)
   :short "The source character set defined by
