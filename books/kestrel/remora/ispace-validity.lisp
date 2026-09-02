@@ -116,10 +116,10 @@
      with the necessary structural adaptations to our ASTs,
      and with additional rules for splices."))
 
-  :preds ((shape-ok ivars shp)
-          (shapes-ok ivars shps)
-          (ispace-ok ivars isp)
-          (ispaces-ok ivars isps))
+  :preds ((shape-ok ivars shape)
+          (shapes-ok ivars shapes)
+          (ispace-ok ivars ispace)
+          (ispaces-ok ivars ispaces))
 
   :irules
 
@@ -136,14 +136,14 @@
          (shape-ok ivars (shape-dims dims)))
 
    (append ((ispace-var-setp ivars)
-            (shape-listp shps)
-            (shapes-ok ivars shps))
-           (shape-ok ivars (shape-append shps)))
+            (shape-listp shapes)
+            (shapes-ok ivars shapes))
+           (shape-ok ivars (shape-append shapes)))
 
    (splice ((ispace-var-setp ivars)
-            (ispace-listp isps)
-            (ispaces-ok ivars isps))
-           (shape-ok ivars (shape-splice isps)))
+            (ispace-listp ispaces)
+            (ispaces-ok ivars ispaces))
+           (shape-ok ivars (shape-splice ispaces)))
 
    ;; lists of shapes:
 
@@ -151,11 +151,11 @@
           (shapes-ok ivars nil))
 
    (cons ((ispace-var-setp ivars)
-          (shapep shp)
-          (shape-listp shps)
-          (shape-ok ivars shp)
-          (shapes-ok ivars shps))
-         (shapes-ok ivars (cons shp shps)))
+          (shapep shape)
+          (shape-listp shapes)
+          (shape-ok ivars shape)
+          (shapes-ok ivars shapes))
+         (shapes-ok ivars (cons shape shapes)))
 
    ;; ispaces:
 
@@ -165,9 +165,9 @@
         (ispace-ok ivars (ispace-dim dim)))
 
    (shape ((ispace-var-setp ivars)
-           (shapep shp)
-           (shape-ok ivars shp))
-          (ispace-ok ivars (ispace-shape shp)))
+           (shapep shape)
+           (shape-ok ivars shape))
+          (ispace-ok ivars (ispace-shape shape)))
 
    ;; lists of ispaces:
 
@@ -175,8 +175,8 @@
           (ispaces-ok ivars nil))
 
    (cons ((ispace-var-setp ivars)
-          (ispacep isp)
-          (ispace-listp isps)
-          (ispace-ok ivars isp)
-          (ispaces-ok ivars isps))
-         (ispaces-ok ivars (cons isp isps)))))
+          (ispacep ispace)
+          (ispace-listp ispaces)
+          (ispace-ok ivars ispace)
+          (ispaces-ok ivars ispaces))
+         (ispaces-ok ivars (cons ispace ispaces)))))
