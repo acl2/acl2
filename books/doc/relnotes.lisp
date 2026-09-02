@@ -171,17 +171,74 @@
    (xdoc::p
     "We have improved and added transformations,
      in particular one to split struct types,
-     which is more general than the previous one that splits struct object.
+     which is more general than the previous one that splits struct objects.
      We have also started working out proof generation for struct splitting.")
+
+   (xdoc::p
+    "We have introduced a JSON-RPC interface to C-to-C transformations.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "data::data-lib" "Data-lib"))
 
    (xdoc::p
-    "A new data structure,"
-    (xdoc::seetopic "treemap::treemap" "treemaps")
-    ", was introduced, representing finite maps with ordered keys.")
+    "The "
+    (xdoc::seetopic "hash::hashes" "hashes")
+    " sub-library was refactored to provide an explicit serialization step,
+     which was modified to be injective for objects not including bad atoms.
+     Injectivity is proven.
+     Performance was also improved on large integers.
+     Although the serialization step was made explicit, the actual "
+    (xdoc::seetopic "hash::jenkins-one-at-a-time" "Jenkins one-at-a-time")
+    " hash algorithm fuses the serialization with the hash algorithm.")
+
+   (xdoc::p
+    "The @(see treeset) library performance was improved.
+     The @(tsee treeset::from-oset) function is now linear complexity.
+     @(tsee treeset::from-list) now builds by first sorting into an @('oset')
+     rather than naively inserting one element at a time.
+     The @(tsee treeset::subset) is now implemented
+     similarly to @(tsee treeset::diff).")
+
+   (xdoc::p
+    "The @(see treeset::iterator) was rewritten.
+     The new implementation is based on zippers,
+     and allows bidirectional traversal.")
+
+   (xdoc::p
+    "A new data structure, @(see treemap)s, was introduced,
+     representing finite maps with ordered keys.
+     This closely mirrors @(see treeset)s.")
+
+   (xdoc::p
+    "Benchmark suites were added for various operations in the library.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "acl2::fty" "FTY Library"))
+
+   (xdoc::p
+    "The @(see fty::deftreeset) and @(see fty::deftreemap) type generators
+     were introduced.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "omap::omaps"
+                             "Standard Ordered Maps (Omaps) Library"))
+
+   (xdoc::p
+    "The omap equivalence, @(tsee omap::mequiv),
+     is now defined in the @('core') book.
+     As a result, the @('with-fixing-theorems') book was removed
+     and congruence rules are proved within @('core').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
+
+   (xdoc::p
+    "The new @(tsee definductive) macro event was introduced
+     to define inductive predicates via inference rules.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -216,6 +273,11 @@
 
    (xdoc::h3 "Documentation")
 
+   (xdoc::p
+    "A SQL injection vulnerability was fixed in the "
+    (xdoc::ahref "https://acl2.org/doc" "web manual")
+    " SEO PHP script.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Licensing Changes")
@@ -223,6 +285,10 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Build System Updates")
+
+   (xdoc::p
+    "The @('uses-gcc-c17') @(see build::cert_param) now
+     properly generates the @('CERT_PL_USES_GCC_C17') @('make') variable.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
