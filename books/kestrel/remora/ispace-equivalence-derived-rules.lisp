@@ -95,42 +95,43 @@
     "This is analogous to @(tsee dim=-trans-swapped)."))
 
   (defruled shp=-trans-swapped
-    (implies (and (shp= s2 s3)
-                  (shp= s1 s2))
-             (shp= s1 s3))
+    (implies (and (shp= shape2 shape3)
+                  (shp= shape1 shape2))
+             (shp= shape1 shape3))
     :use shp=-trans
     :enable shapep-when-shp=)
 
-  (define shp=-proof-trans-swapped (s1
-                                    s2
-                                    s3
+  (define shp=-proof-trans-swapped (shape1
+                                    shape2
+                                    shape3
                                     (premise1-proof shp=-proofp)
                                     (premise2-proof shp=-proofp))
     :returns (proof shp=-proofp)
     :parents nil
-    (make-shp=-proof-trans :s1 s1
-                           :s2 s2
-                           :s3 s3
+    (make-shp=-proof-trans :shape1 shape1
+                           :shape2 shape2
+                           :shape3 shape3
                            :premise1-proof premise2-proof
                            :premise2-proof premise1-proof)
 
     ///
 
     (defret shp=-proof-validp-of-shp=-proof-trans-swapped
-      (implies (and (shp=-proof-validp premise1-proof s2 s3)
-                    (shp=-proof-validp premise2-proof s1 s2))
-               (shp=-proof-validp proof s1 s3))
+      (implies (and (shp=-proof-validp premise1-proof shape2 shape3)
+                    (shp=-proof-validp premise2-proof shape1 shape2))
+               (shp=-proof-validp proof shape1 shape3))
       :hints (("Goal"
                :expand ((shp=-proof-validp
-                         (shp=-proof-trans s1 s2 s3
+                         (shp=-proof-trans shape1 shape2 shape3
                                            premise2-proof premise1-proof)
-                         s1 s3))
+                         shape1 shape3))
                :in-theory (enable shp=-trans-validp
                                   shapep-when-shp=-proof-validp)))))
 
-  (defmacro make-shp=-proof-trans-swapped (&key s1
-                                                s2
-                                                s3
+  (defmacro make-shp=-proof-trans-swapped (&key shape1
+                                                shape2
+                                                shape3
                                                 premise1-proof
                                                 premise2-proof)
-    `(shp=-proof-trans-swapped ,s1 ,s2 ,s3 ,premise1-proof ,premise2-proof)))
+    `(shp=-proof-trans-swapped
+      ,shape1 ,shape2 ,shape3 ,premise1-proof ,premise2-proof)))

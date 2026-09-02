@@ -853,7 +853,8 @@
              (dim=-proof-validp proof
                                 (dim-sub dims)
                                 new-dim))
-    :hints (("Goal" :in-theory (enable* dim-equivalence-definition-validp-defs))))
+    :hints
+    (("Goal" :in-theory (enable* dim-equivalence-definition-validp-defs))))
 
   (defret dim-unisubp-of-unarize-sub-dims
     (implies (and (dim-list-unisubp dims)
@@ -1072,29 +1073,29 @@
                 (new-shape (shape-append (list shape1 shape2))))
              (mv new-shape
                  (make-shp=-proof-trans
-                  :s1 (shape-dims (cons d ds))
-                  :s2 mid-shape
-                  :s3 new-shape
+                  :shape1 (shape-dims (cons d ds))
+                  :shape2 mid-shape
+                  :shape3 new-shape
                   :premise1-proof (make-shp=-proof-dims2m
-                                   :d d
-                                   :ds ds)
+                                   :dim d
+                                   :dims ds)
                   :premise2-proof
                   (make-shp=-proof-cong-append
-                   :ss1 (list shape1 (shape-dims ds))
-                   :ss2 (list shape1 shape2)
+                   :shapes1 (list shape1 (shape-dims ds))
+                   :shapes2 (list shape1 shape2)
                    :premise1-proof
                    (make-shps=-proof-cong-cons
-                    :s1 shape1
-                    :s2 shape1
-                    :ss1 (list (shape-dims ds))
-                    :ss2 (list shape2)
+                    :shape1 shape1
+                    :shape2 shape1
+                    :shapes1 (list (shape-dims ds))
+                    :shapes2 (list shape2)
                     :premise1-proof (shp=-proof-refl shape1)
                     :premise2-proof
                     (make-shps=-proof-cong-cons
-                     :s1 (shape-dims ds)
-                     :s2 shape2
-                     :ss1 nil
-                     :ss2 nil
+                     :shape1 (shape-dims ds)
+                     :shape2 shape2
+                     :shapes1 nil
+                     :shapes2 nil
                      :premise1-proof proof2
                      :premise2-proof (shps=-proof-refl nil)))))))))
   :measure (len dims)
@@ -1109,7 +1110,8 @@
                                 new-shape))
     :hints (("Goal"
              :induct t
-             :in-theory (enable* shape/ispace-equivalence-definition-validp-defs))))
+             :in-theory
+             (enable* shape/ispace-equivalence-definition-validp-defs))))
 
   (defret shape-unidimsp-of-unarize-shape-dims
     (shape-unidimsp new-shape)
@@ -1180,15 +1182,15 @@
                    (unarize-dims-in-shape-list shape.shapes)))
                (mv (shape-append new-shapes)
                    (make-shp=-proof-cong-append
-                    :ss1 shape.shapes
-                    :ss2 new-shapes
+                    :shapes1 shape.shapes
+                    :shapes2 new-shapes
                     :premise1-proof proof)))
      :splice (b* (((mv new-ispaces proof)
                    (unarize-dims-in-ispace-list shape.ispaces)))
                (mv (shape-splice new-ispaces)
                    (make-shp=-proof-cong-splice
-                    :is1 shape.ispaces
-                    :is2 new-ispaces
+                    :ispaces1 shape.ispaces
+                    :ispaces2 new-ispaces
                     :premise1-proof proof))))
     :measure (shape-count shape))
 
@@ -1204,10 +1206,10 @@
          ((mv new-shapes proof2) (unarize-dims-in-shape-list (cdr shapes))))
       (mv (cons new-shape new-shapes)
           (make-shps=-proof-cong-cons
-           :s1 (shape-fix (car shapes))
-           :s2 new-shape
-           :ss1 (shape-list-fix (cdr shapes))
-           :ss2 new-shapes
+           :shape1 (shape-fix (car shapes))
+           :shape2 new-shape
+           :shapes1 (shape-list-fix (cdr shapes))
+           :shapes2 new-shapes
            :premise1-proof proof1
            :premise2-proof proof2)))
     :measure (shape-list-count shapes)
@@ -1240,8 +1242,8 @@
      :shape (b* (((mv new-shape proof) (unarize-dims-in-shape ispace.shape)))
               (mv (ispace-shape new-shape)
                   (make-isp=-proof-cong-shape
-                   :s1 ispace.shape
-                   :s2 new-shape
+                   :shape1 ispace.shape
+                   :shape2 new-shape
                    :premise1-proof proof))))
     :measure (ispace-count ispace))
 
@@ -1257,10 +1259,10 @@
          ((mv new-ispaces proof2) (unarize-dims-in-ispace-list (cdr ispaces))))
       (mv (cons new-ispace new-ispaces)
           (make-isps=-proof-cong-cons
-           :i1 (ispace-fix (car ispaces))
-           :i2 new-ispace
-           :is1 (ispace-list-fix (cdr ispaces))
-           :is2 new-ispaces
+           :ispace1 (ispace-fix (car ispaces))
+           :ispace2 new-ispace
+           :ispaces1 (ispace-list-fix (cdr ispaces))
+           :ispaces2 new-ispaces
            :premise1-proof proof1
            :premise2-proof proof2)))
     :measure (ispace-list-count ispaces))
@@ -1439,13 +1441,13 @@
                 ((mv new-shape proof) (nullbinarize-append-shapes shapes1)))
              (mv new-shape
                  (make-shp=-proof-trans
-                  :s1 (shape-append shapes)
-                  :s2 (shape-append shapes1)
-                  :s3 new-shape
+                  :shape1 (shape-append shapes)
+                  :shape2 (shape-append shapes1)
+                  :shape3 new-shape
                   :premise1-proof (make-shp=-proof-append3m
-                                   :s1 (shape-fix (car shapes))
-                                   :s2 (shape-fix (cadr shapes))
-                                   :ss (shape-list-fix (cddr shapes)))
+                                   :shape1 (shape-fix (car shapes))
+                                   :shape2 (shape-fix (cadr shapes))
+                                   :shapes (shape-list-fix (cddr shapes)))
                   :premise2-proof proof)))))
   :measure (len shapes)
   :verify-guards :after-returns
@@ -1459,7 +1461,8 @@
                                 new-shape))
     :hints (("Goal"
              :induct t
-             :in-theory (enable* shape/ispace-equivalence-definition-validp-defs))))
+             :in-theory
+             (enable* shape/ispace-equivalence-definition-validp-defs))))
 
   (defret shape-nullbinappendp-of-nullbinarize-append-shapes
     (implies (shape-list-nullbinappendp shapes)
@@ -1535,20 +1538,20 @@
                    (nullbinarize-append-shapes new-shapes)))
                (mv new-shape
                    (make-shp=-proof-trans
-                    :s1 (shape-append shape.shapes)
-                    :s2 (shape-append new-shapes)
-                    :s3 new-shape
+                    :shape1 (shape-append shape.shapes)
+                    :shape2 (shape-append new-shapes)
+                    :shape3 new-shape
                     :premise1-proof (make-shp=-proof-cong-append
-                                     :ss1 shape.shapes
-                                     :ss2 new-shapes
+                                     :shapes1 shape.shapes
+                                     :shapes2 new-shapes
                                      :premise1-proof proof)
                     :premise2-proof proof1)))
      :splice (b* (((mv new-ispaces proof)
                    (nullbinarize-append-in-ispace-list shape.ispaces)))
                (mv (shape-splice new-ispaces)
                    (make-shp=-proof-cong-splice
-                    :is1 shape.ispaces
-                    :is2 new-ispaces
+                    :ispaces1 shape.ispaces
+                    :ispaces2 new-ispaces
                     :premise1-proof proof))))
     :measure (shape-count shape))
 
@@ -1566,10 +1569,10 @@
           (nullbinarize-append-in-shape-list (cdr shapes))))
       (mv (cons new-shape new-shapes)
           (make-shps=-proof-cong-cons
-           :s1 (shape-fix (car shapes))
-           :s2 new-shape
-           :ss1 (shape-list-fix (cdr shapes))
-           :ss2 new-shapes
+           :shape1 (shape-fix (car shapes))
+           :shape2 new-shape
+           :shapes1 (shape-list-fix (cdr shapes))
+           :shapes2 new-shapes
            :premise1-proof proof1
            :premise2-proof proof2)))
     :measure (shape-list-count shapes))
@@ -1590,8 +1593,8 @@
                   (nullbinarize-append-in-shape ispace.shape)))
               (mv (ispace-shape new-shape)
                   (make-isp=-proof-cong-shape
-                   :s1 ispace.shape
-                   :s2 new-shape
+                   :shape1 ispace.shape
+                   :shape2 new-shape
                    :premise1-proof proof))))
     :measure (ispace-count ispace))
 
@@ -1609,10 +1612,10 @@
           (nullbinarize-append-in-ispace-list (cdr ispaces))))
       (mv (cons new-ispace new-ispaces)
           (make-isps=-proof-cong-cons
-           :i1 (ispace-fix (car ispaces))
-           :i2 new-ispace
-           :is1 (ispace-list-fix (cdr ispaces))
-           :is2 new-ispaces
+           :ispace1 (ispace-fix (car ispaces))
+           :ispace2 new-ispace
+           :ispaces1 (ispace-list-fix (cdr ispaces))
+           :ispaces2 new-ispaces
            :premise1-proof proof1
            :premise2-proof proof2)))
     :measure (ispace-list-count ispaces))
@@ -1649,7 +1652,8 @@
                                    new-ispaces))
       :fn nullbinarize-append-in-ispace-list)
     :hints (("Goal"
-             :in-theory (enable* shape/ispace-equivalence-definition-validp-defs))))
+             :in-theory
+             (enable* shape/ispace-equivalence-definition-validp-defs))))
 
   (defret-mutual shape-nullbinappendp-of-nullbinarize-append-in-shapes/ispaces
     (defret shape-nullbinappendp-of-nullbinarize-append-in-shape
@@ -1794,29 +1798,29 @@
                (new-shape (shape-append (list shape1 new-shape2))))
             (mv new-shape
                 (make-shp=-proof-trans
-                 :s1 (shape-splice (cons ispace is))
-                 :s2 mid-shape
-                 :s3 new-shape
+                 :shape1 (shape-splice (cons ispace is))
+                 :shape2 mid-shape
+                 :shape3 new-shape
                  :premise1-proof (make-shp=-proof-splice1m-dim
-                                  :d ispace.dim
-                                  :is is)
+                                  :dim ispace.dim
+                                  :ispaces is)
                  :premise2-proof
                  (make-shp=-proof-cong-append
-                  :ss1 (list shape1 (shape-splice is))
-                  :ss2 (list shape1 new-shape2)
+                  :shapes1 (list shape1 (shape-splice is))
+                  :shapes2 (list shape1 new-shape2)
                   :premise1-proof
                   (make-shps=-proof-cong-cons
-                   :s1 shape1
-                   :s2 shape1
-                   :ss1 (list (shape-splice is))
-                   :ss2 (list new-shape2)
+                   :shape1 shape1
+                   :shape2 shape1
+                   :shapes1 (list (shape-splice is))
+                   :shapes2 (list new-shape2)
                    :premise1-proof (shp=-proof-refl shape1)
                    :premise2-proof
                    (make-shps=-proof-cong-cons
-                    :s1 (shape-splice is)
-                    :s2 new-shape2
-                    :ss1 nil
-                    :ss2 nil
+                    :shape1 (shape-splice is)
+                    :shape2 new-shape2
+                    :shapes1 nil
+                    :shapes2 nil
                     :premise1-proof proof2
                     :premise2-proof (shps=-proof-refl nil)))))))
      :shape (b* ((shape1 ispace.shape)
@@ -1824,29 +1828,29 @@
                  (new-shape (shape-append (list shape1 new-shape2))))
               (mv new-shape
                   (make-shp=-proof-trans
-                   :s1 (shape-splice (cons ispace is))
-                   :s2 mid-shape
-                   :s3 new-shape
+                   :shape1 (shape-splice (cons ispace is))
+                   :shape2 mid-shape
+                   :shape3 new-shape
                    :premise1-proof (make-shp=-proof-splice1m-shape
-                                    :s ispace.shape
-                                    :is is)
+                                    :shape ispace.shape
+                                    :ispaces is)
                    :premise2-proof
                    (make-shp=-proof-cong-append
-                    :ss1 (list shape1 (shape-splice is))
-                    :ss2 (list shape1 new-shape2)
+                    :shapes1 (list shape1 (shape-splice is))
+                    :shapes2 (list shape1 new-shape2)
                     :premise1-proof
                     (make-shps=-proof-cong-cons
-                     :s1 shape1
-                     :s2 shape1
-                     :ss1 (list (shape-splice is))
-                     :ss2 (list new-shape2)
+                     :shape1 shape1
+                     :shape2 shape1
+                     :shapes1 (list (shape-splice is))
+                     :shapes2 (list new-shape2)
                      :premise1-proof (shp=-proof-refl shape1)
                      :premise2-proof
                      (make-shps=-proof-cong-cons
-                      :s1 (shape-splice is)
-                      :s2 new-shape2
-                      :ss1 nil
-                      :ss2 nil
+                      :shape1 (shape-splice is)
+                      :shape2 new-shape2
+                      :shapes1 nil
+                      :shapes2 nil
                       :premise1-proof proof2
                       :premise2-proof (shps=-proof-refl nil)))))))))
   :measure (len ispaces)
@@ -1861,7 +1865,8 @@
                                 new-shape))
     :hints (("Goal"
              :induct t
-             :in-theory (enable* shape/ispace-equivalence-definition-validp-defs))))
+             :in-theory
+             (enable* shape/ispace-equivalence-definition-validp-defs))))
 
   (defret shape-nosplicep-of-unsplice-ispaces
     (implies (ispace-list-nosplicep ispaces)
@@ -1944,8 +1949,8 @@
                    (unsplice-in-shape-list shape.shapes)))
                (mv (shape-append new-shapes)
                    (make-shp=-proof-cong-append
-                    :ss1 shape.shapes
-                    :ss2 new-shapes
+                    :shapes1 shape.shapes
+                    :shapes2 new-shapes
                     :premise1-proof proof)))
      :splice (b* (((mv new-ispaces proof)
                    (unsplice-in-ispace-list shape.ispaces))
@@ -1953,12 +1958,12 @@
                    (unsplice-ispaces new-ispaces)))
                (mv new-shape
                    (make-shp=-proof-trans
-                    :s1 (shape-splice shape.ispaces)
-                    :s2 (shape-splice new-ispaces)
-                    :s3 new-shape
+                    :shape1 (shape-splice shape.ispaces)
+                    :shape2 (shape-splice new-ispaces)
+                    :shape3 new-shape
                     :premise1-proof (make-shp=-proof-cong-splice
-                                     :is1 shape.ispaces
-                                     :is2 new-ispaces
+                                     :ispaces1 shape.ispaces
+                                     :ispaces2 new-ispaces
                                      :premise1-proof proof)
                     :premise2-proof proof1))))
     :measure (shape-count shape))
@@ -1975,10 +1980,10 @@
          ((mv new-shapes proof2) (unsplice-in-shape-list (cdr shapes))))
       (mv (cons new-shape new-shapes)
           (make-shps=-proof-cong-cons
-           :s1 (shape-fix (car shapes))
-           :s2 new-shape
-           :ss1 (shape-list-fix (cdr shapes))
-           :ss2 new-shapes
+           :shape1 (shape-fix (car shapes))
+           :shape2 new-shape
+           :shapes1 (shape-list-fix (cdr shapes))
+           :shapes2 new-shapes
            :premise1-proof proof1
            :premise2-proof proof2)))
     :measure (shape-list-count shapes)
@@ -2011,8 +2016,8 @@
      :shape (b* (((mv new-shape proof) (unsplice-in-shape ispace.shape)))
               (mv (ispace-shape new-shape)
                   (make-isp=-proof-cong-shape
-                   :s1 ispace.shape
-                   :s2 new-shape
+                   :shape1 ispace.shape
+                   :shape2 new-shape
                    :premise1-proof proof))))
     :measure (ispace-count ispace))
 
@@ -2028,10 +2033,10 @@
          ((mv new-ispaces proof2) (unsplice-in-ispace-list (cdr ispaces))))
       (mv (cons new-ispace new-ispaces)
           (make-isps=-proof-cong-cons
-           :i1 (ispace-fix (car ispaces))
-           :i2 new-ispace
-           :is1 (ispace-list-fix (cdr ispaces))
-           :is2 new-ispaces
+           :ispace1 (ispace-fix (car ispaces))
+           :ispace2 new-ispace
+           :ispaces1 (ispace-list-fix (cdr ispaces))
+           :ispaces2 new-ispaces
            :premise1-proof proof1
            :premise2-proof proof2)))
     :measure (ispace-list-count ispaces))
@@ -2068,7 +2073,8 @@
                                    new-ispaces))
       :fn unsplice-in-ispace-list)
     :hints (("Goal"
-             :in-theory (enable* shape/ispace-equivalence-definition-validp-defs))))
+             :in-theory
+             (enable* shape/ispace-equivalence-definition-validp-defs))))
 
   (defret-mutual shape-nosplicep-of-unsplice-in-shapes/ispaces
     (defret shape-nosplicep-of-unsplice-in-shape
@@ -2199,15 +2205,15 @@
                    (undim-in-shape-list shape.shapes)))
                (mv (shape-append new-shapes)
                    (make-shp=-proof-cong-append
-                    :ss1 shape.shapes
-                    :ss2 new-shapes
+                    :shapes1 shape.shapes
+                    :shapes2 new-shapes
                     :premise1-proof proof)))
      :splice (b* (((mv new-ispaces proof)
                    (undim-in-ispace-list shape.ispaces)))
                (mv (shape-splice new-ispaces)
                    (make-shp=-proof-cong-splice
-                    :is1 shape.ispaces
-                    :is2 new-ispaces
+                    :ispaces1 shape.ispaces
+                    :ispaces2 new-ispaces
                     :premise1-proof proof))))
     :measure (shape-count shape))
 
@@ -2223,10 +2229,10 @@
          ((mv new-shapes proof2) (undim-in-shape-list (cdr shapes))))
       (mv (cons new-shape new-shapes)
           (make-shps=-proof-cong-cons
-           :s1 (shape-fix (car shapes))
-           :s2 new-shape
-           :ss1 (shape-list-fix (cdr shapes))
-           :ss2 new-shapes
+           :shape1 (shape-fix (car shapes))
+           :shape2 new-shape
+           :shapes1 (shape-list-fix (cdr shapes))
+           :shapes2 new-shapes
            :premise1-proof proof1
            :premise2-proof proof2)))
     :measure (shape-list-count shapes)
@@ -2255,12 +2261,12 @@
     (ispace-case
      ispace
      :dim (mv (ispace-shape (shape-dims (list ispace.dim)))
-              (make-isp=-proof-ispace-dim-shape :d ispace.dim))
+              (make-isp=-proof-ispace-dim-shape :dim ispace.dim))
      :shape (b* (((mv new-shape proof) (undim-in-shape ispace.shape)))
               (mv (ispace-shape new-shape)
                   (make-isp=-proof-cong-shape
-                   :s1 ispace.shape
-                   :s2 new-shape
+                   :shape1 ispace.shape
+                   :shape2 new-shape
                    :premise1-proof proof))))
     :measure (ispace-count ispace))
 
@@ -2276,10 +2282,10 @@
          ((mv new-ispaces proof2) (undim-in-ispace-list (cdr ispaces))))
       (mv (cons new-ispace new-ispaces)
           (make-isps=-proof-cong-cons
-           :i1 (ispace-fix (car ispaces))
-           :i2 new-ispace
-           :is1 (ispace-list-fix (cdr ispaces))
-           :is2 new-ispaces
+           :ispace1 (ispace-fix (car ispaces))
+           :ispace2 new-ispace
+           :ispaces1 (ispace-list-fix (cdr ispaces))
+           :ispaces2 new-ispaces
            :premise1-proof proof1
            :premise2-proof proof2)))
     :measure (ispace-list-count ispaces))
@@ -2539,8 +2545,8 @@
                    (shape1 (mv-nth 0 (unarize-dims-in-shape shape))))
         (:instance shp=-when-proof-validp
                    (proof (mv-nth 1 (unarize-dims-in-shape shape)))
-                   (concl.shp1 shape)
-                   (concl.shp2 (mv-nth 0 (unarize-dims-in-shape shape))))))
+                   (concl.shape1 shape)
+                   (concl.shape2 (mv-nth 0 (unarize-dims-in-shape shape))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2559,9 +2565,9 @@
                    (shape1 (mv-nth 0 (nullbinarize-append-in-shape shape))))
         (:instance shp=-when-proof-validp
                    (proof (mv-nth 1 (nullbinarize-append-in-shape shape)))
-                   (concl.shp1 shape)
-                   (concl.shp2 (mv-nth 0 (nullbinarize-append-in-shape
-                                          shape))))))
+                   (concl.shape1 shape)
+                   (concl.shape2 (mv-nth 0 (nullbinarize-append-in-shape
+                                            shape))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2579,8 +2585,8 @@
                    (shape1 (mv-nth 0 (unsplice-in-shape shape))))
         (:instance shp=-when-proof-validp
                    (proof (mv-nth 1 (unsplice-in-shape shape)))
-                   (concl.shp1 shape)
-                   (concl.shp2 (mv-nth 0 (unsplice-in-shape shape))))))
+                   (concl.shape1 shape)
+                   (concl.shape2 (mv-nth 0 (unsplice-in-shape shape))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2598,8 +2604,8 @@
                    (shape1 (mv-nth 0 (undim-in-shape shape))))
         (:instance shp=-when-proof-validp
                    (proof (mv-nth 1 (undim-in-shape shape)))
-                   (concl.shp1 shape)
-                   (concl.shp2 (mv-nth 0 (undim-in-shape shape))))))
+                   (concl.shape1 shape)
+                   (concl.shape2 (mv-nth 0 (undim-in-shape shape))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2639,15 +2645,15 @@
         (:instance
          shp=-when-proof-validp
          (proof (mv-nth 1 (unarize-dims-in-shape shape)))
-         (concl.shp1 shape)
-         (concl.shp2 (mv-nth 0 (unarize-dims-in-shape shape))))
+         (concl.shape1 shape)
+         (concl.shape2 (mv-nth 0 (unarize-dims-in-shape shape))))
         (:instance
          shp=-when-proof-validp
          (proof
           (mv-nth 1 (nullbinarize-append-in-shape
                      (mv-nth 0 (unarize-dims-in-shape shape)))))
-         (concl.shp1 (mv-nth 0 (unarize-dims-in-shape shape)))
-         (concl.shp2
+         (concl.shape1 (mv-nth 0 (unarize-dims-in-shape shape)))
+         (concl.shape2
           (mv-nth 0 (nullbinarize-append-in-shape
                      (mv-nth 0 (unarize-dims-in-shape shape))))))
         (:instance
@@ -2656,10 +2662,10 @@
           (mv-nth 1 (unsplice-in-shape
                      (mv-nth 0 (nullbinarize-append-in-shape
                                 (mv-nth 0 (unarize-dims-in-shape shape)))))))
-         (concl.shp1
+         (concl.shape1
           (mv-nth 0 (nullbinarize-append-in-shape
                      (mv-nth 0 (unarize-dims-in-shape shape)))))
-         (concl.shp2
+         (concl.shape2
           (mv-nth 0 (unsplice-in-shape
                      (mv-nth 0 (nullbinarize-append-in-shape
                                 (mv-nth 0 (unarize-dims-in-shape shape))))))))
@@ -2671,11 +2677,11 @@
                                 (mv-nth 0 (nullbinarize-append-in-shape
                                            (mv-nth 0 (unarize-dims-in-shape
                                                       shape)))))))))
-         (concl.shp1
+         (concl.shape1
           (mv-nth 0 (unsplice-in-shape
                      (mv-nth 0 (nullbinarize-append-in-shape
                                 (mv-nth 0 (unarize-dims-in-shape shape)))))))
-         (concl.shp2
+         (concl.shape2
           (mv-nth 0 (undim-in-shape
                      (mv-nth 0 (unsplice-in-shape
                                 (mv-nth 0 (nullbinarize-append-in-shape
