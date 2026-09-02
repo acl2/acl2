@@ -2322,7 +2322,8 @@
                                         new-ispaces))
       :fn undim-in-ispace-list)
     :hints (("Goal"
-             :in-theory (enable* shape/ispace-equivalence-definition-validp-defs))))
+             :in-theory
+             (enable* shape/ispace-equivalence-definition-validp-defs))))
 
   (defret-mutual shape-nodimispacep-of-undim-in-shapes/ispaces
     (defret shape-nodimispacep-of-undim-in-shape
