@@ -228,9 +228,6 @@
      the equivalence of dimensions and lists of dimensions,
      defined in @(see dim-equivalence-definition).")
    (xdoc::p
-    "All the inference rules start with type premises about the variables,
-     for the same reason explained in @(see dim-equivalence-definition).")
-   (xdoc::p
     "We start with the equivalence rules
      (reflexivity, symmetry, and transitivity),
      for shapes, lists of shapes, ispaces, and lists of ispaces.
