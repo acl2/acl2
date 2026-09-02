@@ -52,9 +52,6 @@
      For our formalization of Remora, and to be consistent with [impl],
      some additional inference rules are needed.")
    (xdoc::p
-    "All the inference rules start with type premises about the variables,
-     for the same reason explained in @(see dim-equivalence-definition).")
-   (xdoc::p
     "We start with the equivalence rules
      (reflexivity, symmetry, and transitivity).
      [thesis] and [arxiv] only include reflexivity,
