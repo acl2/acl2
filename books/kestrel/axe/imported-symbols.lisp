@@ -412,7 +412,8 @@
     strings-starting-with
     add-prefix-to-strings
     merge-sort-string<
-    ))
+
+    plist-worldp-with-formals))
 
 (defconst *arithmetic-symbols*
   '(ceiling-of-lg
