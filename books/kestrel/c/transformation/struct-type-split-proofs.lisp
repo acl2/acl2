@@ -39,13 +39,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled cdr-of-trans-item-list-fix
-  (equal (cdr (trans-item-list-fix items))
-         (trans-item-list-fix (cdr items)))
-  :enable trans-item-list-fix)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define check-ext-declon-declon ((edeclon ext-declonp))
   :returns (declon? declon-optionp)
   :short "Check if an external declaration is a declaration,
@@ -1029,7 +1022,7 @@
                         declaration after the ones of ~
                         the struct type and struct object.")))
   :hooks
-  ((:fix :hints (("Goal" :in-theory (enable cdr-of-trans-item-list-fix)))))
+  ((:fix :hints (("Goal" :in-theory (enable c$::cdr-of-trans-item-list-fix)))))
 
   ///
 
