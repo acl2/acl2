@@ -3699,7 +3699,14 @@
     :true-listp t
     :pred trans-item-listp
     :elementp-of-nil nil
-    :measure (two-nats-measure (acl2-count x) 0))
+    :measure (two-nats-measure (acl2-count x) 0)
+
+    ///
+
+    (defruled cdr-of-trans-item-list-fix
+      (equal (cdr (trans-item-list-fix items))
+             (trans-item-list-fix (cdr items)))
+      :enable trans-item-list-fix))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
