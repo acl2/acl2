@@ -1123,6 +1123,51 @@
      filepath-trans-unit-map-annop-of-trans-ensemble->units
      trans-ensemble-vinfop-of-trans-ensemble->info)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection abstract-syntax-operations-annotated
+  :short "Annotation theorems about certain abstract syntax operations."
+
+  (defrule declon-annop-of-check-ext-declon-declon
+    (b* ((declon? (check-ext-declon-declon edeclon)))
+      (implies (and (ext-declon-annop edeclon)
+                    declon?)
+               (declon-annop declon?)))
+    :enable (check-ext-declon-declon
+             abstract-syntax-annop-rules))
+
+  (defrule fundef-annop-of-check-ext-declon-fundef
+    (b* ((fundef? (check-ext-declon-fundef edeclon)))
+      (implies (and (ext-declon-annop edeclon)
+                    fundef?)
+               (fundef-annop fundef?)))
+    :enable (check-ext-declon-fundef
+             abstract-syntax-annop-rules))
+
+  (defrule ext-declon-annop-of-check-trans-item-ext-declon
+    (b* ((edeclon? (check-trans-item-ext-declon item)))
+      (implies (and (trans-item-annop item)
+                    edeclon?)
+               (ext-declon-annop edeclon?)))
+    :enable (check-trans-item-ext-declon
+             abstract-syntax-annop-rules))
+
+  (defrule declon-annop-of-check-trans-item-declon
+    (b* ((declon? (check-trans-item-declon item)))
+      (implies (and (trans-item-annop item)
+                    declon?)
+               (declon-annop declon?)))
+    :enable (check-trans-item-declon
+             abstract-syntax-annop-rules))
+
+  (defrule fundef-annop-of-check-trans-item-fundef
+    (b* ((fundef? (check-trans-item-fundef item)))
+      (implies (and (trans-item-annop item)
+                    fundef?)
+               (fundef-annop fundef?)))
+    :enable (check-trans-item-fundef
+             abstract-syntax-annop-rules)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expr-type ((expr exprp))
