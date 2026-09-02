@@ -14,6 +14,7 @@
 (include-book "ispace-equivalence-checker")
 (include-book "type-equivalence-checker")
 (include-book "type-checker")
+(include-book "sort-checking")
 (include-book "ispace-equivalence")
 (include-book "ispace-equivalence-derived-rules")
 (include-book "ispace-equivalence-normalizations")
@@ -29,7 +30,7 @@
    (xdoc::p
     "The static semantics of Remora is defined via inference rules,
      in the Remora publications [thesis] [arxiv] [esop].
-     While we are woking on formalizing those inference rules,
+     While we are working on formalizing those inference rules,
      we also provide an executable type checker,
      that is meant to be equivalent to those inference rules;
      we plan to prove this equivalence."))
@@ -37,6 +38,7 @@
                     ispace-equivalence-checker
                     type-equivalence-checker
                     type-checker
+                    sort-checking
                     ispace-equivalence
                     ispace-equivalence-derived-rules
                     ispace-equivalence-normalizations

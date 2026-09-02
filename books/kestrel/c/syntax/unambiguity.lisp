@@ -380,19 +380,59 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection type-spec-list-unambp-of-sublists
-  :short "Theorems saying that the sublist of type specifiers
-          extracted via some abstract syntax operations
-          is unambiguous if the initial list is unambiguous."
+(defsection abstract-syntax-operations-unambiguity
+  :short "Unambiguity theorems about certain abstract syntax operations."
 
-  (defrule type-spec-list-unambp-of-check-spec/qual-list-all-typespec
-    (b* (((mv okp tyspecs) (check-spec/qual-list-all-typespec specquals)))
-      (implies (and (spec/qual-list-unambp specquals)
-                    okp)
-               (type-spec-list-unambp tyspecs)))
-    :induct t
-    :enable (check-spec/qual-list-all-typespec
-             abstract-syntax-unambp-rules))
+  (defrule expr-unambp-of-check-expr-binary
+    (b* (((mv yes/no & arg1 arg2) (check-expr-binary expr)))
+      (implies (and (expr-unambp expr)
+                    yes/no)
+               (and (expr-unambp arg1)
+                    (expr-unambp arg2))))
+    :enable check-expr-binary)
+
+  (defrule expr-unambp-of-check-expr-mul
+    (b* (((mv yes/no arg1 arg2) (check-expr-mul expr)))
+      (implies (and (expr-unambp expr)
+                    yes/no)
+               (and (expr-unambp arg1)
+                    (expr-unambp arg2))))
+    :enable check-expr-mul)
+
+  (defrule declon-unambp-of-check-ext-declon-declon
+    (b* ((declon? (check-ext-declon-declon edeclon)))
+      (implies (and (ext-declon-unambp edeclon)
+                    declon?)
+               (declon-unambp declon?)))
+    :enable check-ext-declon-declon)
+
+  (defrule fundef-unambp-of-check-ext-declon-fundef
+    (b* ((fundef? (check-ext-declon-fundef edeclon)))
+      (implies (and (ext-declon-unambp edeclon)
+                    fundef?)
+               (fundef-unambp fundef?)))
+    :enable check-ext-declon-fundef)
+
+  (defrule ext-declon-unambp-of-check-trans-item-ext-declon
+    (b* ((edeclon? (check-trans-item-ext-declon item)))
+      (implies (and (trans-item-unambp item)
+                    edeclon?)
+               (ext-declon-unambp edeclon?)))
+    :enable check-trans-item-ext-declon)
+
+  (defrule declon-unambp-of-check-trans-item-declon
+    (b* ((declon? (check-trans-item-declon item)))
+      (implies (and (trans-item-unambp item)
+                    declon?)
+               (declon-unambp declon?)))
+    :enable check-trans-item-declon)
+
+  (defrule fundef-unambp-of-check-trans-item-fundef
+    (b* ((fundef? (check-trans-item-fundef item)))
+      (implies (and (trans-item-unambp item)
+                    fundef?)
+               (fundef-unambp fundef?)))
+    :enable check-trans-item-fundef)
 
   (defrule type-spec-list-unambp-of-check-decl-spec-list-all-typespec
     (b* (((mv okp tyspecs) (check-decl-spec-list-all-typespec specquals)))
@@ -411,12 +451,16 @@
                (type-spec-list-unambp tyspecs)))
     :induct t
     :enable (check-decl-spec-list-all-typespec/stoclass
-             abstract-syntax-unambp-rules)))
+             abstract-syntax-unambp-rules))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection expr-unambp-of-operation-on-expr-unambp
-  :short "Preservation of unambiguity by certain operations on expressions."
+  (defrule type-spec-list-unambp-of-check-spec/qual-list-all-typespec
+    (b* (((mv okp tyspecs) (check-spec/qual-list-all-typespec specquals)))
+      (implies (and (spec/qual-list-unambp specquals)
+                    okp)
+               (type-spec-list-unambp tyspecs)))
+    :induct t
+    :enable (check-spec/qual-list-all-typespec
+             abstract-syntax-unambp-rules))
 
   (defrule expr-unambp-of-apply-pre-inc/dec-ops
     (implies (expr-unambp expr)
@@ -437,20 +481,4 @@
              (expr-list-unambp (expr-to-asg-expr-list expr)))
     :induct t
     :enable (expr-to-asg-expr-list
-             abstract-syntax-unambp-rules))
-
-  (defrule expr-unambp-of-check-expr-mul
-    (b* (((mv yes/no arg1 arg2) (check-expr-mul expr)))
-      (implies (and (expr-unambp expr)
-                    yes/no)
-               (and (expr-unambp arg1)
-                    (expr-unambp arg2))))
-    :enable check-expr-mul)
-
-  (defrule expr-unambp-of-check-expr-binary
-    (b* (((mv yes/no & arg1 arg2) (check-expr-binary expr)))
-      (implies (and (expr-unambp expr)
-                    yes/no)
-               (and (expr-unambp arg1)
-                    (expr-unambp arg2))))
-    :enable check-expr-binary))
+             abstract-syntax-unambp-rules)))

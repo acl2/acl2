@@ -163,3 +163,10 @@
            (< (len (cddr (assoc-equal channel (open-input-channels (mv-nth 1 (read-byte$ channel state))))))
               (len (cddr (assoc-equal channel (open-input-channels state))))))
   :hints (("Goal" :in-theory (enable read-byte$ channel-contents))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm w-of-mv-nth-1-of-read-byte$
+  (equal (w (mv-nth 1 (read-byte$ channel state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable read-byte$))))

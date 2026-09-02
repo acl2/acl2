@@ -60,10 +60,13 @@
 (include-book "kestrel/executable-parsers/elf-tools" :dir :system)
 (include-book "kestrel/axe/utilities" :dir :system) ; for the user's convenience
 (include-book "kestrel/utilities/untranslate-dollar-list" :dir :system)
+(include-book "kestrel/utilities/translate" :dir :system)
 (include-book "kestrel/lists-light/set-difference-equal-fast" :dir :system)
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
 (local (include-book "kestrel/utilities/w" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -96,35 +99,43 @@
 (mutual-recursion
   ;; Create a term representing the extraction of the indicated output from TERM.
   ;; This can translate some parts of the output-indicator.
-  (defun wrap-in-output-extractor (output-indicator term wrld)
-    (declare (xargs :guard (and ;; see above comment on output-indicator
-                             (plist-worldp wrld))
-                    :mode :program ; because of translate-term ; todo: do that outside this function, while also checking the output-indicator?
-                    ))
+  ;; Returns (mv erp result state)
+  (defund wrap-in-output-extractor (output-indicator term state) ; reorder args?
+    (declare (xargs :guard (and (pseudo-termp term)
+                                ;; output-indicator may be untranslated
+                                )
+                    :verify-guards nil ; done below
+                    :stobjs state))
     (if (symbolp output-indicator)
-        (case output-indicator
-          ;; Extract a register:
-          (:x0 `(x0 ,term)) ; odd, since this always gives 0
-          (:x1 `(x1 ,term))
-          ;; todo: more
-          (:a0 `(a0 ,term)) ; return value 0
-          (:a1 `(a1 ,term)) ; return value 1
-          ;; todo: more
+        (let ((maybe-result
+                (case output-indicator
+                  ;; Extract a register:
+                  (:x0 `(x0 ,term)) ; odd, since this always gives 0
+                  (:x1 `(x1 ,term))
+                  ;; todo: more
+                  (:a0 `(a0 ,term)) ; return value 0
+                  (:a1 `(a1 ,term)) ; return value 1
+                  ;; todo: more
 
-          ;; (:xmm0 `(bvchop '128 (xr ':zmm '0 ,term)))
-          ;; (:ymm0 `(bvchop '256 (xr ':zmm '0 ,term)))
-          ;; (:zmm0 `(xr ':zmm '0 ,term)) ; seems to already be unsigned
-          ;; ;; Extract a CPU flag: ; todo: more?
-          ;; (:af `(get-flag ':af ,term)) ; todo: more
-          ;; (:cf `(get-flag ':cf ,term))
-          ;; (:of `(get-flag ':of ,term))
-          ;; (:pf `(get-flag ':pf ,term))
-          ;; (:sf `(get-flag ':sf ,term))
-          ;; (:zf `(get-flag ':zf ,term))
-          (t (er hard? 'wrap-in-output-extractor "Unsupported output-indicator: ~x0." output-indicator)))
+                  ;; (:xmm0 `(bvchop '128 (xr ':zmm '0 ,term)))
+                  ;; (:ymm0 `(bvchop '256 (xr ':zmm '0 ,term)))
+                  ;; (:zmm0 `(xr ':zmm '0 ,term)) ; seems to already be unsigned
+                  ;; ;; Extract a CPU flag: ; todo: more?
+                  ;; (:af `(get-flag ':af ,term)) ; todo: more
+                  ;; (:cf `(get-flag ':cf ,term))
+                  ;; (:of `(get-flag ':of ,term))
+                  ;; (:pf `(get-flag ':pf ,term))
+                  ;; (:sf `(get-flag ':sf ,term))
+                  ;; (:zf `(get-flag ':zf ,term))
+                  (t nil))))
+          (if maybe-result
+              (mv (erp-nil) maybe-result state)
+            (prog2$ (er hard? 'wrap-in-output-extractor "Unsupported output-indicator: ~x0." output-indicator)
+                    (mv :error nil state))))
       (if (not (and (consp output-indicator)
                     (true-listp output-indicator)))
-          (er hard? 'wrap-in-output-extractor "Bad output-indicator: ~x0." output-indicator)
+          (prog2$ (er hard? 'wrap-in-output-extractor "Bad output-indicator: ~x0." output-indicator)
+                  (mv :error nil state))
         (case (ffn-symb output-indicator)
           ;; ;; (:register <N>)
           ;; (:register (if (and (eql 1 (len (fargs output-indicator)))
@@ -150,17 +161,26 @@
 
           ;; (:read <N> <ADDR-TERM>) ; returns a chunk (a BV)
           (:read (if (= 2 (len (fargs output-indicator)))
-                     (translate-term `(read ,(farg1 output-indicator) ,(farg2 output-indicator) ,term) 'wrap-in-output-extractor wrld)
-                   (er hard? 'wrap-in-output-extractor "Bad output-indicator: ~x0." output-indicator)))
+                     (b* (((mv erp res state)
+                           (translate-term-in-logic-mode `(read ,(farg1 output-indicator) ,(farg2 output-indicator) ,term) 'wrap-in-output-extractor state))
+                          ((when erp) (mv erp nil state)))
+                       (mv (erp-nil) res state))
+                   (prog2$ (er hard? 'wrap-in-output-extractor "Bad output-indicator: ~x0." output-indicator)
+                           (mv :error nil state))))
 
           ;; (:byte-array <element-count> <addr-term>) ; not sure what order is best for the args
           (:byte-array (if (and (= 2 (len (fargs output-indicator)))
                                 ;; (posp (farg2 output-indicator)) ; number of bytes to read
                                 )
-                           `(list-to-byte-array (read-bytes ,(translate-term (farg1 output-indicator) 'wrap-in-output-extractor wrld)
-                                                            ,(translate-term (farg2 output-indicator) 'wrap-in-output-extractor wrld)
-                                                            ,term))
-                         (er hard? 'wrap-in-output-extractor "Bad output-indicator: ~x0." output-indicator)))
+                           (b* (((mv erp res1 state)
+                                 (translate-term-in-logic-mode (farg1 output-indicator) 'wrap-in-output-extractor state))
+                                ((when erp) (mv erp nil state))
+                                ((mv erp res2 state)
+                                 (translate-term-in-logic-mode (farg2 output-indicator) 'wrap-in-output-extractor state))
+                                ((when erp) (mv erp nil state)))
+                             (mv (erp-nil) `(list-to-byte-array (read-bytes ,res1 ,res2 ,term)) state))
+                         (prog2$ (er hard? 'wrap-in-output-extractor "Bad output-indicator: ~x0." output-indicator)
+                                 (mv :error nil state))))
 
           ;; ;; (:array <bits-per-element> <element-count> <addr-term>) ; not sure what order is best for the args
           ;; (:array (if (and (eql 3 (len (fargs output-indicator)))
@@ -187,42 +207,78 @@
           ;;    (er hard? 'wrap-in-output-extractor "Bad output-indicator: ~x0." output-indicator)))
           ;; ;; (:tuple ... output-indicators ...)
           ;; todo: what if no args?
-          (:tuple (make-cons-nest (wrap-in-output-extractors (fargs output-indicator) term wrld)))
-          (otherwise (er hard? 'wrap-in-output-extractor "Bad output indicator: ~x0" output-indicator))
-          ))))
+          (:tuple
+           (b* (((mv erp res state)
+                 (wrap-in-output-extractors (fargs output-indicator) term state))
+                ((when erp) (mv erp nil state)))
+             (mv (erp-nil) (make-cons-nest res) state)))
+          (otherwise
+            (prog2$ (er hard? 'wrap-in-outputextractor "Bad output indicator: ~x0" output-indicator)
+                    (mv :error nil state)))))))
 
-  (defun wrap-in-output-extractors (output-indicators term wrld)
+  ;; Returns (mv erp result state)
+  (defund wrap-in-output-extractors (output-indicators term state)
     (declare (xargs :guard (and (true-listp output-indicators)
-                                (plist-worldp wrld))))
+                                (pseudo-termp term))
+                    :stobjs state))
     (if (endp output-indicators)
-        nil
-      (cons (wrap-in-output-extractor (first output-indicators) term wrld)
-            (wrap-in-output-extractors (rest output-indicators) term wrld)))))
+        (mv (erp-nil) nil state)
+      (b* (((mv erp res1 state)
+            (wrap-in-output-extractor (first output-indicators) term state))
+           ((when erp) (mv erp nil state))
+           ((mv erp res2 state)
+            (wrap-in-output-extractors (rest output-indicators) term state))
+           ((when erp) (mv erp nil state)))
+        (mv (erp-nil) (cons res1 res2) state)))))
 
-;; (local (make-flag wrap-in-output-extractor))
+(local (make-flag wrap-in-output-extractor))
 
-;; (defthm-flag-wrap-in-output-extractor
-;;   (defthm pseudo-termp-of-wrap-in-output-extractor
-;;     (implies (and (pseudo-termp term)
-;;                   (plist-worldp wrld))
-;;              (pseudo-termp (wrap-in-output-extractor output-indicator term wrld)))
-;;     :flag wrap-in-output-extractor)
-;;   (defthm pseudo-term-listp-of--wrap-in-output-extractors
-;;     (implies (and (pseudo-termp term)
-;;                   (true-listp output-indicators)
-;;                   (plist-worldp wrld))
-;;              (pseudo-term-listp (wrap-in-output-extractors output-indicators term wrld)))
-;;     :flag wrap-in-output-extractors))
+(defthm-flag-wrap-in-output-extractor
+  (defthm pseudo-termp-of-wrap-in-output-extractor
+    (implies (and (pseudo-termp term)
+                  ;(plist-worldp wrld)
+                  )
+             (pseudo-termp (mv-nth 1 (wrap-in-output-extractor output-indicator term state))))
+    :flag wrap-in-output-extractor)
+  (defthm pseudo-term-listp-of--wrap-in-output-extractors
+    (implies (and (pseudo-termp term)
+                  (true-listp output-indicators)
+                  ;(plist-worldp wrld)
+                  )
+             (pseudo-term-listp (mv-nth 1 (wrap-in-output-extractors output-indicators term state))))
+    :flag wrap-in-output-extractors)
+  :hints (("Goal" :in-theory (enable wrap-in-output-extractor wrap-in-output-extractors))))
+
+(verify-guards wrap-in-output-extractor :hints (("Goal" :use (:instance pseudo-term-listp-of--wrap-in-output-extractors
+                                                                        (output-indicators (cdr output-indicator)))
+                                                 :in-theory (disable pseudo-term-listp-of--wrap-in-output-extractors))))
+
+(defthm-flag-wrap-in-output-extractor
+  (defthm w-of-wrap-in-output-extractor
+    (equal (w (mv-nth 2 (wrap-in-output-extractor output-indicator term state)))
+           (w state))
+    :flag wrap-in-output-extractor)
+  (defthm w-of--wrap-in-output-extractors
+    (equal (w (mv-nth 2 (wrap-in-output-extractors output-indicators term state)))
+           (w state))
+    :flag wrap-in-output-extractors)
+  :hints (("Goal" :in-theory (enable wrap-in-output-extractor wrap-in-output-extractors))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Wraps TERM as indicated by OUTPUT-INDICATOR.
 ;; todo: reorder args?
-(defund maybe-wrap-in-output-extractor (output-indicator term wrld)
-  (declare (xargs :guard (plist-worldp wrld)
-                  :mode :program ; because of translate-term
-                  ))
+;; Returns (mv erp result state).
+(defund maybe-wrap-in-output-extractor (output-indicator term state)
+  (declare (xargs :guard (pseudo-termp term) :stobjs state))
   (if (eq :all output-indicator)
-      term
-    (wrap-in-output-extractor output-indicator term wrld)))
+      (mv (erp-nil) term state)
+    (wrap-in-output-extractor output-indicator term state)))
+
+(defthm w-of-mv-nth-2-of-maybe-wrap-in-output-extractor
+  (equal (w (mv-nth 2 (maybe-wrap-in-output-extractor output-indicator term state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable maybe-wrap-in-output-extractor))))
 
 ;; (defthm pseudo-termp-of-maybe-wrap-in-output-extractor
 ;;   (implies (and (pseudo-termp term)
@@ -237,14 +293,13 @@
 
 (local (in-theory (disable acl2::member-of-cons)))
 
-;; 10 seconds
 (acl2::make-repeatedly-run-function repeatedly-run acl2::simplify-dag-risc-v)
 
 ;; Returns (mv erp result-dag-or-quotep
 ;;                 ; assumptions input-assumption-vars lifter-rules-used assumption-rules-used term-to-simulate
 ;;                state).
 ;; This will also be called by the formal unit tester.
-(defun unroll-risc-v-code-core (target
+(defund unroll-risc-v-code-core (target
                                 parsed-executable
                                 extra-assumptions ; todo: can these introduce vars for state components?  now we have :inputs for that.  could also replace register expressions with register names (vars) -- see what do do for the Tester.
                                 ;;suppress-assumptions
@@ -275,13 +330,14 @@
                                 state)
   (declare (xargs :guard (and (lifter-targetp target)
                               (parsed-executablep parsed-executable)
-                              (true-listp extra-assumptions) ; untranslated terms
+                              (pseudo-term-listp extra-assumptions)
                               ;;(booleanp suppress-assumptions)
                               ;; (member-eq inputs-disjoint-from '(nil :code :all))
                               (natp stack-slots)
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
-                              (member-eq position-independent '(t nil :auto))
+                              (or (booleanp position-independent)
+                                  (eq position-independent :auto))
                               ;; (or (eq :skip inputs) (names-and-typesp inputs))
                               ;; (booleanp type-assumptions-for-array-varsp)
                               ;; no recognizer for output-indicator, we just call maybe-wrap-in-output-extractor and see if it returns an error
@@ -306,10 +362,10 @@
                               (print-levelp print)
                               (member print-base '(10 16))
                               (natp max-printed-term-size)
-                              (booleanp untranslate))
-                  :stobjs state
-                  :mode :program ; todo: because of maybe-wrap-in-output-extractor
-                  ))
+                              (booleanp untranslate)
+                              (plist-worldp-with-formals (w state)))
+                  :guard-hints (("Goal" :do-not-induct t :in-theory (e/d (acl2::true-listp-when-pseudo-term-listp-2) (quotep member-equal))))
+                  :stobjs state))
   (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name, also handle non-string targets better
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (state (widen-margins state))
@@ -375,6 +431,9 @@
                           (prog2$ ;; Throws an error if the target doesn't exist:
                             (ensure-target-exists-in-executable target parsed-executable)
                             (subroutine-address-elf target parsed-executable)))))
+       ((when (not (natp target-offset)))
+        (er hard? 'unroll-risc-v-code-core "Bad target-offset: ~x0." target-offset)
+        (mv :bad-target-offset nil state))
        (target-address-term (if position-independentp
                                 ;; Position-independent, so the target is the base-address-var plus the target-offset:
                                 ;; We postulate that there exists some base var wrt which the executable is loaded.
@@ -385,10 +444,9 @@
                                     `(bvplus '32 ',target-offset ,base-address-var)))
                               ;; Not position-independent, so the target is a concrete address:
                               (enquote target-offset)))
-       (assumptions (append  `((equal (pc stat) ,target-address-term)
-                               (stat32p stat)
-                               )
-                          assumptions))
+       (assumptions (append `((equal (pc stat) ,target-address-term)
+                              (stat32p stat))
+                            assumptions))
        (assumptions (union-equal extra-assumptions assumptions))
        ;; (assumptions (set-difference-equal assumptions remove-assumptions))
 
@@ -428,7 +486,9 @@
        ;;                     (if 64-bitp
        ;;                         '(run-until-return3 x86)
        ;;                       '(run-until-return4 x86))))
-       (term-to-simulate (maybe-wrap-in-output-extractor output-indicator term-to-simulate (w state))) ;TODO: delay this if lifting a loop?
+       ((mv erp term-to-simulate state)
+        (maybe-wrap-in-output-extractor output-indicator term-to-simulate state)) ;TODO: delay this if lifting a loop?
+       ((when erp) (mv erp nil state))
        ((when (not (termp term-to-simulate (w state))))
         (er hard? 'unroll-risc-v-code-core "Bad term after wrapping in output-extractor: ~x0." term-to-simulate)
         (mv :error-wrapping-in-output-extractor nil state))
@@ -514,6 +574,83 @@
     (mv (erp-nil) result-dag-or-quotep ; untranslated-assumptions input-assumption-vars lifter-rules assumption-rules term-to-simulate
         state)))
 
+;; We use myquotep as the normal form
+(defthm pseudo-dagp-of-unroll-risc-v-code-core
+  (implies (and (lifter-targetp target)
+                (parsed-executablep parsed-executable)
+                (pseudo-term-listp extra-assumptions)
+                ;;(booleanp suppress-assumptions)
+                ;; (member-eq inputs-disjoint-from '(nil :code :all))
+                (natp stack-slots)
+                (or (natp existing-stack-slots)
+                    (eq :auto existing-stack-slots))
+                (or (booleanp position-independent)
+                    (eq position-independent :auto))
+                ;; (or (eq :skip inputs) (names-and-typesp inputs))
+                ;; (booleanp type-assumptions-for-array-varsp)
+                ;; no recognizer for output-indicator, we just call maybe-wrap-in-output-extractor and see if it returns an error
+                (or (eq nil prune-precise)
+                    (eq t prune-precise)
+                    (natp prune-precise))
+                (or (eq nil prune-approx)
+                    (eq t prune-approx)
+                    (natp prune-approx))
+                (symbol-listp extra-rules)
+                (symbol-listp remove-rules)
+                (symbol-listp extra-assumption-rules)
+                (symbol-listp remove-assumption-rules)
+                (natp step-limit)
+                (step-incrementp step-increment)
+                ;; (nat-listp stop-pcs)
+                (booleanp memoizep)
+                (or (symbol-listp monitor)
+                    (eq :debug monitor))
+                (normalize-xors-optionp normalize-xors)
+                (count-hits-argp count-hits)
+                (print-levelp print)
+                (member print-base '(10 16))
+                (natp max-printed-term-size)
+                (booleanp untranslate)
+                (plist-worldp-with-formals (w state)))
+           (mv-let (erp result state)
+             (unroll-risc-v-code-core target
+                                      parsed-executable
+                                      extra-assumptions
+                                      ;;suppress-assumptions
+                                      ;;inputs-disjoint-from
+                                      stack-slots
+                                      existing-stack-slots
+                                      position-independent
+                                      ;;inputs
+                                      ;;type-assumptions-for-array-varsp
+                                      output-indicator
+                                      prune-precise
+                                      prune-approx
+                                      extra-rules
+                                      remove-rules
+                                      extra-assumption-rules
+                                      remove-assumption-rules
+                                      step-limit
+                                      step-increment
+                                      ;; stop-pcs
+                                      memoizep
+                                      monitor
+                                      normalize-xors
+                                      count-hits
+                                      print
+                                      print-base
+                                      max-printed-term-size
+                                      untranslate
+                                      state)
+             (declare (ignore state))
+             (implies (not erp)
+                      (equal (pseudo-dagp result)
+                             (not (myquotep result))))))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (e/d (acl2::true-listp-when-pseudo-term-listp-2 unroll-risc-v-code-core) (quotep member-equal)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp event state)
 ;; TODO: Consider using the current print-base (:auto value) by default.
 (defun def-unrolled-fn (lifted-name
@@ -555,16 +692,19 @@
                         state)
   (declare (xargs :guard (and (symbolp lifted-name)
                               (lifter-targetp target)
-                              ;; executable
+                              (or (stringp executable)
+                                  (eq :none executable)
+                                  (parsed-executablep executable))
                               ;; (or (eq :skip inputs) (names-and-typesp inputs))
                               ;; (output-indicatorp output-indicator) ; no recognizer for this, we just call maybe-wrap-in-output-extractor and see if it returns an error
-                              ;; extra-assumptions ; untranslated-terms
+                              (true-listp extra-assumptions) ; untranslated-terms
 ;;                              (booleanp suppress-assumptions)
                               ;; (member-eq inputs-disjoint-from '(nil :code :all))
                               (natp stack-slots)
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
-                              (member-eq position-independent '(t nil :auto))
+                              (or (booleanp position-independent)
+                                  (eq position-independent :auto))
                               ;; (booleanp type-assumptions-for-array-varsp)
                               (or (eq nil prune-precise)
                                   (eq t prune-precise)
@@ -594,9 +734,14 @@
                               ;; (booleanp prove-theorem)
                               (natp max-result-term-size)
                               ;; (booleanp restrict-theory)
-                              )
+                              (consp whole-form)
+                              (symbolp (car whole-form))
+                              (plist-worldp-with-formals (w state)))
+                  :guard-debug t
+                  :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
+                                 :in-theory (e/d (acl2::rationalp-when-natp) (quotep))))
                   :stobjs state
-                  :mode :program ; todo
+                  :verify-guards nil ; todo
                   ))
   (b* (;; Check whether this call to the lifter is redundant:
        ((when (command-is-redundantp whole-form state))
@@ -618,7 +763,10 @@
         (er hard? 'def-unrolled-fn "Error (~x0) parsing executable: ~s1." erp executable)
         (mv t nil state))
        ;; Translate assumptions:
-       (extra-assumptions (translate-terms extra-assumptions 'def-unrolled-fn (w state)))
+       ((mv erp extra-assumptions state) (translate-terms-in-logic-mode extra-assumptions 'def-unrolled-fn state))
+       ((when erp)
+        (er hard? 'def-unrolled-fn "Error (~x0) translating terms: ~s1." erp extra-assumptions)
+        (mv t nil state))
 
        ;; Lift the function to obtain the DAG:
        ((mv erp result-dag-or-quotep ;assumptions assumption-vars lifter-rules-used assumption-rules-used term-to-simulate
@@ -635,6 +783,10 @@
                                  ;;stop-pcs
                                  memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslate state))
        ((when erp) (mv erp nil state))
+       ((when (and (not (quotep result-dag-or-quotep))
+                   (< acl2::*max-1d-array-length* (len result-dag-or-quotep))))
+        (mv :dag-to-big nil state))
+
        ;; Extract info from the result:
        (result-size (dag-or-quotep-size result-dag-or-quotep))
        (- (cw "Result DAG size: ~x0.~%" result-size))
@@ -646,7 +798,7 @@
        ;; Check for incomplete run:
        ;; Do we want a check like this?
        ;; ((when (not (subsetp-eq result-vars '(risc-v text-offset))))
-       ;;  (mv t (er hard 'lifter "Unexpected vars, ~x0, in result DAG!" (set-difference-eq result-vars '(risc-v text-offset))) state))
+       ;;  (mv t (er hard? 'lifter "Unexpected vars, ~x0, in result DAG!" (set-difference-eq result-vars '(risc-v text-offset))) state))
        ;; TODO: Maybe move some of this to the -core function:
        ;; (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
        ;;            (set-print-base-radix print-base state)
@@ -655,7 +807,7 @@
         (print-as-term-or-dag result-dag-or-quotep
                               100000 ; todo: make customizable.  since there was an error, we want to print as a term if at all possible
                               result-size nil "Error result" t state)
-        (er hard 'lifter "Lifter error: The run did not finish.")
+        (er hard? 'lifter "Lifter error: The run did not finish.")
         (mv :incomplete-run nil state))
        (termp (or (quotep result-dag-or-quotep)
                   (<= result-size max-result-term-size)))

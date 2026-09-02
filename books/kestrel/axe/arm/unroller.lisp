@@ -686,7 +686,7 @@
        ;; Check for incomplete run:
        ;; Do we want a check like this?
        ;; ((when (not (subsetp-eq result-vars '(arm text-offset))))
-       ;;  (mv t (er hard 'lifter "Unexpected vars, ~x0, in result DAG!" (set-difference-eq result-vars '(arm text-offset))) state))
+       ;;  (mv t (er hard? 'lifter "Unexpected vars, ~x0, in result DAG!" (set-difference-eq result-vars '(arm text-offset))) state))
        ;; TODO: Maybe move some of this to the -core function:
        ;; (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
        ;;            (set-print-base-radix print-base state)
@@ -696,7 +696,7 @@
         (print-as-term-or-dag result-dag-or-quotep
                               100000 ; todo: make customizable.  since there was an error, we want to print as a term if at all possible
                               result-size nil "Error result" t state)
-        (mv t (er hard 'lifter "Lifter error: The run did not finish.") state))
+        (mv t (er hard? 'lifter "Lifter error: The run did not finish.") state))
        (termp (or (quotep result-dag-or-quotep)
                   (<= result-size max-result-term-size)))
        ;; Not valid if too big:

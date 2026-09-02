@@ -35,155 +35,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; move
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption ext-declon-option
-  ext-declon
-  :short "Fixtype of optional external declarators."
-  :pred ext-declon-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled cdr-of-trans-item-list-fix
-  (equal (cdr (trans-item-list-fix items))
-         (trans-item-list-fix (cdr items)))
-  :enable trans-item-list-fix)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-ext-declon-declon ((edeclon ext-declonp))
-  :returns (declon? declon-optionp)
-  :short "Check if an external declaration is a declaration,
-          return the declaration if successful."
-  (if (ext-declon-case edeclon :declon)
-      (ext-declon-declon->declon edeclon)
-    nil)
-
-  ///
-
-  (defret declon-unambp-of-check-ext-declon-declon
-    (implies declon?
-             (declon-unambp declon?))
-    :hyp (ext-declon-unambp edeclon))
-
-  (defret declon-annop-of-check-ext-declon-declon
-    (implies declon?
-             (declon-annop declon?))
-    :hyp (ext-declon-annop edeclon)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-ext-declon-fundef ((edeclon ext-declonp))
-  :returns (fundef? fundef-optionp)
-  :short "Check if an external declaration is a function definition,
-          return the function definition if successful."
-  (if (ext-declon-case edeclon :fundef)
-      (ext-declon-fundef->fundef edeclon)
-    nil)
-
-  ///
-
-  (defret fundef-unambp-of-check-ext-declon-fundef
-    (implies fundef?
-             (fundef-unambp fundef?))
-    :hyp (ext-declon-unambp edeclon))
-
-  (defret fundef-annop-of-check-ext-declon-fundef
-    (implies fundef?
-             (fundef-annop fundef?))
-    :hyp (ext-declon-annop edeclon)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-trans-item-ext-declon ((item trans-itemp))
-  :returns (edeclon? ext-declon-optionp)
-  :short "Check if a translation item is an external declaration,
-          returning the external declaration if successful."
-  (if (trans-item-case item :declon)
-      (trans-item-declon->declon item)
-    nil)
-
-  ///
-
-  (defret ext-declon-unambp-of-check-trans-item-ext-declon
-    (implies edeclon?
-             (ext-declon-unambp edeclon?))
-    :hyp (trans-item-unambp item))
-
-  (defret ext-declon-annop-of-check-trans-item-ext-declon
-    (implies edeclon?
-             (ext-declon-annop edeclon?))
-    :hyp (trans-item-annop item)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-trans-item-declon ((item trans-itemp))
-  :returns (declon? declon-optionp)
-  :short "Check if a translation item is a declaration,
-          returning the declaration if successful."
-  (b* ((edeclon (check-trans-item-ext-declon item)))
-    (if edeclon
-        (check-ext-declon-declon edeclon)
-      nil))
-
-  ///
-
-  (defret declon-unambp-of-check-trans-item-declon
-    (implies declon?
-             (declon-unambp declon?))
-    :hyp (trans-item-unambp item))
-
-  (defret declon-annop-of-check-trans-item-declon
-    (implies declon?
-             (declon-annop declon?))
-    :hyp (trans-item-annop item)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-trans-item-fundef ((item trans-itemp))
-  :returns (fundef? fundef-optionp)
-  :short "Check if a translation item is a function definition,
-          returning the function definition if successful."
-  (b* ((edeclon (check-trans-item-ext-declon item)))
-    (if edeclon
-        (check-ext-declon-fundef edeclon)
-      nil))
-
-  ///
-
-  (defret fundef-unambp-of-check-trans-item-fundef
-    (implies fundef?
-             (fundef-unambp fundef?))
-    :hyp (trans-item-unambp item))
-
-  (defret fundef-annop-of-check-trans-item-fundef
-    (implies fundef?
-             (fundef-annop fundef?))
-    :hyp (trans-item-annop item)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist ident-list-formalp (x)
-  :guard (ident-listp x)
-  :short "Lift @(tsee ident-formalp) to lists."
-  (ident-formalp x))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define ldm-ident-list ((idents ident-listp))
-  :returns (mv erp (idents1 c::ident-listp))
-  :short "Map a list of identifiers
-          to a list of identifiers in the language definition."
-  (b* (((reterr) nil)
-       ((when (endp idents)) (retok nil))
-       ((erp ident1) (ldm-ident (car idents)))
-       ((erp idents1) (ldm-ident-list (cdr idents))))
-    (retok (cons ident1 idents1))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defxdoc+ struct-type-split-proofs
   :parents (struct-type-split)
   :short "Proof generation for the struct type split (STS) transformation."
@@ -512,6 +363,7 @@
              ,@b*-bindings
              ((unless (not (c::value-struct->flexiblep sval))) nil))
           t)
+        :guard-hints (("Goal" :in-theory (enable len)))
         ///
         (defruled ,value-kind-when-struct-value-onlrp
           (implies (,struct-value-onlrp sval)
@@ -629,7 +481,7 @@
                  ((member-equal (ident-fix mem) (ident-list-fix rmems))
                   (retok
                    (cons
-                    (packn-pos (list 'struct-value-nerl- (c::ident->name cmem))
+                    (packn-pos (list 'struct-value-newr- (c::ident->name cmem))
                                'struct-value-)
                     'newr-val)))
                  (t (retmsg$ "Member ~x0 is neither in ~x1 nor in ~x2."
@@ -669,35 +521,33 @@
            (b* (((when (omap::emptyp (c::scope-fix old-static)))
                  (omap::emptyp (c::scope-fix new-static)))
                 ((mv var old-val) (omap::head old-static)))
-             (if (equal var ',old-cname
-                        (b* ((newl-var ',newl-cname)
-                             (newr-var ',newr-cname)
-                             (newl-var+val
-                              (omap::assoc newl-var (c::scope-fix new-static)))
-                             (newr-var+val
-                              (omap::assoc newr-var (c::scope-fix new-static)))
-                             ((unless (and newl-var+val newr-var+val)) nil)
-                             (newl-val (cdr newl-var+val))
-                             (newr-val (cdr newr-var+val))
-                             ((unless (struct-value-equivp old-val
-                                                           newl-val
-                                                           newr-val))
-                              nil)
-                             (old-static (omap::tail old-static))
-                             (new-static
-                              (omap::delete newl-var (c::scope-fix new-static)))
-                             (new-static
-                              (omap::delete newr-val (c::scope-fix new-static))))
-                          (static-equivp old-static new-static))
-                        (b* ((new-var+val
-                              (omap::assoc var (c::scope-fix new-static)))
-                             ((unless new-var+val) nil)
-                             (new-val (cdr new-var+val))
-                             ((unless (equal old-val new-val)) nil)
-                             (old-static (omap::tail old-static))
-                             (new-static
-                              (omap::delete var (c::scope-fix new-static))))
-                          (static-equivp old-static new-static)))))
+             (if (equal var ',old-cname)
+                 (b* ((newl-var ',newl-cname)
+                      (newr-var ',newr-cname)
+                      (newl-var+val
+                       (omap::assoc newl-var (c::scope-fix new-static)))
+                      (newr-var+val
+                       (omap::assoc newr-var (c::scope-fix new-static)))
+                      ((unless (and newl-var+val newr-var+val)) nil)
+                      (newl-val (cdr newl-var+val))
+                      (newr-val (cdr newr-var+val))
+                      ((unless (struct-value-equivp old-val newl-val newr-val))
+                       nil)
+                      (old-static (omap::tail old-static))
+                      (new-static
+                       (omap::delete newl-var (c::scope-fix new-static)))
+                      (new-static
+                       (omap::delete newr-var (c::scope-fix new-static))))
+                   (static-equivp old-static new-static))
+               (b* ((new-var+val
+                     (omap::assoc var (c::scope-fix new-static)))
+                    ((unless new-var+val) nil)
+                    (new-val (cdr new-var+val))
+                    ((unless (equal old-val new-val)) nil)
+                    (old-static (omap::tail old-static))
+                    (new-static
+                     (omap::delete var (c::scope-fix new-static))))
+                 (static-equivp old-static new-static))))
            ///
            (defruled struct-value-equivp-when-static-equivp
              (b* ((old-var+val (omap::assoc ',old-cname old-static))
@@ -754,11 +604,11 @@
                 (equal (c::compustate->heap old-compst)
                        (c::compustate->heap new-compst))
                 (c::compustate-has-static-var-with-type-p
-                 ',old-cname ',old-ctag old-compst)
+                 ',old-cname (c::type-struct ',old-ctag) old-compst)
                 (c::compustate-has-static-var-with-type-p
-                 ',newl-cname ',newl-ctag new-compst)
+                 ',newl-cname (c::type-struct ',newl-ctag) new-compst)
                 (c::compustate-has-static-var-with-type-p
-                 ',newr-cname ',newr-ctag new-compst))
+                 ',newr-cname (c::type-struct ',newr-ctag) new-compst))
            ///
            (defruled struct-value-equivp-when-compustate-equivp
              (b* ((old-val
@@ -970,7 +820,7 @@
      stage
      :init
      (b* ((new-item (car new-items))
-          (new-declon (check-trans-item-declon new-item))
+          (new-declon (c$::check-trans-item-declon new-item))
           ((unless new-declon)
            (retmsg$ "Unsupported proof generation for ~
                      declaration ~x0 transformed into non-declaration ~x1."
@@ -984,7 +834,7 @@
                     (trans-item-declon (ext-declon-declon old-declon))
                     (trans-item-fix new-item)))
           (new-item2 (car new-items))
-          (new-declon2 (check-trans-item-declon new-item2))
+          (new-declon2 (c$::check-trans-item-declon new-item2))
           ((unless new-declon2)
            (retmsg$ "Unsupported proof generation for ~
                      declaration ~x0 transformed into declaration ~x1 ~
@@ -1003,7 +853,7 @@
               events))
      :types
      (b* ((new-item (car new-items))
-          (new-declon (check-trans-item-declon new-item))
+          (new-declon (c$::check-trans-item-declon new-item))
           ((unless new-declon)
            (retmsg$ "Unsupported proof generation for ~
                      declaration ~x0 transformed into non-declaration ~x1."
@@ -1017,7 +867,7 @@
                     (trans-item-declon (ext-declon-declon old-declon))
                     (trans-item-fix new-item)))
           (new-item2 (car new-items))
-          (new-declon2 (check-trans-item-declon new-item2))
+          (new-declon2 (c$::check-trans-item-declon new-item2))
           ((unless new-declon2)
            (retmsg$ "Unsupported proof generation for ~
                      declaration ~x0 transformed into declaration ~x1 ~
@@ -1037,7 +887,7 @@
                         declaration after the ones of ~
                         the struct type and struct object.")))
   :hooks
-  ((:fix :hints (("Goal" :in-theory (enable cdr-of-trans-item-list-fix)))))
+  ((:fix :hints (("Goal" :in-theory (enable c$::cdr-of-trans-item-list-fix)))))
 
   ///
 
@@ -1063,9 +913,9 @@
   :returns (mv (erp maybe-msgp)
                (events pseudo-event-form-listp))
   :short "Generate events for a function definition."
-  (declare (ignore old-fundef new-fundef tag tag2 rmems))
+  (declare (ignore new-fundef tag tag2 rmems))
   (retok
-   `((acl2::cw-event "TODO: theorems for ~x0~%" (fundef-fix old-fundef)))))
+   `((acl2::cw-event "TODO: theorems for ~x0~%" ',(fundef-fix old-fundef)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1109,7 +959,7 @@
      old-edeclon
      :fundef
      (b* ((new-item (car new-items))
-          (new-fundef (check-trans-item-fundef new-item))
+          (new-fundef (c$::check-trans-item-fundef new-item))
           ((unless new-fundef)
            (raise "Internal error: ~x0 transformed into ~x1."
                   (trans-item-declon old-edeclon)
@@ -1336,7 +1186,11 @@
        (old-tunit (omap::head-val old-tunits))
        (new-tunit (omap::head-val new-tunits))
        ((erp events) (stsp-trans-unit old-tunit new-tunit tag tag2 rmems)))
-    (retok `(encapsulate () ,@events)))
+    (retok `(encapsulate
+              ()
+              (local (include-book "std/lists/top" :dir :system))
+              (local (include-book "std/omaps/delete" :dir :system))
+              ,@events)))
   :guard-hints (("Goal"
                  :expand
                  ((:free (tens) (omap::size (trans-ensemble->units tens)))))))
@@ -1351,7 +1205,6 @@
                                                 state)
   :returns (mv (erp maybe-msgp)
                (event pseudo-event-formp))
-  :parents (simpadd0-implementation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
        ((erp old-code
