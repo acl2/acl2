@@ -149,25 +149,6 @@
              (fundef-annop fundef?))
     :hyp (trans-item-annop item)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist ident-list-formalp (x)
-  :guard (ident-listp x)
-  :short "Lift @(tsee ident-formalp) to lists."
-  (ident-formalp x))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define ldm-ident-list ((idents ident-listp))
-  :returns (mv erp (idents1 c::ident-listp))
-  :short "Map a list of identifiers
-          to a list of identifiers in the language definition."
-  (b* (((reterr) nil)
-       ((when (endp idents)) (retok nil))
-       ((erp ident1) (ldm-ident (car idents)))
-       ((erp idents1) (ldm-ident-list (cdr idents))))
-    (retok (cons ident1 idents1))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ struct-type-split-proofs
