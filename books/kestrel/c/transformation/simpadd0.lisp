@@ -3318,7 +3318,7 @@
   :guard (and (code-ensemble-unambp code-old)
               (code-ensemble-annop code-old))
   :returns (mv erp (event pseudo-event-formp))
-  :short "Event expansion of the transformation."
+  :short "Generate the new code ensemble and accompanying theorems."
   :long
   (xdoc::topstring
    (xdoc::p

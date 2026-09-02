@@ -141,15 +141,6 @@
            fix
            empty))
 
-(defrule emptyp-of-diff-when-tree-emptyp-of-arg2
-  (implies (emptyp y)
-           (equal (diff x y)
-                  (fix x)))
-  :enable (diff
-           fix
-           setp
-           empty))
-
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule in-of-diff
@@ -211,7 +202,11 @@
 (defruled diff-when-emptyp-of-arg2
   (implies (emptyp y)
            (equal (diff x y)
-                  (fix x))))
+                  (fix x)))
+  :enable (diff
+           fix
+           setp
+           empty))
 
 (defrule diff-when-emptyp-of-arg2-cheap
   (implies (emptyp y)
@@ -222,7 +217,8 @@
 
 (defrule diff-of-arg1-and-empty
   (equal (diff x (empty))
-         (fix x)))
+         (fix x))
+  :enable diff-when-emptyp-of-arg2)
 
 (defrule diff-of-union
   (equal (diff (union x y) z)
@@ -271,6 +267,7 @@
   (implies (in a y)
            (equal (diff (insert a x) y)
                   (diff x y)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by diff-of-insert-when-in-of-arg2)
 
 (defruled diff-of-insert-when-not-in-of-arg2
