@@ -39,115 +39,83 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-ext-declon-declon ((edeclon ext-declonp))
-  :returns (declon? declon-optionp)
-  :short "Check if an external declaration is a declaration,
-          return the declaration if successful."
-  (if (ext-declon-case edeclon :declon)
-      (ext-declon-declon->declon edeclon)
-    nil)
+(defret declon-unambp-of-check-ext-declon-declon
+  (implies c$::declon?
+           (declon-unambp c$::declon?))
+  :hyp (ext-declon-unambp c$::edeclon)
+  :fn c$::check-ext-declon-declon
+  :hints (("Goal" :in-theory (enable c$::check-ext-declon-declon))))
 
-  ///
-
-  (defret declon-unambp-of-check-ext-declon-declon
-    (implies declon?
-             (declon-unambp declon?))
-    :hyp (ext-declon-unambp edeclon))
-
-  (defret declon-annop-of-check-ext-declon-declon
-    (implies declon?
-             (declon-annop declon?))
-    :hyp (ext-declon-annop edeclon)))
+(defret declon-annop-of-check-ext-declon-declon
+  (implies c$::declon?
+           (declon-annop c$::declon?))
+  :hyp (ext-declon-annop c$::edeclon)
+  :fn c$::check-ext-declon-declon
+  :hints (("Goal" :in-theory (enable c$::check-ext-declon-declon))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-ext-declon-fundef ((edeclon ext-declonp))
-  :returns (fundef? fundef-optionp)
-  :short "Check if an external declaration is a function definition,
-          return the function definition if successful."
-  (if (ext-declon-case edeclon :fundef)
-      (ext-declon-fundef->fundef edeclon)
-    nil)
+(defret fundef-unambp-of-check-ext-declon-fundef
+  (implies c$::fundef?
+           (fundef-unambp c$::fundef?))
+  :hyp (ext-declon-unambp c$::edeclon)
+  :fn c$::check-ext-declon-fundef
+  :hints (("Goal" :in-theory (enable c$::check-ext-declon-fundef))))
 
-  ///
-
-  (defret fundef-unambp-of-check-ext-declon-fundef
-    (implies fundef?
-             (fundef-unambp fundef?))
-    :hyp (ext-declon-unambp edeclon))
-
-  (defret fundef-annop-of-check-ext-declon-fundef
-    (implies fundef?
-             (fundef-annop fundef?))
-    :hyp (ext-declon-annop edeclon)))
+(defret fundef-annop-of-check-ext-declon-fundef
+  (implies c$::fundef?
+           (fundef-annop c$::fundef?))
+  :hyp (ext-declon-annop c$::edeclon)
+  :fn c$::check-ext-declon-fundef
+  :hints (("Goal" :in-theory (enable c$::check-ext-declon-fundef))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-trans-item-ext-declon ((item trans-itemp))
-  :returns (edeclon? ext-declon-optionp)
-  :short "Check if a translation item is an external declaration,
-          returning the external declaration if successful."
-  (if (trans-item-case item :declon)
-      (trans-item-declon->declon item)
-    nil)
+(defret ext-declon-unambp-of-check-trans-item-ext-declon
+  (implies c$::edeclon?
+           (ext-declon-unambp c$::edeclon?))
+  :hyp (trans-item-unambp c$::item)
+  :fn c$::check-trans-item-ext-declon
+  :hints (("Goal" :in-theory (enable c$::check-trans-item-ext-declon))))
 
-  ///
-
-  (defret ext-declon-unambp-of-check-trans-item-ext-declon
-    (implies edeclon?
-             (ext-declon-unambp edeclon?))
-    :hyp (trans-item-unambp item))
-
-  (defret ext-declon-annop-of-check-trans-item-ext-declon
-    (implies edeclon?
-             (ext-declon-annop edeclon?))
-    :hyp (trans-item-annop item)))
+(defret ext-declon-annop-of-check-trans-item-ext-declon
+  (implies c$::edeclon?
+           (ext-declon-annop c$::edeclon?))
+  :hyp (trans-item-annop c$::item)
+  :fn c$::check-trans-item-ext-declon
+  :hints (("Goal" :in-theory (enable c$::check-trans-item-ext-declon))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-trans-item-declon ((item trans-itemp))
-  :returns (declon? declon-optionp)
-  :short "Check if a translation item is a declaration,
-          returning the declaration if successful."
-  (b* ((edeclon (check-trans-item-ext-declon item)))
-    (if edeclon
-        (check-ext-declon-declon edeclon)
-      nil))
+(defret declon-unambp-of-check-trans-item-declon
+  (implies c$::declon?
+           (declon-unambp c$::declon?))
+  :hyp (trans-item-unambp c$::item)
+  :fn c$::check-trans-item-declon
+  :hints (("Goal" :in-theory (enable c$::check-trans-item-declon))))
 
-  ///
-
-  (defret declon-unambp-of-check-trans-item-declon
-    (implies declon?
-             (declon-unambp declon?))
-    :hyp (trans-item-unambp item))
-
-  (defret declon-annop-of-check-trans-item-declon
-    (implies declon?
-             (declon-annop declon?))
-    :hyp (trans-item-annop item)))
+(defret declon-annop-of-check-trans-item-declon
+  (implies c$::declon?
+           (declon-annop c$::declon?))
+  :hyp (trans-item-annop c$::item)
+  :fn c$::check-trans-item-declon
+  :hints (("Goal" :in-theory (enable c$::check-trans-item-declon))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-trans-item-fundef ((item trans-itemp))
-  :returns (fundef? fundef-optionp)
-  :short "Check if a translation item is a function definition,
-          returning the function definition if successful."
-  (b* ((edeclon (check-trans-item-ext-declon item)))
-    (if edeclon
-        (check-ext-declon-fundef edeclon)
-      nil))
+(defret fundef-unambp-of-check-trans-item-fundef
+  (implies c$::fundef?
+           (fundef-unambp c$::fundef?))
+  :hyp (trans-item-unambp c$::item)
+  :fn c$::check-trans-item-fundef
+  :hints (("Goal" :in-theory (enable c$::check-trans-item-fundef))))
 
-  ///
-
-  (defret fundef-unambp-of-check-trans-item-fundef
-    (implies fundef?
-             (fundef-unambp fundef?))
-    :hyp (trans-item-unambp item))
-
-  (defret fundef-annop-of-check-trans-item-fundef
-    (implies fundef?
-             (fundef-annop fundef?))
-    :hyp (trans-item-annop item)))
+(defret fundef-annop-of-check-trans-item-fundef
+  (implies c$::fundef?
+           (fundef-annop c$::fundef?))
+  :hyp (trans-item-annop c$::item)
+  :fn c$::check-trans-item-fundef
+  :hints (("Goal" :in-theory (enable c$::check-trans-item-fundef))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -936,7 +904,7 @@
      stage
      :init
      (b* ((new-item (car new-items))
-          (new-declon (check-trans-item-declon new-item))
+          (new-declon (c$::check-trans-item-declon new-item))
           ((unless new-declon)
            (retmsg$ "Unsupported proof generation for ~
                      declaration ~x0 transformed into non-declaration ~x1."
@@ -950,7 +918,7 @@
                     (trans-item-declon (ext-declon-declon old-declon))
                     (trans-item-fix new-item)))
           (new-item2 (car new-items))
-          (new-declon2 (check-trans-item-declon new-item2))
+          (new-declon2 (c$::check-trans-item-declon new-item2))
           ((unless new-declon2)
            (retmsg$ "Unsupported proof generation for ~
                      declaration ~x0 transformed into declaration ~x1 ~
@@ -969,7 +937,7 @@
               events))
      :types
      (b* ((new-item (car new-items))
-          (new-declon (check-trans-item-declon new-item))
+          (new-declon (c$::check-trans-item-declon new-item))
           ((unless new-declon)
            (retmsg$ "Unsupported proof generation for ~
                      declaration ~x0 transformed into non-declaration ~x1."
@@ -983,7 +951,7 @@
                     (trans-item-declon (ext-declon-declon old-declon))
                     (trans-item-fix new-item)))
           (new-item2 (car new-items))
-          (new-declon2 (check-trans-item-declon new-item2))
+          (new-declon2 (c$::check-trans-item-declon new-item2))
           ((unless new-declon2)
            (retmsg$ "Unsupported proof generation for ~
                      declaration ~x0 transformed into declaration ~x1 ~
@@ -1075,7 +1043,7 @@
      old-edeclon
      :fundef
      (b* ((new-item (car new-items))
-          (new-fundef (check-trans-item-fundef new-item))
+          (new-fundef (c$::check-trans-item-fundef new-item))
           ((unless new-fundef)
            (raise "Internal error: ~x0 transformed into ~x1."
                   (trans-item-declon old-edeclon)
