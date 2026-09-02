@@ -254,47 +254,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define source-charset-ascii ()
-  :returns (charset source-charsetp)
-  :short "The source character set defined by
-          ASCII and three kinds of line endings (LF, CR, and CR LF)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This consists of the 128 ASCII characters,
-     for which we use the ACL2 characters with the respective codes."))
-  (b* ((chars-with-codes (source-charset-ascii-loop 0))
-       (end-of-lines (set::mergesort (list (list #\Newline)
-                                           (list #\Return)
-                                           (list #\Return #\Newline)))))
-    (make-source-charset :chars-with-codes chars-with-codes
-                         :end-of-lines end-of-lines))
-
-  :prepwork
-  ((define source-charset-ascii-loop ((code natp))
-     :returns (map any-nat-mapp)
-     :parents nil
-     (if (>= (lnfix code) 128)
-         nil
-       (omap::update (code-char code)
-                     (lnfix code)
-                     (source-charset-ascii-loop (1+ (lnfix code)))))
-     :measure (nfix (- 128 (nfix code)))
-     :hints (("Goal" :in-theory (enable nfix)))
-     :verify-guards :after-returns
-     :hooks ((:fix :hints (("Goal" :in-theory (enable nfix)))))))
-
-  ///
-
-  (defrule source-charset-wfp-of-source-charset-ascii
-    (source-charset-wfp (source-charset-ascii) std)
-    :enable (source-charset-wfp
-             source-charset-has-basic-chars-p
-             ascii-basic-source-chars
-             acl2::char-code-set)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define source-charset-basic+lf ((std standardp))
   :returns (charset source-charsetp)
   :short "The source character set defined by
@@ -360,3 +319,44 @@
              acl2::char-code-set-monotone
              set::in
              set::expensive-rules)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define source-charset-ascii ()
+  :returns (charset source-charsetp)
+  :short "The source character set defined by
+          ASCII and three kinds of line endings (LF, CR, and CR LF)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This consists of the 128 ASCII characters,
+     for which we use the ACL2 characters with the respective codes."))
+  (b* ((chars-with-codes (source-charset-ascii-loop 0))
+       (end-of-lines (set::mergesort (list (list #\Newline)
+                                           (list #\Return)
+                                           (list #\Return #\Newline)))))
+    (make-source-charset :chars-with-codes chars-with-codes
+                         :end-of-lines end-of-lines))
+
+  :prepwork
+  ((define source-charset-ascii-loop ((code natp))
+     :returns (map any-nat-mapp)
+     :parents nil
+     (if (>= (lnfix code) 128)
+         nil
+       (omap::update (code-char code)
+                     (lnfix code)
+                     (source-charset-ascii-loop (1+ (lnfix code)))))
+     :measure (nfix (- 128 (nfix code)))
+     :hints (("Goal" :in-theory (enable nfix)))
+     :verify-guards :after-returns
+     :hooks ((:fix :hints (("Goal" :in-theory (enable nfix)))))))
+
+  ///
+
+  (defrule source-charset-wfp-of-source-charset-ascii
+    (source-charset-wfp (source-charset-ascii) std)
+    :enable (source-charset-wfp
+             source-charset-has-basic-chars-p
+             ascii-basic-source-chars
+             acl2::char-code-set)))
