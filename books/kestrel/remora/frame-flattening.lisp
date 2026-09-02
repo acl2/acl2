@@ -4,7 +4,8 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (www.alessandrocoglio.info)
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+;          Sarah Johnson
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -12,6 +13,9 @@
 
 (include-book "abstract-syntax-structurals")
 (include-book "abstract-syntax-core")
+(include-book "desugaring") ; char-lit-list-desugar
+
+(include-book "kestrel/fty/deffold-map" :dir :system)
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
@@ -30,16 +34,47 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This unnests nested frame and array expressions, under suitably conditions.
+    "This unnests nested frame, bracket, and array expressions,
+     according to the conditions specified by @(tsee flatten-merge).
      It could be thought of as
-     a normalizing transformation,
-     or even a desugaring transformation,
-     but it is not part of actual @(see desugaring),
-     and may not be in fact necessary for most purposes.
-     However, it is part of [impl]
-     (part of desugaring in earlier versions, but not currently),
-     and [tutor] describes it as syntactic sugar
-     (but [tutor] is older than [impl])."))
+     a normalizing transformation.
+     It is part of [impl],
+     and [tutor] describes it as syntactic sugar,
+     but it is not part of @(see desugaring).")
+   (xdoc::p
+    "Currently in [impl], it is applied at each bracket
+     expression's parse site to the frame that the bracket
+     notation denotes. Here, it is applied as a pass over
+     the post-parse AST prior to desugaring, arranged to yield
+     the same results as [impl]. @(tsee expr-flatten-brackets)
+     walks the AST looking for bracket expressions, and
+     @(tsee flatten-frames-in-expr) does the merging at each
+     one it finds following only frame and bracket spines.
+     So a frame written explicitly with @('frame') is merged
+     into its parent only when an enclosing bracket reaches it.")
+   (xdoc::p
+    "The general idea is that @(tsee flatten-frames-in-expr)
+     turns an expression of the form")
+   (xdoc::codeblock
+    "(frame [a1 ... aN] (frame [b1 ... bM] x11 ... x1P)"
+    "                   (frame [b1 ... bM] x21 ... x2P)"
+    "                   ..."
+    "                   (frame [b1 ... bM] xQ1 ... xQP))")
+   (xdoc::p
+    "into")
+   (xdoc::codeblock
+    "(frame [a1 ... aN b1 ... bM] x11 ... xQP)")
+   (xdoc::p
+    "and an expression of the form")
+   (xdoc::codeblock
+    "(frame [a1 ... aN] (array [b1 ... bM] x11 ... x1P)"
+    "                   (array [b1 ... bM] x21 ... x2P)"
+    "                   ..."
+    "                   (array [b1 ... bM] xQ1 ... xQP))")
+   (xdoc::p
+    "into")
+   (xdoc::codeblock
+    "(array [a1 ... aN b1 ... bM] x11 ... xQP)"))
   :order-subtopics t
   :default-parent t)
 
@@ -60,6 +95,220 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define expr-array-likep ((expr exprp))
+  :returns (yes/no booleanp)
+  :short "Recognizer for array-like expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An expression is array-like if it "
+     (xdoc::seetopic "desugaring" "desugars")
+     " to a non-empty @(':array') expression.")
+   (xdoc::p
+    "This matches [impl], whose parser turns atoms and strings
+     into arrays as it parses, so its flattening sees arrays
+     where we still see atoms and strings."))
+  (expr-case expr
+             :array t
+             :atom t
+             :string (consp expr.chars)
+             :otherwise nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist expr-array-like-listp (x)
+  :guard (expr-listp x)
+  :short "Recognizer for a true list of array-like expressions."
+  (expr-array-likep x)
+
+  ///
+
+  (defrule expr-array-like-listp-of-expr-list-fix
+    (equal (expr-array-like-listp (expr-list-fix x))
+           (expr-array-like-listp x))
+    :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-array-like->dims ((expr exprp))
+  :guard (expr-array-likep expr)
+  :returns (dims nat-listp)
+  :short "Get the dimensions of an array-like expression."
+  (expr-case expr
+             :array expr.dims
+             :atom nil
+             :string (list (len expr.chars))
+             :otherwise (impossible))
+  :guard-hints (("Goal" :in-theory (enable expr-array-likep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection expr-array-like-list->dims ((x expr-listp))
+  :guard (expr-array-like-listp x)
+  :returns (dimss nat-list-listp)
+  :short "Lift @(tsee expr-array-like->dims) to lists."
+  (expr-array-like->dims x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-array-like->atoms ((expr exprp))
+  :guard (expr-array-likep expr)
+  :returns (atoms atom-listp)
+  :short "Get the atoms of an array-like expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For a string expression, these are the atoms obtained by "
+    (xdoc::seetopic "char-lit-list-desugar" "desugaring")
+    "."))
+  (expr-case expr
+             :array expr.atoms
+             :atom (list expr.atom)
+             :string (atom-base-list
+                      (base-lit-int-list
+                       (char-lit-list-desugar expr.chars)))
+             :otherwise (impossible))
+  :guard-hints (("Goal" :in-theory (enable expr-array-likep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection expr-array-like-list->atoms ((x expr-listp))
+  :guard (expr-array-like-listp x)
+  :returns (atomss atom-list-listp)
+  :short "Lift @(tsee expr-array-like->atoms) to lists."
+  (expr-array-like->atoms x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-frame-likep ((expr exprp))
+  :returns (yes/no booleanp)
+  :short "Recognizer for frame-like expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An expression is frame-like if it "
+     (xdoc::seetopic "desugaring" "desugars")
+     " to a non-empty @(':frame') expression.")
+   (xdoc::p
+    "This matches [impl], whose parser builds the frame that
+     bracket notation denotes as it parses, so its flattening
+     sees frames where we still see brackets."))
+  (expr-case expr
+             :bracket t
+             :frame t
+             :otherwise nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist expr-frame-like-listp (x)
+  :guard (expr-listp x)
+  :short "Recognizer for a true list of frame-like expressions."
+  (expr-frame-likep x)
+
+  ///
+
+  (defrule expr-frame-like-listp-of-expr-list-fix
+    (equal (expr-frame-like-listp (expr-list-fix x))
+           (expr-frame-like-listp x))
+    :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-frame-like->dims ((expr exprp))
+  :guard (expr-frame-likep expr)
+  :returns (dims nat-listp)
+  :short "Get the dimensions of a frame-like expression."
+  (expr-case expr
+             :bracket (list (len expr.exprs))
+             :frame expr.dims
+             :otherwise (impossible))
+  :guard-hints (("Goal" :in-theory (enable expr-frame-likep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection expr-frame-like-list->dims ((x expr-listp))
+  :guard (expr-frame-like-listp x)
+  :returns (dimss nat-list-listp)
+  :short "Lift @(tsee expr-frame-like->dims) to lists."
+  (expr-frame-like->dims x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-frame-like->exprs ((expr exprp))
+  :guard (expr-frame-likep expr)
+  :returns (exprs expr-listp)
+  :short "Get the sub-expressions of a frame-like expression."
+  (expr-case expr
+             :bracket expr.exprs
+             :frame expr.exprs
+             :otherwise (impossible))
+  :guard-hints (("Goal" :in-theory (enable expr-frame-likep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection expr-frame-like-list->exprs ((x expr-listp))
+  :guard (expr-frame-like-listp x)
+  :returns (exprss expr-list-listp)
+  :short "Lift @(tsee expr-frame-like->exprs) to lists."
+  (expr-frame-like->exprs x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define flatten-merge ((dims nat-listp)
+                       (exprs expr-listp)
+                       (bracketp booleanp))
+  :guard (consp exprs)
+  :returns (expr exprp)
+  :short "Merge already-flattened sub-expressions into their parent."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Given the dimensions @('[a1 ... aN]') of the parent expression
+     and its already-flattened sub-expressions @('f1') to @('fQ'),
+     there are three cases.")
+   (xdoc::ul
+    (xdoc::li
+     "If all of @('f1') to @('fQ') are frame-like expressions
+      with identical dimensions @('[b1 ... bM]') and the same number
+      of sub-expressions, we return a frame with dimensions
+      @('[a1 ... aN b1 ... bM]') and all the sub-expressions of
+      @('f1') to @('fQ').")
+    (xdoc::li
+     "If all of @('f1') to @('fQ') are array-like expressions
+      with identical dimensions and the same number
+      of atoms, we return an array formed analogously.")
+    (xdoc::li
+     "Otherwise, we return the parent with @('f1') to @('fQ')
+      as its sub-expressions, denoted @('no-further'), conveying
+      that we do not further flatten it. A bracket parent stays
+      a bracket so that @(see desugaring) can turn it into a frame
+      later.")))
+  (b* ((no-further (if bracketp
+                       (make-expr-bracket :exprs exprs)
+                     (make-expr-frame :dims dims :exprs exprs)))
+       ((when (expr-frame-like-listp exprs))
+        (b* ((dimss (expr-frame-like-list->dims exprs))
+             (exprss (expr-frame-like-list->exprs exprs))
+             ((unless (list-repeatp dimss)) no-further)
+             ((unless (all-same-len-p exprss)) no-further)
+             ((unless (consp (append-all exprss))) no-further))
+          (make-expr-frame :dims (append dims (car dimss))
+                           :exprs (append-all exprss))))
+       ((when (expr-array-like-listp exprs))
+        (b* ((dimss (expr-array-like-list->dims exprs))
+             (atomss (expr-array-like-list->atoms exprs))
+             ((unless (list-repeatp dimss)) no-further)
+             ((unless (all-same-len-p atomss)) no-further)
+             ((unless (consp (append-all atomss))) no-further))
+          (make-expr-array :dims (append dims (car dimss))
+                           :atoms (append-all atomss)))))
+    no-further)
+  :guard-hints
+  (("Goal" :in-theory (enable true-list-listp-when-expr-list-listp
+                              true-list-listp-when-atom-list-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines flatten-frames-in-exprs
   :short "Flatten frames in expressions and lists of expressions."
 
@@ -71,80 +320,19 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "The general idea is that
-       an expression of the form")
-     (xdoc::codeblock
-      "(frame [a1 ... aN] (frame [b1 ... bM] x11 ... x1P)"
-      "                   (frame [b1 ... bM] x21 ... x2P)"
-      "                   ..."
-      "                   (frame [b1 ... bM] xQ1 ... xQP))")
-     (xdoc::p
-      "is turned into")
-     (xdoc::codeblock
-      "(frame [a1 ... aN b1 ... bM] x11 ... xQP)")
-     (xdoc::p
-      "and that an expression of the form")
-     (xdoc::codeblock
-      "(frame [a1 ... aN] (array [b1 ... bM] x11 ... x1P)"
-      "                   (array [b1 ... bM] x21 ... x2P)"
-      "                   ..."
-      "                   (array [b1 ... bM] xQ1 ... xQP))")
-     (xdoc::p
-      "is turned into")
-     (xdoc::codeblock
-      "(array [a1 ... aN b1 ... bM] x11 ... xQP)")
-     (xdoc::p
-      "More precisely, given an expression, we do the following.
-       Unless the expression is a non-empty frame, we leave it unchanged.
-       If it is a non-empty frame,
-       let it be @('(frame [a1 ... aN] e1 ... eQ)').
-       If @('Q') is 0, i.e. there are no expressions,
-       we return the frame expression unchanged;
-       this frame expression is statically malformed,
-       but this is caught by the static semantics.
-       If @('Q') is not 0, we recursively flatten @('e1') to @('eQ'),
-       let the results be @('f1') to @('fQ').
-       Then there are three cases:")
-     (xdoc::ul
-      (xdoc::li
-       "If all of @('f1') to @('fQ') are frame expressions
-        with identical dimensions
-        and with the same number of sub-expressions,
-        i.e. the first form above,
-        we concatenate the dimensions and all the sub-expressions,
-        as shown above.")
-      (xdoc::li
-       "If all of @('f1') to @('fQ') are array expressions
-        with identical dimensions
-        and with the same number of sub-expressions,
-        i.e. the second form above,
-        we concatenate the dimensions and all the sub-atoms,
-        as shown above.")
-      (xdoc::li
-       "Otherwise, we return @('(frame [a1 ... aN] f1 ... fQ)'),
-        which in our code is denoted @('no-further'),
-        conveying that we do not further flatten it.")))
+      "This is the counterpart of [impl]'s @('flattenExp'), which
+       is applied at each bracket expression's parse site.
+       We recursively flatten the sub-expressions of a frame
+       or bracket expression, then merge them into it according
+       to @(tsee flatten-merge). This traversal follows only
+       frame and bracket spines. To reach the bracket expressions
+       elsewhere in an AST, use @(tsee expr-flatten-brackets)."))
     (expr-case
      expr
-     :frame
-     (b* (((unless (consp expr.exprs)) (expr-fix expr))
-          (exprs (flatten-frames-in-expr-list expr.exprs))
-          (no-further (make-expr-frame :dims expr.dims :exprs exprs))
-          ((when (expr-list-case-frame exprs))
-           (b* ((dimss (expr-frame-list->dims exprs))
-                (exprss (expr-frame-list->exprs exprs))
-                ((unless (list-repeatp dimss)) no-further)
-                ((unless (all-same-len-p exprss)) no-further))
-             (make-expr-frame :dims (append expr.dims (car dimss))
-                              :exprs (append-all exprss))))
-          ((when (expr-list-case-array exprs))
-           (b* ((dimss (expr-array-list->dims exprs))
-                (atomss (expr-array-list->atoms exprs))
-                ((unless (list-repeatp dimss)) no-further)
-                ((unless (all-same-len-p atomss)) no-further))
-             (make-expr-array :dims (append expr.dims (car dimss))
-                              :atoms (append-all atomss)))))
-       no-further)
+     :frame (b* ((exprs (flatten-frames-in-expr-list expr.exprs)))
+              (flatten-merge expr.dims exprs nil))
+     :bracket (b* ((exprs (flatten-frames-in-expr-list expr.exprs)))
+                (flatten-merge (list (len exprs)) exprs t))
      :otherwise (expr-fix expr))
     :measure (expr-count expr))
 
@@ -182,16 +370,70 @@
   (verify-guards flatten-frames-in-expr
     :hints (("Goal" :in-theory (enable
                                 true-list-listp-when-expr-list-listp
-                                true-list-listp-when-atom-list-listp
-                                consp-of-append-all-when-consp-of-car)))))
+                                true-list-listp-when-atom-list-listp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-map flatten-brackets
+  :short "Flatten the bracket expressions in an AST."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This walks the whole AST and applies @(tsee flatten-frames-in-expr)
+       at each bracket expression, which is where [impl] applies its
+       flattening.")
+   (xdoc::p
+    "A frame expression written explicitly with @('frame')
+       has no override here, so it is not merged into its parent;
+       it is only merged if some enclosing bracket expression
+       reaches it via @(tsee flatten-frames-in-expr)."))
+  :types (exprs/atoms/binds)
+  :override
+  ((expr :bracket (b* ((exprs (expr-list-flatten-brackets expr.exprs)))
+                    (flatten-frames-in-expr
+                     (make-expr-bracket :exprs exprs)))))
+  :name ast-flatten-brackets)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection corep-of-flatten-frames
   :short "Frame flattening core ASTs yields core ASTs."
 
+  (defrule atom-list-list-corep-of-expr-array-like-list->atoms
+    (implies (and (expr-list-corep exprs)
+                  (expr-array-like-listp exprs))
+             (atom-list-list-corep (expr-array-like-list->atoms exprs)))
+    :induct t
+    :enable (expr-array-like-list->atoms
+             expr-array-like->atoms
+             expr-array-like-listp
+             expr-array-likep))
+
+  (defrule expr-list-list-corep-of-expr-frame-like-list->exprs
+    (implies (and (expr-list-corep exprs)
+                  (expr-frame-like-listp exprs))
+             (expr-list-list-corep (expr-frame-like-list->exprs exprs)))
+    :induct t
+    :enable (expr-frame-like-list->exprs
+             expr-frame-like->exprs
+             expr-frame-like-listp
+             expr-frame-likep))
+
+  (defrule expr-corep-of-flatten-merge
+    (implies (and (expr-list-corep exprs)
+                  (consp exprs)
+                  (not bracketp))
+             (expr-corep (flatten-merge dims exprs bracketp)))
+    :enable (flatten-merge
+             expr-array-likep
+             expr-frame-likep
+             expr-array-like->atoms
+             expr-frame-like->exprs
+             expr-array-like-listp
+             expr-frame-like-listp))
+
   (defret-mutual corep-of-flatten-frames
-    (defret expr-corep-of-flatten-frame-in-expr
+    (defret expr-corep-of-flatten-frames-in-expr
       (expr-corep flat-expr)
       :hyp (expr-corep expr)
       :fn flatten-frames-in-expr)
@@ -201,5 +443,4 @@
       :fn flatten-frames-in-expr-list)
     :mutual-recursion flatten-frames-in-exprs
     :hints (("Goal" :in-theory (enable flatten-frames-in-expr
-                                       flatten-frames-in-expr-list
-                                       consp-of-append-all-when-consp-of-car)))))
+                                       flatten-frames-in-expr-list)))))
