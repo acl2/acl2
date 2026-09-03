@@ -87,6 +87,11 @@
      the renaming maps are string-to-string maps,
      because other premises set them to be equal to string-to-string maps.")
    (xdoc::p
+    "An atom type is allowed where an array type is expected.
+     This is formalized by the rule @('scalar'),
+     which says that an atom type is equivalent to
+     a scalar (i.e. zero-ranked) array type with the atom type as element.")
+   (xdoc::p
     "An array type variable @('*<name>') is sugar for
      an array type @('(A &<name> @<name>)') consisting of
      an atom type variable and a shape variable with the same name.
@@ -278,6 +283,12 @@
                     (type-rename-ispace-vars type2 dim-ren2 shape-ren2)))
           (type-eq (type-sigma param1 type1) (type-sigma param2 type2)))
 
+   ;; lifting of atom types to array types:
+
+   (scalar ((typep type)
+            (type-atomp type))
+           (type-eq type (tarr type (shp++))))
+
    ;; normalization of array type variables:
 
    (array-var ((stringp name))
@@ -361,6 +372,7 @@
   (verify-guards type-eq-forall-validp)
   (verify-guards type-eq-pi-validp)
   (verify-guards type-eq-sigma-validp)
+  (verify-guards type-eq-scalar-validp)
   (verify-guards type-eq-array-var-validp)
   (verify-guards type-eq-bracket-validp)
   (verify-guards type-eq-fun0-validp)
