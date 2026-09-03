@@ -171,6 +171,7 @@
     (STD::STRICT-LIST-RECOGNIZERS "[books]/std/util/deflist-base.lisp")
     (SUBSEQ-LIST "[books]/std/lists/subseq.lisp")
     (XDOC::TERMINAL "[books]/xdoc/topics.lisp")
+    (TESTING-UTILITIES "[books]/doc/more-topics.lisp")
     (TRANS-EVAL-ERROR-TRIPLE "[books]/kestrel/utilities/trans-eval-error-triple.lisp")
     (TRANS-EVAL-STATE "[books]/kestrel/utilities/trans-eval-error-triple.lisp")
     (UNSOUND-READ "[books]/std/io/unsound-read.lisp")
@@ -76115,6 +76116,24 @@ it."
 
  @(def min)")
 
+(defxdoc mini-proveall
+  :parents (testing-utilities)
+  :short "A small test suite"
+  :long "
+ @({
+  General Forms:
+  (mini-proveall)
+  :mini-proveall ; equivalent to the above
+ })
+
+ <p>To run a built-in test suite that takes at most a few seconds, evaluate the form
+ @('(mini-proveall)') in the ACL2 top-level read-eval-print loop.  This action
+ will cause ACL2 to evaluate several definitions and theorems, as a small test
+ that can catch major problems.</p>
+
+ <p>Much more complete testing is available by certifying @(see books)
+ distributed with ACL2.  See @(see books-certification).</p>")
+
 (defxdoc minimal-theory
   :parents (theories theory-functions)
   :short "A minimal theory to enable"
@@ -109805,6 +109824,8 @@ it."
 ; - a bug involving defchoose in tools/with-supporters.lisp
 ; - minor bugs in a couple of error messages in source functions
 ; - guards in source functions that were too strong
+
+; Added :DOC mini-proveall.  Thanks to Eric Smith for suggesting this addition.
 
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"

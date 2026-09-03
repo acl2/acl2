@@ -15907,6 +15907,7 @@ Subtopics
        (std::strict-list-recognizers \"[books]/std/util/deflist-base.lisp\")
        (subseq-list \"[books]/std/lists/subseq.lisp\")
        (xdoc::terminal \"[books]/xdoc/topics.lisp\")
+       (testing-utilities \"[books]/doc/more-topics.lisp\")
        (trans-eval-error-triple
             \"[books]/kestrel/utilities/trans-eval-error-triple.lisp\")
        (trans-eval-state
@@ -79800,6 +79801,22 @@ Precise specification
       (declare (xargs :guard (and (real/rationalp x)
                                   (real/rationalp y))))
       (if (< x y) x y))")
+ (MINI-PROVEALL
+  (TESTING-UTILITIES)
+  "A small test suite
+
+    General Forms:
+    (mini-proveall)
+    :mini-proveall ; equivalent to the above
+
+  To run a built-in test suite that takes at most a few seconds,
+  evaluate the form [30m[47m(mini-proveall)[0m[0m in the ACL2 top-level
+  read-eval-print loop.  This action will cause ACL2 to evaluate
+  several definitions and theorems, as a small test that can catch
+  major problems.
+
+  Much more complete testing is available by certifying [books]
+  distributed with ACL2.  See [books-certification].")
  (MINIMAL-THEORY
   (THEORIES THEORY-FUNCTIONS)
   "A minimal theory to enable
