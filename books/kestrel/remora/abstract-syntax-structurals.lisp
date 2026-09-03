@@ -366,12 +366,26 @@
              :sigma t
              :sigman t))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist type-list-atom-kindp (x)
+  :guard (type-listp x)
+  :short "Lift @(tsee type-atom-kindp) to lists."
+  (type-atom-kindp x))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-array-kindp ((type typep))
   :returns (yes/no booleanp)
   :short "Check if a type has the array kind."
   (not (type-atom-kindp type)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist type-list-array-kindp (x)
+  :guard (type-listp x)
+  :short "Lift @(tsee type-array-kindp) to lists."
+  (type-array-kindp x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
