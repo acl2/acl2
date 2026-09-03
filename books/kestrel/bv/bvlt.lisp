@@ -526,91 +526,115 @@
 (defthm not-equal-of-constant-when-bvlt-constant-1
   (implies (and (syntaxp (quotep const))
                 (bvlt freesize free x)
-                (syntaxp (quotep free))
-                (syntaxp (quotep freesize))
-                (bvle freesize const free))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
+                (bvle freesize const free) ; gets evaluated
+                )
            (not (equal const x))))
 
 (defthm not-equal-of-constant-when-bvlt-constant-2
   (implies (and (syntaxp (quotep const))
                 (bvlt freesize x free)
-                (syntaxp (quotep free))
-                (syntaxp (quotep freesize))
-                (bvle freesize free const))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
+                (bvle freesize free const) ; gets evaluated
+                )
            (not (equal const x))))
 
 (defthm not-equal-of-constant-when-not-bvlt-constant-1
   (implies (and (syntaxp (quotep const))
                 (not (bvlt freesize x free))
-                (syntaxp (quotep freesize))
-                (syntaxp (quotep free))
-                (bvlt freesize const free))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
+                (bvlt freesize const free) ; gets evaluated
+                )
            (not (equal const x))))
 
 (defthm not-equal-of-constant-when-not-bvlt-constant-2
   (implies (and (syntaxp (quotep const))
                 (not (bvlt freesize free x))
-                (syntaxp (quotep freesize))
-                (syntaxp (quotep free))
-                (bvlt freesize free const))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
+                (bvlt freesize free const) ; gets evaluated
+                )
            (not (equal const x))))
 
-; can we drop the -alt rules?  or add 2 more?
+;; These flip the equality in the conclusion (todo: only needed for Axe?)
 
-(defthm not-equal-of-constant-when-bvlt-constant-1-alt
+(defthmd not-equal-of-constant-when-bvlt-constant-1-alt
   (implies (and (syntaxp (quotep const))
                 (bvlt freesize free x)
-                (syntaxp (quotep free))
-                (syntaxp (quotep freesize))
-                (bvle freesize const free))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
+                (bvle freesize const free) ; gets evaluated
+                )
            (not (equal x const))))
 
-(defthm not-equal-of-constant-when-bvlt-constant-2-alt
+(defthmd not-equal-of-constant-when-bvlt-constant-2-alt
   (implies (and (syntaxp (quotep const))
                 (bvlt freesize x free)
-                (syntaxp (quotep free))
-                (syntaxp (quotep freesize))
-                (bvle freesize free const))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
+                (bvle freesize free const) ; gets evaluated
+                )
+           (not (equal x const))))
+
+(defthmd not-equal-of-constant-when-not-bvlt-constant-1-alt
+  (implies (and (syntaxp (quotep const))
+                (not (bvlt freesize x free))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
+                (bvlt freesize const free) ; gets evaluated
+                )
+           (not (equal x const))))
+
+(defthmd not-equal-of-constant-when-not-bvlt-constant-2-alt
+  (implies (and (syntaxp (quotep const))
+                (not (bvlt freesize free x))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
+                (bvlt freesize free const) ; gets evaluated
+                )
            (not (equal x const))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm equal-of-bvchop-and-constant-when-bvlt-constant-1
+(defthm not-equal-of-bvchop-and-constant-when-bvlt-constant-1
   (implies (and (syntaxp (quotep const))
                 (bvlt freesize free x)
                 (<= freesize size)
-                (syntaxp (quotep free))
-                (syntaxp (quotep freesize))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
                 (bvle freesize const free)
                 (integerp size))
            (not (equal const (bvchop size x)))))
 
-(defthm equal-of-bvchop-and-constant-when-bvlt-constant-2
+(defthm not-equal-of-bvchop-and-constant-when-bvlt-constant-2
   (implies (and (syntaxp (quotep const))
                 (bvlt freesize x free)
                 (<= freesize size)
-                (syntaxp (quotep free))
-                (syntaxp (quotep freesize))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
                 (bvle freesize free const)
                 (integerp size))
            (not (equal const (bvchop size x)))))
 
-(defthm equal-of-bvchop-and-constant-when-not-bvlt-constant-1
+(defthm not-equal-of-bvchop-and-constant-when-not-bvlt-constant-1
   (implies (and (syntaxp (quotep const))
                 (not (bvlt freesize x free))
                 (<= freesize size)
-                (syntaxp (quotep freesize))
-                (syntaxp (quotep free))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
                 (bvlt freesize const free)
                 (integerp size))
            (not (equal const (bvchop size x)))))
 
-(defthm equal-of-bvchop-and-constant-when-not-bvlt-constant-2
+(defthm not-equal-of-bvchop-and-constant-when-not-bvlt-constant-2
   (implies (and (syntaxp (quotep const))
                 (not (bvlt freesize free x))
                 (<= freesize size)
-                (syntaxp (quotep freesize))
-                (syntaxp (quotep free))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
                 (bvlt freesize free const)
                 (integerp size))
            (not (equal const (bvchop size x)))))
