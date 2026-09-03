@@ -159,32 +159,45 @@
    (refl ((typep type))
          (type-eq type type))
 
-   (symm ((typep type1) (typep type2)
+   (symm ((typep type1)
+          (typep type2)
           (type-eq type1 type2))
          (type-eq type2 type1))
 
-   (trans ((typep type1) (typep type2) (typep type3)
-           (type-eq type1 type2) (type-eq type2 type3))
+   (trans ((typep type1)
+           (typep type2)
+           (typep type3)
+           (type-eq type1 type2)
+           (type-eq type2 type3))
           (type-eq type1 type3))
 
    ;; array type congruence:
 
-   (array ((typep type1) (typep type2) (ispacep ispace1) (ispacep ispace2)
+   (array ((typep type1)
+           (typep type2)
+           (ispacep ispace1)
+           (ispacep ispace2)
            (type-eq type1 type2)
            (ispace-eq ispace1 ispace2))
           (type-eq (tarr type1 ispace1) (tarr type2 ispace2)))
 
    ;; function type congruence:
 
-   (fun ((typep type-in1) (typep type-in2) (typep type-out1) (typep type-out2)
+   (fun ((typep type-in1)
+         (typep type-in2)
+         (typep type-out1)
+         (typep type-out2)
          (type-eq type-in1 type-in2)
          (type-eq type-out1 type-out2))
         (type-eq (t-> type-in1 type-out1) (t-> type-in2 type-out2)))
 
    ;; universal type congruence:
 
-   (forall ((type-varp param1) (type-varp param2) (type-varp param)
-            (typep type1) (typep type2)
+   (forall ((type-varp param1)
+            (type-varp param2)
+            (type-varp param)
+            (typep type1)
+            (typep type2)
             (not (equal param param1))
             (not (equal param param2))
             (not (set::in param (type-all-type-vars type1)))
@@ -217,8 +230,11 @@
 
    ;; product type congruence:
 
-   (pi ((ispace-varp param1) (ispace-varp param2) (ispace-varp param)
-        (typep type1) (typep type2)
+   (pi ((ispace-varp param1)
+        (ispace-varp param2)
+        (ispace-varp param)
+        (typep type1)
+        (typep type2)
         (not (equal param param1))
         (not (equal param param2))
         (not (set::in param (type-all-ispace-vars type1)))
@@ -251,8 +267,11 @@
 
    ;; sum type congruence:
 
-   (sigma ((ispace-varp param1) (ispace-varp param2) (ispace-varp param)
-           (typep type1) (typep type2)
+   (sigma ((ispace-varp param1)
+           (ispace-varp param2)
+           (ispace-varp param)
+           (typep type1)
+           (typep type2)
            (not (equal param param1))
            (not (equal param param2))
            (not (set::in param (type-all-ispace-vars type1)))
@@ -298,7 +317,9 @@
 
    ;; normalization of bracket types:
 
-   (bracket ((typep type) (ispace-listp ispaces) (ispacep ispace)
+   (bracket ((typep type)
+             (ispace-listp ispaces)
+             (ispacep ispace)
              (ispace-eq ispace (ispace-shape (shape-splice ispaces))))
             (type-eq (type-bracket type ispaces)
                      (tarr type ispace)))
@@ -308,41 +329,58 @@
    (fun0 ((typep type-out))
          (type-eq (type-funn nil type-out) type-out))
 
-   (fun1m ((typep type-in) (type-listp types-in) (typep type-out))
+   (fun1m ((typep type-in)
+           (type-listp types-in)
+           (typep type-out))
           (type-eq (type-funn (cons type-in types-in) type-out)
                    (t-> type-in (type-funn types-in type-out))))
 
    ;; normalization of n-ary universal types:
 
-   (forall2 ((type-varp param1) (type-varp param2) (typep type))
+   (forall2 ((type-varp param1)
+             (type-varp param2)
+             (typep type))
             (type-eq (type-foralln (list param1 param2) type)
                      (type-forall param1 (type-forall param2 type))))
 
-   (forall3m ((type-varp param1) (type-varp param2) (type-var-listp params)
-              (consp params) (typep type))
+   (forall3m ((type-varp param1)
+              (type-varp param2)
+              (type-var-listp params)
+              (consp params)
+              (typep type))
              (type-eq (type-foralln (list* param1 param2 params) type)
                       (type-forall param1
                                    (type-foralln (cons param2 params) type))))
 
    ;; normalization of n-ary product types:
 
-   (pi2 ((ispace-varp param1) (ispace-varp param2) (typep type))
+   (pi2 ((ispace-varp param1)
+         (ispace-varp param2)
+         (typep type))
         (type-eq (type-pin (list param1 param2) type)
                  (type-pi param1 (type-pi param2 type))))
 
-   (pi3m ((ispace-varp param1) (ispace-varp param2) (ispace-var-listp params)
-          (consp params) (typep type))
+   (pi3m ((ispace-varp param1)
+          (ispace-varp param2)
+          (ispace-var-listp params)
+          (consp params)
+          (typep type))
          (type-eq (type-pin (list* param1 param2 params) type)
                   (type-pi param1 (type-pin (cons param2 params) type))))
 
    ;; normalization of n-ary sum types:
 
-   (sigma2 ((ispace-varp param1) (ispace-varp param2) (typep type))
+   (sigma2 ((ispace-varp param1)
+            (ispace-varp param2)
+            (typep type))
            (type-eq (type-sigman (list param1 param2) type)
                     (type-sigma param1 (type-sigma param2 type))))
 
-   (sigma3m ((ispace-varp param1) (ispace-varp param2)
-             (ispace-var-listp params) (consp params) (typep type))
+   (sigma3m ((ispace-varp param1)
+             (ispace-varp param2)
+             (ispace-var-listp params)
+             (consp params)
+             (typep type))
             (type-eq (type-sigman (list* param1 param2 params) type)
                      (type-sigma param1
                                  (type-sigman (cons param2 params) type))))))
