@@ -805,7 +805,7 @@
      A subtraction of one dimension is already unary,
      and is left unchanged.
      A subtraction of no dimensions is illegal and cannot be reduced
-     (see @(see dim-equivalence-definition)),
+     (see @(see dim-validity-definition)),
      so it is also left unchanged.
      Unlike @(tsee binarize-add-dims) and @(tsee binarize-mul-dims),
      this function is not recursive,
