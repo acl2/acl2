@@ -27,9 +27,10 @@
     "The sorting rules for ispaces in [thesis] [arxiv] [esop]
      prove judgements of the form
      @($\\Theta \\vdash \\iota :: \\gamma$),
-     where @($\\Theta$) is a sort environment that assigns sorts to variables,
-     @($\\iota$) is an ispace (called `index' in those publications),
-     and @($\\gamma$) is a sort (`dimension' or `shape').")
+     where
+     @($\\Theta$) is a sort environment that assigns sorts to variables,
+     @($\\iota$) is an ispace (called `index' in those publications), and
+     @($\\gamma$) is a sort (`dimension' or `shape').")
    (xdoc::p
     "Since our ASTs include sort information as part of the syntax,
      our inference rules prove judgements (i.e. define predicates)
