@@ -372,7 +372,10 @@
   (verify-guards type-eq-sigma2-validp)
   (verify-guards type-eq-sigma3m-validp)
 
-  ;; proof validity function:
+  ;; proof validity function
+  ;; (the premises of forall, pi, and sigma apply the predicate to renamings,
+  ;; whose guards follow from the preceding rule validity conjuncts
+  ;; only if the rule validity functions are enabled):
 
   (verify-guards type-eq-proof-validp
     :hints
