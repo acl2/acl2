@@ -394,6 +394,8 @@
 (define type-eq-proof-list-validp ((proofs type-eq-proof-listp)
                                    types1
                                    types2)
+  :guard (and (equal (len types1) (len proofs))
+              (equal (len types2) (len proofs)))
   :returns (yes/no booleanp)
   :short "Check if a list of proof trees for type equivalence
           proves the pairwise equivalence of two lists of types."
@@ -401,18 +403,16 @@
   (xdoc::topstring
    (xdoc::p
     "This lifts @(tsee type-eq-proof-validp) to lists:
-     the three lists must have the same length,
-     and each proof tree must be valid for
-     the corresponding types in the two lists."))
-  (cond ((not (consp proofs)) (and (not (consp types1))
-                                   (not (consp types2))))
-        ((or (not (consp types1)) (not (consp types2))) nil)
-        (t (and (type-eq-proof-validp (car proofs)
-                                      (car types1)
-                                      (car types2))
-                (type-eq-proof-list-validp (cdr proofs)
-                                           (cdr types1)
-                                           (cdr types2))))))
+     each proof tree must be valid for
+     the corresponding types in the two lists.
+     The three lists must have the same length,
+     but this is a structural property,
+     which we therefore express as a guard
+     rather than as part of the validity check."))
+  (or (endp proofs)
+      (and (type-eq-proof-validp (car proofs) (car types1) (car types2))
+           (type-eq-proof-list-validp (cdr proofs) (cdr types1) (cdr types2))))
+  :guard-hints (("Goal" :in-theory (enable len))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
