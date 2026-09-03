@@ -325,3 +325,80 @@
     (implies (ispaces-ok ivars ispaces)
              (ispace-listp ispaces))
     :enable (ispaces-ok ispace-listp-when-ispaces-ok-proof-validp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-validity-holds-only-on-environments
+  :short "The validity of dimensions and lists of dimensions
+          holds only on sort environments,
+          i.e. sets of ispace variables."
+
+  (defthm-dim-ok-proof-validp-clique-flag
+    (defthmd ispace-var-setp-when-dim-ok-proof-validp
+      (implies (dim-ok-proof-validp proof concl.ivars concl.dim)
+               (ispace-var-setp concl.ivars))
+      :flag dim-ok-proof-validp)
+    (defthmd ispace-var-setp-when-dims-ok-proof-validp
+      (implies (dims-ok-proof-validp proof concl.ivars concl.dims)
+               (ispace-var-setp concl.ivars))
+      :flag dims-ok-proof-validp)
+    :hints
+    (("Goal" :in-theory (enable* dim-validity-definition-validp-defs))))
+
+  (defruled ispace-var-setp-when-dim-ok
+    (implies (dim-ok ivars dim)
+             (ispace-var-setp ivars))
+    :enable (dim-ok ispace-var-setp-when-dim-ok-proof-validp))
+
+  (defruled ispace-var-setp-when-dims-ok
+    (implies (dims-ok ivars dims)
+             (ispace-var-setp ivars))
+    :enable (dims-ok ispace-var-setp-when-dims-ok-proof-validp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection shape/ispace-validity-holds-only-on-environments
+  :short "The validity of shapes, ispaces, and lists thereof
+          holds only on sort environments,
+          i.e. sets of ispace variables."
+
+  (defthm-shape-ok-proof-validp-clique-flag
+    (defthmd ispace-var-setp-when-shape-ok-proof-validp
+      (implies (shape-ok-proof-validp proof concl.ivars concl.shape)
+               (ispace-var-setp concl.ivars))
+      :flag shape-ok-proof-validp)
+    (defthmd ispace-var-setp-when-shapes-ok-proof-validp
+      (implies (shapes-ok-proof-validp proof concl.ivars concl.shapes)
+               (ispace-var-setp concl.ivars))
+      :flag shapes-ok-proof-validp)
+    (defthmd ispace-var-setp-when-ispace-ok-proof-validp
+      (implies (ispace-ok-proof-validp proof concl.ivars concl.ispace)
+               (ispace-var-setp concl.ivars))
+      :flag ispace-ok-proof-validp)
+    (defthmd ispace-var-setp-when-ispaces-ok-proof-validp
+      (implies (ispaces-ok-proof-validp proof concl.ivars concl.ispaces)
+               (ispace-var-setp concl.ivars))
+      :flag ispaces-ok-proof-validp)
+    :hints (("Goal"
+             :in-theory
+             (enable* shape/ispace-validity-definition-validp-defs))))
+
+  (defruled ispace-var-setp-when-shape-ok
+    (implies (shape-ok ivars shape)
+             (ispace-var-setp ivars))
+    :enable (shape-ok ispace-var-setp-when-shape-ok-proof-validp))
+
+  (defruled ispace-var-setp-when-shapes-ok
+    (implies (shapes-ok ivars shapes)
+             (ispace-var-setp ivars))
+    :enable (shapes-ok ispace-var-setp-when-shapes-ok-proof-validp))
+
+  (defruled ispace-var-setp-when-ispace-ok
+    (implies (ispace-ok ivars ispace)
+             (ispace-var-setp ivars))
+    :enable (ispace-ok ispace-var-setp-when-ispace-ok-proof-validp))
+
+  (defruled ispace-var-setp-when-ispaces-ok
+    (implies (ispaces-ok ivars ispaces)
+             (ispace-var-setp ivars))
+    :enable (ispaces-ok ispace-var-setp-when-ispaces-ok-proof-validp)))

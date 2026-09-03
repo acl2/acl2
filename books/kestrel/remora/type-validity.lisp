@@ -265,3 +265,41 @@
     (implies (types-ok ivars tvars types)
              (type-listp types))
     :enable (types-ok type-listp-when-types-ok-proof-validp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection type-validity-holds-only-on-environments
+  :short "The validity of types and lists of types
+          holds only on sort and kind environments,
+          i.e. sets of ispace variables and sets of type variables."
+
+  (defthm-type-ok-proof-validp-clique-flag
+    (defthmd ispace-var-setp-and-type-var-setp-when-type-ok-proof-validp
+      (implies (type-ok-proof-validp proof concl.ivars concl.tvars concl.type)
+               (and (ispace-var-setp concl.ivars)
+                    (type-var-setp concl.tvars)))
+      :flag type-ok-proof-validp)
+    (defthmd ispace-var-setp-and-type-var-setp-when-types-ok-proof-validp
+      (implies (types-ok-proof-validp proof
+                                      concl.ivars
+                                      concl.tvars
+                                      concl.types)
+               (and (ispace-var-setp concl.ivars)
+                    (type-var-setp concl.tvars)))
+      :flag types-ok-proof-validp)
+    :hints
+    (("Goal" :in-theory (enable* type-validity-definition-validp-defs))))
+
+  (defruled ispace-var-setp-and-type-var-setp-when-type-ok
+    (implies (type-ok ivars tvars type)
+             (and (ispace-var-setp ivars)
+                  (type-var-setp tvars)))
+    :enable (type-ok
+             ispace-var-setp-and-type-var-setp-when-type-ok-proof-validp))
+
+  (defruled ispace-var-setp-and-type-var-setp-when-types-ok
+    (implies (types-ok ivars tvars types)
+             (and (ispace-var-setp ivars)
+                  (type-var-setp tvars)))
+    :enable (types-ok
+             ispace-var-setp-and-type-var-setp-when-types-ok-proof-validp)))
