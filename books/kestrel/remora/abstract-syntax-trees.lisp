@@ -435,7 +435,7 @@
      the atom-kinded type is auto-lifted to a zero-rank array type.
      There are only two spots in which a type must be atom-kinded,
      namely the element type of an array or bracket type,
-     and that restriction can be enforced in the static semantics.
+     and that restriction is enforced in the static semantics.
      Also note that ispaces and expressions/atoms
      have a different recursive structure than types,
      making those more naturally amenable to a partitioned definition."))

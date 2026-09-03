@@ -35,7 +35,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection dim=-trans-swapped
+(defsection dim-eq-trans-swapped
   :short "Transitivity of dimension equivalence with the premises swapped."
   :long
   (xdoc::topstring
@@ -43,93 +43,95 @@
     "The proof constructor just swaps the premise proofs
      in a proof tree for the transitivity defining rule."))
 
-  (defruled dim=-trans-swapped
-    (implies (and (dim= d2 d3)
-                  (dim= d1 d2))
-             (dim= d1 d3))
-    :use dim=-trans
-    :enable dimp-when-dim=)
+  (defruled dim-eq-trans-swapped
+    (implies (and (dim-eq dim2 dim3)
+                  (dim-eq dim1 dim2))
+             (dim-eq dim1 dim3))
+    :use dim-eq-trans
+    :enable dimp-when-dim-eq)
 
-  (define dim=-proof-trans-swapped (d1
-                                    d2
-                                    d3
-                                    (premise1-proof dim=-proofp)
-                                    (premise2-proof dim=-proofp))
-    :returns (proof dim=-proofp)
+  (define dim-eq-proof-trans-swapped (dim1
+                                      dim2
+                                      dim3
+                                      (premise1-proof dim-eq-proofp)
+                                      (premise2-proof dim-eq-proofp))
+    :returns (proof dim-eq-proofp)
     :parents nil
-    (make-dim=-proof-trans :d1 d1
-                           :d2 d2
-                           :d3 d3
-                           :premise1-proof premise2-proof
-                           :premise2-proof premise1-proof)
+    (make-dim-eq-proof-trans :dim1 dim1
+                             :dim2 dim2
+                             :dim3 dim3
+                             :premise1-proof premise2-proof
+                             :premise2-proof premise1-proof)
 
     ///
 
-    (defret dim=-proof-validp-of-dim=-proof-trans-swapped
-      (implies (and (dim=-proof-validp premise1-proof d2 d3)
-                    (dim=-proof-validp premise2-proof d1 d2))
-               (dim=-proof-validp proof d1 d3))
+    (defret dim-eq-proof-validp-of-dim-eq-proof-trans-swapped
+      (implies (and (dim-eq-proof-validp premise1-proof dim2 dim3)
+                    (dim-eq-proof-validp premise2-proof dim1 dim2))
+               (dim-eq-proof-validp proof dim1 dim3))
       :hints (("Goal"
-               :expand ((dim=-proof-validp
-                         (dim=-proof-trans d1 d2 d3
-                                           premise2-proof premise1-proof)
-                         d1 d3))
-               :in-theory (enable dim=-trans-validp
-                                  dimp-when-dim=-proof-validp)))))
+               :expand ((dim-eq-proof-validp
+                         (dim-eq-proof-trans dim1 dim2 dim3
+                                             premise2-proof premise1-proof)
+                         dim1 dim3))
+               :in-theory (enable dim-eq-trans-validp
+                                  dimp-when-dim-eq-proof-validp)))))
 
-  (defmacro make-dim=-proof-trans-swapped (&key d1
-                                                d2
-                                                d3
-                                                premise1-proof
-                                                premise2-proof)
-    `(dim=-proof-trans-swapped ,d1 ,d2 ,d3 ,premise1-proof ,premise2-proof)))
+  (defmacro make-dim-eq-proof-trans-swapped (&key dim1
+                                                  dim2
+                                                  dim3
+                                                  premise1-proof
+                                                  premise2-proof)
+    `(dim-eq-proof-trans-swapped
+      ,dim1 ,dim2 ,dim3 ,premise1-proof ,premise2-proof)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection shp=-trans-swapped
+(defsection shape-eq-trans-swapped
   :short "Transitivity of shape equivalence with the premises swapped."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is analogous to @(tsee dim=-trans-swapped)."))
+    "This is analogous to @(tsee dim-eq-trans-swapped)."))
 
-  (defruled shp=-trans-swapped
-    (implies (and (shp= s2 s3)
-                  (shp= s1 s2))
-             (shp= s1 s3))
-    :use shp=-trans
-    :enable shapep-when-shp=)
+  (defruled shape-eq-trans-swapped
+    (implies (and (shape-eq shape2 shape3)
+                  (shape-eq shape1 shape2))
+             (shape-eq shape1 shape3))
+    :use shape-eq-trans
+    :enable shapep-when-shape-eq)
 
-  (define shp=-proof-trans-swapped (s1
-                                    s2
-                                    s3
-                                    (premise1-proof shp=-proofp)
-                                    (premise2-proof shp=-proofp))
-    :returns (proof shp=-proofp)
+  (define shape-eq-proof-trans-swapped (shape1
+                                        shape2
+                                        shape3
+                                        (premise1-proof shape-eq-proofp)
+                                        (premise2-proof shape-eq-proofp))
+    :returns (proof shape-eq-proofp)
     :parents nil
-    (make-shp=-proof-trans :s1 s1
-                           :s2 s2
-                           :s3 s3
-                           :premise1-proof premise2-proof
-                           :premise2-proof premise1-proof)
+    (make-shape-eq-proof-trans :shape1 shape1
+                               :shape2 shape2
+                               :shape3 shape3
+                               :premise1-proof premise2-proof
+                               :premise2-proof premise1-proof)
 
     ///
 
-    (defret shp=-proof-validp-of-shp=-proof-trans-swapped
-      (implies (and (shp=-proof-validp premise1-proof s2 s3)
-                    (shp=-proof-validp premise2-proof s1 s2))
-               (shp=-proof-validp proof s1 s3))
+    (defret shape-eq-proof-validp-of-shape-eq-proof-trans-swapped
+      (implies (and (shape-eq-proof-validp premise1-proof shape2 shape3)
+                    (shape-eq-proof-validp premise2-proof shape1 shape2))
+               (shape-eq-proof-validp proof shape1 shape3))
       :hints (("Goal"
-               :expand ((shp=-proof-validp
-                         (shp=-proof-trans s1 s2 s3
-                                           premise2-proof premise1-proof)
-                         s1 s3))
-               :in-theory (enable shp=-trans-validp
-                                  shapep-when-shp=-proof-validp)))))
+               :expand ((shape-eq-proof-validp
+                         (shape-eq-proof-trans shape1 shape2 shape3
+                                               premise2-proof premise1-proof)
+                         shape1 shape3))
+               :in-theory (enable shape-eq-trans-validp
+                                  shapep-when-shape-eq-proof-validp)))))
 
-  (defmacro make-shp=-proof-trans-swapped (&key s1
-                                                s2
-                                                s3
-                                                premise1-proof
-                                                premise2-proof)
-    `(shp=-proof-trans-swapped ,s1 ,s2 ,s3 ,premise1-proof ,premise2-proof)))
+  (defmacro make-shape-eq-proof-trans-swapped (&key shape1
+                                                    shape2
+                                                    shape3
+                                                    premise1-proof
+                                                    premise2-proof)
+    `(shape-eq-proof-trans-swapped
+      ,shape1 ,shape2 ,shape3 ,premise1-proof ,premise2-proof)))

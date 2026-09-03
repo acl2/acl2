@@ -14,11 +14,14 @@
 (include-book "ispace-equivalence-checker")
 (include-book "type-equivalence-checker")
 (include-book "type-checker")
-(include-book "sort-checking")
+(include-book "ispace-validity")
+(include-book "type-validity")
 (include-book "ispace-equivalence")
 (include-book "ispace-equivalence-derived-rules")
 (include-book "ispace-equivalence-normalizations")
 (include-book "type-equivalence")
+(include-book "type-equivalence-derived-rules")
+(include-book "expression-validity")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -38,8 +41,11 @@
                     ispace-equivalence-checker
                     type-equivalence-checker
                     type-checker
-                    sort-checking
+                    ispace-validity
+                    type-validity
                     ispace-equivalence
                     ispace-equivalence-derived-rules
                     ispace-equivalence-normalizations
-                    type-equivalence))
+                    type-equivalence
+                    type-equivalence-derived-rules
+                    expression-validity))
