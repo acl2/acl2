@@ -20,7 +20,7 @@
 
 (defxdoc+ ispace-validity
   :parents (static-semantics)
-  :short "Validity of ispaces."
+  :short "Validity of ispaces, including dimensions and shapes."
   :long
   (xdoc::topstring
    (xdoc::p
