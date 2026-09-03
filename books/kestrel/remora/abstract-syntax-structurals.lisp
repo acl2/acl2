@@ -366,6 +366,13 @@
              :sigma t
              :sigman t))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-array-kindp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type has the array kind."
+  (not (type-atom-kindp type)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-ensure-array ((type typep))
