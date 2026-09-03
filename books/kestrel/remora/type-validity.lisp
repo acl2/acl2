@@ -234,3 +234,34 @@
 
   (verify-guards type-ok)
   (verify-guards types-ok))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection type-validity-holds-only-on-types
+  :short "The validity of types and lists of types
+          holds only on types and lists of types."
+
+  (defthm-type-ok-proof-validp-clique-flag
+    (defthmd typep-when-type-ok-proof-validp
+      (implies (type-ok-proof-validp proof concl.ivars concl.tvars concl.type)
+               (typep concl.type))
+      :flag type-ok-proof-validp)
+    (defthmd type-listp-when-types-ok-proof-validp
+      (implies (types-ok-proof-validp proof
+                                      concl.ivars
+                                      concl.tvars
+                                      concl.types)
+               (type-listp concl.types))
+      :flag types-ok-proof-validp)
+    :hints
+    (("Goal" :in-theory (enable* type-validity-definition-validp-defs))))
+
+  (defruled typep-when-type-ok
+    (implies (type-ok ivars tvars type)
+             (typep type))
+    :enable (type-ok typep-when-type-ok-proof-validp))
+
+  (defruled type-listp-when-types-ok
+    (implies (types-ok ivars tvars types)
+             (type-listp types))
+    :enable (types-ok type-listp-when-types-ok-proof-validp)))
