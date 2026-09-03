@@ -320,16 +320,6 @@
        ((when (reserrp ivals)) (mv t nil)))
     (mv nil ivals)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define nats-to-dims ((nats nat-listp))
-  :returns (dims dim-listp)
-  :short "Turn a list of naturals into the corresponding @(':const') dims."
-  (if (endp nats)
-      nil
-    (cons (dim-const (nfix (car nats)))
-          (nats-to-dims (cdr nats)))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Fold: substitute ispace variables with their values, constant-fold
@@ -390,7 +380,7 @@
                     ((when (reserrp ival)) (shape-var shape.name))
                     ((unless (ispace-value-case ival :shape))
                      (shape-var shape.name)))
-                 (shape-dims (nats-to-dims (ispace-value-shape->val ival))))))
+                 (shape-dims (dim-const-list (ispace-value-shape->val ival))))))
   :name ast-partial-eval-dims)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

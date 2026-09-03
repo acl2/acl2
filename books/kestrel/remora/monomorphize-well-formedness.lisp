@@ -189,11 +189,11 @@
 (defsection wfp-of-partial-eval-dims
   :short "Partially evaluating dimensions preserves well-formedness."
 
-  (defrule dim-list-wfp-of-nats-to-dims
+  (defrule dim-list-wfp-of-dim-const-list
     :short "The dims a substituted shape is built from are well formed."
-    (dim-list-wfp (nats-to-dims nats))
-    :induct (nats-to-dims nats)
-    :enable (nats-to-dims dim-wfp dim-list-wfp))
+    (dim-list-wfp (dim-const-list nats))
+    :induct (dim-const-list nats)
+    :enable (dim-const-list dim-wfp dim-list-wfp))
 
   (defret-mutual dims-wfp-of-dims-partial-eval-dims
     (defret dim-wfp-of-dim-partial-eval-dims
