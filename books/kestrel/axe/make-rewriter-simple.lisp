@@ -1119,11 +1119,11 @@
                                                     (print-alist-elided alist)
                                                     (cw ")~%")
                                                     (and (verbose-monitorp) ; to turn on verbose monitoring, :redef this to return t
-                                                         (progn$ (cw "(Refined assumption alist:~%"))
-                                                         (print-refined-assumption-alist-elided refined-assumption-alist (get-fns-to-elide rewrite-stobj))
-                                                         (cw ")~%")
-                                                         (cw "(node-replacement-array: elided)~%") ; todo print (but compactly)! also harvest relevant nodes above
-                                                         )
+                                                         (progn$ (cw "(Refined assumption alist:~%")
+                                                                 (print-refined-assumption-alist-elided refined-assumption-alist (get-fns-to-elide rewrite-stobj))
+                                                                 (cw ")~%")
+                                                                 (cw "(node-replacement-array: elided)~%") ; todo print (but compactly)! also harvest relevant nodes above
+                                                                 ))
                                                     (cw "(Relevant DAG nodes:~%")
                                                     (if (consp relevant-nodes)
                                                         (print-dag-array-nodes-and-supporters 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) relevant-nodes)
