@@ -418,10 +418,7 @@
     "This lifts @(tsee type-eq-proof-validp) to lists:
      the three lists must have the same length,
      and each proof tree must be valid for
-     the corresponding types in the two lists.")
-   (xdoc::p
-    "The guards are verified in @(see type-equivalence-guard-verification),
-     after those of @(tsee type-eq-proof-validp)."))
+     the corresponding types in the two lists."))
   (cond ((not (consp proofs)) (and (not (consp types1))
                                    (not (consp types2))))
         ((or (not (consp types1)) (not (consp types2))) nil)
