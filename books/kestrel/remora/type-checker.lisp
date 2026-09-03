@@ -272,10 +272,10 @@
      :var (consp (omap::assoc type.var (senv->type-vars senv)))
      :base t
      :array (and (check-type type.elem senv)
-                 (type-atomp type.elem)
+                 (type-atom-kindp type.elem)
                  (check-ispace type.ispace senv))
      :bracket (and (check-type type.elem senv)
-                   (type-atomp type.elem)
+                   (type-atom-kindp type.elem)
                    (check-ispace-list type.ispaces senv))
      :fun (and (check-type type.in senv)
                (check-type type.out senv))
@@ -514,12 +514,12 @@
        (arg (type-fix (car args))))
     (type-var-case
      param
-     :atom (if (type-atomp arg)
+     :atom (if (type-atom-kindp arg)
                (make-string-type-map-pair
                 :1st (omap::update param.name arg maps.1st)
                 :2nd maps.2nd)
              (reserr nil))
-     :array (if (type-atomp arg)
+     :array (if (type-atom-kindp arg)
                 (reserr nil)
               (make-string-type-map-pair
                :1st maps.1st
@@ -657,7 +657,7 @@
      :some
      (type-var-case
       var
-      :atom (if (type-atomp type?.val)
+      :atom (if (type-atom-kindp type?.val)
                 (change-string-type-map-pair
                  subst-rest
                  :1st (omap::update var.name type?.val subst-rest.1st))
@@ -667,7 +667,7 @@
                               array-kind type ~x1."
                              var type?.val)
                       subst-rest))
-      :array (if (type-atomp type?.val)
+      :array (if (type-atom-kindp type?.val)
                  (prog2$ (raise "Internal error: ~
                                  array type variable ~x0 ~
                                  is associated with ~
@@ -1415,7 +1415,7 @@
      :array-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
           ((unless (check-type expr.type senv)) (reserr nil))
-          ((unless (type-atomp expr.type)) (reserr nil))
+          ((unless (type-atom-kindp expr.type)) (reserr nil))
           ((ok elem) (senv-expand-type expr.type senv)))
        (make-type+expr
         :type (make-type-array :elem elem
@@ -1801,7 +1801,7 @@
           ((ok type) (type-option-case atom.type?
                                        :some atom.type?.val
                                        :none (reserr nil)))
-          ((unless (type-atomp type)) (reserr nil))
+          ((unless (type-atom-kindp type)) (reserr nil))
           ((unless (check-type type senv)) (reserr nil))
           ((ok box-type) (senv-expand-type type senv))
           ((ok vars+type) (type-match-sum box-type))
@@ -1825,7 +1825,7 @@
      :boxn
      (b* (((unless (check-ispace-list atom.ispaces senv)) (reserr nil))
           (ispaces (senv-expand-ispace-list atom.ispaces senv))
-          ((unless (type-atomp atom.type)) (reserr nil))
+          ((unless (type-atom-kindp atom.type)) (reserr nil))
           ((unless (check-type atom.type senv)) (reserr nil))
           ((ok box-type) (senv-expand-type atom.type senv))
           ((ok vars+type) (type-match-sum box-type))
@@ -2049,8 +2049,8 @@
      (b* (((unless (check-type bind.type senv)) (reserr nil))
           ((unless (type-var-case
                     bind.var
-                    :atom (type-atomp bind.type)
-                    :array (not (type-atomp bind.type))))
+                    :atom (type-atom-kindp bind.type)
+                    :array (not (type-atom-kindp bind.type))))
            (reserr nil))
           ((ok type) (senv-expand-type bind.type senv)))
        (make-senv+bind

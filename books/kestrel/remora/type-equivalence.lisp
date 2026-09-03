@@ -305,7 +305,7 @@
    ;; lifting of atom types to array types:
 
    (scalar ((typep type)
-            (type-atomp type))
+            (type-atom-kindp type))
            (type-eq type (tarr type (shp++))))
 
    ;; normalization of array type variables:

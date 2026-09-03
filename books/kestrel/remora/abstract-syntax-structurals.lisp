@@ -349,7 +349,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-atomp ((type typep))
+(define type-atom-kindp ((type typep))
   :returns (yes/no booleanp)
   :short "Check if a type has the atom kind."
   (type-case type
@@ -381,7 +381,7 @@
      it leaves array types unchanged,
      and it turns atom types
      into scalar array types (i.e. with no dimensions)."))
-  (if (type-atomp type)
+  (if (type-atom-kindp type)
       (make-type-array :elem type :ispace (ispace-shape (shape-dims nil)))
     (type-fix type)))
 

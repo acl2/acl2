@@ -63,7 +63,7 @@
     "The rules follow [thesis] [arxiv] [esop],
      with the necessary adaptations to the richer forms for our ASTs.
      Where those rules require types of the atom kind,
-     we use @(tsee type-atomp) to check that on the type itself.
+     we use @(tsee type-atom-kindp) to check that on the type itself.
      Where those rules require types of the array kind,
      we actually allow all types, because in our formalization
      we regard atom types as equivalent to zero-rank array types;
@@ -96,7 +96,7 @@
            (typep type)
            (ispacep ispace)
            (type-ok ivars tvars type)
-           (type-atomp type)
+           (type-atom-kindp type)
            (ispace-ok ivars ispace))
           (type-ok ivars tvars (type-array type ispace)))
 
@@ -105,7 +105,7 @@
              (typep type)
              (ispace-listp ispaces)
              (type-ok ivars tvars type)
-             (type-atomp type)
+             (type-atom-kindp type)
              (ispaces-ok ivars ispaces))
             (type-ok ivars tvars (type-bracket type ispaces)))
 
