@@ -37,6 +37,10 @@ Usage (socket transport):
 
      cat tests/example-request.json | tr -d '\n' | (cat; echo) | nc localhost 7070
 
+  **NOTE**: This example assumes the server was started in the `tests` directory.
+  The `tests/example-request.json` request contains relative paths
+  which are resolved against the server's current working directory.
+
 Methods:
 
 Each supported transformation is a JSON-RPC method whose name matches the

@@ -410,7 +410,13 @@
         (c$::input-files-prog-fn t files old-dir preprocess preprocess-args
                                  nil nil :validate nil nil nil ienv state))
        ((when erp)
-        (reterr (jsonrpc::make-internal-error "Error reading input files.")))
+        (reterr
+         (jsonrpc::make-internal-error
+          (if (msgp erp)
+              (concatenate 'string
+                           "Error processing input files: "
+                           (warning-to-string erp))
+            "Error processing input files."))))
        ;; The transformation requires an annotated (validated) code ensemble.
        ;; input-files-prog-fn with :validate produces one, but that is not
        ;; statically guaranteed, so we check it here.
