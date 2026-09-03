@@ -88,17 +88,20 @@ check "method not allowed"               -32601 '{"jsonrpc":"2.0","method":"frob
 # Invalid params (produced by the method itself):
 check "missing required param"           -32602 '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files"},"id":1}'
 check "param wrong type"                 -32602 '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files","new-dir":"out","files":["test1.c"],"struct-tag":99,"right-members":["z"]},"id":1}'
-check "unsafe wrong type"                -32602 '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files","new-dir":"out","files":["test1.c"],"struct-tag":"point","right-members":["z"],"unsafe":"yes"},"id":1}'
+check "safety-checks wrong type"          -32602 '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files","new-dir":"out","files":["test1.c"],"struct-tag":"point","right-members":["z"],"safety-checks":"yes"},"id":1}'
 check "params is array not object"       -32602 '{"jsonrpc":"2.0","method":"struct-type-split","params":[1,2],"id":1}'
 check "duplicate parameter name"         -32602 '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files","old-dir":"elsewhere","new-dir":"out","files":["test1.c"],"struct-tag":"point","right-members":["z"]},"id":1}'
+check "unknown parameter name"           -32602 '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files","new-dir":"out","files":["test1.c"],"struct-tag":"point","right-members":["z"],"unsafe":true},"id":1}'
+check "non-string array element"         -32602 '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files","new-dir":"out","files":["test1.c",7],"struct-tag":"point","right-members":["z"]},"id":1}'
+check "bad preprocess-args entry"        -32602 '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files","new-dir":"out","files":["test1.c"],"struct-tag":"point","right-members":["z"],"preprocess-args":{"test1.c":["-DDEBUG",7]}},"id":1}'
 
 # Internal errors (well-formed request, fails at transform/IO time):
 check "struct tag not found"             -32603 '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files","new-dir":"out","files":["test1.c"],"struct-tag":"nosuchtag","right-members":["z"],"preprocess":false},"id":1}'
 check "input file not found"             -32603 '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files","new-dir":"out","files":["nope.c"],"struct-tag":"point","right-members":["z"],"preprocess":false},"id":1}'
 
 # Sanity checks of the non-error paths:
-check "valid request (success)"          OK     '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files","new-dir":"out","files":["test1.c"],"struct-tag":"point","right-members":["z"],"new-tag":"point_right","unsafe":true,"preprocess":false},"id":1}'
-check "valid notification (no response)" NONE   '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files","new-dir":"out","files":["test1.c"],"struct-tag":"point","right-members":["z"],"new-tag":"point_right","unsafe":true,"preprocess":false}}'
+check "valid request (success)"          OK     '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files","new-dir":"out","files":["test1.c"],"struct-tag":"point","right-members":["z"],"new-tag":"point_right","safety-checks":false,"preprocess":false},"id":1}'
+check "valid notification (no response)" NONE   '{"jsonrpc":"2.0","method":"struct-type-split","params":{"old-dir":"input-files","new-dir":"out","files":["test1.c"],"struct-tag":"point","right-members":["z"],"new-tag":"point_right","safety-checks":false,"preprocess":false}}'
 
 echo
 echo "Passed: ${pass}  Failed: ${fail}"
