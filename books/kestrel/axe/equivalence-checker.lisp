@@ -20004,7 +20004,7 @@
 ;;                                        (make-axe-rules (append '((:rewrite equal-of-constant-and-bvchop-when-bvlt) ;new!
 ;;                                                               (:rewrite bvlt-of-two-less-than-max-when-not-max)
 ;;                                                               (:rewrite EQUAL-OF-CONSTANT-AND-SLICE-WHEN-BVLT) ;new
-;;                                                               (:REWRITE EQUAL-OF-BVCHOP-AND-CONSTANT-WHEN-NOT-BVLT-CONSTANT-2)
+;;                                                               (:REWRITE NOT-EQUAL-OF-BVCHOP-AND-CONSTANT-WHEN-NOT-BVLT-CONSTANT-2)
 ;;                                                               (:rewrite EQUAL-OF-CONSTANT-AND-SLICE-WHEN-EQUAL-OF-CONSTANT-AND-BVCHOP)
 ;;                                                               (:REWRITE BVLT-WHEN-BVCHOP-KNOWN-SUBST)
 ;;                                                               (:REWRITE BVCHOP-SUBST-CONSTANT)
