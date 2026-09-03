@@ -278,3 +278,50 @@
     (implies (dims-ok ivars dims)
              (dim-listp dims))
     :enable (dims-ok dim-listp-when-dims-ok-proof-validp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection shape/ispace-validity-holds-only-on-shapes/ispaces
+  :short "The validity of shapes, ispaces, and lists thereof
+          holds only on shapes, ispaces, and lists thereof."
+
+  (defthm-shape-ok-proof-validp-clique-flag
+    (defthmd shapep-when-shape-ok-proof-validp
+      (implies (shape-ok-proof-validp proof concl.ivars concl.shape)
+               (shapep concl.shape))
+      :flag shape-ok-proof-validp)
+    (defthmd shape-listp-when-shapes-ok-proof-validp
+      (implies (shapes-ok-proof-validp proof concl.ivars concl.shapes)
+               (shape-listp concl.shapes))
+      :flag shapes-ok-proof-validp)
+    (defthmd ispacep-when-ispace-ok-proof-validp
+      (implies (ispace-ok-proof-validp proof concl.ivars concl.ispace)
+               (ispacep concl.ispace))
+      :flag ispace-ok-proof-validp)
+    (defthmd ispace-listp-when-ispaces-ok-proof-validp
+      (implies (ispaces-ok-proof-validp proof concl.ivars concl.ispaces)
+               (ispace-listp concl.ispaces))
+      :flag ispaces-ok-proof-validp)
+    :hints (("Goal"
+             :in-theory
+             (enable* shape/ispace-validity-definition-validp-defs))))
+
+  (defruled shapep-when-shape-ok
+    (implies (shape-ok ivars shape)
+             (shapep shape))
+    :enable (shape-ok shapep-when-shape-ok-proof-validp))
+
+  (defruled shape-listp-when-shapes-ok
+    (implies (shapes-ok ivars shapes)
+             (shape-listp shapes))
+    :enable (shapes-ok shape-listp-when-shapes-ok-proof-validp))
+
+  (defruled ispacep-when-ispace-ok
+    (implies (ispace-ok ivars ispace)
+             (ispacep ispace))
+    :enable (ispace-ok ispacep-when-ispace-ok-proof-validp))
+
+  (defruled ispace-listp-when-ispaces-ok
+    (implies (ispaces-ok ivars ispaces)
+             (ispace-listp ispaces))
+    :enable (ispaces-ok ispace-listp-when-ispaces-ok-proof-validp)))
