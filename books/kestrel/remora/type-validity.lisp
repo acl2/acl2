@@ -39,7 +39,7 @@
      but not @($k$):
      they say that the type satisfies all the static validity conditions
      in the context of the sort and kind environments.
-     We model sort environments as in @(see ispace-validity-definition),
+     We model sort environments as in @(see ispace-validity),
      and we similarly model kind environments as sets of type variables,
      which carry their own kinds
      similarly to ispace variables carrying their own sorts."))
@@ -74,26 +74,34 @@
 
   (;; type variables:
 
-   (var ((ispace-var-setp ivars) (type-var-setp tvars) (type-varp tvar)
+   (var ((ispace-var-setp ivars)
+         (type-var-setp tvars)
+         (type-varp tvar)
          (set::in tvar tvars))
         (type-ok ivars tvars (type-var tvar)))
 
    ;; base types:
 
-   (base ((ispace-var-setp ivars) (type-var-setp tvars) (base-typep btype))
+   (base ((ispace-var-setp ivars)
+          (type-var-setp tvars)
+          (base-typep btype))
          (type-ok ivars tvars (type-base btype)))
 
    ;; array and bracket types:
 
-   (array ((ispace-var-setp ivars) (type-var-setp tvars)
-           (typep type) (ispacep ispace)
+   (array ((ispace-var-setp ivars)
+           (type-var-setp tvars)
+           (typep type)
+           (ispacep ispace)
            (type-ok ivars tvars type)
            (type-atomp type)
            (ispace-ok ivars ispace))
           (type-ok ivars tvars (type-array type ispace)))
 
-   (bracket ((ispace-var-setp ivars) (type-var-setp tvars)
-             (typep type) (ispace-listp ispaces)
+   (bracket ((ispace-var-setp ivars)
+             (type-var-setp tvars)
+             (typep type)
+             (ispace-listp ispaces)
              (type-ok ivars tvars type)
              (type-atomp type)
              (ispaces-ok ivars ispaces))
@@ -101,62 +109,83 @@
 
    ;; function types:
 
-   (fun ((ispace-var-setp ivars) (type-var-setp tvars)
-         (typep type-in) (typep type-out)
+   (fun ((ispace-var-setp ivars)
+         (type-var-setp tvars)
+         (typep type-in)
+         (typep type-out)
          (type-ok ivars tvars type-in)
          (type-ok ivars tvars type-out))
         (type-ok ivars tvars (type-fun type-in type-out)))
 
-   (funn ((ispace-var-setp ivars) (type-var-setp tvars)
-          (type-listp types-in) (typep type-out)
-          (>= (len types-in) 2)
+   (funn ((ispace-var-setp ivars)
+          (type-var-setp tvars)
+          (type-listp types-in)
+          (typep type-out)
           (types-ok ivars tvars types-in)
           (type-ok ivars tvars type-out))
          (type-ok ivars tvars (type-funn types-in type-out)))
 
    ;; universal types:
 
-   (forall ((ispace-var-setp ivars) (type-var-setp tvars)
-            (type-varp param) (typep type)
+   (forall ((ispace-var-setp ivars)
+            (type-var-setp tvars)
+            (type-varp param)
+            (typep type)
             (type-ok ivars (set::insert param tvars) type))
            (type-ok ivars tvars (type-forall param type)))
 
-   (foralln ((ispace-var-setp ivars) (type-var-setp tvars)
-             (type-var-listp params) (typep type)
+   (foralln ((ispace-var-setp ivars)
+             (type-var-setp tvars)
+             (type-var-listp params)
+             (>= (len params) 2)
+             (typep type)
              (type-ok ivars (set::union (set::mergesort params) tvars) type))
             (type-ok ivars tvars (type-foralln params type)))
 
    ;; product types:
 
-   (pi ((ispace-var-setp ivars) (type-var-setp tvars)
-        (ispace-varp param) (typep type)
+   (pi ((ispace-var-setp ivars)
+        (type-var-setp tvars)
+        (ispace-varp param)
+        (typep type)
         (type-ok (set::insert param ivars) tvars type))
        (type-ok ivars tvars (type-pi param type)))
 
-   (pin ((ispace-var-setp ivars) (type-var-setp tvars)
-         (ispace-var-listp params) (typep type)
+   (pin ((ispace-var-setp ivars)
+         (type-var-setp tvars)
+         (ispace-var-listp params)
+         (>= (len params) 2)
+         (typep type)
          (type-ok (set::union (set::mergesort params) ivars) tvars type))
         (type-ok ivars tvars (type-pin params type)))
 
    ;; sum types:
 
-   (sigma ((ispace-var-setp ivars) (type-var-setp tvars)
-           (ispace-varp param) (typep type)
+   (sigma ((ispace-var-setp ivars)
+           (type-var-setp tvars)
+           (ispace-varp param)
+           (typep type)
            (type-ok (set::insert param ivars) tvars type))
           (type-ok ivars tvars (type-sigma param type)))
 
-   (sigman ((ispace-var-setp ivars) (type-var-setp tvars)
-            (ispace-var-listp params) (typep type)
+   (sigman ((ispace-var-setp ivars)
+            (type-var-setp tvars)
+            (ispace-var-listp params)
+            (>= (len params) 2)
+            (typep type)
             (type-ok (set::union (set::mergesort params) ivars) tvars type))
            (type-ok ivars tvars (type-sigman params type)))
 
    ;; lists of types:
 
-   (empty ((ispace-var-setp ivars) (type-var-setp tvars))
+   (empty ((ispace-var-setp ivars)
+           (type-var-setp tvars))
           (types-ok ivars tvars nil))
 
-   (cons ((ispace-var-setp ivars) (type-var-setp tvars)
-          (typep type) (type-listp types)
+   (cons ((ispace-var-setp ivars)
+          (type-var-setp tvars)
+          (typep type)
+          (type-listp types)
           (type-ok ivars tvars type)
-          (types-ok ivars tvars dims))
+          (types-ok ivars tvars types))
          (types-ok ivars tvars (cons type types)))))
