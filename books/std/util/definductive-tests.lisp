@@ -13,6 +13,7 @@
 
 (include-book "definductive")
 
+(include-book "kestrel/built-ins/disable" :dir :system)
 (include-book "std/testing/must-be-redundant" :dir :system)
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "std/testing/must-succeed-star" :dir :system)
@@ -398,6 +399,39 @@
                    (p (cons x x)))
             (step2 ((p x) (p y))
                    (p (cons x y))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A recursive rule listed before the base rule of its predicate,
+; with the built-in logic definitions disabled, as some books do.
+; FTY tests for non-CONSP values only in the kind test of the base summand,
+; so the termination of the fixing function for the summand of STEP
+; needs the definition of ACL2-COUNT, which the generated fixtype enables.
+
+(must-succeed*
+
+ (disable-most-builtin-logic-defuns)
+
+ (definductive rec-rule-first
+   :preds ((p x))
+   :irules ((step ((p x))
+                  (p (cons x x)))
+            (base ()
+                  (p nil))))
+
+ (must-be-redundant
+  (defthm p-step
+    (implies (p x)
+             (p (cons x x)))))
+
+ (must-be-redundant
+  (defthm p-base
+    (p nil)))
+
+ (must-be-redundant
+  (defthm p-alt-when-p
+    (implies (p x)
+             (p-alt x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
