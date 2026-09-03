@@ -105,7 +105,7 @@
 
 ;; D16.5.3 (Bitstring manipulation, Lowest and highest set bits of a bitstring)
 
-(defun LowestSetBit-aux (n size x)
+(defund LowestSetBit-aux (n size x)
   (declare (xargs :guard (and (natp n)
                               (unsigned-byte-p size x)
                               (<= n (+ 1 size)))
@@ -134,7 +134,7 @@
 ;; (assert-equal (LowestSetBit 32 8) 3)
 ;; (assert-equal (LowestSetBit 32 0) 32)
 
-(defun HighestSetBit-aux (n size x)
+(defund HighestSetBit-aux (n size x)
   (declare (xargs :guard (and (integerp n)
                               (<= -1 n)
                               (unsigned-byte-p size x)
@@ -251,6 +251,13 @@
   (declare (xargs :guard (and (posp n)
                               (unsigned-byte-p n x))))
   (bvchop n x))
+
+(defthm unsigned-byte-p-of-uint
+  (implies (and (<= n size)
+                (integerp n))
+           (equal (unsigned-byte-p size (uint n x))
+                  (natp size)))
+  :hints (("Goal" :in-theory (enable uint))))
 
 (local (in-theory (enable uint sint)))
 
@@ -382,7 +389,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv bits bit)
-(defun asr_c (n x shift)
+(defund asr_c (n x shift)
   (declare (xargs :guard (and (unsigned-byte-p n x)
                               (< 0 n) ; so we have a sign bit
                               (integerp shift)
@@ -397,6 +404,12 @@
   (implies (and (unsigned-byte-p n x)
                 (integerp shift))
            (unsigned-byte-p n (mv-nth 0 (asr_c n x shift))))
+  :hints (("Goal" :in-theory (enable asr_c))))
+
+(defthm unsigned-byte-p-1-of-mv-nth-1-of-asr_c
+  (implies (and (unsigned-byte-p n x)
+                (integerp shift))
+           (unsigned-byte-p 1 (mv-nth 1 (asr_c n x shift))))
   :hints (("Goal" :in-theory (enable asr_c))))
 
 (defthm mv-nth-0-of-asr_c-becomes-rightrotate
@@ -500,6 +513,12 @@
                 (unsigned-byte-p 5 imm5))
            (unsigned-byte-p 32 (mv-nth 1 (DecodeImmShift type imm5))))
   :hints (("Goal" :in-theory (enable DecodeImmShift))))
+
+(defthm equal-of-mv-nth-0-of-decodeimmshift-and-srtype_rrx
+  (equal (equal (mv-nth '0 (decodeimmshift type imm5)) ':srtype_rrx)
+         (and (equal type #b11)
+              (equal imm5 #b00000)))
+  :hints (("Goal" :in-theory (enable decodeimmshift))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -622,7 +641,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv bits bit)
-(defun RRX_C (n x carry_in)
+(defund RRX_C (n x carry_in)
   (declare (xargs :guard (and (unsigned-byte-p n x)
                               (< 0 n)
                               (bitp carry_in))))
@@ -630,7 +649,23 @@
         (carry_out (getbit 0 x)))
     (mv result carry_out)))
 
-(defun RRX (n x carry_in)
+(defthm unsigned-byte-p-of-mv-nth-0-of-rrx_c
+  (implies (and ;(unsigned-byte-p n x)
+                ;(integerp shift)
+                (posp n))
+           (unsigned-byte-p n (mv-nth 0 (rrx_c n x shift))))
+  :hints (("Goal" :in-theory (enable rrx_c))))
+
+(defthm unsigned-byte-p-1-of-mv-nth-1-of-rrx_c
+  (implies (and ;(unsigned-byte-p n x)
+                ;(integerp shift)
+                )
+           (unsigned-byte-p 1 (mv-nth 1 (rrx_c n x shift))))
+  :hints (("Goal" :in-theory (enable rrx_c))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund RRX (n x carry_in)
   (declare (xargs :guard (and (unsigned-byte-p n x)
                               (< 0 n)
                               (bitp carry_in))))
@@ -638,6 +673,13 @@
       (RRX_C n x carry_in)
     (declare (ignore bit))
     result))
+
+(defthm unsigned-byte-p-of-mv-nth-0-of-rrx
+  (implies (and ;(unsigned-byte-p n x)
+                ;(integerp carry_in)
+                (posp n))
+           (unsigned-byte-p n (rrx n x carry_in)))
+  :hints (("Goal" :in-theory (enable rrx))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1029,7 +1071,7 @@
 ;; A2.3.2 (Pseudocode details of operations on ARM core registers)
 
 ;; Returns arm.
-(defun BranchWritePC (address arm)
+(defund BranchWritePC (address arm)
   (declare (xargs :guard (unsigned-byte-p 32 address) ; or call addressp
                   :stobjs arm))
   (if (== (CurrentInstrSet arm) *InstrSet_ARM*)
@@ -1042,7 +1084,7 @@
       (BranchTo (bvcat 31 (slice 31 1 address) 1 #b0) arm))))
 
 ;; Returns arm.
-(defun BXWritePC (address arm)
+(defund BXWritePC (address arm)
   (declare (xargs :guard (unsigned-byte-p 32 address)
                   :stobjs arm))
   (if (== (CurrentInstrSet arm) *InstrSet_ThumbEE*)
@@ -1222,7 +1264,7 @@
 ;todo: disable but need rules
 ;; TODO: In some cases, this may be overkill because the register can't be the PC.
 ;; In those cases, we could just use REG instead of REG*.
-(defun reg* (n arm)
+(defund reg* (n arm)
   (declare (xargs :guard (register-numberp n)
                   :stobjs arm))
   (let ((val (reg n arm)))
@@ -1242,3 +1284,16 @@
                 (armp arm))
            (unsigned-byte-p size (reg* reg arm)))
   :hints (("Goal" :in-theory (enable reg*))))
+
+(defthm reg*-when-not-pc
+  (implies (not (equal n *pc*))
+           (equal (reg* n arm)
+                  (reg n arm)))
+  :hints (("Goal" :in-theory (enable reg*))))
+
+(defthm reg*-of-set-apsr.n (equal (reg* n (set-apsr.n bit arm)) (reg* n arm)) :hints (("Goal" :in-theory (enable reg*))))
+(defthm reg*-of-set-apsr.z (equal (reg* n (set-apsr.z bit arm)) (reg* n arm)) :hints (("Goal" :in-theory (enable reg*))))
+(defthm reg*-of-set-apsr.c (equal (reg* n (set-apsr.c bit arm)) (reg* n arm)) :hints (("Goal" :in-theory (enable reg*))))
+(defthm reg*-of-set-apsr.v (equal (reg* n (set-apsr.v bit arm)) (reg* n arm)) :hints (("Goal" :in-theory (enable reg*))))
+(defthm reg*-of-set-apsr.q (equal (reg* n (set-apsr.q bit arm)) (reg* n arm)) :hints (("Goal" :in-theory (enable reg*))))
+(defthm reg*-of-set-apsr.ge (equal (reg* n (set-apsr.ge bits arm)) (reg* n arm)) :hints (("Goal" :in-theory (enable reg*))))
