@@ -136,8 +136,8 @@
                                       bind-list-corep
                                       var+type?-corep
                                       ast-corep-rules)
-           :expand ((mono-expr x defs fn-info-map dim-var-map type-map)
-                    (mono-bind x defs fn-info-map dim-var-map type-map)))))
+           :expand ((mono-expr x defs fn-info-map denv type-map)
+                    (mono-bind x defs fn-info-map denv type-map)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

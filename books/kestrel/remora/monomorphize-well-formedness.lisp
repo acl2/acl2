@@ -76,8 +76,10 @@
      is first run through @(tsee expr-partial-eval-dims) and @(tsee
      expr-subst-type-vars).  Those two operations therefore need
      well-formedness preservation of their own.  Dimension partial
-     evaluation needs no invariant --- it only ever replaces a @(':var')
-     dim by a @(':const') one --- and is the second section below.  Type
+     evaluation needs no invariant --- the values in the environment are
+     naturals, so it only ever replaces a @(':var') dim by a @(':const')
+     one, and a @(':var') shape by a @(':dims') shape over @(':const')
+     dims --- and is the second section below.  Type
      substitution does need one: it replaces a type variable by whatever
      the substitution maps it to, so it preserves well-formedness exactly
      when the types in that map are well formed.  That is @(tsee
@@ -98,8 +100,9 @@
     "No invariant is needed on @('defs'): the traversal only tests
      membership in it, and the definition an instance is created from is
      the one bound by the @(':let') being exited, which is well formed by
-     the hypothesis on that @(':let').  None is needed on @('dim-var-map')
-     either, since it maps names to naturals.")
+     the hypothesis on that @(':let').  None is needed on @('denv')
+     either, since it maps ispace variables to naturals and lists of
+     naturals.")
    (xdoc::p
     "The @(':let') normalizations that @(tsee monomorphize-top-expr)
      applies around the traversal, @(tsee expr-singletonize-let) and
@@ -177,12 +180,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Dimension partial evaluation preserves well-formedness.  No invariant is
-; needed: a dim :VAR is either kept, with its name, or replaced by a
-; :CONST, which AST-WFP does not constrain.
+; Dimension partial evaluation preserves well-formedness.  No invariant on
+; the environment is needed: its values are naturals, so a dim :VAR is
+; either kept, with its name, or replaced by a :CONST, and a shape :VAR is
+; either kept or replaced by a :DIMS over :CONSTs; AST-WFP constrains
+; neither.
 
 (defsection wfp-of-partial-eval-dims
   :short "Partially evaluating dimensions preserves well-formedness."
+
+  (defrule dim-list-wfp-of-dim-const-list
+    :short "The dims a substituted shape is built from are well formed."
+    (dim-list-wfp (dim-const-list nats))
+    :induct (dim-const-list nats)
+    :enable (dim-const-list dim-wfp dim-list-wfp))
 
   (defret-mutual dims-wfp-of-dims-partial-eval-dims
     (defret dim-wfp-of-dim-partial-eval-dims
@@ -220,7 +231,7 @@
   (defrule ispace-list-option-wfp-of-ispace-list-option-partial-eval-dims
     (implies (ispace-list-option-wfp isps?)
              (ispace-list-option-wfp
-              (ispace-list-option-partial-eval-dims isps? dim-var-map)))
+              (ispace-list-option-partial-eval-dims isps? denv)))
     :enable ispace-list-option-partial-eval-dims)
 
   (defret-mutual types-wfp-of-types-partial-eval-dims
@@ -238,23 +249,23 @@
 
   (defrule type-option-wfp-of-type-option-partial-eval-dims
     (implies (type-option-wfp ty?)
-             (type-option-wfp (type-option-partial-eval-dims ty? dim-var-map)))
+             (type-option-wfp (type-option-partial-eval-dims ty? denv)))
     :enable type-option-partial-eval-dims)
 
   (defrule type-list-option-wfp-of-type-list-option-partial-eval-dims
     (implies (type-list-option-wfp tys?)
              (type-list-option-wfp
-              (type-list-option-partial-eval-dims tys? dim-var-map)))
+              (type-list-option-partial-eval-dims tys? denv)))
     :enable type-list-option-partial-eval-dims)
 
   (defrule var+type?-wfp-of-var+type?-partial-eval-dims
     (implies (var+type?-wfp vt)
-             (var+type?-wfp (var+type?-partial-eval-dims vt dim-var-map)))
+             (var+type?-wfp (var+type?-partial-eval-dims vt denv)))
     :enable (var+type?-partial-eval-dims var+type?-wfp))
 
   (defrule var+type?-list-wfp-of-var+type?-list-partial-eval-dims
     (implies (var+type?-list-wfp vts)
-             (var+type?-list-wfp (var+type?-list-partial-eval-dims vts dim-var-map)))
+             (var+type?-list-wfp (var+type?-list-partial-eval-dims vts denv)))
     :induct t
     :enable (var+type?-list-partial-eval-dims var+type?-list-wfp))
 
@@ -499,8 +510,8 @@
                                       consp-of-cdr-of-mono-atom-list
                                       len-of-mono-expr-list
                                       len-of-mono-atom-list)
-           :expand ((mono-expr x defs fn-info-map dim-var-map type-map)
-                    (mono-bind x defs fn-info-map dim-var-map type-map)
+           :expand ((mono-expr x defs fn-info-map denv type-map)
+                    (mono-bind x defs fn-info-map denv type-map)
                     (expr-wfp x)
                     (bind-wfp x)
                     (:free (n) (expr-wfp (expr-var n)))
