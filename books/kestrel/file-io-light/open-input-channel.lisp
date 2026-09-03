@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function open-input-channel
 ;
-; Copyright (C) 2017-2025 Kestrel Institute
+; Copyright (C) 2017-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -122,3 +122,10 @@
                               '(acl2-input-channel::standard-character-input-0
                                 acl2-input-channel::standard-object-input-0))))
   :hints (("Goal" :in-theory (enable member-equal))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm w-of-mv-nth-1-of-open-input-channel
+  (equal (w (mv-nth 1 (open-input-channel file-name typ state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable open-input-channel))))

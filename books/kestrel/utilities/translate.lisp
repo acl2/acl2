@@ -13,6 +13,9 @@
 ;; STATUS: IN-PROGRESS
 
 (include-book "tables")
+(local (include-book "read-acl2-oracle"))
+
+(local (in-theory (disable w)))
 
 ;; Returns (mv ctx msg-or-val), a context-message-pair.  When CTX is nil,
 ;; translation succeeded and msg-or-val is the result.  When CTX is non-nil,
@@ -106,3 +109,36 @@
 (defthm pseudo-termp-of-mv-nth-1-of-translate-term-in-logic-mode
   (pseudo-termp (mv-nth 1 (translate-term-in-logic-mode term ctx state)))
   :hints (("Goal" :in-theory (enable translate-term-in-logic-mode))))
+
+(defthm w-of-mv-nth-1-of-translate-term-in-logic-mode
+  (equal (w (mv-nth 2 (translate-term-in-logic-mode term ctx state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable translate-term-in-logic-mode))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp translated-terms state).
+(defund translate-terms-in-logic-mode (terms ctx state)
+  (declare (xargs :stobjs state
+                  :guard (true-listp terms) ;; todo: what else?
+                  ))
+  (if (endp terms)
+      (mv nil nil state)
+    (mv-let (erp translated-first state)
+      (translate-term-in-logic-mode (first terms) ctx state)
+      (if erp
+          (mv erp nil state)
+        (mv-let (erp translated-rest state)
+          (translate-terms-in-logic-mode (rest terms) ctx state)
+          (if erp
+              (mv erp nil state)
+            (mv nil (cons translated-first translated-rest) state)))))))
+
+(defthm pseudo-term-listp-of-mv-nth-1-of-translate-terms-in-logic-mode
+  (pseudo-term-listp (mv-nth 1 (translate-terms-in-logic-mode terms ctx state)))
+  :hints (("Goal" :in-theory (enable translate-terms-in-logic-mode))))
+
+(defthm w-of-mv-nth-1-of-translate-terms-in-logic-mode
+  (equal (w (mv-nth 2 (translate-terms-in-logic-mode terms ctx state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable translate-terms-in-logic-mode))))

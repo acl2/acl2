@@ -13,7 +13,7 @@
 (include-book "portcullis")
 (include-book "../rule-lists")
 
-(defun symbolic-execution-rules32 ()
+(defund symbolic-execution-rules32 ()
   (declare (xargs :guard t))
   '(run-until-return
     run-until-return-aux-opener
@@ -35,7 +35,7 @@
     read-of-if-arg2
     read-of-if-arg3))
 
-(defun debug-rules32 ()
+(defund debug-rules32 ()
   (declare (xargs :guard t))
   '(step32-opener
     run-until-return-aux-opener
@@ -535,6 +535,12 @@
      acl2::ifix-when-integerp
      acl2::mod-becomes-bvchop-when-power-of-2p
      )))
+
+;; Useful if we've disabled (:e lifter-rules32) to avoid big constant lists in proofs.
+(defthm symbol-listp-of-lifter-rules32
+  (symbol-listp (lifter-rules32)))
+
+(in-theory (disable (:e lifter-rules32)))
 
  ;todo: add more?
 (defund assumption-simplification-rules ()
