@@ -12,9 +12,6 @@
 
 (include-book "type-equivalence")
 
-(local (include-book "kestrel/utilities/ordinals" :dir :system))
-(local (include-book "std/lists/len" :dir :system))
-
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
