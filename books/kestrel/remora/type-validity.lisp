@@ -62,12 +62,15 @@
    (xdoc::p
     "The rules follow [thesis] [arxiv] [esop],
      with the necessary adaptations to the richer forms for our ASTs.
-     Where those rules require types of the atom kind,
-     we use @(tsee type-atom-kindp) to check that on the type itself.
-     Where those rules require types of the array kind,
-     we actually allow all types, because in our formalization
-     we regard atom types as equivalent to zero-rank array types;
-     see @(see type-equivalence)."))
+     Where those rules require types of atom or array kinds,
+     we use @(tsee type-atom-kindp) and @(tsee type-array-kindp)
+     on the types to check that.
+     Although the ASTs allow atom-kinded types
+     where array-kinded types are expected,
+     by lifting atom types to scalar (i.e. zero-ranked) array types,
+     our type validity rules are stricter,
+     requiring the lifting to be explicit:
+     the explicit lifting can be performed as part of type inference."))
 
   :preds ((type-ok ivars tvars type)
           (types-ok ivars tvars types))
@@ -116,7 +119,9 @@
          (typep type-in)
          (typep type-out)
          (type-ok ivars tvars type-in)
-         (type-ok ivars tvars type-out))
+         (type-ok ivars tvars type-out)
+         (type-array-kindp type-in)
+         (type-array-kindp type-out))
         (type-ok ivars tvars (type-fun type-in type-out)))
 
    (funn ((ispace-var-setp ivars)
@@ -124,7 +129,9 @@
           (type-listp types-in)
           (typep type-out)
           (types-ok ivars tvars types-in)
-          (type-ok ivars tvars type-out))
+          (type-ok ivars tvars type-out)
+          (type-list-array-kindp types-in)
+          (type-array-kindp type-out))
          (type-ok ivars tvars (type-funn types-in type-out)))
 
    ;; universal types:
@@ -133,7 +140,8 @@
             (type-var-setp tvars)
             (type-varp param)
             (typep type)
-            (type-ok ivars (set::insert param tvars) type))
+            (type-ok ivars (set::insert param tvars) type)
+            (type-array-kindp type))
            (type-ok ivars tvars (type-forall param type)))
 
    (foralln ((ispace-var-setp ivars)
@@ -141,7 +149,8 @@
              (type-var-listp params)
              (>= (len params) 2)
              (typep type)
-             (type-ok ivars (set::union (set::mergesort params) tvars) type))
+             (type-ok ivars (set::union (set::mergesort params) tvars) type)
+             (type-array-kindp type))
             (type-ok ivars tvars (type-foralln params type)))
 
    ;; product types:
@@ -150,7 +159,8 @@
         (type-var-setp tvars)
         (ispace-varp param)
         (typep type)
-        (type-ok (set::insert param ivars) tvars type))
+        (type-ok (set::insert param ivars) tvars type)
+        (type-array-kindp type))
        (type-ok ivars tvars (type-pi param type)))
 
    (pin ((ispace-var-setp ivars)
@@ -158,7 +168,8 @@
          (ispace-var-listp params)
          (>= (len params) 2)
          (typep type)
-         (type-ok (set::union (set::mergesort params) ivars) tvars type))
+         (type-ok (set::union (set::mergesort params) ivars) tvars type)
+         (type-array-kindp type))
         (type-ok ivars tvars (type-pin params type)))
 
    ;; sum types:
@@ -167,7 +178,8 @@
            (type-var-setp tvars)
            (ispace-varp param)
            (typep type)
-           (type-ok (set::insert param ivars) tvars type))
+           (type-ok (set::insert param ivars) tvars type)
+           (type-array-kindp type))
           (type-ok ivars tvars (type-sigma param type)))
 
    (sigman ((ispace-var-setp ivars)
@@ -175,7 +187,8 @@
             (ispace-var-listp params)
             (>= (len params) 2)
             (typep type)
-            (type-ok (set::union (set::mergesort params) ivars) tvars type))
+            (type-ok (set::union (set::mergesort params) ivars) tvars type)
+            (type-array-kindp type))
            (type-ok ivars tvars (type-sigman params type)))
 
    ;; lists of types:
