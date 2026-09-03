@@ -24,7 +24,8 @@
   (xdoc::topstring
    (xdoc::p
     "The kinding rules for types in [thesis] [arxiv]
-     prove judgements of the form @($\\Theta, \\Delta \\vdash \\tau :: k$),
+     prove judgements of the form
+     @($\\Theta; \\Delta \\vdash \\tau :: k$),
      where @($\\Theta$) is a sort environment that assigns sorts to variables,
      @($\\Delta$) is a kind environment that assigns kinds to variables,
      @($\\tau$) is a type,
