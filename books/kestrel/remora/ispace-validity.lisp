@@ -250,3 +250,31 @@
   (verify-guards shapes-ok)
   (verify-guards ispace-ok)
   (verify-guards ispaces-ok))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-validity-holds-only-on-dimensions
+  :short "The validity of dimensions and lists of dimensions
+          holds only on dimensions and lists of dimensions."
+
+  (defthm-dim-ok-proof-validp-clique-flag
+    (defthmd dimp-when-dim-ok-proof-validp
+      (implies (dim-ok-proof-validp proof concl.ivars concl.dim)
+               (dimp concl.dim))
+      :flag dim-ok-proof-validp)
+    (defthmd dim-listp-when-dims-ok-proof-validp
+      (implies (dims-ok-proof-validp proof concl.ivars concl.dims)
+               (dim-listp concl.dims))
+      :flag dims-ok-proof-validp)
+    :hints
+    (("Goal" :in-theory (enable* dim-validity-definition-validp-defs))))
+
+  (defruled dimp-when-dim-ok
+    (implies (dim-ok ivars dim)
+             (dimp dim))
+    :enable (dim-ok dimp-when-dim-ok-proof-validp))
+
+  (defruled dim-listp-when-dims-ok
+    (implies (dims-ok ivars dims)
+             (dim-listp dims))
+    :enable (dims-ok dim-listp-when-dims-ok-proof-validp)))
