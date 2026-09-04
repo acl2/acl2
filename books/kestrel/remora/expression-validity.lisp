@@ -209,7 +209,14 @@
 
    ;; string literals:
 
-   ;; TODO
+   (string ((ispace-var-setp ivars)
+            (type-var-setp tvars)
+            (string-type-mapp evars)
+            (char-lit-listp chars))
+           (expr-ok ivars tvars evars
+                    (expr-string chars)
+                    (type-array (type-base (base-type-int))
+                                (ispace-dim (dim-const (len chars))))))
 
    ;; application expressions:
 
