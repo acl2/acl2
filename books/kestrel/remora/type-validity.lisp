@@ -70,7 +70,11 @@
      by lifting atom types to scalar (i.e. zero-ranked) array types,
      our type validity rules are stricter,
      requiring the lifting to be explicit:
-     the explicit lifting can be performed as part of type inference."))
+     the explicit lifting can be performed as part of type inference.")
+   (xdoc::p
+    "Since nullary function types stand for their output types,
+     we have a rule @('fun0') for nullary function types,
+     separate from the rule @('fun1m') with one or more input types."))
 
   :preds ((type-ok ivars tvars type)
           (types-ok ivars tvars types))
@@ -124,15 +128,23 @@
          (type-array-kindp type-out))
         (type-ok ivars tvars (type-fun type-in type-out)))
 
-   (funn ((ispace-var-setp ivars)
+   (fun0 ((ispace-var-setp ivars)
           (type-var-setp tvars)
           (type-listp types-in)
-          (typep type-out)
-          (types-ok ivars tvars types-in)
-          (type-ok ivars tvars type-out)
-          (type-list-array-kindp types-in)
-          (type-array-kindp type-out))
-         (type-ok ivars tvars (type-funn types-in type-out)))
+          (typep type)
+          (type-ok ivars tvars type))
+         (type-ok ivars tvars (type-funn nil type)))
+
+   (fun1m ((ispace-var-setp ivars)
+           (type-var-setp tvars)
+           (type-listp types-in)
+           (consp types-in)
+           (typep type-out)
+           (types-ok ivars tvars types-in)
+           (type-ok ivars tvars type-out)
+           (type-list-array-kindp types-in)
+           (type-array-kindp type-out))
+          (type-ok ivars tvars (type-funn types-in type-out)))
 
    ;; universal types:
 
@@ -218,7 +230,8 @@
   (verify-guards type-ok-array-validp)
   (verify-guards type-ok-bracket-validp)
   (verify-guards type-ok-fun-validp)
-  (verify-guards type-ok-funn-validp)
+  (verify-guards type-ok-fun0-validp)
+  (verify-guards type-ok-fun1m-validp)
   (verify-guards type-ok-forall-validp)
   (verify-guards type-ok-foralln-validp)
   (verify-guards type-ok-pi-validp)
