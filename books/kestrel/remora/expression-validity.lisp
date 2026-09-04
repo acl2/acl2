@@ -58,11 +58,18 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "Besides the predicates for individual expressions and atoms,
+     we define predicates for lists of expressions and atoms,
+     with associated lists of types of the same length.
+     This corresponds to @($\\cdots$) in [thesis] [arxiv] [esop].")
+   (xdoc::p
     "The rules follow [thesis] [arxiv] [esop],
      with the necessary adaptations to the richer forms of our ASTs."))
 
   :preds ((expr-ok ivars tvars evars expr type)
-          (atom-ok ivars tvars evars atom type))
+          (atom-ok ivars tvars evars atom type)
+          (exprs-ok ivars tvars evars exprs types)
+          (atoms-ok ivars tvars evars atoms types))
 
   :irules
 
@@ -171,4 +178,38 @@
 
    ;; TODO
 
-  ))
+   ;; lists of expressions:
+
+   (empty ((ispace-var-setp ivars)
+           (type-var-setp tvars)
+           (string-type-mapp evars))
+          (exprs-ok ivars tvars evars nil nil))
+
+   (cons ((ispace-var-setp ivars)
+          (type-var-setp tvars)
+          (string-type-mapp evars)
+          (exprp expr)
+          (expr-listp exprs)
+          (typep type)
+          (type-listp types)
+          (expr-ok ivars tvars evars expr type)
+          (exprs-ok ivars tvars evars exprs types))
+         (exprs-ok ivars tvars evars (cons expr exprs) (cons type types)))
+
+   ;; lists of atoms:
+
+   (empty ((ispace-var-setp ivars)
+           (type-var-setp tvars)
+           (string-type-mapp evars))
+          (atoms-ok ivars tvars evars nil nil))
+
+   (cons ((ispace-var-setp ivars)
+          (type-var-setp tvars)
+          (string-type-mapp evars)
+          (atomp atom)
+          (atom-listp atoms)
+          (typep type)
+          (type-listp types)
+          (atom-ok ivars tvars evars atom type)
+          (atoms-ok ivars tvars evars atoms types))
+         (atoms-ok ivars tvars evars (cons atom atoms) (cons type types)))))
