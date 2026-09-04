@@ -19,6 +19,7 @@
 (include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
@@ -349,22 +350,131 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-atomp ((type typep))
+(define type-atom-kindp ((type typep))
   :returns (yes/no booleanp)
   :short "Check if a type has the atom kind."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Function types are atom-kinded,
+     except that a nullary function type stands for its output type
+     (see @(tsee type)),
+     and thus it has the kind of its output type."))
   (type-case type
              :var (type-var-case type.var :atom)
              :base t
              :array nil
              :bracket nil
              :fun t
-             :funn t
+             :funn (if (consp type.in)
+                       t
+                     (type-atom-kindp type.out))
              :forall t
              :foralln t
              :pi t
              :pin t
              :sigma t
-             :sigman t))
+             :sigman t)
+  :measure (type-count type)
+
+  ///
+
+  (defrule type-atom-kindp-of-type-var
+    (equal (type-atom-kindp (type-var var))
+           (type-var-case var :atom)))
+
+  (defrule type-atom-kindp-of-type-base
+    (type-atom-kindp (type-base type)))
+
+  (defrule type-atom-kindp-of-type-array
+    (not (type-atom-kindp (type-array elem ispace))))
+
+  (defrule type-atom-kindp-of-type-bracket
+    (not (type-atom-kindp (type-bracket elem ispaces))))
+
+  (defrule type-atom-kindp-of-type-fun
+    (type-atom-kindp (type-fun in out)))
+
+  (defrule type-atom-kindp-of-type-funn
+    (equal (type-atom-kindp (type-funn in out))
+           (if (consp in) t (type-atom-kindp (type-fix out))))
+    :expand ((type-atom-kindp (type-funn in out))))
+
+  (defrule type-atom-kindp-of-type-forall
+    (type-atom-kindp (type-forall param body)))
+
+  (defrule type-atom-kindp-of-type-foralln
+    (type-atom-kindp (type-foralln params body)))
+
+  (defrule type-atom-kindp-of-type-pi
+    (type-atom-kindp (type-pi param body)))
+
+  (defrule type-atom-kindp-of-type-pin
+    (type-atom-kindp (type-pin params body)))
+
+  (defrule type-atom-kindp-of-type-sigma
+    (type-atom-kindp (type-sigma param body)))
+
+  (defrule type-atom-kindp-of-type-sigman
+    (type-atom-kindp (type-sigman params body))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist type-list-atom-kindp (x)
+  :guard (type-listp x)
+  :short "Lift @(tsee type-atom-kindp) to lists."
+  (type-atom-kindp x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-array-kindp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type has the array kind."
+  (not (type-atom-kindp type))
+
+  ///
+
+  (defruled type-array-kindp-alt-def
+    (equal (type-array-kindp type)
+           (type-case type
+                      :var (type-var-case type.var :array)
+                      :base nil
+                      :array t
+                      :bracket t
+                      :fun nil
+                      :funn (if (consp type.in)
+                                nil
+                              (type-array-kindp type.out))
+                      :forall nil
+                      :foralln nil
+                      :pi nil
+                      :pin nil
+                      :sigma nil
+                      :sigman nil))
+    :hints (("Goal"
+             :expand ((type-atom-kindp type))
+             :in-theory (enable type-array-kindp)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist type-list-array-kindp (x)
+  :guard (type-listp x)
+  :short "Lift @(tsee type-array-kindp) to lists."
+  (type-array-kindp x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-scalar ((type typep))
+  :guard (type-atom-kindp type)
+  :returns (scalar-type typep)
+  :short "Lift an atom type to a scalar (i.e. zero-ranked) array type."
+  (make-type-array :elem type :ispace (ispace-shape (shape-dims nil)))
+
+  ///
+
+  (defret type-array-kindp-of-type-scalar
+    (type-array-kindp scalar-type)
+    :hints (("Goal" :in-theory (enable type-array-kindp-alt-def)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -381,7 +491,7 @@
      it leaves array types unchanged,
      and it turns atom types
      into scalar array types (i.e. with no dimensions)."))
-  (if (type-atomp type)
+  (if (type-atom-kindp type)
       (make-type-array :elem type :ispace (ispace-shape (shape-dims nil)))
     (type-fix type)))
 

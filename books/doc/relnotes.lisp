@@ -53,6 +53,7 @@
 (include-book "kestrel/ethereum/portcullis" :dir :system)
 (include-book "kestrel/bitcoin/portcullis" :dir :system)
 (include-book "std/omaps/portcullis" :dir :system)
+(include-book "kestrel/jsonrpc/portcullis" :dir :system)
 (include-book "kestrel/yul/portcullis" :dir :system)
 
 ; Book release notes are sometimes disorganized.
@@ -120,6 +121,15 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "New Libraries")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "jsonrpc::jsonrpc" "JSON-RPC Library"))
+
+   (xdoc::p
+    "A library that implements a JSON-RPC 2.0 interface for ACL2.
+     Requests are dispatched to ACL2 functions of the same name,
+     via files or a TCP socket.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -242,14 +252,25 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
+
+   (xdoc::p
+    "Added @(tsee omap::compose), @(tsee omap::inverse),
+     @(tsee omap::restrict-values), @(tsee omap::identityp),
+     @(tsee omap::injectivep), and @(tsee omap::closedp),
+     along with theorems about them and some other new theorems.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Tools Library")
 
    (xdoc::p
     "Fixed @(see with-supporters) to @(see disable) appropriate names of
      theorems (not merely functions), to disable some rules for functions that
-     it was mistakenly failing to disable, and to avoid dropping suitable
-     macro-aliases (see @(see macro-aliases-table)).  Eliminated support for
-     unused utility ('with-supporters-after').")
+     it was mistakenly failing to disable, to avoid dropping suitable
+     macro-aliases (see @(see macro-aliases-table)), and to use bodies of
+     @(tsee defconst) forms (which can avoid slow array accesses).  Eliminated
+     support for unused utility ('with-supporters-after').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

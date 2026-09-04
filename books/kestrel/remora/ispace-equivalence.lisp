@@ -88,12 +88,16 @@
    (refl ((dimp dim))
          (dim-eq dim dim))
 
-   (symm ((dimp dim1) (dimp dim2)
+   (symm ((dimp dim1)
+          (dimp dim2)
           (dim-eq dim1 dim2))
          (dim-eq dim2 dim1))
 
-   (trans ((dimp dim1) (dimp dim2) (dimp dim3)
-           (dim-eq dim1 dim2) (dim-eq dim2 dim3))
+   (trans ((dimp dim1)
+           (dimp dim2)
+           (dimp dim3)
+           (dim-eq dim1 dim2)
+           (dim-eq dim2 dim3))
           (dim-eq dim1 dim3))
 
    ;; equivalence of lists of dimensions:
@@ -101,32 +105,41 @@
    (refl ((dim-listp dims))
          (dims-eq dims dims))
 
-   (symm ((dim-listp dims1) (dim-listp dims2)
+   (symm ((dim-listp dims1)
+          (dim-listp dims2)
           (dims-eq dims1 dims2))
          (dims-eq dims2 dims1))
 
-   (trans ((dim-listp dims1) (dim-listp dims2) (dim-listp dims3)
-           (dims-eq dims1 dims2) (dims-eq dims2 dims3))
+   (trans ((dim-listp dims1)
+           (dim-listp dims2)
+           (dim-listp dims3)
+           (dims-eq dims1 dims2)
+           (dims-eq dims2 dims3))
           (dims-eq dims1 dims3))
 
    ;; congruence of dimensions:
 
-   (cong-add ((dim-listp dims1) (dim-listp dims2)
+   (cong-add ((dim-listp dims1)
+              (dim-listp dims2)
               (dims-eq dims1 dims2))
              (dim-eq (dim-add dims1) (dim-add dims2)))
 
-   (cong-sub ((dim-listp dims1) (dim-listp dims2)
+   (cong-sub ((dim-listp dims1)
+              (dim-listp dims2)
               (dims-eq dims1 dims2))
              (dim-eq (dim-sub dims1) (dim-sub dims2)))
 
-   (cong-mul ((dim-listp dims1) (dim-listp dims2)
+   (cong-mul ((dim-listp dims1)
+              (dim-listp dims2)
               (dims-eq dims1 dims2))
              (dim-eq (dim-mul dims1) (dim-mul dims2)))
 
    ;; congruence of lists of dimensions:
 
-   (cong-cons ((dimp dim1) (dimp dim2)
-               (dim-listp dims1) (dim-listp dims2)
+   (cong-cons ((dimp dim1)
+               (dimp dim2)
+               (dim-listp dims1)
+               (dim-listp dims2)
                (dim-eq dim1 dim2)
                (dims-eq dims1 dims2))
               (dims-eq (cons dim1 dims1) (cons dim2 dims2)))
@@ -139,7 +152,10 @@
    (add1 ((dimp dim))
          (dim-eq (dim+ dim) dim))
 
-   (add3m ((dimp dim1) (dimp dim2) (dim-listp dims) (consp dims))
+   (add3m ((dimp dim1)
+           (dimp dim2)
+           (dim-listp dims)
+           (consp dims))
           (dim-eq (dim-add (list* dim1 dim2 dims))
                   (dim-add (cons (dim+ dim1 dim2) dims))))
 
@@ -151,23 +167,31 @@
    (mul1 ((dimp dim))
          (dim-eq (dim* dim) dim))
 
-   (mul3m ((dimp dim1) (dimp dim2) (dim-listp dims) (consp dims))
+   (mul3m ((dimp dim1)
+           (dimp dim2)
+           (dim-listp dims)
+           (consp dims))
           (dim-eq (dim-mul (list* dim1 dim2 dims))
                   (dim-mul (cons (dim* dim1 dim2) dims))))
 
    ;; normalization of subtraction:
 
-   (sub2m ((dimp dim) (dim-listp dims) (consp dims))
+   (sub2m ((dimp dim)
+           (dim-listp dims)
+           (consp dims))
           (dim-eq (dim-sub (cons dim dims))
                   (dim+ dim (dim- (dim-add dims)))))
 
    ;; abelian group properties of addition:
 
-   (add-comm ((dimp dim1) (dimp dim2))
+   (add-comm ((dimp dim1)
+              (dimp dim2))
              (dim-eq (dim+ dim1 dim2)
                      (dim+ dim2 dim1)))
 
-   (add-assoc ((dimp dim1) (dimp dim2) (dimp dim3))
+   (add-assoc ((dimp dim1)
+               (dimp dim2)
+               (dimp dim3))
               (dim-eq (dim+ (dim+ dim1 dim2) dim3)
                       (dim+ dim1 (dim+ dim2 dim3))))
 
@@ -180,17 +204,21 @@
 
    ;; addition of constants:
 
-   (add-const ((natp n1) (natp n2))
+   (add-const ((natp n1)
+               (natp n2))
               (dim-eq (dim+ (dim-const n1) (dim-const n2))
                       (dim-const (+ n1 n2))))
 
    ;; commutative monoid properties of multiplication:
 
-   (mul-comm ((dimp dim1) (dimp dim2))
+   (mul-comm ((dimp dim1)
+              (dimp dim2))
              (dim-eq (dim* dim1 dim2)
                      (dim* dim2 dim1)))
 
-   (mul-assoc ((dimp dim1) (dimp dim2) (dimp dim3))
+   (mul-assoc ((dimp dim1)
+               (dimp dim2)
+               (dimp dim3))
               (dim-eq (dim* (dim* dim1 dim2) dim3)
                       (dim* dim1 (dim* dim2 dim3))))
 
@@ -199,13 +227,16 @@
 
    ;; multiplication of constants:
 
-   (mul-const ((natp n1) (natp n2))
+   (mul-const ((natp n1)
+               (natp n2))
               (dim-eq (dim* (dim-const n1) (dim-const n2))
                       (dim-const (* n1 n2))))
 
    ;; distributivity of multiplication over addition:
 
-   (distrib ((dimp dim) (dimp dim1) (dimp dim2))
+   (distrib ((dimp dim)
+             (dimp dim1)
+             (dimp dim2))
             (dim-eq (dim* dim (dim+ dim1 dim2))
                     (dim+ (dim* dim dim1) (dim* dim dim2))))))
 
@@ -270,12 +301,16 @@
    (refl ((shapep shape))
          (shape-eq shape shape))
 
-   (symm ((shapep shape1) (shapep shape2)
+   (symm ((shapep shape1)
+          (shapep shape2)
           (shape-eq shape1 shape2))
          (shape-eq shape2 shape1))
 
-   (trans ((shapep shape1) (shapep shape2) (shapep shape3)
-           (shape-eq shape1 shape2) (shape-eq shape2 shape3))
+   (trans ((shapep shape1)
+           (shapep shape2)
+           (shapep shape3)
+           (shape-eq shape1 shape2)
+           (shape-eq shape2 shape3))
           (shape-eq shape1 shape3))
 
    ;; equivalence of lists of shapes:
@@ -283,12 +318,16 @@
    (refl ((shape-listp shapes))
          (shapes-eq shapes shapes))
 
-   (symm ((shape-listp shapes1) (shape-listp shapes2)
+   (symm ((shape-listp shapes1)
+          (shape-listp shapes2)
           (shapes-eq shapes1 shapes2))
          (shapes-eq shapes2 shapes1))
 
-   (trans ((shape-listp shapes1) (shape-listp shapes2) (shape-listp shapes3)
-           (shapes-eq shapes1 shapes2) (shapes-eq shapes2 shapes3))
+   (trans ((shape-listp shapes1)
+           (shape-listp shapes2)
+           (shape-listp shapes3)
+           (shapes-eq shapes1 shapes2)
+           (shapes-eq shapes2 shapes3))
           (shapes-eq shapes1 shapes3))
 
    ;; equivalence of ispaces:
@@ -296,12 +335,16 @@
    (refl ((ispacep ispace))
          (ispace-eq ispace ispace))
 
-   (symm ((ispacep ispace1) (ispacep ispace2)
+   (symm ((ispacep ispace1)
+          (ispacep ispace2)
           (ispace-eq ispace1 ispace2))
          (ispace-eq ispace2 ispace1))
 
-   (trans ((ispacep ispace1) (ispacep ispace2) (ispacep ispace3)
-           (ispace-eq ispace1 ispace2) (ispace-eq ispace2 ispace3))
+   (trans ((ispacep ispace1)
+           (ispacep ispace2)
+           (ispacep ispace3)
+           (ispace-eq ispace1 ispace2)
+           (ispace-eq ispace2 ispace3))
           (ispace-eq ispace1 ispace3))
 
    ;; equivalence of lists of ispaces:
@@ -309,51 +352,63 @@
    (refl ((ispace-listp ispaces))
          (ispaces-eq ispaces ispaces))
 
-   (symm ((ispace-listp ispaces1) (ispace-listp ispaces2)
+   (symm ((ispace-listp ispaces1)
+          (ispace-listp ispaces2)
           (ispaces-eq ispaces1 ispaces2))
          (ispaces-eq ispaces2 ispaces1))
 
-   (trans ((ispace-listp ispaces1) (ispace-listp ispaces2)
+   (trans ((ispace-listp ispaces1)
+           (ispace-listp ispaces2)
            (ispace-listp ispaces3)
-           (ispaces-eq ispaces1 ispaces2) (ispaces-eq ispaces2 ispaces3))
+           (ispaces-eq ispaces1 ispaces2)
+           (ispaces-eq ispaces2 ispaces3))
           (ispaces-eq ispaces1 ispaces3))
 
    ;; congruence of shapes:
 
-   (cong-dims ((dim-listp dims1) (dim-listp dims2)
+   (cong-dims ((dim-listp dims1)
+               (dim-listp dims2)
                (dims-eq dims1 dims2))
               (shape-eq (shape-dims dims1) (shape-dims dims2)))
 
-   (cong-append ((shape-listp shapes1) (shape-listp shapes2)
+   (cong-append ((shape-listp shapes1)
+                 (shape-listp shapes2)
                  (shapes-eq shapes1 shapes2))
                 (shape-eq (shape-append shapes1) (shape-append shapes2)))
 
-   (cong-splice ((ispace-listp ispaces1) (ispace-listp ispaces2)
+   (cong-splice ((ispace-listp ispaces1)
+                 (ispace-listp ispaces2)
                  (ispaces-eq ispaces1 ispaces2))
                 (shape-eq (shape-splice ispaces1) (shape-splice ispaces2)))
 
    ;; congruence of ispaces:
 
-   (cong-dim ((dimp dim1) (dimp dim2)
+   (cong-dim ((dimp dim1)
+              (dimp dim2)
               (dim-eq dim1 dim2))
              (ispace-eq (ispace-dim dim1) (ispace-dim dim2)))
 
-   (cong-shape ((shapep shape1) (shapep shape2)
+   (cong-shape ((shapep shape1)
+                (shapep shape2)
                 (shape-eq shape1 shape2))
                (ispace-eq (ispace-shape shape1) (ispace-shape shape2)))
 
    ;; congruence of lists of shapes:
 
-   (cong-cons ((shapep shape1) (shapep shape2)
-               (shape-listp shapes1) (shape-listp shapes2)
+   (cong-cons ((shapep shape1)
+               (shapep shape2)
+               (shape-listp shapes1)
+               (shape-listp shapes2)
                (shape-eq shape1 shape2)
                (shapes-eq shapes1 shapes2))
               (shapes-eq (cons shape1 shapes1) (cons shape2 shapes2)))
 
    ;; congruence of lists of ispaces:
 
-   (cong-cons ((ispacep ispace1) (ispacep ispace2)
-               (ispace-listp ispaces1) (ispace-listp ispaces2)
+   (cong-cons ((ispacep ispace1)
+               (ispacep ispace2)
+               (ispace-listp ispaces1)
+               (ispace-listp ispaces2)
                (ispace-eq ispace1 ispace2)
                (ispaces-eq ispaces1 ispaces2))
               (ispaces-eq (cons ispace1 ispaces1) (cons ispace2 ispaces2)))
@@ -363,7 +418,9 @@
    (dims0 ()
           (shape-eq (shp) (shp++)))
 
-   (dims2m ((dimp dim) (dim-listp dims) (consp dims))
+   (dims2m ((dimp dim)
+            (dim-listp dims)
+            (consp dims))
            (shape-eq (shape-dims (cons dim dims))
                      (shp++ (shp dim) (shape-dims dims))))
 
@@ -372,8 +429,10 @@
    (append1 ((shapep shape))
             (shape-eq (shp++ shape) shape))
 
-   (append3m ((shapep shape1) (shapep shape2)
-              (shape-listp shapes) (consp shapes))
+   (append3m ((shapep shape1)
+              (shapep shape2)
+              (shape-listp shapes)
+              (consp shapes))
              (shape-eq (shape-append (list* shape1 shape2 shapes))
                        (shape-append (cons (shp++ shape1 shape2) shapes))))
 
@@ -382,17 +441,21 @@
    (splice0 ()
             (shape-eq (shp[]) (shp++)))
 
-   (splice1m-dim ((dimp dim) (ispace-listp ispaces))
+   (splice1m-dim ((dimp dim)
+                  (ispace-listp ispaces))
                  (shape-eq (shape-splice (cons (ispace-dim dim) ispaces))
                            (shp++ (shp dim) (shape-splice ispaces))))
 
-   (splice1m-shape ((shapep shape) (ispace-listp ispaces))
+   (splice1m-shape ((shapep shape)
+                    (ispace-listp ispaces))
                    (shape-eq (shape-splice (cons (ispace-shape shape) ispaces))
                              (shp++ shape (shape-splice ispaces))))
 
    ;; monoid properties of concatenation:
 
-   (append-assoc ((shapep shape1) (shapep shape2) (shapep shape3))
+   (append-assoc ((shapep shape1)
+                  (shapep shape2)
+                  (shapep shape3))
                  (shape-eq (shp++ (shp++ shape1 shape2) shape3)
                            (shp++ shape1 (shp++ shape2 shape3))))
 

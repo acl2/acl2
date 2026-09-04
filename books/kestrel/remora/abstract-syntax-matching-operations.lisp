@@ -56,7 +56,7 @@
      The only case in which this does not succeed is on array type variables,
      because we could not obtain the element atom type and the ispace."))
   (cond
-   ((type-atomp type)
+   ((type-atom-kindp type)
     (make-type+ispace :type type :ispace (ispace-shape (shape-dims nil))))
    ((type-case type :array)
     (make-type+ispace :type (type-array->elem type)

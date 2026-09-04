@@ -42,17 +42,41 @@
      locals 1 through the argument count are the arguments,
      and the rest are temporaries and user variables.")
    (xdoc::p
-    "Per the plan's panic=abort decision (D3),
+    "Because we model the @('panic=abort') compilation mode,
      terminators have no unwind targets:
      a failed assertion or an explicit panic aborts the machine.
      This deletes rustc's @('unwind') edges from
      call, assert, and drop terminators.")
    (xdoc::p
+    "The modeled dialect is runtime MIR
+     before any optimization passes:
+     the body returned by rustc's
+     @('mir_drops_elaborated_and_const_checked') query.
+     In rustc's phase vocabulary such a body is stamped
+     @('MirPhase::Runtime(r)') for some @('RuntimePhase') @('r'):
+     @('Runtime(PostCleanup)') in current rustc,
+     which folds the runtime cleanup passes into the query,
+     but @('Runtime(Initial)') in earlier versions.
+     Both stamps are the same dialect &mdash;
+     drops elaborated and unconditional,
+     borrowck-only constructs gone,
+     overflow checks materialized &mdash;
+     so we identify the modeled MIR
+     by the query and the dialect,
+     never by a @('RuntimePhase') variant,
+     whose placement relative to the query
+     is a rustc-internal detail that drifts across versions.
+     On drop-free code this dialect coincides with
+     the analysis-phase MIR of @('mir_promoted')
+     minus its borrowck-only statements,
+     which lets the same interpreter also serve
+     extraction pipelines that read that earlier query.")
+   (xdoc::p
     "This draft covers the statement and terminator kinds
-     needed for the R0 subset
+     needed for a first core-imperative subset
      (and produced by rustc for it, with overflow checks on):
      more rvalue and cast kinds, and the unwinding forms,
-     will be added as the subset ladder climbs."))
+     will be added as the modeled subset grows."))
   :order-subtopics t
   :default-parent t)
 
@@ -113,32 +137,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum const
-  :short "Fixtype of constants."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The constant operands of the monomorphic scalar core:
-     booleans, characters (by code point),
-     integers of the signed and unsigned types
-     (with mathematical-integer values;
-     the well-formedness predicate, to come,
-     requires the value to fit the type),
-     the unit value,
-     and function items
-     (zero-sized values of @('ty-fn-def') type,
-     which is how call terminators name their callees).
-     Aggregate and by-reference constants
-     will come with later subsets."))
-  (:bool ((value acl2::bool)))
-  (:char ((value acl2::nat)))
-  (:int ((value acl2::int)
-         (type int-type)))
-  (:uint ((value acl2::nat)
-          (type uint-type)))
-  (:unit ())
-  (:fn ((name acl2::string)))
-  :pred constp)
+(fty::deftypes consts
+  :short "Fixtypes of constants."
+
+  (fty::deftagsum const
+    :short "Fixtype of constants."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The constant operands of the monomorphic core:
+       booleans, characters (by code point),
+       integers of the signed and unsigned types
+       (with mathematical-integer values;
+       the well-formedness predicate, to come,
+       requires the value to fit the type),
+       the unit value,
+       function items
+       (zero-sized values of @('ty-fn-def') type,
+       which is how call terminators name their callees),
+       and constant arrays
+       (how promoted table constants reach their reads;
+       rustc stores these as byte allocations,
+       which the importer decodes into structured constants).
+       By-reference constants will come with later subsets."))
+    (:bool ((value acl2::bool)))
+    (:char ((value acl2::nat)))
+    (:int ((value acl2::int)
+           (type int-type)))
+    (:uint ((value acl2::nat)
+            (type uint-type)))
+    (:unit ())
+    (:fn ((name acl2::string)))
+    (:array ((elems const-list)))
+    :pred constp
+    :measure (two-nats-measure (acl2-count x) 0))
+
+  (fty::deflist const-list
+    :short "Fixtype of lists of constants."
+    :elt-type const
+    :true-listp t
+    :elementp-of-nil nil
+    :pred const-listp
+    :measure (two-nats-measure (acl2-count x) 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -205,12 +245,36 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Mirrors rustc's @('UnOp')
-     (except @('PtrMetadata'), which comes with slices):
-     logical/bitwise not, and arithmetic negation."))
+    "Mirrors rustc's @('UnOp'):
+     logical/bitwise not, arithmetic negation,
+     and pointer metadata
+     (which reads the length of a slice reference &mdash;
+     current rustc's replacement for the old @('Len') rvalue,
+     feeding bounds checks)."))
   (:not ())
   (:neg ())
+  (:ptr-metadata ())
   :pred un-opp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum cast-kind
+  :short "Fixtype of cast kinds."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Mirrors the cases of rustc's @('CastKind')
+     used by the current subset:
+     integer-to-integer casts (Rust's @('as') between integer types,
+     truncating or extending two's-complement)
+     and unsizing coercions
+     (@('&[T; N]') to @('&[T]'):
+     a thin reference to an array becomes
+     a fat reference carrying the length).
+     Pointer and float casts will come with later subsets."))
+  (:int-to-int ())
+  (:unsize ())
+  :pred cast-kindp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -238,10 +302,11 @@
     "Mirrors the core cases of rustc's @('Rvalue'):
      operand use, references to places,
      unary and binary operations,
+     casts (with target type),
      aggregate construction,
+     array repetition,
      and enum discriminant reads.
-     Casts, pointer operations, and length reads
-     will come with later subsets."))
+     Raw-pointer operations will come with later subsets."))
   (:use ((operand operand)))
   (:ref ((mut mutability)
          (place place)))
@@ -250,8 +315,13 @@
                (right operand)))
   (:unary-op ((op un-op)
               (operand operand)))
+  (:cast ((kind cast-kind)
+          (operand operand)
+          (ty ty)))
   (:aggregate ((kind agg-kind)
                (operands operand-list)))
+  (:repeat ((operand operand)
+            (count acl2::nat)))
   (:discriminant ((place place)))
   :pred rvaluep)
 
@@ -338,6 +408,13 @@
       (a no-op for the types of the current subset)
       and continue at the target block.")
     (xdoc::li
+     "@(':abort'): abort the machine with a panic.
+      This is where rustc's terminating-panic forms land
+      under @('panic=abort')
+      (e.g. @('TerminatorKind::UnwindTerminate'));
+      the name records the panic entry point that
+      the original program invoked, for error reports.")
+    (xdoc::li
      "@(':unreachable'): undefined behavior if reached.")))
   (:goto ((target acl2::nat)))
   (:switch-int ((discr operand)
@@ -352,6 +429,7 @@
             (target acl2::nat)))
   (:drop ((place place)
           (target acl2::nat)))
+  (:abort ((name acl2::string)))
   (:unreachable ())
   :pred terminatorp)
 

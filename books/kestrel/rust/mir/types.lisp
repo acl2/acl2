@@ -48,14 +48,39 @@
      will follow "
     (xdoc::ahref "https://github.com/minirust/minirust" "MiniRust")
     ";
-     this dialect decision is D9 in the plan document.")
+     rustc-shaped syntax keeps the importer a near-transliteration,
+     while MiniRust supplies a rigorous semantic style.")
    (xdoc::p
-    "This is a draft covering the monomorphic core
-     (the R0 subset of the plan's subset ladder,
-     which is also the shape of post-monomorphization code):
+    "MIR is not a single language:
+     rustc reshapes it through three dialects as compilation proceeds
+     (built, analysis, and runtime MIR, in its phase vocabulary),
+     which differ in which constructs may appear
+     and in what some constructs mean.
+     We model <i>runtime MIR before any optimization passes</i>:
+     the body returned by rustc's
+     @('mir_drops_elaborated_and_const_checked') query,
+     in which drops have been elaborated and made unconditional,
+     the constructs that exist only for borrow checking are gone,
+     and overflow checks are materialized as
+     explicit checked operations and assertions.
+     On drop-free code this dialect coincides with
+     the analysis MIR of the earlier @('mir_promoted') query
+     minus its borrowck-only statements,
+     so the formalization also serves
+     extraction pipelines that read that query;
+     see @(see mir-abstract-syntax) for the precise phase pin.
+     The dialect distinctions are confined to that code vocabulary
+     of statements, terminators, and rvalues;
+     rustc has a single type system shared by all MIR dialects,
+     so the type fixtypes (@(tsee ty) and its components)
+     apply to any dialect unchanged,
+     up to the monomorphic, region-erased form described next.")
+   (xdoc::p
+    "This is a draft covering the monomorphic core &mdash;
+     the shape of post-monomorphization code:
      there are no type parameters, no regions/lifetimes
      (MIR for execution has them erased),
-     and, per the plan's panic=abort decision (D3),
+     and, because we model the @('panic=abort') compilation mode,
      no unwind edges in terminators.")
    (xdoc::p
     "References:
@@ -66,7 +91,7 @@
     (xdoc::ahref
      "https://github.com/rust-lang/rust/tree/1.87.0/compiler/rustc_middle"
      "sources")
-    " (pinned per the plan's D6), and "
+    " (pinned at rustc 1.87.0), and "
     (xdoc::ahref "https://github.com/minirust/minirust" "MiniRust")
     "."))
   :order-subtopics t
@@ -160,8 +185,13 @@
        regions are erased in the MIR that we execute.")
      (xdoc::p
       "The unit type is the empty tuple, as in Rust.
-       Slices, @('str'), closures, trait objects, and function pointers
-       will be added as the subset ladder climbs."))
+       A slice type @('[T]') is unsized;
+       it occurs only behind references and raw pointers
+       (fat pointers, carrying the length),
+       which is where the well-formedness predicate, to come,
+       will allow it.
+       @('str'), closures, trait objects, and function pointers
+       will be added as the modeled subset grows."))
     (:bool ())
     (:char ())
     (:int ((type int-type)))
@@ -170,6 +200,7 @@
     (:tuple ((types ty-list)))
     (:array ((elem ty)
              (len acl2::nat)))
+    (:slice ((elem ty)))
     (:ref ((mut mutability)
            (ty ty)))
     (:raw-ptr ((mut mutability)

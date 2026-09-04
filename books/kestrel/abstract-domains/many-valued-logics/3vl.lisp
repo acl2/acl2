@@ -1323,3 +1323,287 @@
                   (iff x y)))
   :rule-classes ((:rewrite :backchain-limit-lst (0 0)))
   :by 3iff-when-booleanp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define 3possibly ((x 3p))
+  :returns (yes/no booleanp)
+  :parents (3vl)
+  :short "Whether a @(see 3p) may be true."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "This holds of @('t') and @(':unknown'), but not of @('nil').")
+   (xdoc::p
+     "This is one of the two boolean projections of a @(see 3p), the other
+      being @(tsee 3definitely). The two are dual under @(tsee 3not)."))
+  (not (3= x nil))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t 3possibly)))
+
+(defrule 3possibly-type-prescription
+  (booleanp (3possibly x))
+  :rule-classes ((:type-prescription :typed-term (3possibly x))))
+
+(defrule 3possibly-when-3=-congruence
+  (implies (3= x0 x1)
+           (equal (3possibly x0)
+                  (3possibly x1)))
+  :rule-classes :congruence
+  :enable 3possibly)
+
+(defruled 3possibly-when-booleanp
+  (implies (booleanp x)
+           (equal (3possibly x)
+                  x))
+  :enable 3possibly)
+
+(defrule 3possibly-when-booleanp-cheap
+  (implies (booleanp x)
+           (equal (3possibly x)
+                  x))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by 3possibly-when-booleanp)
+
+(defruled 3possibly-when-not-booleanp
+  (implies (not (booleanp x))
+           (3possibly x))
+  :enable (3possibly
+           3=))
+
+(defrule 3possibly-when-not-booleanp-cheap
+  (implies (not (booleanp x))
+           (3possibly x))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by 3possibly-when-not-booleanp)
+
+(defruled 3fix-when-not-3possibly
+  (implies (not (3possibly x))
+           (equal (3fix x)
+                  nil))
+  :enable 3possibly)
+
+(defruled monotonicity-of-3possibly
+  (implies (and (3<= x0 x1)
+                (3possibly x0))
+           (3possibly x1))
+  :enable (3possibly
+           3<=))
+
+(defrule 3possibly-of-3join
+  (equal (3possibly (3join x y))
+         (or (3possibly x)
+             (3possibly y)))
+  :enable (3possibly
+           3join))
+
+(defrule 3possibly-of-3and
+  (equal (3possibly (3and x y))
+         (and (3possibly x)
+              (3possibly y)))
+  :enable (3possibly
+           3and))
+
+(defrule 3possibly-of-3or
+  (equal (3possibly (3or x y))
+         (or (3possibly x)
+             (3possibly y)))
+  :enable (3possibly
+           3or
+           3fix
+           3p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define 3definitely ((x 3p))
+  :returns (yes/no booleanp)
+  :parents (3vl)
+  :short "Whether a @(see 3p) must be true."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "This holds of @('t') only, and so of neither @('nil') nor
+      @(':unknown').")
+   (xdoc::p
+     "This is one of the two boolean projections of a @(see 3p), the other
+      being @(tsee 3possibly). The two are dual under @(tsee 3not)."))
+  (3= x t)
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t 3definitely)))
+
+(defrule 3definitely-type-prescription
+  (booleanp (3definitely x))
+  :rule-classes ((:type-prescription :typed-term (3definitely x))))
+
+(defrule 3definitely-when-3=-congruence
+  (implies (3= x0 x1)
+           (equal (3definitely x0)
+                  (3definitely x1)))
+  :rule-classes :congruence
+  :enable 3definitely)
+
+(defruled 3definitely-when-booleanp
+  (implies (booleanp x)
+           (equal (3definitely x)
+                  x))
+  :enable (3definitely
+           3=))
+
+(defrule 3definitely-when-booleanp-cheap
+  (implies (booleanp x)
+           (equal (3definitely x)
+                  x))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by 3definitely-when-booleanp)
+
+(defruled 3definitely-when-not-booleanp
+  (implies (not (booleanp x))
+           (not (3definitely x)))
+  :enable (3definitely
+           3=))
+
+(defrule 3definitely-when-not-booleanp-cheap
+  (implies (not (booleanp x))
+           (not (3definitely x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by 3definitely-when-not-booleanp)
+
+(defruled 3fix-when-3definitely
+  (implies (3definitely x)
+           (equal (3fix x)
+                  t))
+  :enable 3definitely)
+
+(defruled antimonotonicity-of-3definitely
+  (implies (and (3<= x0 x1)
+                (3definitely x1))
+           (3definitely x0))
+  :enable (3definitely
+           3<=))
+
+(defrule 3definitely-of-3join
+  (equal (3definitely (3join x y))
+         (and (3definitely x)
+              (3definitely y)))
+  :enable (3definitely
+           3=
+           3join))
+
+(defrule 3definitely-of-3and
+  (equal (3definitely (3and x y))
+         (and (3definitely x)
+              (3definitely y)))
+  :enable (3definitely
+           3=
+           3and
+           3fix
+           3p))
+
+(defrule 3definitely-of-3or
+  (equal (3definitely (3or x y))
+         (or (3definitely x)
+             (3definitely y)))
+  :enable (3definitely
+           3=
+           3or))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled 3possibly-when-3definitely
+  (implies (3definitely x)
+           (3possibly x))
+  :enable (3possibly
+           3definitely))
+
+(defrule 3possibly-when-3definitely-forward-chaining
+  (implies (3definitely x)
+           (3possibly x))
+  :rule-classes :forward-chaining
+  :by 3possibly-when-3definitely)
+
+(defruled 3fix-when-3possibly-and-not-3definitely
+  (implies (and (3possibly x)
+                (not (3definitely x)))
+           (equal (3fix x)
+                  :unknown))
+  :enable (3possibly
+           3definitely
+           3fix
+           3p))
+
+(defrule 3possibly-of-3not
+  (equal (3possibly (3not x))
+         (not (3definitely x)))
+  :enable (3possibly
+           3definitely
+           3=
+           3not
+           3fix
+           3p))
+
+(defrule 3definitely-of-3not
+  (equal (3definitely (3not x))
+         (not (3possibly x)))
+  :enable (3possibly
+           3definitely
+           3not))
+
+(defrule 3possibly-of-3xor
+  (equal (3possibly (3xor x y))
+         (or (and (3possibly x) (not (3definitely y)))
+             (and (3possibly y) (not (3definitely x)))))
+  :enable (3possibly
+           3definitely
+           3=
+           3xor
+           3fix
+           3p))
+
+(defrule 3definitely-of-3xor
+  (equal (3definitely (3xor x y))
+         (or (and (3definitely x) (not (3possibly y)))
+             (and (3definitely y) (not (3possibly x)))))
+  :enable (3possibly
+           3definitely
+           3=
+           3xor
+           3fix
+           3p))
+
+(defrule 3possibly-of-3implies
+  (equal (3possibly (3implies x y))
+         (implies (3definitely x)
+                  (3possibly y))))
+
+(defrule 3definitely-of-3implies
+  (equal (3definitely (3implies x y))
+         (implies (3possibly x)
+                  (3definitely y))))
+
+(defrule 3possibly-of-3iff
+  (equal (3possibly (3iff x y))
+         (or (and (3possibly x) (3possibly y))
+             (and (not (3definitely x)) (not (3definitely y)))))
+  :enable (3possibly
+           3definitely
+           3=
+           3iff
+           3fix
+           3p))
+
+(defrule 3definitely-of-3iff
+  (equal (3definitely (3iff x y))
+         (or (and (3definitely x) (3definitely y))
+             (and (not (3possibly x)) (not (3possibly y)))))
+  :enable (3possibly
+           3definitely
+           3=
+           3iff
+           3fix
+           3p))

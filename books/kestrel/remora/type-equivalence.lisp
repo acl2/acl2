@@ -87,11 +87,6 @@
      the renaming maps are string-to-string maps,
      because other premises set them to be equal to string-to-string maps.")
    (xdoc::p
-    "An atom type is allowed where an array type is expected.
-     This is formalized by the rule @('scalar'),
-     which says that an atom type is equivalent to
-     a scalar (i.e. zero-ranked) array type with the atom type as element.")
-   (xdoc::p
     "An array type variable @('*<name>') is sugar for
      an array type @('(A &<name> @<name>)') consisting of
      an atom type variable and a shape variable with the same name.
@@ -105,50 +100,69 @@
     "An n-ary function type is sugar for
      a nesting of unary function types:
      a nullary function type stands for just its output type
-     (rule @('fun0')),
-     and a function type with one or more inputs stands for
+     (rule @('fun0'));
+     a function type with exactly one input stands for
+     the unary function type with that input and the same output
+     (rule @('fun1'));
+     and a function type with two or more inputs stands for
      a unary function type from the first input
-     to the function type with the remaining inputs
-     (rule @('fun1m')).")
+     to the scalar array type of
+     the function type with the remaining inputs
+     (rule @('fun2m')).
+     The scalar array type is needed because
+     the function type with the remaining inputs has the atom kind,
+     while the output of a unary function type must have the array kind.")
    (xdoc::p
     "An n-ary universal type, which has two or more parameters,
      is sugar for a nesting of unary universal types:
      one with exactly two parameters stands for
      a unary universal type of the first parameter
-     whose body is the unary universal type of the second parameter
+     whose body is the scalar array type of
+     the unary universal type of the second parameter
      (rule @('forall2')),
      and one with three or more parameters stands for
      a unary universal type of the first parameter
-     whose body is the n-ary universal type of the remaining parameters
+     whose body is the scalar array type of
+     the n-ary universal type of the remaining parameters
      (rule @('forall3m')).
      The two rules are separate because
-     an n-ary universal type cannot have just one parameter.")
+     an n-ary universal type cannot have just one parameter.
+     The scalar array types are needed for the same reason as
+     in the rules for n-ary function types.")
    (xdoc::p
     "An n-ary product type, which has two or more parameters,
      is sugar for a nesting of unary product types:
      one with exactly two parameters stands for
      a unary product type of the first parameter
-     whose body is the unary product type of the second parameter
+     whose body is the scalar array type of
+     the unary product type of the second parameter
      (rule @('pi2')),
      and one with three or more parameters stands for
      a unary product type of the first parameter
-     whose body is the n-ary product type of the remaining parameters
+     whose body is the scalar array type of
+     the n-ary product type of the remaining parameters
      (rule @('pi3m')).
      The two rules are separate because
-     an n-ary product type cannot have just one parameter.")
+     an n-ary product type cannot have just one parameter.
+     The scalar array types are needed for the same reason as
+     in the rules for n-ary function types.")
    (xdoc::p
     "An n-ary sum type, which has two or more parameters,
      is sugar for a nesting of unary sum types:
      one with exactly two parameters stands for
      a unary sum type of the first parameter
-     whose body is the unary sum type of the second parameter
+     whose body is the scalar array type of
+     the unary sum type of the second parameter
      (rule @('sigma2')),
      and one with three or more parameters stands for
      a unary sum type of the first parameter
-     whose body is the n-ary sum type of the remaining parameters
+     whose body is the scalar array type of
+     the n-ary sum type of the remaining parameters
      (rule @('sigma3m')).
      The two rules are separate because
-     an n-ary sum type cannot have just one parameter."))
+     an n-ary sum type cannot have just one parameter.
+     The scalar array types are needed for the same reason as
+     in the rules for n-ary function types."))
 
   :preds ((type-eq type1 type2))
 
@@ -159,32 +173,45 @@
    (refl ((typep type))
          (type-eq type type))
 
-   (symm ((typep type1) (typep type2)
+   (symm ((typep type1)
+          (typep type2)
           (type-eq type1 type2))
          (type-eq type2 type1))
 
-   (trans ((typep type1) (typep type2) (typep type3)
-           (type-eq type1 type2) (type-eq type2 type3))
+   (trans ((typep type1)
+           (typep type2)
+           (typep type3)
+           (type-eq type1 type2)
+           (type-eq type2 type3))
           (type-eq type1 type3))
 
    ;; array type congruence:
 
-   (array ((typep type1) (typep type2) (ispacep ispace1) (ispacep ispace2)
+   (array ((typep type1)
+           (typep type2)
+           (ispacep ispace1)
+           (ispacep ispace2)
            (type-eq type1 type2)
            (ispace-eq ispace1 ispace2))
           (type-eq (tarr type1 ispace1) (tarr type2 ispace2)))
 
    ;; function type congruence:
 
-   (fun ((typep type-in1) (typep type-in2) (typep type-out1) (typep type-out2)
+   (fun ((typep type-in1)
+         (typep type-in2)
+         (typep type-out1)
+         (typep type-out2)
          (type-eq type-in1 type-in2)
          (type-eq type-out1 type-out2))
         (type-eq (t-> type-in1 type-out1) (t-> type-in2 type-out2)))
 
    ;; universal type congruence:
 
-   (forall ((type-varp param1) (type-varp param2) (type-varp param)
-            (typep type1) (typep type2)
+   (forall ((type-varp param1)
+            (type-varp param2)
+            (type-varp param)
+            (typep type1)
+            (typep type2)
             (not (equal param param1))
             (not (equal param param2))
             (not (set::in param (type-all-type-vars type1)))
@@ -217,8 +244,11 @@
 
    ;; product type congruence:
 
-   (pi ((ispace-varp param1) (ispace-varp param2) (ispace-varp param)
-        (typep type1) (typep type2)
+   (pi ((ispace-varp param1)
+        (ispace-varp param2)
+        (ispace-varp param)
+        (typep type1)
+        (typep type2)
         (not (equal param param1))
         (not (equal param param2))
         (not (set::in param (type-all-ispace-vars type1)))
@@ -251,8 +281,11 @@
 
    ;; sum type congruence:
 
-   (sigma ((ispace-varp param1) (ispace-varp param2) (ispace-varp param)
-           (typep type1) (typep type2)
+   (sigma ((ispace-varp param1)
+           (ispace-varp param2)
+           (ispace-varp param)
+           (typep type1)
+           (typep type2)
            (not (equal param param1))
            (not (equal param param2))
            (not (set::in param (type-all-ispace-vars type1)))
@@ -283,12 +316,6 @@
                     (type-rename-ispace-vars type2 dim-ren2 shape-ren2)))
           (type-eq (type-sigma param1 type1) (type-sigma param2 type2)))
 
-   ;; lifting of atom types to array types:
-
-   (scalar ((typep type)
-            (type-atomp type))
-           (type-eq type (tarr type (shp++))))
-
    ;; normalization of array type variables:
 
    (array-var ((stringp name))
@@ -298,7 +325,9 @@
 
    ;; normalization of bracket types:
 
-   (bracket ((typep type) (ispace-listp ispaces) (ispacep ispace)
+   (bracket ((typep type)
+             (ispace-listp ispaces)
+             (ispacep ispace)
              (ispace-eq ispace (ispace-shape (shape-splice ispaces))))
             (type-eq (type-bracket type ispaces)
                      (tarr type ispace)))
@@ -308,44 +337,76 @@
    (fun0 ((typep type-out))
          (type-eq (type-funn nil type-out) type-out))
 
-   (fun1m ((typep type-in) (type-listp types-in) (typep type-out))
-          (type-eq (type-funn (cons type-in types-in) type-out)
-                   (t-> type-in (type-funn types-in type-out))))
+   (fun1 ((typep type-in)
+          (typep type-out))
+         (type-eq (type-funn (list type-in) type-out)
+                  (t-> type-in type-out)))
+
+   (fun2m ((typep type-in1)
+           (typep type-in2)
+           (type-listp types-in)
+           (typep type-out))
+          (type-eq (type-funn (list* type-in1 type-in2 types-in) type-out)
+                   (t-> type-in1
+                        (type-scalar
+                         (type-funn (cons type-in2 types-in) type-out)))))
 
    ;; normalization of n-ary universal types:
 
-   (forall2 ((type-varp param1) (type-varp param2) (typep type))
+   (forall2 ((type-varp param1)
+             (type-varp param2)
+             (typep type))
             (type-eq (type-foralln (list param1 param2) type)
-                     (type-forall param1 (type-forall param2 type))))
+                     (type-forall param1
+                                  (type-scalar (type-forall param2 type)))))
 
-   (forall3m ((type-varp param1) (type-varp param2) (type-var-listp params)
-              (consp params) (typep type))
+   (forall3m ((type-varp param1)
+              (type-varp param2)
+              (type-var-listp params)
+              (consp params)
+              (typep type))
              (type-eq (type-foralln (list* param1 param2 params) type)
                       (type-forall param1
-                                   (type-foralln (cons param2 params) type))))
+                                   (type-scalar
+                                    (type-foralln (cons param2 params) type)))))
 
    ;; normalization of n-ary product types:
 
-   (pi2 ((ispace-varp param1) (ispace-varp param2) (typep type))
+   (pi2 ((ispace-varp param1)
+         (ispace-varp param2)
+         (typep type))
         (type-eq (type-pin (list param1 param2) type)
-                 (type-pi param1 (type-pi param2 type))))
+                 (type-pi param1
+                          (type-scalar (type-pi param2 type)))))
 
-   (pi3m ((ispace-varp param1) (ispace-varp param2) (ispace-var-listp params)
-          (consp params) (typep type))
+   (pi3m ((ispace-varp param1)
+          (ispace-varp param2)
+          (ispace-var-listp params)
+          (consp params)
+          (typep type))
          (type-eq (type-pin (list* param1 param2 params) type)
-                  (type-pi param1 (type-pin (cons param2 params) type))))
+                  (type-pi param1
+                           (type-scalar
+                            (type-pin (cons param2 params) type)))))
 
    ;; normalization of n-ary sum types:
 
-   (sigma2 ((ispace-varp param1) (ispace-varp param2) (typep type))
+   (sigma2 ((ispace-varp param1)
+            (ispace-varp param2)
+            (typep type))
            (type-eq (type-sigman (list param1 param2) type)
-                    (type-sigma param1 (type-sigma param2 type))))
+                    (type-sigma param1
+                                (type-scalar (type-sigma param2 type)))))
 
-   (sigma3m ((ispace-varp param1) (ispace-varp param2)
-             (ispace-var-listp params) (consp params) (typep type))
+   (sigma3m ((ispace-varp param1)
+             (ispace-varp param2)
+             (ispace-var-listp params)
+             (consp params)
+             (typep type))
             (type-eq (type-sigman (list* param1 param2 params) type)
                      (type-sigma param1
-                                 (type-sigman (cons param2 params) type))))))
+                                 (type-scalar
+                                  (type-sigman (cons param2 params) type)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -372,11 +433,11 @@
   (verify-guards type-eq-forall-validp)
   (verify-guards type-eq-pi-validp)
   (verify-guards type-eq-sigma-validp)
-  (verify-guards type-eq-scalar-validp)
   (verify-guards type-eq-array-var-validp)
   (verify-guards type-eq-bracket-validp)
   (verify-guards type-eq-fun0-validp)
-  (verify-guards type-eq-fun1m-validp)
+  (verify-guards type-eq-fun1-validp)
+  (verify-guards type-eq-fun2m-validp)
   (verify-guards type-eq-forall2-validp)
   (verify-guards type-eq-forall3m-validp)
   (verify-guards type-eq-pi2-validp)

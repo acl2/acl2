@@ -430,12 +430,10 @@
      and given that expressions and atoms are defined separately below,
      it may seem natural to also partition the definition of types
      into atom-kinded types and array-kinded types.
-     However, Remora allows atom-kinded types
+     However, the Remora syntax allows atom-kinded types
      wherever array-kinded types are expected:
-     the atom-kinded type is auto-lifted to a zero-rank array type.
-     There are only two spots in which a type must be atom-kinded,
-     namely the element type of an array or bracket type,
-     and that restriction is enforced in the static semantics.
+     the atom-kinded type stands for a zero-rank array type,
+     and this lifting must be made explicit by type inference.
      Also note that ispaces and expressions/atoms
      have a different recursive structure than types,
      making those more naturally amenable to a partitioned definition."))

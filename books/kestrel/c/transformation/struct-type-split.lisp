@@ -997,7 +997,7 @@
     completions, e.g. an untagged struct type,
     whose members are instead collected syntactically.")
   (b* ((completions (sts-split-state->completions st))
-       (pair (hons-assoc-equal (c$::uid-fix host-uid) completions))
+       (pair (hons-get (c$::uid-fix host-uid) completions))
        ((unless pair) nil))
     (type-struni-member-list-collect-names
       (c$::type-struni-member-list-fix (cdr pair))

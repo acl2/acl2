@@ -40,7 +40,7 @@
 (program)
 (set-state-ok t)
 
-(include-book "elide-event")
+(include-book "tools/elide-event" :dir :system)
 
 (defun get-event-local-p (n wrld)
 
@@ -131,12 +131,7 @@
            (mv nil nil))
           (t (let ((ev (access-event-tuple-form
                         (cddr (car (lookup-world-index 'event index wrld))))))
-               (mv index
-                   (if (eq (car ev) 'defconst)
-                       (assert$ (eq (cadr ev) name)
-                                `(defconst ,name
-                                   ,(getpropc name 'const nil wrld)))
-                     ev)))))))
+               (mv index ev))))))
 
 (defun constant-name-p (form)
 
@@ -333,6 +328,20 @@
                               (absstobj-supporters (cdr absstobj-tuples)))
                       (absstobj-supporters (cdr absstobj-tuples))))))))
 
+(defun defconst-body (ev wrld)
+  (and (consp ev)
+       (eq (car ev) 'defconst)
+       (mv-let (erp val bindings)
+         (translate1-cmp (caddr ev) '(nil) nil nil 'defconst-body wrld
+                         (default-state-vars nil))
+         (declare (ignore bindings))
+         (if erp
+             (er hard 'defconst-body
+                 "Surprisingly, the body of the form ~x0 failed to translate ~
+                  during evaluation of a call of with-supporters."
+                 ev)
+           val))))
+
 (mutual-recursion
 
 (defun supporters-of-1-lst (defs min max macro-aliases wrld state-vars fns-fal)
@@ -389,6 +398,7 @@
                        (name2 (conjoin x))
                        (t x)))
                   (or (getpropc name 'macro-body nil wrld)
+                      (defconst-body ev wrld)
                       (formula name nil wrld))))
                (guard ; incomplete for encapsulate if more than 1 signature
                 (getpropc name 'guard nil wrld))

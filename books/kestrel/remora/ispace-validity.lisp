@@ -59,7 +59,8 @@
      this corresponds to the use of @($\\cdots$) in [thesis] [arxiv] [esop].
      The rules for individual dimensions follow [thesis] [arxiv] [esop],
      with the addition of rules for multiplication and subtraction,
-     which are analogous to the one for addition."))
+     which are analogous to the one for addition,
+     except that subtraction needs at least one argument."))
 
   :preds ((dim-ok ivars dim)
           (dims-ok ivars dims))
@@ -89,6 +90,7 @@
 
    (sub ((ispace-var-setp ivars)
          (dim-listp dims)
+         (consp dims)
          (dims-ok ivars dims))
         (dim-ok ivars (dim-sub dims)))
 
