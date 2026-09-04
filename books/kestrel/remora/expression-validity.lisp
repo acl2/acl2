@@ -13,6 +13,8 @@
 (include-book "type-validity")
 (include-book "type-equivalence")
 
+(include-book "nat-lists")
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -64,7 +66,16 @@
      This corresponds to @($\\cdots$) in [thesis] [arxiv] [esop].")
    (xdoc::p
     "The rules follow [thesis] [arxiv] [esop],
-     with the necessary adaptations to the richer forms of our ASTs."))
+     with the necessary adaptations to the richer forms of our ASTs.")
+   (xdoc::p
+    "The rule for non-empty arrays
+     omit the premise from [thesis] [arxiv] saying that
+     the type of the elements is valid and has atom kind,
+     because it should be a consequence of the fact that
+     there is at least one atom that has that type;
+     we plan to prove this formally.
+     The rule for empty arrays, in contrast,
+     needs the requirement on the type, which is part of the expression."))
 
   :preds ((expr-ok ivars tvars evars expr type)
           (atom-ok ivars tvars evars atom type)
@@ -118,7 +129,36 @@
 
    ;; array expressions:
 
-   ;; TODO
+   (array-nonempty ((ispace-var-setp ivars)
+                    (type-var-setp tvars)
+                    (string-type-mapp evars)
+                    (nat-listp dims)
+                    (atom-listp atoms)
+                    (typep type)
+                    (not (member-equal 0 dims))
+                    (equal (len atoms) (nat-list-product dims))
+                    (atoms-ok ivars tvars evars
+                              atoms
+                              (repeat (len atoms) type)))
+                   (expr-ok ivars tvars evars
+                            (expr-array dims atoms)
+                            (type-array type
+                                        (ispace-shape
+                                         (shape-dims (dim-const-list dims))))))
+
+   (array-empty ((ispace-var-setp ivars)
+                 (type-var-setp tvars)
+                 (string-type-mapp evars)
+                 (nat-listp dims)
+                 (typep type)
+                 (type-ok ivars tvars type)
+                 (type-atom-kindp type)
+                 (member-equal 0 dims))
+                (expr-ok ivars tvars evars
+                         (expr-array-empty dims type)
+                         (type-array type
+                                     (ispace-shape
+                                      (shape-dims (dim-const-list dims))))))
 
    ;; frame expressions:
 
