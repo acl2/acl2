@@ -378,7 +378,26 @@
 (define type-array-kindp ((type typep))
   :returns (yes/no booleanp)
   :short "Check if a type has the array kind."
-  (not (type-atom-kindp type)))
+  (not (type-atom-kindp type))
+
+  ///
+
+  (defruled type-array-kindp-alt-def
+    (equal (type-array-kindp type)
+           (type-case type
+                      :var (type-var-case type.var :array)
+                      :base nil
+                      :array t
+                      :bracket t
+                      :fun nil
+                      :funn nil
+                      :forall nil
+                      :foralln nil
+                      :pi nil
+                      :pin nil
+                      :sigma nil
+                      :sigman nil))
+    :hints (("Goal" :in-theory (enable type-atom-kindp)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -386,6 +405,20 @@
   :guard (type-listp x)
   :short "Lift @(tsee type-array-kindp) to lists."
   (type-array-kindp x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-scalar ((type typep))
+  :guard (type-atom-kindp type)
+  :returns (scalar-type typep)
+  :short "Lift an atom type to a scalar (i.e. zero-ranked) array type."
+  (make-type-array :elem type :ispace (ispace-shape (shape-dims nil)))
+
+  ///
+
+  (defret type-array-kindp-of-type-scalar
+    (type-array-kindp scalar-type)
+    :hints (("Goal" :in-theory (enable type-array-kindp-alt-def)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
