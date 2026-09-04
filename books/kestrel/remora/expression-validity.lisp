@@ -75,7 +75,9 @@
      there is at least one atom that has that type;
      we plan to prove this formally.
      The rule for empty arrays, in contrast,
-     needs the requirement on the type, which is part of the expression."))
+     needs the requirement on the type, which is part of the expression.
+     The rules for non-empty and empty frames
+     follow a similar pattern in that respect."))
 
   :preds ((expr-ok ivars tvars evars expr type)
           (atom-ok ivars tvars evars atom type)
