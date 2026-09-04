@@ -53,6 +53,7 @@
 (include-book "kestrel/ethereum/portcullis" :dir :system)
 (include-book "kestrel/bitcoin/portcullis" :dir :system)
 (include-book "std/omaps/portcullis" :dir :system)
+(include-book "kestrel/jsonrpc/portcullis" :dir :system)
 (include-book "kestrel/yul/portcullis" :dir :system)
 
 ; Book release notes are sometimes disorganized.
@@ -123,6 +124,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "jsonrpc::jsonrpc" "JSON-RPC Library"))
+
+   (xdoc::p
+    "A library that implements a JSON-RPC 2.0 interface for ACL2.
+     Requests are dispatched to ACL2 functions of the same name,
+     via files or a TCP socket.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Remora")
 
    (xdoc::p
@@ -182,6 +192,16 @@
     "A new data structure,"
     (xdoc::seetopic "treemap::treemap" "treemaps")
     ", was introduced, representing finite maps with ordered keys.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
+
+   (xdoc::p
+    "Added @(tsee omap::compose), @(tsee omap::inverse),
+     @(tsee omap::restrict-values), @(tsee omap::identityp),
+     @(tsee omap::injectivep), and @(tsee omap::closedp),
+     along with theorems about them and some other new theorems.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
