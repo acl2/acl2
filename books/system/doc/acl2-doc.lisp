@@ -109827,6 +109827,9 @@ it."
 
 ; Added :DOC mini-proveall.  Thanks to Eric Smith for suggesting this addition.
 
+; For #+ and #-, changed :non-standard-analysis to non-standard-analysis as per
+; a chat with Eric Smith.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -109998,6 +110001,23 @@ it."
  <p>Made a @(see guard) fix for calls of the macro @(tsee fmx-cw) that use
  @(tsee fmt) directive @('~_'), for example, @('(fmx-cw \"~_0\" x)').  Thanks
  to Eric Smith for pointing out this bug using that example.</p>
+
+ <p>Fixed a bug that made it possible to certify a book that could not then be
+ included.  The bug could occur when a @(tsee defconst) form inside an @(tsee
+ encapsulate) form is dependent on @(see local) definitions, as in the
+ following example, which formerly was admitted but now is not.</p>
+
+ @({
+ (encapsulate
+   ()
+   (local (defun c-body () 17))
+   (defconst *c* (c-body)))
+ })
+
+ <p>As before, the value for the constant that is saved from the first pass of
+ the @('encapsulate') is used as the value in the second pass.  But unlike
+ before, the body of the @('defconst') form is translated during both passes,
+ not just the first.</p>
 
  <h3>Changes at the System Level</h3>
 

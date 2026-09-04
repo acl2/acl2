@@ -121,8 +121,8 @@
 (defun defconst-val (name form ctx wrld state)
   #+acl2-loop-only
   (declare (ignore name))
-  #-acl2-loop-only
   (cond
+   #-acl2-loop-only
    ((f-get-global 'boot-strap-flg state)
     (cond
      ((member name '(*first-order-like-terms-and-out-arities*
@@ -157,15 +157,32 @@
 
     (return-from defconst-val
                  (value (symbol-value name))))
-   (t (let ((val (defconst-val-raw name)))
+   (t #-acl2-loop-only
+      (let ((val (defconst-val-raw name)))
         (when (not (eq val *hcomp-fake-value*))
-          (return-from defconst-val
-                       (with-debug (value val)
-                                   "[~s] Found ~s in hash table.~%"
-                                   'defconst-val name))))))
-  (er-let*
-   ((pair (state-global-let*
-           ((safe-mode
+
+; At one time we returned the value here, without translating.  But that
+; allowed the following event to be admitted when not skipping proofs, which
+; caused a book containing this event to fail being included after
+; certification.
+
+;   (encapsulate
+;     ()
+;     (local (defun c-body () 17))
+;     (defconst *c* (c-body)))
+
+; We will want to use the saved value, but we create an expression that will
+; force translation of the form.  So we modify the form accordingly.
+
+          (setq form
+                (with-debug
+                 `(prog2$ ,form
+                          (quote ,val))
+                 "[~s] Found ~s in hash table.~%"
+                 'defconst-val name))))
+      (er-let*
+          ((pair (state-global-let*
+                  ((safe-mode
 
 ; Warning: If you are tempted to bind safe-mode to nil outside the boot-strap,
 ; then revisit the binding of *safe-mode-verified-p* to t in the
@@ -235,13 +252,13 @@
 ;   allow raw Lisp calls, avoiding safe mode during the boot-strap, even for
 ;   other lisps.
 
-             t ; (not (f-get-global 'boot-strap-flg state))
-             ))
-           (simple-translate-and-eval form nil
-                                      nil
-                                      "The second argument of defconst"
-                                      ctx wrld state nil))))
-   (value (cdr pair))))
+                    t ; (not (f-get-global 'boot-strap-flg state))
+                    ))
+                  (simple-translate-and-eval form nil
+                                             nil
+                                             "The second argument of defconst"
+                                             ctx wrld state nil))))
+        (value (cdr pair))))))
 
 (defun large-consp (x)
   (eql (the #.*fixnat-type* (cons-count-bounded x))

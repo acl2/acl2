@@ -107067,6 +107067,22 @@ Bug Fixes
   directive [30m[47m~_[0m[0m, for example, [30m[47m(fmx-cw \"~_0\" x)[0m[0m.  Thanks to Eric Smith
   for pointing out this bug using that example.
 
+  Fixed a bug that made it possible to certify a book that could not
+  then be included.  The bug could occur when a [30m[47m[defconst][0m[0m form
+  inside an [30m[47m[encapsulate][0m[0m form is dependent on [local] definitions,
+  as in the following example, which formerly was admitted but now is
+  not.
+
+    (encapsulate
+      ()
+      (local (defun c-body () 17))
+      (defconst *c* (c-body)))
+
+  As before, the value for the constant that is saved from the first
+  pass of the [30m[47mencapsulate[0m[0m is used as the value in the second pass.
+  But unlike before, the body of the [30m[47mdefconst[0m[0m form is translated
+  during both passes, not just the first.
+
 
 Changes at the System Level
 
