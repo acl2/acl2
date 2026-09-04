@@ -14,3 +14,5 @@
 (include-book "abstract-syntax")
 (include-book "limits")
 (include-book "values")
+(include-book "states")
+(include-book "interp")
