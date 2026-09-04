@@ -393,7 +393,7 @@
        (val (if (and (symbolp ent) (equal (symbol-name ent) "~"))
                 (if (4vec-p lastval)
                     (4vec-bitnot lastval)
-                  (prog2$ (raise "Toggle entries (~) must be preceded by a constant value")
+                  (prog2$ (raise "Toggle entries (~~) must be preceded by a constant value")
                           'acl2::_))
               ent))
        (val (if (4vec-p val)
