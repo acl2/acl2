@@ -68,27 +68,25 @@
 
   (;; equivalence:
 
-   ;; TODO: currently these two cause failure
+   (eqv ((ispace-var-setp ivars)
+         (type-var-setp tvars)
+         (string-type-mapp evars)
+         (exprp expr)
+         (typep type1)
+         (typep type2)
+         (expr-ok ivars tvars evars expr type1)
+         (type-eq type1 type2))
+        (expr-ok ivars tvars evars expr type2))
 
-   ;; (equiv ((ispace-var-setp ivars)
-   ;;         (type-var-setp tvars)
-   ;;         (string-type-mapp evars)
-   ;;         (exprp expr)
-   ;;         (typep type1)
-   ;;         (typep type2)
-   ;;         (expr-ok ivars tvars evars expr type1)
-   ;;         (type-eq type1 type2))
-   ;;        (expr-ok ivars tvars evars expr type2))
-
-   ;; (equiv ((ispace-var-setp ivars)
-   ;;         (type-var-setp tvars)
-   ;;         (string-type-mapp evars)
-   ;;         (atomp atom)
-   ;;         (typep type1)
-   ;;         (typep type2)
-   ;;         (atom-ok ivars tvars evars atom type1)
-   ;;         (type-eq type1 type2))
-   ;;        (atom-ok ivars tvars evars atom type2))
+   (eqv ((ispace-var-setp ivars)
+         (type-var-setp tvars)
+         (string-type-mapp evars)
+         (atomp atom)
+         (typep type1)
+         (typep type2)
+         (atom-ok ivars tvars evars atom type1)
+         (type-eq type1 type2))
+        (atom-ok ivars tvars evars atom type2))
 
    ;; expression variables:
 
