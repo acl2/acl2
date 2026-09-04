@@ -130,7 +130,6 @@
 
    (fun0 ((ispace-var-setp ivars)
           (type-var-setp tvars)
-          (type-listp types-in)
           (typep type)
           (type-ok ivars tvars type))
          (type-ok ivars tvars (type-funn nil type)))
