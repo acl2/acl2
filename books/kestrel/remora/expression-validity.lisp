@@ -133,10 +133,10 @@
                     (type-var-setp tvars)
                     (string-type-mapp evars)
                     (nat-listp dims)
-                    (atom-listp atoms)
-                    (typep type)
                     (not (member-equal 0 dims))
+                    (atom-listp atoms)
                     (equal (len atoms) (nat-list-product dims))
+                    (typep type)
                     (atoms-ok ivars tvars evars
                               atoms
                               (repeat (len atoms) type)))
@@ -150,10 +150,10 @@
                  (type-var-setp tvars)
                  (string-type-mapp evars)
                  (nat-listp dims)
+                 (member-equal 0 dims)
                  (typep type)
                  (type-ok ivars tvars type)
-                 (type-atom-kindp type)
-                 (member-equal 0 dims))
+                 (type-atom-kindp type))
                 (expr-ok ivars tvars evars
                          (expr-array-empty dims type)
                          (type-array type
@@ -162,7 +162,48 @@
 
    ;; frame expressions:
 
-   ;; TODO
+   (frame-nonempty ((ispace-var-setp ivars)
+                    (type-var-setp tvars)
+                    (string-type-mapp evars)
+                    (nat-listp dims)
+                    (not (member-equal 0 dims))
+                    (expr-listp exprs)
+                    (equal (len exprs) (nat-list-product dims))
+                    (typep type)
+                    (shapep shape)
+                    (exprs-ok ivars tvars evars
+                              exprs
+                              (repeat (len exprs)
+                                      (type-array type
+                                                  (ispace-shape shape)))))
+                   (expr-ok ivars tvars evars
+                            (expr-frame dims exprs)
+                            (type-array type
+                                        (ispace-shape
+                                         (shp++ (shape-dims
+                                                 (dim-const-list dims))
+                                                shape)))))
+
+   (frame-empty ((ispace-var-setp ivars)
+                 (type-var-setp tvars)
+                 (string-type-mapp evars)
+                 (nat-listp dims)
+                 (member-equal 0 dims)
+                 (typep cell-type)
+                 (typep type)
+                 (shapep shape)
+                 (type-ok ivars tvars cell-type)
+                 (type-ok ivars tvars type)
+                 (type-atom-kindp type)
+                 (shape-ok ivars shape)
+                 (type-eq cell-type (type-array type (ispace-shape shape))))
+                (expr-ok ivars tvars evars
+                         (expr-frame-empty dims cell-type)
+                         (type-array type
+                                     (ispace-shape
+                                      (shp++ (shape-dims
+                                              (dim-const-list dims))
+                                             shape)))))
 
    ;; string literals:
 
