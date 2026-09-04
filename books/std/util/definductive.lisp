@@ -3180,6 +3180,24 @@
      a clique of mutually recursive fixtypes,
      the limit is in the enclosing @(tsee fty::deftypes) instead.")
    (xdoc::p
+    "The @(':enable-rules') option adds the definition of @(tsee acl2-count)
+     to the theory in which FTY admits the fixtype.
+     FTY tests for non-@(tsee consp) values
+     only in the kind test of the base summand,
+     which is the first one without recursive fields unless overridden;
+     a summand before it is recognized by its tag alone.
+     For the summand of a recursive rule that precedes
+     the base rules of its predicate,
+     the termination proof of the fixing function
+     thus lacks the @(tsee consp) hypothesis
+     that the lemmas in FTY's theory need,
+     and FTY falls back to the surrounding theory,
+     where the definition of @(tsee acl2-count) closes the goal.
+     But the surrounding book may have that definition disabled,
+     in which case the fixtype fails;
+     enabling it explicitly makes the fixtype independent of
+     the order of the rules.")
+   (xdoc::p
     "The @(':xvar') option is necessary:
      since the fields are named after the variables of the rules,
      the default @('x') would clash with a rule variable @('x'),
@@ -3212,6 +3230,7 @@
                    `(:measure (two-nats-measure (acl2-count ,xvar) ,level)))
             :pred ,(defind-proof-recog-name pred-name name)
             :xvar ,xvar
+            :enable-rules (acl2-count)
             ,@(and prepworkp
                    '(:prepwork ((set-induction-depth-limit 1))))))
        (print-event?

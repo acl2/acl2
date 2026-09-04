@@ -919,10 +919,10 @@
      bitxor-of-myif-arg1
      bitxor-of-myif-arg2
 
-     equal-of-bvchop-and-constant-when-bvlt-constant-1
-     equal-of-bvchop-and-constant-when-bvlt-constant-2
-     equal-of-bvchop-and-constant-when-not-bvlt-constant-1
-     equal-of-bvchop-and-constant-when-not-bvlt-constant-2
+     not-equal-of-bvchop-and-constant-when-bvlt-constant-1
+     not-equal-of-bvchop-and-constant-when-bvlt-constant-2
+     not-equal-of-bvchop-and-constant-when-not-bvlt-constant-1
+     not-equal-of-bvchop-and-constant-when-not-bvlt-constant-2
 
      getbit-identity-free ;Sun Mar 13 03:18:26 2011
 
@@ -3074,10 +3074,10 @@
             integerp-of-len
             bvlt-of-plus-arg1
             bvlt-of-plus-arg2
-            equal-of-bvchop-and-constant-when-bvlt-constant-1
-            equal-of-bvchop-and-constant-when-bvlt-constant-2
-            equal-of-bvchop-and-constant-when-not-bvlt-constant-1
-            equal-of-bvchop-and-constant-when-not-bvlt-constant-2
+            not-equal-of-bvchop-and-constant-when-bvlt-constant-1
+            not-equal-of-bvchop-and-constant-when-bvlt-constant-2
+            not-equal-of-bvchop-and-constant-when-not-bvlt-constant-1
+            not-equal-of-bvchop-and-constant-when-not-bvlt-constant-2
             bvlt-when-bvlt-must-be-fake-free-axe ;thu mar 17 15:36:51 2011
             bvlt-when-bvlt-must-be-gen-axe ;fri may  6 21:22:34 2011
             bvlt-of-max-arg3-axe
