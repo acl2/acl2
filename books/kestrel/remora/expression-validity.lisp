@@ -36,13 +36,18 @@
     "Our inference rules prove judgements (i.e. define predicates) of that form,
      which say that an expression or atom
      satisfies all the static validity conditions and has a certain type.
-     We have separate predicates for expressions and atoms.
-     Sort and kind environments are modeled
+     We have separate predicates for expressions and atoms.")
+   (xdoc::p
+    "Sort and kind environments are modeled
      as sets of ispace and type variables,
-     as in @(see ispace-validity) and @(see type-validity).
-     Type environments are modeled as maps from names to types,
-     similarly to @($\\Gamma$) in [thesis] [arxiv] [esop];
-     note that variables are always for expressions, never for atoms."))
+     as in @(see ispace-validity) and @(see type-validity).")
+   (xdoc::p
+    "Type environments are modeled as maps from names to types,
+     similarly to @($\\Gamma$) in [thesis] [arxiv] [esop].
+     Variables are always for expressions, never for atoms;
+     so the types in the map should all have the array kind.
+     Currently the inference rules enforce that not on the maps themselves,
+     but on the types looked up in the maps."))
   :order-subtopics t
   :default-parent t)
 
@@ -92,7 +97,8 @@
          (string-type-mapp evars)
          (stringp name)
          (set::in name (omap::keys evars))
-         (equal type (omap::lookup name evars)))
+         (equal type (omap::lookup name evars))
+         (type-array-kindp type))
         (expr-ok ivars tvars evars (expr-var name) type))
 
    ;; atom expressions:
