@@ -19,6 +19,7 @@
 (include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
@@ -352,19 +353,29 @@
 (define type-atom-kindp ((type typep))
   :returns (yes/no booleanp)
   :short "Check if a type has the atom kind."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Function types are atom-kinded,
+     except that a nullary function type stands for its output type
+     (see @(tsee type)),
+     and thus it has the kind of its output type."))
   (type-case type
              :var (type-var-case type.var :atom)
              :base t
              :array nil
              :bracket nil
              :fun t
-             :funn t
+             :funn (if (consp type.in)
+                       t
+                     (type-atom-kindp type.out))
              :forall t
              :foralln t
              :pi t
              :pin t
              :sigma t
-             :sigman t))
+             :sigman t)
+  :measure (type-count type))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -390,14 +401,18 @@
                       :array t
                       :bracket t
                       :fun nil
-                      :funn nil
+                      :funn (if (consp type.in)
+                                nil
+                              (type-array-kindp type.out))
                       :forall nil
                       :foralln nil
                       :pi nil
                       :pin nil
                       :sigma nil
                       :sigman nil))
-    :hints (("Goal" :in-theory (enable type-atom-kindp)))))
+    :hints (("Goal"
+             :expand ((type-atom-kindp type))
+             :in-theory (enable type-array-kindp)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
