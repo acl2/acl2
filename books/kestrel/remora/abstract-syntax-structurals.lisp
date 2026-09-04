@@ -375,7 +375,48 @@
              :pin t
              :sigma t
              :sigman t)
-  :measure (type-count type))
+  :measure (type-count type)
+
+  ///
+
+  (defrule type-atom-kindp-of-type-var
+    (equal (type-atom-kindp (type-var var))
+           (type-var-case var :atom)))
+
+  (defrule type-atom-kindp-of-type-base
+    (type-atom-kindp (type-base type)))
+
+  (defrule type-atom-kindp-of-type-array
+    (not (type-atom-kindp (type-array elem ispace))))
+
+  (defrule type-atom-kindp-of-type-bracket
+    (not (type-atom-kindp (type-bracket elem ispaces))))
+
+  (defrule type-atom-kindp-of-type-fun
+    (type-atom-kindp (type-fun in out)))
+
+  (defrule type-atom-kindp-of-type-funn
+    (equal (type-atom-kindp (type-funn in out))
+           (if (consp in) t (type-atom-kindp (type-fix out))))
+    :expand ((type-atom-kindp (type-funn in out))))
+
+  (defrule type-atom-kindp-of-type-forall
+    (type-atom-kindp (type-forall param body)))
+
+  (defrule type-atom-kindp-of-type-foralln
+    (type-atom-kindp (type-foralln params body)))
+
+  (defrule type-atom-kindp-of-type-pi
+    (type-atom-kindp (type-pi param body)))
+
+  (defrule type-atom-kindp-of-type-pin
+    (type-atom-kindp (type-pin params body)))
+
+  (defrule type-atom-kindp-of-type-sigma
+    (type-atom-kindp (type-sigma param body)))
+
+  (defrule type-atom-kindp-of-type-sigman
+    (type-atom-kindp (type-sigman params body))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
