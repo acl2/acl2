@@ -247,9 +247,10 @@
    (xdoc::p
     "Fixed @(see with-supporters) to @(see disable) appropriate names of
      theorems (not merely functions), to disable some rules for functions that
-     it was mistakenly failing to disable, and to avoid dropping suitable
-     macro-aliases (see @(see macro-aliases-table)).  Eliminated support for
-     unused utility ('with-supporters-after').")
+     it was mistakenly failing to disable, to avoid dropping suitable
+     macro-aliases (see @(see macro-aliases-table)), and to use bodies of
+     @(tsee defconst) forms (which can avoid slow array accesses).  Eliminated
+     support for unused utility ('with-supporters-after').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

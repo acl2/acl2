@@ -127,15 +127,15 @@
 ; will use rationalp as a poor substitute which however suffices for ACL2
 ; objects.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun acl2-realp (x)
   (rationalp x))
 
-#+(and :non-standard-analysis CLTL2)
+#+(and non-standard-analysis CLTL2)
 (if (not (fboundp 'common-lisp::realp))
     (setf (symbol-function 'common-lisp::realp) (symbol-function 'acl2-realp)))
 
-#+(and :non-standard-analysis (not CLTL2))
+#+(and non-standard-analysis (not CLTL2))
 (if (not (fboundp 'lisp::realp))
     (setf (symbol-function 'lisp::realp) (symbol-function 'acl2-realp)))
 
