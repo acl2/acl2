@@ -220,7 +220,37 @@
 
    ;; application expressions:
 
-   ;; TODO
+   (eapp ((ispace-var-setp ivars)
+          (type-var-setp tvars)
+          (string-type-mapp evars)
+          (exprp fun)
+          (exprp arg)
+          (typep type-in)
+          (typep type-out)
+          (shapep shape-in)
+          (shapep shape-out)
+          (shapep shape-fun)
+          (shapep shape-arg)
+          (expr-ok ivars tvars evars
+                   fun
+                   (type-array (type-fun (type-array type-in
+                                                     (ispace-shape shape-in))
+                                         (type-array type-out
+                                                     (ispace-shape shape-out)))
+                               (ispace-shape shape-fun)))
+          (expr-ok ivars tvars evars
+                   arg
+                   (type-array type-in
+                               (ispace-shape (shp++ shape-arg shape-in))))
+          (shape-eq shape-arg (shp)) ; TODO: remove
+          (equal shape-princ shape-fun) ; TODO: generalize
+         )
+         (expr-ok ivars tvars evars
+                  (expr-app fun arg)
+                  (type-array type-out
+                              (ispace-shape (shp++ shape-princ shape-out)))))
+
+   ;; TODO: other application expressions
 
    ;; unboxing expressions:
 
