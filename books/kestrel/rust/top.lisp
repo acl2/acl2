@@ -13,6 +13,7 @@
 (include-book "editions")
 (include-book "syntax/top")
 (include-book "mir/top")
+(include-book "import/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
