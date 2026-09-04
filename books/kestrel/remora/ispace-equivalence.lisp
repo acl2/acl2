@@ -675,20 +675,46 @@
      for the defining rules in @(see dim-equivalence-definition)
      have all the premises of the rules as hypotheses,
      including the ones that constrain the types of the rule variables.
-     When a rule has premises that are the defined predicates,
+     Here we prove versions of those rule theorems
+     without the type hypotheses that are redundant,
+     for the two different reasons explained below;
+     their names are obtained by adding @('!') to the names of the rules,
+     to convey that they are stronger.
+     These theorems are proved from the generated rule theorems,
+     so there is no need for new proof tree constructors.")
+   (xdoc::p
+    "When a rule has premises that are the defined predicates,
      the type premises for the variables in those predicate premises
      are redundant, because of the theorems in
      @(see dim-equivalence-holds-only-on-dimensions).
-     Here we prove versions of those rule theorems
-     without the redundant type hypotheses;
-     their names are obtained by adding @('!') to the names of the rules,
-     to convey that they are stronger.
-     The rules without predicate premises do not have stronger versions,
-     because their type premises are not redundant.")
+     The stronger versions are proved by
+     instantiating the rule theorems with the same variables;
+     the proof trees are the same.")
    (xdoc::p
-    "These theorems are proved from the generated rule theorems;
-     the proof trees are the same,
-     so there is no need for new proof tree constructors."))
+    "When the conclusion of a rule mentions the rule variables
+     only as (possibly nested) arguments of fixtype constructors,
+     the type premises for those variables are redundant,
+     because the constructors fix their arguments:
+     the conclusion for arbitrary values of the variables
+     is the same as the conclusion for the fixed values,
+     which satisfy the type premises.
+     The stronger versions are proved by
+     instantiating the rule theorems with the fixed variables;
+     the proof trees are the ones for the fixed values.
+     Only the premises that are not type premises,
+     like @('(consp dims)'), remain.")
+   (xdoc::p
+    "The other rules do not have stronger versions.
+     The reflexivity rules, and the rules whose conclusion mentions
+     a rule variable outside constructors (e.g. @('add1')),
+     need the type premises,
+     because the equivalence holds only on dimensions.
+     The rules for constants (@('add-const') and @('mul-const'))
+     need the type premises,
+     because fixing the natural numbers does not commute
+     with the arithmetic operations on them.
+     The rules without premises (@('add0') and @('mul0'))
+     have nothing to strengthen."))
 
   ;; equivalence of dimensions:
 
@@ -747,7 +773,88 @@
                   (dims-eq dims1 dims2))
              (dims-eq (cons dim1 dims1) (cons dim2 dims2)))
     :use dims-eq-cong-cons
-    :enable (dimp-when-dim-eq dim-listp-when-dims-eq)))
+    :enable (dimp-when-dim-eq dim-listp-when-dims-eq))
+
+  ;; normalization of addition:
+
+  (defruled dim-eq-add3m!
+    (implies (consp dims)
+             (dim-eq (dim-add (list* dim1 dim2 dims))
+                     (dim-add (cons (dim+ dim1 dim2) dims))))
+    :use (:instance dim-eq-add3m
+                    (dim1 (dim-fix dim1))
+                    (dim2 (dim-fix dim2))
+                    (dims (dim-list-fix dims))))
+
+  ;; normalization of multiplication:
+
+  (defruled dim-eq-mul3m!
+    (implies (consp dims)
+             (dim-eq (dim-mul (list* dim1 dim2 dims))
+                     (dim-mul (cons (dim* dim1 dim2) dims))))
+    :use (:instance dim-eq-mul3m
+                    (dim1 (dim-fix dim1))
+                    (dim2 (dim-fix dim2))
+                    (dims (dim-list-fix dims))))
+
+  ;; normalization of subtraction:
+
+  (defruled dim-eq-sub2m!
+    (implies (consp dims)
+             (dim-eq (dim-sub (cons dim dims))
+                     (dim+ dim (dim- (dim-add dims)))))
+    :use (:instance dim-eq-sub2m
+                    (dim (dim-fix dim))
+                    (dims (dim-list-fix dims))))
+
+  ;; abelian group properties of addition:
+
+  (defruled dim-eq-add-comm!
+    (dim-eq (dim+ dim1 dim2)
+            (dim+ dim2 dim1))
+    :use (:instance dim-eq-add-comm
+                    (dim1 (dim-fix dim1))
+                    (dim2 (dim-fix dim2))))
+
+  (defruled dim-eq-add-assoc!
+    (dim-eq (dim+ (dim+ dim1 dim2) dim3)
+            (dim+ dim1 (dim+ dim2 dim3)))
+    :use (:instance dim-eq-add-assoc
+                    (dim1 (dim-fix dim1))
+                    (dim2 (dim-fix dim2))
+                    (dim3 (dim-fix dim3))))
+
+  (defruled dim-eq-add-inv!
+    (dim-eq (dim+ dim (dim- dim))
+            (dim-const 0))
+    :use (:instance dim-eq-add-inv (dim (dim-fix dim))))
+
+  ;; commutative monoid properties of multiplication:
+
+  (defruled dim-eq-mul-comm!
+    (dim-eq (dim* dim1 dim2)
+            (dim* dim2 dim1))
+    :use (:instance dim-eq-mul-comm
+                    (dim1 (dim-fix dim1))
+                    (dim2 (dim-fix dim2))))
+
+  (defruled dim-eq-mul-assoc!
+    (dim-eq (dim* (dim* dim1 dim2) dim3)
+            (dim* dim1 (dim* dim2 dim3)))
+    :use (:instance dim-eq-mul-assoc
+                    (dim1 (dim-fix dim1))
+                    (dim2 (dim-fix dim2))
+                    (dim3 (dim-fix dim3))))
+
+  ;; distributivity of multiplication over addition:
+
+  (defruled dim-eq-distrib!
+    (dim-eq (dim* dim (dim+ dim1 dim2))
+            (dim+ (dim* dim dim1) (dim* dim dim2)))
+    :use (:instance dim-eq-distrib
+                    (dim (dim-fix dim))
+                    (dim1 (dim-fix dim1))
+                    (dim2 (dim-fix dim2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -761,7 +868,13 @@
      using the theorems in
      @(see shape/ispace-equivalence-holds-only-on-shapes/ispaces),
      and also the ones in @(see dim-equivalence-holds-only-on-dimensions)
-     for the rules with dimension premises."))
+     for the rules with dimension premises.")
+   (xdoc::p
+    "The rules without stronger versions are
+     the reflexivity rules,
+     the rules whose conclusion mentions a rule variable outside constructors
+     (@('append1'), @('append-id-left'), and @('append-id-right')),
+     and the rules without premises (@('dims0') and @('splice0'))."))
 
   ;; equivalence of shapes:
 
@@ -873,4 +986,57 @@
                   (ispaces-eq ispaces1 ispaces2))
              (ispaces-eq (cons ispace1 ispaces1) (cons ispace2 ispaces2)))
     :use ispaces-eq-cong-cons
-    :enable (ispacep-when-ispace-eq ispace-listp-when-ispaces-eq)))
+    :enable (ispacep-when-ispace-eq ispace-listp-when-ispaces-eq))
+
+  ;; normalization of shapes built from dimensions:
+
+  (defruled shape-eq-dims2m!
+    (implies (consp dims)
+             (shape-eq (shape-dims (cons dim dims))
+                       (shp++ (shp dim) (shape-dims dims))))
+    :use (:instance shape-eq-dims2m
+                    (dim (dim-fix dim))
+                    (dims (dim-list-fix dims))))
+
+  ;; normalization of non-empty and non-binary concatenations:
+
+  (defruled shape-eq-append3m!
+    (implies (consp shapes)
+             (shape-eq (shape-append (list* shape1 shape2 shapes))
+                       (shape-append (cons (shp++ shape1 shape2) shapes))))
+    :use (:instance shape-eq-append3m
+                    (shape1 (shape-fix shape1))
+                    (shape2 (shape-fix shape2))
+                    (shapes (shape-list-fix shapes))))
+
+  ;; normalization of splices:
+
+  (defruled shape-eq-splice1m-dim!
+    (shape-eq (shape-splice (cons (ispace-dim dim) ispaces))
+              (shp++ (shp dim) (shape-splice ispaces)))
+    :use (:instance shape-eq-splice1m-dim
+                    (dim (dim-fix dim))
+                    (ispaces (ispace-list-fix ispaces))))
+
+  (defruled shape-eq-splice1m-shape!
+    (shape-eq (shape-splice (cons (ispace-shape shape) ispaces))
+              (shp++ shape (shape-splice ispaces)))
+    :use (:instance shape-eq-splice1m-shape
+                    (shape (shape-fix shape))
+                    (ispaces (ispace-list-fix ispaces))))
+
+  ;; monoid properties of concatenation:
+
+  (defruled shape-eq-append-assoc!
+    (shape-eq (shp++ (shp++ shape1 shape2) shape3)
+              (shp++ shape1 (shp++ shape2 shape3)))
+    :use (:instance shape-eq-append-assoc
+                    (shape1 (shape-fix shape1))
+                    (shape2 (shape-fix shape2))
+                    (shape3 (shape-fix shape3))))
+
+  ;; equivalence of dimension ispace and singleton shape ispace:
+
+  (defruled ispace-eq-ispace-dim-shape!
+    (ispace-eq (ispace-dim dim) (ispace-shape (shp dim)))
+    :use (:instance ispace-eq-ispace-dim-shape (dim (dim-fix dim)))))
