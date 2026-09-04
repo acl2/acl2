@@ -42,8 +42,7 @@
      (e.g. @(tsee dim-eq-when-proof-validp)),
      which says that a valid proof tree implies the predicate;
      the proof trees of the premises are obtained from
-     the witness functions of the predicates
-     (e.g. @(tsee dim-eq-proof)).
+     the witness functions of the predicates (e.g. @('dim-eq-proof')).
      This way, the chain of rule applications that derives the rule
      is written only once, in the proof tree constructor,
      and the proof of the theorem is essentially mechanical."))
