@@ -514,7 +514,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are analogous to @(see dim-equivalence-stronger-rules)."))
+    "These are analogous to @(see dim-validity-stronger-rules)."))
 
   ;; equivalence:
 
