@@ -24,6 +24,7 @@
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
 
+(local (include-book "kestrel/data/treeset/iter" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -136,16 +137,28 @@
 (define map-ident->unwrap
   ((idents ident-setp))
   :returns (strings acl2::string-setp)
-  (b* ((idents (ident-set-fix idents))
-       ((when (emptyp idents))
-        nil)
-       (unwrapped-head (ident->unwrap (head idents))))
-    (if (stringp unwrapped-head)
-        (insert unwrapped-head
-                (map-ident->unwrap (tail idents)))
-      (map-ident->unwrap (tail idents))))
-  :measure (acl2-count (ident-set-fix idents))
-  :verify-guards :after-returns)
+  (map-ident->unwrap-loop (treeset::iter-min (ident-set-fix idents)))
+  :guard-hints (("Goal" :in-theory (enable treeset::fix-when-setp)))
+
+  :prepwork
+  ((define map-ident->unwrap-loop ((iter treeset::iterp))
+     :guard (ident-setp (treeset::from-iter iter))
+     :returns (strings acl2::string-setp)
+     :parents nil
+     (b* (((unless (treeset::has-valuep iter)) nil)
+          (unwrapped (ident->unwrap (treeset::value iter)))
+          (strings (map-ident->unwrap-loop (treeset::next iter))))
+       (if (stringp unwrapped)
+           (insert unwrapped strings)
+         strings))
+     :measure (nfix (treeset::nexts iter))
+     :hints (("Goal" :in-theory (enable nfix
+                                        treeset::nexts-linear
+                                        treeset::not-after-lastp-when-has-valuep)))
+     :guard-hints (("Goal" :use (:instance treeset::in-of-value
+                                           (treeset::iter iter))
+                           :in-theory (enable c$::identp-when-in-ident-setp-binds-free-x)))
+     :verify-guards :after-returns)))
 
 (define fresh-ident
   ((ident identp)
@@ -194,7 +207,7 @@
                             :number-suffix number-suffix)))
     (cons ident$
           (fresh-idents (rest idents)
-                        (insert ident$ blacklist)
+                        (treeset::insert ident$ blacklist)
                         :force-suffix force-suffix
                         :number-prefix number-prefix
                         :number-suffix number-suffix)))

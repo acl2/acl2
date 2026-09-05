@@ -64,8 +64,8 @@
                         item.stmt.expr?
                         :funcall (expr-case
                                    item.stmt.expr?.fun
-                                   :ident (in item.stmt.expr?.fun.ident
-                                              triggers)
+                                   :ident (treeset::in item.stmt.expr?.fun.ident
+                                                       triggers)
                                    :otherwise nil)
                         :otherwise nil))
            :otherwise nil)
@@ -362,7 +362,7 @@
   :returns (idents ident-setp)
   (if (endp strings)
       nil
-    (insert (ident (first strings))
+    (treeset::insert (ident (first strings))
             (string-list-to-ident-set (rest strings))))
   :guard-hints (("Goal" :in-theory (enable string-listp)))
   :verify-guards :after-returns)

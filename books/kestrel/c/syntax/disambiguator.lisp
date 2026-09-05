@@ -344,7 +344,7 @@
      so we push via @(tsee cons).
      Also see @(tsee dimb-pop-scope)."))
   (b* ((table (dstate->table dstate))
-       (new-table (cons nil table)))
+       (new-table (cons (treemap::empty) table)))
     (change-dstate dstate :table new-table)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -477,7 +477,7 @@
   :returns (new-dstate dstatep)
   :short "Add an identifier to the set for which @('goto')s we re-classified."
   (b* ((idents (dstate->goto-reclass dstate))
-       (new-idents (set::insert (ident-fix ident) idents)))
+       (new-idents (treeset::insert (ident-fix ident) idents)))
     (change-dstate dstate :goto-reclass new-idents)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -502,11 +502,11 @@
      is initially empty, since no re-classification has occurred yet.")
    (xdoc::p
     "The macro table is the initial one for the given dialect."))
-  (b* ((table (list nil))
+  (b* ((table (list (treemap::empty)))
        (dialect (ienv->dialect ienv))
        (macros (macro-init dialect))
        (dstate (make-dstate :table table
-                            :goto-reclass nil
+                            :goto-reclass (treeset::empty)
                             :macros macros
                             :file file
                             :ienv ienv)))

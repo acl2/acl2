@@ -1211,7 +1211,7 @@
               ;; the validation table.
               (retmsg$ "Could not find struct type."))
              (ident-blacklist
-               (insert new-struct-tag1 (insert new-struct-tag2 ident-blacklist)))
+               (treeset::insert new-struct-tag1 (treeset::insert new-struct-tag2 ident-blacklist)))
              ((list new-struct1 new-struct2)
               (fresh-idents (list new-struct1
                                   new-struct2)
@@ -1250,7 +1250,7 @@
         ;; the validation table.
         (retmsg$ "Could not find struct type."))
        (ident-blacklist
-         (insert new-struct-tag1 (insert new-struct-tag2 ident-blacklist)))
+         (treeset::insert new-struct-tag1 (treeset::insert new-struct-tag2 ident-blacklist)))
        ((list new-struct1 new-struct2)
         (fresh-idents (list new-struct1
                             new-struct2)
