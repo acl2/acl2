@@ -16,6 +16,10 @@
 
 (include-book "cpp-member-full")
 
+;; Generic library rewrites that the .sys/cpp-top-level-parser@useless-runes.lsp
+;; evidence shows contribute nothing to these proofs.
+(local (in-theory (disable acl2::default-car acl2::default-cdr)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Dotted Module Name Helper
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

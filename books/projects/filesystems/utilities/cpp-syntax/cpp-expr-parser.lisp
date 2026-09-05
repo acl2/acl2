@@ -42,6 +42,15 @@
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
 
+;; Generic library rewrites that the .sys/cpp-expr-parser@useless-runes.lsp
+;; evidence shows contribute nothing to these proofs; disabling globally speeds
+;; up certification of this (the heaviest) book.  (Arithmetic/ordinal rules are
+;; kept ENABLED: they are load-bearing for the parsize measure conjectures.)
+(local (in-theory (disable acl2::default-car acl2::default-cdr
+                           acl2::consp-by-len acl2::consp-of-cdr-by-len
+                           acl2::append-when-not-consp acl2::subsetp-nil
+                           acl2::subsetp-append1)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ cpp-expr-parser

@@ -43,7 +43,24 @@
 
 (local (in-theory (disable member-equal acl2::member-of-cons string-append append)))
 
-(set-induction-depth-limit 0)
+;; Generic library rewrites that the .sys/cpp-parser@useless-runes.lsp evidence
+;; shows contribute nothing to these proofs; disabling globally speeds up certs.
+;; (Arithmetic/ordinal rules are kept ENABLED: they are load-bearing for the
+;; parsize measure/termination conjectures.)
+(local (in-theory (disable acl2::default-car acl2::default-cdr
+                           acl2::consp-by-len acl2::consp-of-cdr-by-len acl2::intersectp-member
+                           acl2::subsetp-of-cons acl2::subsetp-nil
+                           acl2::subsetp-append1
+                           str::consp-of-explode str::explode-when-not-stringp
+                           str::make-character-list-when-character-listp
+                           str::make-character-list-of-append)))
+
+(in-theory (disable acl2::append-atom-under-list-equiv
+                    acl2::subsetp-member
+                    acl2::subsetp-of-cons
+                    acl2::subsetp-when-atom-left
+                    acl2::subsetp-when-atom-right
+                    acl2::subsetp-trans acl2::subsetp-trans2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
