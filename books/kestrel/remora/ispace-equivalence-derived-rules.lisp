@@ -108,6 +108,1195 @@
     `(dim-eq-proof-trans-swapped
       ,dim1 ,dim2 ,dim3 ,premise1-proof ,premise2-proof)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-eq-cong-add2
+  :short "Congruence of dimension equivalence
+          with respect to binary addition."
+
+  (define dim-eq-proof-cong-add2 (dim1
+                                  dim2
+                                  dim3
+                                  dim4
+                                  (premise1-proof dim-eq-proofp)
+                                  (premise2-proof dim-eq-proofp))
+    :returns (proof dim-eq-proofp)
+    :parents nil
+    (make-dim-eq-proof-cong-add
+     :dims1 (list dim1 dim3)
+     :dims2 (list dim2 dim4)
+     :premise1-proof
+     (make-dims-eq-proof-cong-cons
+      :dim1 dim1
+      :dim2 dim2
+      :dims1 (list dim3)
+      :dims2 (list dim4)
+      :premise1-proof premise1-proof
+      :premise2-proof
+      (make-dims-eq-proof-cong-cons
+       :dim1 dim3
+       :dim2 dim4
+       :dims1 nil
+       :dims2 nil
+       :premise1-proof premise2-proof
+       :premise2-proof (make-dims-eq-proof-refl :dims nil))))
+
+    ///
+
+    (defret dim-eq-proof-validp-of-dim-eq-proof-cong-add2
+      (implies (and (dim-eq-proof-validp premise1-proof dim1 dim2)
+                    (dim-eq-proof-validp premise2-proof dim3 dim4))
+               (dim-eq-proof-validp proof (dim+ dim1 dim3) (dim+ dim2 dim4)))
+      :hints
+      (("Goal"
+        :in-theory (enable* dim-equivalence-definition-validp-defs
+                            dimp-when-dim-eq-proof-validp)))))
+
+  (defruled dim-eq-cong-add2
+    (implies (and (dim-eq dim1 dim2)
+                  (dim-eq dim3 dim4))
+             (dim-eq (dim+ dim1 dim3) (dim+ dim2 dim4)))
+    :use ((:instance dim-eq (dim1 dim1) (dim2 dim2))
+          (:instance dim-eq (dim1 dim3) (dim2 dim4))
+          (:instance dim-eq-when-proof-validp
+                     (proof (dim-eq-proof-cong-add2 dim1
+                                                    dim2
+                                                    dim3
+                                                    dim4
+                                                    (dim-eq-proof dim1 dim2)
+                                                    (dim-eq-proof dim3 dim4)))
+                     (concl.dim1 (dim+ dim1 dim3))
+                     (concl.dim2 (dim+ dim2 dim4)))))
+
+  (defmacro make-dim-eq-proof-cong-add2 (&key dim1
+                                              dim2
+                                              dim3
+                                              dim4
+                                              premise1-proof
+                                              premise2-proof)
+    `(dim-eq-proof-cong-add2
+      ,dim1 ,dim2 ,dim3 ,dim4 ,premise1-proof ,premise2-proof)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-eq-cong-mul2
+  :short "Congruence of dimension equivalence
+          with respect to binary multiplication."
+
+  (define dim-eq-proof-cong-mul2 (dim1
+                                  dim2
+                                  dim3
+                                  dim4
+                                  (premise1-proof dim-eq-proofp)
+                                  (premise2-proof dim-eq-proofp))
+    :returns (proof dim-eq-proofp)
+    :parents nil
+    (make-dim-eq-proof-cong-mul
+     :dims1 (list dim1 dim3)
+     :dims2 (list dim2 dim4)
+     :premise1-proof
+     (make-dims-eq-proof-cong-cons
+      :dim1 dim1
+      :dim2 dim2
+      :dims1 (list dim3)
+      :dims2 (list dim4)
+      :premise1-proof premise1-proof
+      :premise2-proof
+      (make-dims-eq-proof-cong-cons
+       :dim1 dim3
+       :dim2 dim4
+       :dims1 nil
+       :dims2 nil
+       :premise1-proof premise2-proof
+       :premise2-proof (make-dims-eq-proof-refl :dims nil))))
+
+    ///
+
+    (defret dim-eq-proof-validp-of-dim-eq-proof-cong-mul2
+      (implies (and (dim-eq-proof-validp premise1-proof dim1 dim2)
+                    (dim-eq-proof-validp premise2-proof dim3 dim4))
+               (dim-eq-proof-validp proof (dim* dim1 dim3) (dim* dim2 dim4)))
+      :hints
+      (("Goal"
+        :in-theory (enable* dim-equivalence-definition-validp-defs
+                            dimp-when-dim-eq-proof-validp)))))
+
+  (defruled dim-eq-cong-mul2
+    (implies (and (dim-eq dim1 dim2)
+                  (dim-eq dim3 dim4))
+             (dim-eq (dim* dim1 dim3) (dim* dim2 dim4)))
+    :use ((:instance dim-eq (dim1 dim1) (dim2 dim2))
+          (:instance dim-eq (dim1 dim3) (dim2 dim4))
+          (:instance dim-eq-when-proof-validp
+                     (proof (dim-eq-proof-cong-mul2 dim1
+                                                    dim2
+                                                    dim3
+                                                    dim4
+                                                    (dim-eq-proof dim1 dim2)
+                                                    (dim-eq-proof dim3 dim4)))
+                     (concl.dim1 (dim* dim1 dim3))
+                     (concl.dim2 (dim* dim2 dim4)))))
+
+  (defmacro make-dim-eq-proof-cong-mul2 (&key dim1
+                                              dim2
+                                              dim3
+                                              dim4
+                                              premise1-proof
+                                              premise2-proof)
+    `(dim-eq-proof-cong-mul2
+      ,dim1 ,dim2 ,dim3 ,dim4 ,premise1-proof ,premise2-proof)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-eq-cong-sub1
+  :short "Congruence of dimension equivalence
+          with respect to unary subtraction."
+
+  (define dim-eq-proof-cong-sub1 (dim1
+                                  dim2
+                                  (premise1-proof dim-eq-proofp))
+    :returns (proof dim-eq-proofp)
+    :parents nil
+    (make-dim-eq-proof-cong-sub
+     :dims1 (list dim1)
+     :dims2 (list dim2)
+     :premise1-proof
+     (make-dims-eq-proof-cong-cons
+      :dim1 dim1
+      :dim2 dim2
+      :dims1 nil
+      :dims2 nil
+      :premise1-proof premise1-proof
+      :premise2-proof (make-dims-eq-proof-refl :dims nil)))
+
+    ///
+
+    (defret dim-eq-proof-validp-of-dim-eq-proof-cong-sub1
+      (implies (dim-eq-proof-validp premise1-proof dim1 dim2)
+               (dim-eq-proof-validp proof (dim- dim1) (dim- dim2)))
+      :hints
+      (("Goal"
+        :in-theory (enable* dim-equivalence-definition-validp-defs
+                            dimp-when-dim-eq-proof-validp)))))
+
+  (defruled dim-eq-cong-sub1
+    (implies (dim-eq dim1 dim2)
+             (dim-eq (dim- dim1) (dim- dim2)))
+    :use ((:instance dim-eq (dim1 dim1) (dim2 dim2))
+          (:instance dim-eq-when-proof-validp
+                     (proof (dim-eq-proof-cong-sub1 dim1
+                                                    dim2
+                                                    (dim-eq-proof dim1 dim2)))
+                     (concl.dim1 (dim- dim1))
+                     (concl.dim2 (dim- dim2)))))
+
+  (defmacro make-dim-eq-proof-cong-sub1 (&key dim1 dim2 premise1-proof)
+    `(dim-eq-proof-cong-sub1 ,dim1 ,dim2 ,premise1-proof)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-eq-add-id-right
+  :short "Right identity of addition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This complements the defining rule @('add-id'),
+     which is formulated as left identity of addition."))
+
+  (define dim-eq-proof-add-id-right (dim)
+    :returns (proof dim-eq-proofp)
+    :parents nil
+    (b* (((unless (dimp dim)) (dim-eq-proof-refl nil)))
+      (make-dim-eq-proof-trans
+       :dim1 (dim+ dim 0)
+       :dim2 (dim+ 0 dim)
+       :dim3 dim
+       :premise1-proof (make-dim-eq-proof-add-comm :dim1 dim
+                                                   :dim2 (dim-const 0))
+       :premise2-proof (make-dim-eq-proof-add-id :dim dim)))
+
+    ///
+
+    (defret dim-eq-proof-validp-of-dim-eq-proof-add-id-right
+      (implies (dimp dim)
+               (dim-eq-proof-validp proof (dim+ dim 0) dim))
+      :hints
+      (("Goal"
+        :in-theory (enable* dim-equivalence-definition-validp-defs)))))
+
+  (defruled dim-eq-add-id-right
+    (implies (dimp dim)
+             (dim-eq (dim+ dim 0) dim))
+    :use (:instance dim-eq-when-proof-validp
+                    (proof (dim-eq-proof-add-id-right dim))
+                    (concl.dim1 (dim+ dim 0))
+                    (concl.dim2 dim))
+    :disable ((:e dim-const)))
+
+  (defmacro make-dim-eq-proof-add-id-right (&key dim)
+    `(dim-eq-proof-add-id-right ,dim)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-eq-mul-id-right
+  :short "Right identity of multiplication."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This complements the defining rule @('mul-id'),
+     which is formulated as left identity of multiplication."))
+
+  (define dim-eq-proof-mul-id-right (dim)
+    :returns (proof dim-eq-proofp)
+    :parents nil
+    (b* (((unless (dimp dim)) (dim-eq-proof-refl nil)))
+      (make-dim-eq-proof-trans
+       :dim1 (dim* dim 1)
+       :dim2 (dim* 1 dim)
+       :dim3 dim
+       :premise1-proof (make-dim-eq-proof-mul-comm :dim1 dim
+                                                   :dim2 (dim-const 1))
+       :premise2-proof (make-dim-eq-proof-mul-id :dim dim)))
+
+    ///
+
+    (defret dim-eq-proof-validp-of-dim-eq-proof-mul-id-right
+      (implies (dimp dim)
+               (dim-eq-proof-validp proof (dim* dim 1) dim))
+      :hints
+      (("Goal"
+        :in-theory (enable* dim-equivalence-definition-validp-defs)))))
+
+  (defruled dim-eq-mul-id-right
+    (implies (dimp dim)
+             (dim-eq (dim* dim 1) dim))
+    :use (:instance dim-eq-when-proof-validp
+                    (proof (dim-eq-proof-mul-id-right dim))
+                    (concl.dim1 (dim* dim 1))
+                    (concl.dim2 dim))
+    :disable ((:e dim-const)))
+
+  (defmacro make-dim-eq-proof-mul-id-right (&key dim)
+    `(dim-eq-proof-mul-id-right ,dim)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-eq-add-inv-left
+  :short "Left inverse of addition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This complements the defining rule @('add-inv'),
+     which is formulated as right inverse of addition."))
+
+  (define dim-eq-proof-add-inv-left (dim)
+    :returns (proof dim-eq-proofp)
+    :parents nil
+    (b* (((unless (dimp dim)) (dim-eq-proof-refl nil)))
+      (make-dim-eq-proof-trans
+       :dim1 (dim+ (dim- dim) dim)
+       :dim2 (dim+ dim (dim- dim))
+       :dim3 (dim-const 0)
+       :premise1-proof (make-dim-eq-proof-add-comm :dim1 (dim- dim)
+                                                   :dim2 dim)
+       :premise2-proof (make-dim-eq-proof-add-inv :dim dim)))
+
+    ///
+
+    (defret dim-eq-proof-validp-of-dim-eq-proof-add-inv-left
+      (implies (dimp dim)
+               (dim-eq-proof-validp proof (dim+ (dim- dim) dim) (dim-const 0)))
+      :hints
+      (("Goal"
+        :in-theory (enable* dim-equivalence-definition-validp-defs)))))
+
+  (defruled dim-eq-add-inv-left
+    (implies (dimp dim)
+             (dim-eq (dim+ (dim- dim) dim) (dim-const 0)))
+    :use (:instance dim-eq-when-proof-validp
+                    (proof (dim-eq-proof-add-inv-left dim))
+                    (concl.dim1 (dim+ (dim- dim) dim))
+                    (concl.dim2 (dim-const 0)))
+    :disable ((:e dim-const)))
+
+  (defmacro make-dim-eq-proof-add-inv-left (&key dim)
+    `(dim-eq-proof-add-inv-left ,dim)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-eq-neg-zero
+  :short "The additive inverse of zero is zero."
+
+  (define dim-eq-proof-neg-zero ()
+    :returns (proof dim-eq-proofp)
+    :parents nil
+    (make-dim-eq-proof-trans
+     :dim1 (dim- 0)
+     :dim2 (dim+ 0 (dim- 0))
+     :dim3 (dim-const 0)
+     :premise1-proof
+     (make-dim-eq-proof-symm
+      :dim1 (dim+ 0 (dim- 0))
+      :dim2 (dim- 0)
+      :premise1-proof (make-dim-eq-proof-add-id :dim (dim- 0)))
+     :premise2-proof (make-dim-eq-proof-add-inv :dim (dim-const 0)))
+
+    ///
+
+    (defret dim-eq-proof-validp-of-dim-eq-proof-neg-zero
+      (dim-eq-proof-validp proof (dim- 0) (dim-const 0))
+      :hints
+      (("Goal"
+        :in-theory (enable* dim-equivalence-definition-validp-defs)))))
+
+  (defruled dim-eq-neg-zero
+    (dim-eq (dim- 0) (dim-const 0))
+    :use (:instance dim-eq-when-proof-validp
+                    (proof (dim-eq-proof-neg-zero))
+                    (concl.dim1 (dim- 0))
+                    (concl.dim2 (dim-const 0))))
+
+  (defmacro make-dim-eq-proof-neg-zero ()
+    '(dim-eq-proof-neg-zero)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-eq-neg-neg
+  :short "The additive inverse of the additive inverse of a dimension
+          is the dimension."
+
+  (define dim-eq-proof-neg-neg (dim)
+    :returns (proof dim-eq-proofp)
+    :parents nil
+    (b* (((unless (dimp dim)) (dim-eq-proof-refl nil))
+         (neg (dim- dim))
+         (negneg (dim- (dim- dim))))
+      (make-dim-eq-proof-trans
+       :dim1 negneg
+       :dim2 (dim+ 0 negneg)
+       :dim3 dim
+       :premise1-proof
+       (make-dim-eq-proof-symm
+        :dim1 (dim+ 0 negneg)
+        :dim2 negneg
+        :premise1-proof (make-dim-eq-proof-add-id :dim negneg))
+       :premise2-proof
+       (make-dim-eq-proof-trans
+        :dim1 (dim+ 0 negneg)
+        :dim2 (dim+ (dim+ dim neg) negneg)
+        :dim3 dim
+        :premise1-proof
+        (make-dim-eq-proof-cong-add2
+         :dim1 (dim-const 0)
+         :dim2 (dim+ dim neg)
+         :dim3 negneg
+         :dim4 negneg
+         :premise1-proof
+         (make-dim-eq-proof-symm
+          :dim1 (dim+ dim neg)
+          :dim2 (dim-const 0)
+          :premise1-proof (make-dim-eq-proof-add-inv :dim dim))
+         :premise2-proof (make-dim-eq-proof-refl :dim negneg))
+        :premise2-proof
+        (make-dim-eq-proof-trans
+         :dim1 (dim+ (dim+ dim neg) negneg)
+         :dim2 (dim+ dim (dim+ neg negneg))
+         :dim3 dim
+         :premise1-proof (make-dim-eq-proof-add-assoc :dim1 dim
+                                                      :dim2 neg
+                                                      :dim3 negneg)
+         :premise2-proof
+         (make-dim-eq-proof-trans
+          :dim1 (dim+ dim (dim+ neg negneg))
+          :dim2 (dim+ dim 0)
+          :dim3 dim
+          :premise1-proof
+          (make-dim-eq-proof-cong-add2
+           :dim1 dim
+           :dim2 dim
+           :dim3 (dim+ neg negneg)
+           :dim4 (dim-const 0)
+           :premise1-proof (make-dim-eq-proof-refl :dim dim)
+           :premise2-proof (make-dim-eq-proof-add-inv :dim neg))
+          :premise2-proof (make-dim-eq-proof-add-id-right :dim dim))))))
+
+    ///
+
+    (defret dim-eq-proof-validp-of-dim-eq-proof-neg-neg
+      (implies (dimp dim)
+               (dim-eq-proof-validp proof (dim- (dim- dim)) dim))
+      :hints
+      (("Goal"
+        :in-theory (acl2::e/d* (dim-equivalence-definition-validp-defs)
+                               ((:e dim-const)))))))
+
+  (defruled dim-eq-neg-neg
+    (implies (dimp dim)
+             (dim-eq (dim- (dim- dim)) dim))
+    :use (:instance dim-eq-when-proof-validp
+                    (proof (dim-eq-proof-neg-neg dim))
+                    (concl.dim1 (dim- (dim- dim)))
+                    (concl.dim2 dim)))
+
+  (defmacro make-dim-eq-proof-neg-neg (&key dim)
+    `(dim-eq-proof-neg-neg ,dim)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-eq-add-cancel-right
+  :short "Right cancellation of addition."
+
+  (define dim-eq-proof-add-cancel-right (dim1
+                                         dim2
+                                         dim3
+                                         (premise1-proof dim-eq-proofp))
+    :returns (proof dim-eq-proofp)
+    :parents nil
+    (b* (((unless (and (dimp dim1)
+                       (dimp dim2)
+                       (dimp dim3)))
+          (dim-eq-proof-refl nil))
+         (neg (dim- dim3)))
+      (make-dim-eq-proof-trans
+       :dim1 dim1
+       :dim2 (dim+ dim1 0)
+       :dim3 dim2
+       :premise1-proof
+       (make-dim-eq-proof-symm
+        :dim1 (dim+ dim1 0)
+        :dim2 dim1
+        :premise1-proof (make-dim-eq-proof-add-id-right :dim dim1))
+       :premise2-proof
+       (make-dim-eq-proof-trans
+        :dim1 (dim+ dim1 0)
+        :dim2 (dim+ dim1 (dim+ dim3 neg))
+        :dim3 dim2
+        :premise1-proof
+        (make-dim-eq-proof-cong-add2
+         :dim1 dim1
+         :dim2 dim1
+         :dim3 (dim-const 0)
+         :dim4 (dim+ dim3 neg)
+         :premise1-proof (make-dim-eq-proof-refl :dim dim1)
+         :premise2-proof
+         (make-dim-eq-proof-symm
+          :dim1 (dim+ dim3 neg)
+          :dim2 (dim-const 0)
+          :premise1-proof (make-dim-eq-proof-add-inv :dim dim3)))
+        :premise2-proof
+        (make-dim-eq-proof-trans
+         :dim1 (dim+ dim1 (dim+ dim3 neg))
+         :dim2 (dim+ (dim+ dim1 dim3) neg)
+         :dim3 dim2
+         :premise1-proof
+         (make-dim-eq-proof-symm
+          :dim1 (dim+ (dim+ dim1 dim3) neg)
+          :dim2 (dim+ dim1 (dim+ dim3 neg))
+          :premise1-proof (make-dim-eq-proof-add-assoc :dim1 dim1
+                                                       :dim2 dim3
+                                                       :dim3 neg))
+         :premise2-proof
+         (make-dim-eq-proof-trans
+          :dim1 (dim+ (dim+ dim1 dim3) neg)
+          :dim2 (dim+ (dim+ dim2 dim3) neg)
+          :dim3 dim2
+          :premise1-proof
+          (make-dim-eq-proof-cong-add2
+           :dim1 (dim+ dim1 dim3)
+           :dim2 (dim+ dim2 dim3)
+           :dim3 neg
+           :dim4 neg
+           :premise1-proof premise1-proof
+           :premise2-proof (make-dim-eq-proof-refl :dim neg))
+          :premise2-proof
+          (make-dim-eq-proof-trans
+           :dim1 (dim+ (dim+ dim2 dim3) neg)
+           :dim2 (dim+ dim2 (dim+ dim3 neg))
+           :dim3 dim2
+           :premise1-proof (make-dim-eq-proof-add-assoc :dim1 dim2
+                                                        :dim2 dim3
+                                                        :dim3 neg)
+           :premise2-proof
+           (make-dim-eq-proof-trans
+            :dim1 (dim+ dim2 (dim+ dim3 neg))
+            :dim2 (dim+ dim2 0)
+            :dim3 dim2
+            :premise1-proof
+            (make-dim-eq-proof-cong-add2
+             :dim1 dim2
+             :dim2 dim2
+             :dim3 (dim+ dim3 neg)
+             :dim4 (dim-const 0)
+             :premise1-proof (make-dim-eq-proof-refl :dim dim2)
+             :premise2-proof (make-dim-eq-proof-add-inv :dim dim3))
+            :premise2-proof (make-dim-eq-proof-add-id-right :dim dim2))))))))
+
+    ///
+
+    (defret dim-eq-proof-validp-of-dim-eq-proof-add-cancel-right
+      (implies (and (dimp dim1)
+                    (dimp dim2)
+                    (dimp dim3)
+                    (dim-eq-proof-validp premise1-proof
+                                         (dim+ dim1 dim3)
+                                         (dim+ dim2 dim3)))
+               (dim-eq-proof-validp proof dim1 dim2))
+      :hints
+      (("Goal"
+        :in-theory (acl2::e/d* (dim-equivalence-definition-validp-defs)
+                               ((:e dim-const)))))))
+
+  (defruled dim-eq-add-cancel-right
+    (implies (and (dimp dim1)
+                  (dimp dim2)
+                  (dimp dim3)
+                  (dim-eq (dim+ dim1 dim3) (dim+ dim2 dim3)))
+             (dim-eq dim1 dim2))
+    :use ((:instance dim-eq
+                     (dim1 (dim+ dim1 dim3))
+                     (dim2 (dim+ dim2 dim3)))
+          (:instance dim-eq-when-proof-validp
+                     (proof (dim-eq-proof-add-cancel-right
+                             dim1
+                             dim2
+                             dim3
+                             (dim-eq-proof (dim+ dim1 dim3) (dim+ dim2 dim3))))
+                     (concl.dim1 dim1)
+                     (concl.dim2 dim2))))
+
+  (defmacro make-dim-eq-proof-add-cancel-right (&key dim1
+                                                     dim2
+                                                     dim3
+                                                     premise1-proof)
+    `(dim-eq-proof-add-cancel-right ,dim1 ,dim2 ,dim3 ,premise1-proof)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-eq-add-cancel-left
+  :short "Left cancellation of addition."
+
+  (define dim-eq-proof-add-cancel-left (dim1
+                                        dim2
+                                        dim3
+                                        (premise1-proof dim-eq-proofp))
+    :returns (proof dim-eq-proofp)
+    :parents nil
+    (b* (((unless (and (dimp dim1)
+                       (dimp dim2)
+                       (dimp dim3)))
+          (dim-eq-proof-refl nil)))
+      (make-dim-eq-proof-add-cancel-right
+       :dim1 dim1
+       :dim2 dim2
+       :dim3 dim3
+       :premise1-proof
+       (make-dim-eq-proof-trans
+        :dim1 (dim+ dim1 dim3)
+        :dim2 (dim+ dim3 dim1)
+        :dim3 (dim+ dim2 dim3)
+        :premise1-proof (make-dim-eq-proof-add-comm :dim1 dim1 :dim2 dim3)
+        :premise2-proof
+        (make-dim-eq-proof-trans
+         :dim1 (dim+ dim3 dim1)
+         :dim2 (dim+ dim3 dim2)
+         :dim3 (dim+ dim2 dim3)
+         :premise1-proof premise1-proof
+         :premise2-proof (make-dim-eq-proof-add-comm :dim1 dim3
+                                                     :dim2 dim2)))))
+
+    ///
+
+    (defret dim-eq-proof-validp-of-dim-eq-proof-add-cancel-left
+      (implies (and (dimp dim1)
+                    (dimp dim2)
+                    (dimp dim3)
+                    (dim-eq-proof-validp premise1-proof
+                                         (dim+ dim3 dim1)
+                                         (dim+ dim3 dim2)))
+               (dim-eq-proof-validp proof dim1 dim2))
+      :hints
+      (("Goal"
+        :in-theory (enable* dim-equivalence-definition-validp-defs)))))
+
+  (defruled dim-eq-add-cancel-left
+    (implies (and (dimp dim1)
+                  (dimp dim2)
+                  (dimp dim3)
+                  (dim-eq (dim+ dim3 dim1) (dim+ dim3 dim2)))
+             (dim-eq dim1 dim2))
+    :use ((:instance dim-eq
+                     (dim1 (dim+ dim3 dim1))
+                     (dim2 (dim+ dim3 dim2)))
+          (:instance dim-eq-when-proof-validp
+                     (proof (dim-eq-proof-add-cancel-left
+                             dim1
+                             dim2
+                             dim3
+                             (dim-eq-proof (dim+ dim3 dim1) (dim+ dim3 dim2))))
+                     (concl.dim1 dim1)
+                     (concl.dim2 dim2))))
+
+  (defmacro make-dim-eq-proof-add-cancel-left (&key dim1
+                                                    dim2
+                                                    dim3
+                                                    premise1-proof)
+    `(dim-eq-proof-add-cancel-left ,dim1 ,dim2 ,dim3 ,premise1-proof)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-eq-mul-zero-right
+  :short "Multiplication by zero on the right yields zero."
+
+  (define dim-eq-proof-mul-zero-right (dim)
+    :returns (proof dim-eq-proofp)
+    :parents nil
+    (b* (((unless (dimp dim)) (dim-eq-proof-refl nil))
+         (zero (dim-const 0))
+         (mul0 (dim* dim 0)))
+      (make-dim-eq-proof-symm
+       :dim1 zero
+       :dim2 mul0
+       :premise1-proof
+       (make-dim-eq-proof-add-cancel-left
+        :dim1 zero
+        :dim2 mul0
+        :dim3 mul0
+        :premise1-proof
+        (make-dim-eq-proof-trans
+         :dim1 (dim+ mul0 0)
+         :dim2 mul0
+         :dim3 (dim+ mul0 mul0)
+         :premise1-proof (make-dim-eq-proof-add-id-right :dim mul0)
+         :premise2-proof
+         (make-dim-eq-proof-trans
+          :dim1 mul0
+          :dim2 (dim* dim (dim+ 0 0))
+          :dim3 (dim+ mul0 mul0)
+          :premise1-proof
+          (make-dim-eq-proof-cong-mul2
+           :dim1 dim
+           :dim2 dim
+           :dim3 zero
+           :dim4 (dim+ 0 0)
+           :premise1-proof (make-dim-eq-proof-refl :dim dim)
+           :premise2-proof
+           (make-dim-eq-proof-symm
+            :dim1 (dim+ 0 0)
+            :dim2 zero
+            :premise1-proof (make-dim-eq-proof-add-id :dim zero)))
+          :premise2-proof (make-dim-eq-proof-distrib :dim dim
+                                                     :dim1 zero
+                                                     :dim2 zero))))))
+
+    ///
+
+    (defret dim-eq-proof-validp-of-dim-eq-proof-mul-zero-right
+      (implies (dimp dim)
+               (dim-eq-proof-validp proof (dim* dim 0) (dim-const 0)))
+      :hints
+      (("Goal"
+        :in-theory (acl2::e/d* (dim-equivalence-definition-validp-defs)
+                               ((:e dim-const)))))))
+
+  (defruled dim-eq-mul-zero-right
+    (implies (dimp dim)
+             (dim-eq (dim* dim 0) (dim-const 0)))
+    :use (:instance dim-eq-when-proof-validp
+                    (proof (dim-eq-proof-mul-zero-right dim))
+                    (concl.dim1 (dim* dim 0))
+                    (concl.dim2 (dim-const 0)))
+    :disable ((:e dim-const)))
+
+  (defmacro make-dim-eq-proof-mul-zero-right (&key dim)
+    `(dim-eq-proof-mul-zero-right ,dim)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-eq-mul-zero-left
+  :short "Multiplication by zero on the left yields zero."
+
+  (define dim-eq-proof-mul-zero-left (dim)
+    :returns (proof dim-eq-proofp)
+    :parents nil
+    (b* (((unless (dimp dim)) (dim-eq-proof-refl nil)))
+      (make-dim-eq-proof-trans
+       :dim1 (dim* 0 dim)
+       :dim2 (dim* dim 0)
+       :dim3 (dim-const 0)
+       :premise1-proof (make-dim-eq-proof-mul-comm :dim1 (dim-const 0)
+                                                   :dim2 dim)
+       :premise2-proof (make-dim-eq-proof-mul-zero-right :dim dim)))
+
+    ///
+
+    (defret dim-eq-proof-validp-of-dim-eq-proof-mul-zero-left
+      (implies (dimp dim)
+               (dim-eq-proof-validp proof (dim* 0 dim) (dim-const 0)))
+      :hints
+      (("Goal"
+        :in-theory (acl2::e/d* (dim-equivalence-definition-validp-defs)
+                               ((:e dim-const)))))))
+
+  (defruled dim-eq-mul-zero-left
+    (implies (dimp dim)
+             (dim-eq (dim* 0 dim) (dim-const 0)))
+    :use (:instance dim-eq-when-proof-validp
+                    (proof (dim-eq-proof-mul-zero-left dim))
+                    (concl.dim1 (dim* 0 dim))
+                    (concl.dim2 (dim-const 0)))
+    :disable ((:e dim-const)))
+
+  (defmacro make-dim-eq-proof-mul-zero-left (&key dim)
+    `(dim-eq-proof-mul-zero-left ,dim)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-eq-add-inv-uniq
+  :short "Uniqueness of the additive inverse."
+
+  (define dim-eq-proof-add-inv-uniq (dim1
+                                     dim2
+                                     (premise1-proof dim-eq-proofp))
+    :returns (proof dim-eq-proofp)
+    :parents nil
+    (b* (((unless (and (dimp dim1)
+                       (dimp dim2)))
+          (dim-eq-proof-refl nil)))
+      (make-dim-eq-proof-add-cancel-left
+       :dim1 (dim- dim1)
+       :dim2 dim2
+       :dim3 dim1
+       :premise1-proof
+       (make-dim-eq-proof-trans
+        :dim1 (dim+ dim1 (dim- dim1))
+        :dim2 (dim-const 0)
+        :dim3 (dim+ dim1 dim2)
+        :premise1-proof (make-dim-eq-proof-add-inv :dim dim1)
+        :premise2-proof
+        (make-dim-eq-proof-symm
+         :dim1 (dim+ dim1 dim2)
+         :dim2 (dim-const 0)
+         :premise1-proof premise1-proof))))
+
+    ///
+
+    (defret dim-eq-proof-validp-of-dim-eq-proof-add-inv-uniq
+      (implies (and (dimp dim1)
+                    (dimp dim2)
+                    (dim-eq-proof-validp premise1-proof
+                                         (dim+ dim1 dim2)
+                                         (dim-const 0)))
+               (dim-eq-proof-validp proof (dim- dim1) dim2))
+      :hints
+      (("Goal"
+        :in-theory (acl2::e/d* (dim-equivalence-definition-validp-defs)
+                               ((:e dim-const)))))))
+
+  (defruled dim-eq-add-inv-uniq
+    (implies (and (dimp dim1)
+                  (dimp dim2)
+                  (dim-eq (dim+ dim1 dim2) (dim-const 0)))
+             (dim-eq (dim- dim1) dim2))
+    :use ((:instance dim-eq
+                     (dim1 (dim+ dim1 dim2))
+                     (dim2 (dim-const 0)))
+          (:instance dim-eq-when-proof-validp
+                     (proof (dim-eq-proof-add-inv-uniq
+                             dim1
+                             dim2
+                             (dim-eq-proof (dim+ dim1 dim2) (dim-const 0))))
+                     (concl.dim1 (dim- dim1))
+                     (concl.dim2 dim2)))
+    :disable ((:e dim-const)))
+
+  (defmacro make-dim-eq-proof-add-inv-uniq (&key dim1 dim2 premise1-proof)
+    `(dim-eq-proof-add-inv-uniq ,dim1 ,dim2 ,premise1-proof)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-eq-add-interchange
+  :short "Interchange of the addends of two additions."
+
+  (define dim-eq-proof-add-interchange (dim1 dim2 dim3 dim4)
+    :returns (proof dim-eq-proofp)
+    :parents nil
+    (b* (((unless (and (dimp dim1)
+                       (dimp dim2)
+                       (dimp dim3)
+                       (dimp dim4)))
+          (dim-eq-proof-refl nil))
+         (start (dim+ (dim+ dim1 dim2) (dim+ dim3 dim4)))
+         (step1 (dim+ dim1 (dim+ dim2 (dim+ dim3 dim4))))
+         (step2 (dim+ dim1 (dim+ (dim+ dim2 dim3) dim4)))
+         (step3 (dim+ dim1 (dim+ (dim+ dim3 dim2) dim4)))
+         (step4 (dim+ dim1 (dim+ dim3 (dim+ dim2 dim4))))
+         (end (dim+ (dim+ dim1 dim3) (dim+ dim2 dim4))))
+      (make-dim-eq-proof-trans
+       :dim1 start
+       :dim2 step1
+       :dim3 end
+       :premise1-proof (make-dim-eq-proof-add-assoc :dim1 dim1
+                                                    :dim2 dim2
+                                                    :dim3 (dim+ dim3 dim4))
+       :premise2-proof
+       (make-dim-eq-proof-trans
+        :dim1 step1
+        :dim2 step2
+        :dim3 end
+        :premise1-proof
+        (make-dim-eq-proof-cong-add2
+         :dim1 dim1
+         :dim2 dim1
+         :dim3 (dim+ dim2 (dim+ dim3 dim4))
+         :dim4 (dim+ (dim+ dim2 dim3) dim4)
+         :premise1-proof (make-dim-eq-proof-refl :dim dim1)
+         :premise2-proof
+         (make-dim-eq-proof-symm
+          :dim1 (dim+ (dim+ dim2 dim3) dim4)
+          :dim2 (dim+ dim2 (dim+ dim3 dim4))
+          :premise1-proof (make-dim-eq-proof-add-assoc :dim1 dim2
+                                                       :dim2 dim3
+                                                       :dim3 dim4)))
+        :premise2-proof
+        (make-dim-eq-proof-trans
+         :dim1 step2
+         :dim2 step3
+         :dim3 end
+         :premise1-proof
+         (make-dim-eq-proof-cong-add2
+          :dim1 dim1
+          :dim2 dim1
+          :dim3 (dim+ (dim+ dim2 dim3) dim4)
+          :dim4 (dim+ (dim+ dim3 dim2) dim4)
+          :premise1-proof (make-dim-eq-proof-refl :dim dim1)
+          :premise2-proof
+          (make-dim-eq-proof-cong-add2
+           :dim1 (dim+ dim2 dim3)
+           :dim2 (dim+ dim3 dim2)
+           :dim3 dim4
+           :dim4 dim4
+           :premise1-proof (make-dim-eq-proof-add-comm :dim1 dim2 :dim2 dim3)
+           :premise2-proof (make-dim-eq-proof-refl :dim dim4)))
+         :premise2-proof
+         (make-dim-eq-proof-trans
+          :dim1 step3
+          :dim2 step4
+          :dim3 end
+          :premise1-proof
+          (make-dim-eq-proof-cong-add2
+           :dim1 dim1
+           :dim2 dim1
+           :dim3 (dim+ (dim+ dim3 dim2) dim4)
+           :dim4 (dim+ dim3 (dim+ dim2 dim4))
+           :premise1-proof (make-dim-eq-proof-refl :dim dim1)
+           :premise2-proof (make-dim-eq-proof-add-assoc :dim1 dim3
+                                                        :dim2 dim2
+                                                        :dim3 dim4))
+          :premise2-proof
+          (make-dim-eq-proof-symm
+           :dim1 end
+           :dim2 step4
+           :premise1-proof
+           (make-dim-eq-proof-add-assoc :dim1 dim1
+                                        :dim2 dim3
+                                        :dim3 (dim+ dim2 dim4))))))))
+
+    ///
+
+    (defret dim-eq-proof-validp-of-dim-eq-proof-add-interchange
+      (implies (and (dimp dim1)
+                    (dimp dim2)
+                    (dimp dim3)
+                    (dimp dim4))
+               (dim-eq-proof-validp proof
+                                    (dim+ (dim+ dim1 dim2) (dim+ dim3 dim4))
+                                    (dim+ (dim+ dim1 dim3) (dim+ dim2 dim4))))
+      :hints
+      (("Goal"
+        :in-theory (enable* dim-equivalence-definition-validp-defs)))))
+
+  (defruled dim-eq-add-interchange
+    (implies (and (dimp dim1)
+                  (dimp dim2)
+                  (dimp dim3)
+                  (dimp dim4))
+             (dim-eq (dim+ (dim+ dim1 dim2) (dim+ dim3 dim4))
+                     (dim+ (dim+ dim1 dim3) (dim+ dim2 dim4))))
+    :use (:instance dim-eq-when-proof-validp
+                    (proof (dim-eq-proof-add-interchange dim1 dim2 dim3 dim4))
+                    (concl.dim1 (dim+ (dim+ dim1 dim2) (dim+ dim3 dim4)))
+                    (concl.dim2 (dim+ (dim+ dim1 dim3) (dim+ dim2 dim4)))))
+
+  (defmacro make-dim-eq-proof-add-interchange (&key dim1 dim2 dim3 dim4)
+    `(dim-eq-proof-add-interchange ,dim1 ,dim2 ,dim3 ,dim4)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-eq-neg-add
+  :short "The additive inverse of an addition is
+          the addition of the additive inverses."
+
+  (define dim-eq-proof-neg-add (dim1 dim2)
+    :returns (proof dim-eq-proofp)
+    :parents nil
+    (b* (((unless (and (dimp dim1)
+                       (dimp dim2)))
+          (dim-eq-proof-refl nil))
+         (neg1 (dim- dim1))
+         (neg2 (dim- dim2)))
+      (make-dim-eq-proof-add-inv-uniq
+       :dim1 (dim+ dim1 dim2)
+       :dim2 (dim+ neg1 neg2)
+       :premise1-proof
+       (make-dim-eq-proof-trans
+        :dim1 (dim+ (dim+ dim1 dim2) (dim+ neg1 neg2))
+        :dim2 (dim+ (dim+ dim1 neg1) (dim+ dim2 neg2))
+        :dim3 (dim-const 0)
+        :premise1-proof (make-dim-eq-proof-add-interchange :dim1 dim1
+                                                           :dim2 dim2
+                                                           :dim3 neg1
+                                                           :dim4 neg2)
+        :premise2-proof
+        (make-dim-eq-proof-trans
+         :dim1 (dim+ (dim+ dim1 neg1) (dim+ dim2 neg2))
+         :dim2 (dim+ 0 0)
+         :dim3 (dim-const 0)
+         :premise1-proof
+         (make-dim-eq-proof-cong-add2
+          :dim1 (dim+ dim1 neg1)
+          :dim2 (dim-const 0)
+          :dim3 (dim+ dim2 neg2)
+          :dim4 (dim-const 0)
+          :premise1-proof (make-dim-eq-proof-add-inv :dim dim1)
+          :premise2-proof (make-dim-eq-proof-add-inv :dim dim2))
+         :premise2-proof (make-dim-eq-proof-add-id :dim (dim-const 0))))))
+
+    ///
+
+    (defret dim-eq-proof-validp-of-dim-eq-proof-neg-add
+      (implies (and (dimp dim1)
+                    (dimp dim2))
+               (dim-eq-proof-validp proof
+                                    (dim- (dim+ dim1 dim2))
+                                    (dim+ (dim- dim1) (dim- dim2))))
+      :hints
+      (("Goal"
+        :in-theory (acl2::e/d* (dim-equivalence-definition-validp-defs)
+                               ((:e dim-const)))))))
+
+  (defruled dim-eq-neg-add
+    (implies (and (dimp dim1)
+                  (dimp dim2))
+             (dim-eq (dim- (dim+ dim1 dim2))
+                     (dim+ (dim- dim1) (dim- dim2))))
+    :use (:instance dim-eq-when-proof-validp
+                    (proof (dim-eq-proof-neg-add dim1 dim2))
+                    (concl.dim1 (dim- (dim+ dim1 dim2)))
+                    (concl.dim2 (dim+ (dim- dim1) (dim- dim2)))))
+
+  (defmacro make-dim-eq-proof-neg-add (&key dim1 dim2)
+    `(dim-eq-proof-neg-add ,dim1 ,dim2)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-eq-distrib-right
+  :short "Right distributivity of multiplication over addition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This complements the defining rule @('distrib'),
+     which is formulated as
+     left distributivity of multiplication over addition."))
+
+  (define dim-eq-proof-distrib-right (dim dim1 dim2)
+    :returns (proof dim-eq-proofp)
+    :parents nil
+    (b* (((unless (and (dimp dim)
+                       (dimp dim1)
+                       (dimp dim2)))
+          (dim-eq-proof-refl nil)))
+      (make-dim-eq-proof-trans
+       :dim1 (dim* (dim+ dim1 dim2) dim)
+       :dim2 (dim* dim (dim+ dim1 dim2))
+       :dim3 (dim+ (dim* dim1 dim) (dim* dim2 dim))
+       :premise1-proof (make-dim-eq-proof-mul-comm :dim1 (dim+ dim1 dim2)
+                                                   :dim2 dim)
+       :premise2-proof
+       (make-dim-eq-proof-trans
+        :dim1 (dim* dim (dim+ dim1 dim2))
+        :dim2 (dim+ (dim* dim dim1) (dim* dim dim2))
+        :dim3 (dim+ (dim* dim1 dim) (dim* dim2 dim))
+        :premise1-proof (make-dim-eq-proof-distrib :dim dim
+                                                   :dim1 dim1
+                                                   :dim2 dim2)
+        :premise2-proof
+        (make-dim-eq-proof-cong-add2
+         :dim1 (dim* dim dim1)
+         :dim2 (dim* dim1 dim)
+         :dim3 (dim* dim dim2)
+         :dim4 (dim* dim2 dim)
+         :premise1-proof (make-dim-eq-proof-mul-comm :dim1 dim :dim2 dim1)
+         :premise2-proof (make-dim-eq-proof-mul-comm :dim1 dim :dim2 dim2)))))
+
+    ///
+
+    (defret dim-eq-proof-validp-of-dim-eq-proof-distrib-right
+      (implies (and (dimp dim)
+                    (dimp dim1)
+                    (dimp dim2))
+               (dim-eq-proof-validp proof
+                                    (dim* (dim+ dim1 dim2) dim)
+                                    (dim+ (dim* dim1 dim) (dim* dim2 dim))))
+      :hints
+      (("Goal"
+        :in-theory (enable* dim-equivalence-definition-validp-defs)))))
+
+  (defruled dim-eq-distrib-right
+    (implies (and (dimp dim)
+                  (dimp dim1)
+                  (dimp dim2))
+             (dim-eq (dim* (dim+ dim1 dim2) dim)
+                     (dim+ (dim* dim1 dim) (dim* dim2 dim))))
+    :use (:instance dim-eq-when-proof-validp
+                    (proof (dim-eq-proof-distrib-right dim dim1 dim2))
+                    (concl.dim1 (dim* (dim+ dim1 dim2) dim))
+                    (concl.dim2 (dim+ (dim* dim1 dim) (dim* dim2 dim)))))
+
+  (defmacro make-dim-eq-proof-distrib-right (&key dim dim1 dim2)
+    `(dim-eq-proof-distrib-right ,dim ,dim1 ,dim2)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-eq-neg-mul-left
+  :short "Multiplication by an additive inverse on the left
+          is the additive inverse of the multiplication."
+
+  (define dim-eq-proof-neg-mul-left (dim1 dim2)
+    :returns (proof dim-eq-proofp)
+    :parents nil
+    (b* (((unless (and (dimp dim1)
+                       (dimp dim2)))
+          (dim-eq-proof-refl nil))
+         (neg1 (dim- dim1))
+         (mul (dim* dim1 dim2))
+         (negmul (dim* neg1 dim2)))
+      (make-dim-eq-proof-symm
+       :dim1 (dim- mul)
+       :dim2 negmul
+       :premise1-proof
+       (make-dim-eq-proof-add-inv-uniq
+        :dim1 mul
+        :dim2 negmul
+        :premise1-proof
+        (make-dim-eq-proof-trans
+         :dim1 (dim+ mul negmul)
+         :dim2 (dim* (dim+ dim1 neg1) dim2)
+         :dim3 (dim-const 0)
+         :premise1-proof
+         (make-dim-eq-proof-symm
+          :dim1 (dim* (dim+ dim1 neg1) dim2)
+          :dim2 (dim+ mul negmul)
+          :premise1-proof (make-dim-eq-proof-distrib-right :dim dim2
+                                                           :dim1 dim1
+                                                           :dim2 neg1))
+         :premise2-proof
+         (make-dim-eq-proof-trans
+          :dim1 (dim* (dim+ dim1 neg1) dim2)
+          :dim2 (dim* 0 dim2)
+          :dim3 (dim-const 0)
+          :premise1-proof
+          (make-dim-eq-proof-cong-mul2
+           :dim1 (dim+ dim1 neg1)
+           :dim2 (dim-const 0)
+           :dim3 dim2
+           :dim4 dim2
+           :premise1-proof (make-dim-eq-proof-add-inv :dim dim1)
+           :premise2-proof (make-dim-eq-proof-refl :dim dim2))
+          :premise2-proof (make-dim-eq-proof-mul-zero-left :dim dim2))))))
+
+    ///
+
+    (defret dim-eq-proof-validp-of-dim-eq-proof-neg-mul-left
+      (implies (and (dimp dim1)
+                    (dimp dim2))
+               (dim-eq-proof-validp proof
+                                    (dim* (dim- dim1) dim2)
+                                    (dim- (dim* dim1 dim2))))
+      :hints
+      (("Goal"
+        :in-theory (acl2::e/d* (dim-equivalence-definition-validp-defs)
+                               ((:e dim-const)))))))
+
+  (defruled dim-eq-neg-mul-left
+    (implies (and (dimp dim1)
+                  (dimp dim2))
+             (dim-eq (dim* (dim- dim1) dim2)
+                     (dim- (dim* dim1 dim2))))
+    :use (:instance dim-eq-when-proof-validp
+                    (proof (dim-eq-proof-neg-mul-left dim1 dim2))
+                    (concl.dim1 (dim* (dim- dim1) dim2))
+                    (concl.dim2 (dim- (dim* dim1 dim2)))))
+
+  (defmacro make-dim-eq-proof-neg-mul-left (&key dim1 dim2)
+    `(dim-eq-proof-neg-mul-left ,dim1 ,dim2)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-eq-neg-mul-right
+  :short "Multiplication by an additive inverse on the right
+          is the additive inverse of the multiplication."
+
+  (define dim-eq-proof-neg-mul-right (dim1 dim2)
+    :returns (proof dim-eq-proofp)
+    :parents nil
+    (b* (((unless (and (dimp dim1)
+                       (dimp dim2)))
+          (dim-eq-proof-refl nil))
+         (neg2 (dim- dim2)))
+      (make-dim-eq-proof-trans
+       :dim1 (dim* dim1 neg2)
+       :dim2 (dim* neg2 dim1)
+       :dim3 (dim- (dim* dim1 dim2))
+       :premise1-proof (make-dim-eq-proof-mul-comm :dim1 dim1 :dim2 neg2)
+       :premise2-proof
+       (make-dim-eq-proof-trans
+        :dim1 (dim* neg2 dim1)
+        :dim2 (dim- (dim* dim2 dim1))
+        :dim3 (dim- (dim* dim1 dim2))
+        :premise1-proof (make-dim-eq-proof-neg-mul-left :dim1 dim2
+                                                        :dim2 dim1)
+        :premise2-proof
+        (make-dim-eq-proof-cong-sub1
+         :dim1 (dim* dim2 dim1)
+         :dim2 (dim* dim1 dim2)
+         :premise1-proof (make-dim-eq-proof-mul-comm :dim1 dim2
+                                                     :dim2 dim1)))))
+
+    ///
+
+    (defret dim-eq-proof-validp-of-dim-eq-proof-neg-mul-right
+      (implies (and (dimp dim1)
+                    (dimp dim2))
+               (dim-eq-proof-validp proof
+                                    (dim* dim1 (dim- dim2))
+                                    (dim- (dim* dim1 dim2))))
+      :hints
+      (("Goal"
+        :in-theory (enable* dim-equivalence-definition-validp-defs)))))
+
+  (defruled dim-eq-neg-mul-right
+    (implies (and (dimp dim1)
+                  (dimp dim2))
+             (dim-eq (dim* dim1 (dim- dim2))
+                     (dim- (dim* dim1 dim2))))
+    :use (:instance dim-eq-when-proof-validp
+                    (proof (dim-eq-proof-neg-mul-right dim1 dim2))
+                    (concl.dim1 (dim* dim1 (dim- dim2)))
+                    (concl.dim2 (dim- (dim* dim1 dim2)))))
+
+  (defmacro make-dim-eq-proof-neg-mul-right (&key dim1 dim2)
+    `(dim-eq-proof-neg-mul-right ,dim1 ,dim2)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection shape-eq-trans-swapped
