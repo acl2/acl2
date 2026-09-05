@@ -468,17 +468,19 @@
     ))
 
 ;; Returns (mv erp failedp state)
-(defun run-formal-test-on-method (method-id methods-expected-to-fail error-on-unexpectedp method-info-alist class-name assumptions root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor state)
+(defun run-formal-test-on-method (method-id class-name methods-expected-to-fail error-on-unexpectedp method-info-alist assumptions root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor state)
   (declare (xargs :guard (and (jvm::method-idp method-id)
+                              (jvm::class-namep class-name)
                               (or (eq :any methods-expected-to-fail)
                                   (eq :auto methods-expected-to-fail)
                                   (string-listp methods-expected-to-fail))
                               (booleanp error-on-unexpectedp)
                               (jvm::method-info-alistp method-info-alist)
-                              (jvm::class-namep class-name)
+                              (lookup-equal method-id method-info-alist)
                               ;; TODO: translate the assumptions!
                               (stringp root-of-class-hierarchy) ;a directory name
                               (count-hits-argp count-hits)
+                              ;;print
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
                               (prune-precise-optionp prune-precise)
@@ -487,9 +489,9 @@
                   :stobjs state
                   :mode :program ;; for submit-event-quiet, simp-dag-fn, and apply-tactic-prover
                   ))
-  (b* ((method-name (car method-id))
-       (method-descriptor (cdr method-id))
-       (method-info (lookup-equal method-id method-info-alist))
+  (b* ((method-name (jvm::method-id-name method-id))
+       (method-descriptor (jvm::method-id-descriptor method-id))
+       (method-info (lookup-equal method-id method-info-alist)) ; must be pressent, per the guard
        (method-designator-string (concatenate 'string class-name "." method-name method-descriptor)) ;todo: use fully qualified name?
        (method-return-type (jvm::return-type-from-method-descriptor method-descriptor))
        (variant (if (eq method-return-type :void)
@@ -521,45 +523,45 @@
        ((mv erp dag & & & state)
         ;; TODO: Use assumptions here:
         (unroll-java-code-core method-designator-string
-                                 output-indicator
-                                 nil   ;;array-length-alist
-                                 ;; extra-rules, to add to default set:
-                                 (append (formal-unit-tester-extra-lifting-rules)
-                                         extra-rules)
-                                 ;; remove-rules, to remove from default set (since boolif isn't handled right by pruning -- todo, maybe it is handled now?):
-                                 ;; todo: commenting these out caused a loop:
-                                 (append '(MYIF-BECOMES-BOOLIF-T-ARG1
-                                           MYIF-BECOMES-BOOLIF-T-ARG2
-                                           MYIF-BECOMES-BOOLIF-NIL-ARG1
-                                           MYIF-BECOMES-BOOLIF-NIL-ARG2
-                                           MYIF-BECOMES-BOOLIF-AXE
-                                           )
-                                         ;; (bool-intro-rules)
-                                         (sbvlt-of-bvif-rules) ; caused problems with BinarySearch ; todo: make cheap versions?
-                                         remove-rules)
-                                 nil ; extra-assumption-rules ; consider adding support for this
-                                 nil ;rule-alists
-                                 monitor
-                                 ;todo: think about these:
-                                 assert-assumptions ;; nil ;user-assumptions
-                                 t ;normalize-xors
-                                 :all ;'("java.lang.Object" "java.lang.System") ;classes-to-assume-initialized
-                                 nil ;ignore-exceptions
-                                 nil ;ignore-errors
-                                 count-hits
-                                 print
-                                 nil    ;print-interval
-                                 t ;memoizep
-                                 t      ;vars-for-array-elements
-                                 prune-precise
-                                 prune-approx
-                                 nil    ;call-stp ;t, nil, or a max-conflicts
-                                 :auto  ;steps
-                                 :smart ;; (if (eq variant :assert) :split :smart)
-                                 :auto    ;param-names
-                                 t ;chunkedp ;whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code?)
-                                 error-on-incomplete-runsp
-                                 state))
+                               output-indicator
+                               nil ; array-length-alist
+                               ;; extra-rules, to add to default set:
+                               (append (formal-unit-tester-extra-lifting-rules)
+                                       extra-rules)
+                               ;; remove-rules, to remove from default set (since boolif isn't handled right by pruning -- todo, maybe it is handled now?):
+                               ;; todo: commenting these out caused a loop:
+                               (append '(MYIF-BECOMES-BOOLIF-T-ARG1
+                                         MYIF-BECOMES-BOOLIF-T-ARG2
+                                         MYIF-BECOMES-BOOLIF-NIL-ARG1
+                                         MYIF-BECOMES-BOOLIF-NIL-ARG2
+                                         MYIF-BECOMES-BOOLIF-AXE
+                                         )
+                                       ;; (bool-intro-rules)
+                                       (sbvlt-of-bvif-rules) ; caused problems with BinarySearch ; todo: make cheap versions?
+                                       remove-rules)
+                               nil ; extra-assumption-rules ; consider adding support for this
+                               nil ; rule-alists
+                               monitor
+                               ;; todo: think about these:
+                               assert-assumptions ;; nil ;user-assumptions
+                               t ;normalize-xors
+                               :all ;'("java.lang.Object" "java.lang.System") ;classes-to-assume-initialized
+                               nil ; ignore-exceptions
+                               nil ; ignore-errors
+                               count-hits
+                               print
+                               nil ; print-interval
+                               t ; memoizep
+                               t ; vars-for-array-elements
+                               prune-precise
+                               prune-approx
+                               nil ; call-stp ;t, nil, or a max-conflicts ; todo: why nil?
+                               :auto ; steps
+                               :smart ;; (if (eq variant :assert) :split :smart)
+                               :auto ; param-names
+                               t ; chunkedp
+                               error-on-incomplete-runsp
+                               state))
        ((when erp) (mv erp t state))
        ;; ;;prune again: todo: shouldn't be needed!:
        ;; (- (cw "(Pruning again:~%"))
@@ -570,7 +572,7 @@
        ;;        (dag2term dag) ;todo: limit
        ;;        nil))
        ;; put boolifs back:
-       ((mv erp dag state)
+       ((mv erp dag state) ; todo: use jvm rewriter here?
         (simp-dag dag :rules (set-difference-equal
                                (append (formal-unit-testing-extra-simplification-rules)
                                        ;; '(booland-becomes-boolif
@@ -669,29 +671,34 @@
                   t ;failed
                   state)))))
 
-
 ;; Returns (mv erp results state).
-(defun run-formal-tests-on-methods (method-ids methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor results-acc state)
-  (declare (xargs :guard ;; todo: flesh out:
-                  (and
-                   (or (eq :any methods-expected-to-fail)
-                       (eq :auto methods-expected-to-fail)
-                       (string-listp methods-expected-to-fail))
-                   (booleanp error-on-unexpectedp)
-                   (count-hits-argp count-hits)
-                   (prune-precise-optionp prune-precise)
-                   (prune-approx-optionp prune-approx))
-                  :stobjs state
-                  :mode :program))
+(defun run-formal-tests-on-methods (method-ids class-name methods-expected-to-fail error-on-unexpectedp method-info-alist root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor results-acc state)
+  (declare (xargs :guard (and (jvm::method-id-listp method-ids)
+                              (jvm::class-namep class-name)
+                              (or (eq :any methods-expected-to-fail)
+                                  (eq :auto methods-expected-to-fail)
+                                  (string-listp methods-expected-to-fail))
+                              (booleanp error-on-unexpectedp)
+                              (jvm::method-info-alistp method-info-alist)
+                              (stringp root-of-class-hierarchy) ;a directory name
+                              (count-hits-argp count-hits)
+                              ;;print
+                              (symbol-listp extra-rules)
+                              (symbol-listp remove-rules)
+                              (prune-precise-optionp prune-precise)
+                              (prune-approx-optionp prune-approx))
+                           :stobjs state
+                           :mode :program))
   (if (endp method-ids)
       (mv (erp-nil) (reverse results-acc) state)
     (let ((method-id (first method-ids)))
       (mv-let (erp failedp state)
-        (run-formal-test-on-method method-id methods-expected-to-fail error-on-unexpectedp method-info-alist class-name nil root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor state)
+        (run-formal-test-on-method method-id class-name methods-expected-to-fail error-on-unexpectedp method-info-alist nil root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor state)
         (if erp
             (mv erp nil state)
           (run-formal-tests-on-methods (rest method-ids)
-                                       methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor
+                                       class-name
+                                       methods-expected-to-fail error-on-unexpectedp method-info-alist root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor
                                        (cons (cons method-id (if failedp "FAILED" "PASSED")) results-acc)
                                        state))))))
 
@@ -784,7 +791,7 @@
        ;; (- (cw ")~%"))
        ;; Run the tests:
        ((mv erp results state)
-        (run-formal-tests-on-methods test-method-ids methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-user-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor
+        (run-formal-tests-on-methods test-method-ids class-name methods-expected-to-fail error-on-unexpectedp method-info-alist root-of-user-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor
                       nil ;empty accumulator
                       state))
        ((when erp) (mv erp nil state))

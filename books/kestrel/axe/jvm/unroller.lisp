@@ -10,7 +10,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ACL2")
+(in-package "ACL2") ; todo: use JVM package
 
 ;; TODO: The JVM lifters use debugging information (which may or may not be
 ;; present) in the .class file, to choose names for parameters of generated
@@ -44,7 +44,7 @@
 
 (local (in-theory (enable symbolp-of-lookup-equal-when-param-slot-to-name-alistp)))
 
-(local (in-theory (disable acl2-count ;for speed
+(local (in-theory (disable min acl2-count ;for speed
                            w
                            state-p1-forward
                            state-p-implies-and-forward-to-state-p1
@@ -59,13 +59,11 @@
     jvm::do-inst))
 
 ;; Returns a boolean
-(defun dag-ok-after-symbolic-execution (dag assumptions error-on-incomplete-runsp state)
+(defund dag-ok-after-symbolic-executionp (dag assumptions error-on-incomplete-runsp state)
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              ;; assumptions
-                              (booleanp error-on-incomplete-runsp)
-                              )
+                              (true-listp assumptions)
+                              (booleanp error-on-incomplete-runsp))
                   :stobjs state))
-;  (declare (xargs :mode :program)) ; because this calls untranslate
   (let ((dag-fns (dag-fns dag)))
     (if (or (acl2::contains-anyp-eq *incomplete-run-fns* dag-fns) ;todo: pass in a set of functions to look for?
             (member-eq 'jvm::error-state dag-fns))
@@ -109,7 +107,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (mutual-recursion
- (defun elide-method-info-in-term (term)
+ (defund elide-method-info-in-term (term)
    (declare (xargs :guard (pseudo-termp term)
                    :hints (("Goal" :in-theory (enable maybe-elide-make-frame-args)))))
    (if (or (not (consp term)) ; var
@@ -119,7 +117,7 @@
             (args (maybe-elide-make-frame-args fn (fargs term)))
             (new-args (elide-method-info-in-terms args)))
        (cons fn new-args))))
- (defun elide-method-info-in-terms (terms)
+ (defund elide-method-info-in-terms (terms)
    (declare (xargs :guard (pseudo-term-listp terms)))
    (if (not (consp terms))
        nil
@@ -134,7 +132,7 @@
   (defthm len-of-elide-method-info-in-terms
     (equal (len (elide-method-info-in-terms terms))
            (len terms))
-    :hints (("Goal" :in-theory (enable (:i len))))))
+    :hints (("Goal" :in-theory (enable (:i len) elide-method-info-in-terms)))))
 
 (local
   (defthm-flag-elide-method-info-in-term
@@ -145,7 +143,8 @@
     (defthm pseudo-term-listp-of-elide-method-info-in-terms
       (implies (pseudo-term-listp terms)
                (pseudo-term-listp (elide-method-info-in-terms terms)))
-      :flag elide-method-info-in-terms)))
+      :flag elide-method-info-in-terms)
+    :hints (("Goal" :in-theory (enable elide-method-info-in-term elide-method-info-in-terms)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -199,7 +198,8 @@
 
 (local
   (defthm min-helper
-    (<= (min x y) x)))
+    (<= (min x y) x)
+    :hints (("Goal" :in-theory (enable min)))))
 
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
@@ -391,58 +391,58 @@
                             total-steps
                             state)))))))
 
-(defthm pseudo-dagp-of-mv-nth-1-of-repeatedly-run
-  (implies (and (pseudo-dagp dag)
-                (natp steps-left)
-                (step-incrementp step-increment)
-                (rule-alistsp rule-alists)
-                (pseudo-term-listp assumptions)
-                (booleanp normalize-xors)
-                (symbol-listp rules-to-monitor)
+(local
+  (defthm pseudo-dagp-of-mv-nth-1-of-repeatedly-run
+    (implies (and (pseudo-dagp dag)
+                  (natp steps-left)
+                  (step-incrementp step-increment)
+                  (rule-alistsp rule-alists)
+                  (pseudo-term-listp assumptions)
+                  (booleanp normalize-xors)
+                  (symbol-listp rules-to-monitor)
 ;                              (booleanp use-internal-contextsp)
-                (print-levelp print)
-                (booleanp memoizep)
-                ;; (prune-precise-optionp prune-precise)
-                ;; (prune-approx-optionp prune-approx)
-                (natp total-steps))
-           (equal (pseudo-dagp (mv-nth 1 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits hits print print-interval memoizep prune-precise prune-approx total-steps state)))
-                  (not (quotep (mv-nth 1 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits hits print print-interval memoizep prune-precise prune-approx total-steps state))))))
-  :hints (("Goal" :induct t
-           :in-theory (e/d (repeatedly-run)
-                           (myquotep ; todo: loop with SIMPLIFY-DAG-WITH-RULE-ALISTS-JVM-RETURN-TYPE1-COROLLARY2
-                            quotep
-                            min)))))
+                  (print-levelp print)
+                  (booleanp memoizep)
+                  ;; (prune-precise-optionp prune-precise)
+                  ;; (prune-approx-optionp prune-approx)
+                  (natp total-steps))
+             (equal (pseudo-dagp (mv-nth 1 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits hits print print-interval memoizep prune-precise prune-approx total-steps state)))
+                    (not (quotep (mv-nth 1 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits hits print print-interval memoizep prune-precise prune-approx total-steps state))))))
+    :hints (("Goal" :induct t
+             :in-theory (e/d (repeatedly-run)
+                             (myquotep ; todo: loop with SIMPLIFY-DAG-WITH-RULE-ALISTS-JVM-RETURN-TYPE1-COROLLARY2
+                              quotep
+                              min))))))
 
-(defthm w-of-mv-nth-3-of-repeatedly-run
-  (equal (w (mv-nth 3 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits hits print print-interval memoizep prune-precise prune-approx total-steps state)))
-         (w state))
-  :hints (("Goal" :in-theory (enable repeatedly-run))))
+(local
+  (defthm w-of-mv-nth-3-of-repeatedly-run
+    (equal (w (mv-nth 3 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits hits print print-interval memoizep prune-precise prune-approx total-steps state)))
+           (w state))
+    :hints (("Goal" :in-theory (enable repeatedly-run)))))
 
-(defthm hitsp-of-mv-nth-2-of-repeatedly-run
-  (implies (and (pseudo-dagp dag)
-                (natp steps-left)
-                (step-incrementp step-increment)
-                (rule-alistsp rule-alists)
-                (pseudo-term-listp assumptions)
-                (booleanp normalize-xors)
-                (symbol-listp rules-to-monitor)
-                (count-hits-argp count-hits)
-                (hitsp hits)
+(local
+  (defthm hitsp-of-mv-nth-2-of-repeatedly-run
+    (implies (and (pseudo-dagp dag)
+                  (natp steps-left)
+                  (step-incrementp step-increment)
+                  (rule-alistsp rule-alists)
+                  (pseudo-term-listp assumptions)
+                  (booleanp normalize-xors)
+                  (symbol-listp rules-to-monitor)
+                  (count-hits-argp count-hits)
+                  (hitsp hits)
 ;                              (booleanp use-internal-contextsp)
-                (print-levelp print)
-                (booleanp memoizep)
-                (prune-precise-optionp prune-precise)
-                (prune-approx-optionp prune-approx)
-                (natp total-steps))
-           (hitsp (mv-nth 2 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits hits print print-interval memoizep prune-precise prune-approx total-steps state))))
-  :hints (("Goal" :in-theory (e/d (repeatedly-run) (simplify-dag-with-rule-alists-jvm-return-type-corollary-2 ; todo: loop
-                                                    )))))
+                  (print-levelp print)
+                  (booleanp memoizep)
+                  (prune-precise-optionp prune-precise)
+                  (prune-approx-optionp prune-approx)
+                  (natp total-steps))
+             (hitsp (mv-nth 2 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits hits print print-interval memoizep prune-precise prune-approx total-steps state))))
+    :hints (("Goal" :in-theory (e/d (repeatedly-run) (simplify-dag-with-rule-alists-jvm-return-type-corollary-2 ; todo: loop
+                                                      ))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-;; Chunked execution can be necessary to make use of overarching if-conditions.
-;; For example, we may have a test that ensures that a later loop terminates.
 
 (local
   (in-theory (disable unroll-java-code-rules (:e unroll-java-code-rules)
@@ -495,6 +495,7 @@
       (strip-cars class-alist)
     classes-to-assume-initialized))
 
+;; is the defined elsewhere too?
 (defund steps-optionp (steps)
   (declare (xargs :guard t))
   (or (eq :auto steps)
@@ -556,7 +557,8 @@
 ;;when working with this function.
 ;; Somewhat slow guard proof
 ;; This is also called in tester.lisp.
-(defun unroll-java-code-core (method-designator-string
+;; Chunked execution can be necessary to make use of overarching if-conditions. For example, we may have a test that ensures that a later loop terminates.
+(defund unroll-java-code-core (method-designator-string
                                 nice-output-indicator
                                 array-length-alist
                                 extra-rules  ;to add to default set
@@ -613,11 +615,10 @@
                   :stobjs state
                   :guard-hints (("Goal" :in-theory (e/d (symbol-listp-of-unroll-java-code-rules
                                                          steps-optionp ; todo
-                                                         )
+                                                         true-listp-when-pseudo-term-listp-2)
                                                         (quotep
                                                          myquotep
-                                                         integerp-of-nth-when-all-natp
-                                                         ))))))
+                                                         integerp-of-nth-when-all-natp))))))
   (b* ((method-class (extract-method-class method-designator-string))
        (method-name (extract-method-name method-designator-string))
        (method-descriptor (extract-method-descriptor method-designator-string)) ;todo: should this be called a descriptor?
@@ -824,7 +825,7 @@
        ((when (quotep dag)) ; todo: test this case
         (mv (erp-nil) dag all-assumptions term-to-run-with-output-extractor parameter-names state))
        ;; Check whether symbolic execution failed:
-       (dag-okp (dag-ok-after-symbolic-execution dag all-assumptions error-on-incomplete-runsp state)))
+       (dag-okp (dag-ok-after-symbolic-executionp dag all-assumptions error-on-incomplete-runsp state)))
     (mv (if (and (not dag-okp)
                  error-on-incomplete-runsp)
             (erp-t)
@@ -946,9 +947,7 @@
                      nil
                    ;;todo: check these (what should be allowed)?
                    (sort-vars-with-guidance (dag-vars-unsorted dag-or-quotep) parameter-names)))
-       (dag-fns (if (quotep dag-or-quotep)
-                     nil
-                   (dag-fns dag-or-quotep)))
+       (dag-fns (dag-or-quotep-fns dag-or-quotep))
        (function-body (if (dag-or-quotep-size-less-thanp dag-or-quotep 1000)
                           (dag2term dag-or-quotep)
                         `(dag-val-with-axe-evaluator ,defconst-name
@@ -1002,7 +1001,7 @@
                                       method-indicator
                                       &key
                                       ;; Options affecting what is proved:
-                                      (assumptions 'nil) ;TODO: What variables are these over? 'locals'?  well, at least the params of the function
+                                      (assumptions 'nil) ;TODO: What variables are these over? 'locals'?  well, at least the params of the function ; todo: rename extra-assumptions
                                       (array-length-alist 'nil)
                                       (classes-to-assume-initialized ''("java.lang.Object" "java.lang.System")) ;TODO; Try making :all the default
                                       (ignore-exceptions 'nil)
@@ -1076,9 +1075,9 @@
                  form)))
     form)
   :parents (axe-jvm axe-lifters)
-  :short "A tool to lift Java/JVM code into logic, unrolling loops as needed."
+  :short "A tool to lift Java/JVM code into logic, unrolling any loops encountered."
   :args ((defconst-name
-           "The name of the constant to create.  This constant will represent the computation in DAG form.  A function may also created (its name is obtained by stripping the stars from the defconst name).")
+           "The name of the constant to create.  This constant will represent the computation in DAG form.  A function may also created, according to the @(':produce-function') argument.  If a funtion is created, its name is obtained by stripping the stars from the defconst name.")
          (method-indicator
           "The Java method to unroll (a string like \"java.lang.Object.foo(IB)V\").  The descriptor (input and output type) can be omitted if only one method in the given class has the given name.")
          (assumptions             "Terms to assume true when unrolling.  These assumptions can mention the method's parameter names (symbols), the byte-variables and/or bit-variables in the contents of array parameters, and the special variables @('locals'), @('initial-heap'), @('initial-static-field-map'), and @('initial-intern-table').")
