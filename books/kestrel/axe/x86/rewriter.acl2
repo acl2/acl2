@@ -1,6 +1,6 @@
-; Cert params for rewriter-x86.lisp
+; Cert params for rewriter.lisp
 ;
-; Copyright (C) 2024 Kestrel Technology, LLC
+; Copyright (C) 2024-2026 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
