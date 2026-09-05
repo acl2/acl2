@@ -413,9 +413,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These omit hypotheses that
-     follow from @(see dim-validity-holds-only-on-environments)
-     or are absorbed by the fixing operated by fixtype constructors."))
+    "These omit hypotheses
+     that follow from @(see dim-validity-holds-only-on-dimensions)
+     and @(see dim-validity-holds-only-on-environments),
+     or that are absorbed by the fixing operated by fixtype constructors.")
+   (xdoc::p
+    "The @('!') at the end of the name conveys the idea of `stronger'.")
+   (xdoc::p
+    "The proof trees for these rules are the same as the weaker variants,
+     up to the fixing of the variables in the rules proved via fixing."))
 
   ;; dimensions:
 
@@ -463,14 +469,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection shape/ispace-validity-stronger-rules
-  :short "Stronger versions of the defining rules of
-          shape and ispace validity."
+  :short "Stronger versions of
+          some of the defining rules of shape and ispace validity."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These omit hypotheses that
-     follow from @(see shape/ispace-validity-holds-only-on-environments)
-     or are absorbed by the fixing operated by fixtype constructors."))
+    "These are analogous to @(see dim-validity-stronger-rules)."))
 
   ;; shapes:
 
