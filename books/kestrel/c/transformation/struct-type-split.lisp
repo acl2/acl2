@@ -4676,10 +4676,9 @@
                   more than one scope found: ~x0"
                  scopes))
        (scope (first scopes))
-       (lookup (assoc-equal (c$::ident-fix tag)
-                            (c$::valid-scope->tag scope))))
-    (retok (and lookup
-                (c$::valid-tag-info-fix (cdr lookup))))))
+       (info? (treemap::lookup (c$::ident-fix tag)
+                               (c$::valid-scope->tag scope))))
+    (retok info?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

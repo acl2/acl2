@@ -15,12 +15,12 @@
 (include-book "unambiguity")
 (include-book "translation-unit-comparison")
 
+(include-book "kestrel/fty/deftreemap" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
-(local (include-book "std/alists/top" :dir :system))
 
 (local (in-theory (enable* abstract-syntax-unambp-rules)))
 
@@ -221,30 +221,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defalist dimb-scope
+(fty::deftreemap dimb-scope
   :short "Fixtype of scopes in disambiguation tables."
   :long
   (xdoc::topstring
    (xdoc::p
     "An identifier may have different meanings in different scopes,
      but it must have one meaning within the same scope.
-     Thus, we represent scopes as alists from identifiers to their kinds."))
+     Thus, we represent scopes as maps from identifiers to their kinds."))
   :key-type ident
   :val-type dimb-kind
-  :true-listp t
-  :keyp-of-nil nil
-  :valp-of-nil nil
   :pred dimb-scopep
-  :prepwork ((set-induction-depth-limit 1))
 
   ///
 
-  (defrule dimb-kindp-of-cdr-of-assoc-equal-when-dimb-scopep
+  (defrule dimb-kind-optionp-of-lookup-when-dimb-scopep
     (implies (dimb-scopep scope)
-             (iff (dimb-kindp (cdr (assoc-equal ident scope)))
-                  (assoc-equal ident scope)))
-    :induct t
-    :enable (assoc-equal)))
+             (dimb-kind-optionp (treemap::lookup ident scope)))
+    :cases ((treeset::in ident (treemap::keys scope)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -396,11 +390,9 @@
      :parents nil
      (b* (((when (endp table)) nil)
           (scope (dimb-scope-fix (car table)))
-          (ident+kind (assoc-equal (ident-fix ident) scope))
-          ((when ident+kind) (dimb-kind-fix (cdr ident+kind))))
-       (dimb-lookup-ident-loop ident (cdr table)))
-     :guard-hints
-     (("Goal" :in-theory (enable alistp-when-dimb-scopep-rewrite))))))
+          (kind? (treemap::lookup (ident-fix ident) scope))
+          ((when kind?) kind?))
+       (dimb-lookup-ident-loop ident (cdr table))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -429,12 +421,12 @@
         (raise "Internal error: empty disambiguation table.")
         (irr-dstate))
        (scope (dimb-scope-fix (car table)))
-       (new-scope (acons (ident-fix ident) (dimb-kind-fix kind) scope))
+       (new-scope (treemap::update (ident-fix ident)
+                                   (dimb-kind-fix kind)
+                                   scope))
        (new-table (cons new-scope (cdr table))))
     (change-dstate dstate :table new-table))
-  :no-function nil
-  :guard-hints
-  (("Goal" :in-theory (enable acons alistp-when-dimb-scopep-rewrite))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -458,7 +450,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-add-ident-objfun-file-scope ((ident identp) (dstate dstatep))
-  :returns (new-dstate dstatep :hints (("Goal" :in-theory (enable acons))))
+  :returns (new-dstate dstatep)
   :short "Add an identifier to the file scope of a disambiguation table,
           with object or function kind."
   :long
@@ -472,12 +464,12 @@
         (irr-dstate))
        (table (dimb-table-fix table))
        (scope (car (last table)))
-       (new-scope (acons (ident-fix ident) (dimb-kind-objfun) scope))
+       (new-scope (treemap::update (ident-fix ident)
+                                   (dimb-kind-objfun)
+                                   scope))
        (new-table (append (butlast table 1) (list new-scope))))
     (change-dstate dstate :table new-table))
-  :no-function nil
-  :guard-hints
-  (("Goal" :in-theory (enable acons alistp-when-dimb-scopep-rewrite))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
