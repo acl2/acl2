@@ -404,3 +404,132 @@
     (implies (ispaces-ok ivars ispaces)
              (ispace-var-setp ivars))
     :enable (ispaces-ok ispace-var-setp-when-ispaces-ok-proof-validp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-validity-stronger-rules
+  :short "Stronger versions of
+          some of the defining rules of dimension validity."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These omit hypotheses that
+     follow from @(see dim-validity-holds-only-on-environments)
+     or are absorbed by the fixing operated by fixtype constructors."))
+
+  ;; dimensions:
+
+  (defruled dim-ok-var!
+    (implies (and (ispace-var-setp ivars)
+                  (set::in (ispace-var-dim name) ivars))
+             (dim-ok ivars (dim-var name)))
+    :use (:instance dim-ok-var (name (str-fix name))))
+
+  (defruled dim-ok-const!
+    (implies (ispace-var-setp ivars)
+             (dim-ok ivars (dim-const val)))
+    :use (:instance dim-ok-const (val (nfix val))))
+
+  (defruled dim-ok-add!
+    (implies (dims-ok ivars dims)
+             (dim-ok ivars (dim-add dims)))
+    :use dim-ok-add
+    :enable (ispace-var-setp-when-dims-ok dim-listp-when-dims-ok))
+
+  (defruled dim-ok-mul!
+    (implies (dims-ok ivars dims)
+             (dim-ok ivars (dim-mul dims)))
+    :use dim-ok-mul
+    :enable (ispace-var-setp-when-dims-ok dim-listp-when-dims-ok))
+
+  (defruled dim-ok-sub!
+    (implies (and (consp dims)
+                  (dims-ok ivars dims))
+             (dim-ok ivars (dim-sub dims)))
+    :use dim-ok-sub
+    :enable (ispace-var-setp-when-dims-ok dim-listp-when-dims-ok))
+
+  ;; lists of dimensions:
+
+  (defruled dims-ok-cons!
+    (implies (and (dim-ok ivars dim)
+                  (dims-ok ivars dims))
+             (dims-ok ivars (cons dim dims)))
+    :use dims-ok-cons
+    :enable (ispace-var-setp-when-dim-ok
+             dimp-when-dim-ok
+             dim-listp-when-dims-ok)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection shape/ispace-validity-stronger-rules
+  :short "Stronger versions of the defining rules of
+          shape and ispace validity."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These omit hypotheses that
+     follow from @(see shape/ispace-validity-holds-only-on-environments)
+     or are absorbed by the fixing operated by fixtype constructors."))
+
+  ;; shapes:
+
+  (defruled shape-ok-var!
+    (implies (and (ispace-var-setp ivars)
+                  (set::in (ispace-var-shape name) ivars))
+             (shape-ok ivars (shape-var name)))
+    :use (:instance shape-ok-var (name (str-fix name))))
+
+  (defruled shape-ok-dims!
+    (implies (dims-ok ivars dims)
+             (shape-ok ivars (shape-dims dims)))
+    :use shape-ok-dims
+    :enable (ispace-var-setp-when-dims-ok dim-listp-when-dims-ok))
+
+  (defruled shape-ok-append!
+    (implies (shapes-ok ivars shapes)
+             (shape-ok ivars (shape-append shapes)))
+    :use shape-ok-append
+    :enable (ispace-var-setp-when-shapes-ok shape-listp-when-shapes-ok))
+
+  (defruled shape-ok-splice!
+    (implies (ispaces-ok ivars ispaces)
+             (shape-ok ivars (shape-splice ispaces)))
+    :use shape-ok-splice
+    :enable (ispace-var-setp-when-ispaces-ok ispace-listp-when-ispaces-ok))
+
+  ;; lists of shapes:
+
+  (defruled shapes-ok-cons!
+    (implies (and (shape-ok ivars shape)
+                  (shapes-ok ivars shapes))
+             (shapes-ok ivars (cons shape shapes)))
+    :use shapes-ok-cons
+    :enable (ispace-var-setp-when-shape-ok
+             shapep-when-shape-ok
+             shape-listp-when-shapes-ok))
+
+  ;; ispaces:
+
+  (defruled ispace-ok-dim!
+    (implies (dim-ok ivars dim)
+             (ispace-ok ivars (ispace-dim dim)))
+    :use ispace-ok-dim
+    :enable (ispace-var-setp-when-dim-ok dimp-when-dim-ok))
+
+  (defruled ispace-ok-shape!
+    (implies (shape-ok ivars shape)
+             (ispace-ok ivars (ispace-shape shape)))
+    :use ispace-ok-shape
+    :enable (ispace-var-setp-when-shape-ok shapep-when-shape-ok))
+
+  ;; lists of ispaces:
+
+  (defruled ispaces-ok-cons!
+    (implies (and (ispace-ok ivars ispace)
+                  (ispaces-ok ivars ispaces))
+             (ispaces-ok ivars (cons ispace ispaces)))
+    :use ispaces-ok-cons
+    :enable (ispace-var-setp-when-ispace-ok
+             ispacep-when-ispace-ok
+             ispace-listp-when-ispaces-ok)))
