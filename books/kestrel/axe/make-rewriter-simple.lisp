@@ -7032,6 +7032,7 @@
          ;; function to do most of the work.
          ;; Returns (mv erp event state).
          ;; TODO: Perhaps add an option to take a rule-alist.
+         ;; TODO: Remove this wrapper
          (defund ,def-simplified-fn-name (defconst-name ; the name of the constant to create
                                           dag-or-term
                                           assumptions
@@ -7049,7 +7050,7 @@
                                           state)
            (declare (xargs :guard (and (symbolp defconst-name)
                                        ;; dag-or-term is a dag or an (untranslated) term
-                                       ;; assumptions are (untranslated) terms
+                                       (true-listp assumptions) ; (untranslated) terms
                                        (symbol-listp rules)
                                        (interpreted-function-alistp interpreted-function-alist)
                                        (normalize-xors-optionp normalize-xors)
@@ -7063,18 +7064,20 @@
                                        (consp whole-form)
                                        (symbolp (car whole-form)))
                            :stobjs state
-                           :mode :program ; because this calls translate
                            :guard-hints (("Goal" :in-theory (disable w)))))
            (b* (((when (command-is-redundantp whole-form state))
                  (mv nil '(value-triple :redundant) state))
                 ;; Translate the assumptions:
-                (assumptions (translate-terms assumptions ',def-simplified-fn-name (w state)))
+                ((mv erp assumptions state)
+                 (translate-terms-in-logic-mode assumptions ',def-simplified-fn-name state))
+                ((when erp) (mv erp nil state))
                 ;; Translates, if a term:
-                (dag-or-term
+                ((mv erp dag-or-term state)
                   (if (pseudo-dagp dag-or-term)
-                      dag-or-term
+                      (mv nil dag-or-term state)
                     ;; it's a term, so translate it:
-                    (translate-term dag-or-term ',def-simplified-fn-name (w state)))))
+                    (translate-term-in-logic-mode dag-or-term ',def-simplified-fn-name state)))
+                ((when erp) (mv erp nil state)))
              (,def-simplified-fn-core-name defconst-name dag-or-term assumptions rules interpreted-function-alist normalize-xors limits memoizep count-hits print monitored-symbols no-warn-ground-functions fns-to-elide whole-form state)))
 
          ;; A utility to simplify a DAG or term and create a constant to hold the resulting DAG.
