@@ -12,6 +12,7 @@
 
 (include-book "centaur/fty/basetypes" :dir :system)
 (include-book "centaur/fty/deftypes" :dir :system)
+(include-book "kestrel/fty/deftreemap" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
 
 (include-book "std/basic/controlled-configuration" :dir :system)
@@ -62,7 +63,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap uid-uid-map
+(fty::deftreemap uid-uid-map
   :parents (uid)
   :key-type uid
   :val-type uid

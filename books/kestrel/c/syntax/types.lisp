@@ -2195,13 +2195,15 @@
                 :tagged
                 (b* ((composites (uid-uid-mfix composites))
                      (completions (type-completions-fix completions))
-                     (x-composite? (omap::assoc x.uid composites))
-                     (y-composite? (omap::assoc y.uid composites))
-                     ((when (and (consp x-composite?)
-                                 (consp y-composite?)
-                                 (equal (cdr x-composite?) (cdr y-composite?))))
+                     ((mv x-foundp x-composite)
+                      (treemap::lookup? x.uid composites))
+                     ((mv y-foundp y-composite)
+                      (treemap::lookup? y.uid composites))
+                     ((when (and x-foundp
+                                 y-foundp
+                                 (equal x-composite y-composite)))
                       (mv (make-type-struct
-                            :uid (cdr x-composite?)
+                            :uid x-composite
                             :tunit? nil
                             :tag/members x.tag/members)
                           completions
@@ -2219,11 +2221,11 @@
                      (composite-uid (uid-fix next-uid))
                      (next-uid (uid-increment next-uid))
                      (composites
-                       (omap::update x.uid
-                                     composite-uid
-                                     (omap::update y.uid
-                                                   composite-uid
-                                                   composites)))
+                       (treemap::update x.uid
+                                        composite-uid
+                                        (treemap::update y.uid
+                                                         composite-uid
+                                                         composites)))
                      ((mv members-composite completions next-uid)
                       (type-struni-member-list-composite-aux
                         (cdr x-members?)
@@ -2569,7 +2571,7 @@
      [C17:6.2.7/3] [C23:6.2.7/3])."))
   (type-composite-aux x
                       y
-                      nil
+                      (treemap::empty)
                       completions
                       next-uid
                       ienv
