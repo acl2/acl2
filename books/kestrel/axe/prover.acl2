@@ -1,4 +1,4 @@
-; Cert params for prover.lisp
+; Cert flags for prover.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2020 Kestrel Institute

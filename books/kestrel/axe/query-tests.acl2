@@ -1,4 +1,4 @@
-; Cert params for query-tests.lisp
+; Cert flags for query-tests.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2021 Kestrel Institute
