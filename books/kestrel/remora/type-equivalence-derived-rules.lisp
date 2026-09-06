@@ -211,7 +211,19 @@
       (("Goal"
         :in-theory (enable* type-equivalence-definition-validp-defs
                             typep-when-type-eq-proof-validp
-                            ispace-eq-refl)))))
+                            ispace-eq-refl))))
+
+    (defret type-eq-proof-validp-of-type-eq-proof-cong-bracket-when-bracket
+      (implies (and (typep type)
+                    (type-case type :bracket)
+                    (equal type1 (type-bracket->elem type))
+                    (equal ispaces (type-bracket->ispaces type))
+                    (type-eq-proof-validp premise1-proof type1 type2))
+               (type-eq-proof-validp proof
+                                     type
+                                     (type-bracket type2 ispaces)))
+      :hints
+      (("Goal" :use type-eq-proof-validp-of-type-eq-proof-cong-bracket))))
 
   (defruled type-eq-cong-bracket
     (implies (and (ispace-listp ispaces)
@@ -827,7 +839,20 @@
                                 typep-when-type-eq-proof-validp
                                 consp-when-types-eq-proof-validp)
                                (type-eq-proof-validp
-                                types-eq-proof-validp))))))
+                                types-eq-proof-validp)))))
+
+    (defret type-eq-proof-validp-of-type-eq-proof-cong-funn-when-funn
+      (implies (and (typep type)
+                    (type-case type :funn)
+                    (equal types-in1 (type-funn->in type))
+                    (equal type-out1 (type-funn->out type))
+                    (types-eq-proof-validp premise1-proof types-in1 types-in2)
+                    (type-eq-proof-validp premise2-proof type-out1 type-out2))
+               (type-eq-proof-validp proof
+                                     type
+                                     (type-funn types-in2 type-out2)))
+      :hints
+      (("Goal" :use type-eq-proof-validp-of-type-eq-proof-cong-funn))))
 
   (defruled type-eq-cong-funn
     (implies (and (types-eq types-in1 types-in2)
