@@ -28,13 +28,15 @@
    (xdoc::p
     "We formalize the equivalence of ispaces via inference rules.
      Although [thesis], [arxiv], and [esop] do not explicate these rules,
-     their existence is arguably implied;
-     those publications make use of judgements
-     asserting the equivalence of ispaces (called `indices' there),
-     and describe the equations according to which
-     dimensions are considered equivalent.
-     Unlike [impl], those publications only have addition of dimensions,
-     but our rules also include their multiplication and subtraction."))
+     their existence is arguably implied.
+     [thesis] makes use of judgements of the form
+     @($\\models \\iota \\equiv \\iota'$),
+     where @($\\iota$) and @($\\iota'$) are ispaces (called `indices' there),
+     asserting the equivalence of @($\\iota$) and @($\\iota'$),
+     while [arxiv] uses a slightly different form,
+     and [esop] omits explicit judgements.
+     Instead of inference rules, those publications describe
+     the equations according to which ispaces are considered equivalent."))
   :order-subtopics t
   :default-parent t)
 
