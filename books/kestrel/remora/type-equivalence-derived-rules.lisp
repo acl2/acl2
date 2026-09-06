@@ -28,7 +28,7 @@
      as well as a @('make-...') macro with keyword arguments;
      the derived rule is proved as a theorem
      from the validity theorem of the proof tree constructor,
-     via the soundness theorem @(tsee type-eq-when-proof-validp)
+     via the soundness theorem @('type-eq-when-proof-validp')
      and the witness function @('type-eq-proof')."))
   :order-subtopics t
   :default-parent t)
