@@ -14,6 +14,8 @@
 
 (include-book "std/util/definductive" :dir :system)
 
+(local (include-book "std/lists/len" :dir :system))
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -663,6 +665,86 @@
              (and (ispace-listp ispaces1)
                   (ispace-listp ispaces2)))
     :enable (ispaces-eq ispace-listp-when-ispaces-eq-proof-validp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-list-equivalence-same-length
+  :short "The equivalence of lists of dimensions
+          holds only on lists of the same length."
+
+  (defthm-dim-eq-proof-validp-clique-flag
+    (defthmd same-len-when-dims-eq-proof-validp
+      (implies (dims-eq-proof-validp proof concl.dims1 concl.dims2)
+               (equal (len concl.dims1)
+                      (len concl.dims2)))
+      :flag dims-eq-proof-validp)
+    :skip-others t
+    :hints
+    (("Goal" :in-theory (enable* dim-equivalence-definition-validp-defs))))
+
+  (defruled same-len-when-dims-eq
+    (implies (dims-eq dims1 dims2)
+             (equal (len dims1)
+                    (len dims2)))
+    :enable (dims-eq same-len-when-dims-eq-proof-validp))
+
+  (defruled consp-when-dims-eq-proof-validp
+    (implies (dims-eq-proof-validp proof concl.dims1 concl.dims2)
+             (equal (consp concl.dims2)
+                    (consp concl.dims1)))
+    :use same-len-when-dims-eq-proof-validp
+    :expand ((len concl.dims1)
+             (len concl.dims2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection shape/ispace-list-equivalence-same-length
+  :short "The equivalence of lists of shapes and lists of ispaces
+          holds only on lists of the same length."
+
+  (defthm-shape-eq-proof-validp-clique-flag
+    (defthmd same-len-when-shapes-eq-proof-validp
+      (implies (shapes-eq-proof-validp proof concl.shapes1 concl.shapes2)
+               (equal (len concl.shapes1)
+                      (len concl.shapes2)))
+      :flag shapes-eq-proof-validp)
+    (defthmd same-len-when-ispaces-eq-proof-validp
+      (implies (ispaces-eq-proof-validp proof concl.ispaces1 concl.ispaces2)
+               (equal (len concl.ispaces1)
+                      (len concl.ispaces2)))
+      :flag ispaces-eq-proof-validp)
+    :skip-others t
+    :hints (("Goal"
+             :in-theory
+             (enable* shape/ispace-equivalence-definition-validp-defs))))
+
+  (defruled same-len-when-shapes-eq
+    (implies (shapes-eq shapes1 shapes2)
+             (equal (len shapes1)
+                    (len shapes2)))
+    :enable (shapes-eq same-len-when-shapes-eq-proof-validp))
+
+  (defruled same-len-when-ispaces-eq
+    (implies (ispaces-eq ispaces1 ispaces2)
+             (equal (len ispaces1)
+                    (len ispaces2)))
+    :enable (ispaces-eq same-len-when-ispaces-eq-proof-validp))
+
+  (defruled consp-when-shapes-eq-proof-validp
+    (implies (shapes-eq-proof-validp proof concl.shapes1 concl.shapes2)
+             (equal (consp concl.shapes2)
+                    (consp concl.shapes1)))
+    :use same-len-when-shapes-eq-proof-validp
+    :expand ((len concl.shapes1)
+             (len concl.shapes2)))
+
+  (defruled consp-when-ispaces-eq-proof-validp
+    (implies (ispaces-eq-proof-validp proof concl.ispaces1 concl.ispaces2)
+             (equal (consp concl.ispaces2)
+                    (consp concl.ispaces1)))
+    :use same-len-when-ispaces-eq-proof-validp
+    :expand ((len concl.ispaces1)
+             (len concl.ispaces2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
