@@ -52,6 +52,13 @@
      For our formalization of Remora, and to be consistent with [impl],
      some additional inference rules are needed.")
    (xdoc::p
+    "Besides equivalence of individual types,
+     we also define equivalence of lists of types.
+     Unlike @(see dim-equivalence-definition)
+     and @(see shape/ispace-equivalence-definition),
+     the inference rules for individual types and for lists of types
+     are not mutually dependent.")
+   (xdoc::p
     "We start with the equivalence rules
      (reflexivity, symmetry, and transitivity).
      [thesis] and [arxiv] only include reflexivity,
@@ -164,11 +171,12 @@
      The scalar array types are needed for the same reason as
      in the rules for n-ary function types."))
 
-  :preds ((type-eq type1 type2))
+  :preds ((type-eq type1 type2)
+          (types-eq types1 types2))
 
   :irules
 
-  (;; equivalence:
+  (;; equivalence of types:
 
    (refl ((typep type))
          (type-eq type type))
@@ -184,6 +192,23 @@
            (type-eq type1 type2)
            (type-eq type2 type3))
           (type-eq type1 type3))
+
+   ;; equivalence of lists of types:
+
+   (refl ((type-listp types))
+         (types-eq types types))
+
+   (symm ((type-listp types1)
+          (type-listp types2)
+          (types-eq types1 types2))
+         (types-eq types2 types1))
+
+   (trans ((type-listp types1)
+           (type-listp types2)
+           (type-listp types3)
+           (types-eq types1 types2)
+           (types-eq types2 types3))
+          (types-eq types1 types3))
 
    ;; array type congruence:
 
@@ -316,6 +341,16 @@
                     (type-rename-ispace-vars type2 dim-ren2 shape-ren2)))
           (type-eq (type-sigma param1 type1) (type-sigma param2 type2)))
 
+   ;; congruence of lists of types:
+
+   (cong-cons ((typep type1)
+               (typep type2)
+               (type-listp types1)
+               (type-listp types2)
+               (type-eq type1 type2)
+               (types-eq types1 types2))
+              (types-eq (cons type1 types1) (cons type2 types2)))
+
    ;; normalization of array type variables:
 
    (array-var ((stringp name))
@@ -408,15 +443,6 @@
                                  (type-scalar
                                   (type-sigman (cons param2 params) type)))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist type-eq-proof-list
-  :short "Fixtype of lists of proof trees for type equivalence."
-  :elt-type type-eq-proof
-  :true-listp t
-  :elementp-of-nil nil
-  :pred type-eq-proof-listp)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection type-equivalence-guard-verification
@@ -428,11 +454,15 @@
   (verify-guards type-eq-refl-validp)
   (verify-guards type-eq-symm-validp)
   (verify-guards type-eq-trans-validp)
+  (verify-guards types-eq-refl-validp)
+  (verify-guards types-eq-symm-validp)
+  (verify-guards types-eq-trans-validp)
   (verify-guards type-eq-array-validp)
   (verify-guards type-eq-fun-validp)
   (verify-guards type-eq-forall-validp)
   (verify-guards type-eq-pi-validp)
   (verify-guards type-eq-sigma-validp)
+  (verify-guards types-eq-cong-cons-validp)
   (verify-guards type-eq-array-var-validp)
   (verify-guards type-eq-bracket-validp)
   (verify-guards type-eq-fun0-validp)
@@ -445,7 +475,7 @@
   (verify-guards type-eq-sigma2-validp)
   (verify-guards type-eq-sigma3m-validp)
 
-  ;; proof validity function
+  ;; proof validity functions
   ;; (the premises of forall, pi, and sigma apply the predicate to renamings,
   ;; whose guards follow from the preceding rule validity conjuncts
   ;; only if the rule validity functions are enabled):
@@ -453,44 +483,23 @@
   (verify-guards type-eq-proof-validp
     :hints
     (("Goal" :in-theory (enable* type-equivalence-definition-validp-defs))))
+  (verify-guards types-eq-proof-validp)
 
-  ;; minimality predicate:
+  ;; minimality predicates:
 
   (verify-guards type-eq-proof-minimalp)
+  (verify-guards types-eq-proof-minimalp)
 
-  ;; equivalence predicate:
+  ;; equivalence predicates:
 
-  (verify-guards type-eq))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-eq-proof-list-validp ((proofs type-eq-proof-listp)
-                                   types1
-                                   types2)
-  :guard (and (equal (len types1) (len proofs))
-              (equal (len types2) (len proofs)))
-  :returns (yes/no booleanp)
-  :short "Check if a list of proof trees for type equivalence
-          proves the pairwise equivalence of two lists of types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This lifts @(tsee type-eq-proof-validp) to lists:
-     each proof tree must be valid for
-     the corresponding types in the two lists.
-     The three lists must have the same length,
-     but this is a structural property,
-     which we therefore express as a guard
-     rather than as part of the validity check."))
-  (or (endp proofs)
-      (and (type-eq-proof-validp (car proofs) (car types1) (car types2))
-           (type-eq-proof-list-validp (cdr proofs) (cdr types1) (cdr types2))))
-  :guard-hints (("Goal" :in-theory (enable len))))
+  (verify-guards type-eq)
+  (verify-guards types-eq))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection type-equivalence-holds-only-on-types
-  :short "The equivalence of types holds only on types."
+  :short "The equivalence of types and lists of types
+          holds only on types and lists of types."
 
   (defruled typep-when-type-eq-proof-validp
     (implies (type-eq-proof-validp proof concl.type1 concl.type2)
@@ -501,11 +510,47 @@
              :in-theory (enable* type-equivalence-definition-validp-defs
                                  (:induction type-eq-proof-validp)))))
 
+  (defruled type-listp-when-types-eq-proof-validp
+    (implies (types-eq-proof-validp proof concl.types1 concl.types2)
+             (and (type-listp concl.types1)
+                  (type-listp concl.types2)))
+    :hints (("Goal"
+             :induct (types-eq-proof-validp proof concl.types1 concl.types2)
+             :in-theory (enable* type-equivalence-definition-validp-defs
+                                 (:induction types-eq-proof-validp)))))
+
   (defruled typep-when-type-eq
     (implies (type-eq type1 type2)
              (and (typep type1)
                   (typep type2)))
-    :enable (type-eq typep-when-type-eq-proof-validp)))
+    :enable (type-eq typep-when-type-eq-proof-validp))
+
+  (defruled type-listp-when-types-eq
+    (implies (types-eq types1 types2)
+             (and (type-listp types1)
+                  (type-listp types2)))
+    :enable (types-eq type-listp-when-types-eq-proof-validp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection type-list-equivalence-same-length
+  :short "The equivalence of lists of types
+          holds only on lists of the same length."
+
+  (defruled same-len-when-types-eq-proof-validp
+    (implies (types-eq-proof-validp proof concl.types1 concl.types2)
+             (equal (len concl.types1)
+                    (len concl.types2)))
+    :hints (("Goal"
+             :induct (types-eq-proof-validp proof concl.types1 concl.types2)
+             :in-theory (enable* type-equivalence-definition-validp-defs
+                                 (:induction types-eq-proof-validp)))))
+
+  (defruled same-len-when-types-eq
+    (implies (types-eq types1 types2)
+             (equal (len types1)
+                    (len types2)))
+    :enable (types-eq same-len-when-types-eq-proof-validp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -516,7 +561,7 @@
    (xdoc::p
     "These are analogous to @(see dim-validity-stronger-rules)."))
 
-  ;; equivalence:
+  ;; equivalence of types:
 
   (defruled type-eq-symm!
     (implies (type-eq type1 type2)
@@ -530,6 +575,21 @@
              (type-eq type1 type3))
     :use type-eq-trans
     :enable typep-when-type-eq)
+
+  ;; equivalence of lists of types:
+
+  (defruled types-eq-symm!
+    (implies (types-eq types1 types2)
+             (types-eq types2 types1))
+    :use types-eq-symm
+    :enable type-listp-when-types-eq)
+
+  (defruled types-eq-trans!
+    (implies (and (types-eq types1 types2)
+                  (types-eq types2 types3))
+             (types-eq types1 types3))
+    :use types-eq-trans
+    :enable type-listp-when-types-eq)
 
   ;; array type congruence:
 
@@ -665,6 +725,15 @@
     :use (:instance type-eq-sigma
                     (type1 (type-fix type1))
                     (type2 (type-fix type2))))
+
+  ;; congruence of lists of types:
+
+  (defruled types-eq-cong-cons!
+    (implies (and (type-eq type1 type2)
+                  (types-eq types1 types2))
+             (types-eq (cons type1 types1) (cons type2 types2)))
+    :use types-eq-cong-cons
+    :enable (typep-when-type-eq type-listp-when-types-eq))
 
   ;; normalization of array type variables:
 
