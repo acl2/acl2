@@ -568,107 +568,304 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection type-eq-cong-funn-out
+  :short "Congruence of type equivalence with respect to
+          the output types of n-ary function types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This derived rule rewrites the output type of an n-ary function type
+     with any number of input types, which are left unchanged.
+     The proof tree is constructed by recursion on the input types:
+     it is a chain of instances of @('cong-funn2m')
+     ending with an instance of @('cong-funn1'),
+     each with a reflexivity proof tree for the unchanged input type;
+     it is just an instance of @('cong-funn-nil')
+     if there are no input types."))
+
+  (define type-eq-proof-cong-funn-out (types-in
+                                       type-out1
+                                       type-out2
+                                       (premise1-proof type-eq-proofp))
+    :returns (proof type-eq-proofp)
+    :parents nil
+    (cond ((not (consp types-in))
+           (make-type-eq-proof-cong-funn-nil :type-out1 type-out1
+                                             :type-out2 type-out2
+                                             :premise1-proof premise1-proof))
+          ((not (consp (cdr types-in)))
+           (make-type-eq-proof-cong-funn1
+            :type-in1 (car types-in)
+            :type-in2 (car types-in)
+            :type-out1 type-out1
+            :type-out2 type-out2
+            :premise1-proof (make-type-eq-proof-refl :type (car types-in))
+            :premise2-proof premise1-proof))
+          (t (make-type-eq-proof-cong-funn2m
+              :type-in1 (car types-in)
+              :type-in2 (car types-in)
+              :types-in1 (cdr types-in)
+              :types-in2 (cdr types-in)
+              :type-out1 type-out1
+              :type-out2 type-out2
+              :premise1-proof (make-type-eq-proof-refl :type (car types-in))
+              :premise2-proof (type-eq-proof-cong-funn-out (cdr types-in)
+                                                           type-out1
+                                                           type-out2
+                                                           premise1-proof))))
+    :measure (len types-in)
+    :verify-guards :after-returns
+
+    ///
+
+    (defret type-eq-proof-validp-of-type-eq-proof-cong-funn-out
+      (implies (and (type-listp types-in)
+                    (type-eq-proof-validp premise1-proof type-out1 type-out2))
+               (type-eq-proof-validp proof
+                                     (type-funn types-in type-out1)
+                                     (type-funn types-in type-out2)))
+      :hints
+      (("Goal"
+        :induct t
+        :in-theory (enable* type-equivalence-definition-validp-defs
+                            typep-when-type-eq-proof-validp)))))
+
+  (defruled type-eq-cong-funn-out
+    (implies (and (type-listp types-in)
+                  (type-eq type-out1 type-out2))
+             (type-eq (type-funn types-in type-out1)
+                      (type-funn types-in type-out2)))
+    :use ((:instance type-eq (type1 type-out1) (type2 type-out2))
+          (:instance type-eq-when-proof-validp
+                     (proof (type-eq-proof-cong-funn-out
+                             types-in
+                             type-out1
+                             type-out2
+                             (type-eq-proof type-out1 type-out2)))
+                     (concl.type1 (type-funn types-in type-out1))
+                     (concl.type2 (type-funn types-in type-out2)))))
+
+  (defmacro make-type-eq-proof-cong-funn-out (&key types-in
+                                                   type-out1
+                                                   type-out2
+                                                   premise1-proof)
+    `(type-eq-proof-cong-funn-out ,types-in
+                                  ,type-out1 ,type-out2
+                                  ,premise1-proof)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection type-eq-cong-funn
   :short "Congruence of type equivalence with respect to
-          all the components of n-ary function types,
-          at the level of proof trees."
+          all the components of n-ary function types."
   :long
   (xdoc::topstring
    (xdoc::p
     "The derived rules
      @(see type-eq-cong-funn-nil),
-     @(see type-eq-cong-funn1), and
-     @(see type-eq-cong-funn2m)
+     @(see type-eq-cong-funn1),
+     @(see type-eq-cong-funn2m), and
+     @(see type-eq-cong-funn-out)
      rewrite the components of an n-ary function type one at a time.
-     Here we put them together, at the level of proof trees:
-     given proof trees for the pairwise equivalence of the input types
-     and a proof tree for the equivalence of the output types,
-     we construct a proof tree for the equivalence of
-     the n-ary function types,
-     by chaining instances of @('cong-funn2m') along the input types,
-     ending with an instance of @('cong-funn1')
-     (or with an instance of @('cong-funn-nil') if there are no input types).
-     The lists of proof trees and their validity are formalized by
-     @(tsee type-eq-proof-list) and @(tsee type-eq-proof-list-validp).")
+     Here we put them together into a congruence rule
+     whose premises are the equivalence of the lists of input types
+     and the equivalence of the output types.")
    (xdoc::p
-    "Since this is at the level of proof trees only,
-     there is no corresponding theorem about the predicate:
-     there is no predicate for the pairwise equivalence of lists of types."))
+    "The proof tree is constructed by recursion on
+     the proof tree for the equivalence of the lists of input types:
+     an instance of @('refl') is turned into
+     an instance of @('cong-funn-out');
+     instances of @('symm') and @('trans') are turned into
+     instances of @('symm') and @('trans') on the n-ary function types
+     (in the case of @('trans'),
+     the first of the two chained proof trees
+     leaves the output type unchanged, via reflexivity);
+     and an instance of @('cong-cons') is turned into
+     an instance of @('cong-funn2m')
+     with the recursively constructed proof tree,
+     or into an instance of @('cong-funn1')
+     if the rests of the lists of input types are empty.")
+   (xdoc::p
+    "Besides checking the type premises of the rule
+     before building the types for the @('symm') and @('trans') instances,
+     as explained in @(see type-equivalence-derived-rules),
+     the constructor also checks that the middle list of types
+     found in an instance of @('trans') is a list of types,
+     because it is used to build a type too."))
+
+  ;; When the constructor encounters an instance of cong-cons,
+  ;; it examines only the rest of the first list of input types,
+  ;; to decide whether to use cong-funn2m or cong-funn1.
+  ;; For the validity proof,
+  ;; the rest of the second list must be shown to have the same emptiness,
+  ;; which follows from the fact that
+  ;; the equivalence of lists of types holds only on lists of the same length.
+
+  (defruledl consp-when-types-eq-proof-validp
+    (implies (types-eq-proof-validp proof types1 types2)
+             (equal (consp types2)
+                    (consp types1)))
+    :use (:instance same-len-when-types-eq-proof-validp
+                    (concl.types1 types1)
+                    (concl.types2 types2))
+    :expand ((len types1)
+             (len types2)))
 
   (define type-eq-proof-cong-funn (types-in1
                                    types-in2
-                                   (in-proofs type-eq-proof-listp)
                                    type-out1
                                    type-out2
-                                   (out-proof type-eq-proofp))
+                                   (premise1-proof types-eq-proofp)
+                                   (premise2-proof type-eq-proofp))
     :returns (proof type-eq-proofp)
     :parents nil
-    (cond ((or (not (consp types-in1))
-               (not (consp types-in2))
-               (not (consp in-proofs)))
-           (make-type-eq-proof-cong-funn-nil :type-out1 type-out1
-                                             :type-out2 type-out2
-                                             :premise1-proof out-proof))
-          ((or (not (consp (cdr types-in1)))
-               (not (consp (cdr types-in2)))
-               (not (consp (cdr in-proofs))))
-           (make-type-eq-proof-cong-funn1 :type-in1 (car types-in1)
-                                          :type-in2 (car types-in2)
-                                          :type-out1 type-out1
-                                          :type-out2 type-out2
-                                          :premise1-proof (car in-proofs)
-                                          :premise2-proof out-proof))
-          (t (make-type-eq-proof-cong-funn2m
-              :type-in1 (car types-in1)
-              :type-in2 (car types-in2)
-              :types-in1 (cdr types-in1)
-              :types-in2 (cdr types-in2)
-              :type-out1 type-out1
-              :type-out2 type-out2
-              :premise1-proof (car in-proofs)
-              :premise2-proof (type-eq-proof-cong-funn (cdr types-in1)
-                                                       (cdr types-in2)
-                                                       (cdr in-proofs)
-                                                       type-out1
-                                                       type-out2
-                                                       out-proof))))
-    :measure (len types-in1)
+    (b* (((unless (and (type-listp types-in1)
+                       (type-listp types-in2)
+                       (typep type-out1)
+                       (typep type-out2)))
+          (type-eq-proof-refl nil)))
+      (types-eq-proof-case
+       premise1-proof
+       :refl
+       (make-type-eq-proof-cong-funn-out :types-in types-in1
+                                         :type-out1 type-out1
+                                         :type-out2 type-out2
+                                         :premise1-proof premise2-proof)
+       :symm
+       (make-type-eq-proof-symm
+        :type1 (type-funn types-in2 type-out2)
+        :type2 (type-funn types-in1 type-out1)
+        :premise1-proof
+        (type-eq-proof-cong-funn types-in2
+                                 types-in1
+                                 type-out2
+                                 type-out1
+                                 premise1-proof.premise1-proof
+                                 (make-type-eq-proof-symm
+                                  :type1 type-out1
+                                  :type2 type-out2
+                                  :premise1-proof premise2-proof)))
+       :trans
+       (b* (((unless (type-listp premise1-proof.types2))
+             (type-eq-proof-refl nil))
+            (types-mid premise1-proof.types2))
+         (make-type-eq-proof-trans
+          :type1 (type-funn types-in1 type-out1)
+          :type2 (type-funn types-mid type-out1)
+          :type3 (type-funn types-in2 type-out2)
+          :premise1-proof
+          (type-eq-proof-cong-funn types-in1
+                                   types-mid
+                                   type-out1
+                                   type-out1
+                                   premise1-proof.premise1-proof
+                                   (make-type-eq-proof-refl :type type-out1))
+          :premise2-proof
+          (type-eq-proof-cong-funn types-mid
+                                   types-in2
+                                   type-out1
+                                   type-out2
+                                   premise1-proof.premise2-proof
+                                   premise2-proof)))
+       :cong-cons
+       (if (consp premise1-proof.types1)
+           (make-type-eq-proof-cong-funn2m
+            :type-in1 premise1-proof.type1
+            :type-in2 premise1-proof.type2
+            :types-in1 premise1-proof.types1
+            :types-in2 premise1-proof.types2
+            :type-out1 type-out1
+            :type-out2 type-out2
+            :premise1-proof premise1-proof.premise1-proof
+            :premise2-proof
+            (type-eq-proof-cong-funn premise1-proof.types1
+                                     premise1-proof.types2
+                                     type-out1
+                                     type-out2
+                                     premise1-proof.premise2-proof
+                                     premise2-proof))
+         (make-type-eq-proof-cong-funn1
+          :type-in1 premise1-proof.type1
+          :type-in2 premise1-proof.type2
+          :type-out1 type-out1
+          :type-out2 type-out2
+          :premise1-proof premise1-proof.premise1-proof
+          :premise2-proof premise2-proof))))
+    :measure (types-eq-proof-count premise1-proof)
     :verify-guards :after-returns
 
     ///
 
-    ;; When the constructor for one input type is used,
-    ;; one of the three lists is known to have exactly one element,
-    ;; and the other two must be shown to have exactly one element too,
-    ;; via the hypotheses on the lengths.
-    ;; Expanding the lengths of the two lists of types and of their tails
-    ;; provides the needed case splits on whether those lists are empty.
+    ;; The validity of the premise proof tree for the lists of input types
+    ;; is expanded via a hint,
+    ;; because the rewriter does not open it on a variable.
+    ;; The validity of the constructed instances of refl, symm, and trans
+    ;; is also expanded via hints,
+    ;; while the definitions of the proof validity functions are disabled,
+    ;; because otherwise the rewriter opens the one for types
+    ;; on the variable for the premise proof tree for the output types,
+    ;; without bound.
 
     (defret type-eq-proof-validp-of-type-eq-proof-cong-funn
-      (implies (and (type-listp types-in1)
-                    (type-listp types-in2)
-                    (equal (len types-in1) (len in-proofs))
-                    (equal (len types-in2) (len in-proofs))
-                    (type-eq-proof-list-validp in-proofs types-in1 types-in2)
-                    (type-eq-proof-validp out-proof type-out1 type-out2))
+      (implies (and (types-eq-proof-validp premise1-proof types-in1 types-in2)
+                    (type-eq-proof-validp premise2-proof type-out1 type-out2))
                (type-eq-proof-validp proof
                                      (type-funn types-in1 type-out1)
                                      (type-funn types-in2 type-out2)))
-      :hints (("Goal"
-               :induct t
-               :expand ((len types-in1)
-                        (len types-in2)
-                        (len (cdr types-in1))
-                        (len (cdr types-in2)))
-               :in-theory (enable type-eq-proof-list-validp
-                                  typep-when-type-eq-proof-validp
-                                  len)))))
+      :hints
+      (("Goal"
+        :induct (type-eq-proof-cong-funn types-in1
+                                         types-in2
+                                         type-out1
+                                         type-out2
+                                         premise1-proof
+                                         premise2-proof)
+        :expand ((types-eq-proof-validp premise1-proof types-in1 types-in2)
+                 (:free (type concl.type1 concl.type2)
+                        (type-eq-proof-validp (type-eq-proof-refl type)
+                                              concl.type1
+                                              concl.type2))
+                 (:free (type1 type2 proof concl.type1 concl.type2)
+                        (type-eq-proof-validp
+                         (type-eq-proof-symm type1 type2 proof)
+                         concl.type1
+                         concl.type2))
+                 (:free (type1 type2 type3 proof1 proof2
+                         concl.type1 concl.type2)
+                        (type-eq-proof-validp
+                         (type-eq-proof-trans type1 type2 type3 proof1 proof2)
+                         concl.type1
+                         concl.type2)))
+        :in-theory (acl2::e/d* (type-equivalence-definition-validp-defs
+                                typep-when-type-eq-proof-validp
+                                consp-when-types-eq-proof-validp)
+                               (type-eq-proof-validp
+                                types-eq-proof-validp))))))
+
+  (defruled type-eq-cong-funn
+    (implies (and (types-eq types-in1 types-in2)
+                  (type-eq type-out1 type-out2))
+             (type-eq (type-funn types-in1 type-out1)
+                      (type-funn types-in2 type-out2)))
+    :use ((:instance types-eq (types1 types-in1) (types2 types-in2))
+          (:instance type-eq (type1 type-out1) (type2 type-out2))
+          (:instance type-eq-when-proof-validp
+                     (proof (type-eq-proof-cong-funn
+                             types-in1
+                             types-in2
+                             type-out1
+                             type-out2
+                             (types-eq-proof types-in1 types-in2)
+                             (type-eq-proof type-out1 type-out2)))
+                     (concl.type1 (type-funn types-in1 type-out1))
+                     (concl.type2 (type-funn types-in2 type-out2)))))
 
   (defmacro make-type-eq-proof-cong-funn (&key types-in1
                                                types-in2
-                                               in-proofs
                                                type-out1
                                                type-out2
-                                               out-proof)
-    `(type-eq-proof-cong-funn ,types-in1 ,types-in2 ,in-proofs
-                              ,type-out1 ,type-out2 ,out-proof)))
+                                               premise1-proof
+                                               premise2-proof)
+    `(type-eq-proof-cong-funn ,types-in1 ,types-in2
+                              ,type-out1 ,type-out2
+                              ,premise1-proof ,premise2-proof)))
