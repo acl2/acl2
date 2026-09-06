@@ -2020,101 +2020,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define unsugar-in-type ((type typep))
-  :returns (mv (new-type typep)
-               (proof type-eq-proofp))
-  :short "Turn a type into an equivalent one without
-          array type variables,
-          bracket types,
-          and n-ary function, universal, product, and sum types
-          outside the bodies of binder types,
-          and construct a proof tree demonstrating the equivalence."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This composes the six transformations, in the order:
-     eliminate array type variables,
-     eliminate bracket types,
-     eliminate n-ary function types,
-     eliminate n-ary universal types,
-     eliminate n-ary product types,
-     eliminate n-ary sum types.
-     The proof trees of the six transformations
-     are chained via the rule @('trans').")
-   (xdoc::p
-    "Each transformation establishes its own status,
-     and preserves the statuses established by the preceding ones;
-     thus, the resulting type has all six statuses.
-     Any order of the six transformations works,
-     because each transformation preserves
-     the statuses established by the other five."))
-  (b* ((type (type-fix type))
-       ((mv type1 proof1) (decompose-array-vars-in-type type))
-       ((mv type2 proof2) (unbracket-in-type type1))
-       ((mv type3 proof3) (unarize-funs-in-type type2))
-       ((mv type4 proof4) (unarize-foralls-in-type type3))
-       ((mv type5 proof5) (unarize-pis-in-type type4))
-       ((mv type6 proof6) (unarize-sigmas-in-type type5)))
-    (mv type6
-        (make-type-eq-proof-trans
-         :type1 type
-         :type2 type1
-         :type3 type6
-         :premise1-proof proof1
-         :premise2-proof
-         (make-type-eq-proof-trans
-          :type1 type1
-          :type2 type2
-          :type3 type6
-          :premise1-proof proof2
-          :premise2-proof
-          (make-type-eq-proof-trans
-           :type1 type2
-           :type2 type3
-           :type3 type6
-           :premise1-proof proof3
-           :premise2-proof
-           (make-type-eq-proof-trans
-            :type1 type3
-            :type2 type4
-            :type3 type6
-            :premise1-proof proof4
-            :premise2-proof
-            (make-type-eq-proof-trans
-             :type1 type4
-             :type2 type5
-             :type3 type6
-             :premise1-proof proof5
-             :premise2-proof proof6)))))))
-
-  ///
-
-  (defret type-eq-proof-validp-of-unsugar-in-type
-    (implies (typep type)
-             (type-eq-proof-validp proof type new-type))
-    :hints (("Goal" :in-theory (enable type-eq-proof-validp
-                                       type-eq-trans-validp))))
-
-  (defret type-noarrayvarp-of-unsugar-in-type
-    (type-noarrayvarp new-type))
-
-  (defret type-nobracketp-of-unsugar-in-type
-    (type-nobracketp new-type))
-
-  (defret type-nofunnp-of-unsugar-in-type
-    (type-nofunnp new-type))
-
-  (defret type-noforallnp-of-unsugar-in-type
-    (type-noforallnp new-type))
-
-  (defret type-nopinp-of-unsugar-in-type
-    (type-nopinp new-type))
-
-  (defret type-nosigmanp-of-unsugar-in-type
-    (type-nosigmanp new-type)))
-
-;;;;;;;;;;;;;;;;;;;;
-
 (defruled type-eq-to-noarrayvar-nobracket-nonaries-p-when-typep
   :short "Every type is equivalent to one without
           array type variables,
@@ -2124,13 +2029,63 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "This is a corollary of composing the six transformations,
+     in the order:
+     decompose array type variables,
+     eliminate bracket types,
+     unarize n-ary function types,
+     unarize n-ary universal types,
+     unarize n-ary product types,
+     unarize n-ary sum types.
+     Each transformation establishes its own status,
+     and preserves the statuses established by the preceding ones.")
+   (xdoc::p
+    "Unlike the analogous corollary for dimensions
+     (see @(tsee dim-eq-to-binadd-binmul-unisub-p-when-dimp-and-nonullsubp)),
+     and like the analogous corollary for shapes
+     (see @(see ispace-equivalence-normalizations)),
+     any order of the six transformations works,
+     because each transformation preserves
+     the statuses established by the other five.")
+   (xdoc::p
     "This validates the intention of all the normalization rules together,
      described in @(see type-equivalence-definition)."))
   (implies (typep type)
            (type-eq-to-noarrayvar-nobracket-nonaries-p type))
-  :use ((:instance type-eq-to-noarrayvar-nobracket-nonaries-p-suff
-                   (type1 (mv-nth 0 (unsugar-in-type type))))
-        (:instance type-eq-when-proof-validp
-                   (proof (mv-nth 1 (unsugar-in-type type)))
-                   (concl.type1 type)
-                   (concl.type2 (mv-nth 0 (unsugar-in-type type))))))
+  :prep-lemmas
+  ((defrule lemma
+     (implies (and (typep type)
+                   (equal type1 (mv-nth 0 (decompose-array-vars-in-type type)))
+                   (equal type2 (mv-nth 0 (unbracket-in-type type1)))
+                   (equal type3 (mv-nth 0 (unarize-funs-in-type type2)))
+                   (equal type4 (mv-nth 0 (unarize-foralls-in-type type3)))
+                   (equal type5 (mv-nth 0 (unarize-pis-in-type type4)))
+                   (equal type6 (mv-nth 0 (unarize-sigmas-in-type type5))))
+              (type-eq-to-noarrayvar-nobracket-nonaries-p type))
+     :use ((:instance type-eq-to-noarrayvar-nobracket-nonaries-p-suff
+                      (type1 type6))
+           (:instance type-eq-when-proof-validp
+                      (proof (mv-nth 1 (decompose-array-vars-in-type type)))
+                      (concl.type1 type)
+                      (concl.type2 type1))
+           (:instance type-eq-when-proof-validp
+                      (proof (mv-nth 1 (unbracket-in-type type1)))
+                      (concl.type1 type1)
+                      (concl.type2 type2))
+           (:instance type-eq-when-proof-validp
+                      (proof (mv-nth 1 (unarize-funs-in-type type2)))
+                      (concl.type1 type2)
+                      (concl.type2 type3))
+           (:instance type-eq-when-proof-validp
+                      (proof (mv-nth 1 (unarize-foralls-in-type type3)))
+                      (concl.type1 type3)
+                      (concl.type2 type4))
+           (:instance type-eq-when-proof-validp
+                      (proof (mv-nth 1 (unarize-pis-in-type type4)))
+                      (concl.type1 type4)
+                      (concl.type2 type5))
+           (:instance type-eq-when-proof-validp
+                      (proof (mv-nth 1 (unarize-sigmas-in-type type5)))
+                      (concl.type1 type5)
+                      (concl.type2 type6)))
+     :enable type-eq-trans-swapped)))
