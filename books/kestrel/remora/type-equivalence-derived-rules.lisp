@@ -693,24 +693,6 @@
      found in an instance of @('trans') is a list of types,
      because it is used to build a type too."))
 
-  ;; When the constructor encounters an instance of cong-cons,
-  ;; it examines only the rest of the first list of input types,
-  ;; to decide whether to use cong-funn2m or cong-funn1.
-  ;; For the validity proof,
-  ;; the rest of the second list must be shown to have the same emptiness,
-  ;; which follows from the fact that
-  ;; the equivalence of lists of types holds only on lists of the same length.
-
-  (defruledl consp-when-types-eq-proof-validp
-    (implies (types-eq-proof-validp proof types1 types2)
-             (equal (consp types2)
-                    (consp types1)))
-    :use (:instance same-len-when-types-eq-proof-validp
-                    (concl.types1 types1)
-                    (concl.types2 types2))
-    :expand ((len types1)
-             (len types2)))
-
   (define type-eq-proof-cong-funn (types-in1
                                    types-in2
                                    type-out1
@@ -805,6 +787,11 @@
     ;; because otherwise the rewriter opens the one for types
     ;; on the variable for the premise proof tree for the output types,
     ;; without bound.
+    ;; When the constructor encounters an instance of cong-cons,
+    ;; it examines only the rest of the first list of input types,
+    ;; to decide whether to use cong-funn2m or cong-funn1;
+    ;; the rule consp-when-types-eq-proof-validp
+    ;; provides the same emptiness of the rest of the second list.
 
     (defret type-eq-proof-validp-of-type-eq-proof-cong-funn
       (implies (and (types-eq-proof-validp premise1-proof types-in1 types-in2)

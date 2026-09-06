@@ -550,7 +550,15 @@
     (implies (types-eq types1 types2)
              (equal (len types1)
                     (len types2)))
-    :enable (types-eq same-len-when-types-eq-proof-validp)))
+    :enable (types-eq same-len-when-types-eq-proof-validp))
+
+  (defruled consp-when-types-eq-proof-validp
+    (implies (types-eq-proof-validp proof concl.types1 concl.types2)
+             (equal (consp concl.types2)
+                    (consp concl.types1)))
+    :use same-len-when-types-eq-proof-validp
+    :expand ((len concl.types1)
+             (len concl.types2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
