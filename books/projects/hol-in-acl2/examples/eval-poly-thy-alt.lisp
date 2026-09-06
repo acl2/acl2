@@ -69,7 +69,7 @@
                            (c (hp-hash-car (hp-list-car x)))
                            (e (hp-hash-cdr (hp-list-car x)))
                            (r (hp-list-cdr x)))
-           :in-theory (disable hol{eval_poly}1))))
+           :in-theory (disable zf::hpp hol{eval_poly}1))))
 
 (DEFTHM HOL{SUC}-alt
   (IMPLIES (AND (ALIST-SUBSETP (EVAL-POLY$HTA) HTA)
@@ -167,7 +167,6 @@
                             (m m)
                             (n (zf::make-hp (acl2::1- (hp-value N)) :num)))))))
 
-#!HOL
 (DEFTHM HOL{SUM_POLYS}0-alt
 
 ; Modify HOL{SUM_POLYS}1 by introducing variable x = [] to enable more
@@ -189,7 +188,6 @@
            :in-theory (disable HOL{SUM_POLYS}1)
            :use HOL{SUM_POLYS}0)))
 
-#!HOL
 (DEFTHM HOL{SUM_POLYS}1-alt
 
 ; Modify HOL{SUM_POLYS}1 by introducing variables x = (v2::v3) and y = [] to
@@ -207,12 +205,11 @@
                         y)
                   x))
   :hints (("Goal"
-           :in-theory (disable HOL{SUM_POLYS}2)
+           :in-theory (disable HOL{SUM_POLYS}2 zf::hpp)
            :cases ((hp-nil-p x (typ (:hash :num :num))))
            :use ((:instance HOL{SUM_POLYS}1
                             (v2 (hp-list-car x))
                             (v3 (hp-list-cdr x)))))))
-#!HOL
 (DEFTHM HOL{SUM_POLYS}2-alt
 
 ; Modify HOL{SUM_POLYS}2 by introducing variables x = ((c1,e1)::r1) and y =
@@ -267,7 +264,7 @@
                                                         (:LIST (:HASH :NUM :NUM)))))
                                R1 (HP-CONS (HP-COMMA C2 E2) R2))))))))
   :hints (("Goal"
-           :in-theory (disable HOL{SUM_POLYS}2)
+           :in-theory (disable HOL{SUM_POLYS}2 zf::hpp)
            :use (:instance HOL{SUM_POLYS}2
                            (c1 (hp-hash-car (hp-list-car x)))
                            (e1 (hp-hash-cdr (hp-list-car x)))
@@ -276,7 +273,6 @@
                            (e2 (hp-hash-cdr (hp-list-car y)))
                            (r2 (hp-list-cdr y))))))
 
-#!hol
 (DEFTHM HOL{COND}
 
 ; This is a special hand-crafted lemma that combines HOL{COND}0 and HOL{COND}1,
