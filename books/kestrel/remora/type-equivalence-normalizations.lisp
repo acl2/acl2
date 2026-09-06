@@ -256,7 +256,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines unsugar-array-vars-in-types
+(defines decompose-array-vars-in-types
   :short "Turn types into equivalent ones
           without array type variables outside the bodies of binder types,
           and construct proof trees demonstrating the equivalence."
@@ -281,10 +281,10 @@
      and the absence of n-ary universal, product, and sum types,
      which these functions do not affect."))
 
-  (define unsugar-array-vars-in-type ((type typep))
+  (define decompose-array-vars-in-type ((type typep))
     :returns (mv (new-type typep)
                  (proof type-eq-proofp))
-    :parents (type-equivalence-normalizations unsugar-array-vars-in-types)
+    :parents (type-equivalence-normalizations decompose-array-vars-in-types)
     :short "Turn a type into an equivalent one
             without array type variables outside the bodies of binder types,
             and construct a proof tree demonstrating the equivalence."
@@ -303,7 +303,7 @@
      :base (mv (type-base type.type)
                (type-eq-proof-refl (type-base type.type)))
      :array (b* (((mv new-elem proof)
-                  (unsugar-array-vars-in-type type.elem)))
+                  (decompose-array-vars-in-type type.elem)))
               (mv (type-array new-elem type.ispace)
                   (make-type-eq-proof-array
                    :type1 type.elem
@@ -312,7 +312,7 @@
                    :ispace2 type.ispace
                    :premise1-proof proof)))
      :bracket (b* (((mv new-elem proof)
-                    (unsugar-array-vars-in-type type.elem)))
+                    (decompose-array-vars-in-type type.elem)))
                 (mv (type-bracket new-elem type.ispaces)
                     (make-type-eq-proof-cong-bracket
                      :type1 type.elem
@@ -320,9 +320,9 @@
                      :ispaces type.ispaces
                      :premise1-proof proof)))
      :fun (b* (((mv new-in proof-in)
-                (unsugar-array-vars-in-type type.in))
+                (decompose-array-vars-in-type type.in))
                ((mv new-out proof-out)
-                (unsugar-array-vars-in-type type.out)))
+                (decompose-array-vars-in-type type.out)))
             (mv (type-fun new-in new-out)
                 (make-type-eq-proof-fun
                  :type-in1 type.in
@@ -332,9 +332,9 @@
                  :premise1-proof proof-in
                  :premise2-proof proof-out)))
      :funn (b* (((mv new-ins proof-ins)
-                 (unsugar-array-vars-in-type-list type.in))
+                 (decompose-array-vars-in-type-list type.in))
                 ((mv new-out proof-out)
-                 (unsugar-array-vars-in-type type.out)))
+                 (decompose-array-vars-in-type type.out)))
              (mv (type-funn new-ins new-out)
                  (make-type-eq-proof-cong-funn
                   :types-in1 type.in
@@ -357,17 +357,17 @@
                  (type-eq-proof-refl (type-sigman type.params type.body))))
     :measure (type-count type))
 
-  (define unsugar-array-vars-in-type-list ((types type-listp))
+  (define decompose-array-vars-in-type-list ((types type-listp))
     :returns (mv (new-types type-listp)
                  (proof types-eq-proofp))
-    :parents (type-equivalence-normalizations unsugar-array-vars-in-types)
+    :parents (type-equivalence-normalizations decompose-array-vars-in-types)
     :short "Turn a list of types into an equivalent one
             without array type variables outside the bodies of binder types,
             and construct a proof tree demonstrating the equivalence."
     (b* (((when (endp types)) (mv nil (types-eq-proof-refl nil)))
-         ((mv new-type proof1) (unsugar-array-vars-in-type (car types)))
+         ((mv new-type proof1) (decompose-array-vars-in-type (car types)))
          ((mv new-types proof2)
-          (unsugar-array-vars-in-type-list (cdr types))))
+          (decompose-array-vars-in-type-list (cdr types))))
       (mv (cons new-type new-types)
           (make-types-eq-proof-cong-cons
            :type1 (type-fix (car types))
@@ -380,7 +380,7 @@
 
     ///
 
-    (defret len-of-unsugar-array-vars-in-type-list
+    (defret len-of-decompose-array-vars-in-type-list
       (equal (len new-types)
              (len types))
       :hints (("Goal"
@@ -391,17 +391,17 @@
 
   ///
 
-  (fty::deffixequiv-mutual unsugar-array-vars-in-types)
+  (fty::deffixequiv-mutual decompose-array-vars-in-types)
 
-  (defret-mutual type-eq-proof-validp-of-unsugar-array-vars-in-types
-    (defret type-eq-proof-validp-of-unsugar-array-vars-in-type
+  (defret-mutual type-eq-proof-validp-of-decompose-array-vars-in-types
+    (defret type-eq-proof-validp-of-decompose-array-vars-in-type
       (implies (typep type)
                (type-eq-proof-validp proof type new-type))
-      :fn unsugar-array-vars-in-type)
-    (defret types-eq-proof-validp-of-unsugar-array-vars-in-type-list
+      :fn decompose-array-vars-in-type)
+    (defret types-eq-proof-validp-of-decompose-array-vars-in-type-list
       (implies (type-listp types)
                (types-eq-proof-validp proof types new-types))
-      :fn unsugar-array-vars-in-type-list)
+      :fn decompose-array-vars-in-type-list)
     :hints (("Goal"
              :in-theory (enable type-eq-proof-validp
                                 types-eq-proof-validp
@@ -413,13 +413,13 @@
                                 types-eq-cong-cons-validp
                                 ispace-eq-refl))))
 
-  (defret-mutual type-noarrayvarp-of-unsugar-array-vars-in-types
-    (defret type-noarrayvarp-of-unsugar-array-vars-in-type
+  (defret-mutual type-noarrayvarp-of-decompose-array-vars-in-types
+    (defret type-noarrayvarp-of-decompose-array-vars-in-type
       (type-noarrayvarp new-type)
-      :fn unsugar-array-vars-in-type)
-    (defret type-list-noarrayvarp-of-unsugar-array-vars-in-type-list
+      :fn decompose-array-vars-in-type)
+    (defret type-list-noarrayvarp-of-decompose-array-vars-in-type-list
       (type-list-noarrayvarp new-types)
-      :fn unsugar-array-vars-in-type-list)
+      :fn decompose-array-vars-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-noarrayvarp-rules))
             '(:expand ((type-noarrayvarp type)
@@ -431,15 +431,15 @@
                        (:free (p b) (type-noarrayvarp (type-sigma p b)))
                        (:free (p b) (type-noarrayvarp (type-sigman p b)))))))
 
-  (defret-mutual type-nobracketp-of-unsugar-array-vars-in-types
-    (defret type-nobracketp-of-unsugar-array-vars-in-type
+  (defret-mutual type-nobracketp-of-decompose-array-vars-in-types
+    (defret type-nobracketp-of-decompose-array-vars-in-type
       (implies (type-nobracketp type)
                (type-nobracketp new-type))
-      :fn unsugar-array-vars-in-type)
-    (defret type-list-nobracketp-of-unsugar-array-vars-in-type-list
+      :fn decompose-array-vars-in-type)
+    (defret type-list-nobracketp-of-decompose-array-vars-in-type-list
       (implies (type-list-nobracketp types)
                (type-list-nobracketp new-types))
-      :fn unsugar-array-vars-in-type-list)
+      :fn decompose-array-vars-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-nobracketp-rules))
             '(:expand ((type-nobracketp type)
@@ -450,15 +450,15 @@
                        (:free (p b) (type-nobracketp (type-sigma p b)))
                        (:free (p b) (type-nobracketp (type-sigman p b)))))))
 
-  (defret-mutual type-nofunnp-of-unsugar-array-vars-in-types
-    (defret type-nofunnp-of-unsugar-array-vars-in-type
+  (defret-mutual type-nofunnp-of-decompose-array-vars-in-types
+    (defret type-nofunnp-of-decompose-array-vars-in-type
       (implies (type-nofunnp type)
                (type-nofunnp new-type))
-      :fn unsugar-array-vars-in-type)
-    (defret type-list-nofunnp-of-unsugar-array-vars-in-type-list
+      :fn decompose-array-vars-in-type)
+    (defret type-list-nofunnp-of-decompose-array-vars-in-type-list
       (implies (type-list-nofunnp types)
                (type-list-nofunnp new-types))
-      :fn unsugar-array-vars-in-type-list)
+      :fn decompose-array-vars-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-nofunnp-rules))
             '(:expand ((type-nofunnp type)
@@ -469,15 +469,15 @@
                        (:free (p b) (type-nofunnp (type-sigma p b)))
                        (:free (p b) (type-nofunnp (type-sigman p b)))))))
 
-  (defret-mutual type-noforallnp-of-unsugar-array-vars-in-types
-    (defret type-noforallnp-of-unsugar-array-vars-in-type
+  (defret-mutual type-noforallnp-of-decompose-array-vars-in-types
+    (defret type-noforallnp-of-decompose-array-vars-in-type
       (implies (type-noforallnp type)
                (type-noforallnp new-type))
-      :fn unsugar-array-vars-in-type)
-    (defret type-list-noforallnp-of-unsugar-array-vars-in-type-list
+      :fn decompose-array-vars-in-type)
+    (defret type-list-noforallnp-of-decompose-array-vars-in-type-list
       (implies (type-list-noforallnp types)
                (type-list-noforallnp new-types))
-      :fn unsugar-array-vars-in-type-list)
+      :fn decompose-array-vars-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-noforallnp-rules))
             '(:expand ((type-noforallnp type)
@@ -488,15 +488,15 @@
                        (:free (p b) (type-noforallnp (type-sigma p b)))
                        (:free (p b) (type-noforallnp (type-sigman p b)))))))
 
-  (defret-mutual type-nopinp-of-unsugar-array-vars-in-types
-    (defret type-nopinp-of-unsugar-array-vars-in-type
+  (defret-mutual type-nopinp-of-decompose-array-vars-in-types
+    (defret type-nopinp-of-decompose-array-vars-in-type
       (implies (type-nopinp type)
                (type-nopinp new-type))
-      :fn unsugar-array-vars-in-type)
-    (defret type-list-nopinp-of-unsugar-array-vars-in-type-list
+      :fn decompose-array-vars-in-type)
+    (defret type-list-nopinp-of-decompose-array-vars-in-type-list
       (implies (type-list-nopinp types)
                (type-list-nopinp new-types))
-      :fn unsugar-array-vars-in-type-list)
+      :fn decompose-array-vars-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-nopinp-rules))
             '(:expand ((type-nopinp type)
@@ -507,15 +507,15 @@
                        (:free (p b) (type-nopinp (type-sigma p b)))
                        (:free (p b) (type-nopinp (type-sigman p b)))))))
 
-  (defret-mutual type-nosigmanp-of-unsugar-array-vars-in-types
-    (defret type-nosigmanp-of-unsugar-array-vars-in-type
+  (defret-mutual type-nosigmanp-of-decompose-array-vars-in-types
+    (defret type-nosigmanp-of-decompose-array-vars-in-type
       (implies (type-nosigmanp type)
                (type-nosigmanp new-type))
-      :fn unsugar-array-vars-in-type)
-    (defret type-list-nosigmanp-of-unsugar-array-vars-in-type-list
+      :fn decompose-array-vars-in-type)
+    (defret type-list-nosigmanp-of-decompose-array-vars-in-type-list
       (implies (type-list-nosigmanp types)
                (type-list-nosigmanp new-types))
-      :fn unsugar-array-vars-in-type-list)
+      :fn decompose-array-vars-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-nosigmanp-rules))
             '(:expand ((type-nosigmanp type)
@@ -1911,11 +1911,12 @@
   (implies (typep type)
            (type-eq-to-noarrayvar-p type))
   :use ((:instance type-eq-to-noarrayvar-p-suff
-                   (type1 (mv-nth 0 (unsugar-array-vars-in-type type))))
+                   (type1 (mv-nth 0 (decompose-array-vars-in-type type))))
         (:instance type-eq-when-proof-validp
-                   (proof (mv-nth 1 (unsugar-array-vars-in-type type)))
+                   (proof (mv-nth 1 (decompose-array-vars-in-type type)))
                    (concl.type1 type)
-                   (concl.type2 (mv-nth 0 (unsugar-array-vars-in-type type))))))
+                   (concl.type2
+                    (mv-nth 0 (decompose-array-vars-in-type type))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2048,7 +2049,7 @@
      because each transformation preserves
      the statuses established by the other five."))
   (b* ((type (type-fix type))
-       ((mv type1 proof1) (unsugar-array-vars-in-type type))
+       ((mv type1 proof1) (decompose-array-vars-in-type type))
        ((mv type2 proof2) (unbracket-in-type type1))
        ((mv type3 proof3) (unarize-funs-in-type type2))
        ((mv type4 proof4) (unarize-foralls-in-type type3))
