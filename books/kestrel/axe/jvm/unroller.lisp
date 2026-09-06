@@ -252,9 +252,10 @@
       (mv (erp-nil) dag hits state)
     (b* ((this-step-increment (this-step-increment step-increment total-steps))
          (steps-for-this-iteration (min steps-left this-step-increment))
-         (old-dag dag)
          (limits `((step-state-with-pc-and-call-stack-height-becomes-step-axe . ,steps-for-this-iteration)
                    (run-until-return-from-stack-height-opener-fast-axe . ,steps-for-this-iteration)))
+         ;; Remember the old DAG, so we can see if anything changed:
+         (old-dag dag)
          ;; ((mv erp dag-or-quotep state)
          ;;  (simp-dag dag
          ;;            :assumptions assumptions
@@ -494,7 +495,7 @@
       (strip-cars class-alist)
     classes-to-assume-initialized))
 
-;; is the defined elsewhere too?
+;; is this defined elsewhere too?
 (defund steps-optionp (steps)
   (declare (xargs :guard t))
   (or (eq :auto steps)
