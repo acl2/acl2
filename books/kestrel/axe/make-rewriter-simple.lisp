@@ -7027,12 +7027,10 @@
                          )
                  state)))
 
-         ;; Macro helper function for ,def-simplified-name.  This does the
-         ;; translation (requires :program mode), but then calls the :logic mode core
-         ;; function to do most of the work.
+         ;; Macro helper function for ,def-simplified-name.
          ;; Returns (mv erp event state).
          ;; TODO: Perhaps add an option to take a rule-alist.
-         ;; TODO: Remove this wrapper
+         ;; TODO: Remove this wrapper.  Previously, this part required :program mode.
          (defund ,def-simplified-fn-name (defconst-name ; the name of the constant to create
                                           dag-or-term
                                           assumptions
