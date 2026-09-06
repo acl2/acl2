@@ -15,7 +15,7 @@
 ;(include-book "../jvm/gather-relevant-classes2")
 (include-book "kestrel/utilities/unify" :dir :system)
 (include-book "unroller")
-(include-book "../tactic-prover")
+(include-book "../tactic-prover") ; has skip-proofs
 (include-book "kestrel/bv/bvdiv-rules" :dir :system)
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 
