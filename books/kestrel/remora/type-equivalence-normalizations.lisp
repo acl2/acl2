@@ -528,7 +528,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines unsugar-brackets-in-types
+(defines unbracket-in-types
   :short "Turn types into equivalent ones
           without bracket types outside the bodies of binder types,
           and construct proof trees demonstrating the equivalence."
@@ -557,10 +557,10 @@
      and the absence of n-ary universal, product, and sum types,
      which these functions do not affect."))
 
-  (define unsugar-brackets-in-type ((type typep))
+  (define unbracket-in-type ((type typep))
     :returns (mv (new-type typep)
                  (proof type-eq-proofp))
-    :parents (type-equivalence-normalizations unsugar-brackets-in-types)
+    :parents (type-equivalence-normalizations unbracket-in-types)
     :short "Turn a type into an equivalent one
             without bracket types outside the bodies of binder types,
             and construct a proof tree demonstrating the equivalence."
@@ -571,7 +571,7 @@
      :base (mv (type-base type.type)
                (type-eq-proof-refl (type-base type.type)))
      :array (b* (((mv new-elem proof)
-                  (unsugar-brackets-in-type type.elem)))
+                  (unbracket-in-type type.elem)))
               (mv (type-array new-elem type.ispace)
                   (make-type-eq-proof-array
                    :type1 type.elem
@@ -581,7 +581,7 @@
                    :premise1-proof proof)))
      :bracket (b* ((ispace (ispace-shape (shape-splice type.ispaces)))
                    ((mv new-elem proof)
-                    (unsugar-brackets-in-type type.elem))
+                    (unbracket-in-type type.elem))
                    (mid-type (type-array type.elem ispace))
                    (new-type (type-array new-elem ispace)))
                 (mv new-type
@@ -600,9 +600,9 @@
                                       :ispace2 ispace
                                       :premise1-proof proof))))
      :fun (b* (((mv new-in proof-in)
-                (unsugar-brackets-in-type type.in))
+                (unbracket-in-type type.in))
                ((mv new-out proof-out)
-                (unsugar-brackets-in-type type.out)))
+                (unbracket-in-type type.out)))
             (mv (type-fun new-in new-out)
                 (make-type-eq-proof-fun
                  :type-in1 type.in
@@ -612,9 +612,9 @@
                  :premise1-proof proof-in
                  :premise2-proof proof-out)))
      :funn (b* (((mv new-ins proof-ins)
-                 (unsugar-brackets-in-type-list type.in))
+                 (unbracket-in-type-list type.in))
                 ((mv new-out proof-out)
-                 (unsugar-brackets-in-type type.out)))
+                 (unbracket-in-type type.out)))
              (mv (type-funn new-ins new-out)
                  (make-type-eq-proof-cong-funn
                   :types-in1 type.in
@@ -637,16 +637,16 @@
                  (type-eq-proof-refl (type-sigman type.params type.body))))
     :measure (type-count type))
 
-  (define unsugar-brackets-in-type-list ((types type-listp))
+  (define unbracket-in-type-list ((types type-listp))
     :returns (mv (new-types type-listp)
                  (proof types-eq-proofp))
-    :parents (type-equivalence-normalizations unsugar-brackets-in-types)
+    :parents (type-equivalence-normalizations unbracket-in-types)
     :short "Turn a list of types into an equivalent one
             without bracket types outside the bodies of binder types,
             and construct a proof tree demonstrating the equivalence."
     (b* (((when (endp types)) (mv nil (types-eq-proof-refl nil)))
-         ((mv new-type proof1) (unsugar-brackets-in-type (car types)))
-         ((mv new-types proof2) (unsugar-brackets-in-type-list (cdr types))))
+         ((mv new-type proof1) (unbracket-in-type (car types)))
+         ((mv new-types proof2) (unbracket-in-type-list (cdr types))))
       (mv (cons new-type new-types)
           (make-types-eq-proof-cong-cons
            :type1 (type-fix (car types))
@@ -659,7 +659,7 @@
 
     ///
 
-    (defret len-of-unsugar-brackets-in-type-list
+    (defret len-of-unbracket-in-type-list
       (equal (len new-types)
              (len types))
       :hints (("Goal"
@@ -670,17 +670,17 @@
 
   ///
 
-  (fty::deffixequiv-mutual unsugar-brackets-in-types)
+  (fty::deffixequiv-mutual unbracket-in-types)
 
-  (defret-mutual type-eq-proof-validp-of-unsugar-brackets-in-types
-    (defret type-eq-proof-validp-of-unsugar-brackets-in-type
+  (defret-mutual type-eq-proof-validp-of-unbracket-in-types
+    (defret type-eq-proof-validp-of-unbracket-in-type
       (implies (typep type)
                (type-eq-proof-validp proof type new-type))
-      :fn unsugar-brackets-in-type)
-    (defret types-eq-proof-validp-of-unsugar-brackets-in-type-list
+      :fn unbracket-in-type)
+    (defret types-eq-proof-validp-of-unbracket-in-type-list
       (implies (type-listp types)
                (types-eq-proof-validp proof types new-types))
-      :fn unsugar-brackets-in-type-list)
+      :fn unbracket-in-type-list)
     :hints (("Goal"
              :in-theory (enable type-eq-proof-validp
                                 types-eq-proof-validp
@@ -693,13 +693,13 @@
                                 types-eq-cong-cons-validp
                                 ispace-eq-refl))))
 
-  (defret-mutual type-nobracketp-of-unsugar-brackets-in-types
-    (defret type-nobracketp-of-unsugar-brackets-in-type
+  (defret-mutual type-nobracketp-of-unbracket-in-types
+    (defret type-nobracketp-of-unbracket-in-type
       (type-nobracketp new-type)
-      :fn unsugar-brackets-in-type)
-    (defret type-list-nobracketp-of-unsugar-brackets-in-type-list
+      :fn unbracket-in-type)
+    (defret type-list-nobracketp-of-unbracket-in-type-list
       (type-list-nobracketp new-types)
-      :fn unsugar-brackets-in-type-list)
+      :fn unbracket-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-nobracketp-rules))
             '(:expand ((type-nobracketp type)
@@ -710,15 +710,15 @@
                        (:free (p b) (type-nobracketp (type-sigma p b)))
                        (:free (p b) (type-nobracketp (type-sigman p b)))))))
 
-  (defret-mutual type-noarrayvarp-of-unsugar-brackets-in-types
-    (defret type-noarrayvarp-of-unsugar-brackets-in-type
+  (defret-mutual type-noarrayvarp-of-unbracket-in-types
+    (defret type-noarrayvarp-of-unbracket-in-type
       (implies (type-noarrayvarp type)
                (type-noarrayvarp new-type))
-      :fn unsugar-brackets-in-type)
-    (defret type-list-noarrayvarp-of-unsugar-brackets-in-type-list
+      :fn unbracket-in-type)
+    (defret type-list-noarrayvarp-of-unbracket-in-type-list
       (implies (type-list-noarrayvarp types)
                (type-list-noarrayvarp new-types))
-      :fn unsugar-brackets-in-type-list)
+      :fn unbracket-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-noarrayvarp-rules))
             '(:expand ((type-noarrayvarp type)
@@ -729,15 +729,15 @@
                        (:free (p b) (type-noarrayvarp (type-sigma p b)))
                        (:free (p b) (type-noarrayvarp (type-sigman p b)))))))
 
-  (defret-mutual type-nofunnp-of-unsugar-brackets-in-types
-    (defret type-nofunnp-of-unsugar-brackets-in-type
+  (defret-mutual type-nofunnp-of-unbracket-in-types
+    (defret type-nofunnp-of-unbracket-in-type
       (implies (type-nofunnp type)
                (type-nofunnp new-type))
-      :fn unsugar-brackets-in-type)
-    (defret type-list-nofunnp-of-unsugar-brackets-in-type-list
+      :fn unbracket-in-type)
+    (defret type-list-nofunnp-of-unbracket-in-type-list
       (implies (type-list-nofunnp types)
                (type-list-nofunnp new-types))
-      :fn unsugar-brackets-in-type-list)
+      :fn unbracket-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-nofunnp-rules))
             '(:expand ((type-nofunnp type)
@@ -748,15 +748,15 @@
                        (:free (p b) (type-nofunnp (type-sigma p b)))
                        (:free (p b) (type-nofunnp (type-sigman p b)))))))
 
-  (defret-mutual type-noforallnp-of-unsugar-brackets-in-types
-    (defret type-noforallnp-of-unsugar-brackets-in-type
+  (defret-mutual type-noforallnp-of-unbracket-in-types
+    (defret type-noforallnp-of-unbracket-in-type
       (implies (type-noforallnp type)
                (type-noforallnp new-type))
-      :fn unsugar-brackets-in-type)
-    (defret type-list-noforallnp-of-unsugar-brackets-in-type-list
+      :fn unbracket-in-type)
+    (defret type-list-noforallnp-of-unbracket-in-type-list
       (implies (type-list-noforallnp types)
                (type-list-noforallnp new-types))
-      :fn unsugar-brackets-in-type-list)
+      :fn unbracket-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-noforallnp-rules))
             '(:expand ((type-noforallnp type)
@@ -767,15 +767,15 @@
                        (:free (p b) (type-noforallnp (type-sigma p b)))
                        (:free (p b) (type-noforallnp (type-sigman p b)))))))
 
-  (defret-mutual type-nopinp-of-unsugar-brackets-in-types
-    (defret type-nopinp-of-unsugar-brackets-in-type
+  (defret-mutual type-nopinp-of-unbracket-in-types
+    (defret type-nopinp-of-unbracket-in-type
       (implies (type-nopinp type)
                (type-nopinp new-type))
-      :fn unsugar-brackets-in-type)
-    (defret type-list-nopinp-of-unsugar-brackets-in-type-list
+      :fn unbracket-in-type)
+    (defret type-list-nopinp-of-unbracket-in-type-list
       (implies (type-list-nopinp types)
                (type-list-nopinp new-types))
-      :fn unsugar-brackets-in-type-list)
+      :fn unbracket-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-nopinp-rules))
             '(:expand ((type-nopinp type)
@@ -786,15 +786,15 @@
                        (:free (p b) (type-nopinp (type-sigma p b)))
                        (:free (p b) (type-nopinp (type-sigman p b)))))))
 
-  (defret-mutual type-nosigmanp-of-unsugar-brackets-in-types
-    (defret type-nosigmanp-of-unsugar-brackets-in-type
+  (defret-mutual type-nosigmanp-of-unbracket-in-types
+    (defret type-nosigmanp-of-unbracket-in-type
       (implies (type-nosigmanp type)
                (type-nosigmanp new-type))
-      :fn unsugar-brackets-in-type)
-    (defret type-list-nosigmanp-of-unsugar-brackets-in-type-list
+      :fn unbracket-in-type)
+    (defret type-list-nosigmanp-of-unbracket-in-type-list
       (implies (type-list-nosigmanp types)
                (type-list-nosigmanp new-types))
-      :fn unsugar-brackets-in-type-list)
+      :fn unbracket-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-nosigmanp-rules))
             '(:expand ((type-nosigmanp type)
@@ -807,7 +807,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define unsugar-nary-funs-in-type ((type typep))
+(define unarize-funs-in-type ((type typep))
   :returns (mv (new-type typep)
                (proof type-eq-proofp))
   :short "Turn a type into an equivalent one
@@ -863,7 +863,7 @@
             (type-eq-proof-refl (type-var type.var)))
    :base (mv (type-base type.type)
              (type-eq-proof-refl (type-base type.type)))
-   :array (b* (((mv new-elem proof) (unsugar-nary-funs-in-type type.elem)))
+   :array (b* (((mv new-elem proof) (unarize-funs-in-type type.elem)))
             (mv (type-array new-elem type.ispace)
                 (make-type-eq-proof-array
                  :type1 type.elem
@@ -871,15 +871,15 @@
                  :ispace1 type.ispace
                  :ispace2 type.ispace
                  :premise1-proof proof)))
-   :bracket (b* (((mv new-elem proof) (unsugar-nary-funs-in-type type.elem)))
+   :bracket (b* (((mv new-elem proof) (unarize-funs-in-type type.elem)))
               (mv (type-bracket new-elem type.ispaces)
                   (make-type-eq-proof-cong-bracket
                    :type1 type.elem
                    :type2 new-elem
                    :ispaces type.ispaces
                    :premise1-proof proof)))
-   :fun (b* (((mv new-in proof-in) (unsugar-nary-funs-in-type type.in))
-             ((mv new-out proof-out) (unsugar-nary-funs-in-type type.out)))
+   :fun (b* (((mv new-in proof-in) (unarize-funs-in-type type.in))
+             ((mv new-out proof-out) (unarize-funs-in-type type.out)))
           (mv (type-fun new-in new-out)
               (make-type-eq-proof-fun
                :type-in1 type.in
@@ -890,7 +890,7 @@
                :premise2-proof proof-out)))
    :funn
    (b* (((when (endp type.in))
-         (b* (((mv new-out proof-out) (unsugar-nary-funs-in-type type.out)))
+         (b* (((mv new-out proof-out) (unarize-funs-in-type type.out)))
            (mv new-out
                (make-type-eq-proof-trans
                 :type1 (type-funn nil type.out)
@@ -899,9 +899,9 @@
                 :premise1-proof (type-eq-proof-fun0 type.out)
                 :premise2-proof proof-out))))
         (type-in (car type.in))
-        ((mv new-in proof-in) (unsugar-nary-funs-in-type type-in))
+        ((mv new-in proof-in) (unarize-funs-in-type type-in))
         ((when (endp (cdr type.in)))
-         (b* (((mv new-out proof-out) (unsugar-nary-funs-in-type type.out))
+         (b* (((mv new-out proof-out) (unarize-funs-in-type type.out))
               (mid-type (type-fun type-in type.out))
               (new-type (type-fun new-in new-out)))
            (mv new-type
@@ -920,7 +920,7 @@
                                  :premise1-proof proof-in
                                  :premise2-proof proof-out)))))
         (rest-type (type-funn (cdr type.in) type.out))
-        ((mv new-rest proof-rest) (unsugar-nary-funs-in-type rest-type))
+        ((mv new-rest proof-rest) (unarize-funs-in-type rest-type))
         (mid-type (type-fun type-in (type-scalar rest-type)))
         (new-type (type-fun new-in (type-scalar new-rest))))
      (mv new-type
@@ -965,7 +965,7 @@
 
   ///
 
-  (defret type-eq-proof-validp-of-unsugar-nary-funs-in-type
+  (defret type-eq-proof-validp-of-unarize-funs-in-type
     (implies (typep type)
              (type-eq-proof-validp proof type new-type))
     :hints (("Goal"
@@ -980,16 +980,16 @@
                                 type-eq-fun2m-validp
                                 ispace-eq-refl))))
 
-  (defret type-atom-kindp-of-unsugar-nary-funs-in-type
+  (defret type-atom-kindp-of-unarize-funs-in-type
     (equal (type-atom-kindp new-type)
            (type-atom-kindp type))
     :hints (("Goal"
              :induct t
              :expand ((type-atom-kindp type)))))
 
-  (verify-guards unsugar-nary-funs-in-type)
+  (verify-guards unarize-funs-in-type)
 
-  (defret type-nofunnp-of-unsugar-nary-funs-in-type
+  (defret type-nofunnp-of-unarize-funs-in-type
     (type-nofunnp new-type)
     :hints (("Goal"
              :induct t
@@ -1002,7 +1002,7 @@
                        (:free (p b) (type-nofunnp (type-sigma p b)))
                        (:free (p b) (type-nofunnp (type-sigman p b)))))))
 
-  (defret type-noarrayvarp-of-unsugar-nary-funs-in-type
+  (defret type-noarrayvarp-of-unarize-funs-in-type
     (implies (type-noarrayvarp type)
              (type-noarrayvarp new-type))
     :hints (("Goal"
@@ -1016,7 +1016,7 @@
                        (:free (p b) (type-noarrayvarp (type-sigma p b)))
                        (:free (p b) (type-noarrayvarp (type-sigman p b)))))))
 
-  (defret type-nobracketp-of-unsugar-nary-funs-in-type
+  (defret type-nobracketp-of-unarize-funs-in-type
     (implies (type-nobracketp type)
              (type-nobracketp new-type))
     :hints (("Goal"
@@ -1030,7 +1030,7 @@
                        (:free (p b) (type-nobracketp (type-sigma p b)))
                        (:free (p b) (type-nobracketp (type-sigman p b)))))))
 
-  (defret type-noforallnp-of-unsugar-nary-funs-in-type
+  (defret type-noforallnp-of-unarize-funs-in-type
     (implies (type-noforallnp type)
              (type-noforallnp new-type))
     :hints (("Goal"
@@ -1044,7 +1044,7 @@
                        (:free (p b) (type-noforallnp (type-sigma p b)))
                        (:free (p b) (type-noforallnp (type-sigman p b)))))))
 
-  (defret type-nopinp-of-unsugar-nary-funs-in-type
+  (defret type-nopinp-of-unarize-funs-in-type
     (implies (type-nopinp type)
              (type-nopinp new-type))
     :hints (("Goal"
@@ -1058,7 +1058,7 @@
                        (:free (p b) (type-nopinp (type-sigma p b)))
                        (:free (p b) (type-nopinp (type-sigman p b)))))))
 
-  (defret type-nosigmanp-of-unsugar-nary-funs-in-type
+  (defret type-nosigmanp-of-unarize-funs-in-type
     (implies (type-nosigmanp type)
              (type-nosigmanp new-type))
     :hints (("Goal"
@@ -1074,7 +1074,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines unsugar-nary-foralls-in-types
+(defines unarize-foralls-in-types
   :short "Turn types into equivalent ones
           without n-ary universal types outside the bodies of binder types,
           and construct proof trees demonstrating the equivalence."
@@ -1106,10 +1106,10 @@
      and the absence of n-ary product and sum types,
      which these functions do not affect."))
 
-  (define unsugar-nary-foralls-in-type ((type typep))
+  (define unarize-foralls-in-type ((type typep))
     :returns (mv (new-type typep)
                  (proof type-eq-proofp))
-    :parents (type-equivalence-normalizations unsugar-nary-foralls-in-types)
+    :parents (type-equivalence-normalizations unarize-foralls-in-types)
     :short "Turn a type into an equivalent one
             without n-ary universal types outside the bodies of binder types,
             and construct a proof tree demonstrating the equivalence."
@@ -1120,7 +1120,7 @@
      :base (mv (type-base type.type)
                (type-eq-proof-refl (type-base type.type)))
      :array (b* (((mv new-elem proof)
-                  (unsugar-nary-foralls-in-type type.elem)))
+                  (unarize-foralls-in-type type.elem)))
               (mv (type-array new-elem type.ispace)
                   (make-type-eq-proof-array
                    :type1 type.elem
@@ -1129,7 +1129,7 @@
                    :ispace2 type.ispace
                    :premise1-proof proof)))
      :bracket (b* (((mv new-elem proof)
-                    (unsugar-nary-foralls-in-type type.elem)))
+                    (unarize-foralls-in-type type.elem)))
                 (mv (type-bracket new-elem type.ispaces)
                     (make-type-eq-proof-cong-bracket
                      :type1 type.elem
@@ -1137,9 +1137,9 @@
                      :ispaces type.ispaces
                      :premise1-proof proof)))
      :fun (b* (((mv new-in proof-in)
-                (unsugar-nary-foralls-in-type type.in))
+                (unarize-foralls-in-type type.in))
                ((mv new-out proof-out)
-                (unsugar-nary-foralls-in-type type.out)))
+                (unarize-foralls-in-type type.out)))
             (mv (type-fun new-in new-out)
                 (make-type-eq-proof-fun
                  :type-in1 type.in
@@ -1149,9 +1149,9 @@
                  :premise1-proof proof-in
                  :premise2-proof proof-out)))
      :funn (b* (((mv new-ins proof-ins)
-                 (unsugar-nary-foralls-in-type-list type.in))
+                 (unarize-foralls-in-type-list type.in))
                 ((mv new-out proof-out)
-                 (unsugar-nary-foralls-in-type type.out)))
+                 (unarize-foralls-in-type type.out)))
              (mv (type-funn new-ins new-out)
                  (make-type-eq-proof-cong-funn
                   :types-in1 type.in
@@ -1192,17 +1192,17 @@
                  (type-eq-proof-refl (type-sigman type.params type.body))))
     :measure (type-count type))
 
-  (define unsugar-nary-foralls-in-type-list ((types type-listp))
+  (define unarize-foralls-in-type-list ((types type-listp))
     :returns (mv (new-types type-listp)
                  (proof types-eq-proofp))
-    :parents (type-equivalence-normalizations unsugar-nary-foralls-in-types)
+    :parents (type-equivalence-normalizations unarize-foralls-in-types)
     :short "Turn a list of types into an equivalent one
             without n-ary universal types outside the bodies of binder types,
             and construct a proof tree demonstrating the equivalence."
     (b* (((when (endp types)) (mv nil (types-eq-proof-refl nil)))
-         ((mv new-type proof1) (unsugar-nary-foralls-in-type (car types)))
+         ((mv new-type proof1) (unarize-foralls-in-type (car types)))
          ((mv new-types proof2)
-          (unsugar-nary-foralls-in-type-list (cdr types))))
+          (unarize-foralls-in-type-list (cdr types))))
       (mv (cons new-type new-types)
           (make-types-eq-proof-cong-cons
            :type1 (type-fix (car types))
@@ -1215,7 +1215,7 @@
 
     ///
 
-    (defret len-of-unsugar-nary-foralls-in-type-list
+    (defret len-of-unarize-foralls-in-type-list
       (equal (len new-types)
              (len types))
       :hints (("Goal"
@@ -1228,17 +1228,17 @@
 
   ///
 
-  (fty::deffixequiv-mutual unsugar-nary-foralls-in-types)
+  (fty::deffixequiv-mutual unarize-foralls-in-types)
 
-  (defret-mutual type-eq-proof-validp-of-unsugar-nary-foralls-in-types
-    (defret type-eq-proof-validp-of-unsugar-nary-foralls-in-type
+  (defret-mutual type-eq-proof-validp-of-unarize-foralls-in-types
+    (defret type-eq-proof-validp-of-unarize-foralls-in-type
       (implies (typep type)
                (type-eq-proof-validp proof type new-type))
-      :fn unsugar-nary-foralls-in-type)
-    (defret types-eq-proof-validp-of-unsugar-nary-foralls-in-type-list
+      :fn unarize-foralls-in-type)
+    (defret types-eq-proof-validp-of-unarize-foralls-in-type-list
       (implies (type-listp types)
                (types-eq-proof-validp proof types new-types))
-      :fn unsugar-nary-foralls-in-type-list)
+      :fn unarize-foralls-in-type-list)
     :hints (("Goal"
              :in-theory (enable type-eq-proof-validp
                                 types-eq-proof-validp
@@ -1252,13 +1252,13 @@
                                 ispace-eq-refl
                                 consp-of-cdr-of-type-foralln->params))))
 
-  (defret-mutual type-noforallnp-of-unsugar-nary-foralls-in-types
-    (defret type-noforallnp-of-unsugar-nary-foralls-in-type
+  (defret-mutual type-noforallnp-of-unarize-foralls-in-types
+    (defret type-noforallnp-of-unarize-foralls-in-type
       (type-noforallnp new-type)
-      :fn unsugar-nary-foralls-in-type)
-    (defret type-list-noforallnp-of-unsugar-nary-foralls-in-type-list
+      :fn unarize-foralls-in-type)
+    (defret type-list-noforallnp-of-unarize-foralls-in-type-list
       (type-list-noforallnp new-types)
-      :fn unsugar-nary-foralls-in-type-list)
+      :fn unarize-foralls-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-noforallnp-rules))
             '(:expand ((type-noforallnp type)
@@ -1269,15 +1269,15 @@
                        (:free (p b) (type-noforallnp (type-sigma p b)))
                        (:free (p b) (type-noforallnp (type-sigman p b)))))))
 
-  (defret-mutual type-noarrayvarp-of-unsugar-nary-foralls-in-types
-    (defret type-noarrayvarp-of-unsugar-nary-foralls-in-type
+  (defret-mutual type-noarrayvarp-of-unarize-foralls-in-types
+    (defret type-noarrayvarp-of-unarize-foralls-in-type
       (implies (type-noarrayvarp type)
                (type-noarrayvarp new-type))
-      :fn unsugar-nary-foralls-in-type)
-    (defret type-list-noarrayvarp-of-unsugar-nary-foralls-in-type-list
+      :fn unarize-foralls-in-type)
+    (defret type-list-noarrayvarp-of-unarize-foralls-in-type-list
       (implies (type-list-noarrayvarp types)
                (type-list-noarrayvarp new-types))
-      :fn unsugar-nary-foralls-in-type-list)
+      :fn unarize-foralls-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-noarrayvarp-rules))
             '(:expand ((type-noarrayvarp type)
@@ -1288,15 +1288,15 @@
                        (:free (p b) (type-noarrayvarp (type-sigma p b)))
                        (:free (p b) (type-noarrayvarp (type-sigman p b)))))))
 
-  (defret-mutual type-nobracketp-of-unsugar-nary-foralls-in-types
-    (defret type-nobracketp-of-unsugar-nary-foralls-in-type
+  (defret-mutual type-nobracketp-of-unarize-foralls-in-types
+    (defret type-nobracketp-of-unarize-foralls-in-type
       (implies (type-nobracketp type)
                (type-nobracketp new-type))
-      :fn unsugar-nary-foralls-in-type)
-    (defret type-list-nobracketp-of-unsugar-nary-foralls-in-type-list
+      :fn unarize-foralls-in-type)
+    (defret type-list-nobracketp-of-unarize-foralls-in-type-list
       (implies (type-list-nobracketp types)
                (type-list-nobracketp new-types))
-      :fn unsugar-nary-foralls-in-type-list)
+      :fn unarize-foralls-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-nobracketp-rules))
             '(:expand ((type-nobracketp type)
@@ -1307,15 +1307,15 @@
                        (:free (p b) (type-nobracketp (type-sigma p b)))
                        (:free (p b) (type-nobracketp (type-sigman p b)))))))
 
-  (defret-mutual type-nofunnp-of-unsugar-nary-foralls-in-types
-    (defret type-nofunnp-of-unsugar-nary-foralls-in-type
+  (defret-mutual type-nofunnp-of-unarize-foralls-in-types
+    (defret type-nofunnp-of-unarize-foralls-in-type
       (implies (type-nofunnp type)
                (type-nofunnp new-type))
-      :fn unsugar-nary-foralls-in-type)
-    (defret type-list-nofunnp-of-unsugar-nary-foralls-in-type-list
+      :fn unarize-foralls-in-type)
+    (defret type-list-nofunnp-of-unarize-foralls-in-type-list
       (implies (type-list-nofunnp types)
                (type-list-nofunnp new-types))
-      :fn unsugar-nary-foralls-in-type-list)
+      :fn unarize-foralls-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-nofunnp-rules))
             '(:expand ((type-nofunnp type)
@@ -1326,15 +1326,15 @@
                        (:free (p b) (type-nofunnp (type-sigma p b)))
                        (:free (p b) (type-nofunnp (type-sigman p b)))))))
 
-  (defret-mutual type-nopinp-of-unsugar-nary-foralls-in-types
-    (defret type-nopinp-of-unsugar-nary-foralls-in-type
+  (defret-mutual type-nopinp-of-unarize-foralls-in-types
+    (defret type-nopinp-of-unarize-foralls-in-type
       (implies (type-nopinp type)
                (type-nopinp new-type))
-      :fn unsugar-nary-foralls-in-type)
-    (defret type-list-nopinp-of-unsugar-nary-foralls-in-type-list
+      :fn unarize-foralls-in-type)
+    (defret type-list-nopinp-of-unarize-foralls-in-type-list
       (implies (type-list-nopinp types)
                (type-list-nopinp new-types))
-      :fn unsugar-nary-foralls-in-type-list)
+      :fn unarize-foralls-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-nopinp-rules))
             '(:expand ((type-nopinp type)
@@ -1345,15 +1345,15 @@
                        (:free (p b) (type-nopinp (type-sigma p b)))
                        (:free (p b) (type-nopinp (type-sigman p b)))))))
 
-  (defret-mutual type-nosigmanp-of-unsugar-nary-foralls-in-types
-    (defret type-nosigmanp-of-unsugar-nary-foralls-in-type
+  (defret-mutual type-nosigmanp-of-unarize-foralls-in-types
+    (defret type-nosigmanp-of-unarize-foralls-in-type
       (implies (type-nosigmanp type)
                (type-nosigmanp new-type))
-      :fn unsugar-nary-foralls-in-type)
-    (defret type-list-nosigmanp-of-unsugar-nary-foralls-in-type-list
+      :fn unarize-foralls-in-type)
+    (defret type-list-nosigmanp-of-unarize-foralls-in-type-list
       (implies (type-list-nosigmanp types)
                (type-list-nosigmanp new-types))
-      :fn unsugar-nary-foralls-in-type-list)
+      :fn unarize-foralls-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-nosigmanp-rules))
             '(:expand ((type-nosigmanp type)
@@ -1366,20 +1366,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines unsugar-nary-pis-in-types
+(defines unarize-pis-in-types
   :short "Turn types into equivalent ones
           without n-ary product types outside the bodies of binder types,
           and construct proof trees demonstrating the equivalence."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is analogous to @(see unsugar-nary-foralls-in-types),
+    "This is analogous to @(see unarize-foralls-in-types),
      with the rules @('pi2') and @('pi3m')."))
 
-  (define unsugar-nary-pis-in-type ((type typep))
+  (define unarize-pis-in-type ((type typep))
     :returns (mv (new-type typep)
                  (proof type-eq-proofp))
-    :parents (type-equivalence-normalizations unsugar-nary-pis-in-types)
+    :parents (type-equivalence-normalizations unarize-pis-in-types)
     :short "Turn a type into an equivalent one
             without n-ary product types outside the bodies of binder types,
             and construct a proof tree demonstrating the equivalence."
@@ -1389,7 +1389,7 @@
               (type-eq-proof-refl (type-var type.var)))
      :base (mv (type-base type.type)
                (type-eq-proof-refl (type-base type.type)))
-     :array (b* (((mv new-elem proof) (unsugar-nary-pis-in-type type.elem)))
+     :array (b* (((mv new-elem proof) (unarize-pis-in-type type.elem)))
               (mv (type-array new-elem type.ispace)
                   (make-type-eq-proof-array
                    :type1 type.elem
@@ -1398,15 +1398,15 @@
                    :ispace2 type.ispace
                    :premise1-proof proof)))
      :bracket (b* (((mv new-elem proof)
-                    (unsugar-nary-pis-in-type type.elem)))
+                    (unarize-pis-in-type type.elem)))
                 (mv (type-bracket new-elem type.ispaces)
                     (make-type-eq-proof-cong-bracket
                      :type1 type.elem
                      :type2 new-elem
                      :ispaces type.ispaces
                      :premise1-proof proof)))
-     :fun (b* (((mv new-in proof-in) (unsugar-nary-pis-in-type type.in))
-               ((mv new-out proof-out) (unsugar-nary-pis-in-type type.out)))
+     :fun (b* (((mv new-in proof-in) (unarize-pis-in-type type.in))
+               ((mv new-out proof-out) (unarize-pis-in-type type.out)))
             (mv (type-fun new-in new-out)
                 (make-type-eq-proof-fun
                  :type-in1 type.in
@@ -1416,9 +1416,9 @@
                  :premise1-proof proof-in
                  :premise2-proof proof-out)))
      :funn (b* (((mv new-ins proof-ins)
-                 (unsugar-nary-pis-in-type-list type.in))
+                 (unarize-pis-in-type-list type.in))
                 ((mv new-out proof-out)
-                 (unsugar-nary-pis-in-type type.out)))
+                 (unarize-pis-in-type type.out)))
              (mv (type-funn new-ins new-out)
                  (make-type-eq-proof-cong-funn
                   :types-in1 type.in
@@ -1457,16 +1457,16 @@
                  (type-eq-proof-refl (type-sigman type.params type.body))))
     :measure (type-count type))
 
-  (define unsugar-nary-pis-in-type-list ((types type-listp))
+  (define unarize-pis-in-type-list ((types type-listp))
     :returns (mv (new-types type-listp)
                  (proof types-eq-proofp))
-    :parents (type-equivalence-normalizations unsugar-nary-pis-in-types)
+    :parents (type-equivalence-normalizations unarize-pis-in-types)
     :short "Turn a list of types into an equivalent one
             without n-ary product types outside the bodies of binder types,
             and construct a proof tree demonstrating the equivalence."
     (b* (((when (endp types)) (mv nil (types-eq-proof-refl nil)))
-         ((mv new-type proof1) (unsugar-nary-pis-in-type (car types)))
-         ((mv new-types proof2) (unsugar-nary-pis-in-type-list (cdr types))))
+         ((mv new-type proof1) (unarize-pis-in-type (car types)))
+         ((mv new-types proof2) (unarize-pis-in-type-list (cdr types))))
       (mv (cons new-type new-types)
           (make-types-eq-proof-cong-cons
            :type1 (type-fix (car types))
@@ -1479,7 +1479,7 @@
 
     ///
 
-    (defret len-of-unsugar-nary-pis-in-type-list
+    (defret len-of-unarize-pis-in-type-list
       (equal (len new-types)
              (len types))
       :hints (("Goal"
@@ -1492,17 +1492,17 @@
 
   ///
 
-  (fty::deffixequiv-mutual unsugar-nary-pis-in-types)
+  (fty::deffixequiv-mutual unarize-pis-in-types)
 
-  (defret-mutual type-eq-proof-validp-of-unsugar-nary-pis-in-types
-    (defret type-eq-proof-validp-of-unsugar-nary-pis-in-type
+  (defret-mutual type-eq-proof-validp-of-unarize-pis-in-types
+    (defret type-eq-proof-validp-of-unarize-pis-in-type
       (implies (typep type)
                (type-eq-proof-validp proof type new-type))
-      :fn unsugar-nary-pis-in-type)
-    (defret types-eq-proof-validp-of-unsugar-nary-pis-in-type-list
+      :fn unarize-pis-in-type)
+    (defret types-eq-proof-validp-of-unarize-pis-in-type-list
       (implies (type-listp types)
                (types-eq-proof-validp proof types new-types))
-      :fn unsugar-nary-pis-in-type-list)
+      :fn unarize-pis-in-type-list)
     :hints (("Goal"
              :in-theory (enable type-eq-proof-validp
                                 types-eq-proof-validp
@@ -1516,13 +1516,13 @@
                                 ispace-eq-refl
                                 consp-of-cdr-of-type-pin->params))))
 
-  (defret-mutual type-nopinp-of-unsugar-nary-pis-in-types
-    (defret type-nopinp-of-unsugar-nary-pis-in-type
+  (defret-mutual type-nopinp-of-unarize-pis-in-types
+    (defret type-nopinp-of-unarize-pis-in-type
       (type-nopinp new-type)
-      :fn unsugar-nary-pis-in-type)
-    (defret type-list-nopinp-of-unsugar-nary-pis-in-type-list
+      :fn unarize-pis-in-type)
+    (defret type-list-nopinp-of-unarize-pis-in-type-list
       (type-list-nopinp new-types)
-      :fn unsugar-nary-pis-in-type-list)
+      :fn unarize-pis-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-nopinp-rules))
             '(:expand ((type-nopinp type)
@@ -1533,15 +1533,15 @@
                        (:free (p b) (type-nopinp (type-sigma p b)))
                        (:free (p b) (type-nopinp (type-sigman p b)))))))
 
-  (defret-mutual type-noarrayvarp-of-unsugar-nary-pis-in-types
-    (defret type-noarrayvarp-of-unsugar-nary-pis-in-type
+  (defret-mutual type-noarrayvarp-of-unarize-pis-in-types
+    (defret type-noarrayvarp-of-unarize-pis-in-type
       (implies (type-noarrayvarp type)
                (type-noarrayvarp new-type))
-      :fn unsugar-nary-pis-in-type)
-    (defret type-list-noarrayvarp-of-unsugar-nary-pis-in-type-list
+      :fn unarize-pis-in-type)
+    (defret type-list-noarrayvarp-of-unarize-pis-in-type-list
       (implies (type-list-noarrayvarp types)
                (type-list-noarrayvarp new-types))
-      :fn unsugar-nary-pis-in-type-list)
+      :fn unarize-pis-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-noarrayvarp-rules))
             '(:expand ((type-noarrayvarp type)
@@ -1552,15 +1552,15 @@
                        (:free (p b) (type-noarrayvarp (type-sigma p b)))
                        (:free (p b) (type-noarrayvarp (type-sigman p b)))))))
 
-  (defret-mutual type-nobracketp-of-unsugar-nary-pis-in-types
-    (defret type-nobracketp-of-unsugar-nary-pis-in-type
+  (defret-mutual type-nobracketp-of-unarize-pis-in-types
+    (defret type-nobracketp-of-unarize-pis-in-type
       (implies (type-nobracketp type)
                (type-nobracketp new-type))
-      :fn unsugar-nary-pis-in-type)
-    (defret type-list-nobracketp-of-unsugar-nary-pis-in-type-list
+      :fn unarize-pis-in-type)
+    (defret type-list-nobracketp-of-unarize-pis-in-type-list
       (implies (type-list-nobracketp types)
                (type-list-nobracketp new-types))
-      :fn unsugar-nary-pis-in-type-list)
+      :fn unarize-pis-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-nobracketp-rules))
             '(:expand ((type-nobracketp type)
@@ -1571,15 +1571,15 @@
                        (:free (p b) (type-nobracketp (type-sigma p b)))
                        (:free (p b) (type-nobracketp (type-sigman p b)))))))
 
-  (defret-mutual type-nofunnp-of-unsugar-nary-pis-in-types
-    (defret type-nofunnp-of-unsugar-nary-pis-in-type
+  (defret-mutual type-nofunnp-of-unarize-pis-in-types
+    (defret type-nofunnp-of-unarize-pis-in-type
       (implies (type-nofunnp type)
                (type-nofunnp new-type))
-      :fn unsugar-nary-pis-in-type)
-    (defret type-list-nofunnp-of-unsugar-nary-pis-in-type-list
+      :fn unarize-pis-in-type)
+    (defret type-list-nofunnp-of-unarize-pis-in-type-list
       (implies (type-list-nofunnp types)
                (type-list-nofunnp new-types))
-      :fn unsugar-nary-pis-in-type-list)
+      :fn unarize-pis-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-nofunnp-rules))
             '(:expand ((type-nofunnp type)
@@ -1590,15 +1590,15 @@
                        (:free (p b) (type-nofunnp (type-sigma p b)))
                        (:free (p b) (type-nofunnp (type-sigman p b)))))))
 
-  (defret-mutual type-noforallnp-of-unsugar-nary-pis-in-types
-    (defret type-noforallnp-of-unsugar-nary-pis-in-type
+  (defret-mutual type-noforallnp-of-unarize-pis-in-types
+    (defret type-noforallnp-of-unarize-pis-in-type
       (implies (type-noforallnp type)
                (type-noforallnp new-type))
-      :fn unsugar-nary-pis-in-type)
-    (defret type-list-noforallnp-of-unsugar-nary-pis-in-type-list
+      :fn unarize-pis-in-type)
+    (defret type-list-noforallnp-of-unarize-pis-in-type-list
       (implies (type-list-noforallnp types)
                (type-list-noforallnp new-types))
-      :fn unsugar-nary-pis-in-type-list)
+      :fn unarize-pis-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-noforallnp-rules))
             '(:expand ((type-noforallnp type)
@@ -1609,15 +1609,15 @@
                        (:free (p b) (type-noforallnp (type-sigma p b)))
                        (:free (p b) (type-noforallnp (type-sigman p b)))))))
 
-  (defret-mutual type-nosigmanp-of-unsugar-nary-pis-in-types
-    (defret type-nosigmanp-of-unsugar-nary-pis-in-type
+  (defret-mutual type-nosigmanp-of-unarize-pis-in-types
+    (defret type-nosigmanp-of-unarize-pis-in-type
       (implies (type-nosigmanp type)
                (type-nosigmanp new-type))
-      :fn unsugar-nary-pis-in-type)
-    (defret type-list-nosigmanp-of-unsugar-nary-pis-in-type-list
+      :fn unarize-pis-in-type)
+    (defret type-list-nosigmanp-of-unarize-pis-in-type-list
       (implies (type-list-nosigmanp types)
                (type-list-nosigmanp new-types))
-      :fn unsugar-nary-pis-in-type-list)
+      :fn unarize-pis-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-nosigmanp-rules))
             '(:expand ((type-nosigmanp type)
@@ -1630,20 +1630,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines unsugar-nary-sigmas-in-types
+(defines unarize-sigmas-in-types
   :short "Turn types into equivalent ones
           without n-ary sum types outside the bodies of binder types,
           and construct proof trees demonstrating the equivalence."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is analogous to @(see unsugar-nary-foralls-in-types),
+    "This is analogous to @(see unarize-foralls-in-types),
      with the rules @('sigma2') and @('sigma3m')."))
 
-  (define unsugar-nary-sigmas-in-type ((type typep))
+  (define unarize-sigmas-in-type ((type typep))
     :returns (mv (new-type typep)
                  (proof type-eq-proofp))
-    :parents (type-equivalence-normalizations unsugar-nary-sigmas-in-types)
+    :parents (type-equivalence-normalizations unarize-sigmas-in-types)
     :short "Turn a type into an equivalent one
             without n-ary sum types outside the bodies of binder types,
             and construct a proof tree demonstrating the equivalence."
@@ -1654,7 +1654,7 @@
      :base (mv (type-base type.type)
                (type-eq-proof-refl (type-base type.type)))
      :array (b* (((mv new-elem proof)
-                  (unsugar-nary-sigmas-in-type type.elem)))
+                  (unarize-sigmas-in-type type.elem)))
               (mv (type-array new-elem type.ispace)
                   (make-type-eq-proof-array
                    :type1 type.elem
@@ -1663,7 +1663,7 @@
                    :ispace2 type.ispace
                    :premise1-proof proof)))
      :bracket (b* (((mv new-elem proof)
-                    (unsugar-nary-sigmas-in-type type.elem)))
+                    (unarize-sigmas-in-type type.elem)))
                 (mv (type-bracket new-elem type.ispaces)
                     (make-type-eq-proof-cong-bracket
                      :type1 type.elem
@@ -1671,9 +1671,9 @@
                      :ispaces type.ispaces
                      :premise1-proof proof)))
      :fun (b* (((mv new-in proof-in)
-                (unsugar-nary-sigmas-in-type type.in))
+                (unarize-sigmas-in-type type.in))
                ((mv new-out proof-out)
-                (unsugar-nary-sigmas-in-type type.out)))
+                (unarize-sigmas-in-type type.out)))
             (mv (type-fun new-in new-out)
                 (make-type-eq-proof-fun
                  :type-in1 type.in
@@ -1683,9 +1683,9 @@
                  :premise1-proof proof-in
                  :premise2-proof proof-out)))
      :funn (b* (((mv new-ins proof-ins)
-                 (unsugar-nary-sigmas-in-type-list type.in))
+                 (unarize-sigmas-in-type-list type.in))
                 ((mv new-out proof-out)
-                 (unsugar-nary-sigmas-in-type type.out)))
+                 (unarize-sigmas-in-type type.out)))
              (mv (type-funn new-ins new-out)
                  (make-type-eq-proof-cong-funn
                   :types-in1 type.in
@@ -1726,17 +1726,17 @@
                       :type type.body)))))
     :measure (type-count type))
 
-  (define unsugar-nary-sigmas-in-type-list ((types type-listp))
+  (define unarize-sigmas-in-type-list ((types type-listp))
     :returns (mv (new-types type-listp)
                  (proof types-eq-proofp))
-    :parents (type-equivalence-normalizations unsugar-nary-sigmas-in-types)
+    :parents (type-equivalence-normalizations unarize-sigmas-in-types)
     :short "Turn a list of types into an equivalent one
             without n-ary sum types outside the bodies of binder types,
             and construct a proof tree demonstrating the equivalence."
     (b* (((when (endp types)) (mv nil (types-eq-proof-refl nil)))
-         ((mv new-type proof1) (unsugar-nary-sigmas-in-type (car types)))
+         ((mv new-type proof1) (unarize-sigmas-in-type (car types)))
          ((mv new-types proof2)
-          (unsugar-nary-sigmas-in-type-list (cdr types))))
+          (unarize-sigmas-in-type-list (cdr types))))
       (mv (cons new-type new-types)
           (make-types-eq-proof-cong-cons
            :type1 (type-fix (car types))
@@ -1749,7 +1749,7 @@
 
     ///
 
-    (defret len-of-unsugar-nary-sigmas-in-type-list
+    (defret len-of-unarize-sigmas-in-type-list
       (equal (len new-types)
              (len types))
       :hints (("Goal"
@@ -1762,17 +1762,17 @@
 
   ///
 
-  (fty::deffixequiv-mutual unsugar-nary-sigmas-in-types)
+  (fty::deffixequiv-mutual unarize-sigmas-in-types)
 
-  (defret-mutual type-eq-proof-validp-of-unsugar-nary-sigmas-in-types
-    (defret type-eq-proof-validp-of-unsugar-nary-sigmas-in-type
+  (defret-mutual type-eq-proof-validp-of-unarize-sigmas-in-types
+    (defret type-eq-proof-validp-of-unarize-sigmas-in-type
       (implies (typep type)
                (type-eq-proof-validp proof type new-type))
-      :fn unsugar-nary-sigmas-in-type)
-    (defret types-eq-proof-validp-of-unsugar-nary-sigmas-in-type-list
+      :fn unarize-sigmas-in-type)
+    (defret types-eq-proof-validp-of-unarize-sigmas-in-type-list
       (implies (type-listp types)
                (types-eq-proof-validp proof types new-types))
-      :fn unsugar-nary-sigmas-in-type-list)
+      :fn unarize-sigmas-in-type-list)
     :hints (("Goal"
              :in-theory (enable type-eq-proof-validp
                                 types-eq-proof-validp
@@ -1786,13 +1786,13 @@
                                 ispace-eq-refl
                                 consp-of-cdr-of-type-sigman->params))))
 
-  (defret-mutual type-nosigmanp-of-unsugar-nary-sigmas-in-types
-    (defret type-nosigmanp-of-unsugar-nary-sigmas-in-type
+  (defret-mutual type-nosigmanp-of-unarize-sigmas-in-types
+    (defret type-nosigmanp-of-unarize-sigmas-in-type
       (type-nosigmanp new-type)
-      :fn unsugar-nary-sigmas-in-type)
-    (defret type-list-nosigmanp-of-unsugar-nary-sigmas-in-type-list
+      :fn unarize-sigmas-in-type)
+    (defret type-list-nosigmanp-of-unarize-sigmas-in-type-list
       (type-list-nosigmanp new-types)
-      :fn unsugar-nary-sigmas-in-type-list)
+      :fn unarize-sigmas-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-nosigmanp-rules))
             '(:expand ((type-nosigmanp type)
@@ -1803,15 +1803,15 @@
                        (:free (p b) (type-nosigmanp (type-sigma p b)))
                        (:free (p b) (type-nosigmanp (type-sigman p b)))))))
 
-  (defret-mutual type-noarrayvarp-of-unsugar-nary-sigmas-in-types
-    (defret type-noarrayvarp-of-unsugar-nary-sigmas-in-type
+  (defret-mutual type-noarrayvarp-of-unarize-sigmas-in-types
+    (defret type-noarrayvarp-of-unarize-sigmas-in-type
       (implies (type-noarrayvarp type)
                (type-noarrayvarp new-type))
-      :fn unsugar-nary-sigmas-in-type)
-    (defret type-list-noarrayvarp-of-unsugar-nary-sigmas-in-type-list
+      :fn unarize-sigmas-in-type)
+    (defret type-list-noarrayvarp-of-unarize-sigmas-in-type-list
       (implies (type-list-noarrayvarp types)
                (type-list-noarrayvarp new-types))
-      :fn unsugar-nary-sigmas-in-type-list)
+      :fn unarize-sigmas-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-noarrayvarp-rules))
             '(:expand ((type-noarrayvarp type)
@@ -1822,15 +1822,15 @@
                        (:free (p b) (type-noarrayvarp (type-sigma p b)))
                        (:free (p b) (type-noarrayvarp (type-sigman p b)))))))
 
-  (defret-mutual type-nobracketp-of-unsugar-nary-sigmas-in-types
-    (defret type-nobracketp-of-unsugar-nary-sigmas-in-type
+  (defret-mutual type-nobracketp-of-unarize-sigmas-in-types
+    (defret type-nobracketp-of-unarize-sigmas-in-type
       (implies (type-nobracketp type)
                (type-nobracketp new-type))
-      :fn unsugar-nary-sigmas-in-type)
-    (defret type-list-nobracketp-of-unsugar-nary-sigmas-in-type-list
+      :fn unarize-sigmas-in-type)
+    (defret type-list-nobracketp-of-unarize-sigmas-in-type-list
       (implies (type-list-nobracketp types)
                (type-list-nobracketp new-types))
-      :fn unsugar-nary-sigmas-in-type-list)
+      :fn unarize-sigmas-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-nobracketp-rules))
             '(:expand ((type-nobracketp type)
@@ -1841,15 +1841,15 @@
                        (:free (p b) (type-nobracketp (type-sigma p b)))
                        (:free (p b) (type-nobracketp (type-sigman p b)))))))
 
-  (defret-mutual type-nofunnp-of-unsugar-nary-sigmas-in-types
-    (defret type-nofunnp-of-unsugar-nary-sigmas-in-type
+  (defret-mutual type-nofunnp-of-unarize-sigmas-in-types
+    (defret type-nofunnp-of-unarize-sigmas-in-type
       (implies (type-nofunnp type)
                (type-nofunnp new-type))
-      :fn unsugar-nary-sigmas-in-type)
-    (defret type-list-nofunnp-of-unsugar-nary-sigmas-in-type-list
+      :fn unarize-sigmas-in-type)
+    (defret type-list-nofunnp-of-unarize-sigmas-in-type-list
       (implies (type-list-nofunnp types)
                (type-list-nofunnp new-types))
-      :fn unsugar-nary-sigmas-in-type-list)
+      :fn unarize-sigmas-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-nofunnp-rules))
             '(:expand ((type-nofunnp type)
@@ -1860,15 +1860,15 @@
                        (:free (p b) (type-nofunnp (type-sigma p b)))
                        (:free (p b) (type-nofunnp (type-sigman p b)))))))
 
-  (defret-mutual type-noforallnp-of-unsugar-nary-sigmas-in-types
-    (defret type-noforallnp-of-unsugar-nary-sigmas-in-type
+  (defret-mutual type-noforallnp-of-unarize-sigmas-in-types
+    (defret type-noforallnp-of-unarize-sigmas-in-type
       (implies (type-noforallnp type)
                (type-noforallnp new-type))
-      :fn unsugar-nary-sigmas-in-type)
-    (defret type-list-noforallnp-of-unsugar-nary-sigmas-in-type-list
+      :fn unarize-sigmas-in-type)
+    (defret type-list-noforallnp-of-unarize-sigmas-in-type-list
       (implies (type-list-noforallnp types)
                (type-list-noforallnp new-types))
-      :fn unsugar-nary-sigmas-in-type-list)
+      :fn unarize-sigmas-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-noforallnp-rules))
             '(:expand ((type-noforallnp type)
@@ -1879,15 +1879,15 @@
                        (:free (p b) (type-noforallnp (type-sigma p b)))
                        (:free (p b) (type-noforallnp (type-sigman p b)))))))
 
-  (defret-mutual type-nopinp-of-unsugar-nary-sigmas-in-types
-    (defret type-nopinp-of-unsugar-nary-sigmas-in-type
+  (defret-mutual type-nopinp-of-unarize-sigmas-in-types
+    (defret type-nopinp-of-unarize-sigmas-in-type
       (implies (type-nopinp type)
                (type-nopinp new-type))
-      :fn unsugar-nary-sigmas-in-type)
-    (defret type-list-nopinp-of-unsugar-nary-sigmas-in-type-list
+      :fn unarize-sigmas-in-type)
+    (defret type-list-nopinp-of-unarize-sigmas-in-type-list
       (implies (type-list-nopinp types)
                (type-list-nopinp new-types))
-      :fn unsugar-nary-sigmas-in-type-list)
+      :fn unarize-sigmas-in-type-list)
     :hints (("Goal"
              :in-theory (enable* ast-nopinp-rules))
             '(:expand ((type-nopinp type)
@@ -1930,11 +1930,11 @@
   (implies (typep type)
            (type-eq-to-nobracket-p type))
   :use ((:instance type-eq-to-nobracket-p-suff
-                   (type1 (mv-nth 0 (unsugar-brackets-in-type type))))
+                   (type1 (mv-nth 0 (unbracket-in-type type))))
         (:instance type-eq-when-proof-validp
-                   (proof (mv-nth 1 (unsugar-brackets-in-type type)))
+                   (proof (mv-nth 1 (unbracket-in-type type)))
                    (concl.type1 type)
-                   (concl.type2 (mv-nth 0 (unsugar-brackets-in-type type))))))
+                   (concl.type2 (mv-nth 0 (unbracket-in-type type))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1950,11 +1950,11 @@
   (implies (typep type)
            (type-eq-to-nofunn-p type))
   :use ((:instance type-eq-to-nofunn-p-suff
-                   (type1 (mv-nth 0 (unsugar-nary-funs-in-type type))))
+                   (type1 (mv-nth 0 (unarize-funs-in-type type))))
         (:instance type-eq-when-proof-validp
-                   (proof (mv-nth 1 (unsugar-nary-funs-in-type type)))
+                   (proof (mv-nth 1 (unarize-funs-in-type type)))
                    (concl.type1 type)
-                   (concl.type2 (mv-nth 0 (unsugar-nary-funs-in-type type))))))
+                   (concl.type2 (mv-nth 0 (unarize-funs-in-type type))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1970,12 +1970,12 @@
   (implies (typep type)
            (type-eq-to-noforalln-p type))
   :use ((:instance type-eq-to-noforalln-p-suff
-                   (type1 (mv-nth 0 (unsugar-nary-foralls-in-type type))))
+                   (type1 (mv-nth 0 (unarize-foralls-in-type type))))
         (:instance type-eq-when-proof-validp
-                   (proof (mv-nth 1 (unsugar-nary-foralls-in-type type)))
+                   (proof (mv-nth 1 (unarize-foralls-in-type type)))
                    (concl.type1 type)
                    (concl.type2
-                    (mv-nth 0 (unsugar-nary-foralls-in-type type))))))
+                    (mv-nth 0 (unarize-foralls-in-type type))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1990,11 +1990,11 @@
   (implies (typep type)
            (type-eq-to-nopin-p type))
   :use ((:instance type-eq-to-nopin-p-suff
-                   (type1 (mv-nth 0 (unsugar-nary-pis-in-type type))))
+                   (type1 (mv-nth 0 (unarize-pis-in-type type))))
         (:instance type-eq-when-proof-validp
-                   (proof (mv-nth 1 (unsugar-nary-pis-in-type type)))
+                   (proof (mv-nth 1 (unarize-pis-in-type type)))
                    (concl.type1 type)
-                   (concl.type2 (mv-nth 0 (unsugar-nary-pis-in-type type))))))
+                   (concl.type2 (mv-nth 0 (unarize-pis-in-type type))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2010,12 +2010,12 @@
   (implies (typep type)
            (type-eq-to-nosigman-p type))
   :use ((:instance type-eq-to-nosigman-p-suff
-                   (type1 (mv-nth 0 (unsugar-nary-sigmas-in-type type))))
+                   (type1 (mv-nth 0 (unarize-sigmas-in-type type))))
         (:instance type-eq-when-proof-validp
-                   (proof (mv-nth 1 (unsugar-nary-sigmas-in-type type)))
+                   (proof (mv-nth 1 (unarize-sigmas-in-type type)))
                    (concl.type1 type)
                    (concl.type2
-                    (mv-nth 0 (unsugar-nary-sigmas-in-type type))))))
+                    (mv-nth 0 (unarize-sigmas-in-type type))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2049,11 +2049,11 @@
      the statuses established by the other five."))
   (b* ((type (type-fix type))
        ((mv type1 proof1) (unsugar-array-vars-in-type type))
-       ((mv type2 proof2) (unsugar-brackets-in-type type1))
-       ((mv type3 proof3) (unsugar-nary-funs-in-type type2))
-       ((mv type4 proof4) (unsugar-nary-foralls-in-type type3))
-       ((mv type5 proof5) (unsugar-nary-pis-in-type type4))
-       ((mv type6 proof6) (unsugar-nary-sigmas-in-type type5)))
+       ((mv type2 proof2) (unbracket-in-type type1))
+       ((mv type3 proof3) (unarize-funs-in-type type2))
+       ((mv type4 proof4) (unarize-foralls-in-type type3))
+       ((mv type5 proof5) (unarize-pis-in-type type4))
+       ((mv type6 proof6) (unarize-sigmas-in-type type5)))
     (mv type6
         (make-type-eq-proof-trans
          :type1 type
