@@ -26,10 +26,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We formalize the equivalence of types via inference rules
-     that correspond to the ones in [thesis] and [arxiv]
-     (while [esop] describes type equivalence
-     without giving explicit inference rules).")
+    "The type equivalence rules in [thesis] [arxiv]
+     prove judgements of the form
+     @($\\tau \\cong \\tau'$),
+     where @($\\tau$) and @($\\tau'$) are types.
+     ([esop] describes type equivalence
+     without giving explicit inference rules.)")
+   (xdoc::p
+    "Our inference rules prove judgements (i.e. define predicates)
+     of that form.")
    (xdoc::p
     "Type equivalence builds on "
     (xdoc::seetopic "ispace-equivalence" "ispace equivalence")
