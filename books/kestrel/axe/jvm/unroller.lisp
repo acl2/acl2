@@ -888,7 +888,7 @@
                               (booleanp chunkedp)
                               (booleanp normalize-xors))
                   :stobjs state
-                  :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, and TRANSLATE-TERMS
+                  :mode :program ;because of TRANSLATE-TERMS
                   ))
   (b* ((;; Check whether this call to the lifter is redundant:
         (when (command-is-redundantp whole-form state))
@@ -939,15 +939,21 @@
        (- (and (quotep dag-or-quotep)
                (cw "Warning: Code unexpectedly rewrote to the constant ~x0." dag-or-quotep))) ; may be common for the tester?
        ;; build the function:
+       ;; todo: guard this with produce-function:
        (function-name (intern-in-package-of-symbol
                        ;;todo: why is the re-interning needed here?
-                       (symbol-name (FRESH-NAME-IN-WORLD-WITH-$S (strip-stars-from-name defconst-name) nil (w state)))
+                       (symbol-name (strip-stars-from-name defconst-name))
                        defconst-name))
+       ((mv & msg/nil state) (fresh-namep-msg function-name 'acl2::function (w state) state))
+       ((when (and produce-function msg/nil))
+        (er hard? 'unroll-java-code-fn "We have been told to create a function, but the name ~x0 function-name is not fresh.")
+        (mv :non-fresh-name nil state))
        (dag-vars (if (quotep dag-or-quotep)
                      nil
                    ;;todo: check these (what should be allowed)?
                    (sort-vars-with-guidance (dag-vars-unsorted dag-or-quotep) parameter-names)))
        (dag-fns (dag-or-quotep-fns dag-or-quotep))
+       ;; todo: guard this with produce-function:
        (function-body (if (dag-or-quotep-size-less-thanp dag-or-quotep 1000)
                           (dag2term dag-or-quotep)
                         `(dag-val-with-axe-evaluator ,defconst-name
