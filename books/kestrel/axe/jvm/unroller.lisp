@@ -35,7 +35,6 @@
 (include-book "../supporting-functions")
 ;(include-book "../rewriter") ; for simp-dag
 (include-book "../evaluator-support")
-(include-book "../evaluator") ; for dag-val-with-axe-evaluator, has skip-proofs
 (include-book "../prune-dag-approximately") ;brings in rewriter-basic
 (include-book "../prune-dag-precisely") ;brings in rewriter-basic
 (include-book "../dag-info")
@@ -888,7 +887,7 @@
                               (booleanp chunkedp)
                               (booleanp normalize-xors))
                   :stobjs state
-                  :mode :program ;because of TRANSLATE-TERMS
+                  :mode :program ; todo: because of chk-fresh-namep and fresh-namep-msg
                   ))
   (b* ((;; Check whether this call to the lifter is redundant:
         (when (command-is-redundantp whole-form state))
@@ -902,7 +901,8 @@
        ((when (and produce-theorem (not produce-function)))
         (er hard? 'unroll-java-code-fn "When :produce-theorem is t, :produce-function must also be t.")
         (mv (erp-t) nil state))
-       (user-assumptions (translate-terms user-assumptions 'unroll-java-code-fn (w state))) ;throws an error on bad input
+       ((mv erp user-assumptions state) (translate-terms-in-logic-mode user-assumptions 'unroll-java-code-fn state)) ;throws an error on bad input
+       ((when erp) (mv erp nil state))
        ;; Adds the descriptor if omitted and unambiguous:
        (method-designator-string (jvm::elaborate-method-indicator method-indicator (jvm::global-class-alist state)))
        ;; Printed even if print is nil (seems ok):
@@ -938,41 +938,60 @@
        ((when erp) (mv erp nil state))
        (- (and (quotep dag-or-quotep)
                (cw "Warning: Code unexpectedly rewrote to the constant ~x0." dag-or-quotep))) ; may be common for the tester?
-       ;; build the function:
-       ;; todo: guard this with produce-function:
-       (function-name (intern-in-package-of-symbol
-                       ;;todo: why is the re-interning needed here?
-                       (symbol-name (strip-stars-from-name defconst-name))
-                       defconst-name))
-       ((mv & msg/nil state) (fresh-namep-msg function-name 'acl2::function (w state) state))
-       ((when (and produce-function msg/nil))
-        (er hard? 'unroll-java-code-fn "We have been told to create a function, but the name ~x0 function-name is not fresh.")
-        (mv :non-fresh-name nil state))
        (dag-vars (if (quotep dag-or-quotep)
                      nil
                    ;;todo: check these (what should be allowed)?
                    (sort-vars-with-guidance (dag-vars-unsorted dag-or-quotep) parameter-names)))
-       (dag-fns (dag-or-quotep-fns dag-or-quotep))
-       ;; todo: guard this with produce-function:
-       (function-body (if (dag-or-quotep-size-less-thanp dag-or-quotep 1000)
-                          (dag2term dag-or-quotep)
-                        `(dag-val-with-axe-evaluator ,defconst-name
-                                                     ,(make-acons-nest dag-vars)
-                                                     ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns *axe-evaluator-functions* (w state)) (w state))
-                                                     '0 ;array depth (not very important)
-                                                     )))
-       (theorem-name (pack$ function-name '-correct)) ;not always used
+       ;; maybe build a function:
+       ((mv erp maybe-function-name events-for-defun state)
+        (if (not produce-function)
+            (mv (erp-nil) nil nil state)
+          (b* ((function-name (intern-in-package-of-symbol
+                                ;;todo: why is the re-interning needed here?
+                                (symbol-name (strip-stars-from-name defconst-name))
+                                defconst-name))
+               ((mv & msg/nil state) (fresh-namep-msg function-name 'acl2::function (w state) state)) ; todo: this should not return state
+               ((when msg/nil)
+                (er hard? 'unroll-java-code-fn "We have been told to create a function, but the name ~x0 function-name is not fresh.")
+                (mv :non-fresh-name nil nil state))
+               (dag-fns (dag-or-quotep-fns dag-or-quotep))
+               (termp (dag-or-quotep-size-less-thanp dag-or-quotep 1000))
+               (function-body (if termp
+                                  (dag2term dag-or-quotep)
+                                `(dag-val-with-axe-evaluator ,defconst-name
+                                                             ,(make-acons-nest dag-vars)
+                                                             ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns *axe-evaluator-functions* (w state)) (w state))
+                                                             '0 ;array depth (not very important)
+                                                             )))
+               (defun `(defun ,function-name ,dag-vars ,function-body)))
+            (mv (erp-nil)
+                function-name
+                (append (if termp
+                            nil
+                          ;; We bring in the evaluator only if needed to embed a dag in the defun:
+                          '((include-book "kestrel/axe/evaluator" :dir :system)) ; note that this has skip-proofs (currently)
+                          )
+                        (list defun))
+                state))))
+       ((when erp) (mv erp nil state))
+       ;; maybe build a theorem:
+       ((mv maybe-theorem-name events-for-defthm)
+        (if (not produce-theorem)
+            (mv nil nil)
+          (b* ((theorem-name (pack$ maybe-function-name '-correct))
+               (defthm `(skip-proofs
+                          (defthm ,theorem-name
+                            (implies (and ,@all-assumptions)
+                                     (equal ,term-to-run-with-output-extractor
+                                            (,maybe-function-name ,@dag-vars)))))))
+            (mv theorem-name (list defthm)))))
+       ; build the whole event:
        (event `(progn (defconst ,defconst-name ',dag-or-quotep)
-                      ,@(and produce-function `((defun ,function-name ,dag-vars ,function-body)))
-                      ,@(and produce-theorem
-                             `((skip-proofs
-                                (defthm ,theorem-name
-                                  (implies (and ,@all-assumptions)
-                                           (equal ,term-to-run-with-output-extractor
-                                                  (,function-name ,@dag-vars)))))))))
+                 ,@events-for-defun
+                 ,@events-for-defthm))
        (items-created (append (list defconst-name)
-                              (if produce-function (list function-name) nil)
-                              (if produce-theorem (list theorem-name) nil)))
+                              (if produce-function (list maybe-function-name) nil)
+                              (if produce-theorem (list maybe-theorem-name) nil)))
        ((mv end-time state) (acl2::get-real-time state))
        (- (if (= 1 (len items-created))
               (cw "Created ~x0.~%~%" (first items-created))
