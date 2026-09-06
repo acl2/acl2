@@ -647,8 +647,6 @@
     (defret type-eq-proof-validp-of-type-eq-proof-cong-funn
       (implies (and (type-listp types-in1)
                     (type-listp types-in2)
-                    (typep type-out1)
-                    (typep type-out2)
                     (equal (len types-in1) (len in-proofs))
                     (equal (len types-in2) (len in-proofs))
                     (type-eq-proof-list-validp in-proofs types-in1 types-in2)
@@ -663,6 +661,7 @@
                         (len (cdr types-in1))
                         (len (cdr types-in2)))
                :in-theory (enable type-eq-proof-list-validp
+                                  typep-when-type-eq-proof-validp
                                   len)))))
 
   (defmacro make-type-eq-proof-cong-funn (&key types-in1
