@@ -42,15 +42,6 @@
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "arithmetic/top" :dir :system))
 
-;; Generic library rewrites that the .sys/cpp-expr-parser@useless-runes.lsp
-;; evidence shows contribute nothing to these proofs; disabling globally speeds
-;; up certification of this (the heaviest) book.  (Arithmetic/ordinal rules are
-;; kept ENABLED: they are load-bearing for the parsize measure conjectures.)
-(local (in-theory (disable acl2::default-car acl2::default-cdr
-                           acl2::consp-by-len acl2::consp-of-cdr-by-len
-                           acl2::append-when-not-consp acl2::subsetp-nil
-                           acl2::subsetp-append1)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ cpp-expr-parser
@@ -458,19 +449,27 @@
 (defines parse-cpp-full-mutual
   :parents (parser)
 
-  :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-cond
-                                     c$::parsize-of-unread-token
-                                     parsize-of-parse-cpp-type-spec-uncond
-                                     parsize-of-parse-cpp-type-spec-cond
-                                     parsize-of-parse-cpp-type-spec-suffix-uncond
-                                     parsize-of-parse-cpp-binding-names-uncond
-                                     parsize-of-parse-cpp-binding-names-cond
-                                     parsize-of-parse-cpp-try-binding-prefix-uncond
-                                     parsize-of-parse-cpp-try-ident-cast-suffix-uncond
-                                     parsize-of-parse-cpp-exception-handler-header-uncond
-                                     parsize-of-parse-cpp-exception-handler-header-cond
-                                     parsize-of-parse-cpp-param-list-uncond
-                                     parsize-of-parse-cpp-param-list-cond)))
+  :hints (("Goal" :in-theory (e/d (c$::parsize-of-read-token-cond
+                                   c$::parsize-of-unread-token
+                                   parsize-of-parse-cpp-type-spec-uncond
+                                   parsize-of-parse-cpp-type-spec-cond
+                                   parsize-of-parse-cpp-type-spec-suffix-uncond
+                                   parsize-of-parse-cpp-binding-names-uncond
+                                   parsize-of-parse-cpp-binding-names-cond
+                                   parsize-of-parse-cpp-try-binding-prefix-uncond
+                                   parsize-of-parse-cpp-try-ident-cast-suffix-uncond
+                                   parsize-of-parse-cpp-exception-handler-header-uncond
+                                   parsize-of-parse-cpp-exception-handler-header-cond
+                                   parsize-of-parse-cpp-param-list-uncond
+                                   parsize-of-parse-cpp-param-list-cond)
+                                  (c$::spanp-when-member-equal-of-span-listp
+                                   cpp-expr-p-when-member-equal-of-cpp-expr-listp
+                                   cpp-type-spec-p-when-member-equal-of-cpp-type-spec-listp
+                                   cpp-block-item-p-when-member-equal-of-cpp-block-item-listp
+                                   cpp-catch-clause-p-when-member-equal-of-cpp-catch-clause-listp
+                                   cpp-capture-p-when-member-equal-of-cpp-capture-listp
+                                   cpp-expr-listp-when-subsetp-equal
+                                   cpp-capture-listp-when-subsetp-equal))))
 
   :ruler-extenders :all
 
@@ -2156,6 +2155,24 @@
                             :found name?
                             :extra nil))
                ((erp peek? & parstate) (read-token parstate))
+               ;; Most vexing parse: 'type name ( params ) ;' is a function
+               ;; declaration, not a variable with a functional-cast initializer.
+               ;; peek? already consumed the '(', which parse-cpp-param-list expects.
+               ((when (token-punctuatorp peek? "("))
+                (b* (((erp params & parstate) (parse-cpp-param-list parstate))
+                     ((erp fsemi? fsemi-span parstate) (read-token parstate))
+                     ((unless (token-punctuatorp fsemi? ";"))
+                      (reterr-msg :where (span->start fsemi-span)
+                                  :expected "';' after function declaration"
+                                  :found fsemi?
+                                  :extra nil))
+                     (span (make-span :start (span->start t1-span)
+                                      :end   (span->end fsemi-span))))
+                  (retok (make-cpp-block-item-func-decl
+                          :ret-type type
+                          :name (token-ident->ident name?)
+                          :params params)
+                         span parstate)))
                ((mv init-p init parstate)
                 (cond ((token-punctuatorp peek? "=")
                        (b* (((unless (< (parsize parstate) psize))

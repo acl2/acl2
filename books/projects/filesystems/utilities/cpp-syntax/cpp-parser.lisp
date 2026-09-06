@@ -852,6 +852,56 @@
 ;; Parse: Typed Parameter
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define parse-cpp-paren-or-plain-name ((parstate parstatep))
+  :returns (mv erp
+               (name ident-optionp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse an optional parameter name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The name is either a bare identifier or a redundant parenthesized
+     declarator @('( ident )').  The latter is the crux of the most vexing
+     parse: in a parameter, @('int(x)') is the parameter @('int x'), not a
+     functional-cast expression.  On any other token (or none) no name is
+     taken and the lookahead is restored."))
+  (b* (((reterr) nil (irr-span) parstate)
+       ((erp tok? tok-span parstate) (read-token parstate))
+       ((unless tok?) (retok nil tok-span parstate))
+       ;; '( ident )' redundant-paren declarator
+       ((when (token-punctuatorp tok? "("))
+        (b* (((erp id? id-span parstate) (read-token parstate))
+             ((erp rp? & parstate) (read-token parstate)))
+          (if (and id? (token-case id? :ident)
+                   (token-punctuatorp rp? ")"))
+              (retok (token-ident->ident id?) id-span parstate)
+            (b* ((parstate (if rp? (unread-token parstate) parstate))
+                 (parstate (if id? (unread-token parstate) parstate))
+                 (parstate (unread-token parstate)))     ; unread '('
+              (retok nil tok-span parstate)))))
+       ;; bare ident (not ',', ')', '>', '=')
+       ((when (and (token-case tok? :ident)
+                   (not (token-punctuatorp tok? ","))
+                   (not (token-punctuatorp tok? ")"))
+                   (not (token-punctuatorp tok? ">"))
+                   (not (token-punctuatorp tok? "="))))
+        (retok (token-ident->ident tok?) tok-span parstate))
+       ;; no name: restore the lookahead token
+       (parstate (unread-token parstate)))
+    (retok nil tok-span parstate))
+
+  ///
+
+  (defret parsize-of-parse-cpp-paren-or-plain-name-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal"
+             :in-theory (enable c$::parsize-of-read-token-uncond
+                                c$::parsize-of-read-token-cond
+                                c$::parsize-of-unread-token)))))
+
 (define parse-cpp-param ((parstate parstatep))
   :returns (mv erp
                (param cpp-param-p)
@@ -991,17 +1041,11 @@
        (packp (token-punctuatorp dots? "..."))
        (parstate (if (and dots? (not packp)) (unread-token parstate) parstate))
        (last-span (if packp dots-span type-span))
-       ;; Optional: parameter name (not ',', ')', '>', or '=')
-       ((erp name-token? name-span parstate) (read-token parstate))
-       (name-p (and name-token?
-                    (token-case name-token? :ident)
-                    (not (token-punctuatorp name-token? ","))
-                    (not (token-punctuatorp name-token? ")"))
-                    (not (token-punctuatorp name-token? ">"))
-                    (not (token-punctuatorp name-token? "="))))
-       (param-name (if name-p (token-ident->ident name-token?) nil))
-       (parstate (if (and name-token? (not name-p)) (unread-token parstate) parstate))
-       (last-span (if name-p name-span last-span))
+       ;; Optional parameter name: a bare ident, or a redundant parenthesized
+       ;; declarator '( ident )' (most vexing parse: the param int(x) means int x).
+       ((erp param-name name-span parstate)
+        (parse-cpp-paren-or-plain-name parstate))
+       (last-span (if param-name name-span last-span))
        ;; Optional default: '=' const-expr
        ((erp eq? & parstate) (read-token parstate))
        ((when (not (token-punctuatorp eq? "=")))
@@ -1048,6 +1092,7 @@
              :in-theory (enable c$::parsize-of-read-token-uncond
                                 c$::parsize-of-read-token-cond
                                 c$::parsize-of-unread-token
+                                parsize-of-parse-cpp-paren-or-plain-name-uncond
                                 parsize-of-parse-cpp-type-spec-uncond))))
 
   (defret parsize-of-parse-cpp-param-cond
@@ -1060,6 +1105,7 @@
              :in-theory (enable c$::parsize-of-read-token-uncond
                                 c$::parsize-of-read-token-cond
                                 c$::parsize-of-unread-token
+                                parsize-of-parse-cpp-paren-or-plain-name-uncond
                                 parsize-of-parse-cpp-type-spec-uncond
                                 parsize-of-parse-cpp-type-spec-cond)))))
 
