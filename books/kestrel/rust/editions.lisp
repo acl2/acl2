@@ -64,8 +64,8 @@
   (xdoc::topstring
    (xdoc::p
     "We model the Rust 2021 and 2024 editions."))
-  (:e2021 ())
-  (:e2024 ())
+  (:2021 ())
+  (:2024 ())
   :pred editionp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -96,10 +96,10 @@
      is used for other fixtypes of this library;
      their witnesses (also of irrelevant value) reference this documentation."))
   :type editionp
-  :body (edition-e2024))
+  :body (edition-2024))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *default-edition*
   :short "The default edition (Rust 2024)."
-  (edition-e2024))
+  (edition-2024))

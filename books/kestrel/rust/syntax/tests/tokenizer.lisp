@@ -20,7 +20,7 @@
 
 ; Abbreviations for the tests.
 
-(defmacro toks (string &optional (edition '(rust::edition-e2024)))
+(defmacro toks (string &optional (edition '(rust::edition-2024)))
   `(tokenize-rust-from-string ,string ,edition "test.rs"))
 
 ; The list of bare tokens (spans stripped), or :error.
@@ -40,7 +40,7 @@
   `(assert-event (equal (toks-only (toks ,string)) ,expected)))
 
 (defmacro test-tokens-2021 (string expected)
-  `(assert-event (equal (toks-only (toks ,string (rust::edition-e2021)))
+  `(assert-event (equal (toks-only (toks ,string (rust::edition-2021)))
                         ,expected)))
 
 (defmacro test-tokenize-fail (string)
@@ -184,7 +184,7 @@ bc"))
 
 (assert-event
  (b* ((tokens+spans (tokenize-rust (list #x61 #x2028 #x62)
-                                   (rust::edition-e2024)
+                                   (rust::edition-2024)
                                    "test.rs"))
       ((when (reserrp tokens+spans)) nil)
       ((list ts1 ts2) tokens+spans))
@@ -198,7 +198,7 @@ bc"))
 
 (assert-event
  (equal (abs-lexeme-list (lexemize-rust-from-string "x // c")
-                         (rust::edition-e2024))
+                         (rust::edition-2024))
         (list (lexeme-token (token-ident "x" nil))
               (lexeme-whitespace " ")
               (lexeme-comment nil " c"))))
