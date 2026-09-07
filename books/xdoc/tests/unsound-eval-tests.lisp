@@ -94,7 +94,13 @@
 ; enough to avoid the stack overflow in CMUCL or any other Lisp for which this
 ; turns out to be an issue.  In fact we've seen problems here with Allegro CL
 ; and CLISP, so we exclude those, too.
- (if (member-eq (@ host-lisp) '(:CMU :ALLEGRO :CLISP))
+ (if (member-eq (@ host-lisp) '(:CMU :ALLEGRO :CLISP
+; Matt K.: Removing this test for ACL2 built on CCL on Arm-based Macs
+; (and other Arm machines), due to the following error in early 9/2026 that
+; kicks one out of Lisp:
+;   Fatal error: Mach exception
+;   nested deep-stack exception frame: scratch buffer in use
+                                     #+arm64 :CCL))
      (f 3)
    (infinite 3)))
 

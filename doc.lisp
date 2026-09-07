@@ -107147,6 +107147,11 @@ Changes at the System Level
   character 12 may be printed by [30m[47m[print-object$][0m[0m.  Thanks to Duane
   Rettig for bringing this issue to our attention.
 
+  Made a change so that ACL2 can be built and run using host Lisp CCL
+  on an Arm-based Mac.  Thanks to Yahya Sohail for supplying that
+  change, which handles certain floating-point exceptions.  (ACL2
+  supports floating-point computations; see [df].)
+
 
 EMACS Support
 

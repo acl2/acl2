@@ -299,6 +299,12 @@ BOZO what is going on here?
         state))
     state))
 
+; Matt K.: Removing this test for ACL2 built on CCL on Arm-based Macs
+; (and other Arm machines), due to the following error in early 9/2026 that
+; kicks one out of Lisp:
+;   Fatal error: Mach exception
+;   nested deep-stack exception frame: scratch buffer in use
+#-(and ccl arm64)
 (make-event
  (let ((state (test7 state)))
    (value '(value-triple :success))))

@@ -9432,9 +9432,9 @@
 ; already know that an error is signalled on overflow for other Lisps that host
 ; ACL2; see break-on-overflow-and-nan.
 
-  #-(or allegro lispworks (and gcl no-sigfpe))
+  #-(or allegro lispworks (and gcl no-sigfpe) (and ccl arm64))
   (declare (ignore op))
-  #-(or allegro lispworks (and gcl no-sigfpe))
+  #-(or allegro lispworks (and gcl no-sigfpe) (and ccl arm64))
   form
 ; Camm Maguire suggestion:
   #+(and gcl no-sigfpe)
@@ -9452,7 +9452,15 @@
      (when (or (= result +1D++0) (= result -1D++0))
        (error "Floating-point overflow for a call of ~s"
               ',op))
-     result))
+     result)
+  #+(and ccl arm64)
+  `(progn
+     (ccl::%fp-begin-inline-check)
+     (let ((result ,form))
+       (ccl::%fp-check-inline-exception
+        ',op nil
+        (ccl::%fp-inline-exception-status))
+       result)))
 
 (defun check-fp-signals ()
 
@@ -9469,7 +9477,7 @@
            (format t "This Lisp is unsuitable for ACL2, because~%~
                       evaluation of the form ~s was expected~%~
                       to produce an error but instead it produced the~%~
-                      value ~s.  You may want to notify the ACL2~%`
+                      following value:~%~s~%You may want to notify the ACL2~%~
                       implementors of this error message, with~%~
                       information about your Lisp implementation~%~
                       and platform."
