@@ -55,7 +55,7 @@
    (xdoc::p
     "Besides the predicate for individual dimensions,
      we define one for lists of dimensions,
-     via the two rules @('empty') and @('cons');
+     via the two rules @('nil') and @('cons');
      this corresponds to the use of @($\\cdots$) in [thesis] [arxiv] [esop].
      The rules for individual dimensions follow [thesis] [arxiv] [esop],
      with the addition of rules for multiplication and subtraction,
@@ -96,8 +96,8 @@
 
    ;; lists of dimensions:
 
-   (empty ((ispace-var-setp ivars))
-          (dims-ok ivars nil))
+   (nil ((ispace-var-setp ivars))
+        (dims-ok ivars nil))
 
    (cons ((ispace-var-setp ivars)
           (dimp dim)
@@ -152,8 +152,8 @@
 
    ;; lists of shapes:
 
-   (empty ((ispace-var-setp ivars))
-          (shapes-ok ivars nil))
+   (nil ((ispace-var-setp ivars))
+        (shapes-ok ivars nil))
 
    (cons ((ispace-var-setp ivars)
           (shapep shape)
@@ -176,8 +176,8 @@
 
    ;; lists of ispaces:
 
-   (empty ((ispace-var-setp ivars))
-          (ispaces-ok ivars nil))
+   (nil ((ispace-var-setp ivars))
+        (ispaces-ok ivars nil))
 
    (cons ((ispace-var-setp ivars)
           (ispacep ispace)
@@ -199,7 +199,7 @@
   (verify-guards dim-ok-add-validp)
   (verify-guards dim-ok-mul-validp)
   (verify-guards dim-ok-sub-validp)
-  (verify-guards dims-ok-empty-validp)
+  (verify-guards dims-ok-nil-validp)
   (verify-guards dims-ok-cons-validp)
 
   ;; proof validity functions:
@@ -228,11 +228,11 @@
   (verify-guards shape-ok-dims-validp)
   (verify-guards shape-ok-append-validp)
   (verify-guards shape-ok-splice-validp)
-  (verify-guards shapes-ok-empty-validp)
+  (verify-guards shapes-ok-nil-validp)
   (verify-guards shapes-ok-cons-validp)
   (verify-guards ispace-ok-dim-validp)
   (verify-guards ispace-ok-shape-validp)
-  (verify-guards ispaces-ok-empty-validp)
+  (verify-guards ispaces-ok-nil-validp)
   (verify-guards ispaces-ok-cons-validp)
 
   ;; proof validity functions:

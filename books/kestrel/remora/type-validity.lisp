@@ -57,7 +57,7 @@
    (xdoc::p
     "Besides the predicate for individual types,
      we define one for lists of types,
-     via the two rules @('empty') and @('cons');
+     via the two rules @('nil') and @('cons');
      this corresponds to the use of @($\\cdots$) in [thesis] [arxiv] [esop].")
    (xdoc::p
     "The rules follow [thesis] [arxiv] [esop],
@@ -204,9 +204,9 @@
 
    ;; lists of types:
 
-   (empty ((ispace-var-setp ivars)
-           (type-var-setp tvars))
-          (types-ok ivars tvars nil))
+   (nil ((ispace-var-setp ivars)
+         (type-var-setp tvars))
+        (types-ok ivars tvars nil))
 
    (cons ((ispace-var-setp ivars)
           (type-var-setp tvars)
@@ -237,7 +237,7 @@
   (verify-guards type-ok-pin-validp)
   (verify-guards type-ok-sigma-validp)
   (verify-guards type-ok-sigman-validp)
-  (verify-guards types-ok-empty-validp)
+  (verify-guards types-ok-nil-validp)
   (verify-guards types-ok-cons-validp)
 
   ;; proof validity functions

@@ -300,10 +300,10 @@
 
    ;; lists of expressions:
 
-   (empty ((ispace-var-setp ivars)
-           (type-var-setp tvars)
-           (string-type-mapp evars))
-          (exprs-ok ivars tvars evars nil nil))
+   (nil ((ispace-var-setp ivars)
+         (type-var-setp tvars)
+         (string-type-mapp evars))
+        (exprs-ok ivars tvars evars nil nil))
 
    (cons ((ispace-var-setp ivars)
           (type-var-setp tvars)
@@ -318,10 +318,10 @@
 
    ;; lists of atoms:
 
-   (empty ((ispace-var-setp ivars)
-           (type-var-setp tvars)
-           (string-type-mapp evars))
-          (atoms-ok ivars tvars evars nil nil))
+   (nil ((ispace-var-setp ivars)
+         (type-var-setp tvars)
+         (string-type-mapp evars))
+        (atoms-ok ivars tvars evars nil nil))
 
    (cons ((ispace-var-setp ivars)
           (type-var-setp tvars)
@@ -355,9 +355,9 @@
   (verify-guards atom-ok-bool-validp)
   (verify-guards atom-ok-int-validp)
   (verify-guards atom-ok-float-validp)
-  (verify-guards exprs-ok-empty-validp)
+  (verify-guards exprs-ok-nil-validp)
   (verify-guards exprs-ok-cons-validp)
-  (verify-guards atoms-ok-empty-validp)
+  (verify-guards atoms-ok-nil-validp)
   (verify-guards atoms-ok-cons-validp)
 
   ;; proof validity functions
