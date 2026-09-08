@@ -412,6 +412,48 @@
 ;; (local (in-theory (enable gobj-bfr-eval)))
 (local (in-theory (disable gobj-bfr-eval-reduce-by-bfr-eval)))
 
+(define fgl-objectlist-to-object ((x fgl-objectlist-p))
+  :returns (obj fgl-object-p)
+  (if (atom x)
+      nil
+    (g-cons (car x)
+            (fgl-objectlist-to-object (cdr x))))
+  ///
+  (defret fgl-object-eval-of-<fn>
+    (equal (fgl-object-eval obj env)
+           (fgl-objectlist-eval x env)))
+
+  (defret fgl-object-bfrlist-of-<fn>
+    (equal (fgl-object-bfrlist obj)
+           (fgl-objectlist-bfrlist x))))
+
+(local (in-theory (disable iff-forall-extensions)))
+
+(local (defthm iff-forall-extensions-implies
+         (iff (iff-forall-extensions t hyp eval-alist)
+              (and (hide (iff-forall-extensions t hyp eval-alist))
+                   (fgl-ev hyp eval-alist)))
+         :hints (("goal" :expand ((:free (x) (hide x)))))))
+
+(def-fgl-meta equal-when-equal-functions
+  (b* (((unless (and (fgl-object-case x :g-apply)
+                     (fgl-object-case y :g-apply)))
+        (mv nil nil nil nil))
+       ((g-apply x))
+       ((g-apply y))
+       ((unless (eq x.fn y.fn))
+        (mv nil nil nil nil)))
+    (mv t ''t
+        '((equal xargs yargs))
+        (list (cons 'xargs (fgl-objectlist-to-object x.args))
+              (cons 'yargs (fgl-objectlist-to-object y.args)))))
+  :formals (x y)
+  :origfn equal
+  :returns (successp rhs hyps bindings))
+
+(local (in-theory (disable iff-forall-extensions-implies)))
+
+
 (define fgl-nice-4vec-call-p ((x fgl-object-p))
   (fgl-object-case x
     :g-apply (and (eq x.fn 'sv::4vec)
