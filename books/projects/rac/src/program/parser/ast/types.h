@@ -64,7 +64,11 @@ public:
   // overridden by IntType
   // Convert rval to an S-expression to be assigned to an object of this
   virtual bool canBeImplicitlyCastTo(const Type *target) const = 0;
-  virtual Sexpression *cast(Expression *rval) const;
+  virtual Sexpression *cast(Expression *rval, bool &has_changed) const;
+  Sexpression *cast(Expression *rval) const {
+    bool b;
+    return cast(rval, b);
+  };
   virtual Sexpression *default_initializer_value() const = 0;
 
   // TODO refactore.
@@ -127,7 +131,7 @@ public:
                         false);
   }
 
-  Sexpression *cast(Expression *rval) const override;
+  Sexpression *cast(Expression *rval, bool &has_changed) const override;
 
   virtual void display(std::ostream &os) const override {
 
@@ -214,8 +218,8 @@ public:
     derefType()->makeDef(name, os);
   }
 
-  virtual Sexpression *cast(Expression *rval) const override {
-    return derefType()->cast(rval);
+  virtual Sexpression *cast(Expression *rval, bool &has_changed) const override {
+    return derefType()->cast(rval, has_changed);
   }
 
   unsigned ACL2ValWidth() const override { return derefType()->ACL2ValWidth(); }
@@ -270,7 +274,7 @@ public:
   static IntType *FromPrimType(const PrimType *t);
 
   void display(std::ostream &os = std::cout) const override;
-  Sexpression *cast(Expression *rval) const override;
+  Sexpression *cast(Expression *rval, bool &has_changed) const override;
 
   unsigned ACL2ValWidth() const override;
 
@@ -324,7 +328,7 @@ public:
     return isEqual(target);
   }
 
-  virtual Sexpression *cast(Expression *rval) const override;
+  virtual Sexpression *cast(Expression *rval, bool &has_changed) const override;
 
   inline void setSTDArray() { isSTDarray_ = true; }
   inline bool isSTDArray() const { return isSTDarray_; }
@@ -391,7 +395,7 @@ public:
     return isEqual(target);
   }
 
-  virtual Sexpression *cast(Expression *rval) const override;
+  virtual Sexpression *cast(Expression *rval, bool &has_changed) const override;
 
   Sexpression *default_initializer_value() const override;
 
@@ -473,7 +477,7 @@ public:
     return new MvType(loc(), std::move(tmp));
   }
 
-  Sexpression *cast(Expression *rval) const override;
+  Sexpression *cast(Expression *rval, bool &has_changed) const override;
 
   Sexpression *default_initializer_value() const override;
 };
@@ -524,8 +528,8 @@ public:
     Type::makeDef(name, os);
   }
 
-  Sexpression *cast(Expression *rval) const override {
-    return Type::cast(rval);
+  Sexpression *cast(Expression *rval, bool &has_changed) const override {
+    return Type::cast(rval, has_changed);
   }
 
   unsigned ACL2ValWidth() const override { return Type::ACL2ValWidth(); }

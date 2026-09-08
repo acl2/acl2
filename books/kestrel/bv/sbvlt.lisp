@@ -371,7 +371,7 @@
   :hints (("Goal" :in-theory (enable sbvlt))))
 
 ;loops with defn sbvlt?
-(defthmd <=-of-logext-and--1
+(defthmd <-of--1-and-logext
   (equal (< -1 (logext size y))
          (not (sbvlt size y 0)))
   :hints (("Goal" :in-theory (enable sbvlt))))
@@ -412,6 +412,7 @@
   :hints (("Goal" :in-theory (enable sbvlt logext-cases))))
 
 ;; In case we don't want to rewrite the sbvlt.
+;limit?
 (defthm getbit-when-not-sbvlt-of-0-cheap
   (implies (not (sbvlt 32 x 0))
            (equal (getbit 31 x)
@@ -420,6 +421,7 @@
   :hints (("Goal" :in-theory (enable sbvlt))))
 
 ;; In case we don't want to rewrite the sbvlt.
+;limit?
 (defthm getbit-when-sbvlt-of-0-cheap
   (implies (sbvlt 32 x 0)
            (equal (getbit 31 x)

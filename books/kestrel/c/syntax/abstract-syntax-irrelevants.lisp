@@ -203,7 +203,7 @@
 (defirrelevant irr-const-expr
   :short "An irrelevant constant expression."
   :type const-exprp
-  :body (const-expr (irr-expr)))
+  :body (make-const-expr :expr (irr-expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -305,19 +305,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-param-declor
+  :short "An irrelevant parameter declarator."
+  :type param-declorp
+  :body (param-declor-none nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-param-declon
   :short "An irrelevant parameter declaration."
   :type param-declonp
   :body (make-param-declon :specs nil
-                           :declor (param-declor-none)
+                           :declor (irr-param-declor)
                            :attribs nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-param-declor
-  :short "An irrelevant parameter declarator."
-  :type param-declorp
-  :body (param-declor-none))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -345,7 +345,7 @@
 (defirrelevant irr-struct-declor
   :short "An irrelevant structure declarator."
   :type struct-declorp
-  :body (make-struct-declor :declor? nil :expr? nil))
+  :body (make-struct-declor :declor? nil :expr? nil :info nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

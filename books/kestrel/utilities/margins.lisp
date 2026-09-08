@@ -1,6 +1,6 @@
 ; Utilities dealing with setting margins
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 ;; See also widen-margins.lisp.
 
 (local (include-book "state"))
+(local (include-book "globals"))
 
 (in-theory (disable set-fmt-hard-right-margin))
 (in-theory (disable set-fmt-soft-right-margin))
@@ -39,4 +40,14 @@
 (defthm state-p-of-set-fmt-soft-right-margin
   (implies (state-p state)
            (state-p (set-fmt-soft-right-margin val state)))
+  :hints (("Goal" :in-theory (enable set-fmt-soft-right-margin))))
+
+(defthm w-of-set-fmt-hard-right-margin
+  (equal (w (set-fmt-hard-right-margin val state))
+         (w state))
+  :hints (("Goal" :in-theory (enable set-fmt-hard-right-margin))))
+
+(defthm w-of-set-fmt-soft-right-margin
+  (equal (w (set-fmt-soft-right-margin val state))
+         (w state))
   :hints (("Goal" :in-theory (enable set-fmt-soft-right-margin))))

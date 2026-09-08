@@ -44,3 +44,8 @@
                 (state-p state))
            (state-p (mv-nth 1 (write-bytes-to-file bytes filename ctx state))))
   :hints (("Goal" :in-theory (enable write-bytes-to-file))))
+
+(defthm w-of-mv-nth-1-of-write-bytes-to-file
+  (equal (w (mv-nth 1 (write-bytes-to-file bytes filename ctx state)))
+         (w state))
+    :hints (("Goal" :in-theory (e/d (write-bytes-to-file) (w)))))

@@ -65,5 +65,7 @@
 (include-book "projects/aleo/portcullis" :dir :system)
 (include-book "projects/aleo/bft/portcullis" :dir :system)
 (include-book "kestrel/risc-v/portcullis" :dir :system)
+(include-book "kestrel/data/portcullis" :dir :system)
+(include-book "kestrel/data/treemap/portcullis" :dir :system)
 
 ; cert-flags: ? t :ttags :all

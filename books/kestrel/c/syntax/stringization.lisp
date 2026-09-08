@@ -48,7 +48,8 @@
      Thus, the mapping is one to one,
      but we return a list for flexibility,
      so that future extensions may return more @(tsee s-char) values."))
-  (list (s-char-char (char-code achar))))
+  (list (s-char-char (char-code achar)))
+  :guard-hints (("Goal" :in-theory (enable unicharp-of-char-code))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -191,6 +192,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define stringize-eprefix ((prefix eprefixp))
+  :returns (schars s-char-listp)
+  :short "Stringize an encoding prefix."
+  (eprefix-case prefix
+                :locase-u8 (stringize-achars (list #\u #\8))
+                :locase-u (stringize-achar #\u)
+                :upcase-u (stringize-achar #\U)
+                :upcase-l (stringize-achar #\L)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stringize-eprefix-option ((prefix? eprefix-optionp))
+  :returns (schars s-char-listp)
+  :short "Stringize an optional encoding prefix."
+  (eprefix-option-case prefix?
+                       :some (stringize-eprefix prefix?.val)
+                       :none nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define stringize-c-char ((cchar c-char-p))
   :returns (schars s-char-listp)
   :short "Stringize a character or escape sequence in character constants."
@@ -206,7 +227,8 @@
                ((= cchar.code (char-code #\"))
                 (append (stringize-achars (list #\\ #\"))))
                (t (list (s-char-char cchar.code))))
-   :escape (stringize-escape cchar.escape)))
+   :escape (stringize-escape cchar.escape))
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-unicharp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -220,30 +242,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stringize-cprefix ((prefix cprefixp))
-  :returns (schars s-char-listp)
-  :short "Stringize a prefix of character constants."
-  (stringize-achar (cprefix-case prefix
-                                 :upcase-l #\L
-                                 :locase-u #\u
-                                 :upcase-u #\U)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define stringize-cprefix-option ((prefix? cprefix-optionp))
-  :returns (schars s-char-listp)
-  :short "Stringize an optional prefix of character constants."
-  (cprefix-option-case prefix?
-                       :some (stringize-cprefix prefix?.val)
-                       :none nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define stringize-cconst ((cconst cconstp))
   :returns (schars s-char-listp)
   :short "Stringize a character constant."
   (b* (((cconst cconst) cconst))
-    (append (stringize-cprefix-option cconst.prefix?)
+    (append (stringize-eprefix-option cconst.prefix?)
             (stringize-achar #\')
             (stringize-c-char-list cconst.cchars)
             (stringize-achar #\'))))
@@ -265,7 +268,8 @@
                ((= schar.code (char-code #\"))
                 (append (stringize-achars (list #\\ #\"))))
                (t (list (s-char-char schar.code))))
-   :escape (stringize-escape schar.escape)))
+   :escape (stringize-escape schar.escape))
+  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-unicharp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -276,26 +280,6 @@
   (cond ((endp schars) nil)
         (t (append (stringize-s-char (car schars))
                    (stringize-s-char-list (cdr schars))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define stringize-eprefix ((prefix eprefixp))
-  :returns (schars s-char-listp)
-  :short "Stringize an encoding prefix."
-  (eprefix-case prefix
-                :locase-u8 (stringize-achars (list #\u #\8))
-                :locase-u (stringize-achar #\u)
-                :upcase-u (stringize-achar #\U)
-                :upcase-l (stringize-achar #\L)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define stringize-eprefix-option ((prefix? eprefix-optionp))
-  :returns (schars s-char-listp)
-  :short "Stringize an optional encoding prefix."
-  (eprefix-option-case prefix?
-                       :some (stringize-eprefix prefix?.val)
-                       :none nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -354,6 +338,7 @@
    :horizontal-tab (raise "Internal error: horizontal tab.")
    :vertical-tab (raise "Internal error: vertical tab.")
    :form-feed (raise "Internal error: form feed."))
+  :guard-hints (("Goal" :in-theory (enable natp-when-unicharp)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -336,7 +336,7 @@
 (define flextranssum-predicate-def (x)
   (b* (((flextranssum x))
        (consp-when-foop (intern-in-package-of-symbol (cat "CONSP-WHEN-" (symbol-name x.pred)) x.name)))
-    `(define ,x.pred (,x.xvar)
+    `((define ,x.pred (,x.xvar)
        :parents (,x.name)
        :progn t
        :short ,(str::cat "Recognizer for @(see " (xdoc::full-escape-symbol x.name) ").")
@@ -353,7 +353,7 @@
        ,@(dts-member-implies-sum-thms x x.members)
        ,@(dts-by-tag-thms x x.members)
        ,@(dts-when-invalid-tag-thms x)
-       ,@(dts-fwd-thms x))))
+       ,@(dts-fwd-thms x)))))
 
 
 

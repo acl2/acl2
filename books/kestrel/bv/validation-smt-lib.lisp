@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "bvuminus-def")
-(include-book "bvminus")
+(include-book "bvminus-def")
 (include-book "bvnot")
 (include-book "bvand-def")
 (include-book "bvor-def")

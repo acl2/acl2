@@ -99,8 +99,8 @@
   :prepwork
   ((local
     (in-theory
-     (enable valuep-when-value-resultp-and-not-reserrp
-             value-listp-when-value-list-resultp-and-not-reserrp))))
+     (enable valuep-when-result-not-error
+             value-listp-when-result-not-error))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

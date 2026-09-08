@@ -834,7 +834,8 @@
                  (pprint-expression-list expr.components (expr-grade-top))))
            :tuple-component
            (msg "~@0.~@1"
-                (pprint-expression expr.tuple (expr-grade-postfix)))
+                (pprint-expression expr.tuple (expr-grade-postfix))
+                (pprint-natural expr.index))
            :struct
            (msg "~@0 { ~@1 }"
                 (pprint-identifier expr.type)

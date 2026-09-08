@@ -12,6 +12,8 @@
 (in-package "C")
 
 (include-book "pretty-printer" :ttags ((:open-output-channel!)))
+(include-book "../syntax/abstract-syntax-formal-mapping-inverse")
+(include-book "../syntax/printer" :ttags ((:file-io!)))
 (include-book "shallow-embedding")
 (include-book "table")
 (include-book "expression-generation")
@@ -54,7 +56,11 @@
    (xdoc::p
     "We generate C abstract syntax,
      which we pretty-print to files
-     and also assign to a named constant.")
+     and also assign to a named constant.
+     We have started migrating to use the "
+    (xdoc::seetopic "c$::printer" "pretty-printer for the syntax for tools")
+    "; when the migration is complete,
+     we will remove the pretty-printer under this ATC directory.")
    (xdoc::p
     "Given the restrictions on the target functions,
      the translation is relatively straightforward, by design.")
@@ -157,24 +163,25 @@
   (xdoc::topstring
    (xdoc::p
     "If the @(':header') input is @('t'), we generate two declarations:
-     one for the header, with @('extern') and without initializer
+     one for the header file, with @('extern') and without initializer
      (whether the @(tsee defobject) has an initializer or not);
-     and one for the source file, without @('extern'),
+     and one for the @('.c') source file, without @('extern'),
      and with or without the intiializer
      depending of whether the @(tsee defobject) has it or not.
      If instead the @(':header') input is @('nil'),
-     we generate one declaration, for the source file,
+     we generate one declaration, for the @('.c') source file,
      without @('extern'),
      and with or without the intiializer
      depending of whether the @(tsee defobject) has it or not.
-     In other words, we always generate a declaration for the source file,
+     In other words,
+     we always generate a declaration for the @('.c') source file,
      the same regardless of @(':header'),
-     and we optionally generate an @('extern') one for the header,
+     and we optionally generate an @('extern') one for the header file,
      always without initializer.
      The @('extern') serves so that the declaration
      does not count like a tentative definition,
      and the only definition (tentative if it has no initializer)
-     is in the source file."))
+     is in the @('.c') source file."))
   (b* ((id (defobject-info->name-ident info))
        (type (defobject-info->type info))
        (initer? (defobject-info->init info))
@@ -226,20 +233,20 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The first list, @('exts-h'), is for the generated header;
-     the second list, @('exts-c'), is for the generated source file.
-     The flag @('header') controls whether the header is generated or not:
+    "The first list, @('exts-h'), is for the generated header file;
+     the second list, @('exts-c'), is for the generated @('.c') source file.
+     The flag @('header') controls whether the header file is generated or not:
      if the flag is @('nil'), @('exts-h') is empty,
-     i.e. we only generate external declarations for the source file.")
+     i.e. we only generate external declarations for the @('.c') source file.")
    (xdoc::p
-    "If the header is generated,
+    "If the header file is generated,
      all the structs and external objects go there,
      while only declarations for the functions go there;
      furthermore, the external objects have no initializers there.
-     The function definitions go into the source file,
+     The function definitions go into the @('.c') source file,
      together with the external objects that have initializers.
-     If the header is not generated,
-     everything goes into the source file."))
+     If the header file is not generated,
+     everything goes into the @('.c') source file."))
   (b* (((reterr) nil nil nil nil)
        (wrld (w state))
        ((when (endp targets)) (retok nil nil nil names-to-avoid))
@@ -605,6 +612,119 @@
     (retok tunits
            events
            names-to-avoid)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-pprint-options-to-priopt ((options pprint-options-p))
+  :returns (priopt c$::prioptp)
+  :short "Turn ATC pretty-printing options into
+          options for the pretty-printer of the syntax for tools."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is part of the migration to the new pretty-printer."))
+  (c$::make-priopt
+   :indent-size 4
+   :paren-nested-conds
+   (pprint-options->parenthesize-nested-conditionals options))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-printer-dialect ()
+  :returns (dialect dialectp)
+  :short "The C dialect used by the pretty-printer."
+  (make-dialect :std (standard-c17)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-add-generated-comment-to-trans-unit ((tunit c$::trans-unitp))
+  :returns (new-tunit c$::trans-unitp)
+  :short "Add ATC's generated-file comment to a translation unit."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Currently ATC generates translation units
+     using the ASTs in the language formalization,
+     but in order to use the pretty-printer from the syntax for tools,
+     we need to convert those to the ASTs for tools.
+     The ATC legacy pretty-printer (which we are migrating away from)
+     just prints the comment,
+     but the ASTs for tools include comments,
+     which the new pretty-printer prints,
+     so here we add the comment to the translation unit."))
+  (c$::change-trans-unit
+   tunit
+   :items (cons (c$::trans-item-line-comment
+                 (acl2::string=>nats "This file is generated by ATC."))
+                (c$::trans-unit->items tunit)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define atc-add-generated-comment-to-filepath-trans-unit-map
+  ((map c$::filepath-trans-unit-mapp))
+  :returns (new-map c$::filepath-trans-unit-mapp
+                    :hyp (c$::filepath-trans-unit-mapp map))
+  :short "Add ATC's generated-file comment to every translation unit in a map."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee atc-add-generated-comment-to-trans-unit) for rationale."))
+  (b* (((when (omap::emptyp (c$::filepath-trans-unit-map-fix map))) nil)
+       ((mv path tunit) (omap::head map))
+       (new-tunit (atc-add-generated-comment-to-trans-unit tunit))
+       (new-map
+        (atc-add-generated-comment-to-filepath-trans-unit-map
+         (omap::tail map))))
+    (omap::update path new-tunit new-map))
+  :verify-guards :after-returns
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define atc-add-generated-comments-to-trans-ensemble
+  ((tunits c$::trans-ensemblep))
+  :returns (new-tunits c$::trans-ensemblep)
+  :short "Add ATC's generated-file comment to a translation ensemble."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee atc-add-generated-comment-to-trans-unit) for rationale."))
+  (c$::make-trans-ensemble
+   :units
+   (atc-add-generated-comment-to-filepath-trans-unit-map
+    (c$::trans-ensemble->units tunits))
+   :resolved-includes (c$::trans-ensemble->resolved-includes tunits)
+   :info (c$::trans-ensemble->info tunits))
+  :hooks nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-fileset ((file-name stringp)
+                         (tunits trans-ensemblep)
+                         (options pprint-options-p))
+  :guard (b* ((new-tunits
+               (atc-add-generated-comments-to-trans-ensemble
+                (c$::ildm-trans-ensemble file-name tunits)))
+              (dialect (atc-printer-dialect)))
+           (and (c$::trans-ensemble-unambp new-tunits)
+                (c$::trans-ensemble-aidentp new-tunits dialect)))
+  :returns (fileset c$::filesetp)
+  :short "Generate a file set from a translation unit ensemble."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We map ATC's abstract syntax to the abstract syntax for tools,
+     add ATC's generated-file comment to each translation unit,
+     and print the result to a file set with the C17 dialect option;
+     the pretty-printing options are determined from the ones given to ATC."))
+  (b* ((new-tunits (atc-add-generated-comments-to-trans-ensemble
+                    (c$::ildm-trans-ensemble file-name tunits)))
+       (priopt (atc-pprint-options-to-priopt options))
+       (dialect (atc-printer-dialect)))
+    (c$::print-fileset new-tunits priopt dialect))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

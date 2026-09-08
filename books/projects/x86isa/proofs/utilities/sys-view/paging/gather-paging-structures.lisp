@@ -419,6 +419,8 @@
               (ia32e-page-tablesBits->ps e-2))
        (equal (ia32e-page-tablesBits->res1 e-1)
               (ia32e-page-tablesBits->res1 e-2))
+       (equal (ia32e-page-tablesBits->r e-1)
+              (ia32e-page-tablesBits->r e-2))
        (equal (ia32e-page-tablesBits->reference-addr e-1)
               (ia32e-page-tablesBits->reference-addr e-2))
        (equal (ia32e-page-tablesBits->res2 e-1)
@@ -439,6 +441,7 @@
       !ia32e-page-tablesBits->pcd-is-ia32e-page-tablesbits
       !ia32e-page-tablesBits->ps-is-ia32e-page-tablesbits
       !ia32e-page-tablesBits->res1-is-ia32e-page-tablesbits
+      !ia32e-page-tablesBits->r-is-ia32e-page-tablesbits
       !ia32e-page-tablesBits->reference-addr-is-ia32e-page-tablesbits
       !ia32e-page-tablesBits->res2-is-ia32e-page-tablesbits
       !ia32e-page-tablesBits->xd-is-ia32e-page-tablesbits))
@@ -582,6 +585,7 @@
                                      ia32e-page-tablesbits->res2
                                      ia32e-page-tablesbits->reference-addr
                                      ia32e-page-tablesbits->res1
+                                     ia32e-page-tablesbits->r
                                      ia32e-page-tablesbits->ps
                                      ia32e-page-tablesbits->pcd
                                      ia32e-page-tablesbits->pwt
@@ -599,6 +603,7 @@
                                      ia32e-page-tablesbits->res2
                                      ia32e-page-tablesbits->reference-addr
                                      ia32e-page-tablesbits->res1
+                                     ia32e-page-tablesbits->r
                                      ia32e-page-tablesbits->ps
                                      ia32e-page-tablesbits->pcd
                                      ia32e-page-tablesbits->pwt
@@ -615,6 +620,7 @@
                                      ia32e-page-tablesbits->res2
                                      ia32e-page-tablesbits->reference-addr
                                      ia32e-page-tablesbits->res1
+                                     ia32e-page-tablesbits->r
                                      ia32e-page-tablesbits->ps
                                      ia32e-page-tablesbits->pcd
                                      ia32e-page-tablesbits->pwt

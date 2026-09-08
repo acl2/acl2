@@ -295,6 +295,7 @@
           ;; todo: add type hyps for the var?
           (mv `((equal ,state-component ,input-name))
               `(,input-name))
+        ;; must be a pointer or an array:
         (let ((stack-byte-count (* 8 stack-slots)) ; each stack element is 64-bits
               (existing-stack-byte-count (* 8 existing-stack-slots)))
           (if (call-of :pointer type)

@@ -171,9 +171,8 @@
            :in-theory (disable logtail-shift-gen))))
 
 (defthm logtail-of-expt
-  (implies (and
-            (natp n)
-            (integerp size))
+  (implies (and (natp n)
+                (integerp size))
            (equal (logtail n (expt 2 size))
                   (if (<= n size)
                       (expt 2 (- size n))
@@ -195,8 +194,7 @@
 (defthm unsigned-byte-p-of-logtail-strong
   (equal (unsigned-byte-p n (logtail pos i))
          (and (natp n)
-              (unsigned-byte-p (+ n (nfix pos)) (ifix i))))
-  :hints (("Goal" :cases ((integerp x)))))
+              (unsigned-byte-p (+ n (nfix pos)) (ifix i)))))
 
 (defthm logtail-shift-gen2
   (implies (and (<= size n) ;this case

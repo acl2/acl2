@@ -422,7 +422,8 @@
                         "Since the :SOLUTION-NAME input ~
                          specifies an existing function, ~
                          the :SOLUTION-BODY input must be absent, ~
-                         but instead ~x0 has been supplied.")
+                         but instead ~x0 has been supplied."
+                        solution-body)
             (value nil))
         (if (not solution-body?)
             (er-soft+ ctx t nil

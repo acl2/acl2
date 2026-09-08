@@ -351,7 +351,7 @@
               (mv nil nil nil))
              (vars (cadr uterm))
              ((unless (symbol-listp vars))
-              (raise "Internal error: MV-LET bound variables not symbols." vars)
+              (raise "Internal error: MV-LET bound variables ~x0 not symbols." vars)
               (mv nil nil nil))
              (vars-uterms (caddr uterm))
              (body-uterm (cadddr uterm))
@@ -3695,6 +3695,10 @@
           not-flexible-array-member-p-when-ullongp
           not-flexible-array-member-p-when-sllongp
           not-flexible-array-member-p-when-value-pointer
+          not-flexible-array-member-p-when-value-struct
+          ,@(atc-string-taginfo-alist-to-value-kind-thms gin.prec-tags)
+          ,@(atc-string-taginfo-alist-to-valuep-thms gin.prec-tags)
+          ,@(atc-string-taginfo-alist-to-flexiblep-thms gin.prec-tags)
           value-fix-when-valuep
           valuep-when-ucharp
           valuep-when-scharp

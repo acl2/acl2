@@ -1,6 +1,6 @@
 ; Utilities for archiving xdoc resources
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -34,7 +34,7 @@
   (declare (xargs :guard (plist-worldp wrld)))
   (let ((alist (table-alist 'xdoc::xdoc wrld)))
     (if (not (alistp alist))
-        (er hard? 'get-xdoc-resource-dirs "Bad alist.")
+        (er hard? 'count-documented-topics "Bad alist.")
       (len (cdr (assoc-eq 'doc alist))))))
 
 ;; Generates a table form that, when the containing book is included, will

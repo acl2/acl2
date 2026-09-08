@@ -7,8 +7,8 @@
 
 # (1) Run fresh "everything" regression with ACL2_USELESS_RUNES=write
 #     to regenerate @useless-runes.lsp files.  -- NOTE: file
-#     books/projects/filesystems/oracle.lisp has take a very long time
-#     to certify this way, perhaps adding as much as 4 hours to
+#     books/projects/filesystems/oracle.lisp has taken more than 2
+#     hours to certify this way, perhaps adding more than an hour to
 #     regression time.  A note here formerly also said to consider
 #     excluding projects/filesystems/abs-syscalls.lisp (which has
 #     taken about 40 minutes to certify this way at UT CS).  So
@@ -16,8 +16,9 @@
 
 #     (time make -j 30 -l 30 regression-everything-fresh ACL2_USELESS_RUNES=write ACL2=`pwd`/sbcl-saved_acl2 EXCLUDED_PREFIXES="projects/filesystems/oracle projects/filesystems/abs-syscalls") >& logs/make-regression-everything-sbcl-j-30-useless-runes-write-jul24.log&
 
-# (2) Run ordinary "everything" regression, perhaps updating with git
-#     first.
+# (2) Run ordinary "regression-everything-fresh", perhaps updating with git
+#     first (though merging can probably be done at the end, followed
+#     by "regression-everything" to check).
 
 # (3) Check for failures, avoiding bad @useless-runes.lsp files by
 #     editing or creating .acl2 files and removing those bad

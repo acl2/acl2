@@ -1023,7 +1023,6 @@
                                               (ADD y
                                                    rot p) p) p) p)))))
   :hints (("Goal" ;:in-theory (enable PFIELD::ADD-BECOMES-BVPLUS-34)
-           :in-theory (disable)
            :use (:instance add-helper-bv35
                                   (bv35 (ADD inv0
                                              (ADD inv4
@@ -1239,7 +1238,8 @@
                   (mod (- (getbit 0 x) (bvchop 34 x)) p)))
   :hints (("Goal" :in-theory (e/d (mul-of--2-becomes-neg-of-mul-of-2
                                    neg)
-                                  (ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
+                                  (;;ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                   )))))
 
 
 ;quite specific

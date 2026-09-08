@@ -1,7 +1,7 @@
 ; A variant of update-subrange
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,7 @@
 
 ;not sure exactly how to define this in the nicest way
 ;i want to make sure the length is always len, even if start, end, etc. are bad
+;; todo: try disabling
 (defun update-subrange2 (len start end vals lst)
   (declare (type (integer 0 *) start end)
            (type (integer 1 *) len)

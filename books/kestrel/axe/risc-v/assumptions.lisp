@@ -1,6 +1,6 @@
 ; Generating assumptions for 32-bit RISC-V code proofs
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,6 @@
 
 ;; This is for 32-bit only
 
-(include-book "kestrel/memory/memory-regions" :dir :system)
 (include-book "kestrel/executable-parsers/elf-tools" :dir :system)
 (include-book "read-and-write")
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
@@ -147,7 +146,7 @@
                               (natp stack-slots)
                               (natp existing-stack-slots)
                               (booleanp position-independentp))))
-  (b* (((mv erp regions) (acl2::elf64-regions-to-load parsed-elf))
+  (b* (((mv erp regions) (acl2::elf-regions-to-load parsed-elf))
        (state-var 'stat)
        ((when erp) (mv erp nil))
        ((mv erp memory-region-assumptions)

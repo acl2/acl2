@@ -22,7 +22,7 @@
 (include-book "centaur/fty/deftypes" :dir :system)
 
 (include-book "../../syntax/abstract-syntax-operations")
-(include-book "../../syntax/validation-information")
+(include-book "../../syntax/validation-annotations")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (acl2::controlled-configuration)
@@ -112,9 +112,9 @@
         (retok nil))
        ((init-declor declor) (first declors))
        ((when (equal (declor->ident declor.declor) qual-ident.ident))
-        (b* (((unless (c$::init-declor-infop declor.info))
+        (b* (((unless (c$::init-declor-vinfop declor.info))
               (retmsg$ "Initializer declarator info is not well-formed."))
-             (uid? (c$::init-declor-info->uid? declor.info))
+             (uid? (c$::init-declor-vinfo->uid declor.info))
              ((unless uid?)
               ;; TODO: should this be an error?
               (retok nil)))
@@ -137,9 +137,9 @@
       (b* (((fundef declon.fundef) declon.fundef)
            ((unless (equal (declor->ident declon.fundef.declor) qual-ident.ident))
             (retok nil))
-           ((unless (fundef-infop declon.fundef.info))
+           ((unless (type+uid-vinfop declon.fundef.info))
             (retmsg$ "Function definition info is not well-formed.")))
-        (retok (c$::fundef-info->uid declon.fundef.info)))
+        (retok (type+uid-vinfo->uid declon.fundef.info)))
       :declon
       (declon-case
         declon.declon
@@ -223,10 +223,9 @@
   (b* (((reterr) (c$::irr-uid))
        ((qualified-ident qual-ident) qual-ident)
        ((unless qual-ident.filepath?)
-        (b* (((c$::valid-table valid-table)
-              (c$::trans-ensemble-info->table-end
-                (c$::trans-ensemble->info ensemble)))
-             (info? (omap::assoc qual-ident.ident valid-table.externals))
+        (b* ((externals (c$::trans-ensemble-vinfo->externals
+                          (c$::trans-ensemble->info ensemble)))
+             (info? (omap::assoc qual-ident.ident externals))
              ((unless info?)
               (retmsg$ "~x0 is not an object or function ~
                         with external linkage."

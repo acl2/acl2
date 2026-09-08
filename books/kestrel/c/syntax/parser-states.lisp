@@ -13,6 +13,7 @@
 (include-book "abstract-syntax-trees")
 (include-book "positions")
 (include-book "spans")
+(include-book "unicode-characters")
 
 (include-book "../language/keywords")
 
@@ -172,7 +173,12 @@
 
 (fty::defprod char+position
   :short "Fixtype of pairs each consisting of a character and a position."
-  ((char nat)
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The character is a Unicode character, i.e. a Unicode scalar value;
+     see @(tsee unichar)."))
+  ((char unichar)
    (position position))
   :pred char+position-p
   :layout :fulltree)
@@ -1012,7 +1018,7 @@
              length
              acl2::update-nth-of-nth))
 
-  (defrule update-parstate->chars-read-of-parstate->chars-unread
+  (defrule update-parstate->chars-unread-of-parstate->chars-unread
     (equal (update-parstate->chars-unread
             (parstate->chars-unread parstate) parstate)
            (parstate-fix parstate))
@@ -1105,7 +1111,7 @@
 
   ///
 
-  (defrule parsize-of-initparstate
+  (defrule parsize-of-init-parstate
     (equal (parsize
             (init-parstate file nil dialect skip-control-lines parstate))
            0)

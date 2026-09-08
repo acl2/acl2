@@ -1,7 +1,7 @@
 ; A utility to update part of a list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -186,7 +186,7 @@
 
 (theory-invariant (incompatible (:rewrite update-subrange-split-off-last-elem) (:rewrite update-nth-of-update-subrange)))
 
-(defthm update-nth-of-update-subrange
+(defthmd update-nth-of-update-subrange
   (implies (and (equal n (+ 1 end))
                 (equal (len vals) (+ 1 end (- start)))
                 (natp end)
@@ -195,7 +195,7 @@
                   (update-subrange start (+ 1 end) (append vals (list val)) lst)))
   :hints (("Goal" :in-theory (enable update-subrange-split-off-last-elem))))
 
-(theory-invariant (incompatible (:rewrite update-subrange) (:rewrite update-nth-of-update-subrange)))
+(theory-invariant (incompatible (:definition update-subrange) (:rewrite update-nth-of-update-subrange)))
 
 (defthm update-subrange-of-update-subrange-same
   (implies (and (natp start)
@@ -211,7 +211,8 @@
                                             (update-subrange (+ 1 start)
                                                              end (cdr vals2)
                                                              (update-nth start (nth 0 vals2) lst))))
-           :in-theory (e/d (update-subrange update-nth-of-update-subrange-diff-back) (update-nth-of-update-subrange-diff))
+           :in-theory (e/d (update-subrange update-nth-of-update-subrange-diff-back)
+                           (update-nth-of-update-subrange-diff))
            :do-not '(generalize eliminate-destructors))))
 
 (defthm update-subrange-of-take
@@ -219,7 +220,8 @@
          (update-subrange start end vals lst))
   :hints (("Goal" :in-theory (e/d (update-subrange; take-rewrite
                                    ;CDR-TAKE-PLUS-1
-                                   ) (UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF)))))
+                                   ) (UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF
+                                      )))))
 
 (defthm update-subrange-reorder
   (implies (and (<= start1 end1)

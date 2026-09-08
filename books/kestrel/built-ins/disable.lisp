@@ -66,27 +66,80 @@
 ; motivated by execution efficiency.
 ; Those should be normally enabled,
 ; so they are replaced by the ones that they are synonyms of.
+; Similarly, some functions are logically identities, or constants.
 ; Thus we define a macro to disable all the built-in logic-mode functions
-; except some that are synonyms in the sense above.
-; We use a whitelist approach to letting these functions enabled:
-; that is, we have an explicit list of such functions
+; except some that fall into one of the above categories.
+; We use a whitelist approach to enabling these functions:
+; that is, we define a constant list for each category of functions
 ; that we remove from the constant defined above,
 ; which lists all the built-in logic-mode functions that can be disabled.
 
-; We start with the following whitelisted functions:
-; - The specialized equality functions, synonyms of EQUAL;
-;   we also include /=, even though technically it is not a synonym,
-;   but an abbreviation of (NOT (EQUAL ...)),
-;   which we normally want to expose as such.
-;  We may add more in the future.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; We also include /=, even though technically it is not a synonym,
+; but an abbreviation of (NOT (EQUAL ...)),
+; which we normally want to expose as such.
+; Similarly, we include ATOM even though it is not a "true" synonym,
+; but the negation of a primitive recognizer.
+; Finally, we include NULL, which we might think of as a synonym of (NOT ...),
+; albeit indirectly.
+(defconst *logic-defuns-whitelist-synonyms*
+  '(/=
+    =
+    atom
+    cons-with-hint
+    endp
+    eq
+    eql
+    fast-alist-free
+    hons
+    hons-equal
+    hons-equal-lite
+    hons-get
+    make-fast-alist
+    null
+    ))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defconst *logic-defuns-whitelist-identities*
+  '(hons-copy
+    hons-copy-persistent
+    hons-copy-with-state
+    identity
+    the-check
+    ))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defconst *logic-defuns-whitelist-constants*
+  '(fast-alist-summary
+    hons-clear
+    hons-clear!
+    hons-resize-fn
+    hons-summary
+    hons-wash
+    hons-wash!
+    ))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defconst *logic-defuns-whitelist*
+  (append *logic-defuns-whitelist-synonyms*
+          *logic-defuns-whitelist-identities*
+          *logic-defuns-whitelist-constants*))
+
+(assert-event
+  (and (no-duplicatesp-eq *logic-defuns-whitelist*)
+       (subsetp-eq *logic-defuns-whitelist*
+                   *builtin-logic-defun-names-that-can-be-disabled*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro disable-most-builtin-logic-defuns ()
   `(in-theory (disable ,@(set-difference-eq
                           *builtin-logic-defun-names-that-can-be-disabled*
-                          '(=
-                            /=
-                            eq
-                            eql)))))
+                          *logic-defuns-whitelist*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

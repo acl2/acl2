@@ -127,15 +127,15 @@
 ; will use rationalp as a poor substitute which however suffices for ACL2
 ; objects.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun acl2-realp (x)
   (rationalp x))
 
-#+(and :non-standard-analysis CLTL2)
+#+(and non-standard-analysis CLTL2)
 (if (not (fboundp 'common-lisp::realp))
     (setf (symbol-function 'common-lisp::realp) (symbol-function 'acl2-realp)))
 
-#+(and :non-standard-analysis (not CLTL2))
+#+(and non-standard-analysis (not CLTL2))
 (if (not (fboundp 'lisp::realp))
     (setf (symbol-function 'lisp::realp) (symbol-function 'acl2-realp)))
 
@@ -1279,7 +1279,16 @@ notation causes an error and (b) the use of ,. is not permitted."
                   ((string-equal x "NEWLINE")
                    #\Newline)
                   ((string-equal x "PAGE")
-                   #\Page)
+                   *acl2-page-char*)
+                  #+allegro
+                  ((string-equal x "FORMFEED")
+
+; See *acl2-page-char*.  We allow #\Formfeed in case it has been printed by
+; print-object$: that function prints using prin1, and Allegro CL may print the
+; character with char-code 12 as #\Formfeed.  We want ACL2 to be able to read
+; forms that have been printed using print-object$.
+
+                   *acl2-page-char*)
                   ((string-equal x "RUBOUT")
                    #\Rubout)
                   ((string-equal x "RETURN")
@@ -1342,7 +1351,8 @@ notation causes an error and (b) the use of ,. is not permitted."
                   (symbol-value 'ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD)))
     (return-from sharp-dot-read
                  (funcall *old-sharp-dot-read* stream char n)))
-  (let ((whitespace-chars '(#\Backspace #\Tab #\Newline #\Linefeed #\Page
+  (let ((whitespace-chars '(#\Backspace #\Tab #\Newline #\Linefeed
+                            #.*acl2-page-char*
                             #\Return #\Space)))
     (when (member (peek-char nil stream nil nil t)
                   whitespace-chars)

@@ -2,6 +2,10 @@
 ; Written by Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; NOTE: This book may need to be recertified if the formals change for any
+; :logic mode function that is built into ACL2, because of the make-event call
+; constructed below.
+
 (in-package "ZF")
 
 (include-book "base")

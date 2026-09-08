@@ -96,8 +96,7 @@
                                           )
            :in-theory (disable dag-exprp-of-lookup-equal-when-pseudo-dagp
                                ;; dag-exprp-of-lookup-equal-when-weak-dagp-aux
-                               dag-exprp-of-lookup-equal-when-weak-dagp
-                               dag-exprp-of-lookup-equal-when-pseudo-dagp))
+                               dag-exprp-of-lookup-equal-when-weak-dagp))
           ("Goal" :in-theory (e/d (symbolp-when-dag-exprp) (weak-dagp-aux
                                                              bounded-dag-exprp
                                                              ;;myquotep

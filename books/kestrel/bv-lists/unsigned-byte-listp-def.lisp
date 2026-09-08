@@ -1,6 +1,6 @@
 ; A book that cherry-picks the definition of unsigned-byte-listp
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,7 @@
 
 ;; Unlike all-unsigned-byte-p, this one implies true-listp.
 ;; Also in std/typed-lists/unsigned-byte-listp.lisp.
+;; TODO: Does this redo the EXPT in UNSIGNED-BYTE-P over and over?
 (defund unsigned-byte-listp (n x)
   (declare (xargs :guard t))
   (if (atom x)

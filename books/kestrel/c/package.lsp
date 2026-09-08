@@ -42,7 +42,16 @@
              '(alist-to-doublets
                all-fnnames
                any
+               any-nat-map
+               any-nat-mapp
+               any-nat-mfix
                bool
+               char-fix
+               character-setp
+               character-sfix
+               character-any-map
+               character-any-mapp
+               character-any-mfix
                check-and-call
                check-fn-call
                check-if-call
@@ -130,6 +139,7 @@
                mv-nth-of-cons
                nat
                nat-list-fix
+               nat-setp
                nats=>string
                nvariablep
                one-way-unify
@@ -198,6 +208,9 @@
                termination-theorem$
                theorem-symbolp
                true-list
+               true-list-set
+               true-list-setp
+               true-list-set-fix
                tuple
                ubody+
                uguard+

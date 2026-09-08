@@ -508,6 +508,23 @@
        monitoredp
        (cw "(STP result for hyp ~x0 of rule ~x1: ~x2.)~%" hyp-num rule-symbol result)))
 
+;; todo: print the parens before and after?
+(defund print-alist-elided (alist)
+  (declare (xargs :guard (and (symbol-alistp alist)
+                              (darg-listp (strip-cdrs alist)))))
+  (if (endp alist)
+      nil
+    (let* ((entry (first alist))
+           (var (car entry))
+           (darg (cdr entry)))
+      (progn$ (cw "(~x0 . " var) ; maybe don't print the dot?
+              (if (and (darg-quotep darg)
+                       (< 100 (len (unquote darg))))
+                  ;; it's a large quoted list, so elide (could print the first part):
+                  (cw ":elided)~%")
+                (cw "~x0)~%" darg))
+              (print-alist-elided (rest alist))))))
+
 (defun make-rewriter-simple-fn (suffix ;; gets added to generated names
                                 evaluator-base-name
                                 syntaxp-evaluator-suffix
@@ -929,7 +946,9 @@
                           (prog2$ (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
                                        ;;is it worth printing in this case?
                                        (progn$ (cw "(Failed to relieve axe-syntaxp hyp ~x0 for ~x1.)~%" syntaxp-expr rule-symbol)
-                                               (cw "(Alist: ~x0)~%" alist)
+                                               (cw "(Alist: ")
+                                               (print-alist-elided alist)
+                                               (cw ")~%")
                                                ;; (cw "(DAG:~%")
                                                ;; (print-array 'dag-array dag-array (get-dag-len rewrite-stobj2))
                                                ;; (cw ")~%")
@@ -1096,13 +1115,15 @@
                                             (progn$ (cw "(Failed to relieve hyp ~x0 of rule ~x1.~%" hyp rule-symbol)
                                                     (cw "Reason: Rewrote to:~%")
                                                     (print-dag-node-nicely new-nodenum 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) 200)
-                                                    (cw "(Alist: ~x0)~%" alist)
+                                                    (cw "(Alist: ")
+                                                    (print-alist-elided alist)
+                                                    (cw ")~%")
                                                     (and (verbose-monitorp) ; to turn on verbose monitoring, :redef this to return t
-                                                         (progn$ (cw "(Refined assumption alist:~%"))
-                                                         (print-refined-assumption-alist-elided refined-assumption-alist (get-fns-to-elide rewrite-stobj))
-                                                         (cw ")~%")
-                                                         (cw "(node-replacement-array: elided)~%") ; todo print (but compactly)! also harvest relevant nodes above
-                                                         )
+                                                         (progn$ (cw "(Refined assumption alist:~%")
+                                                                 (print-refined-assumption-alist-elided refined-assumption-alist (get-fns-to-elide rewrite-stobj))
+                                                                 (cw ")~%")
+                                                                 (cw "(node-replacement-array: elided)~%") ; todo print (but compactly)! also harvest relevant nodes above
+                                                                 ))
                                                     (cw "(Relevant DAG nodes:~%")
                                                     (if (consp relevant-nodes)
                                                         (print-dag-array-nodes-and-supporters 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) relevant-nodes)
@@ -2390,8 +2411,8 @@
                      (hit-countsp (mv-nth ,(if smtp 5 4) ,call-of-simplify-fun-call-and-add-to-dag)))
             :flag ,simplify-fun-call-and-add-to-dag-name)
 
-          :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                   :in-theory (e/d ( ;TAKE-WHEN-<=-OF-LEN
+          :hints (("Goal"
+                   :in-theory (e/d (;TAKE-WHEN-<=-OF-LEN
                                     len-of-cadar-when-axe-treep
                                     pseudo-termp-of-cadddr-when-axe-treep
                                     axe-bind-free-result-okayp-rewrite
@@ -2536,8 +2557,8 @@
                      (rule-limitsp (mv-nth ,(if smtp 7 6) ,call-of-simplify-fun-call-and-add-to-dag)))
             :flag ,simplify-fun-call-and-add-to-dag-name)
 
-          :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                   :in-theory (e/d ( ;TAKE-WHEN-<=-OF-LEN
+          :hints (("Goal"
+                   :in-theory (e/d (;TAKE-WHEN-<=-OF-LEN
                                     len-of-cadar-when-axe-treep
                                     pseudo-termp-of-cadddr-when-axe-treep
                                     axe-bind-free-result-okayp-rewrite
@@ -2667,8 +2688,8 @@
                      (triesp (mv-nth ,(if smtp 6 5) ,call-of-simplify-fun-call-and-add-to-dag)))
             :flag ,simplify-fun-call-and-add-to-dag-name)
 
-          :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                   :in-theory (e/d ( ;TAKE-WHEN-<=-OF-LEN
+          :hints (("Goal"
+                   :in-theory (e/d (;TAKE-WHEN-<=-OF-LEN
                                     len-of-cadar-when-axe-treep
                                     pseudo-termp-of-cadddr-when-axe-treep
                                     axe-bind-free-result-okayp-rewrite
@@ -3188,8 +3209,8 @@
                             ,@maybe-w-unchanged)))
             :flag ,simplify-fun-call-and-add-to-dag-name)
 
-          :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                   :in-theory ;; (e/d ( ;TAKE-WHEN-<=-OF-LEN
+          :hints (("Goal"
+                   :in-theory ;; (e/d (;TAKE-WHEN-<=-OF-LEN
                    ;;       len-of-cadar-when-axe-treep
                    ;;       pseudo-termp-of-cadddr-when-axe-treep
                    ;;       axe-bind-free-result-okayp-rewrite
@@ -3567,7 +3588,7 @@
                      (:type-prescription wf-dagp)
                      ;; only needed when smtp:
                      ,@(and smtp '(w-of-mv-nth-1-of-prove-disjunction-with-stp)))
-                   :expand ( ;(alist-suitable-for-hypsp alist hyps)
+                   :expand (;(alist-suitable-for-hypsp alist hyps)
                             (:free (memoization ;count
                                      other-hyps alist)
                                    ,call-of-relieve-free-var-hyp-and-all-others)
@@ -3905,7 +3926,7 @@
                     (<= x
                         (get-dag-len (mv-nth 2 ,call-of-simplify-not-tree-and-add-to-dag))))
            :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-not-tree-and-add-to-dag- suffix))
-                    :in-theory (e/d ( ;member-equal ; split into 2 cases
+                    :in-theory (e/d (;member-equal ; split into 2 cases
                                      )
                                     (,(pack$ 'theorem-for-simplify-not-tree-and-add-to-dag- suffix))))))
 
@@ -4915,8 +4936,8 @@
                      (natp (get-dag-len (mv-nth 2 ,call-of-simplify-fun-call-and-add-to-dag))))
             :rule-classes (:rewrite :type-prescription) :flag ,simplify-fun-call-and-add-to-dag-name)
 
-          :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                   :in-theory (e/d ( ;TAKE-WHEN-<=-OF-LEN
+          :hints (("Goal"
+                   :in-theory (e/d (;TAKE-WHEN-<=-OF-LEN
                                     len-of-cadar-when-axe-treep
                                     pseudo-termp-of-cadddr-when-axe-treep
                                     axe-bind-free-result-okayp-rewrite
@@ -4969,7 +4990,7 @@
                             (axe-rule-hyp-listp hyps)))))
 
          (verify-guards ,simplify-fun-call-and-add-to-dag-name
-           :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :hints (("Goal"
                     :expand ((axe-bind-free-function-applicationp (nth 1 (car hyps)))
                              (axe-rule-hyp-listp hyps)
                              ;; (axe-treep tree)
@@ -5485,8 +5506,7 @@
                                                            consp-of-car-of-last-when-weak-dagp-aux
                                                            acl2-numberp-of-car-of-car-of-last-when-weak-dagp-aux
                                                            consp-of-dargs-when-dag-exprp-iff)
-                                                          (natp dargp dargp-less-than-when-not-consp-cheap dargp-less-than-when-consp-cheap))
-                                          :do-not '(generalize eliminate-destructors)))))
+                                                          (natp dargp dargp-less-than-when-not-consp-cheap dargp-less-than-when-consp-cheap))))))
            (if (endp rev-dag)
                (mv (erp-nil) rewrite-stobj2 ,@maybe-state memoization (hit-counts-to-hits hit-counts) tries limits node-replacement-array renumbering-stobj)
              (b* ((entry (first rev-dag))
@@ -5635,7 +5655,8 @@
                                     (natp
                                      bounded-refined-assumption-alistp-monotone ; why?
                                      ))
-                    :do-not '(generalize eliminate-destructors))))
+                    ;
+                    )))
 
          ;; A simple consequence of the return type theorem
          (defthm ,(pack$ simplify-dag-nodes-name '-return-type-corollary0)
@@ -5878,7 +5899,7 @@
                                                 (dag-and-array-agreep dag 'dag-array dag-array dag-len))
                                          t))
                            ,@maybe-stobjs
-                           :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
+                           :guard-hints (("Goal"
                                           :in-theory (e/d (not-<-of-0-when-natp-disabled
                                                            acl2-numberp-when-natp
                                                            natp-of-+-of--1-when-natp-disabled
@@ -6019,7 +6040,7 @@
                                     (rule-limitsp new-limits)
                                     (hitsp hits)
                                     ,@maybe-w-unchanged))))
-           :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :hints (("Goal"
                     :in-theory (e/d (,simplify-dag-core-name
                                      natp-of-renumberingi
                                      integerp-of-renumberingi
@@ -6118,7 +6139,7 @@
                                        (symbol-listp no-warn-ground-functions)
                                        (symbol-listp fns-to-elide))
                            ,@maybe-stobjs
-                           :guard-hints (("Goal" ; :do-not '(generalize eliminate-destructors)
+                           :guard-hints (("Goal"
                                           :in-theory (e/d (len-when-pseudo-dagp
                                                            car-of-nth-when-pseudo-dagp
                                                            natp-of-+-of-1
@@ -6168,7 +6189,7 @@
                     (initial-array-size (min *max-1d-array-length* (* 2 dag-len))) ; could make this adjustable
                     ;; Start with an array with all the nodes loaded (since we are using contexts):
                     ;; TODO: Opt: Combine these steps?:
-                    (dag-array (make-into-array-with-len 'dag-array dag initial-array-size))
+                    (dag-array (alist-to-array1-with-len 'dag-array dag initial-array-size))
                     ;; Make the auxiliary data structures for the DAG:
                     ((mv dag-parent-array dag-constant-alist dag-variable-alist)
                      (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
@@ -6206,7 +6227,7 @@
                                     (rule-limitsp new-limits)
                                     (hitsp hits)
                                     ,@maybe-w-unchanged))))
-           :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :hints (("Goal"
                     :in-theory (e/d (,simplify-dag-name
                                      len-when-pseudo-dagp
                                      car-of-nth-when-pseudo-dagp
@@ -6244,7 +6265,7 @@
                                (and (pseudo-dagp dag-or-quotep)
                                     (<= (len dag-or-quotep) *max-1d-array-length*) ;; todo
                                     ))))
-           :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :hints (("Goal"
                     :in-theory (e/d (,simplify-dag-name
                                      len-when-pseudo-dagp
                                      car-of-nth-when-pseudo-dagp
@@ -6416,7 +6437,7 @@
                                     (rule-limitsp new-limits)
                                     (hitsp new-hits)
                                     ,@maybe-w-unchanged))))
-           :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :hints (("Goal" :induct t
                     :in-theory (e/d (,simplify-dag-with-rule-alists-name)
                                     (myquotep quotep)))))
 
@@ -6813,8 +6834,7 @@
                                     (hitsp hits)
                                     ,@maybe-w-unchanged))))
            :hints (("Goal" :use (:instance ,(pack$ simplify-term-name '-return-type))
-                    :do-not '(generalize eliminate-destructors)
-                    :do-not-induct t
+                    :do-not-induct t ; todo
                     :in-theory (e/d (,simplify-term-to-term-name) (,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name))))))
 
          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -7007,11 +7027,10 @@
                          )
                  state)))
 
-         ;; Macro helper function for ,def-simplified-name.  This does the
-         ;; translation (requires :program mode), but then calls the :logic mode core
-         ;; function to do most of the work.
+         ;; Macro helper function for ,def-simplified-name.
          ;; Returns (mv erp event state).
          ;; TODO: Perhaps add an option to take a rule-alist.
+         ;; TODO: Remove this wrapper.  Previously, this part required :program mode.
          (defund ,def-simplified-fn-name (defconst-name ; the name of the constant to create
                                           dag-or-term
                                           assumptions
@@ -7029,7 +7048,7 @@
                                           state)
            (declare (xargs :guard (and (symbolp defconst-name)
                                        ;; dag-or-term is a dag or an (untranslated) term
-                                       ;; assumptions are (untranslated) terms
+                                       (true-listp assumptions) ; (untranslated) terms
                                        (symbol-listp rules)
                                        (interpreted-function-alistp interpreted-function-alist)
                                        (normalize-xors-optionp normalize-xors)
@@ -7043,18 +7062,20 @@
                                        (consp whole-form)
                                        (symbolp (car whole-form)))
                            :stobjs state
-                           :mode :program ; because this calls translate
                            :guard-hints (("Goal" :in-theory (disable w)))))
            (b* (((when (command-is-redundantp whole-form state))
                  (mv nil '(value-triple :redundant) state))
                 ;; Translate the assumptions:
-                (assumptions (translate-terms assumptions ',def-simplified-fn-name (w state)))
+                ((mv erp assumptions state)
+                 (translate-terms-in-logic-mode assumptions ',def-simplified-fn-name state))
+                ((when erp) (mv erp nil state))
                 ;; Translates, if a term:
-                (dag-or-term
+                ((mv erp dag-or-term state)
                   (if (pseudo-dagp dag-or-term)
-                      dag-or-term
+                      (mv nil dag-or-term state)
                     ;; it's a term, so translate it:
-                    (translate-term dag-or-term ',def-simplified-fn-name (w state)))))
+                    (translate-term-in-logic-mode dag-or-term ',def-simplified-fn-name state)))
+                ((when erp) (mv erp nil state)))
              (,def-simplified-fn-core-name defconst-name dag-or-term assumptions rules interpreted-function-alist normalize-xors limits memoizep count-hits print monitored-symbols no-warn-ground-functions fns-to-elide whole-form state)))
 
          ;; A utility to simplify a DAG or term and create a constant to hold the resulting DAG.

@@ -21,6 +21,7 @@
 (include-book "if-rules")
 (include-book "boolean-rules-axe")
 (include-book "../bv/rules12")
+(include-book "kestrel/bv/intro" :dir :system)
 (include-book "bv-rules-axe0")
 (include-book "bv-array-rules") ; for stuff like bv-array-clear-of-bv-array-write-both
 (include-book "bv-rules-axe") ;bring in theorems like LEFTROTATE32-OF-BVCHOP-5
@@ -52,6 +53,7 @@
 (include-book "kestrel/bv/sbvdivdown-rules" :dir :system)
 (include-book "kestrel/bv/sbvdiv-rules" :dir :system)
 (include-book "kestrel/bv/bvor" :dir :system)
+(include-book "kestrel/bv/bvminus" :dir :system)
 (include-book "kestrel/bv/bvxor" :dir :system)
 (include-book "kestrel/bv/bvif2" :dir :system)
 (include-book "kestrel/bv/rules6" :dir :system)

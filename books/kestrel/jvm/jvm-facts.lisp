@@ -1,7 +1,7 @@
 ; Rules about the JVM model
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -144,7 +144,7 @@
 ;;            ;;(equal 'jvm::make-thread (car (caddr term)))
 ;;            )
 ;;       (caddr term)
-;;     (er hard 'get-call-stack-term-from-thread-table-term "Found a thread table term we don't yet handle, ~s0." term)))
+;;     (er hard 'get-call-stack-term-from-thread-table-term "Found a thread table term we don't yet handle, ~x0." term)))
 
 ;; ;seems to return a list!
 ;; ;computes heuristic information only?
@@ -158,7 +158,7 @@
 ;;   (if (equal 'jvm::bind (car (cadr term)))
 ;;             (get-call-stack-term-from-thread-table-term (cadr term))
 ;;     ;;this doesn't actually seem to be firing...
-;;     (er hard 'get-call-stack-term-from-state-term "Found a state term we don't yet handle, ~s0." term)))
+;;     (er hard 'get-call-stack-term-from-state-term "Found a state term we don't yet handle, ~x0." term)))
 
 (defun get-height-of-stack-term (term)
   (if (and (consp term)
@@ -198,7 +198,7 @@
       (if (<= 0 (get-height-of-stack-term (caddr term))) ;(single-pop-around-call-stackp (caddr (cadr (caddr term)))) ;the state hasn't already returned
           (list (cadr (cadr (cadr (caddr term)))))
         nil)
-    (er hard 'get-pc-from-thread-table-term "Found a thread table term we don't yet handle, ~s0." term)))
+    (er hard 'get-pc-from-thread-table-term "Found a thread table term we don't yet handle, ~x0." term)))
 
 ;seems to return a list!
 ;computes heuristic information only?
@@ -219,7 +219,7 @@
         (if (equal 'jvm::bind (car (cadr term)))
             (get-pc-from-thread-table-term (cadr term))
 ;this doesn't actually seem to be firing...
-          (er hard 'get-pcs-from-state-term "Found a state term we don't yet handle, ~s0." term))))))
+          (er hard 'get-pc-from-state-term "Found a state term we don't yet handle, ~x0." term))))))
 
 ;TERM may include calls to myif
 ;returns a list of the PCS for all the suitable branches
@@ -384,12 +384,12 @@
            (equal 'jvm::make-frame (car (cadr (caddr term))))
            )
       (equal 'jvm::push-frame (car (caddr (caddr term)))) ;is the stack to which we are pushing on a frame also a push?
-    (er hard 'get-pc-from-thread-table-term "Found a thread table term we don't yet handle, ~s0." term)))
+    (er hard 'this-threadtable-is-at-a-subroutine-call "Found a thread table term we don't yet handle, ~x0." term)))
 
 (defun this-branch-is-at-a-subroutine-call (term)
   (if (equal 'jvm::bind (car (cadr term)))
       (this-threadtable-is-at-a-subroutine-call (cadr term))
-    (er hard? 'this-branch-is-at-a-subroutine-call "Found a state term we don't yet handle, ~s0." term)))
+    (er hard? 'this-branch-is-at-a-subroutine-call "Found a state term we don't yet handle, ~x0." term)))
 
 ;; ;term is a nest of myifs with states at the leaves
 ;; (defun some-branch-is-at-a-subroutine-call (term)
@@ -841,29 +841,6 @@
 ;move to a sequences library or drop the rule?
 ;(in-theory (disable JVM::NTH-OPENER)) ;BOZO trying...
 
-;allow alists to differ?
-(defthm bind-equal-bind-reduce
-  (equal (equal (jvm::bind x y alist) (jvm::bind x y2 alist))
-         (equal y y2))
-  :hints (("Goal" :in-theory (enable jvm::bind))))
-
-;move
-;newly disabled
-(defthmd bind-what-was-already-there
-  (implies (and (assoc-equal key alist)
-                (alistp alist)
-                (equal v (cdr (assoc-equal key alist))))
-           (equal (jvm::bind key v alist)
-                  alist))
-  :hints (("Goal" :in-theory (enable jvm::bind assoc-equal))))
-
-;move
-(defthm alistp-of-bind
-  (implies (alistp alist)
-           (equal (alistp (JVM::BIND x y alist))
-                  t))
-  :hints (("Goal" :in-theory (enable JVM::BIND alistp))))
-
 (defthm do-inst-of-myif
   (equal (jvm::do-inst (myif test op-code1 op-code2) inst th s)
          (myif test (jvm::do-inst op-code1 inst th s)
@@ -897,8 +874,8 @@
                        free)
                 (syntaxp (quotep free)))
            (equal (jvm::lookup-method-in-classes method-id class-names class-table)
-                  (if (acl2::lookup-equal method-id (jvm::class-decl-methods (jvm::get-class-info (car class-names) class-table)))
-                      (cons (acl2::lookup-equal method-id (jvm::class-decl-methods (jvm::get-class-info (car class-names) class-table)))
+                  (if (lookup-equal method-id (jvm::class-decl-methods (jvm::get-class-info (car class-names) class-table)))
+                      (cons (lookup-equal method-id (jvm::class-decl-methods (jvm::get-class-info (car class-names) class-table)))
                             (car class-names))
                     (jvm::lookup-method-in-classes method-id (cdr class-names) class-table))))
   :hints (("Goal" :in-theory (enable jvm::lookup-method-in-classes))))

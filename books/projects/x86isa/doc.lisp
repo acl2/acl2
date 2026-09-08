@@ -129,7 +129,10 @@
  mode</b>.</p>
 
  <p>To see a list of opcodes implemented in these books, see @(see
- implemented-opcodes).</p>
+ implemented-opcodes).
+ Also see @(see implemented-instructions) for lists
+ organized according to Chapter 5 of the Intel manual Volume 1.
+ </p>
 
  <h3>Reasoning and Execution Efficiency</h3>
 
@@ -518,6 +521,7 @@
 (xdoc::order-subtopics
  X86ISA
  (introduction
+  implemented-instructions
   implemented-opcodes
   x86isa-build-instructions
   utils

@@ -1,7 +1,7 @@
 ; A utility to split a list of characters at a given char
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -99,6 +99,8 @@
               (+ (len chars)
                  (len acc))))
   :hints (("Goal" :in-theory (enable split-chars-aux))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Splits the CHARS into two parts, the characters before the first occurence
 ;; of CHAR and the characters after the first occurrence of CHAR.  Returns (mv

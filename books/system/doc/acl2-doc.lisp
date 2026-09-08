@@ -158,6 +158,7 @@
     (RUN-SCRIPT "[books]/tools/run-script.lisp")
     (SATLINK::SAT-SOLVER-OPTIONS "[books]/centaur/satlink/top.lisp")
     (SATLINK "[books]/centaur/satlink/top.lisp")
+    (SHOW-INDUCTION-RECORDS  "[books]/tools/show-induction-records.lisp")
     (XDOC::SAVE "[books]/xdoc/topics.lisp")
     (XDOC::SAVE-RENDERED "[books]/xdoc/topics.lisp")
     (XDOC::SAVE-RENDERED-EVENT "[books]/xdoc/topics.lisp")
@@ -170,6 +171,7 @@
     (STD::STRICT-LIST-RECOGNIZERS "[books]/std/util/deflist-base.lisp")
     (SUBSEQ-LIST "[books]/std/lists/subseq.lisp")
     (XDOC::TERMINAL "[books]/xdoc/topics.lisp")
+    (TESTING-UTILITIES "[books]/doc/more-topics.lisp")
     (TRANS-EVAL-ERROR-TRIPLE "[books]/kestrel/utilities/trans-eval-error-triple.lisp")
     (TRANS-EVAL-STATE "[books]/kestrel/utilities/trans-eval-error-triple.lisp")
     (UNSOUND-READ "[books]/std/io/unsound-read.lisp")
@@ -4611,6 +4613,20 @@ and @(tsee include-book)"
 
  ")
 
+;;; The following is commented out because alist-keys is already documented in
+;;; std/alists/alist-keys.lisp.
+; (defxdoc alist-keys
+;   :parents (stobj acl2-built-ins)
+;   :short "Count the number of keys in association list"
+;   :long "<p>@('(Alist-keys al)') returns the sorted list of keys in an
+;  association list.  The sorting function is @(tsee merge-sort-lexorder).</p>
+;
+;  <p>@('Alist-keys') has a guard of @('t').  This function is called in the body
+;  of function, @('<h>-keys') where @('<h>') is a hash-table field of a @(see
+;  stobj).  See @(see defstobj).</p>
+;
+;  @(def alist-keys)")
+
 (defxdoc alist-keys-subsetp
   :parents (alists acl2-built-ins)
   :short "Check that all keys of the alist belong to a given set"
@@ -4660,14 +4676,11 @@ and @(tsee include-book)"
  an ACL2 executable built with host Lisp Allegro CL, the use of &ldquo;@('make
  regression')&rdquo; resulted in four books (in the @(see community-books))
  that failed to certify.  We discuss those failures in the
- &ldquo;<b>Details</b>&rdquo; section below.  These failures may suggest that
- Allegro CL, at least for its Version 10.1, does not correctly support the
- Common Lisp language, or at least there is problematic ACL2 code specific to
- Allegro CL.  In practice we don't expect a lot of problems when using ACL2
- built on Allegro CL.  However, since Allegro CL is relatively slow compared to
- several other Common Lisp implementations that can host ACL2 &mdash; SBCL,
- CCL, LispWorks, and GCL &mdash; those failures suggest that Allegro CL might
- not be a good choice for ACL2 users.</p>
+ &ldquo;<b>Details</b>&rdquo; section below.  These failures suggest that you
+ may encounter problems when using ACL2 built on Allegro CL, though we expect
+ them to be rare.  Perhaps more important: Allegro CL has been observed to be
+ slower than several other Common Lisp implementations that can host ACL2
+ &mdash; SBCL, CCL, LispWorks, and GCL.</p>
 
  <h3>Details</h3>
 
@@ -7040,7 +7053,7 @@ and @(tsee include-book)"
  })
 
  <p>@('Obj') may be any object and is called the ``default value'' of the
- array.  @(tsee Max) must be an integer greater than @('dim').  @('Name') must
+ array.  @('Max') must be an integer greater than @('dim').  @('Name') must
  be a symbol.  The @(':')@(tsee default) and @(':name') entries are optional;
  if @(':')@(tsee default) is omitted, the default value is @('nil').  The
  function @(tsee header), when given a name and a 1- or 2-dimensional array,
@@ -7092,7 +7105,7 @@ and @(tsee include-book)"
  <p>To prevent arrays from growing excessively long due to repeated @(tsee
  aset1) operations, @(tsee aset1) essentially calls @(tsee compress1) on the
  new alist whenever the length of the new alist exceeds the @(':')@(tsee
- maximum-length) entry, @(tsee max), in the @(see header) of the array.  See
+ maximum-length) entry, @('max'), in the @(see header) of the array.  See
  the definition of @(tsee aset1) (for example by using @(':')@(tsee pe)).  This
  is primarily just a mechanism for freeing up @(tsee cons) space consumed while
  doing @(tsee aset1) operations.  Note however that this @(tsee compress1) call
@@ -15360,7 +15373,9 @@ way to split up large ACL2 developments into separate modules."
  extends the usual ASCII coding of characters.  We also check that Space, Tab,
  Newline, Page, Rubout, and Return correspond to characters with respective
  @(tsee char-code)s @('32'), @('9'), @('10'), @('12'), @('127'), and
- @('13').</p>
+ @('13').  (Starting in 2026 or 2027, some versions of Allegro CL might not
+ recogize the Page character as the value of @('(code-char 12)'), but ACL2
+ arranges this to be the case inside the ACL2 read-eval-print loop.)</p>
 
  <p>@(tsee Code-char) has an inverse, @(tsee char-code).  Thus, when @(tsee
  char-code) is applied to an ACL2 character, @('c'), it returns a number @('n')
@@ -19342,8 +19357,6 @@ subtree of X with T, without duplication.</p>
  <p>@('Count-keys') has a guard of @('t').  This function is called in the body
  of function, @('<h>-count') where @('<h>') is a hash-table field of a @(see
  stobj).  See @(see defstobj).</p>
-
- @(def hons-remove-assoc)
 
  @(def count-keys)")
 
@@ -23861,7 +23874,7 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
 
  <p>The following code is intended to give an idea for how one might define the
  ``guts'' of a trusted clause-processor in raw Lisp.  The idea is to stub out
- functions, such as @('acl2-my-prove below'), that you want to define in raw
+ functions, such as @('acl2-my-prove') below, that you want to define in raw
  Lisp; and then, load a raw Lisp file to overwrite any such function with the
  real code.  But then we make any such overwritten function untouchable.  (This
  last step is important because otherwise, one can prove @('nil') using a
@@ -24982,7 +24995,7 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
  creator, accessors, updaters, constants.  For fields of @('ARRAY') type, this
  event also introduces length and resize functions.  For fields of
  @('HASH-TABLE') type, this event also introduces boundp, get?, remove, count,
- clear, and initialization functions.  Fields of @('STOBJ-TABLE') type
+ keys, clear, and initialization functions.  Fields of @('STOBJ-TABLE') type
  introduce those functions as well except for the get? function.</p>
 
  <h3>The Single-Threaded Object Introduced</h3>
@@ -25049,7 +25062,7 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
  introduced; see @(see defstobj-element-type) for discussion of the
  @(':element-type') keyword that may be provided for performance .  For fields
  of @('HASH-TABLE') or @('STOBJ-TABLE') type, this event also introduces
- boundp, get? (@('HASH-TABLE') types only), remove, count, clear, and
+ boundp, get? (@('HASH-TABLE') types only), remove, count, keys, clear, and
  initialization functions, as discussed below.  Constants are introduced that
  correspond to the accessor functions.</p>
 
@@ -25261,6 +25274,9 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
  <li>a ``count'' function that returns the number of (distinct) bound
  keys;</li>
 
+ <li>a ``keys'' function that returns the list of bound keys, sorted with
+ @(tsee merge-sort-lexorder);</li>
+
  <li>a ``clear'' function that creates a new empty hash table (and logically,
  the empty alist);</li>
 
@@ -25321,14 +25337,14 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
 
  <p>These functions &mdash; the recognizer, accessor, and updater, and also
  length and resize functions in the case of array fields, and boundp, get?,
- remove, count, clear, and init functions in the case of hash-table fields
- &mdash; have ``default names.''  The default names depend on the field name,
- @('fieldi'), and on whether the field is an array field, a hash-table field,
- or neither (i.e., a scalar field).  For clarity, suppose @('fieldi') is named
- @('c'). The default names are shown below in calls, which also indicate the
- arities of the functions.  In the expressions, we use @('x') as the object to
- be recognized by field recognizers, @('i') as an array index or the size of a
- resized array, @('k') as a key (for the logical association list or raw-Lisp
+ remove, count, keys, clear, and init functions in the case of hash-table
+ fields &mdash; have ``default names.''  The default names depend on the field
+ name, @('fieldi'), and on whether the field is an array field, a hash-table
+ field, or neither (i.e., a scalar field).  For clarity, suppose @('fieldi') is
+ named @('c'). The default names are shown below in calls, which also indicate
+ the arities of the functions.  In the expressions, we use @('x') as the object
+ to be recognized by field recognizers, @('i') as an array index or the size of
+ a resized array, @('k') as a key (for the logical association list or raw-Lisp
  hash table associated with the field), @('v') as the ``new value'' to be
  installed by an updater, and @('name') as the single-threaded object.</p>
 
@@ -25346,6 +25362,7 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
   get? [For hash-tables only, not stobj-tables]        (c-get? k name)
   remove                                               (c-rem k name)
   count                                                (c-count name)
+  keys                                                 (c-keys name)
   clear                                                (c-clear name)
   init                                                 (c-init ht-size
                                                                rehash-size
@@ -25400,6 +25417,8 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
                                    ;   (mv nil nil) if key is not bound in H
   (DEFUN H-REM (K $S) ...)         ; remove key K from field H
   (DEFUN H-COUNT ($S) ...)         ; the number of (distinct) keys in field H
+  (DEFUN H-KEYS ($S) ...)          ; the sorted list of (distinct) keys in
+                                   ;   field H, sorted by merge-sort-lexorder
   (DEFUN H-CLEAR ($S) ...)         ; empty the hash table for field H
   (DEFUN H-INIT (HT-SIZE REHASH-SIZE REHASH-THRESHOLD $S) ...)
                                    ; replace the hash table for field H with
@@ -25974,11 +25993,12 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
   :long "<p><b>Introduction</b>.  This event is intended for advanced users
  who, in essence, want to build extensions of ACL2.  The typical intended use
  is to create @(see books) that extend the functionality of ACL2 in ways not
- allowed without a so-called ``active trust tag''.  A trust tag thus represents
- a contract: The writer of such a book is guaranteeing that the book extends
- ACL2 in a ``correct'' way as defined by the writer of the book.  The writer of
- the book will often have a small section of the book in the scope of an active
- trust tag that can be inspected by potential users of that book:</p>
+ allowed without a so-called &ldquo;active trust tag&rdquo;.  A trust tag (or
+ &ldquo;ttag&rdquo;) thus represents a contract: The writer of such a book is
+ guaranteeing that the book extends ACL2 in a &ldquo;correct&rdquo; way as
+ defined by the writer of the book.  The writer of the book will often have a
+ small section of the book in the scope of an active trust tag that can be
+ inspected by potential users of that book:</p>
 
  @({
   <initial part of book, which does not use trust tags>
@@ -26002,7 +26022,7 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
   ACL2 Error in TOP-LEVEL:  The SYS-CALL function cannot be called unless
   a trust tag is in effect.  See :DOC defttag.
 
-  ACL2 !>(defttag t) ; Install :T as an active trust tag.
+  ACL2 !>(defttag t) ; Install :T as the active trust tag.
 
   TTAG NOTE: Adding ttag :T from the top level loop.
    T
@@ -26068,16 +26088,18 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
  <p>This event introduces or removes a so-called active trust tag (or ``ttag'',
  pronounced ``tee tag'').  An active ttag is a @(see keyword) symbol that is
  associated with potentially unsafe evaluation.  For example, calls of @(tsee
- sys-call) are illegal unless there is an active trust tag.  An active trust
- tag can be installed using a @('defttag') event.  If one introduces an active
- ttag and then writes definitions that contain calls of @(tsee sys-call),
- presumably in a defensibly ``safe'' way, then responsibility for those calls
- is attributed to that ttag.  This attribution (or blame!) is at the level of
- @(see books); a book's @(see certificate) contains a list of ttags that are
- active in that book, or in a book that is included (possibly @(see local)ly),
- or in a book included in a book that is included (either inclusion being
- potentially @(see local)), and so on.  We explain all this in more detail
- below.</p>
+ sys-call) are illegal unless there is an active trust tag.  The event
+ @('(defttag SYM)') where @('SYM') is not @('nil') installs, as the unique
+ active trust tag, the keyword whose @(tsee symbol-name) is that of @('SYM');
+ this keyword could reasonably be denoted as @(':SYM').  If one introduces an
+ active ttag and then writes definitions that contain calls of @(tsee
+ sys-call), presumably in a defensibly ``safe'' way, then responsibility for
+ those calls is attributed to that ttag.  This attribution (or blame!) is at
+ the level of @(see books); a book's @(see certificate) contains a list of
+ ttags that are active in that book, or in a book that is included (possibly
+ @(see local)ly), or in a book included in a book that is included (either
+ inclusion being potentially @(see local)), and so on.  We explain all this in
+ more detail below.</p>
 
  <p>@('(Defttag :tag-name)') is essentially equivalent to</p>
 
@@ -39227,7 +39249,7 @@ current fast alists."
 
 (defxdoc fmx
   :parents (io acl2-built-ins)
-  :short "@('(fmx str &rest args) => state')"
+  :short "@('(fmx str &rest args) => (mv col state)')"
   :long "<p>See @(see fmt) for further explanation, including documentation of
  the tilde-directives.</p>")
 
@@ -45635,7 +45657,7 @@ current fast alists."
 
 (defxdoc get-event-data
   :parents (system-utilities output-controls)
-  :short "Obtain data stored after at the conclusion of an event"
+  :short "Obtain data from the most recent event's evaluation"
   :long "<p>Warning: This is a low-level system utility that may change
  somewhat over time.  For more details, see the ACL2 source code.</p>
 
@@ -45661,6 +45683,9 @@ current fast alists."
 
  <li>@('HINT-EVENTS'): @('VAL') is as in the corresponding field of the event
  summary.</li>
+
+ <li>@('INDUCTION-RECORDS'): @('VAL') contains information about inductions
+ performed during the proof.  See @(see show-induction-records).</li>
 
  <li>@('NAMEX'): @('VAL') is 0, a single name, or a list of names; see
  comments in ACL2 source function @('access-event-tuple-namex').</li>
@@ -47472,9 +47497,7 @@ current fast alists."
 
   ACL2 !>:set-guard-checking :none
 
-  Turning off guard checking entirely.  To allow execution in raw Lisp
-  for functions with guards other than T, while continuing to mask guard
-  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+  Turning off guard checking entirely.
 
   ACL2 >(fact 2)
   1> (ACL2_*1*_ACL2::FACT 2)
@@ -47566,9 +47589,7 @@ current fast alists."
   1
   ACL2 !>:set-guard-checking :none
 
-  Turning off guard checking entirely.  To allow execution in raw Lisp
-  for functions with guards other than T, while continuing to mask guard
-  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+  Turning off guard checking entirely.
 
   ACL2 >(fact 2)
   1> (ACL2_*1*_ACL2::FACT 2)
@@ -47675,9 +47696,7 @@ current fast alists."
 
   ACL2 !>:set-guard-checking :none
 
-  Turning off guard checking entirely.  To allow execution in raw Lisp
-  for functions with guards other than T, while continuing to mask guard
-  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+  Turning off guard checking entirely.
 
   ACL2 >(fact 2)
   1> (ACL2_*1*_ACL2::FACT 2)
@@ -47885,9 +47904,7 @@ current fast alists."
 
   ACL2 !>:set-guard-checking :none
 
-  Turning off guard checking entirely.  To allow execution in raw Lisp
-  for functions with guards other than T, while continuing to mask guard
-  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+  Turning off guard checking entirely.
 
   ACL2 >(fact 2)
   1> (ACL2_*1*_ACL2::FACT 2)
@@ -47975,9 +47992,7 @@ current fast alists."
   1
   ACL2 !>:set-guard-checking :none
 
-  Turning off guard checking entirely.  To allow execution in raw Lisp
-  for functions with guards other than T, while continuing to mask guard
-  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+  Turning off guard checking entirely.
 
   ACL2 >(fact 2)
   1> (ACL2_*1*_ACL2::FACT 2)
@@ -48069,9 +48084,7 @@ current fast alists."
   1
   ACL2 !>:set-guard-checking :none
 
-  Turning off guard checking entirely.  To allow execution in raw Lisp
-  for functions with guards other than T, while continuing to mask guard
-  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+  Turning off guard checking entirely.
 
   ACL2 >(fact 2)
   1> (ACL2_*1*_ACL2::FACT 2)
@@ -53135,35 +53148,114 @@ tables in the current Hons Space."
   :short "Designate theory for some rewriting done for non-linear arithmetic"
   :long "<p>We assume familiarity with @(see theories); in particular, see
  @(see in-theory) for the normal way to set the current theory.  Here, we
- discuss an analogous event that pertains only to non-linear arithmetic
- (see @(see non-linear-arithmetic)).</p>
+ discuss a more primitive but analogous event that pertains only to non-linear
+ arithmetic (see @(see non-linear-arithmetic)).</p>
 
  @({
   Example:
-  (in-arithmetic-theory '(lemma1 lemma2))
+  (in-arithmetic-theory '(lemma1 lemma2 (:rewrite lemma3 . 2)))
 
   General Form:
-  (in-arithmetic-theory term)
+  (in-arithmetic-theory '(e1 ... en))
  })
 
- <p>where @('term') is a term that when evaluated will produce a theory (see
- @(see theories)).  Except for the variable @(tsee world), @('term') must
- contain no free variables.  @('Term') is evaluated with the variable @(tsee
- world) bound to the current @(see world) to obtain a theory and the
- corresponding runic theory (see @(see theories)) is then used by non-linear
- arithmetic (see @(see non-linear-arithmetic)).</p>
+ <p>where each @('ei') is a ``runic designator'' as defined formally in @(see
+ theories).  The non-linear arithmetic theory is obtained by expanding each
+ runic designator into a set of runes and unioning those sets together.</p>
 
- <p>Warning: If @('term') involves macros such as @(tsee ENABLE) and @(tsee
- DISABLE) you will probably not get what you expect!  Those macros are defined
- relative to the @(tsee CURRENT-THEORY).  But in this context you might wish
- they were defined in terms of the ``@('CURRENT-ARITHMETIC-THEORY')'' which is
- not actually a defined function.  We do not anticipate that users will
- repeatedly modify the arithmetic theory.  We expect @('term') most often to be
- a constant list of runes and so have not provided ``arithmetic theory
- manipulation functions'' analogous to @(tsee CURRENT-THEORY) and @(tsee
- ENABLE).</p>
+ <p>Warning: The theory set by @('in-arithmetic-theory') is used only when
+ inequalities are combined according to the heuristics described in @(see
+ non-linear-arithmetic).  We do not anticipate that users will repeatedly
+ modify the arithmetic theory and thus have not provided more sophisticated
+ tools for constructing it.  So, for example, you cannot construct it with the
+ usual @(see theory-functions) or by reference to previously named theories.
+ Instead, you must explicitly list the runic designators constituting the
+ theory.</p>")
 
- <p>See @(see non-linear-arithmetic).</p>")
+(defxdoc in-logic-mode
+  :parents (macros acl2-built-ins programming)
+  :short "Permit @(see program)-mode code in @(see logic)-mode definitions"
+  :long "<p>It is generally prohibited for the body of a @(see logic)-mode
+ function to call a @(see program)-mode function.  This prohibition can be
+ overcome, in a sense described below, by wrapping @('in-logic-mode') around
+ code that includes program-mode code.</p>
+
+ <p>See also @(see magic-ev-fncall) for a related utility that is a bit less
+ general (operating only on function calls applied to argument lists; but see
+ also @(see magic-ev)) but has the advantage of having some logical
+ content (see @(see meta-extract)).  Unlike @('magic-ev-fncall') and
+ @('magic-ev'), @('in-logic-mode') does not cause errors that can be caused by
+ @(see safe-mode).  @('In-logic-mode') also has a simpler interface than those
+ utilities, but unlike those utilities, @('in-logic-mode') not only takes
+ @(tsee state) but also returns @('state').</p>
+
+ @({
+ General Form:
+ (in-logic-mode <form> state &optional (quote <variable-list>))
+ })
+
+ <p>where @('<form>') is code that returns a single, non-@(tsee stobj) value,
+ but which may include calls of program-mode functions; and @('state') must be
+ the symbol, @('state'), if the @('in-logic-mode') call is to be executed (as
+ opposed to being in the statement of a theorem).  If @('<form>') is of the
+ form @('(f t1 ... tn)') where each @('ti') is an atom, then, but only then,
+ may the optional argument be omitted.  Otherwise, @('<variable-list>') should
+ be a list of symbols, which usually consists of the variables occurring free
+ in the (@(see translation) of) @('<form>'), as discussed below.</p>
+
+ <p>The following example shows a typical (though very simple) use of
+ @('in-logic-mode'), where we see the @(see logic)-mode function, @('f'),
+ calling the @(see program)-mode function, @('p').</p>
+
+ @({
+ (defun p (x)
+   (declare (xargs :mode :program))
+   (cons x x))
+
+ (defun f (x state)
+   (declare (xargs :stobjs state))
+   (in-logic-mode (p x) state))
+ })
+
+ <p>About the only thing we can prove about @('f') is the following.</p>
+
+ @({
+ (equal (f x state)
+        (read-acl2-oracle state))
+ })
+
+ <p>But when we evaluate with @('f') at the top level, we invoke @('p').</p>
+
+ @({
+ ACL2 !>(f 3 state)
+  (3 . 3)
+ ACL2 !>
+ })
+
+ <p>Notice the space printed in front of the result, @('(3 . 3)').  This space
+ indicates that the return value is actually a multiple-value return,
+ specifically an @(see error-triple), which we may write as @('(mv nil (3 . 3)
+ state)').</p>
+
+ <p>The forms @('(in-logic-mode <form>)') and @('(in-logic-mode <form> (quote
+ <variable-list>))') are logically just @('(read-acl2-oracle state)').  More
+ precisely, their single-step macroexpansions produce</p>
+
+ @({
+ (prog2$ (list v1 ... vk)
+         (read-acl2-oracle state))
+ })
+
+ <p>where @('(v1 ... vk)') is @('<variable-list>') if supplied, else is the
+ list of arguments of @('<form>').  The presence of @('(list v1 ... vk)')
+ avoids the need for an @('ignore') or @('ignorable') @(see declaration).</p>
+
+ <p>Thus, logically, a call of @('in-logic-mode') returns an @(see
+ error-triple), @('(mv erp val state)').  This is of course legitimate code to
+ occur in the body of a @(tsee logic)-mode definition, but nothing can be
+ proved about @('erp') or @('val').  However, in code that is executed, then
+ @('<form>') is evaluated and in the absence of error, @('erp') is @('nil') and
+ @('val') is the result of that evaluation.</p>")
 
 (defxdoc in-package
   :parents (packages acl2-built-ins)
@@ -71254,6 +71346,9 @@ forms allowed for a @('let') form are  @('ignore'), @('ignorable'), and
  <li>A reasonable model for @('(magic-ev-fncall 'fn (list a1 a2 ...) state h
  aokp)') is @('(ec-call (fn a1 a2 ...))').</li>
 
+ <li>See also @(see magic-ev) and @(see in-logic-mode) for related
+ utilities.</li>
+
  </ul>")
 
 (defxdoc mailing-lists
@@ -76020,6 +76115,24 @@ it."
  more information.</p>
 
  @(def min)")
+
+(defxdoc mini-proveall
+  :parents (testing-utilities)
+  :short "A small test suite"
+  :long "
+ @({
+  General Forms:
+  (mini-proveall)
+  :mini-proveall ; equivalent to the above
+ })
+
+ <p>To run a built-in test suite that takes at most a few seconds, evaluate the form
+ @('(mini-proveall)') in the ACL2 top-level read-eval-print loop.  This action
+ will cause ACL2 to evaluate several definitions and theorems, as a small test
+ that can catch major problems.</p>
+
+ <p>Much more complete testing is available by certifying @(see books)
+ distributed with ACL2.  See @(see books-certification).</p>")
 
 (defxdoc minimal-theory
   :parents (theories theory-functions)
@@ -109398,7 +109511,8 @@ it."
  implies that such function definitions were compiled with each pass.  Now,
  with a few exceptions, these definitions are saved in the first pass of
  evaluating the @('encapsulate') form and retrieved, rather than re-evaluated,
- in the second pass.  The exceptions include the following.
+ in the second pass.  The exceptions include the following.  <b>WARNING</b>:
+ These restrictions have been removed in later versions; see @(see note-8-8).
 
  <ul>
 
@@ -109686,6 +109800,36 @@ it."
  ")
 
 (defxdoc note-8-8
+
+; When *debug-on* is t, the debug info now goes to (standard-co state) instead
+; of Lisp standard output.
+
+; The files Makefile and books/Makefile serve only one purpose: to cause an
+; error when using a make utility other than GNU make (which invokes
+; GNUmakefile).  Both Makefile and books/Makefile have been simplified.  Thanks
+; to Grant Jurgensen and Eric Smith for the suggestion.
+
+; Removed duplicate occurrence of defstobj-field-fns-raw-defs in
+; *initial-program-fns-with-raw-code*.  Thanks to Eric Smith for pointing this
+; out.
+
+; Removed duplicate commands (defpointer double-float df) in
+; books/system/doc/acl2-doc.lisp.
+
+; Fixed a minor efficiency issue (incorrect hint in cons-with-hint) in
+; fix-export-updaters1.
+
+; Fixed some bugs found by Claude AI and passed along by Eric Smith.
+; - bugs in fmt strings/args
+; - a bug involving defchoose in tools/with-supporters.lisp
+; - minor bugs in a couple of error messages in source functions
+; - guards in source functions that were too strong
+
+; Added :DOC mini-proveall.  Thanks to Eric Smith for suggesting this addition.
+
+; For #+ and #-, changed :non-standard-analysis to non-standard-analysis as per
+; a chat with Eric Smith.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -109741,7 +109885,44 @@ it."
  <p>Improved the @(see guard), as well as the guard violation message, for
  @(tsee defevaluator).</p>
 
+ <p>The macro @(tsee tau-data) now has a guard requiring its argument to be a
+ symbol.  Thanks to Jerome Dubois and Eric Smith for a Zulip discussion leading
+ to this change.</p>
+
+ <p>The message printed by @(':set-guard-checking :none') was somewhat
+ misleading but has been fixed.  Thanks to Eric Smith for noticing this
+ problem.</p>
+
+ <p>The macro @('union-theories') now takes any number of arguments.  See @(see
+ union-theories).  Thanks to Eric Smith for suggesting this enhancement.</p>
+
  <h3>New Features</h3>
+
+ <p>For @(tsee defstobj) fields of hash-table type, a new &ldquo;keys&rdquo;
+ function returns a sorted list of keys of the hash table.  See @(see
+ defstobj).  Thanks to Eric Smith for requesting this enhancement.</p>
+
+ <p>A new macro, @(tsee in-logic-mode), allows @(see program)-mode code to be
+ included, for execution only, in the body of a @(see logic)-mode function.
+ See @(see in-logic-mode).  Thanks to Alessandro Coglio for requesting such a
+ capability and to him and Eric Smith for helpful discussions.</p>
+
+ <p>The @(tsee xargs) keyword @(':type-prescription') for a @(tsee defun) form
+ may now have the value @(':none'), which specifies that no built-in
+ @(':')@(tsee type-prescription) rule is to be computed for the new function
+ symbol.  Thanks to Alessandro Coglio, Grant Jurgensen, and Eric Smith for a
+ discussion on Zulip leading to this enhancement.</p>
+
+ <p>The new event @(tsee set-call-depth-overflow-advice) allows the author or
+ expert users of a book to add some advice for how users of the book might deal
+ with stack overflow sometimes caused by rewrite rules in the book.  The advice
+ is printed when the @('HARD ACL2 ERROR [Call depth] in REWRITE') error occurs
+ in sessions when the book has been included.</p>
+
+ <p>A new result is obtained by @(tsee get-event-data): a field named
+ @('INDUCTION-RECORDS') contains information on inductions performed during the
+ proof attempt.  See @(see get-event-data) and @(see show-induction-records).
+ Thanks to Grant Jurgensen for requesting such an enhancement.</p>
 
  <h3>Heuristic and Efficiency Improvements</h3>
 
@@ -109753,6 +109934,23 @@ it."
  on every host Lisp except GCL.  Thanks to Eric McCarthy for <a
  href='https://acl2.zulip.kestrel.institute/#narrow/channel/19-general/topic/Non-ASCII.20characters.20in.20ACL2.20source.20files/near/40162'>pointing
  out this bug as well as code relevant to a fix</a>.</p>
+
+ <p>Fixed a soundness bug in the macro @('channel-to-string'), which is used in
+ functions like @(tsee fms-to-string) (see @(see printing-to-strings)).  Thanks
+ to Grant Jurgensen for reporting this bug and providing a helpful analysis of
+ it.  The fix is to the constant @('*default-state*').  In particular, the
+ following is no longer provable by ACL2.</p>
+
+ @({
+ (equal (car (open-output-channel :string :character *default-state*))
+        nil)
+ })
+
+ <p>Moreover, our fix required modifying several functions related to I/O,
+ often to add an @('output-p') argument that is true when considering
+ output (which allows for a channel of type @(':character') with
+ &ldquo;filename&rdquo; @(':string')) but false when considering input.  Thanks
+ to Aakash Koneru for pointing us in the direction of these changes.</p>
 
  <p>Checks were improved to avoid raw Lisp errors in the following situations:</p>
 
@@ -109785,12 +109983,113 @@ it."
  @(tsee mfc-relieve-hyp).  Thanks to Eric Smith for sending a report he
  produced with Claude Code that points out the bugs and provides the fixes.</p>
 
+ <p>A release note item in @(see note-8-7) mentions a new feature in the
+ preceding ACL2 release, for which &ldquo;definitions are saved in the first
+ pass of evaluating the @('encapsulate') form and retrieved, rather than
+ re-evaluated, in the second pass.&rdquo; The implementation of this feature
+ has been significantly modified.  This modification fixes some bugs, as noted
+ in a new test book, @('books/system/tests/encap-defs-ht-input.lsp'), which
+ mentions those bugs (search for &ldquo;8.7&rdquo;).  This modification also
+ removes the first two restrictions mentioned in the aforementioned release
+ note item.  The key idea is to avoid saving code for @(see local) definitions
+ but to save code for most @(see redundant) definitions.</p>
+
+ <p>The constant @('*default-state*') was defined incorrectly.  Thanks to
+ Aakash Koneru and Grant Jurgensen for pointing this out and providing a
+ fix.</p>
+
+ <p>Made a @(see guard) fix for calls of the macro @(tsee fmx-cw) that use
+ @(tsee fmt) directive @('~_'), for example, @('(fmx-cw \"~_0\" x)').  Thanks
+ to Eric Smith for pointing out this bug using that example.</p>
+
+ <p>Fixed a bug that made it possible to certify a book that could not then be
+ included.  The bug could occur when a @(tsee defconst) form inside an @(tsee
+ encapsulate) form is dependent on @(see local) definitions, as in the
+ following example, which formerly was admitted but now is not.</p>
+
+ @({
+ (encapsulate
+   ()
+   (local (defun c-body () 17))
+   (defconst *c* (c-body)))
+ })
+
+ <p>As before, the value for the constant that is saved from the first pass of
+ the @('encapsulate') is used as the value in the second pass.  But unlike
+ before, the body of the @('defconst') form is translated during both passes,
+ not just the first.</p>
+
  <h3>Changes at the System Level</h3>
 
  <p>The built-in @(see events) @('Integer-1') and @('cons-equal') are now
  @(tsee defthm) events instead of @(tsee defaxiom) events.  Thanks to Eric
  Smith for showing us a report from Claude Code, which explained how those two
  formulas are provable from the other axioms.</p>
+
+ <p>Added a capability for collecting times for definitions made during the
+ @('include-book') pass of @(tsee certify-book).  See the comment in the
+ definition of @('*pass2-def-time-info*') in the ACL2 source code.  Thanks to
+ Eric Smith for a conversation leading to this enhancement.</p>
+
+ <p>Added a build-time check (incomplete in principle, but perhaps complete in
+ practice) that for ACL2 floating-point operations (see @(see df)), overflow
+ and division by zero cause errors rather than producing results that are not
+ truly numbers.  Thanks to Camm Maguire for a conversation leading to this
+ check.</p>
+
+ <p>(GCL only) Added code for proper handling of floating-point exceptions on
+ arm and riscv64 platforms.  Thanks to Camm Maguire for major help with
+ this.</p>
+
+ <p>It is now possible to make it impossible (we believe) to interact directly
+ with raw Lisp, at least for ACL2 built on CCL and SBCL.</p>
+
+ <ul>
+
+ <li>A new argument, @('never!'), is available for @(tsee set-debugger-enable).
+ When @('(set-debugger-enable :never!)') is evaluated, the effect is the same
+ as evaluating @('(set-debugger-enable :never)') &mdash; in particular, @(tsee
+ break$) does not enter the Lisp debugger &mdash; except that in addition, you
+ cannot exit the ACL2 loop.  This effectively disables @(':q') as a means for
+ going into raw Lisp (and also @('(value :q)'), etc.; see @(see q).</li>
+
+ <li>So to avoid the possibility of interaction with raw Lisp for ACL2 built on
+ CCL or SBCL, provided trust tags are avoided (see @(see defttag)), you can do
+ the following.
+
+ @({
+ ; The following seems to be necessary in order to avoid the rare occasions that
+ ; an interrupt in SBCL causes the Lisp debugger to be entered.
+ ; This is for SBCL only:
+ #+sbcl :q
+ #+sbcl (setq sb-ext:*invoke-debugger-hook* 'our-abort)
+ #+sbcl (lp)
+
+ ; Disable entering the debugger and disable existing the ACL2 loop:
+ (set-debugger-enable :never!)
+ (push-untouchable set-debugger-enable-fn t)
+ (push-untouchable debugger-enable nil)
+
+ ; Disable entering raw-mode:
+ (push-untouchable set-raw-mode-on t)
+ })</li>
+
+ </ul>
+
+ <p>Future Common Lisp implementations might not recognize @('#\\Page') as the
+ traditional &ldquo;Page&rdquo; character (with character-code 12), for
+ compatibility with Unicode.  We made updates to accommodate such a change that
+ is probably coming to Allegro CL, so that @('#\\Page') continues to be
+ suitable input for character 12 inside the ACL2 read-eval-print loop.
+ Moreover, when the host Lisp is Allegro CL, @('#\\Formfeed') is accepted as
+ input since that representation of character 12 may be printed by @(tsee
+ print-object$).  Thanks to Duane Rettig for bringing this issue to our
+ attention.</p>
+
+ <p>Made a change so that ACL2 can be built and run using host Lisp CCL on an
+ Arm-based Mac.  Thanks to Yahya Sohail for supplying that change, which
+ handles certain floating-point exceptions.  (ACL2 supports floating-point
+ computations; see @(see df).)</p>
 
  <h3>EMACS Support</h3>
 
@@ -134157,7 +134456,7 @@ work on <tt>(q x)</tt>.</p>
 
  <p>To understand how safe-mode works we refer to the notion of
  ``executable-counterpart''; see @(see evaluation) for relevant background.
- ACL2 arranges for that for the executable-counterpart of any program mode
+ ACL2 arranges that for the executable-counterpart of any program mode
  function, @('F'), then for every called subroutine @('G') of @('F') that is in
  program mode, the executable-counterpart of @('G') is called rather than the
  raw Lisp function for @('G').  This may result in an attempt to evaluate a
@@ -135624,6 +135923,72 @@ work on <tt>(q x)</tt>.</p>
  <p>The general command for setting any of the system evisc-tuples is @(tsee
  set-evisc-tuple).</p>")
 
+(defxdoc set-call-depth-overflow-advice
+  :parents (errors)
+  :short "Record a book-specific message about stack overflow"
+  :long "@({
+  General Form:
+  (set-call-depth-overflow-advice str)
+  })
+
+ <p>where @('str') is a @(tsee fmt) string suitable for printing with, say,
+ @('(cw str)').  In particular, @('str') may not use any @('fmt') directives
+ that refer to characters bound in an alist.</p>
+
+ <p>@('(set-call-depth-overflow-advice str)') is an @(see event) and is a no-op
+ except when found in a book during @(tsee certify-book) or @(tsee
+ include-book).  The event associates the string to the book name.  If multiple
+ @('set-call-depth-overflow-advice') events occur in a book, only the last one
+ is recorded.  Advice from other books, including sub-books, is recorded.  The
+ event gives the author or expert users of a book the means to provide the
+ other users of the book advice for dealing with stack overflow possibly caused
+ by the rules in the book.  In particular, @('str') is printed, along with the
+ associated book name, when a stack overflow error signalled like this</p>
+
+ @({HARD ACL2 ERROR [Call depth] in REWRITE:})
+
+ <p>occurs in a session in which the book has been included.</p>
+
+ <p>For example, if the book with full file name @('\"/u/jones/my-book.lisp\"')
+ contains:</p>
+
+ @({
+ (set-call-depth-overflow-advice
+  \"If you see the lemma MY-DANGEROUS-RULE in the output of ~
+  the cw-gstack command mentioned above, you might try~%~%~
+  (in-theory (e/d (my-less-dangerous-rule) (my-dangerous-rule)))~%~%~
+  and retry the proof.\")
+ })
+
+ <p>Then, in the event that a stack overflow occurs in a session in which
+ @('\"/u/jones/my-book.lisp\"') has been included, the HARD ACL2 ERROR above
+ will occur and the generic advice will be printed, including the advice to enable @(tsee brr)
+ and use @(tsee cw-gstack) to see the overflowing stack.  Then, a message like
+ this will be printed:</p>
+
+ @({
+ FYI: The books named below offer the following advice about rewrite
+ loops attributable to rules in each individual book.
+
+ ...
+
+ \"/u/jones/my-book.lisp\":
+ If you see the lemma MY-DANGEROUS-RULE in the output of the cw-gstack
+ command mentioned above, you might try
+
+ (in-theory (e/d (my-less-dangerous-rule) (my-dangerous-rule)))
+
+ and retry the proof.
+
+ ...
+ })
+
+ <p>where the elipses above denote the other books in the current session that
+ have a @('set-call-depth-overflow-advice') event.  System books, e.g., those
+ included via @('(include-book \"misc/his-book\" :dir :system)') will be
+ displayed like this @('(:SYSTEM . book-name)'), e.g., @('(:SYSTEM
+ . \"misc/his-book.lisp\")').</p>")
+
 (defxdoc set-case-split-limitations
   :parents (miscellaneous)
   :short "Set the @(see case-split-limitations)"
@@ -136312,6 +136677,7 @@ work on <tt>(q x)</tt>.</p>
   (set-debugger-enable :bt-break) ; as above, but print a backtrace first
   (set-debugger-enable :bt)       ; print a backtrace but do not enter debugger
   (set-debugger-enable :never)    ; disable all breaks into the debugger
+  (set-debugger-enable :never!)   ; disable entering raw Lisp entirely
   (set-debugger-enable nil)       ; disable debugger except when calling break$
  })
 
@@ -136403,11 +136769,16 @@ work on <tt>(q x)</tt>.</p>
 
  @({
   (set-debugger-enable :never)
- })
+  (set-debugger-enable :never!)
+})
 
- <p>The discussion above also applies to interrupts (from @('Control-C')) in
- some, but not all, host Common Lisps &mdash; perhaps all except for non-ANSI
- GCL, where interrupts will likely always put you into the debugger.</p>
+ <p>Furthermore, when the argument is @(':never!') then exits from the ACL2
+ top-level-loop are disabled as well.  We believe that, at least for ACL2 built
+ on CCL or SBCL, this prevents all direct interaction with raw Lisp unless
+ @(tsee set-raw-mode) is invoked, which requires a trust tag.</p>
+
+ <p>The discussion above applies to interrupts (from @('Control-C')) as
+ well.</p>
 
  <p>It remains to discuss options @(':break'), @(':bt'), @(':break-bt'), and
  @(':bt-break').  Option @(':break') is synonymous with option @('t'), while
@@ -137483,9 +137854,7 @@ work on <tt>(q x)</tt>.</p>
   [1] ACL2(1): [RAW LISP] :pop
   ACL2 !>:set-guard-checking :none
 
-  Turning off guard checking entirely.  To allow execution in raw Lisp
-  for functions with guards other than T, while continuing to mask guard
-  violations, :SET-GUARD-CHECKING NIL.  See :DOC set-guard-checking.
+  Turning off guard checking entirely.
 
   ACL2 >(foo 3)
   NIL
@@ -151230,10 +151599,11 @@ work on <tt>(q x)</tt>.</p>
  somewhat pretentious nature of any such advice.  But these remarks have helped
  many users approach ACL2 in a constructive and disciplined way.</p>
 
- <p>We say much more about The Method in the ACL2 book.  See the home page.
- Also see @(see set-gag-mode) for a discussion of a way for ACL2 to help you to
- use The Method.  And again, see @(see introduction-to-the-theorem-prover) for
- a more detailed tutorial.</p>
+ <p>We say much more about The Method in the book, <em>Computer-Aided
+ Reasoning: An Approach</em>; see @(see pubs::pubs-books).  Also see @(see
+ set-gag-mode) for a discussion of a way for ACL2 to help you to use The
+ Method.  And again, see @(see introduction-to-the-theorem-prover) for a more
+ detailed tutorial.</p>
 
  <p>Learning to read failed proofs is a useful skill.  There are several kinds
  of ``checkpoints'' in a proof: (1) a formula to which induction is being (or
@@ -158577,12 +158947,12 @@ introduction-to-the-tau-system) for more information about Tau.</dd>
                   (theory 'arith-patch))
 
   General Form:
-  (union-theories th1 th2)
+  (union-theories th1 th2 ... thn)
  })
 
- <p>where @('th1') and @('th2') are theories (see @(see theories)).  To each of
- the arguments there corresponds a runic theory.  This function returns the
- union of those two runic @(see theories), represented as a list and ordered
+ <p>where each @('thi') is a theory (see @(see theories)).  To each of the
+ arguments there corresponds a runic theory.  This function returns the union
+ of those runic @(see theories), represented as a list and ordered
  chronologically.</p>
 
  <p>This ``function'' is actually a macro that expands to a term mentioning the
@@ -168968,20 +169338,23 @@ created from the original fast alist during @('form') must be manually freed."
 
  <p>@(':type-prescription')<br></br>
 
- @('Value') is either @('nil') (the default) or a formula that is suitable for
- a hypothesis-free @(':')@(tsee type-prescription) rule.  That rule must be
- appropriate for the @(':typed-term') that is the application of the defined
- function symbol to its formal parameters.  For example, a legal value for
- @(':type-prescription') in @('(defun f (x y) ...)') could be @('(or (consp (f
- x y)) (equal (f x y) y))'), but not @('(or (consp (f u v)) (equal (f u v)
- v))').  The specified formula must provide a type that is implied by the
+ @('Value') is either @('nil'), which is the default; @(':none'), which
+ specifies that no built-in @(':')@(tsee type-prescription) rule is to be
+ computed for the new function symbol; or a formula, which we now discuss.
+ That formula should be suitable for a hypothesis-free @(':')@(tsee
+ type-prescription) rule, appropriate for the @(':typed-term') that is the
+ application of the defined function symbol to its formal parameters.  For
+ example, consider the definition: @('(defun f (x y) ...)').  A legal value for
+ @(':type-prescription') could thus be the formula @('(or (consp (f x
+ y)) (equal (f x y) y))'), but not the formula @('(or (consp (f u v)) (equal (f
+ u v) v))').  The specified formula must provide a type that is implied by the
  built-in type that is computed for the defined function.  Normally these will
  be equal, but if the value of @(':type-prescription') specifies a strictly
- weaker type than the computed built-in type then a warning will be printed
- (unless of course such warnings have been suppressed; see @(see
+ weaker type than the computed built-in type then a warning will be
+ printed (unless of course such warnings have been suppressed; see @(see
  set-inhibit-output-lst) and @(see set-inhibit-warnings)).  It is an error to
- supply a non-@('nil') value for @(':type-prescription') if there is no
- built-in type computed for the function.  See also @(see
+ supply a value other than @('nil') or @(':none') for @(':type-prescription')
+ if there is no built-in type computed for the function.  See also @(see
  type-prescription).</p>
 
  <p>@(':')@(tsee verify-guards)<br></br>
@@ -174757,7 +175130,7 @@ expand function call at the current subterm, without simplifying"
 (defpointer disjoin system-utilities)
 (defpointer disjoin2 system-utilities)
 (defpointer do-not-induct hints t)
-(defpointer double-float df)
+; (defpointer double-float df) ; included with other df-related defpointers below.
 (defpointer doublet-listp system-utilities)
 (defpointer dynamically-monitor-rewrites dmr)
 (defpointer dumb-negate-lit system-utilities)
@@ -175066,6 +175439,7 @@ expand function call at the current subterm, without simplifying"
 (defpointer translate11 system-utilities)
 (defpointer translate-cmp system-utilities)
 (defpointer translate1-cmp system-utilities)
+(defpointer translation translate)
 (defpointer ttag defttag)
 (defpointer trust-tag defttag)
 (defpointer typespec-check meta-extract)

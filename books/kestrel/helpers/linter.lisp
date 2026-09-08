@@ -1,6 +1,6 @@
 ; A linter for ACL2
 ;
-; Copyright (C) 2018-2025 Kestrel Institute
+; Copyright (C) 2018-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -63,9 +63,9 @@
 
 ;; TODO: Detect a B* that could simply be a LET or LET* (maybe)
 
-;; TODO: Add option to diable checking for the acl2 system itself.
+;; TODO: Add option to disable checking for the acl2 system itself.
 
-;; TODO: Add support for supressing more kinds of reports.
+;; TODO: Add support for suppressing more kinds of reports.
 
 ;; TODO: Suppress reasoning-based checks (like those involving types) on :program mode functions.
 
@@ -91,6 +91,7 @@
 (include-book "kestrel/terms-light/get-hyps-and-conc" :dir :system)
 (include-book "kestrel/world-light/fn-primitivep" :dir :system)
 (include-book "kestrel/world-light/defs-in-world" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
@@ -349,7 +350,7 @@
     (progn$
       (and (not (member-eq :equal-self suppress))
            (equal arg1 arg2)
-           ;; substitution may have occurred, so the args of term may not actually be idential forms
+           ;; substitution may have occurred, so the args of term may not actually be identical forms
            (cw "~%   EQUAL test ~x0 compares a value with an identical value." orig-term))
       (and (quotep arg1) ; todo: add a suppress option for this
            (quotep arg2)
@@ -414,8 +415,7 @@
            (not (equal (unquote arg1) (unquote arg2)))
            (cw "~%   EQL test ~x0 compares different constants (perhaps after substituting lets)." orig-term))
       (and (not (member-eq :equality-variant suppress))
-           (b* (
-                ((mv type-set1 &)
+           (b* (((mv type-set1 &)
                  (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
                 ((mv type-set2 &)
                  (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
@@ -532,8 +532,7 @@
   (and
    ;; It's not surprising for an MBT (or its negation), so we suppress that:
    (not (possibly-negated-mbtp term))
-   (b* (
-        ;; Apply the subst before checking:
+   (b* (;; Apply the subst before checking:
         (term (sublis-var-simple subst term))
         ;; Get the type:
         ((mv type-set &)
@@ -830,7 +829,7 @@
     (cons `(,(first fns) ,arg)
           (make-unary-calls (rest fns) arg))))
 
-;; todo: allow weakening to be read from a a table, so we can do things like pfield::fep -> natp
+;; todo: allow weakening to be read from a table, so we can do things like pfield::fep -> natp
 (defund get-weakenings (hyp)
   (and (consp hyp)
        (let ((fn (ffn-symb hyp)))
@@ -947,7 +946,7 @@
      (union-equal (non-variable-subterms (first terms))
                   (non-variable-subterms-list (rest terms))))))
 
-(make-flag non-variable-subterms)
+(local (make-flag non-variable-subterms))
 
 (defthm-flag-non-variable-subterms
   (defthm pseudo-term-listp-of-non-variable-subterms
@@ -999,7 +998,7 @@
        ((mv erp res state)
         (prove$ body-with-replacement :step-limit step-limit :ignore-ok t))
        ((when erp)
-        (er hard? 'try-replacing-each-subterm "Error trying to generalize ~s0." ctx)
+        (er hard? 'try-replacing-subterm "Error trying to generalize ~s0." ctx)
         state)
        ((when res)
         (cw "~%   body can be generalized by replacing ~x0 with a fresh variable." subterm)
@@ -1015,7 +1014,7 @@
        ((mv erp res state)
         (prove$ `(implies ,subterm-type-assumption ,body-with-replacement) :step-limit step-limit :ignore-ok t))
        ((when erp)
-        (er hard? 'try-replacing-each-subterm "Error trying to generalize ~s0." ctx)
+        (er hard? 'try-replacing-subterm "Error trying to generalize ~s0." ctx)
         state)
        (- (and res (cw "~%   body can be generalized by replacing ~x0 with a fresh variable, ~x1, satisfying ~x2."
                        subterm new-var
@@ -1041,7 +1040,7 @@
   (b* (((mv &  conclusion)
         (get-hyps-and-conc body))
        ;; we don't to generalize things like the 'nil in the conclusion (if x y 'nil) == (and x y)
-       ;; todo: try each conjunct of the concluson separately?
+       ;; todo: try each conjunct of the conclusion separately?
        (conclusions (get-conjuncts conclusion))
        (subterms (non-variable-subterms-list conclusions))
        (vars-to-avoid (append (free-vars-in-term body)
@@ -1118,7 +1117,7 @@
                   (er hard? 'vars-bound-after-hyps "Bad synp hyp: ~x0." hyp))))
           ;; todo: handle axe-bind-free and axe-syntaxp
           (let ((hyp-vars (free-vars-in-term hyp)))
-            ;; either all vars are bound, or free variable matching wil bind them:
+            ;; either all vars are bound, or free variable matching will bind them:
             (vars-bound-after-hyps (rest hyps) (union-eq hyp-vars acc))))))))
 
 (defun lint-conclusion (conclusion name hyps suppress)

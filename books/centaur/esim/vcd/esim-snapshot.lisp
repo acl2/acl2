@@ -29,7 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "std/util/top" :dir :system)
+(include-book "std/util/deflist" :dir :system)
 (include-book "std/strings/top" :dir :system)
 (include-book "../esim-paths")
 

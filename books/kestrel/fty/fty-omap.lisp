@@ -332,8 +332,8 @@
                               (acl2::string-downcase (symbol-name omap.name))
                               ")")))
     (if omap.already-definedp
-        '(progn)
-      `(define ,omap.pred (,omap.xvar)
+        '((progn))
+      `((define ,omap.pred (,omap.xvar)
            :parents (,omap.name)
            :short ,(concatenate 'string "Recognizer for " type-ref ".")
            ,@(if omap.measure `(:measure ,omap.measure)
@@ -423,7 +423,7 @@
              (implies (and (,omap.pred ,omap.xvar)
                            (omap::assoc ,k ,omap.xvar))
                       (,omap.val-type (omap::lookup ,k ,omap.xvar)))
-             :enable omap::lookup)))))
+             :enable omap::lookup))))))
 
 (define flexomap-fix-def (omap flagp)
   (b* (((flexomap omap))

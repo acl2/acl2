@@ -31,7 +31,7 @@
   (xdoc::topstring
     (xdoc::p
       "This returns all identifiers within a C AST. Eventually, we may wish
-       to extend this utility to only collect the identifiers occuring in
+       to extend this utility to only collect the identifiers occurring in
        particular scopes or name spaces.")
     (xdoc::p
       "This utility is intended to operate on unambiguous ASTs. It may or may
@@ -62,4 +62,5 @@
   :result ident-setp
   :default nil
   :combine union
-  :override ((ident (insert (ident-fix ident) nil))))
+  :override ((ident (insert (ident-fix ident) nil)))
+  :name abstract-syntax-collect-idents)

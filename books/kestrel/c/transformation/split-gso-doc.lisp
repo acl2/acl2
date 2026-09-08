@@ -60,7 +60,7 @@
           whose translation ensemble results from "
          (xdoc::seetopic "c$::validator" "validation")
          ", and in particular containing "
-         (xdoc::seetopic "c$::validation-information" "validation information")
+         (xdoc::seetopic "c$::validation-annotations" "validation information")
          ". This constant could result from @(tsee c$::input-files),
           or from some other "
          (xdoc::seetopic "transformation-tools" "transformation")

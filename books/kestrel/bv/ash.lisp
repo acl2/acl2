@@ -196,7 +196,8 @@
                                low 0)))
   :hints (("Goal" :in-theory (e/d (bvcat ash BVUMINUS BVMINUS)
                                   (;BVPLUS-OF-UNARY-MINUS-ARG2
-                                   BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
+                                   ;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                   )))))
 
 (defthm ash-of-bvcat
   (implies (and (natp lowsize)

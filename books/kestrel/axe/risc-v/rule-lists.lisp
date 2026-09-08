@@ -13,7 +13,7 @@
 (include-book "portcullis")
 (include-book "../rule-lists")
 
-(defun symbolic-execution-rules32 ()
+(defund symbolic-execution-rules32 ()
   (declare (xargs :guard t))
   '(run-until-return
     run-until-return-aux-opener
@@ -35,7 +35,7 @@
     read-of-if-arg2
     read-of-if-arg3))
 
-(defun debug-rules32 ()
+(defund debug-rules32 ()
   (declare (xargs :guard t))
   '(step32-opener
     run-until-return-aux-opener
@@ -55,16 +55,25 @@
     clear-extend-of-write-of-clear-retract
     write-of-clear-retract))
 
-(defun lifter-rules32 ()
+(defund register-aliases ()
+  (declare (xargs :guard t))
+  '(;; register names (we expand these to REG):
+    x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15
+    ;; register aliases:
+    ;; zero
+    ra sp gp tp t0 t1 t2 s0 fp s1 a0 a1 a2 a3 a4 a5 a6 a7))
+
+(defund lifter-rules32 ()
   (declare (xargs :guard t))
   (append
+   (register-aliases)
    (shadowed-write-rules32)
    (acl2::base-rules) ; gets us if-same-branches, for example
    (acl2::core-rules-bv)
    (acl2::unsigned-byte-p-forced-rules)
    (acl2::type-rules) ; rename
    (acl2::bvchop-of-bv-rules)
-   (acl2::convert-to-bv-rules) ; todo: may just need the trim-elim rules
+   (acl2::convert-to-bv-rules-axe) ; todo: may just need the trim-elim rules
    (acl2::boolean-rules-safe)
    (acl2::list-to-bv-array-rules) ;; unrolling seemed bad for large sections?
    '(;acl2::list-to-bv-array-constant-opener
@@ -123,8 +132,6 @@
      subregion32p-of-1-arg1     ;; trying
      disjoint-regions32p-of-1-and-1 ; trying
 
-     acl2::equal-of-bvplus-constant-and-constant-alt
-     acl2::equal-of-bvplus-constant-and-constant
      acl2::equal-of-bvplus-and-bvplus-reduce-constants
      disjoint-regions32p-byte-special
      acl2::bv-array-read-chunk-little-of-1
@@ -140,8 +147,6 @@
 
      ;;bv-array-read-shorten-8
      acl2::bv-array-read-of-bvplus-of-constant-no-wrap
-     acl2::not-equal-of-constant-and-bv-term-axe
-     acl2::not-equal-of-constant-and-bv-term-alt-axe
      acl2::equal-of-bvchop-and-bvplus-of-same
      acl2::equal-of-bvchop-and-bvplus-of-same-alt
      acl2::logext-identity-when-usb-smaller-axe
@@ -153,7 +158,6 @@
      not-in-region32p-when-disjoint-regions32p-special
      ;; not-in-region32p-when-disjoint-regions32p-one ; looped -- why?
      ;; not-in-region32p-when-disjoint-regions32p-two
-     acl2::bvlt-of-1
      ;acl2::bvlt-of-bvplus-constant-and-constant-gen ; bad?
      bvlt-of-read-and-constant
 
@@ -273,12 +277,6 @@
      stat32p-of-write
      ;; stat32p-of-set-pc ; uncomment?
 
-     ;; register names (we expand these to REG):
-     x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15
-     ;; register aliases:
-     ;; zero
-     ra sp gp tp t0 t1 t2 s0 fp s1 a0 a1 a2 a3 a4 a5
-
      acl2::subregion32p-constant-opener
      acl2::in-region32p-constant-opener
      acl2::disjoint-regions32p-constant-opener
@@ -348,15 +346,13 @@
      acl2::logtail-of-logext
      ;acl2::logtail-of-bvcat
      acl2::logtail-becomes-slice-bind-free-axe
-     acl2::bvcat-of-logext-arg2
-     acl2::bvcat-of-logext-arg4
+;     acl2::bvcat-of-logext-arg2
+;     acl2::bvcat-of-logext-arg4
 
      ;acl2::bvcat-of-if-arg2
      ;acl2::bvcat-of-if-arg4
-     acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg2 ; these could be convert-to-bv rules
+     acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg2 ; these could be convert-to-bv-axe rules
      acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg4
-
-     acl2::loghead-becomes-bvchop
 
      ubyte5-fix
      acl2::ubyte12-fix
@@ -539,6 +535,17 @@
      acl2::ifix-when-integerp
      acl2::mod-becomes-bvchop-when-power-of-2p
      )))
+
+;; Useful if we've disabled (:e lifter-rules32) to avoid big constant lists in proofs.
+(defthm symbol-listp-of-lifter-rules32
+  (symbol-listp (lifter-rules32)))
+
+(in-theory (disable (:e lifter-rules32)))
+
+ ;todo: add more?
+(defund assumption-simplification-rules ()
+  (declare (xargs :guard t))
+  (register-aliases))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

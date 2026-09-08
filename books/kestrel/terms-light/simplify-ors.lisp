@@ -1,6 +1,6 @@
 ; A tool to replace (if x x y) with (if x t y) in boolean contexts
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -91,26 +91,15 @@
          (len terms))
   :hints (("Goal" :induct (len terms))))
 
-(local
- (defthm-flag-simplify-ors
-   (defthm pseudo-termp-of-simplify-ors
-     (implies (pseudo-termp term)
-              (pseudo-termp (simplify-ors term iffp)))
-     :flag simplify-ors)
-   (defthm pseudo-termp-of-simplify-ors-lst
-     (implies (pseudo-term-listp terms)
-              (pseudo-term-listp (simplify-ors-lst terms)))
-     :flag simplify-ors-lst)
-   :hints (("Goal" :in-theory (enable pseudo-term-listp-when-symbol-listp)))))
-
-;; redundant and non-local
-(defthm pseudo-termp-of-simplify-ors
-  (implies (pseudo-termp term)
-           (pseudo-termp (simplify-ors term iffp))))
-
-;; redundant and non-local
-(defthm pseudo-term-listp-of-simplify-ors-lst
-  (implies (pseudo-term-listp terms)
-           (pseudo-term-listp (simplify-ors-lst terms))))
+(defthm-flag-simplify-ors
+  (defthm pseudo-termp-of-simplify-ors
+    (implies (pseudo-termp term)
+             (pseudo-termp (simplify-ors term iffp)))
+    :flag simplify-ors)
+  (defthm pseudo-termp-of-simplify-ors-lst
+    (implies (pseudo-term-listp terms)
+             (pseudo-term-listp (simplify-ors-lst terms)))
+    :flag simplify-ors-lst)
+  :hints (("Goal" :in-theory (enable pseudo-term-listp-when-symbol-listp))))
 
 (verify-guards simplify-ors :hints (("Goal" :expand ((pseudo-termp term)))))

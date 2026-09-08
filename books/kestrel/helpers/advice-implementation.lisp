@@ -590,7 +590,7 @@
     (and (symbol-sourcep (first sources))
          (symbol-source-listp (rest sources)))))
 
-;; Maps symbols (e.g., ones occuring in action objects of recommendations) to the books that define them.
+;; Maps symbols (e.g., ones occurring in action objects of recommendations) to the books that define them.
 (defund symbol-tablep (tab)
   (declare (xargs :guard t))
   (or (eq :unavailable tab) ; todo: eventually remove this case?  Or allow individual symbols to be mapped to :unknown or :top-level?
@@ -1061,7 +1061,7 @@
          ((mv erp book-map state) (parse-book-map book-map state))
          ((when erp)
           (cw "WARNING: When parsing book map: ~x0.~%" erp)
-          (mv nil ; supressing this error for now
+          (mv nil ; suppressing this error for now
               :none state))
          ((when (or (not (rationalp confidence))
                     (< confidence 0)

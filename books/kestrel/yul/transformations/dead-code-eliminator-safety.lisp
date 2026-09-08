@@ -1,10 +1,10 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -117,39 +117,38 @@
       :flag check-safe-fundef)
 
     :hints (("Goal"
-             :in-theory
-             (enable check-safe-statement
-                     check-safe-statement-list
-                     check-safe-block
-                     check-safe-block-option
-                     check-safe-swcase
-                     check-safe-swcase-list
-                     check-safe-fundef
-                     statement-dead
-                     statement-list-dead
-                     block-dead
-                     block-option-dead
-                     swcase-dead
-                     swcase-list-dead
-                     fundef-dead
-                     statement-nofunp
-                     statement-list-nofunp
-                     block-nofunp
-                     block-option-nofunp
-                     swcase-nofunp
-                     swcase-list-nofunp
-                     fundef-nofunp
-                     statement-noloopinitp
-                     statement-list-noloopinitp
-                     block-noloopinitp
-                     block-option-noloopinitp
-                     swcase-noloopinitp
-                     swcase-list-noloopinitp
-                     fundef-noloopinitp
-                     set::subset-in-2
-                     not-reserrp-when-mode-setp
-                     mode-setp-when-mode-set-resultp-and-not-reserrp
-                     set::subset-of-union-and-union
-                     set::union-subset-x
-                     set::subset-transitive)
+             :in-theory (enable check-safe-statement
+                                check-safe-statement-list
+                                check-safe-block
+                                check-safe-block-option
+                                check-safe-swcase
+                                check-safe-swcase-list
+                                check-safe-fundef
+                                statement-dead
+                                statement-list-dead
+                                block-dead
+                                block-option-dead
+                                swcase-dead
+                                swcase-list-dead
+                                fundef-dead
+                                statement-nofunp
+                                statement-list-nofunp
+                                block-nofunp
+                                block-option-nofunp
+                                swcase-nofunp
+                                swcase-list-nofunp
+                                fundef-nofunp
+                                statement-noloopinitp
+                                statement-list-noloopinitp
+                                block-noloopinitp
+                                block-option-noloopinitp
+                                swcase-noloopinitp
+                                swcase-list-noloopinitp
+                                fundef-noloopinitp
+                                set::subset-in-2
+                                not-reserrp-when-mode-setp
+                                mode-setp-when-result-not-error
+                                set::subset-of-union-and-union
+                                set::union-subset-x
+                                set::subset-transitive)
              :expand (check-safe-statement stmt varset funtab)))))

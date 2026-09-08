@@ -35,7 +35,7 @@
            )
      (let ((fn (ffn-symb tree)))
        (if (eq fn 'quote)
-           ;; a quoted constant;
+           ;; a quoted constant:
            (and (= 1 (len (fargs tree)))
                 (true-listp (fargs tree)))
          ;; the application of a function symbol or lambda to args that are axe trees:
@@ -210,7 +210,7 @@
                   ))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
   :hints (("Goal" :in-theory (e/d (axe-treep)
-                                  ( ;; for speed:
+                                  (;; for speed:
                                    equal-of-len-and-0)))))
 
 ;todo: prove from the above
@@ -370,7 +370,7 @@
                 (< tree bound)))
      (let ((fn (ffn-symb tree)))
        (if (eq fn 'quote)
-           ;; a quoted constant;
+           ;; a quoted constant:
            (and (= 1 (len (fargs tree)))
                 (true-listp (fargs tree)))
          ;; the application of a function symbol or lambda to args that are axe trees:
@@ -582,7 +582,7 @@
                 )
            (bounded-axe-treep (nth n args) bound))
   :hints (("Goal" :expand (bounded-axe-tree-listp args bound2)
-           :in-theory (e/d (bounded-axe-tree-listp (:i nth)) ( ;nth-of-cdr
+           :in-theory (e/d (bounded-axe-tree-listp (:i nth)) (;nth-of-cdr
                                                              )))))
 
 (defthm bounded-axe-tree-listp-of-append

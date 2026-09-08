@@ -6,6 +6,8 @@ the Axe variant (e.g., JVM or x86).
 
 See Setup instrucions in ../README.md
 
-See also ../jvm/examples.
-
-See also ../x86/examples.
+See also the following directories that contain examples for the Axe variants:
+- ../jvm/examples/
+- ../x86/examples/
+- ../risc-v/examples/
+- ../arm/examples/

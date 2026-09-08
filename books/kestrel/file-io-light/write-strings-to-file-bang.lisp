@@ -1,6 +1,6 @@
 ; A variant of write-strings-to-file that can be used in make-event, etc.
 ;
-; Copyright (C) 2017-2025 Kestrel Institute
+; Copyright (C) 2017-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -47,6 +47,11 @@
 (defthm w-of-mv-nth-1-of-write-strings-to-file!
   (equal (w (mv-nth 1 (write-strings-to-file! strings filename ctx state)))
          (w state))
+  :hints (("Goal" :in-theory (enable write-strings-to-file!))))
+
+(defthm state-p1-of-mv-nth-1-of-write-strings-to-file!
+  (implies (state-p1 state)
+           (state-p1 (mv-nth 1 (write-strings-to-file! strings filename ctx state))))
   :hints (("Goal" :in-theory (enable write-strings-to-file!))))
 
 (defthm state-p-of-mv-nth-1-of-write-strings-to-file!

@@ -18,6 +18,7 @@
 (include-book "kestrel/jvm/heap0" :dir :system)
 (include-book "kestrel/jvm/arrays0" :dir :system)
 (include-book "kestrel/jvm/class-tables" :dir :system)
+(include-book "std/util/bstar" :dir :system)
 (local (include-book "tools/flag" :dir :system))
 
 ;; TODO: Move to jvm dir.

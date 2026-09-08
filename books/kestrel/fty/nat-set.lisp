@@ -1,6 +1,6 @@
 ; FTY Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -28,4 +28,18 @@
     (implies (and (nat-setp x)
                   (not (set::emptyp x)))
              (natp (set::head x)))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defruled nat-setp-of-subset-when-superset
+    (implies (and (set::subset a b)
+                  (nat-setp b)
+                  (set::setp a))
+             (nat-setp a))
+    :induct (nat-setp a)
+    :enable (nat-setp
+             set::setp
+             set::emptyp
+             set::head
+             set::tail
+             set::subset)
+    :disable natp))

@@ -1,0 +1,512 @@
+; Remora Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "REMORA")
+
+(include-book "abstract-syntax-derived-fixtypes")
+(include-book "abstract-syntax-structurals")
+(include-book "abstract-syntax-constructors")
+
+(local (include-book "std/lists/no-duplicatesp" :dir :system))
+
+(acl2::controlled-configuration)
+
+(local (in-theory (enable typep-when-result-not-error)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ static-environments
+  :parents (static-semantics)
+  :short "Static environments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A static environment consists of
+     the contextual information needed to
+     enforce the static semantics of some AST.
+     It is the static counterpart of a "
+    (xdoc::seetopic "dynamic-semantics" "dynamic environment")
+    ".")
+   (xdoc::p
+    "Our static environments correspond to the combination of
+     the sort environment @($\\Theta$),
+     the kind environment @($\\Delta$), and
+     the type environment @($\\Gamma$)
+     in [thesis], [arxiv], and [esop]."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod senv
+  :short "Fixtype of static environments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A static environment consists of:")
+   (xdoc::ul
+    (xdoc::li
+     "A map from the ispace variables in scope to optional ispaces.
+      This corresponds to @($\\Theta$);
+      since our ispace variables include their own sort,
+      the keys suffice to capture the sorts,
+      as opposed to a map from variables to sorts.
+      The optional ispace associated to a variable is absent
+      when the variable is bound by an abstraction,
+      i.e. it does not stand for any specific ispace;
+      it is present when the variable is bound by a @('let')
+      to a specific ispace, which is then its definition.
+      The definitions are taken into account
+      by ispace and type equivalence.")
+    (xdoc::li
+     "A map from the type variables in scope to optional types.
+      This corresponds to @($\\Delta$);
+      since our type variables include their own kind,
+      the keys suffice to capture the kinds,
+      as opposed to a map from variables to kinds.
+      The optional type is absent or present,
+      and is used analogously to the ispace variables described above.")
+    (xdoc::li
+     "A map from the expression variables in scope to their types.
+      This corresponds to @($\\Gamma$)."))
+   (xdoc::p
+    "Variables are in five separate name spaces:
+     one for dimension variables,
+     one for shape variables,
+     one for atom types,
+     one for array types,
+     and one for expression variables.
+     E.g. @('$x'), @('@x'), @('&x'), @('*x'), and @('x')
+     are all distinct variables, despite the common @('x') part;
+     indeed, they are distinguished by the prefixes.
+     The variables in a static environment are similarly separated,
+     in the three components and via fixtype sum tags."))
+  ((ispace-vars ispace-var-ispace-option-map)
+   (type-vars type-var-type-option-map)
+   (expr-vars string-type-map))
+  :pred senvp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defresult senv-result
+  :short "Fixtype of static environments and errors."
+  :ok senv
+  :pred senv-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define primop-types ()
+  :returns (expr-vars string-type-mapp)
+  :short "Association of primitive operations to their types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In Remora, the primitive operations (i.e. built-in functions)
+     are syntactically variables of (zero-rank array type of) a function type.
+     These variables are implicitly in scope,
+     and thus part of the initial static environment.
+     Each operation's name (the map key) is its surface name in [impl].
+     This is an initial selection of primitive operations;
+     more will be added as the formalization grows.")
+   (xdoc::p
+    "The operations from @('+') to @('bool->f') have monomorphic types:
+     function types between base types.
+     The @('head'), @('tail'), @('length'),
+     @('append'), @('reverse'), @('index'), @('index2d'),
+     @('reshape'), @('flatten'), @('transpose2d'),
+     @('reduce'), and @('fold') operations
+     have polymorphic types:
+     a universal type of a product type of a function type, as in [impl].
+     The first input types of @('reduce') and @('fold')
+     are themselves function types,
+     making them higher-order operations.
+     The @('sum') operation is polymorphic only in the shape,
+     not in the element type, which is always integer:
+     its type is a product type of a function type,
+     without an enclosing universal type, as in [impl].
+     The @('iota/static') operation is also polymorphic only in the shape:
+     its type is a product type of an array type,
+     without any function type, as in [impl],
+     since the single ispace application directly yields the array.
+     The @('iota') operation is polymorphic only in a dimension:
+     its type is a product type of a function type
+     whose output is an existential type, as in [impl],
+     since the shape of the result depends on the argument's value,
+     and is thus not known statically.
+     The @('reify-dim') and @('reify-shape') operations are polymorphic
+     only in a dimension and only in a shape, respectively:
+     their types are product types of, respectively,
+     the integer base type
+     and an existential type of an integer array type,
+     without any function type, as in [impl],
+     since the single ispace application directly yields the result.
+     The @('trace') operation returns its second argument,
+     ignoring its first one,
+     which the interpreter in [impl] prints as a side effect
+     that we do not model;
+     its type has two type parameters and two shape parameters,
+     for the two arguments.
+     The @('undefined') operation always fails, as in [impl]:
+     like @('iota/static'), its type has no function type,
+     so the last ispace application yields the (erroneous) result.
+     All these types are atom-kinded, without zero-rank array type wrapping:
+     as explained in @(see types),
+     atom-kinded types are allowed wherever array-kinded types are expected,
+     implicitly standing for zero-rank array types of those atom types."))
+  (b* ((int-binop-type
+        (t-> :int :int :int))
+       (int-unop-type
+        (t-> :int :int))
+       (int-relop-type
+        (t-> :int :int :bool))
+       (int-to-float-type
+        (t-> :int :float))
+       (int-to-bool-type
+        (t-> :int :bool))
+       (float-binop-type
+        (t-> :float :float :float))
+       (float-unop-type
+        (t-> :float :float))
+       (float-relop-type
+        (t-> :float :float :bool))
+       (float-to-int-type
+        (t-> :float :int))
+       (bool-unop-type
+        (t-> :bool :bool))
+       (bool-binop-type
+        (t-> :bool :bool :bool))
+       (bool-to-int-type
+        (t-> :bool :int))
+       (bool-to-float-type
+        (t-> :bool :float))
+       (head-type
+        (tfa "&t"
+             (tpi ("$d" "@s")
+                  (t-> (t[] "&t" (shp[] (dim+ 1 "$d") "@s"))
+                       (t[] "&t" "@s")))))
+       (tail-type
+        (tfa "&t"
+             (tpi ("$d" "@s")
+                  (t-> (t[] "&t" (shp[] (dim+ 1 "$d") "@s"))
+                       (t[] "&t" (shp[] "$d" "@s"))))))
+       (length-type
+        (tfa "&t"
+             (tpi ("$d" "@s")
+                  (t-> (t[] "&t" (shp[] "$d" "@s"))
+                       :int))))
+       (append-type
+        (tfa "&t"
+             (tpi ("$m" "$n" "@s")
+                  (t-> (t[] "&t" (shp[] "$m" "@s"))
+                       (t[] "&t" (shp[] "$n" "@s"))
+                       (t[] "&t" (shp[] (dim+ "$m" "$n") "@s"))))))
+       (reverse-type
+        (tfa "&t"
+             (tpi ("$d" "@s")
+                  (t-> (t[] "&t" (shp[] "$d" "@s"))
+                       (t[] "&t" (shp[] "$d" "@s"))))))
+       (index-type
+        (tfa "&t"
+             (tpi "$m"
+                  (t-> (t[] "&t" "$m")
+                       :int
+                       "&t"))))
+       (index2d-type
+        (tfa "&t"
+             (tpi ("$m" "$n")
+                  (t-> (t[] "&t" (shp[] "$m" "$n"))
+                       (t[] :int (shp 2))
+                       "&t"))))
+       (sum-type
+        (tpi "@s"
+             (t-> (t[] :int "@s")
+                  :int)))
+       (reshape-type
+        (tfa "&t"
+             (tpi ("@s1" "@s2")
+                  (t-> (t[] "&t" "@s1")
+                       (t[] "&t" "@s2")))))
+       (flatten-type
+        (tfa "&t"
+             (tpi ("$m" "$n" "@s")
+                  (t-> (t[] "&t" (shp[] "$m" "$n" "@s"))
+                       (t[] "&t" (shp[] (dim* "$m" "$n") "@s"))))))
+       (transpose2d-type
+        (tfa "&t"
+             (tpi ("$m" "$n")
+                  (t-> (t[] "&t" (shp[] "$m" "$n"))
+                       (t[] "&t" (shp[] "$n" "$m"))))))
+       (iota/static-type
+        (tpi "@s"
+             (t[] :int "@s")))
+       (reduce-type
+        (tfa "&t"
+             (tpi ("$d" "@s")
+                  (t-> (t-> (t[] "&t" "@s")
+                            (t[] "&t" "@s")
+                            (t[] "&t" "@s"))
+                       (t[] "&t" (shp[] (dim+ 1 "$d") "@s"))
+                       (t[] "&t" "@s")))))
+       (fold-type
+        (tfa ("&t" "&t2")
+             (tpi ("$d" "@s" "@s2")
+                  (t-> (t-> (t[] "&t2" "@s2")
+                            (t[] "&t" "@s")
+                            (t[] "&t2" "@s2"))
+                       (t[] "&t2" "@s2")
+                       (t[] "&t" (shp[] (dim+ 1 "$d") "@s"))
+                       (t[] "&t2" "@s2")))))
+       (reify-dim-type
+        (tpi "$d" :int))
+       (reify-shape-type
+        (tpi "@s"
+             (tsi "$r"
+                  (t[] :int (shp "$r")))))
+       (iota-type
+        (tpi "$d"
+             (t-> (t[] :int (shp "$d"))
+                  (tsi "@s"
+                       (t[] :int "@s")))))
+       (trace-type
+        (tfa ("&t" "&r")
+             (tpi ("@s" "@q")
+                  (t-> (t[] "&t" "@s")
+                       (t[] "&r" "@q")
+                       (t[] "&r" "@q")))))
+       (undefined-type
+        (tfa "&t"
+             (tpi "@s"
+                  (t[] "&t" "@s")))))
+    (omap::from-alist
+     (list$ (cons "+" int-binop-type)
+            (cons "-" int-binop-type)
+            (cons "*" int-binop-type)
+            (cons "/" int-binop-type)
+            (cons "^" int-binop-type)
+            (cons "mod" int-binop-type)
+            (cons "max" int-binop-type)
+            (cons "min" int-binop-type)
+            (cons "bit-and" int-binop-type)
+            (cons "bit-or" int-binop-type)
+            (cons "bit-xor" int-binop-type)
+            (cons "shl" int-binop-type)
+            (cons "shr" int-binop-type)
+            (cons "bit-not" int-unop-type)
+            (cons "popc" int-unop-type)
+            (cons "==" int-relop-type)
+            (cons "!=" int-relop-type)
+            (cons "<" int-relop-type)
+            (cons ">" int-relop-type)
+            (cons "<=" int-relop-type)
+            (cons ">=" int-relop-type)
+            (cons "i->f" int-to-float-type)
+            (cons "i->bool" int-to-bool-type)
+            (cons "f.+" float-binop-type)
+            (cons "f.-" float-binop-type)
+            (cons "f.*" float-binop-type)
+            (cons "f./" float-binop-type)
+            (cons "f.^" float-binop-type)
+            (cons "f.max" float-binop-type)
+            (cons "f.min" float-binop-type)
+            (cons "sqrt" float-unop-type)
+            (cons "f.sqrt" float-unop-type)
+            (cons "f.==" float-relop-type)
+            (cons "f.!=" float-relop-type)
+            (cons "f.<" float-relop-type)
+            (cons "f.>" float-relop-type)
+            (cons "f.<=" float-relop-type)
+            (cons "f.>=" float-relop-type)
+            (cons "truncate" float-to-int-type)
+            (cons "round" float-to-int-type)
+            (cons "ceiling" float-to-int-type)
+            (cons "floor" float-to-int-type)
+            (cons "not" bool-unop-type)
+            (cons "and" bool-binop-type)
+            (cons "or" bool-binop-type)
+            (cons "bool.==" bool-binop-type)
+            (cons "bool.!=" bool-binop-type)
+            (cons "bool->i" bool-to-int-type)
+            (cons "bool->f" bool-to-float-type)
+            (cons "head" head-type)
+            (cons "tail" tail-type)
+            (cons "length" length-type)
+            (cons "append" append-type)
+            (cons "reverse" reverse-type)
+            (cons "index" index-type)
+            (cons "index2d" index2d-type)
+            (cons "sum" sum-type)
+            (cons "reshape" reshape-type)
+            (cons "flatten" flatten-type)
+            (cons "transpose2d" transpose2d-type)
+            (cons "iota/static" iota/static-type)
+            (cons "reduce" reduce-type)
+            (cons "fold" fold-type)
+            (cons "reify-dim" reify-dim-type)
+            (cons "reify-shape" reify-shape-type)
+            (cons "iota" iota-type)
+            (cons "trace" trace-type)
+            (cons "undefined" undefined-type)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define init-senv ()
+  :short "Initial static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the initial, i.e. top-level, static environment.
+     It only contains the primitive operations in scope."))
+  (make-senv :ispace-vars nil
+             :type-vars nil
+             :expr-vars (primop-types)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-add-ispace-var ((var ispace-varp) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add an ispace variable to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variable is added with an absent associated ispace,
+     because it does not stand for any specific ispace;
+     this is the case for variables bound by abstractions.
+     A variable already present is overwritten,
+     which realizes the intended shadowing."))
+  (change-senv senv
+               :ispace-vars (omap::update (ispace-var-fix var)
+                                          nil
+                                          (senv->ispace-vars senv))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define senv-add-ispace-vars ((vars ispace-var-listp) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add zero or more ispace variables to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee senv-add-ispace-var),
+     which this function repeats for each variable."))
+  (b* (((when (endp vars)) (senv-fix senv))
+       (senv (senv-add-ispace-var (car vars) senv)))
+    (senv-add-ispace-vars (cdr vars) senv)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-add-type-var ((var type-varp) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add a type variable to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variable is added with an absent associated type,
+     because it does not stand for any specific type;
+     this is the case for variables bound by abstractions.
+     A variable already present is overwritten,
+     which realizes the intended shadowing."))
+  (change-senv senv
+               :type-vars (omap::update (type-var-fix var)
+                                        nil
+                                        (senv->type-vars senv))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define senv-add-type-vars ((vars type-var-listp) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add zero or more type variables to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee senv-add-type-var),
+     which this function repeats for each variable."))
+  (b* (((when (endp vars)) (senv-fix senv))
+       (senv (senv-add-type-var (car vars) senv)))
+    (senv-add-type-vars (cdr vars) senv)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-add-ispace-def ((var ispace-varp) (ispace ispacep) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add an ispace variable with its ispace definition
+          to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variable is added with a present associated ispace,
+     namely its definition;
+     this is the case for variables bound by @('let')s.
+     A variable already present is overwritten,
+     which realizes the intended shadowing."))
+  (b* ((new-ispace-vars (omap::update (ispace-var-fix var)
+                                      (ispace-fix ispace)
+                                      (senv->ispace-vars senv))))
+    (change-senv senv :ispace-vars new-ispace-vars)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-add-type-def ((var type-varp) (type typep) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add a type variable with its type definition
+          to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The variable is added with a present associated type,
+     namely its definition;
+     this is the case for variables bound by @('let')s.
+     A variable already present is overwritten,
+     which realizes the intended shadowing."))
+  (b* ((new-type-vars (omap::update (type-var-fix var)
+                                    (type-fix type)
+                                    (senv->type-vars senv))))
+    (change-senv senv :type-vars new-type-vars)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-add-var+type ((var stringp) (type typep) (senv senvp))
+  :returns (new-senv senvp)
+  :short "Add a variable with a type to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since variables are expressions, the type must be an array type.
+     So we auto-lift atom types to scalar array types if needed.")
+   (xdoc::p
+    "This may override an existing variable,
+     which is intended hiding behavior."))
+  (b* ((expr-vars (senv->expr-vars senv))
+       (new-expr-vars (omap::update (str::str-fix var)
+                                    (type-ensure-array type)
+                                    expr-vars)))
+    (change-senv senv :expr-vars new-expr-vars)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-add-vars+types ((vars+types var+type?-listp) (senv senvp))
+  :guard (no-duplicatesp-equal (var+type?-list->var vars+types))
+  :returns (new-senv senv-resultp)
+  :short "Add zero or more variables with types to the static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This function actually takes a list of variables with optional types,
+     but it fails if some type is missing.")
+   (xdoc::p
+    "This repeatedly calls @(tsee senv-add-var+type).
+     The guard ensures that the order of the list does not matter.")
+   (xdoc::p
+    "Since we do not perform type inference yet,
+     this fails if any of the variables has no type."))
+  (b* (((when (endp vars+types)) (senv-fix senv))
+       (vt (car vars+types))
+       ((ok type) (var+type?->type-or-err vt))
+       (senv (senv-add-var+type (var+type?->var vt) type senv)))
+    (senv-add-vars+types (cdr vars+types) senv)))

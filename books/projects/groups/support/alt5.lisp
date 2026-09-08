@@ -118,6 +118,9 @@
 	   (member-equal x (append-list (select-conjs l h))))
   :hints (("Subgoal *1/2" :use (consp-conjs
                                 (:instance conjs-conjer (y (caar l)))
+                                (:instance normalp-conj (y (conjer (caar l) x g)))))
+	  ("Subgoal *1/1" :use (consp-conjs
+                                (:instance conjs-conjer (y (caar l)))
                                 (:instance normalp-conj (y (conjer (caar l) x g)))))))
 
 (local-defthmd sublistp-h-append-list-select-conjs-2

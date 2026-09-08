@@ -44,8 +44,8 @@
 (defthmd truncate-becomes-floor
   (implies (and ;(rationalp i)
                 (<= 0 i)
-                (rationalp j)
-                (<= 0 j))
+                (<= 0 j)
+                (rationalp j))
            (equal (truncate i j)
                   (floor i j)))
   :hints (("Goal" :in-theory (enable floor truncate)
@@ -96,7 +96,7 @@
 
 (defthm my-truncate-lower-bound-linear
   (implies (and (<= 0 i)
-                (< 0 j)
+                (<= 0 j)
                 (rationalp i)
                 (rationalp j))
            (< (+ -1 (/ i j)) (truncate i j)))
@@ -112,6 +112,16 @@
   :rule-classes :linear
   :hints (("Goal" :cases ((< j 0))
            :in-theory (enable truncate-becomes-floor))))
+
+;enable?
+(defthmd truncate-when-multiple
+  (implies (and (integerp (/ i j))
+                (rationalp i)
+                (rationalp j))
+           (equal (truncate i j)
+                  (/ i j)))
+  :hints (("Goal" :in-theory (enable truncate))))
+
 
 ;; in this case, the quotient is positive
 (defthmd truncate-becomes-floor-gen1
@@ -135,23 +145,25 @@
                   (+ 1 (floor i j))))
   :hints (("Goal" :in-theory (enable floor truncate))))
 
+;; in this case, no rounding is done
 (defthmd truncate-becomes-floor-gen3
   (implies (and (integerp (/ i j))
                 (rationalp i)
                 (rationalp j))
            (equal (truncate i j)
                   (floor i j)))
-  :hints (("Goal" :in-theory (enable floor truncate))))
+  :hints (("Goal" :in-theory (enable truncate-when-multiple))))
 
 ;better in some cases
 (defthmd truncate-becomes-floor-other
   (implies (and (rationalp i)
                 (rationalp j))
            (equal (truncate i j)
-                  (if (integerp (/ i j))
+                  (if (or (and (<= 0 i) (<= 0 j))
+                          (and (< i 0) (< j 0)))
+                      ;; quotient is non-negative:
                       (floor i j)
-                    (if (or (and (<= 0 i) (<= 0 j))
-                            (and (< i 0) (< j 0)))
+                    (if (integerp (/ i j))
                         (floor i j)
                       (+ 1 (floor i j))))))
   :hints (("Goal" :in-theory (enable floor truncate))))
@@ -160,12 +172,12 @@
   (implies (and (rationalp i)
                 (rationalp j))
            (equal (truncate i j)
-                  (if (equal (floor i j) (/ i j))
+                  (if (or (and (<= 0 i) (<= 0 j))
+                          (and (< i 0) (< j 0)))
                       (floor i j)
-                      (if (or (and (<= 0 i) (<= 0 j))
-                              (and (< i 0) (< j 0)))
-                          (floor i j)
-                          (+ 1 (floor i j))))))
+                    (if (equal (floor i j) (/ i j))
+                        (floor i j)
+                      (+ 1 (floor i j))))))
   :hints (("Goal" :in-theory (enable truncate-becomes-floor-gen1
                                      truncate-becomes-floor-gen2
                                      truncate-becomes-floor-gen3))))
@@ -176,12 +188,12 @@
   (implies (and (rationalp i)
                 (rationalp j))
            (equal (truncate i j)
-                  (if (equal 0 j)
-                      0
-                    (if (equal 0 (mod i j))
-                        (floor i j)
-                      (if (or (and (<= 0 i) (<= 0 j))
-                              (and (< i 0) (< j 0)))
+                  (if (or (and (<= 0 i) (<= 0 j))
+                          (and (< i 0) (< j 0)))
+                      (floor i j)
+                    (if (equal 0 j)
+                        0
+                      (if (equal 0 (mod i j))
                           (floor i j)
                         (+ 1 (floor i j)))))))
   :hints (("Goal" :in-theory (enable truncate-becomes-floor-gen))))
@@ -272,3 +284,13 @@
   :rule-classes :linear
   :hints (("Goal" :cases ((< j 0))
            :in-theory (enable truncate-becomes-floor-gen))))
+
+(defthm truncate-bound-when-negative-linear
+  (implies (and (<= i 0)
+                (<= 1 j) ; (integerp j)
+                (rationalp i)
+                (rationalp j))
+           (<= i (truncate i j)))
+  :rule-classes :linear
+  :hints (("Goal" :cases ((equal i 0))
+           :in-theory (enable acl2::truncate-becomes-floor-gen4-better-better floor-when-mod-0))))

@@ -1037,7 +1037,7 @@
       (token-punctuatorp token? ":"))
   ///
 
-  (defrule non-nil-when-token-strut-declarator-start-p
+  (defrule non-nil-when-token-struct-declarator-start-p
     (implies (token-struct-declarator-start-p token?)
              token?)
     :rule-classes :compound-recognizer))
@@ -1071,7 +1071,7 @@
       (and gcc/clang (token-punctuatorp token? ";")))
   ///
 
-  (defrule non-nil-when-token-strut-declaration-start-p
+  (defrule non-nil-when-token-struct-declaration-start-p
     (implies (token-struct-declaration-start-p token? gcc/clang)
              token?)
     :rule-classes :forward-chaining))
@@ -4244,7 +4244,7 @@
        but the check that that is the case is done elsewhere."))
     (b* (((reterr) (irr-const-expr) (irr-span) parstate)
          ((erp expr span parstate) (parse-conditional-expression parstate)))
-      (retok (const-expr expr) span parstate))
+      (retok (make-const-expr :expr expr) span parstate))
     :measure (two-nats-measure (parsize parstate) 17))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4871,7 +4871,8 @@
        ;; a specifier or qualifier is expected.
        ((and token (token-case token :ident)) ; ident
         (retok (spec/qual-typespec
-                (type-spec-typedef (token-ident->ident token)))
+                (make-type-spec-typedef :name (token-ident->ident token)
+                                        :info nil))
                span
                parstate))
        ;; If token is 'typeof' or '__typeof' or '__typeof__',
@@ -5156,7 +5157,8 @@
        ;; a specifier or qualifier is expected.
        ((and token (token-case token :ident)) ; ident
         (retok (decl-spec-typespec
-                (type-spec-typedef (token-ident->ident token)))
+                (make-type-spec-typedef :name (token-ident->ident token)
+                                        :info nil))
                span
                parstate))
        ;; If token is 'typeof' or '__typeof' or '__typeof__',
@@ -5602,10 +5604,12 @@
                          ((erp last-span parstate)
                           ;; struct [attrs] ident { structdeclons }
                           (read-punctuator "}" parstate)))
-                      (retok (type-spec-struct
-                              (make-struni-spec :attribs attrspecs
-                                                :name? ident
-                                                :members structdeclons))
+                      (retok (make-type-spec-struct
+                               :spec
+                               (make-struni-spec :attribs attrspecs
+                                                 :name? ident
+                                                 :members structdeclons)
+                               :info nil)
                              (span-join struct/union-span last-span)
                              parstate)))))
               ;; if we are parsing a union type specifier
@@ -5619,14 +5623,16 @@
                     ;; union [attrs] ident { structdeclons }
                     (read-punctuator "}" parstate)))
                 (retok (if structp
-                           (type-spec-struct
-                            (make-struni-spec :attribs attrspecs
-                                              :name? ident
-                                              :members structdeclons))
-                         (type-spec-union
-                          (make-struni-spec :attribs attrspecs
-                                            :name? ident
-                                            :members structdeclons)))
+                           (make-type-spec-struct
+                            :spec (make-struni-spec :attribs attrspecs
+                                                    :name? ident
+                                                    :members structdeclons)
+                            :info nil)
+                         (make-type-spec-union
+                          :spec (make-struni-spec :attribs attrspecs
+                                                  :name? ident
+                                                  :members structdeclons)
+                          :info nil))
                        (span-join struct/union-span last-span)
                        parstate))))
            ;; If token2 is not an open curly brace,
@@ -5636,14 +5642,16 @@
             (b* ((parstate ; struct/union [attrs] ident
                   (if token2 (unread-token parstate) parstate)))
               (retok (if structp
-                         (type-spec-struct
-                          (make-struni-spec :attribs attrspecs
-                                            :name? ident
-                                            :members nil))
-                       (type-spec-union
-                        (make-struni-spec :attribs attrspecs
-                                          :name? ident
-                                          :members nil)))
+                         (make-type-spec-struct
+                          :spec (make-struni-spec :attribs attrspecs
+                                                  :name? ident
+                                                  :members nil)
+                          :info nil)
+                       (make-type-spec-union
+                        :spec (make-struni-spec :attribs attrspecs
+                                                :name? ident
+                                                :members nil)
+                        :info nil))
                      (span-join struct/union-span span)
                      parstate))))))
        ;; If token is an open curly brace,
@@ -5679,10 +5687,12 @@
                      ((erp last-span parstate)
                       ;; struct [attrs] { structdeclons }
                       (read-punctuator "}" parstate)))
-                  (retok (type-spec-struct
-                          (make-struni-spec :attribs attrspecs
-                                            :name? nil
-                                            :members structdeclons))
+                  (retok (make-type-spec-struct
+                           :spec
+                           (make-struni-spec :attribs attrspecs
+                                             :name? nil
+                                             :members structdeclons)
+                           :info nil)
                          (span-join struct/union-span last-span)
                          parstate)))))
           ;; If we are parsing a union type specifier
@@ -5695,14 +5705,17 @@
                 ;; struct/union [attrs] { structdeclons }
                 (read-punctuator "}" parstate)))
             (retok (if structp
-                       (type-spec-struct
+                       (make-type-spec-struct
+                        :spec
                         (make-struni-spec :attribs attrspecs
                                           :name? nil
-                                          :members structdeclons))
-                     (type-spec-union
-                      (make-struni-spec :attribs attrspecs
-                                        :name? nil
-                                        :members structdeclons)))
+                                          :members structdeclons)
+                        :info nil)
+                     (make-type-spec-union
+                      :spec (make-struni-spec :attribs attrspecs
+                                              :name? nil
+                                              :members structdeclons)
+                      :info nil))
                    (span-join struct/union-span last-span)
                    parstate))))
        ;; If token is neither an identifier nor an open curly brace,
@@ -5815,7 +5828,8 @@
        expr/tyname
        ;; If we parsed an expression,
        ;; we return an @('_Alignas') with an expression.
-       :expr (retok (align-spec-alignas-expr (const-expr expr/tyname.expr))
+       :expr (retok (align-spec-alignas-expr
+                      (make-const-expr :expr expr/tyname.expr))
                     (span-join first-span last-span)
                     parstate)
        ;; If we parsed a type name,
@@ -6729,7 +6743,8 @@
             (b* (((erp cexpr last-span parstate) ; declor : expr
                   (parse-constant-expression parstate)))
               (retok (make-struct-declor :declor? declor
-                                         :expr? cexpr)
+                                         :expr? cexpr
+                                         :info nil)
                      (span-join span last-span)
                      parstate)))
            ;; If token2 is not a colon,
@@ -6737,7 +6752,8 @@
            (t ; declor other
             (b* ((parstate (if token2 (unread-token parstate) parstate)))
               (retok (make-struct-declor :declor? declor
-                                         :expr? nil)
+                                         :expr? nil
+                                         :info nil)
                      span
                      parstate))))))
        ;; If token is a colon,
@@ -6747,7 +6763,8 @@
         (b* (((erp cexpr last-span parstate) ; : expr
               (parse-constant-expression parstate)))
           (retok (make-struct-declor :declor? nil
-                                     :expr? cexpr)
+                                     :expr? cexpr
+                                     :info nil)
                  (span-join span last-span)
                  parstate)))
        ;; If token is anything else, it is an error.
@@ -7004,7 +7021,7 @@
              ((erp attrspecs last-span parstate) ; declspecs attrspecs
               (parse-*-attribute-specifier parstate)))
           (retok (make-param-declon :specs declspecs
-                                    :declor (param-declor-none)
+                                    :declor (param-declor-none nil)
                                     :attribs attrspecs)
                  (if attrspecs
                      (span-join span last-span)
@@ -7049,7 +7066,9 @@
            :absdeclor
            (retok (make-param-declon
                    :specs declspecs
-                   :declor (param-declor-abstract declor/absdeclor.absdeclor)
+                   :declor (make-param-declor-abstract
+                            :declor declor/absdeclor.absdeclor
+                            :info nil)
                    :attribs attrspecs)
                   (if attrspecs
                       (span-join span attrs-span)
@@ -12517,7 +12536,7 @@
      and for the translation ensembles
      (they are the keys of the maps)."))
   (b* (((reterr) (irr-trans-ensemble))
-       (filemap (fileset->unwrap fileset))
+       (filemap (fileset->files fileset))
        ((erp tunitmap)
         (parse-fileset-loop filemap dialect skip-control-lines keep-going))
        (- (if keep-going
@@ -12578,4 +12597,4 @@
     (implies (and (not keep-going)
                   (not erp))
              (equal (omap::keys (trans-ensemble->units tunits))
-                    (omap::keys (fileset->unwrap fileset))))))
+                    (omap::keys (fileset->files fileset))))))

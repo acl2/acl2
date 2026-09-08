@@ -322,7 +322,7 @@
   (rebuild-nodes-with-var-subst-aux worklist
                                     translation-array
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                    (make-empty-array 'worklist-array (alen1 'translation-array translation-array))))
+                                    (new-array1 'worklist-array (alen1 'translation-array translation-array))))
 
 (def-dag-builder-theorems
   (rebuild-nodes-with-var-subst worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -424,7 +424,7 @@
             nil ;provedp
             literal-nodenums ;; the original literal-nodenums (so that the order is the same)
             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
-       (translation-array (make-empty-array 'translation-array (+ 1 max-literal-nodenum)))
+       (translation-array (new-array1 'translation-array (+ 1 max-literal-nodenum)))
        ;; Mark nodenum-to-replace to be replaced by new-nodenum:
        (translation-array (aset1 'translation-array translation-array nodenum-to-replace new-nodenum-or-quotep))
        ;; Rebuild all the literals, and their supporters, with the substitution applied:

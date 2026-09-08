@@ -16,6 +16,7 @@
 (local (include-book "kestrel/bv/rules" :dir :system)) ; for the bvmult-of-bvplus rules
 (local (include-book "kestrel/bv/convert-to-bv-rules" :dir :system))
 (local (include-book "kestrel/bv-lists/packbv-and-unpackbv" :dir :system))
+(local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
@@ -127,7 +128,8 @@
                                                      (:i tea-encrypt-loop-i2)
                                                      tea-encrypt-loop-opener
                                                      bvmult-convert-arg3-to-bv
-                                                     trim-of-+-becomes-bvplus)
+                                                     trim-of-+-becomes-bvplus
+                                                     acl2::bvminus-becomes-bvplus-of-bvuminus)
                                    ((:d tea-encrypt-loop) tea-decrypt-loop))
                    :induct (tea-encrypt-loop-i2 n y z sum k)
                    :expand ((:free (y z sum k) (tea-decrypt-loop n y z sum k)))))))

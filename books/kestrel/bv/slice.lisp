@@ -599,7 +599,7 @@
                        (+ i (- j)))))
   :hints (("Goal"
            :use my-floor-lower-bound
-           :in-theory (e/d (posp) ( ;FLOOR-BOUNDED-BY-/
+           :in-theory (e/d (posp) (;FLOOR-BOUNDED-BY-/
                                    )))))
 
 

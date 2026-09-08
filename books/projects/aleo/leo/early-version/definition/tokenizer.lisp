@@ -11,7 +11,7 @@
 
 (in-package "LEO-EARLY")
 
-(include-book "projects/abnf/tree-utilities" :dir :system)
+(include-book "projects/abnf/tree-operations/tree-utilities" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -33,8 +33,8 @@
                         (("Goal"
                           :in-theory
                           (enable
-                           abnf::treep-when-tree-resultp-and-not-reserrp
-                           abnf::tree-listp-when-tree-list-resultp-and-not-reserrp))))
+                           abnf::treep-when-result-not-error
+                           abnf::tree-listp-when-result-not-error))))
   :short "Token filtering."
   :long
   (xdoc::topstring

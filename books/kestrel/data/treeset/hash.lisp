@@ -21,6 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define hash (x)
+  (declare (xargs :type-prescription :none))
   :returns (hash (unsigned-byte-p 32 hash))
   :parents (implementation)
   :short "The hash function used by @('heap<')."
@@ -35,8 +36,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t hash)))
 
 (defrule hash-type-prescription
   (natp (hash x))

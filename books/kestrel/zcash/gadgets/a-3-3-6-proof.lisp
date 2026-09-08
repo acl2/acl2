@@ -1,6 +1,6 @@
 ; A proof of the A.3.3.6 gadget
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -908,8 +908,7 @@
                  sub
                  pfield::equal-of-0-and-div-special
                  )
- :rule-lists '((
-                ZCASH::AFFINE-EDWARDS-SPEC
+ :rule-lists '((ZCASH::AFFINE-EDWARDS-SPEC
                 solve-1
                 solve-2
                 solve-3

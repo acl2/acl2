@@ -1688,10 +1688,12 @@
                                ,@correct-thms
                                ,@measure-thms
                                ,fn-fun-env-thm
+                               return-type-of-stmt-value-return
                                return-type-of-stmt-value-none
                                expr-value-optionp-when-expr-valuep
                                (:e c::expr-value-optionp)
-                               expr-valuep-of-expr-value))
+                               expr-valuep-of-expr-value
+                               max))
                  :use (:instance (:guard-theorem ,fn)
                                  :extra-bindings-ok
                                  ,@(alist-to-doublets instantiation))
@@ -1707,7 +1709,6 @@
                           ,@value-kind-thms
                           not
                           return-type-of-stmt-value-return
-                          return-type-of-stmt-value-none
                           stmt-value-return->value?-of-stmt-value-return
                           value-option-fix-when-value-optionp
                           ,@result-thms
@@ -1728,7 +1729,8 @@
                           return-type-of-stmt-value-none
                           expr-value-optionp-when-expr-valuep
                           (:e c::expr-value-optionp)
-                          expr-valuep-of-expr-value))))))
+                          expr-valuep-of-expr-value
+                          max))))))
        ((mv local-event exported-event)
         (evmac-generate-defthm name
                                :formula formula
@@ -1750,7 +1752,7 @@
 (define atc-formal-affectablep ((formal symbolp)
                                 (typed-formals atc-symbol-varinfo-alistp))
   :returns (yes/no booleanp)
-  :short "Check if a formal parameter is a affectable."
+  :short "Check if a formal parameter is affectable."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -4697,7 +4699,7 @@
      the reason is so we can have the appropriate induction.")
    (xdoc::p
     "We make use of the theorems for the test and body,
-     so that the proof the the loop itself is, in a sense,
+     so that the proof the loop itself is, in a sense,
      independent from the specifics of test and body;
      this is critical for efficiency of the proof.
      While the theorem for the test is used as a rewrite rule,

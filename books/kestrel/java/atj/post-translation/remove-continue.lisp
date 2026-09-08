@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -130,7 +130,7 @@
     "Currently ATJ's ACL2-to-Java translation does not generate nested loops,
      and none of ATJ's post-translation steps generates nested loops.
      However, making this post-translation step more general
-     require only little additional effort."))
+     would require only little additional effort."))
 
   (define atj-remove-continue-in-jstatem ((statem jstatemp))
     :returns (new-statem jstatemp :hyp :guard)

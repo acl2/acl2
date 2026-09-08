@@ -27,10 +27,9 @@
   of) @('f') is a <i>supporter of</i> (the definition of) @('g').</p>
 
   <p>@('With-supporters') automatically generates and evaluates definitions, in
-  order to support a given set of names and events.  See also @(tsee
-  with-supporters-after) for a related utility.</p>
+  order to support a given set of names and events.</p>
 
-  <p>General forms:</p>
+  <p>General Form:</p>
 
   @({
   (with-supporters (local ev) ; a local event
@@ -61,8 +60,9 @@
 
   <li>@(tsee defattach) and @(tsee table) events; and</li>
 
-  <li>@(tsee in-theory) events so that the rules introduced by the @('EXTRA')
-  definitions are suitably enabled or disabled.</li>
+  <li>if necessary, an @(tsee in-theory) event so that the rules introduced by
+  the @('EXTRA') definitions are suitably @(see enable)d or @(see disable)d, as
+  discussed in the &ldquo;Final Remark&rdquo; below.</li>
 
   </ul>
 
@@ -214,8 +214,27 @@
   guard)-verification, and @(see enable)d status of supporting functions.</p>
 
   <p>For more examples, see @(see community-books) file
-  @('tools/with-supporters-test-top.lisp').</p>")
+  @('tools/with-supporters-test-top.lisp').</p>
 
+  <p><b>Final Remark.</b> Above, we mention a possible @('in-theory') event
+  that arranges for rules to be &ldquo;suitably enabled or disabled&rdquo;; we
+  explain that event here.  Consider the @(see world) after evaluating the call
+  @('(with-supporters (local ev) ...)').  Then a set @('S') of supporting
+  function symbols is calculated as discussed above.  For the subset of
+  function symbols in @('S') that were introduced by evaluating @('ev') or were
+  introduced @(see local)ly before evaluating @('ev'), the rules introduced by
+  that subset (in particular, @(tsee definition) rules) that are currently
+  disabled are collected into a list of rules, @('(r1 ... rk)').  When @('k >
+  0'), then the @('in-theory') event is @('(in-theory (disable r1 ... rk))').
+  Subtle note: The reason we collect supporting function symbols introduced
+  locally before @('ev') is that such function symbols will likely be
+  introduced by @('ev') when later including a book, or evaluating an @(tsee
+  encapsulate) event, that includes the @('with-supporters') call; and it seems
+  reasonable to disable those at that later time, if they were disabled after
+  the evaluation of @('ev') when the @('with-supporters') call was originally
+  processed.</p>")
+
+#|
 (defxdoc with-supporters-after
   :parents (macro-libraries)
   :short "Automatically define necessary redundant definitions from after a
@@ -305,3 +324,5 @@
            (EQUAL (DUPLICITY A (APPEND X Y))
                   (+ (DUPLICITY A X) (DUPLICITY A Y)))))
   })")
+|#
+

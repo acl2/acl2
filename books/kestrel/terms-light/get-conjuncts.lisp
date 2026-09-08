@@ -1,7 +1,7 @@
 ; Extracting conjuncts from a translated term
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -32,3 +32,8 @@
   (implies (pseudo-termp term)
            (pseudo-term-listp (get-conjuncts term)))
   :hints (("Goal" :in-theory (enable get-conjuncts))))
+
+(defthm logic-term-listp-of-get-conjuncts
+  (implies (logic-termp term w)
+           (logic-term-listp (get-conjuncts term) w))
+  :hints (("Goal" :in-theory (enable get-conjuncts logic-termp logic-term-listp))))

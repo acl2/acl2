@@ -27,7 +27,7 @@
     "Based on the fact that characters have @(see positions),
      C constructs, such as tokens and expressions,
      which are formed by sequences of contiguous characters,
-     have spans, i.e. pair of positions, starting and ending.
+     have spans, i.e. pairs of positions, starting and ending.
      Here we introduce a data type for spans,
      and some operations on spans."))
   :order-subtopics t
@@ -46,7 +46,7 @@
    (xdoc::p
     "The positions of a span normally have the same file component,
      i.e. the span is within a file.
-     However, our data structure for spans allow for
+     However, our data structure for spans allows for
      positions with different files.
      Indeed, this may be the case for constructs
      within which there is a @('#line') directive [C17:6.10.4]."))

@@ -155,7 +155,7 @@
                             (ad (NTH N (GET-FIELD AD (array-contents-pair) HEAP)))
                             (dims (cdr dims))
                             (type element-type)))
-           :in-theory (e/d ( ;REFS-DIFFER-WHEN-ARRAY-DIMENSIONS-DIFFER
+           :in-theory (e/d (;REFS-DIFFER-WHEN-ARRAY-DIMENSIONS-DIFFER
 ;                 refs-differ-when-classes
                             consp-of-cdr ;why?
                             not-equal-of-nth-when-not-memberp

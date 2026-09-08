@@ -43,6 +43,7 @@
 (local (include-book "kestrel/bv/ash" :dir :system))
 (local (include-book "kestrel/bv/rules3" :dir :system))
 (local (include-book "kestrel/bv/bvuminus" :dir :system))
+(local (include-book "kestrel/bv/bvminus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
@@ -77,14 +78,14 @@
   (implies (and (signed-byte-p 48 x)
                 (natp x))
            (not (< (bvchop 48 x) x)))
-  :hints (("Goal" :cases ((< x 0)(equal x 0))
+  :hints (("Goal" :cases ((< x 0) (equal x 0))
            :in-theory (enable signed-byte-p))))
 
 (defthmd <-of-bvchop-when-signed-byte-p-2
   (implies (and (signed-byte-p 48 x)
                 (not (natp x)))
            (not (< (bvchop 48 x) x)))
-  :hints (("Goal" :cases ((< x 0)(equal x 0))
+  :hints (("Goal" :cases ((< x 0) (equal x 0))
            :in-theory (enable signed-byte-p))))
 
 (defthm <-of-bvchop-when-signed-byte-p
@@ -411,6 +412,14 @@
            (equal (unsigned-byte-p size (read n addr x86))
                   (natp size)))
   :hints (("Goal" :in-theory (enable read))))
+
+(defthm getbit-of-read-too-high
+  (implies (and (<= (* 8 n) m)
+                (natp n)
+                (natp m))
+           (equal (getbit m (read n addr x86))
+                  0))
+  :hints (("Goal" :in-theory (enable acl2::getbit-too-high))))
 
 (defthm <=-of-read-linear
   (implies (natp size)
@@ -1110,7 +1119,7 @@
   :hints (("Goal" :in-theory (enable read-when-bvchops-agree))))
 
 ;; we use logext so that negative constants are nice
-(defthm read-of-bvplus-normalize
+(defthmd read-of-bvplus-normalize
   (implies (and (syntaxp (quotep k))
                 (integerp k)
                 (integerp addr))
@@ -1121,7 +1130,7 @@
 
 
 ;; or do we want bvplus?
-(defthm read-of-bvplus
+(defthmd read-of-bvplus
   (implies (and (integerp x)
                 (integerp y))
            (equal (read n (bvplus 48 x y) x86)
@@ -1135,9 +1144,10 @@
                 (integerp y))
            (equal (read n (+ x y) x86)
                   (read n (bvplus 48 x y) x86)))
-  :hints (("Goal" :in-theory (e/d (read) (READ-OF-BVPLUS-TIGHTEN ; todo loop
-                                          ;ACL2::BVPLUS-COMMUTATIVE-2-SIZES-DIFFER
-                                          )))))
+  :hints (("Goal" :in-theory (e/d (read read-of-bvplus)
+                                  (READ-OF-BVPLUS-TIGHTEN ; todo loop
+                                   ;;ACL2::BVPLUS-COMMUTATIVE-2-SIZES-DIFFER
+                                   )))))
 
 (theory-invariant (incompatible (:rewrite read-of-+-arg2) (:rewrite read-of-bvplus)))
 
@@ -1780,7 +1790,7 @@
                 (unsigned-byte-p 48 addr2))
            (equal (xr :mem addr1 (write n addr2 val x86))
                   (xr :mem addr1 x86)))
-  :hints (("Goal" :in-theory (enable write write-byte))))
+  :hints (("Goal" :in-theory (enable write write-byte acl2::unsigned-byte-p-of-+-of-constant-strong))))
 
 (defthm xr-of-write-too-high-alt
   (implies (and (< (+ n addr2) addr1)
@@ -2098,7 +2108,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :induct t
            :in-theory (e/d (read write bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus)
-                           (acl2::bvminus-becomes-bvplus-of-bvuminus
+                           (;;acl2::bvminus-becomes-bvplus-of-bvuminus
                             acl2::bvcat-of-+-high
                             ;; for speed:
                             acl2::bvchop-identity)))))
@@ -2175,7 +2185,7 @@
                          val)))
   :hints (("Goal" :induct t
            :in-theory (enable read write posp
-                              bvuminus
+                              bvuminus bvminus
                               bvplus
                               acl2::bvchop-of-sum-cases))))
 
@@ -2205,7 +2215,8 @@
           ("Goal" :do-not '(generalize eliminate-destructors)
            :induct (read n1 addr1 x86)
            :in-theory (e/d (read bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus read-when-bvchops-agree ifix)
-                           (acl2::bvminus-becomes-bvplus-of-bvuminus ACL2::BVCAT-OF-+-HIGH)))))
+                           (;;acl2::bvminus-becomes-bvplus-of-bvuminus
+                            ACL2::BVCAT-OF-+-HIGH)))))
 
 ;todo: improve
 ;; (defthm read-of-write-irrel
@@ -2416,7 +2427,7 @@
           ("Goal" :do-not '(generalize eliminate-destructors)
            :induct t
            :in-theory (e/d (read write bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus read-when-bvchops-agree ifix)
-                           (acl2::bvminus-becomes-bvplus-of-bvuminus
+                           (;;acl2::bvminus-becomes-bvplus-of-bvuminus
                             acl2::bvcat-of-+-high
                             ;; for speed:
                             acl2::bvchop-identity)))))
@@ -2452,7 +2463,7 @@
                             write-of-1-becomes-write-byte
                             ;bvminus
                             bvplus
-                            bvuminus
+                            bvuminus bvminus
                             acl2::bvchop-of-sum-cases
                             bvlt
                             acl2::expt-becomes-expt-limited
@@ -2646,8 +2657,7 @@
            :in-theory (e/d (write-alt !memi
                             ACL2::BVCHOP-PLUS-1-SPLIT
                             ACL2::BVCHOP-OF-SUM-CASES)
-                           (
-                            x86isa::xw-of-xw-both
+                           (x86isa::xw-of-xw-both
                             x86isa::xw-of-xw-diff
                             X86ISA::XW-XW-INTRA-FIELD-ARRANGE-WRITES))
            :expand ((:free (addr val x86) (WRITE 1 ADDR VAL X86))
@@ -3052,8 +3062,11 @@
                                   (j (read n2 addr x86)))
            :in-theory (e/d (unsigned-byte-p-forced) (acl2::logapp-becomes-bvcat-when-bv)))))
 
-;move up
-(defthm bvcat-of-read-and-read-combine
+;can loop with the blasting rules, and we may need to blast reads into bytes
+;because the SMT solver won't know about read (unless we model memory as a
+;giant array).
+; move up
+(defthmd bvcat-of-read-and-read-combine
   (implies (and (equal (bvchop 48 ad1) (bvplus 48 n2 ad2))
                 (equal size1 (* 8 n1))
                 (equal size2 (* 8 n2))
@@ -3307,7 +3320,7 @@
   ;;                          X86))))
   :hints (("Goal" :use (write-of-write-combine-constants-1
                          (:instance write-of-write-diff-bv))
-           :in-theory (e/d (helper helper2)
+           :in-theory (e/d (helper helper2 acl2::bvminus-becomes-bvplus-of-bvuminus)
                            (write-of-write-combine-constants-1
                             write-of-write-diff-bv)))))
 
@@ -3421,7 +3434,7 @@
                     (slice (+ -1 (* 8 (+ n1 (bvminus 48 ad1 ad2))))
                            (* 8 (bvminus 48 ad1 ad2))
                            val)))
-    :hints (("Goal" :in-theory (e/d (acl2::bvminus-becomes-bvplus-of-bvuminus
+    :hints (("Goal" :in-theory (e/d (;;acl2::bvminus-becomes-bvplus-of-bvuminus
                                      bvlt bvplus bvminus bvuminus acl2::bvchop-of-sum-cases
                                      )
                                     (acl2::logcar-logcdr-elim ; disable !

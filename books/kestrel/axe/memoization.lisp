@@ -395,7 +395,7 @@
 ;; Create an empty memoization structure
 (defund empty-memoization ()
   (declare (xargs :guard t))
-  (make-empty-array 'memoization *memoization-size*))
+  (new-array1 'memoization *memoization-size*))
 
 ;; Avoid expensive computation during proofs:
 (in-theory (disable (:e empty-memoization)))
@@ -653,7 +653,7 @@
                 (posp size)
                 (<= size 1152921504606846974))
            (array-of-bounded-memo-alistsp-aux array-name
-                                              (make-empty-array array-name size)
+                                              (new-array1 array-name size)
                                               index
                                               bound))
   :hints (("Goal" :in-theory (enable array-of-bounded-memo-alistsp-aux))))

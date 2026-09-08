@@ -194,11 +194,13 @@
 (defrule in-of-keys-when-lookup-not-default-forward-chaining
   (implies (not (equal (lookup key map :default default) default))
            (treeset::in key (keys map)))
+  :rule-classes :forward-chaining
   :by in-of-keys-when-lookup-not-default)
 
 (defrule in-of-keys-when-lookup-forward-chaining
   (implies (lookup key map)
            (treeset::in key (keys map)))
+  :rule-classes :forward-chaining
   :use (:instance in-of-keys-when-lookup-not-default
                   (default nil)))
 

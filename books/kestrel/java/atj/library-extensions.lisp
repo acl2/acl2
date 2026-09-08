@@ -146,7 +146,7 @@
      This utility, @('fty-check-mv-let-call') demonstrates this,
      for the @(tsee check-mv-let-call) system utility.")
    (xdoc::p
-    "Note that the retun type theorems readily become unconditional,
+    "Note that the return type theorems readily become unconditional,
      as is common with fixtypes.
      In order to prove that the FTY term count decreases,
      we first prove lemmas saying that,

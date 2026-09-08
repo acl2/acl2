@@ -113,8 +113,6 @@
   (wordp (bytes-to-word bytes))
   :hints (("Goal" :in-theory (enable bytes-to-word wordp))))
 
-(local (in-theory (disable acl2::mod-by-4-becomes-bvchop)))
-
 ;; Convert a list of bytes into a list of words, in little endian fashion.
 (defund bytes-to-words (bytes)
   (declare (xargs :guard (and (true-listp bytes)

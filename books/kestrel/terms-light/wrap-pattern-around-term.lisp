@@ -15,7 +15,7 @@
 (include-book "sublis-var-simple")
 
 ;todo: rename?
-(defun wrap-pattern-around-term (term pattern)
+(defund wrap-pattern-around-term (term pattern)
   (declare (xargs :guard (and ;(PSEUDO-TERMP TERM)
                               (unary-lambdap pattern))
                   :guard-hints (("Goal" :in-theory (enable PSEUDO-LAMBDAP))))) ;todo

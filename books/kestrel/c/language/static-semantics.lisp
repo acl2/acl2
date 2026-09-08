@@ -1081,9 +1081,7 @@
   (const-case c
               :int (b* (((okf type) (check-iconst c.get)))
                      (make-expr-type :type type :lvalue nil))
-              :float (reserrf (list :unsupported-float-const (const-fix c)))
-              :enum (reserrf (list :unsupported-enum-const (const-fix c)))
-              :char (reserrf (list :unsupported-char-const (const-fix c))))
+              :enum (reserrf (list :unsupported-enum-const (const-fix c))))
   :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
   :no-function nil)
 
@@ -1713,9 +1711,8 @@
                   :hints (("Goal"
                            :induct t
                            :in-theory
-                           (enable
-                            typep-when-type-resultp-and-not-reserrp
-                            type-listp-when-type-list-resultp-and-not-reserrp))))
+                           (enable typep-when-result-not-error
+                                   type-listp-when-result-not-error))))
   :short "Check a list of pure expressions."
   :long
   (xdoc::topstring
@@ -2291,14 +2288,7 @@
                   (equal (types+vartab->variables result)
                          (var-table-fix vartab))))
        :flag check-stmt)
-     (defthm check-block-item-var-table
-       t
-       :rule-classes nil
-       :flag check-block-item)
-     (defthm check-block-item-list-var-table
-       t
-       :rule-classes nil
-       :flag check-block-item-list)
+     :skip-others t
      :hints (("Goal"
               :in-theory (enable (:e tau-system))
               :expand ((check-stmt s funtab vartab tagenv))))))
@@ -2587,9 +2577,7 @@
    :union (reserrf (list :union-not-supported (tag-declon-fix declon)))
    :enum (reserrf (list :enum-not-supported (tag-declon-fix declon))))
   :guard-hints
-  (("Goal"
-    :in-theory
-    (enable member-type-listp-when-member-type-list-resultp-and-not-reserrp)))
+  (("Goal" :in-theory (enable member-type-listp-when-result-not-error)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2723,16 +2711,16 @@
   (xdoc::topstring
    (xdoc::p
     "This is a very simplified model of C preprocessing [C17:6.10].
-     If there is no header, this is essentially a no-op:
+     If there is no header file, this is essentially a no-op:
      we return the translation unit for the source file.
-     If there is a header, as explained in @(tsee trans-ensemble),
+     If there is a header file, as explained in @(tsee trans-ensemble),
      it is implicitly included in the source file
      (without an explicit representation of the @('#include') directive):
-     we concatenate the external declarations from the header
+     we concatenate the external declarations from the header file
      and the external declarations from the source file,
      and wrap the concatenation into a translation unit.
      This amounts to replacing the (implicit) @('#include')
-     with the included header,
+     with the included header file,
      which is assumed to be at the beginning of the source file.
      The path without extension component of the translation ensemble
      is currently ignored, because the @('#include') is implicit."))

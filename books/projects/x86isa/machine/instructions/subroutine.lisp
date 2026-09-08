@@ -489,19 +489,26 @@
   ;; operand-size override prefix, and put them in rBP, and then
   ;; increment the stack pointer appropriately)
 
-  ;; According to the pseudocode in Intel manual, May'18, Volume 2A, LEAVE
+  ;; According to the pseudocode in Intel manual, Jun 2026, Volume 2A, LEAVE
   ;; specification, the size of rSP and rBP in the assignment rSP := rBP is
   ;; determined by StackAddressSize, while the size of rBP in the assignment
-  ;; rBP := Pop() is determined by OperandSize. It seems that these two sizes
-  ;; should be the same for this operation to make sense: it is not clear why
-  ;; OperandSize is used in the pseudocode, and why the table shows that a
-  ;; 16-bit stack address size is allowed in 64-bit mode, in which the stack
-  ;; size is always 64 bits. For now we use the operand size for both
-  ;; assignments, implicitly assuming that it is equal to the stack address
-  ;; size. TODO: We should test if a real processor accepts LEAVE instructions
-  ;; whose StackAddressSize and OperandSize differ; we should also test if a
-  ;; real processor allows operations just on BP and SP (i.e. 16-bit size) in
-  ;; 64-bit mode.
+  ;; rBP := Pop() is determined by OperandSize. That is, the stack address
+  ;; size determines the width at which rBP is used as an address: it is the
+  ;; new value of rSP, and also the address from which the pop reads. The
+  ;; operand size determines the width of the data transfer into rBP: the
+  ;; number of bytes popped, and the slice of rBP that receives them. The two
+  ;; sizes may differ: e.g. LEAVE with a 66H prefix in 64-bit mode pops 16
+  ;; bits of data from the address in the full 64-bit rBP. This reading of
+  ;; the pseudocode is confirmed by the Description section of the ENTER
+  ;; specification, which says that the OperandSize attribute determines "the
+  ;; data being transferred from SP/ESP/RSP register into the BP/EBP/RBP
+  ;; register" (in ENTER, the transfer opposite to LEAVE's), and which makes
+  ;; software responsible for ensuring that, after a 66H ENTER (whose rBP
+  ;; write updates only BP, leaving the high bits of rBP stale), the value of
+  ;; rBP "remains a valid address in the stack" so that a 66H LEAVE works:
+  ;; this implies that LEAVE uses the full stack-address-size-wide rBP as the
+  ;; address of the pop. Thus, below we read rBP at the stack address size,
+  ;; and we use the operand size for the pop's data.
 
   :parents (one-byte-opcodes)
 
@@ -510,6 +517,8 @@
                                          rme-size-of-2-to-rme16
                                          rme-size-of-4-to-rme32
                                          rme-size-of-8-to-rme64
+                                         rme16
+                                         rme32
                                          rme64)
                                         ())))
 
@@ -520,12 +529,26 @@
   (b* (((the (integer 2 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
-       (rbp/ebp/bp (rgfi-size operand-size *rbp* 0 x86))
+       ;; We read rBP at the stack address size (not the operand size),
+       ;; because this value is used as an address,
+       ;; namely the new value of rSP, from which the pop below reads;
+       ;; see the comments at the beginning of this function.
+       ((the (integer 2 8) stack-address-size)
+        (select-stack-address-size proc-mode x86))
+       (rbp/ebp/bp (rgfi-size stack-address-size *rbp* 0 x86))
 
-       ;; RBP/EBP/BP is the new value of RSP/ESP/SP now, but we cannot write it
-       ;; into the state yet. However, we use it, below, to pop the new value
-       ;; of RBP/EBP/BP: as we do that, we implicitly check it to be canonical
-       ;; (in 64-bit mode) or within the stack segment limits (in 32-bit mode),
+       ;; RBP/EBP/BP is the new value of RSP/ESP/SP now,
+       ;; but we cannot write it into the state yet,
+       ;; because according to
+       ;; Intel manual, Jun 2026, Vol. 3, Section 7.5,
+       ;; a fault must leave the processor state in the same state as
+       ;; at the start of the instruction that caused the fault,
+       ;; the following code may result in #SS,
+       ;; and Table 7-1 in Chapter 7 classifies #SS as a fault.
+       ;; We use RBP/EBP/BP, below, to pop the new value of RBP/EBP/BP:
+       ;; as we do that,
+       ;; we implicitly check it to be canonical (in 64-bit mode) or
+       ;; within the stack segment limits (in 32-bit mode),
        ;; so there's no need to make these checks explicitly here.
 
        (inst-ac? (alignment-checking-enabled-p x86))
@@ -559,6 +582,329 @@
        (x86 (!rgfi-size operand-size *rbp* val rex-byte x86))
        (x86 (write-*sp proc-mode new-rsp x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
+
+;; ======================================================================
+;; INSTRUCTION: ENTER
+;; ======================================================================
+
+(define x86-enter-copy-nested-frame-pointers
+  ((proc-mode        :type (integer 0 #.*num-proc-modes-1*))
+   (count            :type (integer 0 31))
+   (operand-size     :type (integer 2 8))
+   (frame-ptr        :type (signed-byte 64))
+   (rsp              :type (signed-byte 64))
+   (check-alignment? booleanp)
+   x86)
+  :guard (member operand-size '(2 4 8))
+  :returns (mv flg
+               (new-rsp i64p :hyp (i64p rsp))
+               (x86 x86p :hyp (x86p x86)))
+  :parents (x86-enter)
+  :short "Copy the nested frame pointers onto the stack,
+          as part of the ENTER instruction with nesting level greater than 0."
+  :long
+  "<p>
+   This is the loop in the pseudocode of the ENTER instruction
+   (Intel manual, Jun 2026, Volume 2A):
+   when the nesting level is greater than 0,
+   after pushing the (old) frame pointer rBP,
+   @('NestingLevel - 1') further frame pointers are copied onto the stack,
+   by repeatedly decrementing @('frame-ptr') (initially rBP)
+   and reading the frame pointer at that stack address.
+   The @('count') argument is @('NestingLevel - 1'),
+   i.e. the number of frame pointers still to be copied.
+   The @('rsp') argument is the running stack pointer,
+   which is decremented and written to on each iteration.
+   </p>
+   <p>
+   Per the ENTER specification, the operand size is
+   the size of each frame pointer copied by the loop,
+   i.e. the size of the data read and written by each iteration,
+   and thus also the amount by which
+   @('frame-ptr') and @('rsp') are decremented.
+   </p>"
+  (if (mbe :logic (zp count) :exec (eql count 0))
+      (mv nil (the (signed-byte 64) rsp) x86)
+    (b* ( ;; frame-ptr := frame-ptr - operand-size
+         ((mv flg (the (signed-byte 64) frame-ptr))
+          (add-to-*sp proc-mode frame-ptr (- operand-size) x86))
+         ((when flg) (mv flg 0 x86))
+         ;; read the frame pointer at [frame-ptr]
+         ((mv flg val x86) (rme-size-opt proc-mode
+                                         operand-size
+                                         frame-ptr
+                                         #.*ss*
+                                         :r
+                                         check-alignment?
+                                         x86
+                                         :mem-ptr? nil))
+         ((when flg) (mv flg 0 x86))
+         ;; push it, i.e. rsp := rsp - operand-size and [rsp] := val
+         ((mv flg (the (signed-byte 64) rsp))
+          (add-to-*sp proc-mode rsp (- operand-size) x86))
+         ((when flg) (mv flg 0 x86))
+         ((mv flg x86) (wme-size-opt proc-mode
+                                     operand-size
+                                     rsp
+                                     #.*ss*
+                                     val
+                                     check-alignment?
+                                     x86
+                                     :mem-ptr? nil))
+         ((when flg) (mv flg 0 x86)))
+      (x86-enter-copy-nested-frame-pointers proc-mode
+                                            (- count 1)
+                                            operand-size
+                                            frame-ptr
+                                            rsp
+                                            check-alignment?
+                                            x86)))
+  :measure (nfix count)
+  :guard-hints (("Goal"
+                 :in-theory (e/d (rme-size-of-2-to-rme16
+                                  rme-size-of-4-to-rme32
+                                  rme-size-of-8-to-rme64)
+                                 ())
+                 :cases ((eql operand-size 2)
+                         (eql operand-size 4)
+                         (eql operand-size 8))))
+
+  ///
+
+  ;; The returned stack pointer is a 64-bit signed integer.  We generate the
+  ;; type-prescription and linear rules (in addition to the rewrite rule that
+  ;; :RETURNS provides), so that the guards of the caller (X86-ENTER), which
+  ;; passes the returned stack pointer to operations such as ADD-TO-*SP, can be
+  ;; verified.
+  (defthm-signed-byte-p
+    signed-byte-p-64-of-mv-nth-1-x86-enter-copy-nested-frame-pointers
+    :hyp (i64p rsp)
+    :bound 64
+    :concl (mv-nth 1 (x86-enter-copy-nested-frame-pointers proc-mode
+                                                           count
+                                                           operand-size
+                                                           frame-ptr
+                                                           rsp
+                                                           check-alignment?
+                                                           x86))
+    :gen-type t
+    :gen-linear t
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable x86-enter-copy-nested-frame-pointers)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst x86-enter
+
+  ;; The ENTER instruction creates a stack frame for a procedure,
+  ;; which is later released by the LEAVE instruction (see X86-LEAVE).
+
+  ;; Op/En: II
+  ;; C8 iw ib   ENTER imm16, imm8
+  ;; imm16 (the first operand) is the number of bytes reserved on the stack
+  ;; for the local variables of the procedure; imm8 (the second operand) is
+  ;; the lexical nesting level, whose low 5 bits are used (i.e. it is taken
+  ;; modulo 32).
+
+  ;; See the pseudocode in the Intel manual, Jun 2026, Volume 2A, ENTER
+  ;; specification, as well as the helper function
+  ;; X86-ENTER-COPY-NESTED-FRAME-POINTERS above.
+
+  ;; rBP is used at two different widths in this instruction (cf. the
+  ;; comments in X86-LEAVE about the roles of the operand size and of the
+  ;; stack address size). As data, rBP is operand-size wide: the Description
+  ;; section of the ENTER specification says that the OperandSize attribute
+  ;; determines the size of each frame pointer copied onto the stack, and
+  ;; "the data being transferred from SP/ESP/RSP register into the BP/EBP/RBP
+  ;; register"; accordingly, Push(rBP) below pushes the operand-size-wide
+  ;; rBP, and rBP := FrameTemp writes the low operand-size-wide part of
+  ;; FrameTemp into rBP. As an address, rBP is stack-address-size wide: the
+  ;; loop in the pseudocode decrements RBP, EBP, or BP according to
+  ;; StackSize (notably, the full RBP when StackSize = 64 and OperandSize =
+  ;; 16); accordingly, the base address from which the nested frame pointers
+  ;; are copied below is the stack-address-size-wide rBP.
+
+  :parents (one-byte-opcodes)
+
+  :guard-hints (("Goal" :in-theory (e/d (rme-size-of-2-to-rme16
+                                         rme-size-of-4-to-rme32
+                                         rme-size-of-8-to-rme64
+                                         rme64)
+                                        ())))
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :body
+
+  (b* (((the (integer 2 8) operand-size)
+        (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
+
+       ;; Read the two immediate operands:
+       ;; the allocation size (imm16) and the nesting level (imm8).
+       ;; These are fetched from the instruction stream, so, like other code
+       ;; fetches, no alignment checking is done here.
+
+       ((mv flg (the (unsigned-byte 16) alloc-size) x86)
+        (rme16-opt proc-mode temp-rip #.*cs* :x nil x86))
+       ((when flg) (!!ms-fresh :alloc-size-read-error flg))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip 2 x86))
+       ((when flg)
+        (!!fault-fresh :gp 0 :temp-rip-not-canonical temp-rip)) ;; #GP(0)
+
+       ((mv flg (the (unsigned-byte 8) nesting-byte) x86)
+        (rme08-opt proc-mode temp-rip #.*cs* :x x86))
+       ((when flg) (!!ms-fresh :nesting-level-read-error flg))
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip 1 x86))
+       ((when flg)
+        (!!fault-fresh :gp 0 :temp-rip-not-canonical temp-rip)) ;; #GP(0)
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; NestingLevel := imm8 MOD 32.
+       ((the (integer 0 31) nesting-level) (loghead 5 nesting-byte))
+
+       (check-alignment? (alignment-checking-enabled-p x86))
+
+       ;; Push rBP. The value pushed is the operand-size-wide rBP;
+       ;; see the comments at the beginning of this function.
+       ((the (unsigned-byte 64) rbp) (rgfi-size operand-size *rbp* 0 x86))
+       (rsp (read-*sp proc-mode x86))
+       ((mv flg (the (signed-byte 64) rsp))
+        (add-to-*sp proc-mode rsp (- operand-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :push-rbp flg)) ;; #SS(0)
+       ((mv flg x86) (wme-size-opt proc-mode
+                                   operand-size
+                                   rsp
+                                   #.*ss*
+                                   rbp
+                                   check-alignment?
+                                   x86
+                                   :mem-ptr? nil))
+       ;; The COND below is analogous to the one after the nesting block
+       ;; further down (see the comment there about the possible errors),
+       ;; with two differences:
+       ;; the #SS case omits the error tags :NON-CANONICAL-STACK-ADDRESS
+       ;; and :OUT-OF-SEGMENT-STACK-ADDRESS,
+       ;; which can only arise from ADD-TO-*SP,
+       ;; whose failure for this push of rBP
+       ;; is already mapped to #SS just above;
+       ;; the #SS case also omits the error symbols RML16 etc.,
+       ;; which can only arise from reads, while this is a write.
+       ((when flg)
+        (cond
+         ((or (and (consp flg) (eql (car flg) :segment-limit-fail))
+              (member-eq flg '(wml16 wml32 wml64)))
+          (!!fault-fresh :ss 0 :stack-writing-error flg)) ;; #SS(0)
+         ((and (consp flg) (eql (car flg) :unaligned-linear-address))
+          (!!fault-fresh :ac 0 :memory-access-unaligned flg)) ;; #AC(0)
+         (t ;; Unclassified error!
+          (!!ms-fresh :stack-writing-error flg))))
+
+       ;; FrameTemp := rSP, i.e. the stack pointer just after pushing rBP.
+       ((the (signed-byte 64) frame-temp) rsp)
+
+       ;; If NestingLevel > 0, copy the NestingLevel - 1 nested frame pointers
+       ;; onto the stack (see X86-ENTER-COPY-NESTED-FRAME-POINTERS) and then
+       ;; push FrameTemp.  If NestingLevel = 0, none of this is done: the
+       ;; pseudocode in the Intel manual jumps to the CONTINUE label below.
+       ((mv flg (the (signed-byte 64) rsp) x86)
+        (if (eql nesting-level 0)
+            (mv nil rsp x86)
+          (b* (;; The base address from which the nested frame pointers are
+               ;; copied is the stack-address-size-wide rBP;
+               ;; see the comments at the beginning of this function.
+               ((the (integer 2 8) stack-address-size)
+                (select-stack-address-size proc-mode x86))
+               ((the (signed-byte 64) frame-ptr)
+                (i64 (rgfi-size stack-address-size *rbp* 0 x86)))
+               ((mv flg (the (signed-byte 64) rsp) x86)
+                (x86-enter-copy-nested-frame-pointers proc-mode
+                                                      (1- nesting-level)
+                                                      operand-size
+                                                      frame-ptr
+                                                      rsp
+                                                      check-alignment?
+                                                      x86))
+               ((when flg) (mv flg rsp x86))
+               ;; Push FrameTemp.
+               ((mv flg (the (signed-byte 64) rsp))
+                (add-to-*sp proc-mode rsp (- operand-size) x86))
+               ((when flg) (mv flg rsp x86))
+               ((mv flg x86) (wme-size-opt proc-mode
+                                           operand-size
+                                           rsp
+                                           #.*ss*
+                                           (loghead (ash operand-size 3)
+                                                    frame-temp)
+                                           check-alignment?
+                                           x86
+                                           :mem-ptr? nil))
+               ((when flg) (mv flg rsp x86)))
+            (mv nil rsp x86))))
+       ;; In the COND below:
+       ;; the error tags :NON-CANONICAL-STACK-ADDRESS
+       ;; and :OUT-OF-SEGMENT-STACK-ADDRESS come from ADD-TO-*SP;
+       ;; the error tag :SEGMENT-LIMIT-FAIL comes from EA-TO-LA
+       ;; (via RME-SIZE and WME-SIZE), in 32-bit mode,
+       ;; for an access that starts within the stack segment limits
+       ;; but ends past them;
+       ;; the error symbols RML16 etc. and WML16 etc.
+       ;; come from the functions with those names
+       ;; (via RME-SIZE and WME-SIZE), in 64-bit mode,
+       ;; for an access that starts at a canonical address
+       ;; but ends past the canonical address space.
+       ;; The last two kinds of errors are possible because ADD-TO-*SP
+       ;; only checks the start address of an access.
+       ;; All the aforementioned errors are stack faults (#SS);
+       ;; an :UNALIGNED-LINEAR-ADDRESS error from RME-SIZE or WME-SIZE
+       ;; is instead an alignment check fault (#AC).
+       ((when flg)
+        (cond
+         ((or (and (consp flg)
+                   (or (eql (car flg) :non-canonical-stack-address)
+                       (eql (car flg) :out-of-segment-stack-address)
+                       (eql (car flg) :segment-limit-fail)))
+              (member-eq flg '(rml16 rml32 rml64 wml16 wml32 wml64)))
+          (!!fault-fresh :ss 0 :enter-stack-error flg)) ;; #SS(0)
+         ((and (consp flg) (eql (car flg) :unaligned-linear-address))
+          (!!fault-fresh :ac 0 :memory-access-unaligned flg)) ;; #AC(0)
+         (t ;; Unclassified error!
+          (!!ms-fresh :enter-error flg))))
+
+       ;; Update the x86 state:
+
+       ;; Calculate rSP - AllocSize.
+       ;; We calculate the new rSP, but we write it a few lines below.
+       ;; We calculate this before writing to rBP because
+       ;; this calculation can cause a #SS fault,
+       ;; and according to Intel manual, Jun 2026, Vol. 3, Section 7.5,
+       ;; a fault must leave the processor state
+       ;; in the same state as at the start of
+       ;; the instruction that caused the fault;
+       ;; Table 7-1 in Chapter 7 classifies #SS as a fault.
+       ((mv flg (the (signed-byte 64) rsp))
+        (add-to-*sp proc-mode rsp (- alloc-size) x86))
+       ((when flg) (!!fault-fresh :ss 0 :alloc-error flg)) ;; #SS(0)
+
+       ;; rBP := FrameTemp.
+       ;; We use !rgfi-size (rather than !rgfi) since it expects an unsigned
+       ;; value, so we take the low bits of FrameTemp accordingly.
+       (x86 (!rgfi-size operand-size *rbp*
+                        (loghead (ash operand-size 3)
+                                 frame-temp)
+                        rex-byte x86))
+       ;; rSP := rSP - AllocSize.
+       ;; The calculation was done above, for the reason explained above.
+       (x86 (write-*sp proc-mode rsp x86))
+
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
     x86))
 
 ;; ======================================================================

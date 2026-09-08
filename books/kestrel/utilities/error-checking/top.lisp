@@ -15,7 +15,6 @@
 (include-book "std/system/all-program-ffn-symbs" :dir :system)
 (include-book "std/system/check-user-lambda" :dir :system)
 (include-book "std/system/function-name-listp" :dir :system)
-(include-book "std/system/get-measure" :dir :system)
 (include-book "std/system/guard-verified-exec-fnsp" :dir :system)
 (include-book "std/system/guard-verified-fnsp" :dir :system)
 (include-book "std/system/lambda-closedp" :dir :system)
@@ -39,6 +38,7 @@
 (include-book "kestrel/error-checking/ensure-function-is-guard-verified" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-symbol" :dir :system)
+(include-book "kestrel/error-checking/ensure-function-known-measure" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -451,19 +451,6 @@
   :body
   (((= (len (recursivep fn nil (w state))) 1)
     "~@0 must be singly recursive." description)))
-
-(def-error-checker ensure-function-known-measure
-  ((fn (and (logic-function-namep fn (w state))
-            (recursivep fn nil (w state)))
-       "Function to check."))
-  :short
-  "Cause an error if a recursive function
-   has an unknown measure (i.e. one with @(':?'))."
-  :body
-  (((not (eq (car (get-measure fn (w state))) :?))
-    "~@0 must have a known measure, i.e. not one of the form (:? ...)."
-    description))
-  :verify-guards nil)
 
 (def-error-checker ensure-function-not-in-termination-thm
   ((fn (and (logic-function-namep fn (w state))

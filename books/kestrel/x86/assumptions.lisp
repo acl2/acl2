@@ -113,7 +113,7 @@
      (ctri '0 ,state-var)) ; so we can extract the bits (todo: avoid actually using this assumption?)
     (equal (cr0bits->ts$inline (ctri '0 ,state-var)) '0)
     (equal (cr0bits->em$inline (ctri '0 ,state-var)) '0)
-    (unsigned-byte-p '26 ;cr4bits-p
+    (unsigned-byte-p '33 ;cr4bits-p
                      (ctri '4 ,state-var)) ; so we can call cr4bits->osfxsr (todo: avoid actually using this assumption?)
     (equal (cr4bits->osfxsr$inline (ctri '4 ,state-var)) '1)))
 

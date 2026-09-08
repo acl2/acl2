@@ -136,7 +136,8 @@ Future Work
             (er hard 'constraint
                 "Unable to determine constraints on ~x0!  Presumably this ~
                  function was introduced with a partial-encapsulate; see :DOC ~
-                 partial-encapsulate."))
+                 partial-encapsulate."
+                fn))
            (sym (conjoin x))
            (t x))))
 
@@ -424,4 +425,3 @@ Future Work
    (defun concrete-c-bar (x) (ifix x)))
   :functional-substitution ((c-baz concrete-c-baz)
                             (c-bar concrete-c-bar)))
-

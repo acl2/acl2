@@ -345,8 +345,8 @@
   :hints (("Goal" :in-theory (e/d (mod unicity-of-0)
                                   (|(* y x)| ; for speed
                                    integerp-of-*))
-           :use ((:instance integerp-of-* (x (* y1 (/ y2)))
-                            (y (floor x y1)))
+           :use (;; (:instance integerp-of-* (x (* y1 (/ y2)))
+                 ;;            (y (floor x y1)))
                  (:instance floor-of-+-when-mult-arg1
                             (i1 (* y1 (floor i y1)))
                             (i2 x)

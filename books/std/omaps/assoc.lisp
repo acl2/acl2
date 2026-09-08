@@ -80,3 +80,22 @@
                      val)))
   :induct t
   :enable rlookup)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled cons-of-key-and-cdr-assoc
+  (equal (cons k (cdr (assoc k x)))
+         (if (assoc k x)
+             (assoc k x)
+           (cons k nil)))
+  :induct t
+  :enable assoc)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule in-of-cdr-assoc-when-assoc
+    (implies (assoc k x)
+             (set::in (cdr (assoc k x))
+                      (values x)))
+  :induct t
+  :enable (assoc values))

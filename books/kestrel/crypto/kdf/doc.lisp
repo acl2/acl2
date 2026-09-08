@@ -39,9 +39,9 @@
     (xdoc::li
      "@('S') -- the salt, an octet string represented as a list of 8-bit bytes")
     (xdoc::li
-     "@('c') -- the iteraction count.  Note that "
+     "@('c') -- the iteration count.  Note that "
      (xdoc::seetopic "bitcoin::bip39" "BIP 39")
-     " uses an iteraction count of 2048.")
+     " uses an iteration count of 2048.")
     (xdoc::li
      "@('dkLen') -- the intended length in octets of the derived key.  Note that "
      (xdoc::seetopic "bitcoin::bip39" "BIP 39")
@@ -58,9 +58,9 @@
     (xdoc::li
      "@('S-string') -- the salt, an octet string represented as a an ACL2 string")
     (xdoc::li
-     "@('c') -- the iteraction count.  Note that "
+     "@('c') -- the iteration count.  Note that "
      (xdoc::seetopic "bitcoin::bip39" "BIP 39")
-     " uses an iteraction count of 2048.")
+     " uses an iteration count of 2048.")
     (xdoc::li
      "@('dkLen') -- the intended length in octets of the derived key.  Note that "
      (xdoc::seetopic "bitcoin::bip39" "BIP 39")

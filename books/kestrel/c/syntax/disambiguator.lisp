@@ -11,9 +11,9 @@
 
 (in-package "C$")
 
-(include-book "built-in")
+(include-book "built-ins")
 (include-book "unambiguity")
-(include-book "macro-tables")
+(include-book "translation-unit-comparison")
 
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
@@ -84,7 +84,14 @@
       a declaration or an expression followed by a semicolon,
       represented by the @(':for-ambig') case of @(tsee stmt).
       The disambiguator turns these ambiguous @('for') loops
-      into unambiguous ones."))
+      into unambiguous ones.")
+    (xdoc::li
+     "When GCC or Clang extensions are enabled,
+      @('goto') statements with an identifier
+      are always classified as @('goto')s with an expression by the parser
+      (i.e. the @(':gotoe') summand of @(tsee stmt)),
+      but in some of them the identifier may be a label.
+      The disambiguator re-classifies the latter as required."))
    (xdoc::p
     "The disambiguator does not perform a full (static) semantic analysis,
      but only a light-weight one, enough for disambiguation.
@@ -104,11 +111,11 @@
      we can re-classify from an identifier expression to an enumeration constant
      (this is the first of the ambiguities listed above).
      In essence, we need a symbol table of identifiers;
-     not a full one that would be needed to check the full validity of the code,
+     not a full one that as needed to check the full validity of the code,
      but one with sufficient information to disambiguate.
      We need to take into account the scoping rules of C of course,
      since the same identifier
-     may have different meaning in different scopes.
+     may have different meanings in different scopes.
      We call these symbol tables `disambiguation tables'.")
    (xdoc::p
     "We use "
@@ -154,7 +161,7 @@
     "| #include F.h   |"
     "+----------------+")
    (xdoc::p
-    "The @('x * y;') from @('F.c') results is disambiguated
+    "The @('x * y;') from @('F.c') is disambiguated
      into different constructs in @('G.c') and @('H.c'),
      namely an expression statement vs. a declaration.
      (This code is invalid, but it can be made valid with a few changes;
@@ -210,11 +217,6 @@
 (fty::defoption dimb-kind-option
   dimb-kind
   :short "Fixtype of optional kinds of identifiers in disambiguation tables."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Kinds of identifiers in disambiguation tables
-     are defined in @(tsee dimb-kind)."))
   :pred dimb-kind-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -289,9 +291,24 @@
    (xdoc::p
     "This consists of
      a (mutable) disambiguation table,
+     a (mutable) set of identifiers for which
+     @(':gotoe') statements are re-classified as @(':goto') statements
+     (more on this below),
      a (mutable) macro table,
-     an immutable string containing the path of the file,
-     and an immutable C dialect.")
+     an immutable path of the file being disambiguated,
+     and an immutable implementation environment.")
+   (xdoc::p
+    "The aforementioned set of identifiers is always empty,
+     unless GCC or Clang extensions are enabled.
+     As mentioned in @(tsee disambiguator),
+     with those extensions,
+     a @('goto') followed by an identifier
+     may need to be re-classified from @(':gotoe') to @(':goto').
+     When that happens, we add the identifier to the set.
+     The exact use of this set will be explained
+     when we add the code that actually makes use of the set;
+     this is for simplifying our approach to
+     preserving @('#include') directives.")
    (xdoc::p
     "This could be turned into a stobj, if needed for efficiency.
      But note that
@@ -303,9 +320,10 @@
    (xdoc::p
     "We pick the short name `@('dstate')' since it is used a lot."))
   ((table dimb-table)
+   (goto-reclass ident-set)
    (macros macro-table)
-   (file string)
-   (dialect c::dialect))
+   (file filepath)
+   (ienv ienv))
   :pred dstatep)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -313,7 +331,11 @@
 (defirrelevant irr-dstate
   :short "An irrelevant disambiguation state."
   :type dstatep
-  :body (dstate (irr-dimb-table) (irr-macro-table) "" (c::irr-dialect)))
+  :body (dstate (irr-dimb-table)
+                nil
+                (irr-macro-table)
+                (irr-filepath)
+                (irr-ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -341,7 +363,7 @@
    (xdoc::p
     "It is an internal error if the table is empty;
      it should never be empty.
-     We should replace this with guards and proofs.")
+     We should replace this run-time check with guards and proofs.")
    (xdoc::p
     "We remove the top scope, via @(tsee cdr).
      Recall that the stack top is on the left;
@@ -377,7 +399,8 @@
           (ident+kind (assoc-equal (ident-fix ident) scope))
           ((when ident+kind) (dimb-kind-fix (cdr ident+kind))))
        (dimb-lookup-ident-loop ident (cdr table)))
-     :guard-hints (("Goal" :in-theory (enable alistp-when-dimb-scopep-rewrite))))))
+     :guard-hints
+     (("Goal" :in-theory (enable alistp-when-dimb-scopep-rewrite))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -389,7 +412,7 @@
    (xdoc::p
     "It is an internal error if the table is empty;
      it should never be empty.
-     We should replace this with guards and proofs.")
+     We should replace this run-time check with guards and proofs.")
    (xdoc::p
     "We add the identifier to the innermost (i.e. top) scope.
      If the identifier is already in the innermost scope,
@@ -458,71 +481,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-dstate ((file stringp) (dialect c::dialectp))
+(define dimb-add-goto-reclass ((ident identp) (dstate dstatep))
+  :returns (new-dstate dstatep)
+  :short "Add an identifier to the set for which @('goto')s we re-classified."
+  (b* ((idents (dstate->goto-reclass dstate))
+       (new-idents (set::insert (ident-fix ident) idents)))
+    (change-dstate dstate :goto-reclass new-idents)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define init-dstate ((file filepathp) (ienv ienvp))
   :returns (dstate dstatep)
   :short "Initial disambiguation state."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The disambiguation table consists of a single scope,
-     which is the file scope.")
-   (xdoc::p
-    "The macro table is the initial one for the given dialect.")
-   (xdoc::p
-    "If the C dialect does not have any extensions,
-     the initial disambiguation table is empty.
-     Otherwise, we initialize the disambiguation table
-     with some @(see built-ins).
+    "The initial disambiguation table consists of a single scope,
+     which is the file scope.
+     If the C dialect does not have any extensions,
+     the initial file scope is empty.
+     Otherwise, we initialize the file scope with some @(see built-ins).
      For now we only add some built-ins
      that we have observed in some preprocessed files.
      We should revisit this, adding all the @(see built-ins),
      with clear and accurate references.")
    (xdoc::p
-    "If GCC/Clang extensions are enabled,
-     we also add entries for certain built-in variables
-     corresponding to the x86 registers, i.e. @('__eax') etc.
-     We could not find those documented in the GCC manual,
-     but we found them in practical code.
-     Experiments suggest that these variables are somewhat restricted in usage.
-     The normal pattern seems to be something like")
-   (xdoc::codeblock
-    "unsigned long __eax = __eax;")
+    "The set of identifiers for which @('goto')s are re-classified
+     is initially empty, since no re-classification has occurred yet.")
    (xdoc::p
-    "after which one can use @('__eax') as a regular variable.
-     However, without the declaration above,
-     @('__eax') cannot be used as a regular variable.
-     This is odd, because the validity of the declaration above
-     presupposes that @('__eax') is already in scope.
-     It is not clear why such a declaration is needed in the first place.
-     To add to the strangeness,
-     one can change the above initializer to @('__eax + 1')
-     (and presumably other similar expressions)
-     and the compiler accepts it.")
-   (xdoc::p
-    "However, none of this matters for the disambiguator,
-     which does not need to validate the code,
-     and is only required to return correct results
-     only if the code is indeed valid
-     (even though validity is checked after disambiguation).
-     We add these special variables to the initial disambiguation table,
-     so that declarations such as the one above
-     do not cause an error during disambiguation.
-     The declaration itself is handled by the disambiguator
-     by overriding any preceding entry with the same name
-     (see @(tsee dimb-add-ident)),
-     so after a declaration like the one above
-     @('__eax') is still in the table, with the right kind,
-     and can be used as an expression in scope.
-     However, note that these variables only make sense on an x86 platform:
-     we should refine our GCC/Clang flag with
-     a richer description of the C implementation."))
+    "The macro table is the initial one for the given dialect."))
   (b* ((table (list nil))
+       (dialect (ienv->dialect ienv))
        (macros (macro-init dialect))
        (dstate (make-dstate :table table
+                            :goto-reclass nil
                             :macros macros
                             :file file
-                            :dialect dialect)))
-    (dimb-add-idents-objfun (built-ins-for dialect) dstate)))
+                            :ienv ienv)))
+    (dimb-add-idents-objfun (ident-list-of (built-in-fun/var-names-for dialect))
+                            dstate)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1290,25 +1287,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-params-to-names ((params param-declon-listp)
-                              (fundefp booleanp)
-                              (dstate dstatep))
-  :returns (mv (yes/no booleanp) (names ident-listp))
-  :short "Disambiguate a list of parameter declarations to a list of names,
-          if appropriate."
+(define dimb-params-to-names ((params param-declon-listp))
+  :returns (mv (erp maybe-msgp) (names ident-listp))
+  :short "Disambiguate a list of parameter declarations to a list of names."
   :long
   (xdoc::topstring
    (xdoc::p
-    "There are two kinds of direct function declarators,
+    "In C17 (but not in C23),
+     there are two kinds of direct function declarators,
      both in the grammar and in the abstract syntax:
-     one has a (non-empty) list of parameter declarations
+     one has a non-empty list of parameter declarations
      optionally followed by ellipsis;
      the other has a possibly empty list of names.")
    (xdoc::p
     "The second kind is allowed to be non-empty only if
      the function declarator is part of a function definition
-     [C17:6.7.6.3/3].
-     This is indicated by the flag @('fundefp') passed to this ACL2 function.")
+     [C17:6.7.6.3/3].")
    (xdoc::p
     "The parser always creates the first kind,
      because a name, which is an identifier, is syntactically ambiguous:
@@ -1318,64 +1312,34 @@
      it creates an empty list of parameter declarations,
      because this needs to be disambiguated anyhow.")
    (xdoc::p
-    "This ACL2 function checks whether
-     a possibly empty list of parameter declarations
-     should in fact be a list of names.
-     This is the case when either the list is empty,
-     or the @('fundefp') flag is @('t') and
-     every parameter declaration consists of
-     a single type specifier consisting of a @('typedef') name,
-     but that identifier does not identify a @('typedef') name in scope.
-     This means that, for example, if we have two identifiers @('x') and @('y'),
-     one of which is a @('typedef') name but the other one is not,
-     the re-classification to names fails.
-     [C17:6.7.6.3/11] says that @('typedef') names have priority,
-     but strictly speaking it mentions only parameter declarations,
-     not also identifier lists;
-     nonetheless, some simple experiments with GCC show that
-     this priority of @('typedef') names also applies to
-     the choice between parameter declarations and identifier lists,
-     and not just within parameter declarations
-     (this aspect is dealt with elsewhere,
-     in the code to disambiguate parameter declarations).
-     So, in the example above with @('x') and @('y'),
-     the code is in fact invalid.")
-   (xdoc::p
-    "This ACL2 function returns a boolean saying whether
-     the parameter declarations are re-classified into names,
-     and in this case it also returns the list of names, which may be empty.
-     If the check fails for any element of the list,
-     the re-classification fails,
-     and the caller will do its own processing and disambiguation
-     of the (non-empty) list of parameter declarations,
-     which will then remain parameter declarations (not names)
-     after that processing and disambiguation."))
-  (b* (((when (endp params)) (mv t nil))
-       ((unless fundefp) (mv nil nil)))
-    (dimb-params-to-names-loop params dstate))
-
-  :prepwork
-  ((define dimb-params-to-names-loop ((params param-declon-listp)
-                                      (dstate dstatep))
-     :returns (mv (yes/no booleanp) (names ident-listp))
-     :parents nil
-     (b* (((when (endp params)) (mv t nil))
-          (param (car params))
-          ((unless (param-declor-case (param-declon->declor param) :none))
-           (mv nil nil))
-          (declspecs (param-declon->specs param))
-          ((unless (and (consp declspecs) (endp (cdr declspecs))))
-           (mv nil nil))
-          (declspec (car declspecs))
-          ((unless (decl-spec-case declspec :typespec)) (mv nil nil))
-          (tyspec (decl-spec-typespec->spec declspec))
-          ((unless (type-spec-case tyspec :typedef)) (mv nil nil))
-          (ident (type-spec-typedef->name tyspec))
-          (kind? (dimb-lookup-ident ident dstate))
-          ((when (equal kind? (dimb-kind-typedef))) (mv nil nil))
-          ((mv yes/no names) (dimb-params-to-names-loop (cdr params) dstate))
-          ((unless yes/no) (mv nil nil)))
-       (mv t (cons ident names))))))
+    "This ACL2 function is called when, in a function definition,
+     the list of parameter declarations must be turned into a list of names.
+     Thus, we return an error if the re-classification fails."))
+  (b* (((reterr) nil)
+       ((when (endp params)) (retok nil))
+       (param (car params))
+       ((unless (param-declor-case (param-declon->declor param) :none))
+        (retmsg$ "The parameter declaration ~x0 ~
+                  cannot be re-classified as an identifier."
+                 (param-declon-fix param)))
+       (declspecs (param-declon->specs param))
+       ((unless (and (consp declspecs) (endp (cdr declspecs))))
+        (retmsg$ "The parameter declaration ~x0 ~
+                  cannot be re-classified as an identifier."
+                 (param-declon-fix param)))
+       (declspec (car declspecs))
+       ((unless (decl-spec-case declspec :typespec))
+        (retmsg$ "The parameter declaration ~x0 ~
+                  cannot be re-classified as an identifier."
+                 (param-declon-fix param)))
+       (tyspec (decl-spec-typespec->spec declspec))
+       ((unless (type-spec-case tyspec :typedef))
+        (retmsg$ "The parameter declaration ~x0 ~
+                  cannot be re-classified as an identifier."
+                 (param-declon-fix param)))
+       (ident (type-spec-typedef->name tyspec))
+       ((erp names) (dimb-params-to-names (cdr params))))
+    (retok (cons ident names))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1418,7 +1382,7 @@
      (xdoc::p
       "We recursively disambiguate sub-expressions,
        and other sub-entities (e.g. generic associations, type names),
-       following the recursive structure of the types.")
+       following the recursive structure of the fixtypes.")
      (xdoc::p
       "We call a separate function to disambiguate
        an ambiguous @('sizeof') or @('_Alignof') expression.
@@ -1741,7 +1705,7 @@
     :short "Disambiguate a constant expression."
     (b* (((reterr) (irr-const-expr) (irr-dstate))
          ((erp new-expr dstate) (dimb-expr (const-expr->expr cexpr) dstate)))
-      (retok (const-expr new-expr) dstate))
+      (retok (make-const-expr :expr new-expr) dstate))
     :measure (const-expr-count cexpr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1874,11 +1838,13 @@
                  (retok (type-spec-atomic new-type) dstate))
        :struct (b* (((erp new-struni-spec dstate)
                      (dimb-struni-spec tyspec.spec dstate)))
-                 (retok (type-spec-struct new-struni-spec)
+                 (retok (make-type-spec-struct :spec new-struni-spec
+                                               :info nil)
                         dstate))
        :union (b* (((erp new-struni-spec dstate)
                     (dimb-struni-spec tyspec.spec dstate)))
-                (retok (type-spec-union new-struni-spec)
+                (retok (make-type-spec-union :spec new-struni-spec
+                                             :info nil)
                        dstate))
        :enum (b* (((erp new-enumspec dstate)
                    (dimb-enum-spec tyspec.spec dstate)))
@@ -1890,7 +1856,8 @@
                                (ident->unwrap tyspec.name))))
                   (dimb-kind-case
                    kind
-                   :typedef (retok (type-spec-typedef tyspec.name)
+                   :typedef (retok (make-type-spec-typedef :name tyspec.name
+                                                           :info nil)
                                    (dstate-fix dstate))
                    :objfun (retmsg$ "The identifier ~x0 denotes ~
                                      an object or function ~
@@ -1988,7 +1955,8 @@
     (b* (((reterr) nil (irr-dstate))
          ((when (endp specquals)) (retok nil (dstate-fix dstate)))
          ((erp new-specqual dstate) (dimb-spec/qual (car specquals) dstate))
-         ((erp new-specquals dstate) (dimb-spec/qual-list (cdr specquals) dstate)))
+         ((erp new-specquals dstate)
+          (dimb-spec/qual-list (cdr specquals) dstate)))
       (retok (cons new-specqual new-specquals) dstate))
     :measure (spec/qual-list-count specquals))
 
@@ -2021,7 +1989,8 @@
              (dimb-amb-expr/tyname alignspec.expr/type nil dstate)))
          (expr/tyname-case
           expr/tyname
-          :expr (retok (align-spec-alignas-expr (const-expr expr/tyname.expr))
+          :expr (retok (align-spec-alignas-expr
+                         (make-const-expr :expr expr/tyname.expr))
                        dstate)
           :tyname (retok (align-spec-alignas-type expr/tyname.tyname)
                          dstate)))))
@@ -2224,7 +2193,9 @@
 
   (define dimb-declor ((declor declorp)
                        (fundefp booleanp)
+                       (declsp booleanp)
                        (dstate dstatep))
+    :guard (or fundefp (not declsp))
     :returns (mv (erp maybe-msgp)
                  (new-declor declorp)
                  (ident identp)
@@ -2247,19 +2218,26 @@
        which also gives us the identifier,
        and then we re-add the pointer part.")
      (xdoc::p
-      "The @('fundefp') flag is @('t')
-       when this function is called
-       to disambiguate the declarator of a function definition.")
+      "The @('fundefp') flag says whether
+       the declarator is that of a function definition;
+       if that flag is @('t'),
+       the @('declsp') flag says whether
+       the function definition includes declarations or not.
+       (The flag @('declsp') is @('nil') if the @('fundefp') flag is @('nil'),
+       but @('declsp') is not used in this case.)
+       These flags are used to decide whether
+       a @(':function-params') direct declarator
+       must be turned into a @(':function-names') direct declarator.")
      (xdoc::p
-      "We also pass the @('fundefp') flag to @(tsee dimb-dirdeclor).
+      "We pass @('fundefp') and @('declsp') to @(tsee dimb-dirdeclor).
        The reason is that, after peeling off the pointers,
        which refine the return result of the function,
        the direct declarator is still expected to be for a function,
-       and we have not disambiguated the parameters yet."))
+       and we have not worked on the parameters yet."))
     (b* (((reterr) (irr-declor) (irr-ident) (irr-dstate))
          ((declor declor) declor)
          ((erp new-dirdeclor ident dstate)
-          (dimb-dirdeclor declor.direct fundefp dstate)))
+          (dimb-dirdeclor declor.direct fundefp declsp dstate)))
       (retok (make-declor :pointers declor.pointers
                           :direct new-dirdeclor)
              ident
@@ -2281,15 +2259,12 @@
       "As with similar disambiguation functions,
        this lifts @(tsee dimb-declor) to optional declarators.
        Since the declarator may be absent,
-       we also generalize the returned identifier to be an optional one.")
-     (xdoc::p
-      "This function does not take a @('fundefp') flag
-       because optional declarators are not used in function parameters."))
+       we also generalize the returned identifier to be an optional one."))
     (b* (((reterr) nil nil (irr-dstate)))
       (declor-option-case
        declor?
        :some (b* (((erp new-declor? ident dstate)
-                   (dimb-declor declor?.val nil dstate)))
+                   (dimb-declor declor?.val nil nil dstate)))
                (retok new-declor? ident dstate))
        :none (retok nil nil (dstate-fix dstate))))
     :measure (declor-option-count declor?))
@@ -2298,7 +2273,9 @@
 
   (define dimb-dirdeclor ((dirdeclor dirdeclorp)
                           (fundefp booleanp)
+                          (declsp booleanp)
                           (dstate dstatep))
+    :guard (or fundefp (not declsp))
     :returns (mv (erp maybe-msgp)
                  (new-dirdeclor dirdeclorp)
                  (ident identp)
@@ -2308,15 +2285,15 @@
     :long
     (xdoc::topstring
      (xdoc::p
+      "The meaning of the @('fundefp') and @('declsp') inputs
+       is as explained in @(tsee dimb-declor).")
+     (xdoc::p
       "As explained in @(tsee dimb-declor),
        a (direct) declarator adds an identifier to the scope.
-       So here we return the identifer,
+       So here we return the identifier,
        recursively extracted from the direct declarator.
        The actual addition to the disambiguation table
        is performed outside this function.")
-     (xdoc::p
-      "The meaning of the @('fundefp') flag passed as input is
-       the same as in @(tsee dimb-declor): see that function's documentation.")
      (xdoc::p
       "We recursively disambiguate the inner declarator and direct declarator,
        from which we obtain the identifier.
@@ -2330,35 +2307,52 @@
        We push a new scope, for uniformity with the treatment
        described in the next paragraph.")
      (xdoc::p
-      "For a @(':function-params'),
-       first we attempt to turn it into a @(':function-names'), if applicable.
-       We pass @('fundefp') to @(tsee dimb-params-to-names),
-       which indicates whether the parameters in question
-       are for a function definition or not.
-       If this flag is @('t'),
-       and this is the innermost @(':function-params')
-       (see explanation later),
-       we push a new scope for the function parameters and body,
-       but it will be the declarations between the parameter names and the body
-       that will populate the newly pushed scope.
-       If this flag is @('nil'),
-       we do not push a new scope,
-       because it just means that the list of parameters is empty,
-       but they are not the parameters of a function definition;
-       it is just a function prototype with no parameters.")
+      "For a @(':function-params'), there are two cases.")
      (xdoc::p
-      "If we cannot turn the @(':function-params') into a @(':function-names'),
-       we push a new scope for the parameters,
-       and we disambiguate the parameters (which adds them to the new scope).
-       Then, if @('fundefp') is @('t')
-       and this is the innermost @(':function-params')
-       (see explanation later),
-       we leave the previously pushed scope in the disambiguation table,
-       so it is available for the body of the function;
-       otherwise, we pop that scope.")
+      "The first case is when we need to turn it into a @(':function-names').
+       This happens in one of the following two sub-cases.
+       The first sub-case is when:
+       (i) the standard is C17;
+       (ii) the @('fundefp') flag is cleared;
+       (iii) the list of parameters is empty.
+       This means that we are not in a function declaration (not definition),
+       and for that only the empty list of identifiers is allowed in C17.
+       The second sub-case is when:
+       (i) the standard is C17;
+       (ii) the @('fundefp') flag is set,
+       i.e. the declarator is one of a function definition;
+       (iii) there are no parameters or the @('declsp') flag is set
+       (the latter condition means that
+       there are declarations between parameters and body,
+       which according to [C17:6.9.1/6] and [C17:6.9.1/5]
+       happens exactly when there are one or more names as parameters);
+       (iv) this is the innermost @(':function-params')
+       (the reason for this is explained below).
+       The second sub-case is tested after the first sub-case,
+       so if the second sub-case holds it means that there are some parameters.
+       If @('fundefp') is @('t'),
+       besides turning the @(':function-params') into a @(':function-names'),
+       we also push a new scope for the function parameters and body.
+       The scope will be populated by the declarations
+       between the declarator and the body of the function definition
+       (possibly none, if the list of parameters was empty).
+       We also ensure that there is no ellipsis in this case,
+       because otherwise we would be masking erroneous code.")
      (xdoc::p
-      "The reason for the @(tsee dirdeclor-has-params-p)
-       can be seen from the example function definition")
+      "The second case happens when none of the two sub-cases above holds.
+       Then the @(':function-params') stays as such.
+       We push a new scope for the parameters,
+       and we disambiguate the parameters.
+       Then we pop the scope,
+       unless @('fundefp') is @('t')
+       and this is the innermost @(':function-params'),
+       because in this case we must leave the scope open
+       for the body of the function definition.")
+     (xdoc::p
+      "The check (iv) mentioned earlier
+       is performed via @(tsee dirdeclor-has-params-p).
+       The need for this check can be seen
+       from the example function definition")
      (xdoc::codeblock
       "void (*f(float x, double y))(int z) {"
       "  ..."
@@ -2385,13 +2379,13 @@
               (dstate-fix dstate))
        :paren
        (b* (((erp new-declor ident dstate)
-             (dimb-declor dirdeclor.inner fundefp dstate)))
+             (dimb-declor dirdeclor.inner fundefp declsp dstate)))
          (retok (dirdeclor-paren new-declor)
                 ident
                 dstate))
        :array
        (b* (((erp new-dirdeclor ident dstate)
-             (dimb-dirdeclor dirdeclor.declor fundefp dstate))
+             (dimb-dirdeclor dirdeclor.declor fundefp declsp dstate))
             ((erp new-expr? dstate) (dimb-expr-option dirdeclor.size? dstate)))
          (retok (make-dirdeclor-array :declor new-dirdeclor
                                       :qualspecs dirdeclor.qualspecs
@@ -2400,7 +2394,7 @@
                 dstate))
        :array-static1
        (b* (((erp new-dirdeclor ident dstate)
-             (dimb-dirdeclor dirdeclor.declor fundefp dstate))
+             (dimb-dirdeclor dirdeclor.declor fundefp declsp dstate))
             ((erp new-expr dstate) (dimb-expr dirdeclor.size dstate)))
          (retok (make-dirdeclor-array-static1 :declor new-dirdeclor
                                               :qualspecs dirdeclor.qualspecs
@@ -2409,7 +2403,7 @@
                 dstate))
        :array-static2
        (b* (((erp new-dirdeclor ident dstate)
-             (dimb-dirdeclor dirdeclor.declor fundefp dstate))
+             (dimb-dirdeclor dirdeclor.declor fundefp declsp dstate))
             ((erp new-expr dstate) (dimb-expr dirdeclor.size dstate)))
          (retok (make-dirdeclor-array-static2 :declor new-dirdeclor
                                               :qualspecs dirdeclor.qualspecs
@@ -2418,24 +2412,56 @@
                 dstate))
        :array-star
        (b* (((erp new-dirdeclor ident dstate)
-             (dimb-dirdeclor dirdeclor.declor fundefp dstate)))
+             (dimb-dirdeclor dirdeclor.declor fundefp declsp dstate)))
          (retok (make-dirdeclor-array-star :declor new-dirdeclor
                                            :qualspecs dirdeclor.qualspecs)
                 ident
                 dstate))
        :function-params
        (b* (((erp new-dirdeclor ident dstate)
-             (dimb-dirdeclor dirdeclor.declor fundefp dstate))
-            ((mv yes/no names)
-             (dimb-params-to-names dirdeclor.params fundefp dstate))
-            ((when yes/no)
-             (retok (make-dirdeclor-function-names :declor new-dirdeclor
-                                                   :names names)
-                    ident
-                    (if (and fundefp
-                             (not (dirdeclor-has-params-p dirdeclor.declor)))
-                        (dimb-push-scope dstate)
-                      dstate)))
+             (dimb-dirdeclor dirdeclor.declor fundefp declsp dstate))
+            ;; 1st sub-case of 1st case in doc above:
+            ((when (and (c::standard-case
+                         (c::dialect->std (ienv->dialect (dstate->ienv dstate)))
+                         :c17)
+                        (not fundefp)
+                        (endp dirdeclor.params)))
+             (b* (((when dirdeclor.ellipsis)
+                   (retmsg$ "The declarator ~x0 is invalid, ~
+                             because it must be disambiguated to ~
+                             one with function parameter names, ~
+                             but it also contains an ellipsis."
+                            (dirdeclor-fix dirdeclor))))
+               (retok (make-dirdeclor-function-names :declor new-dirdeclor
+                                                     :names nil)
+                      ident
+                      dstate))) ; no scope is pushed
+            ;; 2nd sub-case of 1st case in doc above:
+            ((when (and (c::standard-case
+                         (c::dialect->std (ienv->dialect (dstate->ienv dstate)))
+                         :c17)
+                        fundefp
+                        ;; Strangely, if we swap the following two conjuncts,
+                        ;; which would be our preferred order,
+                        ;; consistently with the sequence (i) (ii) (iii) (iv)
+                        ;; in the documentation above,
+                        ;; we get a failure with the flag function
+                        ;; that DEFINES generates for the :RETURNS.
+                        (not (dirdeclor-has-params-p new-dirdeclor))
+                        (or (endp dirdeclor.params)
+                            declsp)))
+             (b* (((when dirdeclor.ellipsis)
+                   (retmsg$ "The declarator ~x0 is invalid, ~
+                             because it must be disambiguated to ~
+                             one with function parameter names, ~
+                             but it also contains an ellipsis."
+                            (dirdeclor-fix dirdeclor)))
+                  ((erp names) (dimb-params-to-names dirdeclor.params)))
+               (retok (make-dirdeclor-function-names :declor new-dirdeclor
+                                                     :names names)
+                      ident
+                      (dimb-push-scope dstate))))
+            ;; 2nd case in doc above:
             (dstate (dimb-push-scope dstate))
             ((erp new-params dstate)
              (dimb-param-declon-list dirdeclor.params dstate))
@@ -2450,13 +2476,11 @@
                 dstate))
        :function-names
        (b* (((erp new-dirdeclor ident dstate)
-             (dimb-dirdeclor dirdeclor.declor fundefp dstate)))
+             (dimb-dirdeclor dirdeclor.declor fundefp declsp dstate)))
          (retok (make-dirdeclor-function-names :declor new-dirdeclor
                                                :names dirdeclor.names)
                 ident
-                (if fundefp
-                    (dimb-push-scope dstate)
-                  dstate)))))
+                (dimb-push-scope dstate)))))
     :measure (dirdeclor-count dirdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2672,7 +2696,7 @@
        the identifier is also added to the disambiguation table.")
      (xdoc::p
       "Note that we call @(tsee dimb-declor)
-       with @('nil') as the @('fundefp') flag,
+       with @('nil') as the @('fundefp') and @('declsp') flags,
        because the declarator passed to that function
        is for a parameter, not for a defined function."))
     (b* (((reterr) (irr-param-declor) (irr-dstate)))
@@ -2680,16 +2704,17 @@
        paramdeclor
        :nonabstract
        (b* (((erp new-declor ident dstate)
-             (dimb-declor paramdeclor.declor nil dstate))
+             (dimb-declor paramdeclor.declor nil nil dstate))
             (dstate (dimb-add-ident ident (dimb-kind-objfun) dstate)))
          (retok (make-param-declor-nonabstract :declor new-declor :info nil)
                 dstate))
        :abstract
        (b* (((erp new-absdeclor dstate)
              (dimb-absdeclor paramdeclor.declor dstate)))
-         (retok (param-declor-abstract new-absdeclor) (dstate-fix dstate)))
+         (retok (make-param-declor-abstract :declor new-absdeclor :info nil)
+                (dstate-fix dstate)))
        :none
-       (retok (param-declor-none) (dstate-fix dstate))
+       (retok (param-declor-none nil) (dstate-fix dstate))
        :ambig
        (b* (((erp declor/absdeclor ident? dstate)
              (dimb-amb-declor/absdeclor paramdeclor.declor dstate)))
@@ -2705,7 +2730,9 @@
                     :info nil)
                    dstate))
           :absdeclor
-          (retok (param-declor-abstract declor/absdeclor.absdeclor)
+          (retok (make-param-declor-abstract
+                  :declor declor/absdeclor.absdeclor
+                  :info nil)
                  (dstate-fix dstate))))))
     :no-function nil
     :measure (param-declor-count paramdeclor))
@@ -2819,7 +2846,9 @@
           (dimb-declor-option structdeclor.declor? dstate))
          ((erp new-expr? dstate)
           (dimb-const-expr-option structdeclor.expr? dstate)))
-      (retok (make-struct-declor :declor? new-declor? :expr? new-expr?)
+      (retok (make-struct-declor :declor? new-declor?
+                                 :expr? new-expr?
+                                 :info nil)
              dstate))
     :measure (struct-declor-count structdeclor))
 
@@ -2943,13 +2972,14 @@
        The kind comes from the preceding declaration specifiers,
        and is passed to this function.")
      (xdoc::p
-      "We pass @('nil') as the @('fundefp') flag
+      "We pass @('nil') as the @('fundefp') and @('declsp') flags
        to @(tsee dimb-declor),
        because an initializer declarator is not
        the declarator of a defined function."))
     (b* (((reterr) (irr-init-declor) (irr-dstate))
          ((init-declor ideclor) ideclor)
-         ((erp new-declor ident dstate) (dimb-declor ideclor.declor nil dstate))
+         ((erp new-declor ident dstate)
+          (dimb-declor ideclor.declor nil nil dstate))
          (dstate (dimb-add-ident ident kind dstate))
          ((erp new-initer? dstate) (dimb-initer-option ideclor.initer? dstate)))
       (retok (make-init-declor :declor new-declor
@@ -2978,7 +3008,8 @@
        and passed to this function as input."))
     (b* (((reterr) nil (irr-dstate))
          ((when (endp ideclors)) (retok nil (dstate-fix dstate)))
-         ((erp new-ideclor dstate) (dimb-init-declor (car ideclors) kind dstate))
+         ((erp new-ideclor dstate)
+          (dimb-init-declor (car ideclors) kind dstate))
          ((erp new-ideclors dstate)
           (dimb-init-declor-list (cdr ideclors) kind dstate)))
       (retok (cons new-ideclor new-ideclors) dstate))
@@ -3084,7 +3115,9 @@
       "A @(':gotoe') followed by an expression that is an identifier
        may need to be re-classified into a @(':goto').
        We base that on whether the identifier is in scope:
-       if it is not, it must be a label."))
+       if it is not, it must be a label.
+       If the re-classification happens,
+       we add the identifier to the set in the state."))
     (b* (((reterr) (irr-stmt) (irr-dstate)))
       (stmt-case
        stmt
@@ -3201,8 +3234,9 @@
                         (not (dimb-lookup-ident
                               (expr-ident->ident stmt.label)
                               dstate))))
-             (retok (stmt-goto (expr-ident->ident stmt.label))
-                    (dstate-fix dstate)))
+             (b* ((ident (expr-ident->ident stmt.label)))
+               (retok (stmt-goto ident)
+                      (dimb-add-goto-reclass ident dstate))))
             ((erp new-label dstate) (dimb-expr stmt.label dstate)))
          (retok (stmt-gotoe new-label) dstate))
        :continue
@@ -3433,14 +3467,14 @@
        besides the disambiguated declarator or abstract declarator.")
      (xdoc::p
       "In the call of @(tsee dimb-declor)
-       we pass @('nil') as the @('fundefp') flag,
+       we pass @('nil') as the @('fundefp') and @('declsp') flag,
        because if we are disambiguating a declarator or abstract declarator,
        it means that we are disambiguating a parameter declarator,
        and not the declarator of a defined function."))
     (b* (((reterr) (irr-declor/absdeclor) nil (irr-dstate))
          ((amb-declor/absdeclor declor/absdeclor) declor/absdeclor)
          ((mv erp-declor new-declor ident dstate-declor)
-          (dimb-declor declor/absdeclor.declor nil dstate))
+          (dimb-declor declor/absdeclor.declor nil nil dstate))
          ((mv erp-absdeclor new-absdeclor dstate-absdeclor)
           (dimb-absdeclor declor/absdeclor.absdeclor dstate)))
       (if erp-declor
@@ -3782,14 +3816,15 @@
      which in valid code must be @(':objfun'),
      but we do not check this explicitly.")
    (xdoc::p
-    "Then we process the declarator,
+    "We process the declarator,
      passing @('t') as the @('fundefp') flag,
-     because we are processing the declarator of a defined function.
+     because we are processing the declarator of a function definition.
+     The @('declsp') flag is determined from
+     the presence or absence of declarations between parameter and body.
      In valid code, this declarator will contain a function declarator
      with either parameter declarations or identifiers,
      after it has been processed.
-     Because of the @('fundefp') flag set to @('t'),
-     the disambiguation state returned from @(tsee dimb-declor)
+     The disambiguation state returned from @(tsee dimb-declor)
      should contain a newly pushed scope for the function definition.
      But this may not be the case in invalid code,
      so we check that this is the case explicitly here;
@@ -3798,7 +3833,7 @@
      (we observed this in an example of invalid code,
      which motivated the addition of the check just described).")
    (xdoc::p
-    "So with the check on the the validation tables described above,
+    "So with the check on the validation tables described above,
      we know that we have added a scope to the disambiguation table.
      If the (disambiguated) declarator has parameter declarations,
      those will have added the formal parameters of the function to that scope.
@@ -3844,7 +3879,7 @@
         (dimb-decl-spec-list fundef.specs (dimb-kind-objfun) dstate))
        (nscopes (len (dstate->table dstate))) ; for checking it below
        ((erp new-declor ident dstate)
-        (dimb-declor fundef.declor t dstate))
+        (dimb-declor fundef.declor t (consp fundef.declons) dstate))
        ((unless (= (len (dstate->table dstate)) (1+ nscopes)))
         (retmsg$ "The function definition ~x0 is invalid, ~
                   because the disambiguation dstate after the declarator ~
@@ -3854,7 +3889,7 @@
        (dstate (dimb-add-ident-objfun-file-scope ident dstate))
        ((erp new-declons dstate) (dimb-declon-list fundef.declons dstate))
        (dstate (dimb-add-ident-objfun (ident "__func__") dstate))
-       (dstate (if (c::dialect-gcc/clangp (dstate->dialect dstate))
+       (dstate (if (c::dialect-gcc/clangp (ienv->dialect (dstate->ienv dstate)))
                    (dimb-add-idents-objfun
                     (list (ident "__FUNCTION__")
                           (ident "__PRETTY_FUNCTION__"))
@@ -3904,6 +3939,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define eval-if/ifdef/ifndef-condition ((if/ifdef/ifndef hash-if/ifdef/ifndef-p)
+                                        (dstate dstatep))
+  :returns (mv (erp maybe-msgp) (yes/no booleanp))
+  :short "Evaluate the condition of a
+          @('#if'), @('#ifdef'), or @('#ifndef')
+          during disambiguation."
+  (b* (((reterr) nil)
+       (macros (dstate->macros dstate))
+       (ienv (dstate->ienv dstate)))
+    (hash-if/ifdef/ifndef-case
+     if/ifdef/ifndef
+     :if (b* (((mv erp intval)
+               (eval-hash-if/elif-expr if/ifdef/ifndef.expr macros ienv))
+              ((unless (maybe-msgp erp))
+               (raise "Internal error: malformed message ~x0." erp)
+               (reterr "irrelevant")))
+           (retok (/= intval 0)))
+     :ifdef (b* ((name (ident->unwrap if/ifdef/ifndef.name))
+                 ((unless (stringp name))
+                  (raise "Internal error: identifier ~x0."
+                         if/ifdef/ifndef.name)
+                  (reterr "irrelevant")))
+              (retok (and (macro-lookup name macros) t)))
+     :ifndef (b* ((name (ident->unwrap if/ifdef/ifndef.name))
+                  ((unless (stringp name))
+                   (raise "Internal error: identifier ~x0."
+                          if/ifdef/ifndef.name)
+                   (reterr "irrelevant")))
+               (retok (not (macro-lookup name macros))))))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines dimb-trans-items/units
   :short "Disambiguate translation items and units."
   :long
@@ -3926,122 +3994,11 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-include ((header header-namep)
-                        (dstate dstatep)
-                        (tumap-orig filepath-trans-unit-mapp)
-                        (resolved-includes string-header-name-string-map-mapp)
-                        (tumap-dimb filepath-trans-unit-mapp)
-                        (limit natp))
-    :returns (mv (erp maybe-msgp)
-                 (new-items trans-item-listp)
-                 (new-dstate dstatep)
-                 (new-tumap-dimb filepath-trans-unit-mapp))
-    :parents (disambiguator dimb-trans-items/units)
-    :short "Disambiguate a @('#include') directive."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "We need to see whether the directive can be preserved or not:
-       the approach is overviewed in @(see disambiguator).")
-     (xdoc::p
-      "We resolve the header name to a translation unit, via three map lookups.
-       First we disambiguate the translation unit
-       in the current disambiguation state;
-       then we disambiguate it in a fresh disambiguation state,
-       unless that has been already done,
-       i.e. if it is already in the @('tumap-dimb') map.
-       If stand-alone disambiguation fails,
-       the @('#include') cannot be preserved.
-       Otherwise, we compare the two obtained ASTS:
-       if they are equal, we can preserve the @('#include');
-       otherwise, we need to expand it in place.
-       This is an initial comparison,
-       which needs to be refined to take into account
-       conditional preprocessing constructs,
-       which we do not support in the disambiguator yet."))
-    (b* (((reterr) nil (irr-dstate) nil)
-         ((when (zp limit))
-          (raise "Internal error: limit exhausted.")
-          (reterr "irrelevant"))
-         ;; Look up translation unit through the 3 maps.
-         (including (dstate->file dstate))
-         (including+inner (omap::assoc including
-                                       (string-header-name-string-map-map-fix
-                                        resolved-includes)))
-         ((unless including+inner)
-          (raise "Internal error: ~x0 not in ~x1."
-                 including
-                 (string-header-name-string-map-map-fix resolved-includes))
-          (reterr "irrelevant"))
-         (inner (cdr including+inner))
-         (header+included (omap::assoc (header-name-fix header) inner))
-         ((unless header+included)
-          (raise "Internal error: ~x0 not in ~x1."
-                 (header-name-fix header)
-                 inner)
-          (reterr "irrelevant"))
-         (included (cdr header+included))
-         (included+tunit (omap::assoc (filepath included)
-                                      (filepath-trans-unit-map-fix tumap-orig)))
-         ((unless included+tunit)
-          (raise "Internal error: ~x0 not in ~x1."
-                 included
-                 (filepath-trans-unit-map-fix tumap-orig))
-          (reterr "irrelevant"))
-         (tunit (cdr included+tunit))
-         ;; Dismbiguate the included translation unit in context.
-         ;; This must not fail; if it does,
-         ;; the disambiguation of the including translation unit fails.
-         ((erp new-tunit-in-context dstate tumap-dimb)
-          (dimb-trans-unit tunit
-                           dstate
-                           tumap-orig
-                           resolved-includes
-                           tumap-dimb
-                           (1- limit)))
-         ;; Disambiguate the included translation unit stand-alone.
-         ;; This may fail, so we do not use the ERP binder,
-         ;; which would propagate the error.
-         ((mv erp new-tunit-stand-alone tumap-dimb)
-          (b* (((reterr) (irr-trans-unit) nil)
-               (included+tunit
-                (omap::assoc (filepath included)
-                             (filepath-trans-unit-map-fix tumap-dimb)))
-               ((when included+tunit)
-                (retok (cdr included+tunit) tumap-dimb))
-               (dstate-fresh (init-dstate included (dstate->dialect dstate)))
-               ((erp new-tunit-stand-alone & tumap-dimb)
-                (dimb-trans-unit tunit
-                                 dstate-fresh
-                                 tumap-orig
-                                 resolved-includes
-                                 tumap-dimb
-                                 (1- limit))))
-            (retok new-tunit-stand-alone tumap-dimb)))
-         ;; If the included translation unit was disambiguated stand-alone,
-         ;; and gave the same result as the disambiguation in context,
-         ;; we preserve the #include, and update the disambiguated map.
-         ((when (and (not erp)
-                     (equal new-tunit-stand-alone new-tunit-in-context)))
-          (retok (list (trans-item-include header))
-                 dstate
-                 (omap::update (filepath included)
-                               new-tunit-stand-alone
-                               (filepath-trans-unit-map-fix tumap-dimb)))))
-      ;; Otherwise, we expand the #include in place.
-      (retok (trans-unit->items new-tunit-in-context)
-             dstate
-             (filepath-trans-unit-map-fix tumap-dimb)))
-    :no-function nil
-    :measure (nfix limit))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
   (define dimb-trans-item ((item trans-itemp)
                            (dstate dstatep)
                            (tumap-orig filepath-trans-unit-mapp)
                            (resolved-includes
-                            string-header-name-string-map-mapp)
+                            filepath-header-name-filepath-map-mapp)
                            (tumap-dimb filepath-trans-unit-mapp)
                            (limit natp))
     :returns (mv (erp maybe-msgp)
@@ -4064,14 +4021,26 @@
      (xdoc::p
       "A @('#define') or @('#undef') directive is considered unambiguous,
        but it adds an entry (definition or undefinition) to the macro table.
-       Recall that, as a translation items,
+       Recall that, as a translation item,
        a @('#define') directive is implicitly always
        an object-like macro whose replacement list is just the macro name.")
      (xdoc::p
       "Comments are always considered unambiguous,
        and undergo no transformation.")
      (xdoc::p
-      "We do not support conditional preprocessing constructs yet."))
+      "As in our @(see preprocessor),
+       we retain the scaffolding of the conditional translation items,
+       but we only keep, and disambiguate,
+       the code that is selected according to the conditions.
+       First we evaluate the initial condition.
+       If it is satisfied, we disambiguate the initial items,
+       otherwise we drop them.
+       Then we disambiguate all the @('#elif')s if any,
+       and finally the @('#else') if present.
+       We use the variable @('condp') for the satisfaction of each condition,
+       and the variable @('donep') to record
+       when a condition has been satisfied;
+       this is similar to the code in our preprocesor."))
     (b* (((reterr) nil (irr-dstate) nil)
          ((when (zp limit))
           (raise "Internal error: limit exhausted.")
@@ -4120,8 +4089,44 @@
                 (retok (list (trans-item-fix item))
                        dstate
                        (filepath-trans-unit-map-fix tumap-dimb)))
-       :cond (reterr
-              (msg "Disambiguator does not support conditional directives yet."))
+       :cond (b* (((erp condp)
+                   (eval-if/ifdef/ifndef-condition item.if/ifdef/ifndef dstate))
+                  ((erp new-items dstate tumap-dimb)
+                   (if condp
+                       (dimb-trans-item-list item.items
+                                             dstate
+                                             tumap-orig
+                                             resolved-includes
+                                             tumap-dimb
+                                             (1- limit))
+                     (mv nil ; erp
+                         nil ; new-items
+                         (dstate-fix dstate)
+                         (filepath-trans-unit-map-fix tumap-dimb))))
+                  (donep condp)
+                  ((erp new-elifs dstate tumap-dimb donep)
+                   (dimb-elif-list item.elifs
+                                   dstate
+                                   tumap-orig
+                                   resolved-includes
+                                   tumap-dimb
+                                   donep
+                                   (1- limit)))
+                  ((erp new-else dstate tumap-dimb)
+                   (dimb-else-option item.else
+                                     dstate
+                                     tumap-orig
+                                     resolved-includes
+                                     tumap-dimb
+                                     donep
+                                     (1- limit))))
+               (retok (list (make-trans-item-cond
+                             :if/ifdef/ifndef item.if/ifdef/ifndef
+                             :items new-items
+                             :elifs new-elifs
+                             :else new-else))
+                      dstate
+                      tumap-dimb))
        :line-comment (retok (list (trans-item-fix item))
                             (dstate-fix dstate)
                             (filepath-trans-unit-map-fix tumap-dimb))))
@@ -4134,7 +4139,7 @@
                                 (dstate dstatep)
                                 (tumap-orig filepath-trans-unit-mapp)
                                 (resolved-includes
-                                 string-header-name-string-map-mapp)
+                                 filepath-header-name-filepath-map-mapp)
                                 (tumap-dimb filepath-trans-unit-mapp)
                                 (limit natp))
     :returns (mv (erp maybe-msgp)
@@ -4171,11 +4176,301 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define dimb-include ((header header-namep)
+                        (dstate dstatep)
+                        (tumap-orig filepath-trans-unit-mapp)
+                        (resolved-includes
+                         filepath-header-name-filepath-map-mapp)
+                        (tumap-dimb filepath-trans-unit-mapp)
+                        (limit natp))
+    :returns (mv (erp maybe-msgp)
+                 (new-items trans-item-listp)
+                 (new-dstate dstatep)
+                 (new-tumap-dimb filepath-trans-unit-mapp))
+    :parents (disambiguator dimb-trans-items/units)
+    :short "Disambiguate a @('#include') directive."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We need to see whether the directive can be preserved or not:
+       the approach is overviewed in @(see disambiguator).")
+     (xdoc::p
+      "We resolve the header name to a translation unit, via three map lookups.
+       First we disambiguate the translation unit
+       in the current disambiguation state;
+       then we disambiguate it in a fresh disambiguation state,
+       unless that has been already done,
+       i.e. if it is already in the @('tumap-dimb') map.
+       If stand-alone disambiguation fails,
+       the @('#include') cannot be preserved.
+       Otherwise, we compare the two obtained ASTS:
+       if they are equal, we can preserve the @('#include');
+       otherwise, we need to expand it in place.
+       This is an initial comparison,
+       which needs to be refined to take into account
+       conditional preprocessing constructs,
+       which we do not support in the disambiguator yet."))
+    (b* (((reterr) nil (irr-dstate) nil)
+         ((when (zp limit))
+          (raise "Internal error: limit exhausted.")
+          (reterr "irrelevant"))
+         ;; Look up translation unit through the 3 maps.
+         (including (dstate->file dstate))
+         (including+inner (omap::assoc
+                           including
+                           (filepath-header-name-filepath-map-map-fix
+                            resolved-includes)))
+         ((unless including+inner)
+          (raise "Internal error: ~x0 not in ~x1."
+                 including
+                 (filepath-header-name-filepath-map-map-fix resolved-includes))
+          (reterr "irrelevant"))
+         (inner (cdr including+inner))
+         (header+included (omap::assoc (header-name-fix header) inner))
+         ((unless header+included)
+          (raise "Internal error: ~x0 not in ~x1."
+                 (header-name-fix header)
+                 inner)
+          (reterr "irrelevant"))
+         (included (cdr header+included))
+         (included+tunit (omap::assoc included
+                                      (filepath-trans-unit-map-fix tumap-orig)))
+         ((unless included+tunit)
+          (raise "Internal error: ~x0 not in ~x1."
+                 included
+                 (filepath-trans-unit-map-fix tumap-orig))
+          (reterr "irrelevant"))
+         (tunit (cdr included+tunit))
+         ;; Dismbiguate the included translation unit in context.
+         ;; This must not fail; if it does,
+         ;; the disambiguation of the including translation unit fails.
+         (dstate (change-dstate dstate :file included))
+         ((erp new-tunit-in-context dstate tumap-dimb)
+          (dimb-trans-unit tunit
+                           dstate
+                           tumap-orig
+                           resolved-includes
+                           tumap-dimb
+                           (1- limit)))
+         (dstate (change-dstate dstate :file including))
+         ;; Disambiguate the included translation unit stand-alone.
+         ;; This may fail, so we do not use the ERP binder,
+         ;; which would propagate the error.
+         ((mv erp new-tunit-stand-alone tumap-dimb)
+          (b* (((reterr) (irr-trans-unit) nil)
+               (included+tunit
+                (omap::assoc included
+                             (filepath-trans-unit-map-fix tumap-dimb)))
+               ((when included+tunit)
+                (retok (cdr included+tunit) tumap-dimb))
+               (dstate-fresh (init-dstate included (dstate->ienv dstate)))
+               ((erp new-tunit-stand-alone & tumap-dimb)
+                (dimb-trans-unit tunit
+                                 dstate-fresh
+                                 tumap-orig
+                                 resolved-includes
+                                 tumap-dimb
+                                 (1- limit))))
+            (retok new-tunit-stand-alone tumap-dimb)))
+         ;; If the included translation unit was disambiguated stand-alone,
+         ;; and gave the same result as the disambiguation in context,
+         ;; we preserve the #include, and update the disambiguated map.
+         ;; Here by 'same result' we mean that
+         ;; they compare equal w.r.t. macros.
+         ((when (and (not erp)
+                     (compare-trans-units new-tunit-stand-alone
+                                          new-tunit-in-context
+                                          (dstate->macros dstate)
+                                          (dstate->ienv dstate))))
+          (retok (list (trans-item-include header))
+                 dstate
+                 (omap::update included
+                               new-tunit-stand-alone
+                               (filepath-trans-unit-map-fix tumap-dimb)))))
+      ;; Otherwise, we expand the #include in place.
+      (retok (trans-unit->items new-tunit-in-context)
+             dstate
+             (filepath-trans-unit-map-fix tumap-dimb)))
+    :no-function nil
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define dimb-elif ((elif hash-elifp)
+                     (dstate dstatep)
+                     (tumap-orig filepath-trans-unit-mapp)
+                     (resolved-includes filepath-header-name-filepath-map-mapp)
+                     (tumap-dimb filepath-trans-unit-mapp)
+                     (donep booleanp)
+                     (limit natp))
+    :returns (mv (erp maybe-msgp)
+                 (new-elif hash-elifp)
+                 (new-dstate dstatep)
+                 (new-tumap-dimb filepath-trans-unit-mapp)
+                 (new-donep booleanp))
+    :parents (disambiguator dimb-trans-items/units)
+    :short "Disambiguate a @('#elif')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If the input @('donep') flag is @('t'),
+       it means that some previous condition was satisfied,
+       and thus we skip these items.
+       Otherwise, we evaluate the expression,
+       and if it returns non-zero we disambiguate the items,
+       otherwise we skip them.
+       We return @('donep') based on whether
+       the condition was true or false."))
+    (b* (((reterr) (irr-hash-elif) (irr-dstate) nil nil)
+         ((when (zp limit))
+          (raise "Internal error: limit exhausted.")
+          (reterr "irrelevant"))
+         ((hash-elif elif) elif)
+         ((when donep)
+          (retok (make-hash-elif :expr elif.expr :items nil)
+                 (dstate-fix dstate)
+                 (filepath-trans-unit-map-fix tumap-dimb)
+                 t))
+         ((mv erp intval)
+          (eval-hash-if/elif-expr elif.expr
+                                  (dstate->macros dstate)
+                                  (dstate->ienv dstate)))
+         ((unless (maybe-msgp erp))
+          (raise "Internal error: malformed message ~x0." erp)
+          (reterr "irrelevant"))
+         (condp (/= intval 0))
+         ((erp new-items dstate tumap-dimb)
+          (if condp
+              (dimb-trans-item-list elif.items
+                                    dstate
+                                    tumap-orig
+                                    resolved-includes
+                                    tumap-dimb
+                                    (1- limit))
+            (mv nil ; erp
+                nil ; new-items
+                (dstate-fix dstate)
+                (filepath-trans-unit-map-fix tumap-dimb))))
+         (donep condp))
+      (retok (make-hash-elif :expr elif.expr :items new-items)
+             dstate
+             tumap-dimb
+             donep))
+    :no-function nil
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define dimb-elif-list ((elifs hash-elif-listp)
+                          (dstate dstatep)
+                          (tumap-orig filepath-trans-unit-mapp)
+                          (resolved-includes
+                           filepath-header-name-filepath-map-mapp)
+                          (tumap-dimb filepath-trans-unit-mapp)
+                          (donep booleanp)
+                          (limit natp))
+    :returns (mv (erp maybe-msgp)
+                 (new-elifs hash-elif-listp)
+                 (new-dstate dstatep)
+                 (new-tumap-dimb filepath-trans-unit-mapp)
+                 (new-donep booleanp))
+    :parents (disambiguator dimb-trans-items/units)
+    :short "Disambiguate a list of zero or more @('#elif')s."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We disambiguate each @('#elif') in turn,
+       threading @('donep') through.
+       Once @('donep') is @('t'),
+       all subsequent items are dropped,
+       but the scaffolding is preserved."))
+    (b* (((reterr) nil (irr-dstate) nil nil)
+         ((when (zp limit))
+          (raise "Internal error: limit exhausted.")
+          (reterr "irrelevant"))
+         ((when (endp elifs))
+          (retok nil
+                 (dstate-fix dstate)
+                 (filepath-trans-unit-map-fix tumap-dimb)
+                 (bool-fix donep)))
+         ((erp new-elif dstate tumap-dimb donep)
+          (dimb-elif (car elifs)
+                     dstate
+                     tumap-orig
+                     resolved-includes
+                     tumap-dimb
+                     donep
+                     (1- limit)))
+         ((erp new-elifs dstate tumap-dimb donep)
+          (dimb-elif-list (cdr elifs)
+                          dstate
+                          tumap-orig
+                          resolved-includes
+                          tumap-dimb
+                          donep
+                          (1- limit))))
+      (retok (cons new-elif new-elifs) dstate tumap-dimb donep))
+    :no-function nil
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define dimb-else-option ((else? hash-else-optionp)
+                            (dstate dstatep)
+                            (tumap-orig filepath-trans-unit-mapp)
+                            (resolved-includes
+                             filepath-header-name-filepath-map-mapp)
+                            (tumap-dimb filepath-trans-unit-mapp)
+                            (donep booleanp)
+                            (limit natp))
+    :returns (mv (erp maybe-msgp)
+                 (new-else? hash-else-optionp)
+                 (new-dstate dstatep)
+                 (new-tumap-dimb filepath-trans-unit-mapp))
+    :parents (disambiguator dimb-trans-items/units)
+    :short "Disambiguate an optional @('#else')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If the @('#else') is absent, we return it unchanged.
+       Otherwise, if the @('donep') flag is @('t'),
+       it means that a previous condition was satisfied,
+       and thus we drop the items of the @('#else').
+       Otherwise, we disambiguate the items."))
+    (b* (((reterr) (hash-else-option-none) (irr-dstate) nil)
+         ((when (zp limit))
+          (raise "Internal error: limit exhausted.")
+          (reterr "irrelevant"))
+         ((unless (hash-else-option-case else? :some))
+          (retok (hash-else-option-none)
+                 (dstate-fix dstate)
+                 (filepath-trans-unit-map-fix tumap-dimb)))
+         ((hash-else else) (hash-else-option-some->val else?))
+         ((erp new-items dstate tumap-dimb)
+          (if donep
+              (mv nil ; erp
+                  nil ; new-items
+                  (dstate-fix dstate)
+                  (filepath-trans-unit-map-fix tumap-dimb))
+            (dimb-trans-item-list else.items
+                                  dstate
+                                  tumap-orig
+                                  resolved-includes
+                                  tumap-dimb
+                                  (1- limit)))))
+      (retok (hash-else-option-some (make-hash-else :items new-items))
+             dstate
+             tumap-dimb))
+    :no-function nil
+    :measure (nfix limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define dimb-trans-unit ((tunit trans-unitp)
                            (dstate dstatep)
                            (tumap-orig filepath-trans-unit-mapp)
                            (resolved-includes
-                            string-header-name-string-map-mapp)
+                            filepath-header-name-filepath-map-mapp)
                            (tumap-dimb filepath-trans-unit-mapp)
                            (limit natp))
     :returns (mv (erp maybe-msgp)
@@ -4218,10 +4513,6 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defret-mutual trans-items/units-unambp-of-dimb-trans-items/units
-    (defret trans-item-list-unambp-of-dimb-include
-      (implies (not erp)
-               (trans-item-list-unambp new-items))
-      :fn dimb-include)
     (defret trans-item-list-unambp-of-dimb-trans-item
       (implies (not erp)
                (trans-item-list-unambp new-items))
@@ -4230,6 +4521,22 @@
       (implies (not erp)
                (trans-item-list-unambp new-items))
       :fn dimb-trans-item-list)
+    (defret trans-item-list-unambp-of-dimb-include
+      (implies (not erp)
+               (trans-item-list-unambp new-items))
+      :fn dimb-include)
+    (defret hash-elif-unambp-of-dimb-eliif
+      (implies (not erp)
+               (hash-elif-unambp new-elif))
+      :fn dimb-elif)
+    (defret hash-elif-list-unambp-of-dimb-eliif
+      (implies (not erp)
+               (hash-elif-list-unambp new-elifs))
+      :fn dimb-elif-list)
+    (defret hash-else-option-unambp-of-dimb-else-option
+      (implies (not erp)
+               (hash-else-option-unambp new-else?))
+      :fn dimb-else-option)
     (defret trans-unit-unambp-of-dimb-trans-unit
       (implies (not erp)
                (trans-unit-unambp new-tunit))
@@ -4238,10 +4545,6 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (defret-mutual filepath-trans-unit-map-unambp-of-dimb-trans-items/units
-    (defret filepath-trans-unit-map-unambp-of-dimb-include
-      (filepath-trans-unit-map-unambp new-tumap-dimb)
-      :hyp (filepath-trans-unit-map-unambp tumap-dimb)
-      :fn dimb-include)
     (defret filepath-trans-unit-map-unambp-of-dimb-trans-item
       (filepath-trans-unit-map-unambp new-tumap-dimb)
       :hyp (filepath-trans-unit-map-unambp tumap-dimb)
@@ -4250,6 +4553,22 @@
       (filepath-trans-unit-map-unambp new-tumap-dimb)
       :hyp (filepath-trans-unit-map-unambp tumap-dimb)
       :fn dimb-trans-item-list)
+    (defret filepath-trans-unit-map-unambp-of-dimb-include
+      (filepath-trans-unit-map-unambp new-tumap-dimb)
+      :hyp (filepath-trans-unit-map-unambp tumap-dimb)
+      :fn dimb-include)
+    (defret filepath-trans-unit-map-unambp-of-dimb-elif
+      (filepath-trans-unit-map-unambp new-tumap-dimb)
+      :hyp (filepath-trans-unit-map-unambp tumap-dimb)
+      :fn dimb-elif)
+    (defret filepath-trans-unit-map-unambp-of-dimb-elif-list
+      (filepath-trans-unit-map-unambp new-tumap-dimb)
+      :hyp (filepath-trans-unit-map-unambp tumap-dimb)
+      :fn dimb-elif-list)
+    (defret filepath-trans-unit-map-unambp-of-dimb-else-option
+      (filepath-trans-unit-map-unambp new-tumap-dimb)
+      :hyp (filepath-trans-unit-map-unambp tumap-dimb)
+      :fn dimb-else-option)
     (defret filepath-trans-unit-map-unambp-of-dimb-trans-unit
       (filepath-trans-unit-map-unambp new-tumap-dimb)
       :hyp (filepath-trans-unit-map-unambp tumap-dimb)
@@ -4259,8 +4578,8 @@
 
 (define dimb-filepath-trans-unit-map ((tumap filepath-trans-unit-mapp)
                                       (resolved-includes
-                                       string-header-name-string-map-mapp)
-                                      (dialect c::dialectp)
+                                       filepath-header-name-filepath-map-mapp)
+                                      (ienv ienvp)
                                       (keep-going booleanp))
   :returns (mv (erp maybe-msgp)
                (new-tumap filepath-trans-unit-mapp))
@@ -4284,7 +4603,7 @@
    (omap::keys (filepath-trans-unit-map-fix tumap))
    tumap
    resolved-includes
-   dialect
+   ienv
    keep-going
    nil) ; tumap-dimb
 
@@ -4292,10 +4611,11 @@
   ((define dimb-filepath-trans-unit-map-loop
      ((paths filepath-setp)
       (tumap filepath-trans-unit-mapp)
-      (resolved-includes string-header-name-string-map-mapp)
-      (dialect c::dialectp)
+      (resolved-includes filepath-header-name-filepath-map-mapp)
+      (ienv ienvp)
       (keep-going booleanp)
       (tumap-dimb filepath-trans-unit-mapp))
+     :guard (set::subset paths (omap::keys tumap))
      :returns (mv (erp maybe-msgp)
                   (new-tumap-dimb filepath-trans-unit-mapp))
      :parents nil
@@ -4305,15 +4625,10 @@
           (tumap (filepath-trans-unit-map-fix tumap))
           (tumap-dimb (filepath-trans-unit-map-fix tumap-dimb))
           (resolved-includes
-           (string-header-name-string-map-map-fix resolved-includes))
+           (filepath-header-name-filepath-map-map-fix resolved-includes))
           (path (set::head paths))
-          (path+tunit (omap::assoc path tumap))
-          ((unless path+tunit)
-           (raise "Internal error: ~x0 not in ~x1." path tumap)
-           (reterr "irrelevant"))
-          (tunit (cdr path+tunit))
-          (file (filepath->string path))
-          (dstate (init-dstate file dialect))
+          (tunit (omap::lookup path tumap))
+          (dstate (init-dstate path ienv))
           ((mv erp new-tunit & tumap-dimb)
            (dimb-trans-unit tunit
                             dstate
@@ -4323,23 +4638,25 @@
                             1000000000))
           ((when erp)
            (if keep-going
-               (prog2$ (cw "Error in translation unit ~x0: ~@1~%" file erp)
+               (prog2$ (cw "Error in translation unit ~x0: ~@1~%" path erp)
                        (dimb-filepath-trans-unit-map-loop (set::tail paths)
                                                           tumap
                                                           resolved-includes
-                                                          dialect
+                                                          ienv
                                                           keep-going
                                                           tumap-dimb))
-             (retmsg$ "Error in translation unit ~x0: ~@1" file erp)))
+             (retmsg$ "Error in translation unit ~x0: ~@1" path erp)))
           (tumap-dimb (omap::update path new-tunit tumap-dimb)))
        (dimb-filepath-trans-unit-map-loop (set::tail paths)
                                           tumap
                                           resolved-includes
-                                          dialect
+                                          ienv
                                           keep-going
                                           tumap-dimb))
      :no-function nil
      :prepwork ((local (in-theory (enable emptyp-of-filepath-set-fix))))
+     :guard-hints (("Goal" :in-theory (enable* omap::assoc-to-in-of-keys
+                                               set::expensive-rules)))
 
      ///
 
@@ -4354,17 +4671,17 @@
     (implies (not erp)
              (filepath-trans-unit-map-unambp new-tumap))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-trans-ensemble ((tuens trans-ensemblep)
-                             (dialect c::dialectp)
+                             (ienv ienvp)
                              (keep-going booleanp))
   :returns (mv (erp maybe-msgp) (new-tuens trans-ensemblep))
   :short "Disambiguate a translation ensemble."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We pass an indication of the C dialect to use.")
+    "We pass an implementation environment.")
    (xdoc::p
     "We disambiguate all the translation units, independently.
      We leave the file path mapping unchanged."))
@@ -4374,7 +4691,7 @@
        ((erp new-tumap)
         (dimb-filepath-trans-unit-map tumap
                                       resolved-includes
-                                      dialect
+                                      ienv
                                       keep-going))
        (- (if keep-going
               (b* ((len-tumap (omap::size tumap))

@@ -10,8 +10,8 @@
 
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
-; This file contains rules for string literals
-; for the C23 dialects [C23:6.4.6].
+; This file contains grammar rules for string literals in the C23 dialects
+; [C23:6.4.6].
 ; The rules are the same as for C17,
 ; but we omit the rule for 'encoding-prefix' here,
 ; because it is already with the rules for character constants.

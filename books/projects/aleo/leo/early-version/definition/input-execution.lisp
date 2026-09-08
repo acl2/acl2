@@ -127,8 +127,8 @@
   :prepwork
   ((local
     (in-theory
-     (enable funargp-when-funarg-resultp-and-not-reserrp
-             funarg-listp-when-funarg-list-resultp-and-not-reserrp))))
+     (enable funargp-when-result-not-error
+             funarg-listp-when-result-not-error))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -163,8 +163,8 @@
   :prepwork
   ((local
     (in-theory
-     (enable funargp-when-funarg-resultp-and-not-reserrp
-             funarg-listp-when-funarg-list-resultp-and-not-reserrp))))
+     (enable funargp-when-result-not-error
+             funarg-listp-when-result-not-error))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function member-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -93,7 +93,7 @@
 
 (defthmd member-equal-of-true-list-fix
   (equal (member-equal a (true-list-fix x))
-         (true-list-fix (member-equal a (true-list-fix x))))
+         (true-list-fix (member-equal a x)))
   :hints (("Goal" :in-theory (enable member-equal))))
 
 (defthm member-equal-of-true-list-fix-iff
@@ -190,7 +190,7 @@
              (list x)
            nil)))
 
-;; Should avoid case splitsa
+;; Should avoid case splits
 (defthm member-equal-when-singleton-iff
   (iff (member-equal x (list y))
        (equal x y)))

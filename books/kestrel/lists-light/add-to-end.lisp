@@ -1,7 +1,7 @@
 ; A function to add an item to the end of a list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -34,7 +34,8 @@
                     (if (< n (len lst))
                         (nth n lst)
                       item))))
-  :hints (("Goal" :in-theory (enable add-to-end))))
+  :hints (("Goal" :induct t
+           :in-theory (enable add-to-end))))
 
 (defthm nat-listp-of-add-to-end
   (equal (nat-listp (add-to-end a x))

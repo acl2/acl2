@@ -14,6 +14,7 @@
 (include-book "proof-support")
 
 (include-book "std/strings/char-case" :dir :system)
+(include-book "std/system/current-package-plus" :dir :system)
 (include-book "std/system/pseudo-event-form-listp" :dir :system)
 (include-book "std/system/table-alist-plus" :dir :system)
 (include-book "std/util/defund-sk" :dir :system)
@@ -56,27 +57,6 @@
      is equivalent to the satisfaction of the shallowly embedded one."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define current-package+ (state)
-  :returns (package stringp)
-  :short "Logic-friendly wrapper of the built-in @(tsee current-package)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This belongs to a more general library."))
-  (b* ((package (current-package state))
-       ((unless (and (stringp package)
-                     (not (equal package ""))))
-        (raise "Internal error: current package ~x0 is not a string." package)
-        "."))
-    package)
-
-  ///
-
-  (defret current-package+-not-empty
-    (not (equal package ""))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

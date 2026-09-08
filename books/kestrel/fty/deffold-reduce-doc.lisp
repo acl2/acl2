@@ -1,6 +1,6 @@
 ; FTY Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -51,6 +51,7 @@
      "                :default    ...  ; no default"
      "                :combine    ...  ; no default"
      "                :override   ...  ; default nil"
+     "                :name       ...  ; no default"
      "                :parents    ...  ; no default"
      "                :short      ...  ; no default"
      "                :long       ...  ; no default"
@@ -160,7 +161,10 @@
      (xdoc::ul
       (xdoc::li
        "A pair @('(<type> <term>)'),
-        where @('<type>') is a @(tsee defprod) or @(tsee deftagsum),
+        where @('<type>') is a
+        @(tsee defprod),
+        @(tsee deftagsum),
+        or @(tsee deflist),
         and @('<term>') is an (untranslated) term
         whose only free variables may be @('<type>')
         and the formals specified in @(':extra-args').")
@@ -171,6 +175,13 @@
         and @('<term>') is an (untranslated) term
         whose only free variables may be @('<type>')
         and the formals specified in @(':extra-args').")))
+
+    (xdoc::desc
+     "@('name')"
+     (xdoc::p
+      "Symbol that specifies the name of the generated XDOC topic
+       and the prefix of the name of the generated ruleset.
+       See Section `Generated Events' below."))
 
     (xdoc::desc
      (list
@@ -195,11 +206,9 @@
    (xdoc::evmac-section-generated
 
     (xdoc::desc
-     "@('abstract-syntax-<suffix>')"
+     "@('<name>')"
      (xdoc::p
-      "An XDOC topic whose name is obtained by adding,
-       at the end of the symbol @('abstract-syntax-'),
-       the symbol specified by the @('suffix') input.
+      "An XDOC topic whose name is specified by the @(':name') input.
        If any of the @(':parents'), @(':short'), or @(':long') inputs
        are provided, they are added to this XDOC topic.
        This XDOC topic is generated with @(tsee acl2::defxdoc+),
@@ -292,18 +301,27 @@
        "If @('<type>') is a @(tsee deflist):"
        (xdoc::ul
         (xdoc::li
-         "If the list is empty,
-          the function is defined to return
-          the term specified by the @(':default') input.")
+         "If the @(':override') input includes
+          an element @('(<type> <term>')),
+          the function is defined to return @('<term>').")
         (xdoc::li
-         "If the list is not empty,
-          the function is defined to return
-          the result of combining,
-          via the function specified by the @(':combine') input,
-          the result of applying the element type's fold function
-          to the @(tsee car) of the list
-          with the result of applying to list type's fold function
-          to the @(tsee cdr) of the list.")))
+         "If the @(':override') input does not include
+          an element of the form @('(<type> <term>')),
+          the function is defined to return the following:")
+        (xdoc::ul
+         (xdoc::li
+          "If the list is empty,
+           the function is defined to return
+           the term specified by the @(':default') input.")
+         (xdoc::li
+          "If the list is not empty,
+           the function is defined to return
+           the result of combining,
+           via the function specified by the @(':combine') input,
+           the result of applying the element type's fold function
+           to the @(tsee car) of the list
+           with the result of applying to list type's fold function
+           to the @(tsee cdr) of the list."))))
       (xdoc::li
        "If @('<type>') is a @(tsee defoption):"
        (xdoc::ul
@@ -375,7 +393,7 @@
      (xdoc::p
       "If @(':combine') is @(tsee and) and @(':default') is @('t'),
        the following additional theorems are generated,
-       for each field @('<field>') ofthe kind @('<kind>') of @('<type>')
+       for each field @('<field>') of the kind @('<kind>') of @('<type>')
        such that the field has type @('<field-type>'):")
      (xdoc::ul
       (xdoc::li
@@ -389,6 +407,8 @@
      (xdoc::p
       "For each @(tsee deflist) type @('<type>')
        specified by the @(':types') input,
+       such that the @(':override') input
+       does not include an element @('(<type> ...)'),
        with element type @('<elemtype>'),
        we generate the following theorems,
        whose exact form can be inspected with @(tsee pe) or similar command:")
@@ -453,13 +473,17 @@
       (xdoc::li
        "@('<type>-<suffix>-of-update')")
       (xdoc::li
-       "@('<valtype>-<suffix>-of-head-when-<type>-<suffix>')"))
+       "@('<valtype>-<suffix>-of-head-when-<type>-<suffix>')")
+      (xdoc::li
+       "@('<valtype>-<suffix>-of-cdr-assoc-when-<type>-<suffix>')")
+      (xdoc::li
+       "@('<valtype>-<suffix>-of-lookup-when-<type>-<suffix>')"))
      (xdoc::p
       "All these generated theorems are disabled,
        and added to the generated ruleset described below."))
 
     (xdoc::desc
-     "@('abstract-syntax-<suffix>-rules')"
+     "@('<name>-rules')"
      (xdoc::p
       "A "
       (xdoc::seetopic "acl2::rulesets" "ruleset")

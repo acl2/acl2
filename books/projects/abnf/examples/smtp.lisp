@@ -11,7 +11,7 @@
 (in-package "ABNF")
 
 (include-book "imf")
-(include-book "../operations/renaming")
+(include-book "../grammar-operations/renaming")
 
 ; (depends-on "smtp.abnf")
 

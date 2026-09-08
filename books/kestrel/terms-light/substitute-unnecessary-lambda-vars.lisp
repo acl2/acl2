@@ -1,6 +1,6 @@
 ; A tool to substitute away vars that are needlessly lambda-bound
 ;
-; Copyright (C) 2014-2024 Kestrel Institute
+; Copyright (C) 2014-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -225,7 +225,7 @@
                      (substitute-unnecessary-lambda-vars-in-terms (rest terms) print)
                      terms))))
 
-(make-flag flag-substitute-unnecessary-lambda-vars-in-term substitute-unnecessary-lambda-vars-in-term)
+(local (make-flag flag-substitute-unnecessary-lambda-vars-in-term substitute-unnecessary-lambda-vars-in-term))
 
 ;TODO: Automate some of this?
 

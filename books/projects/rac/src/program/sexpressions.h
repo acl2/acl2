@@ -13,6 +13,7 @@
 // S-expressions). Note that Constant is a derived class of Symbol.
 class Sexpression {
 public:
+  virtual ~Sexpression() = default;
   virtual void display(std::ostream &os) const = 0;
 };
 

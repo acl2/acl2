@@ -1,6 +1,6 @@
 ; Proofs about sublis-var-simple
 ;
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,14 +10,15 @@
 
 (in-package "ACL2")
 
-(include-book "tools/flag" :dir :system)
 (include-book "kestrel/utilities/symbol-term-alistp" :dir :system)
 (include-book "sublis-var-simple")
 (include-book "make-lambda-terms-simple")
 (include-book "lambdas-closed-in-termp")
+(include-book "lambda-free-termp")
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "no-nils-in-termp")
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/evaluators/empty-eval-theorems" :dir :system))
 (local (include-book "../lists-light/subsetp-equal"))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -26,7 +27,7 @@
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 
-(make-flag sublis-var-simple)
+(local (make-flag sublis-var-simple))
 
 (defthm-flag-sublis-var-simple
   (defthm sublis-var-simple-of-nil
@@ -376,3 +377,19 @@
            :in-theory (enable sublis-var-simple
                               sublis-var-simple-lst
                               no-duplicate-lambda-formals-in-termp))))
+
+;; Substitution doesn't introduce lambdas if there were none to start with and
+;; there are none in the alist being used for substitution.
+(defthm-flag-sublis-var-simple
+  (defthm lambda-free-termp-of-sublis-var-simple
+    (implies (and (lambda-free-termp term)
+                  (lambda-free-termsp (strip-cdrs alist)))
+             (lambda-free-termp (sublis-var-simple alist term)))
+    :flag sublis-var-simple)
+  (defthm lambda-free-termsp-of-sublis-var-simple-lst
+    (implies (and (lambda-free-termsp terms)
+                  (lambda-free-termsp (strip-cdrs alist)))
+             (lambda-free-termsp (sublis-var-simple-lst alist terms)))
+    :flag sublis-var-simple-lst)
+  :hints (("Goal" :in-theory (enable sublis-var-simple
+                                     sublis-var-simple-lst))))

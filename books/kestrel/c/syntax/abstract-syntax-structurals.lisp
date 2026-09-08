@@ -31,6 +31,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::defprojection ident-list-of ((x true-listp))
+  :returns (idents ident-listp)
+  :short "Lift @(tsee ident) to lists."
+  (ident x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (std::defprojection stringlit-list->prefix? ((x stringlit-listp))
   :returns (prefixes eprefix-option-listp)
   :short "Lift @(tsee stringlit->prefix?) to lists."

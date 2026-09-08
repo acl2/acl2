@@ -192,6 +192,7 @@
 (define tree-search-assoc
   (key
    (tree treep))
+  (declare (xargs :type-prescription :none))
   :parents (tree-lookup)
   :short "A performant variant of @(tsee tree-lookup) which uses a BST
           assumption."
@@ -213,8 +214,6 @@
                                            treep))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-search-assoc)))
 
 (defrule tree-search-assoc-type-prescription
   (or (consp (tree-search-assoc key tree))

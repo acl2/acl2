@@ -56,17 +56,17 @@
 (define tree-in-order-acc
   ((tree treep)
    (acc true-listp))
+  (declare (xargs :type-prescription :none))
   :returns (list true-listp :rule-classes :type-prescription)
   (if (tree-empty-p tree)
       (llist-fix acc)
     (tree-in-order-acc (tree->left tree)
                        (cons (tree-element->val (tree->head tree))
                              (tree-in-order-acc (tree->right tree)
-                                                acc)))))
+                                                acc))))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-in-order-acc)))
 
 (defrule tree-in-order-acc-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)
@@ -112,6 +112,7 @@
 
 (define tree-in-order
   ((tree treep))
+  (declare (xargs :type-prescription :none))
   :returns (list true-listp :rule-classes :type-prescription)
   :parents (implementation)
   :short "Create an in-order list of values from a tree."
@@ -125,8 +126,6 @@
   :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-in-order)))
 
 (defrule tree-in-order-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)
@@ -281,3 +280,64 @@
                   (tree (tree-intersect x y)))
   :enable set::expensive-rules
   :disable osetp-of-tree-in-order-when-bstp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tree-oset ((tree treep))
+  :returns (oset set::setp)
+  :verify-guards :after-returns
+  :parents (implementation)
+  :short "The elements of a tree, as an oset."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "Built with oset primitives, so the result is a @(tsee set::setp)
+      structurally, for any tree at all. Over a binary search tree this agrees
+      with @(tsee tree-in-order), which builds the same oset in @($O(n)$) by
+      reading the elements off in order; see
+      @('tree-oset-becomes-tree-in-order'). This function is the logical form:
+      definitions phrased over it face the mature oset theory rather than
+      facts about lists."))
+  (if (tree-empty-p tree)
+      nil
+    (set::insert (tree-element->val (tree->head tree))
+                 (set::union (tree-oset (tree->left tree))
+                             (tree-oset (tree->right tree))))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t tree-oset)))
+
+(defrule tree-oset-when-tree-equiv-congruence
+  (implies (tree-equiv tree0 tree1)
+           (equal (tree-oset tree0)
+                  (tree-oset tree1)))
+  :rule-classes :congruence
+  :expand ((tree-oset tree0)
+           (tree-oset tree1)))
+
+;; Membership is tree membership, with no hypothesis: the fold inserts exactly
+;; the elements of the tree, ordered or not.
+
+(defrule in-of-tree-oset
+  (equal (set::in x (tree-oset tree))
+         (tree-in x tree))
+  :induct t
+  :enable (tree-oset
+           tree-in))
+
+(defrule emptyp-of-tree-oset
+  (equal (set::emptyp (tree-oset tree))
+         (tree-empty-p tree))
+  :expand ((tree-oset tree)))
+
+;; Over a binary search tree the two builders agree exactly: both produce
+;; osets, and they have the same members.
+
+(defruled tree-oset-becomes-tree-in-order
+  (implies (bstp tree)
+           (equal (tree-oset tree)
+                  (tree-in-order tree)))
+  :enable (set::in-to-member
+           set::double-containment
+           set::pick-a-point-subset-strategy))

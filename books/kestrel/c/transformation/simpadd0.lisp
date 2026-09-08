@@ -95,7 +95,7 @@
                               (arg2 exprp)
                               (arg2-new exprp)
                               (arg2-thm-name symbolp)
-                              (info expr-binary-infop)
+                              (info type-vinfop)
                               (gin ginp))
   :guard (and (expr-unambp arg1)
               (expr-annop arg1)
@@ -214,7 +214,7 @@
     (expr-annop expr)
     :hyp (and (expr-annop arg1-new)
               (expr-annop arg2-new)
-              (expr-binary-infop info)))
+              (type-vinfop info)))
 
   (defret expr-aidentp-of-simpadd0-expr-binary
     (expr-aidentp expr gcc)
@@ -344,14 +344,16 @@
              (simpadd0-expr expr.arg gin))
             (gin (gin-update gin gout-arg)))
          (mv (make-expr-member :arg new-arg
-                               :name expr.name)
+                               :name expr.name
+                               :info expr.info)
              (gout-no-thm gin)))
        :memberp
        (b* (((mv new-arg (gout gout-arg))
              (simpadd0-expr expr.arg gin))
             (gin (gin-update gin gout-arg)))
          (mv (make-expr-memberp :arg new-arg
-                                :name expr.name)
+                                :name expr.name
+                                :info expr.info)
              (gout-no-thm gin)))
        :complit
        (b* (((mv new-type (gout gout-type))
@@ -362,7 +364,8 @@
             (gin (gin-update gin gout-elems)))
          (mv (make-expr-complit :type new-type
                                 :elems new-elems
-                                :final-comma expr.final-comma)
+                                :final-comma expr.final-comma
+                                :info expr.info)
              (gout-no-thm gin)))
        :unary
        (b* (((mv new-arg (gout gout-arg))
@@ -547,10 +550,11 @@
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a constant expression."
     (b* (((gin gin) gin)
+         ((const-expr cexpr) cexpr)
          ((mv new-expr (gout gout-expr))
-          (simpadd0-expr (const-expr->expr cexpr) gin))
+          (simpadd0-expr cexpr.expr gin))
          (gin (gin-update gin gout-expr)))
-      (mv (const-expr new-expr)
+      (mv (make-const-expr :expr new-expr :info cexpr.info)
           (gout-no-thm gin)))
     :measure (const-expr-count cexpr))
 
@@ -689,12 +693,14 @@
        :struct (b* (((mv new-spec (gout gout-spec))
                      (simpadd0-struni-spec tyspec.spec gin))
                     (gin (gin-update gin gout-spec)))
-                 (mv (type-spec-struct new-spec)
+                 (mv (c$::make-type-spec-struct :spec new-spec
+                                                :info tyspec.info)
                      (gout-no-thm gin)))
        :union (b* (((mv new-spec (gout gout-spec))
                     (simpadd0-struni-spec tyspec.spec gin))
                    (gin (gin-update gin gout-spec)))
-                (mv (type-spec-union new-spec)
+                (mv (c$::make-type-spec-union :spec new-spec
+                                              :info tyspec.info)
                     (gout-no-thm gin)))
        :enum (b* (((mv new-spec (gout gout-spec))
                    (simpadd0-enum-spec tyspec.spec gin))
@@ -923,7 +929,8 @@
           (simpadd0-initer desiniter.initer gin))
          (gin (gin-update gin gout-initer)))
       (mv (make-desiniter :designors new-designors
-                          :initer new-initer)
+                          :initer new-initer
+                          :info desiniter.info)
           (gout-no-thm gin)))
     :measure (desiniter-count desiniter))
 
@@ -1319,7 +1326,8 @@
          (gin (gin-update gin gout-declor)))
       (mv (make-param-declon :specs new-specs
                              :declor new-declor
-                             :attribs paramdeclon.attribs)
+                             :attribs paramdeclon.attribs
+                             :info paramdeclon.info)
           (change-gout (gout-no-thm gin)
                        :vartys gout-declor.vartys)))
     :measure (param-declon-count paramdeclon))
@@ -1377,7 +1385,7 @@
        (b* (((mv new-declor & (gout gout-declor))
              (simpadd0-declor paramdeclor.declor nil gin))
             (gin (gin-update gin gout-declor))
-            (type (param-declor-nonabstract-info->type paramdeclor.info))
+            (type (type+uid-vinfo->type paramdeclor.info))
             (ident (declor->ident paramdeclor.declor))
             (post-vartys
              (if (and (ident-formalp ident)
@@ -1396,9 +1404,11 @@
        :abstract (b* (((mv new-absdeclor (gout gout-absdeclor))
                        (simpadd0-absdeclor paramdeclor.declor gin))
                       (gin (gin-update gin gout-absdeclor)))
-                   (mv (param-declor-abstract new-absdeclor)
+                   (mv (make-param-declor-abstract
+                        :declor new-absdeclor
+                        :info paramdeclor.info)
                        (gout-no-thm gin)))
-       :none (mv (param-declor-none) (gout-no-thm gin))
+       :none (mv (param-declor-none paramdeclor.info) (gout-no-thm gin))
        :ambig (prog2$ (impossible) (mv (irr-param-declor) (irr-gout)))))
     :measure (param-declor-count paramdeclor))
 
@@ -1521,7 +1531,8 @@
           (simpadd0-const-expr-option structdeclor.expr? gin))
          (gin (gin-update gin gout-expr?)))
       (mv (make-struct-declor :declor? new-declor?
-                              :expr? new-expr?)
+                              :expr? new-expr?
+                              :info structdeclor.info)
           (gout-no-thm gin)))
     :measure (struct-declor-count structdeclor))
 
@@ -1655,10 +1666,10 @@
                                   (change-gin
                                    gin :vartys gout-declor.vartys)))
          ((gin gin) (gin-update gin gout-initer?))
-         (type (init-declor-info->type initdeclor.info))
+         (type (init-declor-vinfo->type initdeclor.info))
          (ident (declor->ident initdeclor.declor))
          (post-vartys
-          (if (and (not (init-declor-info->typedefp initdeclor.info))
+          (if (and (not (init-declor-vinfo->typedefp initdeclor.info))
                    (ident-formalp ident)
                    (type-formalp type)
                    (not (type-case type :void))
@@ -2948,7 +2959,7 @@
        ((mv new-declor & (gout gout-declor))
         (simpadd0-declor fundef.declor t gin))
        (gin (gin-update gin gout-declor))
-       (type (fundef-info->type fundef.info))
+       (type (type+uid-vinfo->type fundef.info))
        (ident (declor->ident fundef.declor))
        (vartys-with-fun (if (and (ident-formalp ident)
                                  (type-formalp type)
@@ -3307,7 +3318,7 @@
   :guard (and (code-ensemble-unambp code-old)
               (code-ensemble-annop code-old))
   :returns (mv erp (event pseudo-event-formp))
-  :short "Event expansion of the transformation."
+  :short "Generate the new code ensemble and accompanying theorems."
   :long
   (xdoc::topstring
    (xdoc::p

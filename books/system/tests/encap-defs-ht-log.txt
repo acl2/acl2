@@ -1,0 +1,1860 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(IN-PACKAGE "ACL2")
+ "ACL2"
+ACL2 !>>(SET-RAW-MODE-ON!)
+(DEFTTAG :RAW-MODE-HACK)
+(SET-RAW-MODE-ON STATE)
+ACL2 P>>(SETQ *DEBUG-ON* T)
+T
+ACL2 P>>(SET-RAW-MODE NIL)
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(SET-DEBUGGER-ENABLE NIL)
+<state>
+ACL2 !>>(ENCAPSULATE NIL
+          (LOCAL (DEFUN FOO (X)
+                   (DECLARE (XARGS :MODE :PROGRAM))
+                   (CONS X X)))
+          (DEFUN FOO (X)
+            (DECLARE (XARGS :MODE :PROGRAM))
+            (CONS X X)))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN FOO (X)
+                  (DECLARE (XARGS :MODE :PROGRAM))
+                  (CONS X X)))
+; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+; DEBUG: [IFATHB-1] Eval def for FOO.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::FOO.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+FOO
+
+
+ACL2 !>>>(DEFUN FOO (X)
+           (DECLARE (XARGS :MODE :PROGRAM))
+           (CONS X X))
+; DEBUG: [REDUNDANT-FN] Set (symbol-function FOO).
+; DEBUG: [REDUNDANT-*1*FN] Set (symbol-function ACL2_*1*_ACL2::FOO).
+
+The event ( DEFUN FOO ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+:REDUNDANT
+
+End of Encapsulated Events.
+; DEBUG: [IFATIB-5] Set (symbol-function FOO), symbol-class :PROGRAM.
+; DEBUG: [IFATIB-5] Set (symbol-function ACL2_*1*_ACL2::FOO), symbol-class :PROGRAM.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+We export FOO.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (LOCAL ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(ENCAPSULATE NIL
+          (ENCAPSULATE NIL
+            (LOCAL (DEFUN FOO (X)
+                     (DECLARE (XARGS :MODE :PROGRAM))
+                     (CONS X X)))
+            (DEFUN FOO (X)
+              (DECLARE (XARGS :MODE :PROGRAM))
+              (CONS X X))))
+
+To verify that the encapsulated event correctly extends the current
+theory we will evaluate it.  The theory thus constructed is only ephemeral.
+
+Encapsulated Event:
+
+
+ACL2 !>>>(ENCAPSULATE NIL
+           (LOCAL (DEFUN FOO (X)
+                    (DECLARE (XARGS :MODE :PROGRAM))
+                    (CONS X X)))
+           (DEFUN FOO (X)
+             (DECLARE (XARGS :MODE :PROGRAM))
+             (CONS X X)))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN FOO (X)
+                  (DECLARE (XARGS :MODE :PROGRAM))
+                  (CONS X X)))
+; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+; DEBUG: [IFATHB-1] Eval def for FOO.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::FOO.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+FOO
+
+
+ACL2 !>>>(DEFUN FOO (X)
+           (DECLARE (XARGS :MODE :PROGRAM))
+           (CONS X X))
+; DEBUG: [REDUNDANT-FN] Set (symbol-function FOO).
+; DEBUG: [REDUNDANT-*1*FN] Set (symbol-function ACL2_*1*_ACL2::FOO).
+
+The event ( DEFUN FOO ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+:REDUNDANT
+
+End of Encapsulated Events.
+; DEBUG: [IFATIB-5] Set (symbol-function FOO), symbol-class :PROGRAM.
+; DEBUG: [IFATIB-5] Set (symbol-function ACL2_*1*_ACL2::FOO), symbol-class :PROGRAM.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+We export FOO.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (LOCAL ...) ...)
+Rules: NIL
+T
+
+End of Encapsulated Event.
+; DEBUG: [IFATIB-5] Set (symbol-function FOO), symbol-class :PROGRAM.
+; DEBUG: [IFATIB-5] Set (symbol-function ACL2_*1*_ACL2::FOO), symbol-class :PROGRAM.
+
+Having verified that the encapsulated event validates the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+We export FOO.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (ENCAPSULATE NIL ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(ENCAPSULATE NIL
+          (ENCAPSULATE NIL
+            (ENCAPSULATE NIL
+              (DEFUN G (X)
+                (DECLARE (XARGS :MODE :PROGRAM))
+                (CONS X X)))))
+
+To verify that the encapsulated event correctly extends the current
+theory we will evaluate it.  The theory thus constructed is only ephemeral.
+
+Encapsulated Event:
+
+
+ACL2 !>>>(ENCAPSULATE NIL
+           (ENCAPSULATE NIL
+             (DEFUN G (X)
+               (DECLARE (XARGS :MODE :PROGRAM))
+               (CONS X X))))
+
+To verify that the encapsulated event correctly extends the current
+theory we will evaluate it.  The theory thus constructed is only ephemeral.
+
+Encapsulated Event:
+
+
+ACL2 !>>>(ENCAPSULATE NIL
+           (DEFUN G (X)
+             (DECLARE (XARGS :MODE :PROGRAM))
+             (CONS X X)))
+
+To verify that the encapsulated event correctly extends the current
+theory we will evaluate it.  The theory thus constructed is only ephemeral.
+
+Encapsulated Event:
+
+
+ACL2 !>>>(DEFUN G (X)
+           (DECLARE (XARGS :MODE :PROGRAM))
+           (CONS X X))
+; DEBUG: [IDFAT-ONEIFY] (oneify G)
+; DEBUG: [IFATHB-1] Eval def for G.
+; DEBUG: [IFATHB-6] Set hash table for G.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::G.
+; DEBUG: [IFATHB-6] Set hash table for ACL2_*1*_ACL2::G.
+
+Summary
+Form:  ( DEFUN G ...)
+Rules: NIL
+G
+
+End of Encapsulated Event.
+; DEBUG: [IFATIB-5] Set (symbol-function G), symbol-class :PROGRAM.
+; DEBUG: [IFATIB-5] Set (symbol-function ACL2_*1*_ACL2::G), symbol-class :PROGRAM.
+
+Having verified that the encapsulated event validates the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+We export G.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (DEFUN G ...) ...)
+Rules: NIL
+T
+
+End of Encapsulated Event.
+; DEBUG: [IFATIB-5] Set (symbol-function G), symbol-class :PROGRAM.
+; DEBUG: [IFATIB-5] Set (symbol-function ACL2_*1*_ACL2::G), symbol-class :PROGRAM.
+
+Having verified that the encapsulated event validates the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+We export G.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (ENCAPSULATE NIL ...) ...)
+Rules: NIL
+T
+
+End of Encapsulated Event.
+; DEBUG: [IFATIB-5] Set (symbol-function G), symbol-class :PROGRAM.
+; DEBUG: [IFATIB-5] Set (symbol-function ACL2_*1*_ACL2::G), symbol-class :PROGRAM.
+
+Having verified that the encapsulated event validates the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+We export G.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (ENCAPSULATE NIL ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(ENCAPSULATE NIL
+          (LOCAL (DEFUN F (X)
+                   (DECLARE (XARGS :GUARD T))
+                   (WITH-DEBUG (CONS X X) "@@@HI@@@~%")))
+          (LOCAL (MEMOIZE 'F))
+          (DEFUN F (X)
+            (DECLARE (XARGS :GUARD T))
+            (WITH-DEBUG (CONS X X) "@@@HI@@@~%")))
+
+To verify that the three encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN F (X)
+                  (DECLARE (XARGS :GUARD T))
+                  (WITH-DEBUG (CONS X X) "@@@HI@@@~%")))
+
+Since F is non-recursive, its admission is trivial.  We observe that
+the type of F is described by the theorem (CONSP (F X)).  We used primitive
+type reasoning.
+
+Computing the guard conjecture for F....
+
+The guard conjecture for F is trivial to prove.  F is compliant with
+Common Lisp.
+; DEBUG: [IDFAT-ONEIFY] (oneify F)
+; DEBUG: [IFATHB-1] Eval def for F.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::F.
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+F
+
+
+ACL2 !>>>(LOCAL (MEMOIZE 'F))
+F
+
+
+ACL2 !>>>(DEFUN F (X)
+           (DECLARE (XARGS :GUARD T))
+           (WITH-DEBUG (CONS X X) "@@@HI@@@~%"))
+; DEBUG: [REDUNDANT-*1*FN] Set (symbol-function ACL2_*1*_ACL2::F).
+
+The event ( DEFUN F ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: NIL
+:REDUNDANT
+
+End of Encapsulated Events.
+; DEBUG: [IFATIB-5] Set (symbol-function ACL2_*1*_ACL2::F), symbol-class :COMMON-LISP-COMPLIANT.
+; DEBUG: [IDFAT-9] Eval def for F.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+We export F.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (LOCAL ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(F 3)
+; DEBUG: @@@HI@@@
+(3 . 3)
+ACL2 !>>(F 3)
+; DEBUG: @@@HI@@@
+(3 . 3)
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(ENCAPSULATE NIL
+          (LOCAL (DEFUN F (X)
+                   (DECLARE (XARGS :GUARD T))
+                   (WITH-DEBUG (CONS X X) "@@@HI@@@~%")))
+          (DEFUN F (X)
+            (DECLARE (XARGS :GUARD T))
+            (WITH-DEBUG (CONS X X) "@@@HI@@@~%"))
+          (MEMOIZE 'F))
+
+To verify that the three encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN F (X)
+                  (DECLARE (XARGS :GUARD T))
+                  (WITH-DEBUG (CONS X X) "@@@HI@@@~%")))
+
+Since F is non-recursive, its admission is trivial.  We observe that
+the type of F is described by the theorem (CONSP (F X)).  We used primitive
+type reasoning.
+
+Computing the guard conjecture for F....
+
+The guard conjecture for F is trivial to prove.  F is compliant with
+Common Lisp.
+; DEBUG: [IDFAT-ONEIFY] (oneify F)
+; DEBUG: [IFATHB-1] Eval def for F.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::F.
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+F
+
+
+ACL2 !>>>(DEFUN F (X)
+           (DECLARE (XARGS :GUARD T))
+           (WITH-DEBUG (CONS X X) "@@@HI@@@~%"))
+; DEBUG: [REDUNDANT-FN] Set (symbol-function F).
+; DEBUG: [REDUNDANT-*1*FN] Set (symbol-function ACL2_*1*_ACL2::F).
+
+The event ( DEFUN F ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFUN F ...)
+Rules: NIL
+:REDUNDANT
+
+
+ACL2 !>>>(MEMOIZE 'F)
+F
+
+End of Encapsulated Events.
+; DEBUG: [IFATIB-5] Set (symbol-function F), symbol-class :COMMON-LISP-COMPLIANT.
+; DEBUG: [IFATIB-5] Set (symbol-function ACL2_*1*_ACL2::F), symbol-class :COMMON-LISP-COMPLIANT.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+We export F.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (LOCAL ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(F 3)
+; DEBUG: @@@HI@@@
+(3 . 3)
+ACL2 !>>(F 3)
+(3 . 3)
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(ENCAPSULATE NIL
+          (LOCAL (DEFUN FOO (X)
+                   (DECLARE (XARGS :MODE :LOGIC))
+                   (CAR X)))
+          (DEFUN FOO (X)
+            (DECLARE (XARGS :MODE :PROGRAM))
+            (CAR X)))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN FOO (X)
+                  (DECLARE (XARGS :MODE :LOGIC))
+                  (CAR X)))
+
+Since FOO is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of FOO.
+; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+; DEBUG: [IFATHB-1] Eval def for FOO.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::FOO.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+FOO
+
+
+ACL2 !>>>(DEFUN FOO (X)
+           (DECLARE (XARGS :MODE :PROGRAM))
+           (CAR X))
+; DEBUG: [REDUNDANT-FN] Set (symbol-function FOO).
+; DEBUG: [REDUNDANT-*1*FN-FAKE] Set hash table to *hcomp-fake-value* for ACL2_*1*_ACL2::FOO.
+
+The event ( DEFUN FOO ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+:REDUNDANT
+
+End of Encapsulated Events.
+; DEBUG: [IFATIB-5] Set (symbol-function FOO), symbol-class :PROGRAM.
+; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+; DEBUG: [IDFAT-9] Eval def for ACL2_*1*_ACL2::FOO.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+We export FOO.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (LOCAL ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(FOO 3)
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(ENCAPSULATE NIL
+          (LOCAL (DEFUN FOO (X)
+                   (DECLARE (XARGS :MODE :PROGRAM))
+                   (CAR X)))
+          (LOCAL (DEFUN FOO (X)
+                   (DECLARE (XARGS :MODE :LOGIC))
+                   (CAR X)))
+          (DEFUN FOO (X)
+            (DECLARE (XARGS :MODE :LOGIC))
+            (CAR X)))
+
+To verify that the three encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN FOO (X)
+                  (DECLARE (XARGS :MODE :PROGRAM))
+                  (CAR X)))
+; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+; DEBUG: [IFATHB-1] Eval def for FOO.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::FOO.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+FOO
+
+
+ACL2 !>>>(LOCAL (DEFUN FOO (X)
+                  (DECLARE (XARGS :MODE :LOGIC))
+                  (CAR X)))
+
+Since FOO is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of FOO.
+; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::FOO.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+FOO
+
+
+ACL2 !>>>(DEFUN FOO (X)
+           (DECLARE (XARGS :MODE :LOGIC))
+           (CAR X))
+; DEBUG: [REDUNDANT-FN] Set (symbol-function FOO).
+; DEBUG: [REDUNDANT-*1*FN] Set (symbol-function ACL2_*1*_ACL2::FOO).
+
+The event ( DEFUN FOO ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+:REDUNDANT
+
+End of Encapsulated Events.
+; DEBUG: [IFATIB-5] Set (symbol-function FOO), symbol-class :IDEAL.
+; DEBUG: [IFATIB-5] Set (symbol-function ACL2_*1*_ACL2::FOO), symbol-class :IDEAL.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+We export FOO.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (LOCAL ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(FOO 3)
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  The guard for the function call
+(CAR X), which is (OR (CONSP X) (EQUAL X NIL)), is violated by the
+arguments in the call (CAR 3).
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(SET-GUARD-CHECKING :ALL)
+
+Leaving guard checking on, but changing value to :ALL.
+
+ACL2 !>>(DEFUN MY-TRUE-LISTP (X)
+          (DECLARE (XARGS :GUARD T))
+          (WITH-DEBUG (TRUE-LISTP X) "@~%"))
+
+Since MY-TRUE-LISTP is non-recursive, its admission is trivial.  We
+observe that the type of MY-TRUE-LISTP is described by the theorem
+(OR (EQUAL (MY-TRUE-LISTP X) T) (EQUAL (MY-TRUE-LISTP X) NIL)).  
+
+Computing the guard conjecture for MY-TRUE-LISTP....
+
+The guard conjecture for MY-TRUE-LISTP is trivial to prove.  MY-TRUE-LISTP
+is compliant with Common Lisp.
+; DEBUG: [IDFAT-ONEIFY] (oneify MY-TRUE-LISTP)
+; DEBUG: [IDFAT-10] Eval def for MY-TRUE-LISTP.
+; DEBUG: [IDFAT-10] Eval def for ACL2_*1*_ACL2::MY-TRUE-LISTP.
+
+Summary
+Form:  ( DEFUN MY-TRUE-LISTP ...)
+Rules: NIL
+ MY-TRUE-LISTP
+ACL2 !>>(ENCAPSULATE NIL
+          (LOCAL (DEFUN FOO (X)
+                   (DECLARE (XARGS :GUARD (MY-TRUE-LISTP X)))
+                   (IF (CONSP X) (FOO (CDR X)) X)))
+          (DEFUN FOO (X)
+            (DECLARE (XARGS :GUARD (MY-TRUE-LISTP X)
+                            :VERIFY-GUARDS NIL))
+            (IF (CONSP X) (FOO (CDR X)) X)))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN FOO (X)
+                  (DECLARE (XARGS :GUARD (MY-TRUE-LISTP X)))
+                  (IF (CONSP X) (FOO (CDR X)) X)))
+
+The admission of FOO is trivial, using the relation O< (which is known
+to be well-founded on the domain recognized by O-P) and the measure
+(ACL2-COUNT X).  We observe that the type of FOO is described by the
+theorem (NOT (CONSP (FOO X))).  
+
+Computing the guard conjecture for FOO....
+
+The non-trivial part of the guard conjecture for FOO is
+
+Goal
+(IMPLIES (AND (MY-TRUE-LISTP X) (CONSP X))
+         (MY-TRUE-LISTP (CDR X))).
+
+Q.E.D.
+
+That completes the proof of the guard theorem for FOO.  FOO is compliant
+with Common Lisp.
+; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+; DEBUG: [IFATHB-1] Eval def for FOO.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::FOO.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: ((:DEFINITION MY-TRUE-LISTP)
+        (:DEFINITION NOT)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
+FOO
+
+
+ACL2 !>>>(DEFUN FOO (X)
+           (DECLARE (XARGS :GUARD (MY-TRUE-LISTP X)
+                           :VERIFY-GUARDS NIL))
+           (IF (CONSP X) (FOO (CDR X)) X))
+; DEBUG: [REDUNDANT-FN] Set (symbol-function FOO).
+; DEBUG: [REDUNDANT-*1*FN-FAKE] Set hash table to *hcomp-fake-value* for ACL2_*1*_ACL2::FOO.
+
+The event ( DEFUN FOO ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+:REDUNDANT
+
+End of Encapsulated Events.
+; DEBUG: [IFATIB-5] Set (symbol-function FOO), symbol-class :IDEAL.
+; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+; DEBUG: [IDFAT-9] Eval def for ACL2_*1*_ACL2::FOO.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+We export FOO.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (LOCAL ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(FOO '(1 2 3 4))
+; DEBUG: @
+; DEBUG: @
+; DEBUG: @
+; DEBUG: @
+; DEBUG: @
+NIL
+ACL2 !>>(SET-GUARD-CHECKING T)
+
+Leaving guard checking on, but changing value to T.
+
+ACL2 !>>(U)
+ V         2:x(DEFUN MY-TRUE-LISTP (X) ...)
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(ENCAPSULATE NIL
+          (ENCAPSULATE NIL
+            (LOCAL (DEFUN G (X)
+                     (DECLARE (XARGS :MODE :PROGRAM))
+                     X)))
+          (DEFUN G (X)
+            (DECLARE (XARGS :MODE :PROGRAM))
+            (CONS X X)))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(ENCAPSULATE NIL
+           (LOCAL (DEFUN G (X)
+                    (DECLARE (XARGS :MODE :PROGRAM))
+                    X)))
+
+To verify that the encapsulated event correctly extends the current
+theory we will evaluate it.  The theory thus constructed is only ephemeral.
+
+Encapsulated Event:
+
+
+ACL2 !>>>(LOCAL (DEFUN G (X)
+                  (DECLARE (XARGS :MODE :PROGRAM))
+                  X))
+; DEBUG: [IDFAT-ONEIFY] (oneify G)
+; DEBUG: [IFATHB-1] Eval def for G.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::G.
+
+Summary
+Form:  ( DEFUN G ...)
+Rules: NIL
+G
+
+End of Encapsulated Event.
+
+ACL2 Observation in ( ENCAPSULATE NIL (LOCAL ...) ...):  The submitted
+encapsulate event has created no new ACL2 events, and thus is leaving
+the ACL2 logical world unchanged.  See :DOC encapsulate.
+
+Summary
+Form:  ( ENCAPSULATE NIL (LOCAL ...) ...)
+Rules: NIL
+:EMPTY-ENCAPSULATE
+
+
+ACL2 !>>>(DEFUN G (X)
+           (DECLARE (XARGS :MODE :PROGRAM))
+           (CONS X X))
+; DEBUG: [IDFAT-ONEIFY] (oneify G)
+; DEBUG: [IFATHB-1] Eval def for G.
+; DEBUG: [IFATHB-6] Set hash table for G.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::G.
+; DEBUG: [IFATHB-6] Set hash table for ACL2_*1*_ACL2::G.
+
+Summary
+Form:  ( DEFUN G ...)
+Rules: NIL
+G
+
+End of Encapsulated Events.
+; DEBUG: [IFATIB-5] Set (symbol-function G), symbol-class :PROGRAM.
+; DEBUG: [IFATIB-5] Set (symbol-function ACL2_*1*_ACL2::G), symbol-class :PROGRAM.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+We export G.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (ENCAPSULATE NIL ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(G 3)
+(3 . 3)
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(ENCAPSULATE NIL
+          (ENCAPSULATE ((H (X) T))
+            (LOCAL (DEFUN H (X) X))
+            (DEFUN FOO (X)
+              (DECLARE (XARGS :MODE :PROGRAM))
+              (CAR X)))
+          (DEFUN FOO (X) (CAR X)))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(ENCAPSULATE ((H (X) T))
+           (LOCAL (DEFUN H (X) X))
+           (DEFUN FOO (X)
+             (DECLARE (XARGS :MODE :PROGRAM))
+             (CAR X)))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN H (X) X))
+
+Since H is non-recursive, its admission is trivial.  We observe that
+the type of H is described by the theorem (EQUAL (H X) X).  
+; DEBUG: [IDFAT-ONEIFY] (oneify H)
+; DEBUG: [IFATHB-1] Eval def for H.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::H.
+
+Summary
+Form:  ( DEFUN H ...)
+Rules: NIL
+H
+
+
+ACL2 !>>>(DEFUN FOO (X)
+           (DECLARE (XARGS :MODE :PROGRAM))
+           (CAR X))
+; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+; DEBUG: [IFATHB-1] Eval def for FOO.
+; DEBUG: [IFATHB-6] Set hash table for FOO.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::FOO.
+; DEBUG: [IFATHB-6] Set hash table for ACL2_*1*_ACL2::FOO.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+FOO
+
+End of Encapsulated Events.
+; DEBUG: [IDFAT-ONEIFY] (oneify H)
+; DEBUG: [IDFAT-9] Eval def for H.
+; DEBUG: [IDFAT-9] Eval def for ACL2_*1*_ACL2::H.
+; DEBUG: [IFATIB-5] Set (symbol-function FOO), symbol-class :PROGRAM.
+; DEBUG: [IFATIB-5] Set (symbol-function ACL2_*1*_ACL2::FOO), symbol-class :PROGRAM.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+In addition to H, we export FOO.
+
+
+Summary
+Form:  ( ENCAPSULATE ((H ...) ...) ...)
+Rules: NIL
+H
+
+
+ACL2 !>>>(DEFUN FOO (X) (CAR X))
+
+Since FOO is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of FOO.
+; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::FOO.
+; DEBUG: [IFATHB-4] Set hash table to reclassifying value for ACL2_*1*_ACL2::FOO.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+FOO
+
+End of Encapsulated Events.
+; DEBUG: [IDFAT-ONEIFY] (oneify H)
+; DEBUG: [IDFAT-9] Eval def for H.
+; DEBUG: [IDFAT-9] Eval def for ACL2_*1*_ACL2::H.
+; DEBUG: [IFATIB-5] Set (symbol-function FOO), symbol-class :PROGRAM.
+; DEBUG: [IFATIB-2] Update hash table entry for ACL2_*1*_ACL2::FOO with fixed-val.
+; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+; DEBUG: [IDFAT-9] Eval def for ACL2_*1*_ACL2::FOO.
+; DEBUG: [IFATIB-5] Set (symbol-function ACL2_*1*_ACL2::FOO), symbol-class :IDEAL.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+We export FOO and H.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (ENCAPSULATE ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(FOO 3)
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  The guard for the function call
+(CAR X), which is (OR (CONSP X) (EQUAL X NIL)), is violated by the
+arguments in the call (CAR 3).
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(SET-LD-SKIP-PROOFSP T STATE)
+ T
+ACL2 !s>>(ENCAPSULATE NIL
+           (LOCAL (DEFUN FOO (X)
+                    (DECLARE (XARGS :GUARD T))
+                    (CAR X)))
+           (DEFUN FOO (X) (CAR X)))
+; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+; DEBUG: [IFATHB-1] Eval def for FOO.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::FOO.
+; DEBUG: [REDUNDANT-FN] Set (symbol-function FOO).
+; DEBUG: [REDUNDANT-*1*FN-FAKE] Set hash table to *hcomp-fake-value* for ACL2_*1*_ACL2::FOO.
+; DEBUG: [IFATIB-5] Set (symbol-function FOO), symbol-class :IDEAL.
+; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+; DEBUG: [IDFAT-9] Eval def for ACL2_*1*_ACL2::FOO.
+ T
+ACL2 !s>>(FOO 3)
+
+
+ACL2 Error [Evaluation] in TOP-LEVEL:  The guard for the function call
+(CAR X), which is (OR (CONSP X) (EQUAL X NIL)), is violated by the
+arguments in the call (CAR 3).
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+ACL2 !s>>(SET-LD-SKIP-PROOFSP NIL STATE)
+ NIL
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(ENCAPSULATE NIL
+          (MAKE-EVENT (PROGN (DEFUN FOO (X)
+                               (DECLARE (XARGS :GUARD T :MODE :PROGRAM))
+                               X)
+                             (ASSERT-EVENT (EQUAL (FOO 3) 3))
+                             (VALUE-TRIPLE '(VALUE-TRIPLE 17)))
+                      :CHECK-EXPANSION T)
+          (DEFUN FOO (X)
+            (DECLARE (XARGS :GUARD T :MODE :PROGRAM))
+            (CONS X X)))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(MAKE-EVENT (PROGN (DEFUN FOO (X)
+                              (DECLARE (XARGS :GUARD T :MODE :PROGRAM))
+                              X)
+                            (ASSERT-EVENT (EQUAL (FOO 3) 3))
+                            (VALUE-TRIPLE '(VALUE-TRIPLE 17)))
+                     :CHECK-EXPANSION T)
+
+
+ACL2 !>>>(DEFUN FOO (X)
+           (DECLARE (XARGS :GUARD T :MODE :PROGRAM))
+           X)
+; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+; DEBUG: [IDFAT-10] Eval def for FOO.
+; DEBUG: [IDFAT-10] Eval def for ACL2_*1*_ACL2::FOO.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+FOO
+
+
+ACL2 !>>>(ASSERT-EVENT (EQUAL (FOO 3) 3))
+:PASSED
+
+
+ACL2 !>>>(VALUE-TRIPLE '(VALUE-TRIPLE 17))
+(VALUE-TRIPLE 17)
+
+Summary
+Form:  ( PROGN (DEFUN FOO ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (PROGN ...) ...)
+Rules: NIL
+17
+
+
+ACL2 !>>>(DEFUN FOO (X)
+           (DECLARE (XARGS :GUARD T :MODE :PROGRAM))
+           (CONS X X))
+; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+; DEBUG: [IFATHB-1] Eval def for FOO.
+; DEBUG: [IFATHB-6] Set hash table for FOO.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::FOO.
+; DEBUG: [IFATHB-6] Set hash table for ACL2_*1*_ACL2::FOO.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+FOO
+
+End of Encapsulated Events.
+
+
+ACL2 !>>>(DEFUN FOO (X)
+           (DECLARE (XARGS :GUARD T :MODE :PROGRAM))
+           X)
+; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+; DEBUG: [IDFAT-10] Eval def for FOO.
+; DEBUG: [IDFAT-10] Eval def for ACL2_*1*_ACL2::FOO.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+FOO
+
+
+ACL2 !>>>(ASSERT-EVENT (EQUAL (FOO 3) 3))
+:PASSED
+
+
+ACL2 !>>>(VALUE-TRIPLE '(VALUE-TRIPLE 17))
+(VALUE-TRIPLE 17)
+
+Summary
+Form:  ( PROGN (DEFUN FOO ...) ...)
+Rules: NIL
+; DEBUG: [IFATIB-5] Set (symbol-function FOO), symbol-class :PROGRAM.
+; DEBUG: [IFATIB-5] Set (symbol-function ACL2_*1*_ACL2::FOO), symbol-class :PROGRAM.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+We export FOO.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (MAKE-EVENT ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(ENCAPSULATE NIL
+          (ENCAPSULATE ((H (X) T))
+            (LOCAL (DEFUN H (X) X))
+            (DEFUN FOO (X)
+              (DECLARE (XARGS :MODE :PROGRAM))
+              (CAR X)))
+          (LOCAL (DEFUN LOC (X) X))
+          (MAKE-EVENT (LET ((VAL (IF (FUNCTION-SYMBOLP 'LOC (W STATE))
+                                     NIL
+                                   (WITH-GUARD-CHECKING NIL (FOO 3)))))
+                        (VALUE (LIST 'VALUE-TRIPLE VAL)))
+                      :CHECK-EXPANSION T)
+          (DEFUN FOO (X) (CAR X)))
+
+To verify that the four encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(ENCAPSULATE ((H (X) T))
+           (LOCAL (DEFUN H (X) X))
+           (DEFUN FOO (X)
+             (DECLARE (XARGS :MODE :PROGRAM))
+             (CAR X)))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN H (X) X))
+
+Since H is non-recursive, its admission is trivial.  We observe that
+the type of H is described by the theorem (EQUAL (H X) X).  
+; DEBUG: [IDFAT-ONEIFY] (oneify H)
+; DEBUG: [IFATHB-1] Eval def for H.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::H.
+
+Summary
+Form:  ( DEFUN H ...)
+Rules: NIL
+H
+
+
+ACL2 !>>>(DEFUN FOO (X)
+           (DECLARE (XARGS :MODE :PROGRAM))
+           (CAR X))
+; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+; DEBUG: [IFATHB-1] Eval def for FOO.
+; DEBUG: [IFATHB-6] Set hash table for FOO.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::FOO.
+; DEBUG: [IFATHB-6] Set hash table for ACL2_*1*_ACL2::FOO.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+FOO
+
+End of Encapsulated Events.
+; DEBUG: [IDFAT-ONEIFY] (oneify H)
+; DEBUG: [IDFAT-9] Eval def for H.
+; DEBUG: [IDFAT-9] Eval def for ACL2_*1*_ACL2::H.
+; DEBUG: [IFATIB-5] Set (symbol-function FOO), symbol-class :PROGRAM.
+; DEBUG: [IFATIB-5] Set (symbol-function ACL2_*1*_ACL2::FOO), symbol-class :PROGRAM.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+In addition to H, we export FOO.
+
+
+Summary
+Form:  ( ENCAPSULATE ((H ...) ...) ...)
+Rules: NIL
+H
+
+
+ACL2 !>>>(LOCAL (DEFUN LOC (X) X))
+
+Since LOC is non-recursive, its admission is trivial.  We observe that
+the type of LOC is described by the theorem (EQUAL (LOC X) X).  
+; DEBUG: [IDFAT-ONEIFY] (oneify LOC)
+; DEBUG: [IFATHB-1] Eval def for LOC.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::LOC.
+
+Summary
+Form:  ( DEFUN LOC ...)
+Rules: NIL
+LOC
+
+
+ACL2 !>>>(MAKE-EVENT (LET ((VAL (IF (FUNCTION-SYMBOLP 'LOC (W STATE))
+                                    NIL
+                                  (WITH-GUARD-CHECKING NIL (FOO 3)))))
+                       (VALUE (LIST 'VALUE-TRIPLE VAL)))
+                     :CHECK-EXPANSION T)
+
+Summary
+Form:  ( MAKE-EVENT (LET ...) ...)
+Rules: NIL
+NIL
+
+
+ACL2 !>>>(DEFUN FOO (X) (CAR X))
+
+Since FOO is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of FOO.
+; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::FOO.
+; DEBUG: [IFATHB-4] Set hash table to reclassifying value for ACL2_*1*_ACL2::FOO.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+FOO
+
+End of Encapsulated Events.
+; DEBUG: [IDFAT-ONEIFY] (oneify H)
+; DEBUG: [IDFAT-9] Eval def for H.
+; DEBUG: [IDFAT-9] Eval def for ACL2_*1*_ACL2::H.
+; DEBUG: [IFATIB-5] Set (symbol-function FOO), symbol-class :PROGRAM.
+; DEBUG: [IFATIB-2] Update hash table entry for ACL2_*1*_ACL2::FOO with fixed-val.
+; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+; DEBUG: [IDFAT-9] Eval def for ACL2_*1*_ACL2::FOO.
+
+ACL2 Error [Failure] in ( MAKE-EVENT (LET ...) ...):  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( ENCAPSULATE NIL (ENCAPSULATE ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( ENCAPSULATE NIL (ENCAPSULATE ...) ...): 
+See :DOC failure.
+
+******** FAILED ********
+ACL2 !>>(ENCAPSULATE NIL
+          (DEFMACRO MAC (X)
+            (CONS 'EXPT (CONS '2 (CONS X 'NIL)))))
+
+To verify that the encapsulated event correctly extends the current
+theory we will evaluate it.  The theory thus constructed is only ephemeral.
+
+Encapsulated Event:
+
+
+ACL2 !>>>(DEFMACRO MAC (X)
+           (CONS 'EXPT (CONS '2 (CONS X 'NIL))))
+; DEBUG: [IFATHB-1] Eval def for MAC.
+; DEBUG: [IFATHB-6] Set hash table for MAC.
+
+Summary
+Form:  ( DEFMACRO MAC ...)
+Rules: NIL
+MAC
+
+End of Encapsulated Event.
+; DEBUG: [IFATIB-7] Set (macro-function MAC).
+
+Having verified that the encapsulated event validates the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (DEFMACRO MAC ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(ENCAPSULATE NIL
+          (LOCAL (DEFMACRO MAC (X)
+                   (CONS 'EXPT (CONS '2 (CONS X 'NIL)))))
+          (DEFMACRO MAC (X)
+            (CONS 'EXPT (CONS '2 (CONS X 'NIL)))))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFMACRO MAC (X)
+                  (CONS 'EXPT (CONS '2 (CONS X 'NIL)))))
+; DEBUG: [IFATHB-1] Eval def for MAC.
+
+Summary
+Form:  ( DEFMACRO MAC ...)
+Rules: NIL
+MAC
+
+
+ACL2 !>>>(DEFMACRO MAC (X)
+           (CONS 'EXPT (CONS '2 (CONS X 'NIL))))
+; DEBUG: [REDUNDANT-MACRO] Set (macro-function MAC).
+
+The event ( DEFMACRO MAC ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFMACRO MAC ...)
+Rules: NIL
+:REDUNDANT
+
+End of Encapsulated Events.
+; DEBUG: [IFATIB-7] Set (macro-function MAC).
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (LOCAL ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(ENCAPSULATE NIL
+          (ENCAPSULATE NIL
+            (LOCAL (DEFMACRO MAC (X)
+                     (CONS 'EXPT (CONS '2 (CONS X 'NIL)))))
+            (DEFMACRO MAC (X)
+              (CONS 'EXPT (CONS '2 (CONS X 'NIL)))))
+          (DEFMACRO MAC (X)
+            (CONS 'EXPT (CONS '2 (CONS X 'NIL)))))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(ENCAPSULATE NIL
+           (LOCAL (DEFMACRO MAC (X)
+                    (CONS 'EXPT (CONS '2 (CONS X 'NIL)))))
+           (DEFMACRO MAC (X)
+             (CONS 'EXPT (CONS '2 (CONS X 'NIL)))))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFMACRO MAC (X)
+                  (CONS 'EXPT (CONS '2 (CONS X 'NIL)))))
+; DEBUG: [IFATHB-1] Eval def for MAC.
+
+Summary
+Form:  ( DEFMACRO MAC ...)
+Rules: NIL
+MAC
+
+
+ACL2 !>>>(DEFMACRO MAC (X)
+           (CONS 'EXPT (CONS '2 (CONS X 'NIL))))
+; DEBUG: [REDUNDANT-MACRO] Set (macro-function MAC).
+
+The event ( DEFMACRO MAC ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFMACRO MAC ...)
+Rules: NIL
+:REDUNDANT
+
+End of Encapsulated Events.
+; DEBUG: [IFATIB-7] Set (macro-function MAC).
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (LOCAL ...) ...)
+Rules: NIL
+T
+
+
+ACL2 !>>>(DEFMACRO MAC (X)
+           (CONS 'EXPT (CONS '2 (CONS X 'NIL))))
+
+The event ( DEFMACRO MAC ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFMACRO MAC ...)
+Rules: NIL
+:REDUNDANT
+
+End of Encapsulated Events.
+; DEBUG: [IFATIB-7] Set (macro-function MAC).
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (ENCAPSULATE NIL ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(LOCAL (DEFMACRO MAC (X)
+                 (CONS 'EXPT (CONS '2 (CONS X 'NIL)))))
+; DEBUG: [IFAT-1] Eval def for MAC.
+
+Summary
+Form:  ( DEFMACRO MAC ...)
+Rules: NIL
+ MAC
+ACL2 !>>(ENCAPSULATE NIL
+          (DEFUN H (X) X)
+          (DEFMACRO MAC (X)
+            (CONS 'EXPT (CONS '2 (CONS X 'NIL)))))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(DEFUN H (X) X)
+
+Since H is non-recursive, its admission is trivial.  We observe that
+the type of H is described by the theorem (EQUAL (H X) X).  
+; DEBUG: [IDFAT-ONEIFY] (oneify H)
+; DEBUG: [IFATHB-1] Eval def for H.
+; DEBUG: [IFATHB-6] Set hash table for H.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::H.
+; DEBUG: [IFATHB-6] Set hash table for ACL2_*1*_ACL2::H.
+
+Summary
+Form:  ( DEFUN H ...)
+Rules: NIL
+H
+
+
+ACL2 !>>>(DEFMACRO MAC (X)
+           (CONS 'EXPT (CONS '2 (CONS X 'NIL))))
+; DEBUG: [REDUNDANT-MACRO] Set (macro-function MAC).
+
+The event ( DEFMACRO MAC ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFMACRO MAC ...)
+Rules: NIL
+:REDUNDANT
+
+End of Encapsulated Events.
+; DEBUG: [IFATIB-5] Set (symbol-function H), symbol-class :IDEAL.
+; DEBUG: [IFATIB-5] Set (symbol-function ACL2_*1*_ACL2::H), symbol-class :IDEAL.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+We export H.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (DEFUN H ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(U)
+           2:x(LOCAL (DEFMACRO MAC # ...))
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(ENCAPSULATE NIL
+          (DEFCONST *C* (EXPT 2 3)))
+
+To verify that the encapsulated event correctly extends the current
+theory we will evaluate it.  The theory thus constructed is only ephemeral.
+
+Encapsulated Event:
+
+
+ACL2 !>>>(DEFCONST *C* (EXPT 2 3))
+; DEBUG: [DEFCONST-FN] Eval defconst-val for *C*.
+; DEBUG: [IFATHB-1] Eval def for *C*.
+; DEBUG: [IFATHB-6] Set hash table for *C*.
+
+Summary
+Form:  ( DEFCONST *C* ...)
+Rules: NIL
+*C*
+
+End of Encapsulated Event.
+; DEBUG: [DEFCONST-FN] Eval defconst-val for *C*.
+; DEBUG: [DEFCONST-VAL] Found *C* in hash table.
+; DEBUG: [IFATIB-6] Set (symbol-value *C*).
+
+Having verified that the encapsulated event validates the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (DEFCONST *C* ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(ENCAPSULATE NIL
+          (LOCAL (DEFCONST *C* (EXPT 2 3)))
+          (DEFCONST *C* (EXPT 2 3)))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFCONST *C* (EXPT 2 3)))
+; DEBUG: [DEFCONST-FN] Eval defconst-val for *C*.
+; DEBUG: [IFATHB-1] Eval def for *C*.
+
+Summary
+Form:  ( DEFCONST *C* ...)
+Rules: NIL
+*C*
+
+
+ACL2 !>>>(DEFCONST *C* (EXPT 2 3))
+; DEBUG: [REDUNDANT-DEFCONST] Set (symbol-value *C*).
+
+The event ( DEFCONST *C* ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFCONST *C* ...)
+Rules: NIL
+:REDUNDANT
+
+End of Encapsulated Events.
+; DEBUG: [DEFCONST-FN] Eval defconst-val for *C*.
+; DEBUG: [DEFCONST-VAL] Found *C* in hash table.
+; DEBUG: [IFATIB-6] Set (symbol-value *C*).
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (LOCAL ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(ENCAPSULATE NIL
+          (ENCAPSULATE NIL
+            (LOCAL (DEFCONST *C* (EXPT 2 3)))
+            (DEFCONST *C* (EXPT 2 3)))
+          (DEFCONST *C* (EXPT 2 3)))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(ENCAPSULATE NIL
+           (LOCAL (DEFCONST *C* (EXPT 2 3)))
+           (DEFCONST *C* (EXPT 2 3)))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFCONST *C* (EXPT 2 3)))
+; DEBUG: [DEFCONST-FN] Eval defconst-val for *C*.
+; DEBUG: [IFATHB-1] Eval def for *C*.
+
+Summary
+Form:  ( DEFCONST *C* ...)
+Rules: NIL
+*C*
+
+
+ACL2 !>>>(DEFCONST *C* (EXPT 2 3))
+; DEBUG: [REDUNDANT-DEFCONST] Set (symbol-value *C*).
+
+The event ( DEFCONST *C* ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFCONST *C* ...)
+Rules: NIL
+:REDUNDANT
+
+End of Encapsulated Events.
+; DEBUG: [DEFCONST-FN] Eval defconst-val for *C*.
+; DEBUG: [DEFCONST-VAL] Found *C* in hash table.
+; DEBUG: [IFATIB-6] Set (symbol-value *C*).
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (LOCAL ...) ...)
+Rules: NIL
+T
+
+
+ACL2 !>>>(DEFCONST *C* (EXPT 2 3))
+
+The event ( DEFCONST *C* ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFCONST *C* ...)
+Rules: NIL
+:REDUNDANT
+
+End of Encapsulated Events.
+; DEBUG: [DEFCONST-FN] Eval defconst-val for *C*.
+; DEBUG: [DEFCONST-VAL] Found *C* in hash table.
+; DEBUG: [IFATIB-6] Set (symbol-value *C*).
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (ENCAPSULATE NIL ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(LOCAL (DEFCONST *C* (EXPT 2 3)))
+
+The event ( DEFCONST *C* ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFCONST *C* ...)
+Rules: NIL
+ :REDUNDANT
+ACL2 !>>(ENCAPSULATE NIL
+          (DEFUN H (X) X)
+          (DEFCONST *C* (EXPT 2 3)))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(DEFUN H (X) X)
+
+Since H is non-recursive, its admission is trivial.  We observe that
+the type of H is described by the theorem (EQUAL (H X) X).  
+; DEBUG: [IDFAT-ONEIFY] (oneify H)
+; DEBUG: [IFATHB-1] Eval def for H.
+; DEBUG: [IFATHB-6] Set hash table for H.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::H.
+; DEBUG: [IFATHB-6] Set hash table for ACL2_*1*_ACL2::H.
+
+Summary
+Form:  ( DEFUN H ...)
+Rules: NIL
+H
+
+
+ACL2 !>>>(DEFCONST *C* (EXPT 2 3))
+; DEBUG: [REDUNDANT-DEFCONST] Set (symbol-value *C*).
+
+The event ( DEFCONST *C* ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFCONST *C* ...)
+Rules: NIL
+:REDUNDANT
+
+End of Encapsulated Events.
+; DEBUG: [IFATIB-5] Set (symbol-function H), symbol-class :IDEAL.
+; DEBUG: [IFATIB-5] Set (symbol-function ACL2_*1*_ACL2::H), symbol-class :IDEAL.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+We export H.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (DEFUN H ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(U)
+           2:x(ENCAPSULATE NIL ...)
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(ENCAPSULATE NIL
+          (LOCAL (INCLUDE-BOOK "encap-defs-ht-sub"))
+          (DEFUN FOO (X) (CONS X X)))
+
+To verify that the two encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (INCLUDE-BOOK "encap-defs-ht-sub"))
+; DEBUG: [IFATIB-5] Set (symbol-function FOO), symbol-class :IDEAL.
+; DEBUG: [IFATIB-5] Set (symbol-function ACL2_*1*_ACL2::FOO), symbol-class :IDEAL.
+
+Summary
+Form:  ( INCLUDE-BOOK "encap-defs-ht-sub" ...)
+Rules: NIL
+(:SYSTEM . "system/tests/encap-defs-ht-sub.lisp")
+
+
+ACL2 !>>>(DEFUN FOO (X) (CONS X X))
+; DEBUG: [REDUNDANT-FN] Set (symbol-function FOO).
+; DEBUG: [REDUNDANT-*1*FN] Set (symbol-function ACL2_*1*_ACL2::FOO).
+
+The event ( DEFUN FOO ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+:REDUNDANT
+
+End of Encapsulated Events.
+; DEBUG: [IFATIB-5] Set (symbol-function FOO), symbol-class :IDEAL.
+; DEBUG: [IFATIB-5] Set (symbol-function ACL2_*1*_ACL2::FOO), symbol-class :IDEAL.
+
+Having verified that the encapsulated events validate the signatures
+of the ENCAPSULATE event, we discard the ephemeral theory and extend
+the original theory as directed by the signatures and the non-LOCAL
+events.
+
+We export FOO.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (LOCAL ...) ...)
+Rules: NIL
+ T
+ACL2 !>>(U)
+   d       1:x(INCLUDE-BOOK "tools/run-script"
+                            :DIR ...)
+ACL2 !>>(ENCAPSULATE NIL
+          (LOCAL (DEFUN G (X) X))
+          (LOCAL (DEFUN FOO (X)
+                   (DECLARE (XARGS :MODE :LOGIC))
+                   (CAR X)))
+          (DEFUN FOO (X)
+            (DECLARE (XARGS :MODE :PROGRAM))
+            (CAR X))
+          (MAKE-EVENT (PROG2$ (OR (FUNCTION-SYMBOLP 'G (W STATE))
+                                  (FOO 3))
+                              (VALUE '(DEFUN H (X) X)))
+                      :CHECK-EXPANSION T)
+          (DEFUN FOO (X)
+            (DECLARE (XARGS :MODE :LOGIC))
+            (CAR X)))
+
+To verify that the five encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(LOCAL (DEFUN G (X) X))
+
+Since G is non-recursive, its admission is trivial.  We observe that
+the type of G is described by the theorem (EQUAL (G X) X).  
+; DEBUG: [IDFAT-ONEIFY] (oneify G)
+; DEBUG: [IFATHB-1] Eval def for G.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::G.
+
+Summary
+Form:  ( DEFUN G ...)
+Rules: NIL
+G
+
+
+ACL2 !>>>(LOCAL (DEFUN FOO (X)
+                  (DECLARE (XARGS :MODE :LOGIC))
+                  (CAR X)))
+
+Since FOO is non-recursive, its admission is trivial.  We could deduce
+no constraints on the type of FOO.
+; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+; DEBUG: [IFATHB-1] Eval def for FOO.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::FOO.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+FOO
+
+
+ACL2 !>>>(DEFUN FOO (X)
+           (DECLARE (XARGS :MODE :PROGRAM))
+           (CAR X))
+; DEBUG: [REDUNDANT-FN] Set (symbol-function FOO).
+; DEBUG: [REDUNDANT-*1*FN-FAKE] Set hash table to *hcomp-fake-value* for ACL2_*1*_ACL2::FOO.
+
+The event ( DEFUN FOO ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+:REDUNDANT
+
+
+ACL2 !>>>(MAKE-EVENT (PROG2$ (OR (FUNCTION-SYMBOLP 'G (W STATE))
+                                 (FOO 3))
+                             (VALUE '(DEFUN H (X) X)))
+                     :CHECK-EXPANSION T)
+
+Since H is non-recursive, its admission is trivial.  We observe that
+the type of H is described by the theorem (EQUAL (H X) X).  
+; DEBUG: [IDFAT-ONEIFY] (oneify H)
+; DEBUG: [IFATHB-1] Eval def for H.
+; DEBUG: [IFATHB-6] Set hash table for H.
+; DEBUG: [IFATHB-1] Eval def for ACL2_*1*_ACL2::H.
+; DEBUG: [IFATHB-6] Set hash table for ACL2_*1*_ACL2::H.
+
+Summary
+Form:  ( DEFUN H ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (PROG2$ ...) ...)
+Rules: NIL
+H
+
+
+ACL2 !>>>(DEFUN FOO (X)
+           (DECLARE (XARGS :MODE :LOGIC))
+           (CAR X))
+; DEBUG: [REDUNDANT-*1*FN-FAKE-VALUE] Storing *hcomp-fake-value* for ACL2_*1*_ACL2::FOO.
+
+The event ( DEFUN FOO ...) is redundant.  See :DOC redundant-events.
+
+Summary
+Form:  ( DEFUN FOO ...)
+Rules: NIL
+:REDUNDANT
+
+End of Encapsulated Events.
+; DEBUG: [IFATIB-5] Set (symbol-function FOO), symbol-class :PROGRAM.
+; DEBUG: [IDFAT-ONEIFY] (oneify FOO)
+; DEBUG: [IDFAT-9] Eval def for ACL2_*1*_ACL2::FOO.
+
+ACL2 Error [Failure] in ( MAKE-EVENT (PROG2$ ...) ...):  See :DOC failure.
+
+******** FAILED ********
+
+Summary
+Form:  ( ENCAPSULATE NIL (LOCAL ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( ENCAPSULATE NIL (LOCAL ...) ...):  See :DOC
+failure.
+
+******** FAILED ********
+ACL2 !>>Bye.

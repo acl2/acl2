@@ -27,7 +27,7 @@
 ;(local (include-book "kestrel/acl2-arrays/compress1" :dir :system))
 (local (include-book "kestrel/utilities/assoc-keyword" :dir :system))
 
-;; We can build the node-replacement-array by calling make-into-array on the
+;; We can build the node-replacement-array by calling alist-to-array1 on the
 ;; node-replacement-alist produced by make-node-replacement-alist-and-add-to-dag-array.
 
 ;; TODO: Consider chains of replacement, e.g., if the array indicates to
@@ -40,7 +40,7 @@
 
 (local (in-theory (e/d (consp-of-cdr-when-dargp
                         not-cddr-when-dargp)
-                       ( ;symbolp-of-car-of-car-when-symbol-term-alistp
+                       (;symbolp-of-car-of-car-when-symbol-term-alistp
                         assoc-equal
                         ;;default-car
                         ;;default-cdr
@@ -63,7 +63,7 @@
                                      strip-cars
                                      alistp))))
 
-;;add support in typed arrays machinery for make-into-array?
+;;add support in typed arrays machinery for alist-to-array1?
 
 ;move
 (defthm natp-of-max-key-2
@@ -77,33 +77,33 @@
   (implies (bounded-darg-listp (strip-cdrs alist) bound)
            (bounded-darg-listp (strip-cdrs (cdr alist)) bound)))
 
-(defthm not-node-replacement-alistp
-  (implies (and (not (integerp (cdr (assoc-equal index alist))))
-                (cdr (assoc-equal index alist))
-                (not (consp (cdr (assoc-equal index alist)))))
-           (not (node-replacement-alistp alist bound)))
-  :hints (("Goal" :in-theory (enable node-replacement-alistp
-                                     assoc-equal))))
+;; (defthm not-node-replacement-alistp
+;;   (implies (and (not (integerp (cdr (assoc-equal index alist))))
+;;                 (cdr (assoc-equal index alist))
+;;                 (not (consp (cdr (assoc-equal index alist)))))
+;;            (not (node-replacement-alistp alist bound)))
+;;   :hints (("Goal" :in-theory (enable node-replacement-alistp
+;;                                      assoc-equal))))
 
-(defthm not-node-replacement-alistp-2
-  (implies (and (<= BOUND (CDR (ASSOC-EQUAL INDEX ALIST)))
-                (not (consp (CDR (ASSOC-EQUAL INDEX ALIST))))
-                (ASSOC-EQUAL INDEX ALIST)
-                ;(natp bound)
-                )
-           (not (node-replacement-alistp alist bound)))
-  :hints (("Goal" :in-theory (enable node-replacement-alistp
-                                     assoc-equal))))
+;; (defthm not-node-replacement-alistp-2
+;;   (implies (and (<= BOUND (CDR (ASSOC-EQUAL INDEX ALIST)))
+;;                 (not (consp (CDR (ASSOC-EQUAL INDEX ALIST))))
+;;                 (ASSOC-EQUAL INDEX ALIST)
+;;                 ;(natp bound)
+;;                 )
+;;            (not (node-replacement-alistp alist bound)))
+;;   :hints (("Goal" :in-theory (enable node-replacement-alistp
+;;                                      assoc-equal))))
 
-(defthm not-node-replacement-alistp-3
-  (implies (and (< (CDR (ASSOC-EQUAL INDEX ALIST)) 0)
-;                (not (consp (CDR (ASSOC-EQUAL INDEX ALIST))))
-                (ASSOC-EQUAL INDEX ALIST)
-                ;(natp bound)
-                )
-           (not (node-replacement-alistp alist bound)))
-  :hints (("Goal" :in-theory (enable node-replacement-alistp
-                                     assoc-equal))))
+;; (defthm not-node-replacement-alistp-3
+;;   (implies (and (< (CDR (ASSOC-EQUAL INDEX ALIST)) 0)
+;; ;                (not (consp (CDR (ASSOC-EQUAL INDEX ALIST))))
+;;                 (ASSOC-EQUAL INDEX ALIST)
+;;                 ;(natp bound)
+;;                 )
+;;            (not (node-replacement-alistp alist bound)))
+;;   :hints (("Goal" :in-theory (enable node-replacement-alistp
+;;                                      assoc-equal))))
 
 (defthm integerp-of-cdr-of-assoc-equal-when-node-replacement-alistp
   (implies (and (node-replacement-alistp alist bound)
@@ -279,18 +279,18 @@
   :hints (("Goal" :use (:instance type-of-aref1-when-bounded-node-replacement-arrayp)
            :in-theory (disable type-of-aref1-when-bounded-node-replacement-arrayp))))
 
-(defthm bounded-node-replacement-arrayp-aux-of-make-into-array
+(defthm bounded-node-replacement-arrayp-aux-of-alist-to-array1
   (implies (and (node-replacement-alistp alist bound)
                 (natp index)
                 (< (max-key alist 0) *max-1d-array-length*) ;or say bounded-natp-alistp, or even bounded-node-replacement-alistp
                 (<= index (max-key alist 0))
                 (symbolp array-name))
-           (bounded-node-replacement-arrayp-aux array-name (make-into-array array-name alist) index bound))
+           (bounded-node-replacement-arrayp-aux array-name (alist-to-array1 array-name alist) index bound))
   :hints (("Goal" :in-theory (e/d (bounded-node-replacement-arrayp-aux
                                    bounded-natp-alistp-when-node-replacement-alistp
-                                   make-into-array ;todo
+                                   alist-to-array1 ;todo
                                    aref1 ;todo
-                                   make-into-array-with-len ;todo
+                                   alist-to-array1-with-len ;todo
                                    dargp-less-than-of-cdr-of-assoc-equal-when-node-replacement-alistp
                                    acons
                                    array1p-of-cons-header
@@ -298,20 +298,20 @@
                                   ;; for speed:
                                   (bounded-node-replacement-arrayp-aux-beyond-length)))))
 
-(defthm bounded-node-replacement-arrayp-of-make-into-array
+(defthm bounded-node-replacement-arrayp-of-alist-to-array1
   (implies (and (node-replacement-alistp node-replacement-alist bound)
                 (natp bound)
                 (<= bound *max-1d-array-length*)
                 ;(equal (alen1 ..) (+ 1 (max-key node-replacement-alist 0)))
                 )
            (bounded-node-replacement-arrayp 'node-replacement-array ; gen?
-                                            (make-into-array 'node-replacement-array node-replacement-alist)
+                                            (alist-to-array1 'node-replacement-array node-replacement-alist)
                                             bound))
   :hints (("Goal" :cases ((CONSP NODE-REPLACEMENT-ALIST))
            :in-theory (e/d (bounded-NODE-REPLACEMENT-ARRAYP
                                    bounded-NODE-REPLACEMENT-ARRAYP-aux
                                    ;;NODE-REPLACEMENT-ALISTP
-                                   ;;MAKE-INTO-ARRAY
+                                   ;;ALIST-TO-ARRAY1
                                    BOUNDED-NATP-ALISTP-redef
                                    bounded-natp-alistp-when-node-replacement-alistp
                                    ) (alistp
@@ -800,16 +800,18 @@
                (eq *non-nil* (cdr pair)))
            (term-replacement-alistp (rest alist))))))
 
-(defthm term-replacement-alistp-forward-to-alistp
-  (implies (term-replacement-alistp alist)
-           (alistp alist))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable term-replacement-alistp alistp))))
+(local
+  (defthm term-replacement-alistp-forward-to-alistp
+    (implies (term-replacement-alistp alist)
+             (alistp alist))
+    :rule-classes :forward-chaining
+    :hints (("Goal" :in-theory (enable term-replacement-alistp alistp)))))
 
-(defthm term-replacement-alistp-of-cdr
-  (implies (term-replacement-alistp alist)
-           (term-replacement-alistp (cdr alist)))
-  :hints (("Goal" :in-theory (enable term-replacement-alistp))))
+(local
+  (defthm term-replacement-alistp-of-cdr
+    (implies (term-replacement-alistp alist)
+             (term-replacement-alistp (cdr alist)))
+    :hints (("Goal" :in-theory (enable term-replacement-alistp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -818,7 +820,7 @@
 ;; TODO: What else should we handle here (ifs that represent conjunctions, negated disjunctions?
 ;; See also update-node-replacement-array-for-assuming-possibly-negated-nodenums.
 ;; See also refine-assumption-for-matching.
-(defun term-replacement-alist-for-assumption (assumption known-booleans acc)
+(defund term-replacement-alist-for-assumption (assumption known-booleans acc)
   (declare (xargs :guard (and (pseudo-termp assumption)
                               (symbol-listp known-booleans)
                               (term-replacement-alistp acc))
@@ -876,17 +878,17 @@
 
 (defthm term-replacement-alistp-of-term-replacement-alist-for-assumption
   (implies (and (pseudo-termp assumption)
-                (symbol-listp known-booleans)
+                ;; (symbol-listp known-booleans)
                 (term-replacement-alistp acc))
            (term-replacement-alistp (term-replacement-alist-for-assumption assumption known-booleans acc)))
-  :hints (("Goal" :in-theory (e/d (term-replacement-alist-for-assumption
-                                   term-replacement-alistp)
+  :hints (("Goal" :in-theory (e/d (term-replacement-alist-for-assumption term-replacement-alistp)
                                   (quotep)))))
 
 (verify-guards term-replacement-alist-for-assumption :hints (("Goal" :in-theory (enable term-replacement-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Converts the ASSUMPTIONS into a term-replacement-alist.
 (defund term-replacement-alist-for-assumptions (assumptions known-booleans acc)
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
                               (symbol-listp known-booleans)
@@ -1048,7 +1050,7 @@
                               (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                               (symbol-listp known-booleans))))
   (let ((alist (term-replacement-alist-for-assumptions assumptions known-booleans nil))
-        (node-replacement-array (make-empty-array 'node-replacement-array 1))
+        (node-replacement-array (new-array1 'node-replacement-array 1))
         (node-replacement-count 0))
     (update-node-replacement-array-and-extend-dag-for-alist alist
                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist

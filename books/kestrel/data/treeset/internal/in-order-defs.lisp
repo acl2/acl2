@@ -9,6 +9,7 @@
 (in-package "TREESET")
 
 (include-book "kestrel/data/utilities/lists/defs" :dir :system)
+(include-book "kestrel/data/utilities/oset-defs" :dir :system)
 
 (include-book "tree-defs")
 
@@ -19,4 +20,5 @@
 
 (std::defredundant
   :names (tree-in-order-acc
-          tree-in-order))
+          tree-in-order
+          tree-oset))

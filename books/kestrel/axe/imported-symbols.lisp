@@ -337,6 +337,8 @@
     doublets-to-alist
     translate-term
     translate-terms
+    translate-term-in-logic-mode
+    translate-terms-in-logic-mode
     variablep
     empty-alist
     empty-acc
@@ -410,7 +412,8 @@
     strings-starting-with
     add-prefix-to-strings
     merge-sort-string<
-    ))
+
+    plist-worldp-with-formals))
 
 (defconst *arithmetic-symbols*
   '(ceiling-of-lg
@@ -446,7 +449,8 @@
     amazing-rules-bv
     trim-rules
     prune-dag-post-rewrite-rules
-    pre-stp-rules))
+    pre-stp-rules
+    introduce-bv-array-rules))
 
 (defconst *bv-list-symbols*
   '(packbv-little
@@ -519,10 +523,9 @@
     bit->bool$inline
     bit->bool
 
-    acl2::bfix
-    ;; acl2::bfix$ ; doesn't seem to exist
-    acl2::bfix$inline
-    ))
+    bfix
+    ;; bfix$ ; doesn't seem to exist
+    bfix$inline))
 
 ;; Ideally, these would all be rewritten away
 (defconst *symbols-from-rtl*

@@ -117,3 +117,9 @@
     (loop for pair in (sort ans (lambda (x y) (> (cdr x) (cdr y))))
           do
           (format t "~s: ~s~%" (cdr pair) (car pair)))))
+
+(defun zero-out-agaa-ht ()
+  (maphash (lambda (key val)
+             (declare (ignore val))
+             (setf (gethash key *agaa-ht*) 0))
+           *agaa-ht*))

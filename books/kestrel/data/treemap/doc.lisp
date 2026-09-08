@@ -28,9 +28,9 @@
   (xdoc::topstring
     (xdoc::p
       "This library generalizes the finite sets of the "
-      (xdoc::seetopic "treeset::treeset" "treeset")
+      (xdoc::seetopic "acl2::treeset" "treeset")
       " library to finite maps. Just as "
-      (xdoc::seetopic "treeset::treeset" "treeset")
+      (xdoc::seetopic "acl2::treeset" "treeset")
       "s are isomorphic to "
       (xdoc::seetopic "set::std/osets" "osets")
       ", @(see treemap)s are isomorphic to "
@@ -83,7 +83,7 @@
     (xdoc::p
       "The representation of @(see treemap)s is a straightforward
        generalization from "
-      (xdoc::seetopic "treeset::treeset" "treeset")
+      (xdoc::seetopic "acl2::treeset" "treeset")
       "s. Node values are replaced with
        key/value pairs, and all invariants (i.e., @(tsee bstp) and @(tsee
        heapp)) apply just to the key values.")

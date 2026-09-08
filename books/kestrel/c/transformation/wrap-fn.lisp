@@ -25,7 +25,7 @@
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/code-ensembles")
-(include-book "../syntax/validation-information")
+(include-book "../syntax/validation-annotations")
 (include-book "../syntax/validator")
 (include-book "utilities/collect-idents")
 (include-book "utilities/fresh-ident")
@@ -131,12 +131,13 @@
   (b* (((reterr) nil nil nil)
        (blacklist (ident-set-fix blacklist))
        (params (param-declon-list-fix params))
-       ((when (equal params
-                     (list (make-param-declon
-                             :specs (list (decl-spec-typespec
-                                            (c$::type-spec-void)))
-                             :declor (param-declor-none)
-                             :attribs nil))))
+       ((when (and (not (endp params))
+                   (endp (rest params))
+                   (equal (c$::param-declon->specs (first params))
+                          (list (decl-spec-typespec (c$::type-spec-void))))
+                   (param-declor-case (c$::param-declon->declor (first params))
+                                      :none)
+                   (not (c$::param-declon->attribs (first params)))))
         ;; Special (void) case
         (retok blacklist params nil)))
     (wrap-fn-process-param-declon-list-loop params
@@ -387,11 +388,11 @@
                                                 specs))
        ((erp uid?)
          (b* (((reterr) nil)
-             ((unless (c$::init-declor-infop (c$::init-declor->info (first init))))
+             ((unless (c$::init-declor-vinfop (c$::init-declor->info (first init))))
               (retmsg$ "Initializer declarator does not have ~
-                        init-declor-info metadata: ~x0"
+                        init-declor-vinfo metadata: ~x0"
                        (init-declor-fix (first init)))))
-           (retok (c$::init-declor-info->uid?
+           (retok (c$::init-declor-vinfo->uid
                     (c$::init-declor->info (first init)))))))
     (retok uid? wrapper? wrapper-name?$))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules)))
@@ -480,11 +481,11 @@
         (b* (((reterr) nil)
              ((unless foundp)
               (retok nil))
-             ((unless (fundef-infop (c$::fundef->info fundef)))
+             ((unless (type+uid-vinfop (c$::fundef->info fundef)))
               (retmsg$ "Function definition does not have ~
-                        fundef-info metadata: ~x0"
+                        type+uid-vinfo metadata: ~x0"
                        (fundef-fix fundef))))
-          (retok (c$::fundef-info->uid (c$::fundef->info fundef))))))
+          (retok (c$::type+uid-vinfo->uid (c$::fundef->info fundef))))))
     (retok uid?
            wrapper?
            wrapper-name?))

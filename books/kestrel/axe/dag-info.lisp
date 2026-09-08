@@ -167,10 +167,9 @@
 
 ;; TODO: Instead of the print-sizep option, consider trying to print the size
 ;; but giving up if it is too big (and thus would take too long to compute)
-(defun print-dag-info (dag name print-sizep)
+(defund print-dag-info (dag name print-sizep)
   (declare (xargs :guard (and (or (myquotep dag)
-                                  (and (pseudo-dagp dag)
-                                       (<= (len dag) *max-1d-array-length*)))
+                                  (pseudo-dagp dag))
                               (or (symbolp name)
                                   (null name))
                               (booleanp print-sizep))))
@@ -179,7 +178,10 @@
                   (cw "The entire DAG ~x0 is: ~x1.~%" name dag)
                 (cw "The entire DAG is: ~x0.~%" dag))))
         nil)
-    (b* ((- (if name
+    ;; It's a dag:
+    (b* (((when (not (<= (len dag) *max-1d-array-length*)))
+          (er hard? 'print-dag-info "DAG too big!"))
+         (- (if name
                 (cw "(DAG info for ~x0:~%" name)
               (cw "(DAG info:~%")))
          (- (cw " Unique nodes: ~x0~%" (len dag)))
@@ -215,7 +217,7 @@
 ;; TODO: print something about constant nodes, or constants that appear in nodes?
 ;; This calls dag-size, which uses arrays.
 ;; Returns the error triple (mv nil :invisible state).
-(defun dag-info-fn (dag dag-form print-sizep state)
+(defund dag-info-fn (dag dag-form print-sizep state)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (<= (len dag) *max-1d-array-length*)
                               (booleanp print-sizep))

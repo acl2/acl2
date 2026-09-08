@@ -27,6 +27,7 @@
 (include-book "kestrel/utilities/polarity" :dir :system)
 ;(local (include-book "kestrel/bv/rules10" :dir :system))
 (include-book "kestrel/utilities/mv-nth" :dir :system)
+(include-book "kestrel/utilities/myif" :dir :system)
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/bv/bvcat2" :dir :system)
 (include-book "kestrel/bv/sbvdiv" :dir :system)
@@ -53,6 +54,7 @@
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/bv/idioms" :dir :system))
+(local (include-book "kestrel/bv/bvminus" :dir :system))
 
 ;; (in-theory (disable acl2::car-to-nth-0))
 ;; (in-theory (disable acl2::nth-of-cdr)) ;new
@@ -103,7 +105,7 @@
            (equal (canonical-address-p x)
                   (acl2::bvlt 64 (acl2::bvminus 64 x -140737488355328) 281474976710656)))
   :hints (("Goal" :cases ((< x 0))
-           :in-theory (enable canonical-address-p acl2::bvlt signed-byte-p
+           :in-theory (enable canonical-address-p acl2::bvlt acl2::bvminus signed-byte-p
                               acl2::bvchop-when-negative-lemma))))
 
 ;use more
@@ -121,7 +123,7 @@
          (and (signed-byte-p 64 x)
               (acl2::bvlt 64 (acl2::bvminus 64 x -140737488355328) 281474976710656)))
   :hints (("Goal" :cases ((< x 0))
-           :in-theory (enable canonical-address-p acl2::bvlt signed-byte-p
+           :in-theory (enable canonical-address-p acl2::bvlt acl2::bvminus signed-byte-p
                               acl2::bvchop-when-negative-lemma))))
 
 ;use more
@@ -130,7 +132,7 @@
          (and (signed-byte-p 64 x)
               (acl2::bvlt 64 (acl2::bvplus 64 140737488355328 x) 281474976710656)))
   :hints (("Goal" :cases ((< x 0))
-           :in-theory (enable canonical-address-p acl2::bvlt signed-byte-p
+           :in-theory (enable canonical-address-p acl2::bvlt acl2::bvminus signed-byte-p
                               acl2::bvchop-when-negative-lemma))))
 
 ;; ;; Just a wrapper that is in the x86isa package instead of the ACL2 package.
@@ -487,8 +489,7 @@
                                    acl2::getbit-of-+
                                    acl2::bvchop-when-top-bit-1-cheap
                                    bvchop-when-signed-byte-p-one-more-and-negative-linear)
-                                  (
-                                   acl2::bvchop-identity-cheap
+                                  (acl2::bvchop-identity-free
                                    acl2::bvchop-identity
                                    acl2::bvcat-of-bvchop-low ;looped
                                    acl2::slice-of-bvchop-low ;looped
@@ -539,7 +540,7 @@
                                                 acl2::bvcat ACL2::LOGAPP
                                                 ACL2::LOGEXT-OF-PLUS
                                                 acl2::getbit)
-                                  (ACL2::BVCHOP-IDENTITY-CHEAP
+                                  (ACL2::BVCHOP-IDENTITY-free
                                    ACL2::BVCHOP-IDENTITY
                                    ACL2::BVCAT-OF-BVCHOP-LOW ;looped
                                    ))
@@ -618,8 +619,7 @@
 ;;                               n
 ;;                               (+ -1 (expt 2 n)))))
 ;;  :hints (("Goal" :in-theory (e/d (acl2::bvplus ACL2::REPEATBIT)
-;;                                  (
-;;                                   ACL2::BVCAT-OF-+-LOW ;looped
+;;                                  (ACL2::BVCAT-OF-+-LOW ;looped
 ;;                                   )))))
 
 ;; ;a bunch of 0's followed by a bunch of 1's
@@ -634,8 +634,7 @@
 ;;                               n
 ;;                               (+ -1 (expt 2 n)))))
 ;;  :hints (("Goal" :in-theory (e/d (acl2::bvplus ACL2::REPEATBIT)
-;;                                  (
-;;                                   ACL2::BVCAT-OF-+-LOW ;looped
+;;                                  (ACL2::BVCAT-OF-+-LOW ;looped
 ;;                                   )))))
 
 

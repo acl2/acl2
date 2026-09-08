@@ -173,6 +173,7 @@
 (include-book "numeric-lists")
 (include-book "packbv-axe")
 (include-book "possibly-negated-nodenums")
+(include-book "pre-stp-rules")
 (include-book "print-constant")
 (include-book "print-dag-to-file")
 (include-book "print-dag-array-to-file")

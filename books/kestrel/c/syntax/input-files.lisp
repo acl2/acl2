@@ -275,7 +275,7 @@
     (retok (make-ppoptions :full-expansion full-expansion
                            :keep-comments keep-comments
                            :trace-expansion trace-expansion
-                           :no-errors/warnings nil)))
+                           :no-warnings nil)))
   :guard-hints
   (("Goal"
     :in-theory (enable acl2::symbol-listp-of-strip-cars-when-symbol-alistp))))
@@ -573,7 +573,7 @@
         (input-files-read-files (cdr files) base-dir state)))
     (retok (fileset (omap::update (filepath file)
                                   data
-                                  (fileset->unwrap fileset)))
+                                  (fileset->files fileset)))
            state))
   :verify-guards :after-returns)
 
@@ -652,8 +652,7 @@
                        events)))
           (retok events code state)))
        ;; Disambiguation is required, if we get here.
-       ((erp tunits)
-        (dimb-trans-ensemble tunits (ienv->dialect ienv) keep-going))
+       ((erp tunits) (dimb-trans-ensemble tunits ienv keep-going))
        ;; If no validation is required, we are done;
        ;; generate :CONST constant with the disambiguated translation unit.
        ((when (eq process :disambiguate))
@@ -801,7 +800,7 @@
                                                    nil
                                                    state))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
-    (value event)))
+    (acl2::value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

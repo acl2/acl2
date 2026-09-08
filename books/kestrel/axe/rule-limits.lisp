@@ -196,12 +196,20 @@
 ;; restrict to the case where we know there is an entry in the alist?
 (defund limit-for-rule (rule-name limits)
   (declare (xargs :guard (and (symbolp rule-name)
-                              (rule-limitsp limits))))
-  (cdr (assoc-eq rule-name limits)))
+                              (rule-limitsp limits))
+                  :guard-hints (("Goal" :in-theory (enable rule-limitsp assoc-equal)))))
+  (let ((res (cdr (assoc-eq rule-name limits))))
+    (mbe :exec res
+         ;; ensures the return type is good:
+         :logic (if (or (natp res)
+                        (null res))
+                    res
+                  nil))))
 
 (defthm natp-of-limit-for-rule
-  (implies (and (rule-limitsp limits)
+  (implies (and ;; (rule-limitsp limits)
                 ;; not nil:
-                (limit-for-rule rule-name limits))
+                (limit-for-rule rule-name limits)
+                )
            (natp (limit-for-rule rule-name limits)))
   :hints (("Goal" :in-theory (enable limit-for-rule rule-limitsp))))

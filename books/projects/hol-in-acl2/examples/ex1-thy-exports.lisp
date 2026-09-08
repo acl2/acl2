@@ -17,6 +17,17 @@
 ; upon evaluating the include-book form above.
 (set-enforce-redundancy t)
 
+; To generate the next two forms, start ACL2 in this directory and evaluate the
+; following five forms.  The final two forms (the fourth and fifth) will print
+; out the defun and encapsulate forms below, respectively, though below we have
+; added comments to the latter and modified whitespace.
+
+; (ld "cert.acl2")
+; (rebuild "ex1-thy.lisp" t)
+; (in-package "ZF")
+; :pe hol::ex1$hta
+; :pe hol::ex1$prop
+
 (DEFUN HOL::EX1$HTA NIL
   (DECLARE (XARGS :GUARD T))
   (HTA0))

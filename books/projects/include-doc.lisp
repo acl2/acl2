@@ -22,6 +22,7 @@
      (include-book "sat/dimacs-reader/reader")
      (include-book "irv/top")
      (include-book "rp-rewriter/top")
+     (include-book "taspi/taspi-xdoc")
      (include-book "vescmul/doc")
      (include-book "vwsim/vwsim-doc")
 

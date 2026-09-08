@@ -42,6 +42,7 @@
 (local (include-book "kestrel/bv/sbvdiv" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
 (local (include-book "kestrel/bv/bvor" :dir :system))
+(local (include-book "kestrel/bv/bvminus" :dir :system))
 (local (include-book "kestrel/bv/leftrotate-rules" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -195,9 +196,9 @@
   :hints (("Goal" :in-theory (enable bvand))))
 
 (defthmd bvand-commutative-2-axe
-  (implies (axe-syntaxp (should-commute-axe-argsp 'bvand y x dag-array))
-           (equal (bvand size y (bvand size x z))
-                  (bvand size x (bvand size y z))))
+  (implies (axe-syntaxp (should-commute-axe-argsp 'bvand x y dag-array))
+           (equal (bvand size x (bvand size y z))
+                  (bvand size y (bvand size x z))))
   :hints (("Goal" :use (:instance bvand-commutative-2)
            :in-theory (disable bvand-commutative-2))))
 
@@ -210,9 +211,9 @@
   :hints (("Goal" :in-theory (enable bvor))))
 
 (defthmd bvor-commutative-2-axe
-  (implies (axe-syntaxp (should-commute-axe-argsp 'bvor y x dag-array))
-           (equal (bvor size y (bvor size x z))
-                  (bvor size x (bvor size y z))))
+  (implies (axe-syntaxp (should-commute-axe-argsp 'bvor x y dag-array))
+           (equal (bvor size x (bvor size y z))
+                  (bvor size y (bvor size x z))))
   :hints (("Goal" :use (:instance bvor-commutative-2)
            :in-theory (disable bvor-commutative-2))))
 
@@ -253,14 +254,12 @@
 (defthmd bvmult-commutative-2-axe
   (implies (axe-syntaxp (should-commute-axe-argsp 'bvmult x y dag-array))
            (equal (bvmult size x (bvmult size y z))
-                  (bvmult size y (bvmult size x z))))
-  :hints (("Goal" :in-theory (enable))))
+                  (bvmult size y (bvmult size x z)))))
 
 (defthmd bvmult-commutative-2-increasing-axe
   (implies (axe-syntaxp (should-commute-axe-args-increasingp 'bvmult x y dag-array))
            (equal (bvmult size x (bvmult size y z))
-                  (bvmult size y (bvmult size x z))))
-  :hints (("Goal" :in-theory (enable))))
+                  (bvmult size y (bvmult size x z)))))
 
 (defthmd getbit-identity-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
@@ -314,8 +313,7 @@
 (defthmd +-commutative-2-axe
   (implies (axe-syntaxp (should-commute-axe-argsp 'binary-+ x y dag-array))
            (equal (+ x (+ y z))
-                  (+ y (+ x z))))
-  :hints (("Goal" :in-theory (enable))))
+                  (+ y (+ x z)))))
 
 (defthmd slice-too-high-is-0-bind-free-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
@@ -370,15 +368,7 @@
   :hints (("Goal" :use (:instance sbvlt-becomes-bvlt-cheap)
            :in-theory (e/d (unsigned-byte-p-forced) (sbvlt-becomes-bvlt-cheap)))))
 
-(defthm not-equal-constant-when-unsigned-byte-p-bind-free-axe
-  (implies (and (syntaxp (quotep k))
-                (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (syntaxp (quotep xsize))
-                (not (unsigned-byte-p xsize k))
-                (unsigned-byte-p-forced xsize x))
-           (not (equal k x)))
-  :rule-classes nil ; since in ACL2, xsize not is bound when used
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
+
 
 ;a cheap case of logext-identity
 (defthmd logext-identity-when-usb-smaller-axe
@@ -390,8 +380,8 @@
            (equal (logext n x)
                   x))
   :hints (("Goal"
-           :use (:instance logext-when-usb-cheap (i x) (free size2) (size n))
-           :in-theory (e/d (UNSIGNED-BYTE-P-FORCED) (logext-when-usb-cheap)))))
+           :use (:instance logext-when-unsigned-byte-p-free (i x) (free size2) (size n))
+           :in-theory (e/d (UNSIGNED-BYTE-P-FORCED) (logext-when-unsigned-byte-p-free)))))
 
 ;rename axe-
 (defthmd rationalp-when-bv-operator
@@ -1113,7 +1103,7 @@
 ;;             :use (:instance sum-bound-lemma)
 ;; ;          :expand (UNSIGNED-BYTE-P SIZE (+ X Y))
 ;;             :in-theory (e/d (BVPLUS UNSIGNED-BYTE-P
-;;                                     ) ( ;max
+;;                                     ) (;max
 ;;                                     sum-bound-lemma))))
 
 (defthmd bvplus-tighten-hack2
@@ -1133,7 +1123,7 @@
             :in-theory (e/d (BVPLUS UNSIGNED-BYTE-P
                                     SLICE-TOO-HIGH-IS-0
                                     expt-of-+
-                                    ) ( ;max
+                                    ) (;max
                                     sum-bound-lemma)))))
 
 ;free var rule from usb to integerp of the index?
@@ -1748,7 +1738,7 @@
            :in-theory (e/d (bvlt
                             bvplus
                             getbit-when-val-is-not-an-integer
-                            bvuminus bvminus
+                            ;bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1 expt-of-+)
@@ -1759,7 +1749,8 @@
                             ;minus-becomes-bv
                             ;bvuminus-of-+
                             ;plus-1-and-bvchop-becomes-bvplus ;fixme
-                            bvminus-becomes-bvplus-of-bvuminus)))))
+                            ;bvminus-becomes-bvplus-of-bvuminus
+                            )))))
 
 ;todo: add axe to the name
 ;shouldn't this just go to bvuminus?
@@ -1891,7 +1882,7 @@
 ;;                       (bvchop-list 8 (take 4 data))
 ;;                     (bv-array-write '8 '4 (bvchop 2 x) val data))))
 ;;   :hints (("Goal" :in-theory (e/d (unsigned-byte-p-forced bv-array-write update-nth2 bvlt)
-;;                                   (update-nth-becomes-update-nth2-extend-gen)))))
+;;                                   ()))))
 
 
 ;rename
@@ -2027,14 +2018,14 @@
                 (equal :l (car path)))
            (equal (cancel-bvplus-arg path size x (bvplus size y z))
                   (bvplus size (cancel-bvplus-arg (cdr path) size x y) z)))
-  :hints (("Goal" :in-theory (enable cancel-bvplus-arg))))
+  :hints (("Goal" :in-theory (enable cancel-bvplus-arg acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
 (defthmd cancel-bvplus-arg-right
   (implies (and (consp path)
                 (equal :r (car path)))
            (equal (cancel-bvplus-arg path size x (bvplus size y z))
                   (bvplus size y (cancel-bvplus-arg (cdr path) size x z))))
-  :hints (("Goal" :in-theory (enable cancel-bvplus-arg))))
+  :hints (("Goal" :in-theory (enable cancel-bvplus-arg acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
 ;; Searches for Y in the nest rooted at X.
 (defthmd bvminus-cancel-axe

@@ -21,6 +21,7 @@
               defxdoc+
               enable*
               lnfix
+              treeset
               )
             (set-difference-eq *std-pkg-symbols*
                                #!STD
@@ -44,4 +45,5 @@
                                  union-eq
                                  union-eql
                                  value
+                                 zip
                                  ))))

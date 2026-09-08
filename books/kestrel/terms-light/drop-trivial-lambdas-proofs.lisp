@@ -15,6 +15,7 @@
 (include-book "lambdas-closed-in-termp")
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "no-nils-in-termp")
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "helpers"))
 (local (include-book "empty-eval-helpers"))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))

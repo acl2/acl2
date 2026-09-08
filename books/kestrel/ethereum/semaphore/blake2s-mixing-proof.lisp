@@ -1,6 +1,6 @@
 ; A proof of an R1CS for a mixing function from blake2s
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1465,8 +1465,7 @@
                 acl2::bvcat-of-slice-and-x-adjacent-2
                 )
                ;; ;; doing this earlier may interfere with bvcat reconstruction:
-               (
-                ;;  ;; would be better to use these:
+               (;;  ;; would be better to use these:
                 acl2::bvcat-trim-arg2-axe ;does not trim bvplus, etc
                 acl2::bvcat-trim-arg4-axe ;does not trim bvplus, etc
                 ;;  acl2::bvcat-trim-arg2-axe-all

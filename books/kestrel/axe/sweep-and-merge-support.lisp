@@ -340,8 +340,7 @@
   (declare (xargs :guard (and (sweep-arrayp 'sweep-array sweep-array)
                               (nat-listp smaller-nodes-from-this-set)
                               (nat-listp node-set)
-                              (all-< node-set (alen1 'sweep-array sweep-array)))
-                  :guard-hints (("Goal" :in-theory (enable)))))
+                              (all-< node-set (alen1 'sweep-array sweep-array)))))
   (if (endp node-set)
       sweep-array
     (let* ((node (car node-set))

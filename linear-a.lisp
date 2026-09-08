@@ -313,6 +313,10 @@
 
 ; Note: Tag-tree primitive
 
+; This associates val with the list of values associated with tag in ttree,
+; except that this is a no-op if val is already in that list.  See also
+; add-to-tag-tree-new for a variant that does not make that exception.
+
 ; See also add-to-tag-tree!, for the case that tag is known not to be a key of
 ; ttree.
 
@@ -326,6 +330,27 @@
                         (t (acons tag
                                   (cons val (cdr pair))
                                   (remove-tag-from-tag-tree! tag ttree)))))
+            (t (acons tag (list val) ttree)))))))
+
+(defun add-to-tag-tree-new (tag val ttree)
+
+; Note: Tag-tree primitive
+
+; It is legal (and more efficient) to use this instead of add-to-tag-tree if we
+; know (or don't care) that val is already in the list of values associated
+; with tag 
+
+; See also add-to-tag-tree!, for the case that tag is known not to be a key of
+; ttree.
+
+  (cond
+   ((eq ttree nil) ; optimization
+    (list (list tag val)))
+   (t
+    (let ((pair (assoc-eq tag ttree)))
+      (cond (pair (acons tag
+                         (cons val (cdr pair))
+                         (remove-tag-from-tag-tree! tag ttree)))
             (t (acons tag (list val) ttree)))))))
 
 (defun add-to-tag-tree! (tag val ttree)

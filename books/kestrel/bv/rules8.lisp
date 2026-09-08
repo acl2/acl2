@@ -1,7 +1,7 @@
 ; Mixed rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -71,12 +71,11 @@
                     (bvplus 30 -1 (slice 31 2 x)))))
   :hints
   (("Goal" :in-theory (e/d (slice logtail-of-bvchop bvplus)
-                           (
-                            ;;anti-slice
+                           (;;anti-slice
                             bvchop-of-logtail
-                                       ;BVLT-OF-BVCHOP-ARG2
-                                       ;BVLT-OF-BVCHOP-ARG3
-                                       )))))
+                            ;;BVLT-OF-BVCHOP-ARG2
+                            ;;BVLT-OF-BVCHOP-ARG3
+                            )))))
 
 ;i think we may need this to split into cases - but maybe delay that?
 (defthm bvuminus-when-smaller-bind-free
@@ -89,4 +88,4 @@
                       0
                     (bvplus size (- (expt 2 size) (expt 2 free)) (bvuminus free x)))))
   :hints (("Goal" :use bvuminus-when-smaller
-           :in-theory (e/d (UNSIGNED-BYTE-P-FORCED) ( bvuminus-when-smaller)))))
+           :in-theory (e/d (UNSIGNED-BYTE-P-FORCED) (bvuminus-when-smaller)))))

@@ -67,7 +67,8 @@
                               allp
                               nil))
           (t (er hard? 'raw-acl2-exports
-                 "Expected ~x0 to be an alistp!")))))
+                 "Expected ~x0 to be an alistp!"
+                 '*acl2-system-documentation*)))))
 
 (defthm symbol-listp-revappend
   (implies (and (symbol-listp x)
@@ -86,6 +87,7 @@
 (defconst *acl2-exports-exclusions*
   '(*UNTROUBLESOME-CHARACTERS*
     ADD-DIVE-INTO-MACRO
+    ALIST-KEYS ; documented in books/std/alists/alist-keys.lisp
     BDD
     BOOK-HASH
     CHECK-SUM
@@ -97,6 +99,7 @@
     FIND-RULES-OF-RUNE
     LOOP-STOPPER
     MBE1
+    MINI-PROVEALL
     NON-LINEAR-ARITHMETIC
     NORMALIZE
 
@@ -211,6 +214,8 @@
 
 ; Symbols below should probably be added to *acl2-exports*.
 
+    IN-LOGIC-MODE
+    SET-CALL-DEPTH-OVERFLOW-ADVICE
   ))
 
 (defconst *special-ops*

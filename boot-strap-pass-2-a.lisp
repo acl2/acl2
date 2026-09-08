@@ -227,6 +227,7 @@
 (verify-termination-boot-strap brr-data-lst) ; and guards
 (verify-termination-boot-strap cbd-fn)
 (verify-guards cbd-fn :hints (("Goal" :in-theory (enable state-p1))))
+(verify-termination-boot-strap remove-adjacent-duplicates)
 (verify-termination-boot-strap pairs-to-macro-alias-msgs)
 (verify-termination-boot-strap defevaluator-check-msg)
 (verify-termination-boot-strap defevaluator-guard-msg)

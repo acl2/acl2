@@ -1,7 +1,7 @@
 ; A tool to unroll Java code
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -10,7 +10,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ACL2")
+(in-package "ACL2") ; todo: use JVM package
 
 ;; TODO: The JVM lifters use debugging information (which may or may not be
 ;; present) in the .class file, to choose names for parameters of generated
@@ -30,12 +30,11 @@
 (include-book "kestrel/lists-light/contains-anyp-eq" :dir :system)
 (include-book "std/system/untranslate-dollar" :dir :system)
 (include-book "../make-term-into-dag-basic")
-(include-book "rewriter-jvm")
+(include-book "rewriter")
 (include-book "../make-evaluator") ; for make-acons-nest, todo
 (include-book "../supporting-functions")
 ;(include-book "../rewriter") ; for simp-dag
 (include-book "../evaluator-support")
-(include-book "../evaluator") ; for dag-val-with-axe-evaluator, has skip-proofs
 (include-book "../prune-dag-approximately") ;brings in rewriter-basic
 (include-book "../prune-dag-precisely") ;brings in rewriter-basic
 (include-book "../dag-info")
@@ -44,7 +43,7 @@
 
 (local (in-theory (enable symbolp-of-lookup-equal-when-param-slot-to-name-alistp)))
 
-(local (in-theory (disable acl2-count ;for speed
+(local (in-theory (disable min acl2-count ;for speed
                            w
                            state-p1-forward
                            state-p-implies-and-forward-to-state-p1
@@ -59,13 +58,11 @@
     jvm::do-inst))
 
 ;; Returns a boolean
-(defun dag-ok-after-symbolic-execution (dag assumptions error-on-incomplete-runsp state)
+(defund dag-ok-after-symbolic-executionp (dag assumptions error-on-incomplete-runsp state)
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              ;; assumptions
-                              (booleanp error-on-incomplete-runsp)
-                              )
+                              (true-listp assumptions)
+                              (booleanp error-on-incomplete-runsp))
                   :stobjs state))
-;  (declare (xargs :mode :program)) ; because this calls untranslate
   (let ((dag-fns (dag-fns dag)))
     (if (or (acl2::contains-anyp-eq *incomplete-run-fns* dag-fns) ;todo: pass in a set of functions to look for?
             (member-eq 'jvm::error-state dag-fns))
@@ -80,69 +77,73 @@
                      (er hard? 'unroll-java-code-fn "ERROR: Symbolic simulation did not seem to finish (see DAG and assumptions above).")))
       t)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Works for terms or dag-exprs
-(defund elide-make-frame-args (fn args)
-  (declare (xargs :guard t)) ;strengthen?
+(defund maybe-elide-make-frame-args (fn args)
+  (declare (xargs :guard (true-listp args)))
   (if (and (eq fn 'jvm::make-frame)
            (= 6 (len args))
            ;; for termination:
            (myquotep (fifth args))
            (consp (unquote (fifth args)))
            )
-      (list (first args)
-            (second args)
-            (third args)
-            (fourth args)
-            '':method-info-elided ;; (fifth args)
-            (sixth args))
+      (elide-make-frame-args args)
     args))
 
-(defthm pseudo-term-listp-of-elide-make-frame-args
-  (implies (pseudo-term-listp args)
-           (pseudo-term-listp (elide-make-frame-args fn args)))
-  :hints (("Goal" :in-theory (enable elide-make-frame-args))))
+(local
+  (defthm pseudo-term-listp-of-maybe-elide-make-frame-args
+    (implies (pseudo-term-listp args)
+             (pseudo-term-listp (maybe-elide-make-frame-args fn args)))
+    :hints (("Goal" :in-theory (enable maybe-elide-make-frame-args)))))
 
-(defthm len-of-elide-make-frame-args
-  (equal (len (elide-make-frame-args fn args))
-         (len args))
-  :hints (("Goal" :in-theory (enable elide-make-frame-args))))
+(local
+  (defthm len-of-maybe-elide-make-frame-args
+    (equal (len (maybe-elide-make-frame-args fn args))
+           (len args))
+    :hints (("Goal" :in-theory (enable maybe-elide-make-frame-args)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (mutual-recursion
- (defun elide-method-info-in-term (term)
-   (declare (xargs :guard t  ; or require pseudo-termp, but that might take time to check?
-                   :hints (("Goal" :in-theory (enable elide-make-frame-args)))))
+ (defund elide-method-info-in-term (term)
+   (declare (xargs :guard (pseudo-termp term)
+                   :hints (("Goal" :in-theory (enable maybe-elide-make-frame-args)))))
    (if (or (not (consp term)) ; var
            (eq 'quote (ffn-symb term)))
        term
      (let* ((fn (ffn-symb term))
-            (args (elide-make-frame-args fn (fargs term)))
+            (args (maybe-elide-make-frame-args fn (fargs term)))
             (new-args (elide-method-info-in-terms args)))
        (cons fn new-args))))
- (defun elide-method-info-in-terms (terms)
-   (declare (xargs :guard t)) ; or require pseudo-term-listp, but that might take time to check?
+ (defund elide-method-info-in-terms (terms)
+   (declare (xargs :guard (pseudo-term-listp terms)))
    (if (not (consp terms))
        nil
      (cons (elide-method-info-in-term (first terms))
            (elide-method-info-in-terms (rest terms))))))
 
-(local (make-flag elide-method-info-in-term :hints (("Goal" :in-theory (enable elide-make-frame-args)))))
+(local (make-flag elide-method-info-in-term :hints (("Goal" :in-theory (enable maybe-elide-make-frame-args)))))
 
-(defthm-flag-elide-method-info-in-term)
+(local (defthm-flag-elide-method-info-in-term))
 
-(defthm len-of-elide-method-info-in-terms
-  (equal (len (elide-method-info-in-terms terms))
-         (len terms))
-  :hints (("Goal" :in-theory (enable (:i len)))))
+(local
+  (defthm len-of-elide-method-info-in-terms
+    (equal (len (elide-method-info-in-terms terms))
+           (len terms))
+    :hints (("Goal" :in-theory (enable (:i len) elide-method-info-in-terms)))))
 
-(defthm-flag-elide-method-info-in-term
-  (defthm pseudo-termp-of-elide-method-info-in-term
-    (implies (pseudo-termp term)
-             (pseudo-termp (elide-method-info-in-term term)))
-    :flag elide-method-info-in-term)
-  (defthm pseudo-term-listp-of-elide-method-info-in-terms
-    (implies (pseudo-term-listp terms)
-             (pseudo-term-listp (elide-method-info-in-terms terms)))
-    :flag elide-method-info-in-terms))
+(local
+  (defthm-flag-elide-method-info-in-term
+    (defthm pseudo-termp-of-elide-method-info-in-term
+      (implies (pseudo-termp term)
+               (pseudo-termp (elide-method-info-in-term term)))
+      :flag elide-method-info-in-term)
+    (defthm pseudo-term-listp-of-elide-method-info-in-terms
+      (implies (pseudo-term-listp terms)
+               (pseudo-term-listp (elide-method-info-in-terms terms)))
+      :flag elide-method-info-in-terms)
+    :hints (("Goal" :in-theory (enable elide-method-info-in-term elide-method-info-in-terms)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -162,7 +163,7 @@
 ;;                      (eq 'quote (ffn-symb expr)))
 ;;                  expr
 ;;                  (let ((fn (ffn-symb expr)))
-;;                    (cons fn (elide-make-frame-args fn (cdr expr))))))
+;;                    (cons fn (maybe-elide-make-frame-args fn (cdr expr))))))
 ;;       (progn$ (if (not first-elementp) (cw "~% ") nil)
 ;;               (cw "~F0" (cons nodenum expr)) ;; TODO: Avoid this cons?
 ;;               (print-dag-array-with-elided-method-info-aux (+ -1 nodenum)
@@ -178,30 +179,6 @@
 ;;   (progn$ (cw "(")
 ;;           (print-dag-array-with-elided-method-info-aux nodenum dag-array-name dag-array t)
 ;;           (cw ")~%")))
-
-(defund print-dag-with-elided-method-info-aux (dag first-elementp)
-  (declare (xargs :guard (and (weak-dagp-aux dag)
-                              (booleanp first-elementp))))
-  (if (endp dag)
-      nil
-    (let* ((entry (first dag))
-           (nodenum (car entry))
-           (expr (cdr entry))
-           (expr (if (or (not (consp expr))
-                         (eq 'quote (ffn-symb expr)))
-                     expr
-                   (let ((fn (ffn-symb expr)))
-                     (cons fn (elide-make-frame-args fn (cdr expr)))))))
-      (progn$ (if (not first-elementp) (cw "~% ") nil)
-              (cw "~F0" (cons nodenum expr)) ;; TODO: Avoid this cons?
-              (print-dag-with-elided-method-info-aux (rest dag) nil)))))
-
-;; Print the entire dag, from NODENUM down to 0, including nodes not supporting NODENUM, if any.
-(defund print-dag-with-elided-method-info (dag)
-  (declare (xargs :guard (weak-dagp-aux dag)))
-  (progn$ (cw "(")
-          (print-dag-with-elided-method-info-aux dag t)
-          (cw ")~%")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -220,7 +197,8 @@
 
 (local
   (defthm min-helper
-    (<= (min x y) x)))
+    (<= (min x y) x)
+    :hints (("Goal" :in-theory (enable min)))))
 
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
@@ -274,9 +252,10 @@
       (mv (erp-nil) dag hits state)
     (b* ((this-step-increment (this-step-increment step-increment total-steps))
          (steps-for-this-iteration (min steps-left this-step-increment))
-         (old-dag dag)
          (limits `((step-state-with-pc-and-call-stack-height-becomes-step-axe . ,steps-for-this-iteration)
                    (run-until-return-from-stack-height-opener-fast-axe . ,steps-for-this-iteration)))
+         ;; Remember the old DAG, so we can see if anything changed:
+         (old-dag dag)
          ;; ((mv erp dag-or-quotep state)
          ;;  (simp-dag dag
          ;;            :assumptions assumptions
@@ -307,14 +286,17 @@
                                                    (reduce-print-level print)
                                                    rules-to-monitor
                                                    *no-warn-ground-functions-jvm*
-                                                   '(program-at) ; fns-to-elide
-                                                   ))
+                                                   ;; fns-to-elide:
+                                                   '(program-at
+                                                     ;; jvm::make-frame ; todo uncomment but just elide the method-info part?
+                                                     )))
          ((when erp) (mv erp dag hits state))
          (hits (combine-hits hits hits-this-time))
          ((when (quotep dag-or-quotep))
           (cw "Note: The run produced the constant ~x0.~%" dag-or-quotep)
           (mv (erp-nil) dag-or-quotep hits state))
          (dag dag-or-quotep) ; renames it, since we know it's not a quotep
+         (dag-before-pruning dag) ; remember this for comparison below
          ;; todo: which kind(s) of pruning should we use?  this is our chance to apply STP to prune away impossible branches.
          ((mv erp dag-or-quotep state)
           (maybe-prune-dag-approximately prune-approx dag assumptions *no-warn-ground-functions-jvm* print
@@ -341,11 +323,37 @@
           (cw "Note: The run produced the constant ~x0.~%" dag-or-quotep)
           (mv (erp-nil) dag-or-quotep hits state))
          (dag dag-or-quotep) ; renames it, since we know it's not a quotep
-         (dag-fns (dag-fns dag)) ; optimize to not create the whole list
+         (dag-fns (dag-fns dag)) ; todo: optimize to not create the whole list
          (run-completedp (not (acl2::contains-anyp-eq *incomplete-run-fns* dag-fns))))
       (if run-completedp
-          (prog2$ (cw "Note: The run has completed.~%")
-                  (mv (erp-nil) dag hits state))
+          (if (equal dag dag-before-pruning)
+              ;; Pruning did nothing, so we don't need to simplify again:
+              (prog2$ (cw "Note: The run has completed.~%")
+                      (mv (erp-nil) dag hits state))
+            ;; Pruning did something, so we might be able to simplify more (e.g., if a myif branch got pruned away and now a remaining myif can become a bvif):
+            ;; We could make this final simplification optional.
+            (b* ((- (cw "Note: The run has completed. Doing final simplification.~%"))
+                 ((mv erp dag-or-quotep
+                      & ;limits
+                      hits-this-time)
+                  (acl2::simplify-dag-with-rule-alists-jvm dag
+                                                           assumptions
+                                                           rule-alists ; todo exclude the symbolic execution rules since the run is done?
+                                                           nil ; interpreted-function-alist
+                                                           (acl2::known-booleans (w state))
+                                                           normalize-xors
+                                                           limits
+                                                           (empty-hits)
+                                                           memoizep
+                                                           count-hits
+                                                           (reduce-print-level print)
+                                                           rules-to-monitor
+                                                           *no-warn-ground-functions-jvm*
+                                                           '(program-at) ; fns-to-elide
+                                                           ))
+                 ((when erp) (mv erp dag hits state))
+                 (hits (combine-hits hits hits-this-time)))
+              (mv (erp-nil) dag-or-quotep hits state)))
         (if nil ;todo: (member-eq 'x86isa::x86-step-unimplemented dag-fns) ;; stop if we hit an unimplemented instruction (todo: update this for JVM)
             (prog2$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
                     (mv (erp-nil) dag hits state))
@@ -368,7 +376,7 @@
                                      (cw "~X01" (untranslate$ (elide-method-info-in-term (dag2term dag)) nil state) nil)
                                      (cw ")~%"))
                            (progn$ (cw "(DAG after ~x0 steps:~%" total-steps)
-                                   (print-dag-with-elided-method-info dag)
+                                   (print-dag-with-elided-method-info dag "") ; todo: use the indent?
                                    (cw ")")))))))
             (repeatedly-run dag
                             (- steps-left steps-for-this-iteration)
@@ -383,58 +391,58 @@
                             total-steps
                             state)))))))
 
-(defthm pseudo-dagp-of-mv-nth-1-of-repeatedly-run
-  (implies (and (pseudo-dagp dag)
-                (natp steps-left)
-                (step-incrementp step-increment)
-                (rule-alistsp rule-alists)
-                (pseudo-term-listp assumptions)
-                (booleanp normalize-xors)
-                (symbol-listp rules-to-monitor)
+(local
+  (defthm pseudo-dagp-of-mv-nth-1-of-repeatedly-run
+    (implies (and (pseudo-dagp dag)
+                  (natp steps-left)
+                  (step-incrementp step-increment)
+                  (rule-alistsp rule-alists)
+                  (pseudo-term-listp assumptions)
+                  (booleanp normalize-xors)
+                  (symbol-listp rules-to-monitor)
 ;                              (booleanp use-internal-contextsp)
-                (print-levelp print)
-                (booleanp memoizep)
-                ;; (prune-precise-optionp prune-precise)
-                ;; (prune-approx-optionp prune-approx)
-                (natp total-steps))
-           (equal (pseudo-dagp (mv-nth 1 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits hits print print-interval memoizep prune-precise prune-approx total-steps state)))
-                  (not (quotep (mv-nth 1 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits hits print print-interval memoizep prune-precise prune-approx total-steps state))))))
-  :hints (("Goal" :induct t
-           :in-theory (e/d (repeatedly-run)
-                           (myquotep ; todo: loop with SIMPLIFY-DAG-WITH-RULE-ALISTS-JVM-RETURN-TYPE1-COROLLARY2
-                            quotep
-                            min)))))
+                  (print-levelp print)
+                  (booleanp memoizep)
+                  ;; (prune-precise-optionp prune-precise)
+                  ;; (prune-approx-optionp prune-approx)
+                  (natp total-steps))
+             (equal (pseudo-dagp (mv-nth 1 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits hits print print-interval memoizep prune-precise prune-approx total-steps state)))
+                    (not (quotep (mv-nth 1 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits hits print print-interval memoizep prune-precise prune-approx total-steps state))))))
+    :hints (("Goal" :induct t
+             :in-theory (e/d (repeatedly-run)
+                             (myquotep ; todo: loop with SIMPLIFY-DAG-WITH-RULE-ALISTS-JVM-RETURN-TYPE1-COROLLARY2
+                              quotep
+                              min))))))
 
-(defthm w-of-mv-nth-3-of-repeatedly-run
-  (equal (w (mv-nth 3 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits hits print print-interval memoizep prune-precise prune-approx total-steps state)))
-         (w state))
-  :hints (("Goal" :in-theory (enable repeatedly-run))))
+(local
+  (defthm w-of-mv-nth-3-of-repeatedly-run
+    (equal (w (mv-nth 3 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits hits print print-interval memoizep prune-precise prune-approx total-steps state)))
+           (w state))
+    :hints (("Goal" :in-theory (enable repeatedly-run)))))
 
-(defthm hitsp-of-mv-nth-2-of-repeatedly-run
-  (implies (and (pseudo-dagp dag)
-                (natp steps-left)
-                (step-incrementp step-increment)
-                (rule-alistsp rule-alists)
-                (pseudo-term-listp assumptions)
-                (booleanp normalize-xors)
-                (symbol-listp rules-to-monitor)
-                (count-hits-argp count-hits)
-                (hitsp hits)
+(local
+  (defthm hitsp-of-mv-nth-2-of-repeatedly-run
+    (implies (and (pseudo-dagp dag)
+                  (natp steps-left)
+                  (step-incrementp step-increment)
+                  (rule-alistsp rule-alists)
+                  (pseudo-term-listp assumptions)
+                  (booleanp normalize-xors)
+                  (symbol-listp rules-to-monitor)
+                  (count-hits-argp count-hits)
+                  (hitsp hits)
 ;                              (booleanp use-internal-contextsp)
-                (print-levelp print)
-                (booleanp memoizep)
-                (prune-precise-optionp prune-precise)
-                (prune-approx-optionp prune-approx)
-                (natp total-steps))
-           (hitsp (mv-nth 2 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits hits print print-interval memoizep prune-precise prune-approx total-steps state))))
-  :hints (("Goal" :in-theory (e/d (repeatedly-run) (simplify-dag-with-rule-alists-jvm-return-type-corollary-2 ; todo: loop
-                                                    )))))
+                  (print-levelp print)
+                  (booleanp memoizep)
+                  (prune-precise-optionp prune-precise)
+                  (prune-approx-optionp prune-approx)
+                  (natp total-steps))
+             (hitsp (mv-nth 2 (repeatedly-run dag steps-left step-increment rule-alists assumptions normalize-xors rules-to-monitor count-hits hits print print-interval memoizep prune-precise prune-approx total-steps state))))
+    :hints (("Goal" :in-theory (e/d (repeatedly-run) (simplify-dag-with-rule-alists-jvm-return-type-corollary-2 ; todo: loop
+                                                      ))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-;; Chunked execution can be necessary to make use of overarching if-conditions.
-;; For example, we may have a test that ensures that a later loop terminates.
 
 (local
   (in-theory (disable unroll-java-code-rules (:e unroll-java-code-rules)
@@ -477,7 +485,7 @@
 (defund classes-to-assume-initialized-optionp (classes-to-assume-initialized)
   (declare (xargs :guard t))
   (or (eq :all classes-to-assume-initialized)
-      (jvm::all-class-namesp classes-to-assume-initialized)))
+      (jvm::class-name-listp classes-to-assume-initialized)))
 
 ;; This is separate to avoid causing case splits in the slow guard proof for unroll-java-code-core.
 (defund choose-classes-to-assume-initialized (classes-to-assume-initialized class-alist)
@@ -487,6 +495,7 @@
       (strip-cars class-alist)
     classes-to-assume-initialized))
 
+;; is this defined elsewhere too?
 (defund steps-optionp (steps)
   (declare (xargs :guard t))
   (or (eq :auto steps)
@@ -548,7 +557,8 @@
 ;;when working with this function.
 ;; Somewhat slow guard proof
 ;; This is also called in tester.lisp.
-(defun unroll-java-code-core (method-designator-string
+;; Chunked execution can be necessary to make use of overarching if-conditions. For example, we may have a test that ensures that a later loop terminates.
+(defund unroll-java-code-core (method-designator-string
                                 nice-output-indicator
                                 array-length-alist
                                 extra-rules  ;to add to default set
@@ -605,11 +615,10 @@
                   :stobjs state
                   :guard-hints (("Goal" :in-theory (e/d (symbol-listp-of-unroll-java-code-rules
                                                          steps-optionp ; todo
-                                                         )
+                                                         true-listp-when-pseudo-term-listp-2)
                                                         (quotep
                                                          myquotep
-                                                         integerp-of-nth-when-all-natp
-                                                         ))))))
+                                                         integerp-of-nth-when-all-natp))))))
   (b* ((method-class (extract-method-class method-designator-string))
        (method-name (extract-method-name method-designator-string))
        (method-descriptor (extract-method-descriptor method-designator-string)) ;todo: should this be called a descriptor?
@@ -816,7 +825,7 @@
        ((when (quotep dag)) ; todo: test this case
         (mv (erp-nil) dag all-assumptions term-to-run-with-output-extractor parameter-names state))
        ;; Check whether symbolic execution failed:
-       (dag-okp (dag-ok-after-symbolic-execution dag all-assumptions error-on-incomplete-runsp state)))
+       (dag-okp (dag-ok-after-symbolic-executionp dag all-assumptions error-on-incomplete-runsp state)))
     (mv (if (and (not dag-okp)
                  error-on-incomplete-runsp)
             (erp-t)
@@ -857,7 +866,7 @@
   (declare (xargs :guard (and (nice-output-indicatorp nice-output-indicator)
                               (jvm::method-indicatorp method-indicator)
                               (or (eq :all classes-to-assume-initialized)
-                                  (jvm::all-class-namesp classes-to-assume-initialized))
+                                  (jvm::class-name-listp classes-to-assume-initialized))
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
                               (symbol-listp extra-assumption-rules)
@@ -879,7 +888,7 @@
                               (booleanp chunkedp)
                               (booleanp normalize-xors))
                   :stobjs state
-                  :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, and TRANSLATE-TERMS
+                  :mode :program ; todo: because of chk-fresh-namep and fresh-namep-msg
                   ))
   (b* ((;; Check whether this call to the lifter is redundant:
         (when (command-is-redundantp whole-form state))
@@ -893,7 +902,8 @@
        ((when (and produce-theorem (not produce-function)))
         (er hard? 'unroll-java-code-fn "When :produce-theorem is t, :produce-function must also be t.")
         (mv (erp-t) nil state))
-       (user-assumptions (translate-terms user-assumptions 'unroll-java-code-fn (w state))) ;throws an error on bad input
+       ((mv erp user-assumptions state) (translate-terms-in-logic-mode user-assumptions 'unroll-java-code-fn state)) ;throws an error on bad input
+       ((when erp) (mv erp nil state))
        ;; Adds the descriptor if omitted and unambiguous:
        (method-designator-string (jvm::elaborate-method-indicator method-indicator (jvm::global-class-alist state)))
        ;; Printed even if print is nil (seems ok):
@@ -929,37 +939,60 @@
        ((when erp) (mv erp nil state))
        (- (and (quotep dag-or-quotep)
                (cw "Warning: Code unexpectedly rewrote to the constant ~x0." dag-or-quotep))) ; may be common for the tester?
-       ;; build the function:
-       (function-name (intern-in-package-of-symbol
-                       ;;todo: why is the re-interning needed here?
-                       (symbol-name (FRESH-NAME-IN-WORLD-WITH-$S (strip-stars-from-name defconst-name) nil (w state)))
-                       defconst-name))
        (dag-vars (if (quotep dag-or-quotep)
                      nil
                    ;;todo: check these (what should be allowed)?
                    (sort-vars-with-guidance (dag-vars-unsorted dag-or-quotep) parameter-names)))
-       (dag-fns (if (quotep dag-or-quotep)
-                     nil
-                   (dag-fns dag-or-quotep)))
-       (function-body (if (dag-or-quotep-size-less-thanp dag-or-quotep 1000)
-                          (dag2term dag-or-quotep)
-                        `(dag-val-with-axe-evaluator ,defconst-name
-                                                     ,(make-acons-nest dag-vars)
-                                                     ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns *axe-evaluator-functions* (w state)) (w state))
-                                                     '0 ;array depth (not very important)
-                                                     )))
-       (theorem-name (pack$ function-name '-correct)) ;not always used
+       ;; maybe build a function:
+       ((mv erp maybe-function-name events-for-defun state)
+        (if (not produce-function)
+            (mv (erp-nil) nil nil state)
+          (b* ((function-name (intern-in-package-of-symbol
+                                ;;todo: why is the re-interning needed here?
+                                (symbol-name (strip-stars-from-name defconst-name))
+                                defconst-name))
+               ((mv & msg/nil state) (fresh-namep-msg function-name 'acl2::function (w state) state)) ; todo: this should not return state
+               ((when msg/nil)
+                (er hard? 'unroll-java-code-fn "We have been told to create a function, but the name ~x0 function-name is not fresh.")
+                (mv :non-fresh-name nil nil state))
+               (dag-fns (dag-or-quotep-fns dag-or-quotep))
+               (termp (dag-or-quotep-size-less-thanp dag-or-quotep 1000))
+               (function-body (if termp
+                                  (dag2term dag-or-quotep)
+                                `(dag-val-with-axe-evaluator ,defconst-name
+                                                             ,(make-acons-nest dag-vars)
+                                                             ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns *axe-evaluator-functions* (w state)) (w state))
+                                                             '0 ;array depth (not very important)
+                                                             )))
+               (defun `(defun ,function-name ,dag-vars ,function-body)))
+            (mv (erp-nil)
+                function-name
+                (append (if termp
+                            nil
+                          ;; We bring in the evaluator only if needed to embed a dag in the defun:
+                          '((include-book "kestrel/axe/evaluator" :dir :system)) ; note that this has skip-proofs (currently)
+                          )
+                        (list defun))
+                state))))
+       ((when erp) (mv erp nil state))
+       ;; maybe build a theorem:
+       ((mv maybe-theorem-name events-for-defthm)
+        (if (not produce-theorem)
+            (mv nil nil)
+          (b* ((theorem-name (pack$ maybe-function-name '-correct))
+               (defthm `(skip-proofs
+                          (defthm ,theorem-name
+                            (implies (and ,@all-assumptions)
+                                     (equal ,term-to-run-with-output-extractor
+                                            (,maybe-function-name ,@dag-vars)))))))
+            (mv theorem-name (list defthm)))))
+       ; build the whole event:
        (event `(progn (defconst ,defconst-name ',dag-or-quotep)
-                      ,@(and produce-function `((defun ,function-name ,dag-vars ,function-body)))
-                      ,@(and produce-theorem
-                             `((skip-proofs
-                                (defthm ,theorem-name
-                                  (implies (and ,@all-assumptions)
-                                           (equal ,term-to-run-with-output-extractor
-                                                  (,function-name ,@dag-vars)))))))))
+                 ,@events-for-defun
+                 ,@events-for-defthm))
        (items-created (append (list defconst-name)
-                              (if produce-function (list function-name) nil)
-                              (if produce-theorem (list theorem-name) nil)))
+                              (if produce-function (list maybe-function-name) nil)
+                              (if produce-theorem (list maybe-theorem-name) nil)))
        ((mv end-time state) (acl2::get-real-time state))
        (- (if (= 1 (len items-created))
               (cw "Created ~x0.~%~%" (first items-created))
@@ -994,7 +1027,7 @@
                                       method-indicator
                                       &key
                                       ;; Options affecting what is proved:
-                                      (assumptions 'nil) ;TODO: What variables are these over? 'locals'?  well, at least the params of the function
+                                      (assumptions 'nil) ;TODO: What variables are these over? 'locals'?  well, at least the params of the function ; todo: rename extra-assumptions
                                       (array-length-alist 'nil)
                                       (classes-to-assume-initialized ''("java.lang.Object" "java.lang.System")) ;TODO; Try making :all the default
                                       (ignore-exceptions 'nil)
@@ -1068,9 +1101,9 @@
                  form)))
     form)
   :parents (axe-jvm axe-lifters)
-  :short "A tool to lift Java/JVM code into logic, unrolling loops as needed."
+  :short "A tool to lift Java/JVM code into logic, unrolling any loops encountered."
   :args ((defconst-name
-           "The name of the constant to create.  This constant will represent the computation in DAG form.  A function may also created (its name is obtained by stripping the stars from the defconst name).")
+           "The name of the constant to create.  This constant will represent the computation in DAG form.  A function may also created, according to the @(':produce-function') argument.  If a funtion is created, its name is obtained by stripping the stars from the defconst name.")
          (method-indicator
           "The Java method to unroll (a string like \"java.lang.Object.foo(IB)V\").  The descriptor (input and output type) can be omitted if only one method in the given class has the given name.")
          (assumptions             "Terms to assume true when unrolling.  These assumptions can mention the method's parameter names (symbols), the byte-variables and/or bit-variables in the contents of array parameters, and the special variables @('locals'), @('initial-heap'), @('initial-static-field-map'), and @('initial-intern-table').")

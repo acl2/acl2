@@ -18,6 +18,7 @@
 (local (include-book "unsigned-byte-p"))
 (local (include-book "bvcat"))
 (local (include-book "getbit"))
+(local (include-book "logcount"))
 (local (include-book "kestrel/arithmetic-light/numerator" :dir :system))
 (local (include-book "kestrel/arithmetic-light/denominator" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -26,18 +27,12 @@
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/arithmetic-light/nonnegative-integer-quotient" :dir :system))
 (local (include-book "kestrel/arithmetic-light/evenp" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor-mod-expt" :dir :system))
 
 (local (in-theory (disable expt)))
 
-;; Count the number of 1 bits in X, which should be SIZE bits wide.  The result
-;; fits in B bits where B is (integer-length SIZE).
-(defund bvcount (size x)
-  (declare (xargs :guard (and (natp size)
-                              (integerp x))))
-  (if (zp size)
-      0
-    (+ (getbit (+ -1 size) x)
-       (bvcount (+ -1 size) x))))
+(include-book "bvcount-def")
 
 (defthm bvcount-of-0-arg1
   (equal (bvcount 0 x)
@@ -108,32 +103,42 @@
 ;;             (logcount (bvchop lowsize lowval))))
 ;;   :hints (("Goal" :in-theory (enable logcount bvcat))))
 
-;; (thm
-;;   (implies (and (posp size)
-;;                 (unsigned-byte-p size x))
-;;            (equal (logcount x)
-;;                   (+ (getbit (+ -1 size) x)
-;;                      (logcount (bvchop (+ -1 size) x)))))
-;;   :hints (("Goal" :induct (ind x size)
-;;            :in-theory (enable logcount
-;;                               nonnegative-integer-quotient-becomes-floor))))
+(local
+ ;; todo: move
+ (defthmd bvchop-of-floor-of-2
+   (implies (and (natp size)
+                 (integerp x))
+            (equal (bvchop size (floor x 2))
+                   (floor (bvchop (+ 1 size) x) 2)))
+   :hints (("Goal" :in-theory (enable bvchop)))))
 
-;; ;; ;;sanity check
-;; (defthmd bvcount-is-logcount
-;;   (implies t;(unsigned-byte-p size x)
-;;            (equal (bvcount size x)
-;;                   (logcount (bvchop size x))))
-;;   :hints (("Goal" ;:use (:instance logcount-bound (n size))
-;;            :in-theory (e/d (unsigned-byte-p bvcount)
-;;                            (;logcount-bound
-;;                             )))))
+(defthmd logcount-split-high-bit
+  (implies (and (natp size)
+                (unsigned-byte-p size x))
+           (equal (logcount x)
+                  (+ (getbit (+ -1 size) x)
+                     (logcount (bvchop (+ -1 size) x)))))
+  :hints (("subgoal *1/3" :cases ((equal 0 size) (equal 1 size)))
+          ("subgoal *1/4" :cases ((equal 0 size) (equal 1 size)))
+          ("Goal" :induct (ind x size)
+                  :in-theory (enable logcount zip bvchop-of-floor-of-2
+                                     nonnegative-integer-quotient-becomes-floor))))
+
+(defthmd bvcount-becomes-logcount
+  (equal (bvcount size x)
+         (logcount (bvchop size x)))
+  :hints (("subgoal *1/2" :use (:instance logcount-split-high-bit
+                                          (x (bvchop size x))))
+          ("Goal" ;:use (:instance logcount-bound (n size))
+           :in-theory (e/d (unsigned-byte-p bvcount)
+                           ( ;logcount-bound
+                            )))))
 
 ;; (defthm evenp-of-bvchop
 ;;   (implies (posp size)
 ;;            (equal (evenp (bvchop size x))
 ;;                   (equal 0 (getbit 0 x))))
-;;   :hints (("Goal" :in-theory (e/d (bvchop EVENP-BECOMES-EQUAL-OF-0-AND-MOD getbit)
-;;                                   ()))))
+;;   :hints (("Goal" :in-theory (enable bvchop EVENP-BECOMES-EQUAL-OF-0-AND-MOD getbit))))
 
 (defthm bvcount-bound
   (implies (natp size)
@@ -151,7 +156,7 @@
 ;;            :use (:instance logcount-bound (n (+ -1 (expt 2 (integer-length size)))))
 ;;            :in-theory (e/d (unsigned-byte-p) (logcount-bound)))))
 
-;;Disabled because we have unsigned-byte-p-of-bvcountg-gen.
+;;Disabled because we have unsigned-byte-p-of-bvcount-gen.
 (defthmd unsigned-byte-p-of-bvcount
   (implies (natp size)
            (unsigned-byte-p (integer-length size) (bvcount size x)))
@@ -194,10 +199,9 @@
 ;;   :hints (("Goal" :induct (bvcount size x)
 ;;            :in-theory (enable bvcount))))
 
-;;   :hints (("Goal" ;:expand ((LOGCOUNT (BVCHOP SIZE X)))
-;;            :in-theory (e/d (slice bvplus BVCHOP-OF-LOGTAIL floor-by-2
-;;                                   bvcount)
-;;                            ()))))
+  ;; :hints (("Goal" ;:expand ((LOGCOUNT (BVCHOP SIZE X)))
+  ;;          :in-theory (enable slice bvplus BVCHOP-OF-LOGTAIL floor-by-2
+  ;;                                 bvcount))))
 
 ;; (defthmd bvcount-unroll2
 ;;   (implies (posp size)
@@ -306,7 +310,7 @@
            (equal (bvcount size (bvcat highsize highval lowsize lowval))
                   (+ (bvcount highsize highval)
                      (bvcount lowsize lowval))))
-  :hints (("subgoal *1/4" :in-theory (e/d (bvcount) ( bvcount-of-bvchop))
+  :hints (("subgoal *1/4" :in-theory (e/d (bvcount) (bvcount-of-bvchop))
            :use (:instance bvcount-of-bvchop
                            (size (+ -1 HIGHSIZE LOWSIZE))
                            (size2 (+ -1 HIGHSIZE LOWSIZE))

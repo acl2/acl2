@@ -18,6 +18,7 @@
 (include-book "axe-syntax-functions-bv")
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 (include-book "kestrel/bv/bvlt" :dir :system)
+(include-book "kestrel/bv/bvuminus-def" :dir :system)
 (include-book "kestrel/bv-lists/all-all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/bv-lists/bvchop-list" :dir :system)
 (include-book "kestrel/bv-lists/bvxor-list" :dir :system)
@@ -36,6 +37,7 @@
 ;(include-book "kestrel/lists-light/nth" :dir :system)
 (local (include-book "list-rules")) ; for nth-equal-car-hack
 (local (include-book "kestrel/bv/bvchop" :dir :system))
+(local (include-book "kestrel/bv/bvminus-def" :dir :system))
 
 (add-known-boolean unsigned-byte-listp)
 (add-known-boolean all-unsigned-byte-p)
@@ -79,7 +81,7 @@
                   (if (<= y x)
                       (nth (bvplus xsize x (- y)) lst)
                     (nth 0 lst))))
-  :hints (("Goal" :in-theory (e/d (bvplus bvminus bvuminus unsigned-byte-p-forced unsigned-byte-p nth)
+  :hints (("Goal" :in-theory (e/d (bvplus unsigned-byte-p-forced unsigned-byte-p nth)
                                   (;NTH-OF-CDR
                                    )))))
 
@@ -102,7 +104,7 @@
                   (if (<= y x)
                       (repeat (bvplus xsize x (- y)) v)
                     (repeat 0 v))))
-  :hints (("Goal" :in-theory (enable bvplus bvminus bvuminus unsigned-byte-p-forced unsigned-byte-p))))
+  :hints (("Goal" :in-theory (enable bvplus unsigned-byte-p-forced unsigned-byte-p))))
 
 (defthmd repeat-of-plus-of-bv-and-minus-alt
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
@@ -124,7 +126,7 @@
                   (if (< x y)
                       nil
                     (firstn (bvplus (max xsize ysize) x (bvuminus (max xsize ysize) y)) z))))
-  :hints (("Goal" :in-theory (e/d (bvplus bvuminus bvminus unsigned-byte-p-forced <-of-if-arg1
+  :hints (("Goal" :in-theory (e/d (bvplus bvuminus unsigned-byte-p-forced <-of-if-arg1
                                           ;bvchop-identity-when-<=
                                           bvchop-identity-when-<=
                                           )

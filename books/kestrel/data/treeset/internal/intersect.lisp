@@ -39,6 +39,7 @@
 (define tree-intersect
   ((x treep)
    (y treep))
+  (declare (xargs :type-prescription :none))
   :parents (implementation)
   :short "Take the intersection of two treaps."
   :long
@@ -76,8 +77,6 @@
   :guard-hints (("Goal" :in-theory (enable tree-join-at))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-intersect)))
 
 (defrule tree-intersect-type-prescription
   (or (consp (tree-intersect x y))

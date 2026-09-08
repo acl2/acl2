@@ -1,6 +1,6 @@
 ; Rank-1 constraint systems, represented in dense form
 ;
-; Copyright (C) 2019-2022 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -272,7 +272,7 @@
    (implies (var-listp vars)
             (true-listp vars))))
 
-;; Check whether a valuation satisifies an R1CS.
+;; Check whether a valuation satisfies an R1CS.
 (defun r1cs-holdsp (r1cs valuation)
   (declare (xargs :guard (and (r1csp r1cs)
                               (r1cs-valuationp valuation (r1cs->prime r1cs))

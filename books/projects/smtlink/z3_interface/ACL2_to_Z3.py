@@ -72,6 +72,10 @@ class ACL22SMT(object):
     #                   Basic Functions
     #
 
+    # Declarations, so that generated scripts talk only to this object
+    def Const(self, name, sort): return Const(name, sort)
+    def Function(self, name, *sorts): return Function(name, *sorts)
+
     # Type declarations
     def IntSort(self): return IntSort()
     def RealSort(self): return RealSort()

@@ -53,6 +53,12 @@
 
 (verify-guards acl2::all-addressp)
 
+(defthm addressp-of-nth-when-all-addressp
+  (implies (and (all-addressp ads)
+                (natp n)
+                (< n (len ads)))
+           (addressp (nth n ads))))
+
 ;; Most keys in the heap object are pairs of class names and field-ids.
 (defund jvm::class-name-field-id-pairp (x)
   (declare (xargs :guard t))
@@ -437,8 +443,7 @@
 (defthm new-ad-not-equal-something-in-dom-2
   (implies (set::in xx (dom heap))
            (equal (equal xx (new-ad (dom heap)))
-                  nil))
-  :hints (("goal" :in-theory (enable))))
+                  nil)))
 
 ;label the crucial property of new-ad
 
@@ -502,7 +507,7 @@
                           (get-field ad pair heap)))
           :hints (("goal" :in-theory (set-difference-theories
                                       (enable set-fields)
-                                      '( set-fields-collect-2))))))
+                                      '(set-fields-collect-2))))))
 
  (local (defthm get-field-of-set-fields-2
           (implies (memberp pair (strip-cars bindings))
@@ -1006,17 +1011,11 @@
 ;;   :rule-classes ((:rewrite :match-free :all))
 ;;   :hints (("Goal" :in-theory (enable bound-in-heap get-field))))
 
-
-
-
-
-
 ;; ;kill?
 ;; (local (defthm new-ad-not-bound-helper3
 ;;        (implies (sets::subset bound-adrs bound-adrs2)
 ;;                 (not (sets::in (new-ad-aux bound-adrs2 current-try) bound-adrs)))
-;;        :hints (
-;;                ("Goal" :in-theory (disable NEW-AD-NOT-BOUND-HELPER2)
+;;        :hints (("Goal" :in-theory (disable NEW-AD-NOT-BOUND-HELPER2)
 ;;                 :use (:instance new-ad-not-bound-helper2
 ;;                                        (ad-set bound-adrs2))))))
 

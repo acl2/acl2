@@ -57,6 +57,7 @@
    (hash (unsigned-byte-p 32 hash))
    val
    (tree treep))
+  (declare (xargs :type-prescription :none))
   ;; TODO: treeset definition should have guards/returns first like this.
   :guard (mbe :logic (equal (hash key) hash)
               :exec (data::u32-equal (hash key) hash))
@@ -112,8 +113,6 @@
   :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-update)))
 
 (defrule tree-empty-p-of-tree-update
   (not (tree-empty-p (tree-update x hash val tree)))
@@ -287,7 +286,7 @@
            )
   ;; TODO: disable this rule by default?
   ;; Or, I think preferably, make non-definition.
-  :disable tree-node-count-when-bstp)
+  :disable tree-nodes-count-when-bstp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

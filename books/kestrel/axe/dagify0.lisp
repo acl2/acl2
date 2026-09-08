@@ -708,7 +708,7 @@
                                                               variable-node-alist-for-dag
                                                               dag-array dag-len dag-parent-array
                                                               dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-                                                              (make-empty-array 'renaming-array-for-merge-embedded-dag-into-dag-array (+ 1 (top-nodenum dag))) ; nil ;the translation-alist
+                                                              (new-array1 'renaming-array-for-merge-embedded-dag-into-dag-array (+ 1 (top-nodenum dag))) ; nil ;the translation-alist
                                                               interpreted-function-alist))
                           ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
                           )
@@ -958,7 +958,7 @@
                                 interpreted-function-alist)))))
     :flag merge-trees-into-dag-array)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d ( ;nth-0-of-nth-of-len-minus1-when-pseudo-dagp
+           :in-theory (e/d (;nth-0-of-nth-of-len-minus1-when-pseudo-dagp
                             car-becomes-nth-of-0
                             merge-tree-into-dag-array
                             merge-trees-into-dag-array
@@ -1220,9 +1220,9 @@
                               (interpreted-function-alistp interpreted-function-alist))))
   (merge-tree-into-dag-array term ;overkill since this can't contain nodenums?
                              nil ;initial var-replacement-alist
-                             (make-empty-array dag-array-name 10) ;fixme why 10?
+                             (new-array1 dag-array-name 10) ;fixme why 10?
                              0 ;initial dag-len
-                             (make-empty-array dag-parent-array-name 10)
+                             (new-array1 dag-parent-array-name 10)
                              nil         ;dag-constant-alist
                              (empty-dag-variable-alist)
                              dag-array-name dag-parent-array-name
@@ -1294,9 +1294,9 @@
                               (interpreted-function-alistp interpreted-function-alist))))
   (merge-trees-into-dag-array terms
                               nil ;initial var-replacement-alist
-                              (make-empty-array dag-array-name 1000) ;fixme why 1000?
+                              (new-array1 dag-array-name 1000) ;fixme why 1000?
                               0 ;initial dag-len
-                              (make-empty-array dag-parent-array-name 1000)
+                              (new-array1 dag-parent-array-name 1000)
                               nil ;empty dag-constant-alist
                               (empty-dag-variable-alist)
                               dag-array-name dag-parent-array-name
@@ -1415,7 +1415,7 @@
         (mv :dag-too-big 0 dag))
        (dag-array-name 'dag-array-for-merge-tree-into-dag)
        (dag-parent-array-name 'dag-parent-array-for-merge-tree-into-dag)
-       (dag-array (make-into-array dag-array-name dag)))
+       (dag-array (alist-to-array1 dag-array-name dag)))
     (mv-let (dag-parent-array dag-constant-alist dag-variable-alist)
       (make-dag-indices dag-array-name dag-array dag-parent-array-name dag-len)
       (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -1633,14 +1633,14 @@
           (prog2$ (er hard? 'compose-dags "var ~x0 isn't present in DAG ~X12" var-to-replace main-dag nil)
                   (mv (erp-t) nil))
         (if (quotep subdag-for-var)
-            (b* ( ;; make the subdag into a dag array:
+            (b* (;; make the subdag into a dag array:
                  (dag-len 0)
-                 (dag-array (make-empty-array 'dag-array (+ 1 (top-nodenum main-dag))))
-                 (dag-parent-array (make-empty-array 'dag-parent-array (+ 1 (top-nodenum main-dag))))
+                 (dag-array (new-array1 'dag-array (+ 1 (top-nodenum main-dag))))
+                 (dag-parent-array (new-array1 'dag-parent-array (+ 1 (top-nodenum main-dag))))
                  (dag-constant-alist nil)
                  (dag-variable-alist (empty-dag-variable-alist))
                  ;; initially empty (the var gets renamed by the alist):
-                 (renaming-array (make-empty-array 'renaming-array-for-merge-embedded-dag-into-dag-array (+ 1 (top-nodenum main-dag))))
+                 (renaming-array (new-array1 'renaming-array-for-merge-embedded-dag-into-dag-array (+ 1 (top-nodenum main-dag))))
                  ((mv erp renaming-array dag-array & & & &)
                   (merge-embedded-dag-into-dag-array (reverse-list main-dag)
                                                      (acons var-to-replace subdag-for-var nil) ;map the var to the quotep
@@ -1651,13 +1651,13 @@
                  ((when erp) (mv erp nil))
                  (top-nodenum (aref1 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array (top-nodenum main-dag))))
               (mv (erp-nil) (drop-non-supporters-array-with-name 'dag-array dag-array top-nodenum nil)))
-          (b* ( ;; make the subdag into a dag array:
+          (b* (;; make the subdag into a dag array:
                (dag-len (+ 1 (top-nodenum subdag-for-var)))
-               (dag-array (make-into-array-with-len 'dag-array subdag-for-var (+ dag-len 1 (top-nodenum main-dag))))
+               (dag-array (alist-to-array1-with-len 'dag-array subdag-for-var (+ dag-len 1 (top-nodenum main-dag))))
                ((mv dag-parent-array dag-constant-alist dag-variable-alist)
                 (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
                ;; initially empty (the var gets renamed by the alist):
-               (renaming-array (make-empty-array 'renaming-array-for-merge-embedded-dag-into-dag-array (+ 1 (top-nodenum main-dag))))
+               (renaming-array (new-array1 'renaming-array-for-merge-embedded-dag-into-dag-array (+ 1 (top-nodenum main-dag))))
                ((mv erp renaming-array dag-array & & & &)
                 (merge-embedded-dag-into-dag-array (reverse-list main-dag)
                                                    (acons var-to-replace (top-nodenum subdag-for-var) nil)

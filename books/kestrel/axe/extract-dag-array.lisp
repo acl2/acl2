@@ -86,8 +86,8 @@
   (let* ((max-nodenum (maxelem nodenums))
          (relevant-dag-length (+ 1 max-nodenum))
          (tag-array (tag-supporters-of-nodes-with-name nodenums max-nodenum dag-array-name dag-array 'tag-array relevant-dag-length)) ;okay to use the name 'tag-array??
-         (new-dag-array (make-empty-array new-dag-array-name relevant-dag-length)) ;probably won't need all the space?
-         (translation-array (make-empty-array 'translation-array relevant-dag-length)))
+         (new-dag-array (new-array1 new-dag-array-name relevant-dag-length)) ;probably won't need all the space?
+         (translation-array (new-array1 'translation-array relevant-dag-length)))
     (mv-let (new-dag-len new-dag-array translation-array)
             (extract-dag-array-aux 0 0 relevant-dag-length dag-array-name dag-array new-dag-array-name new-dag-array tag-array translation-array)
             (mv new-dag-array new-dag-len translation-array))))

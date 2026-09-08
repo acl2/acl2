@@ -835,7 +835,7 @@
   :hooks (:fix)
   ///
 
-  (defrule fundef-list-renamevar-of-statement-to-fundefs
+  (defrule fundef-list-renamevar-of-statements-to-fundefs
     (implies (not (reserrp (statement-list-renamevar old new ren)))
              (not (reserrp
                    (fundef-list-renamevar (statements-to-fundefs old)

@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -399,7 +399,7 @@
                 :guard (< (len list) (expt 2 31))
                 :returns (array ,type-arrayp)
                 :short ,(str::cat "Convert an ACL2 list of " acl2type-doc
-                                  " to a Java @('boolean') array.")
+                                  " to a Java " type-doc " array.")
                 (,type-array (,type-array-from-list-aux list))
                 :prepwork
                 ((define ,type-array-from-list-aux ((list ,acl2type-listp))

@@ -52,6 +52,7 @@
 (local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/bv/getbit" :dir :system))
 (local (include-book "kestrel/bv/bvuminus" :dir :system))
+(local (include-book "kestrel/bv/bvminus" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
 (local (include-book "kestrel/bv/bvor" :dir :system))
 
@@ -82,7 +83,7 @@
 ;; appropriate abstraction level (abstract away too much and the STP goal may
 ;; no longer be true, abstract away too little and the solver may time out).
 
-;; We now parse, process, and return the counter-examples found by STP.  This
+;; We now parse, process, and return the counterexamples found by STP.  This
 ;; forms the basis of our query answering capability; we pose a query to STP
 ;; that attempts to prove that some behavior is impossible, and it returns a
 ;; concrete input showing when the behavior is in fact possible.
@@ -840,7 +841,6 @@
                   (pseudo-dag-arrayp 'dag-array dag-array dag-len))
              (all-< (get-nodenums-of-negations-of-disjuncts disjuncts dag-array dag-len) dag-len))
     :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp get-nodenums-of-negations-of-disjuncts
-                                       possibly-negated-nodenumsp
                                        strip-nots-from-possibly-negated-nodenums
                                        strip-not-from-possibly-negated-nodenum
                                        car-becomes-nth-of-0
@@ -898,6 +898,7 @@
 (local (include-book "kestrel/bv/sbvrem" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
 (local (include-book "kestrel/bv/sbvlt" :dir :system))
+(local (include-book "kestrel/bv/bvmult" :dir :system))
 
 ;; These theorems justify the induced types:
 
@@ -1307,8 +1308,7 @@
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (symbolp fn)
                               (bounded-darg-listp args dag-len)
-                              (nodenum-type-alistp known-nodenum-type-alist))
-                  :guard-hints (("Goal" :in-theory (enable))))
+                              (nodenum-type-alistp known-nodenum-type-alist)))
            (ignore dag-len))
   (case fn
     (not (and (= 1 (len args))
@@ -1574,8 +1574,7 @@
 
 ;; sanity check
 (thm
- (subsetp-equal (pseudo-term-listp (keep-smt-assumptions terms))
-                (pseudo-term-listp terms))
+ (subsetp-equal (keep-smt-assumptions terms) terms)
  :hints (("Goal" :in-theory (enable keep-smt-assumptions))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1652,13 +1651,13 @@
 
 (local
   (defthm node-given-empty-type-type
-    (implies (and (nodenum-type-alistp known-nodenum-type-alist)
-                  )
+    (implies (nodenum-type-alistp known-nodenum-type-alist)
              (or (null (node-given-empty-type known-nodenum-type-alist))
                  (and (integerp (node-given-empty-type known-nodenum-type-alist))
                       (<= 0 (node-given-empty-type known-nodenum-type-alist)))))
     :rule-classes :type-prescription
-    :hints (("Goal" :in-theory (enable node-given-empty-type nodenum-type-alistp)))))
+    :hints (("Goal" :induct t
+             :in-theory (enable node-given-empty-type nodenum-type-alistp)))))
 
 (local
   (defthm node-given-empty-type-return-type-rewrite
@@ -2056,7 +2055,7 @@
                   :stobjs state
                   :guard-hints (("Goal" :in-theory (e/d (integer-listp-when-nat-listp) (natp))))))
   (b* (;; Array to track which nodes we've considered as we go through the disjuncts (disjuncts may have nodes in common):
-       (handled-node-array (make-empty-array 'handled-node-array (+ 1 (max-nodenum-in-possibly-negated-nodenums disjuncts))))
+       (handled-node-array (new-array1 'handled-node-array (+ 1 (max-nodenum-in-possibly-negated-nodenums disjuncts))))
        ;; Decide which disjuncts to include in the query and which nodes under them to translate / cut:
        ;; TODO: What if a node is shallow in one disjunct and deep in another?  How should we treat it?
        ((mv erp disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist)

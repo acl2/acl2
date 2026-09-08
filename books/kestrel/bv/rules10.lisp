@@ -1,7 +1,7 @@
 ; More rules about bit vectors
 ;
 ; Copyright (C) 2017-2021 Kestrel Technology, LLC
-; Copyright (C) 2022-2025 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -35,6 +35,7 @@
 ;(in-theory (disable mod-x-y-=-x+y-for-rationals)) ;seemed to lead to generalization
 
 ;todo: think about this
+;todo: rename
 (defthmd signed-byte-p-of-bvchop
   (signed-byte-p 64 (bvchop 32 x))
   :hints (("Goal" :in-theory (enable signed-byte-p))))
@@ -105,7 +106,8 @@
   (equal (bvuminus size 1)
          (repeatbit size 1))
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus repeatbit)
-                                  (bvminus-becomes-bvplus-of-bvuminus)))))
+                                  (;bvminus-becomes-bvplus-of-bvuminus
+                                   )))))
 
 ;todo: move
 (defthm equal-of-bvchop-and-constant-when-signed-byte-p
@@ -134,11 +136,6 @@
   :hints (("Goal" :in-theory (enable bvor))))
 
 ;(in-theory (disable getbit-of-logior)) ; consider what to do here
-
-;todo: think about this
-(defthm signed-byte-p-of-bvchop
-  (signed-byte-p 64 (bvchop 32 x))
-  :hints (("Goal" :in-theory (enable signed-byte-p))))
 
 ;; This can help if the model splits into cases unnecessarily, but we are
 ;; attempting to handle that better by keeping JCC/CMOVCC/SETCC-SPEC disabled.
@@ -200,8 +197,7 @@
 ;; (defthm mod-of-bvchop-and-2
 ;;   (equal (mod (bvchop 63 x) 2)
 ;;          (getbit 0 x))
-;;   :hints (("Goal" :in-theory (e/d (bvchop getbit)
-;;                                   ()))))
+;;   :hints (("Goal" :in-theory (enable bvchop getbit))))
 
 ;move to an arith library
 (defthm <-of-constant-when-<-of-constant-integer

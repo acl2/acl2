@@ -462,7 +462,7 @@
        (consp-when-foo-p (intern-in-package-of-symbol
                           (cat "CONSP-WHEN-" (symbol-name sum.pred))
                           sum.pred)))
-    `(define ,sum.pred (,sum.xvar)
+    `((define ,sum.pred (,sum.xvar)
        :parents (,sum.name)
        :short ,short
        :measure ,sum.measure
@@ -486,7 +486,7 @@
                            (and stable-under-simplificationp
                                 '(:error t)))
                    :rule-classes :compound-recognizer)))
-          (value-triple :skip-compound-recognizer))))))
+          (value-triple :skip-compound-recognizer)))))))
 
 
 

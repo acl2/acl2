@@ -37,10 +37,7 @@
      (as part of perhaps a larger character set like Unicode).")
    (xdoc::p
     "We plan to generalize and extend this abstract syntax
-     to avoid specific assumptions and to cover all the C constructs.
-     In particular, we plan to use the formalization of "
-    (xdoc::seetopic "character-sets" "character sets")
-    " to lift the ASCII assumption.")
+     to avoid specific assumptions and to cover all the C constructs.")
    (xdoc::p
     "The purpose of this abstract syntax is to support
      our formal definition of (a subset of) C.
@@ -161,8 +158,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only capture integer and enumeration constants,
-     but we include placeholders for floating and character constants.")
+    "For now we only capture integer and enumeration constants.")
    (xdoc::p
     "The C grammar for enumeration constants [C17:6.4.4.3/1] [C17:6.4.4/1]
      is actually ambiguous in expressions [C17:6.5.1/1]:
@@ -184,9 +180,7 @@
      and just use identifiers in expressions,
      which may denote either enumeration constants or other things."))
   (:int ((get iconst)))
-  (:float ())
   (:enum ((get ident)))
-  (:char ())
   :pred constp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1082,14 +1076,12 @@
    (xdoc::p
     "For now, a translation ensemble consists of
      one or two translation units (see @(tsee trans-unit)),
-     one for an optional header and one for a source file,
-     which have the same name except for the extension.
-     (The preceding sentence uses the terminology in [C17:5.1.1/1],
-     which appears to call `headers' the @('.h') files
-     and `source files' the @('.c') files.)
+     one for an optional @('.h') file
+     and one for a mandatory @('.c') file.
      The idea is that for now we model (portions of) programs
      that consist of a single source file,
-     optionally with its own header that is @('#include')d in the source file.
+     optionally with its own header file
+     that is @('#include')d in the source file.
      We do not explicitly model the @('#include') directive: it is implicit.
      The @('path-wo-ext') component of this fixtype
      is the common path of both files without the extension.
@@ -1098,11 +1090,12 @@
      where the first one is optional.")
    (xdoc::p
     "Technically, the (implicit) presence of the @('#include') directive
-     in the source file when the header is present
-     makes the translation unit for the source file
-     actually a preprocessing translation unit [C17:5.1.1.1/1],
-     but we take the term `translation unit', in this context,
-     to also encompass preprocessing translation units."))
+     in the source file when the header file is present
+     means that the translation unit for the source file
+     is not actually a translation unit;
+     but we take the term `translation unit' slightly more broadly here.
+     Eventually, we will generalize all of this,
+     and conform to the terminology in the C standard."))
   ((path-wo-ext string)
    (dot-h trans-unit-option)
    (dot-c trans-unit))

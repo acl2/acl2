@@ -293,16 +293,14 @@
             (wrap-in-normal-output-extractors32 (rest output-indicators) term wrld)))))
 
 ;; Wraps TERM as indicated by OUTPUT-INDICATOR.
-;; todo: reorder args?
-(defun wrap-in-output-extractor (output-indicator term 64-bitp wrld)
-  (declare (xargs :guard (plist-worldp wrld)
-                  :mode :program ; because of translate-term
-                  ))
+(defun wrap-in-output-extractor (term output-indicator 64-bitp state)
+  (declare (xargs :mode :program ; because of translate-term
+                  :stobjs state))
   (if (eq :all output-indicator)
       term
     (if 64-bitp
-        (wrap-in-normal-output-extractor64 output-indicator term wrld)
-      (wrap-in-normal-output-extractor32 output-indicator term wrld))))
+        (wrap-in-normal-output-extractor64 output-indicator term (w state))
+      (wrap-in-normal-output-extractor32 output-indicator term (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

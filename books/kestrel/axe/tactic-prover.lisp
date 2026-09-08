@@ -20,8 +20,12 @@
 
 ;; TODO: Add support for embedded DAGs in the inputs (without using the legacy rewriter)
 
-;; See also the provers created by make-prover-simple (they are more
-;; lightweight and do not depend on skip-proofs).
+;; See also the legacy Axe Prover in prover.lisp and the provers created by
+;; make-prover-simple, such as the one in prover-basic.lisp (those are more
+;; lightweight and do not depend on skip-proofs).  Another difference is that
+;; this book distinguishes between a conclusion to be proved and the various
+;; side assumptions, whereas prover.lisp and prover-basic.lisp treat all
+;; literals in the clause equally (including rewriting the assumptions).
 
 (include-book "make-equality-dag-gen")
 (include-book "prune-term")
@@ -33,31 +37,17 @@
 ;(include-book "equivalent-dags")
 (include-book "sweep-and-merge-support")
 (include-book "find-probable-facts-simple")
+(include-book "pre-stp-rules")
 (include-book "tools/prove-dollar" :dir :system)
-(include-book "kestrel/arithmetic-light/minus" :dir :system) ; for INTEGERP-OF--
-(include-book "kestrel/arithmetic-light/plus" :dir :system) ; for INTEGERP-OF-+
 (include-book "kestrel/utilities/system/fresh-names" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/ensure-rules-known" :dir :system)
-;(include-book "kestrel/utilities/progn" :dir :system) ; for extend-progn
 ;(include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
 ;(include-book "kestrel/utilities/real-time-since" :dir :system)
-;(include-book "kestrel/bv/bvashr" :dir :system)
-(include-book "kestrel/bv/unsigned-byte-p-forced-rules" :dir :system)
-(include-book "kestrel/bv/bvor" :dir :system)
-(include-book "kestrel/bv/bvxor" :dir :system)
-(include-book "bv-rules-axe0")
-(include-book "bv-rules-axe")
-(include-book "basic-rules")
+(include-book "kestrel/bv/unsigned-byte-p-forced-rules" :dir :system) ; needed?
 (include-book "arithmetic-rules-axe")
-(include-book "bv-array-rules-axe") ; not all are needed, but we need integerp-of-bv-array-read
-(include-book "bv-intro-rules")
-(include-book "kestrel/bv-arrays/bv-array-read-rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BV-ARRAY-READ
-(include-book "kestrel/bv/sbvdiv" :dir :system)
-(include-book "kestrel/bv/sbvrem" :dir :system)
-(include-book "kestrel/bv/rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BVCHOP, etc?
-(include-book "kestrel/bv/bvuminus" :dir :system) ; for the (pre-stp-rules)
-(include-book "kestrel/bv/rotate" :dir :system)
+;(include-book "kestrel/bv-arrays/bv-array-read-rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BV-ARRAY-READ
+;(include-book "kestrel/bv/rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BVCHOP, etc?
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
@@ -98,30 +88,29 @@
     (prog2$ (check-assumption (first assumptions))
             (check-assumptions (rest assumptions)))))
 
-;; Returns (mv erp dag-or-quotep assumptions) where dag-or-quotep is boolean-valued.
+;; Returns (mv erp dag-or-quotep assumptions state) where dag-or-quotep is boolean-valued.
 ;todo: redo this to first convert to a dag, then extract hyps and conc from the dag (may blow up but unlikely in practice?)
 ; TODO: Consider IF when getting assumptions.
 ;; TODO: Do more type checking between TYPE and the type of the term / top dag node.
 ;; todo: extract assumptions from dags?
-(defun dag-or-term-to-dag-and-assumptions (item wrld)
-  (declare (xargs :guard (plist-worldp wrld)
-                  :mode :program ; because this calls translate-term
-                  ))
+(defund dag-or-term-to-dag-and-assumptions (item state)
+  (declare (xargs :stobjs state))
   (if (eq nil item) ;we interpret nil as a term (not an empty dag)
-      (mv (erp-nil) *nil* nil)
+      (mv (erp-nil) *nil* nil state)
     (if (weak-dagp item)
         ;; TODO: Add support for getting assumptions out of a DAG that is an
         ;; IMPLIES (but what if they are huge?), in both the :boolean and :bit
         ;; cases.
-        (mv (erp-nil) item nil)
-      (b* ((term (translate-term item 'dag-or-term-to-dag-and-assumptions wrld))
+        (mv (erp-nil) item nil state)
+      (b* (((mv erp term state) (translate-term-in-logic-mode item 'dag-or-term-to-dag-and-assumptions state))
+           ((when erp) (mv erp *nil* nil state))
            ;; TODO: Consider extracting hyps from bit-valued terms:
            ((mv assumptions term)
             (term-hyps-and-conc term))
            ;; Create the DAG for the conclusion:
            ((mv erp dag) (dagify-term term))
-           ((when erp) (mv erp nil nil)))
-        (mv (erp-nil) dag assumptions)))))
+           ((when erp) (mv erp nil nil state)))
+        (mv (erp-nil) dag assumptions state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -135,7 +124,7 @@
 ;; TODO: What about increasing the timeout and trying again?
 (defun tacticp (tac)
   (declare (xargs :guard t))
-  (or (member-eq tac '(:rewrite
+  (or (member-eq tac '(:rewrite ; todo: pass in the rules or rule-lists with the tactic, instead of as a top-level argument?
                        :rewrite-with-precise-contexts
                        :prune
                        :prune-with-rules
@@ -485,10 +474,11 @@
     (make-tactic-result new-dag dag assumptions state)))
 
 ;;
-;; The :acl2 tactic
+;; The :acl2 tactic (we could call this :prove$)
 ;;
 
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
+;; TODO: Add support for arguments to prove$
 (defun apply-tactic-acl2 (problem print state)
   (declare (xargs :guard (proof-problemp problem)
                   :stobjs state
@@ -542,8 +532,6 @@
 (verify-guards lookup-nodes-in-counterexample :hints (("Goal" :in-theory (enable bounded-counterexamplep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(ensure-rules-known (pre-stp-rules))
 
 ;; so we can get the top nodenum
 (local
@@ -742,7 +730,7 @@
                   :stobjs state
                   :mode :program ; because this calls translate-terms on the user-supplied CASES
                   ))
-  (b* ( ;(dag (first problem))
+  (b* (;(dag (first problem))
        (assumptions (second problem))
        (cases (translate-terms cases 'apply-tactic-cases (w state)))
        ((mv exhaustivep state)
@@ -929,7 +917,7 @@
    (if (endp problems)
        (prog2$ (cw "Finished proving all problems.~%")
                (mv *valid* (add-to-end prev-info info-acc) state))
-     (b* ( ;; Try to prove the first problem:
+     (b* (;; Try to prove the first problem:
           (- (cw "(Attacking sub-problem ~x0 of ~x1.~%" num (+ num (- (len problems) 1))))
           ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
           ((mv result new-info-acc state)
@@ -1106,9 +1094,9 @@
         (er hard 'prove-with-tactics-fn "Illegal tactics: ~x0. See TACTICP." tactics)
         (mv :bad-input nil state))
        ;; Form the dag to prove:
-       ((mv erp dag-or-constant assumptions2)
+       ((mv erp dag-or-constant assumptions2 state)
         ;; Also translates the term:
-        (dag-or-term-to-dag-and-assumptions dag-or-term (w state)))
+        (dag-or-term-to-dag-and-assumptions dag-or-term state))
        ((when erp) (mv :error-translating-input nil state))
        (all-assumptions (append assumptions assumptions2)) ; reorder args?
        ((mv result info-acc state)

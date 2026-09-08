@@ -233,12 +233,54 @@
    fix-already-definedp)
   :tag :omap)
 
+(def-primitive-aggregate flextreeset
+  ;; A single Treeset type (the acl2::treeset analogue of flexset).
+  (name               ;; name of this set type, e.g., myset
+   pred               ;; predicate function name, e.g., myset-p
+   tree-all           ;; structural fold function name, e.g., tree-all-myset
+   fix                ;; fix function name, e.g., myset-fix
+   equiv              ;; equiv function name, e.g., myset-equiv
+   count              ;; count function name, e.g., myset-count
+   elt-type           ;; element predicate name, e.g., myp
+   elt-fix            ;; element fixing function, e.g., my-fix
+   elt-equiv          ;; element equiv function, e.g., my-equiv
+   measure            ;; termination measure
+   xvar               ;; special x variable name, e.g., mypkg::x
+   kwd-alist          ;; alist of options, see *flextreeset-keywords*
+   recp               ;; is .elt-type part of the mutual recursion?
+   already-definedp
+   fix-already-definedp)
+  :tag :treeset)
+
+(def-primitive-aggregate flextreemap
+  ;; A single Treemap type (the treemap::treemap analogue of flexomap).
+  (name               ;; name of this map type, e.g., mymap
+   pred               ;; predicate function name, e.g., mymap-p
+   tree-all-keys      ;; key fold function name, e.g., tree-all-keys-mymap
+   tree-all-vals      ;; value fold function name, e.g., tree-all-vals-mymap
+   fix                ;; fix function name, e.g., mymap-fix
+   equiv              ;; equiv function name, e.g., mymap-equiv
+   count              ;; count function name, e.g., mymap-count
+   key-type           ;; key predicate name, e.g., mykeyp
+   key-fix            ;; key fixing function, e.g., mykey-fix
+   key-equiv          ;; key equiv function, e.g., mykey-equiv
+   val-type           ;; value predicate name, e.g., myvalp
+   val-fix            ;; value fixing function, e.g., myval-fix
+   val-equiv          ;; value equiv function, e.g., myval-equiv
+   measure            ;; termination measure
+   xvar               ;; special x variable name, e.g., mypkg::x
+   kwd-alist          ;; alist of options, see *flextreemap-keywords*
+   recp               ;; is .key-type or .val-type part of the mutual recursion?
+   already-definedp
+   fix-already-definedp)
+  :tag :treemap)
+
 (def-primitive-aggregate flextypes
   ;; A top-level entry in the flextypes table.
   ;; May bundle up a group of mutually recursive types.
   ;; Alternately, may contain a singleton type (e.g., from defprod, deflist, etc.)
   (name               ;; wrapper name, often shared by a member type
-   types              ;; member types -- list of flexsum, flexlist, flexalists, flextranssums, flexomap or flexset
+   types              ;; member types -- list of flexsum, flexlist, flexalists, flextranssums, flexomap, flexset, flextreeset or flextreemap
                       ;;  (no flexprods here, they'll be inside flexsums)
    kwd-alist          ;; alist of options, see *flextypes-keywords*
    no-count           ;; boolean -- skip the count function?
@@ -360,6 +402,8 @@
        (transsumbody (replace-*-in-symbols-with-str body "TRANSSUM"))
        (setbody      (replace-*-in-symbols-with-str body "SET"))
        (omapbody     (replace-*-in-symbols-with-str body "OMAP"))
+       (treesetbody  (replace-*-in-symbols-with-str body "TREESET"))
+       (treemapbody  (replace-*-in-symbols-with-str body "TREEMAP"))
        (cases
         `(case (tag ,var)
            (:sum ,(if add-binds `(b* (((flexsum ,var) ,var)) ,sumbody) sumbody))
@@ -368,6 +412,8 @@
            (:transsum ,(if add-binds `(b* (((flextranssum ,var) ,var)) ,transsumbody) transsumbody))
            (:set ,(if add-binds `(b* (((flexset ,var) ,var)) ,setbody) setbody))
            (:omap ,(if add-binds `(b* (((flexomap ,var) ,var)) ,omapbody) omapbody))
+           (:treeset ,(if add-binds `(b* (((flextreeset ,var) ,var)) ,treesetbody) treesetbody))
+           (:treemap ,(if add-binds `(b* (((flextreemap ,var) ,var)) ,treemapbody) treemapbody))
            (otherwise ,default))))
     (if (consp binding)
         `(let ((,var ,(cadr binding))) ,cases)

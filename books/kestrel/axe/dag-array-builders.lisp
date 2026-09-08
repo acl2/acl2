@@ -538,7 +538,7 @@
                 (not (mv-nth 0 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))))
            (<= (+ 1 (mv-nth 1 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist)))
                (mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))))
-  :rule-classes ( ;:rewrite
+  :rule-classes (;:rewrite
                  (:linear :trigger-terms ((mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist)))))
   :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array bounded-dag-constant-alistp))))
 
@@ -760,9 +760,9 @@
 (defund empty-dag-array (slack-amount)
   (declare (xargs :guard (and (posp slack-amount)
                               (<= slack-amount *max-1d-array-length*))))
-  (mv (make-empty-array 'dag-array slack-amount)
+  (mv (new-array1 'dag-array slack-amount)
       0
-      (make-empty-array 'dag-parent-array slack-amount)
+      (new-array1 'dag-parent-array slack-amount)
       nil ; empty-dag-constant-alist ; todo: name that notion
       (empty-dag-variable-alist)))
 

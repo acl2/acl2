@@ -242,7 +242,7 @@
        ;; Do the symbolic simulation:
        (enables (append enables *standard-lifter-enables*))
        (term-to-simulate '(run-until-return x86))
-       (term-to-simulate (wrap-in-output-extractor output term-to-simulate 64-bitp (w state)))
+       (term-to-simulate (wrap-in-output-extractor term-to-simulate output 64-bitp state))
        ((mv result runes state)
         (symsim$-fn term-to-simulate
                     assumptions

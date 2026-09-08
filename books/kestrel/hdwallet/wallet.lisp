@@ -51,7 +51,7 @@
    (xdoc::p
     "This wallet is meant for use on an air-gapped machine.
      It provides two basic functions: key generation and transaction signing.
-     Thus, keys can be generated and used for signing transacions:
+     Thus, keys can be generated and used for signing transactions:
      the data of the transaction to sign and the signed transaction
      must be passed between the air-gapped machine where this wallet runs
      and an Internet-connected machine that submits the signed transactions.
@@ -272,7 +272,7 @@
      at rest, the wallet state can be protected by disk encryption.
      Thus, even if the machine is stolen,
      it should not be possible to recover the wallet state,
-     assuming that the disk encryption is protected by a  strong password.")
+     assuming that the disk encryption is protected by a strong password.")
 
    (xdoc::h3 "Error Handling")
 
@@ -932,7 +932,7 @@
    (xdoc::p
     "Certain wallet commands take byte lists as inputs,
      which are supplied by the wallet's user as strings.
-     These must be an even-length strings of hexadecimal digits,
+     These must be an even-length string of hexadecimal digits,
      where the letters may be uppercase or lowercase.
      Each pair of hexadecimal digits is turned into a byte,
      with the first digit becoming the most significant nibble of the byte.
@@ -1201,7 +1201,7 @@
    (xdoc::p
     "The six components of the transaction are passed as string inputs,
      which we parse and validate.
-     Is validation fails, specific error values are returned."))
+     If validation fails, specific error values are returned."))
   (b* (((mv error? nonce) (string-to-word nonce-string))
        ((when error?)
         (mv (command-error-malformed-nonce nonce-string) nil))

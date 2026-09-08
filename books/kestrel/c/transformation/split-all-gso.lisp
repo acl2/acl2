@@ -262,7 +262,7 @@
           ((mv erp linkage tag?)
            (get-gso-linkage-from-valid-table
              gso
-             (c$::trans-unit-info->table-end (c$::trans-unit->info tunit))))
+             (c$::trans-unit-vinfo->table-end (c$::trans-unit->info tunit))))
           ((when erp)
            (trans-unit-find-gso-candidate0 tunit
                                           (insert gso blacklist)
@@ -401,7 +401,7 @@
           ;; TODO: prove that split-gso preserves unambiguity and validity
           ;;   (it likely doesn't preserve the latter currently).
           ((erp tunits$)
-           (c$::dimb-trans-ensemble tunits$ (c$::ienv->dialect ienv) nil))
+           (c$::dimb-trans-ensemble tunits$ ienv nil))
           ((erp tunits$)
            (c$::valid-trans-ensemble tunits$ ienv nil))
           ;; TODO: c$::valid-trans-ensemble should return an annop

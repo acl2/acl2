@@ -1,0 +1,54 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains a grammar rule for keywords in the GCC and Clang dialects.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The GCC and Clang documentation does not seem to have
+; a clear list of all their additional keywords in the style of [C17] and [C23].
+; The list is inferred from the documentation,
+; but the lists may be incomplete, and it will be extended as needed.
+
+keyword-gcc-clang = %s"__alignof"
+                  / %s"__alignof__"
+                  / %s"asm"
+                  / %s"__asm"
+                  / %s"__asm__"
+                  / %s"__attribute"
+                  / %s"__attribute__"
+                  / %s"__auto_type"
+                  / %s"__builtin_offsetof"
+                  / %s"__builtin_types_compatible_p"
+                  / %s"__builtin_va_arg"
+                  / %s"__builtin_va_list"
+                  / %s"__declspec"
+                  / %s"__extension__"
+                  / %s"__imag__"
+                  / %s"__inline"
+                  / %s"__inline__"
+                  / %s"__int128"
+                  / %s"__int128_t"
+                  / %s"__label__"
+                  / %s"__real__"
+                  / %s"__restrict"
+                  / %s"__restrict__"
+                  / %s"__seg_fs"
+                  / %s"__seg_gs"
+                  / %s"__signed"
+                  / %s"__signed__"
+                  / %s"__stdcall"
+                  / %s"__thread"
+                  / %s"__typeof"
+                  / %s"__typeof__"
+                  / %s"__volatile"
+                  / %s"__volatile__"

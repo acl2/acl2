@@ -11,6 +11,10 @@
 
 (in-package "APT")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Utilities:
+
 (include-book "utilities/top")
 
 (include-book "def")
@@ -18,11 +22,25 @@
 (include-book "common-concepts")
 (include-book "common-options")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Transformations:
+
 (include-book "copy-function")
+
+(include-book "add-return-values")
+
+(include-book "annotate-c-locals")
+
+(include-book "arrange-ifs-and-mbts")
 
 (include-book "casesplit")
 
+(include-book "drop-irrelevant-params")
+
 (include-book "expdata")
+
+(include-book "finite-difference")
 
 (include-book "isodata")
 
@@ -30,7 +48,11 @@
 
 (include-book "propagate-iso")
 
+(include-book "remove-nesting")
+
 (include-book "rename-calls")
+
+(include-book "rename-params")
 
 (include-book "restrict")
 
@@ -44,3 +66,5 @@
 (include-book "solve-method-acl2-rewriter")
 
 (include-book "tailrec")
+
+(include-book "wrap-output")

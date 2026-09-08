@@ -98,18 +98,21 @@
      :member (c$::expr-member
                (expr-subst-free (c$::expr-member->arg expr)
                                 subst bound-vars)
-               (c$::expr-member->name expr))
+               (c$::expr-member->name expr)
+               (c$::expr-member->info expr))
      :memberp (c$::expr-memberp
                 (expr-subst-free (c$::expr-memberp->arg expr)
                                  subst bound-vars)
-                (c$::expr-memberp->name expr))
+                (c$::expr-memberp->name expr)
+                (c$::expr-memberp->info expr))
      :complit
      (c$::expr-complit
        (tyname-subst-free (c$::expr-complit->type expr)
                           subst bound-vars)
        (desiniter-list-subst-free (c$::expr-complit->elems expr)
                                   subst bound-vars)
-       (c$::expr-complit->final-comma expr))
+       (c$::expr-complit->final-comma expr)
+       (c$::expr-complit->info expr))
      :unary
      (c$::expr-unary (c$::expr-unary->op expr)
                      (expr-subst-free (c$::expr-unary->arg expr)
@@ -265,8 +268,9 @@
                                  (subst ident-expr-mapp)
                                  (bound-vars ident-setp))
     :returns (result const-exprp)
-    (const-expr (expr-subst-free (const-expr->expr const-expr)
-                                 subst bound-vars))
+    (make-const-expr :expr (expr-subst-free (const-expr->expr const-expr)
+                                            subst bound-vars)
+                     :info (const-expr->info const-expr))
     :measure (const-expr-count const-expr))
 
   (define const-expr-option-subst-free
@@ -357,12 +361,16 @@
      (type-spec-atomic
        (tyname-subst-free (c$::type-spec-atomic->type type-spec)
                           subst bound-vars))
-     :struct (type-spec-struct (struni-spec-subst-free
-                                 (c$::type-spec-struct->spec type-spec)
-                                 subst bound-vars))
-     :union (type-spec-union (struni-spec-subst-free
-                               (c$::type-spec-union->spec type-spec)
-                               subst bound-vars))
+     :struct (c$::make-type-spec-struct
+               :spec (struni-spec-subst-free
+                       (c$::type-spec-struct->spec type-spec)
+                       subst bound-vars)
+               :info type-spec.info)
+     :union (c$::make-type-spec-union
+             :spec (struni-spec-subst-free
+                    (c$::type-spec-union->spec type-spec)
+                    subst bound-vars)
+             :info type-spec.info)
      :enum
      (type-spec-enum
        (enum-spec-subst-free (c$::type-spec-enum->spec type-spec)
@@ -575,7 +583,8 @@
      (designor-list-subst-free (c$::desiniter->designors desiniter)
                                subst bound-vars)
      (initer-subst-free (c$::desiniter->initer desiniter)
-                        subst bound-vars))
+                        subst bound-vars)
+     nil)
     :measure (desiniter-count desiniter))
 
   (define desiniter-list-subst-free
@@ -866,7 +875,10 @@
           (param-declor-subst-free
             (c$::param-declon->declor param-declon)
             subst bound-vars)))
-      (mv (param-declon specs declor (c$::param-declon->attribs param-declon))
+      (mv (param-declon specs
+                        declor
+                        (c$::param-declon->attribs param-declon)
+                        (c$::param-declon->info param-declon))
           (ident-set-fix bound-vars)))
     :measure (param-declon-count param-declon))
 
@@ -902,10 +914,11 @@
                                           :info param-declor.info)
            (ident-set-fix bound-vars)))
      :abstract
-     (mv (param-declor-abstract
-           (absdeclor-subst-free
-             (c$::param-declor-abstract->declor param-declor)
-             subst bound-vars))
+     (mv (make-param-declor-abstract
+          :declor (absdeclor-subst-free
+                   (c$::param-declor-abstract->declor param-declor)
+                   subst bound-vars)
+          :info param-declor.info)
          (ident-set-fix bound-vars))
      :none (mv (param-declor-fix param-declor) (ident-set-fix bound-vars))
      :ambig
@@ -1001,7 +1014,7 @@
           (declor-option-subst-free
            (c$::struct-declor->declor? structdeclor)
            subst bound-vars)))
-      (mv (struct-declor declor? expr?)
+      (mv (struct-declor declor? expr? (c$::struct-declor->info structdeclor))
           (ident-set-fix bound-vars)))
     :measure (struct-declor-count structdeclor))
 

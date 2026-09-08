@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/c/syntax/input-files" :dir :system)
+(include-book "kestrel/c/syntax/abstract-syntax-formal-mapping-direct" :dir :system)
 (include-book "kestrel/c/language/dynamic-semantics" :dir :system)
 (include-book "kestrel/c/representation/integers" :dir :system)
 (include-book "kestrel/c/proof-support/const-ast-accessors" :dir :system)

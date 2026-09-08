@@ -1216,6 +1216,9 @@
      (let ((NLA (lookup-NLA fn 'not-found $sat)))
        (if (eq 'not-found NLA)
            (mv (er hard 'acl2::sat-ground-formals
-                   "ERROR: No function ~x0 ~%")
+                   ;; Matt K.: Fix for missing argument:
+                   ;; "ERROR: No function ~x0 ~%"
+                   "ERROR: lookup-NLA failed for ~x0 ~%"
+                   fn)
                nil $sat state)
          (mv nil (make-gf-list formals NLA) $sat state))))))

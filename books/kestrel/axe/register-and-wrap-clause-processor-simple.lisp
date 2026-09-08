@@ -1,7 +1,7 @@
 ; A tool to make a clause processor that uses an Axe Prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -15,7 +15,7 @@
 ;; TODO: Rename this book, since the clause processor function itself must already exist.  Should make-prover-simple (optionally) just do this stuff?
 ;; TODO: Rename to be more specific.
 
-;; This machinery requires a TTAG, due to the use of define-trusted-clause-processor.
+;; This machinery requires a TTAG, for define-trusted-clause-processor.
 
 (include-book "kestrel/utilities/pack" :dir :system)
 
@@ -52,10 +52,13 @@
                                      (print-levelp print)
                                      (symbol-listp var-ordering)
                                      (booleanp count-hits)
-                                     ;; todo: rule-classes
-                                     )
+                                     (or (eq :auto rule-classes)
+                                         ;; could make this stricter if we want:
+                                         (keywordp rule-classes)
+                                         (true-listp rule-classes)))
                          :stobjs state))
-         (b* (((when (and rules rule-lists))
+         (b* (;; Create the rule-lists:
+              ((when (and rules rule-lists))
                (er hard? ',defthm-axe-fn-name "Both :rules and :rule-lists were given for ~x0." name))
               (rule-lists (if rules
                               (list (elaborate-rule-items rules state))
@@ -81,7 +84,8 @@
                     nil
                   `(:rule-classes ,rule-classes)))))
 
-       ;; Submit a defthm that uses the clause-processor:
+       ;; Submit a defthm that uses the clause-processor to prove Goal:
+       ;; TODO: Also make a version that uses the clause-processor when stable (passing in all other user hints) -- or just allow hints to be given here?
        (defmacro ,defthm-axe-name (name
                                    term
                                    &key

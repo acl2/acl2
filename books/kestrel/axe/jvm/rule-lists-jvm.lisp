@@ -49,7 +49,7 @@
 ;; Rules about new addresses
 (defun new-ad-rules ()
   (declare (xargs :guard t))
-  '( ;;rules to simplidy sets of new addresses (could instead unroll n-new-ads?)
+  '(;;rules to simplidy sets of new addresses (could instead unroll n-new-ads?)
     insert-of-new-ad-of-insert-of-nth-new-ad ;new
     insert-of-nth-new-ad-of-insert-of-nth-new-ad
     insert-of-next-ad-onto-union-of-dom-and-n-new-adsalt-better
@@ -691,7 +691,8 @@
   (append (jvm-constant-opener-rules)
           (new-ad-rules)
           (address-rules)
-          '(set::delete-constant-opener ;needed for address calcs
+          '(if-becomes-myif ; todo: avoid myif, now that a rewrite rule can have a LHS that is an IF
+            set::delete-constant-opener ;needed for address calcs
             set::tail$inline-constant-opener   ;needed for address calcs
             set::head$inline-constant-opener   ;needed for address calcs
             set::emptyp$inline-constant-opener ;needed for address calcs
@@ -915,10 +916,10 @@
             equal-nil-s
             jvm::equal-nil-string-to-char-list
 
-            logext-when-usb-cheap ;new, since logext is still used a little bit (for arraycopy?)
+            logext-when-unsigned-byte-p-free ;new, since logext is still used a little bit (for arraycopy?)
             logext-identity-when-usb-smaller-axe
 
-            jvm::op-code
+            jvm::instruction-opcode
 
             jvm::call-stack
 
@@ -948,6 +949,7 @@
             ;bvand-of-logext
             ;bvand-of-logext-alt
 
+            array-length ; try array-length-of-set-field-both instead?
             ;; rules about get-field:
             get-field-of-set-field-both ;todo: try this one first
             ;; don't need these 3 if we have get-field-of-set-field-both:
@@ -1032,6 +1034,7 @@
             jvm::stack-of-make-frame
             jvm::method-designator-of-make-frame
             jvm::method-info-of-make-frame
+            ;jvm::method-program ; new
             ;; todo: rename to frame-method-descriptor, etc.:
             jvm::cur-method-descriptor
             jvm::cur-method-name
@@ -1589,14 +1592,14 @@
 ;todo: add jvm to the name
 (defun phase-1-rules ()
   (declare (xargs :guard t))
-  (set-difference-equal (append '( ;bvshl ;this makes things much bigger
+  (set-difference-equal (append '(;bvshl ;this makes things much bigger
                                   )
                                 (amazing-rules-spec-and-dag)
                                 (map-rules)
                                 (jvm-semantics-rules)
                                 (jvm-simplification-rules)
                                 (run-until-return-from-stack-height-rules-smart))
-                        '(                ;;BVOR-WITH-SMALL-ARG2
+                        '(;;BVOR-WITH-SMALL-ARG2
                           getbit-of-bvxor ;new
                           bvplus-commutative-axe
                           bvplus-commutative-2-axe
@@ -1614,14 +1617,14 @@
   (list (make-rule-alist! (phase-1-rules)
                           (w state))
         ;; here's what gets turned on here (BVPLUS-COMMUTATIVE-AXE BVPLUS-COMMUTATIVE-2-AXE BVPLUS-ASSOCIATIVE BVUMINUS-OF-BVPLUS GETBIT-OF-BVXOR BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT BVASHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT):
-        (make-rule-alist! (set-difference-equal (append '( ;bvshl ;this makes things much bigger
+        (make-rule-alist! (set-difference-equal (append '(;bvshl ;this makes things much bigger
                                                           )
                                                         (amazing-rules-spec-and-dag)
                                                         (map-rules)
                                                         (jvm-semantics-rules)
                                                         (jvm-simplification-rules)
                                                         (run-until-return-from-stack-height-rules-smart))
-                                                '( ;BVOR-WITH-SMALL-ARG2
+                                                '(;BVOR-WITH-SMALL-ARG2
                                                   ;;GETBIT-OF-BVXOR
                                                   ;;BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT
                                                   ;;BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT

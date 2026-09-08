@@ -515,7 +515,7 @@
   (b* (;; One of these parents will be the equality we are using to subst, but it may occur elsewhere as well, so handle it normally:
        (parents (aref1 'dag-parent-array dag-parent-array nodenum-to-replace))
        ;; (- (cw "Node ~x0 being replaced has ~x1 parents: ~x2.~%" nodenum-to-replace (len parents) parents))
-       (translation-array (make-empty-array 'translation-array dag-len)) ;can we make it any shorter?
+       (translation-array (new-array1 'translation-array dag-len)) ;can we make it any shorter?
        ;; ensure that nodenum-to-replace gets replaced with new-nodenum:
        (translation-array (aset1 'translation-array translation-array nodenum-to-replace new-nodenum))
        ((mv erp translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)

@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,18 +17,21 @@
 (include-book "oslib/portcullis" :dir :system)
 (include-book "std/portcullis" :dir :system)
 
-(include-book "../syntax/abstract-syntax-symbols")
+(include-book "../syntax/exported-symbols")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpkg "C2C" (append
                (set-difference-eq *std-pkg-symbols*
-                                  '(block))
-               c$::*abstract-syntax-symbols*
+                                  '(block
+                                    type
+                                    typep))
+               c$::*exported-symbols*
                '(bool
                  constant-symbolp
                  constant-value
                  defirrelevant
+                 defmacro+
                  defund-sk
                  defxdoc+
                  enable*
@@ -36,6 +39,7 @@
                  erp
                  impossible
                  index-of
+                 lnfix
                  packn-pos
                  maybe-msgp
                  maybe-pseudo-event-formp
@@ -48,5 +52,6 @@
                  reterr
                  retmsg$
                  retok
+                 symbol-lfix
                  symbol-list
                  std::defret-mutual)))

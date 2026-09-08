@@ -79,9 +79,10 @@
          @(see treeset)s (@(tsee min) and @(tsee tail)), it would be
          inefficient to use them for iteration. Instead, one should use an
          @(see iterator). This requires an initial step to create the
-         @(see iterator) (via @(tsee iter)), but once one has an iterator, one
+         @(see iterator) (via @(tsee iter-min)), but once one has an iterator, one
          can call @(tsee value) and @(tsee next) as you would @(tsee set::head)
-         and @(tsee set::tail). If you are going to iterate over the entire
+         and @(tsee set::tail). To walk the other way, start from @(tsee
+         iter-max) and use @(tsee prev). If you are going to iterate over the entire
          set (i.e. you don't need to ``exit early''), you could also use
          @('to-oset'). All these methods of iteration take @($O(n)$) time.")))
   :order-subtopics t)

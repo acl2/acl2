@@ -5,10 +5,17 @@
 
 ;; Field:
 
-(encapsulate (((fp *) => *)                   ;field element recognizer
-              ((f+ * *) => *) ((f* * *) => *) ;addition and multiplication
-	      ((f0) => *) ((f1) => *)         ;identities
-	      ((f- *) => *) ((f/ *) => *))    ;inverses 
+(encapsulate (;field element recognizer
+              ((fp *) => *)                                              
+              ;addition and multiplication
+	      ((f+ * *) => * :formals (x y) :guard (and (fp x) (fp y)))  
+              ((f* * *) => * :formals (x y) :guard (and (fp x) (fp y)))
+              ;identities
+	      ((f0) => *)                                                
+              ((f1) => *)
+              ;inverses
+	      ((f- *) => * :formals (x) :guard (fp x))                   
+              ((f/ *) => * :formals (x) :guard (and (fp x) (not (equal x (f0))))))
   (local (defun fp (x) (rationalp x)))
   (local (defun f+ (x y) (+ x y)))
   (local (defun f* (x y) (* x y)))
@@ -38,6 +45,14 @@
   (defthm f*inv (implies (and (fp x) (not (equal x (f0)))) (equal (f* x (f/ x)) (f1))))
   ;; Distributivity:
   (defthm fdist (implies (and (fp x) (fp y) (fp z)) (equal (f* x (f+ y z)) (f+ (f* x y) (f* x z))))))
+
+;; We attach the corresponding functions pertaining to the rationals to the above
+;; constrained functions, so that all functions will be executable:;; 
+
+(defun nullary-0 () (declare (xargs :guard t)) 0)
+(defun nullary-1 () (declare (xargs :guard t)) 1)
+(defattach (fp rationalp) (f+ binary-+) (f* binary-*)
+           (f0 nullary-0) (f1 nullary-1) (f- unary--) (f/ unary-/))
 
 ;; Trivial consequences of the axioms:
 
@@ -155,6 +170,12 @@
   :hints (("Goal" :use ((:instance fdist (z (f- y)))
 			(:instance f-unique (x (f* x y)) (y (f* x (f- y))))))))
 
+(defthmd f*f-f1
+  (implies (fp x)
+           (equal (f* (f- (f1)) x)
+	          (f- x)))
+  :hints (("Goal" :use ((:instance f-f* (y (f1)))
+                        (:instance f*comm (y (f- (f1))))))))
 
 ;;----------------------------------------------------------------------------------------
 ;; Lists of Field Elements
@@ -223,6 +244,10 @@
 (defthm fp-flistn-prod
   (implies (flistnp x n)
            (fp (flist-prod x))))
+
+(defthmd flistnp-append
+  (implies (and (flistnp x n) (flistnp y m) (natp n) (natp m))
+           (flistnp (append x y) (+ n m))))
 
 ;; Every member of x is (f0):
 
@@ -301,6 +326,23 @@
 	   (equal (flist-add x (flist-add y z))
 		  (flist-add (flist-add x y) z)))
   :hints (("Subgoal *1/4" :in-theory (enable f+assoc))))
+
+;; Negative of a list:
+
+(defun flist-minus (x)
+  (if (consp x)
+      (cons (f- (car x)) (flist-minus (cdr x)))
+    ()))
+
+(defthm flistnp-flist-minus
+  (implies (flistnp x n)
+           (flistnp (flist-minus x) n)))
+
+(defthm flist-minus-inv
+  (implies (flistnp x n)
+           (equal (flist-add x (flist-minus x))
+	          (flistn0 n))))
+
 
 ;; List of products of corresponding members of x and y:
 

@@ -1,6 +1,6 @@
 ; Another experiment verifying a rewriter-like tool
 ;
-; Copyright (C) 2020-2022 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -55,7 +55,7 @@
                   (evl term a)))
   :hints (("Goal" :in-theory (enable rewrite-term-with-formula))))
 
-;; The metafunction. This checks whether a theorem named MY-RULE exists. Is so,
+;; The metafunction. This checks whether a theorem named MY-RULE exists. If so,
 ;; and if it is an equality whose left-hand-side is TERM, this replaces TERM
 ;; with the right-hand-side of the equality.  Note that the match must be
 ;; exact; we don't do any unification of TERM with the left-hand-side.  We also
@@ -69,7 +69,7 @@
   ;; MY-RULE.
   (let ((formula (meta-extract-formula 'my-rule state)))
     (if (not (pseudo-termp formula))
-        (prog2$ (er hard? 'apply-rule-to-term "Non-pseudo-term formula, ~x0, found for ~x1." formula 'myrule)
+        (prog2$ (er hard? 'apply-rule-to-term "Non-pseudo-term formula, ~x0, found for ~x1." formula 'my-rule)
                 term ;; no change
                 )
       (rewrite-term-with-formula term formula))))

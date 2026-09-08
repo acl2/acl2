@@ -14,7 +14,8 @@
 (include-book "bvor-def")
 (include-book "bvxor-def")
 (include-book "bvplus-def")
-(include-book "bvminus")
+(include-book "bvuminus-def")
+(include-book "bvminus-def")
 (include-book "bv-syntax")
 (include-book "bvcat-def")
 (include-book "bvsx-def")
@@ -26,6 +27,7 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "bvand"))
+(local (include-book "bvminus"))
 (local (include-book "bvor"))
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
@@ -133,14 +135,14 @@
 ;;   (equal (logand y (bvchop width x))
 ;;          (bvand width y x))
 ;;   :hints (("Goal" :use (:instance logand-becomes-bvand (size width) (x (bvchop width x)))
-;;            :in-theory (disable))))
+;;            )))
 
 ;; ;; subsumed?
 ;; (defthmd logand-of-bvchop-becomes-bvand-alt
 ;;   (equal (logand (bvchop width x) y)
 ;;          (bvand width y x))
 ;;   :hints (("Goal" :use (:instance logand-becomes-bvand (size width) (x (bvchop width x)))
-;;            :in-theory (disable))))
+;;            )))
 
 ;; We only need to get the size of one argument for logand
 (defthmd logand-becomes-bvand-when-unsigned-byte-p-arg1
@@ -314,7 +316,8 @@
                 (posp size2))
            (equal (bvminus size (logext size2 x) y)
                   (bvminus size (bvsx size size2 x) y)))
-  :hints (("Goal" :cases ((equal size size2)))))
+  :hints (("Goal" :cases ((equal size size2))
+                  :in-theory (enable bvminus-becomes-bvplus-of-bvuminus))))
 
 ;; replace with a general rule?
 (defthmd bvminus-of-logext-arg3-convert-to-bv
@@ -323,4 +326,5 @@
                 (posp size2))
            (equal (bvminus size x (logext size2 y))
                   (bvminus size x (bvsx size size2 y))))
-  :hints (("Goal" :cases ((equal size size2)))))
+  :hints (("Goal" :cases ((equal size size2))
+                  :in-theory (enable bvminus-becomes-bvplus-of-bvuminus))))

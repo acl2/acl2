@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function intersection-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -183,6 +183,14 @@
    (subsetp-equal x x)
    :hints (("Goal" :in-theory (enable subsetp-equal)))))
 
+;; A list that is a subset of both X and Y is a subset of their intersection.
+(defthm subsetp-equal-of-intersection-equal-when-subsetp-equal-of-both
+  (implies (and (subsetp-equal a x)
+                (subsetp-equal a y))
+           (subsetp-equal a (intersection-equal x y)))
+  :hints (("Goal" :induct (len a)
+           :in-theory (enable subsetp-equal (:i len)))))
+
 (defthm intersection-equal-same
   (equal (intersection-equal x x)
          (true-list-fix x))
@@ -215,3 +223,10 @@
            (equal (intersection-equal x (remove-equal a y))
                   (intersection-equal x y)))
   :hints (("Goal" :in-theory (enable intersection-equal remove-equal))))
+
+;; BTW, it's not enough for y to be duplicate-free.  Consider (intersection-equal '(1 1) '(1)) = '(1 1).
+;; Also in no-duplicatesp-equal.lisp
+(defthm no-duplicatesp-equal-of-intersection-equal
+  (implies (no-duplicatesp-equal x)
+           (no-duplicatesp-equal (intersection-equal x y)))
+  :hints (("Goal" :in-theory (enable intersection-equal no-duplicatesp-equal))))

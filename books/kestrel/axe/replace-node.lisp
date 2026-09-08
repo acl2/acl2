@@ -140,7 +140,7 @@
                               (<= new-nodenum old-nodenum) ; equal would be unusual
                               (< old-nodenum dag-len))
                   :guard-hints (("Goal" :in-theory (enable bounded-dag-exprp-when-myquotep)))))
-  (let* ( ;; we could perhaps remove some child nodes as well:
+  (let* (;; we could perhaps remove some child nodes as well:
          ;; (dag-array (aset1 dag-array-name dag-array old-nodenum (enquote :removed)))
          (dag-array (change-mentions-of-nodenum (+ 1 old-nodenum) dag-len old-nodenum new-nodenum dag-array-name dag-array)))
     dag-array))

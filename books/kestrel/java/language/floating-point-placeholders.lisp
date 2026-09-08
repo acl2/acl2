@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -292,7 +292,7 @@
   (xdoc::topstring
    (xdoc::p
     "All our abstract operations and conversions
-     are weakly constraned ACL2 functions
+     are weakly constrained ACL2 functions
      that unconditionally return results of the appropriate types.
      The macros capture this boilerplate structure.")
    (xdoc::p

@@ -1,7 +1,7 @@
 ; Rules about BVLT
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,7 +14,7 @@
 (include-book "bvlt-def")
 (include-book "unsigned-byte-p")
 (include-book "bvplus") ;drop!
-(include-book "bvminus") ;drop! but is used below
+(include-book "bvminus-def") ;drop! but is used below
 (include-book "kestrel/arithmetic-light/ceiling-of-lg-def" :dir :system)
 (local (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system))
 (local (include-book "slice")) ; since we open getbit below
@@ -526,91 +526,115 @@
 (defthm not-equal-of-constant-when-bvlt-constant-1
   (implies (and (syntaxp (quotep const))
                 (bvlt freesize free x)
-                (syntaxp (quotep free))
-                (syntaxp (quotep freesize))
-                (bvle freesize const free))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
+                (bvle freesize const free) ; gets evaluated
+                )
            (not (equal const x))))
 
 (defthm not-equal-of-constant-when-bvlt-constant-2
   (implies (and (syntaxp (quotep const))
                 (bvlt freesize x free)
-                (syntaxp (quotep free))
-                (syntaxp (quotep freesize))
-                (bvle freesize free const))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
+                (bvle freesize free const) ; gets evaluated
+                )
            (not (equal const x))))
 
 (defthm not-equal-of-constant-when-not-bvlt-constant-1
   (implies (and (syntaxp (quotep const))
                 (not (bvlt freesize x free))
-                (syntaxp (quotep freesize))
-                (syntaxp (quotep free))
-                (bvlt freesize const free))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
+                (bvlt freesize const free) ; gets evaluated
+                )
            (not (equal const x))))
 
 (defthm not-equal-of-constant-when-not-bvlt-constant-2
   (implies (and (syntaxp (quotep const))
                 (not (bvlt freesize free x))
-                (syntaxp (quotep freesize))
-                (syntaxp (quotep free))
-                (bvlt freesize free const))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
+                (bvlt freesize free const) ; gets evaluated
+                )
            (not (equal const x))))
 
-; can we drop the -alt rules?  or add 2 more?
+;; These flip the equality in the conclusion (todo: only needed for Axe?)
 
-(defthm not-equal-of-constant-when-bvlt-constant-1-alt
+(defthmd not-equal-of-constant-when-bvlt-constant-1-alt
   (implies (and (syntaxp (quotep const))
                 (bvlt freesize free x)
-                (syntaxp (quotep free))
-                (syntaxp (quotep freesize))
-                (bvle freesize const free))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
+                (bvle freesize const free) ; gets evaluated
+                )
            (not (equal x const))))
 
-(defthm not-equal-of-constant-when-bvlt-constant-2-alt
+(defthmd not-equal-of-constant-when-bvlt-constant-2-alt
   (implies (and (syntaxp (quotep const))
                 (bvlt freesize x free)
-                (syntaxp (quotep free))
-                (syntaxp (quotep freesize))
-                (bvle freesize free const))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
+                (bvle freesize free const) ; gets evaluated
+                )
+           (not (equal x const))))
+
+(defthmd not-equal-of-constant-when-not-bvlt-constant-1-alt
+  (implies (and (syntaxp (quotep const))
+                (not (bvlt freesize x free))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
+                (bvlt freesize const free) ; gets evaluated
+                )
+           (not (equal x const))))
+
+(defthmd not-equal-of-constant-when-not-bvlt-constant-2-alt
+  (implies (and (syntaxp (quotep const))
+                (not (bvlt freesize free x))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
+                (bvlt freesize free const) ; gets evaluated
+                )
            (not (equal x const))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm equal-of-bvchop-and-constant-when-bvlt-constant-1
+(defthm not-equal-of-bvchop-and-constant-when-bvlt-constant-1
   (implies (and (syntaxp (quotep const))
                 (bvlt freesize free x)
                 (<= freesize size)
-                (syntaxp (quotep free))
-                (syntaxp (quotep freesize))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
                 (bvle freesize const free)
                 (integerp size))
            (not (equal const (bvchop size x)))))
 
-(defthm equal-of-bvchop-and-constant-when-bvlt-constant-2
+(defthm not-equal-of-bvchop-and-constant-when-bvlt-constant-2
   (implies (and (syntaxp (quotep const))
                 (bvlt freesize x free)
                 (<= freesize size)
-                (syntaxp (quotep free))
-                (syntaxp (quotep freesize))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
                 (bvle freesize free const)
                 (integerp size))
            (not (equal const (bvchop size x)))))
 
-(defthm equal-of-bvchop-and-constant-when-not-bvlt-constant-1
+(defthm not-equal-of-bvchop-and-constant-when-not-bvlt-constant-1
   (implies (and (syntaxp (quotep const))
                 (not (bvlt freesize x free))
                 (<= freesize size)
-                (syntaxp (quotep freesize))
-                (syntaxp (quotep free))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
                 (bvlt freesize const free)
                 (integerp size))
            (not (equal const (bvchop size x)))))
 
-(defthm equal-of-bvchop-and-constant-when-not-bvlt-constant-2
+(defthm not-equal-of-bvchop-and-constant-when-not-bvlt-constant-2
   (implies (and (syntaxp (quotep const))
                 (not (bvlt freesize free x))
                 (<= freesize size)
-                (syntaxp (quotep freesize))
-                (syntaxp (quotep free))
+                (syntaxp (and (quotep free)
+                              (quotep freesize)))
                 (bvlt freesize free const)
                 (integerp size))
            (not (equal const (bvchop size x)))))
@@ -835,10 +859,9 @@
                 (natp size)
                 )
            (not (BVLT size x k)))
-  :hints (("Goal" :in-theory (e/d (bvlt ;unsigned-byte-p
-                                   bvchop-of-sum-cases
-                                   bvplus)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt ;unsigned-byte-p
+                                     bvchop-of-sum-cases
+                                     bvplus))))
 
 (defthm bvlt-when-not-bvlt-one-more
   (implies (and (syntaxp (quotep const)) ;new

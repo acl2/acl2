@@ -123,11 +123,6 @@
   (alistp (gen-init-bindings-for-class field-info-alist class-name))
   :hints (("Goal" :in-theory (enable gen-init-bindings-for-class))))
 
-(defthm all-name-type-pairsp-of-strip-cars
-  (implies (jvm::field-info-alistp field-info-alist)
-           (jvm::all-field-idp (strip-cars field-info-alist)))
-  :hints (("Goal" :in-theory (enable jvm::field-info-alistp))))
-
 (defthm len-gen-init-bindings-for-class
   (equal (len (gen-init-bindings-for-class field-info-alist class-name))
          (len field-info-alist))
@@ -146,7 +141,7 @@
 
 ;; todo: do we need to reify these?
 (defund gen-init-bindings (class-names class-table)
-  (declare (xargs :guard (and (jvm::all-class-namesp class-names)
+  (declare (xargs :guard (and (jvm::class-name-listp class-names)
                               (true-listp class-names)
                               (jvm::class-tablep class-table)
                               (jvm::all-bound-in-class-tablep class-names class-table))
@@ -175,7 +170,7 @@
   :hints (("Goal" :in-theory (e/d (acl2::gen-init-bindings-for-class JVM::FIELD-INFO-ALISTP) (jvm::field-idp)))))
 
 (defthm all-heap-object-keyp-of-strip-cars-of-gen-init-bindings
-  (implies (and (jvm::all-class-namesp class-names)
+  (implies (and (jvm::class-name-listp class-names)
                 (jvm::all-bound-in-class-tablep class-names class-table)
                 (jvm::class-tablep class-table))
            (jvm::all-heap-object-keyp (strip-cars (acl2::gen-init-bindings class-names class-table))))

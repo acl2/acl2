@@ -21,7 +21,7 @@
 (include-book "../language/dynamic-semantics")
 (include-book "../language/values")
 (include-book "../syntax/abstract-syntax-operations")
-(include-book "../syntax/langdef-mapping")
+(include-book "../syntax/abstract-syntax-formal-mapping-direct")
 (include-book "../syntax/code-ensembles")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -37,7 +37,7 @@
   :long
   (xdoc::topstring
     (xdoc::p
-      "This is a very preliminary transformation to propogate constants at the
+      "This is a very preliminary transformation to propagate constants at the
        function level.")
     (xdoc::p
       "The transformation currently only folds integer constants."))
@@ -282,7 +282,7 @@
 (define const-prop-eval-unop-expr
   ((unop c$::unopp)
    (arg c::valuep))
-  :short "Propogate a constant through a @(see c$::unop)."
+  :short "Propagate a constant through a @(see c$::unop)."
   :returns (value? c::value-optionp)
   (c$::unop-case
    unop
@@ -324,7 +324,7 @@
   ((binop c$::binopp)
    (left c::valuep)
    (right c::valuep))
-  :short "Propogate a constant through a pure @(see c$::binop)."
+  :short "Propagate a constant through a pure @(see c$::binop)."
   :guard (pure-binopp binop)
   :returns (value? c::value-optionp)
   (c$::binop-case
@@ -380,7 +380,7 @@
    (left exprp)
    (right c::valuep)
    (env envp))
-  :short "Propogate a constant through an impure @(see c$::binop)."
+  :short "Propagate a constant through an impure @(see c$::binop)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -579,7 +579,7 @@
   (define const-prop-expr
     ((expr exprp)
      (env envp))
-    :short "Propogate a constant through an impure @(see c$::expr)."
+    :short "Propagate a constant through an impure @(see c$::expr)."
     :returns (mv (new-expr exprp)
                  (value? c::value-optionp)
                  (new-env envp))
@@ -876,7 +876,7 @@
                  (new-env envp))
     (b* (((mv expr - env)
           (const-prop-expr (const-expr->expr cexpr) env)))
-      (mv (const-expr expr) env))
+      (mv (make-const-expr :expr expr) env))
     :measure (const-expr-count cexpr))
 
   (define const-prop-const-expr-option
@@ -983,10 +983,14 @@
                   (mv (type-spec-atomic type) env))
         :struct (b* (((mv spec env)
                       (const-prop-struni-spec tyspec.spec env)))
-                  (mv (type-spec-struct spec) env))
+                  (mv (c$::make-type-spec-struct :spec spec
+                                                 :info nil)
+                      env))
         :union (b* (((mv spec env)
                      (const-prop-struni-spec tyspec.spec env)))
-                 (mv (type-spec-union spec) env))
+                 (mv (c$::make-type-spec-union :spec spec
+                                               :info nil)
+                     env))
         :enum (b* (((mv spec env)
                     (const-prop-enum-spec tyspec.spec env)))
                 (mv (type-spec-enum spec) env))
@@ -1433,7 +1437,8 @@
       (mv (make-param-declon
             :specs spec
             :declor decl
-            :attribs paramdecl.attribs)
+            :attribs paramdecl.attribs
+            :info paramdecl.info)
           env))
     :measure (param-declon-count paramdecl))
 
@@ -1471,8 +1476,11 @@
                            env))
         :abstract (b* (((mv unwrap env)
                         (const-prop-absdeclor paramdeclor.declor env)))
-                    (mv (param-declor-abstract unwrap) env))
-        :none (mv (param-declor-none) env)
+                    (mv (make-param-declor-abstract
+                         :declor unwrap
+                         :info paramdeclor.info)
+                        env))
+        :none (mv (param-declor-none paramdeclor.info) env)
         :ambig (prog2$ (raise "Misusage error: ~x0."
                               (param-declor-fix paramdeclor))
                        (mv (param-declor-fix paramdeclor)
@@ -1573,7 +1581,8 @@
           (const-prop-const-expr-option structdeclor.expr? env)))
       (mv (make-struct-declor
             :declor? declor?
-            :expr? expr?)
+            :expr? expr?
+            :info structdeclor.info)
           env))
     :measure (struct-declor-count structdeclor))
 

@@ -53,6 +53,7 @@
 (include-book "kestrel/ethereum/portcullis" :dir :system)
 (include-book "kestrel/bitcoin/portcullis" :dir :system)
 (include-book "std/omaps/portcullis" :dir :system)
+(include-book "kestrel/jsonrpc/portcullis" :dir :system)
 (include-book "kestrel/yul/portcullis" :dir :system)
 
 ; Book release notes are sometimes disorganized.
@@ -121,18 +122,184 @@
 
    (xdoc::h3 "New Libraries")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "jsonrpc::jsonrpc" "JSON-RPC Library"))
+
+   (xdoc::p
+    "A library that implements a JSON-RPC 2.0 interface for ACL2.
+     Requests are dispatched to ACL2 functions of the same name,
+     via files or a TCP socket.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Remora")
+
+   (xdoc::p
+    "A formalization of, and tools for, Remora,
+     a rank-polymorphic higher-order programming language.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "arithmetic-5" "Arithmetic-5 library"))
+
+   (xdoc::p
+    "The @(see arithmetic-5) library has been improved.  See the new section of
+     @('arithmetic-5/README') entitled, &ldquo;1.D. The Moore Modifications to
+     Prevent Some Rewrite Loops&rdquo;.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c::language" "C Formalization"))
+
+   (xdoc::p
+    "We have added a formal notion of implementation environment,
+     which describes things like the format of the various integer types.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c$::syntax-for-tools" "Tool-Oriented C Syntax"))
+
+   (xdoc::p
+    "We have made several extensions and improvements,
+     including more support for C23,
+     more precise validation.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5
+    (xdoc::seetopic "c2c::transformation-tools" "C Transformation Tools"))
+
+   (xdoc::p
+    "We have improved and added transformations,
+     in particular one to split struct types,
+     which is more general than the previous one that splits struct objects.
+     We have also started working out proof generation for struct splitting.")
+
+   (xdoc::p
+    "We have introduced a JSON-RPC interface to C-to-C transformations.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "data::data-lib" "Data-lib"))
 
    (xdoc::p
-    "A new data structure,"
-    (xdoc::seetopic "treemap::treemap" "treemaps")
-    ", was introduced, representing finite maps with ordered keys.")
+    "The "
+    (xdoc::seetopic "hash::hashes" "hashes")
+    " sub-library was refactored to provide an explicit serialization step,
+     which was modified to be injective for objects not including bad atoms.
+     Injectivity is proven.
+     Performance was also improved on large integers.
+     Although the serialization step was made explicit, the actual "
+    (xdoc::seetopic "hash::jenkins-one-at-a-time" "Jenkins one-at-a-time")
+    " hash algorithm fuses the serialization with the hash algorithm.")
+
+   (xdoc::p
+    "The @(see treeset) library performance was improved.
+     The @(tsee treeset::from-oset) function is now linear complexity.
+     @(tsee treeset::from-list) now builds by first sorting into an @('oset')
+     rather than naively inserting one element at a time.
+     The @(tsee treeset::subset) is now implemented
+     similarly to @(tsee treeset::diff).")
+
+   (xdoc::p
+    "The @(see treeset::iterator) was rewritten.
+     The new implementation is based on zippers,
+     and allows bidirectional traversal.")
+
+   (xdoc::p
+    "A new data structure, @(see treemap)s, was introduced,
+     representing finite maps with ordered keys.
+     This closely mirrors @(see treeset)s.")
+
+   (xdoc::p
+    "Benchmark suites were added for various operations in the library.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "acl2::fty" "FTY Library"))
+
+   (xdoc::p
+    "The @(see fty::deftreeset) and @(see fty::deftreemap) type generators
+     were introduced.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "HOL4 to ACL2 Translator")
+
+   (xdoc::p
+    "Some clean-up was made to directory @('[books]/projects/hol-in-acl2/') in
+     support of translation from HOL4 to ACL2(zfc) (see @(see zfc)).  A new
+     file, @('soundness/hol-in-acl2-supplement.pdf'), presents a soundness
+     argument; see file @('README.txt') in that @('soundness') subdirectory for
+     context.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "omap::omaps"
+                             "Standard Ordered Maps (Omaps) Library"))
+
+   (xdoc::p
+    "The omap equivalence, @(tsee omap::mequiv),
+     is now defined in the @('core') book.
+     As a result, the @('with-fixing-theorems') book was removed
+     and congruence rules are proved within @('core').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
+
+   (xdoc::p
+    "The new @(tsee definductive) macro event was introduced
+     to define inductive predicates via inference rules.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
+
+   (xdoc::p
+    "Added @(tsee omap::compose), @(tsee omap::inverse),
+     @(tsee omap::restrict-values), @(tsee omap::identityp),
+     @(tsee omap::injectivep), and @(tsee omap::closedp),
+     along with theorems about them and some other new theorems.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Tools Library")
+
+   (xdoc::p
+    "Fixed @(see with-supporters) to @(see disable) appropriate names of
+     theorems (not merely functions), to disable some rules for functions that
+     it was mistakenly failing to disable, to avoid dropping suitable
+     macro-aliases (see @(see macro-aliases-table)), and to use bodies of
+     @(tsee defconst) forms (which can avoid slow array accesses).  Eliminated
+     support for unused utility ('with-supporters-after').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "x86isa::x86isa" "X86ISA Library"))
+
+   (xdoc::p
+    "We have added support for several instructions.")
+
+   (xdoc::p
+    "We have made various fixed and updates to code and documentation.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "zfc" "Set Theory Library"))
+
+   (xdoc::p
+    "Set theory development has continued in @('projects/set-theory/'), including
+     new subdirectories for finiteness and basic topology.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -149,6 +316,11 @@
    
    (xdoc::h3 "Documentation")
 
+   (xdoc::p
+    "A SQL injection vulnerability was fixed in the "
+    (xdoc::ahref "https://acl2.org/doc" "web manual")
+    " SEO PHP script.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Licensing Changes")
@@ -157,9 +329,17 @@
 
    (xdoc::h3 "Build System Updates")
 
+   (xdoc::p
+    "The @('uses-gcc-c17') @(see build::cert_param) now
+     properly generates the @('CERT_PL_USES_GCC_C17') @('make') variable.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Testing")
+
+   (xdoc::p
+     "More tests have been added to the book
+      @('system/check-system-guards.lisp').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -807,7 +987,7 @@
 
    (xdoc::p
     "A new summary of implemented and unimplemented instructions has been added.
-     at @(see x86isa::sdm-instruction-set-summary).
+     at @(see x86isa::implemented-instructions).
      It is organized according to the sections of
      Chapter 5 of Volume 1 of Intel's Software Development Manual (SFM).
      The summary is generated from the opcode maps,
@@ -816,7 +996,7 @@
    (xdoc::p
     "Support for several instructions has been added.
      Currently supported instructions can be seen at
-     @(see x86isa::sdm-instruction-set-summary).")
+     @(see x86isa::implemented-instructions).")
 
    (xdoc::p "Several instruction bugs were fixed:")
    (xdoc::ul

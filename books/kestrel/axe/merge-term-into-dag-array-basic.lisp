@@ -90,7 +90,7 @@
   (implies (and (all-myquotep (strip-cdrs var-replacement-alist))
                 (lookup-equal term var-replacement-alist))
            (consp (lookup-equal term var-replacement-alist)))
-  :hints (("Goal" :in-theory (enable lookup-equal strip-cdrs strip-cdrs assoc-equal))))
+  :hints (("Goal" :in-theory (enable lookup-equal strip-cdrs assoc-equal))))
 
 ;; (thm
 ;;  (implies (and (pseudo-termp term)

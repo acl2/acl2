@@ -1,6 +1,6 @@
 ; Tests for get-disjuncts
 ;
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -28,11 +28,11 @@
             & ; dag-len
             & & & ;dag-parent-array dag-constant-alist dag-variable-alist
             )
-        (get-darg-disjuncts nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                       nil ;acc
-                       nil ;negated-flg
-                       t ;print
-                       ))
+        (get-darg-disjuncts-aux nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                nil ;acc
+                                nil ;negated-flg
+                                t   ;print
+                                ))
        ((when erp) (er hard? 'get-disjuncts-tester "Error getting disjuncts.")))
     (if provedp
         :proved

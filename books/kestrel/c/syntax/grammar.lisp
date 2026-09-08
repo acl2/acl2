@@ -13,8 +13,8 @@
 (include-book "../language/implementation-environments/dialects")
 
 (include-book "projects/abnf/grammar-definer/defgrammar" :dir :system)
-(include-book "projects/abnf/grammar-definer/deftreeops" :dir :system)
-(include-book "projects/abnf/operations/in-terminal-set" :dir :system)
+(include-book "projects/abnf/tree-operations/deftreeops" :dir :system)
+(include-book "projects/abnf/grammar-operations/in-terminal-set" :dir :system)
 (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system)
 
 (acl2::controlled-configuration)
@@ -23,18 +23,24 @@
 ; (depends-on "grammar/characters-c17.abnf")
 ; (depends-on "grammar/characters-c23.abnf")
 ; (depends-on "grammar/comments.abnf")
-; (depends-on "grammar/keywords.abnf")
 ; (depends-on "grammar/keywords-c17.abnf")
-; (depends-on "grammar/keywords-c17-gcc.abnf")
-; (depends-on "grammar/keywords-c17-clang.abnf")
-; (depends-on "grammar/keywords-c17-clang-cheri.abnf")
 ; (depends-on "grammar/keywords-c23.abnf")
+; (depends-on "grammar/keywords-gcc-clang.abnf")
+; (depends-on "grammar/keywords-gcc.abnf")
+; (depends-on "grammar/keywords-clang.abnf")
+; (depends-on "grammar/keywords-cheri.abnf")
+; (depends-on "grammar/keywords-c17-noext.abnf")
+; (depends-on "grammar/keywords-c23-noext.abnf")
+; (depends-on "grammar/keywords-c17-gcc.abnf")
 ; (depends-on "grammar/keywords-c23-gcc.abnf")
-; (depends-on "grammar/keywords-c23-clang.abnf")
+; (depends-on "grammar/keywords-c17-clang-nocheri.abnf")
+; (depends-on "grammar/keywords-c23-clang-nocheri.abnf")
+; (depends-on "grammar/keywords-c17-clang-cheri.abnf")
 ; (depends-on "grammar/keywords-c23-clang-cheri.abnf")
 ; (depends-on "grammar/identifiers.abnf")
 ; (depends-on "grammar/identifiers-c17.abnf")
 ; (depends-on "grammar/identifiers-c23.abnf")
+; (depends-on "grammar/identifier-lists.abnf")
 ; (depends-on "grammar/universal-character-names.abnf")
 ; (depends-on "grammar/integer-constants.abnf")
 ; (depends-on "grammar/integer-constants-c17.abnf")
@@ -46,6 +52,8 @@
 ; (depends-on "grammar/floating-constants-c23-nogcc.abnf")
 ; (depends-on "grammar/floating-constants-c17-gcc.abnf")
 ; (depends-on "grammar/floating-constants-c23-gcc.abnf")
+; (depends-on "grammar/enumeration-constants.abnf")
+; (depends-on "grammar/encoding-prefixes.abnf")
 ; (depends-on "grammar/character-constants.abnf")
 ; (depends-on "grammar/character-constants-c17.abnf")
 ; (depends-on "grammar/character-constants-c23.abnf")
@@ -63,6 +71,27 @@
 ; (depends-on "grammar/preprocessing-tokens-c17.abnf")
 ; (depends-on "grammar/preprocessing-tokens-c23.abnf")
 ; (depends-on "grammar/preprocessing-lexemes.abnf")
+; (depends-on "grammar/preprocessing-expressions.abnf")
+; (depends-on "grammar/preprocessing-expressions-c17.abnf")
+; (depends-on "grammar/preprocessing-expressions-c23.abnf")
+; (depends-on "grammar/preprocessing-directives.abnf")
+; (depends-on "grammar/preprocessing-directives-c17.abnf")
+; (depends-on "grammar/preprocessing-directives-c23.abnf")
+; (depends-on "grammar/standard-pragmas.abnf")
+; (depends-on "grammar/standard-pragmas-c17.abnf")
+; (depends-on "grammar/standard-pragmas-c23.abnf")
+; (depends-on "grammar/tokens.abnf")
+; (depends-on "grammar/lexemes.abnf")
+; (depends-on "grammar/expressions.abnf")
+; (depends-on "grammar/expressions-c17.abnf")
+; (depends-on "grammar/expressions-c23.abnf")
+; (depends-on "grammar/expressions-ext.abnf")
+; (depends-on "grammar/expressions-c17-noext.abnf")
+; (depends-on "grammar/expressions-c23-noext.abnf")
+; (depends-on "grammar/expressions-c17-ext.abnf")
+; (depends-on "grammar/expressions-c23-ext.abnf")
+; (depends-on "grammar/attributes.abnf")
+; (depends-on "grammar/assembly.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -73,7 +102,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Since the conrete syntax varies slightly based on "
+    "Since the concrete syntax varies slightly based on "
     (xdoc::seetopic "c::dialects" "the C dialect")
     ", we actually define a family of grammars,
      parameterized over the C dialect.
@@ -85,9 +114,7 @@
    (xdoc::p
     "[C17:5.2.1] provides requirements on the source character set,
      i.e. the character set used to write the C code,
-     but the details of this character set are implementation-dependent;
-     see @('[books]/kestrel/c/language/character-sets.lisp')
-     for a formalization of the requirements in [C17:5.2.1].
+     but the details of this character set are implementation-dependent.
      In particular, [C17:5.2.1] does not prescribe ASCII or Unicode.
      Our grammar assumes Unicode, which is a very general assumption these days;
      other (uncommon) character sets should be also easily encodable in Unicode,
@@ -107,7 +134,7 @@
      when needed to fulfill the purpose of our C syntax for tools;
      see @(tsee syntax-for-tools).")
    (xdoc::p
-    "[C23] presents a lexical grammar] [C23:A.2]
+    "[C23] presents a lexical grammar [C23:A.2]
      and a phrase structure grammar [C23:A.3].
      This is a typical two-level grammar structure for programming languages:
      the first grammar describes how a sequence of characters
@@ -125,7 +152,7 @@
      and one for a phrase structure that includes some preprocessing constructs.
      The details are in the documentation that accompanies the grammar rules.")
    (xdoc::p
-    "Our ABNF grammar rules does not consider
+    "Our ABNF grammar rules do not consider
      the translation of trigraph sequences
      handled in the first phase in [C17:5.1.1.2]
      (which, incidentally, has been removed in [C23:5.2.1.2]),
@@ -178,14 +205,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar characters
-  "the source character set that are common to all the C dialects")
+(defgrammar characters "the source character set in all the C dialects")
 
-(defgrammar characters-c17
-  "the source character set that are specific to the C17 dialects")
+(defgrammar characters-c17 "the source character set in the C17 dialects")
 
-(defgrammar characters-c23
-  "the source character set that are specific to the C23 dialects")
+(defgrammar characters-c23 "the source character set in the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -193,45 +217,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar keywords "keywords that form subsets for the various C dialects")
+(defgrammar keywords-c17 "keywords in the C17 dialects")
 
-(defgrammar keywords-c17
-  "keywords that are specific to the C17 dialect without extensions")
+(defgrammar keywords-c23 "keywords in the C23 dialects")
 
-(defgrammar keywords-c23
-  "keywords that are specific to the C23 dialect without extensions")
+(defgrammar keywords-gcc-clang "keywords in the GCC and Clang dialects")
 
-(defgrammar keywords-c17-gcc
-  "keywords that are specific to
-   the C17 dialect with GCC and without CHERI extensions")
+(defgrammar keywords-gcc "keywords in the GCC dialects")
 
-(defgrammar keywords-c23-gcc
-  "keywords that are specific to
-   the C23 dialect with GCC and without CHERI extensions")
+(defgrammar keywords-clang "keywords in the Clang dialects")
 
-(defgrammar keywords-c17-clang
-  "keywords that are specific to
-   the C17 dialect with Clang and without CHERI extensions")
+(defgrammar keywords-cheri "keywords in the CHERI dialects")
 
-(defgrammar keywords-c23-clang
-  "keywords that are specific to
-   the C23 dialect with Clang and without CHERI extensions")
+(defgrammar keywords-c17-noext "keywords in the C17 dialect without extensions")
+
+(defgrammar keywords-c23-noext "keywords in the C23 dialect without extensions")
+
+(defgrammar keywords-c17-gcc "keywords in the C17 dialect with GCC extensions")
+
+(defgrammar keywords-c23-gcc "keywords in the C23 dialect with GCC extensions")
+
+(defgrammar keywords-c17-clang-nocheri
+  "keywords in the C17 dialect with Clang and without CHERI extensions")
+
+(defgrammar keywords-c23-clang-nocheri
+  "keywords in the C23 dialect with Clang and without CHERI extensions")
 
 (defgrammar keywords-c17-clang-cheri
-  "keywords that are specific to
-   the C17 dialect with Clang and CHERI extensions")
+  "keywords in the C17 dialect with Clang and CHERI extensions")
 
 (defgrammar keywords-c23-clang-cheri
-  "keywords that are specific to
-   the C23 dialect with Clang and CHERI extensions")
+  "keywords in the C23 dialect with Clang and CHERI extensions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar identifiers "identifiers that are common to all the C dialects")
+(defgrammar identifiers "identifiers in all the C dialects")
 
-(defgrammar identifiers-c17 "identifiers that are specific to the C17 dialects")
+(defgrammar identifiers-c17 "identifiers in the C17 dialects")
 
-(defgrammar identifiers-c23 "identifiers that are specific to the C23 dialects")
+(defgrammar identifiers-c23 "identifiers in the C23 dialects")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar identifier-lists "lists of identifiers")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -239,37 +267,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar integer-constants
-  "integer constants that are common to all the C dialects")
+(defgrammar integer-constants "integer constants in all the C dialects")
 
-(defgrammar integer-constants-c17
-  "integer constants that are specific to the C17 dialects")
+(defgrammar integer-constants-c17 "integer constants in the C17 dialects")
 
-(defgrammar integer-constants-c23
-  "integer constants that are specific to the C23 dialects")
+(defgrammar integer-constants-c23 "integer constants in the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgrammar floating-constants
-  "floating constants that are common to all the C dialects")
+  "floating constants in all the C dialects")
 
 (defgrammar floating-constants-c17
-  "floating constants that are specific to C17 dialects")
+  "floating constants in C17 dialects")
 
 (defgrammar floating-constants-c23
-  "floating constants that are specific to C23 dialects")
+  "floating constants in C23 dialects")
 
 (defgrammar floating-constants-c17-nogcc
-  "floating constants that are specific to C17 dialects without GCC extensions")
+  "floating constants in C17 dialects without GCC extensions")
 
 (defgrammar floating-constants-c23-nogcc
-  "floating constants that are specific to C23 dialects without GCC extensions")
+  "floating constants in C23 dialects without GCC extensions")
 
 (defgrammar floating-constants-c17-gcc
-  "floating constants that are specific to C17 dialect with GCC extensions")
+  "floating constants in C17 dialect with GCC extensions")
 
 (defgrammar floating-constants-c23-gcc
-  "floating constants that are specific to C23 dialect with GCC extensions")
+  "floating constants in C23 dialect with GCC extensions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -277,71 +302,137 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar character-constants
-  "character constants that are common to all the C dialects")
+(defgrammar encoding-prefixes "encoding prefixes")
 
-(defgrammar character-constants-c17
-  "character constants that are specific to the C17 dialects")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar character-constants-c23
-  "character constants that are specific to the C23 dialects")
+(defgrammar character-constants "character constants in all the C dialects")
+
+(defgrammar character-constants-c17 "character constants in the C17 dialects")
+
+(defgrammar character-constants-c23 "character constants in the C23 dialects")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgrammar simple-escapes-std
-  "simple escapes that are specific to
-   the dialects without GCC or Clang extensions")
+  "simple escapes in the standard C dialects (i.e. without extensions)")
 
 (defgrammar simple-escapes-ext
-  "simple escapes that are specific to
-   the dialects with GCC or Clang extensions")
+  "simple escapes in the non-standard C dialects (i.e. with extensions)")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar constants-c17
-  "constants that are specific to the C17 dialects")
+(defgrammar constants-c17 "constants in the C17 dialects")
 
-(defgrammar constants-c23
-  "constants that are specific to the C23 dialects")
+(defgrammar constants-c23 "constants in the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar string-literals-c17
-  "string literals that are specific to the C17 dialects")
+(defgrammar string-literals-c17 "string literals in the C17 dialects")
 
-(defgrammar string-literals-c23
-  "string literals that are specific to the C23 dialects")
+(defgrammar string-literals-c23 "string literals in the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar punctuators-c17
-  "punctuators that are specific to the C17 dialects")
+(defgrammar punctuators-c17 "punctuators in the C17 dialects")
 
-(defgrammar punctuators-c23
-  "punctuators that are specific to the C23 dialects")
+(defgrammar punctuators-c23 "punctuators in the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defgrammar header-names
-  "header names that are specific to the C17 dialects")
+(defgrammar header-names "header names")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgrammar preprocessing-numbers-c17
-  "preprocessing numbers that are specific to the C17 dialects")
+  "preprocessing numbers in the C17 dialects")
 
 (defgrammar preprocessing-numbers-c23
-  "preprocessing numbers that are specific to the C23 dialects")
+  "preprocessing numbers in the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgrammar preprocessing-tokens-c17
-  "preprocessing tokens that are specific to the C17 dialects")
+  "preprocessing tokens in the C17 dialects")
 
 (defgrammar preprocessing-tokens-c23
-  "preprocessing tokens that are specific to the C23 dialects")
+  "preprocessing tokens in the C23 dialects")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgrammar preprocessing-lexemes "preprocessing lexemes")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar preprocessing-expressions
+  "preprocessing expressions in all the C dialects")
+
+(defgrammar preprocessing-expressions-c17
+  "preprocessing expressions in the C17 dialects")
+
+(defgrammar preprocessing-expressions-c23
+  "preprocessing expressions in the C23 dialects")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar preprocessing-directives
+  "preprocessing directives in all the C dialects")
+
+(defgrammar preprocessing-directives-c17
+  "preprocessing directives in the C17 dialects")
+
+(defgrammar preprocessing-directives-c23
+  "preprocessing directives in the C23 dialects")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar standard-pragmas "standard pragmas in all the C dialects")
+
+(defgrammar standard-pragmas-c17 "standard pragmas in the C17 dialects")
+
+(defgrammar standard-pragmas-c23 "standard pragmas in the C23 dialects")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar tokens "tokens")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar lexemes "lexemes")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar expressions
+  "expressions in all the C dialects")
+
+(defgrammar expressions-c17
+  "expressions in the C17 dialects")
+
+(defgrammar expressions-c23
+  "expressions in the C23 dialects")
+
+(defgrammar expressions-ext
+  "expressions in the non-standard C dialects (i.e. with extensions)")
+
+(defgrammar expressions-c17-noext
+  "expressions in the C17 dialect without extensions")
+
+(defgrammar expressions-c23-noext
+  "expressions in the C23 dialect without extensions")
+
+(defgrammar expressions-c17-ext
+  "expressions in the C17 dialects with extensions")
+
+(defgrammar expressions-c23-ext
+  "expressions in the C23 dialects with extensions")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar attributes "attributes")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defgrammar assembly "assembly")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -369,24 +460,45 @@
      ;; comments:
      *grammar-comments*
      ;; keywords:
-     *grammar-keywords*
      (c::standard-case
       dialect.std
-      :c17 (cond (dialect.gcc *grammar-keywords-c17-gcc*)
-                 (dialect.clang (if dialect.cheri
-                                    *grammar-keywords-c17-clang-cheri*
-                                  *grammar-keywords-c17-clang*))
-                 (t *grammar-keywords-c17*))
-      :c23 (cond (dialect.gcc *grammar-keywords-c23-gcc*)
-                 (dialect.clang (if dialect.cheri
-                                    *grammar-keywords-c23-clang-cheri*
-                                  *grammar-keywords-c23-clang*))
-                 (t *grammar-keywords-c23*)))
+      :c17 (append
+            *grammar-keywords-c17*
+            (cond (dialect.gcc (append
+                                *grammar-keywords-gcc-clang*
+                                *grammar-keywords-gcc*
+                                *grammar-keywords-c17-gcc*))
+                  (dialect.clang (append
+                                  *grammar-keywords-gcc-clang*
+                                  *grammar-keywords-clang*
+                                  (if dialect.cheri
+                                      (append
+                                       *grammar-keywords-cheri*
+                                       *grammar-keywords-c17-clang-cheri*)
+                                    *grammar-keywords-c17-clang-nocheri*)))
+                  (t *grammar-keywords-c17-noext*)))
+      :c23 (append
+            *grammar-keywords-c23*
+            (cond (dialect.gcc (append
+                                *grammar-keywords-gcc-clang*
+                                *grammar-keywords-gcc*
+                                *grammar-keywords-c23-gcc*))
+                  (dialect.clang (append
+                                  *grammar-keywords-gcc-clang*
+                                  *grammar-keywords-clang*
+                                  (if dialect.cheri
+                                      (append
+                                       *grammar-keywords-cheri*
+                                       *grammar-keywords-c23-clang-cheri*)
+                                    *grammar-keywords-c23-clang-nocheri*)))
+                  (t *grammar-keywords-c23-noext*))))
      ;; identifiers:
      *grammar-identifiers*
      (c::standard-case dialect.std
                        :c17 *grammar-identifiers-c17*
                        :c23 *grammar-identifiers-c23*)
+     ;; identifier lists:
+     *grammar-identifier-lists*
      ;; universal character names:
      *grammar-universal-character-names*
      ;; integer constants:
@@ -406,6 +518,10 @@
                    (if dialect.gcc
                        *grammar-floating-constants-c23-gcc*
                      *grammar-floating-constants-c23-nogcc*)))
+     ;; enumeration constants:
+     *grammar-enumeration-constants*
+     ;; encoding prefixes:
+     *grammar-encoding-prefixes*
      ;; character-constants:
      *grammar-character-constants*
      (c::standard-case dialect.std
@@ -414,8 +530,6 @@
      (if (or dialect.gcc dialect.clang)
          *grammar-simple-escapes-ext*
        *grammar-simple-escapes-std*)
-     ;; enumeration constants:
-     *grammar-enumeration-constants*
      ;; constants:
      (c::standard-case dialect.std
                        :c17 *grammar-constants-c17*
@@ -440,6 +554,45 @@
                        :c23 *grammar-preprocessing-tokens-c23*)
      ;; preprocessing lexemes:
      *grammar-preprocessing-lexemes*
+     ;; preprocessing expressions:
+     *grammar-preprocessing-expressions*
+     (c::standard-case dialect.std
+                       :c17 *grammar-preprocessing-expressions-c17*
+                       :c23 *grammar-preprocessing-expressions-c23*)
+     ;; preprocessing directives:
+     *grammar-preprocessing-directives*
+     (c::standard-case dialect.std
+                       :c17 *grammar-preprocessing-directives-c17*
+                       :c23 *grammar-preprocessing-directives-c23*)
+     ;; standard pragmas:
+     *grammar-standard-pragmas*
+     (c::standard-case dialect.std
+                       :c17 *grammar-standard-pragmas-c17*
+                       :c23 *grammar-standard-pragmas-c23*)
+     ;; tokens:
+     *grammar-tokens*
+     ;; lexemes:
+     *grammar-lexemes*
+     ;; expressions:
+     *grammar-expressions*
+     (c::standard-case
+      dialect.std
+      :c17 (append *grammar-expressions-c17*
+                   (if (or dialect.gcc
+                           dialect.clang)
+                       (append *grammar-expressions-ext*
+                               *grammar-expressions-c17-ext*)
+                     *grammar-expressions-c17-noext*))
+      :c23 (append *grammar-expressions-c23*
+                   (if (or dialect.gcc
+                           dialect.clang)
+                       (append *grammar-expressions-ext*
+                               *grammar-expressions-c23-ext*)
+                     *grammar-expressions-c23-noext*)))
+     ;; attributes:
+     *grammar-attributes*
+     ;; assembly:
+     *grammar-assembly*
      ;; rest (TODO: modularize):
      *grammar-rest*))
 
@@ -452,6 +605,11 @@
   (defruled rulelist-closedp-of-grammar-for
     (abnf::rulelist-closedp (grammar-for dialect))
     :enable abnf::rulelist-closedp)
+
+  ;; The next theorem fails with the default 1000 limit.
+  ;; It is still fast (about 1.25 seconds on a fast machine),
+  ;; even with this higher limit.
+  (set-rewrite-stack-limit 2000) ; implicitly local
 
   (defruled unicode-only-grammar-for
     (abnf::rulelist-in-termset-p (grammar-for dialect)

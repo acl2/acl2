@@ -20,7 +20,7 @@
 (include-book "kestrel/fty/deffold-map" :dir :system)
 
 (include-book "../../syntax/abstract-syntax-operations")
-(include-book "../../syntax/validation-information")
+(include-book "../../syntax/validation-annotations")
 
 (include-book "qualified-ident")
 
@@ -188,10 +188,10 @@
         nil)
        (attrs (uid-attrib-spec-list-mfix attrs))
        ((init-declor declor) (first declors))
-       ((unless (c$::init-declor-infop declor.info))
+       ((unless (c$::init-declor-vinfop declor.info))
         (er hard? 'add-attributes
             "Initializer declarator info is not well-formed."))
-       (uid? (c$::init-declor-info->uid? declor.info))
+       (uid? (c$::init-declor-vinfo->uid declor.info))
        (attribs (if uid? (cdr (omap::assoc uid? attrs)) nil))
        (rest-attribs+declors
          (init-declor-list-add-attrib-split (rest declors) attrs))
@@ -293,7 +293,7 @@
                (block-item-list-add-attributes (rest c$::block-item-list) attrs))))
    (c$::fundef
      (b* (((fundef fundef) c$::fundef)
-          ((unless (fundef-infop fundef.info))
+          ((unless (type+uid-vinfop fundef.info))
            (er hard? 'add-attributes
                "Function definition info is not well-formed.")
            (fundef-fix c$::fundef))
@@ -305,7 +305,7 @@
              :attribs (attrib-spec-list-add-attributes fundef.attribs attrs)
              :declons (declon-list-add-attributes fundef.declons attrs)
              :body (comp-stmt-add-attributes fundef.body attrs)))
-          (uid (c$::fundef-info->uid fundef.info))
+          (uid (c$::type+uid-vinfo->uid fundef.info))
           (attrib-specs?
             (omap::assoc uid (uid-attrib-spec-list-mfix attrs)))
           ((unless attrib-specs?)
@@ -330,7 +330,8 @@
             :otherwise (list trans-item))
            :otherwise (list trans-item))))
       (append split-trans-items
-              (trans-item-list-add-attributes (rest c$::trans-item-list) attrs))))))
+              (trans-item-list-add-attributes (rest c$::trans-item-list) attrs)))))
+  :name abstract-syntax-add-attributes)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

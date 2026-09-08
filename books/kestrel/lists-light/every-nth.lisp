@@ -1,6 +1,6 @@
 ; Extracting every nth value of a list
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -68,13 +68,14 @@
                   (consp vals)))
   :hints (("Goal" :in-theory (enable every-nth))))
 
-(defun ind (n vals n2)
-   (declare (xargs :measure (len vals)))
-   (if (not (posp n2))
-       nil
-     (if (endp vals)
-         (list n vals n2)
-       (ind (- n 1) (nthcdr n2 vals) n2))))
+(local
+  (defun ind (n vals n2)
+    (declare (xargs :measure (len vals)))
+    (if (not (posp n2))
+        nil
+      (if (endp vals)
+          (list n vals n2)
+        (ind (- n 1) (nthcdr n2 vals) n2)))))
 
 (defthm nth-of-every-nth
   (implies (and (posp n2)

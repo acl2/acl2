@@ -1,7 +1,7 @@
 ; Tools to rebuild DAGs while applying node translations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -331,7 +331,7 @@
   (rebuild-nodes-aux worklist
                      translation-array
                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                     (make-empty-array 'worklist-array (alen1 'translation-array translation-array))))
+                     (new-array1 'worklist-array (alen1 'translation-array translation-array))))
 
 (def-dag-builder-theorems
   (rebuild-nodes worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)

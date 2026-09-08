@@ -80,8 +80,8 @@
    (("Goal"
      :in-theory
      (enable
-      input-itemp-when-input-item-resultp-and-not-reserrp
-      input-item-listp-when-input-item-list-resultp-and-not-reserrp))))
+      input-itemp-when-result-not-error
+      input-item-listp-when-result-not-error))))
   :short "Abstract a @('*input-item') to a list of input items."
   (b* (((when (endp trees)) nil)
        ((okf initem) (abs-input-item (car trees)))
@@ -199,7 +199,7 @@
    (("Goal"
      :in-theory
      (enable
-      input-title-optionp-when-input-title-option-resultp-and-not-reserrp))))
+      input-title-optionp-when-result-not-error))))
   :short "Abstract an @('input-section') to an input section."
   (b* (((okf (abnf::tree-list-tuple2 sub))
         (abnf::check-tree-nonleaf-2 tree "input-section"))
@@ -223,8 +223,8 @@
    (("Goal"
      :in-theory
      (enable
-      input-section-optionp-when-input-section-option-resultp-and-not-reserrp
-      input-section-listp-when-input-section-list-resultp-and-not-reserrp))))
+      input-section-optionp-when-result-not-error
+      input-section-listp-when-result-not-error))))
   :short "Abstract a @('*input-item') to a list of input items."
   (b* (((when (endp trees)) nil)
        ((okf insec) (abs-input-section (car trees)))

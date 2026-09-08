@@ -1,7 +1,7 @@
 ; Supporting material for x86 code proofs
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,7 +19,7 @@
 (include-book "projects/x86isa/proofs/utilities/row-wow-thms" :dir :system) ; for X86ISA::WRITE-USER-RFLAGS-AND-XW
 (include-book "projects/x86isa/proofs/utilities/app-view/user-level-memory-utils" :dir :system) ; for rb-rb-subset
 ;(include-book "projects/x86isa/machine/state" :dir :system)
-(include-book "projects/x86isa/machine/x86" :dir :system) ; for x86-fetch-decode-execute, ONE-BYTE-OPCODE-EXECUTE, etc.
+;(include-book "projects/x86isa/machine/x86" :dir :system) ; for x86-fetch-decode-execute, ONE-BYTE-OPCODE-EXECUTE, etc.
 ;(include-book "projects/x86isa/machine/get-prefixes" :dir :system)
 ;(include-book "projects/x86isa/machine/state-field-thms" :dir :system)
 ;(include-book "projects/x86isa/machine/application-level-memory" :dir :system) ;for canonical-address-p
@@ -49,69 +49,9 @@
 (local (include-book "kestrel/arithmetic-light/numerator" :dir :system))
 (local (include-book "kestrel/bv/getbit2" :dir :system))
 
-;; some of these are for symbolic execution:
-(in-theory (acl2::enable* x86isa::X86-EFFECTIVE-ADDR-FROM-SIB
-                          x86isa::instruction-decoding-and-spec-rules ;this one is a ruleset
-                          x86isa::jcc/cmovcc/setcc-spec
-                          x86isa::gpr-and-spec-4
-                          x86isa::gpr-xor-spec-4
-                          x86isa::GPR-ADD-SPEC-4
-
-                          x86isa::one-byte-opcode-execute ;; x86isa::one-byte-opcode-execute
-                          ;; !rgfi-size
-                          x86isa::x86-operand-to-reg/mem
-
-                          ;;These appear to eventually call xw (via
-                          ;;!rgfi), so we'll keep them enabled
-                          ;;since xw is our normal form:
-                          x86isa::wr08
-                          x86isa::wr16
-                          x86isa::wr32
-                          x86isa::wr64
-
-                          ;;These appear to eventually call xr (via
-                          ;;rgfi), so we'll keep them enabled
-                          ;;since xw is our normal form:
-                          x86isa::rr08
-                          x86isa::rr16
-                          x86isa::rr32
-                          x86isa::rr64
-
-                          x86isa::wml32
-                          x86isa::wml64
-                          x86isa::riml08
-                          x86isa::riml32
-
-                          x86isa::x86-operand-from-modr/m-and-sib-bytes
-                          x86isa::riml-size
-
-                          x86isa::check-instruction-length
-
-                          x86isa::select-segment-register
-
-                          x86isa::n08-to-i08
-                          x86isa::n16-to-i16
-                          x86isa::n32-to-i32
-                          x86isa::n64-to-i64
-                          x86isa::n128-to-i128
-
-                          x86isa::two-byte-opcode-decode-and-execute
-                          x86isa::x86-effective-addr-when-64-bit-modep
-                          x86isa::x86-effective-addr-32/64
-                          ;; Flags
-                          x86isa::write-user-rflags
-                          x86isa::zf-spec))
-
-;; should some of these be local?
-(in-theory (disable logcount
+(in-theory (disable
                     x86isa::write-user-rflags-and-xw
-                    byte-listp
-                    x86isa::combine-bytes
-                    member-equal
-                    get-prefixes-opener-lemma-zero-cnt ;for speed
-                    x86isa::create-canonical-address-list
-                    (:e x86isa::create-canonical-address-list)
-                    zf-spec))
+                   ))
 
 ;why?
 (in-theory (disable x86isa::program-at-xw-in-app-view))
@@ -172,11 +112,11 @@
 ;;   :hints (("Goal" :in-theory (enable ;x86isa::xw-xr
 ;;                               ))))
 
-(defthm member-p-of-create-canonical-address-list-same
-  (implies (canonical-address-p addr)
-           (equal (x86isa::member-p addr (x86isa::create-canonical-address-list count addr))
-                  (posp count)))
-  :hints (("Goal" :in-theory (enable x86isa::create-canonical-address-list))))
+;; (defthm member-p-of-create-canonical-address-list-same
+;;   (implies (canonical-address-p addr)
+;;            (equal (x86isa::member-p addr (x86isa::create-canonical-address-list count addr))
+;;                   (posp count)))
+;;   :hints (("Goal" :in-theory (enable x86isa::create-canonical-address-list))))
 
 ;; ;could restrict k and k2 to constants
 ;; (defthm canonical-address-p-of-+-when-canonical-address-p-of-+
@@ -193,19 +133,7 @@
          (x86isa::member-p a x))
   :hints (("Goal" :in-theory (enable x86isa::subset-p))))
 
-;; splits the simulation!
-(defthm x86-fetch-decode-execute-of-set-rip-split
-  (equal (x86-fetch-decode-execute (xw :rip nil (if test rip1 rip2) x86))
-         (if test
-             (x86-fetch-decode-execute (xw :rip nil rip1 x86))
-           (x86-fetch-decode-execute (xw :rip nil rip2 x86)))))
 
-;; splits the simulation!
-(defthm x86-fetch-decode-execute-of-if
-  (equal (x86-fetch-decode-execute (if test x86_1 x86_2))
-         (if test
-             (x86-fetch-decode-execute x86_1)
-           (x86-fetch-decode-execute x86_2))))
 
 ;; (defthm !flgi-undefined-of-!flgi-different-concrete-indices
 ;;   (implies (and (syntaxp (quotep i1))
@@ -331,15 +259,7 @@
               (true-listp x)))
   :hints (("Goal" :in-theory (enable byte-listp))))
 
-;; Avoids the b* at the top level
-(defthm x86isa::get-prefixes-does-not-modify-x86-state-in-app-view-new
-  (implies (app-view x86)
-           (equal (mv-nth 3
-                          (get-prefixes x86isa::proc-mode
-                                        x86isa::start-rip x86isa::prefixes
-                                        x86isa::rex-byte x86isa::cnt x86))
-                  x86))
-  :hints (("Goal" :use x86isa::get-prefixes-does-not-modify-x86-state-in-app-view)))
+
 
 (defthm segment-base-and-bounds-of-xw
   (implies (and ;(not (equal :mem fld))
@@ -474,47 +394,9 @@
                       (x86isa::wml-size nbytes eff-addr x86isa::val x86)
                     (list (list :non-canonical-address eff-addr) x86)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm feature-flags-opener
-  (implies (consp features)
-           (equal (feature-flags features)
-                  (if (equal 0 (feature-flag (first features)))
-                      0
-                    (feature-flags (rest features)))))
-  :hints (("Goal" :in-theory (enable feature-flags))))
-
-;; maybe not needed since we have the constant-opener for the call on nil
-(defthm feature-flags-base
-  (implies (not (consp features))
-           (equal (feature-flags features)
-                  1))
-  :hints (("Goal" :in-theory (enable feature-flags))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm get-one-byte-prefix-array-code-of-if
-  (equal (get-one-byte-prefix-array-code (if test b1 b2))
-         (if test
-             (get-one-byte-prefix-array-code b1)
-           (get-one-byte-prefix-array-code b2))))
-
-(defthm 64-bit-mode-one-byte-opcode-modr/m-p$inline-of-if
-  (equal (64-bit-mode-one-byte-opcode-modr/m-p$inline (if test tp ep))
-         (if test
-             (64-bit-mode-one-byte-opcode-modr/m-p$inline tp)
-             (64-bit-mode-one-byte-opcode-modr/m-p$inline ep))))
-
-;TODO: we could just build this kind of thing into axe..
-(defthm 64-bit-mode-one-byte-opcode-modr/m-p$inline-of-if-when-constants
-  (implies (syntaxp (and (quotep tp)
-                         (quotep ep)))
-           (equal (64-bit-mode-one-byte-opcode-modr/m-p$inline (if test tp ep))
-                  (if test
-                      (64-bit-mode-one-byte-opcode-modr/m-p$inline tp)
-                    (64-bit-mode-one-byte-opcode-modr/m-p$inline ep)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm canonical-address-p-of-nth
   (implies (and (x86isa::canonical-address-listp addresses)
@@ -555,8 +437,6 @@
                     0))) ;yikes.  combine-bytes should chop its arg?
   :hints (("Goal" :expand (x86isa::combine-bytes lst)
            :in-theory (enable x86isa::combine-bytes))))
-
-(acl2::defopeners get-prefixes)
 
 ;; ;; A version of X86ISA::GET-PREFIXES-OPENER-LEMMA-GROUP-1-PREFIX.
 ;; ;; simplified hyps should work better with axe
@@ -715,16 +595,6 @@
 ;; to open when everything but the RIP arguments is constant (that is,
 ;; when we managed to resolve the instruction).
 
-;todo: make defopeners use the untranslated body
-;todo: make defopeners check for redundancy
-;todo: make defopeners suppress printing
-(acl2::defopeners one-byte-opcode-execute :hyps ((syntaxp (and (quotep x86isa::prefixes)
-                                                               (quotep x86isa::rex-byte)
-                                                               (quotep x86isa::opcode)
-                                                               (quotep x86isa::modr/m)
-                                                               (quotep x86isa::sib)))))
-
-(in-theory (disable x86isa::one-byte-opcode-execute))
 
 ;gen the 1?
 (defthm unsigned-byte-p-of-bool->bit
@@ -865,49 +735,6 @@
            (equal (if (app-view x86) tp ep)
                   tp)))
 
-;helps get rid of irrelevant stuff (even though we expect to not really need this)
-(defthm mv-nth-0-of-get-prefixes-of-xw-of-irrel
-  (implies (or (eq :rgf field)
-               (eq :rip field)
-               (eq :undef field)) ;gen
-           (equal (mv-nth 0 (get-prefixes proc-mode start-rip prefixes rex-byte cnt (xw field index value x86)))
-                  (mv-nth 0 (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86))))
-  :hints (("Goal" :induct (GET-PREFIXES proc-mode START-RIP PREFIXES rex-byte CNT X86)
-           :in-theory (e/d ( ;xw
-                            add-to-*ip
-                            get-prefixes)
-                           (acl2::unsigned-byte-p-from-bounds
-                            ;acl2::bvchop-identity
-                            ;x86isa::part-install-width-low-becomes-bvcat-32
-                            ;for speed:
-                            ;CANONICAL-ADDRESS-P-BETWEEN
-                            ;x86isa::PART-SELECT-WIDTH-LOW-BECOMES-SLICE
-                            ;x86isa::SLICE-OF-PART-INSTALL-WIDTH-LOW
-                            ;acl2::MV-NTH-OF-IF
-                            x86isa::GET-PREFIXES-OPENER-LEMMA-NO-PREFIX-BYTE
-                            )))))
-
-(defthm mv-nth-1-of-get-prefixes-of-xw-of-irrel
-  (implies (or (eq :rgf field)
-               (eq :rip field)
-               (eq :undef field)) ;gen
-           (equal (mv-nth 1
-                          (get-prefixes proc-mode start-rip prefixes rex-byte
-                                        cnt (xw field index value x86)))
-                  (mv-nth 1
-                          (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86))))
-  :hints (("Goal" :induct (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)
-           :in-theory (e/d (get-prefixes
-                            add-to-*ip)
-                                  (acl2::unsigned-byte-p-from-bounds
-                                   ;acl2::bvchop-identity
-                                   ;x86isa::part-install-width-low-becomes-bvcat-32
-                                   combine-bytes-when-singleton ;for speed
-                                   x86isa::get-prefixes-opener-lemma-no-prefix-byte ;for speed
-                                   ;x86isa::part-select-width-low-becomes-slice ;for speed
-                                   ACL2::ZP-OPEN
-                                   ;acl2::MV-NTH-OF-IF
-                                   )))))
 
 ;maybe only needed for PE files?
 ;helps us show that code read from the text section is independent of stuff
@@ -1001,9 +828,6 @@
 ;;            (equal (!flgi flg val (mv-nth '1 (wb n addr w value x86)))
 ;;                   (mv-nth '1 (wb n addr w value (!flgi flg val x86)))))
 ;;   :hints (("Goal" :in-theory (enable !flgi wb))))
-
-(acl2::defopeners x86-fetch-decode-execute :hyps ((not (ms x86)) (not (x86isa::fault x86))))
-(in-theory (disable x86isa::x86-fetch-decode-execute-base)) ;disable because for ACL2 reasoning there is an opener rule
 
 (defthm unsigned-byte-p-of-mv-nth-1-of-rvm08
   (implies (and (<= 8 size)
@@ -1118,7 +942,3 @@
 (defthm unsigned-byte-p-1-of-rflagsbits->AF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->AF$inline rflags)))
 (defthm unsigned-byte-p-1-of-rflagsbits->RES2$inline (unsigned-byte-p 1 (x86isa::rflagsbits->RES2$inline rflags)))
 (defthm unsigned-byte-p-2-of-rflagsbits->iopl$inline (unsigned-byte-p 2 (x86isa::rflagsbits->iopl$inline rflags)))
-
-
-;seems needed - todo
-(in-theory (enable x86isa::GPR-SUB-SPEC-8$INLINE))

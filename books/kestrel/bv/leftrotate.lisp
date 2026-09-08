@@ -152,7 +152,7 @@
   :hints (("Goal" ;:cases ((equal amount width))
            :in-theory (enable leftrotate))))
 
-;; is there a nicer way to comvine the cases?
+;; is there a nicer way to combine the cases?
 (defthm bvchop-of-leftrotate-both
   (implies (and (<= size width)
                 (<= amount width)
@@ -206,8 +206,7 @@
                  (natp width))
             (equal (getbit n (leftrotate width amt x))
                    (getbit (- n amt) x)))
-   :hints (("Goal" :in-theory (e/d (getbit leftrotate) (
-                                                        ))))))
+   :hints (("Goal" :in-theory (enable getbit leftrotate)))))
 
 (local
  (defthm getbit-of-leftrotate-low
@@ -219,8 +218,7 @@
                  (natp width))
             (equal (getbit n (leftrotate width amt x))
                    (getbit (+ width (- amt) n) x)))
-   :hints (("Goal" :in-theory (e/d (getbit leftrotate) (
-                                                        ))))))
+   :hints (("Goal" :in-theory (enable getbit leftrotate)))))
 
 ;; todo: restrict to the case when we can resolve the (< n width) test?
 (defthm getbit-of-leftrotate
@@ -234,8 +232,7 @@
                           (getbit (+ width (- (mod amt width)) n) x)
                         (getbit (- n (mod amt width)) x))
                     0)))
-  :hints (("Goal" :in-theory (e/d (getbit leftrotate) (
-                                                       )))))
+  :hints (("Goal" :in-theory (enable getbit leftrotate))))
 
 ;; no mod in rhs
 ;; todo: restrict to the case when we can resolve the (< n width) test?
@@ -251,7 +248,7 @@
                           (getbit (+ width (- amt) n) x)
                         (getbit (- n amt) x))
                     0)))
-  :hints (("Goal" :in-theory (e/d (getbit leftrotate) ()))))
+  :hints (("Goal" :in-theory (enable getbit leftrotate))))
 
 (defthm equal-of-leftrotate-and-leftrotate
   (implies (natp size)
@@ -313,3 +310,14 @@
            (equal (leftrotate width amt x)
                   (leftrotate width k x)))
   :hints (("Goal" :in-theory (enable leftrotate BVCHOP))))
+
+(defthm leftrotate-normalize-amt
+  (implies (and (syntaxp (and (quotep amt)
+                              (quotep width)))
+                (not (and (<= 0 amt)
+                          (< amt width)))
+                (posp width) ; disallows 0 to prevent loop
+                )
+           (equal (leftrotate width amt val)
+                  (leftrotate width (mod amt width) val)))
+  :hints (("Goal" :in-theory (enable leftrotate))))

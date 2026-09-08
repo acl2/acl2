@@ -246,7 +246,13 @@
                           (pnumber-number-digit
                            (pnumber-number-digit
                             (pnumber-digit
-                             #\2) #\0) #\1) #\7) #\1) #\0) #\L))))))
+                             #\2)
+                            nil #\0)
+                           nil #\1)
+                          nil #\7)
+                         nil #\1)
+                        nil #\0)
+                       nil #\L))))))
   :guard-hints (("Goal" :in-theory (enable str::letter/uscore-char-p)))
 
   ///
@@ -277,7 +283,13 @@
                           (pnumber-number-digit
                            (pnumber-number-digit
                             (pnumber-digit
-                             #\2) #\0) #\2) #\3) #\1) #\1) #\L))))))
+                             #\2)
+                            nil #\0)
+                           nil #\2)
+                          nil #\3)
+                         nil #\1)
+                        nil #\1)
+                       nil #\L))))))
   :guard-hints (("Goal" :in-theory (enable str::letter/uscore-char-p)))
 
   ///

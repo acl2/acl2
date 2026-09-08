@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -86,7 +86,7 @@
   :returns (tokens-after-symbol-or-reserr abnf::tree-list-resultp
                                           :hints
                                           (("Goal" :in-theory
-                                            (enable abnf::tree-listp-when-tree-list-resultp-and-not-reserrp))))
+                                            (enable abnf::tree-listp-when-result-not-error))))
                                         ;  :verbosep t ; for debugging
   :short "Attempts to eat the named @('symbol'), returning either the list of remaining tokens or a reserr."
   :long
@@ -482,14 +482,14 @@
                      (unsigned-byte-listp 8 fringe)))
         (reserrf "unexpected input to cst2ast-single-char 2")))
     (case (car fringe)
+      (10 (make-escape-line-feed))
+      (13 (make-escape-carriage-return))
       (39 (make-escape-single-quote))
       (34 (make-escape-double-quote))
       (92 (make-escape-backslash))
       (110 (make-escape-letter-n))
       (114 (make-escape-letter-r))
       (116 (make-escape-letter-t))
-      (110 (make-escape-line-feed))
-      (114 (make-escape-carriage-return))
       (t (reserrf "unrecognized escaped character in cst2ast-single-char")))))
 
 (define cst2ast-escape-sequence ((tree abnf::treep))

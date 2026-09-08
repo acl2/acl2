@@ -235,7 +235,7 @@
                               (all-< nodenums tag-array-length) ;implies that tag-array-length is positive
                               (<= tag-array-length *max-1d-array-length*)
                               (symbolp tag-array-name))))
-  (let* ((tag-array (make-empty-array tag-array-name tag-array-length))
+  (let* ((tag-array (new-array1 tag-array-name tag-array-length))
          ;; Tag all the NODENUMS...
          (tag-array (aset1-list tag-array-name tag-array nodenums t))
          ;; ... and their supporters:
@@ -517,7 +517,7 @@
                     ;;(pseudo-dagp-aux dag-acc (car (car dag-acc)))
                     )
            :in-theory (e/d (build-reduced-dag-with-name ; pseudo-dagp-aux
-                            ) (                ;dag-exprp
+                            ) (;dag-exprp
                             )))))
 
 (defthm consp-of-mv-nth-0-of-build-reduced-dag-with-name-alt
@@ -531,7 +531,7 @@
                                               dag-len translation-array dag-acc)
            :expand ((pseudo-dagp-aux dag-acc -1))
            :in-theory (e/d (build-reduced-dag-with-name ; pseudo-dagp-aux
-                            ) (                ;dag-exprp
+                            ) (;dag-exprp
                                )))))
 
 (defthm natp-of-car-of-car-of-mv-nth-0-of-build-reduced-dag-with-name
@@ -546,7 +546,7 @@
                                               dag-len translation-array dag-acc)
            :expand ((pseudo-dagp-aux dag-acc -1))
            :in-theory (e/d (build-reduced-dag-with-name ; pseudo-dagp-aux
-                            ) (                ;dag-exprp
+                            ) (;dag-exprp
                             )))))
 
 (defthm pseudo-dagp-of-mv-nth-0-of-build-reduced-dag-with-name
@@ -763,7 +763,7 @@
                   ))
   (b* ((old-node-count (+ 1 top-nodenum))
        (tag-array (tag-supporters-of-node-with-name top-nodenum dag-array-name dag-array 'tag-array (+ 1 top-nodenum)))
-       (translation-array (make-empty-array 'translation-array (+ 1 top-nodenum)))
+       (translation-array (new-array1 'translation-array (+ 1 top-nodenum)))
        ((mv dag & ;translation-array
             )
         (build-reduced-dag-with-name 0 top-nodenum dag-array-name dag-array tag-array 0 translation-array nil))
@@ -842,7 +842,7 @@
                                  :in-theory (enable pseudo-dag-arrayp  ;fixme?
                                                     )))))
   (let* ((tag-array (tag-supporters-of-nodes-with-name (list smaller-nodenum larger-nodenum) (max smaller-nodenum larger-nodenum) dag-array-name dag-array 'tag-array (+ 1 larger-nodenum)))
-         (translation-array (make-empty-array 'translation-array (+ 1 larger-nodenum))))
+         (translation-array (new-array1 'translation-array (+ 1 larger-nodenum))))
     (mv-let (dag-lst translation-array)
             (build-reduced-dag-with-name 0 larger-nodenum dag-array-name dag-array tag-array 0 translation-array nil)
             (mv (aref1 'translation-array translation-array smaller-nodenum)
@@ -872,6 +872,25 @@
                                            top-nodenum
                                            nil ; print
                                            ))))
+
+(defthm drop-non-supporters-return-type
+  (implies (or (and (pseudo-dagp dag-or-quotep)
+                    (<= (top-nodenum-of-dag dag-or-quotep) *max-1d-array-index*))
+               (myquotep dag-or-quotep))
+           (or (pseudo-dagp (drop-non-supporters dag-or-quotep))
+               (myquotep (drop-non-supporters dag-or-quotep))))
+  :hints (("Goal" :cases ((< 0 (car (car dag-or-quotep))))
+           :in-theory (enable drop-non-supporters len-when-pseudo-dagp))))
+
+;; uses quotep as the normal form
+(defthm myquotep-of-non-supporters
+  (implies (or (and (pseudo-dagp dag-or-quotep)
+                    (<= (top-nodenum-of-dag dag-or-quotep) *max-1d-array-index*))
+               (myquotep dag-or-quotep))
+           (equal (myquotep (drop-non-supporters dag-or-quotep))
+                  (quotep (drop-non-supporters dag-or-quotep))))
+  :hints (("Goal" :use (drop-non-supporters-return-type)
+           :in-theory (disable drop-non-supporters-return-type))))
 
 (defthm true-listp-of-drop-non-supporters
   (implies (or (pseudo-dagp dag-or-quotep)

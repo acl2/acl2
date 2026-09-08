@@ -1,6 +1,6 @@
 ; A tool to turn lambdas into lets
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,7 +17,7 @@
 (include-book "non-trivial-formals")
 (include-book "kestrel/utilities/non-trivial-bindings" :dir :system)
 (include-book "kestrel/lists-light/prefixp-def" :dir :system)
-(include-book "tools/flag" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
@@ -230,7 +230,7 @@
          (mv (cons new-first-term new-rest-terms)
              (union-eq first-term-free-vars rest-terms-free-vars)))))))
 
-(make-flag reconstruct-lets-in-term-aux)
+(local (make-flag reconstruct-lets-in-term-aux))
 
 (defthm-flag-reconstruct-lets-in-term-aux
   (defthm symbol-listp-of-mv-nth-1-of-reconstruct-lets-in-term-aux

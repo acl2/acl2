@@ -1,7 +1,7 @@
 ; The run-until-return function for x86
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "X")
 
-;; TODO: Deprecate (use newer versions in run-until-return3.lisp and run-until-return4.lisp).
+;; TODO: Deprecate (use newer versions in run-until-return32.lisp and run-until-return64.lisp).
 
 ;TODO: Use x86isa package?
 

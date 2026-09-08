@@ -20,7 +20,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ definition
-  :parents (aleobft-definition-and-correctness)
+  :parents (aleobft)
   :short "Definition of the AleoBFT labeled state transition system."
   :long
   (xdoc::topstring

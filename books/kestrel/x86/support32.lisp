@@ -735,6 +735,22 @@
                               esp
                               unsigned-byte-p))))
 
+(defthm slice-63-32-of-bvplus-64-of-esp-when-stack-segment-assumptions32
+  (implies (and (stack-segment-assumptions32 stack-slots-needed x86)
+                (<= k 11) ; see "for now, assuming it's at least 12 bytes" above
+                (natp k))
+           (equal (slice 63 32 (bvplus 64 k (esp x86)))
+                  0))
+  :hints (("Goal"
+           :use ((:instance acl2::slice-too-high-is-0
+                            (acl2::high 63)
+                            (acl2::low 32)
+                            (x (+ k (esp x86)))))
+           :in-theory (enable stack-segment-assumptions32
+                              esp
+                              unsigned-byte-p
+                              bvplus))))
+
 (defthm data-segment-writeable-bit-when-stack-segment-assumptions32
   (implies (stack-segment-assumptions32 stack-slots-needed x86)
            (equal (data-segment-writeable-bit *ss* x86)
@@ -1094,7 +1110,7 @@
 ;; ;                            SEGMENT-IS-32-BITSP
 ;;                             )
 ;;                            ( ;ACL2::BVCHOP-IDENTITY
-;; ;                            ACL2::BVCHOP-IDENTITY-cheap
+;; ;                            ACL2::bvchop-identity-free
 ;;                             x86isa::!memi$inline
 ;; ;
 ;;                             stack-segment-assumptions32
@@ -1326,7 +1342,7 @@
                                                           acl2::bvchop-identity)
                                   ( ;acl2::bvchop-+-cancel-seconds
                                    ;x86isa::msri$inline
-                                   acl2::bvminus-becomes-bvplus-of-bvuminus
+                                   ;acl2::bvminus-becomes-bvplus-of-bvuminus
                                    )))))
 
 (defthm read-byte-list-from-segment-of-write-byte-to-segment
@@ -1451,7 +1467,7 @@
                                           ACL2::ASH-0 ; why?
                                           acl2::bvchop-identity
                                           )
-                           (ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                           (;ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                             )))))
 
 (defthm segment-is-32-bitsp-when-stack-segment-assumptions32
@@ -1490,7 +1506,7 @@
                                    bvminus
                                    bvplus
                                    acl2::bvchop-of-sum-cases)
-                                  (acl2::bvminus-becomes-bvplus-of-bvuminus
+                                  (;acl2::bvminus-becomes-bvplus-of-bvuminus
                                    )))))
 
 (defthm <-of-32-bit-segment-size
@@ -1519,7 +1535,7 @@
                                    bvplus
                                    acl2::bvchop-of-sum-cases
                                    esp)
-                                  (acl2::bvminus-becomes-bvplus-of-bvuminus
+                                  (;acl2::bvminus-becomes-bvplus-of-bvuminus
                                    )))))
 
 (defthm segment-max-eff-addr32-bound-when-stack-segment-assumptions32
@@ -1536,7 +1552,7 @@
                                    bvplus
                                    acl2::bvchop-of-sum-cases
                                    esp)
-                                  (acl2::bvminus-becomes-bvplus-of-bvuminus
+                                  (;acl2::bvminus-becomes-bvplus-of-bvuminus
                                    )))))
 
 (local (in-theory (disable esp))) ;prevents loops
@@ -2052,7 +2068,7 @@
 ;;   (or (<= (+ n1 eff-addr1) eff-addr2)
 ;;       (<= (+ n2 eff-addr2) eff-addr1)))
 
-(local (in-theory (disable acl2::bvminus-becomes-bvplus-of-bvuminus)))
+;(local (in-theory (disable acl2::bvminus-becomes-bvplus-of-bvuminus)))
 
 ;; Check whether the ranges of effective addresses (which may wrap around mod 2^32) are disjoint.
 ;uses cyclic ranges
@@ -3157,8 +3173,7 @@
                             (:e expt)
                             ea-to-la
                             acl2::bvchop-identity)
-                           (
-                            ;acl2::bvcat-equal-rewrite
+                           (;acl2::bvcat-equal-rewrite
                             ;acl2::bvcat-equal-rewrite-alt
                             ACL2::LOGEXT-OF-LOGIOR)))))
 
@@ -3214,8 +3229,7 @@
                             (:e expt)
                             ea-to-la
                             acl2::bvchop-identity)
-                           (
-                            ACL2::LOGEXT-OF-LOGIOR)))))
+                           (ACL2::LOGEXT-OF-LOGIOR)))))
 
 (defthm mv-nth-1-of-rime-size$inline-becomes-read-from-segment-8
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -3269,8 +3283,7 @@
                             (:e expt)
                             ea-to-la
                             acl2::bvchop-identity)
-                           (
-                            ;for speed:
+                           (;for speed:
                             ACL2::LOGEXT-OF-LOGIOR
                             ACL2::UNSIGNED-BYTE-P-LOGIOR
                             ACL2::UNSIGNED-BYTE-P-OF-ASH-alt
@@ -3800,7 +3813,7 @@
                                        32-bit-segment-start
                                        32-bit-segment-start-and-size
                                      )
-                                  (acl2::bvminus-becomes-bvplus-of-bvuminus)))))
+                                  ()))))
 
 
 ;move, localize!

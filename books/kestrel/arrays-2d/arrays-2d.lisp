@@ -1,7 +1,7 @@
 ; A formalization of 2-dimensional arrays as lists of rows
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -162,13 +162,19 @@
 (defund cols-to-array (numrows cols)
   (reverse-list (cols-to-array-aux (+ -1 numrows) cols)))
 
-(defthm cols-to-row-of-cons2
+(defthm cols-to-row-of-cons
   (equal (cols-to-row rownum (cons col cols))
-         (if (endp cols)
-             (list (nth rownum col))
-           (cons (nth rownum col)
-                 (cols-to-row rownum cols))))
+         (cons (nth rownum col)
+               (cols-to-row rownum cols)))
   :hints (("Goal" :in-theory (enable cols-to-row))))
+
+;; (defthm cols-to-row-of-cons2
+;;   (equal (cols-to-row rownum (cons col cols))
+;;          (if (endp cols)
+;;              (list (nth rownum col))
+;;            (cons (nth rownum col)
+;;                  (cols-to-row rownum cols))))
+;;   :hints (("Goal" :in-theory (enable cols-to-row))))
 
 (defthm cols-to-row-of-nil
   (equal (cols-to-row rownum nil)
@@ -179,7 +185,7 @@
 (defund array-elem-2d (row col contents)
   (declare (xargs :guard (and (natp row)
                               (natp col)
-                              (TRUE-LISTP CONTENTS)
+                              (true-listp contents)
                               (all-true-listp contents))))
   (nth col (nth row contents)))
 
@@ -241,12 +247,6 @@
 (defthm len-of-cols-to-row
   (equal (len (cols-to-row rownum cols))
          (len cols))
-  :hints (("Goal" :in-theory (enable cols-to-row))))
-
-(defthm cols-to-row-of-cons
-  (equal (cols-to-row rownum (cons col cols))
-         (cons (nth rownum col)
-               (cols-to-row rownum cols)))
   :hints (("Goal" :in-theory (enable cols-to-row))))
 
 (defthm len-of-get-column

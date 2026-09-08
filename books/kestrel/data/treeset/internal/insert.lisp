@@ -164,6 +164,7 @@
   (implies (mv-nth 0 (tree-insert x hash tree))
            (equal (mv-nth 1 (tree-insert x hash tree))
                   (tree-fix tree)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by tree-insert.tree$-when-tree-insert.inp)
 
 ;;;;;;;;;;;;;;;;;;;;

@@ -760,11 +760,11 @@
                  (and test step)
                  (er hard 'defthm-domain
                      "Non-nil values are required in a defthm-domain either ~
-                      for keyword :root or for for keywords :test and :step, ~
+                      for keyword :root or for keywords :test and :step, ~
                       unless the termination predicate is a symbol whose name ~
                       ends in \"-TERMINATES\", for example, FOO-TERMINATES.  ~
-                      The following form has termination predicate ~x0 is ~
-                      thus illegal:~|~x1"
+                      The following form, which has termination predicate ~
+                      ~x0, is thus illegal:~|~x1"
                      terminates
                      form))
              (maybe-verbose-form (defthm-domain-form thm-name

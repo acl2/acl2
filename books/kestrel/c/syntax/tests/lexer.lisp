@@ -19,7 +19,7 @@
 
 ; for ASSERT!-STOBJ
 (make-event (er-progn (add-global-stobj 'parstate state)
-                      (value '(value-triple nil)))
+                      (acl2::value '(value-triple nil)))
             :check-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -536,12 +536,12 @@
  lex-character-constant
  "\\aA'"
  :pos (position "" 1 2)
- :more-inputs ((cprefix-locase-u) (position "" 1 1))
+ :more-inputs ((eprefix-locase-u) (position "" 1 1))
  :cond (equal ast
               (lexeme-token
                (token-const
                 (const-char
-                 (cconst (cprefix-locase-u)
+                 (cconst (eprefix-locase-u)
                          (list (c-char-escape (escape-simple (simple-escape-a)))
                                (c-char-char (char-code #\A)))))))))
 

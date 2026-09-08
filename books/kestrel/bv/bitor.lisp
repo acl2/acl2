@@ -25,7 +25,7 @@
   (bvor 1 x y))
 
 ;; This version requires bitp inputs and so may be faster and may also help
-;; catch bugs via stricter guard obligations.  We intened to keep this enabled
+;; catch bugs via stricter guard obligations.  We intend to keep this enabled
 ;; for reasoning.
 (defun bitor$ (x y)
   (declare (xargs :guard (and (bitp x) (bitp y))

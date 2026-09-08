@@ -1,6 +1,6 @@
 ; Formal specification of BLAKE2b
 ;
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -43,7 +43,7 @@
 
 (local (in-theory (disable len true-listp nth update-nth expt ;; prevent inductions
                            acl2::mod-sum-cases nth-update-nth ;; prevent case splits
-                           acl2::mod-by-4-becomes-bvchop)))
+                           )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

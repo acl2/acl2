@@ -1,0 +1,226 @@
+;===============================================================================
+; ABNF Lexical Grammar of Rust -- first slice
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Eric McCarthy (bendyarm on GitHub)
+;===============================================================================
+
+; This grammar covers the lexical structure of Rust
+; [Reference; rustc 1.87.0] for a first slice:
+; whitespace, comments (except block doc comments),
+; identifiers (ASCII-only for now), integer literals,
+; punctuation, and delimiters.
+; Not yet covered: block doc comments, lifetimes, float literals,
+; character/string/byte/C-string literals (of which the raw forms
+; will be a documented deviation, being inexpressible in ABNF),
+; and the shebang line.
+
+; The input to this grammar is a sequence of Unicode scalar values,
+; i.e. code points excluding the surrogate range %xD800-DFFF;
+; all character ranges below exclude surrogates.
+; UTF-8 decoding is outside the grammar.
+
+; Literal text strings containing letters use the RFC 7405
+; case-sensitive form %s"..." since Rust is case-sensitive.
+
+; Keywords are deliberately not enumerated in this grammar:
+; keyword classification is edition-dependent (see [SC6]),
+; so it cannot be expressed in a static grammar;
+; the rule identifier-or-keyword covers both.
+
+; Extra-grammatical side conditions are labeled [SCn] at their
+; points of relevance below; each has (or will have) a declarative
+; specification in extra-grammatical-restrictions.lisp:
+;
+; [SC1] Maximal munch: at each point of the input, among the valid
+;       lexemes (grammar match plus the other side conditions) that
+;       match a prefix of the remaining input, lexing takes a
+;       longest one.
+; [SC2] Block comment closing: the block-comment rule below
+;       overapproximates; a valid block comment ends at the first
+;       point where its "/*"-"*/" nesting depth returns to zero.
+;       (This condition constrains the candidate set over which
+;       [SC1] maximizes; without it, maximal munch would overshoot
+;       to a later "*/".)
+; [SC3] Bare carriage return: CR not immediately followed by LF
+;       must not occur in doc comments (and rustc normalizes CRLF
+;       and rejects bare CR more widely); not yet formalized.
+; [SC4] Identifiers: the ASCII-only identifier rules below are
+;       placeholders for Unicode XID_Start / XID_Continue
+;       (Unicode 16.0.0) with NFC normalization; to be replaced
+;       when the XID table books land.
+; [SC5] Raw identifiers: the identifier-or-keyword part of a
+;       raw-identifier must not be "crate", "self", "super",
+;       or "Self".
+; [SC6] Keyword classification: an identifier-or-keyword token that
+;       is a strict or reserved keyword of the current edition
+;       (see keywords.lisp) is a keyword token, not an identifier.
+; [SC7] Reserved numeric forms: certain forms are reserved and must
+;       be rejected rather than lexed as an integer literal
+;       followed by more input, e.g. "0b_" (no binary digits) and
+;       "0b123" (decimal digits after a binary prefix)
+;       [Reference; reserved forms similar to number literals].
+; [SC8] Reserved prefixes: an identifier-or-keyword (not a raw
+;       identifier) immediately followed by "#", "'", or a
+;       double quote is a reserved prefix, which must be rejected
+;       [Reference; reserved prefixes] (Rust edition 2021 and
+;       later, so both supported editions).  Genuine raw-identifier
+;       forms like r#ident are not affected: they lex as single
+;       raw-identifier lexemes.
+
+;-------------------------------------------------------------------------------
+; Lexemes
+;-------------------------------------------------------------------------------
+
+lexeme = whitespace / comment / token ; [SC1]
+
+token = identifier-or-keyword ; [SC6]
+      / raw-identifier
+      / integer-literal
+      / punctuation
+      / delimiter
+
+;-------------------------------------------------------------------------------
+; Whitespace
+;-------------------------------------------------------------------------------
+
+; The whitespace characters are those of [Reference; whitespace].
+; Note that they include two bidirectional marks (%x200E-200F),
+; a lexical-security concern to revisit.
+
+whitespace = 1*whitespace-char
+
+whitespace-char = %x9 ; horizontal tab
+                / %xA ; line feed
+                / %xB ; vertical tab
+                / %xC ; form feed
+                / %xD ; carriage return
+                / %x20 ; space
+                / %x85 ; next line
+                / %x200E ; left-to-right mark
+                / %x200F ; right-to-left mark
+                / %x2028 ; line separator
+                / %x2029 ; paragraph separator
+
+;-------------------------------------------------------------------------------
+; Comments
+;-------------------------------------------------------------------------------
+
+; Under maximal munch [SC1], these rules reproduce rustc's
+; classification quirks: "//" and "////..." are plain line comments
+; (on "////...", line-comment matches more input than
+; outer-line-doc's "///"), "///" begins an outer line doc comment,
+; and "//!" begins an inner line doc comment.
+
+comment = line-comment
+        / outer-line-doc
+        / inner-line-doc
+        / block-comment
+
+line-comment = "//" [ ( not-slash-bang-lf / "//" ) *not-lf ]
+
+outer-line-doc = "///" [ not-slash-lf *not-lf ] ; [SC3]
+
+inner-line-doc = "//!" *not-lf ; [SC3]
+
+; Block comments nest: block-item includes block-comment.
+; The rule overapproximates: see [SC2].
+
+block-comment = "/*" *block-item "*/" ; [SC2]
+
+block-item = block-comment
+           / not-star-slash
+           / "*"
+           / "/"
+
+;-------------------------------------------------------------------------------
+; Identifiers
+;-------------------------------------------------------------------------------
+
+; A lone "_" is not an identifier; it is punctuation.
+; ASCII-only for now: see [SC4].
+
+identifier-or-keyword = identifier-start *identifier-continue ; [SC8]
+                      / "_" 1*identifier-continue
+
+identifier-start = ascii-letter ; [SC4]
+
+identifier-continue = ascii-letter / dec-digit / "_" ; [SC4]
+
+raw-identifier = %s"r#" identifier-or-keyword ; [SC5]
+
+;-------------------------------------------------------------------------------
+; Integer literals
+;-------------------------------------------------------------------------------
+
+integer-literal = ( dec-literal
+                  / bin-literal
+                  / oct-literal
+                  / hex-literal )
+                  [ suffix-no-e ] ; [SC7]
+
+dec-literal = dec-digit *( dec-digit / "_" )
+
+bin-literal = %s"0b" *( bin-digit / "_" ) bin-digit *( bin-digit / "_" )
+
+oct-literal = %s"0o" *( oct-digit / "_" ) oct-digit *( oct-digit / "_" )
+
+hex-literal = %s"0x" *( hex-digit / "_" ) hex-digit *( hex-digit / "_" )
+
+; A suffix is identifier-shaped text immediately after the digits;
+; any such suffix lexes [Reference; suffixes], with validity
+; checked in later phases.  On integer literals the suffix must not
+; start with "e" or "E" (which would be a float exponent), hence
+; this rule.
+
+suffix-no-e = ascii-letter-no-e *identifier-continue
+            / "_" 1*identifier-continue
+
+;-------------------------------------------------------------------------------
+; Punctuation and delimiters
+;-------------------------------------------------------------------------------
+
+; The 47 punctuation tokens of [Reference; punctuation],
+; including the lone underscore, and including "<-" and "~",
+; which are currently unused by the language but lex as tokens.
+; Under [SC1], e.g. ">>=" lexes as one token, and "_a" lexes as
+; an identifier rather than as "_" followed by "a".
+
+punctuation = "+" / "-" / "*" / "/" / "%" / "^" / "!" / "&" / "|"
+            / "&&" / "||" / "<<" / ">>"
+            / "+=" / "-=" / "*=" / "/=" / "%=" / "^=" / "&=" / "|="
+            / "<<=" / ">>="
+            / "=" / "==" / "!=" / ">" / "<" / ">=" / "<="
+            / "@" / "_" / "." / ".." / "..." / "..="
+            / "," / ";" / ":" / "::"
+            / "->" / "=>" / "<-"
+            / "#" / "$" / "?" / "~"
+
+delimiter = "(" / ")" / "[" / "]" / "{" / "}"
+
+;-------------------------------------------------------------------------------
+; Character classes
+;-------------------------------------------------------------------------------
+
+ascii-letter = %x41-5A / %x61-7A
+
+ascii-letter-no-e = %x41-44 / %x46-5A / %x61-64 / %x66-7A
+
+dec-digit = %x30-39
+
+bin-digit = %x30-31
+
+oct-digit = %x30-37
+
+hex-digit = dec-digit / %x41-46 / %x61-66
+
+not-lf = %x0-9 / %xB-D7FF / %xE000-10FFFF
+
+not-slash-bang-lf = %x0-9 / %xB-20 / %x22-2E / %x30-D7FF / %xE000-10FFFF
+
+not-slash-lf = %x0-9 / %xB-2E / %x30-D7FF / %xE000-10FFFF
+
+not-star-slash = %x0-29 / %x2B-2E / %x30-D7FF / %xE000-10FFFF

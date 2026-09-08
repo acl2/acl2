@@ -75,8 +75,7 @@
    (xdoc::ul
     (xdoc::li
      "GCC and Clang extensions cannot both be enabled.
-      It would not make sense to enable both.
-      ")
+      It would not make sense to enable both.")
     (xdoc::li
      "CHERI extensions are allowed only with Clang.
       This is just a support limitation,

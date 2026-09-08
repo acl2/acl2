@@ -1,4 +1,4 @@
-; Running until we return from a function
+; Running until we return from a function or hit a stop PC
 ;
 ; Copyright (C) 2025-2026 Kestrel Institute
 ;
@@ -11,60 +11,17 @@
 (in-package "A")
 
 ;; This machinery is useful for symbolic execution.
+;; See also run-until-return-with-tracing.lisp.
 
 (include-book "portcullis")
-(include-book "kestrel/arm/step" :dir :system)
+(include-book "run-until-return-common")
 (include-book "misc/defpun" :dir :system)
-(include-book "kestrel/bv/bvlt" :dir :system)
+;(include-book "kestrel/bv/bvlt" :dir :system)
 (include-book "kestrel/lists-light/memberp" :dir :system)
+(local (include-book "kestrel/alists-light/acons" :dir :system))
 
-(defstub error-wrapper (* * arm) => *)
+(local (in-theory (disable alistp)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; To determine when to stop symbolic execution, we track the implicit stack
-;; height, relative to the start of the symbolic execution.  Calls increase the
-;; height and returns decrease it.  We stop symbolic execution when the
-;; relative height goes negative.
-
-;; This is separate so we can prevent opening it when INSTR is not a constant.
-(defund update-call-stack-height-aux (instr call-stack-height arm)
-  (declare (xargs :guard (and (unsigned-byte-p 32 instr) ; todo: use a recognizer
-                              (integerp call-stack-height))
-                  :stobjs arm))
-  (mv-let (erp mnemonic args) ;; where ARGS is an alist from field names
-      (arm::arm32-decode instr)
-    (declare (ignore args)) ; for now
-    (if erp
-        (error-wrapper "Can't decode instr." instr arm)
-      (case mnemonic
-        (:bl ; todo: blx
-         ;; We consider every BL to be a subroutine call since it saves the return address in the LR
-         (+ 1 call-stack-height))
-        ;; TODO: Add checks.  For now, we assume every BX is a return
-        ;; TODO: Add support for other return idioms, including moving to the PC and popping values into a register set that includes the PC
-        (:bx
-         (+ -1 call-stack-height))
-        (otherwise call-stack-height)))))
-
-;; Open only when we can determine the instruction
-(defopeners update-call-stack-height-aux :hyps ((syntaxp (quotep instr))))
-
-(defthm update-call-stack-height-aux-of-if-arg1
-  (equal (update-call-stack-height-aux (if test instr1 instr2) call-stack-height arm)
-         (if test
-             (update-call-stack-height-aux instr1 call-stack-height arm)
-           (update-call-stack-height-aux instr2 call-stack-height arm))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Increment on call, decrement on return
-(defund update-call-stack-height (call-stack-height arm)
-  (declare (xargs :guard (integerp call-stack-height)
-                  :stobjs arm))
-  (let* ((pc (pc arm))
-         (instr (read 4 pc arm)))
-    (update-call-stack-height-aux instr call-stack-height arm)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -124,7 +81,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: Consider stopping if the error field of the state is set.
+;; Should we stop if the error field of the state is set?  Probably not, since the
+;; run did not in fact finish but we may be able to prove things about the error state.
 ;; It would be nice to support the :stobjs arm below, but it is
 ;; not very important, because a defpun is already non-executable.
 (defpun run-until-return-or-reach-pc-aux (call-stack-height stop-pcs arm)
@@ -132,7 +90,7 @@
   (if (or (< call-stack-height 0)
           (memberp (reg *pc* arm) ; (pc arm)
                    stop-pcs))
-      arm ; stop since we've returned from the function being lifted
+      arm ; stop since we've returned from the function being lifted or reached a stop-pc
     ;; Step the state and also update our tracked version of the call-stack-height:
     (run-until-return-or-reach-pc-aux (update-call-stack-height call-stack-height arm) stop-pcs (step arm))))
 
@@ -169,10 +127,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Run until we return from the current function.
+;; Run until we return from the current function or hit one of the STOP-PCS.
 (defund run-until-return-or-reach-pc (stop-pcs arm)
   ;; (declare (xargs :stobjs arm))
   (run-until-return-or-reach-pc-aux
    0 ; initial call-stack-height
    stop-pcs
    arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defpun run-until-reach-pc-aux (stop-pcs arm)
+  ;; (declare (xargs :stobjs arm))
+  (if (memberp (reg *pc* arm) ; (pc arm)
+               stop-pcs)
+      arm ; stop since we've reached a stop-pc
+    ;; Step the state:
+    (run-until-reach-pc-aux stop-pcs (step arm))))
+
+;; This is a non-Axe rule
+(defthm run-until-reach-pc-aux-base
+  (implies (and (syntaxp (not (and (consp arm) (eq 'if (ffn-symb arm)))))
+                (memberp (reg *pc* arm) ; (pc arm)
+                         stop-pcs))
+           (equal (run-until-reach-pc-aux stop-pcs arm)
+                  arm)))
+
+;; This is a non-Axe rule
+(defthm run-until-reach-pc-aux-opener
+  (implies (and (syntaxp (not (and (consp arm) (eq 'if (ffn-symb arm)))))
+                (not (memberp (reg *pc* arm) ; (pc arm)
+                                  stop-pcs)))
+           (equal (run-until-reach-pc-aux stop-pcs arm)
+                  (run-until-reach-pc-aux stop-pcs (step arm)))))
+
+;; todo: add "smart" if handling, like we do elsewhere
+(defthm run-until-reach-pc-aux-of-if-arg2
+  (equal (run-until-reach-pc-aux stop-pcs (if test arma armb))
+         (if test
+             (run-until-reach-pc-aux stop-pcs arma)
+           (run-until-reach-pc-aux stop-pcs armb))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Run until we hit one of the STOP-PCS.
+(defund run-until-reach-pc (stop-pcs arm)
+  ;; (declare (xargs :stobjs arm))
+  (run-until-reach-pc-aux stop-pcs arm))

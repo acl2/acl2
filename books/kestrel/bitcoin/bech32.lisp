@@ -288,7 +288,7 @@
 
 (define bech32m-verify-checksum ((hrp stringp) (data (unsigned-byte-listp 8 data)))
   :returns (y/n booleanp)
-  :short "Verifies a Bech32 checksum."
+  :short "Verifies a Bech32m checksum."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -304,7 +304,7 @@
 (define bech32-or-bech32m-verify-checksum ((hrp stringp)
                                            (data (unsigned-byte-listp 8 data)))
   :returns (y/n booleanp)
-  :short "Verifies a Bech32 checksum."
+  :short "Verifies a Bech32 or Bech32m checksum."
   :long
   (xdoc::topstring
    (xdoc::p

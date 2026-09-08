@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -537,7 +537,7 @@
      called by the @('build()') method.")
    (xdoc::p
     "We remove any natively implemented function from @('fns-to-translate')
-     before calling the code that translated the Java function.
+     before calling the code that translates the function to Java.
      This is because we only build representations of the ACL2 functions
      to be executed by AIJ's interpreter;
      the natively implemented functions are executed ``directly''."))

@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function aref1
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -28,7 +28,7 @@
 
 ;; Disabled since this can be expensive and is rarely needed.
 (defthmd aref1-when-too-large
-  (implies (and (<= (alen1 array-name array) n)
+  (implies (and (<= (alen1 array-name array) n) ; unusual
                 (array1p array-name array)
                 (natp n))
            (equal (aref1 array-name array n)

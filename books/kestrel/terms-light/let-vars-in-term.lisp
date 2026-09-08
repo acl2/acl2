@@ -16,7 +16,7 @@
 ;; often arise because lambdas in ACL2 must be closed.
 
 (include-book "non-trivial-formals")
-(include-book "tools/flag" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
@@ -49,7 +49,7 @@
      (union-eq (let-vars-in-term (first terms))
                (let-vars-in-terms (rest terms))))))
 
-(make-flag let-vars-in-term)
+(local (make-flag let-vars-in-term))
 
 (defthm-flag-let-vars-in-term
   (defthm symbol-listp-of-let-vars-in-term

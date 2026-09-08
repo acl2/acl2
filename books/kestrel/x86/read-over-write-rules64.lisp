@@ -1,6 +1,7 @@
 ; "Read over write" rules for our x86 state readers and writers
 ;
 ; Copyright (C) 2016-2025 Kestrel Technology, LLC
+; Copyright (C) 2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,6 +18,8 @@
 (include-book "read-bytes-and-write-bytes")
 (include-book "readers-and-writers")
 (include-book "support") ;todo: remove (factor out non-32-bit read-over-write stuff like mv-nth-0-of-get-prefixes-of-xw-of-irrel)
+(include-book "projects/x86isa/machine/get-prefixes" :dir :system)
+(include-book "support-x86b") ; reduce?  need rules about get-prefixes?
 
 ;; TODO: Make sure we have the complete set of these rules
 
@@ -1110,8 +1113,7 @@
                                      rb-1
                                      rml128
                                      rml48
-                                     rml80
-                                     rb-1))))
+                                     rml80))))
 
 (encapsulate ()
   (local (in-theory (enable rml80

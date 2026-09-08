@@ -834,12 +834,12 @@
          ((mv erp renaming-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
           (merge-nodes-into-dag-array (reverse dag) ;fixme what about embedded dags?
                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                      (make-empty-array 'renaming-array (len dag))))
+                                      (new-array1 'renaming-array (len dag))))
          ((when erp) (mv erp translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
          (renamed-node (aref1 'renaming-array renaming-array top-nodenum))
          )
       (if (< renamed-node original-dag-len)
-          ;;the subdag is present, so merge in the term and do (aset1 'translation-array translation-array nodenum-of-dag nodenum-of-term);
+          ;;the subdag is present, so merge in the term and do (aset1 'translation-array translation-array nodenum-of-dag nodenum-of-term):
           (mv-let (erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
             (merge-tree-into-dag-array term nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'dag-array 'dag-parent-array
                                        nil ;interpreted-function-alist fixme
@@ -867,12 +867,12 @@
       (mv (erp-nil) dag)
     ;;dag is a dag-lst:
     (let* ((dag-len (len dag))
-           (dag-array (make-into-array 'dag-array dag)) ;okay to reuse the name?
+           (dag-array (alist-to-array1 'dag-array dag)) ;okay to reuse the name?
            )
       (mv-let (dag-parent-array dag-constant-alist dag-variable-alist)
         (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len)
         (let* ((top-nodenum (top-nodenum dag))
-               (translation-array (make-empty-array 'translation-array dag-len)))
+               (translation-array (new-array1 'translation-array dag-len)))
           ;;populate translation-array with entries for the subdags that will be replaced:
           (mv-let (erp translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
             (process-replacement-alist replacement-alist dag-len translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -1137,7 +1137,7 @@
 
 (defun make-dag-var-array (dag-lst)
   (make-dag-var-array-aux (reverse dag-lst)
-                          (make-empty-array 'dag-var-array (len dag-lst))))
+                          (new-array1 'dag-var-array (len dag-lst))))
 
 ;; i think we should never choose a node that is not a destructor...
 ;think about calls of other generated functions.
@@ -1186,7 +1186,7 @@
 ;;             (nodenum (find-nodenum-of-si-dag-to-replace dag dag-var-array))) ;fixme is it possible that this value won't be a word or array?
 ;;        (if (not nodenum) ;;we didn't find a subdag that depends on only si
 ;;            (mv dag param-new-val-alist-acc param-initial-val-alist replacement-alist param-count state)
-;;          (let ( ;(expr (lookup nodenum dag))
+;;          (let (;(expr (lookup nodenum dag))
 ;;                )
 ;;            (let* ((si-dag (get-subdag nodenum dag))
 ;;                   (dummy nil ;(cw "Si-expr dag:~% ~X01~%" si-dag nil)
@@ -1485,7 +1485,7 @@
 ;; ;;this includes all the exception branches:
 ;; (defun run-arbitrary-loop-iteration (state-dag-at-loop-header loop-pcs extra-rules arbitrary-iteration-assumptions
 ;;                                                               invariant-conjuncts state)
-;;   (let* ( ;;we start by running as far as we can:
+;;   (let* (;;we start by running as far as we can:
 ;;          (arbitrary-iteration-dag
 ;;           (prog2$ (cw "Symbolically executing an arbitrary loop iteration.  Running as far as we can.~%") ;fixme print assumptions and invariant-conjuncts
 ;;                   (simplify-term
@@ -1664,7 +1664,7 @@
 ;;                          ;; Prove that the invariant holds over an arbitary loop iteration:
 ;;                          ;; Simplify the one-rep DAG using the invariant
 ;;                          (let*
-;;                              ( ;;we now simplify the continuation-assumption using the invariant, or it may not fire
+;;                              (;;we now simplify the continuation-assumption using the invariant, or it may not fire
 ;;                               ;; fixme make sure this is sound
 ;;                               (test-dag (simplify-dag
 ;;                                          test-dag
@@ -1953,7 +1953,7 @@
 ;;                                                  nil
 ;;                                                  param-count)
 ;;                                 ;;check here that only new vars are in fixed-up-new-value-alist
-;;                                   (let* ( ;(all-changed-vars (strip-cars fixed-up-new-value-alist))
+;;                                   (let* (;(all-changed-vars (strip-cars fixed-up-new-value-alist))
 ;;                                          (si-expr-varnums (strip-cdrs var-to-si-expr-alist))
 ;; ;     (all-vars (append all-changed-vars si-expr-varnums))
 ;;                                          )
@@ -2028,7 +2028,7 @@
 ;;                                             (make-axe-rules
 ;;                                              (append (jvm-semantics-rules)
 ;;                                                      (jvm-simplification-rules)
-;;                                                      (amazing-rules-spec-and-dag)(map-rules))
+;;                                                      (amazing-rules-spec-and-dag) (map-rules))
 ;;                                              (w state))) ;fixme where else might we need these assumptions?
 ;;                                     :assumptions si-hyps)))
 ;;      (if (not (quotep call-stack-less-than-flg))
@@ -2041,7 +2041,7 @@
 ;;            (mv t state-dag)
 ;;          ;;We have not exited.
 ;;          ;;So see if we can just execute past the loop (because it doesn't execute at all):
-;;          (let* ( ;figure out which loop we are in:
+;;          (let* (;figure out which loop we are in:
 ;;                 (loop-loop-designator-from-state (safe-unquote2 'skip-loops-that-dont-execute
 ;;                                                                       (simplify-dag
 ;;                                                                        (wrap-term-around-dag '(loop-designator-from-state s)
@@ -2128,7 +2128,7 @@
 ;;           ;;if so, we are done!
 ;;           (list state-dag loop-defuns-and-theorems-acc generated-rules (+ -1 loop-count))
 ;;         ;;otherwise, we are at a real loop header, so decompile the loop, and repeat
-;;         (let* ( ;(dummy2 (cw "State at loop header: ~x0~%" state-at-loop-header-dag))
+;;         (let* (;(dummy2 (cw "State at loop header: ~x0~%" state-at-loop-header-dag))
 ;;                (loop-loop-designator-from-state (safe-unquote2 'decompile-loops-aux
 ;;                                                                      (simplify-dag
 ;;                                                                       (wrap-term-around-dag '(loop-designator-from-state s)
@@ -3171,11 +3171,12 @@
                                         paramnum-update-alist
                                         paramnum-extractor-alist
                                         paramnum-name-alist
+                                        this-loop-number
                                         state)
   (declare (xargs :mode :program :measure (nfix (+ 1 local-num)) :stobjs state))
   (if (not (natp local-num))
       (mv (erp-nil) next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state)
-    (b* ((local-name-and-type (lookup-in-local-variable-table local-num pc local-variable-table)) ;might be nil
+    (b* ((local-name-and-type (jvm::lookup-in-local-variable-table local-num pc local-variable-table)) ;might be nil
          (local-name (first local-name-and-type))
          (local-type (second local-name-and-type))
          ;; Decide whether to exclude the local (TODO: Think about soundness: How to ensure the local is not use after the loop?)
@@ -3193,7 +3194,7 @@
       (if exclude-reason
           (progn$ (cw "(Skipping excluded local ~x0 (~s1).)~%" local-num exclude-reason)
                   (make-loop-parameters-for-locals (+ -1 local-num) pc local-variable-table state-var excluded-locals one-rep-dag next-param-number updated-state-term
-                                                   paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state))
+                                                   paramnum-update-alist paramnum-extractor-alist paramnum-name-alist this-loop-number state))
         (b* ((initial-local-term `(jvm::nth-local ',local-num (jvm::locals (jvm::thread-top-frame (th) ,state-var))))
              ((mv erp initial-local-dag) (dagify-term initial-local-term))
              ((when erp) (mv erp nil nil nil nil nil state))
@@ -3212,10 +3213,10 @@
               ;; Later we handle read-only locals
               (progn$ (cw "(Skipping unchanged local ~x0.)~%" local-num)
                       (make-loop-parameters-for-locals (+ -1 local-num) pc local-variable-table state-var excluded-locals one-rep-dag next-param-number updated-state-term
-                                                       paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state))
+                                                       paramnum-update-alist paramnum-extractor-alist paramnum-name-alist this-loop-number state))
             ;;ffixme the local may not be live during the whole loop and so may not be assigned a slot at this pc (it may be a temporary that is written before it is read)
             ;;look for any name for that slot at any pc in the loop - can there be more than 1? ffixme  (or always exclude such things - now we have to use the excluded-locals-alist to do that)
-            (b* ((- (cw "(Param ~x0 is ~s1 (local #~x2), of type ~s3.)~%" next-param-number (or local-name :unknown-name) local-num (or local-type :unknown-type))))
+            (b* ((- (cw "(Loop ~x0 Param ~x1 is ~s2 (local #~x3), of type ~s4.)~%" this-loop-number next-param-number (or local-name :unknown-name) local-num (or local-type :unknown-type))))
               (make-loop-parameters-for-locals (+ -1 local-num)
                                                pc local-variable-table state-var excluded-locals one-rep-dag
                                                (+ 1 next-param-number)
@@ -3223,6 +3224,7 @@
                                                (acons next-param-number updated-local-dag paramnum-update-alist)
                                                (acons next-param-number initial-local-dag paramnum-extractor-alist)
                                                (acons next-param-number (or local-name :unknown-name) paramnum-name-alist)
+                                               this-loop-number
                                                state))))))))
 
 ;returns a list of triples (one for each nested call to set-field) of the form (address-dag class-field-pair value-dag)
@@ -3270,7 +3272,7 @@
 ;;returns (mv erp updated-state-term paramnum-update-alist paramnum-extractor-alist next-param-number paramnum-name-alist)
 ;TODO: really this should process the triples in the other order (to make the first triple be the outermost update).
 ;;well, we now prove that no addresses alias...
-(defun make-loop-parameters-for-fields (heap-update-triples updated-state-term next-param-num paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var)
+(defun make-loop-parameters-for-fields (heap-update-triples updated-state-term next-param-num paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var this-loop-number)
   (if (endp heap-update-triples)
       (mv (erp-nil) updated-state-term paramnum-update-alist paramnum-extractor-alist next-param-num paramnum-name-alist)
     (b* ((triple (first heap-update-triples))
@@ -3286,14 +3288,14 @@
 ;will we handle exceptions that depend on the results of
 ;loop functions?  -- now we generate type lemmas, so that handles the array length case, at least
          (getfield-term `(get-field ,ad-term ,class-name-field-id-pair (jvm::heap ,state-var)))
-         (- (cw "Param ~x0 is ~X12.~%" next-param-num getfield-term nil))
+         (- (cw "Loop ~x0 Param ~x1 is ~X23.~%" this-loop-number next-param-num getfield-term nil))
          (updated-state-term `(set-field-in-state ,ad-term ,class-name-field-id-pair (nth ',next-param-num :loop-function-result) ,updated-state-term)) ;we wrap a set-field around the old updated-state-term
          (paramnum-update-alist (acons next-param-num value-dag paramnum-update-alist)) ;check that the values coming in are right
          ((mv erp getfield-dag) (dagify-term getfield-term))
          ((when erp) (mv erp nil nil nil nil nil))
          (paramnum-extractor-alist (acons next-param-num getfield-dag paramnum-extractor-alist))
          (paramnum-name-alist (acons next-param-num getfield-term paramnum-name-alist)))
-      (make-loop-parameters-for-fields (rest heap-update-triples) updated-state-term (+ 1 next-param-num) paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var))))
+      (make-loop-parameters-for-fields (rest heap-update-triples) updated-state-term (+ 1 next-param-num) paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var this-loop-number))))
 
 ;;TOOO: What if other state components than the locals/heap/static-fields are changed?  e.g., strings get interned in the loop?
 
@@ -3332,7 +3334,8 @@
                                                paramnum-update-alist
                                                paramnum-extractor-alist
                                                paramnum-name-alist
-                                               state-var)
+                                               state-var
+                                               this-loop-number)
   (if (endp static-field-update-pairs)
       (mv (erp-nil) updated-state-term paramnum-update-alist paramnum-extractor-alist next-param-number paramnum-name-alist)
     (b* ((pair (first static-field-update-pairs))
@@ -3341,7 +3344,7 @@
          (class-name (car class-name-field-id-pair))
          (field-id (cdr class-name-field-id-pair))
          (get-static-field-term `(jvm::get-static-field ,class-name ,field-id (jvm::static-field-map ,state-var)))
-         (- (cw "Param ~x0 is ~X12.~%" next-param-number get-static-field-term nil))
+         (- (cw "Loop ~x0 Param ~x1 is ~X23.~%" this-loop-number next-param-number get-static-field-term nil))
          (updated-state-term `(jvm::setstaticfield ,class-name ,field-id
                                                    (nth ',next-param-number :loop-function-result) ,updated-state-term))
          (paramnum-update-alist (acons next-param-number value-dag paramnum-update-alist))
@@ -3356,7 +3359,8 @@
                                               paramnum-update-alist
                                               paramnum-extractor-alist
                                               paramnum-name-alist
-                                              state-var))))
+                                              state-var
+                                              this-loop-number))))
 
 (defun lookup-equivalent-dag (dag alist-with-dag-keys)
   (if (endp alist-with-dag-keys)
@@ -3373,7 +3377,7 @@
 ;;TTODO: Need to show that none of these alias any of the changed instance fields?
 ;;TTTODO: This seems to depend on brittle node ordering in the DAG.  Do something better?
 ;(skip-proofs
-(defun find-read-only-params (dag dag-paramnum-alist next-param-number paramnum-name-alist state)
+(defun find-read-only-params (dag dag-paramnum-alist next-param-number paramnum-name-alist this-loop-number state)
   (declare (xargs :mode :program :stobjs state))
   (if (quotep dag) ;fixme this is new - add support for quotep dags elsewhere?
       (mv (erp-nil) dag dag-paramnum-alist next-param-number paramnum-name-alist state)
@@ -3389,7 +3393,7 @@
              (si-term-or-dag (if (dag-or-quotep-size-less-thanp si-dag 1000)
                                  (dag2term si-dag)
                                si-dag))
-             (- (and (not match) (cw "Param ~x0 is ~X12.~%" next-param-number si-term-or-dag nil)))
+             (- (and (not match) (cw "Loop ~x0 Param ~x1 is ~X23.~%" this-loop-number next-param-number si-term-or-dag nil)))
              (paramnum-name-alist (if (not match)
                                       (acons next-param-number
                                              si-dag ;this isn't really a name..
@@ -3419,27 +3423,27 @@
           ;;                                   nil  ;use-internal-contextsp
           ;;                                   nil nil nil nil t state)
           (if match ;this si-expression has already been given a parameter name
-              (find-read-only-params dag dag-paramnum-alist next-param-number paramnum-name-alist state)
+              (find-read-only-params dag dag-paramnum-alist next-param-number paramnum-name-alist this-loop-number state)
             ;;we are replacing a new expression and adding a new param for it:
             (find-read-only-params dag
                                    ;;fixme call a dagify-term that inlines constants...
                                    (acons si-dag next-param-number dag-paramnum-alist)
                                    (+ 1 next-param-number)
-                                   paramnum-name-alist state)))))))
+                                   paramnum-name-alist this-loop-number state)))))))
 ;)
 
 ;;returns (mv erp dags new-param-term-alist next-param-number paramnum-name-alist state)
-(defun find-read-only-params-lst (dags dag-paramnum-alist next-param-number dags-acc paramnum-name-alist state)
+(defun find-read-only-params-lst (dags dag-paramnum-alist next-param-number dags-acc paramnum-name-alist this-loop-number state)
   (declare (xargs :mode :program :stobjs state))
   (if (endp dags)
       (mv (erp-nil) (reverse dags-acc) (swap-pairs dag-paramnum-alist) next-param-number paramnum-name-alist state)
     (mv-let (erp dag dag-paramnum-alist next-param-number paramnum-name-alist state)
-      (find-read-only-params (first dags) dag-paramnum-alist next-param-number paramnum-name-alist state)
+      (find-read-only-params (first dags) dag-paramnum-alist next-param-number paramnum-name-alist this-loop-number state)
       (if erp
           (mv erp nil nil nil nil state)
         (find-read-only-params-lst (rest dags) dag-paramnum-alist next-param-number
                                    (cons dag dags-acc)
-                                   paramnum-name-alist state)))))
+                                   paramnum-name-alist this-loop-number state)))))
 
 ;should have no duplicates
 (defun make-replacement-alist (paramnum-dag-alist)
@@ -4044,7 +4048,7 @@
 (defun make-type-invars-for-local (local-num type state-var loop-top-state-dag hyps options print state)
   (declare (xargs :mode :program :stobjs state))
   (if (jvm::reference-typep type)
-      (b* ( ;;we always put in the address-or-nullp invar
+      (b* (;;we always put in the address-or-nullp invar
            (address-or-nullp-invars (list `(address-or-nullp (jvm::nth-local ',local-num (jvm::locals (jvm::thread-top-frame (th) ,state-var))))))
            ((mv erp non-null-invars state)
             ;; we put in the non-null invar, if we can show it holds initially:
@@ -4059,10 +4063,34 @@
                     non-null-invars
                     array-ref-invars)
             state))
-    (if (eq :int type) ;TODO: handle other types!
+    (if (eq :int type) ;;TODO: handle other types! i've seen :double and :long too
         (let ((invars (list `(unsigned-byte-p '32 (jvm::nth-local ',local-num (jvm::locals (jvm::thread-top-frame (th) ,state-var)))))))
           (maybe-add-non-negative-invar-for-local local-num 32 state-var loop-top-state-dag hyps invars options print state))
-      (mv (erp-nil) nil state))))
+      (if (eq :byte type)
+          (let ((invars (list `(unsigned-byte-p '32 (jvm::nth-local ',local-num (jvm::locals (jvm::thread-top-frame (th) ,state-var))))
+                              ;; todo: also assert that the value is properly sign extended?
+                              )))
+            (mv (erp-nil) invars state) ;(maybe-add-non-negative-invar-for-local local-num 32 state-var loop-top-state-dag hyps invars options print state) ; todo: put back?
+            )
+        (if (eq :short type)
+            (let ((invars (list `(unsigned-byte-p '32 (jvm::nth-local ',local-num (jvm::locals (jvm::thread-top-frame (th) ,state-var))))
+                                ;; todo: also assert that the value is properly sign extended?
+                                )))
+              (mv (erp-nil) invars state) ;(maybe-add-non-negative-invar-for-local local-num 32 state-var loop-top-state-dag hyps invars options print state) ; todo: put back?
+              )
+          (if (eq :char type)
+              (let ((invars (list `(unsigned-byte-p '16 (jvm::nth-local ',local-num (jvm::locals (jvm::thread-top-frame (th) ,state-var))))
+                                  ;; todo: also assert that the value is properly sign extended?
+                                  )))
+                (mv (erp-nil) invars state) ;(maybe-add-non-negative-invar-for-local local-num 32 state-var loop-top-state-dag hyps invars options print state) ; todo: put back?
+                )
+            (if (eq :boolean type)
+                (let ((invars (list `(unsigned-byte-p '32 (jvm::nth-local ',local-num (jvm::locals (jvm::thread-top-frame (th) ,state-var)))) ; tighten?
+                                    ;; todo: also assert that the value is either 0 or 1?
+                                    )))
+                  (mv (erp-nil) invars state))
+              (progn$ ;(er hard? 'make-type-invars-for-local "Unhandled type: ~x0." type)
+                (mv (erp-nil) nil state)))))))))
 
 ;; Returns (mv erp type-invars-for-locals state).
 (defun make-type-invars-for-locals-aux (local-variable-table loop-pc state-var loop-top-state-dag hyps options print state)
@@ -4285,7 +4313,7 @@
 
 (defun get-terms-from-node-contexts (nodenums dag-lst)
   (let* ((dag-len (len dag-lst))
-         (dag-array (make-into-array 'dag-array dag-lst))
+         (dag-array (alist-to-array1 'dag-array dag-lst))
          (context-array (make-full-context-array 'dag-array dag-array dag-len))
          (terms (get-terms-from-node-contexts-aux nodenums 'context-array context-array dag-lst))
          )
@@ -4365,7 +4393,7 @@
     (if (or native-flag abstract-flag)
         nil ;native and abstract methods don't have any code
       (b* (;;(- (cw " (Getting loops for method ~x0~x1: " name descriptor))
-           (program (lookup-eq-safe :program method-info))
+           (program (jvm::method-program method-info))
            (loops (decompose-into-loops program))
            (loop-infos (make-loop-infos loops class-name name descriptor))
            ;;(- (cw " Found ~x0 loops.)~%" (len loop-infos)))
@@ -4581,7 +4609,7 @@
        ((when erp) (mv erp nil state)))
     (simp-dag dag2
               :rule-alist *state-component-extraction-axe-rule-alist*
-              ;; (append (amazing-rules-spec-and-dag)(map-rules)
+              ;; (append (amazing-rules-spec-and-dag) (map-rules)
               ;;         (map-rules) ;needed to push IFs, or we could open up JVM::thread-top-frame, JVM::CALL-STACK, etc.
               ;;         (jvm-semantics-rules)
               ;;         (jvm-simplification-rules))
@@ -4823,7 +4851,7 @@
          ))
        ((when erp) (mv erp nil nil nil nil nil nil state))
        (- (and print (progn$ (cw "(state dag after unrolling:~%")
-                             (print-list state-dag)
+                             (print-dag-with-elided-method-info state-dag " ")
                              (cw ")~%"))))
        ;; (- (cw ")~%")) ;matches the open paren printed at the top of this routine?
        )
@@ -4882,7 +4910,7 @@
    (declare (xargs :mode :program
                    :stobjs state
                    :guard (<= 1 loop-depth)))
-   (b* ( ;; Decompile the loop body completely, including any nested loops and subroutine calls, assuming the candidate invars:
+   (b* (;; Decompile the loop body completely, including any nested loops and subroutine calls, assuming the candidate invars:
         ((mv erp state-var-dag) (dagify-term state-var))
         ((when erp) (mv erp nil nil nil nil nil nil nil nil nil state))
         ((mv erp body-dag ;what vars might be in this?  can assumptions introduce vars other than state-var?
@@ -4921,9 +4949,15 @@
         ((mv erp exit-dag state)
          (get-exit-dag body-dag loop-pc state-var state))
         ((when erp) (mv erp nil nil nil nil nil nil nil nil nil state))
-        (- (and print (cw "(One rep DAG for loop ~x0:~%~x1)~%" this-loop-number one-rep-dag)))
-        (- (and print (cw "(Exit DAG for loop ~x0:~%~x1)~%" this-loop-number exit-dag)))
-        (- (and print (cw "(Exit test DAG for loop ~x0:~%~x1)~%" this-loop-number termination-test-dag)))
+        (- (and print (cw "(One rep DAG for loop ~x0:~%" this-loop-number)))
+        (- (print-dag-with-elided-method-info one-rep-dag " "))
+        (- (cw ")~%"))
+        (- (and print (cw "(Exit DAG for loop ~x0:~%" this-loop-number )))
+        (- (print-dag-with-elided-method-info exit-dag " "))
+        (- (cw ")~%"))
+        (- (and print (cw "(Exit test DAG for loop ~x0:~%" this-loop-number)))
+        (- (print-dag-with-elided-method-info termination-test-dag " "))
+        (- (cw ")~%"))
         ;; (- (and print (cw "(Options: ~x0)~%" options)))
         (termination-test (dag2term termination-test-dag))
         (continuation-test (negate-term termination-test))
@@ -5017,7 +5051,7 @@
    (declare (xargs :mode :program :stobjs state :guard (<= 1 loop-depth)))
 ;fffixme - what if we can resolve the loop test? might save a whole lot of work? (maybe only if the loop does not execute)
 ;did this check on the old decompiler - best way to tell is to just try running through the loop.
-   (b* ( ;; Extract the method-info:
+   (b* (;; Extract the method-info:
         ((mv erp method-info state)
          (quick-simp-composed-term-and-dag `(jvm::method-info (jvm::thread-top-frame (th) replace-me)) 'replace-me loop-top-state-dag
                                            :rule-alist *state-component-extraction-axe-rule-alist*
@@ -5087,12 +5121,12 @@
               (- (cw " (Static flag: ~x0)~%" static-flag))
               (- (check-dag-vars (append previous-state-vars other-input-vars) loop-top-state-dag)) ;what is the point of this check?
               (- (and print (progn$ (cw " (Loop top state dag:~%")
-                                    (PRINT-LIST-with-indent loop-top-state-dag "  ")
+                                    (print-dag-with-elided-method-info loop-top-state-dag "  ")
                                     (cw ")~%"))))
               (- (and print (cw " (ifns: ~x0)~%" (strip-cars interpreted-function-alist))))
               (code-hyps (code-hyps loop-pc method-info class-name method-name method-descriptor state-var))
               (loop-pcs-no-header (remove loop-pc loop-pcs))
-              (locals-stored-into (locals-stored-into loop-pcs (lookup-eq :program method-info) nil))
+              (locals-stored-into (locals-stored-into loop-pcs (jvm::method-program method-info) nil))
               (- (cw " (Locals stored into: ~x0.)~%" locals-stored-into)) ;TODO: Print the names if available, TODO: print the locals *not* stored into.
 
 
@@ -5193,7 +5227,7 @@
                                                     (bv-array-rules)
                                                     (jvm-rules-unfiled-misc)
                                                     (boolean-rules)
-                                                    '(IF-BECOMES-MYIF
+                                                    '(;IF-BECOMES-MYIF
                                                       MYIF-BECOMES-BOOLIF-AXE
                                                       UNSIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-SMALLER
                                                       sbvlt-of-bvplus-of-minus-1-and-minus-1
@@ -5393,6 +5427,7 @@
                                                 excluded-locals
                                                 one-rep-dag next-param-number updated-state-term
                                                 paramnum-update-alist paramnum-extractor-alist paramnum-name-alist
+                                                this-loop-number
                                                 state))
               ((when erp) (mv erp nil nil nil nil nil nil nil state))
               (- (cw "Done handling locals.)~%"))
@@ -5422,7 +5457,7 @@
               (- (cw "Good! There is no aliasing among the fields changed by the loop.)~%"))
               ((mv erp updated-state-term paramnum-update-alist paramnum-extractor-alist next-param-number paramnum-name-alist)
                (make-loop-parameters-for-fields heap-update-triples updated-state-term next-param-number paramnum-update-alist
-                                                paramnum-extractor-alist paramnum-name-alist state-var))
+                                                paramnum-extractor-alist paramnum-name-alist state-var this-loop-number))
               ((when erp) (mv erp nil nil nil nil nil nil nil state))
               (- (cw "Done processing instance fields.)~%"))
               (- (cw "(Making loop parameters for static fields changed by the loop:~%"))
@@ -5443,7 +5478,7 @@
                            nil nil nil nil nil nil state)))
               ((mv erp updated-state-term paramnum-update-alist paramnum-extractor-alist next-param-number paramnum-name-alist)
                (make-loop-parameters-for-static-fields static-field-update-pairs
-                                                       updated-state-term next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var))
+                                                       updated-state-term next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var this-loop-number))
               ((when erp) (mv erp nil nil nil nil nil nil nil state))
               (- (cw "Done processing static fields.)~%"))
 
@@ -5484,7 +5519,7 @@
                                           nil
                                           next-param-number
                                           nil
-                                          paramnum-name-alist
+                                          paramnum-name-alist this-loop-number
                                           state))
               ((when erp) (mv erp nil nil nil nil nil nil nil state))
               (- (cw "  Done finding read-only params.)~%"))
@@ -5509,7 +5544,7 @@
               ;;                                                                               loop-top-state-dag state-var state))
 
               (initial-value-dags (strip-cdrs paramnum-extractor-alist)) ;these are over state-var and perhaps earlier state vars (and inputs??)
-              (- (cw "(There are ~x0 params.)~%" param-count))
+              (- (cw "(There are ~x0 params in loop ~x1.)~%" param-count this-loop-number))
               ;; (- (progn$ (cw "(Initial values of params:~%")
               ;;            (print-list initial-value-dags)
               ;;            (cw ")~%")))
@@ -5951,7 +5986,7 @@
                segment-call-stack-height
                (if (and print (not (eq :brief print))) (strip-cars interpreted-function-alist) :elided)
                (if print hyps :elided)))
-        ;; (- (cw "(Rules: ~x0)" generated-rules-acc))
+        ;; (- (cw "(Generated rules: ~x0)" generated-rules-acc))
         (loop-headers (strip-cars loop-alist))
         ;; (- (cw "(Loop headers: ~x0)" loop-headers)) ;we could print these just for this class
         ((mv erp dag-to-run) (wrap-term-around-dag
@@ -6011,15 +6046,15 @@
           dag-to-run
           :rule-alists rule-alists
           :interpreted-function-alist interpreted-function-alist ;Thu Jul 29 02:45:04 2010
-          :monitor (append '( ;; get-class-of-inner-array-2d
-                             ;;RUN-UNTIL-EXIT-SEGMENT-OR-HIT-LOOP-HEADER-OPENER-2;;
-                             ;;RUN-UNTIL-EXIT-SEGMENT-OR-HIT-LOOP-HEADER-OPENER-1;;
+          :monitor (append '(;; get-class-of-inner-array-2d
+                             ;;RUN-UNTIL-EXIT-SEGMENT-OR-HIT-LOOP-HEADER-OPENER-2
+                             ;;RUN-UNTIL-EXIT-SEGMENT-OR-HIT-LOOP-HEADER-OPENER-1
                              ;;JVM::INVOKE-STATIC-INITIALIZER-FOR-NEXT-CLASS-BASE
                              )
                            (g :monitor options))
           :assumptions hyps
           :normalize-xors nil
-          :print-interval 10000
+          :print-interval (g :print-interval options)
           :print print ;;:print t
           :use-internal-contextsp t ;trying this... Wed Apr 29 16:32:19 2015 ;;this leads to occurrences of ':irrelevant
           :check-inputs nil
@@ -6060,16 +6095,13 @@
        ;;the run ended because each branch either exited from the stack height, left the code segment, or hit a loop header.
        ;;For each branch that hit a loop header, we need to decompile the loop and splice the result back into the state-dag.
        ;;Then we have to continue running all the branches on which loops were decompiled
-       ;;fixme print the number of branches?
+       ;;todo: print the number of branches?
        (progn$ ;fixme what if there are none of these?
         (cw "(All branches seemed to run without error.)~%")
         (cw "(State DAG after running all branches:~%")
-        (if print (print-list state-dag) (cw ":ELIDED"))
+        (if print (print-dag-with-elided-method-info state-dag "  ") (cw ":ELIDED"))
         (cw ")~%")
         (cw "(Decompiling loop branches~% (segment-call-stack-height: ~x0)~%" segment-call-stack-height)
-        (and print (cw "(state-dag:~%"))
-        (and print (print-list state-dag))
-        (and print (cw "~%)"))
         (mv-let (erp state-dag2 ;details of this?
                  generated-events-acc generated-rules-acc change-flg next-loop-number interpreted-function-alist-alist interpreted-function-alist state)
           (decompile-loop-branches state-dag
@@ -6098,7 +6130,7 @@
                          nil nil nil nil nil state)
                    (progn$ (cw "No nested loops were decompiled (print is ~x0.)~%" print) ;todo: print loop-depth
                            (cw "(state dag:~%")
-                           (if print (print-list state-dag) (cw "elided~%"))
+                           (if print (print-dag-with-elided-method-info state-dag " ") (cw "elided~%"))
                            (cw ")~%")
                            (mv nil
                                state-dag
@@ -6153,7 +6185,7 @@
                    :guard (and (pseudo-term-listp hyps) ;TODO add more to the guard
                                ;(invariant-alistp (g :invariant-alist options) state) ;TODO: Make a decompiler-optionsp?
                                )))
-   (b* ( ;; Get the stack-height (we do this once, outside of decompile-code-segment-aux):
+   (b* (;; Get the stack-height (we do this once, outside of decompile-code-segment-aux):
         ((mv erp stack-height-dag state)
          (quick-simp-composed-term-and-dag `(stack-height state-var) 'state-var state-dag
                                            ;;pass in ifns?
@@ -6352,6 +6384,7 @@
                           user-assumptions
                           classes-to-assume-initialized
                           print
+                          print-interval
                           ignore-exceptions
                           ignore-errors
                           invariants
@@ -6401,9 +6434,10 @@
                           (or (booleanp prune-branches) ; todo: precise or approx?
                               (natp prune-branches))
                           (booleanp disable-loop-openers)
+                          (natp print-interval) ; todo: allow nil?
                           )
                   :mode :program))
-  (b* ( ;; Check whether an identical call to the lifter has already been done:
+  (b* (;; Check whether an identical call to the lifter has already been done:
        ((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :redundant) state))
        ;; Check inputs (TODO: What other checks should we do here?):
@@ -6441,7 +6475,7 @@
         (prog2$ (cw "ERROR: Couldn't find info for method ~x0 with descriptor ~x1 in class ~x2.  Existing methods are ~x3."
                     method-name method-descriptor method-class (strip-cars (jvm::class-decl-methods class-info)))
                 (mv t nil state)))
-       (code (lookup-eq :program method-info))
+       (code (jvm::method-program method-info))
        ((when (not code))
         (prog2$ (cw "ERROR: Couldn't find code for method ~x0 with descriptor ~x1 in class ~x2" method-name method-descriptor method-class)
                 (mv t nil state)))
@@ -6517,7 +6551,8 @@
                                                                          (s :symbolic-execution-rules symbolic-execution-rules
                                                                             (s :use-lets-in-terms use-lets-in-terms
                                                                                (s :disable-loop-openers disable-loop-openers
-                                                                                  nil)))))))))))))))))))))))
+                                                                                  (s :print-interval print-interval
+                                                                                     nil))))))))))))))))))))))))
        (input-vars (append param-input-vars other-input-vars)) ;input variables (assumptions can be about these, and they become params of the generated function) , a symbol-listp
        ;;((mv erp event state)
 ;todo: clean up here:
@@ -6528,6 +6563,11 @@
             interpreted-function-alist state)
         (decompile-program
          (append (code-hyps 0 method-info method-class method-name method-descriptor 's0)
+                 ;; the instruction in the frame below where we are working is in fact an invoke (needed for the return):
+                 '((memberp (car (lookup-equal (jvm::pc (jvm::top-frame (jvm::pop-frame (jvm::binding (th) (jvm::thread-table s0)))))
+                                                (jvm::method-program (jvm::method-info (jvm::top-frame (jvm::pop-frame (jvm::binding (th)
+                                                                                                                                     (jvm::thread-table s0))))))))
+                             '(:invokevirtual :invokestatic :invokespecial :invokeinterface :ldc_w :ldc)))
                  assumptions)
          (jvm::get-pcs-from-program code)
          program-name
@@ -6540,7 +6580,7 @@
          state))
        ((when erp) (mv erp nil state))
        (- (and print (progn$ (cw "(Dag before extracting outputs:~%")
-                             (print-list final-state-dag)
+                             (print-dag-with-elided-method-info final-state-dag " ")
                              (cw ")~%"))))
        ;; Extract the term representing the output:
        (return-type (lookup-eq :return-type method-info))
@@ -6579,7 +6619,7 @@
                                    state))
        ((when erp) (mv erp nil state))
        (- (and print (progn$ (cw "(Output DAG:~%")
-                             (print-list output-dag)
+                             (print-dag-with-elided-method-info output-dag " ")
                              (cw ")~%"))))
        (dag-vars (dag-vars-unsorted output-dag)) ; these get sorted below
        ;; TODO: Shouldn't we just add inputs automatically for this new stuff?
@@ -6622,6 +6662,7 @@
                                  (assumptions 'nil)
                                  (classes-to-assume-initialized 'nil)
                                  (print 'nil)
+                                 (print-interval '10000)
                                  (ignore-exceptions 'nil)
                                  (ignore-errors 'nil)
                                  (invariants 'nil)
@@ -6657,6 +6698,7 @@
                                   ,assumptions
                                   ,classes-to-assume-initialized
                                   ,print
+                                  ,print-interval
                                   ,ignore-exceptions
                                   ,ignore-errors
                                   ,invariants
@@ -6722,6 +6764,7 @@
                                   assumptions
                                   classes-to-assume-initialized
                                   print
+                                  print-interval
                                   ignore-exceptions
                                   ignore-errors
                                   invariants
@@ -6754,7 +6797,8 @@
                               (or (string-listp classes-to-assume-initialized)
                                   (eq :all classes-to-assume-initialized))
                               (or (member-eq call-stp '(t nil))
-                                  (natp call-stp))) ;todo: what else?
+                                  (natp call-stp))
+                              (natp print-interval)) ;todo: what else?
                   :mode :program))
   (b* (;; Check whether this call to the lifter has already been made:
        ((when (command-is-redundantp whole-form state))
@@ -6774,7 +6818,7 @@
         (prog2$ (cw "ERROR: Error getting the class info for ~x0" method-class)
                 (mv t nil state)))
        (method-info (lookup-equal (cons method-name method-descriptor) (jvm::class-decl-methods class-info)))
-       (code (lookup-eq :program method-info))
+       (code (jvm::method-program method-info))
        (return-type (lookup-eq :return-type method-info))
        ((when (not code))
         (prog2$ (cw "ERROR: Couldn't find code for method ~x0 with descriptor ~x1 in class ~x2" method-name method-descriptor method-class)
@@ -6812,12 +6856,18 @@
                                                        (s :monitor monitor
                                                           ;; todo: :use-prover-for-invars, :use-lets-in-terms, :disable-loop-openers, ...
                                                           (s :symbolic-execution-rules symbolic-execution-rules
-                                                             nil))))))))))))))))
+                                                             (s :print-interval print-interval
+                                                                nil)))))))))))))))))
        ((mv erp final-state-dag generated-events generated-rules   ;;fixme think about these ignores
             & ;interpreted-function-alist-alist
             interpreted-function-alist state)
         (decompile-program
          (append (code-hyps start-pc method-info method-class method-name method-descriptor 's0)
+                 ;; the instruction in the frame below where we are working is in fact an invoke (needed for the return):
+                 '((memberp (car (lookup-equal (jvm::pc (jvm::top-frame (jvm::pop-frame (jvm::binding (th) (jvm::thread-table s0)))))
+                                               (jvm::method-program (jvm::method-info (jvm::top-frame (jvm::pop-frame (jvm::binding (th)
+                                                                                                                             (jvm::thread-table s0))))))))
+                    '(:invokevirtual :invokestatic :invokespecial :invokeinterface :ldc_w :ldc)))
                  assumptions
                  input-assumptions)
          segment-pcs
@@ -6872,6 +6922,7 @@
                                          (assumptions 'nil)
                                          (classes-to-assume-initialized 'nil)
                                          (print 'nil)
+                                         (print-interval '10000)
                                          (ignore-exceptions 'nil)
                                          (ignore-errors 'nil)
                                          (invariants 'nil)
@@ -6900,6 +6951,7 @@
                                           ,assumptions
                                           ,classes-to-assume-initialized
                                           ,print
+                                          ,print-interval
                                           ,ignore-exceptions
                                           ,ignore-errors
                                           ,invariants
@@ -6931,6 +6983,7 @@
                                               (assumptions 'nil)
                                               (classes-to-assume-initialized 'nil)
                                               (print 'nil)
+                                              (print-interval '10000)
                                               (ignore-exceptions 'nil)
                                               (ignore-errors 'nil)
                                               (invariants 'nil)
@@ -6957,6 +7010,7 @@
                               ,assumptions
                               ,classes-to-assume-initialized
                               ,print
+                              ,print-interval
                               ,ignore-exceptions
                               ,ignore-errors
                               ,invariants

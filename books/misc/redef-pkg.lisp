@@ -274,8 +274,7 @@
 ;   :rule-classes nil)
 
          (er soft ctx
-             "The empty string is not a legal package name for defpkg."
-             name))
+             "The empty string is not a legal package name for defpkg."))
         ((not (standard-char-listp (coerce name 'list)))
          (er soft ctx
              "~x0 is not a legal package name for defpkg, which requires the ~

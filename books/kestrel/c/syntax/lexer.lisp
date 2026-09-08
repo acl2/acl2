@@ -763,7 +763,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-character-constant ((cprefix? cprefix-optionp)
+(define lex-character-constant ((prefix? eprefix-optionp)
                                 (first-pos positionp)
                                 (parstate parstatep))
   :returns (mv erp
@@ -791,7 +791,7 @@
         (reterr-msg :where closing-squote-pos
                     :expected "one or more characters and escape sequences"
                     :found "none")))
-    (retok (lexeme-token (token-const (const-char (cconst cprefix? cchars))))
+    (retok (lexeme-token (token-const (const-char (cconst prefix? cchars))))
            span
            parstate))
 
@@ -2844,7 +2844,11 @@
              (t nil)))
      :measure (nfix i)
      :hints (("Goal" :in-theory (enable nfix)))
-     :guard-hints (("Goal" :in-theory (enable nfix))))))
+     :guard-hints
+     (("Goal"
+       :in-theory (enable nfix)
+       :use (:instance natp-when-unicharp
+                       (x (char+position->char (parstate->char i parstate)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2853,7 +2857,6 @@
                (lexeme? lexeme-optionp)
                (span spanp)
                (new-parstate parstatep :hyp (parstatep parstate)))
-  :guard-debug t
   :short "Lex a lexeme."
   :long
   (xdoc::topstring
@@ -3024,7 +3027,7 @@
                  (make-span :start first-pos :end first-pos)
                  parstate))
          ((utf8-= char2 (char-code #\')) ; u '
-          (lex-character-constant (cprefix-locase-u) first-pos parstate))
+          (lex-character-constant (eprefix-locase-u) first-pos parstate))
          ((utf8-= char2 (char-code #\")) ; u "
           (lex-string-literal (eprefix-locase-u) first-pos parstate))
          ((utf8-= char2 (char-code #\8)) ; u 8
@@ -3052,7 +3055,7 @@
                  (make-span :start first-pos :end first-pos)
                  parstate))
          ((utf8-= char2 (char-code #\')) ; U '
-          (lex-character-constant (cprefix-upcase-u) first-pos parstate))
+          (lex-character-constant (eprefix-upcase-u) first-pos parstate))
          ((utf8-= char2 (char-code #\")) ; U "
           (lex-string-literal (eprefix-upcase-u) first-pos parstate))
          (t ; U other
@@ -3067,7 +3070,7 @@
                  (make-span :start first-pos :end first-pos)
                  parstate))
          ((utf8-= char2 (char-code #\')) ; L '
-          (lex-character-constant (cprefix-upcase-l) first-pos parstate))
+          (lex-character-constant (eprefix-upcase-l) first-pos parstate))
          ((utf8-= char2 (char-code #\")) ; L "
           (lex-string-literal (eprefix-upcase-l) first-pos parstate))
          (t ; L other
@@ -3155,16 +3158,28 @@
                    (make-span :start first-pos :end first-pos)
                    parstate))))))
 
-     ((utf8-= char (char-code #\#))
+     ((utf8-= char (char-code #\#)) ; #
       (if (parstate->skip-control-lines parstate)
           (if (only-whitespace-backward-through-line parstate)
               (lex-control-line first-pos parstate)
             (reterr-msg :where first-pos
                         :expected "not a #"
                         :found "a #"))
-        (retok (lexeme-token (token-punctuator "#"))
-               (make-span :start first-pos :end first-pos)
-               parstate)))
+        (b* (((erp char2 pos2 parstate) (read-char parstate)))
+          (cond
+           ((not char2) ; # EOF
+            (retok (lexeme-token (token-punctuator "#"))
+                   (make-span :start first-pos :end first-pos)
+                   parstate))
+           ((utf8-= char2 (char-code #\#)) ; # #
+            (retok (lexeme-token (token-punctuator "##"))
+                   (make-span :start first-pos :end pos2)
+                   parstate))
+           (t ; # other
+            (b* ((parstate (unread-char parstate)))
+              (retok (lexeme-token (token-punctuator "#"))
+                     (make-span :start first-pos :end first-pos)
+                     parstate)))))))
 
      ((or (utf8-= char (char-code #\[)) ; [
           (utf8-= char (char-code #\])) ; ]
@@ -3263,23 +3278,6 @@
          (t ; : other
           (b* ((parstate (unread-char parstate)))
             (retok (lexeme-token (token-punctuator ":"))
-                   (make-span :start first-pos :end first-pos)
-                   parstate))))))
-
-     ((utf8-= char (char-code #\#)) ; #
-      (b* (((erp char2 pos2 parstate) (read-char parstate)))
-        (cond
-         ((not char2) ; # EOF
-          (retok (lexeme-token (token-punctuator "#"))
-                 (make-span :start first-pos :end first-pos)
-                 parstate))
-         ((utf8-= char2 (char-code #\#)) ; # #
-          (retok (lexeme-token (token-punctuator "##"))
-                 (make-span :start first-pos :end pos2)
-                 parstate))
-         (t ; # other
-          (b* ((parstate (unread-char parstate)))
-            (retok (lexeme-token (token-punctuator "#"))
                    (make-span :start first-pos :end first-pos)
                    parstate))))))
 
@@ -3538,8 +3536,7 @@
                                            unsigned-byte-p
                                            integer-range-p
                                            dec-digit-char-p
-                                           natp
-                                           the-check)))
+                                           natp)))
 
   ///
 

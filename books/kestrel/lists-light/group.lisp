@@ -1,7 +1,7 @@
 ; A function to divide a list into fixed-sized chunks
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -63,7 +63,7 @@
 ;;                 (posp x)
 ;;                 (posp n))
 ;;            (not (integerp (* (/ n) x))))
-;;   :hints (("Goal" :in-theory (enable)
+;;   :hints (("Goal"
 ;;            :cases ((< (* (/ n) x) 0)
 ;;                    (<= 1 (* (/ n) x))))))
 
@@ -256,8 +256,7 @@
   (equal (cdr (firstn n x))
          (subrange 1 (+ -1 (min (nfix n) (len x))) x))
   :hints (("Goal" :expand ((SUBRANGE 1 (+ -1 N) X)
-                           (subrange 1 (+ -1 (min (nfix n) (len x))) x))
-           :in-theory (enable))))
+                           (subrange 1 (+ -1 (min (nfix n) (len x))) x)))))
 
 (defthm consp-of-group
   (implies (posp n)

@@ -1,7 +1,7 @@
 ; A utility to quickly check that all vars in a term are bound in an alist
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 
 ;; Note that this avoids doing any consing (e.g., to construct the list of vars
 ;; in the term, or to extract the strip-cars of the alist).
@@ -35,7 +36,7 @@
      (and (all-vars-in-term-bound-in-alistp (first terms) alist)
           (all-vars-in-terms-bound-in-alistp (rest terms) alist)))))
 
-(make-flag all-vars-in-term-bound-in-alistp)
+(local (make-flag all-vars-in-term-bound-in-alistp))
 
 ;; Proves that all-vars-in-term-bound-in-alistp works as expected.
 (defthm-flag-all-vars-in-term-bound-in-alistp

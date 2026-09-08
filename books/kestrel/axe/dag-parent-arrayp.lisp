@@ -41,7 +41,7 @@
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
 (include-book "bounded-dag-exprs")
 (include-book "kestrel/acl2-arrays/expandable-arrays" :dir :system)
-(include-book "kestrel/acl2-arrays/make-empty-array" :dir :system)
+(include-book "kestrel/acl2-arrays/new-array1" :dir :system)
 (include-book "kestrel/acl2-arrays/alen1" :dir :system)
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)) ; todo: reduce, but we need read of write rules
 ;; (local (include-book "kestrel/acl2-arrays/maximum-length" :dir :system))
@@ -185,7 +185,7 @@
            (all-dag-parent-entriesp n dag-parent-array-name (aset1 dag-parent-array-name dag-parent-array index val)))
   :hints (("Goal" :in-theory (enable all-dag-parent-entriesp))))
 
-(defthm all-dag-parent-entriesp-of-make-empty-array
+(defthm all-dag-parent-entriesp-of-new-array1
   (implies (and ;(natp n)
             (< n size)
             (natp size)
@@ -193,10 +193,10 @@
             (<= size *max-1d-array-length*))
            (all-dag-parent-entriesp n
                                     dag-parent-array-name
-                                    (make-empty-array dag-parent-array-name
+                                    (new-array1 dag-parent-array-name
                                                       size)))
   :hints (("Goal" :expand (all-dag-parent-entriesp 0 dag-parent-array-name
-                                                   (make-empty-array dag-parent-array-name size))
+                                                   (new-array1 dag-parent-array-name size))
            :in-theory (enable all-dag-parent-entriesp))))
 
 ;; (defthm all-dag-parent-entriesp-of-compress1
@@ -315,11 +315,11 @@
 ;;            (dag-parent-arrayp dag-parent-array-name dag-parent-array len2))
 ;;   :hints (("Goal" :in-theory (enable dag-parent-arrayp))))
 
-(defthm dag-parent-arrayp-of-make-empty-array
+(defthm dag-parent-arrayp-of-new-array1
   (implies (and (posp size)
                 (<= size *max-1d-array-length*)
                 (symbolp dag-parent-array-name))
-           (dag-parent-arrayp dag-parent-array-name (make-empty-array dag-parent-array-name size)))
+           (dag-parent-arrayp dag-parent-array-name (new-array1 dag-parent-array-name size)))
   :hints (("Goal" :in-theory (enable dag-parent-arrayp))))
 
 (defthm dag-parent-arrayp-of-aset1

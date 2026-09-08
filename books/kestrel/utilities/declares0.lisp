@@ -1,6 +1,6 @@
 ; Simple utilities about declares
 ;
-; Copyright (C) 2015-2023 Kestrel Institute
+; Copyright (C) 2015-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -567,8 +567,7 @@
 
 (defthm all-declarep-of-remove-declares
   (implies (all-declarep declares)
-           (all-declarep (remove-declares type declares)))
-  :hints (("Goal" :in-theory (enable))))
+           (all-declarep (remove-declares type declares))))
 
 (assert-event (equal (remove-declares 'xargs '((declare (xargs :guard (all-declarep declares)))))
                      nil))

@@ -1,7 +1,7 @@
 ; Rules about sbvdivdown
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -98,10 +98,9 @@
                                           bvchop-of-sum-cases
                                           BVCHOP-REDUCE-WHEN-TOP-BIT-KNOWN
                                           bvcat
-                                          logapp
                                           TRUNCATE-BECOMES-FLOOR-GEN
                                           )
-                                  (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                  (;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    )))))
 
 (defthmd bvchop-of-minus-rule
@@ -144,7 +143,7 @@
                                    truncate-becomes-floor-other
                                    bvchop-of-minus-rule
                                    )
-                                  (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                  (;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    ;;mod-sum-cases
                                    ;;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
                                    ;;SBVDIV-rewrite
@@ -196,7 +195,7 @@
                                    (:REWRITE UNSIGNED-BYTE-P-OF-FLOOR)
 
                                    EQUAL-OF-0-AND-FLOOR
-                                   BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                   ;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    FLOOR-OF-1-ARG1 ;why?
                                    mod-sum-cases
                                    ;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
@@ -225,8 +224,8 @@
                             (sbvdiv size x y)
                           ;;sbvdiv rounded up, and we want to round down, so subtract 1
                           (bvplus size -1 (sbvdiv size x y))))))))
-  :hints (("Goal" :cases ((and (SBVLT SIZE X '0) (SBVLT SIZE Y 0))
-                          (and (not (SBVLT SIZE X '0)) (SBVLT SIZE Y 0)))
+  :hints (("Goal" :cases ((and (SBVLT SIZE X 0) (SBVLT SIZE Y 0))
+                          (and (not (SBVLT SIZE X 0)) (SBVLT SIZE Y 0)))
            :in-theory (e/d (sbvlt
                               sbvdivdown-rewrite-case-1
                               sbvdivdown-rewrite-case-2

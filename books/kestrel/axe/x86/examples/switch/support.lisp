@@ -22,11 +22,12 @@
 (local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/bv/arith" :dir :system)) ; for expt-hack
 (local (include-book "kestrel/bv/rules10" :dir :system))
+(local (include-book "kestrel/bv/bvuminus" :dir :system))
 (local (include-book "kestrel/lists-light/group" :dir :system)) ; for acl2::*-of-/-same-alt
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
-(local (include-book "kestrel/axe/rules3" :dir :system))
+;(local (include-book "kestrel/axe/rules3" :dir :system)) ; for slice-of-bvplus-cases
 (local (include-book "kestrel/bv/trim-intro-rules" :dir :system))
 
 ;(in-theory (disable bitops::unsigned-byte-p-induct bitops::unsigned-byte-p-ind)) ; yuck
@@ -92,9 +93,9 @@
                                    ;bvlt
                                    bv-array-read-chunk-little
                                    )
-                                  (acl2::bvcat-of-nth-arg4 ;loop
-                                   acl2::bvcat-of-nth-arg2 ; loop!
-                                   acl2::equal-of-constant-and-getbit-extend ; looped
+                                  (;acl2::bvcat-of-nth-arg4 ;loop
+                                   ;acl2::bvcat-of-nth-arg2 ; loop!
+                                   ;acl2::equal-of-constant-and-getbit-extend ; looped
                                    ;acl2::bvchop-top-bit-cases ; looped
                                    )))))
 
@@ -197,9 +198,9 @@
                                    ;bvlt
                                    bv-array-read-chunk-little
                                    )
-                                  (acl2::bvcat-of-nth-arg4 ;loop
-                                   acl2::bvcat-of-nth-arg2 ; loop!
-                                   acl2::equal-of-constant-and-getbit-extend ; looped
+                                  (;acl2::bvcat-of-nth-arg4 ;loop
+                                   ;acl2::bvcat-of-nth-arg2 ; loop!
+                                   ;acl2::equal-of-constant-and-getbit-extend ; looped
                                    ;acl2::bvchop-top-bit-cases ; looped
                                    )))))
 
@@ -293,7 +294,7 @@
                                     acl2::bv-array-read-chunk-little-alt-def)
                                    (acl2::bvcat-equal-rewrite
                                     acl2::bvcat-equal-rewrite-alt
-                                    acl2::bvcat-of-nth-arg4 ; todo
+                                    ;acl2::bvcat-of-nth-arg4 ; todo
                                     acl2::bv-array-read-chunk-little-unroll))))))
 
 ;; This can introduce a call of bv-array-read, which the SMT solver knows about.

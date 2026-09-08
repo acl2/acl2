@@ -515,7 +515,7 @@
 ;;            :expand (array-refp (nth 0 ads)
 ;;                                (list numcols)
 ;;                                type heap)
-;;            :in-theory (enable))))
+;;            )))
 
 (defthm g-of-set-field-both
   (equal (G AD1 (SET-FIELD AD2 pair val heap))
@@ -892,8 +892,8 @@
   :hints (("goal" :use ((:instance CLR-NON-NIL-WHEN-GET-FIELD-2 (a (array-contents-pair)) (pair '(:SPECIAL-DATA . :CLASS)))
                         (:instance NON-NIL-WHEN-NTH-IS-NON-NIL-GET-FIELD (n 0) (free :array) (class-field-pair '(:SPECIAL-DATA . :CLASS))))
 
-           :in-theory (e/d ( ;-nil-when-nth-is-non-nil-get-field
-                            ) ( CLR-NON-NIL-WHEN-GET-FIELD-2 CLR-NON-NIL-WHEN-GET-FIELD)))))
+           :in-theory (e/d (;-nil-when-nth-is-non-nil-get-field
+                            ) (clr-non-nil-when-get-field-2 clr-non-nil-when-get-field)))))
 
 ;BOZO make other versions?
 (defthm array-ref-listp-of-set-field-both
@@ -904,14 +904,14 @@
                            (equal dim (len val))
                            (all-unsigned-byte-p 32 val))
                     (array-ref-listp reflist (list dim) ':int heap))))
-  :hints (;("subgoal *1/1.1" :use (:instance CLR-NON-NIL-WHEN-GET-FIELD-2 (a (array-contents-pair)) (ad (NTH 0 REFLIST)))                      :in-theory (e/d (non-nil-when-nth-is-non-nil-get-field) ( CLR-NON-NIL-WHEN-GET-FIELD-2 CLR-NON-NIL-WHEN-GET-FIELD)))
+  :hints (;("subgoal *1/1.1" :use (:instance CLR-NON-NIL-WHEN-GET-FIELD-2 (a (array-contents-pair)) (ad (NTH 0 REFLIST)))                      :in-theory (e/d (non-nil-when-nth-is-non-nil-get-field) (CLR-NON-NIL-WHEN-GET-FIELD-2 CLR-NON-NIL-WHEN-GET-FIELD)))
 
           ("Goal"
            :induct (len reflist)
            :in-theory (e/d ((:induction len)
                             ARRAY-REF-LISTP
                              hack11)
-                           ( ;RKEYS-OF-SET-FIELD-BOTH
+                           (;RKEYS-OF-SET-FIELD-BOTH
                             )))))
 
 (defthmd split-list-hack
@@ -932,9 +932,8 @@
                       x))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :use split-list-hack
-           :in-theory (e/d ( ;PERM-OF-CONS PERM-BECOMES-TWO-SUBBAGP-CLAIMS
-                            ) (equal-of-append
-                               )))))
+           :in-theory (e/d (;PERM-OF-CONS PERM-BECOMES-TWO-SUBBAGP-CLAIMS
+                            ) (equal-of-append)))))
 
 ;bozo handle other array types
 ;bozo heaps may not be the same
@@ -1008,6 +1007,7 @@
                                ))))
 
 
+;rename
 ;better than the other rule...
 (defthm length-field-when-array-ref-listp
   (implies (and (ARRAY-REF-LISTP ads (LIST NUMCOLS) type HEAP)
@@ -1019,7 +1019,7 @@
                                (LIST NUMCOLS)
                                TYPE HEAP)
            :in-theory (enable ;array-ref-listp
-                       ))))
+                       array-length))))
 
 ;todo: what is this all about?
 ;gen the type
@@ -1247,9 +1247,7 @@
   (implies (and (<= 2147483647 k)
                 (array-refp ref (cons dim nil) type heap))
            (not (< k (LEN (GET-FIELD ref (array-contents-pair) heap)))))
-  :hints (("Goal"
-           :expand ((ARRAY-REFP REF (LIST DIM) TYPE HEAP))
-           :in-theory (enable))))
+  :hints (("Goal" :expand ((ARRAY-REFP REF (LIST DIM) TYPE HEAP)))))
 
 ;todo: drop the (equal .. t) phrasing.
 (defthm len-of-get-field-contents-bound-other
@@ -1264,7 +1262,8 @@
   (implies (and (<= 2147483648 k)
                 (array-refp ref (cons dim nil) type heap))
            (< (array-length ref heap) k))
-  :hints (("Goal" :expand ((array-refp ref (cons dim nil) type heap)))))
+  :hints (("Goal" :expand ((array-refp ref (cons dim nil) type heap))
+                  :in-theory (enable array-length))))
 
 ;bozo whether we want this seems to depend on whether we are in the conclusion
 ;could add linear rules instead..
@@ -1282,7 +1281,7 @@
            (equal (< (array-length ref heap) 2147483647)
                   (not (equal (array-length ref heap) 2147483647))))
   :hints (("Goal" :expand ((array-refp ref (cons dim nil) type heap))
-           :in-theory (enable ;array-refp
+           :in-theory (enable array-length ;array-refp
                        ))))
 
 ;bozo flesh out this set, or don't explicitly store the length?
@@ -1292,7 +1291,7 @@
                 (array-refp ref (cons dim nil) type heap))
            (not (< k (array-length ref heap))))
   :hints (("Goal" :expand (array-refp ref (cons dim nil) type heap)
-           :in-theory (enable ;array-refp
+           :in-theory (enable array-length ;array-refp
                        ))))
 
 (defthm len-of-get-fields-contents-impossible-value
@@ -1382,14 +1381,14 @@
   (implies (array-refp ref (cons dim dims) type heap)
            (signed-byte-p 32 (+ -1 dim)))
   :hints (("Goal" :expand (array-refp ref (cons dim dims) type heap)
-           :in-theory (enable ;array-refp
+           :in-theory (enable array-length ;array-refp
                        ))))
 
 (defthm sbp-of-arraylen-minus-1
   (implies (array-refp ref (cons dim dims) type heap)
            (signed-byte-p 32 (+ -1 (array-length ref heap))))
   :hints (("Goal" :expand (array-refp ref (cons dim dims) type heap)
-           :in-theory (enable ;array-refp
+           :in-theory (enable array-length ;array-refp
                        ))))
 
 (defthm array-refp-fw-to-len
@@ -1402,7 +1401,8 @@
   (implies (array-refp ref (list dim) type heap)
            (equal dim (array-length ref heap)))
   :rule-classes (:forward-chaining)
-  :hints (("Goal" :expand ((array-refp ref (list dim) type heap)))))
+  :hints (("Goal" :expand ((array-refp ref (list dim) type heap))
+                  :in-theory (enable array-length))))
 
 
 ;; ;BOZO only for bytes!
@@ -1585,8 +1585,9 @@
            (not (equal nil (s (array-contents-pair) new-contents (g ad heap)))))
   :hints (("Goal" ;:use (:instance GET-FIELD-TYPE-FROM-ARRAY-REFP (ref ad) (dim len))
            :expand ((ARRAY-REFP AD (LIST LEN) TYPE HEAP))
-           :in-theory (e/d (get-field) ( ;GET-FIELD-TYPE-FROM-ARRAY-REFP
-                                        G-IFF-GEN S-IFF)))))
+           :in-theory (e/d (get-field)
+                           (;GET-FIELD-TYPE-FROM-ARRAY-REFP
+                            G-IFF-GEN S-IFF)))))
 
 (DEFTHM INTEGERP-NTH-OF-GET-FIELD-CONTENTS-WHEN-ARRAY-REFP2
   (IMPLIES (AND (ARRAY-REFP REF (LIST LEN) TYPE HEAP)
@@ -1613,7 +1614,7 @@
                                   HEAP))
                   (cadr dims)))
   :hints (("Goal" :use (:instance get-dim2-when-array-refp (dim1 (car dims)) (dim2 (cadr dims)))
-           :in-theory (disable get-dim2-when-array-refp))))
+           :in-theory (e/d (array-length) (get-dim2-when-array-refp)))))
 
 (defthm array-row-of-set-field-irrel2
   (implies (not (equal pair (array-contents-pair)))
@@ -1682,7 +1683,8 @@
            (equal (getbit n (bv-array-read element-size len index data))
                   (bv-array-read 1 len index (getbit-list n data)))) ;the getbit-list gets computed
   :hints (("Goal" :use getbit-of-bv-array-read-helper
-           :in-theory (e/d (getbit-list) ( getbit-of-bv-array-read-helper)))))
+           :in-theory (e/d (getbit-list)
+                           (getbit-of-bv-array-read-helper)))))
 
 ;disable?
 ;compare to the regular

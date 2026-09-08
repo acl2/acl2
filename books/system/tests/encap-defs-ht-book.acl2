@@ -1,0 +1,11 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "encap-defs-ht")
+
+; Help dependency scanner.
+#||
+(depends-on "encap-defs-ht-input.lsp")
+(depends-on "encap-defs-ht-log.txt")
+(include-book "encap-defs-ht-sub")
+||#
+
+; cert-flags: ? t :ttags :all :skip-proofs-okp t

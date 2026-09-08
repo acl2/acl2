@@ -80,6 +80,7 @@
 (include-book "safe-case")
 (include-book "saved-errors")
 (include-book "save-obligs")
+(include-book "show-induction-records")
 (include-book "some-events")
 (include-book "stobj-frame")
 ;; (include-book "stobj-help") ; name clash with manual on LEN-RESIZE-LIST

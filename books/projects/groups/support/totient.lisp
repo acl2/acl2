@@ -65,9 +65,9 @@
 (local-defthm mod-map-codomain-cex
   (implies (and (posp m) (> m 1)
                 (posp n) (> n 1))
-	   (not (codomain-cex (mod-map m n)
-	                      (z* (* m n))
-			      (direct-product (list (z* m) (z* n))))))
+	   (not (find-codomain-cex (mod-map m n)
+	                           (z* (* m n))
+			           (direct-product (list (z* m) (z* n))))))
   :hints (("Goal" :use ((:instance codomain-cex-lemma (map (mod-map m n)) (g (z* (* m n))) (h (direct-product (list (z* m) (z* n)))))
                         (:instance mod-map-range (x (codomain-cex (mod-map m n) (z* (* m n)) (direct-product (list (z* m) (z* n))))))))))
 

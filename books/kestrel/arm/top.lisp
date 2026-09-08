@@ -23,3 +23,4 @@
 (include-book "step")
 (include-book "rules")
 (include-book "doc")
+(include-book "library-models")

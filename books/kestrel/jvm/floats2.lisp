@@ -1,7 +1,7 @@
 ; Java floats as bit-vectors -- Experimental!
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -35,7 +35,7 @@
 ;;   (declare (xargs :guard (acl2::ieee-float32p f)))
 ;;   (let ((sign (acl2::getbit 31 f)) ;sign bit
 ;;         (e (acl2::slice 30 23 f))    ;biased exponent
-;;         (sig (acl2::bvchop 23 f)) ;trailing significand bits
+;;         (sig (bvchop 23 f)) ;trailing significand bits
 ;;         )
 ;;     (if (= e (+ (expt 2 8) -1)) ;all ones for exponent
 ;;         (if (= 0 sig)
@@ -91,6 +91,7 @@
       (eq acl2::*float-negative-zero* f)))
 
 ;; Floating point "less than"
+;; todo: compare to floating-point-datum-<
 (defund float< (x y)
   (declare (xargs :guard (and (java-floatp x)
                               (java-floatp y))
@@ -123,6 +124,7 @@
   (float< y x))
 
 ;; Floating point equality
+;; todo: compare to floating-point-datum-=
 (defund float= (x y)
   (declare (xargs :guard (and (java-floatp x)
                               (java-floatp y))

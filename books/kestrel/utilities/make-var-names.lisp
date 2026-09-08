@@ -1,7 +1,7 @@
 ; Utilities to make variable names
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -25,14 +25,20 @@
 
 ;; Makes a list of symbols each of which is BASE-SYMBOL with a numeric suffix
 ;; added to it.  The result contains symbols from BASE-SYMBOL with a suffix of
-;; STARTNUM through BASE-SYMBOL with a suffix of ENDNUM.
+;; STARTNUM through BASE-SYMBOL with a suffix of ENDNUM.  The package used for
+;; the new symbols is the package of BASE-SYMBOL.
 (defund make-var-names-aux (base-symbol startnum endnum)
-  (declare (xargs :guard (symbolp base-symbol)
+  (declare (xargs :guard (and (symbolp base-symbol)
+                              (natp startnum)
+                              (integerp endnum)
+                              ;; -1 for endnum gives and empty list:
+                              (<= -1 endnum))
                   :measure (nfix (+ 1 (- endnum startnum)))
                   ))
-  (if (or (not (natp startnum))
-          (not (natp endnum))
-          (< endnum startnum))
+  (if (or (< endnum startnum)
+          ;; for termination:
+          (not (mbt (and (natp startnum)
+                         (integerp endnum)))))
       nil
     (cons (pack-in-package-of-symbol base-symbol base-symbol (nat-to-string startnum))
           (make-var-names-aux base-symbol (+ 1 startnum) endnum))))
@@ -72,7 +78,8 @@
 
 ;; Makes a list of symbols each of which is BASE-SYMBOL with a numeric suffix
 ;; added.  The first numeric suffix is START, and subsequent ones are
-;; consecutive, with a total of COUNT symbols generated.
+;; consecutive, with a total of COUNT symbols generated. The package used for
+;; the new symbols is the package of BASE-SYMBOL.
 (defund make-var-names-from (base-symbol start count)
   (declare (xargs :guard (and (symbolp base-symbol)
                               (natp start)
@@ -102,11 +109,12 @@
 ;; Special case where the names start at 0.
 ;; Makes a list of symbols each of which is BASE-SYMBOL with a numeric suffix
 ;; added to it.  The result contains symbols from BASE-SYMBOL with a suffix of
-;; 0 through BASE-SYMBOL with a suffix of COUNT minus 1.
+;; 0 through BASE-SYMBOL with a suffix of COUNT minus 1.  The package used for
+;; the new symbols is the package of BASE-SYMBOL.
 ;; Example: (make-var-names 'in 4) = (in0 in1 in2 in3).
 (defund make-var-names (base-symbol count)
-  (declare (xargs :guard (and (natp count)
-                              (symbolp base-symbol))))
+  (declare (xargs :guard (and (symbolp base-symbol)
+                              (natp count))))
   (make-var-names-aux base-symbol 0 (+ -1 count)))
 
 (defthm symbol-listp-of-make-var-names
@@ -130,7 +138,6 @@
   :hints (("Goal" :in-theory (enable make-var-names))))
 
 (defthm consp-of-make-var-names
-  (implies (natp count)
-           (equal (consp (make-var-names base-symbol count))
-                  (posp count)))
+  (equal (consp (make-var-names base-symbol count))
+         (posp count))
   :hints (("Goal" :in-theory (enable make-var-names))))

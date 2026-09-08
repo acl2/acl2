@@ -57,6 +57,7 @@
 (define tree-restrict
   ((keys treeset::treep)
    (tree treep))
+  (declare (xargs :type-prescription :none))
   :parents (implementation)
   :short "Take the restriction of a map treap under a key set treap."
   :long
@@ -117,8 +118,6 @@
                                            tree-element-p))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-restrict)))
 
 (defrule tree-restrict-type-prescription
   (or (consp (tree-restrict keys tree))

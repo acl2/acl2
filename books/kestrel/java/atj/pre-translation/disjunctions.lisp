@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -33,7 +33,7 @@
     "Note that this pre-translation step
      turns @('(if a a b)') into @('(or a b)')
      even when the original untranslated term was @('(if a a b)').
-     But this is harmelss, as the two untranslated terms are equivalent,
+     But this is harmless, as the two untranslated terms are equivalent,
      at least functionally (assuming that @('a') has no side effects)."))
   :order-subtopics t
   :default-parent t)

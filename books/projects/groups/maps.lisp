@@ -95,19 +95,22 @@
 
 ;; The function codomain-cex searches the elements of g for a counter-example of (b):
 
-(defun codomain-cex-aux (map l h)
+(defun find-codomain-cex-aux (map l h)
   (if (consp l)
       (if (in (mapply map (car l)) h)
-	  (codomain-cex-aux map (cdr l) h)
-	(car l))
+	  (find-codomain-cex-aux map (cdr l) h)
+	(list (car l)))
     ()))
 
+(defund find-codomain-cex (map g h)
+  (find-codomain-cex-aux map (elts g) h))
+
 (defund codomain-cex (map g h)
-  (codomain-cex-aux map (elts g) h))
+  (car (find-codomain-cex map g h)))
 
 (defthm not-codomain-cex
   (implies (and (groupp g)
-		(not (codomain-cex map g h))
+		(not (find-codomain-cex map g h))
 		(in x g))
 	   (in (mapply map x) h)))
 
@@ -115,7 +118,7 @@
 
 (defthmd codomain-cex-lemma
   (let ((x (codomain-cex map g h)))
-    (implies x
+    (implies (find-codomain-cex map g h)
 	     (and (in x g)
 		  (not (in (mapply map x) h))))))
 
@@ -158,7 +161,7 @@
        (groupp h)
        (sublistp (elts g) (domain map))
        (mapp map)
-       (not (codomain-cex map g h))
+       (not (find-codomain-cex map g h))
        (equal (mapply map (e g)) (e h))
        (not (homomorphism-cex map g h))))
 

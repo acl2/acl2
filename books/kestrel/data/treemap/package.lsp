@@ -22,6 +22,7 @@
               defxdoc+
               enable*
               lnfix
+              treemap
               treeset::acl2-number-hash
               treeset::eqlable-hash
               treeset::hash

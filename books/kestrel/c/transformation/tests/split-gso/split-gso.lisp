@@ -297,6 +297,106 @@ struct S2 s2 = {.x = 0};
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(acl2::must-succeed*
+  (c$::input-files :files '("implicit-initer.c")
+                   :const *old*)
+
+  (split-gso *old*
+             *new*
+             :object-name "my"
+             :new-object1 "my1"
+             :new-object2 "my2"
+             :new-type1 "s1"
+             :new-type2 "s2"
+             :split-members ("y" "z"))
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  ;; TODO: We may also consider removing redundant checks while making the
+  ;; initializers explicit.
+  (assert-file-contents
+    :file "new/implicit-initer.c"
+    :content "struct myStruct {
+  int x;
+  _Bool y;
+  unsigned long int z;
+};
+
+struct s1 {
+  int x;
+};
+
+struct s2 {
+  _Bool y;
+  unsigned long int z;
+};
+
+static struct s1 my1 = {.x = 1, .x = 2};
+
+static struct s2 my2 = {.y = 0, .y = 1, .z = 2};
+
+int main(void) {
+  return my1.x + (-my2.y);
+}
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files '("unnamed-members.c")
+                   :const *old*)
+
+  (split-gso *old*
+             *new*
+             :object-name "my"
+             :new-object1 "my1"
+             :new-object2 "my2"
+             :new-type1 "s1"
+             :new-type2 "s2"
+             :split-members ("a" "b" "f"))
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/unnamed-members.c"
+    :content "struct myStruct {
+  int a;
+  int b : 4;
+  union { int c; int d; };
+  _Bool e;
+  int : 4;
+  unsigned long int f;
+};
+
+struct s1 {
+  union { int c; int d; };
+  _Bool e;
+  int : 4;
+};
+
+struct s2 {
+  int a;
+  int b : 4;
+  unsigned long int f;
+};
+
+static struct s1 my1 = {.c = 1, .e = 1};
+
+static struct s2 my2 = {.f = 1};
+
+int main(void) {
+  return my2.a + (-my1.e);
+}
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Test an ensemble
 
 (acl2::must-succeed*

@@ -1,7 +1,7 @@
 ; Assumptions for 32-bit x86 proofs
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,7 +20,8 @@
 
 (local
  (in-theory (e/d (acl2::acl2-numberp-when-natp
-                  ;; acl2::integerp-when-posp
+                  acl2::acl2-numberp-when-posp
+                  acl2::integerp-when-posp
                   acl2::integerp-when-natp)
                  (symbol-alistp ; prevent induction
                   ))))
@@ -30,18 +31,6 @@
  (defthm <=-of-0-and-+-of--1-when-posp
    (implies (posp x)
             (<= 0 (+ -1 x)))))
-
-;; add to arithmetic-light/types !
-(local
- (defthm integerp-when-posp
-   (implies (posp x)
-            (integerp x))))
-
-;; add to arithmetic-light/types !
-(local
- (defthm acl2-numberp-when-posp
-   (implies (posp x)
-            (acl2-numberp x))))
 
 ;; TODO: Add assumptions about segments
 (defun standard-state-assumption-32 (x86)

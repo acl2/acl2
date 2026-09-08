@@ -13,21 +13,22 @@
 
 ;; The file includes rules about TRIM applied to BV functions.  These rules
 ;; finish the trimming after other rules (from trim-intro-rules.lisp or
-;; ../axe/trim-intro-rules-axe.lisp) introduce trim.  See also
-;; trim-elim-rules-non-bv.lisp, which covers trim applied to non-BV functions.
+;; ../axe/trim-intro-rules-axe.lisp) introduce TRIM.  See also
+;; trim-elim-rules-non-bv.lisp, which covers TRIM applied to non-BV functions.
 
 (include-book "trim")
-(include-book "bvsx")
+(include-book "bvsx-def")
 (include-book "leftrotate32")
-(include-book "bvnot")
-(include-book "bvplus")
-(include-book "bvmult")
-(include-book "bvminus")
+(include-book "bvnot-def")
+(include-book "bvplus-def")
+(include-book "bvmult-def")
+(include-book "bvuminus-def")
+(include-book "bvminus-def")
 (include-book "bvand-def")
 (include-book "bvor-def")
 (include-book "bvxor-def")
-(include-book "bvif")
-(include-book "bvshl")
+(include-book "bvif-def")
+(include-book "bvshl-def")
 (local (include-book "bvand"))
 (local (include-book "bvor"))
 (local (include-book "bvcat-rules"))
@@ -35,6 +36,7 @@
 (local (include-book "getbit"))
 (local (include-book "slice"))
 (local (include-book "bvuminus"))
+(local (include-book "bvminus"))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 (defthm trim-of-bvchop
@@ -197,7 +199,7 @@
 ;;                 (natp size1))
 ;;            (equal (trim size1 (bvdiv size2 x y))
 ;;                   (bvdiv size1 x y)))
-;;   :hints (("Goal" :in-theory (enable))))
+;;   )
 
 (defthm trim-of-bvif
   (implies (and (<= size1 size2)
@@ -227,3 +229,23 @@
 ;;   :hints (("Goal" :in-theory (enable trim
 ;;                                      bvshr
 ;;                                      ))))
+
+(deftheory trim-elim-rules-bv
+  '(trim-of-bvchop
+    trim-of-slice
+    trim-of-bvcat
+    trim-of-bvnot
+    trim-of-bvand
+    trim-of-bvor
+    trim-of-bvxor
+    trim-of-bvplus
+    trim-of-bvminus
+    trim-of-bvuminus
+    trim-of-bvmult
+    trim-of-bvsx
+    trim-of-leftrotate32
+    trim-of-1-and-leftrotate
+    trim-of-repeatbit
+    trim-of-bvif
+    trim-of-bvshl)
+  :redundant-okp t)

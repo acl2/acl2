@@ -1,10 +1,10 @@
 ; Documentation for APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 ; Supporting Author: Eric Smith (eric.smith@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -15,6 +15,10 @@
 
 (include-book "common-concepts")
 (include-book "common-options")
+
+(include-book "add-return-values")
+
+(include-book "annotate-c-locals")
 
 (include-book "casesplit")
 (include-book "casesplit-doc")
@@ -32,12 +36,15 @@
 (include-book "propagate-iso-doc")
 (include-book "lift-iso-doc")
 
+(include-book "remove-nesting")
+
 (include-book "restrict")
 (include-book "restrict-doc")
 
 (include-book "schemalg")
 (include-book "schemalg-doc")
 (include-book "schemalg-divconq-list-0-1-doc")
+(include-book "schemalg-divconq-list-0-1-2-doc")
 (include-book "schemalg-divconq-oset-0-1-doc")
 
 (include-book "simplify")
@@ -51,6 +58,7 @@
 (include-book "solve")
 (include-book "solve-doc")
 (include-book "solve-method-acl2-rewriter")
+(include-book "solve-method-axe-rewriter")
 
 (include-book "tailrec")
 (include-book "tailrec-doc")

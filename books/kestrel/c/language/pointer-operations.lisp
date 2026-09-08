@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -53,7 +53,7 @@
 
 (define value-pointer-dangling ((reftype typep))
   :returns (ptr valuep)
-  :short "Danling pointer for a given referenced type."
+  :short "Dangling pointer for a given referenced type."
   (make-value-pointer :core (pointer-dangling) :reftype reftype)
 
   ///

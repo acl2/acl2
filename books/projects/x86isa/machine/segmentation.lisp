@@ -63,13 +63,11 @@
 
 (defsection ia32e-segmentation
   :parents (segmentation)
-  :short "Specification of Segmentation in 64-bit Mode"
-  )
+  :short "Specification of segmentation in 64-bit mode.")
 
 (defsection ia32-segmentation
   :parents (segmentation)
-  :short "Specification of Segmentation in 32-bit Mode"
-  )
+  :short "Specification of segmentation in 32-bit mode.")
 
 ;; ======================================================================
 
@@ -84,78 +82,85 @@
   :parents (segmentation)
   :short "Return a segment's base linear address, lower bound, and upper bound."
   :long
-  "<p>
-  The segment is the one in the given segment register.
-  </p>
-  <p>
-  Base addresses coming from segment descriptors are always 32 bits:
-  see Intel manual, Mar'17, Vol. 3A, Sec. 3.4.5
-  and AMD manual, Apr'16, Vol. 2, Sec. 4.7 and 4.8.
-  However, in 64-bit mode, segment bases for FS and GS are 64 bits:
-  see Intel manual, Mar'17, Vol. 3A, Sec. 3.4.4
-  and AMD manual, Apr'16, Vol. 2, Sec 4.5.3.
-  As an optimization, in 64-bit mode,
-  since segment bases for CS, DS, SS, and ES are ignored,
-  this function just returns 0 as the base result under these conditions.
-  In 64-bit mode, when the segment register is FS or GS,
-  we read the base address from the MSRs
-  mentioned in Intel manual, Mar'17, Vol. 3A, Sec. 3.4.4
-  and AMD manual, Apr'16, Vol. 2, Sec 4.5.3;
-  these are physically mapped to the relevant hidden portions of FS and GS,
-  so it should be a state invariant that they are equal to
-  the relevant hidden portions of FS and GS.
-  In 32-bit mode, since the high 32 bits are ignored
-  (see Intel manual, Mar'17, Vol. 3A, Sec. 3.4.4
-       and AMD manual, Apr'16, Vol. 2, Sec 4.5.3),
-  we only return the low 32 bits of the base address
-  read from the hidden portion of the segment register.
-  </p>
-  <p>
-  @('*hidden-segment-register-layout*') uses 32 bits
-  for the segment limit,
-  which is consistent with the 20 bits in segment descriptors
-  when the G (granularity) bit is 1:
-  see Intel manual, Mar'17, Vol. 3A, Sec. 3.4.5
-  and AMD manual, Apr'16, Vol. 2, Sec. 4-7 and 4-8.
-  Thus, the limit is an unsigned 32-bit integer.
-  </p>
-  <p>
-  The lower bound is 0 for code segments, i.e. for the CS register.
-  For data (including stack) segments,
-  i.e. for the SS, DS, ES, FS, and GS registers,
-  the lower bound depends on the E bit:
-  if E is 0, the lower bound is 0;
-  if E is 1, the segment is an expand-down data segment
-  and the lower bound is one plus the segment limit.
-  See Intel manual, Mar'17, Vol. 3A, Sec. 3.4.5
-  and AMD manual, Apr'16, Vol. 2, Sec. 4.7 and 4-8.
-  Since the limit is an unsigned 32-bit (see above),
-  adding 1 may produce an unsigned 33-bit result.
-  Even though this should not actually happen with well-formed segments,
-  this function returns an unsigned 33-bit integer as the lower bound result.
-  As an optimization, in 64-bit mode,
-  since segment limits and bounds are ignored,
-  this function returns 0 as the lower bound;
-  the caller must ignore this result in 64-bit mode.
-  </p>
-  <p>
-  The upper bound is the segment limit for code segments,
-  i.e. for the CS register.
-  For data (including stack) segments,
-  i.e. for the SS, DS, ES, FS, and GS registers,
-  the upper bound depends on the E and D/B bits:
-  if E is 0, the upper bound is the segment limit;
-  if E is 1, the segment is an expand-down data segment
-  and the upper bound is 2^32-1 if D/B is 1, 2^16-1 if D/B is 0.
-  See Intel manual, Mar'17, Vol. 3A, Sec. 3.4.5
-  and AMD manual, Apr'16, Vol. 2, Sec. 4.7 and 4-8.
-  Since  the limit is an unsigned 32-bit (see above),
-  this function returns an unsigned 32-bit integer as the upper bound result.
-  As an optimization, in 64-bit mode,
-  since segment limits and bounds are ignored,
-  this function returns 0 as the upper bound;
-  the caller must ignore this result in 64-bit mode.
-  </p>"
+  (xdoc::topstring
+   (xdoc::p
+    "The segment is the one in the given segment register.")
+   (xdoc::p
+    "Base addresses coming from segment descriptors are always 32 bits:
+     see Intel manual, Feb'26, Vol. 3A, Sec. 3.4.5
+     and AMD manual, Apr'16, Vol. 2, Sec. 4.7 and 4.8.
+     However, in 64-bit mode, segment bases for FS and GS are 64 bits:
+     see Intel manual, Feb'26, Vol. 3A, Sec. 3.4.4
+     and AMD manual, Apr'16, Vol. 2, Sec 4.5.3.
+     As an optimization, in 64-bit mode,
+     since segment bases for CS, DS, SS, and ES are ignored,
+     this function just returns 0 as the base result under these conditions.
+     In 64-bit mode, when the segment register is FS or GS,
+     we read the base address from the MSRs
+     mentioned in Intel manual, Feb'26, Vol. 3A, Sec. 3.4.4
+     and AMD manual, Apr'16, Vol. 2, Sec 4.5.3;
+     these are physically mapped to the relevant hidden portions of FS and GS,
+     so it should be a state invariant that they are equal to
+     the relevant hidden portions of FS and GS.
+     In 32-bit mode, since the high 32 bits are ignored
+     (see Intel manual, Feb'26, Vol. 3A, Sec. 3.4.4
+     and AMD manual, Apr'16, Vol. 2, Sec 4.5.3),
+     we only return the low 32 bits of the base address
+     read from the hidden portion of the segment register.")
+   (xdoc::p
+    "@(tsee hidden-segment-registerbits) uses 32 bits for the segment limit,
+     which is consistent with the 20 bits in segment descriptors
+     when the G (granularity) bit is 1:
+     see Intel manual, Feb'26, Vol. 3A, Sec. 3.4.5
+     and AMD manual, Apr'16, Vol. 2, Sec. 4-7 and 4-8.
+     Thus, the limit is an unsigned 32-bit integer.")
+   (xdoc::p
+    "The lower bound is 0 for code segments, i.e. for the CS register.
+     For data (including stack) segments,
+     i.e. for the SS, DS, ES, FS, and GS registers,
+     the lower bound depends on the E bit:
+     if E is 0, the lower bound is 0;
+     if E is 1, the segment is an expand-down data segment
+     and the lower bound is one plus the segment limit.
+     See Intel manual, Feb'26, Vol. 3A, Sec. 3.4.5
+     and AMD manual, Apr'16, Vol. 2, Sec. 4.7 and 4-8.
+     Since the limit is an unsigned 32-bit (see above),
+     adding 1 may produce an unsigned 33-bit result.
+     Even though this should not actually happen with well-formed segments,
+     this function returns an unsigned 33-bit integer as the lower bound result.
+     As an optimization, in 64-bit mode,
+     since segment limits and bounds are ignored,
+     this function returns 0 as the lower bound;
+     the caller must ignore this result in 64-bit mode.")
+   (xdoc::p
+    "The upper bound is the segment limit for code segments,
+     i.e. for the CS register.
+     For data (including stack) segments,
+     i.e. for the SS, DS, ES, FS, and GS registers,
+     the upper bound depends on the E and D/B bits:
+     if E is 0, the upper bound is the segment limit;
+     if E is 1, the segment is an expand-down data segment
+     and the upper bound is 2^32-1 if D/B is 1, 2^16-1 if D/B is 0.
+     See Intel manual, Feb'26, Vol. 3A, Sec. 3.4.5
+     and AMD manual, Apr'16, Vol. 2, Sec. 4.7 and 4-8.
+     Since  the limit is an unsigned 32-bit (see above),
+     this function returns an unsigned 32-bit integer as the upper bound result.
+     As an optimization, in 64-bit mode,
+     since segment limits and bounds are ignored,
+     this function returns 0 as the upper bound;
+     the caller must ignore this result in 64-bit mode.")
+   (xdoc::p
+    "Since, in an expand-down segment,
+     the lower bound is one plus the limit,
+     it is not possible to include address 0 in the segment.
+     It may seem strange that the lower bound is not defined as just the limit,
+     which would have allowed including address 0.
+     Some web searches suggest that the reason is
+     to use the same circuitry to check the limit
+     for expand-up and expand-down segments,
+     namely @('addr <= limit') for expand-up
+     and @('addr > limit') for expand-down:
+     it is the same calculation, with just the resulting bit flipped."))
 
   :guard-hints (("Goal" :in-theory (e/d (bitsets::bignum-extract) ())))
 
@@ -212,24 +217,27 @@
   :no-function t
   ///
 
-  (defthm-unsigned-byte-p segment-base-is-n64p
-                          :hyp (x86p x86)
-                          :bound 64
-                          :concl (mv-nth 0 (segment-base-and-bounds proc-mode seg-reg x86))
-                          :gen-type t
-                          :gen-linear t)
+  (defthm-unsigned-byte-p
+    segment-base-is-n64p
+    :hyp (x86p x86)
+    :bound 64
+    :concl (mv-nth 0 (segment-base-and-bounds proc-mode seg-reg x86))
+    :gen-type t
+    :gen-linear t)
 
-  (defthm-unsigned-byte-p segment-lower-bound-is-n33p
-                          :bound 33
-                          :concl (mv-nth 1 (segment-base-and-bounds proc-mode seg-reg x86))
-                          :gen-type t
-                          :gen-linear t)
+  (defthm-unsigned-byte-p
+    segment-lower-bound-is-n33p
+    :bound 33
+    :concl (mv-nth 1 (segment-base-and-bounds proc-mode seg-reg x86))
+    :gen-type t
+    :gen-linear t)
 
-  (defthm-unsigned-byte-p segment-upper-bound-is-n32p
-                          :bound 32
-                          :concl (mv-nth 2 (segment-base-and-bounds proc-mode seg-reg x86))
-                          :gen-type t
-                          :gen-linear t)
+  (defthm-unsigned-byte-p
+    segment-upper-bound-is-n32p
+    :bound 32
+    :concl (mv-nth 2 (segment-base-and-bounds proc-mode seg-reg x86))
+    :gen-type t
+    :gen-linear t)
 
   (defrule segment-base-and-bound-of-xw
     (implies
@@ -251,11 +259,11 @@
   :short "Translate an effective address to a <i>canonical</i> linear address."
   :long
   "<p>
-  This translation is illustrated in Intel manual, Mar'17, Vol. 3A, Fig. 3-5,
+  This translation is illustrated in Intel manual, Feb'26, Vol. 3A, Fig. 3-5,
   as well in AMD mamual, Oct'2013, Vol. 1, Fig. 2-3 and 2-4.
   In addition to the effective address,
   this function takes as input (the index of) a segment register,
-  whose corresponding segment selector, with the effective address,
+  whose contained segment selector, with the effective address,
   forms the logical address that is turned into the linear address.
   </p>
   <p>
@@ -287,7 +295,7 @@
   </p>
   <p>
   This function also takes as input the number of bytes
-  that have to be read or written starting from the effective address;
+  to read or write starting from the effective address;
   that is, the chunk of bytes to be accessed
   goes from @('eff-addr') to @('eff-addr + nbytes - 1'), both inclusive.
   In 32-bit mode, the @('eff-addr') (the start of the chunk)
@@ -337,7 +345,7 @@
   only if the segments are in registers FS and GS;
   the result is truncated to 64 bits,
   because the addition should be modulo 2^64,
-  given that the result must be 32 bits
+  given that the result must be 64 bits
   (cf. aforementioned figures in Intel and AMD manuals);
   since in our model addresses are signed,
   we use @('i64') instead of @('n64') to perform this truncation.
@@ -360,13 +368,13 @@
   which provides some information about the failure.
   </p>
   <p>
-  As explained in Intel manual, May'18, Volume 3, Sections 3.4.2 and 5.4.1,
+  As explained in Intel manual, Feb'26, Volume 3, Sections 3.4.2 and 6.4.1,
   a null segment selector can be loaded into DS, ES, FS, and GS,
   but then a memory access through these segment registers causes a #GP.
   According to AMD manual, Dec'17, Volume 2, Section 4.5.1,
   a null segment selector has SI = TI = 0,
   but no explicit constraint is stated on RPL;
-  Intel manual, May'18, Volume 2, POP specification says that
+  Intel manual, Feb'26, Volume 2, POP specification says that
   a null segment selector has a value from 0 to 3,
   from which we infer that a null segment selector may have a non-zero RPL.
   In this function,
@@ -376,7 +384,7 @@
   so it is a state invariant that
   CS and SS do not contain null segment selectors.
   The null segment selector check is skipped in 64-bit mode
-  (see Intel manual, May'18, Volume 3, Section 5.4.1.1).
+  (see Intel manual, Feb'26, Volume 3, Section 6.4.1.1).
   </p>"
 
   :guard-hints (("Goal" :in-theory (e/d (segment-base-and-bounds) ())))
@@ -396,7 +404,8 @@
            (mv (list :non-canonical-address lin-addr) 0)))
        (mv nil lin-addr)))
 
-    (#.*compatibility-mode* ;; Maybe also *protected-mode*?
+    ((#.*compatibility-mode*
+      #.*protected-mode*)
      (b* (((when (and (not (= seg-reg *cs*))
                       (not (= seg-reg *ss*))
                       (< (seg-visiblei seg-reg x86) 4)))
@@ -425,19 +434,21 @@
   :no-function t
   ///
 
-  (defthm-signed-byte-p ea-to-la-is-i64p
-                        :hyp (i64p eff-addr)
-                        :bound 64
-                        :concl (mv-nth 1 (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
-                        :gen-type t
-                        :gen-linear t)
+  (defthm-signed-byte-p
+    ea-to-la-is-i64p
+    :hyp (i64p eff-addr)
+    :bound 64
+    :concl (mv-nth 1 (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
+    :gen-type t
+    :gen-linear t)
 
-  (defthm-signed-byte-p ea-to-la-is-i48p-when-no-error
-                        :hyp (not (mv-nth 0 (ea-to-la proc-mode eff-addr seg-reg nbytes x86)))
-                        :bound 48
-                        :concl (mv-nth 1 (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
-                        :gen-type t
-                        :gen-linear t)
+  (defthm-signed-byte-p
+    ea-to-la-is-i48p-when-no-error
+    :hyp (not (mv-nth 0 (ea-to-la proc-mode eff-addr seg-reg nbytes x86)))
+    :bound 48
+    :concl (mv-nth 1 (ea-to-la proc-mode eff-addr seg-reg nbytes x86))
+    :gen-type t
+    :gen-linear t)
 
   (defrule ea-to-la-of-xw
     (implies
@@ -523,34 +534,35 @@
 ;; and 7 from Intel Vol. 3 to figure out how segmentation is done on
 ;; Intel machines.
 
-;; Predicates to determine valid user descriptors (in IA32e mode):
+;; References below are to Intel manual, Feb'26, Volume 3A.
+
+;; Predicates to determine valid user descriptors:
 
 ;; Code Segment Descriptor:
 
 (define ia32e-valid-code-segment-descriptor-p
   ((descriptor :type (unsigned-byte 64)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid code segment descriptor in 64-bit mode"
+  :short "Recognizer for a valid code segment descriptor in 64-bit mode."
 
-  (b* (((when (not (equal (code-segment-descriptorBits->msb-of-type
-                                                                descriptor)
+  (b* (;; Must be code segment, i.e. MSB of Type = 1 (Table 3-1).
+       ((when (not (equal (code-segment-descriptorBits->msb-of-type descriptor)
                           1)))
         (mv nil (cons :Invalid-Segment-Type descriptor)))
 
-       ;; User segment?
+       ;; Must be user segment, i.e. S = 1.
        ((when (not (equal (code-segment-descriptorBits->s descriptor) 1)))
         (mv nil (cons :Invalid-Segment-Type descriptor)))
 
-       ;; Segment Present?
+       ;; Segment must be present, i.e. P = 1.
        ((when (not (equal (code-segment-descriptorBits->p descriptor) 1)))
         (mv nil (cons :Segment-Not-Present descriptor)))
 
-       ;; IA32e Mode is on?
+       ;; IA32e mode must be on, i.e. L = 1.
        ((when (not (equal (code-segment-descriptorBits->l descriptor) 1)))
         (mv nil (cons :IA32e-Mode-Off descriptor)))
 
-       ;; Default operand size of 32 bit and default address size of
-       ;; 64 bits when no error below.
+       ;; Must be D = 0 because L = 1 (see L bit in Section 3.4.5).
        ((when (not (equal (code-segment-descriptorBits->d descriptor) 0)))
         (mv nil (cons :IA32e-Default-Operand-Size-Incorrect descriptor))))
     (mv t 0)))
@@ -558,22 +570,22 @@
 (define ia32-valid-code-segment-descriptor-p
   ((descriptor :type (unsigned-byte 64)))
   :parents (ia32-segmentation)
-  :short "Recognizer for a valid code segment descriptor in 32-bit mode"
+  :short "Recognizer for a valid code segment descriptor in 32-bit mode."
 
-  (b* (((when (not (equal (code-segment-descriptorBits->msb-of-type
-                                                                descriptor)
+  (b* (;; Must be code segment, i.e. MSB of Type = 1 (Table 3-1).
+       ((when (not (equal (code-segment-descriptorBits->msb-of-type descriptor)
                           1)))
         (mv nil (cons :Invalid-Segment-Type descriptor)))
 
-       ;; User segment?
+       ;; Must be user segment, i.e. S = 1.
        ((when (not (equal (code-segment-descriptorBits->s descriptor) 1)))
         (mv nil (cons :Invalid-Segment-Type descriptor)))
 
-       ;; Segment Present?
+       ;; Segment must be present, i.e. P = 1.
        ((when (not (equal (code-segment-descriptorBits->p descriptor) 1)))
         (mv nil (cons :Segment-Not-Present descriptor)))
 
-       ;; IA32e Mode is off?
+       ;; IA32e mode must be off, i.e. L = 0.
        ((when (not (equal (code-segment-descriptorBits->l descriptor) 0)))
         (mv nil (cons :IA32e-Mode-Off descriptor))))
     (mv t 0)))
@@ -583,24 +595,28 @@
 (define ia32e-valid-data-segment-descriptor-p
   ((descriptor :type (unsigned-byte 64)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid data segment descriptor"
+  :short "Recognizer for a valid data segment descriptor in 64-bit mode."
 
-  (b* (((when (not (equal (data-segment-descriptorBits->msb-of-type
-                                                                descriptor)
+  (b* (;; Must be code segment, i.e. MSB of Type = 0 (Table 3-1).
+       ((when (not (equal (data-segment-descriptorBits->msb-of-type descriptor)
                           0)))
         (mv nil (cons :Invalid-Type descriptor)))
 
-       ;; User segment?
+       ;; Must be user segment, i.e. S = 1.
        ((when (not (equal (data-segment-descriptorBits->s descriptor) 1)))
         (mv nil (cons :Invalid-Segment-Type descriptor)))
 
-       ;; Segment is present.
+       ;; Segment must be present, i.e. P = 1.
        ((when (not (equal (data-segment-descriptorBits->p descriptor) 1)))
         (mv nil (cons :Segment-Not-Present descriptor)))
 
-       ;; IA32e Mode is on?
+       ;; IA32e mode must be on, i.e. L = 1.
        ((when (not (equal (data-segment-descriptorBits->l descriptor) 1)))
-        (mv nil (cons :IA32e-Mode-Off descriptor))))
+        (mv nil (cons :IA32e-Mode-Off descriptor)))
+
+       ;; Must be D = 0 because L = 1 (see L bit in Section 3.4.5).
+       ((when (not (equal (code-segment-descriptorBits->d descriptor) 0)))
+        (mv nil (cons :IA32e-Default-Operand-Size-Incorrect descriptor))))
       (mv t 0)))
 
 ;; Predicates to determine valid system descriptors (in IA32e mode):
@@ -610,8 +626,7 @@
 (define ia32e-valid-ldt-segment-descriptor-p
   ((descriptor :type (unsigned-byte 128)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid LDT segment descriptor"
-
+  :short "Recognizer for a valid LDT segment descriptor."
 
   (b* ((type (system-segment-descriptorBits->type descriptor))
        ;; Valid type: 64-bit LDT?
@@ -637,7 +652,7 @@
 (define ia32e-valid-available-tss-segment-descriptor-p
   ((descriptor :type (unsigned-byte 128)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid Available TSS segment descriptor"
+  :short "Recognizer for a valid Available TSS segment descriptor."
 
   (b* ((type (system-segment-descriptorBits->type descriptor))
        ((when (not (equal type #x9)))
@@ -657,7 +672,7 @@
 (define ia32e-valid-busy-tss-segment-descriptor-p
   ((descriptor :type (unsigned-byte 128)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid Busy TSS segment descriptor"
+  :short "Recognizer for a valid Busy TSS segment descriptor."
 
   (b* ((type (system-segment-descriptorBits->type descriptor))
        ((when (not (equal type #xB)))
@@ -679,7 +694,7 @@
 (define ia32e-valid-call-gate-segment-descriptor-p
   ((descriptor :type (unsigned-byte 128)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid Call Gate segment descriptor"
+  :short "Recognizer for a valid Call Gate segment descriptor."
 
   (b* ((type (call-gate-descriptorBits->type descriptor))
        ((when (not (equal type #xC)))
@@ -697,7 +712,7 @@
 (define ia32e-valid-interrupt-gates-segment-descriptor-p
   ((descriptor :type (unsigned-byte 128)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid Interrupt Gate segment descriptor"
+  :short "Recognizer for a valid Interrupt Gate segment descriptor."
 
   (b* ((type (interrupt/trap-gate-descriptorBits->type descriptor))
        ((when (not (equal type #xE)))
@@ -711,7 +726,7 @@
 (define ia32e-valid-trap-gates-segment-descriptor-p
   ((descriptor :type (unsigned-byte 128)))
   :parents (ia32e-segmentation)
-  :short "Recognizer for a valid Trap Gate segment descriptor"
+  :short "Recognizer for a valid Trap Gate segment descriptor."
 
   (b* ((type (interrupt/trap-gate-descriptorBits->type descriptor))
        ((when (not (equal type #xF)))
@@ -732,7 +747,7 @@
 (define make-code-segment-attr-field
   ((descriptor  :type (unsigned-byte 64)))
   :parents (ia32e-segmentation)
-  :short "Constructor for the Code Segment attribute field"
+  :short "Constructor for the Code Segment attribute field."
 
   :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
 
@@ -785,7 +800,7 @@
 (define make-data-segment-attr-field
   ((descriptor  :type (unsigned-byte 64)))
   :parents (ia32e-segmentation)
-  :short "Constructor for the Data Segment attribute field"
+  :short "Constructor for the Data Segment attribute field."
 
   :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
 
@@ -840,7 +855,7 @@
   ((descriptor  :type (unsigned-byte 128)))
 
   :parents (ia32e-segmentation)
-  :short "Constructor for the System Segment attribute field"
+  :short "Constructor for the System Segment attribute field."
   :guard-hints (("Goal" :in-theory (e/d ()
                                         (unsigned-byte-p))))
 
@@ -898,109 +913,150 @@
        (!reg-hidden-basei (acl2::packn (list '! typ '-hidden-basei)))
        (!reg-hidden-limiti (acl2::packn (list '! typ '-hidden-limiti)))
        (!reg-hidden-attri (acl2::packn (list '! typ '-hidden-attri)))
-       (loader-fn (acl2::packn (list 'load- (if regular-segment? 'segment 'system-segment) '-reg)))
-       (descriptor-fn (acl2::packn (list 'get- (if regular-segment? 'segment 'system-segment) '-descriptor)))
+       (loader-fn (acl2::packn
+                   (list 'load-
+                         (if regular-segment? 'segment 'system-segment)
+                         '-reg)))
+       (descriptor-fn (acl2::packn
+                       (list 'get-
+                             (if regular-segment? 'segment 'system-segment)
+                             '-descriptor)))
        (descriptor-size (if regular-segment? 8 16)))
-      `(progn
-         (define ,descriptor-fn
-           ((seg-reg :type (integer 0 ,(1- (if regular-segment? *segment-register-names-len* *ldtr-tr-names-len*))))
-            (selector :type (unsigned-byte 16))
-            x86)
-           ;; I included seg-reg, despite not using it, because I think it may
-           ;; be useful for finding some of the error cases. In particular, ss
-           ;; seems to often be handled differently.
-           :ignore-ok t
-           :returns (mv (flg (or (null flg)
-                                 (equal flg t)
-                                 (and (true-listp flg)
-                                      (equal (len flg) 3))))
-                        (descriptor (unsigned-byte-p ,(* 8 descriptor-size) descriptor))
-                        (x86 x86p :hyp (x86p x86)))
-           (b* (((segment-selectorBits selector))
-                (offset (ash selector.index 3))
-                (table-descriptor (stri (if selector.ti #.*ldtr* #.*gdtr*) x86))
-                ((gdtr/idtrBits table-descriptor))
+    `(progn
 
-                ((mv gp-selector? descriptor-addr x86)
-                 (b* (;; GP if the segment descriptor doesn't fit in the table or if
-                      ;; the selector's rpl != cpl
-                      ((when (> (+ offset ,descriptor-size) (1+ table-descriptor.limit)))
-                       (mv :table-limit 0 x86))
-                      (descriptor-addr (+ (i64 table-descriptor.base-addr) offset))
-                      ;; Non-canonical address
-                      ((when (or (not (canonical-address-p descriptor-addr))
-                                 (not (canonical-address-p (1- (+ descriptor-addr ,descriptor-size))))))
-                       (mv :non-canonical-descriptor-addr 0 x86)))
-                     (mv nil descriptor-addr x86)))
-                ((when gp-selector?)
-                 (mv (list :gp selector gp-selector?) 0 x86))
+       (define ,descriptor-fn
+         ((seg-reg :type (integer 0 ,(1- (if regular-segment?
+                                             *segment-register-names-len*
+                                           *ldtr-tr-names-len*))))
+          (selector :type (unsigned-byte 16))
+          x86)
+         ;; I included seg-reg, despite not using it, because I think it may
+         ;; be useful for finding some of the error cases. In particular, ss
+         ;; seems to often be handled differently.
+         :ignore-ok t
+         :returns (mv (flg (or (null flg)
+                               (equal flg t)
+                               (and (true-listp flg)
+                                    (equal (len flg) 3))))
+                      (descriptor (unsigned-byte-p ,(* 8 descriptor-size)
+                                                   descriptor))
+                      (x86 x86p :hyp (x86p x86)))
 
-                (prev-implicit-supervisor-access (implicit-supervisor-access x86))
-                (x86 (!implicit-supervisor-access t x86))
-                ((mv flg descriptor x86) (,(if regular-segment? 'rml64 'rml128)
-                                           descriptor-addr :r x86))
-                (x86 (!implicit-supervisor-access prev-implicit-supervisor-access x86))
-                ((when flg)
-                 (mv t 0 x86)))
-               (mv nil descriptor x86))
-           ///
-           (defthm ,(acl2::packn (list 'consp-flg-cdr-cddr-when-neither-nil-nor-t- descriptor-fn))
-                   (implies (and (not (null (mv-nth 0 (,descriptor-fn seg-reg selector x86))))
-                                 (not (equal (mv-nth 0 (,descriptor-fn seg-reg selector x86)) t)))
-                            (and (consp (mv-nth 0 (,descriptor-fn seg-reg selector x86)))
-                                 (consp (cdr (mv-nth 0 (,descriptor-fn seg-reg selector x86))))
-                                 (consp (cddr (mv-nth 0 (,descriptor-fn seg-reg selector x86))))))
-                   :rule-classes :rewrite)
+         (b* (((segment-selectorBits selector))
+              (offset (ash selector.index 3))
+              (table-descriptor
+               (stri (if (= selector.ti 1) #.*ldtr* #.*gdtr*) x86))
+              ((gdtr/idtrBits table-descriptor))
 
-           (defthm ,(acl2::packn (list '64-bit-modep-of-mv-nth-2- descriptor-fn))
-                   (equal (64-bit-modep (mv-nth 2 (,descriptor-fn seg-reg selector x86)))
-                          (64-bit-modep x86))
-                   :hints (("Goal" :in-theory (enable 64-bit-modep)
-                            :cases ((app-view x86)))))
+              ((mv gp-selector? descriptor-addr x86)
+               (b* (;; GP if the segment descriptor doesn't fit in the table or if
+                    ;; the selector's rpl != cpl
+                    ((when (> (+ offset ,descriptor-size)
+                              (1+ table-descriptor.limit)))
+                     (mv :table-limit 0 x86))
+                    (descriptor-addr (+ (i64 table-descriptor.base-addr)
+                                        offset))
+                    ;; Non-canonical address
+                    ((when (or (not (canonical-address-p descriptor-addr))
+                               (not (canonical-address-p
+                                     (1- (+ descriptor-addr ,descriptor-size))))))
+                     (mv :non-canonical-descriptor-addr 0 x86)))
+                 (mv nil descriptor-addr x86)))
+              ((when gp-selector?)
+               (mv (list :gp selector gp-selector?) 0 x86))
 
-           (defthm ,(acl2::packn (list 'xr-of-mv-nth-2- descriptor-fn))
-                   (implies (and (not (equal fld :mem))
-                                 (not (equal fld :fault))
-                                 (not (equal fld :tlb))
-                                 (member-equal fld *x86-field-names-as-keywords*))
-                            (equal (xr fld idx (mv-nth 2 (,descriptor-fn seg-reg selector x86)))
-                                   (xr fld idx x86)))
-                   :hints (("Goal" :cases ((app-view x86))))))
+              (prev-implicit-supervisor-access (implicit-supervisor-access x86))
+              (x86 (!implicit-supervisor-access t x86))
+              ((mv flg descriptor x86) (,(if regular-segment? 'rml64 'rml128)
+                                        descriptor-addr :r x86))
+              (x86 (!implicit-supervisor-access prev-implicit-supervisor-access x86))
+              ((when flg)
+               (mv t 0 x86)))
+           (mv nil descriptor x86))
 
-         (define ,loader-fn
-           ((seg-reg :type (integer 0 ,(1- (if regular-segment? *segment-register-names-len* *ldtr-tr-names-len*))))
-            (selector :type (unsigned-byte 16))
-            (descriptor :type (unsigned-byte ,(* 8 descriptor-size)))
-            x86)
-          :returns (x86 x86p :hyp (x86p x86))
-          (b* ((x86 (,!reg-visiblei seg-reg selector x86))
-               (limit (logior (logand descriptor #xFFFF)
-                              (logand (ash descriptor (- 16 48)) #xF0000)))
-               (x86 (,!reg-hidden-limiti seg-reg limit x86))
-               (base (logior (logand (ash descriptor -16) #xFFFFFF)
-                             (logand (ash descriptor (- 24 56)) #xFFFFFFFFFF000000)))
-               (x86 (,!reg-hidden-basei seg-reg base x86))
-               (attr (make-code-segment-attr-field (loghead 64 descriptor)))
-               (x86 (,!reg-hidden-attri seg-reg attr x86)))
-              x86)
-          ///
-          (defthm ,(acl2::packn (list 'xr-of- loader-fn))
-                  (implies
-                    (and (not (equal fld ,(intern (symbol-name (acl2::packn (list typ '-visible))) "KEYWORD")))
-                         (not (equal fld ,(intern (symbol-name (acl2::packn (list typ '-hidden-base))) "KEYWORD")))
-                         (not (equal fld ,(intern (symbol-name (acl2::packn (list typ '-hidden-attr))) "KEYWORD")))
-                         (not (equal fld ,(intern (symbol-name (acl2::packn (list typ '-hidden-limit))) "KEYWORD"))))
-                    (equal (xr fld idx (,loader-fn seg-reg selector descriptor x86))
-                           (xr fld idx x86))))
+         ///
 
-          (defthm ,(acl2::packn (list '64-bit-modep-of- loader-fn))
-                  (implies (and (or (not (equal seg-reg #.*cs*))
-                                    (equal (code-segment-descriptor-attributesBits->l
-                                             (make-code-segment-attr-field (loghead 64 descriptor)))
-                                           1))
-                                (64-bit-modep x86))
-                           (64-bit-modep (,loader-fn seg-reg selector descriptor x86)))
-                  :hints (("Goal" :in-theory (enable 64-bit-modep))))))))
+         (defthm ,(acl2::packn (list 'consp-flg-cdr-cddr-when-neither-nil-nor-t-
+                                     descriptor-fn))
+           (implies
+            (and (not (null (mv-nth 0 (,descriptor-fn seg-reg selector x86))))
+                 (not (equal (mv-nth 0 (,descriptor-fn seg-reg selector x86))
+                             t)))
+            (and (consp (mv-nth 0 (,descriptor-fn seg-reg selector x86)))
+                 (consp (cdr (mv-nth 0 (,descriptor-fn seg-reg selector x86))))
+                 (consp (cddr (mv-nth 0 (,descriptor-fn seg-reg selector x86))))))
+           :rule-classes :rewrite)
+
+         (defthm ,(acl2::packn (list '64-bit-modep-of-mv-nth-2- descriptor-fn))
+           (equal (64-bit-modep (mv-nth 2 (,descriptor-fn seg-reg selector x86)))
+                  (64-bit-modep x86))
+           :hints (("Goal"
+                    :in-theory (enable 64-bit-modep)
+                    :cases ((app-view x86)))))
+
+         (defthm ,(acl2::packn (list 'xr-of-mv-nth-2- descriptor-fn))
+           (implies (and (not (equal fld :mem))
+                         (not (equal fld :fault))
+                         (not (equal fld :tlb))
+                         (member-equal fld *x86-field-names-as-keywords*))
+                    (equal (xr fld idx (mv-nth 2 (,descriptor-fn
+                                                  seg-reg selector x86)))
+                           (xr fld idx x86)))
+           :hints (("Goal" :cases ((app-view x86))))))
+
+       (define ,loader-fn
+         ((seg-reg :type (integer 0 ,(1- (if regular-segment?
+                                             *segment-register-names-len*
+                                           *ldtr-tr-names-len*))))
+          (selector :type (unsigned-byte 16))
+          (descriptor :type (unsigned-byte ,(* 8 descriptor-size)))
+          x86)
+         :returns (x86 x86p :hyp (x86p x86))
+         (b* ((x86 (,!reg-visiblei seg-reg selector x86))
+              (limit (logior (logand descriptor #xFFFF)
+                             (logand (ash descriptor (- 16 48)) #xF0000)))
+              (x86 (,!reg-hidden-limiti seg-reg limit x86))
+              (base (logior (logand (ash descriptor -16) #xFFFFFF)
+                            (logand (ash descriptor (- 24 56)) #xFFFFFFFFFF000000)))
+              (x86 (,!reg-hidden-basei seg-reg base x86))
+              (attr (make-code-segment-attr-field (loghead 64 descriptor)))
+              (x86 (,!reg-hidden-attri seg-reg attr x86)))
+           x86)
+         ///
+         (defthm ,(acl2::packn (list 'xr-of- loader-fn))
+           (implies
+            (and (not (equal fld
+                             ,(intern
+                               (symbol-name
+                                (acl2::packn
+                                 (list typ '-visible))) "KEYWORD")))
+                 (not (equal fld
+                             ,(intern
+                               (symbol-name
+                                (acl2::packn
+                                 (list typ '-hidden-base))) "KEYWORD")))
+                 (not (equal fld
+                             ,(intern
+                               (symbol-name
+                                (acl2::packn
+                                 (list typ '-hidden-attr))) "KEYWORD")))
+                 (not (equal fld
+                             ,(intern
+                               (symbol-name
+                                (acl2::packn
+                                 (list typ '-hidden-limit))) "KEYWORD"))))
+            (equal (xr fld idx (,loader-fn seg-reg selector descriptor x86))
+                   (xr fld idx x86))))
+
+         (defthm ,(acl2::packn (list '64-bit-modep-of- loader-fn))
+           (implies
+            (and (or (not (equal seg-reg #.*cs*))
+                     (equal (code-segment-descriptor-attributesBits->l
+                             (make-code-segment-attr-field (loghead 64 descriptor)))
+                            1))
+                 (64-bit-modep x86))
+            (64-bit-modep (,loader-fn seg-reg selector descriptor x86)))
+           :hints (("Goal" :in-theory (enable 64-bit-modep))))))))
 
 (define-segment-register-loader seg)
 (define-segment-register-loader ssr)

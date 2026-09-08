@@ -13,14 +13,12 @@
 (include-book "kestrel/fty/deffold-map" :dir :system)
 
 (include-book "../../syntax/abstract-syntax-trees")
-(include-book "../../syntax/validation-information")
+(include-book "../../syntax/validation-annotations")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 (include-book "std/basic/controlled-configuration" :dir :system)
-(acl2::controlled-configuration
-  ;; Necessary for the deffold-map termination.
-  :tau t)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -35,8 +33,8 @@
           (new-fn (ident-fix new-fn)))
        (expr-case
          c$::expr
-         :ident (if (and (var-infop c$::expr.info)
-                         (c$::uid-equal (c$::var-info->uid c$::expr.info)
+         :ident (if (and (var-vinfop c$::expr.info)
+                         (c$::uid-equal (var-vinfo->uid c$::expr.info)
                                         uid))
                     (make-expr-ident :ident new-fn :info nil)
                   (expr-fix c$::expr))
@@ -50,7 +48,8 @@
          :cast (make-expr-cast :type expr.type
                                :arg (expr-funcall-fun-rename-fn
                                       expr.arg uid new-fn))
-         :otherwise (expr-fix c$::expr))))))
+         :otherwise (expr-fix c$::expr)))))
+  :name abstract-syntax-funcall-fun-rename-fn)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -70,4 +69,5 @@
      :funcall
      (make-expr-funcall
        :fun (expr-funcall-fun-rename-fn expr.fun uid new-fn)
-       :args (expr-list-rename-fn expr.args uid new-fn)))))
+       :args (expr-list-rename-fn expr.args uid new-fn))))
+  :name abstract-syntax-rename-fn)

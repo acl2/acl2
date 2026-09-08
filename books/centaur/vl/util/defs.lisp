@@ -40,7 +40,19 @@
 ; other, conflicting theorems about.
 
 (include-book "centaur/fty/deftypes" :dir :system)
-(include-book "std/util/top" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
+(include-book "std/util/defaggrify-defrec" :dir :system)
+(include-book "std/util/defalist" :dir :system)
+(include-book "std/util/defconsts" :dir :system)
+(include-book "std/util/defenum" :dir :system)
+(include-book "std/util/define" :dir :system)
+(include-book "std/util/defines" :dir :system)
+(include-book "std/util/deflist" :dir :system)
+(include-book "std/util/defmapappend" :dir :system)
+(include-book "std/util/defmvtypes" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
+(include-book "std/util/defrule" :dir :system)
+(include-book "std/util/defval" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "centaur/misc/alist-equiv" :dir :system)
 (include-book "std/strings/top" :dir :system)
@@ -714,4 +726,3 @@ versions of the standard.  We currently have some support for:</p>
                   (vl-maybe-string-listp x))
              (equal (string-listp x)
                     (true-listp x)))))
-

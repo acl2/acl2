@@ -1,7 +1,7 @@
 ; Utilities for parsing x86 binaries
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -258,7 +258,7 @@
 ; Given a BV and an alist from flag masks (values with a single bit set) to
 ; flag 'names', return a list of the names of the flags whose corresponding
 ; bits are set in the value.
-(defun decode-flags-aux (val flags-alist acc)
+(defund decode-flags-aux (val flags-alist acc)
   (declare (xargs :guard (and (integerp val)
                               (alistp flags-alist)
                               (integer-listp (strip-cars flags-alist))
@@ -273,12 +273,31 @@
                   acc)))
       (decode-flags-aux val (rest flags-alist) acc))))
 
+(local
+  (defthm keyword-listp-of-revappend
+    (implies (and (keyword-listp x)
+                  (keyword-listp y))
+             (keyword-listp (revappend x y)))
+    :hints (("Goal" :in-theory (enable revappend keyword-listp)))))
+
+(local
+  (defthm keyword-listp-of-decode-flags-aux
+    (implies (and (keyword-listp (strip-cdrs flags-alist))
+                  (keyword-listp acc))
+             (keyword-listp (decode-flags-aux val flags-alist acc)))
+    :hints (("Goal" :in-theory (enable decode-flags-aux)))))
+
 ;flags-alist maps masks to symbolic names of flags
 (defund decode-flags (val flags-alist)
   (declare (xargs :guard (and (integerp val)
                               (alistp flags-alist)
                               (integer-listp (strip-cars flags-alist)))))
   (decode-flags-aux val flags-alist nil))
+
+(defthm keyword-listp-of-decode-flags
+  (implies (keyword-listp (strip-cdrs flags-alist))
+           (keyword-listp (decode-flags val flags-alist)))
+  :hints (("Goal" :in-theory (enable decode-flags))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

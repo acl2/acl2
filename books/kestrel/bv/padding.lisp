@@ -1,7 +1,7 @@
 ; Rules about padding bit-vectors with zeros
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,9 +20,9 @@
 (include-book "bvxor-def")
 
 ;Depending on how we translate to SMT, We might prefer, for example:
-;(bvxor 8 x (bvchop 8 (foo x)) (slice 7 0 y))
+;(bvxor 8 (bvchop 8 (foo x)) (slice 7 0 y))
 ;to
-;(bvxor 8 x (foo x) (slice 7 0 y))
+;(bvxor 8 (foo x) (slice 7 0 y))
 ;even though the bvchop can be dropped, because foo might be big (say, of size 32) and the latter would give a length mismatch in stp
 ;more like this?
 ;(in-theory (disable bvxor-of-bvchop-1 bvxor-of-bvchop-2))
@@ -46,7 +46,7 @@
            (equal (bvmult size x y)
                   (bvmult size (bvcat (- size xsize) 0 xsize x) y)))
   :hints (("Goal" :in-theory (e/d (bvchop-identity)
-                                  ( ;add-bvchop-to-bvxor-1
+                                  (;add-bvchop-to-bvxor-1
                                    ;add-bvchop-to-bvxor-2
                                    )))))
 
@@ -63,7 +63,7 @@
            (equal (BVMULT size x y)
                   (bvmult size x (bvcat (- size ysize) 0 ysize y))))
   :hints (("Goal" :in-theory (e/d (bvchop-identity)
-                                  ( ;ADD-BVCHOP-TO-BVXOR-1
+                                  (;ADD-BVCHOP-TO-BVXOR-1
                                    ;ADD-BVCHOP-TO-BVXOR-2
                                    )))))
 
@@ -137,7 +137,7 @@
            (equal (bvxor size x y)
                   (bvxor size (bvcat (- size newsize) 0 newsize x) y)))
   :hints (("Goal" :in-theory (e/d (bvchop-identity)
-                                  ( ;add-bvchop-to-bvxor-1
+                                  (;add-bvchop-to-bvxor-1
                                    )))))
 
 ;not used?
@@ -152,7 +152,7 @@
            (equal (bvxor size x y)
                   (bvxor size x (bvcat (- size newsize) 0 newsize y))))
   :hints (("Goal" :in-theory (e/d (bvchop-identity)
-                                  ( ;add-bvchop-to-bvxor-1
+                                  (;add-bvchop-to-bvxor-1
                                    )))))
 
 ;now we handle the adding of padding when we translate to stp

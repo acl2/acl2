@@ -3129,7 +3129,7 @@
           (msg "There ~#0~[are no hypotheses~/is only one hypothesis~/are only ~
                 ~n0 hypotheses~] in this goal, but your :BDD hint suggested ~
                 that there would be at least ~x1 ~
-                ~#1~[~/hypothesis~/hypotheses]."
+                ~#1~[~/hypothesis~/hypotheses~]."
                (1- (length top-clause))
                (1+ literal-hint))
           nil

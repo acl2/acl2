@@ -93,7 +93,7 @@
 ; say, even though sig is a single bit.  So we add the following.
 
 (defthm cat-bitn-m-equal-cat-bitn-1
-  (implies (and (syntaxp (and (quote m)
+  (implies (and (syntaxp (and (quotep m)
                               (natp (cadr m))
                               (> (cadr m) 1)))
                 (natp m)

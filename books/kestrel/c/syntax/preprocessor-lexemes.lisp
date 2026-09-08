@@ -11,6 +11,7 @@
 (in-package "C$")
 
 (include-book "abstract-syntax-trees")
+(include-book "unicode-characters")
 
 (include-book "std/strings/letter-uscore-chars" :dir :system)
 
@@ -44,13 +45,22 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum pnumber
-  :short "Fixtype of preprocessing numbers [C17:6.4.8] [C17:A.1.9]."
+  :short "Fixtype of preprocessing numbers [C17:6.4.8] [C23:6.4.9]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is like an abstract syntax for preprocessing numbers,
      corresponding to the rule for @('pp-number') in the ABNF grammar.
-     We need to capture their structure, in order to do preprocessing."))
+     We need to capture their structure, in order to do preprocessing.")
+   (xdoc::p
+    "The only difference between the C17 and C23 grammar rules is that
+     the latter allows an optional single quote
+     between a preprocessing number and a digit or non-digit.
+     So C17 is a special case in which there is never such a quote.
+     Note that, in the ABNF grammar rules,
+     @('identifier-continue') in C23 is equivalent to
+     either a @('digit') or @('nondigit'),
+     and that @('identifier-nondigit') in C17 is equivalen to @('nodigit')."))
   (:digit ((digit character
                   :reqfix (if (dec-digit-char-p digit)
                               digit
@@ -62,12 +72,14 @@
                                 #\0)))
    :require (dec-digit-char-p digit))
   (:number-digit ((number pnumber)
+                  (squotep bool)
                   (digit character
                          :reqfix (if (dec-digit-char-p digit)
                                      digit
                                    #\0)))
    :require (dec-digit-char-p digit))
   (:number-nondigit ((number pnumber)
+                     (squotep bool)
                      (nondigit character
                                :reqfix (if (str::letter/uscore-char-p nondigit)
                                            nondigit
@@ -162,10 +174,10 @@
     "The @(':other') summand corresponds to
      the last alternative in the ABNF grammar rule for @('preprocessing-token'),
      as well as the prose description of the rule in [C17].
-     It consists of the code of the character.")
+     It consists of the code of the Unicode character.")
    (xdoc::p
     "For (block and line) comments, we include the content,
-     consisting of the codes of the characters.
+     consisting of the codes of the Unicode characters.
      For block comments, these are all the characters
      from just after the opening @('/*') to just before the closing @('*/').
      For line comments, these are all the characters
@@ -184,9 +196,9 @@
   (:char ((const cconst)))
   (:string ((literal stringlit)))
   (:punctuator ((punctuator string)))
-  (:other ((char nat)))
-  (:block-comment ((content nat-list)))
-  (:line-comment ((content nat-list)))
+  (:other ((char unichar)))
+  (:block-comment ((content unichar-list)))
+  (:line-comment ((content unichar-list)))
   (:newline ((chars newline)))
   (:spaces ((count pos)))
   (:horizontal-tab ())
@@ -470,7 +482,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "That is, check if the lexeme is the punctuator @('#'),
+    "That is, check if the lexeme is the punctuator @('##'),
      or also if the lexeme is the digraph @('%:%:') [C17:6.4.6/3]."))
   (and (plexeme-case lexeme :punctuator)
        (b* ((string (plexeme-punctuator->punctuator lexeme)))

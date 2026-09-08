@@ -167,7 +167,7 @@
     ((:linear
       :trigger-terms ((schar-format->min schar-format uchar-format))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define schar-format-8tcnt ()
   :returns (format schar-formatp)

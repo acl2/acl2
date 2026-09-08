@@ -1,6 +1,6 @@
 ; A simple utility to check if lambdas are closed
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "free-vars-in-term")
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 
@@ -136,28 +137,18 @@
 (local (make-flag lambdas-closed-in-termp))
 
 (local
- (defthm-flag-lambdas-closed-in-termp
+  ;; Sanity check: termp implies lambdas-closed-in-termp:
+  (defthm-flag-lambdas-closed-in-termp
    (defthm lambdas-closed-in-termp-when-termp
-     (implies (termp term w)
+     (implies (termp term w) ; w is a free var
               (lambdas-closed-in-termp term))
      :flag lambdas-closed-in-termp)
    (defthm lambdas-closed-in-termsp-when-term-listp
-     (implies (term-listp terms w)
+     (implies (term-listp terms w) ; w is a free var
               (lambdas-closed-in-termsp terms))
      :flag lambdas-closed-in-termsp)
    :hints (("Goal" :expand (free-vars-in-terms terms)
             :in-theory (enable free-vars-in-term lambdas-closed-in-termp)))))
-
-;; Sanity check: termp implies lambdas-closed-in-termp:
-;; redundant and non-local
-(defthm lambdas-closed-in-termp-when-termp
-  (implies (termp term w)
-           (lambdas-closed-in-termp term)))
-
-;; redundant and non-local
-(defthm lambdas-closed-in-termsp-when-term-listp
-  (implies (term-listp terms w)
-           (lambdas-closed-in-termsp terms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

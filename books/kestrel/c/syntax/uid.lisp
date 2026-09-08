@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod uid
-  :parents (validation-information)
+  :parents (validation)
   :short "Fixtype of unique identifiers."
   :long
   (xdoc::topstring

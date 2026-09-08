@@ -89,7 +89,8 @@
                      "PUSH ES is illegal in the 64-bit mode!"))
           '((:UD T)))
     (INST "POP ES" (OP :OP #x7 :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-POP-SEGMENT-REGISTER)
           '((:UD (UD-LOCK-USED))))
     (INST "#UD" (OP :OP #x7 :MODE :O64)
           NIL
@@ -168,7 +169,8 @@
                      "PUSH SS is illegal in the 64-bit mode!"))
           '((:UD T)))
     (INST "POP SS" (OP :OP #x17 :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-POP-SEGMENT-REGISTER)
           '((:UD (UD-LOCK-USED))))
     (INST "#UD" (OP :OP #x17 :MODE :O64)
           NIL
@@ -210,7 +212,8 @@
                      "PUSH DS is illegal in the 64-bit mode!"))
           '((:UD T)))
     (INST "POP DS" (OP :OP #x1F :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-POP-SEGMENT-REGISTER)
           '((:UD (UD-LOCK-USED))))
     (INST "#UD" (OP :OP #x1F :MODE :O64)
           NIL
@@ -247,7 +250,8 @@
           '(:NO-INSTRUCTION)
           'NIL)
     (INST "DAA" (OP :OP #x27 :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-DAA)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #x27 :MODE :O64)
@@ -283,7 +287,8 @@
           '(:NO-INSTRUCTION)
           'NIL)
     (INST "DAS" (OP :OP #x2F :MODE :I64)
-          NIL 'NIL
+          NIL
+          '(X86-DAS)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #x2F :MODE :O64)
@@ -1197,19 +1202,19 @@
           '((:UD (UD-LOCK-USED))))
     (INST "LODS/B" (OP :OP #xAC)
           (ARG :OP1 '(:AL) :OP2 '(X B))
-          'NIL
+          '(X86-LODS)
           '((:UD (UD-LOCK-USED))))
     (INST "LODS/W/D/Q" (OP :OP #xAD)
           (ARG :OP1 '(:RAX) :OP2 '(X V))
-          'NIL
+          '(X86-LODS)
           '((:UD (UD-LOCK-USED))))
     (INST "SCAS/B" (OP :OP #xAE)
           (ARG :OP1 '(:AL) :OP2 '(Y B))
-          'NIL
+          '(X86-SCAS)
           '((:UD (UD-LOCK-USED))))
     (INST "SCAS/W/D/Q" (OP :OP #xAF)
           (ARG :OP1 '(:RAX) :OP2 '(Y V))
-          'NIL
+          '(X86-SCAS)
           '((:UD (UD-LOCK-USED))))
     (INST "MOV" (OP :OP #xB0)
           (ARG :OP1 '(:AL/R8L) :OP2 '(I B))
@@ -1411,7 +1416,7 @@
           'NIL)
     (INST "LES" (OP :OP #xC4 :MODE :I64)
           (ARG :OP1 '(G Z) :OP2 '(M P))
-          'NIL
+          '(X86-LOAD-FAR-POINTER)
           '((:UD (UD-LOCK-USED)
                  (UD-SOURCE-OPERAND-IS-A-REGISTER))))
     (INST :VEX2-BYTE0 (OP :OP #xC5 :MODE :O64)
@@ -1420,7 +1425,7 @@
           'NIL)
     (INST "LDS" (OP :OP #xC5 :MODE :I64)
           (ARG :OP1 '(G Z) :OP2 '(M P))
-          'NIL
+          '(X86-LOAD-FAR-POINTER)
           '((:UD (UD-LOCK-USED)
                  (UD-SOURCE-OPERAND-IS-A-REGISTER))))
     (INST "MOV"
@@ -1463,7 +1468,7 @@
           '((:UD (UD-LOCK-USED))))
     (INST "ENTER" (OP :OP #xC8)
           (ARG :OP1 '(I W) :OP2 '(I B))
-          'NIL
+          '(X86-ENTER)
           '((:UD (UD-LOCK-USED))))
     (INST "LEAVE"
           (OP :OP #xC9 :SUPERSCRIPTS '(:D64))
@@ -1719,7 +1724,7 @@
           '((:UD (UD-LOCK-USED))))
     (INST "AAM" (OP :OP #xD4 :MODE :I64)
           (ARG :OP1 '(I B))
-          'NIL
+          '(X86-AAM)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #xD4 :MODE :O64)
@@ -1728,7 +1733,7 @@
      '((:UD T)))
     (INST "AAD" (OP :OP #xD5 :MODE :I64)
           (ARG :OP1 '(I B))
-          'NIL
+          '(X86-AAD)
           '((:UD (UD-LOCK-USED))))
     (INST
      "#UD" (OP :OP #xD5 :MODE :O64)
@@ -5572,37 +5577,41 @@
               :PFX :NO-PREFIX
               :FEAT '(:SSE))
           (ARG :OP1 '(G Y) :OP2 '(U PS))
-          'NIL
+          '(X86-MOVMSKPS-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE)))))
     (INST "MOVMSKPD"
           (OP :OP #xF50 :PFX :66 :FEAT '(:SSE2))
           (ARG :OP1 '(G Y) :OP2 '(U PD))
-          'NIL
+          '(X86-MOVMSKPD-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
     (INST "VMOVMSKPD"
           (OP :OP #xF50
               :VEX '(:0F :128 :66 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(G Y) :OP2 '(U PD))
-          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+          '(X86-VMOVMSKPD-VEX)
+          '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
     (INST "VMOVMSKPD"
           (OP :OP #xF50
               :VEX '(:0F :256 :66 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(G Y) :OP2 '(U PD))
-          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+          '(X86-VMOVMSKPD-VEX)
+          '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
     (INST "VMOVMSKPS"
           (OP :OP #xF50
               :VEX '(:0F :128 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(G Y) :OP2 '(U PS))
-          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+          '(X86-VMOVMSKPS-VEX)
+          '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
     (INST "VMOVMSKPS"
           (OP :OP #xF50
               :VEX '(:0F :256 :WIG)
               :FEAT '(:AVX))
           (ARG :OP1 '(G Y) :OP2 '(U PS))
-          NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
+          '(X86-VMOVMSKPS-VEX)
+          '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
     (INST "SQRTPS"
           (OP :OP #xF51
               :PFX :NO-PREFIX
@@ -10049,10 +10058,10 @@
           (ARG :OP1 '(:FS))
           '(X86-PUSH-SEGMENT-REGISTER)
           '((:UD (UD-LOCK-USED))))
-    (INST "POP"
+    (INST "POP FS"
           (OP :OP #xFA1 :SUPERSCRIPTS '(:D64))
           (ARG :OP1 '(:FS))
-          'NIL
+          '(X86-POP-SEGMENT-REGISTER)
           '((:UD (UD-LOCK-USED))))
     (INST "CPUID" (OP :OP #xFA2)
           NIL '(X86-CPUID)
@@ -10078,10 +10087,10 @@
           (ARG :OP1 '(:GS))
           '(X86-PUSH-SEGMENT-REGISTER)
           '((:UD (UD-LOCK-USED))))
-    (INST "POP"
+    (INST "POP GS"
           (OP :OP #xFA9 :SUPERSCRIPTS '(:D64))
           (ARG :OP1 '(:GS))
-          'NIL
+          '(X86-POP-SEGMENT-REGISTER)
           '((:UD (UD-LOCK-USED))))
     (INST "RSM" (OP :OP #xFAA)
           NIL 'NIL
@@ -10305,7 +10314,7 @@
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "LSS" (OP :OP #xFB2)
           (ARG :OP1 '(G V) :OP2 '(M P))
-          'NIL
+          '(X86-LOAD-FAR-POINTER)
           '((:UD (UD-LOCK-USED)
                  (UD-SOURCE-OPERAND-IS-A-REGISTER))))
     (INST "BTR" (OP :OP #xFB3)
@@ -10314,12 +10323,12 @@
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "LFS" (OP :OP #xFB4)
           (ARG :OP1 '(G V) :OP2 '(M P))
-          'NIL
+          '(X86-LOAD-FAR-POINTER)
           '((:UD (UD-LOCK-USED)
                  (UD-SOURCE-OPERAND-IS-A-REGISTER))))
     (INST "LGS" (OP :OP #xFB5)
           (ARG :OP1 '(G V) :OP2 '(M P))
-          'NIL
+          '(X86-LOAD-FAR-POINTER)
           '((:UD (UD-LOCK-USED)
                  (UD-SOURCE-OPERAND-IS-A-REGISTER))))
     (INST "MOVZX" (OP :OP #xFB6)
@@ -10385,7 +10394,7 @@
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "BSF" (OP :OP #xFBC :PFX :NO-PREFIX)
           (ARG :OP1 '(G V) :OP2 '(E V))
-          '(X86-BSF-OP/EN-RM)
+          '(X86-BSF)
           '((:UD (UD-LOCK-USED))))
     (INST "TZCNT" (OP :OP #xFBC :PFX :F3)
           (ARG :OP1 '(G V) :OP2 '(E V))
@@ -10397,7 +10406,7 @@
           '((:UD (UD-LOCK-USED))))
     (INST "LZCNT" (OP :OP #xFBD :PFX :F3)
           (ARG :OP1 '(G V) :OP2 '(E V))
-          'NIL
+          '(X86-LZCNT)
           '((:UD (UD-LOCK-USED))))
     (INST "MOVSX" (OP :OP #xFBE)
           (ARG :OP1 '(G V) :OP2 '(E B))
@@ -12309,7 +12318,7 @@
                :OP2 '(H X)
                :OP3 '(W X))
           '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+            (operation . #.*OP-OR*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VPOR"
           (OP :OP #xFEB
@@ -12319,7 +12328,7 @@
                :OP2 '(H X)
                :OP3 '(W X))
           '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+            (operation . #.*OP-OR*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPORD"
           (OP :OP #xFEB
@@ -19938,7 +19947,7 @@
     (INST "CRC32" (OP :OP #xF38F0 :PFX :F2
                       :FEAT '(:SSE4.2))
           (ARG :OP1 '(G D) :OP2 '(E B))
-          'NIL
+          '(X86-CRC32)
           '((:UD (UD-LOCK-USED))))
     (INST "MOVBE" (OP :OP #xF38F1 :PFX :NO-PREFIX
                       :FEAT '(:MOVBE))
@@ -19959,7 +19968,7 @@
     (INST "CRC32" (OP :OP #xF38F1 :PFX :F2
                       :FEAT '(:SSE4.2))
           (ARG :OP1 '(G D) :OP2 '(E Y))
-          'NIL
+          '(X86-CRC32)
           '((:UD (UD-LOCK-USED))))
     (INST "ANDN"
           (OP :OP #xF38F2

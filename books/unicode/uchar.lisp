@@ -453,7 +453,15 @@
   (implies (ustring? x)
            (ustring? (cdr x))))
 
+(defthm nat-listp-when-ustring?
+  (implies (ustring? x)
+           (nat-listp x))
+  :rule-classes ((:forward-chaining)))
 
+(defthm ustring?-of-append
+  (equal (ustring? (append x y))
+         (and (ustring? (true-list-fix x))
+              (ustring? y))))
 
 
 ; One problem with supporting Unicode in ACL2 is that fms and so forth are all

@@ -1,6 +1,6 @@
 ; Rules about the empty evaluator (which we use a lot in this dir)
 ;
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,7 @@
 (include-book "free-vars-in-term")
 (include-book "no-nils-in-termp")
 (include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "helpers"))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -89,6 +90,8 @@
 
 (theory-invariant (incompatible (:rewrite empty-eval-list-of-map-lookup-equal-of-pairlis$)
                                 (:rewrite map-lookup-equal-of-pairlis$-of-empty-eval-list)))
+
+(local (make-flag free-vars-in-term))
 
 (defthm-flag-free-vars-in-term
   ;; If the alists agree on some set of keys that includes all the free vars in the term,

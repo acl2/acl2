@@ -93,8 +93,8 @@ public:
 
 class VarDec : public SymDec {
 public:
-  VarDec(Location loc, const char *n, Type *t, Expression *i = nullptr);
-  VarDec(NodesId id, Location loc, const char *n, Type *t,
+  VarDec(Location loc, const char *n, const Type *t, Expression *i = nullptr);
+  VarDec(NodesId id, Location loc, const char *n, const Type *t,
          Expression *i = nullptr);
   void displaySimple(std::ostream &os) override;
   Sexpression *ACL2Expr() override;

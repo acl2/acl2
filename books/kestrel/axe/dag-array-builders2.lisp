@@ -699,9 +699,9 @@
                               (<= slack-amount *max-1d-array-length*)
                               (symbolp dag-array-name)
                               (symbolp dag-parent-array-name))))
-  (mv (make-empty-array dag-array-name slack-amount)
+  (mv (new-array1 dag-array-name slack-amount)
       0
-      (make-empty-array dag-parent-array-name slack-amount)
+      (new-array1 dag-parent-array-name slack-amount)
       nil ; empty-dag-constant-alist ; todo: name that notion
       (empty-dag-variable-alist)))
 

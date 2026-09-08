@@ -32,8 +32,21 @@
                                    standardp
                                    type
                                    typep
-                                   unread-char))
-              '(any
+                                   unread-char
+                                   value))
+              '(3p
+                3fix
+                3=
+                3<
+                3<=
+                3join
+                3not
+                3and
+                3or
+                3xor
+                3implies
+                3iff
+                any
                 assert!-stobj
                 bool
                 bool-fix
@@ -63,6 +76,7 @@
                 nat
                 nat-list
                 nat-list-fix
+                nat-option
                 nat-optionp
                 nat-option-fix
                 nat-list-measure
@@ -70,6 +84,8 @@
                 packn-pos
                 pos
                 pos-fix
+                pos-option
+                pos-optionp
                 pseudo-event-formp
                 pseudo-event-form-listp
                 reterr

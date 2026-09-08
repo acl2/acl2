@@ -1,7 +1,7 @@
 ; Theorems about bvsx
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -228,7 +228,7 @@
                             unsigned-byte-p-of-bvchop-one-more
                             getbit-when-slice-is-known-to-be-all-ones
                             slice-low-cases)
-                           ( ;GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT
+                           (;GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT
                             ;;EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT
                             ;;BVCAT-EQUAL-REWRITE-ALT
                             ;;BVCAT-EQUAL-REWRITE

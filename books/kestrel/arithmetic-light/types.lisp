@@ -1,6 +1,6 @@
 ; A lightweight book about the various numeric types
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; These establish acl2-numberp:
+
+(defthmd acl2-numberp-when-posp
+  (implies (posp x)
+           (acl2-numberp x)))
 
 (defthmd acl2-numberp-when-natp
   (implies (natp x)
@@ -34,6 +38,10 @@
 
 ;;; These establish rationalp:
 
+(defthmd rationalp-when-posp
+  (implies (posp x)
+           (rationalp x)))
+
 (defthmd rationalp-when-natp
   (implies (natp x)
            (rationalp x)))
@@ -45,6 +53,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; These establish integerp:
+
+(defthmd integerp-when-posp
+  (implies (posp x)
+           (integerp x)))
 
 (defthmd integerp-when-natp
   (implies (natp x)
@@ -67,6 +79,11 @@
 ;;                                 (:definition natp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; for books we want to certify on acl2(r)
+(defthmd real/rationalp-when-posp
+  (implies (posp x)
+           (real/rationalp x)))
 
 ;; for books we want to certify on acl2(r)
 (defthmd real/rationalp-when-natp

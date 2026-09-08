@@ -39,7 +39,59 @@
 ; about general concepts which the ordinary ACL2 user may have written
 ; other, conflicting theorems about.
 
-(include-book "std/util/top" :dir :system)
+; The following inclusion of std/util/top.lisp would cause
+; hard-to-debug proof failures in warnings.lisp,
+; after std/util/top.lisp was extended to include the new definductive.lisp.
+; Most likely, this book does not need to include all of Std/util,
+; but for now we simply include all the books in std/util/top.lisp
+; except for definductive-doc.lisp and definductive.lisp.
+; (include-book "std/util/top" :dir :system)
+(include-book "std/util/add-io-pairs" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
+(include-book "std/util/defaggrify-defrec" :dir :system)
+(include-book "std/util/defalist" :dir :system)
+(include-book "std/util/defarbrec" :dir :system)
+(include-book "std/util/defarbrec-doc" :dir :system)
+(include-book "std/util/defconstrained-recognizer" :dir :system)
+(include-book "std/util/defconsts" :dir :system)
+(include-book "std/util/defenum" :dir :system)
+(include-book "std/util/deffixer" :dir :system)
+(include-book "std/util/defmacro-plus" :dir :system)
+(include-book "std/util/defmacro-plus-doc" :dir :system)
+(include-book "std/util/defirrelevant" :dir :system)
+(include-book "std/util/deflist" :dir :system)
+(include-book "std/util/defmapappend" :dir :system)
+(include-book "std/util/defmvtypes" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
+(include-book "std/util/define" :dir :system)
+(include-book "std/util/defines" :dir :system)
+(include-book "std/util/define-sk" :dir :system)
+(include-book "std/util/defrule" :dir :system)
+(include-book "std/util/defredundant" :dir :system)
+(include-book "std/util/defsum" :dir :system)
+(include-book "std/util/defval" :dir :system)
+(include-book "std/util/def-bound-theorems" :dir :system)
+(include-book "std/util/defthm-commutative" :dir :system)
+(include-book "std/util/tuple" :dir :system)
+(include-book "std/util/error-value-tuples" :dir :system)
+(include-book "std/util/defund-sk" :dir :system)
+(include-book "std/util/defund-sk-doc" :dir :system)
+(include-book "std/util/deftutorial" :dir :system)
+(include-book "std/util/deftutorial-doc" :dir :system)
+(include-book "std/util/defmax-nat" :dir :system)
+(include-book "std/util/defmax-nat-doc" :dir :system)
+(include-book "std/util/defmin-int" :dir :system)
+(include-book "std/util/defmin-int-doc" :dir :system)
+(include-book "std/util/defmapping" :dir :system)
+(include-book "std/util/defmapping-doc" :dir :system)
+(include-book "std/util/definj" :dir :system)
+(include-book "std/util/definj-doc" :dir :system)
+(include-book "std/util/defsurj" :dir :system)
+(include-book "std/util/defsurj-doc" :dir :system)
+(include-book "std/util/defiso" :dir :system)
+(include-book "std/util/defiso-doc" :dir :system)
+; End of inclusions from std/util/top.lisp except definductive*.lisp.
+
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/lists/list-defuns" :dir :system)
 (include-book "centaur/misc/alist-equiv" :dir :system)

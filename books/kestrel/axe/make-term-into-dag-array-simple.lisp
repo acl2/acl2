@@ -137,9 +137,9 @@
   ;; todo: call empty-dag-array
   (merge-terms-into-dag-array-simple terms
                                      nil ;initial var-replacement-alist
-                                     (make-empty-array dag-array-name 1000) ;fixme why 1000?
+                                     (new-array1 dag-array-name 1000) ;fixme why 1000?
                                      0 ;initial dag-len
-                                     (make-empty-array dag-parent-array-name 1000)
+                                     (new-array1 dag-parent-array-name 1000)
                                      nil ;empty dag-constant-alist
                                      (empty-dag-variable-alist)
                                      dag-array-name dag-parent-array-name

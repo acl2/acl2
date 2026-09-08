@@ -1644,11 +1644,11 @@
 
   (declare (xargs :guard
                   (and (iprint-alistp1 iprint-alist)
-                       (consp iprint-alist)
                        (iprint-falp (f-get-global 'iprint-fal state))
                        (array1p 'iprint-ar (f-get-global 'iprint-ar state))
                        (posp last-index)
-                       (equal last-index (caar iprint-alist))
+                       (or (null iprint-alist)
+                           (eql last-index (caar iprint-alist)))
                        (iprint-array-p (f-get-global 'iprint-ar state)
                                        last-index)
                        (natp (f-get-global 'iprint-hard-bound state))
@@ -5488,7 +5488,7 @@
    #.*fixnat-type*
    (cond
     ((not (character-alistp alist))
-     (mv (prog2$ (er hard! 'fmt0
+     (mv (prog2$ (er hard! 'fmt1
                      "The second argument of any of the FMT family of ~
                       functions must satisfy ~x0, but ~x1 does not."
                      'character-alistp
@@ -5875,14 +5875,14 @@
                                 i x s)))))
                           (#\_
                            (cond
-                            ((and (natp c2)
-                                  (<= c2
+                            ((and (natp val2)
+                                  (<= val2
                                       (floor (fixnum-bound) 2)))
                              (fmx-cw-msg-1 s alist i+3 maximum clk-1))
                             (t
                              (illegal-fmt-msg
                               bad-tilde-_-arg
-                              i c2 (floor (fixnum-bound) 2) s))))
+                              i val2 (floor (fixnum-bound) 2) s))))
                           ((#\Newline #\| #\% #\~ #\-)
                            (fmx-cw-msg-1 s alist i+2 maximum clk-1))
                           (otherwise
@@ -7989,8 +7989,8 @@
                               (member-eq key1
                                          '(:recognizer
                                            :length :resize :accessor :updater
-                                           :creator :boundp :accessor? :remove
-                                           :count :clear :init))
+                                           :creator :boundp :keys :accessor?
+                                           :remove :count :clear :init))
                               (symbolp key2)
                               (doublet-listp renaming-alist))))
   (let* ((default-fnname
@@ -8027,6 +8027,10 @@
               (and (or (eq key2 :hash-table)
                        (eq key2 :stobj-table))
                    (packn-pos (list root "-BOUNDP") root)))
+             (:keys
+              (and (or (eq key2 :hash-table)
+                       (eq key2 :stobj-table))
+                   (packn-pos (list root "-KEYS") root)))
              (:accessor?
               (and (eq key2 :hash-table)
                    (packn-pos (list root "-GET?") root)))
@@ -8153,7 +8157,7 @@
                                       (symbolp size0)
                                       (symbol-value size0)))
                         #+acl2-loop-only
-                        (er hard 'fix-stobj-hash-table-type
+                        (er hard 'fix-stobj-table-type
                             "Implementation error: Attempted to get logical ~
                              result for fix-stobj-table-type when the world ~
                              is empty.")))))
@@ -8192,6 +8196,7 @@
            (accessor-name (defstobj-fnname field :accessor key2 renaming))
            (updater-name (defstobj-fnname field :updater key2 renaming))
            (boundp-name (defstobj-fnname field :boundp key2 renaming))
+           (keys-name (defstobj-fnname field :keys key2 renaming))
            (accessor?-name (defstobj-fnname field :accessor? key2
                              renaming))
            (remove-name (defstobj-fnname field :remove key2 renaming))
@@ -8221,6 +8226,7 @@
                   :element-type element-type
                   :other
                   (list boundp-name
+                        keys-name
                         accessor?-name
                         remove-name
                         count-name
@@ -8677,6 +8683,16 @@
                        ar)
                   0)))))
 
+#-acl2-loop-only
+(defun hash-table-sorted-keys (ht)
+  (declare (type hash-table ht))
+  (let ((keys nil))
+    (maphash (lambda (key val)
+               (declare (ignore val))
+               (push key keys))
+             ht)
+    (merge-sort-lexorder keys)))
+
 (defun defstobj-field-fns-raw-defs (var flush-var inline n field-templates)
 
 ; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
@@ -8760,11 +8776,12 @@
                            field-template
                            :other))
             (boundp-name (nth 0 other))
-            (accessor?-name (nth 1 other))
-            (remove-name (nth 2 other))
-            (count-name (nth 3 other))
-            (clear-name (nth 4 other))
-            (init-name (nth 5 other)))
+            (keys-name (nth 1 other))
+            (accessor?-name (nth 2 other))
+            (remove-name (nth 3 other))
+            (count-name (nth 4 other))
+            (clear-name (nth 5 other))
+            (init-name (nth 6 other)))
        (cond
         ((or hashp stobj-tablep)
          (let ((key (if stobj-tablep
@@ -8824,6 +8841,10 @@
                                    (gethash ,key (the hash-table ,fld))
                                    (declare (ignore val))
                                    (if boundp t nil)))
+             (,keys-name
+              (,var)
+              ,@(and inline (list *stobj-inline-declare*))
+              (hash-table-sorted-keys (the hash-table ,fld)))
              ,@(and hashp ; skip this for a stobj-table
 ; Keep the following in sync with the accessor-name case above.
                     `((,accessor?-name
@@ -10215,7 +10236,7 @@
                          *print-readably*)
          t)
         (otherwise
-         (hard-error 'print-control-p
+         (hard-error 'print-control-alistp
                      "The symbol ~x0 is not a legal print control variable."
                      (list (cons #\0 key))))))
     (print-control-alistp (cdr alist)))

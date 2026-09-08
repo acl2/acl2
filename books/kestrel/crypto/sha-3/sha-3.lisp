@@ -48,16 +48,13 @@
 (local (include-book "kestrel/lists-light/group-and-ungroup" :dir :system))
 (local (include-book "support"))
 
-;(local (in-theory (disable acl2::group-becomes-group2)))
-
-(local (in-theory (disable true-listp ;prevent inductions
-                           bitp)))
-
-(local (in-theory (disable acl2::mod-sum-cases))) ;avoid case splits
-
-(local (in-theory (disable acl2::len-of-group)))
-
-(local (in-theory (enable acl2::memberp-of-cons-when-constant)))
+(local (in-theory (e/d (acl2::memberp-of-cons-when-constant)
+                       (true-listp ;prevent inductions
+                        bitp
+                        acl2::mod-sum-cases ;avoid case splits
+                        acl2::len-of-group
+                        ;; acl2::group-becomes-group2
+                        ))))
 
 (local
   (defthm bitp-when-unsigned-byte-p-1

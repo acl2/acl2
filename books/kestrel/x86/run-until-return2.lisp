@@ -1,7 +1,7 @@
 ; A variant scheme for handling "run-until-return"
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,7 +15,7 @@
 ;; malware, which increments the stack pointer by 8 instead of 4 as expected
 ;; for 32-bit):
 
-;; TODO: Deprecate (use newer versions in run-until-return3.lisp and run-until-return4.lisp).
+;; TODO: Deprecate (use newer versions in run-until-return32.lisp and run-until-return64.lisp).
 
 ;TODO: Use x86isa package?
 

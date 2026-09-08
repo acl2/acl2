@@ -639,7 +639,7 @@
          (bad
           (mv `(er soft 'deft
                    "It is illegal to supply both a :PROOF hint and any other ~
-                    proof-time advice.  You supplied ~&1."
+                    proof-time advice.  You supplied ~&0."
                    ',bad)
               nil nil))
          (t (translate-proof name term

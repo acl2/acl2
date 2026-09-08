@@ -1217,6 +1217,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define print-eprefix ((eprefix eprefixp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an encoding prefix."
+  (eprefix-case
+   eprefix
+   :locase-u8 (print-astring "u8" pstate)
+   :locase-u (print-astring "u" pstate)
+   :upcase-u (print-astring "U" pstate)
+   :upcase-l (print-astring "L" pstate))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-dialect print-eprefix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-eprefix-option ((eprefix? eprefix-optionp) (pstate pristatep))
+  :returns (new-pstate pristatep)
+  :short "Print an optional encoding prefix."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no prefix, we print nothing."))
+  (eprefix-option-case
+   eprefix?
+   :some (print-eprefix eprefix?.val pstate)
+   :none (pristate-fix pstate))
+  :hooks (:fix)
+
+  ///
+
+  (defret-same-dialect print-eprefix-option))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-c-char ((cchar c-char-p) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a character or escape sequence usable in character constants."
@@ -1272,41 +1308,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-cprefix ((cprefix cprefixp) (pstate pristatep))
-  :returns (new-pstate pristatep)
-  :short "Print a character constant prefix."
-  (cprefix-case
-   cprefix
-   :upcase-l (print-astring "L" pstate)
-   :locase-u (print-astring "u" pstate)
-   :upcase-u (print-astring "U" pstate))
-  :hooks (:fix)
-
-  ///
-
-  (defret-same-dialect print-cprefix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define print-cprefix-option ((cprefix? cprefix-optionp) (pstate pristatep))
-  :returns (new-pstate pristatep)
-  :short "Print an optional character constant prefix."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If there is no prefix, we print nothing."))
-  (cprefix-option-case
-   cprefix?
-   :some (print-cprefix cprefix?.val pstate)
-   :none (pristate-fix pstate))
-  :hooks (:fix)
-
-  ///
-
-  (defret-same-dialect print-cprefix-option))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define print-cconst ((cconst cconstp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a character constant."
@@ -1315,7 +1316,7 @@
    (xdoc::p
     "We ensure that there is at least one character or escape sequence."))
   (b* (((cconst cconst) cconst)
-       (pstate (print-cprefix-option cconst.prefix? pstate))
+       (pstate (print-eprefix-option cconst.prefix? pstate))
        (pstate (print-astring "'" pstate))
        ((unless cconst.cchars)
         (raise "Misusage error: ~
@@ -1402,42 +1403,6 @@
   ///
 
   (defret-rec-same-dialect print-s-char-list))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define print-eprefix ((eprefix eprefixp) (pstate pristatep))
-  :returns (new-pstate pristatep)
-  :short "Print an encoding prefix."
-  (eprefix-case
-   eprefix
-   :locase-u8 (print-astring "u8" pstate)
-   :locase-u (print-astring "u" pstate)
-   :upcase-u (print-astring "U" pstate)
-   :upcase-l (print-astring "L" pstate))
-  :hooks (:fix)
-
-  ///
-
-  (defret-same-dialect print-eprefix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define print-eprefix-option ((eprefix? eprefix-optionp) (pstate pristatep))
-  :returns (new-pstate pristatep)
-  :short "Print an optional encoding prefix."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If there is no prefix, we print nothing."))
-  (eprefix-option-case
-   eprefix?
-   :some (print-eprefix eprefix?.val pstate)
-   :none (pristate-fix pstate))
-  :hooks (:fix)
-
-  ///
-
-  (defret-same-dialect print-eprefix-option))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2948,7 +2913,7 @@
        pstate)
      :array-static1
      (b* ((pstate (print-dirdeclor dirdeclor.declor pstate))
-          (pstate (print-astring "static " pstate))
+          (pstate (print-astring "[static " pstate))
           (pstate (if dirdeclor.qualspecs
                       (b* ((pstate (print-typequal/attribspec-list
                                     dirdeclor.qualspecs
@@ -3090,7 +3055,7 @@
                        (dirabsdeclor-option-some->val dirabsdeclor.declor?)
                        pstate)
                     pstate))
-          (pstate (print-astring "static " pstate))
+          (pstate (print-astring "[static " pstate))
           (pstate (if dirabsdeclor.qualspecs
                       (b* ((pstate (print-typequal/attribspec-list
                                     dirabsdeclor.qualspecs
@@ -4524,10 +4489,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define print-line-comment ((content nat-listp) (pstate pristatep))
+(define print-line-comment ((content unichar-listp) (pstate pristatep))
   :returns (new-pstate pristatep)
   :short "Print a line comment."
-  (b* ((content (nat-list-fix content)))
+  (b* ((content (unichar-list-fix content)))
     (if (grammar-character-listp content)
         (b* ((pstate (print-astring "// " pstate))
              (pstate (print-chars content pstate))
@@ -4536,6 +4501,7 @@
       (prog2$
        (raise "Internal error: non-grammatical line comment ~x0." content)
        (pristate-fix pstate))))
+  :guard-hints (("Goal" :in-theory (enable nat-listp-when-unichar-listp)))
   :hooks (:fix)
 
   ///
@@ -5010,5 +4976,5 @@
   ///
 
   (defret keys-of-print-fileset
-    (equal (omap::keys (fileset->unwrap fileset))
+    (equal (omap::keys (fileset->files fileset))
            (omap::keys (trans-ensemble->units tunits)))))

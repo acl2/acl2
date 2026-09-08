@@ -111,14 +111,13 @@
   :enable tree-union)
 
 (defrule tree-in-of-tree-union
-  (implies (and (bstp x)
-                (bstp y))
-           (equal (tree-in a (tree-union x y))
-                  (or (tree-in a x)
-                      (tree-in a y))))
-  :induct t
+  (equal (tree-in a (tree-union x y))
+         (or (tree-in a x)
+             (tree-in a y)))
+  :induct (tree-union x y)
   :enable (tree-union
-           data::<<-rules))
+           tree-in-when-not-tree-in-of-tree-split.right-and-left
+           acl2::equal-of-booleans-cheap))
 
 ;;;;;;;;;;;;;;;;;;;;
 

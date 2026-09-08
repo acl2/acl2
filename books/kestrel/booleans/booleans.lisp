@@ -24,7 +24,7 @@
 
 ;;These rules and boolif-when-quotep-arg1 should prevent boolif from ever having a constant in any argument position:
 
-(defthm boolif-when-quotep-arg2
+(defthmd boolif-when-quotep-arg2
   (implies (syntaxp (quotep x))
            (equal (boolif test x y)
                   (if x
@@ -32,7 +32,7 @@
                     (booland (not test) y))))
   :hints (("Goal" :in-theory (enable boolor boolif))))
 
-(defthm boolif-when-quotep-arg3
+(defthmd boolif-when-quotep-arg3
   (implies (syntaxp (quotep y))
            (equal (boolif test x y)
                   (if y
@@ -40,12 +40,12 @@
                     (booland test x))))
   :hints (("Goal" :in-theory (enable booland boolif))))
 
-(defthm boolif-x-x-y-becomes-boolor
+(defthmd boolif-x-x-y-becomes-boolor
   (equal (boolif x x y)
          (boolor x y))
   :hints (("Goal" :in-theory (enable boolor boolif))))
 
-(defthm boolif-x-y-x-becomes-booland
+(defthmd boolif-x-y-x-becomes-booland
   (equal (boolif x y x)
          (booland x y))
   :hints (("Goal" :in-theory (enable booland boolif))))
@@ -129,12 +129,16 @@
          (boolif test x (not y)))
   :hints (("Goal" :in-theory (enable boolif))))
 
-(defthm boolif-of-not-same-arg3
+;rename to mention boolor
+;maybe remove (use the -alt rule first)
+(defthmd boolif-of-not-same-arg3
   (equal (boolif x y (not x))
          (boolor y (not x)))
   :hints (("Goal" :in-theory (enable boolif))))
 
-(defthm boolif-of-not-same-arg2
+;rename to mention booland
+;maybe remove (use the -alt rule first)
+(defthmd boolif-of-not-same-arg2
   (equal (boolif x (not x) y)
          (booland y (not x)))
   :hints (("Goal" :in-theory (enable boolif))))

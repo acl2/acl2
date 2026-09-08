@@ -15,7 +15,6 @@
 (include-book "grammar")
 (include-book "keywords")
 (include-book "punctuators")
-(include-book "character-sets")
 (include-book "abstract-syntax")
 (include-book "abstract-syntax-operations")
 (include-book "decimal-0-to-octal-0")

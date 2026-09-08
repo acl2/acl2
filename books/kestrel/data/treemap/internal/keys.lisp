@@ -276,7 +276,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule heap<-when-heap-<-all-l-and-in-of-tree-key-set
+(defrule heap<-when-heap<-all-l-and-in-of-tree-key-set
   (implies (and (heap<-all-l tree x)
                 (treeset::in key (tree-key-set tree)))
            (heap< key x))
@@ -284,11 +284,11 @@
   :enable (tree-key-set
            heap<-rules))
 
-(defrule heap<-when-in-of-tree-key-set-and-heap-<-all-l
+(defrule heap<-when-in-of-tree-key-set-and-heap<-all-l
   (implies (and (treeset::in key (tree-key-set tree))
                 (heap<-all-l tree x))
            (heap< key x))
-  :by heap<-when-heap-<-all-l-and-in-of-tree-key-set)
+  :by heap<-when-heap<-all-l-and-in-of-tree-key-set)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -431,6 +431,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-key-tree ((tree treep))
+  (declare (xargs :type-prescription :none))
   :returns (key-tree treeset::treep)
   (if (tree-empty-p tree)
       nil
@@ -442,8 +443,6 @@
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-key-tree)))
 
 (defrule tree-key-tree-type-prescription
   (or (consp (tree-key-tree tree))
@@ -482,7 +481,7 @@
   :induct t
   :enable tree-key-tree)
 
-(defrule heap<-all-l-of-tree-key-tree-when-<<-all-r
+(defrule heap<-all-l-of-tree-key-tree-when-heap<-all-l
   (implies (heap<-all-l tree x)
            (treeset::heap<-all-l (tree-key-tree tree) x))
   :induct t
@@ -665,6 +664,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-keys-acl2-numberp ((tree treep))
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (treeset::set-all-acl2-numberp (tree-key-set tree))
        :exec (or (tree-empty-p tree)
@@ -676,8 +676,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t tree-keys-acl2-numberp)))
-
 (defrule tree-keys-acl2-numberp-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)
            (equal (tree-keys-acl2-numberp tree0)
@@ -687,6 +685,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-keys-symbolp ((tree treep))
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (treeset::set-all-symbolp (tree-key-set tree))
        :exec (or (tree-empty-p tree)
@@ -698,8 +697,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t tree-keys-symbolp)))
-
 (defrule tree-keys-symbolp-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)
            (equal (tree-keys-symbolp tree0)
@@ -709,6 +706,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-keys-eqlablep ((tree treep))
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (treeset::set-all-eqlablep (tree-key-set tree))
        :exec (or (tree-empty-p tree)
@@ -719,8 +717,6 @@
   :guard-hints (("Goal" :in-theory (enable tree-keys-eqlablep))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-keys-eqlablep)))
 
 (defrule tree-keys-eqlablep-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)

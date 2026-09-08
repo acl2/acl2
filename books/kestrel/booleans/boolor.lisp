@@ -13,8 +13,10 @@
 
 ;; STATUS: In-progress
 
-(include-book "bool-fix")
+(include-book "bool-fix-def")
+(local (include-book "bool-fix"))
 
+;; Unlike OR, this always returns a boolean
 (defund boolor (x y)
   (declare (xargs :guard t))
   (if x t (if y t nil)))

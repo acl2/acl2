@@ -15,7 +15,7 @@
 (include-book "std/testing/assert" :dir :system)
 (include-book "dag-size-sparse")
 
-(assert-equal (size-array-for-nodes '(0 1 2 3 4 5) 'dag-array (make-into-array 'dag-array '((5 foo 4 3) (4 foo 3 0) (3 foo 0 2) (2 foo 1 0) (1 quote 17) (0 . x))) 6 'size-array)
+(assert-equal (size-array-for-nodes '(0 1 2 3 4 5) 'dag-array (alist-to-array1 'dag-array '((5 foo 4 3) (4 foo 3 0) (3 foo 0 2) (2 foo 1 0) (1 quote 17) (0 . x))) 6 'size-array)
               '((5 . 13)
                 (4 . 7)
                 (3 . 5)

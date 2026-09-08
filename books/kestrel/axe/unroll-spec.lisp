@@ -18,7 +18,7 @@
 (include-book "rewriter")
 (include-book "dag-to-term-with-lets")
 (include-book "dag-size-fast")
-(include-book "jvm/rule-lists-jvm") ;for amazing-rules-spec-and-dag
+(include-book "rule-lists") ; for unroll-spec-rules
 (include-book "rules-in-rule-lists")
 (include-book "utilities") ;; not strictly needed
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)

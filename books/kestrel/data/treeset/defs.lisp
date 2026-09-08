@@ -17,11 +17,11 @@
 (include-book "subset-defs")
 (include-book "insert-defs")
 (include-book "delete-defs")
+(include-book "iter-defs")
 (include-book "generic-typed-defs")
 (include-book "union-defs")
 (include-book "intersect-defs")
 (include-book "diff-defs")
-(include-book "iter-defs")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

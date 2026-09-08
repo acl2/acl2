@@ -19,7 +19,7 @@
 
 ; for ASSERT!-STOBJ
 (make-event (er-progn (add-global-stobj 'ppstate state)
-                      (value '(value-triple nil)))
+                      (acl2::value '(value-triple nil)))
             :check-expansion t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -39,7 +39,7 @@
          (options (make-ppoptions :full-expansion nil
                                   :keep-comments t
                                   :trace-expansion t
-                                  :no-errors/warnings nil))
+                                  :no-warnings nil))
          ((mv erp ppstate)
           (ppstate-for-file ""
                             (if (stringp ,input)
@@ -178,7 +178,17 @@
  :index 1
  :cond (equal ast
               (plexeme-number
-               (pnumber-number-digit (pnumber-digit #\3) #\4))))
+               (pnumber-number-digit (pnumber-digit #\3) nil #\4))))
+
+(test-lex
+ plex-pp-number
+ "3'4"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-digit (pnumber-digit #\3) t #\4)))
+ :dialect (c::make-dialect :std (c::standard-c23)))
 
 (test-lex
  plex-pp-number
@@ -187,7 +197,17 @@
  :index 2
  :cond (equal ast
               (plexeme-number
-               (pnumber-number-digit (pnumber-dot-digit #\3) #\4))))
+               (pnumber-number-digit (pnumber-dot-digit #\3) nil #\4))))
+
+(test-lex
+ plex-pp-number
+ ".3'4"
+ :more-inputs (t #\3 (pos 1 2))
+ :index 2
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-digit (pnumber-dot-digit #\3) t #\4)))
+ :dialect (c::make-dialect :std (c::standard-c23)))
 
 (test-lex
  plex-pp-number
@@ -216,7 +236,7 @@
  :index 1
  :cond (equal ast
               (plexeme-number
-               (pnumber-number-nondigit (pnumber-digit #\3) #\e))))
+               (pnumber-number-nondigit (pnumber-digit #\3) nil #\e))))
 
 (test-lex
  plex-pp-number
@@ -245,7 +265,7 @@
  :index 1
  :cond (equal ast
               (plexeme-number
-               (pnumber-number-nondigit (pnumber-digit #\3) #\E))))
+               (pnumber-number-nondigit (pnumber-digit #\3) nil #\E))))
 
 (test-lex
  plex-pp-number
@@ -274,7 +294,7 @@
  :index 1
  :cond (equal ast
               (plexeme-number
-               (pnumber-number-nondigit (pnumber-digit #\3) #\p))))
+               (pnumber-number-nondigit (pnumber-digit #\3) nil #\p))))
 
 (test-lex
  plex-pp-number
@@ -303,7 +323,7 @@
  :index 1
  :cond (equal ast
               (plexeme-number
-               (pnumber-number-nondigit (pnumber-digit #\3) #\P))))
+               (pnumber-number-nondigit (pnumber-digit #\3) nil #\P))))
 
 (test-lex
  plex-pp-number
@@ -312,7 +332,17 @@
  :index 1
  :cond (equal ast
               (plexeme-number
-               (pnumber-number-nondigit (pnumber-digit #\3) #\a))))
+               (pnumber-number-nondigit (pnumber-digit #\3) nil #\a))))
+
+(test-lex
+ plex-pp-number
+ "3'a"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-nondigit (pnumber-digit #\3) t #\a)))
+ :dialect (c::make-dialect :std (c::standard-c23)))
 
 (test-lex
  plex-pp-number
@@ -321,7 +351,17 @@
  :index 1
  :cond (equal ast
               (plexeme-number
-               (pnumber-number-nondigit (pnumber-digit #\3) #\a))))
+               (pnumber-number-nondigit (pnumber-digit #\3) nil #\a))))
+
+(test-lex
+ plex-pp-number
+ "3'a+"
+ :more-inputs (nil #\3 (pos 1 1))
+ :index 1
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-nondigit (pnumber-digit #\3) t #\a)))
+ :dialect (c::make-dialect :std (c::standard-c23)))
 
 (test-lex
  plex-pp-number
@@ -346,11 +386,32 @@
                    (pnumber-number-nondigit
                     (pnumber-number-digit
                      (pnumber-dot-digit #\3)
-                     #\7)
-                    #\a)
-                   #\b)
+                     nil #\7)
+                    nil #\a)
+                   nil #\b)
                   (sign-minus)))
-                #\x))))
+                nil #\x))))
+
+(test-lex
+ plex-pp-number
+ "37'abP-.x"
+ :more-inputs (t #\3 (pos 1 1))
+ :index 1
+ :cond (equal ast
+              (plexeme-number
+               (pnumber-number-nondigit
+                (pnumber-number-dot
+                 (pnumber-number-upcase-p-sign
+                  (pnumber-number-nondigit
+                   (pnumber-number-nondigit
+                    (pnumber-number-digit
+                     (pnumber-dot-digit #\3)
+                     nil #\7)
+                    t #\a)
+                   nil #\b)
+                  (sign-minus)))
+                nil #\x)))
+ :dialect (c::make-dialect :std (c::standard-c23)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -846,10 +907,10 @@
 (test-lex
  plex-character-constant
  "\\aA'"
- :more-inputs ((cprefix-locase-u) (pos 1 0))
+ :more-inputs ((eprefix-locase-u) (pos 1 0))
  :cond (equal ast
               (plexeme-char
-               (cconst (cprefix-locase-u)
+               (cconst (eprefix-locase-u)
                        (list (c-char-escape (escape-simple (simple-escape-a)))
                              (c-char-char (char-code #\A)))))))
 
@@ -1126,7 +1187,7 @@
  :cond (equal ast (plexeme-number
                    (pnumber-number-digit
                     (pnumber-number-digit
-                     (pnumber-digit #\1) #\2) #\4))))
+                     (pnumber-digit #\1) nil #\2) nil #\4))))
 
 (test-lex-lexeme
  "124e+"
@@ -1134,7 +1195,7 @@
                    (pnumber-number-locase-e-sign
                     (pnumber-number-digit
                      (pnumber-number-digit
-                      (pnumber-digit #\1) #\2) #\4)
+                      (pnumber-digit #\1) nil #\2) nil #\4)
                     (sign-plus)))))
 
 (test-lex-lexeme
@@ -1143,8 +1204,7 @@
                    (pnumber-number-nondigit
                     (pnumber-number-digit
                      (pnumber-number-digit
-                      (pnumber-digit #\1) #\2) #\4)
-                    #\x))))
+                      (pnumber-digit #\1) nil #\2) nil #\4) nil #\x))))
 
 (test-lex-lexeme
  ".5"
@@ -1195,9 +1255,16 @@
 (test-lex-lexeme
  "U'\\n'" ; lexer sees just one \
  :cond (equal ast (plexeme-char
-                   (cconst (cprefix-upcase-u)
+                   (cconst (eprefix-upcase-u)
                            (list (c-char-escape
                                   (escape-simple (simple-escape-n))))))))
+
+(test-lex-lexeme
+ "u8'a'"
+ :cond (equal ast (plexeme-char
+                   (cconst (eprefix-locase-u8)
+                           (list (c-char-char (char-code #\a))))))
+ :dialect (c::make-dialect :std (c::standard-c23)))
 
 ; string literals
 
@@ -1485,6 +1552,11 @@
 (test-lex-lexeme
  ":: "
  :cond (equal ast (plexeme-punctuator ":")))
+
+(test-lex-lexeme
+ ":: "
+ :cond (equal ast (plexeme-punctuator "::"))
+ :dialect (c::make-dialect :std (c::standard-c23)))
 
 (test-lex-lexeme
  "; "

@@ -1,0 +1,50 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains grammar rules for preprocessing directives
+; in the C23 dialects [C23:6.10.1].
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; We define elif groups and control lines for C23.
+
+elif-group = elif-group-c17
+           / "#" %s"elifdef" identifier new-line [ group ]
+           / "#" %s"elifndef" identifier new-line [ group ]
+
+control-line = control-line-c17
+             / "#" %s"embed" pp-tokens new-line
+             / "#" %s"warning" [ pp-tokens ] new-line
+
+; We add the rules for preprocessing parameters.
+
+pp-parameter = pp-parameter-name [ pp-parameter-clause ]
+
+pp-parameter-name = pp-standard-parameter
+                  / pp-prefixed-parameter
+
+pp-standard-parameter = identifier
+
+pp-prefixed-parameter = identifier "::" identifier
+
+pp-parameter-clause = "(" [ pp-balanced-token-sequence ] ")"
+
+pp-balanced-token-sequence = pp-balanced-token
+                           / pp-balanced-token-sequence pp-balanced-token
+
+pp-balanced-token = "(" [ pp-balanced-token-sequence ] ")"
+                  / "[" [ pp-balanced-token-sequence ] "]"
+                  / "{" [ pp-balanced-token-sequence ] "}"
+                  / preprocessing-token ; not parenthesis, bracket, or brace
+
+embed-parameter-sequence = pp-parameter
+                         / embed-parameter-sequence pp-parameter

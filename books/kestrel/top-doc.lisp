@@ -4,7 +4,7 @@
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 ; Author: Eric Smith (eric.smith@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -42,22 +42,28 @@
    (include-book "hdwallet/top")
    (include-book "ethereum/top")
    (include-book "file-io-light/doc")
+   (include-book "filepath/paths")
    (include-book "fty/top")
+   (include-book "futhark/top")
    (include-book "helpers/doc")
    (include-book "htclient/top")
    (include-book "isar/top")
    (include-book "java/top")
    (include-book "jvm/doc")
    (include-book "json/top")
+   (include-book "jsonrpc/top")
    (include-book "lists-light/doc")
    (include-book "number-theory/top")
    (include-book "prime-fields/doc")
+   (include-book "remora/top")
    (include-book "risc-v/top")
+   (include-book "rust/top")
    (include-book "simpl-imp/top")
    (include-book "soft/top")
    (include-book "solidity/top")
    (include-book "strings-light/doc")
    (include-book "syntheto/top")
+   (include-book "terms-light/doc")
    (include-book "typed-lists-light/doc")
    (include-book "utilities/top")
    (include-book "utilities/doc")
@@ -65,6 +71,7 @@
    (include-book "utilities/show-books-doc")
    (include-book "utilities/ubi-doc")
    (include-book "utilities/checkpoints-doc")
+   (include-book "utilities/defstobj-plus-doc")
    (include-book "yul/top")
    (include-book "zcash/top")
 

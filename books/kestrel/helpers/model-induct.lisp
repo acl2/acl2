@@ -21,12 +21,15 @@
 (include-book "kestrel/world-light/defined-functionp" :dir :system)
 (include-book "std/system/measured-subset-plus" :dir :system)
 ;(include-book "kestrel/utilities/rational-printing" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/remove-duplicates-equal" :dir :system))
 
 (verify-termination induction-depth-limit) ; move
 ;; (verify-guards induction-depth-limit) ; todo: needs a guard
+
+(local (acl2::make-flag acl2::find-all-fn-call-subterms))
 
 (acl2::defthm-flag-find-all-fn-call-subterms
   (defthm theorem-for-find-all-fn-call-subterms

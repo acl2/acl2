@@ -1,7 +1,7 @@
 ; Theorems about merge-sort-<
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -213,7 +213,6 @@
            (sortedp-<= (merge-< l1 l2 acc)))
   :hints (("Goal" :in-theory (enable merge-<
                                      sortedp-<=
-                                     SORTEDP-<=
                                      <=-all
                                      revappend-becomes-append-of-reverse-list
                                      ))))
@@ -415,8 +414,7 @@
 
 (defthm all-natp-of-merge-sort-<
   (equal (all-natp (merge-sort-< lst))
-         (all-natp lst))
-  :hints (("Goal" :in-theory (enable))))
+         (all-natp lst)))
 
 (defthm all-<-of-merge-sort-<
   (equal (all-< (merge-sort-< lst) val)

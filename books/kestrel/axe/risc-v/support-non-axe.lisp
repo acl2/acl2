@@ -1,6 +1,6 @@
 ; Top-level support book for non-Axe code proofs
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -87,7 +87,6 @@
                    run-until-return
                    run-until-return-aux-opener
                    run-until-return-aux-base
-                   run-subroutine
                    ;; sp-is-abovep
                    ;; run-until-sp-is-above-opener
                    ;; run-until-sp-is-above-base

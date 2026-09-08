@@ -261,7 +261,7 @@
                            expr)
                 (nat-listp acc))
            (nat-listp (maybe-add-split-candidates expr dag-array-name dag-array dag-len acc)))
-  :hints (("Goal" :cases ((integerp (nth '0 (dargs$inline expr))))
+  :hints (("Goal" :cases ((integerp (nth 0 (dargs$inline expr))))
            :in-theory (e/d (maybe-add-split-candidates
                             car-becomes-nth-of-0
                             bounded-dag-exprp
@@ -277,7 +277,7 @@
                 (all-< acc dag-len))
            (all-< (maybe-add-split-candidates expr dag-array-name dag-array dag-len acc)
                   dag-len))
-  :hints (("Goal" :cases ((integerp (nth '0 (dargs$inline expr))))
+  :hints (("Goal" :cases ((integerp (nth 0 (dargs$inline expr))))
            :in-theory (e/d (maybe-add-split-candidates
                             car-becomes-nth-of-0
                             bounded-dag-exprp
@@ -511,7 +511,7 @@
                                  :in-theory (enable all-rationalp-when-nat-listp
                                                     true-listp-when-nat-listp-rewrite)))))
   (let* ((max-literal-nodenum (maxelem literal-nodenums))
-         (done-array (make-empty-array 'done-array (+ 1 max-literal-nodenum)))
+         (done-array (new-array1 'done-array (+ 1 max-literal-nodenum)))
          ;;won't include any nodes that are calls to not:
          (candidate-nodenums (find-node-to-split-candidates-work-list literal-nodenums dag-array-name dag-array dag-len done-array nil))
          (candidate-nodenums (merge-sort-< candidate-nodenums))

@@ -32,6 +32,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define cardinality ((set setp))
+  (declare (xargs :type-prescription :none))
   :returns (cardinality natp)
   :parents (treeset)
   :short "The number of elements in a @(see treeset)."
@@ -44,8 +45,6 @@
   :guard-hints (("Goal" :in-theory (enable setp))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t cardinality)))
 
 (defrule cardinality-type-prescription
   (natp (cardinality set))

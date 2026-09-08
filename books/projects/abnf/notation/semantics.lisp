@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -187,7 +187,13 @@
     :elt-type tree
     :true-listp t
     :elementp-of-nil nil
-    :pred tree-listp)
+    :pred tree-listp
+
+    ///
+
+    (defruled true-listp-when-tree-listp
+      (implies (tree-listp x)
+               (true-listp x))))
 
   (fty::deflist tree-list-list
     :short "True lists of true lists

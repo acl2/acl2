@@ -105,14 +105,15 @@
            :use ((:instance append-of-take-and-nthcdr-2 (l (take (+ 1 free) x)) (n n))
                  (:instance append-of-take-and-nthcdr-2 (l (take (+ 1 free) y)) (n n))))))
 
-(defun group2-induct (x y n)
-  (if (or (not (posp n))
-          (< (len x) n)
-          (< (len y) n))
-      (list x y n)
-    (group2-induct (nthcdr n x)
-                   (nthcdr n y)
-                   n)))
+(local
+  (defun group2-induct (x y n)
+    (if (or (not (posp n))
+            (< (len x) n)
+            (< (len y) n))
+        (list x y n)
+      (group2-induct (nthcdr n x)
+                     (nthcdr n y)
+                     n))))
 
 (defthm equal-of-group2-and-group2
   (implies (posp n)

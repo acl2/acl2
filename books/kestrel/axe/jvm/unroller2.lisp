@@ -1,7 +1,7 @@
 ; A more compositional version of the unrolling lifter
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -98,7 +98,7 @@
 (skip-proofs
  (defthm run-until-return-from-stack-height-lemma-for-invoke
    (implies (and (<= sh (stack-height s)) ;todo: prevent loops
-                 (member-equal (jvm::op-code (jvm::current-inst (th) s)) *invoke-opcodes*)
+                 (member-equal (jvm::instruction-opcode (jvm::current-inst (th) s)) *invoke-opcodes*)
                  (natp sh)
                  )
             (equal (run-until-return-from-stack-height sh (jvm::step (th) s))
@@ -236,7 +236,7 @@
 ;; TODO: We could actually have this prove the equality...
 (defun make-defun-abstracting-state-components (fn term)
   (declare (xargs :guard (pseudo-termp term)))
-  (b* (( ;; Walk through term identifying state components and binding them to vars
+  (b* ((;; Walk through term identifying state components and binding them to vars
         (mv new-term term-var-alist &)
         (abstract-state-components-in-term term nil 0))
        (state-components (strip-cars term-var-alist))
@@ -393,9 +393,9 @@
                               (jvm::method-indicatorp method-indicator)
                               ;;todo: check array-length-alist
                               (or (eq classes-to-assume-initialized :all)
-                                  (jvm::all-class-namesp classes-to-assume-initialized))
+                                  (jvm::class-name-listp classes-to-assume-initialized))
                               (or (eq classes-to-assume-uninitialized :all)
-                                  (jvm::all-class-namesp classes-to-assume-uninitialized))
+                                  (jvm::class-name-listp classes-to-assume-uninitialized))
                               (booleanp ignore-exceptions)
                               (booleanp ignore-errors)
                               (symbol-listp extra-rules)
@@ -568,7 +568,7 @@
                         :assumptions assumptions
                         :check-inputs nil))
        ((when erp)
-        (er hard? 'unroll-java-code-fn "Error in unrolling.")
+        (er hard? 'unroll-java-code2-fn "Error in unrolling.")
         (mv erp nil state))
        (- (cw "  Done simplifying term.)~%"))
        ;; TODO: Handle a result-dag that is a quotep.
@@ -603,7 +603,7 @@
                       :check-inputs nil)
           (mv (erp-nil) result-dag state)))
        ((when erp) (mv erp nil state))
-       (dag-okp (dag-ok-after-symbolic-execution result-dag assumptions t state))
+       (dag-okp (dag-ok-after-symbolic-executionp result-dag assumptions t state))
        ((when (not dag-okp)) (mv :symbolic-execution-failed nil state))
 
        ;; Result-dag should be over the single variable S0 and should represent
@@ -650,13 +650,15 @@
                                          run-until-return-from-stack-height-base
                                          run-until-return-from-stack-height-opener
                                          )
-                                       ;; These are not legal ACL2 rules:
+                                       ;; These are not legal ACL2 rules (todo: consider adding legal ACL2 replacements):
                                        '(run-until-return-from-stack-height-of-myif-alt-axe
                                          run-until-return-from-stack-height-opener-axe
                                          run-until-return-from-stack-height-base-axe
                                          step-state-with-pc-and-call-stack-height-becomes-step-axe
                                          step-state-with-pc-and-call-stack-height-does-nothing-1-axe
-                                         step-state-with-pc-and-call-stack-height-does-nothing-2-axe))
+                                         step-state-with-pc-and-call-stack-height-does-nothing-2-axe
+                                         not-equal-of-constant-and-bv-term-axe
+                                         not-equal-of-constant-and-bv-term-alt-axe))
                     ;; (e/d (,@state-component-defun-names
                     ;;                           ;; ,@extra-rules
                     ;;                           jvm::step ;todo: it would be nice to use an axe rule set here (should axe rule sets be acl2 rulesets? well, the axe-syntax rules would not work..)
