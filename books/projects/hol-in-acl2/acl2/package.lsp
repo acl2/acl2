@@ -30,6 +30,7 @@
 ; Others from hol.lisp:
     hp-cons hp-list-p hp-nil-p hp-cons-p hp-list-car hp-list-cdr
     hp-comma hp-comma-p hp-hash-car hp-hash-cdr
+    hta ; for applying hypotheses (bind-free '((hta . hta)))
 ; But we deliberately avoid importing t and nil, so that they can be used as
 ; variable names.
     ))
