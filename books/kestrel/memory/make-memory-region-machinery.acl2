@@ -1,4 +1,4 @@
-; cert params for make-memory-region-machinery.lisp
+; Cert flags for make-memory-region-machinery.lisp
 ;
 ; Copyright (C) 2026 Kestrel Institute
 ;

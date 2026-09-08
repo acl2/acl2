@@ -1,4 +1,4 @@
-; Cert params and portcullis commands for top-doc.lisp
+; Portcullis commands and cert flags for top-doc.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2023 Kestrel Institute

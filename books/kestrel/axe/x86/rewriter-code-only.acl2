@@ -1,4 +1,4 @@
-; Cert params for rewriter-x86-code-only.lisp
+; Cert flags for rewriter-x86-code-only.lisp
 ;
 ; Copyright (C) 2024 Kestrel Technology, LLC
 ; Copyright (C) 2025 Kestrel Institute
