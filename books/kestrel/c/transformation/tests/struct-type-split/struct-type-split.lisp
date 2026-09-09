@@ -152,6 +152,39 @@ int main(void) {
                        :struct-tag "point"
                        :right-members ()))
 
+  ;; Moving every member would turn the original definition into an
+  ;; incomplete declaration, leaving the static object p with incomplete
+  ;; type.  The validator accepts this case, but a C compiler rejects it.
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :right-members ("x" "y" "z")
+                       :new-tag "point_right"))
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Unnamed members stay on the left, even when every named member
+;; (including promoted names) is selected for the right.
+
+(acl2::must-succeed*
+  (c$::input-files :files '("unnamed-left.c")
+                   :const *old*)
+
+  (struct-type-split *old* *new-bitfield*
+                     :struct-tag "bitfield"
+                     :right-members ("z"))
+
+  (struct-type-split *old* *new-struct*
+                     :struct-tag "anonymous_struct"
+                     :right-members ("x" "z"))
+
+  (struct-type-split *old* *new-union*
+                     :struct-tag "anonymous_union"
+                     :right-members ("x" "y" "z"))
+
   :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1282,6 +1315,14 @@ int main(void) {
                      :struct-tag "point"
                      :right-members ("next")
                      :new-tag "point_right_only")
+
+  ;; Selecting every name still leaves the directly splittable members
+  ;; on both sides, so the original struct does not become empty.
+  (struct-type-split *old*
+                     *new-all-names*
+                     :struct-tag "point"
+                     :right-members ("x" "z" "next" "indirect" "children")
+                     :new-tag "point_right_all")
 
   :with-output-off nil)
 
