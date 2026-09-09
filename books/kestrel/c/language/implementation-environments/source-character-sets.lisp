@@ -350,19 +350,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define source-charset-ascii ()
+(define source-charset-ascii ((end-of-lines true-list-setp))
+  :guard (and (not (set::emptyp end-of-lines))
+              (source-charset-end-of-lines-wfp end-of-lines
+                                               (source-charset-ascii-loop 0)))
   :returns (charset source-charsetp)
   :short "The source character set defined by
-          ASCII and three kinds of line endings (LF, CR, and CR LF)."
+          ASCII and a specified set of line endings."
   :long
   (xdoc::topstring
    (xdoc::p
     "This consists of the 128 ASCII characters,
-     for which we use the ACL2 characters with the respective codes."))
-  (b* ((chars-with-codes (source-charset-ascii-loop 0))
-       (end-of-lines (set::mergesort (list (list #\Newline)
-                                           (list #\Return)
-                                           (list #\Return #\Newline)))))
+     for which we use the ACL2 characters with the respective codes.
+     ASCII fixes these characters and codes,
+     but leaves a choice of which character sequences represent new lines.")
+   (xdoc::p
+    "The parameter specifies the exact set of new-line representations.
+     The set must be non-empty,
+     and each representation must be a non-empty list of ASCII characters.
+     As explained in @(tsee source-charset-end-of-lines-wfp),
+     one representation may be a prefix of another,
+     with the longest matching sequence denoting a single new line."))
+  (b* ((chars-with-codes (source-charset-ascii-loop 0)))
     (make-source-charset :chars-with-codes chars-with-codes
                          :end-of-lines end-of-lines))
 
@@ -383,8 +392,13 @@
   ///
 
   (defrule source-charset-wfp-of-source-charset-ascii
-    (source-charset-wfp (source-charset-ascii) std)
+    (implies
+     (and (not (set::emptyp (true-list-set-fix end-of-lines)))
+          (source-charset-end-of-lines-wfp end-of-lines
+                                           (source-charset-ascii-loop 0)))
+     (source-charset-wfp (source-charset-ascii end-of-lines) std))
     :enable (source-charset-wfp
+             source-charset-ascii
              source-charset-has-basic-chars-p
              ascii-basic-source-chars
              acl2::char-code-set)))
