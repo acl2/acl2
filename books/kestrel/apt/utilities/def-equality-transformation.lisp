@@ -102,7 +102,7 @@
                                        )
   (declare (xargs :guard (and (symbolp name)
                               (symbolp function-body-transformer)
-                              (member-eq function-body-transformer-kind '(:body :body-and-info))
+                              (member-eq function-body-transformer-kind '(:body :body-and-info :body-and-info-and-state))
                               (symbol-listp transform-specific-required-args)
                               (no-duplicatesp transform-specific-required-args)
                               (keyword-args-and-defaultsp transform-specific-keyword-args-and-defaults)
@@ -136,7 +136,7 @@
             transform-specific-arg-names)))
     `(progn
        ;; Builds a new defun by transforming FN.  Calls FUNCTION-BODY-TRANSFORMER to transform the body.
-       ;; Returns (mv new-defun info).
+       ;; Returns (mv new-defun info state).
        ;; When function-body-transformer is an identity, this generates a function that just copies FN and fixes up recursive calls as appropriate.
        ;; TODO: What if more than simple renaming is needed to fix up recursive calls (e.g., re-ordering params)?
        (defun ,apply-to-defun-name (fn ;the old function to transform (possibly one function in a mutual-recursion)
@@ -238,10 +238,12 @@
               ;; TODO: What about irrelevant declares?  They need to be handled at a higher level, since they may depend on mut-rec partners.
               ;; We should clear them out here and set them if needed in ,event-generator-name
               ;; Here we actually make the new body:
-              ,@(if (eq function-body-transformer-kind :body-and-info)
-                    `(((mv body info) (,function-body-transformer fn body state ,@transform-specific-arg-names)))
-                  `((body (,function-body-transformer fn body state ,@transform-specific-arg-names))
-                    (info nil)))
+              ,@(if (eq function-body-transformer-kind :body-and-info-and-state)
+                    `(((mv body info state) (,function-body-transformer fn body state ,@transform-specific-arg-names)))
+                  (if (eq function-body-transformer-kind :body-and-info)
+                      `(((mv body info) (,function-body-transformer fn body state ,@transform-specific-arg-names)))
+                    `((body (,function-body-transformer fn body state ,@transform-specific-arg-names))
+                      (info nil))))
               ;; (new-fns-arity-alist (pairlis$ (strip-cdrs function-renaming)
               ;;                                (fn-arities (strip-cars function-renaming) wrld)))
               ;; ;; New fns from the renaming may appear as recursive calls, but they are not yet in the world:
@@ -264,12 +266,12 @@
               (defun (if (eq rec :mutual)
                          defun ; irrelevant declares for mutual recursions must be handled at a higher level
                        (fixup-irrelevants-in-defun-form defun state))))
-           (mv defun info)))
+           (mv defun info state)))
 
        ;; Go through all the functions in the clique. For each, if it is in
        ;; TARGET-FNS, we both transform it and update rec calls in it (yes, for
        ;; copy-function the transform part is a no-op).  Otherwise, we just update rec
-       ;; calls.  Returns (mv new-defuns info-alist) where the INFO-ALIST associates old function names with info (alists).
+       ;; calls.  Returns (mv new-defuns info-alist state) where the INFO-ALIST associates old function names with info (alists).
        (defun ,apply-to-defuns-name (fns
                                      ,@transform-specific-arg-names
                                      target-fns ;; the functions to which the transformation is being applied (a no-op for copy-function but not in general)
@@ -291,9 +293,9 @@
                                      (booleanp normalize))
                          :mode :program))
          (if (endp fns)
-             (mv nil nil)
+             (mv nil nil state)
            (b* ((fn (first fns))
-                ((mv new-defun fn-info)
+                ((mv new-defun fn-info state)
                  (if (member-eq fn target-fns)
                      ;; transform the function:
                      (,apply-to-defun-name fn
@@ -310,7 +312,7 @@
                                            (if firstp measure-hints :none) ; attach measure hints to only the first function
                                            normalize
                                            state)))
-                ((mv new-defuns rest-info)
+                ((mv new-defuns rest-info state)
                  (,apply-to-defuns-name (rest fns)
                                         ,@transform-specific-arg-names
                                         target-fns fn-event function-renaming function-disabled
@@ -319,7 +321,8 @@
                                         nil ;no longer the first function
                                         state)))
              (mv (cons new-defun new-defuns)
-                 (acons fn fn-info rest-info)))))
+                 (acons fn fn-info rest-info)
+                 state))))
 
        ;; Generates the event that the transformation will submit.
        ;; Returns (mv erp result state), where result is usually an event but in the erp case might contain other useful info.
@@ -369,7 +372,7 @@
                ;; we are operating on a single, non-recursive function:
                (b* ((new-fn (pick-new-name fn new-name state))
                     (function-renaming (acons fn new-fn nil))
-                    ((mv new-defun ?info)
+                    ((mv new-defun ?info state)
                      (,apply-to-defun-name fn
                                            ,@transform-specific-arg-names
                                            fn-event
@@ -412,7 +415,7 @@
                  ;;we are operating on a single, recursive function:
                  (b* ((new-fn (pick-new-name fn new-name state))
                       (function-renaming (acons fn new-fn nil))
-                      ((mv new-defun ?info)
+                      ((mv new-defun ?info state)
                        (,apply-to-defun-name fn
                                              ,@transform-specific-arg-names
                                              fn-event
@@ -460,7 +463,7 @@
                      (elaborate-mut-rec-option2 measure :measure fns ctx))
                     ;; (new-fns (strip-cdrs function-renaming))
                     ;; (new-fn (lookup-eq-safe fn function-renaming))
-                    ((mv new-defuns ?info-alist)
+                    ((mv new-defuns ?info-alist state)
                      (,apply-to-defuns-name fns
                                             ,@transform-specific-arg-names
                                             fns ;we'll say all the functions in the nest are targets (though for copy-function it doesn't matter)
