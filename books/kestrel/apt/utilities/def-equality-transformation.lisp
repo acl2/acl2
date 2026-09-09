@@ -85,7 +85,7 @@
 ;; Returns an event
 (defun def-equality-transformation-fn (name
                                        function-body-transformer ; args must be exactly: fn, untranslated-body, state, then the transform-specific-required-args, then the transform-specific-keyword-args
-                                       infop
+                                       function-body-transformer-kind
                                        transform-specific-required-args ;arguments to function-body-transformer
                                        transform-specific-keyword-args-and-defaults ;arguments to function-body-transformer
                                        enables ; used for each function (currently)
@@ -102,7 +102,7 @@
                                        )
   (declare (xargs :guard (and (symbolp name)
                               (symbolp function-body-transformer)
-                              (booleanp infop)
+                              (member-eq function-body-transformer-kind '(:body :body-and-info))
                               (symbol-listp transform-specific-required-args)
                               (no-duplicatesp transform-specific-required-args)
                               (keyword-args-and-defaultsp transform-specific-keyword-args-and-defaults)
@@ -238,7 +238,7 @@
               ;; TODO: What about irrelevant declares?  They need to be handled at a higher level, since they may depend on mut-rec partners.
               ;; We should clear them out here and set them if needed in ,event-generator-name
               ;; Here we actually make the new body:
-              ,@(if infop
+              ,@(if (eq function-body-transformer-kind :body-and-info)
                     `(((mv body info) (,function-body-transformer fn body state ,@transform-specific-arg-names)))
                   `((body (,function-body-transformer fn body state ,@transform-specific-arg-names))
                     (info nil)))
@@ -560,12 +560,12 @@
     ))
 
 (defmacro def-equality-transformation (name ; name of the transformation to create
-                                       function-body-transformer ; args should be: function name, untranslated body, state, and then the transform-specific-args.  should return either the new-defun or (mv new-defun info) according to infop
+                                       function-body-transformer ; args should be: function name, untranslated body, state, and then the transform-specific-args.  should return either the new-defun or (mv new-defun info) according to function-body-transformer-kind
                                        transform-specific-required-args
                                        transform-specific-keyword-args-and-defaults ; a list of doublets containing arg names and quoted default values
                                        &key
                                        ;; All of these are baked into the generated transformation, not passed into each call of the transformation:
-                                       (infop 'nil) ; whether the function body transformer returns additional info, which then is (currently) used to create more enables for the proofs.
+                                       (function-body-transformer-kind ':body) ; whether the function body transformer returns additional info, which then is (currently) used to create more enables for the proofs.
                                        (enables 'nil) ; enables to use in all equivalence proofs, a form to be spliced into the generated code, can mention FN and state
                                        (measure-enables 'nil) ; for when :measure-hints is :auto
                                        (guard-enables 'nil) ; for when :guard-hints is :auto
@@ -579,7 +579,7 @@
   `(make-event (def-equality-transformation-fn
                  ',name
                  ',function-body-transformer
-                 ',infop
+                 ',function-body-transformer-kind
                  ',transform-specific-required-args
                  ',transform-specific-keyword-args-and-defaults
                  ',enables

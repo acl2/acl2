@@ -114,7 +114,7 @@
   ((untranslate 't)
    (rule-names 'nil)
    (monitor 'nil))
-  :infop t ; because we return the rule-names as extra enables for the proof
+  :function-body-transformer-kind :body-and-info ; because we return the rule-names as extra enables for the proof
   :enables (simplify-conjunctions-enables fn rule-names (w state)) ; form to compute the enables for the 'becomes theorem' ; TODO: Allow the function-body-transformer to return pre-events and hints?
   :short "Simplify conjunctions in a function using the Axe Rewriter."
   ;; todo: put this sort of thing in automatically?:
