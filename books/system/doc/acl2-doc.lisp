@@ -109895,7 +109895,7 @@ it."
  <p>Improved error messages for ill-formed first and second arguments of @(tsee
  defund), @(tsee defun-nx), and @(tsee defund-nx).  The case of @('defund-nx')
  was reported by Claude Code as showing no error message at all, for example
- when evaluting the form, @('(defund-nx 42 (x) x)').  Thanks to Eric Smith for
+ when evaluating the form, @('(defund-nx 42 (x) x)').  Thanks to Eric Smith for
  bringing these to our attention.</p>
 
  <p>Improved the @(see guard), as well as the guard violation message, for
@@ -110109,7 +110109,7 @@ it."
  as evaluating @('(set-debugger-enable :never)') &mdash; in particular, @(tsee
  break$) does not enter the Lisp debugger &mdash; except that in addition, you
  cannot exit the ACL2 loop.  This effectively disables @(':q') as a means for
- going into raw Lisp (and also @('(value :q)'), etc.; see @(see q).</li>
+ going into raw Lisp (and also @('(value :q)'), etc.; see @(see q)).</li>
 
  <li>So to avoid the possibility of interaction with raw Lisp for ACL2 built on
  CCL or SBCL, provided trust tags are avoided (see @(see defttag)), you can do
@@ -110123,7 +110123,7 @@ it."
  #+sbcl (setq sb-ext:*invoke-debugger-hook* 'our-abort)
  #+sbcl (lp)
 
- ; Disable entering the debugger and disable existing the ACL2 loop:
+ ; Disable entering the debugger and disable exiting the ACL2 loop:
  (set-debugger-enable :never!)
  (push-untouchable set-debugger-enable-fn t)
  (push-untouchable debugger-enable nil)
