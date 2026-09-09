@@ -647,6 +647,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define stsp-exec-strct-thm ((onlr (member-eq onlr '(old newl newr)))
+                             (name identp))
+  :returns (mv (erp maybe-msgp)
+               (event pseudo-event-formp))
+  :short "Generate the theorem saying
+          what the execution of a struct object results in."
+  (b* (((reterr) '(_))
+       (thm-name (packn-pos (list 'exec- onlr '-struct) 'struct-value-))
+       ((erp cname) (ldm-ident name) :iferr "")
+       (compst (if (eq onlr 'old) 'old-compst 'new-compst)))
+    (retok
+     `(defruled ,thm-name
+        (implies (and (compustate-equivp old-compst new-compst)
+                      (equal expr (c::expr-ident ',cname))
+                      (not (zp limit)))
+                 (equal (c::exec-expr expr ,compst old-fenv limit)
+                        (mv (c::expr-value
+                             (c::read-object
+                              (c::objdesign-of-var ',cname ,compst)
+                              ,compst)
+                             (c::objdesign-of-var ',cname ,compst))
+                            (c::compustate-fix ,compst))))
+        :enable
+        (c::exec-expr
+         c::exec-ident
+         compustate-equivp
+         c::objdesign-of-var-when-compustate-has-static-var-with-type-p)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define stsp-struct-type-declon ((old-declon declonp)
                                  (new-declon declonp)
                                  (new-declon2 declonp)
@@ -768,9 +798,15 @@
         (stsp-static-equiv old-name newl-name newr-name))
        ((erp compustate-equiv-pred)
         (stsp-compustate-equiv old-name newl-name newr-name
-                               old-tag newl-tag newr-tag)))
+                               old-tag newl-tag newr-tag))
+       ((erp exec-old-struct) (stsp-exec-strct-thm 'old old-name))
+       ((erp exec-newl-struct) (stsp-exec-strct-thm 'newl newl-name))
+       ((erp exec-newr-struct) (stsp-exec-strct-thm 'newr newr-name)))
     (retok (list static-equiv-pred
-                 compustate-equiv-pred))))
+                 compustate-equiv-pred
+                 exec-old-struct
+                 exec-newl-struct
+                 exec-newr-struct))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
