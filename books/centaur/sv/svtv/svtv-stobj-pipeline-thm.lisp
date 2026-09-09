@@ -108,7 +108,7 @@
 ;;   (b* ((fsm (my-cycle))
 ;;        (rename-fsm (make-svtv-fsm :fsm fsm
 ;;                                   :namemap (my-namemap)))
-;;        (renamed-fsm (svtv-fsm->renamed-fsm rename-fsm))       
+;;        (renamed-fsm (svtv-fsm->renamed-fsm rename-fsm))
 ;;        ((pipeline-setup pipe) (my-pipeline-setup))
 ;;        (outvars (svtv-probealist-outvars pipe.probes))
 ;;        (run (fsm-run
@@ -132,7 +132,7 @@
 ;;                                        env)
 ;;                                      svtv-data state)
 ;;            :in-theory (enable svtv-pipeline-correct))))
-       
+
 
 
 
@@ -409,6 +409,7 @@
        ((when (or namemap-term-err
                   (not (equal namemap-val (svtv-data->namemap svtv-data)))))
         (mv (msg "The namemap term given, ~x0, ~@1"
+                 namemap-term
                  (if namemap-term-err
                      "failed to evaluate."
                    "does not equal the namemap currently stored in the given svtv-data stobj."))
@@ -418,6 +419,7 @@
        ((when (or pipeline-setup-term-err
                   (not (equal pipeline-setup-val (svtv-data->pipeline-setup svtv-data)))))
         (mv (msg "The pipeline-setup term given, ~x0, ~@1"
+                 pipeline-setup-term
                  (if pipeline-setup-term-err
                      "failed to evaluate."
                    "does not equal the pipeline-setup currently stored in the given svtv-data stobj."))
@@ -427,6 +429,7 @@
        ((when (or pipeline-term-err
                   (not (equal pipeline-val (svtv-data->pipeline svtv-data)))))
         (mv (msg "The pipeline term given, ~x0, ~@1"
+                 pipeline-term
                  (if pipeline-term-err
                      "failed to evaluate."
                    "does not equal the pipeline currently stored in the given svtv-data stobj."))
@@ -507,7 +510,7 @@
                                ;;   (results . ,(svtv-data->pipeline svtv-data)))
                                a))
              (svtvpipe-ev (disjoin clause) a))
-    :hints (("goal" :do-not-induct t 
+    :hints (("goal" :do-not-induct t
              :in-theory (e/d (pipeline-okp-hint-subst)
                              (nth))
              ;; :use ((:instance svtvpipe-ev-term-replace-correct
@@ -736,7 +739,7 @@ event. (The cycle function doesn't need to be created if a previous
                                ;;   (results . ,(svtv-data->cycle svtv-data)))
                                a))
              (svtvpipe-ev (disjoin clause) a))
-    :hints (("goal" :do-not-induct t 
+    :hints (("goal" :do-not-induct t
              :in-theory (e/d (cycle-okp-hint-subst)
                              (nth))
              ;; :use ((:instance svtvpipe-ev-term-replace-correct

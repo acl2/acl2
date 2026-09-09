@@ -192,7 +192,7 @@ define-vls-html).</p>"
         (raise "Arguments to ~x0 do not include data." name))
        (reserved-names (intersection-equal '("BASE" "MODEL") (str::symbol-list-names args)))
        ((when reserved-names)
-        (raise "Arguments to ~x0 use reserved names ~&1." reserved-names))
+        (raise "Arguments to ~x0 use reserved names ~&1." name reserved-names))
        ((unless (vls-commandtype-p type))
         (raise "Unrecognized command type for ~x0." name))
        (info (make-vls-commandinfo :fn name

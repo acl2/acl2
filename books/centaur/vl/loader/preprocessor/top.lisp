@@ -1596,7 +1596,7 @@ the defines table, and make the appropriate changes to the @('istack') and
         ;; Special prohibition of compiler directive names in ifdefs, ifndefs,
         ;; etc.  See :xdoc preprocessor-ifdef-minutia for why.
         (let ((ppst (vl-ppst-fatal
-                     :msg "~a0: cowardly refusing to permit `s1 ~s2."
+                     :msg "~a0: cowardly refusing to permit `~s1 ~s2."
                      :args (list loc directive name))))
           (mv nil echars ppst)))
 
@@ -2183,7 +2183,7 @@ non-arguments pieces.</p>"
 
   (local (in-theory (disable acl2::append-under-iff
                              acl2::member-of-cons)))
-  
+
   (defthm true-listp-of-vl-read-until-end-of-define-prefix
     (true-listp (mv-nth 1 (vl-read-until-end-of-define echars config)))
     :rule-classes :type-prescription)
@@ -2466,7 +2466,7 @@ non-arguments pieces.</p>"
                   (not (vl-whitespace-p (char x nw-idx)))
                   (<= (nfix idx) (nfix nw-idx)))
              (<= result-idx (nfix nw-idx)))))
-             
+
 
 (define scan-backward-for-non-whitespace ((idx natp)
                                           (x stringp))
@@ -2541,7 +2541,7 @@ non-arguments pieces.</p>"
                   (< (nfix nw-idx) (nfix idx)))
              (and (<= (nfix nw-idx) result-idx)
                   (< result-idx (length x))))))
-        
+
 
 (define vl-trim-for-preproc ((x stringp))
   :short "Trim whitespace from a string, but preserving space that might be syntactically significant."
@@ -2556,9 +2556,9 @@ though, it is important NOT to include a space in something like prefix below:</
       logic ``prefix``_foo_``suffix``;
 
    module test ();
-   
+
       `MY_MACRO(aaa, bbb)
-   
+
    endmodule // test
  })
 
@@ -2585,7 +2585,7 @@ characters immediately preceding the final block of whitespace.</p>"
 
        ;; Look for a backslash in the region between the trailing whitespace
        ;; and the last whitespace before that.
-       
+
        ;; Find the last whitespace preceding the trailing whitespace.  read
        ;; this as "last non-trailing whitespace", i.e. it is whitespace but not
        ;; trailing whitespace.
@@ -2601,7 +2601,7 @@ characters immediately preceding the final block of whitespace.</p>"
         (subseq x first-non-whitespace-idx (+ 2 last-non-whitespace-idx))))
     ;; no escaped identifier -- trim all whitespace.
     (subseq x first-non-whitespace-idx (+ 1 last-non-whitespace-idx))))
-       
+
 
 (define vl-process-define
   :short "Handler for @('define') directives."
@@ -4183,8 +4183,8 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
         (b* (((mv & ?prefix remainder) (vl-read-until-literal *nls*
                                                               remainder)))
           (vl-preprocess-loop remainder n ppst state)))
-             
-       
+
+
        (ppst (vl-ppst-fatal
               :msg "~a0: we do not support `~s1."
               :args (list (vl-echar->loc echar1)
@@ -4343,6 +4343,3 @@ out of memory before running out of clock.</p>"
             (vl-echarlist->string (vl-safe-previous-n 50 (vl-ppst->acc)))
             (vl-echarlist->string (vl-safe-next-n 50 remainder)))
         defines filemap iskips ifdefmap defmap bytes warnings nil ppst state)))
-
-
-

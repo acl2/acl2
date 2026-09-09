@@ -363,7 +363,7 @@ records book.  See @(see def-typed-record).</p>")
 
        (- (and fix typed-rec
                (er hard? 'make-fta
-                   "Field ~x0 is not allowed: only non-array fields may specify :fix.")))
+                   "Field ~x0 is not allowed: only non-array fields may specify :fix." field-name)))
 
        (- (and (not typed-rec) (not fix)
                (not (equal type t))
