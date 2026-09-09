@@ -424,10 +424,20 @@
   :returns (tyname1 tynamep)
   :short "Map a type name in the language definition
           to a type name in the syntax for tools."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An absent abstract declarator in the language definition
+     is mapped to an absent abstract declarator in the syntax for tools.
+     In particular, we do not map it to an empty abstract declarator,
+     which is not allowed by the C grammar."))
   (b* (((c::tyname tyname) tyname)
        (tyspecs (ildm-tyspecseq tyname.tyspec))
        (specquals (spec/qual-typespec-list tyspecs))
-       (declor? (ildm-obj-adeclor tyname.declor)))
+       (declor? (c::obj-adeclor-case
+                 tyname.declor
+                 :none nil
+                 :otherwise (ildm-obj-adeclor tyname.declor))))
     (make-tyname :specquals specquals
                  :declor? declor?
                  :info nil))
@@ -437,6 +447,7 @@
   (defrule ldm-tyname-of-ildm-tyname
     (equal (ldm-tyname (ildm-tyname tyname))
            (mv nil (c::tyname-dec0-to-oct0 tyname)))
+    :expand (c::obj-adeclor-dec0-to-oct0 (c::tyname->declor tyname))
     :enable (ldm-tyname
              c::tyname-dec0-to-oct0)))
 
