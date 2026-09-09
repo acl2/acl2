@@ -21,6 +21,29 @@
 (local (include-book "kestrel/terms-light/all-fnnames1" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
+;; Extracts the bodies of all the named "rules" (which can be defthms and/or defuns).
+;move
+(defund rule-bodies (names wrld)
+  (declare (xargs :guard (and (symbol-listp names)
+                              (plist-worldp wrld))))
+
+  (if (endp names)
+      nil
+    (let ((name (first names)))
+      (cons (if (and (function-symbolp name wrld)
+                     (fn-definedp name wrld))
+                (fn-body name t wrld)
+              (if (defthm-or-defaxiom-symbolp name wrld)
+                  (defthm-body name wrld)
+                (er hard? 'rule-bodies "Unknown kind of item: ~x0." name)))
+            (rule-bodies (rest names) wrld)))))
+
+(defthm pseudo-term-listp-of-rule-bodies
+  (pseudo-term-listp (rule-bodies names wrld))
+  :hints (("Goal" :in-theory (enable rule-bodies))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; The core function for simplify-conjunctions.  Such functions always take:
 ;; fn, untranslated-body, state, and then transformation-specific args (none
 ;; for simplify-conjunctions).
@@ -73,25 +96,6 @@
     ;; todo: consider returning only those rule-names that got used:
     (mv new-body (acons :enables rule-names nil))))
 
-;move
-(defund rule-bodies (names wrld)
-  (declare (xargs :guard (and (symbol-listp names)
-                              (plist-worldp wrld))))
-
-  (if (endp names)
-      nil
-    (let ((name (first names)))
-      (cons (if (and (function-symbolp name wrld)
-                     (fn-definedp name wrld))
-                (fn-body name t wrld)
-              (if (defthm-or-defaxiom-symbolp name wrld)
-                  (defthm-body name wrld)
-                (er hard? 'rule-bodies "Unknown kind of item: ~x0." name)))
-            (rule-bodies (rest names) wrld)))))
-
-(defthm pseudo-term-listp-of-rule-bodies
-  (pseudo-term-listp (rule-bodies names wrld))
-  :hints (("Goal" :in-theory (enable rule-bodies))))
 
 (defund simplify-conjunctions-enables (fn rule-names wrld)
   (declare (xargs :guard (and (symbolp fn)
