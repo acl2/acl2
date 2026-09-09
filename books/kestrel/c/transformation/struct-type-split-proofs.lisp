@@ -187,11 +187,13 @@
    (xdoc::p
     "This fixtype captures the possible stages of that scan.
      Starting with @(':init'),
-     we switch to @(':types') when we have found the struct types,
+     we switch to @(':types') when we have found the struct types
+     (where we store all the memebers and the left members,
+     while the right members are available from the user inputs),
      then to @(':objects') when we have found the struct objects.
      See the scanning code for details."))
   (:init ())
-  (:types ())
+  (:types ((mems ident-list) (lmems ident-list)))
   (:objects ())
   :pred stsp-stagep)
 
@@ -677,6 +679,91 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define stsp-exec-mem-eq ((mems ident-listp)
+                          (lmems ident-listp)
+                          (old-name identp)
+                          (newl-name identp)
+                          (newr-name identp))
+  :returns (mv (erp maybe-msgp)
+               (events pseudo-event-form-listp))
+  :short "Generate the theorems ssaying that
+          the execution of each member in the old code
+          returns the same as the corresponding member in the new code."
+  (b* (((reterr) nil)
+       ((when (endp mems)) (retok nil))
+       (mem (car mems))
+       ((erp cmem) (ldm-ident mem) :iferr "")
+       (thm-name (packn-pos (list 'exec-member- (c::ident->name cmem))
+                            'struct-value-))
+       ((mv new newp new-name)
+        (if (member-equal (ident-fix mem) (ident-list-fix lmems))
+            (mv 'newl 'newlp newl-name)
+          (mv 'newr 'newrp newr-name)))
+       ((erp old-cname) (ldm-ident old-name) :iferr "")
+       ((erp new-cname) (ldm-ident new-name) :iferr "")
+       (exec-new-struct (packn-pos (list 'exec- new '-struct) 'struct-value-))
+       (value-kind-when-struct-value-newp
+        (packn-pos (list 'value-kind-when-struct-value- newp) 'struct-value-))
+       (value-struct-read-mem-when-struct-value-oldp
+        (packn-pos (list 'value-struct-read-
+                         (c::ident->name cmem)
+                         '-when-struct-value-oldp)
+                   'struct-value-))
+       (value-struct-read-mem-when-struct-value-newp
+        (packn-pos (list 'value-struct-read-
+                         (c::ident->name cmem)
+                         '-when-struct-value-
+                         (if (member-equal (ident-fix mem)
+                                           (ident-list-fix lmems))
+                             'newlp
+                           'newrp))
+                   'struct-value-))
+       (event
+        `(defruled ,thm-name
+           (b* ((old-expr (c::expr-member (c::expr-ident ',old-cname) ',cmem))
+                (new-expr (c::expr-member (c::expr-ident ',new-cname) ',cmem))
+                ((mv old-eval old-compst1)
+                 (c::exec-expr old-expr old-compst old-fenv limit))
+                ((mv new-eval new-compst1)
+                 (c::exec-expr new-expr new-compst new-fenv limit))
+                (old-val (c::expr-value->value old-eval))
+                (new-val (c::expr-value->value new-eval)))
+             (implies (and (compustate-equivp old-compst new-compst)
+                           (integerp limit)
+                           (>= limit 2))
+                      (and (not (c::errorp old-eval))
+                           (not (c::errorp new-eval))
+                           old-eval
+                           new-eval
+                           (equal old-val new-val)
+                           (equal old-compst1
+                                  (c::compustate-fix old-compst))
+                           (equal new-compst1
+                                  (c::compustate-fix new-compst)))))
+           :use struct-value-equivp-when-compustate-equivp
+           :expand ((c::exec-expr ',(c::expr-member (c::expr-ident old-cname)
+                                                    cmem)
+                                  old-compst old-fenv limit)
+                    (c::exec-expr ',(c::expr-member (c::expr-ident new-cname)
+                                                    cmem)
+                                  new-compst new-fenv limit))
+           :enable (exec-old-struct
+                    ,exec-new-struct
+                    c::not-errorp-when-expr-valuep
+                    c::not-errorp-when-valuep
+                    c::exec-member
+                    c::apconvert-expr-value
+                    struct-value-equivp
+                    value-kind-when-struct-value-oldp
+                    ,value-kind-when-struct-value-newp
+                    ,value-struct-read-mem-when-struct-value-oldp
+                    ,value-struct-read-mem-when-struct-value-newp)))
+       ((erp events)
+        (stsp-exec-mem-eq (cdr mems) lmems old-name newl-name newr-name)))
+    (retok (cons event events))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define stsp-struct-type-declon ((old-declon declonp)
                                  (new-declon declonp)
                                  (new-declon2 declonp)
@@ -690,7 +777,9 @@
               (declon-annop new-declon)
               (declon-annop new-declon2))
   :returns (mv (erp maybe-msgp)
-               (events pseudo-event-form-listp))
+               (events pseudo-event-form-listp)
+               (mems ident-listp)
+               (lmems ident-listp))
   :short "Check, and generate events for,
           the declarations of the old and new left and right struct types."
   :long
@@ -709,7 +798,7 @@
      the three predicates that characterize the struct values,
      the accessors of the member values in the old and new structs,
      and the equivalence predicates over struct values."))
-  (b* (((reterr) nil)
+  (b* (((reterr) nil nil nil)
        ((erp old-tag old-mems) (stsp-check-struct-type-declon old-declon))
        ((erp newl-tag newl-mems) (stsp-check-struct-type-declon new-declon))
        ((erp newr-tag newr-mems) (stsp-check-struct-type-declon new-declon2))
@@ -746,7 +835,9 @@
                    old-accs
                    newl-accs
                    newr-accs
-                   (list equiv-pred))))
+                   (list equiv-pred))
+           old-mems
+           newl-mems))
   :guard-hints
   (("Goal"
     :in-theory (enable c$::true-listp-when-ident-listp
@@ -758,7 +849,9 @@
                                    (new-declon declonp)
                                    (new-declon2 declonp)
                                    (tag identp)
-                                   (tag2 identp))
+                                   (tag2 identp)
+                                   (mems ident-listp)
+                                   (lmems ident-listp))
   :guard (and (declon-unambp old-declon)
               (declon-unambp new-declon)
               (declon-unambp new-declon2)
@@ -801,12 +894,15 @@
                                old-tag newl-tag newr-tag))
        ((erp exec-old-struct) (stsp-exec-strct-thm 'old old-name))
        ((erp exec-newl-struct) (stsp-exec-strct-thm 'newl newl-name))
-       ((erp exec-newr-struct) (stsp-exec-strct-thm 'newr newr-name)))
-    (retok (list static-equiv-pred
-                 compustate-equiv-pred
-                 exec-old-struct
-                 exec-newl-struct
-                 exec-newr-struct))))
+       ((erp exec-newr-struct) (stsp-exec-strct-thm 'newr newr-name))
+       ((erp exec-members)
+        (stsp-exec-mem-eq mems lmems old-name newl-name newr-name)))
+    (retok (list* static-equiv-pred
+                  compustate-equiv-pred
+                  exec-old-struct
+                  exec-newl-struct
+                  exec-newr-struct
+                  exec-members))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -878,13 +974,13 @@
                     (trans-item-declon (ext-declon-declon old-declon))
                     (trans-item-fix new-item)
                     (trans-item-fix new-item2)))
-          ((erp events) (stsp-struct-type-declon old-declon
-                                                 new-declon
-                                                 new-declon2
-                                                 tag
-                                                 tag2
-                                                 rmems)))
-       (retok (stsp-stage-types)
+          ((erp events mems lmems) (stsp-struct-type-declon old-declon
+                                                            new-declon
+                                                            new-declon2
+                                                            tag
+                                                            tag2
+                                                            rmems)))
+       (retok (stsp-stage-types mems lmems)
               (trans-item-list-fix (cdr new-items))
               events))
      :types
@@ -915,7 +1011,9 @@
                                                    new-declon
                                                    new-declon2
                                                    tag
-                                                   tag2)))
+                                                   tag2
+                                                   stage.mems
+                                                   stage.lmems)))
        (retok (stsp-stage-objects)
               (trans-item-list-fix (cdr new-items))
               events))

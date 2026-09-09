@@ -21,11 +21,12 @@
 
     ;; code representation:
 
-    identp
     ident
+    identp
     ident-fix
     ident->unwrap
 
+    ident-list
     ident-listp
     ident-list-fix
     ident-list-of
