@@ -211,7 +211,8 @@
               (declon-annop declon))
   :returns (mv (erp maybe-msgp)
                (tag identp)
-               (mems ident-listp))
+               (mems ident-listp)
+               (types type-listp))
   :short "Check if a declaration is that of a struct type
           that we currently support for proof generation."
   :long
@@ -219,9 +220,12 @@
    (xdoc::p
     "The declaration must consists of a single struct type specifier
      with a tag and with members each of which consists of
-     an identifier with type specifiers for an integer type.
-     If that is the case, we return the tag and the names of the members."))
-  (b* (((reterr) (irr-ident) nil)
+     an identifier with type specifiers for an integer type
+     (except for plain @('char'),
+     for which we do not have formal semantics yet).
+     If that is the case, we return the tag,
+     and the names and types of the members."))
+  (b* (((reterr) (irr-ident) nil nil)
        ((unless (and (declon-case declon :declon)
                      (not (declon-declon->extension declon))
                      (endp (declon-declon->declors declon))))
@@ -242,18 +246,19 @@
                      (consp suspec.members)))
         (retmsg$ "Unsupported proof generation for ~x0." (declon-fix declon)))
        (tag suspec.name?)
-       ((erp mems) (stsp-check-struct-type-declon-loop suspec.members)))
-    (retok tag mems))
+       ((erp mems types) (stsp-check-struct-type-declon-loop suspec.members)))
+    (retok tag mems types))
 
   :prepwork
   ((define stsp-check-struct-type-declon-loop ((members struct-declon-listp))
      :guard (and (struct-declon-list-unambp members)
                  (struct-declon-list-annop members))
      :returns (mv (erp maybe-msgp)
-                  (mems ident-listp))
+                  (mems ident-listp)
+                  (types type-listp))
      :parents nil
-     (b* (((reterr) nil)
-          ((when (endp members)) (retok nil))
+     (b* (((reterr) nil nil)
+          ((when (endp members)) (retok nil nil))
           (sdeclon (struct-declon-fix (car members)))
           ((unless (struct-declon-case sdeclon :member))
            (retmsg$ "Unsupported proof generation for ~x0." sdeclon))
@@ -273,11 +278,26 @@
           ((unless (and sdeclor.declor?
                         (not sdeclor.expr?)))
            (retmsg$ "Unsupported proof generation for ~x0." sdeclon))
-          ((unless (type-integerp (type-vinfo->type sdeclor.info)))
+          (type (type-vinfo->type sdeclor.info))
+          ((unless (and (type-integerp type)
+                        (not (type-case type :char))))
            (retmsg$ "Unsupported proof generation for ~x0." sdeclon))
           (mem (declor->ident sdeclor.declor?))
-          ((erp mems) (stsp-check-struct-type-declon-loop (cdr members))))
-       (retok (cons mem mems))))))
+          ((erp mems types) (stsp-check-struct-type-declon-loop (cdr members))))
+       (retok (cons mem mems) (cons type types)))
+
+     ///
+
+     (defret len-of-stsp-check-struct-type-declon-loop
+       (implies (not erp)
+                (equal (len types) (len mems)))
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret len-of-stsp-check-struct-type-declon
+    (implies (not erp)
+             (equal (len types) (len mems)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -336,7 +356,9 @@
 
 (define stsp-struct-value-pred ((onlr (member-eq onlr '(old newl newr)))
                                 (tag identp)
-                                (mems ident-listp))
+                                (mems ident-listp)
+                                (types type-listp))
+  :guard (equal (len types) (len mems))
   :returns (mv (erp maybe-msgp)
                (event pseudo-event-formp))
   :short "Generate a predicate characterizing a struct value
@@ -354,7 +376,7 @@
         (packn-pos (list 'value-kind-when- struct-value-onlrp)
                    struct-value-onlrp))
        ((erp ctag) (ldm-ident tag) :iferr "")
-       ((erp b*-bindings) (stsp-struct-value-pred-loop mems 0)))
+       ((erp b*-bindings) (stsp-struct-value-pred-loop mems types 0)))
     (retok
      `(define ,struct-value-onlrp ((sval c::valuep))
         :returns (yes/no booleanp)
@@ -372,24 +394,40 @@
                    (equal (c::value-kind sval) :struct))))))
 
   :prepwork
-  ((define stsp-struct-value-pred-loop ((mems ident-listp) (index natp))
+  ((define stsp-struct-value-pred-loop ((mems ident-listp)
+                                        (types type-listp)
+                                        (index natp))
+     :guard (equal (len types) (len mems))
      :returns (mv (erp maybe-msgp)
-                  (b*-binders true-listp))
+                  (b*-bindings true-listp))
      :parents nil
      (b* (((reterr) nil)
           ((when (endp mems)) (retok nil))
           (memval `(nth ,(lnfix index) memvals))
           ((erp cmem) (ldm-ident (car mems)) :iferr "")
-          (b*-binder
-           `((unless (equal (c::member-value->name ,memval) ',cmem)) nil))
-          ((erp b*-binders)
-           (stsp-struct-value-pred-loop (cdr mems) (1+ (lnfix index)))))
-       (retok (cons b*-binder b*-binders))))))
+          (b*-bindings
+           `(((unless (equal (c::member-value->name ,memval)
+                             ',cmem))
+              nil)
+             ((unless (c::value-case (c::member-value->value ,memval)
+                                     ,(type-kind (car types))))
+              nil)))
+          ((erp more-b*-bindings)
+           (stsp-struct-value-pred-loop (cdr mems)
+                                        (cdr types)
+                                        (1+ (lnfix index)))))
+       (retok (append b*-bindings more-b*-bindings)))
+     :hooks
+     ((:fix
+       :hints (("Goal" :induct t :in-theory (enable c$::cdr-of-type-list-fix
+                                                    ident-list-fix))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define stsp-struct-value-accs ((onlr (member-eq onlr '(old newl newr)))
-                                (mems ident-listp))
+                                (mems ident-listp)
+                                (types type-listp))
+  :guard (equal (len types) (len mems))
   :returns (mv (erp maybe-msgp)
                (events pseudo-event-form-listp))
   :short "Generate the accessor functions for the values of
@@ -409,6 +447,9 @@
                    'struct-value-))
        (struct-value-onlrp (packn-pos (list 'struct-value- onlr 'p)
                                       'struct-value-))
+       (value-kind-of-struct-value-onlr-mem
+        (packn-pos (list 'value-kind-of- struct-value-onlr-mem)
+                   'struct-value-))
        (value-struct-read-mem-when-struct-value-onlrp
         (packn-pos (list 'value-struct-read-
                          (c::ident->name cmem)
@@ -424,12 +465,19 @@
                                                 c::value-struct-read
                                                 c::value-struct-read-aux))))
            ///
+           (defruled ,value-kind-of-struct-value-onlr-mem
+             (equal (c::value-kind mval) ,(type-kind (car types)))
+             :hyp (,struct-value-onlrp sval))
            (defruled ,value-struct-read-mem-when-struct-value-onlrp
              (implies (,struct-value-onlrp sval)
                       (equal (c::value-struct-read ',cmem sval)
                              (,struct-value-onlr-mem sval))))))
-       ((erp events) (stsp-struct-value-accs onlr (cdr mems))))
-    (retok (cons event events))))
+       ((erp events) (stsp-struct-value-accs onlr (cdr mems) (cdr types))))
+    (retok (cons event events)))
+  :hooks
+  ((:fix :hints (("Goal" :in-theory (enable c$::cdr-of-type-list-fix
+                                            ident-list-fix)))))
+  :verbosep t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -799,9 +847,12 @@
      the accessors of the member values in the old and new structs,
      and the equivalence predicates over struct values."))
   (b* (((reterr) nil nil nil)
-       ((erp old-tag old-mems) (stsp-check-struct-type-declon old-declon))
-       ((erp newl-tag newl-mems) (stsp-check-struct-type-declon new-declon))
-       ((erp newr-tag newr-mems) (stsp-check-struct-type-declon new-declon2))
+       ((erp old-tag old-mems old-types)
+        (stsp-check-struct-type-declon old-declon))
+       ((erp newl-tag newl-mems newl-types)
+        (stsp-check-struct-type-declon new-declon))
+       ((erp newr-tag newr-mems newr-types)
+        (stsp-check-struct-type-declon new-declon2))
        ((unless (equal old-tag (ident-fix tag)))
         (retmsg$ "Unsupported proof generation for ~x0."
                  (declon-fix old-declon)))
@@ -821,12 +872,15 @@
                  (list (declon-fix old-declon)
                        (declon-fix new-declon)
                        (declon-fix new-declon2))))
-       ((erp old-pred) (stsp-struct-value-pred 'old old-tag old-mems))
-       ((erp newl-pred) (stsp-struct-value-pred 'newl newl-tag newl-mems))
-       ((erp newr-pred) (stsp-struct-value-pred 'newr newr-tag newr-mems))
-       ((erp old-accs) (stsp-struct-value-accs 'old old-mems))
-       ((erp newl-accs) (stsp-struct-value-accs 'newl newl-mems))
-       ((erp newr-accs) (stsp-struct-value-accs 'newr newr-mems))
+       ((erp old-pred)
+        (stsp-struct-value-pred 'old old-tag old-mems old-types))
+       ((erp newl-pred)
+        (stsp-struct-value-pred 'newl newl-tag newl-mems newl-types))
+       ((erp newr-pred)
+        (stsp-struct-value-pred 'newr newr-tag newr-mems newr-types))
+       ((erp old-accs) (stsp-struct-value-accs 'old old-mems old-types))
+       ((erp newl-accs) (stsp-struct-value-accs 'newl newl-mems newl-types))
+       ((erp newr-accs) (stsp-struct-value-accs 'newr newr-mems newr-types))
        ((erp equiv-pred)
         (stsp-struct-value-equiv old-mems newl-mems newr-mems)))
     (retok (append (list old-pred)
