@@ -324,8 +324,8 @@
                              (not (sbvlt 32 y x))))
 
 ;; TODO: Make these into tests:
-;; (prove-clause-with-stp (list *nil*) t nil t "/tmp/foo" state)
-;; (prove-clause-with-stp (list *nil* *t*) t nil t "/tmp/foo" state)
+;; (prove-clause-with-stp (list *nil*) t nil nil t "/tmp/foo" state)
+;; (prove-clause-with-stp (list *nil* *t*) t nil nil t "/tmp/foo" state)
 
 ;;TODO: Should this work?  The (+ x y) should be replaced by a boolean var
 ;;;(prove-with-stp '(or (+ x y) (not (+ x y))))

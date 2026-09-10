@@ -67,6 +67,7 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/bv-lists/bvchop-list2" :dir :system))
+(local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
 (local (include-book "kestrel/bv/bvsx" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
 (local (include-book "kestrel/bv/logtail" :dir :system))

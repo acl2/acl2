@@ -1502,7 +1502,7 @@
                       (len all-subterms-with-all-rec-names)))
             (prog2$ (cw "simulate: vw-eval-term-list-to-subterm-list ~
                          guards not satisfied.~% r2f-all-subterms: ~
-                         ~p0~% r2f-subterms-to-stv-alist: ~p0.~%"
+                         ~p0~% r2f-subterms-to-stv-alist: ~p1.~%"
                         r2f-all-subterms r2f-subterms-to-stv-alist)
                     (mv Abr st-vals dz rtime rec)))
 

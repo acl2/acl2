@@ -39,6 +39,7 @@
                  erp
                  impossible
                  index-of
+                 lnfix
                  packn-pos
                  maybe-msgp
                  maybe-pseudo-event-formp
@@ -51,5 +52,6 @@
                  reterr
                  retmsg$
                  retok
+                 symbol-lfix
                  symbol-list
                  std::defret-mutual)))

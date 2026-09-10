@@ -515,7 +515,6 @@
                                          ;expt-of-+ ;bad
                                          )
                            (log2-of-round-to-nearest-integer-ties-to-even
-                            log2-of-round-to-nearest-integer-ties-to-even
                             /-of-expt-of-diff)))))
 
 (defthm round-positive-normal-ties-to-even-when-representable-positive-normalp

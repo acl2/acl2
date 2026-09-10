@@ -175,7 +175,7 @@
                                            nil))))
             (t
              nil)))
-    (er hard 'inverse-polys
+    (er hard 'polys-from-type-set
         "A presumptive pot-label, ~x0,  has turned out to be illegitimate. ~
          If possible, please send a script reproducing this error ~
          to the authors of ACL2."

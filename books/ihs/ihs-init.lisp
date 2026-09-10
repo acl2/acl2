@@ -73,9 +73,9 @@ to get the functions admitted.</li>
 (defmacro when$cl (test &rest forms)
   (if (consp forms)
       (if (consp (cdr forms))
-	  `(IF ,test (PROGN ,@forms) NIL)
-	`(IF ,test ,@forms NIL))
-    `(IF ,test NIL NIL)))		;This is a wierd case, maybe an error?
+          `(IF ,test (PROGN ,@forms) NIL)
+        `(IF ,test ,@forms NIL))
+    `(IF ,test NIL NIL)))               ;This is a wierd case, maybe an error?
 
 ;;;  UNLESS test &REST forms [Macro]
 ;;;
@@ -86,8 +86,8 @@ to get the functions admitted.</li>
 (defmacro unless$cl (test &rest forms)
   (if (consp forms)
       (if (consp (cdr forms))
-	  `(IF ,test NIL (PROGN ,@forms))
-	`(IF ,test NIL ,@forms))
+          `(IF ,test NIL (PROGN ,@forms))
+        `(IF ,test NIL ,@forms))
     `(IF ,test NIL NIL)))
 
 ;;;  LET* bindings &REST body
@@ -97,17 +97,17 @@ to get the functions admitted.</li>
 (defun pairwise-list (x y)
   "Like PAIRLIS, but LISTs instead of CONSes."
   (declare (xargs :guard (and (true-listp x)
-			      (true-listp y)
-			      (eql (length x) (length y)))))
+                              (true-listp y)
+                              (eql (length x) (length y)))))
   (cond ((endp x) ())
-	(t (cons (list (car x) (car y))
-		 (pairwise-list (cdr x) (cdr y))))))
+        (t (cons (list (car x) (car y))
+                 (pairwise-list (cdr x) (cdr y))))))
 
 (defun let*$fn (bindings body)
   "LET* for the case that BODY is a single form."
   (declare (xargs :guard (eqlable-alistp bindings)))
   (cond ((endp bindings) body)
-	(t `(LET (,(car bindings)) ,(let*$fn (cdr bindings) body)))))
+        (t `(LET (,(car bindings)) ,(let*$fn (cdr bindings) body)))))
 
 (defmacro let*$ (bindings &rest body)
   "A redefinition of LET* that handles declarations, and removes the old
@@ -117,8 +117,8 @@ to get the functions admitted.</li>
    ((and (consp body) (consp (cdr body))) ;Body contains multiple forms.
     (let ((unique-vars (remove-duplicates (strip-cars bindings))))
       (let ((unique-bindings (pairwise-list unique-vars unique-vars)))
-	(let ((new-body `(LET ,unique-bindings ,@body)))
-	  (let*$fn bindings new-body)))))
+        (let ((new-body `(LET ,unique-bindings ,@body)))
+          (let*$fn bindings new-body)))))
    (t (let*$fn bindings (car body)))))
 
 ;;;****************************************************************************
@@ -163,10 +163,10 @@ to get the functions admitted.</li>
 (defun mlambda-fn (args form)
   (declare (xargs :guard (symbol-listp args)))
   (cond ((atom form)
-	 (cond ((member form args) form)
-	       (t (list 'QUOTE form))))
-	(t (list 'CONS (mlambda-fn args (car form))
-		 (mlambda-fn args (cdr form))))))
+         (cond ((member form args) form)
+               (t (list 'QUOTE form))))
+        (t (list 'CONS (mlambda-fn args (car form))
+                 (mlambda-fn args (cdr form))))))
 
 (defsection mlambda
   :parents (ihs-utilities)
@@ -471,15 +471,15 @@ Examples.
 (let ((world (w state))) (defun-theory '(length cond)))
 (let ((world (w state))) (defun-theory '(length cond) :quiet t))
 (let ((world (w state))) (defun-theory '(length cond)
-			   :theory
-			   (universal-theory 'exit-boot-strap-mode)
-			   :quiet t))
+                           :theory
+                           (universal-theory 'exit-boot-strap-mode)
+                           :quiet t))
 
 (let ((world (w state))) (defun-type/exec-theory '(length)))
 (let ((world (w state))) (defun-type/exec-theory '(length cond)))
 (let ((world (w state))) (defun-type/exec-theory '(length cond) :quiet t))
 (let ((world (w state))) (defun-type/exec-theory '(length cond)
-			   :theory (universal-theory 'exit-boot-strap-mode)
-			   :quiet t))
+                           :theory (universal-theory 'exit-boot-strap-mode)
+                           :quiet t))
 
 |#

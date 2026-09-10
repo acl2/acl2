@@ -15,9 +15,9 @@
 (include-book "bvand-def")
 (include-book "bvor-def")
 (include-book "bvxor-def")
-(include-book "bvplus")
+(include-book "bvplus-def")
 (include-book "bvminus-def")
-(include-book "bvnot")
+(include-book "bvnot-def")
 (include-book "bvshr-def")
 (include-book "bvmult-def")
 (include-book "bvcat-def")
@@ -29,8 +29,10 @@
 (include-book "bitand")
 (include-book "bitor")
 (include-book "bitxor")
+(include-book "bvcount-def")
 (include-book "trim-elim-rules-non-bv") ; to get rid of the TRIMs introduced by these rules
 (local (include-book "bvand"))
+(local (include-book "bvminus"))
 (local (include-book "bvor"))
 (local (include-book "bvcat"))
 (local (include-book "slice"))
@@ -39,6 +41,8 @@
 (local (include-book "bvsx"))
 (local (include-book "bvlt"))
 (local (include-book "bvuminus"))
+(local (include-book "bvmult"))
+(local (include-book "bvcount"))
 
 ;; The rules in this book convert certain arguments of BV functions to be calls
 ;; of BV operators.  The approach has 2 steps:
@@ -281,3 +285,51 @@
            (equal (getbit n x)
                   (getbit n (trim (+ 1 n) x))))
   :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvcount-convert-arg2-to-bv
+  (implies (and (syntaxp (convertible-to-bvp x))
+                (natp size))
+           (equal (bvcount size x)
+                  (bvcount size (trim size x))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; These are the non-Axe rules
+(deftheory convert-to-bv-rules
+  (union-theories (theory 'trim-elim-rules-non-bv)
+                  '(bvplus-convert-arg2-to-bv
+                    bvplus-convert-arg3-to-bv
+                    bvminus-convert-arg2-to-bv
+                    bvminus-convert-arg3-to-bv
+                    bvuminus-convert-arg2-to-bv
+                    bvmult-convert-arg2-to-bv
+                    bvmult-convert-arg3-to-bv
+                    bvdiv-convert-arg2-to-bv
+                    bvdiv-convert-arg3-to-bv
+                    bvshr-convert-arg2-to-bv
+                    bvcat-convert-arg2-to-bv
+                    bvcat-convert-arg4-to-bv
+                    slice-convert-arg3-to-bv
+                    bvlt-convert-arg2-to-bv
+                    bvlt-convert-arg3-to-bv
+                    bvnot-convert-arg2-to-bv
+                    bvand-convert-arg2-to-bv
+                    bvand-convert-arg3-to-bv
+                    bvor-convert-arg2-to-bv
+                    bvor-convert-arg3-to-bv
+                    bvxor-convert-arg2-to-bv
+                    bvxor-convert-arg3-to-bv
+                    bitnot-convert-arg1-to-bv
+                    bitand-convert-arg1-to-bv
+                    bitand-convert-arg2-to-bv
+                    bitor-convert-arg1-to-bv
+                    bitor-convert-arg2-to-bv
+                    bitxor-convert-arg1-to-bv
+                    bitxor-convert-arg2-to-bv
+                    bvsx-convert-arg3-to-bv
+                    getbit-convert-arg2-to-bv
+                    bvcount-convert-arg2-to-bv))
+  :redundant-okp t)

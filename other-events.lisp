@@ -121,8 +121,8 @@
 (defun defconst-val (name form ctx wrld state)
   #+acl2-loop-only
   (declare (ignore name))
-  #-acl2-loop-only
   (cond
+   #-acl2-loop-only
    ((f-get-global 'boot-strap-flg state)
     (cond
      ((member name '(*first-order-like-terms-and-out-arities*
@@ -157,15 +157,32 @@
 
     (return-from defconst-val
                  (value (symbol-value name))))
-   (t (let ((val (defconst-val-raw name)))
+   (t #-acl2-loop-only
+      (let ((val (defconst-val-raw name)))
         (when (not (eq val *hcomp-fake-value*))
-          (return-from defconst-val
-                       (with-debug (value val)
-                                   "[~s] Found ~s in hash table.~%"
-                                   'defconst-val name))))))
-  (er-let*
-   ((pair (state-global-let*
-           ((safe-mode
+
+; At one time we returned the value here, without translating.  But that
+; allowed the following event to be admitted when not skipping proofs, which
+; caused a book containing this event to fail being included after
+; certification.
+
+;   (encapsulate
+;     ()
+;     (local (defun c-body () 17))
+;     (defconst *c* (c-body)))
+
+; We will want to use the saved value, but we create an expression that will
+; force translation of the form.  So we modify the form accordingly.
+
+          (setq form
+                (with-debug
+                 `(prog2$ ,form
+                          (quote ,val))
+                 "[~s] Found ~s in hash table.~%"
+                 'defconst-val name))))
+      (er-let*
+          ((pair (state-global-let*
+                  ((safe-mode
 
 ; Warning: If you are tempted to bind safe-mode to nil outside the boot-strap,
 ; then revisit the binding of *safe-mode-verified-p* to t in the
@@ -235,13 +252,13 @@
 ;   allow raw Lisp calls, avoiding safe mode during the boot-strap, even for
 ;   other lisps.
 
-             t ; (not (f-get-global 'boot-strap-flg state))
-             ))
-           (simple-translate-and-eval form nil
-                                      nil
-                                      "The second argument of defconst"
-                                      ctx wrld state nil))))
-   (value (cdr pair))))
+                    t ; (not (f-get-global 'boot-strap-flg state))
+                    ))
+                  (simple-translate-and-eval form nil
+                                             nil
+                                             "The second argument of defconst"
+                                             ctx wrld state nil))))
+        (value (cdr pair))))))
 
 (defun large-consp (x)
   (eql (the #.*fixnat-type* (cons-count-bounded x))
@@ -12366,9 +12383,10 @@
                 (equal-modulo-hidden-defpkgs cmds1 (cdr cmds2)))
                (& nil))))))
 
-(defun cert-obj-for-convert (full-book-string dir pre-alist fixed-cmds
-                                            suspect-book-action-alist
-                                            ctx state)
+(defun cert-obj-for-convert (full-book-string dir full-book-name pre-alist
+                                              fixed-cmds
+                                              suspect-book-action-alist
+                                              ctx state)
 
 ; Here we check that the pre-alists and portcullis commands correspond, as
 ; explained in the error messages below.  See also certify-book-finish-convert
@@ -12402,6 +12420,7 @@
                 current ACL2 world:~|~y2"
                `(er-let* ((cert-obj
                            (chk-certificate-file ,full-book-string ,dir
+                                                 ,full-book-name
                                                  'convert-pcert ',ctx state
                                                  ',suspect-book-action-alist
                                                  nil)))
@@ -12512,9 +12531,9 @@
                                              wrld ctx state)))))
         (cond
          ((eq cert-op :convert-pcert)
-          (cert-obj-for-convert full-book-string dir pre-alist-cert-wrld
-                                fixed-cmds suspect-book-action-alist ctx
-                                state))
+          (cert-obj-for-convert full-book-string dir full-book-name
+                                pre-alist-cert-wrld fixed-cmds
+                                suspect-book-action-alist ctx state))
          (t
           (value
            (make cert-obj
@@ -13639,7 +13658,7 @@
                               "Although the file ~x0 exists, it is being ~
                                ignored because keyword option :ACL2X T was ~
                                not supplied to certify-book."
-                              acl2x-file full-book-string))
+                              acl2x-file))
                    (t state))
              (value nil)))
     (t (mv-let
@@ -17354,7 +17373,8 @@
                     (value (cond (str (intern$ (string-upcase str) "ACL2"))
                                  (t t))))))) ; default
         (t (er soft ctx
-               "Illegal :write-port argument, ~x0.  See :DOC certify-book."))))
+               "Illegal :write-port argument, ~x0.  See :DOC certify-book."
+               write-port))))
 
 (defun certify-book-cert-op (pcert pcert-env write-acl2x ctx state)
 
@@ -24213,7 +24233,7 @@
           (msg (cond (old-formula (msg "~%~Y01[Note discrepancy with existing ~
                                         formula named ~x2:~|  ~Y31~|]~%"
                                        expected-defthm nil name old-formula))
-                     (t (msg "~%~Y01" expected-defthm nil name old-formula)))))
+                     (t (msg "~%~Y01" expected-defthm nil)))))
      (cond ((endp (cdr missing)) msg)
            (t (msg "~@0~@1"
                    msg
@@ -24505,7 +24525,7 @@
        (t
         (cons-with-hint field-old
                         (fix-export-updaters1 (cdr old) old-to-new)
-                        (cdr old))))))))
+                        old)))))))
 
 (defun export-names (exports)
   (cond ((endp exports) nil)
@@ -28685,7 +28705,7 @@
            key))
       ((member-eq key *hint-keywords*)
        (er soft ctx
-           "It is illegal to use the name of a primitive hint, ~e.g., ~x0, as ~
+           "It is illegal to use the name of a primitive hint, e.g., ~x0, as ~
             a custom keyword hint."
            key))
       ((assoc-eq key
@@ -29077,9 +29097,9 @@
    ((not (or (booleanp substitute)
              (natp substitute)))
     (er soft 'print-gv
-        "The :substitute keyword argument of PRINT-GV must evaluate to T, ~
-         NIL, or a natural number."
-        substitute))
+        "The :substitute keyword argument of PRINT-GV must evaluate to ~x0, ~
+         ~x1, or a natural number, so the argument ~x2 is illegal."
+        t nil substitute))
    (t
     (let* ((fn (nth 0 info))
            (guard (nth 1 info))
@@ -32766,7 +32786,8 @@
         ((member-eq :system-ok args)
          (er hard 'defattach-system
              "The argument :system-ok is illegal for a defattach-system call. ~
-              Consider instead using defattach or removing :system-ok."
+              ~ The call ~x0 is thus illegal.  Consider instead using ~
+              defattach or removing :system-ok."
              form))
         (t
          `(local (defattach ,@args :system-ok t)))))
@@ -34974,7 +34995,7 @@
     `(set-check-invariant-risk-fn ,x state))
    (t `(cond
         ((not (member-eq ,x '(t nil :ERROR :WARNING)))
-         (er soft 'check-invariant-risk
+         (er soft 'set-check-invariant-risk
              "Illegal value for ~x0: ~x1"
              'check-invariant-risk
              ',x))

@@ -1,6 +1,6 @@
 ; Theorems to validate the STP translation of the BV operators
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -38,5 +38,5 @@
 (thm
   (equal (bvminus n t1 t2) ; Axe translates bvminus to bvsub
          (bvplus n t1 (bvuminus n t2)))
-  :hints (("Goal" :in-theory (enable bvuminus bvplus bvnot
+  :hints (("Goal" :in-theory (enable bvminus bvuminus bvplus bvnot
                                      bvchop-of-sum-cases lognot))))

@@ -795,6 +795,7 @@
   :off (event)
   :evisc (:gag-mode (evisc-tuple 5 7 nil nil))
   (defines fgl-object-add-to-cgraph
+    :ruler-extenders :lambdas
     (define fgl-object-add-to-cgraph ((x fgl-object-p)
                                       (cgraph cgraph-p)
                                       (memo cgraph-memo-p)
@@ -820,16 +821,18 @@
            ((when (hons-get (fgl-object-fix x) (cgraph-memo-fix memo)))
             (mv (cgraph-fix cgraph) (cgraph-memo-fix memo)))
            (memo (hons-acons (fgl-object-fix x) t (cgraph-memo-fix memo)))
-           ((when (and (fgl-object-case x :g-apply)
-                       (fgetprop fnsym 'acl2::coarsenings nil wrld)))
-            ;; Equivalence relation.  Add edges between two args
-            (b* (((g-apply x))
-                 ((unless (eql (len x.args) 2))
-                  (mv (cgraph-fix cgraph) (cgraph-memo-fix memo)))
-                 ((list arg1 arg2) x.args)
-                 ((mv cgraph memo) (fgl-object-add-to-cgraph arg1 cgraph memo ruletable bfrstate wrld clk))
-                 ((mv cgraph memo) (fgl-object-add-to-cgraph arg2 cgraph memo ruletable bfrstate wrld clk)))
-              (mv (add-cgraph-equiv x arg1 arg2 cgraph) memo)))
+           ((mv cgraph memo)
+            (if (and (fgl-object-case x :g-apply)
+                       (fgetprop fnsym 'acl2::coarsenings nil wrld))
+                ;; Equivalence relation.  Add edges between two args
+                (b* (((g-apply x))
+                     ((unless (eql (len x.args) 2))
+                      (mv (cgraph-fix cgraph) (cgraph-memo-fix memo)))
+                     ((list arg1 arg2) x.args)
+                     ((mv cgraph memo) (fgl-object-add-to-cgraph arg1 cgraph memo ruletable bfrstate wrld clk))
+                     ((mv cgraph memo) (fgl-object-add-to-cgraph arg2 cgraph memo ruletable bfrstate wrld clk)))
+                  (mv (add-cgraph-equiv x arg1 arg2 cgraph) memo))
+              (mv cgraph memo)))
            ((mv cgraph memo)
             (fgl-object-add-to-cgraph-implicit x cgraph memo ruletable bfrstate wrld clk))
            (rules (cdr (hons-get fnsym (ctrex-ruletable-fix ruletable)))))
@@ -3148,7 +3151,9 @@ compute a value for @('x').</p>
                           warnings/errors from counterexample derivation ~
                           above.~%" ans))
                 (t   (cw "Counterexample verified!~%"))))
-       (interp-st (interp-st-check-bvar-db-ctrex-consistency interp-st state))
+       (interp-st (if config.counterexample-consistency-check-enabledp
+                      (interp-st-check-bvar-db-ctrex-consistency interp-st state)
+                    interp-st))
        (scratch (interp-st->user-scratch interp-st))
        ;; Collect counterexamples in the user scratch for later extraction
        (interp-st (update-interp-st->user-scratch

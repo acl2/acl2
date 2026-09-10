@@ -43,6 +43,7 @@
 (local (include-book "kestrel/arithmetic-light/integer-length2" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/logext" :dir :system))
+(local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/bv/getbit" :dir :system))
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 
@@ -508,9 +509,7 @@
 ;;                  (:instance bvchop-list-of-take-of-bvchop-list
 ;;                            (size element-size)
 ;;                            (lst lst)))
-;;            :in-theory (e/d (bv-array-write update-nth2) (bvchop-list-of-take-of-bvchop-list
-;;                                                          ;UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
-;;                                                          )))))
+;;            :in-theory (e/d (bv-array-write update-nth2) (bvchop-list-of-take-of-bvchop-list)))))
 
 ;; (DEFTHM BV-ARRAY-READ-OF-LOGEXT-LIST-better
 ;;   (IMPLIES (AND (<= SIZE SIZE2)

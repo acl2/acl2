@@ -39,6 +39,7 @@
 (define tree-delete
   (x
    (tree treep))
+  (declare (xargs :type-prescription :none))
   :parents (implementation)
   :short "Remove a value from the tree."
   :long
@@ -72,8 +73,6 @@
   :guard-hints (("Goal" :in-theory (enable tree-join-at))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-delete)))
 
 (defrule tree-delete-type-prescription
   (or (consp (tree-delete x tree))

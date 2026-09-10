@@ -162,6 +162,7 @@
             ;; (ash ash-unguarded)
             ;; (acl2::firstn acl2::firstn-unguarded)
             ;; (logbitp logbitp-unguarded)
+            (rem rem-unguarded)
             (binary-logand binary-logand-unguarded)
             ;; (binary-logior binary-logior-unguarded)
             ;; (nonnegative-integer-quotient nonnegative-integer-quotient-unguarded)

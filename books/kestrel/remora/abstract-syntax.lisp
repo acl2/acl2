@@ -18,8 +18,10 @@
 (include-book "abstract-syntax-matching-operations")
 (include-book "abstract-syntax-variable-operations")
 (include-book "abstract-syntax-core")
+(include-book "abstract-syntax-haskell")
 (include-book "character-literal-codes")
 (include-book "desugaring")
+(include-book "well-formedness-under-desugaring")
 (include-book "frame-flattening")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -49,4 +51,6 @@
                     abstract-syntax-core
                     character-literal-codes
                     desugaring
+                    well-formedness-under-desugaring
+                    abstract-syntax-haskell
                     frame-flattening))

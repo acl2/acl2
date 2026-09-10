@@ -1,6 +1,6 @@
 ; An assistant to help find simple proofs
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -617,7 +617,7 @@
       (progn$ (and (eq res :proved) (cw " Proved it!)~%"))
               (and (eq res :updated) (cw " Reached step limit.)~%"))
               (and (eq res :split) (cw " Split into ~x0 subproblems.)~%" (len raw-subproblems)))
-              (and (eq res :failed) (cw " Failed.)~%" (len raw-subproblems)))
+              (and (eq res :failed) (cw " Failed.)~%"))
               (mv erp res proof-events updated-open-problem new-pending-problem raw-subproblems name-map state)))))
 
 ;; For each subterms of the goal, this considers doing an induction based on it.

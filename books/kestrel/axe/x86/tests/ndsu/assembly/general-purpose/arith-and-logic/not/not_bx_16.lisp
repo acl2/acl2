@@ -17,13 +17,7 @@
 ;; (depends-on "not_bx_16.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
-(include-book "kestrel/x86/register-readers-and-writers-8-16" :dir :system)
-
-;; Rewrite bx to bvchop-of-rbx so proofs reduce to the rbx form.
-(local (defthm bx-rewrite
-  (equal (bx x86) (bvchop 16 (rbx x86)))
-  :hints (("Goal" :in-theory (enable bx rbx)))))
+(include-book "../../../support")
 
 ;; Lifts the subroutine into logic: Creates the function not_bx_16, which
 ;; represents the effect of the program on the x86 state.

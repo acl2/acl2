@@ -13,8 +13,8 @@
 ;; See also bv-array-read-chunk-little.
 ;; TODO: Adapt all rules about that one to apply to this one.
 
-(include-book "kestrel/bv-lists/packbv-little" :dir :system)
-(include-book "unsigned-byte-listp")
+(include-book "packbv-little")
+(include-book "unsigned-byte-listp-def")
 (include-book "kestrel/bv/bvplus" :dir :system)
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
@@ -22,9 +22,10 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
-(local (include-book "kestrel/bv-lists/packbv-theorems" :dir :system))
+(local (include-book "packbv-theorems"))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/typed-lists-light/integer-listp" :dir :system))
+(local (include-book "unsigned-byte-listp"))
 
 (local (in-theory (disable len true-listp))) ; prevent induction
 

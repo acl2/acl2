@@ -1,6 +1,6 @@
 ; A lightweight function to read a file's contents into a list of bytes
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,6 +17,8 @@
 (local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
 (local (include-book "open-input-channel"))
 (local (include-book "close-input-channel"))
+
+(local (in-theory (disable w)))
 
 ;; Returns (mv erp bytes state) where either ERP is non-nil (meaning an error
 ;; occurred) or else BYTES is the contents of the file indicated by
@@ -61,3 +63,8 @@
   (implies (and (stringp path-to-file)
                 (state-p state))
            (state-p (mv-nth 2 (read-file-into-byte-list path-to-file state)))))
+
+(defthm w-of-mv-nth-2-of-read-file-into-byte-list
+  (equal (w (mv-nth 2 (read-file-into-byte-list path-to-file state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable read-file-into-byte-list))))

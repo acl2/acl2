@@ -12453,7 +12453,7 @@
                                rand state))
                  ;;they didn't all prove, so do them one at a time to see which ones failed:
                  ;;if there is only one, don't try that one again
-                 (prog2$ (cw "At least one failed.  Trying them one at at time:)~%")
+                 (prog2$ (cw "At least one failed.  Trying them one at a time:)~%")
                          (mv-let (erp invariants-that-failed defthm-names rand state)
                            (find-failed-invariants invars (append hyps invars) base-theorem-name formal-update-expr-alist
                                                    invar-set-num 0 rewriter-rule-alist prover-rule-alist
@@ -20004,7 +20004,7 @@
 ;;                                        (make-axe-rules (append '((:rewrite equal-of-constant-and-bvchop-when-bvlt) ;new!
 ;;                                                               (:rewrite bvlt-of-two-less-than-max-when-not-max)
 ;;                                                               (:rewrite EQUAL-OF-CONSTANT-AND-SLICE-WHEN-BVLT) ;new
-;;                                                               (:REWRITE EQUAL-OF-BVCHOP-AND-CONSTANT-WHEN-NOT-BVLT-CONSTANT-2)
+;;                                                               (:REWRITE NOT-EQUAL-OF-BVCHOP-AND-CONSTANT-WHEN-NOT-BVLT-CONSTANT-2)
 ;;                                                               (:rewrite EQUAL-OF-CONSTANT-AND-SLICE-WHEN-EQUAL-OF-CONSTANT-AND-BVCHOP)
 ;;                                                               (:REWRITE BVLT-WHEN-BVCHOP-KNOWN-SUBST)
 ;;                                                               (:REWRITE BVCHOP-SUBST-CONSTANT)

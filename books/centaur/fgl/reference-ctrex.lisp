@@ -299,7 +299,7 @@ running that counterexample."
   :short "Evaluate an object under the reference counterexample."
   :long "<p>See @(see reference-ctrex) for details.</p>"
   :guard (and (interp-st-bfrs-ok interp-st)
-              (fgl-object-bfrs-ok x (interp-st-bfr-state)))
+              (fgl-object-bfrs-ok x (interp-st-bfrstate)))
   :returns (mv err val new-interp-st)
   :guard-hints (("goal" :in-theory (enable bfr-env$-p)))
   (b* (((unless (bfr-mode-is :aignet (interp-st-bfr-mode)))
@@ -322,7 +322,7 @@ running that counterexample."
 
 (fancy-ev-add-primitive reference-ctrex-fgl-object-eval-fn
                         (and (fgl-object-p x)
-                             (fgl-object-bfrs-ok x (interp-st-bfr-state))))
+                             (fgl-object-bfrs-ok x (interp-st-bfrstate))))
 
 
 (defmacro reference-ctrex-object-eval-msg (x)
@@ -344,7 +344,7 @@ suitable for printing the result."
                                          (interp-st 'interp-st)
                                          (state 'state))
   :guard (and (interp-st-bfrs-ok interp-st)
-              (fgl-objectlist-bfrs-ok x (interp-st-bfr-state)))
+              (fgl-objectlist-bfrs-ok x (interp-st-bfrstate)))
   :returns (mv err val new-interp-st)
   :guard-hints (("goal" :in-theory (enable bfr-env$-p)))
   (b* (((unless (bfr-mode-is :aignet (interp-st-bfr-mode)))
@@ -367,6 +367,6 @@ suitable for printing the result."
 
 (fancy-ev-add-primitive reference-ctrex-fgl-objectlist-eval-fn
                         (and (fgl-objectlist-p x)
-                             (fgl-objectlist-bfrs-ok x (interp-st-bfr-state))))
+                             (fgl-objectlist-bfrs-ok x (interp-st-bfrstate))))
 
 

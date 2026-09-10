@@ -366,7 +366,7 @@
                       (b* ((- (and print (cw "~%  (Cutting at shared node ~x0.)" n)))
                            (type (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr)))
                            ((when (not (axe-typep type)))
-                            (er hard? 'gather-nodes-for-translation "ERROR: Bad type for ~x0.~%" expr)
+                            (er hard? 'gather-nodes-to-translate-for-aggressively-cut-proof "ERROR: Bad type for ~x0.~%" expr)
                             (mv :type-error nil nil extra-asserts))
                            ;;Special handling for BVMULT when the arguments
                            ;;are small.  Consider the product of two 4-bit

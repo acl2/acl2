@@ -29,17 +29,17 @@
                     (cadr x))))
   :hints (("Goal" :in-theory (enable last1))))
 
-(defthmd car-of-last1-becomes-nth
+(defthmd last1-becomes-nth
   (equal (last1 lst)
          (nth (+ -1 (len lst)) lst))
   :hints (("Goal" :in-theory (enable last1))))
 
-(defthmd nth-of-len-minus-1-becomes-car-of-last1
-  (equal (last1 lst)
-         (nth (+ -1 (len lst)) lst))
+(defthmd nth-of-len-minus-1-becomes-last1
+  (equal (nth (+ -1 (len lst)) lst)
+         (last1 lst))
   :hints (("Goal" :in-theory (enable last1))))
 
-(theory-invariant (incompatible (:rewrite car-of-last1-becomes-nth) (:rewrite nth-of-len-minus-1-becomes-car-of-last1)))
+(theory-invariant (incompatible (:rewrite last1-becomes-nth) (:rewrite nth-of-len-minus-1-becomes-last1)))
 
 ;; Tweaked to match std
 (defthm last1-of-cons
@@ -71,7 +71,7 @@
                (last1 x)
              nil))))
 
-(defthm member-last1
+(defthm member-equal-of-last1-same
   (implies (consp l)
            (member-equal (last1 l) l))
   :hints (("Goal" :in-theory (enable last1))))

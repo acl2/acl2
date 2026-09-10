@@ -17,7 +17,7 @@
 ;; (depends-on "shl_mem32_imm8.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
+(include-book "../../../support")
 
 ;; Lifts the subroutine into logic: Creates the function shl_mem32_imm8, which
 ;; represents the effect of the program on the x86 state.
@@ -111,4 +111,4 @@
                 (not (member-eq flag *standard-flags*)))
            (equal (get-flag flag (shl_mem32_imm8 x86))
                   (get-flag flag x86)))
-  :hints (("Goal" :in-theory (enable acl2::memberp-of-cons-when-constant))))
+  )

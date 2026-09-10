@@ -17,6 +17,7 @@
 (include-book "kestrel/fty/any-nat-map" :dir :system)
 (include-book "kestrel/fty/character-any-map" :dir :system)
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
+(include-book "kestrel/utilities/strings/char-code-set" :dir :system)
 (include-book "std/omaps/identity" :dir :system)
 (include-book "std/omaps/injectivep" :dir :system)
 
@@ -72,6 +73,9 @@
    (xdoc::p
     "We require the values of the execution basic characters
      to fit in a byte [C17:5.2.1.2/1] [C23:5.3.2].")
+   (xdoc::p
+    "We require the null character to have value zero
+     [C17:5.2.1/2] [C23:5.3.1].")
    (xdoc::p
     "Here we do not model anything about shift states
      [C17:5.2.1.2/1] [C23:5.3.2].
@@ -159,6 +163,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec-charset-null-char-zero-p ((chars-with-values any-nat-mapp)
+                                       (basic-chars character-any-mapp))
+  :guard (and (set::in (code-char 0) (omap::keys basic-chars))
+              (set::in (omap::lookup (code-char 0) basic-chars)
+                       (omap::keys chars-with-values)))
+  :returns (yes/no booleanp)
+  :short "Check if the null character of an execution character set
+          has value zero."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use the map from ACL2 characters to execution characters
+     to retrieve the null execution character,
+     and then the map from execution characters to values
+     to check its value."))
+  (equal (omap::lookup (omap::lookup (code-char 0)
+                                     (character-any-mfix basic-chars))
+                       (any-nat-mfix chars-with-values))
+         0))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define-sk exec-charset-digits-in-order-p ((chars-with-values any-nat-mapp)
                                            (basic-chars character-any-mapp))
   :guard (and (set::subset '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
@@ -210,6 +236,7 @@
     "The map from characters to values must be injective.
      The character set must include the basic characters,
      whose values must all fit in a byte.
+     The null character must have value zero.
      The digit values must be in order.
      The map from ASCII characters to execution characters must be injective."))
   (b* (((exec-charset charset)))
@@ -220,11 +247,16 @@
          (exec-charset-basic-chars-byte-p charset.chars-with-values
                                           charset.basic-chars
                                           uchar-format)
+         (exec-charset-null-char-zero-p charset.chars-with-values
+                                        charset.basic-chars)
          (exec-charset-digits-in-order-p charset.chars-with-values
                                          charset.basic-chars)
          (omap::injectivep charset.basic-chars)))
   :guard-hints (("Goal" :in-theory (enable exec-charset-has-basic-chars-p
-                                           digits-in-ascii-basic-exec-chars))))
+                                           digits-in-ascii-basic-exec-chars
+                                           null-in-ascii-basic-exec-chars
+                                           omap::lookup-in-values-when-in-keys
+                                           set::subset-in))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -278,6 +310,159 @@
              set::expensive-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-charset-basic ((std standardp))
+  :returns (charset exec-charsetp)
+  :short "The execution character set defined by the basic characters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Unlike in the corresponding source character set,
+     LF is already a basic execution character.
+     Thus this execution character set consists of exactly the basic characters,
+     with no extended characters.")
+   (xdoc::p
+    "We use the ACL2 ASCII characters
+     that correspond to the basic execution characters,
+     with their character codes as values.
+     The mapping from basic characters is the identity."))
+  (b* ((chars-with-values
+        (exec-charset-basic-loop (ascii-basic-exec-chars std)))
+       (basic-chars (omap::identity (ascii-basic-exec-chars std))))
+    (make-exec-charset :chars-with-values chars-with-values
+                       :basic-chars basic-chars))
+
+  :prepwork
+  ((define exec-charset-basic-loop ((chars character-setp))
+     :returns (map any-nat-mapp)
+     :parents nil
+     (b* (((when (set::emptyp (character-sfix chars))) nil)
+          (char (set::head chars)))
+       (omap::update char
+                     (char-code char)
+                     (exec-charset-basic-loop (set::tail chars))))
+     :prepwork ((local (in-theory (enable acl2::emptyp-of-character-sfix))))
+     :verify-guards :after-returns
+
+     ///
+
+     (defret keys-of-exec-charset-basic-loop
+       (equal (omap::keys map)
+              (character-sfix chars))
+       :hints (("Goal"
+                :induct t
+                :in-theory (enable set::emptyp
+                                   character-sfix))))
+
+     (defret values-of-exec-charset-basic-loop
+       (equal (omap::values map)
+              (acl2::char-code-set chars))
+       :hints (("Goal"
+                :induct t
+                :in-theory (enable acl2::char-code-set
+                                   omap::assoc-to-in-of-keys))))
+
+     (defret lookup-of-exec-charset-basic-loop
+       (implies (and (character-setp chars)
+                     (set::in char chars))
+                (equal (omap::lookup char map)
+                       (char-code char)))
+       :hints (("Goal"
+                :induct t
+                :in-theory (enable omap::lookup-of-update))))
+
+     (defret injectivep-of-exec-charset-basic-loop
+       (omap::injectivep map)
+       :hints (("Goal"
+                :induct t
+                :in-theory
+                (enable acl2::not-in-char-code-set-when-not-in-char-set))))))
+
+  ///
+
+  (defrulel injectivep-chars-with-values-lemma
+    (omap::injectivep (exec-charset-basic-loop (ascii-basic-exec-chars std))))
+
+  (defrulel injectivep-basic-chars-lemma
+    (omap::injectivep (omap::identity (ascii-basic-exec-chars std)))
+    :enable omap::injectivep-when-identityp)
+
+  (defrulel has-basic-chars-p-lemma
+    (exec-charset-has-basic-chars-p
+     (exec-charset-basic-loop (ascii-basic-exec-chars std))
+     (omap::identity (ascii-basic-exec-chars std))
+     std)
+    :enable (exec-charset-has-basic-chars-p
+             omap::values-is-keys-when-identityp))
+
+  (defrulel basic-chars-byte-p-lemma
+    (exec-charset-basic-chars-byte-p
+     (exec-charset-basic-loop (ascii-basic-exec-chars std))
+     (omap::identity (ascii-basic-exec-chars std))
+     uchar-format)
+    :enable (exec-charset-basic-chars-byte-p
+             omap::values-is-keys-when-identityp)
+    :prep-lemmas
+    ((defrule lemma
+       (implies (set::in
+                 x
+                 (omap::lookup*
+                  (ascii-basic-exec-chars std)
+                  (exec-charset-basic-loop
+                   (ascii-basic-exec-chars std))))
+                (<= x (uchar-format->max uchar-format)))
+       :use ((:instance acl2::char-code-set-upper-bound
+                        (acl2::code x)
+                        (acl2::chars (ascii-basic-exec-chars std)))
+             (:instance omap::in-values-when-in-lookup*
+                        (omap::x x)
+                        (omap::keys (ascii-basic-exec-chars std))
+                        (omap::map
+                         (exec-charset-basic-loop
+                          (ascii-basic-exec-chars std)))))
+       :enable values-of-exec-charset-basic-loop)))
+
+  (defrulel digits-in-order-p-lemma
+    (exec-charset-digits-in-order-p
+     (exec-charset-basic-loop (ascii-basic-exec-chars std))
+     (omap::identity (ascii-basic-exec-chars std)))
+    :enable (exec-charset-digits-in-order-p
+             set::in
+             omap::lookup-when-identityp
+             lookup-of-exec-charset-basic-loop)
+    :prep-lemmas
+    ((defrule lemma
+       (implies (set::in x '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
+                (set::in x (ascii-basic-exec-chars std)))
+       :enable (digits-in-ascii-basic-exec-chars
+                set::expensive-rules))))
+
+  (defrulel null-char-zero-p-lemma
+    (exec-charset-null-char-zero-p
+     (exec-charset-basic-loop (ascii-basic-exec-chars std))
+     (omap::identity (ascii-basic-exec-chars std)))
+    :enable (exec-charset-null-char-zero-p
+             null-in-ascii-basic-exec-chars
+             omap::lookup-when-identityp
+             lookup-of-exec-charset-basic-loop))
+
+  (defrule exec-charset-wfp-of-exec-charset-basic
+    (exec-charset-wfp (exec-charset-basic std) std uchar-format)
+    :enable (exec-charset-wfp
+             exec-charset-basic)))
+
+  (defruled basic-exec-char-of-exec-charset-basic
+    (implies (set::in bchar (ascii-basic-exec-chars std))
+             (equal (basic-exec-char bchar
+                                     (exec-charset-basic std)
+                                     std
+                                     uchar-format)
+                    bchar))
+    :enable (basic-exec-char
+             exec-charset-basic
+             omap::lookup-when-identityp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-charset-ascii ((std standardp))
   :returns (charset exec-charsetp)
@@ -371,6 +556,14 @@
                 (set::in x (ascii-basic-exec-chars std)))
        :enable (digits-in-ascii-basic-exec-chars
                 set::expensive-rules))))
+
+  (defrulel null-char-zero-p-lemma
+    (exec-charset-null-char-zero-p (exec-charset-ascii-loop 0)
+                                   (omap::identity
+                                    (ascii-basic-exec-chars std)))
+    :enable (exec-charset-null-char-zero-p
+             null-in-ascii-basic-exec-chars
+             omap::lookup-when-identityp))
 
   (defrule exec-charset-wfp-of-exec-charset-ascii
     (exec-charset-wfp (exec-charset-ascii std) std uchar-format)

@@ -10,6 +10,7 @@
 
 (include-book "kestrel/data/utilities/omap-defs" :dir :system)
 
+(include-book "internal/from-omap-defs")
 (include-book "internal/update-defs")
 (include-book "map-defs")
 (include-book "keys-defs")

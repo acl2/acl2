@@ -1266,25 +1266,28 @@
                                  (pdoc-concat (pdoc-line)
                                               (ispace-list-to-pdoc e.args))
                                (pdoc-empty)))))
-      :capp (b* (((ok fun) (expr-to-pdoc e.fun))
-                 ((ok args-doc)
-                  (if (consp e.args)
-                      (b* (((ok args) (expr-list-to-pdoc e.args)))
-                        (pdoc-concat (pdoc-line) args))
-                    (pdoc-empty))))
-              (pdoc-prefix-form
-               "@"
-               (pdoc-concat
-                fun
-                (pdoc-concat
-                 (pdoc-line)
-                 (pdoc-concat
-                  (type-list-option-to-pdoc e.targs)
-                  (pdoc-concat
-                   (pdoc-line)
-                   (pdoc-concat
-                    (ispace-list-option-to-pdoc e.iargs)
-                    args-doc)))))))
+      :capp
+      ;; Surface form (grammar at-app-exp):
+      ;;   "@" exp ws type-args ws ispace-args *( ws exp )
+      ;; The "@" is a prefix of the function expression, not a separate
+      ;; head: it is written against it, with no space and no opportunity
+      ;; to break the line between them.  So the head of the call form is
+      ;; the "@" and the function concatenated, as in the :cfun sig.
+      (b* (((ok fun) (expr-to-pdoc e.fun))
+           ((ok args-doc)
+            (if (consp e.args)
+                (b* (((ok args) (expr-list-to-pdoc e.args)))
+                  (pdoc-concat (pdoc-line) args))
+              (pdoc-empty))))
+        (pdoc-call-form
+         (pdoc-concat (pdoc-ascii "@") fun)
+         (pdoc-concat
+          (type-list-option-to-pdoc e.targs)
+          (pdoc-concat
+           (pdoc-line)
+           (pdoc-concat
+            (ispace-list-option-to-pdoc e.iargs)
+            args-doc)))))
       :unbox
       ;; Surface form (grammar unbox-spec):
       ;;   *( ispace-var ws ) identifier ws exp

@@ -301,9 +301,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun get-conjuncts-of-terms2 (terms)
+(defund get-conjuncts-of-terms2 (terms)
   (declare (xargs :guard (pseudo-term-listp terms)))
   (if (endp terms)
       nil
     (union-equal (get-conjuncts-of-term2 (first terms))
                  (get-conjuncts-of-terms2 (rest terms)))))
+
+(defthm pseudo-term-listp-of-get-conjuncts-of-terms2
+  (implies (pseudo-term-listp terms)
+           (pseudo-term-listp (get-conjuncts-of-terms2 terms)))
+  :hints (("Goal" :in-theory (enable get-conjuncts-of-terms2))))

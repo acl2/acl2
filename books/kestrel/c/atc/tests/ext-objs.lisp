@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/c/atc/atc" :dir :system :ttags ((:quicklisp) (:quicklisp.osicat) (:oslib) (:open-output-channel!)))
+(include-book "kestrel/c/atc/atc" :dir :system :ttags ((:quicklisp) (:quicklisp.osicat) (:oslib) (:open-output-channel!) (:file-io!)))
 
 (include-book "defobject") ; reuse these DEFOBJECTs
 

@@ -1145,7 +1145,8 @@
                                              (t t))))))) ; default
                            (t (er soft ctx
                                   "Illegal :write-port argument, ~x0.  See ~
-                                   :DOC certify-book."))))
+                                   :DOC certify-book."
+                                  write-port))))
                          (write-acl2x
                           (cond (acl2x (value (f-get-global 'write-acl2x state)))
                                 ((f-get-global 'write-acl2x state)

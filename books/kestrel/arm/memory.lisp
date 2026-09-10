@@ -32,11 +32,11 @@
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/logtail" :dir :system))
 (local (include-book "kestrel/bv/bvuminus" :dir :system))
+(local (include-book "kestrel/bv/bvminus" :dir :system))
 (local (include-book "kestrel/bv/bvplus" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/bv/convert-to-bv-rules" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system)) ; for bvchop-plus-1-split
-(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 
@@ -44,7 +44,7 @@
 (defthm subregion32p-of-+-of--1-same
   (implies (posp n)
            (subregion32p (+ -1 n) 1 n 0))
-  :hints (("Goal" :in-theory (enable subregion32p in-region32p bvlt))))
+  :hints (("Goal" :in-theory (enable subregion32p in-region32p bvlt bvminus))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -614,7 +614,7 @@
                     (not (and ;(unsigned-byte-p 32 n2)
                            (equal (bvchop 32 x) (bvminus 32 n2 1))
                            (not (equal (bvchop 32 x) (+ -1 (expt 2 32))))))))
-    :hints (("Goal" :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases)
+    :hints (("Goal" :in-theory (e/d (bvplus bvminus acl2::bvchop-of-sum-cases)
                                     (acl2::bvplus-of-+-arg3
                                      disjoint-regions32p-of-+-arg4
                                      in-region32p-of-+-arg3))))))
@@ -673,8 +673,7 @@
            :induct (read n1 ad1 arm)
            :in-theory (e/d ((:i read)
                             bvplus
-                            ;bvuminus
-                            bvuminus
+                            acl2::bvminus-becomes-bvplus-of-bvuminus bvuminus
                             ;acl2::bvchop-of-sum-cases
                             subregion32p
                             bvlt
@@ -752,7 +751,7 @@
            :in-theory (e/d ((:i read)
                             read-bytes
                             bvplus
-                            ;bvuminus
+                            bvminus
                             bvuminus
                             ;acl2::bvchop-of-sum-cases
                             subregion32p
@@ -938,6 +937,12 @@
   (equal (isetstate (write-byte addr byte arm))
          (isetstate arm))
   :hints (("Goal" :in-theory (enable write-byte isetstate))))
+
+(defthm library-map-of-write-byte
+  (equal (library-map (write-byte addr byte arm))
+         (library-map arm))
+  :hints (("Goal" :in-theory (enable write-byte library-map))))
+
 
 (defthm apsr.n-of-write-byte (equal (apsr.n (write-byte addr byte arm)) (apsr.n arm)) :hints (("Goal" :in-theory (enable apsr.n write-byte))))
 (defthm apsr.z-of-write-byte (equal (apsr.z (write-byte addr byte arm)) (apsr.z arm)) :hints (("Goal" :in-theory (enable apsr.z write-byte))))
@@ -1157,6 +1162,11 @@
          (isetstate arm))
   :hints (("Goal" :in-theory (enable write))))
 
+(defthm library-map-of-write
+  (equal (library-map (write n addr val arm))
+         (library-map arm))
+  :hints (("Goal" :in-theory (enable write))))
+
 (defthm apsr.n-of-write (equal (apsr.n (write n addr val arm)) (apsr.n arm)) :hints (("Goal" :in-theory (enable write))))
 (defthm apsr.z-of-write (equal (apsr.z (write n addr val arm)) (apsr.z arm)) :hints (("Goal" :in-theory (enable write))))
 (defthm apsr.c-of-write (equal (apsr.c (write n addr val arm)) (apsr.c arm)) :hints (("Goal" :in-theory (enable write))))
@@ -1251,7 +1261,7 @@
            (equal (write n ad1 val (write-byte ad2 byte arm))
                   (write-byte ad2 byte (write n ad1 val arm))))
   :hints (("Goal" :induct t
-           :in-theory (enable write
+           :in-theory (enable write bvminus
                               ifix
                               zp
                               acl2::bvlt-convert-arg2-to-bv
@@ -1337,7 +1347,8 @@
           ("Goal" :induct t
            :in-theory (enable write ;acl2::bvuminus-of-+
                                      ;bvlt bvplus bvuminus bvminus
-                                     ;acl2::bvchop-of-sum-cases
+                              ;;acl2::bvchop-of-sum-cases
+                              acl2::bvminus-becomes-bvplus-of-bvuminus
                               acl2::bvlt-convert-arg2-to-bv
                               acl2::trim-of-+-becomes-bvplus ; enable by default?
                               acl2::trim-of-unary---becomes-bvuminus ; enable by default?
@@ -1492,7 +1503,7 @@
            :do-not '(preprocess)
            :in-theory (e/d (read
                             write posp
-                            acl2::bvuminus
+                            acl2::bvuminus acl2::bvminus
                             bvplus acl2::bvchop-of-sum-cases
                             ;read32-mem-ubyte8-becomes-read-byte ; todo: loop
                             acl2::expt-becomes-expt-limited
@@ -1614,7 +1625,7 @@
            :expand (read n addr1 (write-byte 0 val arm))
            :in-theory (e/d (read
                             write-of-1-becomes-write-byte
-                            ;bvminus
+                            bvminus
                             bvplus
                             bvuminus
                             acl2::bvchop-of-sum-cases

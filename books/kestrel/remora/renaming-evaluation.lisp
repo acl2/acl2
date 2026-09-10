@@ -20,6 +20,13 @@
 (local (include-book "osets"))
 (local (include-book "omaps"))
 
+(local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))
+
+; The tau system is needed by only one proof in this book (noted below, where
+; it is switched back on); running it on every goal of the rest is pure
+; overhead, so it is off by default here.
+(local (acl2::in-theory (acl2::disable (:e acl2::tau-system))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ renaming-evaluation
@@ -648,7 +655,8 @@
                                                      shape-renam)
                   (ispace-var-set-rename-ispace-vars vars dim-renam nil)))
   :induct (ispace-var-set-rename-ispace-vars vars dim-renam shape-renam)
-  :enable (ispace-var-set-rename-ispace-vars
+  :enable ((:e acl2::tau-system)   ; tau does the ISPACE-VAR-KIND case analysis
+           ispace-var-set-rename-ispace-vars
            dim/shape-names-of-ispace-vars
            rename-ispace-var))
 
@@ -1037,12 +1045,6 @@
 ; renaming maps equals removing all the parameters at once.
 
 (local
- (defruled mergesort-of-cons
-   (equal (set::mergesort (cons a l))
-          (set::insert a (set::mergesort l)))
-   :enable set::mergesort))
-
-(local
  (defruled mergesort-when-singleton
    (implies (and (consp params)
                  (not (consp (cdr params))))
@@ -1099,7 +1101,9 @@
                                                               dim-all
                                                               shape-all)))))
   :enable (pi-curried-body
-           mergesort-when-singleton)
+           make-type-pi/pin
+           mergesort-when-singleton
+           acl2::equal-len-const)
   :use ((:instance dim/shape-rename-remove-bound-of-insert-then-rest
                    (var (car params))
                    (rest (cdr params)))))
@@ -1120,7 +1124,9 @@
                                                                  dim-all
                                                                  shape-all)))))
   :enable (sigma-curried-body
-           mergesort-when-singleton)
+           make-type-sigma/sigman
+           mergesort-when-singleton
+           acl2::equal-len-const)
   :use ((:instance dim/shape-rename-remove-bound-of-insert-then-rest
                    (var (car params))
                    (rest (cdr params)))))
@@ -1130,15 +1136,15 @@
 ; the renaming maps are not reduced, and the commutation is direct.
 
 (defrule type-rename-ispace-vars-of-forall-curried-body
-  (implies (and (type-var-listp params)
-                (consp params))
+  (implies (type-var-listp params)
            (equal (type-rename-ispace-vars (forall-curried-body params body)
                                            dim-renam shape-renam)
                   (forall-curried-body params
                                        (type-rename-ispace-vars body
                                                                 dim-renam
                                                                 shape-renam))))
-  :enable forall-curried-body)
+  :enable (forall-curried-body
+           make-type-forall/foralln))
 
 ; The analogue for the currying of term lambda abstractions
 ; (see lambda-curried-body), laid down ahead of that currying:
@@ -1164,6 +1170,7 @@
                                                    dim-renam
                                                    shape-renam))))
   :enable (lambda-curried-body
+           make-atom-lambda/lambdan
            var+type?-list-rename-ispace-vars))
 
 ; Phase 1: evaluating a renamed type errs exactly when evaluating the
@@ -1276,7 +1283,11 @@
                        not-reserrp-when-type-value-listp
                        type-valuep-when-result-not-error
                        type-value-listp-when-result-not-error
-                       type-denv-lookup-type))
+                       type-denv-lookup-type
+                       acl2::lt-len-const
+                       consp-of-cdr-of-type-foralln->params
+                       consp-of-cdr-of-type-pin->params
+                       consp-of-cdr-of-type-sigman->params))
    (and acl2::stable-under-simplificationp
         '(:use ((:instance denv-type-vars-ispace-renamed-p-necc
                            (var (type-var->var type))))))))
@@ -1926,7 +1937,8 @@
                                    (type-rename-type-vars body
                                                           atom-renam
                                                           array-renam))))
-  :enable pi-curried-body)
+  :enable (pi-curried-body
+           make-type-pi/pin))
 
 (defrule type-rename-type-vars-of-sigma-curried-body
   (implies (and (ispace-var-listp params)
@@ -1937,7 +1949,8 @@
                                       (type-rename-type-vars body
                                                              atom-renam
                                                              array-renam))))
-  :enable sigma-curried-body)
+  :enable (sigma-curried-body
+           make-type-sigma/sigman))
 
 ; The type-variable commutation for the currying of universal types
 ; mirrors the ispace-variable one for the currying of product types:
@@ -1966,8 +1979,7 @@
             mergesort-of-cons)))
 
 (defrule type-rename-type-vars-of-forall-curried-body
-  (implies (and (type-var-listp params)
-                (consp params))
+  (implies (type-var-listp params)
            (b* (((mv & & atom1 array1)
                  (atom/array-rename-remove-bound (set::insert (car params)
                                                               nil)
@@ -1982,7 +1994,9 @@
                                                                 atom-all
                                                                 array-all)))))
   :enable (forall-curried-body
-           mergesort-when-singleton)
+           make-type-forall/foralln
+           mergesort-when-singleton
+           acl2::equal-len-const)
   :use ((:instance atom/array-rename-remove-bound-of-insert-then-rest
                    (var (car params))
                    (rest (cdr params)))))
@@ -2011,6 +2025,7 @@
                                                  atom-renam
                                                  array-renam))))
   :enable (lambda-curried-body
+           make-atom-lambda/lambdan
            var+type?-list-rename-type-vars))
 
 ; The expression-variable analogue for the currying of
@@ -2039,6 +2054,8 @@
                      (string-string-map-fix renam)))
                    type?)))
   :enable (lambda-curried-body
+           make-atom-lambda/lambdan
+           acl2::equal-len-const
            delete*-of-delete*-fuse
            mergesort-of-cons
            mergesort-when-singleton))
@@ -2144,7 +2161,12 @@
                        not-reserrp-when-type-value-listp
                        type-valuep-when-result-not-error
                        type-value-listp-when-result-not-error
-                       type-denv-lookup-type))
+                       type-denv-lookup-type
+                       acl2::lt-len-const
+                       acl2::equal-len-const
+                       consp-of-cdr-of-type-foralln->params
+                       consp-of-cdr-of-type-pin->params
+                       consp-of-cdr-of-type-sigman->params))
    (and acl2::stable-under-simplificationp
         '(:use ((:instance denv-type-vars-renamed-p-necc
                            (var (type-var->var type))))))))

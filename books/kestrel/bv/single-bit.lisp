@@ -120,14 +120,14 @@
 (defthmd bitor-becomes-bitnot-of-bitand-of-bitnot-and-bitnot
   (equal (bitor x y)
          (bitnot (bitand (bitnot x) (bitnot y))))
-  :hints (("Goal" :in-theory (enable bitor bvor bitand bitand bitnot))))
+  :hints (("Goal" :in-theory (enable bitor bvor bitand bitnot))))
 
 ;; Gets rid of bitxor
 (defthmd bitxor-becomes-bitor-of-bitand-of-bitnot-and-bitand-of-bitnot
   (equal (bitxor x y)
          (bitor (bitand x (bitnot y))
                 (bitand (bitnot x) y)))
-  :hints (("Goal" :in-theory (enable bitor bvor bitand bitand bitnot))))
+  :hints (("Goal" :in-theory (enable bitor bvor bitand bitnot))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

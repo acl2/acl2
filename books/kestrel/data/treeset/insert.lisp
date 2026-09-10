@@ -20,6 +20,7 @@
 (include-book "kestrel/data/utilities/total-order/min-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/max-defs" :dir :system)
 
+(include-book "internal/from-oset-defs")
 (include-book "internal/insert-defs")
 (include-book "hash-defs")
 (include-book "set-defs")
@@ -52,6 +53,7 @@
 (local (include-book "internal/bst"))
 (local (include-book "internal/heap-order"))
 (local (include-book "internal/heap"))
+(local (include-book "internal/from-oset"))
 (local (include-book "internal/insert"))
 (local (include-book "internal/in-order"))
 (local (include-book "hash"))
@@ -342,6 +344,7 @@
 (define insert-all
   ((list true-listp)
    (set setp))
+  (declare (xargs :type-prescription :none))
   :returns (set$ setp)
   :parents (insert)
   :short "Add a list of values to the set."
@@ -356,8 +359,6 @@
                 (insert (first list) set))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t insert-all)))
 
 (defruled insert-all-type-prescription
   (or (consp (insert-all list set))
@@ -425,23 +426,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; A list's elements can be sorted and the treap then built in one pass,
+;; rather than inserted one at a time.  Both are O(n log(n)), but sorting
+;; spends the log factor far more cheaply than repeated insertion does: an
+;; insert copies the whole path from the root and may rotate, so it allocates
+;; O(log(n)) nodes per element, where the sorted build conses each element
+;; into exactly one node.
+
+(defruledl in-of-tree-from-oset
+  (equal (in x (tree-from-oset oset))
+         (set::in x oset))
+  :enable (in$inline
+           fix$inline
+           setp))
+
+(defruledl insert-all-of-empty-becomes-tree-from-oset-of-mergesort
+  (equal (insert-all list (empty))
+         (tree-from-oset (set::mergesort list)))
+  :enable (extensionality
+           in-of-tree-from-oset
+           setp))
+
 (define from-list
   ((list true-listp))
+  (declare (xargs :type-prescription :none))
   :parents (treeset)
   :short "Create a set from a list of values."
   :long
   (xdoc::topstring
    (xdoc::p
-     "This is just a wrapper around @(tsee insert-all).")
+     "Logically just a wrapper around @(tsee insert-all). In execution we
+      sort the list and build the treap in a single pass, which is
+      substantially faster; see @(tsee from-oset).")
    (xdoc::p
      "Time complexity: @($O(n\\log(n))$)."))
   :returns (set$ setp)
-  (insert-all list (empty))
-  :inline t)
+  (mbe :logic (insert-all list (empty))
+       :exec (tree-from-oset (set::mergesort list)))
+  :inline t
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable insert-all-of-empty-becomes-tree-from-oset-of-mergesort))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t from-list)))
 
 (defruled from-list-type-prescription
   (or (consp (from-list list))
@@ -525,22 +553,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; The oset's elements arrive in strictly ascending order, so the treap may
+;; be built directly in linear time (see internal/from-oset.lisp), instead
+;; of via repeated insertion.
+
+(defruledl from-list-of-sfix-becomes-tree-from-oset
+  (equal (from-list (set::sfix oset))
+         (tree-from-oset oset))
+  :enable (extensionality
+           in-of-tree-from-oset
+           in-when-emptyp
+           setp
+           set::in-to-member
+           set::sfix
+           (:e emptyp$inline)))
+
 (define from-oset ((oset set::setp))
+  (declare (xargs :type-prescription :none))
   :parents (insert)
   :short "Build a @(see treeset) from an oset."
   :long
   (xdoc::topstring
    (xdoc::p
-     "Time complexity: @($O(n\\log(n))$).")
+     "Time complexity: @($O(n)$).")
    (xdoc::p
      "This is the inverse of @(tsee to-oset). See @(tsee to-oset) for more
       information."))
   :returns (set setp)
-  (from-list (set::sfix oset)))
+  (mbe :logic (from-list (set::sfix oset))
+       :exec (tree-from-oset oset))
+  :guard-hints
+  (("Goal" :in-theory (enable from-list-of-sfix-becomes-tree-from-oset))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t from-oset)))
 
 (defruled from-oset-type-prescription
   (or (consp (from-oset oset))

@@ -61,6 +61,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled consp-when-positive-len
+  :short "Derive @(tsee consp) from a positive @(tsee len)."
+  (implies (< 0 (len x))
+           (consp x))
+  :enable len)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled positive-len-when-consp
+  :short "Derive a positive @(tsee len) from @(tsee consp)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @(see acl2::std/lists) library proves the rewrite rule
+     @('|(< 0 (len x))|'), which rewrites @('(< 0 (len x))') to
+     @('(consp x)').  That rule does not apply to a goal of the form
+     @('(>= (len x) 1)'), which is the form in which minimum-length
+     requirements are typically stated; hence this linear rule, which
+     the linear arithmetic procedure can combine with such a goal."))
+  (implies (consp x)
+           (< 0 (len x)))
+  :rule-classes :linear
+  :enable len)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled len->=-2-when-consp-of-cdr
+  :short "Derive a @(tsee len) of at least 2
+          from a list with at least two @(tsee cons)es."
+  (implies (and (consp x)
+                (consp (cdr x)))
+           (<= 2 (len x)))
+  :rule-classes :linear
+  :enable len)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled car-of-repeat
   :short "Theorem about @(tsee car) applied to @(tsee repeat)."
   (equal (car (repeat n x))
@@ -249,7 +286,12 @@
              (equal (len (append-all lists))
                     (* (len lists) (len (car lists)))))
     :use (:instance len-of-append-all-when-all-of-len-p
-                    (n (len (car lists))))))
+                    (n (len (car lists)))))
+
+  (defruled consp-of-append-all-when-consp-of-car
+    (implies (consp (car lists))
+             (consp (append-all lists)))
+    :expand ((append-all lists))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -610,7 +652,11 @@
 
   (theory-invariant
    (incompatible (:definition check-list-suffix)
-                 (:rewrite check-list-suffix-alt-def))))
+                 (:rewrite check-list-suffix-alt-def)))
+
+  (defrule check-list-suffix-same
+    (equal (check-list-suffix x x)
+           (mv t nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

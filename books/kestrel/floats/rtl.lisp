@@ -290,7 +290,7 @@
   :hints (("Goal" :in-theory (enable decode-bv-float decode wfn decode-subnormal-number decode-normal-number
                                      emin emax bias
                                      rtl::decode rtl::ndecode rtl::ddecode
-                                     rtl::expf rtl::expf rtl::sgnf
+                                     rtl::expf rtl::sgnf
                                      rtl::encodingp
                                      rtl::formatp
                                      rtl::expw rtl::sigw
@@ -323,7 +323,7 @@
   :hints (("Goal" :in-theory (enable decode-bv-float decode wfn decode-subnormal-number decode-normal-number
                                      emin emax bias
                                      rtl::decode rtl::ndecode rtl::ddecode
-                                     rtl::expf rtl::expf rtl::sgnf
+                                     rtl::expf rtl::sgnf
                                      rtl::encodingp
                                      rtl::formatp
                                      rtl::expw rtl::sigw
@@ -354,7 +354,7 @@
   :hints (("Goal" :in-theory (enable decode-bv-float decode wfn decode-subnormal-number decode-normal-number
                                      emin emax bias
                                      rtl::decode rtl::ndecode rtl::ddecode
-                                     rtl::expf rtl::expf rtl::sgnf
+                                     rtl::expf rtl::sgnf
                                      rtl::encodingp
                                      rtl::formatp
                                      rtl::expw rtl::sigw
@@ -387,7 +387,7 @@
   :hints (("Goal" :in-theory (enable decode-bv-float decode wfn decode-subnormal-number decode-normal-number
                                      emin emax bias
                                      rtl::decode rtl::ndecode rtl::ddecode
-                                     rtl::expf rtl::expf rtl::sgnf
+                                     rtl::expf rtl::sgnf
                                      rtl::encodingp
                                      rtl::formatp
                                      rtl::expw rtl::sigw

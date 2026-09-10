@@ -22,7 +22,7 @@ The books of the top-level directory are listed below.
     - Polynomial evaluation
     - Factorization
     - Primitive element of an extension
-    - Algrbraic nature of finite field extensions: minimal polynomials
+    - Algebraic nature of finite field extensions: minimal polynomials
 
   * embeddings:
     - Embeddings and meta-embeddings of an extension field

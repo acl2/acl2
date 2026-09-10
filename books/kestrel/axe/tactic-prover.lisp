@@ -88,30 +88,29 @@
     (prog2$ (check-assumption (first assumptions))
             (check-assumptions (rest assumptions)))))
 
-;; Returns (mv erp dag-or-quotep assumptions) where dag-or-quotep is boolean-valued.
+;; Returns (mv erp dag-or-quotep assumptions state) where dag-or-quotep is boolean-valued.
 ;todo: redo this to first convert to a dag, then extract hyps and conc from the dag (may blow up but unlikely in practice?)
 ; TODO: Consider IF when getting assumptions.
 ;; TODO: Do more type checking between TYPE and the type of the term / top dag node.
 ;; todo: extract assumptions from dags?
-(defun dag-or-term-to-dag-and-assumptions (item wrld)
-  (declare (xargs :guard (plist-worldp wrld)
-                  :mode :program ; because this calls translate-term
-                  ))
+(defund dag-or-term-to-dag-and-assumptions (item state)
+  (declare (xargs :stobjs state))
   (if (eq nil item) ;we interpret nil as a term (not an empty dag)
-      (mv (erp-nil) *nil* nil)
+      (mv (erp-nil) *nil* nil state)
     (if (weak-dagp item)
         ;; TODO: Add support for getting assumptions out of a DAG that is an
         ;; IMPLIES (but what if they are huge?), in both the :boolean and :bit
         ;; cases.
-        (mv (erp-nil) item nil)
-      (b* ((term (translate-term item 'dag-or-term-to-dag-and-assumptions wrld))
+        (mv (erp-nil) item nil state)
+      (b* (((mv erp term state) (translate-term-in-logic-mode item 'dag-or-term-to-dag-and-assumptions state))
+           ((when erp) (mv erp *nil* nil state))
            ;; TODO: Consider extracting hyps from bit-valued terms:
            ((mv assumptions term)
             (term-hyps-and-conc term))
            ;; Create the DAG for the conclusion:
            ((mv erp dag) (dagify-term term))
-           ((when erp) (mv erp nil nil)))
-        (mv (erp-nil) dag assumptions)))))
+           ((when erp) (mv erp nil nil state)))
+        (mv (erp-nil) dag assumptions state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1095,9 +1094,9 @@
         (er hard 'prove-with-tactics-fn "Illegal tactics: ~x0. See TACTICP." tactics)
         (mv :bad-input nil state))
        ;; Form the dag to prove:
-       ((mv erp dag-or-constant assumptions2)
+       ((mv erp dag-or-constant assumptions2 state)
         ;; Also translates the term:
-        (dag-or-term-to-dag-and-assumptions dag-or-term (w state)))
+        (dag-or-term-to-dag-and-assumptions dag-or-term state))
        ((when erp) (mv :error-translating-input nil state))
        (all-assumptions (append assumptions assumptions2)) ; reorder args?
        ((mv result info-acc state)

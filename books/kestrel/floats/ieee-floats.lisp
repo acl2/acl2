@@ -470,7 +470,7 @@
                 (formatp k p))
            (representable-normalp k p (decode-normal-number k p sign biased-exponent trailing-significand)))
   :hints (("Goal" :cases ((integerp (expt 2 (+ k (- p)))))
-           :in-theory (enable decode-normal-number representable-positive-normalp emin emax bias wfn unsigned-byte-p representable-normalp bitp unsigned-byte-p))))
+           :in-theory (enable decode-normal-number representable-positive-normalp emin emax bias wfn unsigned-byte-p representable-normalp bitp))))
 
 ;; Trivial consequence of the above
 (defthm representable-nonzero-rationalp-of-decode-normal-number

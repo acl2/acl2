@@ -714,7 +714,7 @@
                           (cadr (fargn (car hyps) 1)))))
                (union-eq (cadr (fargn (car hyps) 1))
                          vars))
-              (t (er hard 'free-vars-in-hyps-considering-bind-free
+              (t (er hard 'all-vars-in-hyps
                      "We thought the first argument of synp in this context ~
                       was either 'NIL, 'T, or else a quoted true list of ~
                       variables, but ~x0 is not!"
@@ -5012,13 +5012,13 @@
        (maybe
         (pprogn
          (warning$ ctx nil ; add a string here if someone wants to turn this off
-                   "The proposed ~x0 rule will ultimately need to be LOCAL in ~
-                    its immediately surrounding encapsulate event, because ~
-                    its evaluator is introduced in a superior non-trivial ~
-                    encapsulate event.  Even if this rule is LOCAL, the ~
-                    alleged evaluator will probably not be available for ~
-                    future :META or :CLAUSE-PROCESSOR rules. See :DOC ~
-                    evaluator-restrictions."
+                   "The proposed ~x0 rule, ~x1, will ultimately need to be ~
+                    LOCAL in its immediately surrounding encapsulate event, ~
+                    because its evaluator, ~x2, is introduced in a superior ~
+                    non-trivial encapsulate event.  Even if this rule is ~
+                    LOCAL, the alleged evaluator will probably not be ~
+                    available for future :META or :CLAUSE-PROCESSOR rules. ~
+                    See :DOC evaluator-restrictions."
                    rule-class
                    name
                    ev)

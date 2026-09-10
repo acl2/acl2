@@ -364,7 +364,8 @@
             (gin (gin-update gin gout-elems)))
          (mv (make-expr-complit :type new-type
                                 :elems new-elems
-                                :final-comma expr.final-comma)
+                                :final-comma expr.final-comma
+                                :info expr.info)
              (gout-no-thm gin)))
        :unary
        (b* (((mv new-arg (gout gout-arg))
@@ -3317,7 +3318,7 @@
   :guard (and (code-ensemble-unambp code-old)
               (code-ensemble-annop code-old))
   :returns (mv erp (event pseudo-event-formp))
-  :short "Event expansion of the transformation."
+  :short "Generate the new code ensemble and accompanying theorems."
   :long
   (xdoc::topstring
    (xdoc::p

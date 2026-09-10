@@ -64,6 +64,7 @@
 (include-book "putbits")
 
 ;; Bit-wise operations:
+(include-book "bvnot-def")
 (include-book "bvnot")
 (include-book "bvand-def")
 (include-book "bvand")
@@ -117,6 +118,7 @@
 (include-book "sbvlt")
 
 ;; If-then-else:
+(include-book "bvif-def")
 (include-book "bvif")
 (include-book "bvif2")
 
@@ -138,6 +140,7 @@
 (include-book "bvashr")
 
 ;; Counting one bits:
+(include-book "bvcount-def")
 (include-book "bvcount")
 
 ;; Trim (only for rewriting)

@@ -508,6 +508,102 @@
 
   (fty::deffixequiv-mutual declor/dirdeclor->ident))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines declor/dirdeclor-derived-type-depth
+  :short "Depth of the type derived by a declarator or direct declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the number of array, pointer, and function type constructors
+     contributed by the (direct) declarator.
+     Parentheses do not contribute to the depth."))
+
+  (define declor-derived-type-depth ((declor declorp))
+    :returns (depth natp)
+    :parents (declor/dirdeclor-derived-type-depth abstract-syntax-operations)
+    :short "Depth of the type derived by a declarator."
+    (b* (((declor declor) declor))
+      (+ (len declor.pointers)
+         (dirdeclor-derived-type-depth declor.direct)))
+    :measure (declor-count declor))
+
+  (define dirdeclor-derived-type-depth ((dirdeclor dirdeclorp))
+    :returns (depth natp)
+    :parents (declor/dirdeclor-derived-type-depth abstract-syntax-operations)
+    :short "Depth of the type derived by a direct declarator."
+    (dirdeclor-case
+      dirdeclor
+      :ident 0
+      :paren (declor-derived-type-depth dirdeclor.inner)
+      :array (1+ (dirdeclor-derived-type-depth dirdeclor.declor))
+      :array-static1 (1+ (dirdeclor-derived-type-depth dirdeclor.declor))
+      :array-static2 (1+ (dirdeclor-derived-type-depth dirdeclor.declor))
+      :array-star (1+ (dirdeclor-derived-type-depth dirdeclor.declor))
+      :function-params (1+ (dirdeclor-derived-type-depth dirdeclor.declor))
+      :function-names (1+ (dirdeclor-derived-type-depth dirdeclor.declor)))
+    :measure (dirdeclor-count dirdeclor))
+
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines absdeclor/dirabsdeclor-derived-type-depth
+  :short "Depth of the type derived by an abstract declarator
+          or direct abstract declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the number of array, pointer, and function type constructors
+     contributed by the (direct) abstract declarator.
+     Parentheses do not contribute to the depth."))
+
+  (define absdeclor-derived-type-depth ((absdeclor absdeclorp))
+    :returns (depth natp)
+    :parents (absdeclor/dirabsdeclor-derived-type-depth
+              abstract-syntax-operations)
+    :short "Depth of the type derived by an abstract declarator."
+    (b* (((absdeclor absdeclor) absdeclor))
+      (+ (len absdeclor.pointers)
+         (dirabsdeclor-option-derived-type-depth absdeclor.direct?)))
+    :measure (absdeclor-count absdeclor))
+
+  (define dirabsdeclor-option-derived-type-depth
+    ((dirabsdeclor? dirabsdeclor-optionp))
+    :returns (depth natp)
+    :parents (absdeclor/dirabsdeclor-derived-type-depth
+              abstract-syntax-operations)
+    :short "Depth of the type derived by an optional direct abstract
+            declarator."
+    (dirabsdeclor-option-case
+      dirabsdeclor?
+      :none 0
+      :some (dirabsdeclor-derived-type-depth dirabsdeclor?.val))
+    :measure (dirabsdeclor-option-count dirabsdeclor?))
+
+  (define dirabsdeclor-derived-type-depth ((dirabsdeclor dirabsdeclorp))
+    :returns (depth natp)
+    :parents (absdeclor/dirabsdeclor-derived-type-depth
+              abstract-syntax-operations)
+    :short "Depth of the type derived by a direct abstract declarator."
+    (dirabsdeclor-case
+      dirabsdeclor
+      :dummy-base 0
+      :paren (absdeclor-derived-type-depth dirabsdeclor.inner)
+      :array
+      (1+ (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?))
+      :array-static1
+      (1+ (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?))
+      :array-static2
+      (1+ (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?))
+      :array-star
+      (1+ (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?))
+      :function
+      (1+ (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?)))
+    :measure (dirabsdeclor-count dirabsdeclor))
+
+  :verify-guards :after-returns)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define init-declor->ident
@@ -861,6 +957,58 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-ext-declon-declon ((edeclon ext-declonp))
+  :returns (declon? declon-optionp)
+  :short "Check if an external declaration is a declaration,
+          return the declaration if successful."
+  (if (ext-declon-case edeclon :declon)
+      (ext-declon-declon->declon edeclon)
+    nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-ext-declon-fundef ((edeclon ext-declonp))
+  :returns (fundef? fundef-optionp)
+  :short "Check if an external declaration is a function definition,
+          return the function definition if successful."
+  (if (ext-declon-case edeclon :fundef)
+      (ext-declon-fundef->fundef edeclon)
+    nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-trans-item-ext-declon ((item trans-itemp))
+  :returns (edeclon? ext-declon-optionp)
+  :short "Check if a translation item is an external declaration,
+          returning the external declaration if successful."
+  (if (trans-item-case item :declon)
+      (trans-item-declon->declon item)
+    nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-trans-item-declon ((item trans-itemp))
+  :returns (declon? declon-optionp)
+  :short "Check if a translation item is a declaration,
+          returning the declaration if successful."
+  (b* ((edeclon (check-trans-item-ext-declon item)))
+    (if edeclon
+        (check-ext-declon-declon edeclon)
+      nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-trans-item-fundef ((item trans-itemp))
+  :returns (fundef? fundef-optionp)
+  :short "Check if a translation item is a function definition,
+          returning the function definition if successful."
+  (b* ((edeclon (check-trans-item-ext-declon item)))
+    (if edeclon
+        (check-ext-declon-fundef edeclon)
+      nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-struni-spec-no-members ((struni-spec struni-specp))
   :returns (ident? ident-optionp)
   :short "Check if a structure or union specifier has no members,
@@ -914,7 +1062,16 @@
        ((mv yes/no tyspecs) (check-decl-spec-list-all-typespec (cdr declspecs))))
     (if yes/no
         (mv t (cons (decl-spec-typespec->spec declspec) tyspecs))
-      (mv nil nil))))
+      (mv nil nil)))
+
+  ///
+
+  (defrule check-decl-spec-list-all-typespec-of-decl-spec-typespec-list
+    (equal (check-decl-spec-list-all-typespec
+            (decl-spec-typespec-list tyspecs))
+           (mv t (type-spec-list-fix tyspecs)))
+    :induct t
+    :enable decl-spec-typespec-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -965,7 +1122,26 @@
                                     declspecs))
                          nil)))
     :induct t
-    :enable check-decl-spec-list-all-typespec))
+    :enable check-decl-spec-list-all-typespec)
+
+  (defrule
+    check-decl-spec-list-all-typespec/stoclass-of-decl-spec-typespec-list
+    (equal (check-decl-spec-list-all-typespec/stoclass
+            (decl-spec-typespec-list tyspecs))
+           (mv t (type-spec-list-fix tyspecs) nil))
+    :induct t
+    :enable decl-spec-typespec-list)
+
+  (defrule
+    check-decl-spec-list-all-typespec/stoclass-of-stoclass-and-typespec-append-lists
+    (equal (check-decl-spec-list-all-typespec/stoclass
+            (append (decl-spec-stoclass-list stor-specs)
+                    (decl-spec-typespec-list tyspecs)))
+           (mv t
+               (type-spec-list-fix tyspecs)
+               (stor-spec-list-fix stor-specs)))
+    :induct t
+    :enable decl-spec-stoclass-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -984,7 +1160,16 @@
        ((mv yes/no tyspecs) (check-spec/qual-list-all-typespec (cdr specquals))))
     (if yes/no
         (mv t (cons (spec/qual-typespec->spec specqual) tyspecs))
-      (mv nil nil))))
+      (mv nil nil)))
+
+  ///
+
+  (defrule check-spec/qual-list-all-typespec-of-spec/qual-typespec-list
+    (equal (check-spec/qual-list-all-typespec
+            (spec/qual-typespec-list tyspecs))
+           (mv t (type-spec-list-fix tyspecs)))
+    :induct t
+    :enable spec/qual-typespec-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

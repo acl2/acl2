@@ -42,6 +42,7 @@
 (local (include-book "kestrel/bv/sbvdiv" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
 (local (include-book "kestrel/bv/bvor" :dir :system))
+(local (include-book "kestrel/bv/bvminus" :dir :system))
 (local (include-book "kestrel/bv/leftrotate-rules" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -367,15 +368,7 @@
   :hints (("Goal" :use (:instance sbvlt-becomes-bvlt-cheap)
            :in-theory (e/d (unsigned-byte-p-forced) (sbvlt-becomes-bvlt-cheap)))))
 
-(defthm not-equal-constant-when-unsigned-byte-p-bind-free-axe
-  (implies (and (syntaxp (quotep k))
-                (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (syntaxp (quotep xsize))
-                (not (unsigned-byte-p xsize k))
-                (unsigned-byte-p-forced xsize x))
-           (not (equal k x)))
-  :rule-classes nil ; since in ACL2, xsize not is bound when used
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
+
 
 ;a cheap case of logext-identity
 (defthmd logext-identity-when-usb-smaller-axe
@@ -387,8 +380,8 @@
            (equal (logext n x)
                   x))
   :hints (("Goal"
-           :use (:instance logext-when-usb-cheap (i x) (free size2) (size n))
-           :in-theory (e/d (UNSIGNED-BYTE-P-FORCED) (logext-when-usb-cheap)))))
+           :use (:instance logext-when-unsigned-byte-p-free (i x) (free size2) (size n))
+           :in-theory (e/d (UNSIGNED-BYTE-P-FORCED) (logext-when-unsigned-byte-p-free)))))
 
 ;rename axe-
 (defthmd rationalp-when-bv-operator
@@ -1745,7 +1738,7 @@
            :in-theory (e/d (bvlt
                             bvplus
                             getbit-when-val-is-not-an-integer
-                            bvuminus bvminus
+                            ;bvuminus bvminus
                             bvchop-of-sum-cases sbvlt
                             bvchop-when-i-is-not-an-integer
                             bvchop-when-top-bit-1 expt-of-+)
@@ -1756,7 +1749,8 @@
                             ;minus-becomes-bv
                             ;bvuminus-of-+
                             ;plus-1-and-bvchop-becomes-bvplus ;fixme
-                            bvminus-becomes-bvplus-of-bvuminus)))))
+                            ;bvminus-becomes-bvplus-of-bvuminus
+                            )))))
 
 ;todo: add axe to the name
 ;shouldn't this just go to bvuminus?
@@ -1888,7 +1882,7 @@
 ;;                       (bvchop-list 8 (take 4 data))
 ;;                     (bv-array-write '8 '4 (bvchop 2 x) val data))))
 ;;   :hints (("Goal" :in-theory (e/d (unsigned-byte-p-forced bv-array-write update-nth2 bvlt)
-;;                                   (update-nth-becomes-update-nth2-extend-gen)))))
+;;                                   ()))))
 
 
 ;rename
@@ -2024,14 +2018,14 @@
                 (equal :l (car path)))
            (equal (cancel-bvplus-arg path size x (bvplus size y z))
                   (bvplus size (cancel-bvplus-arg (cdr path) size x y) z)))
-  :hints (("Goal" :in-theory (enable cancel-bvplus-arg))))
+  :hints (("Goal" :in-theory (enable cancel-bvplus-arg acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
 (defthmd cancel-bvplus-arg-right
   (implies (and (consp path)
                 (equal :r (car path)))
            (equal (cancel-bvplus-arg path size x (bvplus size y z))
                   (bvplus size y (cancel-bvplus-arg (cdr path) size x z))))
-  :hints (("Goal" :in-theory (enable cancel-bvplus-arg))))
+  :hints (("Goal" :in-theory (enable cancel-bvplus-arg acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
 ;; Searches for Y in the nest rooted at X.
 (defthmd bvminus-cancel-axe

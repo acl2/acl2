@@ -1,6 +1,6 @@
 ; Utilities to widen the margins
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,7 @@
 
 (include-book "kestrel/utilities/pos-fix" :dir :system)
 (local (include-book "margins"))
+(local (include-book "globals"))
 (local (include-book "kestrel/utilities/state" :dir :system))
 
 (local (in-theory (disable put-global)))
@@ -26,6 +27,11 @@
          (state (set-fmt-hard-right-margin 410 state))
          (state (set-fmt-soft-right-margin 400 state)))
     state))
+
+(defthm w-of-widen-margins
+  (equal (w (widen-margins state))
+         (w state))
+  :hints (("Goal" :in-theory (enable widen-margins))))
 
 ;; Restores the margins to what they were before widen-margins was called.
 (defund unwiden-margins (state)

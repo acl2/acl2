@@ -182,6 +182,13 @@
         (t
          x)))
 
+; Moore Modification: Actually, there's no modification here, just a comment.
+; When I introduced the notion of newp to allow gathered exponents to match if
+; one was the arithmetic negative of the other, I also considered changing the
+; scattering infrastructure to support newp.  But matching-exponents already
+; has some interest in identifying such exponents and so I have not done
+; anything about this issue in the scattering code.
+
 (defun matching-exponents (exp-1 exp-2)
   (declare (xargs :guard t))
   (equal (addend-pattern exp-1)
@@ -216,7 +223,46 @@
         (t
          factor)))
 
-(defun matching-factor-gather-exponents-patterns-p (pattern-1 pattern-2)
+(defun opposite-signsp (term1 term2)
+  (declare (xargs :guard t))
+  (or (and (nvariablep term1)
+           (not (fquotep term1))
+           (eq (ffn-symb term1) 'unary--)
+           (equal (arg1 term1) term2))
+      (and (nvariablep term2)
+           (not (fquotep term2))
+           (eq (ffn-symb term2) 'unary--)
+           (equal (arg1 term2) term1))))
+
+; Moore Modification: This comment ought to be called
+
+; Essay on Moore's Use of ``Wrappers'' and Robert's ``Ugly Hacks''
+
+; Matching-factor-gather-exponents-patterns-p and virtually all of the
+; functions that depend on it have been modified by Moore.  Here at the bottom
+; of the dependency call graph we allow exponents to match if one is the
+; unary-- of the other.  However, we must allow extension only if the rune (:e
+; use-new-arith-5-rules) is enabled.  But testing status involves disabledp-fn
+; which has a dreadful guard.  I don't want to complicate guard verification.
+; so I'm going to pass down a simple boolean flag that tells me whether I'm
+; operating under the new arith-5 rules.  This flag will always be named NEWP
+; and its initial value will be set by an appropriate call inside a :program
+; mode ``wrapper'' function.  Anywhere the name ``newp'' appears a ``Moore
+; Modification'' should also appear!  But as there are at least 90 occurrences
+; of ``newp'' in this file alone, I'll not further mark them.
+
+; FYI: Robert used this same trick -- of switching from guard-verified
+; workhorses to :program mode wrappers -- to select between scattering and
+; gathering exponents (which, like old/new arithmetic-5 rules, is specified by
+; the enabled status of a certain rune).  Robert called his :program mode
+; functions ``ugly-hack-one'' and ``ugly-hack-two'', names which better convey
+; how I regard this trick!  But like Robert, I'll delay introducing my wrappers
+; until just before I need them.
+
+; So for now, just think of newp as meaning (:e use-new-arith-5-rules) is
+; enabled.
+
+(defun matching-factor-gather-exponents-patterns-p (pattern-1 pattern-2 newp)
   (declare (xargs :guard t))
   (cond ((acl2-numberp pattern-1)
          (and (not (equal pattern-1 0))
@@ -229,16 +275,19 @@
 		t)
 	       ((eq (fn-symb pattern-2) 'EXPT-WITH-CONST-BASE)
 		(or (equal (arg1 pattern-1) (arg1 pattern-2))
-		    (equal (arg2 pattern-1) (arg2 pattern-2))))
+		    (equal (arg2 pattern-1) (arg2 pattern-2))
+                    (and newp
+                         (opposite-signsp (arg2 pattern-1)
+                                          (arg2 pattern-2)))))
 	       (t
 		nil)))
         (t
          (equal pattern-1 pattern-2))))
 
-(defun matching-factor-gather-exponents-p (pattern factor)
+(defun matching-factor-gather-exponents-p (pattern factor newp)
   (declare (xargs :guard t))
   (let ((factor-pattern (factor-pattern-gather-exponents factor)))
-    (matching-factor-gather-exponents-patterns-p pattern factor-pattern)))
+    (matching-factor-gather-exponents-patterns-p pattern factor-pattern newp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -432,48 +481,54 @@
         (factor-val-gather-exponents x)
         x))
 
-(defun assoc-factor-gather-exponents (x info-list)
+(defun assoc-factor-gather-exponents (x info-list newp)
   (declare (xargs :guard (info-list-p info-list)))
   (cond ((endp info-list)
          nil)
-        ((matching-factor-gather-exponents-patterns-p x (caar info-list))
+        ((matching-factor-gather-exponents-patterns-p x (caar info-list) newp)
          (car info-list))
         (t
-         (assoc-factor-gather-exponents x (cdr info-list)))))
+         (assoc-factor-gather-exponents x (cdr info-list) newp))))
 
-(defun factor-gather-exponents-intersect-info-lists (info-list1 info-list2)
+(defun factor-gather-exponents-intersect-info-lists
+    (info-list1 info-list2 newp)
   (declare (xargs :guard (and (info-list-p info-list1)
                               (info-list-p info-list2))))
   (if (endp info-list1)
       nil
-    (let ((temp (assoc-factor-gather-exponents (caar info-list1) info-list2)))
+    (let ((temp
+           (assoc-factor-gather-exponents (caar info-list1) info-list2 newp)))
       (cond ((not temp)
              (factor-gather-exponents-intersect-info-lists (cdr info-list1)
-                                                           info-list2))
+                                                           info-list2
+                                                           newp))
             ((val-< (cadr temp) (cadr (car info-list1)))
              (cons temp
                    (factor-gather-exponents-intersect-info-lists (cdr info-list1)
-                                                                 info-list2)))
+                                                                 info-list2
+                                                                 newp)))
             (t
              (cons (car info-list1)
                    (factor-gather-exponents-intersect-info-lists (cdr info-list1)
-                                                                 info-list2)))))))
+                                                                 info-list2
+                                                                 newp)))))))
 
-(defun factor-gather-exponents-info-list (x)
+(defun factor-gather-exponents-info-list (x newp)
   (declare (xargs :guard t
 		  :verify-guards nil))
   (cond ((eq (fn-symb x) 'BINARY-+)
-         (let ((temp (factor-gather-exponents-info-list (arg2 x))))
+         (let ((temp (factor-gather-exponents-info-list (arg2 x) newp)))
            (if temp
                (factor-gather-exponents-intersect-info-lists
                 temp
-                (factor-gather-exponents-info-list (arg1 x)))
+                (factor-gather-exponents-info-list (arg1 x) newp)
+                newp)
              nil)))
         ((eq (fn-symb x) 'BINARY-*)
          (cons (factor-gather-exponents-info-entry (arg1 x))
-               (factor-gather-exponents-info-list (arg2 x))))
+               (factor-gather-exponents-info-list (arg2 x) newp)))
 	((eq (fn-symb x) 'UNARY--)
-	 (factor-gather-exponents-info-list (arg1 x)))
+	 (factor-gather-exponents-info-list (arg1 x) newp))
         (t
          (list (factor-gather-exponents-info-entry x)))))
 
@@ -484,8 +539,9 @@
   (local
    (defthm temp-1
      (implies (and (info-list-p info-list)
-		   (assoc-factor-gather-exponents x info-list))
-	      (info-entry-p (assoc-factor-gather-exponents x info-list)))))
+		   (assoc-factor-gather-exponents x info-list newp))
+	      (info-entry-p
+               (assoc-factor-gather-exponents x info-list newp)))))
 
   (local
    (defthm temp-2
@@ -493,7 +549,8 @@
 		   (info-list-p info-list-2))
 	      (info-list-p (factor-gather-exponents-intersect-info-lists
 			    info-list-1
-			    info-list-2)))))
+			    info-list-2
+                            newp)))))
 
   (local
    (defthm temp-3
@@ -504,7 +561,7 @@
      (good-val-triple-p (factor-val-gather-exponents x))))
 
   (defthm factor-gather-exponents-info-list-thm
-    (info-list-p (factor-gather-exponents-info-list x)))
+    (info-list-p (factor-gather-exponents-info-list x newp)))
 
   ))
 
@@ -512,8 +569,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun first-match-in-factor-gather-exponents-info-lists (info-list1 info-list2
-								     mfc state)
+(defun first-match-in-factor-gather-exponents-info-lists
+    (info-list1 info-list2 newp mfc state)
   (declare (xargs :guard (and (info-list-p info-list1)
                               (info-list-p info-list2))
 		  :guard-hints (("Goal" :in-theory (disable good-val-triple-p
@@ -521,7 +578,9 @@
 							    val-<)))))
   (if (endp info-list1)
       nil
-    (let ((temp (assoc-factor-gather-exponents (car (car info-list1)) info-list2)))
+    (let ((temp (assoc-factor-gather-exponents (car (car info-list1))
+                                               info-list2
+                                               newp)))
       (if temp
 	  (cond ((and ;; We want the ``smaller'' match
 		      (val-< (cadr (car info-list1))
@@ -537,28 +596,29 @@
 		 (list (cons 'x (invert-match (caddr temp)))))
 		(t
 		 (first-match-in-factor-gather-exponents-info-lists
-		  (cdr info-list1) info-list2
+		  (cdr info-list1) info-list2 newp
 		  mfc state)))
-        (first-match-in-factor-gather-exponents-info-lists (cdr info-list1) info-list2
-							   mfc state)))))
+        (first-match-in-factor-gather-exponents-info-lists
+         (cdr info-list1) info-list2 newp mfc state)))))
 
-(defun find-matching-factors-gather-exponents (lhs rhs mfc state)
+(defun find-matching-factors-gather-exponents (lhs rhs newp mfc state)
   (declare (xargs :guard t
 		  :verify-guards nil))
-  (let* ((info-list1 (factor-gather-exponents-info-list lhs))
+  (let* ((info-list1 (factor-gather-exponents-info-list lhs newp))
          (info-list2 (if info-list1
-                         (factor-gather-exponents-info-list rhs)
+                         (factor-gather-exponents-info-list rhs newp)
                        nil)))
     (if info-list2
 	(first-match-in-factor-gather-exponents-info-lists info-list1
 							   info-list2
-							   mfc state)
+							   newp
+                                                           mfc state)
       nil)))
 
 (verify-guards find-matching-factors-gather-exponents)
 
 (defun first-rational-match-in-factor-gather-exponents-info-lists
-    (info-list1 info-list2 mfc state)
+    (info-list1 info-list2 newp mfc state)
   (declare (xargs :guard (and (info-list-p info-list1)
                               (info-list-p info-list2))
 		  :guard-hints (("Goal" :in-theory (disable good-val-triple-p
@@ -566,7 +626,9 @@
 							    val-<)))))
   (if (endp info-list1)
       nil
-    (let ((temp (assoc-factor-gather-exponents (car (car info-list1)) info-list2)))
+    (let ((temp (assoc-factor-gather-exponents (car (car info-list1))
+                                               info-list2
+                                               newp)))
       (if (and temp
                (proveably-real/rational 'x `((x . ,(caddr temp))) mfc state))
           (cond ((and ;; We want the ``smaller'' match
@@ -583,28 +645,29 @@
 		 (list (cons 'x (invert-match (caddr temp)))))
 		(t
 		 (first-rational-match-in-factor-gather-exponents-info-lists
-		  (cdr info-list1) info-list2
+		  (cdr info-list1) info-list2 newp
 		  mfc state)))
-        (first-rational-match-in-factor-gather-exponents-info-lists (cdr info-list1) info-list2
-                                                                    mfc state)))))
+        (first-rational-match-in-factor-gather-exponents-info-lists
+         (cdr info-list1) info-list2 newp mfc state)))))
 
-(defun find-rational-matching-factors-gather-exponents (lhs rhs mfc state)
+(defun find-rational-matching-factors-gather-exponents (lhs rhs newp mfc state)
   (declare (xargs :guard t
 		  :verify-guards nil))
-  (let* ((info-list1 (factor-gather-exponents-info-list lhs))
+  (let* ((info-list1 (factor-gather-exponents-info-list lhs newp))
          (info-list2 (if info-list1
-                         (factor-gather-exponents-info-list rhs)
+                         (factor-gather-exponents-info-list rhs newp)
                        nil)))
     (if info-list2
 	(first-rational-match-in-factor-gather-exponents-info-lists info-list1
 								    info-list2
-								    mfc state)
+								    newp
+                                                                    mfc state)
       nil)))
 
  (verify-guards find-rational-matching-factors-gather-exponents)
 
 (defun first-non-zero-rational-match-in-factor-gather-exponents-info-lists
-    (info-list1 info-list2 mfc state)
+    (info-list1 info-list2 newp mfc state)
   (declare (xargs :guard (and (info-list-p info-list1)
                               (info-list-p info-list2))
 		  :guard-hints (("Goal" :in-theory (disable good-val-triple-p
@@ -612,7 +675,8 @@
 							    val-<)))))
   (if (endp info-list1)
       nil
-    (let ((temp (assoc-factor-gather-exponents (car (car info-list1)) info-list2)))
+    (let ((temp (assoc-factor-gather-exponents (car (car info-list1))
+                                               info-list2 newp)))
       (if (and temp
                (proveably-non-zero-real/rational 'x `((x . ,(caddr temp))) mfc state))
           (cond ((and ;; We want the ``smaller'' match
@@ -629,22 +693,22 @@
 		 (list (cons 'x (invert-match (caddr temp)))))
 		(t
 		 (first-non-zero-rational-match-in-factor-gather-exponents-info-lists
-		  (cdr info-list1) info-list2
+		  (cdr info-list1) info-list2 newp
 		  mfc state)))
-        (first-non-zero-rational-match-in-factor-gather-exponents-info-lists (cdr info-list1) info-list2
-                                                                    mfc state)))))
+        (first-non-zero-rational-match-in-factor-gather-exponents-info-lists
+         (cdr info-list1) info-list2 newp mfc state)))))
 
-(defun find-non-zero-rational-matching-factors-gather-exponents (lhs rhs mfc state)
+(defun find-non-zero-rational-matching-factors-gather-exponents
+    (lhs rhs newp mfc state)
   (declare (xargs :guard t
 		  :verify-guards nil))
-  (let* ((info-list1 (factor-gather-exponents-info-list lhs))
+  (let* ((info-list1 (factor-gather-exponents-info-list lhs newp))
          (info-list2 (if info-list1
-                         (factor-gather-exponents-info-list rhs)
+                         (factor-gather-exponents-info-list rhs newp)
                        nil)))
     (if info-list2
-	(first-non-zero-rational-match-in-factor-gather-exponents-info-lists info-list1
-								    info-list2
-								    mfc state)
+	(first-non-zero-rational-match-in-factor-gather-exponents-info-lists
+         info-list1 info-list2 newp mfc state)
       nil)))
 
  (verify-guards find-non-zero-rational-matching-factors-gather-exponents)
@@ -676,18 +740,20 @@
                               (info-list-p info-list2))))
   (if (endp info-list1)
       nil
-    (let ((temp (assoc-factor-scatter-exponents (caar info-list1) info-list2)))
-      (cond ((not temp)
-             (factor-scatter-exponents-intersect-info-lists (cdr info-list1)
-                                                           info-list2))
-            ((val-< (cadr temp) (cadr (car info-list1)))
-             (cons temp
-                   (factor-scatter-exponents-intersect-info-lists (cdr info-list1)
-                                                                 info-list2)))
-            (t
-             (cons (car info-list1)
-                   (factor-scatter-exponents-intersect-info-lists (cdr info-list1)
-                                                                 info-list2)))))))
+      (let ((temp
+             (assoc-factor-scatter-exponents (caar info-list1) info-list2)))
+        (cond ((not temp)
+               (factor-scatter-exponents-intersect-info-lists
+                (cdr info-list1) info-list2))
+              ((val-< (cadr temp) (cadr (car info-list1)))
+               (cons temp
+                     (factor-scatter-exponents-intersect-info-lists
+                      (cdr info-list1) info-list2)))
+              (t
+               (cons (car info-list1)
+                     (factor-scatter-exponents-intersect-info-lists
+                      (cdr info-list1) info-list2)))))))
+
 
 (defun factor-scatter-exponents-info-list (x)
   (declare (xargs :guard t
@@ -700,7 +766,13 @@
                 (factor-scatter-exponents-info-list (arg1 x)))
              nil)))
 	((eq (fn-symb x) 'UNARY--)
-	 (factor-gather-exponents-info-list (arg1 x)))
+
+; Moore Modification: Robert switches from scatter to gather here, negating the
+; argument.  But under the Moore Modification the gatherer takes a newp flag.
+; We leave it nil because we do not wish to change the behavior of Robert's
+; code for the scattering case.
+
+	 (factor-gather-exponents-info-list (arg1 x) nil))
         ((eq (fn-symb x) 'BINARY-*)
          (cons (factor-scatter-exponents-info-entry (arg1 x))
                (factor-scatter-exponents-info-list (arg2 x))))
@@ -717,7 +789,8 @@
    (defthm temp-1
      (implies (and (info-list-p info-list)
 		   (assoc-factor-scatter-exponents x info-list))
-	      (info-entry-p (assoc-factor-scatter-exponents x info-list)))))
+	      (info-entry-p
+               (assoc-factor-scatter-exponents x info-list)))))
 
   (local
    (defthm temp-2
@@ -746,8 +819,8 @@
 
 ;; Another one to speed up.
 
-(defun first-match-in-factor-scatter-exponents-info-lists (info-list1 info-list2
-								      mfc state)
+(defun first-match-in-factor-scatter-exponents-info-lists
+    (info-list1 info-list2 mfc state)
   (declare (xargs :guard (and (info-list-p info-list1)
                               (info-list-p info-list2))
 		  :guard-hints (("Goal" :in-theory (disable good-val-triple-p
@@ -755,7 +828,8 @@
 							    val-<)))))
   (if (endp info-list1)
       nil
-    (let ((temp (assoc-factor-scatter-exponents (car (car info-list1)) info-list2)))
+    (let ((temp (assoc-factor-scatter-exponents
+                 (car (car info-list1)) info-list2)))
       (if temp
           (cond ((and ;; We want the ``smaller'' match
 		      (val-< (cadr (car info-list1))
@@ -771,10 +845,9 @@
 		 (list (cons 'x (invert-match (caddr temp)))))
 		(t
 		 (first-match-in-factor-scatter-exponents-info-lists
-		  (cdr info-list1) info-list2
-		  mfc state)))
-        (first-match-in-factor-scatter-exponents-info-lists (cdr info-list1) info-list2
-							    mfc state)))))
+		  (cdr info-list1) info-list2 mfc state)))
+        (first-match-in-factor-scatter-exponents-info-lists
+         (cdr info-list1) info-list2 mfc state)))))
 
 (defun find-matching-factors-scatter-exponents (lhs rhs mfc state)
   (declare (xargs :guard t
@@ -784,9 +857,8 @@
                          (factor-scatter-exponents-info-list rhs)
                        nil)))
     (if info-list2
-	(first-match-in-factor-scatter-exponents-info-lists info-list1
-							    info-list2
-							    mfc state)
+	(first-match-in-factor-scatter-exponents-info-lists
+         info-list1 info-list2 mfc state)
       nil)))
 
 (verify-guards find-matching-factors-scatter-exponents)
@@ -804,7 +876,8 @@
 							    val-<)))))
   (if (endp info-list1)
       nil
-    (let ((temp (assoc-factor-scatter-exponents (car (car info-list1)) info-list2)))
+    (let ((temp (assoc-factor-scatter-exponents (car (car info-list1))
+                                                info-list2)))
       (if (and temp
                (proveably-real/rational 'x `((x . ,(caddr temp))) mfc state))
           (cond ((and ;; We want the ``smaller'' match
@@ -821,10 +894,9 @@
 		 (list (cons 'x (invert-match (caddr temp)))))
 		(t
 		 (first-rational-match-in-factor-scatter-exponents-info-lists
-		  (cdr info-list1) info-list2
-		  mfc state)))
-        (first-rational-match-in-factor-scatter-exponents-info-lists (cdr info-list1) info-list2
-                                                                     mfc state)))))
+		  (cdr info-list1) info-list2 mfc state)))
+        (first-rational-match-in-factor-scatter-exponents-info-lists
+         (cdr info-list1) info-list2 mfc state)))))
 
 (defun find-rational-matching-factors-scatter-exponents (lhs rhs mfc state)
   (declare (xargs :guard t
@@ -834,9 +906,8 @@
                          (factor-scatter-exponents-info-list rhs)
                        nil)))
     (if info-list2
-	(first-rational-match-in-factor-scatter-exponents-info-lists info-list1
-								     info-list2
-								     mfc state)
+	(first-rational-match-in-factor-scatter-exponents-info-lists
+         info-list1 info-list2 mfc state)
       nil)))
 
 (verify-guards find-rational-matching-factors-scatter-exponents)
@@ -850,7 +921,9 @@
 							    val-<)))))
   (if (endp info-list1)
       nil
-    (let ((temp (assoc-factor-scatter-exponents (car (car info-list1)) info-list2)))
+    (let ((temp
+           (assoc-factor-scatter-exponents
+            (car (car info-list1)) info-list2)))
       (if (and temp
                (proveably-non-zero-real/rational 'x `((x . ,(caddr temp))) mfc state))
           (cond ((and ;; We want the ``smaller'' match
@@ -867,12 +940,12 @@
 		 (list (cons 'x (invert-match (caddr temp)))))
 		(t
 		 (first-non-zero-rational-match-in-factor-scatter-exponents-info-lists
-		  (cdr info-list1) info-list2
-		  mfc state)))
-        (first-non-zero-rational-match-in-factor-scatter-exponents-info-lists (cdr info-list1) info-list2
-                                                                     mfc state)))))
+		  (cdr info-list1) info-list2 mfc state)))
+        (first-non-zero-rational-match-in-factor-scatter-exponents-info-lists
+         (cdr info-list1) info-list2 mfc state)))))
 
-(defun find-non-zero-rational-matching-factors-scatter-exponents (lhs rhs mfc state)
+(defun find-non-zero-rational-matching-factors-scatter-exponents
+    (lhs rhs mfc state)
   (declare (xargs :guard t
 		  :verify-guards nil))
   (let* ((info-list1 (factor-scatter-exponents-info-list lhs))
@@ -880,9 +953,8 @@
                          (factor-scatter-exponents-info-list rhs)
                        nil)))
     (if info-list2
-	(first-non-zero-rational-match-in-factor-scatter-exponents-info-lists info-list1
-								     info-list2
-								     mfc state)
+	(first-non-zero-rational-match-in-factor-scatter-exponents-info-lists
+         info-list1 info-list2 mfc state)
       nil)))
 
 (verify-guards find-non-zero-rational-matching-factors-scatter-exponents)

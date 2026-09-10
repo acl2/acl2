@@ -136,40 +136,6 @@
   :enable (data::<<-rules
            acl2::equal-of-booleans-cheap))
 
-;;;;;;;;;;;;;;;;;;;;
-
-;; TODO: improve proof
-(defrule tree-min-when-bstp-definition
-  (implies (bstp tree)
-           (equal (tree-min tree)
-                  (cond ((tree-empty-p tree)
-                         nil)
-                        ((tree-empty-p (tree->left tree))
-                         (tree-element->val (tree->head tree)))
-                        (t
-                         (tree-min (tree->left tree))))))
-  :rule-classes :definition
-  :induct t
-  :enable (tree-min
-           data::<<-rules
-           min-<<
-           <<-all-r-weaken)
-  :disable bstp-when-not-tree-empty-p-cheap
-  :prep-lemmas
-  ((defrule lemma0
-     (implies (and (not (tree-empty-p (tree->left (tree->left tree))))
-                   (<<-all-l (tree->left tree)
-                             (tree-element->val (tree->head tree)))
-                   (<<-all-r (tree-element->val (tree->head tree))
-                             (tree->right tree)))
-              (<<-all-r (tree-min (tree->left tree))
-                        (tree->right tree)))
-     :use ((:instance <<-all-r-weaken
-                      (x (tree-min (tree->left tree)))
-                      (y (tree-element->val (tree->head tree)))
-                      (tree (tree->right tree))))
-     :enable <<-when-<<-all-l-and-tree-in)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-max ((tree treep))
@@ -254,9 +220,72 @@
   :enable (data::<<-rules
            acl2::equal-of-booleans-cheap))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled <<-of-tree-min-when-<<-all-l
+  (implies (and (<<-all-l tree x)
+                (not (tree-empty-p tree)))
+           (<< (tree-min tree) x))
+  :enable <<-when-<<-all-l-and-tree-in)
+
+(defruled <<-of-arg1-and-tree-min-when-<<-all-r
+  (implies (and (<<-all-r x tree)
+                (not (tree-empty-p tree)))
+           (<< x (tree-min tree)))
+  :enable <<-when-<<-all-r-and-tree-in)
+
+(defruled <<-of-tree-max-when-<<-all-l
+  (implies (and (<<-all-l tree x)
+                (not (tree-empty-p tree)))
+           (<< (tree-max tree) x))
+  :enable <<-when-<<-all-l-and-tree-in)
+
+(defruled <<-of-arg1-and-tree-max-when-<<-all-r
+  (implies (and (<<-all-r x tree)
+                (not (tree-empty-p tree)))
+           (<< x (tree-max tree)))
+  :enable <<-when-<<-all-r-and-tree-in)
+
+(defthy tree-min-max-extra-rules
+  '(<<-of-tree-min-when-<<-all-l
+    <<-of-arg1-and-tree-min-when-<<-all-r
+    <<-of-tree-max-when-<<-all-l
+    <<-of-arg1-and-tree-max-when-<<-all-r))
+
 ;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: improve proof
+(defrulel bstp-destructors-forward-chaining
+  (implies (and (bstp tree)
+                (not (tree-empty-p tree)))
+           (and (bstp (tree->left tree))
+                (bstp (tree->right tree))
+                (<<-all-l (tree->left tree)
+                          (tree-element->val (tree->head tree)))
+                (<<-all-r (tree-element->val (tree->head tree))
+                          (tree->right tree))))
+  :rule-classes ((:forward-chaining :trigger-terms ((bstp tree))))
+  :enable bstp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule tree-min-when-bstp-definition
+  (implies (bstp tree)
+           (equal (tree-min tree)
+                  (cond ((tree-empty-p tree)
+                         nil)
+                        ((tree-empty-p (tree->left tree))
+                         (tree-element->val (tree->head tree)))
+                        (t
+                         (tree-min (tree->left tree))))))
+  :rule-classes :definition
+  :induct t
+  :enable (tree-min
+           data::<<-rules
+           min-<<
+           <<-all-r-weaken-alt
+           <<-of-tree-min-when-<<-all-l)
+  :disable bstp-when-not-tree-empty-p-cheap)
+
 (defrule tree-max-when-bstp-definition
   (implies (bstp tree)
            (equal (tree-max tree)
@@ -271,7 +300,8 @@
   :enable (tree-max
            data::<<-rules
            max-<<
-           <<-all-l-weaken)
+           <<-all-l-weaken-alt
+           <<-of-arg1-and-tree-max-when-<<-all-r)
   :disable bstp-when-not-tree-empty-p-cheap)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

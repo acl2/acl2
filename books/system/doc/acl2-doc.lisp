@@ -158,6 +158,7 @@
     (RUN-SCRIPT "[books]/tools/run-script.lisp")
     (SATLINK::SAT-SOLVER-OPTIONS "[books]/centaur/satlink/top.lisp")
     (SATLINK "[books]/centaur/satlink/top.lisp")
+    (SHOW-INDUCTION-RECORDS  "[books]/tools/show-induction-records.lisp")
     (XDOC::SAVE "[books]/xdoc/topics.lisp")
     (XDOC::SAVE-RENDERED "[books]/xdoc/topics.lisp")
     (XDOC::SAVE-RENDERED-EVENT "[books]/xdoc/topics.lisp")
@@ -170,6 +171,7 @@
     (STD::STRICT-LIST-RECOGNIZERS "[books]/std/util/deflist-base.lisp")
     (SUBSEQ-LIST "[books]/std/lists/subseq.lisp")
     (XDOC::TERMINAL "[books]/xdoc/topics.lisp")
+    (TESTING-UTILITIES "[books]/doc/more-topics.lisp")
     (TRANS-EVAL-ERROR-TRIPLE "[books]/kestrel/utilities/trans-eval-error-triple.lisp")
     (TRANS-EVAL-STATE "[books]/kestrel/utilities/trans-eval-error-triple.lisp")
     (UNSOUND-READ "[books]/std/io/unsound-read.lisp")
@@ -4674,14 +4676,11 @@ and @(tsee include-book)"
  an ACL2 executable built with host Lisp Allegro CL, the use of &ldquo;@('make
  regression')&rdquo; resulted in four books (in the @(see community-books))
  that failed to certify.  We discuss those failures in the
- &ldquo;<b>Details</b>&rdquo; section below.  These failures may suggest that
- Allegro CL, at least for its Version 10.1, does not correctly support the
- Common Lisp language, or at least there is problematic ACL2 code specific to
- Allegro CL.  In practice we don't expect a lot of problems when using ACL2
- built on Allegro CL.  However, since Allegro CL is relatively slow compared to
- several other Common Lisp implementations that can host ACL2 &mdash; SBCL,
- CCL, LispWorks, and GCL &mdash; those failures suggest that Allegro CL might
- not be a good choice for ACL2 users.</p>
+ &ldquo;<b>Details</b>&rdquo; section below.  These failures suggest that you
+ may encounter problems when using ACL2 built on Allegro CL, though we expect
+ them to be rare.  Perhaps more important: Allegro CL has been observed to be
+ slower than several other Common Lisp implementations that can host ACL2
+ &mdash; SBCL, CCL, LispWorks, and GCL.</p>
 
  <h3>Details</h3>
 
@@ -15374,7 +15373,9 @@ way to split up large ACL2 developments into separate modules."
  extends the usual ASCII coding of characters.  We also check that Space, Tab,
  Newline, Page, Rubout, and Return correspond to characters with respective
  @(tsee char-code)s @('32'), @('9'), @('10'), @('12'), @('127'), and
- @('13').</p>
+ @('13').  (Starting in 2026 or 2027, some versions of Allegro CL might not
+ recogize the Page character as the value of @('(code-char 12)'), but ACL2
+ arranges this to be the case inside the ACL2 read-eval-print loop.)</p>
 
  <p>@(tsee Code-char) has an inverse, @(tsee char-code).  Thus, when @(tsee
  char-code) is applied to an ACL2 character, @('c'), it returns a number @('n')
@@ -45656,7 +45657,7 @@ current fast alists."
 
 (defxdoc get-event-data
   :parents (system-utilities output-controls)
-  :short "Obtain data stored after at the conclusion of an event"
+  :short "Obtain data from the most recent event's evaluation"
   :long "<p>Warning: This is a low-level system utility that may change
  somewhat over time.  For more details, see the ACL2 source code.</p>
 
@@ -45682,6 +45683,9 @@ current fast alists."
 
  <li>@('HINT-EVENTS'): @('VAL') is as in the corresponding field of the event
  summary.</li>
+
+ <li>@('INDUCTION-RECORDS'): @('VAL') contains information about inductions
+ performed during the proof.  See @(see show-induction-records).</li>
 
  <li>@('NAMEX'): @('VAL') is 0, a single name, or a list of names; see
  comments in ACL2 source function @('access-event-tuple-namex').</li>
@@ -76111,6 +76115,24 @@ it."
  more information.</p>
 
  @(def min)")
+
+(defxdoc mini-proveall
+  :parents (testing-utilities)
+  :short "A small test suite"
+  :long "
+ @({
+  General Forms:
+  (mini-proveall)
+  :mini-proveall ; equivalent to the above
+ })
+
+ <p>To run a built-in test suite that takes at most a few seconds, evaluate the form
+ @('(mini-proveall)') in the ACL2 top-level read-eval-print loop.  This action
+ will cause ACL2 to evaluate several definitions and theorems, as a small test
+ that can catch major problems.</p>
+
+ <p>Much more complete testing is available by certifying @(see books)
+ distributed with ACL2.  See @(see books-certification).</p>")
 
 (defxdoc minimal-theory
   :parents (theories theory-functions)
@@ -109794,6 +109816,22 @@ it."
 ; Removed duplicate commands (defpointer double-float df) in
 ; books/system/doc/acl2-doc.lisp.
 
+; Fixed a minor efficiency issue (incorrect hint in cons-with-hint) in
+; fix-export-updaters1.
+
+; Fixed some bugs found by Claude AI and passed along by Eric Smith.
+; - bugs in fmt strings/args
+; - a bug involving defchoose in tools/with-supporters.lisp
+; - minor bugs in a couple of error messages in source functions
+; - guards in source functions that were too strong
+
+; Added :DOC mini-proveall.  Thanks to Eric Smith for suggesting this addition.
+
+; For #+ and #-, changed :non-standard-analysis to non-standard-analysis as per
+; a chat with Eric Smith.
+
+; Made updates to *acl2-exports*.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -109871,6 +109909,23 @@ it."
  See @(see in-logic-mode).  Thanks to Alessandro Coglio for requesting such a
  capability and to him and Eric Smith for helpful discussions.</p>
 
+ <p>The @(tsee xargs) keyword @(':type-prescription') for a @(tsee defun) form
+ may now have the value @(':none'), which specifies that no built-in
+ @(':')@(tsee type-prescription) rule is to be computed for the new function
+ symbol.  Thanks to Alessandro Coglio, Grant Jurgensen, and Eric Smith for a
+ discussion on Zulip leading to this enhancement.</p>
+
+ <p>The new event @(tsee set-call-depth-overflow-advice) allows the author or
+ expert users of a book to add some advice for how users of the book might deal
+ with stack overflow sometimes caused by rewrite rules in the book.  The advice
+ is printed when the @('HARD ACL2 ERROR [Call depth] in REWRITE') error occurs
+ in sessions when the book has been included.</p>
+
+ <p>A new result is obtained by @(tsee get-event-data): a field named
+ @('INDUCTION-RECORDS') contains information on inductions performed during the
+ proof attempt.  See @(see get-event-data) and @(see show-induction-records).
+ Thanks to Grant Jurgensen for requesting such an enhancement.</p>
+
  <h3>Heuristic and Efficiency Improvements</h3>
 
  <h3>Bug Fixes</h3>
@@ -109945,6 +110000,27 @@ it."
  Aakash Koneru and Grant Jurgensen for pointing this out and providing a
  fix.</p>
 
+ <p>Made a @(see guard) fix for calls of the macro @(tsee fmx-cw) that use
+ @(tsee fmt) directive @('~_'), for example, @('(fmx-cw \"~_0\" x)').  Thanks
+ to Eric Smith for pointing out this bug using that example.</p>
+
+ <p>Fixed a bug that made it possible to certify a book that could not then be
+ included.  The bug could occur when a @(tsee defconst) form inside an @(tsee
+ encapsulate) form is dependent on @(see local) definitions, as in the
+ following example, which formerly was admitted but now is not.</p>
+
+ @({
+ (encapsulate
+   ()
+   (local (defun c-body () 17))
+   (defconst *c* (c-body)))
+ })
+
+ <p>As before, the value for the constant that is saved from the first pass of
+ the @('encapsulate') is used as the value in the second pass.  But unlike
+ before, the body of the @('defconst') form is translated during both passes,
+ not just the first.</p>
+
  <h3>Changes at the System Level</h3>
 
  <p>The built-in @(see events) @('Integer-1') and @('cons-equal') are now
@@ -109979,15 +110055,18 @@ it."
  cannot exit the ACL2 loop.  This effectively disables @(':q') as a means for
  going into raw Lisp (and also @('(value :q)'), etc.; see @(see q).</li>
 
- <li>Formerly, interrupts in SBCL could, on rare occasions, cause the Lisp
- debugger to be entered.  That has (we believe) been fixed for SBCL, and it was
- already handled for CCL.</li>
-
  <li>So to avoid the possibility of interaction with raw Lisp for ACL2 built on
- CCL or SBCL, you can do the following, provided trust tags are avoided (see
- @(see defttag)).
+ CCL or SBCL, provided trust tags are avoided (see @(see defttag)), you can do
+ the following.
 
  @({
+ ; The following seems to be necessary in order to avoid the rare occasions that
+ ; an interrupt in SBCL causes the Lisp debugger to be entered.
+ ; This is for SBCL only:
+ #+sbcl :q
+ #+sbcl (setq sb-ext:*invoke-debugger-hook* 'our-abort)
+ #+sbcl (lp)
+
  ; Disable entering the debugger and disable existing the ACL2 loop:
  (set-debugger-enable :never!)
  (push-untouchable set-debugger-enable-fn t)
@@ -109998,6 +110077,21 @@ it."
  })</li>
 
  </ul>
+
+ <p>Future Common Lisp implementations might not recognize @('#\\Page') as the
+ traditional &ldquo;Page&rdquo; character (with character-code 12), for
+ compatibility with Unicode.  We made updates to accommodate such a change that
+ is probably coming to Allegro CL, so that @('#\\Page') continues to be
+ suitable input for character 12 inside the ACL2 read-eval-print loop.
+ Moreover, when the host Lisp is Allegro CL, @('#\\Formfeed') is accepted as
+ input since that representation of character 12 may be printed by @(tsee
+ print-object$).  Thanks to Duane Rettig for bringing this issue to our
+ attention.</p>
+
+ <p>Made a change so that ACL2 can be built and run using host Lisp CCL on an
+ Arm-based Mac.  Thanks to Yahya Sohail for supplying that change, which
+ handles certain floating-point exceptions.  (ACL2 supports floating-point
+ computations; see @(see df).)</p>
 
  <h3>EMACS Support</h3>
 
@@ -135830,6 +135924,72 @@ work on <tt>(q x)</tt>.</p>
 
  <p>The general command for setting any of the system evisc-tuples is @(tsee
  set-evisc-tuple).</p>")
+
+(defxdoc set-call-depth-overflow-advice
+  :parents (errors)
+  :short "Record a book-specific message about stack overflow"
+  :long "@({
+  General Form:
+  (set-call-depth-overflow-advice str)
+  })
+
+ <p>where @('str') is a @(tsee fmt) string suitable for printing with, say,
+ @('(cw str)').  In particular, @('str') may not use any @('fmt') directives
+ that refer to characters bound in an alist.</p>
+
+ <p>@('(set-call-depth-overflow-advice str)') is an @(see event) and is a no-op
+ except when found in a book during @(tsee certify-book) or @(tsee
+ include-book).  The event associates the string to the book name.  If multiple
+ @('set-call-depth-overflow-advice') events occur in a book, only the last one
+ is recorded.  Advice from other books, including sub-books, is recorded.  The
+ event gives the author or expert users of a book the means to provide the
+ other users of the book advice for dealing with stack overflow possibly caused
+ by the rules in the book.  In particular, @('str') is printed, along with the
+ associated book name, when a stack overflow error signalled like this</p>
+
+ @({HARD ACL2 ERROR [Call depth] in REWRITE:})
+
+ <p>occurs in a session in which the book has been included.</p>
+
+ <p>For example, if the book with full file name @('\"/u/jones/my-book.lisp\"')
+ contains:</p>
+
+ @({
+ (set-call-depth-overflow-advice
+  \"If you see the lemma MY-DANGEROUS-RULE in the output of ~
+  the cw-gstack command mentioned above, you might try~%~%~
+  (in-theory (e/d (my-less-dangerous-rule) (my-dangerous-rule)))~%~%~
+  and retry the proof.\")
+ })
+
+ <p>Then, in the event that a stack overflow occurs in a session in which
+ @('\"/u/jones/my-book.lisp\"') has been included, the HARD ACL2 ERROR above
+ will occur and the generic advice will be printed, including the advice to enable @(tsee brr)
+ and use @(tsee cw-gstack) to see the overflowing stack.  Then, a message like
+ this will be printed:</p>
+
+ @({
+ FYI: The books named below offer the following advice about rewrite
+ loops attributable to rules in each individual book.
+
+ ...
+
+ \"/u/jones/my-book.lisp\":
+ If you see the lemma MY-DANGEROUS-RULE in the output of the cw-gstack
+ command mentioned above, you might try
+
+ (in-theory (e/d (my-less-dangerous-rule) (my-dangerous-rule)))
+
+ and retry the proof.
+
+ ...
+ })
+
+ <p>where the elipses above denote the other books in the current session that
+ have a @('set-call-depth-overflow-advice') event.  System books, e.g., those
+ included via @('(include-book \"misc/his-book\" :dir :system)') will be
+ displayed like this @('(:SYSTEM . book-name)'), e.g., @('(:SYSTEM
+ . \"misc/his-book.lisp\")').</p>")
 
 (defxdoc set-case-split-limitations
   :parents (miscellaneous)
@@ -169180,20 +169340,23 @@ created from the original fast alist during @('form') must be manually freed."
 
  <p>@(':type-prescription')<br></br>
 
- @('Value') is either @('nil') (the default) or a formula that is suitable for
- a hypothesis-free @(':')@(tsee type-prescription) rule.  That rule must be
- appropriate for the @(':typed-term') that is the application of the defined
- function symbol to its formal parameters.  For example, a legal value for
- @(':type-prescription') in @('(defun f (x y) ...)') could be @('(or (consp (f
- x y)) (equal (f x y) y))'), but not @('(or (consp (f u v)) (equal (f u v)
- v))').  The specified formula must provide a type that is implied by the
+ @('Value') is either @('nil'), which is the default; @(':none'), which
+ specifies that no built-in @(':')@(tsee type-prescription) rule is to be
+ computed for the new function symbol; or a formula, which we now discuss.
+ That formula should be suitable for a hypothesis-free @(':')@(tsee
+ type-prescription) rule, appropriate for the @(':typed-term') that is the
+ application of the defined function symbol to its formal parameters.  For
+ example, consider the definition: @('(defun f (x y) ...)').  A legal value for
+ @(':type-prescription') could thus be the formula @('(or (consp (f x
+ y)) (equal (f x y) y))'), but not the formula @('(or (consp (f u v)) (equal (f
+ u v) v))').  The specified formula must provide a type that is implied by the
  built-in type that is computed for the defined function.  Normally these will
  be equal, but if the value of @(':type-prescription') specifies a strictly
- weaker type than the computed built-in type then a warning will be printed
- (unless of course such warnings have been suppressed; see @(see
+ weaker type than the computed built-in type then a warning will be
+ printed (unless of course such warnings have been suppressed; see @(see
  set-inhibit-output-lst) and @(see set-inhibit-warnings)).  It is an error to
- supply a non-@('nil') value for @(':type-prescription') if there is no
- built-in type computed for the function.  See also @(see
+ supply a value other than @('nil') or @(':none') for @(':type-prescription')
+ if there is no built-in type computed for the function.  See also @(see
  type-prescription).</p>
 
  <p>@(':')@(tsee verify-guards)<br></br>

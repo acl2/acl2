@@ -764,9 +764,7 @@
                               (<= i (+ 1 bound))
                               (expanded-keyp w nk))
                   :guard-hints (("Goal" :in-theory (e/d (expanded-keyp)
-                                                        (ACL2::BV-ARRAYP
-                                                         acl2::mod-by-4-becomes-bvchop ;todo
-                                                         ))))))
+                                                        (ACL2::BV-ARRAYP))))))
   (if (and (< i bound)
            (mbt (integerp i))
            (mbt (integerp bound)))
@@ -793,7 +791,6 @@
                                    ;EXPANDED-KEYP
                                    )
                                   (acl2::bv-arrayp
-                                   acl2::mod-by-4-becomes-bvchop ;todo
                                    acl2::update-nth))
            :do-not '(generalize eliminate-destructors)
            )))

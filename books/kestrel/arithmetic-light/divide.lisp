@@ -425,6 +425,14 @@
            (<= (* i (/ j)) (- i)))
   :rule-classes :linear)
 
+(defthm <=-of-*-of-/-when-negative-linear
+  (implies (and (< i 0)
+                (<= 1 j)
+                (rationalp i)
+                (rationalp j))
+           (<= i (* i (/ j))))
+  :rule-classes :linear)
+
 (defthm <=-of-*-of-/-when-negative-and-positive-linear
   (implies (and (<= 0 i)
                 (<= j -1)

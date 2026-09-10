@@ -11,9 +11,11 @@
 (in-package "REMORA")
 
 (include-book "variable-substitution-operations")
+(include-book "all-variable-operations")
 (include-book "fresh-variable-operations")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (acl2::controlled-configuration)
@@ -126,13 +128,22 @@
      (defret consp-of-fresh-vars-of-dim/shape-subst-alpha-bound-loop
        (equal (consp fresh-vars)
               (consp bound-vars))
+       :hints (("Goal" :induct t)))
+
+     (defret len-of-fresh-vars-of-dim/shape-subst-alpha-bound-loop
+       (equal (len fresh-vars)
+              (len bound-vars))
        :hints (("Goal" :induct t)))))
 
   ///
 
   (defret consp-of-fresh-vars-of-dim/shape-subst-alpha-bound
     (equal (consp fresh-vars)
-           (consp bound-vars))))
+           (consp bound-vars)))
+
+  (defret len-of-fresh-vars-of-dim/shape-subst-alpha-bound
+    (equal (len fresh-vars)
+           (len bound-vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -210,13 +221,22 @@
      (defret consp-of-fresh-vars-of-atom/array-subst-alpha-bound-loop
        (equal (consp fresh-vars)
               (consp bound-vars))
+       :hints (("Goal" :induct t)))
+
+     (defret len-of-fresh-vars-of-atom/array-subst-alpha-bound-loop
+       (equal (len fresh-vars)
+              (len bound-vars))
        :hints (("Goal" :induct t)))))
 
   ///
 
   (defret consp-of-fresh-vars-of-atom/array-subst-alpha-bound
     (equal (consp fresh-vars)
-           (consp bound-vars))))
+           (consp bound-vars)))
+
+  (defret len-of-fresh-vars-of-atom/array-subst-alpha-bound
+    (equal (len fresh-vars)
+           (len bound-vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -266,13 +286,22 @@
      (defret consp-of-fresh-vars-of-expr-subst-alpha-bound-loop
        (equal (consp fresh-vars)
               (consp bound-vars))
+       :hints (("Goal" :induct t)))
+
+     (defret len-of-fresh-vars-of-expr-subst-alpha-bound-loop
+       (equal (len fresh-vars)
+              (len bound-vars))
        :hints (("Goal" :induct t)))))
 
   ///
 
   (defret consp-of-fresh-vars-of-expr-subst-alpha-bound
     (equal (consp fresh-vars)
-           (consp bound-vars))))
+           (consp bound-vars)))
+
+  (defret len-of-fresh-vars-of-expr-subst-alpha-bound
+    (equal (len fresh-vars)
+           (len bound-vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -748,6 +777,15 @@
                                                    dim-subst
                                                    shape-subst
                                                    avoid)))))
+  :guard-hints
+  ((exprs/atoms/binds
+    (("Goal"
+      :in-theory (enable* ast-subst-ispace-vars-alpha-aux-rules)
+      :expand ((:free (avoid)
+                (bind-list-subst-ispace-vars-alpha-aux (expr-let->binds expr)
+                                                       dim-subst
+                                                       shape-subst
+                                                       avoid)))))))
   :name ast-subst-ispace-vars-alpha-aux)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1073,6 +1111,15 @@
                                                  atom-subst
                                                  array-subst
                                                  avoid)))))
+  :guard-hints
+  ((exprs/atoms/binds
+    (("Goal"
+      :in-theory (enable* ast-subst-type-vars-alpha-aux-rules)
+      :expand ((:free (avoid)
+                (bind-list-subst-type-vars-alpha-aux (expr-let->binds expr)
+                                                     atom-subst
+                                                     array-subst
+                                                     avoid)))))))
   :name ast-subst-type-vars-alpha-aux)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1338,6 +1385,14 @@
             (bind-list-subst-expr-vars-alpha-aux (cdr bind-list)
                                                  subst
                                                  avoid)))))
+  :guard-hints
+  ((exprs/atoms/binds
+    (("Goal"
+      :in-theory (enable* ast-subst-expr-vars-alpha-aux-rules)
+      :expand ((:free (avoid)
+                (bind-list-subst-expr-vars-alpha-aux (expr-let->binds expr)
+                                                     subst
+                                                     avoid)))))))
   :name ast-subst-expr-vars-alpha-aux)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

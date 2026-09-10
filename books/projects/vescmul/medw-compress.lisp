@@ -151,8 +151,8 @@
                             "Unexpected create-c-instance output ~%
 for s-lst = ~p0,~%pp-lst = ~p1,~%c-lst=~p2~%."
                             (list (cons #\0 s-lst)
-                                  (cons #\0 pp-lst)
-                                  (cons #\0 c-lst)))
+                                  (cons #\1 pp-lst)
+                                  (cons #\2 c-lst)))
                 (list `(c '(0 . 0) ,(create-list-instance s-lst)
                           ,(create-list-instance pp-lst)
                           ,(create-list-instance c-lst)))))

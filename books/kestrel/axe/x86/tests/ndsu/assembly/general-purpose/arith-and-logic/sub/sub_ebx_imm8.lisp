@@ -17,12 +17,7 @@
 ;; (depends-on "sub_ebx_imm8.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
-(include-book "kestrel/x86/register-readers-and-writers32" :dir :system)
-
-(local (defthm ebx-rewrite
-  (equal (ebx x86) (bvchop 32 (rbx x86)))
-  :hints (("Goal" :in-theory (enable ebx rbx)))))
+(include-book "../../../support")
 
 ;; Lifts the subroutine into logic: Creates the function sub_ebx_imm8, which
 ;; represents the effect of the program on the x86 state.
@@ -119,4 +114,4 @@
                 (not (member-eq flag *standard-flags*)))
            (equal (get-flag flag (sub_ebx_imm8 x86))
                   (get-flag flag x86)))
-  :hints (("Goal" :in-theory (enable acl2::memberp-of-cons-when-constant))))
+  )

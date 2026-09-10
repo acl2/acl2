@@ -1781,7 +1781,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   `(progn ,@(mapcar #'(lambda (x) `(defun ,@x))
                     lst)))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defmacro defun-std (name formals &rest args)
   (list* 'defun
          name
@@ -1789,7 +1789,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (append (butlast args 1)
                  (list (non-std-body name formals (car (last args)))))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defmacro defuns-std (&rest args)
   `(defuns ,@args))
 
@@ -1801,7 +1801,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (ignore args))
   nil)
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defmacro defthm-std (&rest args)
   (declare (ignore args))
   nil)
@@ -2138,15 +2138,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; universe or not.
 
 (defmacro real/rationalp (x)
-  #+:non-standard-analysis
+  #+non-standard-analysis
   `(realp ,x)
-  #-:non-standard-analysis
+  #-non-standard-analysis
   `(rationalp ,x))
 
 (defmacro complex/complex-rationalp (x)
-  #+:non-standard-analysis
+  #+non-standard-analysis
   `(complexp ,x)
-  #-:non-standard-analysis
+  #-non-standard-analysis
   `(complex-rationalp ,x))
 
 ; Comments labeled "Historical Comment from Ruben Gamboa" are from Ruben
@@ -4378,7 +4378,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (implies (integerp x) (rationalp x))
   :rule-classes nil)
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defaxiom rational-implies-real
   (implies (rationalp x) (realp x))
   :rule-classes nil)
@@ -4483,9 +4483,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defconst *force-xnume*
   (let ((x 164))
-    #+:non-standard-analysis
+    #+non-standard-analysis
     (+ x 12)
-    #-:non-standard-analysis
+    #-non-standard-analysis
     x))
 
 (defun immediate-force-modep ()
@@ -5003,7 +5003,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; that makes it more awkward to use than the other "fix" functions.
 
 ; Since the next function, realfix, is referred to by other :doc topics, do not
-; make it conditional upon #+:non-standard-analysis.
+; make it conditional upon #+non-standard-analysis.
 
 (defun realfix (x)
   (declare (xargs :guard t
@@ -7140,7 +7140,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote r)
         'state))
 
-#+(and :non-standard-analysis (not acl2-loop-only))
+#+(and non-standard-analysis (not acl2-loop-only))
 (defun floor1 (x)
 
 ; See "Historical Comment from Ruben Gamboa" comment in the definition of floor
@@ -7168,7 +7168,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard (and (real/rationalp i)
                               (real/rationalp j)
                               (not (eql j 0)))))
-  #+:non-standard-analysis
+  #+non-standard-analysis
   (let ((q (* i (/ j))))
     (cond ((integerp q) q)
           ((rationalp q)
@@ -7178,7 +7178,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                                  (denominator q)))
                 -1)))
           (t (floor1 q))))
-  #-:non-standard-analysis
+  #-non-standard-analysis
   (let* ((q (* i (/ j)))
          (n (numerator q))
          (d (denominator q)))
@@ -7197,7 +7197,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard (and (real/rationalp i)
                               (real/rationalp j)
                               (not (eql j 0)))))
-  #+:non-standard-analysis
+  #+non-standard-analysis
   (let ((q (* i (/ j))))
     (cond ((integerp q) q)
           ((rationalp q)
@@ -7209,7 +7209,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                               (denominator q)))))
           ((realp q) (1+ (floor1 q)))
           (t 0)))
-  #-:non-standard-analysis
+  #-non-standard-analysis
   (let* ((q (* i (/ j)))
          (n (numerator q))
          (d (denominator q)))
@@ -7226,7 +7226,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard (and (real/rationalp i)
                               (real/rationalp j)
                               (not (eql j 0)))))
-  #+:non-standard-analysis
+  #+non-standard-analysis
   (let ((q (* i (/ j))))
     (cond ((integerp q) q)
           ((rationalp q)
@@ -7238,7 +7238,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
           (t (if (>= q 0)
                  (floor1 q)
                (- (floor1 (- q)))))))
-  #-:non-standard-analysis
+  #-non-standard-analysis
   (let* ((q (* i (/ j)))
          (n (numerator q))
          (d (denominator q)))
@@ -7607,7 +7607,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   '(:guard :guard-hints :guard-debug :guard-simplify
            :hints :measure :measure-debug
            :ruler-extenders :mode :non-executable :normalize
-           :otf-flg #+:non-standard-analysis :std-hints
+           :otf-flg #+non-standard-analysis :std-hints
            :stobjs :dfs :verify-guards :well-founded-relation
            :split-types :loop$-recursion :type-prescription))
 
@@ -8194,7 +8194,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                       (list 'quote (strip-cdrs rst))
                       'state
                       (list 'quote event-form)
-                      #+:non-standard-analysis ; std-p
+                      #+non-standard-analysis ; std-p
                       nil)))
       (cond
        ((or (and (assoc-eq 'defund rst0)
@@ -9139,7 +9139,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; Historical Comment from Ruben Gamboa:
 ;; I added the following lemma, similar to the rational case.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defthm realp-expt-type-prescription
   (implies (realp r)
            (realp (expt r i)))
@@ -9858,10 +9858,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote def)
         'state
         (list 'quote event-form)
-        #+:non-standard-analysis ; std-p
+        #+non-standard-analysis ; std-p
         nil))
 
-#+(and acl2-loop-only :non-standard-analysis)
+#+(and acl2-loop-only non-standard-analysis)
 (defmacro defun-std (&whole event-form &rest def)
   (list 'defun-fn
         (list 'quote def)
@@ -9878,10 +9878,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote def-lst)
         'state
         (list 'quote event-form)
-        #+:non-standard-analysis ; std-p
+        #+non-standard-analysis ; std-p
         nil))
 
-#+(and acl2-loop-only :non-standard-analysis)
+#+(and acl2-loop-only non-standard-analysis)
 (defmacro defuns-std (&whole event-form &rest def-lst)
   (list 'defuns-fn
         (list 'quote def-lst)
@@ -9999,7 +9999,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (list 'quote hints)
         (list 'quote otf-flg)
         (list 'quote event-form)
-        #+:non-standard-analysis ; std-p
+        #+non-standard-analysis ; std-p
         nil))
 
 (defmacro er (severity context str &rest str-args)
@@ -10129,7 +10129,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            (ignore term))
   (defthmd-fn event-form name rst))
 
-#+(and acl2-loop-only :non-standard-analysis)
+#+(and acl2-loop-only non-standard-analysis)
 (defmacro defthm-std (&whole event-form
                       name term
                        &key (rule-classes '(:REWRITE))
@@ -14167,7 +14167,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; Historical Comment from Ruben Gamboa:
 ;; This function is analogous to rational-listp.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun real-listp (l)
   (declare (xargs :guard t))
   (cond ((atom l)
@@ -14178,7 +14178,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; Historical Comment from Ruben Gamboa:
 ;; Standard forward chaining theorem about <type>-listp.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defthm real-listp-forward-to-acl2-number-listp
   (implies (real-listp x)
            (acl2-number-listp x))
@@ -14211,7 +14211,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; Historical Comment from Ruben Gamboa:
 ;; Analogous to the forward rule from integers to rationals.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defthm rational-listp-forward-to-real-listp
   (implies (rational-listp x)
            (real-listp x))
@@ -14755,7 +14755,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     APPEND DEFCONST IN-PACKAGE INTERN FIRST SECOND THIRD FOURTH FIFTH
     SIXTH SEVENTH EIGHTH NINTH TENTH DIGIT-CHAR-P
     UNMEMOIZE MEMOIZE
-    DEFUNS-STD DEFTHM-STD DEFUN-STD ; for #+:non-standard-analysis
+    DEFUNS-STD DEFTHM-STD DEFUN-STD ; for #+non-standard-analysis
     POR PAND PLET PARGS ; for #+acl2-par
     SPEC-MV-LET ; for #+acl2-par
 
@@ -17327,7 +17327,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                      '(#\)))))))
         ((characterp x) (list x))
         ((stringp x) (coerce x 'list))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         ((acl2-numberp x)
 
 ; This case should never arise!
@@ -22332,24 +22332,24 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; Sawada.  As he points out, these rules can be necessary in order to get
 ; proofs about real/rationalp that succeed in ACL2 also to succeed in ACL2(r).
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defthm realp-+
   (implies (and (realp x)
                 (realp y))
            (realp (+ x y))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defthm realp-*
   (implies (and (realp x)
                 (realp y))
            (realp (* x y))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defthm realp-unary--
   (implies (realp x)
            (realp (- x))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defthm realp-unary-/
   (implies (realp x)
            (realp (/ x))))
@@ -22362,7 +22362,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; Addition suggested by Dmitry Nadezhin (a proof that succeeded in ACL2 using
 ; the lemma just above failed without the following):
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defthm realp-implies-acl2-numberp
   (implies (realp x) (acl2-numberp x)))
 
@@ -24915,8 +24915,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       macro-name)))
 
 (add-macro-alias real/rationalp
-                 #+:non-standard-analysis realp
-                 #-:non-standard-analysis rationalp)
+                 #+non-standard-analysis realp
+                 #-non-standard-analysis rationalp)
 
 (add-macro-alias fix-true-list true-list-fix)
 (add-macro-alias member-eq member-equal)
@@ -25692,7 +25692,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; undefined predicate floor1.  We start with the completion axiom,
 ;; which says floor1 is only useful for real numbers.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defaxiom completion-of-floor1
   (equal (floor1 x)
          (if (realp x)
@@ -25704,7 +25704,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; The second axiom about floor1 is that it returns 0 for any
 ;; invalid argument.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defthm default-floor1
   (implies (not (realp x))
            (equal (floor1 x)
@@ -25713,7 +25713,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; Historical Comment from Ruben Gamboa:
 ;; We also know that floor1 is the identity function for the integers.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defaxiom floor1-integer-x
   (implies (integerp x)
            (equal (floor1 x) x)))
@@ -25721,7 +25721,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; Historical Comment from Ruben Gamboa:
 ;; And, we know that the floor1 of x is no larger than x itself.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defaxiom floor1-x-<=-x
   (implies (realp x)
            (<= (floor1 x) x))
@@ -25730,7 +25730,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; Historical Comment from Ruben Gamboa:
 ;; Finally, we know that the floor1 of x is larger than x-1.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defaxiom x-<-add1-floor1-x
   (implies (realp x)
            (< x (1+ (floor1 x))))
@@ -25741,7 +25741,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; specific value.  It is probably only useful when instantiated
 ;; manually, so we do not make it a rewrite rule.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defthm floor1-value
   (implies (and (realp x)
                 (integerp fx)
@@ -25809,7 +25809,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; Here, I put in the basic theory that we will use for
 ;; non-standard analysis.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (progn
 
 (defun i-small (x)
@@ -26899,10 +26899,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; We check that (cadr x) is between *min-type-set* and *max-type-set*, which
 ; are checked by check-built-in-constants.
 
-       (<= #-:non-standard-analysis -16384 #+:non-standard-analysis -131072
+       (<= #-non-standard-analysis -16384 #+non-standard-analysis -131072
            (cadr x))
        (<= (cadr x)
-           #-:non-standard-analysis 16383 #+:non-standard-analysis 131071)))
+           #-non-standard-analysis 16383 #+non-standard-analysis 131071)))
 
 (defun type-alistp (x)
   (declare (xargs :guard t))

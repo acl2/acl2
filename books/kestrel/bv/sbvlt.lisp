@@ -371,7 +371,7 @@
   :hints (("Goal" :in-theory (enable sbvlt))))
 
 ;loops with defn sbvlt?
-(defthmd <=-of-logext-and--1
+(defthmd <-of--1-and-logext
   (equal (< -1 (logext size y))
          (not (sbvlt size y 0)))
   :hints (("Goal" :in-theory (enable sbvlt))))

@@ -393,7 +393,7 @@
      (xdoc::p
       "If @(':combine') is @(tsee and) and @(':default') is @('t'),
        the following additional theorems are generated,
-       for each field @('<field>') ofthe kind @('<kind>') of @('<type>')
+       for each field @('<field>') of the kind @('<kind>') of @('<type>')
        such that the field has type @('<field-type>'):")
      (xdoc::ul
       (xdoc::li

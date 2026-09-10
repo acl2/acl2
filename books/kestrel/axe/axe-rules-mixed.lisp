@@ -26,6 +26,7 @@
 (include-book "kestrel/bv/bvdiv" :dir :system)
 (include-book "kestrel/bv/trim" :dir :system)
 (include-book "kestrel/bv/bvmult" :dir :system)
+(include-book "kestrel/bv/bvuminus-def" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 (include-book "kestrel/booleans/boolor" :dir :system)
 (include-book "kestrel/booleans/booland" :dir :system)
@@ -129,8 +130,8 @@
                       t
                     (< (bvplus xsize x (bvuminus xsize y)) k))))
   :hints (("Goal" :use (:instance plus-of-minus-becomes-bv-dag)
-           :in-theory (e/d (unsigned-byte-p-forced usb-hack-100 bvlt bvplus bvuminus bvminus)
-                           (plus-of-minus-becomes-bv-dag BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
+           :in-theory (e/d (unsigned-byte-p-forced usb-hack-100 bvlt bvplus)
+                           (plus-of-minus-becomes-bv-dag )))))
 
 (defthmd equal-of-+-of-minus-and-bv
   (implies (and (axe-bind-free (bind-bv-size-axe k 'ksize dag-array) '(ksize))
@@ -145,7 +146,7 @@
                     (equal k (bvplus xsize x (bvuminus xsize y))))))
   :hints (("Goal" :use (:instance plus-of-minus-becomes-bv-dag)
            :in-theory (e/d (unsigned-byte-p-forced usb-hack-100 bvlt bvplus bvuminus bvminus)
-                           (plus-of-minus-becomes-bv-dag BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
+                           (plus-of-minus-becomes-bv-dag)))))
 
 (defthmd +-of-minus-bind-free
   (implies (and (syntaxp (quotep k))
@@ -187,7 +188,7 @@
            :cases ((unsigned-byte-p xsize y))
            :in-theory (e/d (bvplus bvlt bvuminus bvchop-of-sum-cases bvminus UNSIGNED-BYTE-P-FORCED
                                    UNSIGNED-BYTE-P-when-UNSIGNED-BYTE-P-free-better)
-                           (bvminus-becomes-bvplus-of-bvuminus)))))
+                           ()))))
 
 ;rename
 (defthmd equal-of-floor-of-expt-and-bv-constant-version-dag

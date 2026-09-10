@@ -204,8 +204,12 @@
 
 (defun alist-remove-rune-entries (fns rune alist)
   (b* (((when (atom fns)) alist)
+       (look (hons-get (car fns) alist))
+       ((unless (or look (and (fgl-rune-case rune :formula)
+                              (eq (fgl-rune-formula->name rune) (car fns)))))
+        (alist-remove-rune-entries (cdr fns) rune alist))
        (alist (hons-acons (car fns)
-                          (remove-equal rune (cdr (hons-get (car fns) alist)))
+                          (remove-equal rune (cdr look))
                           alist)))
     (alist-remove-rune-entries (cdr fns) rune alist)))
 

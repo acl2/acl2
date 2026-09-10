@@ -620,7 +620,8 @@
  ;; used to justify the operation of get-axe-conjunction-from-dag-item below
  (defthmd boolif-of-nil-arg3
    (iff (boolif x y 'nil)
-        (booland x y))))
+        (booland x y))
+   :hints (("Goal" :in-theory (enable boolif)))))
 
 (local
  ;; used to justify the operation of get-axe-conjunction-from-dag-item below
@@ -640,7 +641,8 @@
  ;; used to justify the operation of get-axe-disjunction-from-dag-item below
  (defthmd boolif-of-t-arg2
    (iff (boolif x 't y)
-        (boolor x y))))
+        (boolor x y))
+   :hints (("Goal" :in-theory (enable boolif)))))
 
 (local
  ;; used to justify the operation of get-axe-disjunction-from-dag-item below

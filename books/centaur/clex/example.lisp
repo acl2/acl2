@@ -30,7 +30,10 @@
 
 (in-package "CLEX")
 (include-book "top")
-(include-book "std/util/top" :dir :system)
+(include-book "std/util/defaggregate" :dir :system)
+(include-book "std/util/defenum" :dir :system)
+(include-book "std/util/deflist" :dir :system)
+(include-book "std/util/define" :dir :system)
 (include-book "std/strings/top" :dir :system)
 ; Matt K. mod, 9/4/2023 (see that book for explanation), to avoid a failure
 ; for (defcharset whitespace ...).

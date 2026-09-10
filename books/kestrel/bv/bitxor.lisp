@@ -311,7 +311,6 @@
            :in-theory (e/d (;bitxor
                             ) (;BVXOR-1-BECOMES-BITXOR
                                bitxor-commutative
-                               bitxor-commutative
                                bitxor-associative)))))
 
 (defthm bitxor-of-bvxor-arg2

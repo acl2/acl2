@@ -11,6 +11,8 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "3vl")
+(include-book "3vl-defs")
+(include-book "3vl-fty")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

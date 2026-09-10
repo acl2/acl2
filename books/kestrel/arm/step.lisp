@@ -12,6 +12,8 @@
 
 (include-book "instructions")
 (include-book "decoder")
+(include-book "library-models")
+(include-book "kestrel/alists-light/lookup" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -38,6 +40,58 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund step-core (inst-address arm)
+  (declare (xargs :guard (addressp inst-address)
+                  :stobjs arm))
+  (b* ((inst (read 4 inst-address arm))
+       ((mv erp mnemonic args)
+        (arm32-decode inst))
+       ((when erp)
+        (update-error :decoding-error arm)))
+  (execute-inst mnemonic args inst-address arm)))
+
+(defthmd step-core-opener
+  (implies (and  ;; todo: use a binding-hyp?
+             (not (mv-nth 0 (arm32-decode (read 4 inst-address arm)))))
+           (equal (step-core inst-address arm)
+                  (b* ((inst (read 4 inst-address arm))
+                       ((mv & mnemonic args)
+                        (arm32-decode inst))
+                       ;; ((when erp)
+                       ;;  (update-error :decoding-error arm))
+                       )
+                    (execute-inst mnemonic args inst-address arm))))
+  :hints (("Goal" :in-theory (enable step-core))))
+
+
+(defund step-aux (pc arm)
+  (declare (xargs :guard (addressp pc)
+                  :stobjs arm
+                  :guard-hints (("Goal" :in-theory (enable alistp-when-my-library-mapp)))))
+  (b* ((maybe-library-function (acl2::lookup pc (library-map arm)))
+       ((when (not maybe-library-function))
+        ;; normal instruction:
+        (step-core pc arm))
+       (library-function maybe-library-function) ; no longer a "maybe"
+       ((when (equal "isdigit" library-function))
+        (run-isdigit arm))
+       ((when (equal "ntohl" library-function))
+        (run-ntohl arm))
+       ((when (equal "ntohs" library-function))
+        (run-ntohs arm))
+       ;; ((when (equal "memcpy" library-function))
+       ;;  (run-memcpy arm))
+       ;; ... todo: more ...
+       )
+    (update-error (list :unhandled-library-function library-function) arm)))
+
+(acl2::defopeners step-aux
+  ;; :hyps ((syntaxp (quotep pc))) ; didn't work for PIE examples
+  )
+
+(acl2::defopeners step-aux :suffix when-constant
+  :hyps ((syntaxp (quotep pc))))
+
 ;; Returns a new state, which might have the error flag set
 (defund step (arm)
   (declare (xargs :stobjs arm))
@@ -45,29 +99,14 @@
       arm ; errors persist
     (if (not (equal *InstrSet_ARM* (isetstate arm)))
         (update-error :not-in-arm-state arm)
-      (b* ((inst-address (pc arm))
-           (inst (read 4 inst-address arm))
-           ((mv erp mnemonic args)
-            (arm32-decode inst))
-           ((when erp)
-            (update-error :decoding-error arm)))
-        (execute-inst mnemonic args inst-address arm)))))
+      (step-aux (pc arm) arm))))
 
 (defthm step-opener
   (implies (and (not (error arm)) ; avoids loops
                 (equal *InstrSet_ARM* (isetstate arm)) ; for now
-                ;; todo: use a binding-hyp?
-                (not (mv-nth 0 (arm32-decode (read 4 (pc arm) arm)))))
+                )
            (equal (step arm)
-                  (b* ((inst-address (pc arm))
-                       (inst (read 4 inst-address arm))
-                       ((mv & ;erp
-                            mnemonic args)
-                        (arm32-decode inst))
-                       ;; ((when erp)
-                       ;;  (update-error :decoding-error arm))
-                       )
-                    (execute-inst mnemonic args inst-address arm))))
+                  (step-aux (pc arm) arm)))
   :hints (("Goal" :in-theory (enable step))))
 
 (defthm step-of-if

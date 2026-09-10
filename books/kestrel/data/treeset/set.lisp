@@ -33,6 +33,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define setp (x)
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp)
   :parents (treeset)
   :short "Recognizer for @(see treeset)s."
@@ -45,8 +46,6 @@
        (heapp x)))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t setp)))
 
 (defrule setp-type-prescription
   (booleanp (setp x))
@@ -138,6 +137,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fix ((set setp))
+  (declare (xargs :type-prescription :none))
   :returns (set$ setp)
   :parents (treeset)
   :short "Fixer for @(see treeset)s."
@@ -149,8 +149,6 @@
   :guard-hints (("Goal" :in-theory (enable setp))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t fix)))
 
 (defruled fix-type-prescription
   (or (consp (fix set))
@@ -207,6 +205,7 @@
 (define equiv
   ((x setp)
    (y setp))
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp)
   :parents (treeset)
   :short "Equivalence up to @(tsee fix)."
@@ -218,8 +217,6 @@
   (defequiv equiv))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t equiv)))
 
 (defrule equiv-type-prescription
   (booleanp (equiv x y))
@@ -252,6 +249,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define emptyp ((set setp))
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp)
   :parents (treeset)
   :short "Check if a @(see treeset) is empty."
@@ -260,8 +258,6 @@
   :guard-hints (("Goal" :in-theory (enable setp))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t emptyp)))
 
 (defrule emptyp-type-prescription
   (booleanp (emptyp set))
@@ -371,13 +367,12 @@
 ;; Variants matching the equality primitives
 
 (define set-all-acl2-numberp ((set setp))
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp)
   (tree-all-acl2-numberp (fix set))
   :guard-hints (("Goal" :in-theory (enable setp))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t set-all-acl2-numberp)))
 
 (defrule set-all-acl2-numberp-type-prescription
   (booleanp (set-all-acl2-numberp set))
@@ -386,13 +381,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define set-all-symbolp ((set setp))
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp)
   (tree-all-symbolp (fix set))
   :guard-hints (("Goal" :in-theory (enable setp))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t set-all-symbolp)))
 
 (defrule set-all-symbolp-type-prescription
   (booleanp (set-all-symbolp set))
@@ -401,13 +395,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define set-all-eqlablep ((set setp))
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp)
   (tree-all-eqlablep (fix set))
   :guard-hints (("Goal" :in-theory (enable setp))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t set-all-eqlablep)))
 
 (defrule set-all-eqlablep-type-prescription
   (booleanp (set-all-eqlablep set))

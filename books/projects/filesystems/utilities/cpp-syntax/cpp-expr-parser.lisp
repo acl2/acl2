@@ -21,22 +21,16 @@
 ;  - parse-cpp-member-decl-list-body-full
 ;  - parse-cpp-class-specifier-full
 ;
-; Limitations (constructs supported by the AST but not yet by the parser):
-;  - lambda expressions with bodies (the AST :lambda variant is unused;
-;    the parser does not recognize "[ ] ( ) { ... }")
-;  - C++ named casts: static_cast<T>(e), dynamic_cast, reinterpret_cast,
-;    const_cast, typeid
-;  - C-style casts: (T)e (always parsed as parenthesized expr)
-;  - new, delete expressions
-;  - sizeof, alignof expressions
-;  - try-catch statements (the parser produces a generic statement instead);
-;    catch-clause parsing is still provided for use by ad-hoc clients
-;  - for-decl, for-range (for-loop with declaration init or range-based)
-;  - switch, case, default labels, goto labels
-;  - co_await, co_yield, co_return prefix
-;
-; These limitations are tracked by leaving the corresponding AST variants
-; reachable but not produced.
+; Limitations (constructs with partial or no parser support):
+;  - Nested-template '>>' disambiguation: the C$ lexer produces ">>" as a
+;    single shift token; vector<vector<int>> does not parse correctly
+;  - 'concept' definitions and 'requires' expressions/clauses (C++20)
+;  - 'if consteval' statement form (C++23)
+;  - Explicit object parameters ('this' as first explicit parameter, C++23)
+;  - Multidimensional subscript operator a[i,j] (C++23)
+;  - Spaceship operator <=> is parsed as a binary op but mapped to the C$
+;    'binop-ge' AST node (no dedicated spaceship binop variant in C$ AST)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -213,6 +207,224 @@
                                        parsize-of-parse-cpp-one-capture-cond
                                        parsize-of-parse-cpp-captures-rest-uncond)))))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; C++17 structured-binding name list parser (standalone: only reads tokens).
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define parse-cpp-binding-names-rest ((parstate parstatep))
+  :returns (mv erp
+               (names c$::ident-listp)
+               (close-span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :measure (parsize parstate)
+  :parents nil
+  :short "Parse the @(', b, c ]') tail of a structured-binding name list."
+  (b* (((reterr) nil (irr-span) parstate)
+       ((erp sep? sep-span parstate) (read-token parstate))
+       ((when (token-punctuatorp sep? "]"))
+        (retok nil sep-span parstate))
+       ((unless (token-punctuatorp sep? ","))
+        (reterr-msg :where (span->start sep-span)
+                    :expected "',' or ']' in structured binding"
+                    :found sep?
+                    :extra nil))
+       ((erp name? name-span parstate) (read-token parstate))
+       ((unless (and name? (token-case name? :ident)))
+        (reterr-msg :where (span->start name-span)
+                    :expected "identifier in structured binding"
+                    :found name?
+                    :extra nil))
+       ((erp rest close-span parstate) (parse-cpp-binding-names-rest parstate)))
+    (retok (cons (token-ident->ident name?) rest) close-span parstate))
+  ///
+  (defret parsize-of-parse-cpp-binding-names-rest-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal" :induct (parse-cpp-binding-names-rest parstate))))
+  (defret parsize-of-parse-cpp-binding-names-rest-cond
+    (implies (not erp)
+             (< (parsize new-parstate)
+                (parsize parstate)))
+    :rule-classes :linear
+    :hints (("Goal" :induct (parse-cpp-binding-names-rest parstate)))))
+
+(define parse-cpp-binding-names ((parstate parstatep))
+  :returns (mv erp
+               (names c$::ident-listp)
+               (close-span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse the @('[a, b, c]') name list of a C++17 structured binding.
+          Expects the opening @('[') to have been already consumed."
+  (b* (((reterr) nil (irr-span) parstate)
+       ((erp name? name-span parstate) (read-token parstate))
+       ((unless (and name? (token-case name? :ident)))
+        (reterr-msg :where (span->start name-span)
+                    :expected "identifier in structured binding"
+                    :found name?
+                    :extra nil))
+       ((erp rest close-span parstate) (parse-cpp-binding-names-rest parstate)))
+    (retok (cons (token-ident->ident name?) rest) close-span parstate))
+  ///
+  (defret parsize-of-parse-cpp-binding-names-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable parsize-of-parse-cpp-binding-names-rest-uncond))))
+  (defret parsize-of-parse-cpp-binding-names-cond
+    (implies (not erp)
+             (< (parsize new-parstate)
+                (parsize parstate)))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable parsize-of-parse-cpp-binding-names-rest-uncond)))))
+
+;; Lookahead: detect an 'auto'-based structured-binding decl-specifier
+;; sequence ([const|volatile]? auto [&|&&]?) immediately followed by '['.
+;; On a match, consume through the '[' and return the binding's type; on no
+;; match, restore every token read (net-zero effect on parsize).
+(define parse-cpp-try-binding-prefix ((parstate parstatep))
+  :returns (mv erp
+               (bindingp booleanp)
+               (type cpp-type-spec-p)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Recognize the @('auto [') prefix of a C++17 structured binding."
+  (b* (((reterr) nil (irr-cpp-type-spec) parstate)
+       (auto-type (make-cpp-type-spec-name
+                   :id (c$::make-ident :unwrap "auto")))
+       ((erp t1? & parstate) (read-token parstate))
+       ((when (or (token-keywordp t1? "const")
+                  (token-keywordp t1? "volatile")))
+        (b* ((constp (token-keywordp t1? "const"))
+             ((erp t2? & parstate) (read-token parstate))
+             ((unless (token-keywordp t2? "auto"))
+              (b* ((parstate (if t2? (unread-token parstate) parstate))
+                   (parstate (unread-token parstate)))
+                (retok nil (irr-cpp-type-spec) parstate)))
+             ((erp t3? & parstate) (read-token parstate))
+             ((when (token-punctuatorp t3? "["))
+              (retok t
+                     (if constp
+                         (make-cpp-type-spec-const-qual :base auto-type)
+                       (make-cpp-type-spec-volatile-qual :base auto-type))
+                     parstate))
+             ((when (or (token-punctuatorp t3? "&") (token-punctuatorp t3? "&&")))
+              (b* ((rrefp (token-punctuatorp t3? "&&"))
+                   ((erp t4? & parstate) (read-token parstate))
+                   ((when (token-punctuatorp t4? "["))
+                    (b* ((refty (if rrefp
+                                    (make-cpp-type-spec-rref :base auto-type)
+                                  (make-cpp-type-spec-lref :base auto-type))))
+                      (retok t
+                             (if constp
+                                 (make-cpp-type-spec-const-qual :base refty)
+                               (make-cpp-type-spec-volatile-qual :base refty))
+                             parstate)))
+                   (parstate (if t4? (unread-token parstate) parstate))
+                   (parstate (unread-token parstate))
+                   (parstate (unread-token parstate))
+                   (parstate (unread-token parstate)))
+                (retok nil (irr-cpp-type-spec) parstate)))
+             (parstate (if t3? (unread-token parstate) parstate))
+             (parstate (unread-token parstate))
+             (parstate (unread-token parstate)))
+          (retok nil (irr-cpp-type-spec) parstate)))
+       ((when (token-keywordp t1? "auto"))
+        (b* (((erp t2? & parstate) (read-token parstate))
+             ((when (token-punctuatorp t2? "["))
+              (retok t auto-type parstate))
+             ((when (or (token-punctuatorp t2? "&") (token-punctuatorp t2? "&&")))
+              (b* ((rrefp (token-punctuatorp t2? "&&"))
+                   ((erp t3? & parstate) (read-token parstate))
+                   ((when (token-punctuatorp t3? "["))
+                    (retok t
+                           (if rrefp
+                               (make-cpp-type-spec-rref :base auto-type)
+                             (make-cpp-type-spec-lref :base auto-type))
+                           parstate))
+                   (parstate (if t3? (unread-token parstate) parstate))
+                   (parstate (unread-token parstate))
+                   (parstate (unread-token parstate)))
+                (retok nil (irr-cpp-type-spec) parstate)))
+             (parstate (if t2? (unread-token parstate) parstate))
+             (parstate (unread-token parstate)))
+          (retok nil (irr-cpp-type-spec) parstate)))
+       (parstate (if t1? (unread-token parstate) parstate)))
+    (retok nil (irr-cpp-type-spec) parstate))
+  ///
+  (defret parsize-of-parse-cpp-try-binding-prefix-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-cond
+                                       c$::parsize-of-read-token-uncond
+                                       c$::parsize-of-unread-token)))))
+
+;; Lookahead: after an identifier already consumed as a candidate cast type,
+;; recognize a pointer/reference suffix immediately followed by ')', i.e.
+;; (T*), (T* const), (T&), or (T&&).  These are unambiguous C-style casts: the
+;; ')' right after the suffix cannot be anything but the close of a cast type.
+;; On a match, consume through the ')' and return the suffixed type; on no
+;; match, restore every token read (net-zero effect on parsize).
+(define parse-cpp-try-ident-cast-suffix ((id c$::identp)
+                                         (parstate parstatep))
+  :returns (mv erp
+               (matchp booleanp)
+               (type cpp-type-spec-p)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Recognize a @('(T*)'), @('(T&)'), or @('(T&&)') pointer/reference
+          cast suffix after the type identifier has been consumed."
+  (b* (((reterr) nil (irr-cpp-type-spec) parstate)
+       (base (make-cpp-type-spec-name :id id))
+       ((erp s1? & parstate) (read-token parstate))
+       ;; '*' [const] ')'
+       ((when (token-punctuatorp s1? "*"))
+        (b* (((erp s2? & parstate) (read-token parstate))
+             (constp (token-keywordp s2? "const"))
+             ((when constp)
+              (b* (((erp s3? & parstate) (read-token parstate))
+                   ((when (token-punctuatorp s3? ")"))
+                    (retok t
+                           (make-cpp-type-spec-pointer :pointee base :constp t)
+                           parstate))
+                   (parstate (if s3? (unread-token parstate) parstate))
+                   (parstate (unread-token parstate))   ; 'const'
+                   (parstate (unread-token parstate)))   ; '*'
+                (retok nil (irr-cpp-type-spec) parstate)))
+             ((when (token-punctuatorp s2? ")"))
+              (retok t
+                     (make-cpp-type-spec-pointer :pointee base :constp nil)
+                     parstate))
+             (parstate (if s2? (unread-token parstate) parstate))
+             (parstate (unread-token parstate)))          ; '*'
+          (retok nil (irr-cpp-type-spec) parstate)))
+       ;; '&&' ')'
+       ((when (token-punctuatorp s1? "&&"))
+        (b* (((erp s2? & parstate) (read-token parstate))
+             ((when (token-punctuatorp s2? ")"))
+              (retok t (make-cpp-type-spec-rref :base base) parstate))
+             (parstate (if s2? (unread-token parstate) parstate))
+             (parstate (unread-token parstate)))          ; '&&'
+          (retok nil (irr-cpp-type-spec) parstate)))
+       ;; '&' ')'
+       ((when (token-punctuatorp s1? "&"))
+        (b* (((erp s2? & parstate) (read-token parstate))
+             ((when (token-punctuatorp s2? ")"))
+              (retok t (make-cpp-type-spec-lref :base base) parstate))
+             (parstate (if s2? (unread-token parstate) parstate))
+             (parstate (unread-token parstate)))          ; '&'
+          (retok nil (irr-cpp-type-spec) parstate)))
+       (parstate (if s1? (unread-token parstate) parstate)))
+    (retok nil (irr-cpp-type-spec) parstate))
+  ///
+  (defret parsize-of-parse-cpp-try-ident-cast-suffix-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-cond
+                                       c$::parsize-of-read-token-uncond
+                                       c$::parsize-of-unread-token)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Mutual recursion for C++ expressions, statements, and lambda bodies
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -237,17 +449,27 @@
 (defines parse-cpp-full-mutual
   :parents (parser)
 
-  :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-cond
-                                     c$::parsize-of-unread-token
-                                     parsize-of-parse-cpp-type-spec-uncond
-                                     parsize-of-parse-cpp-type-spec-cond
-                                     parsize-of-parse-cpp-type-spec-suffix-uncond
-                                     parsize-of-parse-cpp-exception-handler-header-uncond
-                                     parsize-of-parse-cpp-exception-handler-header-cond
-                                     parsize-of-parse-cpp-param-list-uncond
-                                     parsize-of-parse-cpp-param-list-cond
-                                     parsize-of-parse-cpp-capture-list-uncond
-                                     parsize-of-parse-cpp-capture-list-cond)))
+  :hints (("Goal" :in-theory (e/d (c$::parsize-of-read-token-cond
+                                   c$::parsize-of-unread-token
+                                   parsize-of-parse-cpp-type-spec-uncond
+                                   parsize-of-parse-cpp-type-spec-cond
+                                   parsize-of-parse-cpp-type-spec-suffix-uncond
+                                   parsize-of-parse-cpp-binding-names-uncond
+                                   parsize-of-parse-cpp-binding-names-cond
+                                   parsize-of-parse-cpp-try-binding-prefix-uncond
+                                   parsize-of-parse-cpp-try-ident-cast-suffix-uncond
+                                   parsize-of-parse-cpp-exception-handler-header-uncond
+                                   parsize-of-parse-cpp-exception-handler-header-cond
+                                   parsize-of-parse-cpp-param-list-uncond
+                                   parsize-of-parse-cpp-param-list-cond)
+                                  (c$::spanp-when-member-equal-of-span-listp
+                                   cpp-expr-p-when-member-equal-of-cpp-expr-listp
+                                   cpp-type-spec-p-when-member-equal-of-cpp-type-spec-listp
+                                   cpp-block-item-p-when-member-equal-of-cpp-block-item-listp
+                                   cpp-catch-clause-p-when-member-equal-of-cpp-catch-clause-listp
+                                   cpp-capture-p-when-member-equal-of-cpp-capture-listp
+                                   cpp-expr-listp-when-subsetp-equal
+                                   cpp-capture-listp-when-subsetp-equal))))
 
   :ruler-extenders :all
 
@@ -963,9 +1185,22 @@
                                       :end   (span->end arg-span))))
                   (retok (make-cpp-expr-c-cast :type type :arg arg)
                          span parstate)))
-               ;; Case 2: single ident followed by ')' then primary-start -> cast
+               ;; Case 2: ident type.  An unambiguous pointer/reference cast
+               ;; suffix -- (T*), (T* const), (T&), (T&&) -- is always a cast.
                ((when (and inner? (token-case inner? :ident)))
-                (b* (((erp after? & parstate) (read-token parstate))
+                (b* (((erp suffixp suffix-type parstate)
+                      (parse-cpp-try-ident-cast-suffix
+                       (token-ident->ident inner?) parstate))
+                     ((when suffixp)
+                      (b* ((psize (parsize parstate))
+                           ((erp arg arg-span parstate) (parse-cpp-unary parstate))
+                           ((unless (mbt (<= (parsize parstate) psize)))
+                            (reterr :impossible))
+                           (span (make-span :start (span->start tok-span)
+                                            :end   (span->end arg-span))))
+                        (retok (make-cpp-expr-c-cast :type suffix-type :arg arg)
+                               span parstate)))
+                     ((erp after? & parstate) (read-token parstate))
                      ((unless (token-punctuatorp after? ")"))
                       (b* ((parstate (if after? (unread-token parstate) parstate))
                            (parstate (unread-token parstate)) ; ident
@@ -976,6 +1211,9 @@
                             (reterr :impossible)))
                         (parse-cpp-postfix-rest prim prim-span parstate)))
                      ((erp next? & parstate) (read-token parstate))
+                     ;; Excluded from cast context: * only (binary multiply).
+                     ;; (x)*y stays as multiplication (test 8b); +, -, & are
+                     ;; unary-only in cast position so (T)+x, (T)-x, (T)&x work.
                      (is-cast-context
                       (or (and next? (token-case next? :ident))
                           (and next? (token-case next? :const))
@@ -985,9 +1223,8 @@
                           (token-punctuatorp next? "--")
                           (token-punctuatorp next? "~")
                           (token-punctuatorp next? "!")
-                          (token-punctuatorp next? "-")
                           (token-punctuatorp next? "+")
-                          (token-punctuatorp next? "*")
+                          (token-punctuatorp next? "-")
                           (token-punctuatorp next? "&")))
                      ((unless is-cast-context)
                       (b* ((parstate (if next? (unread-token parstate) parstate))
@@ -1611,7 +1848,42 @@
                       (mv nil parstate)))))
                ((when declp)
                 ;; for ( type name [: range | [= init] ; test ; next ] ) body
-                (b* (((erp type & parstate) (parse-cpp-type-spec-full parstate))
+                (b* (;; C++17 structured binding: for ( auto '[' a, b ']' : range ) body
+                     ((erp bindingp bind-type parstate)
+                      (parse-cpp-try-binding-prefix parstate))
+                     ((when bindingp)
+                      (b* (((erp names & parstate)
+                            (parse-cpp-binding-names parstate))
+                           ((erp colon? colon-span parstate) (read-token parstate))
+                           ((unless (token-punctuatorp colon? ":"))
+                            (reterr-msg
+                             :where (span->start colon-span)
+                             :expected "':' in structured binding for-range"
+                             :found colon?
+                             :extra nil))
+                           ((unless (< (parsize parstate) psize))
+                            (reterr :impossible))
+                           ((erp range & parstate) (parse-cpp-expr parstate))
+                           ((erp rp? rp-span parstate) (read-token parstate))
+                           ((unless (token-punctuatorp rp? ")"))
+                            (reterr-msg
+                             :where (span->start rp-span)
+                             :expected "')' after for-range initializer"
+                             :found rp?
+                             :extra nil))
+                           ((unless (< (parsize parstate) psize))
+                            (reterr :impossible))
+                           ((erp body body-span parstate)
+                            (parse-cpp-stmt parstate))
+                           ((unless (<= (parsize parstate) psize))
+                            (reterr :impossible))
+                           (span (make-span :start (span->start tok-span)
+                                            :end   (span->end body-span))))
+                        (retok (make-cpp-stmt-for-range-binding
+                                :type bind-type :names names
+                                :range range :body body)
+                               span parstate)))
+                     ((erp type & parstate) (parse-cpp-type-spec-full parstate))
                      ((erp name? name-span parstate) (read-token parstate))
                      ((unless (and name? (token-case name? :ident)))
                       (reterr-msg :where (span->start name-span)
@@ -1850,6 +2122,31 @@
          ((when declp)
           ;; Parse a local declaration: type-spec ident [= init] ';'
           (b* ((psize (parsize parstate))
+               ;; C++17 structured binding: auto '[' a, b ']' '=' init ';'
+               ((erp bindingp bind-type parstate)
+                (parse-cpp-try-binding-prefix parstate))
+               ((when bindingp)
+                (b* (((erp names & parstate) (parse-cpp-binding-names parstate))
+                     ((erp eq? eq-span parstate) (read-token parstate))
+                     ((unless (token-punctuatorp eq? "="))
+                      (reterr-msg :where (span->start eq-span)
+                                  :expected "'=' in structured binding declaration"
+                                  :found eq?
+                                  :extra nil))
+                     ((unless (< (parsize parstate) psize))
+                      (reterr :impossible))
+                     ((erp init & parstate) (parse-cpp-assign-or-cond parstate))
+                     ((erp semi? semi-span parstate) (read-token parstate))
+                     ((unless (token-punctuatorp semi? ";"))
+                      (reterr-msg :where (span->start semi-span)
+                                  :expected "';' after structured binding"
+                                  :found semi?
+                                  :extra nil))
+                     (span (make-span :start (span->start t1-span)
+                                      :end   (span->end semi-span))))
+                  (retok (make-cpp-block-item-binding
+                          :type bind-type :names names :init init)
+                         span parstate)))
                ((erp type & parstate) (parse-cpp-type-spec-full parstate))
                ((erp name? name-span parstate) (read-token parstate))
                ((unless (and name? (token-case name? :ident)))
@@ -1858,6 +2155,24 @@
                             :found name?
                             :extra nil))
                ((erp peek? & parstate) (read-token parstate))
+               ;; Most vexing parse: 'type name ( params ) ;' is a function
+               ;; declaration, not a variable with a functional-cast initializer.
+               ;; peek? already consumed the '(', which parse-cpp-param-list expects.
+               ((when (token-punctuatorp peek? "("))
+                (b* (((erp params & parstate) (parse-cpp-param-list parstate))
+                     ((erp fsemi? fsemi-span parstate) (read-token parstate))
+                     ((unless (token-punctuatorp fsemi? ";"))
+                      (reterr-msg :where (span->start fsemi-span)
+                                  :expected "';' after function declaration"
+                                  :found fsemi?
+                                  :extra nil))
+                     (span (make-span :start (span->start t1-span)
+                                      :end   (span->end fsemi-span))))
+                  (retok (make-cpp-block-item-func-decl
+                          :ret-type type
+                          :name (token-ident->ident name?)
+                          :params params)
+                         span parstate)))
                ((mv init-p init parstate)
                 (cond ((token-punctuatorp peek? "=")
                        (b* (((unless (< (parsize parstate) psize))
@@ -2295,126 +2610,128 @@
       (<= (parsize (mv-nth 3 (parse-cpp-primary parstate)))
           (parsize parstate))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-primary parstate)))
       :flag parse-cpp-primary)
     (defthm parsize-of-parse-cpp-arg-list-rest-uncond
       (<= (parsize (mv-nth 3 (parse-cpp-arg-list-rest acc parstate)))
           (parsize parstate))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-arg-list-rest acc parstate)))
       :flag parse-cpp-arg-list-rest)
     (defthm parsize-of-parse-cpp-postfix-rest-uncond
       (<= (parsize (mv-nth 3 (parse-cpp-postfix-rest lhs lhs-span parstate)))
           (parsize parstate))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-postfix-rest lhs lhs-span parstate)))
       :flag parse-cpp-postfix-rest)
     (defthm parsize-of-parse-cpp-unary-uncond
       (<= (parsize (mv-nth 3 (parse-cpp-unary parstate)))
           (parsize parstate))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-unary parstate)))
       :flag parse-cpp-unary)
     (defthm parsize-of-parse-cpp-pratt-loop-uncond
       (<= (parsize (mv-nth 3 (parse-cpp-pratt-loop
                               min-prec lhs lhs-span parstate)))
           (parsize parstate))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-pratt-loop min-prec lhs lhs-span parstate)))
       :flag parse-cpp-pratt-loop)
     (defthm parsize-of-parse-cpp-cond-rest-uncond
       (<= (parsize (mv-nth 3 (parse-cpp-cond-rest test test-span parstate)))
           (parsize parstate))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-cond-rest test test-span parstate)))
       :flag parse-cpp-cond-rest)
     (defthm parsize-of-parse-cpp-assign-or-cond-uncond
       (<= (parsize (mv-nth 3 (parse-cpp-assign-or-cond parstate)))
           (parsize parstate))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-assign-or-cond parstate)))
       :flag parse-cpp-assign-or-cond)
     (defthm parsize-of-parse-cpp-expr-uncond
       (<= (parsize (mv-nth 3 (parse-cpp-expr parstate)))
           (parsize parstate))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-expr parstate)))
       :flag parse-cpp-expr)
     (defthm parsize-of-parse-cpp-for-opt-test-uncond
       (<= (parsize (mv-nth 3 (parse-cpp-for-opt-test parstate)))
           (parsize parstate))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-for-opt-test parstate)))
       :flag parse-cpp-for-opt-test)
     (defthm parsize-of-parse-cpp-for-opt-next-uncond
       (<= (parsize (mv-nth 3 (parse-cpp-for-opt-next parstate)))
           (parsize parstate))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-for-opt-next parstate)))
       :flag parse-cpp-for-opt-next)
     (defthm parsize-of-parse-cpp-stmt-uncond
       (<= (parsize (mv-nth 3 (parse-cpp-stmt parstate)))
           (parsize parstate))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-stmt parstate)))
       :flag parse-cpp-stmt)
     (defthm parsize-of-parse-cpp-block-item-uncond
       (<= (parsize (mv-nth 3 (parse-cpp-block-item parstate)))
           (parsize parstate))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-block-item parstate)))
       :flag parse-cpp-block-item)
     (defthm parsize-of-parse-cpp-block-item-list-body-uncond
       (<= (parsize (mv-nth 3 (parse-cpp-block-item-list-body parstate)))
           (parsize parstate))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-block-item-list-body parstate)))
       :flag parse-cpp-block-item-list-body)
     (defthm parsize-of-parse-cpp-catch-clause-uncond
       (<= (parsize (mv-nth 3 (parse-cpp-catch-clause parstate)))
           (parsize parstate))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-catch-clause parstate)))
       :flag parse-cpp-catch-clause)
     (defthm parsize-of-parse-cpp-catch-clause-list-uncond
       (<= (parsize (mv-nth 3 (parse-cpp-catch-clause-list parstate)))
           (parsize parstate))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-catch-clause-list parstate)))
       :flag parse-cpp-catch-clause-list)
     (defthm parsize-of-parse-cpp-type-spec-full-uncond
       (<= (parsize (mv-nth 3 (parse-cpp-type-spec-full parstate)))
           (parsize parstate))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-type-spec-full parstate)))
       :flag parse-cpp-type-spec-full)
     (defthm parsize-of-parse-cpp-one-capture-full-uncond
       (<= (parsize (mv-nth 3 (parse-cpp-one-capture-full parstate)))
           (parsize parstate))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-one-capture-full parstate)))
       :flag parse-cpp-one-capture-full)
     (defthm parsize-of-parse-cpp-captures-rest-full-uncond
       (<= (parsize (mv-nth 3 (parse-cpp-captures-rest-full acc parstate)))
           (parsize parstate))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-captures-rest-full acc parstate)))
       :flag parse-cpp-captures-rest-full)
     (defthm parsize-of-parse-cpp-capture-list-full-uncond
       (<= (parsize (mv-nth 3 (parse-cpp-capture-list-full open-span parstate)))
           (parsize parstate))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-capture-list-full open-span parstate)))
       :flag parse-cpp-capture-list-full)
     :hints (("Goal"
-             :in-theory (enable c$::parsize-of-read-token-cond
-                                c$::parsize-of-read-token-uncond
+             :in-theory (enable c$::parsize-of-read-token-uncond
                                 c$::parsize-of-unread-token
                                 parsize-of-parse-cpp-type-spec-uncond
                                 parsize-of-parse-cpp-type-spec-suffix-uncond
+                                parsize-of-parse-cpp-binding-names-uncond
+                                parsize-of-parse-cpp-binding-names-cond
+                                parsize-of-parse-cpp-try-binding-prefix-uncond
+                                parsize-of-parse-cpp-try-ident-cast-suffix-uncond
                                 parsize-of-parse-cpp-exception-handler-header-uncond
-                                parsize-of-parse-cpp-param-list-uncond
-                                parsize-of-parse-cpp-capture-list-uncond)
-             :expand ((parse-cpp-primary parstate)
-                      (parse-cpp-arg-list-rest acc parstate)
-                      (parse-cpp-postfix-rest lhs lhs-span parstate)
-                      (parse-cpp-unary parstate)
-                      (parse-cpp-pratt-loop min-prec lhs lhs-span parstate)
-                      (parse-cpp-cond-rest test test-span parstate)
-                      (parse-cpp-assign-or-cond parstate)
-                      (parse-cpp-expr parstate)
-                      (parse-cpp-for-opt-test parstate)
-                      (parse-cpp-for-opt-next parstate)
-                      (parse-cpp-stmt parstate)
-                      (parse-cpp-block-item parstate)
-                      (parse-cpp-block-item-list-body parstate)
-                      (parse-cpp-catch-clause parstate)
-                      (parse-cpp-catch-clause-list parstate)
-                      (parse-cpp-type-spec-full parstate)
-                      (parse-cpp-one-capture-full parstate)
-                      (parse-cpp-captures-rest-full acc parstate)
-                      (parse-cpp-capture-list-full open-span parstate)))))
+                                parsize-of-parse-cpp-param-list-uncond))))
 
   (defthm-parse-cpp-full-mutual-flag
     parsize-of-parse-cpp-full-mutual-cond
@@ -2423,106 +2740,125 @@
                (< (parsize (mv-nth 3 (parse-cpp-primary parstate)))
                   (parsize parstate)))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-primary parstate)))
       :flag parse-cpp-primary)
     (defthm parsize-of-parse-cpp-arg-list-rest-cond
       (implies (not (mv-nth 0 (parse-cpp-arg-list-rest acc parstate)))
                (< (parsize (mv-nth 3 (parse-cpp-arg-list-rest acc parstate)))
                   (parsize parstate)))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-arg-list-rest acc parstate)))
       :flag parse-cpp-arg-list-rest)
     (defthm parsize-of-parse-cpp-postfix-rest-cond
       t
       :rule-classes nil
+      :hints ('(:expand (parse-cpp-postfix-rest lhs lhs-span parstate)))
       :flag parse-cpp-postfix-rest)
     (defthm parsize-of-parse-cpp-unary-cond
       (implies (not (mv-nth 0 (parse-cpp-unary parstate)))
                (< (parsize (mv-nth 3 (parse-cpp-unary parstate)))
                   (parsize parstate)))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-unary parstate)))
       :flag parse-cpp-unary)
     (defthm parsize-of-parse-cpp-pratt-loop-cond
       t
       :rule-classes nil
+      :hints ('(:expand (parse-cpp-pratt-loop min-prec lhs lhs-span parstate)))
       :flag parse-cpp-pratt-loop)
     (defthm parsize-of-parse-cpp-cond-rest-cond
       (implies (not (mv-nth 0 (parse-cpp-cond-rest test test-span parstate)))
                (< (parsize (mv-nth 3 (parse-cpp-cond-rest test test-span parstate)))
                   (parsize parstate)))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-cond-rest test test-span parstate)))
       :flag parse-cpp-cond-rest)
     (defthm parsize-of-parse-cpp-assign-or-cond-cond
       (implies (not (mv-nth 0 (parse-cpp-assign-or-cond parstate)))
                (< (parsize (mv-nth 3 (parse-cpp-assign-or-cond parstate)))
                   (parsize parstate)))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-assign-or-cond parstate)))
       :flag parse-cpp-assign-or-cond)
     (defthm parsize-of-parse-cpp-expr-cond
       (implies (not (mv-nth 0 (parse-cpp-expr parstate)))
                (< (parsize (mv-nth 3 (parse-cpp-expr parstate)))
                   (parsize parstate)))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-expr parstate)))
       :flag parse-cpp-expr)
     (defthm parsize-of-parse-cpp-for-opt-test-cond
       (implies (not (mv-nth 0 (parse-cpp-for-opt-test parstate)))
                (< (parsize (mv-nth 3 (parse-cpp-for-opt-test parstate)))
                   (parsize parstate)))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-for-opt-test parstate)))
       :flag parse-cpp-for-opt-test)
     (defthm parsize-of-parse-cpp-for-opt-next-cond
       (implies (not (mv-nth 0 (parse-cpp-for-opt-next parstate)))
                (< (parsize (mv-nth 3 (parse-cpp-for-opt-next parstate)))
                   (parsize parstate)))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-for-opt-next parstate)))
       :flag parse-cpp-for-opt-next)
     (defthm parsize-of-parse-cpp-stmt-cond
       (implies (not (mv-nth 0 (parse-cpp-stmt parstate)))
                (< (parsize (mv-nth 3 (parse-cpp-stmt parstate)))
                   (parsize parstate)))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-stmt parstate)))
       :flag parse-cpp-stmt)
     (defthm parsize-of-parse-cpp-block-item-cond
       (implies (not (mv-nth 0 (parse-cpp-block-item parstate)))
                (< (parsize (mv-nth 3 (parse-cpp-block-item parstate)))
                   (parsize parstate)))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-block-item parstate)))
       :flag parse-cpp-block-item)
     (defthm parsize-of-parse-cpp-block-item-list-body-cond
       t
       :rule-classes nil
+      :hints ('(:expand (parse-cpp-block-item-list-body parstate)))
       :flag parse-cpp-block-item-list-body)
     (defthm parsize-of-parse-cpp-catch-clause-cond
       (implies (not (mv-nth 0 (parse-cpp-catch-clause parstate)))
                (< (parsize (mv-nth 3 (parse-cpp-catch-clause parstate)))
                   (parsize parstate)))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-catch-clause parstate)))
       :flag parse-cpp-catch-clause)
     (defthm parsize-of-parse-cpp-catch-clause-list-cond
       t
       :rule-classes nil
+      :hints ('(:expand (parse-cpp-catch-clause-list parstate)))
       :flag parse-cpp-catch-clause-list)
     (defthm parsize-of-parse-cpp-type-spec-full-cond
       (implies (not (mv-nth 0 (parse-cpp-type-spec-full parstate)))
                (< (parsize (mv-nth 3 (parse-cpp-type-spec-full parstate)))
                   (parsize parstate)))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-type-spec-full parstate)))
       :flag parse-cpp-type-spec-full)
     (defthm parsize-of-parse-cpp-one-capture-full-cond
       (implies (not (mv-nth 0 (parse-cpp-one-capture-full parstate)))
                (< (parsize (mv-nth 3 (parse-cpp-one-capture-full parstate)))
                   (parsize parstate)))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-one-capture-full parstate)))
       :flag parse-cpp-one-capture-full)
     (defthm parsize-of-parse-cpp-captures-rest-full-cond
       (implies (not (mv-nth 0 (parse-cpp-captures-rest-full acc parstate)))
                (< (parsize (mv-nth 3 (parse-cpp-captures-rest-full acc parstate)))
                   (parsize parstate)))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-captures-rest-full acc parstate)))
       :flag parse-cpp-captures-rest-full)
     (defthm parsize-of-parse-cpp-capture-list-full-cond
       (implies (not (mv-nth 0 (parse-cpp-capture-list-full open-span parstate)))
                (< (parsize (mv-nth 3 (parse-cpp-capture-list-full open-span parstate)))
                   (parsize parstate)))
       :rule-classes :linear
+      :hints ('(:expand (parse-cpp-capture-list-full open-span parstate)))
       :flag parse-cpp-capture-list-full)
     :hints (("Goal"
              :in-theory (enable c$::parsize-of-read-token-cond
@@ -2531,35 +2867,22 @@
                                 parsize-of-parse-cpp-type-spec-uncond
                                 parsize-of-parse-cpp-type-spec-cond
                                 parsize-of-parse-cpp-type-spec-suffix-uncond
+                                parsize-of-parse-cpp-binding-names-uncond
+                                parsize-of-parse-cpp-binding-names-cond
+                                parsize-of-parse-cpp-try-binding-prefix-uncond
+                                parsize-of-parse-cpp-try-ident-cast-suffix-uncond
                                 parsize-of-parse-cpp-exception-handler-header-uncond
                                 parsize-of-parse-cpp-exception-handler-header-cond
                                 parsize-of-parse-cpp-param-list-uncond
-                                parsize-of-parse-cpp-param-list-cond
-                                parsize-of-parse-cpp-capture-list-uncond
-                                parsize-of-parse-cpp-capture-list-cond)
-             :expand ((parse-cpp-primary parstate)
-                      (parse-cpp-arg-list-rest acc parstate)
-                      (parse-cpp-postfix-rest lhs lhs-span parstate)
-                      (parse-cpp-unary parstate)
-                      (parse-cpp-pratt-loop min-prec lhs lhs-span parstate)
-                      (parse-cpp-cond-rest test test-span parstate)
-                      (parse-cpp-assign-or-cond parstate)
-                      (parse-cpp-expr parstate)
-                      (parse-cpp-for-opt-test parstate)
-                      (parse-cpp-for-opt-next parstate)
-                      (parse-cpp-stmt parstate)
-                      (parse-cpp-block-item parstate)
-                      (parse-cpp-block-item-list-body parstate)
-                      (parse-cpp-catch-clause parstate)
-                      (parse-cpp-catch-clause-list parstate)
-                      (parse-cpp-type-spec-full parstate)
-                      (parse-cpp-one-capture-full parstate)
-                      (parse-cpp-captures-rest-full acc parstate)
-                      (parse-cpp-capture-list-full open-span parstate)))))
+                                parsize-of-parse-cpp-param-list-cond))))
 
   (verify-guards parse-cpp-primary
     :hints (("Goal" :in-theory (enable token-to-cpp-infix-prec
                                        c$::parsize-of-unread-token
+                                       parsize-of-parse-cpp-binding-names-uncond
+                                       parsize-of-parse-cpp-binding-names-cond
+                                       parsize-of-parse-cpp-try-binding-prefix-uncond
+                                       parsize-of-parse-cpp-try-ident-cast-suffix-uncond
                                        parsize-of-parse-cpp-type-spec-uncond
                                        parsize-of-parse-cpp-type-spec-cond
                                        parsize-of-parse-cpp-type-spec-full-uncond
@@ -2567,8 +2890,6 @@
                                        parsize-of-parse-cpp-type-spec-suffix-uncond
                                        parsize-of-parse-cpp-param-list-uncond
                                        parsize-of-parse-cpp-param-list-cond
-                                       parsize-of-parse-cpp-capture-list-full-uncond
-                                       parsize-of-parse-cpp-capture-list-full-cond
                                        parsize-of-parse-cpp-exception-handler-header-uncond
                                        parsize-of-parse-cpp-exception-handler-header-cond
                                        parsize-of-parse-cpp-assign-or-cond-uncond

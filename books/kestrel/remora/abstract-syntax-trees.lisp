@@ -94,8 +94,6 @@
    (xdoc::p
     "The fixtypes for our ASTs do not enforce certain restrictions,
      such as the non-emptiness of certain lists.
-     The FTY @(':require') feature does not seem to work for that,
-     when there are mutually recursive types.
      We can enforce these restrictions via separate predicates,
      but we state them in the documentation of the AST fixtypes."))
   :order-subtopics t
@@ -432,12 +430,10 @@
      and given that expressions and atoms are defined separately below,
      it may seem natural to also partition the definition of types
      into atom-kinded types and array-kinded types.
-     However, Remora allows atom-kinded types
+     However, the Remora syntax allows atom-kinded types
      wherever array-kinded types are expected:
-     the atom-kinded type is auto-lifted to a zero-rank array type.
-     There are only two spots in which a type must be atom-kinded,
-     namely the element type of an array or bracket type,
-     and that restriction can be enforced in the static semantics.
+     the atom-kinded type stands for a zero-rank array type,
+     and this lifting must be made explicit by type inference.
      Also note that ispaces and expressions/atoms
      have a different recursive structure than types,
      making those more naturally amenable to a partitioned definition."))
@@ -486,8 +482,7 @@
        are sugar for a nesting of the unary forms;
        they always contain two or more parameters
        (because there must have at least one parameter,
-       and if there is just one we use the unary forms),
-       but this fixtype does not capture this requirement.
+       and if there is just one we use the unary forms).
        Note the slight difference with function types,
        where singleton lists are allowed as explained above.")
      (xdoc::p
@@ -509,17 +504,73 @@
             (out type)))
     (:forall ((param type-var)
               (body type)))
-    (:foralln ((params type-var-list) ; two or more
-               (body type)))
+    (:foralln ((params type-var-list
+                       :reqfix (if (>= (len params) 2)
+                                   params
+                                 (list (type-var-fix nil)
+                                       (type-var-fix nil))))
+               (body type))
+     :require (>= (len params) 2))
     (:pi ((param ispace-var)
           (body type)))
-    (:pin ((params ispace-var-list) ; two or more
-           (body type)))
+    (:pin ((params ispace-var-list
+                   :reqfix (if (>= (len params) 2)
+                               params
+                             (list (ispace-var-fix nil)
+                                   (ispace-var-fix nil))))
+           (body type))
+     :require (>= (len params) 2))
     (:sigma ((param ispace-var)
              (body type)))
-    (:sigman ((params ispace-var-list) ; two or more
-              (body type)))
-    :pred typep)
+    (:sigman ((params ispace-var-list
+                      :reqfix (if (>= (len params) 2)
+                                  params
+                                (list (ispace-var-fix nil)
+                                      (ispace-var-fix nil))))
+              (body type))
+     :require (>= (len params) 2))
+    :pred typep
+
+    ///
+
+    (defrule consp-of-type-foralln->params
+      (consp (type-foralln->params type))
+      :rule-classes :type-prescription
+      :use (:instance type-foralln-requirements (x type))
+      :disable type-foralln-requirements)
+
+    (defruled consp-of-cdr-of-type-foralln->params
+      (consp (cdr (type-foralln->params type)))
+      :rule-classes :type-prescription
+      :use (:instance type-foralln-requirements (x type))
+      :disable type-foralln-requirements
+      :enable len)
+
+    (defrule consp-of-type-pin->params
+      (consp (type-pin->params type))
+      :rule-classes :type-prescription
+      :use (:instance type-pin-requirements (x type))
+      :disable type-pin-requirements)
+
+    (defruled consp-of-cdr-of-type-pin->params
+      (consp (cdr (type-pin->params type)))
+      :rule-classes :type-prescription
+      :use (:instance type-pin-requirements (x type))
+      :disable type-pin-requirements
+      :enable len)
+
+    (defrule consp-of-type-sigman->params
+      (consp (type-sigman->params type))
+      :rule-classes :type-prescription
+      :use (:instance type-sigman-requirements (x type))
+      :disable type-sigman-requirements)
+
+    (defruled consp-of-cdr-of-type-sigman->params
+      (consp (cdr (type-sigman->params type)))
+      :rule-classes :type-prescription
+      :use (:instance type-sigman-requirements (x type))
+      :disable type-sigman-requirements
+      :enable len))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -882,9 +933,9 @@
        bracketed expressions,
        and @('let') expressions.")
      (xdoc::p
-      "This fixtype does not capture the non-emptiness of
-       the lists of atoms and expressions of
-       non-empty arrays and frames.
+      "This fixtype captures the non-emptiness of
+       the list of atoms of non-empty arrays
+       and the list of expressions of non-empty frames.
        The naming of the summands is not completely symmetric,
        because the unqualified @(':array') and @(':frame') mean non-empty,
        while empty summands are @(':array-empty') and @(':frame-empty').
@@ -900,8 +951,7 @@
        are sugar for a nesting of the unary forms;
        they always contain two or more arguments
        (because there must be at least one argument,
-       and if there is just one we use the unary forms),
-       but this fixtype does not capture this requirement.")
+       and if there is just one we use the unary forms).")
      (xdoc::p
       "The @(':capp') summand is sugar,
        but it allows zero arguments (expressions, types, or ispaces),
@@ -911,44 +961,61 @@
        which is unary, i.e. it has one ispace parameter,
        consistently with other constructs.
        The n-ary @(':unboxn') is sugar for a nesting of the unary form;
-       it always has two or more ispace variables,
-       because there must be at least one,
-       but a single one is represented as the unary @(':unbox'),
-       but this fixtype does not capture that constraint.
+       it always has two or more ispace variables
+       (because there must be at least one,
+       and if there is just one we use the unary form).
        Both forms of unboxing are optionally annotated by
        the type of the whole unboxing expression;
        this type is absent after parsing, calculated by the type checker.")
      (xdoc::p
-      "A bracketed expression must have at least one sub-expression,
-       but this is not enforced in this fixtype.")
+      "A bracketed expression must have at least one sub-expression.")
      (xdoc::p
-      "A @('let') expressions must have at least one bind,
-       but this is not enforced in this fixtype.")
+      "A @('let') expression must have at least one bind.")
      (xdoc::p
       "[impl] has only unary ASTs for applications and unboxing."))
     (:var ((name string)))
     (:atom ((atom atom)))
     (:array ((dims nat-list)
-             (atoms atom-list))) ; one or more
+             (atoms atom-list
+                    :reqfix (if (consp atoms)
+                                atoms
+                              (list (atom-fix nil)))))
+     :require (consp atoms))
     (:array-empty ((dims nat-list)
                    (type type)))
     (:frame ((dims nat-list)
-             (exprs expr-list))) ; one or more
+             (exprs expr-list
+                    :reqfix (if (consp exprs)
+                                exprs
+                              (list (expr-fix nil)))))
+     :require (consp exprs))
     (:frame-empty ((dims nat-list)
                    (type type)))
     (:string ((chars char-lit-list)))
     (:app ((fun expr)
            (arg expr)))
     (:appn ((fun expr)
-            (args expr-list))) ; two or more
+            (args expr-list
+                  :reqfix (if (>= (len args) 2)
+                              args
+                            (list (expr-fix nil) (expr-fix nil)))))
+     :require (>= (len args) 2))
     (:tapp ((fun expr)
             (arg type)))
     (:tappn ((fun expr)
-             (args type-list))) ; two or more
+             (args type-list
+                   :reqfix (if (>= (len args) 2)
+                               args
+                             (list (type-fix nil) (type-fix nil)))))
+     :require (>= (len args) 2))
     (:iapp ((fun expr)
             (arg ispace)))
     (:iappn ((fun expr)
-             (args ispace-list))) ; two or more
+             (args ispace-list
+                   :reqfix (if (>= (len args) 2)
+                               args
+                             (list (ispace-fix nil) (ispace-fix nil)))))
+     :require (>= (len args) 2))
     (:capp ((fun expr)
             (targs type-list-option)
             (iargs ispace-list-option)
@@ -958,15 +1025,106 @@
              (target expr)
              (body expr)
              (type? type-option)))
-    (:unboxn ((ispaces ispace-var-list) ; two or more
+    (:unboxn ((ispaces ispace-var-list
+                       :reqfix (if (>= (len ispaces) 2)
+                                   ispaces
+                                 (list (ispace-var-fix nil)
+                                       (ispace-var-fix nil))))
               (var string)
               (target expr)
               (body expr)
-              (type? type-option)))
-    (:bracket ((exprs expr-list))) ; one or more
-    (:let ((binds bind-list) ; one or more
-           (body expr)))
-    :pred exprp)
+              (type? type-option))
+     :require (>= (len ispaces) 2))
+    (:bracket ((exprs expr-list
+                      :reqfix (if (consp exprs)
+                                  exprs
+                                (list (expr-fix nil)))))
+     :require (consp exprs))
+    (:let ((binds bind-list
+                  :reqfix (if (consp binds)
+                              binds
+                            (list (bind-fix nil))))
+           (body expr))
+     :require (consp binds))
+    :pred exprp
+
+    ///
+
+    (defrule consp-of-expr-array->atoms
+      (consp (expr-array->atoms expr))
+      :rule-classes :type-prescription
+      :use (:instance expr-array-requirements (x expr))
+      :disable expr-array-requirements)
+
+    (defrule consp-of-expr-frame->exprs
+      (consp (expr-frame->exprs expr))
+      :rule-classes :type-prescription
+      :use (:instance expr-frame-requirements (x expr))
+      :disable expr-frame-requirements)
+
+    (defrule consp-of-expr-bracket->exprs
+      (consp (expr-bracket->exprs expr))
+      :rule-classes :type-prescription
+      :use (:instance expr-bracket-requirements (x expr))
+      :disable expr-bracket-requirements)
+
+    (defrule consp-of-expr-appn->args
+      (consp (expr-appn->args expr))
+      :rule-classes :type-prescription
+      :use (:instance expr-appn-requirements (x expr))
+      :disable expr-appn-requirements)
+
+    (defruled consp-of-cdr-of-expr-appn->args
+      (consp (cdr (expr-appn->args expr)))
+      :rule-classes :type-prescription
+      :use (:instance expr-appn-requirements (x expr))
+      :disable expr-appn-requirements
+      :enable len)
+
+    (defrule consp-of-expr-tappn->args
+      (consp (expr-tappn->args expr))
+      :rule-classes :type-prescription
+      :use (:instance expr-tappn-requirements (x expr))
+      :disable expr-tappn-requirements)
+
+    (defruled consp-of-cdr-of-expr-tappn->args
+      (consp (cdr (expr-tappn->args expr)))
+      :rule-classes :type-prescription
+      :use (:instance expr-tappn-requirements (x expr))
+      :disable expr-tappn-requirements
+      :enable len)
+
+    (defrule consp-of-expr-iappn->args
+      (consp (expr-iappn->args expr))
+      :rule-classes :type-prescription
+      :use (:instance expr-iappn-requirements (x expr))
+      :disable expr-iappn-requirements)
+
+    (defruled consp-of-cdr-of-expr-iappn->args
+      (consp (cdr (expr-iappn->args expr)))
+      :rule-classes :type-prescription
+      :use (:instance expr-iappn-requirements (x expr))
+      :disable expr-iappn-requirements
+      :enable len)
+
+    (defrule consp-of-expr-unboxn->ispaces
+      (consp (expr-unboxn->ispaces expr))
+      :rule-classes :type-prescription
+      :use (:instance expr-unboxn-requirements (x expr))
+      :disable expr-unboxn-requirements)
+
+    (defruled consp-of-cdr-of-expr-unboxn->ispaces
+      (consp (cdr (expr-unboxn->ispaces expr)))
+      :rule-classes :type-prescription
+      :use (:instance expr-unboxn-requirements (x expr))
+      :disable expr-unboxn-requirements
+      :enable len)
+
+    (defrule consp-of-expr-let->binds
+      (consp (expr-let->binds expr))
+      :rule-classes :type-prescription
+      :use (:instance expr-let-requirements (x expr))
+      :disable expr-let-requirements))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1001,10 +1159,9 @@
        which is unary, i.e. it has exactly one parameter.
        The n-ary @(':lambdan'), @(':tlambdan'), and @(':ilambdan') summands
        are sugar for a nesting of the unary forms;
-       they always contains two or more parameters
-       (because there must have at least one parameter,
-       and if there is just one we use the unary forms),
-       but this fixtype does not capture this requirement.")
+       they always contain two or more parameters
+       (because there must be at least one parameter,
+       and if there is just one we use the unary forms).")
      (xdoc::p
       "The optional type of the body of a lambda abstraction
        is calculated and stored by the type checker.
@@ -1014,9 +1171,8 @@
        which is unary, i.e. it has exactly one ispace.
        The n-ary @(':boxn') summand is sugar for a nesting of the unary form;
        it always contains two or more ispaces
-       (because there must have at least one ispace,
-       and if there is just one we use the unary form),
-       but this fixtype does not capture this requirement.
+       (because there must be at least one ispace,
+       and if there is just one we use the unary form).
        The type of a unary box is optional:
        it is always present in the concrete syntax,
        but it is absent in the inner boxes of
@@ -1030,24 +1186,96 @@
     (:lambda ((param var+type?)
               (body expr)
               (type? type-option)))
-    (:lambdan ((params var+type?-list) ; two or more
+    (:lambdan ((params var+type?-list
+                       :reqfix (if (>= (len params) 2)
+                                   params
+                                 (list (var+type?-fix nil)
+                                       (var+type?-fix nil))))
                (body expr)
-               (type? type-option)))
+               (type? type-option))
+     :require (>= (len params) 2))
     (:tlambda ((param type-var)
                (body expr)))
-    (:tlambdan ((params type-var-list) ; two or more
-                (body expr)))
+    (:tlambdan ((params type-var-list
+                        :reqfix (if (>= (len params) 2)
+                                    params
+                                  (list (type-var-fix nil) (type-var-fix nil))))
+                (body expr))
+     :require (>= (len params) 2))
     (:ilambda ((param ispace-var)
                (body expr)))
-    (:ilambdan ((params ispace-var-list) ; two or more
-                (body expr)))
+    (:ilambdan ((params ispace-var-list
+                        :reqfix (if (>= (len params) 2)
+                                    params
+                                  (list (ispace-var-fix nil)
+                                        (ispace-var-fix nil))))
+                (body expr))
+     :require (>= (len params) 2))
     (:box ((ispace ispace)
            (array expr)
            (type? type-option)))
-    (:boxn ((ispaces ispace-list) ; two or more
+    (:boxn ((ispaces ispace-list
+                     :reqfix (if (>= (len ispaces) 2)
+                                 ispaces
+                               (list (ispace-fix nil) (ispace-fix nil))))
             (array expr)
-            (type type)))
-    :pred atomp)
+            (type type))
+     :require (>= (len ispaces) 2))
+    :pred atomp
+
+    ///
+
+    (defrule consp-of-atom-lambdan->params
+      (consp (atom-lambdan->params atom))
+      :rule-classes :type-prescription
+      :use (:instance atom-lambdan-requirements (x atom))
+      :disable atom-lambdan-requirements)
+
+    (defruled consp-of-cdr-of-atom-lambdan->params
+      (consp (cdr (atom-lambdan->params atom)))
+      :rule-classes :type-prescription
+      :use (:instance atom-lambdan-requirements (x atom))
+      :disable atom-lambdan-requirements
+      :enable len)
+
+    (defrule consp-of-atom-tlambdan->params
+      (consp (atom-tlambdan->params atom))
+      :rule-classes :type-prescription
+      :use (:instance atom-tlambdan-requirements (x atom))
+      :disable atom-tlambdan-requirements)
+
+    (defruled consp-of-cdr-of-atom-tlambdan->params
+      (consp (cdr (atom-tlambdan->params atom)))
+      :rule-classes :type-prescription
+      :use (:instance atom-tlambdan-requirements (x atom))
+      :disable atom-tlambdan-requirements
+      :enable len)
+
+    (defrule consp-of-atom-ilambdan->params
+      (consp (atom-ilambdan->params atom))
+      :rule-classes :type-prescription
+      :use (:instance atom-ilambdan-requirements (x atom))
+      :disable atom-ilambdan-requirements)
+
+    (defruled consp-of-cdr-of-atom-ilambdan->params
+      (consp (cdr (atom-ilambdan->params atom)))
+      :rule-classes :type-prescription
+      :use (:instance atom-ilambdan-requirements (x atom))
+      :disable atom-ilambdan-requirements
+      :enable len)
+
+    (defrule consp-of-atom-boxn->ispaces
+      (consp (atom-boxn->ispaces atom))
+      :rule-classes :type-prescription
+      :use (:instance atom-boxn-requirements (x atom))
+      :disable atom-boxn-requirements)
+
+    (defruled consp-of-cdr-of-atom-boxn->ispaces
+      (consp (cdr (atom-boxn->ispaces atom)))
+      :rule-classes :type-prescription
+      :use (:instance atom-boxn-requirements (x atom))
+      :disable atom-boxn-requirements
+      :enable len))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

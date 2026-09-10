@@ -17,7 +17,7 @@
 ;; (depends-on "not_rbx_64.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
+(include-book "../../../support")
 
 ;; Lifts the subroutine into logic: Creates the function not_rbx_64, which
 ;; represents the effect of the program on the x86 state.

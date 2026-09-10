@@ -14,12 +14,13 @@
 (include-book "../bv/bvchop-def")
 (include-book "../typed-lists-light/all-integerp")
 (include-book "all-unsigned-byte-p")
-(include-book "unsigned-byte-listp")
+(include-book "unsigned-byte-listp-def")
 (local (include-book "../lists-light/cons"))
 (local (include-book "../lists-light/nth"))
 (local (include-book "../lists-light/len"))
 (local (include-book "../bv/bvchop"))
 (local (include-book "../bv/unsigned-byte-p"))
+(local (include-book "unsigned-byte-listp"))
 
 ;; Apply BVCHOP with the indicated SIZE to every element in LST
 ;; TODO: This re-does the expt inside the bvchop over and over.
@@ -56,6 +57,7 @@
                 (cons (bvchop size (ifix (car lst)))
                       (bvchop-list size (cdr lst))))
        :exec (if (unsigned-byte-listp size lst)
+                 ;; avoids re-consing the list if no chopping is needed:
                  lst
                (bvchop-list-exec size lst))))
 

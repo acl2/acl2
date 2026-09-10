@@ -1234,8 +1234,62 @@ int main(void) {
   :with-output-off nil)
 
 (acl2::must-succeed*
-  ;; A self-referential struct type.
+  ;; A self-referential member is duplicated across the two struct types.
+  ;; Its initializer and accesses split into parallel left and right forms.
+  ;; Listing it in :right-members produces a warning but does not change that
+  ;; forced routing.
   (c$::input-files :files '("self-ref.c")
+                   :const *old*)
+
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z" "next")
+                     :new-tag "point_right")
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/self-ref.c"
+    :content "struct point {
+  int x;
+  struct point *next;
+  struct point **indirect;
+  struct point *children[2];
+};
+
+struct point_right {
+  int z;
+  struct point_right *next;
+  struct point_right **indirect;
+  struct point_right *children[2];
+};
+
+static struct point p = {.x = 1, .next = &p};
+
+static struct point_right p_0 = {.z = 2, .next = &p_0};
+
+int main(void) {
+  return p.next->x + p_0.next->z;
+}
+")
+
+  ;; A forced self-referential member may be the only name listed in
+  ;; :right-members; its right component still populates the right type.
+  (struct-type-split *old*
+                     *new-only-recursive*
+                     :struct-tag "point"
+                     :right-members ("next")
+                     :new-tag "point_right_only")
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; A splittable self-referential member promoted from an anonymous struct
+  ;; is rejected until the anonymous struct can be split across the target
+  ;; struct types.
+  (c$::input-files :files '("self-ref-anon.c")
                    :const *old*)
 
   (must-fail
@@ -1243,6 +1297,20 @@ int main(void) {
                        *new*
                        :struct-tag "point"
                        :right-members ("z")))
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; A named nonsplittable member type that refers to the target struct is
+  ;; handled by the existing in-place member splitting for that named type.
+  (c$::input-files :files '("self-ref-nested.c")
+                   :const *old*)
+
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "node"
+                     :right-members ("z")
+                     :new-tag "node_right")
 
   :with-output-off nil)
 
@@ -1536,3 +1604,86 @@ int main(void) {
 ")
 
   :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This has a self-referential struct that is separate from the one being split,
+;; but it exhibits the fact that, when checking the safety of a cast,
+;; which involves traversing the self-referential struct type,
+;; we need to avoid a loop that follows the self references.
+
+(acl2::must-succeed*
+
+ (c$::input-files :files '("self-ref-checks.c")
+                  :const *old*)
+
+ (struct-type-split *old*
+                    *new*
+                    :struct-tag "s"
+                    :right-members ("b")
+                    :new-tag "s2")
+
+ (c$::output-files :const *new*
+                   :base-dir "new")
+
+ (assert-file-contents
+  :file "new/self-ref-checks.c"
+  :content "struct s {
+  int a;
+};
+
+struct s2 {
+  int b;
+};
+
+struct selfref {
+  int x;
+  struct selfref *y;
+};
+
+static struct selfref sr;
+
+static struct s s;
+
+static struct s2 s_0;
+
+int main(void) {
+  struct selfref *p = (struct selfref *) &sr;
+  return s_0.b;
+}
+")
+
+ :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This tests correct safety checks of incomplete structure types.
+
+(acl2::must-succeed*
+
+ (c$::input-files :files '("opaque.c")
+                  :const *old*)
+
+ (struct-type-split *old*
+                    *new*
+                    :struct-tag "target"
+                    :right-members ("right")
+                    :new-tag "target2")
+
+ (c$::output-files :const *new*
+                   :base-dir "new")
+
+ (assert-file-contents
+  :file "new/opaque.c"
+  :content "struct opaque;
+
+struct target {
+  int left;
+};
+
+struct target2 {
+  int right;
+};
+")
+
+ :with-output-off nil)

@@ -748,3 +748,23 @@ keyword argument. Examples of usage:</p>
              (logicman)
              (logicman-release-ipasirs 0 logicman)
              interp-st))
+
+
+
+(define print-cmr-rewrite ((rewrite cmr::rewrite-p))
+  (b* (((cmr::rewrite r) rewrite))
+    (cw "LHS: ~x0~%" r.lhs)
+    (cw "RHS: ~x0~%" r.rhs)
+    (cw "Hyps: ~x0~%" `(and . ,r.hyps))
+    (cw "Equiv: ~x0~%" r.equiv)))
+
+(define print-cmr-rewrites ((rewrites cmr::rewritelist-p))
+  (if (atom rewrites)
+      nil
+    (b* ((?ign (print-cmr-rewrite (car rewrites))))
+      (and (consp (cdr rewrites))
+           (cw "--------------------------------------~%"))
+      (print-cmr-rewrites (cdr rewrites)))))
+
+(defmacro fgl-pr (name)
+  `(print-cmr-rewrites (collect-cmr-rewrites-for-formula-name ',name (w state))))

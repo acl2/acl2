@@ -17,6 +17,7 @@
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/typed-lists-light/map-code-char" :dir :system)
 (include-book "kestrel/bv/defs-bitwise" :dir :system) ;for bvor
+(include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (local (include-book "kestrel/bv-lists/byte-listp" :dir :system))
 
 ;; See also
@@ -330,8 +331,10 @@
     (#x00000200 . :S_ATTR_EXT_RELOC)
     (#x00000100 . :S_ATTR_LOC_RELOC)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp section bytes).
-(defun parse-mach-o-section (expected-segname all-bytes bytes)
+(defund parse-mach-o-section (expected-segname all-bytes bytes)
   (declare (xargs :guard (and (stringp expected-segname)
                               (byte-listp all-bytes)
                               (byte-listp bytes))))
@@ -388,8 +391,23 @@
                 )
           bytes)))
 
+(defund mach-o-sectionp (sec)
+  (declare (xargs :guard t))
+  (symbol-alistp sec))
+
+(defthm byte-listp-of-mv-nth-2-of-parse-mach-o-section
+  (implies (byte-listp bytes)
+           (byte-listp (mv-nth 2 (parse-mach-o-section expected-segname all-bytes bytes))))
+  :hints (("Goal" :in-theory (enable parse-mach-o-section))))
+
+(defthm mach-o-sectionp-of-mv-nth-1-of-parse-mach-o-section
+  (mach-o-sectionp (mv-nth 1 (parse-mach-o-section expected-segname all-bytes bytes)))
+  :hints (("Goal" :in-theory (enable parse-mach-o-section mach-o-sectionp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp section bytes).
-(defun parse-mach-o-section-64 (expected-segname all-bytes bytes)
+(defund parse-mach-o-section-64 (expected-segname all-bytes bytes)
   (declare (xargs :guard (and (stringp expected-segname)
                               (byte-listp all-bytes)
                               (byte-listp bytes))))
@@ -448,8 +466,37 @@
               (cons :contents contents))
         bytes)))
 
+(defthm byte-listp-of-mv-nth-2-of-parse-mach-o-section-64
+  (implies (byte-listp bytes)
+           (byte-listp (mv-nth 2 (parse-mach-o-section-64 expected-segname all-bytes bytes))))
+  :hints (("Goal" :in-theory (enable parse-mach-o-section-64))))
+
+(defthm mach-o-sectionp-of-mv-nth-1-of-parse-mach-o-section-64
+  (mach-o-sectionp (mv-nth 1 (parse-mach-o-section-64 expected-segname all-bytes bytes)))
+  :hints (("Goal" :in-theory (enable parse-mach-o-section-64 mach-o-sectionp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund mach-o-section-listp (sections)
+  (declare (xargs :guard t))
+  (if (atom sections)
+      (null sections)
+    (and (mach-o-sectionp (first sections))
+         (mach-o-section-listp (rest sections)))))
+
+(defthmd true-listp-when-mach-o-section-listp
+  (implies (mach-o-section-listp sections)
+           (true-listp sections))
+  :hints (("Goal" :in-theory (enable mach-o-section-listp))))
+
+(defthm mach-o-section-listp-of-append
+  (implies (and (mach-o-section-listp secs1)
+                (mach-o-section-listp secs2))
+           (mach-o-section-listp (append secs1 secs2)))
+  :hints (("Goal" :in-theory (enable mach-o-section-listp))))
+
 ;; Returns (mv erp sections bytes).
-(defun parse-mach-o-sections (nsects expected-segname acc all-bytes bytes)
+(defund parse-mach-o-sections (nsects expected-segname acc all-bytes bytes)
   (declare (xargs :guard (and (natp nsects)
                               (stringp expected-segname)
                               (true-listp acc)
@@ -461,8 +508,22 @@
          ((when erp) (mv erp nil bytes)))
       (parse-mach-o-sections (+ -1 nsects) expected-segname (cons section acc) all-bytes bytes))))
 
+(local
+  (defthm mach-o-section-listp-of-revappend
+    (implies (and (mach-o-section-listp x)
+                  (mach-o-section-listp y))
+             (mach-o-section-listp (revappend x y)))
+    :hints (("Goal" :in-theory (enable revappend mach-o-section-listp)))))
+
+(defthm mach-o-section-listp-of-mv-nth-1-of-parse-mach-o-sections
+  (implies (mach-o-section-listp acc)
+           (mach-o-section-listp (mv-nth 1 (parse-mach-o-sections nsects expected-segname acc all-bytes bytes))))
+  :hints (("Goal" :in-theory (enable parse-mach-o-sections mach-o-section-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp sections bytes).
-(defun parse-mach-o-sections-64 (nsects expected-segname acc all-bytes bytes)
+(defund parse-mach-o-sections-64 (nsects expected-segname acc all-bytes bytes)
   (declare (xargs :guard (and (natp nsects)
                               (stringp expected-segname)
                               (true-listp acc)
@@ -473,6 +534,13 @@
     (b* (((mv erp section bytes) (parse-mach-o-section-64 expected-segname all-bytes bytes))
          ((when erp) (mv erp nil bytes)))
         (parse-mach-o-sections-64 (+ -1 nsects) expected-segname (cons section acc) all-bytes bytes))))
+
+(defthm mach-o-section-listp-of-mv-nth-1-of-parse-mach-o-sections-64
+  (implies (mach-o-section-listp acc)
+           (mach-o-section-listp (mv-nth 1 (parse-mach-o-sections-64 nsects expected-segname acc all-bytes bytes))))
+  :hints (("Goal" :in-theory (enable parse-mach-o-sections-64 mach-o-section-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *mach-o-stab-symbol-types*
   '((#x20 . :N_GSYM)
@@ -627,7 +695,7 @@
 
 ; Returns (mv erp cmd-data).
 ;; Note that the caller adds the cmd itself to the alist returned.
-(defun parse-mach-o-load-command (cmd ; the type of the command
+(defund parse-mach-o-load-command (cmd ; the type of the command
                                   architecture
                                   all-bytes
                                   bytes)
@@ -758,8 +826,27 @@
              ;;     bytes)
              ))))
 
+(defund mach-o-commandp (cmd)
+  (declare (xargs :guard t))
+  (and (symbol-alistp cmd)
+       ;; todo: more
+       (keyword-listp (lookup-eq :initprot cmd))
+       (mach-o-section-listp (lookup-equal :sections cmd))))
+
+(defthm mach-o-commandp-of-mv-nth-1-of-parse-mach-o-load-command
+  (implies (not (mv-nth 0 (parse-mach-o-load-command cmd architecture all-bytes bytes)))
+           (mach-o-commandp (mv-nth 1 (parse-mach-o-load-command cmd architecture all-bytes bytes))))
+  :hints (("Goal" :in-theory (enable mach-o-commandp parse-mach-o-load-command))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm alistp-when-mach-o-commandp
+  (implies (mach-o-commandp cmd)
+           (alistp cmd))
+  :hints (("Goal" :in-theory (enable mach-o-commandp))))
+
 ; Returns (mv erp cmds).
-(defun parse-mach-o-load-commands (ncmds acc architecture all-bytes bytes)
+(defund parse-mach-o-load-commands (ncmds acc architecture all-bytes bytes)
   (declare (xargs :guard (and (natp ncmds)
                               (true-listp acc)
                               (member architecture '(32 64))
@@ -790,8 +877,80 @@
              (bytes (nthcdr cmdsize orig-bytes)))
           (parse-mach-o-load-commands (+ -1 ncmds) acc architecture all-bytes bytes))))))
 
+(defund mach-o-command-listp (cmds)
+  (declare (xargs :guard t))
+  (if (atom cmds)
+      (null cmds)
+    (and (mach-o-commandp (first cmds))
+         (mach-o-command-listp (rest cmds)))))
+
+(local
+  (defthm mach-o-commandp-of-cons-of-cons-cmd
+    (implies (mach-o-commandp command)
+             (mach-o-commandp (cons (cons :cmd cmd) command)))
+    :hints (("Goal" :in-theory (enable mach-o-commandp)))))
+
+(local
+  (defthm mach-o-command-listp-of-revappend
+    (implies (and (mach-o-command-listp x)
+                  (mach-o-command-listp y))
+             (mach-o-command-listp (revappend x y)))
+    :hints (("Goal" :in-theory (enable revappend mach-o-command-listp)))))
+
+(defthm mach-o-command-listp-of-mv-nth-1-of-parse-mach-o-load-commands
+  (implies (and (not (mv-nth 0 (parse-mach-o-load-commands ncmds acc architecture all-bytes bytes)))
+                (mach-o-command-listp acc))
+           (mach-o-command-listp (mv-nth 1 (parse-mach-o-load-commands ncmds acc architecture all-bytes bytes))))
+  :hints (("Goal" :in-theory (enable parse-mach-o-load-commands mach-o-command-listp
+                                     ;mach-o-commandp ; todo
+                                     ))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm mach-o-section-listp-when-mach-o-commandp
+  (implies (mach-o-commandp cmd)
+           (mach-o-section-listp (lookup-equal :sections cmd)))
+  :hints (("Goal" :in-theory (enable mach-o-commandp))))
+;move
+(defun mach-o-symbol-table-entryp (entry)
+  (declare (xargs :guard t))
+  (symbol-alistp entry))
+
+;move
+(defund mach-o-symbol-tablep (entriess)
+  (declare (xargs :guard t))
+  (if (atom entriess)
+      (null entriess)
+    (and (mach-o-symbol-table-entryp (first entriess))
+         (mach-o-symbol-tablep (rest entriess)))))
+
+;; Gets the first element of LOAD-COMMANDS that has :cmd type CMD-TYPE.
+;; Returns a load-command, or throws an error
+(defund get-mach-o-load-command (cmd-type load-commands)
+  (declare (xargs :guard (and (symbolp cmd-type)
+                              (mach-o-command-listp load-commands))
+                  :guard-hints (("Goal" :in-theory (enable mach-o-command-listp)))
+                  ))
+  (if (endp load-commands)
+      (er hard? 'get-mach-o-load-command "Can't find a load command of type: ~x0." cmd-type)
+    (let* ((load-command (first load-commands))
+           (this-cmd-type (acl2::lookup-eq-safe :cmd load-command)))
+      (if (eq cmd-type this-cmd-type)
+          load-command
+        (get-mach-o-load-command cmd-type (rest load-commands))))))
+
+;gross
+(defthm mach-o-commandp-of-get-mach-o-load-command
+  (implies (and (symbolp cmd-type)
+                (mach-o-command-listp load-commands))
+           (mach-o-commandp (get-mach-o-load-command cmd-type load-commands)))
+  :hints (("Goal" :in-theory (enable get-mach-o-load-command
+                                     mach-o-command-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp result).
-(defun parse-mach-o-file-bytes (bytes)
+(defund parse-mach-o-file-bytes (bytes)
   (declare (xargs :guard (byte-listp bytes)))
   (b* ((all-bytes bytes) ;capture for later looking up things at given offsets
        ;; Parse the magic number:
@@ -811,7 +970,9 @@
        ;; Parse the load-commands:
        (ncmds (lookup-eq-safe :ncmds header))
        ((mv erp cmds) (parse-mach-o-load-commands ncmds nil architecture all-bytes bytes))
-       ((when erp) (mv erp nil)))
+       ((when erp) (mv erp nil))
+       ((when (not (mach-o-symbol-tablep (lookup-equal :syms (get-mach-o-load-command :lc_symtab cmds)))))
+        (mv :bad-symbol-table nil)))
     (mv nil
         (list (cons :executable-type (if (eql architecture 32) :mach-o-32 :mach-o-64)) ; for use by parsed-executable-type
               (cons :magic magic)
@@ -840,3 +1001,36 @@
 ;;        ;; Parse the bytes read:
 ;;        (parsed-mach-o-file (parse-mach-o-file-bytes bytes)))
 ;;     (mv nil parsed-mach-o-file state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund parsed-mach-o-p (parsed-mach-o)
+  (declare (xargs :guard t))
+  (and (symbol-alistp parsed-mach-o)
+       (equal (strip-cars parsed-mach-o) '(:executable-type :magic :header :cmds :bytes))
+       (let ((executable-type (lookup-eq :executable-type parsed-mach-o))
+             (magic (lookup-eq :magic parsed-mach-o))
+             (header (lookup-eq :header parsed-mach-o))
+             (cmds (lookup-eq :cmds parsed-mach-o))
+             (bytes (lookup-eq :bytes parsed-mach-o)))
+         (and (member-eq executable-type '(:mach-o-32 :mach-o-64))
+              (or (member-eq magic *32-bit-magic-numbers*)
+                  (member-eq magic *64-bit-magic-numbers*))
+              (symbol-alistp header) ; todo: strengthen
+              (mach-o-command-listp cmds)
+              (mach-o-symbol-tablep (lookup-equal :syms (get-mach-o-load-command :lc_symtab cmds)))
+              (byte-listp bytes)))))
+
+(defthm parsed-mach-o-p-forward-to-symbol-alistp
+  (implies (parsed-mach-o-p e)
+           (symbol-alistp e))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable parsed-mach-o-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm parsed-mach-o-p-of-mv-nth-1-of-parse-mach-o-file-bytes
+  (implies (and (byte-listp bytes)
+                (not (mv-nth 0 (parse-mach-o-file-bytes bytes))))
+           (parsed-mach-o-p (mv-nth 1 (parse-mach-o-file-bytes bytes))))
+  :hints (("Goal" :in-theory (enable parse-mach-o-file-bytes parsed-mach-o-p lookup-equal))))

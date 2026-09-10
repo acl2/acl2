@@ -1,6 +1,6 @@
 ; Mapping packbv-little over a list.
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,7 +13,8 @@
 (include-book "packbv-little")
 (include-book "kestrel/typed-lists-light/all-true-listp" :dir :system)
 (include-book "kestrel/typed-lists-light/all-all-integerp" :dir :system)
-(include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system)
+(include-book "unsigned-byte-listp-def")
+(local (include-book "unsigned-byte-listp"))
 
 ;; Packs each of the LISTS in a BV and returns a list of those BVS.
 ;; Each of the LISTS should have length NUM and contain BVs of SIZE bits.

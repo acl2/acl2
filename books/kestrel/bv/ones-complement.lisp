@@ -11,11 +11,12 @@
 
 (in-package "ACL2")
 
-(include-book "bvnot")
+(include-book "bvnot-def")
 (include-book "bvplus-def")
 (include-book "bvuminus-def")
 (local (include-book "unsigned-byte-p"))
 (local (include-book "bvchop"))
+(local (include-book "bvnot"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))

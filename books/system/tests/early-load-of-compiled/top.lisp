@@ -34,4 +34,8 @@
 
 (include-book "ttag")
 
+; Matt K.: Removing this test for ACL2 built on CCL on Arm-based Macs
+; (and other Arm machines), pending a CCL fix (see
+; https://github.com/Clozure/ccl/pull/630).
+#-(and ccl arm64)
 (include-book "eq-test")

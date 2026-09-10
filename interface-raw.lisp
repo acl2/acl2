@@ -6086,7 +6086,7 @@
                             (er hard ctx
                                 "The compiled file for ~x0 was not loaded ~
                                  because ~@1."
-                                reason))
+                                full-book-string reason))
                            (t (let* ((efile (expansion-filename os-file))
                                      (efile-date (and (probe-file efile)
                                                       (file-write-date efile)))
@@ -9432,9 +9432,9 @@
 ; already know that an error is signalled on overflow for other Lisps that host
 ; ACL2; see break-on-overflow-and-nan.
 
-  #-(or allegro lispworks (and gcl no-sigfpe))
+  #-(or allegro lispworks (and gcl no-sigfpe) (and ccl arm64))
   (declare (ignore op))
-  #-(or allegro lispworks (and gcl no-sigfpe))
+  #-(or allegro lispworks (and gcl no-sigfpe) (and ccl arm64))
   form
 ; Camm Maguire suggestion:
   #+(and gcl no-sigfpe)
@@ -9452,7 +9452,15 @@
      (when (or (= result +1D++0) (= result -1D++0))
        (error "Floating-point overflow for a call of ~s"
               ',op))
-     result))
+     result)
+  #+(and ccl arm64)
+  `(progn
+     (ccl::%fp-begin-inline-check)
+     (let ((result ,form))
+       (ccl::%fp-check-inline-exception
+        ',op nil
+        (ccl::%fp-inline-exception-status))
+       result)))
 
 (defun check-fp-signals ()
 
@@ -9469,7 +9477,7 @@
            (format t "This Lisp is unsuitable for ACL2, because~%~
                       evaluation of the form ~s was expected~%~
                       to produce an error but instead it produced the~%~
-                      value ~s.  You may want to notify the ACL2~%`
+                      following value:~%~s~%You may want to notify the ACL2~%~
                       implementors of this error message, with~%~
                       information about your Lisp implementation~%~
                       and platform."
@@ -10017,19 +10025,21 @@
 ; We formerly set *debugger-hook* here, but now we set it in lp; see the
 ; comment there.
 
-; The following two forms can avoid entering the debugger.  It would probably
-; be good to add similar forms, where feasible, for other host Lisps.  In
-; particular: Allegro CL may similarly use excl:*break-hook*; LispWorks may
-; rather similarly use dbg:with-debugger-wrapper; GCL may not need any such
-; attention; and CMUCL might have no such capability.
+; The following form can avoid entering the debugger.  It might be good to add
+; similar forms, where feasible, for other host Lisps.  In particular: Allegro
+; CL may similarly use excl:*break-hook*; LispWorks may rather similarly use
+; dbg:with-debugger-wrapper; GCL may not need any such attention; and CMUCL
+; might have no such capability.  See below for a comment pertaining to SBCL.
 
 #+ccl ; for CCL revisions starting with 12090
 (when (boundp 'ccl::*break-hook*)
   (setq ccl::*break-hook* 'our-abort))
 
-#+sbcl
-(setq sb-ext:*invoke-debugger-hook*
-      'our-abort)
+; The following, for SBCL, will avoid entering the debugger even for calls of
+; break$ or break-on-error.
+; #+sbcl
+; (setq sb-ext:*invoke-debugger-hook*
+;       'our-abort)
 
 (defun initial-customization-filename ()
 
@@ -11442,7 +11452,7 @@ such that feature :acl2-loop-only is true."))
                           #+gcl).")
            :c-file t :h-file t)
           #-gcl
-          (er hard 'compile-uncompiled-defuns
+          (er hard 'compile-uncompiled-*1*-defuns
               "The gcl-flg argument to compile-uncompiled-*1*-defuns is only ~
                legal when running under GCL."))
          (t

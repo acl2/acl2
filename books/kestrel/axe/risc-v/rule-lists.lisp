@@ -13,7 +13,7 @@
 (include-book "portcullis")
 (include-book "../rule-lists")
 
-(defun symbolic-execution-rules32 ()
+(defund symbolic-execution-rules32 ()
   (declare (xargs :guard t))
   '(run-until-return
     run-until-return-aux-opener
@@ -35,7 +35,7 @@
     read-of-if-arg2
     read-of-if-arg3))
 
-(defun debug-rules32 ()
+(defund debug-rules32 ()
   (declare (xargs :guard t))
   '(step32-opener
     run-until-return-aux-opener
@@ -73,7 +73,7 @@
    (acl2::unsigned-byte-p-forced-rules)
    (acl2::type-rules) ; rename
    (acl2::bvchop-of-bv-rules)
-   (acl2::convert-to-bv-rules) ; todo: may just need the trim-elim rules
+   (acl2::convert-to-bv-rules-axe) ; todo: may just need the trim-elim rules
    (acl2::boolean-rules-safe)
    (acl2::list-to-bv-array-rules) ;; unrolling seemed bad for large sections?
    '(;acl2::list-to-bv-array-constant-opener
@@ -147,8 +147,6 @@
 
      ;;bv-array-read-shorten-8
      acl2::bv-array-read-of-bvplus-of-constant-no-wrap
-     acl2::not-equal-of-constant-and-bv-term-axe
-     acl2::not-equal-of-constant-and-bv-term-alt-axe
      acl2::equal-of-bvchop-and-bvplus-of-same
      acl2::equal-of-bvchop-and-bvplus-of-same-alt
      acl2::logext-identity-when-usb-smaller-axe
@@ -353,7 +351,7 @@
 
      ;acl2::bvcat-of-if-arg2
      ;acl2::bvcat-of-if-arg4
-     acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg2 ; these could be convert-to-bv rules
+     acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg2 ; these could be convert-to-bv-axe rules
      acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg4
 
      ubyte5-fix
@@ -537,6 +535,12 @@
      acl2::ifix-when-integerp
      acl2::mod-becomes-bvchop-when-power-of-2p
      )))
+
+;; Useful if we've disabled (:e lifter-rules32) to avoid big constant lists in proofs.
+(defthm symbol-listp-of-lifter-rules32
+  (symbol-listp (lifter-rules32)))
+
+(in-theory (disable (:e lifter-rules32)))
 
  ;todo: add more?
 (defund assumption-simplification-rules ()

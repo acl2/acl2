@@ -274,7 +274,7 @@
            (iff (member-equal str (map-symbol-name (set-difference-equal syms1 syms2)))
                 (and (member-equal str (map-symbol-name syms1))
                      (not (member-equal str (map-symbol-name syms2))))))
-  :hints (("Goal" :in-theory (enable map-symbol-name map-symbol-name))))
+  :hints (("Goal" :in-theory (enable map-symbol-name))))
 
 (defthmd member-equal-of-map-symbol-name-of-set-difference-equal-special
   (implies (and (all-symbols-have-packagep syms1 "COMMON-LISP")
@@ -284,7 +284,7 @@
            (iff (member-equal str (map-symbol-name (set-difference-equal syms1 syms2)))
                 (and (member-equal str (map-symbol-name syms1))
                      (not (member-equal str (map-symbol-name syms2))))))
-  :hints (("Goal" :in-theory (enable map-symbol-name map-symbol-name))))
+  :hints (("Goal" :in-theory (enable map-symbol-name))))
 
 (defthm equal-of-intern-in-package-of-symbol-of-symbol-name-same
   (implies (and ;(symbolp sym)

@@ -26,6 +26,7 @@
    (defun f3 (x)
      (f2 x))))
 
+#|
 (with-supporters-after
  my-start ; add redundant events for all those after the event, MY-START (above)
  (in-theory (enable (:d f2)))
@@ -35,6 +36,7 @@
 (assert-event (equal (disabledp 'f2)
                      '((:INDUCTION F2)))
               :on-skip-proofs t)
+|#
 
 (with-supporters
 

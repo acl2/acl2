@@ -1644,11 +1644,11 @@
 
   (declare (xargs :guard
                   (and (iprint-alistp1 iprint-alist)
-                       (consp iprint-alist)
                        (iprint-falp (f-get-global 'iprint-fal state))
                        (array1p 'iprint-ar (f-get-global 'iprint-ar state))
                        (posp last-index)
-                       (equal last-index (caar iprint-alist))
+                       (or (null iprint-alist)
+                           (eql last-index (caar iprint-alist)))
                        (iprint-array-p (f-get-global 'iprint-ar state)
                                        last-index)
                        (natp (f-get-global 'iprint-hard-bound state))
@@ -5488,7 +5488,7 @@
    #.*fixnat-type*
    (cond
     ((not (character-alistp alist))
-     (mv (prog2$ (er hard! 'fmt0
+     (mv (prog2$ (er hard! 'fmt1
                      "The second argument of any of the FMT family of ~
                       functions must satisfy ~x0, but ~x1 does not."
                      'character-alistp
@@ -5875,14 +5875,14 @@
                                 i x s)))))
                           (#\_
                            (cond
-                            ((and (natp c2)
-                                  (<= c2
+                            ((and (natp val2)
+                                  (<= val2
                                       (floor (fixnum-bound) 2)))
                              (fmx-cw-msg-1 s alist i+3 maximum clk-1))
                             (t
                              (illegal-fmt-msg
                               bad-tilde-_-arg
-                              i c2 (floor (fixnum-bound) 2) s))))
+                              i val2 (floor (fixnum-bound) 2) s))))
                           ((#\Newline #\| #\% #\~ #\-)
                            (fmx-cw-msg-1 s alist i+2 maximum clk-1))
                           (otherwise
@@ -8157,7 +8157,7 @@
                                       (symbolp size0)
                                       (symbol-value size0)))
                         #+acl2-loop-only
-                        (er hard 'fix-stobj-hash-table-type
+                        (er hard 'fix-stobj-table-type
                             "Implementation error: Attempted to get logical ~
                              result for fix-stobj-table-type when the world ~
                              is empty.")))))
@@ -10236,7 +10236,7 @@
                          *print-readably*)
          t)
         (otherwise
-         (hard-error 'print-control-p
+         (hard-error 'print-control-alistp
                      "The symbol ~x0 is not a legal print control variable."
                      (list (cons #\0 key))))))
     (print-control-alistp (cdr alist)))

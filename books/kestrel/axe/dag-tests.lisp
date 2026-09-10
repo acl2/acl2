@@ -138,7 +138,6 @@
                     DEFAULT-CDR
                     DEFAULT-CAR
                     BVCHOP-WITH-N-NEGATIVE
-                    BVCHOP-WITH-N-NEGATIVE
                     NOT-<-OF-CAR-WHEN-ALL-<
                     ))
 

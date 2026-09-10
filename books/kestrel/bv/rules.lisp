@@ -26,10 +26,10 @@
 (include-book "bitand")
 (include-book "logapp")
 (include-book "bvcat2")
-(include-book "bvif")
+(include-book "bvif-def")
 (include-book "logext") ;; todo: this and the next include (of sbvlt) cannot be reordered without breaking the android proofs -- why?
 (include-book "sbvlt")
-(include-book "bvnot")
+(include-book "bvnot-def")
 (include-book "bitxor")
 (include-book "bvmult")
 (include-book "bvmod")
@@ -64,6 +64,7 @@
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
 (local (include-book "bvuminus"))
+(local (include-book "bvminus"))
 (local (include-book "bvand"))
 (local (include-book "bvor"))
 (local (include-book "kestrel/arithmetic-light/denominator" :dir :system))
@@ -557,7 +558,7 @@
                 (natp size)
                 (natp low)
                 (<= low high)
-                (natp high)
+                (integerp high)
                 (integerp y)
                 (integerp z))
            (equal (slice high low (+ (bvchop size y) z))
@@ -569,7 +570,7 @@
                 (natp size)
                 (natp low)
                 (<= low high)
-                (natp high)
+                (integerp high)
                 (integerp y)
                 (integerp z))
            (equal (slice high low (+ z (bvchop size y)))
@@ -2032,10 +2033,9 @@
   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvminus-gen-better (size size) (size1 size) (i x) (j y))
            :in-theory (disable unsigned-byte-p-of-bvminus-gen-better))))
 
-(defthm getbit-too-high-cheap-free
-  (implies (and (unsigned-byte-p free x) ;free variable
-                (<= free n)
-                (natp free)
+(defthm getbit-too-high-when-unsigned-byte-p-free
+  (implies (and (unsigned-byte-p freesize x) ; free variable
+                (<= freesize n)
                 (integerp n))
            (equal (getbit n x)
                   0))
@@ -2409,7 +2409,7 @@
                          (+ -1 (integer-length k))
                          0))))
 
-;; This is helpful when we have things like (equal 0 (bitand 8 128 x))
+;; This is helpful when we have things like (equal 0 (bvand 8 128 x))
 (defthm bvand-of-constant-when-power-of-2p
   (implies (and (syntaxp (quotep k))
                 (power-of-2p k)
@@ -2643,14 +2643,11 @@
                            (;bozo add t-i
                             )))))
 
-(defthm getbit-too-high-cheap
-  (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
-                ;;make sure it's not nil:
-                ;drop this hyp:
-                (natp newsize) ;newsize continues to be a bad name for uses like this...
-                (<= newsize n)
+(defthm getbit-too-high-bind-free
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
+                (<= xsize n)
                 (integerp n)
-                (force (unsigned-byte-p-forced newsize x)))
+                (force (unsigned-byte-p-forced xsize x)))
            (equal (getbit n x)
                   0))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced)
@@ -3471,7 +3468,8 @@
                 (not (unsigned-byte-p free k)))
            (not (equal k x))))
 
-(defthm not-equal-constant-when-unsigned-byte-p-alt
+;; Disabled for ACL2, may be needed for Axe
+(defthmd not-equal-constant-when-unsigned-byte-p-alt
   (implies (and (syntaxp (quotep k))
                 (unsigned-byte-p free x)
                 (syntaxp (quotep free))
@@ -3561,7 +3559,7 @@
 
 ;fixme move
 ;restrict to constants?
-(defthm logext-when-usb-cheap
+(defthm logext-when-unsigned-byte-p-free
   (implies (and (unsigned-byte-p free i)
                 (<= free (+ -1 size))
                 (natp size))
@@ -6032,7 +6030,7 @@
   :hints (("Goal" :in-theory (e/d (bvplus slice-of-sum-cases
                                           bvlt
                                           bvchop-of-sum-cases
-                                          bvuminus bvplus bvminus
+                                          bvuminus bvminus
                                           bvchop-when-i-is-not-an-integer
                                           slice-when-val-is-not-an-integer)
                                   (bvminus-becomes-bvplus-of-bvuminus)))))

@@ -1,4 +1,4 @@
-; Portcullis commands and cert params for equivalence-checker.lisp
+; Portcullis commands and cert flags for equivalence-checker.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2021 Kestrel Institute

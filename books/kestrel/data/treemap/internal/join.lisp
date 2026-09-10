@@ -70,6 +70,7 @@
 (define tree-join
   ((left treep)
    (right treep))
+  (declare (xargs :type-prescription :none))
   :returns (tree treep)
   :parents (implementation)
   :short "Join two trees which have previously been @(see tree-split)."
@@ -97,8 +98,6 @@
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-join)))
 
 (defrule tree-join-type-prescription
   (or (consp (tree-join left right))
@@ -137,6 +136,18 @@
                 (equal right nil))
       (equal (tree-join left right) nil))
   :rule-classes :type-prescription)
+
+(defruled tree->head-of-tree-join
+  (implies (not (and (tree-empty-p left)
+                     (tree-empty-p right)))
+           (equal (tree->head (tree-join left right))
+                  (cond ((tree-empty-p left) (tree->head right))
+                        ((tree-empty-p right) (tree->head left))
+                        ((heap< (tree-element->key (tree->head left))
+                                (tree-element->key (tree->head right)))
+                         (tree->head right))
+                        (t (tree->head left)))))
+  :expand ((tree-join left right)))
 
 (defrule tree-key-set-of-tree-join
   (equal (tree-key-set (tree-join left right))
@@ -219,6 +230,7 @@
   (split
    (left treep)
    (right treep))
+  (declare (xargs :type-prescription :none))
   (declare (ignore split))
   :returns (tree treep)
   :parents (implementation)
@@ -240,8 +252,6 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: prefer tree-join-at?
-
-(in-theory (disable (:t tree-join-at)))
 
 (defrule tree-join-at-type-prescription
   (or (consp (tree-join-at split left right))
@@ -275,6 +285,19 @@
       (equal (tree-join-at split left right) nil))
   :rule-classes :type-prescription
   :enable tree-join-at)
+
+(defruled tree->head-of-tree-join-at
+  (implies (not (and (tree-empty-p left)
+                     (tree-empty-p right)))
+           (equal (tree->head (tree-join-at split left right))
+                  (cond ((tree-empty-p left) (tree->head right))
+                        ((tree-empty-p right) (tree->head left))
+                        ((heap< (tree-element->key (tree->head left))
+                                (tree-element->key (tree->head right)))
+                         (tree->head right))
+                        (t (tree->head left)))))
+  :enable (tree-join-at
+           tree->head-of-tree-join))
 
 (defrule tree-key-set-of-tree-join-at
   (equal (tree-key-set (tree-join-at split left right))

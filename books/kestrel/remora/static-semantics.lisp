@@ -11,10 +11,18 @@
 (in-package "REMORA")
 
 (include-book "static-environments")
+(include-book "ispace-equivalence-checker")
+(include-book "type-equivalence-checker")
+(include-book "type-checker")
+(include-book "ispace-validity")
+(include-book "type-validity")
 (include-book "ispace-equivalence")
+(include-book "ispace-equivalence-derived-rules")
+(include-book "ispace-equivalence-normalizations")
 (include-book "type-equivalence")
-(include-book "type-checking")
-(include-book "dimension-equivalence-infrules")
+(include-book "type-equivalence-derived-rules")
+(include-book "type-equivalence-normalizations")
+(include-book "expression-validity")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,12 +34,20 @@
    (xdoc::p
     "The static semantics of Remora is defined via inference rules,
      in the Remora publications [thesis] [arxiv] [esop].
-     While we are woking on formalizing those inference rules,
-     we also provide an executable definition of type checking,
+     While we are working on formalizing those inference rules,
+     we also provide an executable type checker,
      that is meant to be equivalent to those inference rules;
      we plan to prove this equivalence."))
   :order-subtopics (static-environments
+                    ispace-equivalence-checker
+                    type-equivalence-checker
+                    type-checker
+                    ispace-validity
+                    type-validity
                     ispace-equivalence
+                    ispace-equivalence-derived-rules
+                    ispace-equivalence-normalizations
                     type-equivalence
-                    type-checking
-                    dimension-equivalence-inference-rules))
+                    type-equivalence-derived-rules
+                    type-equivalence-normalizations
+                    expression-validity))

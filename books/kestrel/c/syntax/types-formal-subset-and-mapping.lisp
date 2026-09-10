@@ -42,7 +42,9 @@
      plain @('char'),
      the standard integer types except @('_Bool'),
      pointer types,
-     and struct types with tags.")
+     struct types with tags,
+     array types of known constant length,
+     and incomplete array types.")
    (xdoc::p
     "This predicate can be regarded as an extension of
      the collection of @('-formalp') predicates
@@ -64,7 +66,13 @@
                :tagged (ident-formalp tag/members.tag)
                :untagged nil)))
       (and (type-case type :array)
-           (type-formalp (type-array->of type))))
+           (type-formalp (type-array->of type))
+           (let ((kind (type-array->kind type)))
+             (type-array-kind-case
+               kind
+               :const-len (and kind.len t)
+               :incomplete t
+               :otherwise nil))))
   :measure (type-count type))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -145,8 +153,18 @@
                                         (type-fix type)))))
      :union (reterr (msg "Type ~x0 not supported." (type-fix type)))
      :enum (reterr (msg "Type ~x0 not supported." (type-fix type)))
-     :array (b* (((erp elty) (ldm-type type.of)))
-              (retok (c::make-type-array :of elty :size type.size)))
+     :array (b* (((erp elty) (ldm-type type.of))
+                 (kind (type-array->kind type)))
+              (type-array-kind-case
+                kind
+                :const-len
+                (if kind.len
+                    (retok (c::make-type-array :of elty :size kind.len))
+                  (reterr (msg "Type ~x0 not supported." (type-fix type))))
+                :incomplete
+                (retok (c::make-type-array :of elty :size nil))
+                :otherwise
+                (reterr (msg "Type ~x0 not supported." (type-fix type)))))
      :pointer (b* (((erp refd-type) (ldm-type type.to)))
                 (retok (c::make-type-pointer :to refd-type)))
      :function (reterr (msg "Type ~x0 not supported." (type-fix type)))
@@ -278,6 +296,10 @@
    ;; and tunit. Then, we could perhaps create an incomplete struct type.
    :struct (irr-type)
    :pointer (make-type-pointer :to (ildm-type ctype.to))
-   :array (make-type-array :of (ildm-type ctype.of) :size ctype.size))
+   :array (make-type-array
+            :of (ildm-type ctype.of)
+            :kind (if ctype.size
+                      (make-type-array-kind-const-len :len ctype.size)
+                    (type-array-kind-incomplete))))
   :measure (c::type-count ctype)
   :verify-guards :after-returns)

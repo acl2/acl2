@@ -113,3 +113,7 @@
 ;; This makes a decoder called arm32-decode that decodes a USB32 into an
 ;; instruction (any of the instructions in the *patterns*):
 (make-event (make-decoder 'arm32-decode *desugared-patterns*))
+
+(defthm alistp-of-mv-nth-2-of-arm32-decode
+  (alistp (mv-nth 2 (arm32-decode instr)))
+  :hints (("Goal" :in-theory (enable arm32-decode))))

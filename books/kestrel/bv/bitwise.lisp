@@ -13,7 +13,7 @@
 
 (include-book "bvand-def")
 (include-book "bvxor-def")
-(include-book "bvnot")
+(include-book "bvnot-def")
 (include-book "bvor-def")
 (include-book "bitxor")
 (include-book "bitand")

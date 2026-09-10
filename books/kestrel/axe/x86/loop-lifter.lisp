@@ -53,7 +53,7 @@
 (include-book "../logops-rules-axe")
 ;(include-book "../basic-rules")
 (include-book "../rewriter-basic") ; for simplify-conjunction-basic
-(include-book "rewriter-x86")
+(include-book "rewriter")
 (include-book "../rules-in-rule-lists")
 (include-book "../dagify0") ; for compose-dags
 ;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
@@ -2000,7 +2000,7 @@
         (- (cw "Done.)~%"))
 
         ;; Add params for any additional read-only values read in the exit-test-term:
-        (- (cw "(Making params for read-only values in the exit-term term:~%"))
+        (- (cw "(Making params for read-only values in the exit-test term:~%"))
         ((mv & ;next-param-number
               paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
          (make-read-only-parameters-for-expr exit-test-term next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var ;; nil
@@ -2594,7 +2594,7 @@
           ;; it's already a parsed-executable:
           (mv nil executable state)))
        ((when erp)
-        (er hard? 'def-unrolled-fn "Error parsing executable: ~s0." executable)
+        (er hard? 'lift-subroutine-fn "Error parsing executable: ~s0." executable)
         (mv t nil state))
        ;; Check the inputs argument:
        ((when (not (or (eq :skip inputs) (names-and-typesp inputs))))

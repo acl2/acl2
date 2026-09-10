@@ -149,6 +149,8 @@
   :rule-classes :compound-recognizer)
 
 (define binding-p (x)
+  :parents (binding)
+  :short "Recognize a wellformed @(see binding)."
   (and (consp x)
        (pseudo-var-list-p (car x))
        (pseudo-term-listp (cdr x))
@@ -161,6 +163,8 @@
     :rule-classes :compound-recognizer)
 
   (define binding-fix ((x binding-p))
+    :parents (binding)
+    :short "Fixing function for the @(see binding) type."
     :returns (new-x binding-p :rule-classes (:rewrite (:type-prescription :typed-term new-x)))
     :inline t
     (mbe :logic (let* ((formals (car x))
@@ -178,6 +182,8 @@
     (deffixequiv binding-fix)))
 
 (define binding->formals ((x binding-p))
+  :parents (binding)
+  :short "Get the formals field of a @(see binding)."
   :inline t
   :returns (formals pseudo-var-list-p :rule-classes (:rewrite (:type-prescription :typed-term formals))
                     :hints(("Goal" :in-theory (enable binding-fix))))
@@ -186,6 +192,8 @@
   (deffixequiv binding->formals))
 
 (define binding->args ((x binding-p))
+  :parents (binding)
+  :short "Get the args field of a @(see binding)."
   :inline t
   :returns (args pseudo-term-listp :rule-classes (:rewrite (:type-prescription :typed-term args))
                     :hints(("Goal" :in-theory (enable binding-fix))))
@@ -200,6 +208,20 @@
 
 (define binding ((formals pseudo-var-list-p)
                  (args pseudo-term-listp))
+  :parents (bindinglist)
+  :short "Type of an individual binding within a @(see bindinglist)"
+  :long "<p>A binding is a pairing of a list of variables (formals) with a list of
+terms (args). This represents a single let/lambda binding. To evaluate, the
+args are each evaluated in the current variable binding alist, then their
+values each paired with the corresponding formals and added to the binding
+alist.</p>
+
+<p>This is essentially a two-element product, but the fixing is a bit
+nonstandard. Formals are a pseudo-var-list, but they are fixed using
+@('remove-non-pseudo-vars') rather than @('pseudo-var-list-fix'). Args are
+fixed with @('pseudo-term-list-fix'), but also the elements corresponding to
+non-pseudo-vars in the formals are removed, and if the number of arguments
+falls short of the number of variables, extended with @('nil') elements.</p>"
   :guard (equal (len formals) (len args))
   :inline t
   :returns (x binding-p
@@ -237,7 +259,52 @@
                           (args . binding->args))
                         acl2::args acl2::forms acl2::rest-expr)))
 
-(deflist bindinglist :elt-type binding :true-listp t)
+(deflist bindinglist :elt-type binding :true-listp t
+  :parents (centaur/meta)
+  :short "Representation of a nesting of let/lambda bindings, sometimes more convenient
+to deal with than lambda terms."
+  :long "<p>A bindinglist is a list of @(see binding) objects, each of which is a pair
+containing a list of formals and a list of argument terms. Each of these
+objects represents a set of let or lambda bindings, evaluating to an alist
+mapping its formals to values. The evaluation of a bindinglist under an
+environment evaluates each binding in the current environment and then adds its
+resulting alist to the environment. Note that the environment grows
+cumlatively; each binding implicitly contains all the previous bindings that
+were present. This is a departure from the semantics of lambda nests, but one
+that we can compensate for.</p>
+
+<p>We can turn a lambda call term into a pair of a binding and body. If the
+lambda has some formals that are bound to themselves, then we can omit these
+from the binding. On the other hand, if the body uses some variables that
+aren't bound in the lambda (not allowed in properly formed terms, but allowed
+in pseudo-terms), we have to bind those variables to NIL (which is the implicit
+value of unbound variables inside lambda bodies under conventional
+evaluators). We don't provide a function that does this just once; instead, we
+have @(see lambda-nest-to-bindinglist) which creates a bindinglist for a nest
+of lambdas, keeping going as long as the lambda body is itself a lambda
+call.</p>
+
+<p>Bindinglists can be somewhat faster to process than lambdas when there is a
+large number of variables. E.g., if a lambda nest successively binds 100 new
+variables and the body nested inside uses all 100 of them, then the innermost
+lambda is binding one new variable and rebinding 99 other variables to
+themselves. Evaluating the nest of lambdas using the typical form of evaluator
+requires O(n^2) conses because it requires building a new alist containing all
+previously bound variables and the newest one, at each level of the lambda
+nest. If we translate the lambda nest to a bindinglist, however, the variables
+that are bound to themselves can be omitted and the evaluation iteratively (and
+linearly) builds the full alist required for evaluating the inner body.</p>
+
+<p>A bindinglist and inner body term can be transformed back into lambda nest
+pseudo-terms using @(see bindinglist-to-lambda-nest).</p>
+
+<p>A list of B* bindings can be turned into a bindinglist with @(see
+b*-binders-to-bindinglist), which translates a B* form constructed from the
+bindings and subsequently applies @(see lambda-nest-to-bindinglist). This will
+fail if the B* contains binders that produce non-lambda-call terms. This can
+also be done with a body term provided, which helps for cases where the B*
+binders look at the inner term to decide what lambda bindings to create, such
+as binders for @(see defprod)/@(see defaggregate) types.</p>")
 
 
 
@@ -553,6 +620,13 @@
 
 
 (define lambda-nest-to-bindinglist ((x pseudo-termp))
+  :parents (bindinglist)
+  :short "Extract a bindinglist and body pair from a lambda call nest."
+  :long "<p>This unwraps a pseudo-term into a non-lambda-call body and a bindinglist,
+such that the evaluation of the body under the environment formed by evaluating
+the bindinglist under original environment @('env') equals the evaluation of
+the original term under @('env') -- see theorem
+@('lambda-nest-to-bindinglist-correct').</p>"
   :returns (mv (bindings bindinglist-p)
                (body pseudo-termp))
   :measure (pseudo-term-count x)
@@ -785,6 +859,21 @@
 
 (define bindinglist-to-lambda-nest ((x bindinglist-p)
                                     (body pseudo-termp))
+  :parents (bindinglist)
+  :short "Create a term equivalent to a bindinglist/body pair."
+  :long "<p>This does the reverse of @(see lambda-nest-to-bindinglist), taking a
+bindinglist and body and creating a term by nesting lambda calls such that the
+evaluation of the new term under @('env') equals the evaluation of the body
+under the evaluation of the bindinglist under @('env'); see
+@('bindinglist-to-lambda-nest-correct').</p>
+
+<p>This has an optimized version, @(see bindinglist-to-lambda-nest-exec), that
+is logically equivalent but may perform better because it computes the set of
+free variables as it goes rather than once at each iteration for the rest of
+the bindinglist and body.</p>
+
+<p>Another version, @(see bindinglist-to-lambda-nest-prune), also omits
+bindings of variables that aren't used.</p>"
   :returns (term pseudo-termp)
   :verify-guards nil
   (b* (((when (atom x)) (pseudo-term-fix body))
@@ -977,6 +1066,8 @@
 
 (define bindinglist-to-lambda-nest-exec ((x bindinglist-p)
                                          (body pseudo-termp))
+  :parents (bindinglist-to-lambda-nest)
+  :short "Faster, logically equivalent version of @(see bindinglist-to-lambda-nest)."
   :enabled t
   :guard-hints (("goal" :in-theory (enable bindinglist-to-lambda-nest)))
   (mbe :logic (bindinglist-to-lambda-nest x body)
@@ -990,6 +1081,186 @@
                (pseudo-term-lambda full-formals rest-body full-actuals))))
 
 
+
+
+(define prune-bindings ((free-vars pseudo-var-list-p)
+                        (formals pseudo-var-list-p)
+                        (args pseudo-term-listp))
+  :guard (equal (len formals) (len args))
+  :returns (mv (new-formals pseudo-var-list-p)
+               (new-args pseudo-term-listp))
+  (if (atom formals)
+      (mv nil nil)
+    (b* ((formal (pseudo-var-fix (car formals))))
+      (if (member-eq formal (pseudo-var-list-fix free-vars))
+          (b* (((mv rest-formals rest-args)
+                (prune-bindings free-vars (cdr formals) (cdr args))))
+            (mv (cons formal rest-formals)
+                (cons (pseudo-term-fix (car args)) rest-args)))
+        (prune-bindings free-vars (cdr formals) (cdr args)))))
+  ///
+  (defret len-of-prune-bindings
+    (equal (len new-args)
+           (len new-formals)))
+
+  (defret lookup-of-<fn>
+    (equal (hons-assoc-equal k (pairlis$ new-formals new-args))
+           (and (member-equal k (pseudo-var-list-fix free-vars))
+                (hons-assoc-equal k (pairlis$ (pseudo-var-list-fix formals)
+                                              (pseudo-term-list-fix args))))))
+  
+  (defret eval-alists-agree-of-<fn>
+    (implies (equal free-vars1 (pseudo-var-list-fix free-vars))
+             (eval-alists-agree free-vars1
+                                (pairlis$ new-formals new-args)
+                                (pairlis$ (pseudo-var-list-fix formals)
+                                          (pseudo-term-list-fix args))))
+    :hints(("Goal" :in-theory (enable eval-alists-agree-by-bad-guy)
+            :do-not-induct t))))
+
+(local (set-induction-depth-limit 1))
+(define bindinglist-to-lambda-nest-prune-aux ((x bindinglist-p)
+                                        (body pseudo-termp))
+  :returns (mv (term pseudo-termp)
+               (free-vars pseudo-var-list-p))
+  :verify-guards nil
+  (b* (((when (atom x)) (mv (pseudo-term-fix body) (term-vars body)))
+       ((mv rest-body free-vars)
+        (bindinglist-to-lambda-nest-prune-aux (cdr x) body))
+       ((binding x1) (car x))
+       (missing-vars (set-difference-eq free-vars x1.formals))
+       ((mv pruned-formals pruned-actuals)
+        (prune-bindings free-vars x1.formals x1.args))
+       (full-formals (append missing-vars pruned-formals))
+       (full-actuals (append missing-vars pruned-actuals))
+       (new-free-vars (union-eq (termlist-vars pruned-actuals)
+                                missing-vars)))
+    (mv (pseudo-term-lambda full-formals rest-body full-actuals)
+        new-free-vars))
+  ///
+  (local (defthm termlist-vars-of-append
+           (set-equiv (termlist-vars (append x y))
+                      (append (termlist-vars x) (termlist-vars y)))
+           :hints(("Goal" :in-theory (enable termlist-vars)))))
+
+  (local (defthm term-vars-of-pseudo-var
+           (implies (pseudo-var-p x)
+                    (equal (term-vars x) (list x)))
+           :hints(("Goal" :expand ((term-vars x))
+                   :in-theory (enable pseudo-var-p pseudo-term-kind pseudo-term-var->name)))))
+
+  (local (defthm termlist-vars-of-pseudo-var-list
+           (implies (pseudo-var-list-p x)
+                    (set-equiv (termlist-vars x) x))
+           :hints(("Goal" :induct (len x)
+                   :expand ((termlist-vars x))))))
+
+  (local (defthm pseudo-var-list-p-of-set-difference
+           (implies (pseudo-var-list-p x)
+                    (pseudo-var-list-p (set-difference-equal x y)))))
+
+  (local (defthm termlist-vars-of-true-list-fix
+           (equal (termlist-vars (true-list-fix x))
+                  (termlist-vars x))
+           :hints(("Goal" :induct (len x)
+                   :expand ((termlist-vars x)
+                            (true-list-fix x)
+                            (:free (a b) (termlist-vars (cons a b))))))))
+
+  (defcong set-equiv set-equiv (append x y) 1)
+  
+  (defret <fn>-free-vars-correct
+    (set-equiv free-vars (term-vars term))
+    :hints (("goal" :induct <call>
+             :expand (<call>
+                      (:free (formals body args)
+                       (term-vars (pseudo-term-lambda formals body args)))))))
+
+  (local (defthm pairlis$-append
+           (implies (equal (len a1) (len a2))
+                    (equal (pairlis$ (Append a1 b1) (append a2 b2))
+                           (append (pairlis$ a1 a2) (pairlis$ b1 b2))))
+           :hints(("Goal" :in-theory (enable pairlis$)))))
+
+  (local (defthm pairlis$-of-base-ev-list
+           (implies (pseudo-var-list-p keys)
+                    (equal (pairlis$ keys (base-ev-list vals a))
+                           (base-ev-alist (pairlis$ keys vals) a)))
+           :hints(("Goal" :in-theory (enable base-ev-alist pairlis$)))))
+
+
+  (local (defthm hons-assoc-equal-of-base-ev-alist
+           (equal (hons-assoc-equal k (base-ev-alist x a))
+                  (and (pseudo-var-p k)
+                       (hons-assoc-equal k x)
+                       (cons k (base-ev (cdr (hons-assoc-equal k x)) a))))
+           :hints(("Goal" :in-theory (enable base-ev-alist)
+                   :induct (base-ev-alist x a)))))
+
+  (local (defthm hons-assoc-equal-of-pair-self
+           (equal (hons-assoc-equal k (pairlis$ x x))
+                  (and (member-equal k x)
+                       (cons k k)))
+           :hints(("Goal" :in-theory (enable pairlis$)))))
+  
+  (defret <fn>-correct
+    (equal (base-ev term a)
+           (base-ev body (base-ev-bindinglist x a)))
+    :hints (("goal" :induct (base-ev-bindinglist x a)
+             :in-theory (e/d (base-ev-bindinglist
+                                eval-alists-agree-by-bad-guy)
+                             (base-ev-when-agree-on-term-vars)))
+            (acl2::use-termhint
+             (b* (((binding x1) (car x))
+                  (formals x1.formals)
+                  (actuals x1.args)
+                  ((mv rest-body free-vars) (bindinglist-to-lambda-nest-prune-aux (cdr x) body))
+                  (missing-vars (set-difference-eq free-vars formals))
+                  ((mv pruned-formals pruned-actuals)
+                   (prune-bindings free-vars x1.formals x1.args))
+                  (full-formals (append missing-vars pruned-formals))
+                  (full-actuals (append missing-vars pruned-actuals))
+                  (impl-alist (pairlis$ full-formals (base-ev-list full-actuals a)))
+                  (spec-alist (append (pairlis$ formals (base-ev-list actuals a)) a)))
+               `'(:use ((:instance base-ev-when-agree-on-term-vars
+                         (x ,(hq rest-body))
+                         (a ,(hq impl-alist))
+                         (b  ,(hq spec-alist)))))))))
+
+  (verify-guards bindinglist-to-lambda-nest-prune-aux))
+
+(define bindinglist-to-lambda-nest-prune ((x bindinglist-p)
+                                          (body pseudo-termp))
+  :parents (bindinglist)
+  :short "Create a term equivalent to a bindinglist/body pair, omitting variable bindings
+that aren't used."
+  :long "<p>Like @(see bindinglist-to-lambda-nest), this does the reverse of @(see
+lambda-nest-to-bindinglist), taking a bindinglist and body and creating a term
+by nesting lambda calls such that the evaluation of the new term under @('env')
+equals the evaluation of the body under the evaluation of the bindinglist under
+@('env'); see @('bindinglist-to-lambda-nest-prune-correct'). However, it leaves
+out any variable bindings that are unused.</p>"
+
+  :guard-hints (("goal" :expand ((bindinglist-to-lambda-nest-prune-aux x body)) ))
+  :returns (term pseudo-termp)
+  (mbe :logic (b* (((mv res &) (bindinglist-to-lambda-nest-prune-aux x body)))
+                res)
+       :exec (b* (((when (atom x)) (pseudo-term-fix body))
+                  ((mv rest-body free-vars)
+                   (bindinglist-to-lambda-nest-prune-aux (cdr x) body))
+                  ((binding x1) (car x))
+                  (missing-vars (set-difference-eq free-vars x1.formals))
+                  ((mv pruned-formals pruned-actuals)
+                   (prune-bindings free-vars x1.formals x1.args))
+                  (full-formals (append missing-vars pruned-formals))
+                  (full-actuals (append missing-vars pruned-actuals)))
+               (pseudo-term-lambda full-formals rest-body full-actuals)))
+  ///
+  (defret <fn>-correct
+    (equal (base-ev term a)
+           (base-ev body (base-ev-bindinglist x a)))))
+
+
 (defun translate-cmp-ignore-ok (x stobjs-out logic-modep known-stobjs ctx w state-vars)
   (declare (xargs :mode :program))
   ;; We override ignore-ok so that we can translate a list of B* binders
@@ -1001,6 +1272,13 @@
 
 (define b*-binders-to-bindinglist ((x "list of bstar binders")
                                    wrld)
+  :parents (bindinglist)
+  :short "Translate a set of B* binders to a bindinglist."
+  :long "<p>Program mode only (calls translate). This may fail if there are B* binders
+included such as when/unless, which create non-lambda-call terms.</p>
+
+<p>See also @(see b*-binders-to-bindinglist-with-body) which takes the body
+term of the B*, since that affects the behavior of binders in some cases.</p>"
   :mode :program
   :returns (mv err bindinglist)
   (b* ((state-vars (acl2::default-state-vars nil))
@@ -1022,6 +1300,43 @@
                   unsupported B* binder.  Binders should only create ~
                   LET/LET*/MV-LET bindings."
                  ctx body)
+            nil)))
+    (mv nil bindings)))
+
+(define b*-binders-to-bindinglist-with-body ((x "list of bstar binders")
+                                             (body "body term")
+                                             wrld)
+  :parents (bindinglist)
+  :short "Translate a set of B* binders to a bindinglist, with a body term plugged in."
+  :long "<p>Program mode only (calls translate). This may fail if there are B* binders
+included such as when/unless, which create non-lambda-call terms.</p>
+
+<p>This takes the body term because it can affect the behavior of some
+binders. E.g., defprod/defaggregate binders look at what variables are
+referenced to decide which fields to bind.</p>
+
+<p>See also @(see b*-binders-to-bindinglist) which omits the body argument.</p>"
+  :mode :program
+  :returns (mv err bindinglist)
+  (b* ((state-vars (acl2::default-state-vars nil))
+       (ctx 'b*-binders-to-bindinglist)
+       (marker-term `'(this is the b*-binder-to-bindinglist marker for . ,x))
+       (bstar-term `(b* ,x (cons ,marker-term ,body)))
+       ((mv err translated-bstar-term)
+        (translate-cmp-ignore-ok bstar-term
+                                 t ;; stobjs-out -- logical use only
+                                 t ;; logic-modep -- do the check, maybe not totally necessary
+                                 nil ;; known-stobjs
+                                 ctx wrld state-vars))
+       ((when err)
+        (mv (msg "In ~x0, error translating bstar term: ~@1~%" err translated-bstar-term) nil))
+       ((mv bindings new-body) (lambda-nest-to-bindinglist translated-bstar-term))
+       ((unless (case-match new-body (('cons !marker-term &) t) (& nil)))
+        (mv (msg "In ~x0, inner lambda body was not the expected marker term ~
+                  but instead: ~x1~%This likely means you are using an ~
+                  unsupported B* binder.  Binders should only create ~
+                  LET/LET*/MV-LET bindings."
+                 ctx new-body)
             nil)))
     (mv nil bindings)))
 
@@ -1171,6 +1486,13 @@
 
 (defines pseudo-term-binding-count
   (define pseudo-term-binding-count ((x pseudo-termp))
+    :parents (bindinglist)
+    :short "Measure for traversal of pseudo-terms where lambda nests are converted to @(see
+bindinglist)s."
+    :long "<p>This, in combination with @(see pseudo-term-list-binding-count), @(see
+bindinglist-count), and @(see binding-count),
+provides a measure that decreases when descending into pseudo-terms when lambda
+calls are turned into bindinglists using @(see lambda-nest-to-bindinglist).</p>"
     :Returns (count posp :rule-classes :type-prescription)
     :measure (list (pseudo-term-count x) 1 0 0)
     :well-founded-relation acl2::nat-list-<
@@ -1185,6 +1507,9 @@
                    (pseudo-term-binding-count body)))))
 
   (define pseudo-term-list-binding-count ((x pseudo-term-listp))
+    :parents (pseudo-term-binding-count)
+    :short "Measure for traversal of pseudo-term-lists where lambda nests are converted to
+@(see bindinglist)s."
     :measure (list (pseudo-term-list-max-count x) 2 (len x) 0)
     :Returns (count posp :rule-classes :type-prescription)
     (if (atom x)
@@ -1193,6 +1518,9 @@
          (pseudo-term-list-binding-count (cdr x)))))
 
   (define bindinglist-count ((x bindinglist-p))
+    :parents (pseudo-term-binding-count)
+    :short "Measure for traversal of bindinglists in the context of traversing terms where
+lambda nests are converted to @(see bindinglist)s."
     :measure (list (bindinglist-max-count x) 3 (len x) 0)
     :Returns (count posp :rule-classes :type-prescription)
     (if (atom x)
@@ -1201,6 +1529,9 @@
          (bindinglist-count (cdr x)))))
 
   (define binding-count ((x binding-p))
+    :parents (pseudo-term-binding-count)
+    :short "Measure for traversal of bindings in the context of traversing terms where
+lambda nests are converted to @(see bindinglist)s."
     :measure (list (pseudo-term-list-max-count (binding->args x))
                    3 0 0)
     :Returns (count posp :rule-classes :type-prescription)

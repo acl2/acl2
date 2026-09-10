@@ -170,7 +170,17 @@
        ((unless (< step.rep (len subtrees))) nil)
        (subtree (nth step.rep subtrees)))
     (check-tree-path (cdr path) subtree))
-  :guard-hints (("Goal" :in-theory (enable true-listp-when-tree-listp))))
+  :guard-hints (("Goal" :in-theory (enable true-listp-when-tree-listp)))
+
+  ///
+
+  (defrule tree-terminatedp-of-check-tree-path
+    (b* ((tree? (check-tree-path path tree)))
+      (implies (and (tree-terminatedp tree)
+                    tree?)
+               (tree-terminatedp tree?)))
+    :induct t
+    :enable tree-terminatedp))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -192,7 +202,12 @@
               (treep tree))
   :short "Lift @(tsee tree-path-validp) to lists."
   (tree-path-validp x tree)
-  :elementp-of-nil t)
+  :elementp-of-nil t
+
+  ///
+
+  (fty::deffixequiv tree-path-list-validp
+    :args ((tree treep))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -201,7 +216,15 @@
   :returns (sub treep)
   :short "Subtree of a tree at a valid path."
   (tree-fix (check-tree-path path tree))
-  :guard-hints (("Goal" :in-theory (enable tree-path-validp))))
+  :guard-hints (("Goal" :in-theory (enable tree-path-validp)))
+
+  ///
+
+  (defrule tree-terminatedp-of-tree-at-path
+    (implies (and (tree-path-validp path tree)
+                  (tree-terminatedp tree))
+             (tree-terminatedp (tree-at-path path tree)))
+    :enable tree-path-validp))
 
 ;;;;;;;;;;
 
@@ -210,7 +233,18 @@
   :guard (tree-path-list-validp x tree)
   :returns (subs tree-listp)
   :short "Lift @(tsee tree-at-path) to lists."
-  (tree-at-path x tree))
+  (tree-at-path x tree)
+
+  ///
+
+  (defrule tree-list-terminatedp-of-tree-list-at-path-list
+    (implies (and (tree-path-list-validp x tree)
+                  (tree-terminatedp tree))
+             (tree-list-terminatedp (tree-list-at-path-list x tree)))
+    :induct t)
+
+  (fty::deffixequiv tree-list-at-path-list
+    :args ((tree treep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

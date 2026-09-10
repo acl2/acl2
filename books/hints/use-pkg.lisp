@@ -40,7 +40,7 @@
 (defun illegal-use-pkg (val msg)
   (declare (xargs :guard t))
   (er hard? :use-pkg
-      "Illegal :use-pkg hint, ~x0~@0"
+      "Illegal :use-pkg hint, ~x0~@1"
       val
       (if msg
           (msg "~|~@0" msg)

@@ -53,9 +53,9 @@
     (implies (unsigned-byte-p 32 x)
              (integerp x))))
 
-(local (in-theory (disable symbol-alistp))) ; prevent induction
-
-(local (in-theory (enable shift))) ; todo
+(local (in-theory (disable symbol-alistp ; prevent induction
+                           acl2::unsigned-byte-p-from-bounds ; for speed
+                           )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -763,8 +763,7 @@
                                             acl2::bvuminus-becomes-bvplus-of-bvnot-and-1
                                             acl2::getbit-convert-arg2-to-bv
                                             acl2::trim-of-+-becomes-bvplus
-                                            acl2::bvplus-convert-arg3-to-bv
-                                            )
+                                            acl2::bvplus-convert-arg3-to-bv)
                                            (acl2::signed-addition-underflowsp-correct ;  todo
                                             acl2::signed-addition-overflowsp-correct ; todo
                                             ;;mv-nth-2-of-addwithcarry
@@ -806,7 +805,7 @@
                                             ;acl2::getbit-convert-arg2-to-bv
                                             acl2::trim-of-+-becomes-bvplus
                                             acl2::bvplus-convert-arg3-to-bv
-                                            )
+                                            shift)
                                            (acl2::signed-addition-underflowsp-correct ;  todo
                                             acl2::signed-addition-overflowsp-correct ; todo
                                             ;;mv-nth-2-of-addwithcarry
@@ -857,8 +856,7 @@
                                             cmn-zero
                                             cmn-carry
                                             acl2::trim-of-+-becomes-bvplus
-                                            acl2::bvplus-convert-arg3-to-bv
-                                            )
+                                            acl2::bvplus-convert-arg3-to-bv)
                                            (acl2::signed-addition-underflowsp-correct ;  todo
                                             acl2::signed-addition-overflowsp-correct ; todo
                                             ;;mv-nth-2-of-addwithcarry
@@ -942,12 +940,12 @@
                                             cmp-overflow
                                             cmp-carry
                                             cmp-zero
-                                              ;addwithcarry-overflow
-                                              ;addwithcarry
+                                              ;;addwithcarry-overflow
+                                              ;;addwithcarry
                                               uint acl2::bvuminus-becomes-bvplus-of-bvnot-and-1 acl2::getbit-convert-arg2-to-bv
                                               acl2::trim-of-+-becomes-bvplus
                                               acl2::bvplus-convert-arg3-to-bv
-                                              )
+                                              acl2::bvminus-becomes-bvplus-of-bvuminus)
                                            (acl2::signed-addition-underflowsp-correct ;  todo
                                             acl2::signed-addition-overflowsp-correct ; todo
                                             ;mv-nth-2-of-addwithcarry
@@ -990,7 +988,7 @@
                                             uint acl2::bvuminus-becomes-bvplus-of-bvnot-and-1 acl2::getbit-convert-arg2-to-bv
                                             acl2::trim-of-+-becomes-bvplus
                                             acl2::bvplus-convert-arg3-to-bv
-                                            )
+                                            acl2::bvminus-becomes-bvplus-of-bvuminus)
                                            (acl2::signed-addition-underflowsp-correct ;  todo
                                             acl2::signed-addition-overflowsp-correct ; todo
                                             ;;mv-nth-2-of-addwithcarry
@@ -1045,7 +1043,7 @@
                                             uint acl2::bvuminus-becomes-bvplus-of-bvnot-and-1 acl2::getbit-convert-arg2-to-bv
                                             acl2::trim-of-+-becomes-bvplus
                                             acl2::bvplus-convert-arg3-to-bv
-                                            )
+                                            acl2::bvminus-becomes-bvplus-of-bvuminus)
                                            (acl2::signed-addition-underflowsp-correct ;  todo
                                             acl2::signed-addition-overflowsp-correct ; todo
                                             ;;mv-nth-2-of-addwithcarry
@@ -1138,7 +1136,7 @@
 
 ;; Returns (mv address arm).
 ;; also used for ldmib
-(defun ldm-loop (i registers address arm)
+(defund ldm-loop (i registers address arm)
   (declare (xargs :guard (and (natp i)
                               (<= i 15)
                               (unsigned-byte-p 16 registers)
@@ -1157,7 +1155,8 @@
 
 (defthm ldm-loop-return-type
   (implies (addressp address)
-           (addressp (mv-nth 0 (ldm-loop i registers address arm)))))
+           (addressp (mv-nth 0 (ldm-loop i registers address arm))))
+  :hints (("Goal" :in-theory (enable ldm-loop))))
 
 ;; Also called by POP
 (defun ldm-core (w rn register_list arm)
@@ -2134,7 +2133,7 @@
   (b* (;; EncodingSpecificOperations:
        ((when (and (== rd #b1111)
                    (== s #b1)))
-        (update-error (list *unsupported* 'mov-register-core) arm))
+        (update-error (list *unsupported* :mov-register-core) arm))
        (d (uint 4 rd))
        (m (uint 4 rm))
        (setflags (== s #b1))
@@ -2388,8 +2387,7 @@
          ;; end EncodingSpecificOperations
          (carry 0) ;; Irrelevant since setflags is FALSE
          )
-      (mov-common d setflags imm32 carry arm))
-  :guard-debug t)
+      (mov-common d setflags imm32 carry arm)))
 
 (def-inst :mov-register
     (mov-register-core s rd rm arm))
@@ -4625,7 +4623,7 @@
                 arm))
          (arm (advance-pc arm)))
       arm)
-  :guard-hints (("Goal" :in-theory (enable uint))))
+  :guard-hints (("Goal" :in-theory (enable uint acl2::unsigned-byte-p-of-+-of-constant-strong))))
 
 (def-inst :strd-register
     (b* (;; EncodingSpecificOperations:
@@ -4674,7 +4672,7 @@
                 arm))
          (arm (advance-pc arm)))
       arm)
-  :guard-hints (("Goal" :in-theory (enable uint))))
+  :guard-hints (("Goal" :in-theory (enable uint acl2::unsigned-byte-p-of-+-of-constant-strong))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

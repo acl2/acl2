@@ -53,13 +53,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod type-option-vinfo
-  :short "Fixtype of validator information consisting of an optional type."
-  ((type? type-option))
-  :pred type-option-vinfop)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod type+uid-vinfo
   :short "Fixtype of validator information consisting of a type and a UID."
   ((type type)
@@ -399,6 +392,9 @@
                         (type-vinfop expr.info)))
      (expr :memberp (and (expr-annop expr.arg)
                          (type-vinfop expr.info)))
+     (expr :complit (and (tyname-annop expr.type)
+                         (desiniter-list-annop expr.elems)
+                         (type-vinfop expr.info)))
      (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                                 (expr-fix expr)))
      (expr :alignof-ambig (raise "Internal error: ambiguous ~x0."
@@ -437,12 +433,6 @@
      (dirabsdeclor :dummy-base (raise "Internal error: ~
                                        dummy base case of ~
                                        direct abstract declarator."))
-     (param-declon (and (decl-spec-list-annop
-                          (param-declon->specs param-declon))
-                        (param-declor-annop (param-declon->declor param-declon))
-                        (attrib-spec-list-annop
-                          (param-declon->attribs param-declon))
-                        (type-option-vinfop (param-declon->info param-declon))))
      (param-declor :nonabstract (and (declor-annop
                                       (param-declor-nonabstract->declor
                                        param-declor))
@@ -570,6 +560,13 @@
                 (type-vinfop info)))
     :expand (expr-annop (expr-memberp arg name info)))
 
+  (defruled expr-annop-of-expr-complit
+    (equal (expr-annop (expr-complit type elems final-comma info))
+           (and (tyname-annop type)
+                (desiniter-list-annop elems)
+                (type-vinfop info)))
+    :expand (expr-annop (expr-complit type elems final-comma info)))
+
   (defruled expr-annop-of-expr-binary
     (equal (expr-annop (expr-binary op arg1 arg2 info))
            (and (expr-annop arg1)
@@ -617,14 +614,6 @@
                 (desiniter-vinfop info)))
     :expand (desiniter-annop (desiniter designors initer info))
     :enable identity)
-
-  (defruled param-declon-annop-of-param-declon
-    (equal (param-declon-annop (param-declon specs declor attribs info))
-           (and (decl-spec-list-annop specs)
-                (param-declor-annop declor)
-                (attrib-spec-list-annop attribs)
-                (type-option-vinfop info)))
-    :expand (param-declon-annop (param-declon specs declor attribs info)))
 
   (defruled param-declor-annop-of-param-declor-nonabstract
     (equal (param-declor-annop (param-declor-nonabstract declor info))
@@ -792,6 +781,24 @@
              (type-vinfop (expr-memberp->info expr)))
     :enable expr-annop)
 
+  (defruled tyname-annop-of-expr-complit->type
+    (implies (and (expr-annop expr)
+                  (expr-case expr :complit))
+             (tyname-annop (expr-complit->type expr)))
+    :enable expr-annop)
+
+  (defruled desiniter-list-annop-of-expr-complit->elems
+    (implies (and (expr-annop expr)
+                  (expr-case expr :complit))
+             (desiniter-list-annop (expr-complit->elems expr)))
+    :enable expr-annop)
+
+  (defruled type-vinfop-of-expr-complit->info
+    (implies (and (expr-annop expr)
+                  (expr-case expr :complit))
+             (type-vinfop (expr-complit->info expr)))
+    :enable expr-annop)
+
   (defruled expr-annop-of-expr-binary->arg1
     (implies (and (expr-annop expr)
                   (expr-case expr :binary))
@@ -891,11 +898,6 @@
   (defruled attrib-spec-list-annop-of-param-declon->attribs
     (implies (param-declon-annop param-declon)
              (attrib-spec-list-annop (param-declon->attribs param-declon)))
-    :enable param-declon-annop)
-
-  (defruled type-option-vinfop-of-param-declon->info
-    (implies (param-declon-annop param-declon)
-             (type-option-vinfop (param-declon->info param-declon)))
     :enable param-declon-annop)
 
   (defruled declor-annop-of-param-declor-nonabstract->declor
@@ -1041,6 +1043,7 @@
      expr-annop-of-expr-unary
      expr-annop-of-expr-member
      expr-annop-of-expr-memberp
+     expr-annop-of-expr-complit
      expr-annop-of-expr-binary
      const-expr-annop-of-const-expr
      type-spec-annop-of-type-spec-struct
@@ -1048,7 +1051,6 @@
      type-spec-annop-of-type-spec-typedef
      type-spec-annop-of-type-spec-struct-empty
      desiniter-annop-of-desiniter
-     param-declon-annop-of-param-declon
      param-declor-annop-of-param-declor-nonabstract
      param-declor-annop-of-param-declor-abstract
      param-declor-annop-of-param-declor-none
@@ -1075,6 +1077,9 @@
      type-vinfop-of-expr-member->info
      expr-annop-of-expr-memberp->arg
      type-vinfop-of-expr-memberp->info
+     tyname-annop-of-expr-complit->type
+     desiniter-list-annop-of-expr-complit->elems
+     type-vinfop-of-expr-complit->info
      expr-annop-of-expr-binary->arg1
      expr-annop-of-expr-binary->arg2
      type-vinfop-of-expr-binary->info
@@ -1093,7 +1098,6 @@
      decl-spec-list-annop-of-param-declon->specs
      param-declor-annop-of-param-declon->declor
      attrib-spec-list-annop-of-param-declon->attribs
-     type-option-vinfop-of-param-declon->info
      declor-annop-of-param-declor-nonabstract->declor
      type+uid-vinfop-of-param-declor-nonabstract->info
      absdeclor-annop-of-param-declor-abstract->declor
@@ -1118,6 +1122,51 @@
      trans-unit-vinfop-of-trans-unit->info
      filepath-trans-unit-map-annop-of-trans-ensemble->units
      trans-ensemble-vinfop-of-trans-ensemble->info)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection abstract-syntax-operations-annotated
+  :short "Annotation theorems about certain abstract syntax operations."
+
+  (defrule declon-annop-of-check-ext-declon-declon
+    (b* ((declon? (check-ext-declon-declon edeclon)))
+      (implies (and (ext-declon-annop edeclon)
+                    declon?)
+               (declon-annop declon?)))
+    :enable (check-ext-declon-declon
+             abstract-syntax-annop-rules))
+
+  (defrule fundef-annop-of-check-ext-declon-fundef
+    (b* ((fundef? (check-ext-declon-fundef edeclon)))
+      (implies (and (ext-declon-annop edeclon)
+                    fundef?)
+               (fundef-annop fundef?)))
+    :enable (check-ext-declon-fundef
+             abstract-syntax-annop-rules))
+
+  (defrule ext-declon-annop-of-check-trans-item-ext-declon
+    (b* ((edeclon? (check-trans-item-ext-declon item)))
+      (implies (and (trans-item-annop item)
+                    edeclon?)
+               (ext-declon-annop edeclon?)))
+    :enable (check-trans-item-ext-declon
+             abstract-syntax-annop-rules))
+
+  (defrule declon-annop-of-check-trans-item-declon
+    (b* ((declon? (check-trans-item-declon item)))
+      (implies (and (trans-item-annop item)
+                    declon?)
+               (declon-annop declon?)))
+    :enable (check-trans-item-declon
+             abstract-syntax-annop-rules))
+
+  (defrule fundef-annop-of-check-trans-item-fundef
+    (b* ((fundef? (check-trans-item-fundef item)))
+      (implies (and (trans-item-annop item)
+                    fundef?)
+               (fundef-annop fundef?)))
+    :enable (check-trans-item-fundef
+             abstract-syntax-annop-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1156,7 +1205,7 @@
    :funcall (type-vinfo->type expr.info)
    :member (type-vinfo->type expr.info)
    :memberp (type-vinfo->type expr.info)
-   :complit (type-vinfo->type (tyname->info expr.type))
+   :complit (type-vinfo->type expr.info)
    :unary (type-vinfo->type expr.info)
    :label-addr (type-pointer (type-void))
    :sizeof (type-unknown-arithmetic)
@@ -1368,6 +1417,12 @@
               (param-declor-annop pdeclor))
   :returns (type typep)
   :short "Type of a parameter declarator, from the validation information."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the original type of the declarator,
+     without the adjustment in [C17:6.7.6.3/7] [C23:6.7.7.4].
+     So this could be an array type."))
   (param-declor-case
    pdeclor
    :nonabstract (type+uid-vinfo->type pdeclor.info)
@@ -1383,5 +1438,11 @@
               (param-declon-annop pdeclon))
   :returns (type typep)
   :short "Type of a parameter declaration, from the validation information."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the original type of the declaration,
+     without the adjustment in [C17:6.7.6.3/7] [C23:6.7.7.4].
+     So this could be an array type."))
   (param-declor-type (param-declon->declor pdeclon))
   :guard-hints (("Goal" :in-theory (enable* abstract-syntax-annop-rules))))

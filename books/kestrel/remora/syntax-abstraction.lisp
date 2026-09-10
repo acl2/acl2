@@ -23,6 +23,9 @@
 (include-book "projects/abnf/tree-operations/tree-utilities" :dir :system)
 (include-book "unicode/utf8-encode" :dir :system)
 
+(local (include-book "std/lists/len" :dir :system))
+(local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))
+
 (local
  (in-theory (enable abnf::treep-when-result-not-error
                     abnf::tree-listp-when-result-not-error
@@ -1360,11 +1363,10 @@
           (abnf::check-tree-nonleaf-8 tree "forall-type"))
          ((okf params) (abs-*-ws-type-var sub.4th))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
-         ((okf body) (abs-type body-tree)))
-      (if (and (consp params)
-               (endp (cdr params)))
-          (make-type-forall :param (car params) :body body)
-        (make-type-foralln :params params :body body)))
+         ((okf body) (abs-type body-tree))
+         ((unless (consp params))
+          (reserrf (list :type-forall-no-params body))))
+      (make-type-forall/foralln params body))
     :measure (abnf::tree-count tree))
 
   ;; pi-type = ( "Pi" / %x03A0 ) ws "(" *( ws ispace-var ) ws ")"
@@ -1384,11 +1386,10 @@
           (abnf::check-tree-nonleaf-8 tree "pi-type"))
          ((okf params) (abs-*-ws-ispace-var sub.4th))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
-         ((okf body) (abs-type body-tree)))
-      (if (and (consp params)
-               (endp (cdr params)))
-          (make-type-pi :param (car params) :body body)
-        (make-type-pin :params params :body body)))
+         ((okf body) (abs-type body-tree))
+         ((unless (consp params))
+          (reserrf (list :type-pi-no-params body))))
+      (make-type-pi/pin params body))
     :measure (abnf::tree-count tree))
 
   ;; sigma-type = ( "Sigma" / %x03A3 ) ws "(" *( ws ispace-var ) ws ")"
@@ -1409,11 +1410,10 @@
           (abnf::check-tree-nonleaf-8 tree "sigma-type"))
          ((okf params) (abs-*-ws-ispace-var sub.4th))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
-         ((okf body) (abs-type body-tree)))
-      (if (and (consp params)
-               (endp (cdr params)))
-          (make-type-sigma :param (car params) :body body)
-        (make-type-sigman :params params :body body)))
+         ((okf body) (abs-type body-tree))
+         ((unless (consp params))
+          (reserrf (list :type-sigma-no-params body))))
+      (make-type-sigma/sigman params body))
     :measure (abnf::tree-count tree))
 
   (define abs-ws-type ((tree abnf::treep))
@@ -1917,7 +1917,7 @@
                               (abnf::tree-info-for-error inner))))))
     :measure (abnf::tree-count tree))
 
-  ;; app-exp = exp *( ws exp )
+  ;; app-exp = exp 1*( ws exp )
   (define abs-app-exp ((tree abnf::treep))
     :returns (e expr-resultp)
     :short "Abstract an @('app-exp') to
@@ -1935,13 +1935,14 @@
          ((okf fun-tree) (abnf::check-tree-list-1 sub.1st))
          ((okf fun) (abs-exp fun-tree))
          ((okf args) (abs-*-ws-exp sub.2nd)))
-      (if (and (consp args)
-               (endp (cdr args)))
-          (make-expr-app :fun fun :arg (car args))
-        (make-expr-appn :fun fun :args args)))
+      (cond ((endp args)
+             (reserrf (list :app-exp-no-args fun)))
+            ((endp (cdr args))
+             (make-expr-app :fun fun :arg (car args)))
+            (t (make-expr-appn :fun fun :args args))))
     :measure (abnf::tree-count tree))
 
-  ;; array-exp = "array" ws shape-lit *( ws atom )
+  ;; array-exp = "array" ws shape-lit 1*( ws atom )
   ;;           / "array" ws shape-lit ws type
   (define abs-array-exp ((tree abnf::treep))
     :returns (e expr-resultp)
@@ -1963,7 +1964,9 @@
                  (abnf::check-tree-nonleaf-4 tree "array-exp"))
                 ((okf sl-tree) (abnf::check-tree-list-1 sub.3rd))
                 ((okf dims) (abs-shape-lit sl-tree))
-                ((okf atoms) (abs-*-ws-atom sub.4th)))
+                ((okf atoms) (abs-*-ws-atom sub.4th))
+                ((unless (consp atoms))
+                 (reserrf (list :array-exp-no-atoms dims))))
              (make-expr-array :dims dims :atoms atoms)))
         (5 (b* (((okf (abnf::tree-list-tuple5 sub))
                  (abnf::check-tree-nonleaf-5 tree "array-exp"))
@@ -1976,7 +1979,7 @@
          (reserrf (list :array-exp-shape (len treess))))))
     :measure (abnf::tree-count tree))
 
-  ;; frame-exp = "frame" ws shape-lit *( ws exp )
+  ;; frame-exp = "frame" ws shape-lit 1*( ws exp )
   ;;           / "frame" ws shape-lit ws type
   (define abs-frame-exp ((tree abnf::treep))
     :returns (e expr-resultp)
@@ -1995,7 +1998,9 @@
                  (abnf::check-tree-nonleaf-4 tree "frame-exp"))
                 ((okf sl-tree) (abnf::check-tree-list-1 sub.3rd))
                 ((okf dims) (abs-shape-lit sl-tree))
-                ((okf exprs) (abs-*-ws-exp sub.4th)))
+                ((okf exprs) (abs-*-ws-exp sub.4th))
+                ((unless (consp exprs))
+                 (reserrf (list :frame-exp-no-exprs dims))))
              (make-expr-frame :dims dims :exprs exprs)))
         (5 (b* (((okf (abnf::tree-list-tuple5 sub))
                  (abnf::check-tree-nonleaf-5 tree "frame-exp"))
@@ -2008,7 +2013,7 @@
          (reserrf (list :frame-exp-shape (len treess))))))
     :measure (abnf::tree-count tree))
 
-  ;; tapp-exp = "t-app" ws exp *( ws type )
+  ;; tapp-exp = "t-app" ws exp 1*( ws type )
   (define abs-tapp-exp ((tree abnf::treep))
     :returns (e expr-resultp)
     :short "Abstract a @('tapp-exp') to
@@ -2026,13 +2031,14 @@
          ((okf fun-tree) (abnf::check-tree-list-1 sub.3rd))
          ((okf fun) (abs-exp fun-tree))
          ((okf args) (abs-*-ws-type sub.4th)))
-      (if (and (consp args)
-               (endp (cdr args)))
-          (make-expr-tapp :fun fun :arg (car args))
-        (make-expr-tappn :fun fun :args args)))
+      (cond ((endp args)
+             (reserrf (list :tapp-exp-no-args fun)))
+            ((endp (cdr args))
+             (make-expr-tapp :fun fun :arg (car args)))
+            (t (make-expr-tappn :fun fun :args args))))
     :measure (abnf::tree-count tree))
 
-  ;; iapp-exp = "i-app" ws exp *( ws ispace )
+  ;; iapp-exp = "i-app" ws exp 1*( ws ispace )
   (define abs-iapp-exp ((tree abnf::treep))
     :returns (e expr-resultp)
     :short "Abstract an @('iapp-exp') to
@@ -2050,10 +2056,11 @@
          ((okf fun-tree) (abnf::check-tree-list-1 sub.3rd))
          ((okf fun) (abs-exp fun-tree))
          ((okf args) (abs-*-ws-ispace sub.4th)))
-      (if (and (consp args)
-               (endp (cdr args)))
-          (make-expr-iapp :fun fun :arg (car args))
-        (make-expr-iappn :fun fun :args args)))
+      (cond ((endp args)
+             (reserrf (list :iapp-exp-no-args fun)))
+            ((endp (cdr args))
+             (make-expr-iapp :fun fun :arg (car args)))
+            (t (make-expr-iappn :fun fun :args args))))
     :measure (abnf::tree-count tree))
 
   ;; unbox-exp = "unbox" ws "(" ws unbox-spec ws ")" ws exp
@@ -2078,21 +2085,22 @@
          (ispaces (unbox-spec-info->ispaces info))
          (var (unbox-spec-info->var info))
          (target (unbox-spec-info->target info)))
-      (if (and (consp ispaces)
-               (endp (cdr ispaces)))
-          (make-expr-unbox :ispace (car ispaces)
-                           :var var
-                           :target target
-                           :body body
-                           :type? nil)
-        (make-expr-unboxn :ispaces ispaces
-                          :var var
-                          :target target
-                          :body body
-                          :type? nil)))
+      (cond ((endp ispaces)
+             (reserrf (list :unbox-exp-no-ispaces var)))
+            ((endp (cdr ispaces))
+             (make-expr-unbox :ispace (car ispaces)
+                              :var var
+                              :target target
+                              :body body
+                              :type? nil))
+            (t (make-expr-unboxn :ispaces ispaces
+                                 :var var
+                                 :target target
+                                 :body body
+                                 :type? nil))))
     :measure (abnf::tree-count tree))
 
-  ;; unbox-spec = *( ispace-var ws ) identifier ws exp
+  ;; unbox-spec = 1*( ispace-var ws ) identifier ws exp
   (define abs-unbox-spec ((tree abnf::treep))
     :returns (info unbox-spec-info-resultp)
     :short "Abstract an @('unbox-spec') to an @(tsee unbox-spec-info)."
@@ -2106,7 +2114,7 @@
       (make-unbox-spec-info :ispaces ispaces :var name :target target))
     :measure (abnf::tree-count tree))
 
-  ;; let-exp = "let" ws "(" *( ws bind ) ws ")" ws exp
+  ;; let-exp = "let" ws "(" 1*( ws bind ) ws ")" ws exp
   (define abs-let-exp ((tree abnf::treep))
     :returns (e expr-resultp)
     :short "Abstract a @('let-exp') to an @(tsee expr) @(':let')."
@@ -2114,7 +2122,9 @@
           (abnf::check-tree-nonleaf-8 tree "let-exp"))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf binds) (abs-*-ws-bind sub.4th))
-         ((okf body) (abs-exp body-tree)))
+         ((okf body) (abs-exp body-tree))
+         ((unless (consp binds))
+          (reserrf (list :let-exp-no-binds body))))
       (make-expr-let :binds binds :body body))
     :measure (abnf::tree-count tree))
 
@@ -2173,7 +2183,7 @@
                               (abnf::tree-info-for-error inner))))))
     :measure (abnf::tree-count tree))
 
-  ;; lambda = ( "fn" / λ ) ws "(" *( ws pat ) ws ")" ws exp
+  ;; lambda = ( "fn" / λ ) ws "(" 1*( ws pat ) ws ")" ws exp
   (define abs-lambda ((tree abnf::treep))
     :returns (a atom-resultp)
     :short "Abstract a @('lambda') to
@@ -2190,14 +2200,13 @@
           (abnf::check-tree-nonleaf-8 tree "lambda"))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf params) (abs-*-ws-pat sub.4th))
-         ((okf body) (abs-exp body-tree)))
-      (if (and (consp params)
-               (endp (cdr params)))
-          (make-atom-lambda :param (car params) :body body :type? nil)
-        (make-atom-lambdan :params params :body body :type? nil)))
+         ((okf body) (abs-exp body-tree))
+         ((unless (consp params))
+          (reserrf (list :lambda-no-params body))))
+      (make-atom-lambda/lambdan params body nil))
     :measure (abnf::tree-count tree))
 
-  ;; type-lambda = ( "t-fn" / "tλ" ) ws "(" *( ws type-var ) ws ")" ws exp
+  ;; type-lambda = ( "t-fn" / "tλ" ) ws "(" 1*( ws type-var ) ws ")" ws exp
   (define abs-type-lambda ((tree abnf::treep))
     :returns (a atom-resultp)
     :short "Abstract a @('type-lambda') to
@@ -2214,14 +2223,13 @@
           (abnf::check-tree-nonleaf-8 tree "type-lambda"))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf params) (abs-*-ws-type-var sub.4th))
-         ((okf body) (abs-exp body-tree)))
-      (if (and (consp params)
-               (endp (cdr params)))
-          (make-atom-tlambda :param (car params) :body body)
-        (make-atom-tlambdan :params params :body body)))
+         ((okf body) (abs-exp body-tree))
+         ((unless (consp params))
+          (reserrf (list :type-lambda-no-params body))))
+      (make-atom-tlambda/tlambdan params body))
     :measure (abnf::tree-count tree))
 
-  ;; ispace-lambda = ( "i-fn" / "iλ" ) ws "(" *( ws ispace-var ) ws ")" ws exp
+  ;; ispace-lambda = ( "i-fn" / "iλ" ) ws "(" 1*( ws ispace-var ) ws ")" ws exp
   (define abs-ispace-lambda ((tree abnf::treep))
     :returns (a atom-resultp)
     :short "Abstract an @('ispace-lambda') to
@@ -2238,14 +2246,13 @@
           (abnf::check-tree-nonleaf-8 tree "ispace-lambda"))
          ((okf body-tree) (abnf::check-tree-list-1 sub.8th))
          ((okf params) (abs-*-ws-ispace-var sub.4th))
-         ((okf body) (abs-exp body-tree)))
-      (if (and (consp params)
-               (endp (cdr params)))
-          (make-atom-ilambda :param (car params) :body body)
-        (make-atom-ilambdan :params params :body body)))
+         ((okf body) (abs-exp body-tree))
+         ((unless (consp params))
+          (reserrf (list :ispace-lambda-no-params body))))
+      (make-atom-ilambda/ilambdan params body))
     :measure (abnf::tree-count tree))
 
-  ;; box-expr = "box" ws "(" *( ws ispace ) ws ")" ws exp ws type
+  ;; box-expr = "box" ws "(" 1*( ws ispace ) ws ")" ws exp ws type
   (define abs-box-expr ((tree abnf::treep))
     :returns (a atom-resultp)
     :short "Abstract a @('box-expr') to
@@ -2265,10 +2272,11 @@
          ((okf ispaces) (abs-*-ws-ispace sub.4th))
          ((okf array) (abs-exp e-tree))
          ((okf ty) (abs-type te-tree)))
-      (if (and (consp ispaces)
-               (endp (cdr ispaces)))
-          (make-atom-box :ispace (car ispaces) :array array :type? ty)
-        (make-atom-boxn :ispaces ispaces :array array :type ty)))
+      (cond ((endp ispaces)
+             (reserrf (list :box-expr-no-ispaces array)))
+            ((endp (cdr ispaces))
+             (make-atom-box :ispace (car ispaces) :array array :type? ty))
+            (t (make-atom-boxn :ispaces ispaces :array array :type ty))))
     :measure (abnf::tree-count tree))
 
   ;; ------------------------------------------------------------------
@@ -2460,7 +2468,8 @@
 
   ///
 
-  (verify-guards abs-exp)
+  (verify-guards abs-exp
+    :hints (("Goal" :in-theory (enable len))))
 
   (fty::deffixequiv-mutual abs-exprs/atoms/binds))
 

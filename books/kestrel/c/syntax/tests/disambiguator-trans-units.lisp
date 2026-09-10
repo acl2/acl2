@@ -31,7 +31,7 @@
                                     dialect
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
-         (dstate (init-dstate "" ienv))
+         (dstate (init-dstate (filepath "") ienv))
          ((mv erp2 ast & &) (dimb-trans-unit ast dstate nil nil nil 1000)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2))
@@ -49,7 +49,7 @@
                                     dialect
                                     t))
          (- (cw "~%Input:~%~x0~|" ast))
-         (dstate (init-dstate "" ienv))
+         (dstate (init-dstate (filepath "") ienv))
          ((mv erp2 & & &) (dimb-trans-unit ast dstate nil nil nil 1000)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2)))

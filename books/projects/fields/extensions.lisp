@@ -3,30 +3,33 @@
 ;; http://www.russinoff.com
 
 (in-package "DM")
-(include-book "rtl/rel11/lib/top" :dir :system)
 (include-book "projects/groups/groups" :dir :system)
 (include-book "projects/linear/field" :dir :system)
-(include-book "projects/numbers/fermat" :dir :system)
 (local (include-book "support/extensions"))
 (local (include-book "support/embeddings"))
 
-;; A field may be represented in ACL2 as a set of 7 functions that satisfy the usual field axioms: a predicate
-;; that recognizes field elements, 2 binary operations, 2 nullary identity elements, and 2 unary inverse
-;; operators.  An example of a field is the generic field specified by the encapsulation in the file
-;; "../linear/field".
+;;----------------------------------------------------------------------------------------------------------
+;;                                                Overview
+;;----------------------------------------------------------------------------------------------------------
 
-;; We would like to be able to say "Let f be a field" in the ACL2 logic.  That is, we would like to define an
-;; ACL2 predicate fieldp that recognizes fields, but in general, fields are not ACL2 objects.  We can, however,
-;; define as ACL2 objects a certain class of fields that is sufficiently general to allow us to do some
-;; interesting things.
+;; A field may be represented in ACL2 as a set of 7 functions that satisfy the usual field axioms: a 
+;; predicate that recognizes field elements, 2 binary operations, 2 nullary identity elements, and 2 unary
+;; inverse operators.  An example of a field is the generic field specified by the encapsulation in the
+;; book "../linear/field", which constrains the 7 functions (fp x), (f+ x y), (f* x y), (f0), (f1), (f- x),
+;; and (f/ x).
 
-;; We are interested in field extensions: algebraic number fields, which are finite extensions of the rationals, 
-;; and finite fields, which are finite extensions of prime fields.  We shall also consider finite extensions of
-;; the generic field mentioned above, because any results pertaining to such an extension may be applied, by
-;; functional instantiation, to an extension of any field.  We shall informally refer to the rational field as Q
-;; and to the prime field of order p as Fp.  We have previously referred to the generic field as F, but
-;; henceforth we shall refer to it as F0 so that we may refer to an arbitrary field as F.  All of these fields
-;; are called "base fields" and are encoded as follows:
+;; We would like to be able to say "Let f be a field" in the ACL2 logic.  That is, we would like to 
+;; define an ACL2 predicate fieldp that recognizes fields, as represented by ACL2 objects.  Although this
+;; seems to be infeasible in general, we can define as ACL2 objects a certain class of fields that is
+;; sufficiently general to allow us to do some interesting things.
+
+;; We are interested in field extensions: algebraic number fields, which are finite extensions of the 
+;; rationals, and finite fields, which are finite extensions of prime fields.  We shall also consider finite
+;; extensions of the generic field mentioned above, because any results pertaining to such an extension may
+;; be applied, by functional instantiation, to an extension of any field.  We shall informally refer to the
+;; rational field as Q and to the prime field of order p as Fp.  We have previously referred to the generic 
+;; field as F, but henceforth we shall refer to it as F0 so that we may refer to an arbitrary field as F.  
+;; All of these fields are called "base fields" and are encoded as follows:
 
 (defund fbasep (f)
   (or (zerop f)       ;the rational field is encoded as 0
@@ -75,19 +78,21 @@
 
 (in-theory (disable (fbasep) (beltp) (badd) (bmul) (bzero) (bone) (bneg) (brecip)))
 
-;; A simple extension of a field is constructed by the usual process of adjoining a root of an irreducible monic
-;; polynomial; a finite extension is a tower of simple extensions.  More precisely,  let F[X] denote the polynomial
-;; ring over a field F.  If p(X) an irreducible element of F[X] of degree at least 2, then the simple extension of
-;; F determined by p(X) is the quotient ring F[X]/p(X), which may be shown to satisfy the field axioms.  Each
-;; element of this field is represented by a unique polynomial in F[X] of degree less than that of p(X).  Note that
-;; multiplication of these polynomials is performed modulo p(X).
+;; A simple extension of a field is constructed by the usual process of adjoining a root of an irreducible 
+;; monic polynomial; a finite extension is a tower of simple extensions.  Informally,  let F[X] denote the 
+;; polynomial ring over a field F.  If p(X) an irreducible element of F[X] of degree at least 2, then the 
+;; simple extension of F determined by p(X) is the quotient ring F[X]/p(X), which may be shown to satisfy 
+;; the field axioms.  Each element of this field is represented by a unique polynomial in F[X] of degree 
+;; less than that of p(X).  Note that multiplication of these polynomials is performed modulo p(X).
 
-;; We shall recursively define an extension field, or more simply, a "field", to be either a base field or a simple 
-;; extension of a field, where the latter is represented as a cons of which the cdr is the field F being extended 
-;; and the car is an irreducible monic polynomial in F[X].  A polynomial in F[X] is represented by a non-null proper 
-;; list of elements of F, which are to be thought of as its coefficients.  The degree of a polynomial is 1 less than 
-;; its length.  If the degree of a polynomial is non-zero, then its car (i.e., its leading coefficient) is required
-;; to be non-zero.
+;; In our formalization, a polynomial over a field F is represented by a non-null proper list of elements of 
+;; F, which are to be thought of as its coefficients.  The degree of a polynomial is 1 less than its length.  
+;; If the degree of a polynomial is non-zero, then its car (i.e., its leading coefficient) is required to be 
+;; non-zero. A polynomial is "monic" id its leading coefficient is 1 (the multiplicative identity of F).
+
+;; We shall recursively define an extension field, or more simply, a "field", to be either a base field or a 
+;; simple extension of a field, where the latter is represented as a cons of which the cdr is the field F 
+;; being extended and the car is an irreducible monic polynomial over F.
 
 ;; Thus, a field is an object of the form (p_n ... p_2 p_1 . b), where b is a base field and each p_k is a
 ;; polynomial over the field (p_(k-1) ... p_1 . b).
@@ -143,11 +148,16 @@
 
 ;; Of course, the raison d'etre of a simple extension of a field f for a polynomial p is the creation of 
 ;; a field that includes f and contains a root of p.  The notion of a root of a polynomial is beyond the
-;; scope of this book but will be addressed in the sequel "galois".
+;; scope of this book but will be addressed in the book "polynomials".
+
+;; Since a polynomial over f is a list of elements of f, the elements of f are not actually included in the
+;; elements of an extension of f.  The sense in which an extension e of f "includes" f is that there exists
+;; a natural field homomorphism, (flift x f e),  from f into e.  The notion of a homomorphism and the
+;; function flift are discussed at the end of this book.
 
 
 ;;----------------------------------------------------------------------------------------------------------
-;;                                            Definitions
+;;                                               Definitions
 ;;----------------------------------------------------------------------------------------------------------
 
 ;; The mutual recursion connecting the functions listed above is quite complex.  For example, the field
@@ -473,15 +483,16 @@
 
 ))
 
-;; Our formal definition of a field extension depends on the notion of an irreducible polynomial.  We are 
-;; unable to formulate an algorithmic definition of irreducibility and therefore resort to defchoose.  First
-;; we define polynomial divisibility:
+;; Our formal definition of a field extension depends on the notion of an irreducible polynomial.  In lieu
+;; of an algorithmic definition of irreducibility, we resort to defchoose.  First we define polynomial
+;; divisibility:
 
 (defund pdivides (q p f)
   (equal (prem p q f) (pzero f)))
 
-;; If p has a non-constant divisor of lesser degree, then it has a monic divisor q of the same lesser degree.  
-;; In this case, such a divisor is returned by the following function and p is said to be reducible:
+;; If p has a non-constant divisor of lesser degree, then it has a monic divisor q of the same lesser 
+;; degree.  In this case, such a divisor is returned by the following function and p is said to be
+;; reducible:
 
 (defchoose pfactor q (p f)
   (and (polyp q f)
@@ -553,8 +564,8 @@
 ;;     (defthmd field-axioms-p-fbasep
 ;;       (implies (fbasep f) (field-axioms-p f)))
 
-;; (3) We derive the properties of the polynomial ring as consequences of the field axioms.  These 
-;;     include the ring axioms, e.g.,
+;; (3) We derive the properties of the polynomial ring as consequences of the field axioms.  These include 
+;;     the ring axioms, e.g.,
 
 ;;     (defthm padd-closed-*
 ;;       (implies (and (fieldp f) (field-axioms-p f) (polyp x f) (polyp y f))
@@ -571,8 +582,8 @@
 
 ;;     Again, the hypothesis (field-axioms-p f) will be removed in Step 7.
 
-;; (4) As a consequence of the results of Step 3, we prove that each of the field axioms holds
-;;     for an extension field.  These include the ring axioms, e.g.,
+;; (4) As a consequence of the results of Step 3, we prove that each of the field axioms holds for an
+;;     extension field.  These include the ring axioms, e.g.,
 
 ;;     (defthmd fadd-closed-**
 ;;       (implies (and (fieldp f) (consp f) (field-axioms-p (cdr f))
@@ -724,8 +735,7 @@
              (equal (fmul x (fadd y z f) f)
                     (fadd (fmul x y f) (fmul x z f) f)))))
 
-;; The following lemmas, which are immediate consequences of the above definitions, are used in
-;; Steps 2 and 5:
+;; The following lemmas, which are immediate consequences of the above definitions, are used in Steps 2 and 5:
 
 (defthmd fadd-closed-p-witness-lemma
   (mv-let (x y) (fadd-closed-p-witness f)
@@ -907,8 +917,9 @@
                 (equal (fmul x (fadd y z f) f)
 		       (fadd (fmul x y f) (fmul x z f) f))))
 
-(in-theory (disable fadd-closed-p fmul-closed-p fadd-comm-p fmul-comm-p fadd-assoc-p fmul-assoc-p feltp-fone-p fone-fzero-p
-                    feltp-fzero-p fzero-id-p fone-id-p fadd-fneg-p feltp-fneg-p feltp-fneg-p fmul-frecip-p fdistrib-p))
+(in-theory (disable fadd-closed-p fmul-closed-p fadd-comm-p fmul-comm-p fadd-assoc-p fmul-assoc-p feltp-fone-p 
+                    fone-fzero-p feltp-fzero-p fzero-id-p fone-id-p fadd-fneg-p feltp-fneg-p feltp-fneg-p
+		    fmul-frecip-p fdistrib-p))
 
 ;; Some consequences of the above lemmas:
 
@@ -969,9 +980,9 @@
 ;;                                                  Step 2
 ;;----------------------------------------------------------------------------------------------------------
 
-;; We shall prove that the field axioms hold for each base field f.  If f is F0, the required theorems are the 
-;; encapsulated theorems in ../linear/field"; if f is Q, they are built-in properties of rational arithmetic; 
-;; and if f is Fp, they all reduce to trivial properties of the function mod, with the exception
+;; We shall prove that the field axioms hold for each base field f.  If f is F0, the required theorems are 
+;; the encapsulated theorems in ../linear/field"; if f is Q, they are built-in properties of rational 
+;; arithmetic; and if f is Fp, they all reduce to trivial properties of the function mod, with the exception
 ;; of the following property of the reciprocal:
 
 ;;   (fmul x (recip x f) f) = (fone f).
@@ -1074,8 +1085,7 @@
            (equal (bmul x (badd y z f) f)
 	          (badd (bmul x y f) (bmul x z f) f))))
 
-;; The following are immediate consequences of the above results and the witness lemmas
-;; of Step 1:
+;; The following are immediate consequences of the above results and the witness lemmas of Step 1:
 
 (defthm badd-closed-step
   (implies (fbasep f)
@@ -1596,10 +1606,9 @@
 ;; Degree of Remainder
 ;;---------------------
 
-;; To prove that (degree (prem x y f)) < (degree y), we must show that the polynomial x1
-;; in the definition of pdivision is a polynomial of lesser degree than y.  These lemmas
-;; are also used later in deriving the properties of division as well as the greatest common 
-;; divisor, which is based on the same construction:
+;; To prove that (degree (prem x y f)) < (degree y), we must show that the polynomial x1 in the definition
+;; of pdivision is a polynomial of lesser degree than y.  These lemmas are also used later in deriving the
+;; properties of division as well as the greatest common divisor, which is based on the same construction:
 
 (defthmd polyp-x1
   (implies (and (fieldp f) (field-axioms-p f)
@@ -1801,14 +1810,15 @@
 
 ;;    (monomial c k f) * x = (pshift (cmul c x f) k) = (append (cmul c x f) (fzero-list k f))
 
-;;    (monomial c k f) * (monomial d l f) = (append (cmul c (monomial d l f) f) (zero-list k f))
-;;                                        = (append (cmul c (cons d (zero-list l f)) f) (zero-list k f))
-;;                                        = (append (cons (fmul c d f) (cmul c (zero-list l f) f)) (zero-list k f))
-;;                                        = (append (cons (fmul c d f) (zero-list l f)) (zero-list k f))
-;;                                        = (cons (fmul c d f) (append (zero-list l f) (zero-list k f)))
-;;                                        = (cons (fmul c d f) (zero-list (+ l k) f))
-;;                                        = (cons (fmul d c f) (zero-list (+ k l) f))
-;;                                        = (monomial d l f) * (monomial c k f)
+;;    (monomial c k f) * (monomial d l f)
+;;      = (append (cmul c (monomial d l f) f) (zero-list k f))
+;;      = (append (cmul c (cons d (zero-list l f)) f) (zero-list k f))
+;;      = (append (cons (fmul c d f) (cmul c (zero-list l f) f)) (zero-list k f))
+;;      = (append (cons (fmul c d f) (zero-list l f)) (zero-list k f))
+;;      = (cons (fmul c d f) (append (zero-list l f) (zero-list k f)))
+;;      = (cons (fmul c d f) (zero-list (+ l k) f))
+;;      = (cons (fmul d c f) (zero-list (+ k l) f))
+;;      = (monomial d l f) * (monomial c k f)
 
 (defthmd pmul-monomials
   (implies (and (fieldp f) (field-axioms-p f)
@@ -1916,8 +1926,8 @@
 
 ;;    (cmul c (x * y) f) = (pmul (cmul c x f) y f).
 
-;; We may assume y != (pzero f).  If (not (consp (cdr x))), the claim is trivial if x = (pzero f),
-;; and otherwise
+;; We may assume y != (pzero f).  If (not (consp (cdr x))), the claim is trivial if x = (pzero f), and
+;; otherwise
 
 ;;    (cmul c (x * y) f) = (cmul c (cmul (car x) y f) f)
 ;;                       = (cmul (fmul c (car x) f) y f)
@@ -2130,9 +2140,10 @@
 	   (and (polyp (pquot x y f) f)
 	        (polyp (prem x y f) f))))
 
-;; Let Q and R denote (pquot x y f) and (prem x y f).  Then x = Q * y + R and (degree R) < (degree y).  Suppose we are
-;; given polynomials q and R such that x = q * y + r and (degree r) < (degree y).  Since Q * y + R = q * y + r, y * (Q - q)
-;; = r - R and the degree of y * (Q - q) is less than (degree y), which implies Q - q = 0, q = Q, and r = R. 
+;; Let Q and R denote (pquot x y f) and (prem x y f).  Then x = Q * y + R and (degree R) < (degree y).  
+;; Suppose we are given polynomials q and R such that x = q * y + r and (degree r) < (degree y).  Since 
+;; Q * y + R = q * y + r, y * (Q - q)= r - R and the degree of y * (Q - q) is less than (degree y), which
+;; implies Q - q = 0, q = Q, and r = R. 
 
 (defthmd pquot-prem-unique-*
   (implies (and (fieldp f) (field-axioms-p f)
@@ -2331,9 +2342,9 @@
 ;; Greatest Common Divisor
 ;;-------------------------
 
-;; The essential computation of pgcd and the related functions r$ and s$ is performed by pgcd-aux,
-;; r$-aux, and s$-aux, which execute the Euclidean algorithm.  The properties of pgcd are inherited
-;; from the auxiliary functions.
+;; The essential computation of pgcd and the related functions r$ and s$ is performed by pgcd-aux, r$-aux,
+;; and s$-aux, which execute the Euclidean algorithm.  The properties of pgcd are inherited from the
+;; auxiliary functions.
 
 (defthmd polyp-pgcd-*
   (implies (and (fieldp f) (field-axioms-p f)
@@ -3432,8 +3443,7 @@
   (implies (and (fieldp f) (consp f))
            (>= (degree (car f)) 2)))
 
-;; Every non-constant polynomial has a non-constant irreducible factor, which may be
-;; defined as follows:
+;; Every non-constant polynomial has a non-constant irreducible factor, which may be defined as follows:
 
 (defun irred-factor (p f)
   (declare (xargs :measure (len p) :hints (("Goal" :in-theory (enable reduciblep)))))

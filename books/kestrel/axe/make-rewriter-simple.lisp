@@ -508,6 +508,23 @@
        monitoredp
        (cw "(STP result for hyp ~x0 of rule ~x1: ~x2.)~%" hyp-num rule-symbol result)))
 
+;; todo: print the parens before and after?
+(defund print-alist-elided (alist)
+  (declare (xargs :guard (and (symbol-alistp alist)
+                              (darg-listp (strip-cdrs alist)))))
+  (if (endp alist)
+      nil
+    (let* ((entry (first alist))
+           (var (car entry))
+           (darg (cdr entry)))
+      (progn$ (cw "(~x0 . " var) ; maybe don't print the dot?
+              (if (and (darg-quotep darg)
+                       (< 100 (len (unquote darg))))
+                  ;; it's a large quoted list, so elide (could print the first part):
+                  (cw ":elided)~%")
+                (cw "~x0)~%" darg))
+              (print-alist-elided (rest alist))))))
+
 (defun make-rewriter-simple-fn (suffix ;; gets added to generated names
                                 evaluator-base-name
                                 syntaxp-evaluator-suffix
@@ -929,7 +946,9 @@
                           (prog2$ (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
                                        ;;is it worth printing in this case?
                                        (progn$ (cw "(Failed to relieve axe-syntaxp hyp ~x0 for ~x1.)~%" syntaxp-expr rule-symbol)
-                                               (cw "(Alist: ~x0)~%" alist)
+                                               (cw "(Alist: ")
+                                               (print-alist-elided alist)
+                                               (cw ")~%")
                                                ;; (cw "(DAG:~%")
                                                ;; (print-array 'dag-array dag-array (get-dag-len rewrite-stobj2))
                                                ;; (cw ")~%")
@@ -1096,13 +1115,15 @@
                                             (progn$ (cw "(Failed to relieve hyp ~x0 of rule ~x1.~%" hyp rule-symbol)
                                                     (cw "Reason: Rewrote to:~%")
                                                     (print-dag-node-nicely new-nodenum 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) 200)
-                                                    (cw "(Alist: ~x0)~%" alist)
+                                                    (cw "(Alist: ")
+                                                    (print-alist-elided alist)
+                                                    (cw ")~%")
                                                     (and (verbose-monitorp) ; to turn on verbose monitoring, :redef this to return t
-                                                         (progn$ (cw "(Refined assumption alist:~%"))
-                                                         (print-refined-assumption-alist-elided refined-assumption-alist (get-fns-to-elide rewrite-stobj))
-                                                         (cw ")~%")
-                                                         (cw "(node-replacement-array: elided)~%") ; todo print (but compactly)! also harvest relevant nodes above
-                                                         )
+                                                         (progn$ (cw "(Refined assumption alist:~%")
+                                                                 (print-refined-assumption-alist-elided refined-assumption-alist (get-fns-to-elide rewrite-stobj))
+                                                                 (cw ")~%")
+                                                                 (cw "(node-replacement-array: elided)~%") ; todo print (but compactly)! also harvest relevant nodes above
+                                                                 ))
                                                     (cw "(Relevant DAG nodes:~%")
                                                     (if (consp relevant-nodes)
                                                         (print-dag-array-nodes-and-supporters 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) relevant-nodes)
@@ -7006,11 +7027,10 @@
                          )
                  state)))
 
-         ;; Macro helper function for ,def-simplified-name.  This does the
-         ;; translation (requires :program mode), but then calls the :logic mode core
-         ;; function to do most of the work.
+         ;; Macro helper function for ,def-simplified-name.
          ;; Returns (mv erp event state).
          ;; TODO: Perhaps add an option to take a rule-alist.
+         ;; TODO: Remove this wrapper.  Previously, this part required :program mode.
          (defund ,def-simplified-fn-name (defconst-name ; the name of the constant to create
                                           dag-or-term
                                           assumptions
@@ -7028,7 +7048,7 @@
                                           state)
            (declare (xargs :guard (and (symbolp defconst-name)
                                        ;; dag-or-term is a dag or an (untranslated) term
-                                       ;; assumptions are (untranslated) terms
+                                       (true-listp assumptions) ; (untranslated) terms
                                        (symbol-listp rules)
                                        (interpreted-function-alistp interpreted-function-alist)
                                        (normalize-xors-optionp normalize-xors)
@@ -7042,18 +7062,20 @@
                                        (consp whole-form)
                                        (symbolp (car whole-form)))
                            :stobjs state
-                           :mode :program ; because this calls translate
                            :guard-hints (("Goal" :in-theory (disable w)))))
            (b* (((when (command-is-redundantp whole-form state))
                  (mv nil '(value-triple :redundant) state))
                 ;; Translate the assumptions:
-                (assumptions (translate-terms assumptions ',def-simplified-fn-name (w state)))
+                ((mv erp assumptions state)
+                 (translate-terms-in-logic-mode assumptions ',def-simplified-fn-name state))
+                ((when erp) (mv erp nil state))
                 ;; Translates, if a term:
-                (dag-or-term
+                ((mv erp dag-or-term state)
                   (if (pseudo-dagp dag-or-term)
-                      dag-or-term
+                      (mv nil dag-or-term state)
                     ;; it's a term, so translate it:
-                    (translate-term dag-or-term ',def-simplified-fn-name (w state)))))
+                    (translate-term-in-logic-mode dag-or-term ',def-simplified-fn-name state)))
+                ((when erp) (mv erp nil state)))
              (,def-simplified-fn-core-name defconst-name dag-or-term assumptions rules interpreted-function-alist normalize-xors limits memoizep count-hits print monitored-symbols no-warn-ground-functions fns-to-elide whole-form state)))
 
          ;; A utility to simplify a DAG or term and create a constant to hold the resulting DAG.

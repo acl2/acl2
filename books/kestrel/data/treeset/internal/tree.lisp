@@ -43,6 +43,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-element-p (x)
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Recognizer for a tree element."
   :long
@@ -58,8 +59,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t tree-element-p)))
-
 (defrule tree-element-p-compound-recognizer
   (implies (tree-element-p x)
            (consp x))
@@ -69,12 +68,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define irr-tree-element ()
+  (declare (xargs :type-prescription :none))
   :returns (elem tree-element-p)
   (cons (hash nil) nil))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t irr-tree-element) (:e irr-tree-element)))
+(in-theory (disable (:e irr-tree-element)))
 
 (defrule irr-tree-element-type-prescription
   (tree-element-p (irr-tree-element))
@@ -83,6 +83,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-element-fix ((elem tree-element-p))
+  (declare (xargs :type-prescription :none))
   :returns (elem$ tree-element-p)
   :short "Fixer for @(see tree-element-p)s."
   (mbe :logic (if (tree-element-p elem) elem (irr-tree-element))
@@ -90,8 +91,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-element-fix)))
 
 (defrule tree-element-fix-type-prescription
   (tree-element-p (tree-element-fix elem))
@@ -121,6 +120,7 @@
 (define tree-element-equiv
   ((x tree-element-p)
    (y tree-element-p))
+  (declare (xargs :type-prescription :none))
   :short "Equivalence up to @(tsee tree-element-fix)."
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (equal (tree-element-fix x)
@@ -131,8 +131,6 @@
   (defequiv tree-element-equiv))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-element-equiv)))
 
 (defrule tree-element-fix-when-tree-element-equiv-congruence
   (implies (tree-element-equiv elem0 elem1)
@@ -173,6 +171,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-element->hash ((elem tree-element-p))
+  (declare (xargs :type-prescription :none))
   :returns (hash (unsigned-byte-p 32 hash))
   (mbe :logic (hash (tree-element->val elem))
        :exec (car elem))
@@ -183,8 +182,6 @@
                                            data::u32-equal))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-element->hash)))
 
 (defrule tree-element->hash-type-prescription
   (natp (tree-element->hash elem))
@@ -203,6 +200,7 @@
 (define tree-element
   ((hash (unsigned-byte-p 32 hash))
    x)
+  (declare (xargs :type-prescription :none))
   :guard (mbe :logic (equal (hash x) hash)
               :exec (data::u32-equal (hash x) hash))
   :returns (elem tree-element-p
@@ -215,8 +213,6 @@
   :guard-hints (("Goal" :in-theory (enable data::u32-equal))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-element)))
 
 (defrule tree-element-type-prescription
   (tree-element-p (tree-element hash x))
@@ -303,6 +299,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-fix ((tree treep))
+  (declare (xargs :type-prescription :none))
   :returns (tree$ treep)
   :short "Fixer for @(see tree)s."
   (mbe :logic (if (treep tree) tree nil)
@@ -310,8 +307,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-fix)))
 
 (defrule tree-fix-type-prescription
   (or (consp (tree-fix tree))
@@ -437,6 +432,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree->head ((tree treep))
+  (declare (xargs :type-prescription :none))
   :short "Get the root element of the nonempty @(see tree)."
   :long
   (xdoc::topstring
@@ -461,8 +457,6 @@
                                            treep))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree->head)))
 
 (defrule tree->head-type-prescription
   (tree-element-p (tree->head tree))
@@ -492,6 +486,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree->left ((tree treep))
+  (declare (xargs :type-prescription :none))
   :short "Get the left subtree of the nonempty @(see tree)."
   :long
   (xdoc::topstring
@@ -505,8 +500,6 @@
   :guard-hints (("Goal" :in-theory (enable treep))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree->left)))
 
 (defrule tree->left-type-prescription
   (treep (tree->left tree))
@@ -570,6 +563,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree->right ((tree treep))
+  (declare (xargs :type-prescription :none))
   :returns (right treep
                   :hints (("Goal" :in-theory (enable tree-fix
                                                      treep))))
@@ -583,8 +577,6 @@
   :guard-hints (("Goal" :in-theory (enable treep))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree->right)))
 
 (defrule tree->right-type-prescription
   (treep (tree->right tree))
@@ -849,6 +841,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-list-fix ((trees tree-listp))
+  (declare (xargs :type-prescription :none))
   :returns (trees$ tree-listp)
   (mbe :logic (if (tree-listp trees)
                   trees
@@ -857,8 +850,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-list-fix)))
 
 (defrule tree-list-fix-type-prescription
   (true-listp (tree-list-fix trees))
@@ -927,6 +918,7 @@
 ;; Equality variants
 
 (define tree-all-acl2-numberp ((tree treep))
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tree-empty-p tree)
       (and (acl2-numberp (tree-element->val (tree->head tree)))
@@ -934,8 +926,6 @@
            (tree-all-acl2-numberp (tree->right tree)))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-all-acl2-numberp)))
 
 (defrule tree-all-acl2-numberp-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)
@@ -948,6 +938,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-all-symbolp ((tree treep))
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tree-empty-p tree)
       (and (symbolp (tree-element->val (tree->head tree)))
@@ -955,8 +946,6 @@
            (tree-all-symbolp (tree->right tree)))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-all-symbolp)))
 
 (defrule tree-all-symbolp-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)
@@ -969,6 +958,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-all-eqlablep ((tree treep))
+  (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tree-empty-p tree)
       (and (eqlablep (tree-element->val (tree->head tree)))
@@ -976,8 +966,6 @@
            (tree-all-eqlablep (tree->right tree)))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-all-eqlablep)))
 
 (defrule tree-all-eqlablep-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)

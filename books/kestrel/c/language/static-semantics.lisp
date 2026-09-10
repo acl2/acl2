@@ -1081,9 +1081,7 @@
   (const-case c
               :int (b* (((okf type) (check-iconst c.get)))
                      (make-expr-type :type type :lvalue nil))
-              :float (reserrf (list :unsupported-float-const (const-fix c)))
-              :enum (reserrf (list :unsupported-enum-const (const-fix c)))
-              :char (reserrf (list :unsupported-char-const (const-fix c))))
+              :enum (reserrf (list :unsupported-enum-const (const-fix c))))
   :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
   :no-function nil)
 
@@ -2290,14 +2288,7 @@
                   (equal (types+vartab->variables result)
                          (var-table-fix vartab))))
        :flag check-stmt)
-     (defthm check-block-item-var-table
-       t
-       :rule-classes nil
-       :flag check-block-item)
-     (defthm check-block-item-list-var-table
-       t
-       :rule-classes nil
-       :flag check-block-item-list)
+     :skip-others t
      :hints (("Goal"
               :in-theory (enable (:e tau-system))
               :expand ((check-stmt s funtab vartab tagenv))))))

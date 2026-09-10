@@ -18,6 +18,7 @@
 (include-book "kestrel/memory/memory48" :dir :system)
 (local (include-book "kestrel/bv/rules3" :dir :system)) ; for +-of-minus-constant-version
 (local (include-book "kestrel/bv/bvuminus" :dir :system))
+(local (include-book "kestrel/bv/bvminus" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -315,7 +316,7 @@
            :in-theory (e/d ((:i read)
                             bvplus ;bvuminus acl2::bvchop-of-sum-cases
                             subregion48p
-                            bvlt
+                            bvlt acl2::bvminus-becomes-bvplus-of-bvuminus
                             in-region48p read-becomes-read-byte
                             ifix)
                            (;distributivity
@@ -402,6 +403,7 @@
            :in-theory (e/d (read-bytes nfix subregion48p in-region48p
                                        ;;read-bytes-of-+--arg2
                                        bvplus acl2::bvchop-of-sum-cases
+                                       acl2::bvminus-becomes-bvplus-of-bvuminus
                                        bvlt)
                            (acl2::bvplus-trim-leading-constant ;looped
                             acl2::+-of-minus-constant-version  ; looped
@@ -472,7 +474,7 @@
                             bvlt
                             in-region48p read-becomes-read-byte
                             ifix
-                            acl2::bvchop-of-sum-cases
+                            acl2::bvchop-of-sum-cases acl2::bvminus-becomes-bvplus-of-bvuminus
                             bv-array-read-chunk-little
                             )
                            (;distributivity

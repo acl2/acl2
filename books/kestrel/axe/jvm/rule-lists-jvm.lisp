@@ -916,7 +916,7 @@
             equal-nil-s
             jvm::equal-nil-string-to-char-list
 
-            logext-when-usb-cheap ;new, since logext is still used a little bit (for arraycopy?)
+            logext-when-unsigned-byte-p-free ;new, since logext is still used a little bit (for arraycopy?)
             logext-identity-when-usb-smaller-axe
 
             jvm::instruction-opcode

@@ -1,4 +1,4 @@
-; Cert params for defthm-stp-tests.lisp
+; Cert flags for defthm-stp-tests.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2024 Kestrel Institute

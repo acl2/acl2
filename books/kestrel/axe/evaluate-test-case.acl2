@@ -1,4 +1,4 @@
-; Portcullis commands and cert params for evaluate-test-case.lisp
+; Portcullis commands and cert flags for evaluate-test-case.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2024 Kestrel Institute

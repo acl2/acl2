@@ -57,6 +57,7 @@
    (include-book "prime-fields/doc")
    (include-book "remora/top")
    (include-book "risc-v/top")
+   (include-book "rust/top")
    (include-book "simpl-imp/top")
    (include-book "soft/top")
    (include-book "solidity/top")
@@ -70,6 +71,7 @@
    (include-book "utilities/show-books-doc")
    (include-book "utilities/ubi-doc")
    (include-book "utilities/checkpoints-doc")
+   (include-book "utilities/defstobj-plus-doc")
    (include-book "yul/top")
    (include-book "zcash/top")
 

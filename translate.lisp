@@ -1038,7 +1038,7 @@
           (mv 3 (nthcdr 3 args) (msg "TO~@0" unusual-var-msg)))
          (t (mv 3
                 (nthcdr 1 args)
-                (msg "OF-TYPE, IN, ON, or FROM~0@"
+                (msg "OF-TYPE, IN, ON, or FROM~@0"
                      unusual-var-msg))))))))))
 
 (defun parse-loop$-vsts (stmt args vsts ans)
@@ -16537,7 +16537,7 @@
                            (t ; (not (and (symbolp stobj0) stobj0))
                             (mv "TOP-ST" stobj0)))
                           (msg "For a binding of the form~|(STOBJ-TBL-GET ST ~
-                                TOP-ST ST-CREATOR)), ~a0 must be a non-nil ~
+                                TOP-ST ST-CREATOR)), ~s0 must be a non-nil ~
                                 symbol, but ~x1 is not."
                                str sym))))
                    (mv binding msg nil nil nil nil)))
@@ -21041,7 +21041,8 @@
 ; known-dfs may be '? on recursive calls, signifying that we must compute an
 ; answer without information about which variables are known to be dfs.
 
-  (declare (xargs :guard (and (symbol-listp known-stobjs)
+  (declare (xargs :guard (and (or (symbol-listp known-stobjs)
+                                  (eq known-stobjs t))
                               (symbol-listp known-dfs)
                               (plist-worldp wrld))))
   (cond
@@ -21144,7 +21145,8 @@
 ; whose corresponding form returns a df.  Otherwise we return '?.
 
   (declare (xargs :guard (and (doublet-listp bindings)
-                              (symbol-listp known-stobjs)
+                              (or (symbol-listp known-stobjs)
+                                  (eq known-stobjs t))
                               (symbol-listp known-dfs)
                               (plist-worldp wrld)
                               (symbol-listp df-vars))))
@@ -21206,7 +21208,8 @@
 
   (declare (xargs :guard (and (doublet-listp doublets)
                               (symbol-listp declared-known-dfs)
-                              (symbol-listp known-stobjs)
+                              (or (symbol-listp known-stobjs)
+                                  (eq known-stobjs t))
                               (symbol-listp known-dfs)
                               (plist-worldp w))))
   (cond ((endp doublets) nil)
@@ -27458,7 +27461,8 @@
 
 (defun filter-known-stobjs (vars known-stobjs wrld)
   (declare (xargs :guard (and (symbol-listp vars)
-                              (symbol-listp known-stobjs)
+                              (or (symbol-listp known-stobjs)
+                                  (eq known-stobjs t))
                               (plist-worldp wrld))))
   (cond ((endp vars) nil)
         ((stobjp (car vars) known-stobjs wrld)

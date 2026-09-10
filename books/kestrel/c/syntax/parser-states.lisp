@@ -1018,7 +1018,7 @@
              length
              acl2::update-nth-of-nth))
 
-  (defrule update-parstate->chars-read-of-parstate->chars-unread
+  (defrule update-parstate->chars-unread-of-parstate->chars-unread
     (equal (update-parstate->chars-unread
             (parstate->chars-unread parstate) parstate)
            (parstate-fix parstate))
@@ -1111,7 +1111,7 @@
 
   ///
 
-  (defrule parsize-of-initparstate
+  (defrule parsize-of-init-parstate
     (equal (parsize
             (init-parstate file nil dialect skip-control-lines parstate))
            0)

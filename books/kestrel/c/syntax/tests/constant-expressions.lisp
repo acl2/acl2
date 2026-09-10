@@ -25,6 +25,69 @@
 (defconst *constant-expressions-test-gcc-c17-dialect*
   (c::make-dialect :std (c::standard-c17) :gcc t))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Whether sizeof has an integer-constant result, based on its operand type.
+
+(assert-event
+  (equal (type-sizeof-result-const-3p (type-sint))
+         t))
+
+(assert-event
+  (equal (type-sizeof-result-const-3p
+           (make-type-array
+             :of (type-sint)
+             :kind (make-type-array-kind-const-len :len 10)))
+         t))
+
+;; An unknown constant length does not make the array a VLA.
+(assert-event
+  (equal (type-sizeof-result-const-3p
+           (make-type-array
+             :of (type-sint)
+             :kind (make-type-array-kind-const-len :len nil)))
+         t))
+
+(assert-event
+  (equal (type-sizeof-result-const-3p
+           (make-type-array
+             :of (type-sint)
+             :kind (type-array-kind-nonconst-len)))
+         nil))
+
+(assert-event
+  (equal (type-sizeof-result-const-3p
+           (make-type-array
+             :of (type-sint)
+             :kind (type-array-kind-unknown-complete)))
+         :unknown))
+
+(assert-event
+  (equal (type-sizeof-result-const-3p
+           (make-type-array
+             :of (type-sint)
+             :kind (type-array-kind-incomplete)))
+         :unknown))
+
+;; A constant outer bound does not hide a variable-length element type.
+(assert-event
+  (equal (type-sizeof-result-const-3p
+           (make-type-array
+             :of (make-type-array
+                   :of (type-sint)
+                   :kind (type-array-kind-nonconst-len))
+             :kind (make-type-array-kind-const-len :len 10)))
+         nil))
+
+;; The pointed-to type does not affect whether sizeof the pointer is constant.
+(assert-event
+  (equal (type-sizeof-result-const-3p
+           (make-type-pointer
+             :to (make-type-array
+                   :of (type-sint)
+                   :kind (type-array-kind-nonconst-len))))
+         t))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Wrap the input expression with a declaration of x and a function definition.
@@ -59,7 +122,7 @@ void f(void) {
          (block-item (first (comp-stmt->items (fundef->body fundef))))
          (stmt (block-item-stmt->stmt block-item))
          (expr (stmt-expr->expr? stmt)))
-      (equal (expr-ice-p expr t dialect) ,expected))))
+      (equal (expr-ice-p expr dialect) ,expected))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -57,6 +57,7 @@
 (include-book "kestrel/bv/bvequal-rules" :dir :system)
 (include-book "kestrel/bv/putbits" :dir :system)
 (include-book "kestrel/bv/bvuminus" :dir :system)
+(include-book "kestrel/bv/bvminus" :dir :system)
 (include-book "kestrel/bv/rotate" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced-rules" :dir :system)
 ;(include-book "rules3") ; for EQUAL-OF-BVCHOP-OF-CAR-AND-BV-ARRAY-READ -- drop?

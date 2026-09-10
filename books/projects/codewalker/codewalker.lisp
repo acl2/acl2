@@ -5153,7 +5153,7 @@ to be quoted evgs, but pc = ~x0; splitters = ~x1."
           (er hard 'snorkel-data
               "We thought the step counts of all CODEWALKER-WRAPPER-SNORKELER ~
                terms would be equal but they are not!  We see these two ~
-               tuples:~%tuple1 = ~x0~%~tuple2 = ~x1~%"
+               tuples:~%tuple1 = ~x0~%tuple2 = ~x1~%"
               tuple1 tuple2))
          (t (list step-cnt1
                   (+ cont-cnt1 cont-cnt2)
@@ -6201,7 +6201,8 @@ to be quoted evgs, but pc = ~x0; splitters = ~x1."
     (er hard 'constant-propagation
         "Oops!  Constant-propagation seems to loop.  The trace -- earliest to ~
          latest -- is:  ~X01"
-        (revappend (cons ans trace) nil)))
+        (revappend (cons ans trace) nil)
+        nil))
    (t
     (let ((ans1 (one-pass-constant-propagation fn-to-pc-and-vcalls-alist ans)))
       (cond
@@ -6868,7 +6869,8 @@ to be quoted evgs, but pc = ~x0; splitters = ~x1."
                  pc, vformal is a disguised constant with the given range of ~
                  possible values.~%~%~X02~%~%~X12"
                     clock-disguised-constant-4-tuple-lst
-                    semantic-disguised-constant-4-tuple-lst))
+                    semantic-disguised-constant-4-tuple-lst
+                    nil))
                (t
                 (let* ((clock-function-defun-pairs
                         (modify-hyps-in-defun-pairs

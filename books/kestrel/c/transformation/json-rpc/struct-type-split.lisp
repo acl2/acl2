@@ -202,15 +202,16 @@
     (retok t (json::value-string->get v))))
 
 (define value-list->strings ((vals json::value-listp))
-  :returns (mv (erp booleanp) (strs string-listp))
+  :returns (mv (bad-index acl2::maybe-natp) (strs string-listp))
   :short "Convert a list of JSON values to a list of strings,
-          failing if any value is not a string."
-  (b* (((reterr) nil)
-       ((when (endp vals)) (retok nil))
-       (v (car vals))
-       ((unless (json::value-case v :string)) (reterr t))
-       ((erp rest) (value-list->strings (cdr vals))))
-    (retok (cons (json::value-string->get v) rest))))
+          returning the index of the first non-string value, if any."
+  (if (endp vals)
+      (mv nil nil)
+    (b* ((v (car vals))
+         ((unless (json::value-case v :string)) (mv 0 nil))
+         ((mv bad-index rest) (value-list->strings (cdr vals)))
+         ((when bad-index) (mv (1+ bad-index) nil)))
+      (mv nil (cons (json::value-string->get v) rest)))))
 
 (define param->string-list ((name stringp) (obj json::valuep) (requiredp booleanp))
   :guard (json::value-case obj :object)
@@ -227,11 +228,15 @@
         (reterr (jsonrpc::make-invalid-params-error
                  (concatenate 'string
                               "Parameter " name " must be an array of strings."))))
-       ((mv erp strs) (value-list->strings (json::value-array->elements v)))
-       ((when erp)
-        (reterr (jsonrpc::make-invalid-params-error
-                 (concatenate 'string
-                              "Parameter " name " must be an array of strings.")))))
+       ((mv bad-index strs)
+        (value-list->strings (json::value-array->elements v)))
+       ((when bad-index)
+        (reterr
+         (jsonrpc::make-invalid-params-error
+          (warning-to-string
+           (msg "Element at index ~x0 of parameter ~x1 must be a string."
+                bad-index
+                name))))))
     (retok strs)))
 
 (define param->boolean ((name stringp)
@@ -268,6 +273,31 @@
         (json::member->name (car members))
       (members-first-duplicate (cdr members)))))
 
+(defval *struct-type-split-parameter-names*
+  '("old-dir"
+    "new-dir"
+    "files"
+    "preprocess"
+    "preprocess-args"
+    "extensions"
+    "struct-tag"
+    "typedef-name"
+    "right-members"
+    "filepath"
+    "new-tag"
+    "safety-checks"))
+
+(define members-first-unknown ((members json::member-listp)
+                               (known-names string-listp))
+  :returns (name acl2::maybe-stringp)
+  :short "The first unknown member name, or @('nil')."
+  (if (endp members)
+      nil
+    (b* ((name (json::member->name (car members))))
+      (if (member-equal name known-names)
+          (members-first-unknown (cdr members) known-names)
+        name))))
+
 (define members->string-stringlist-map ((members json::member-listp))
   :returns (mv (erp maybe-errorp)
                (map acl2::string-stringlist-mapp))
@@ -278,12 +308,23 @@
        (name (json::member->name member))
        (value (json::member->value member))
        ((unless (json::value-case value :array))
-        (reterr (jsonrpc::make-invalid-params-error
-                 "Parameter preprocess-args object values must be arrays of strings.")))
-       ((mv erp strs) (value-list->strings (json::value-array->elements value)))
-       ((when erp)
-        (reterr (jsonrpc::make-invalid-params-error
-                 "Parameter preprocess-args object values must be arrays of strings.")))
+        (reterr
+         (jsonrpc::make-invalid-params-error
+          (warning-to-string
+           (msg "Entry ~x0 of parameter ~x1 must be an array of strings."
+                name
+                "preprocess-args")))))
+       ((mv bad-index strs)
+        (value-list->strings (json::value-array->elements value)))
+       ((when bad-index)
+        (reterr
+         (jsonrpc::make-invalid-params-error
+          (warning-to-string
+           (msg "Element at index ~x0 of entry ~x1 in parameter ~x2 ~
+                 must be a string."
+                bad-index
+                name
+                "preprocess-args")))))
        ((erp rest) (members->string-stringlist-map (cdr members))))
     (retok (omap::update name strs rest))))
 
@@ -298,10 +339,16 @@
        ((mv presentp v) (get-member "preprocess-args" obj))
        ((unless presentp) (retok nil))
        ((when (json::value-case v :array))
-        (b* (((mv erp strs) (value-list->strings (json::value-array->elements v)))
-             ((when erp)
-              (reterr (jsonrpc::make-invalid-params-error
-                       "Parameter preprocess-args must be an array of strings or an object mapping strings to arrays of strings."))))
+        (b* (((mv bad-index strs)
+              (value-list->strings (json::value-array->elements v)))
+             ((when bad-index)
+              (reterr
+               (jsonrpc::make-invalid-params-error
+                (warning-to-string
+                 (msg "Element at index ~x0 of parameter ~x1 ~
+                       must be a string."
+                      bad-index
+                      "preprocess-args"))))))
           (retok strs)))
        ((when (json::value-case v :object))
         (b* ((members (json::value-object->members v))
@@ -382,6 +429,14 @@
        ((when dup)
         (reterr (jsonrpc::make-invalid-params-error
                  (concatenate 'string "Duplicate parameter: " dup))))
+       (unknown-param
+        (members-first-unknown members
+                               *struct-type-split-parameter-names*))
+       ((when unknown-param)
+        (reterr (jsonrpc::make-invalid-params-error
+                 (concatenate 'string
+                              "Unknown parameter: "
+                              unknown-param))))
        (obj (json::value-object members))
        ;; Common input/output arguments:
        ((erp & old-dir) (param->string "old-dir" obj t))
@@ -410,7 +465,13 @@
         (c$::input-files-prog-fn t files old-dir preprocess preprocess-args
                                  nil nil :validate nil nil nil ienv state))
        ((when erp)
-        (reterr (jsonrpc::make-internal-error "Error reading input files.")))
+        (reterr
+         (jsonrpc::make-internal-error
+          (if (msgp erp)
+              (concatenate 'string
+                           "Error processing input files: "
+                           (warning-to-string erp))
+            "Error processing input files."))))
        ;; The transformation requires an annotated (validated) code ensemble.
        ;; input-files-prog-fn with :validate produces one, but that is not
        ;; statically guaranteed, so we check it here.
@@ -435,7 +496,13 @@
        ((mv erp state)
         (c$::output-files-prog-fn code$ (list :base-dir new-dir) state))
        ((when erp)
-        (reterr (jsonrpc::make-internal-error "Error writing output files."))))
+        (reterr
+         (jsonrpc::make-internal-error
+          (if (msgp erp)
+              (concatenate 'string
+                           "Error processing output files: "
+                           (warning-to-string erp))
+            "Error processing output files.")))))
     (retok (json::value-object
             (list (json::make-member
                    :name "warnings"

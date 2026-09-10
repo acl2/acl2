@@ -2619,7 +2619,7 @@
 
    (when (member fn (eval '(trace)))
      (observation 'memoize
-                  "Untracing ~s before memoizing it."
+                  "Untracing ~s0 before memoizing it."
                   fn)
      (eval `(untrace ,fn)))
 
@@ -2634,7 +2634,7 @@
    (when (and (fboundp 'old-trace)
               (member fn (eval '(old-trace))))
      (observation 'memoize
-                  "Old-untracing ~s before memoizing it."
+                  "Old-untracing ~s0 before memoizing it."
                   fn)
      (eval `(old-untrace ,fn)))
 

@@ -310,7 +310,6 @@
   :hints (("Goal" :use ((:instance bvchop-when-not-natp-arg1-cheap (x (- x)))
                         bvchop-of-minus-helper)
            :in-theory (disable bvchop-when-size-is-not-posp
-                               bvchop-when-size-is-not-posp
                                expt))))
 
 ;i guess this one is an abbreviation rule
@@ -454,6 +453,9 @@
            (equal (mod i 4)
                   (bvchop 2 i)))
   :hints (("Goal" :in-theory (enable bvchop))))
+
+(theory-invariant (incompatible (:rewrite mod-by-4-becomes-bvchop)
+                                (:definition bvchop)))
 
 ;(in-theory (disable BVCHOP-+-CANCEL))
 
@@ -629,6 +631,14 @@
                   i))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
+(defthm bvchop-identity-free
+  (implies (and (unsigned-byte-p freesize i)
+                (<= freesize size)
+                (integerp size))
+           (equal (bvchop size i)
+                  i))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
 (defthm bvchop-of-mod-of-expt
   (implies (and (<= size j)
                 (integerp j)
@@ -751,13 +761,7 @@
                   0))
   :hints (("Goal" :cases ((natp size)))))
 
-(defthm bvchop-identity-cheap
-  (implies (and (unsigned-byte-p freesize i)
-                (<= freesize size)
-                (integerp size))
-           (equal (bvchop size i)
-                  i))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
 
 (defthm bvchop-of-both-sides
   (implies (equal x y)
@@ -984,3 +988,17 @@
                       0
                     x)))
   :hints (("Goal" :in-theory (enable power-of-2p))))
+
+(defthm bvchop-of-+-of-unary---of-bvchop-arg1
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (bvchop size (+ (- (bvchop size y)) x))
+                  (bvchop size (+ x (- y)))))
+  :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
+
+(defthm bvchop-of-+-of-unary---of-bvchop-arg2
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (bvchop size (+ x (- (bvchop size y))))
+                  (bvchop size (+ x (- y)))))
+  :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))

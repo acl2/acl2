@@ -42,7 +42,7 @@
       thus, the package name must be the one where the symbol is,
       not one that imports the symbol.")
     (xdoc::li
-     "The first three packages returned by @(tsee known-packages)
+     "The first three packages returned by @(tsee acl2::known-packages)
       are @('\"KEYWORD\"'), @('\"COMMON-LISP\"'), and @('\"ACL2\"'),
       in this order.")
     (xdoc::li

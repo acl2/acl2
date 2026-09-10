@@ -992,7 +992,9 @@
                   (nthcdr (- offset (+ h-size lc-size))
                           remaining-file)))))
        ((when (not (byte-listp section)))
-        (cw "EOF encountered unexpectedly in file ~x0.  DATA::dyld section could not be read.~%")
+; Matt K. mod: "in file" was formerly "in file ~x0", but no argument was
+; supplied for ~x0, and I didn't see a filename to use; so I removed " ~x0".
+        (cw "EOF encountered unexpectedly in file.  DATA::dyld section could not be read.~%")
         (mv t mach-o state))
        (mach-o (!DATA-dyld-section-bytes section mach-o)))
     (mv nil mach-o state)))

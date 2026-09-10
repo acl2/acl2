@@ -38,9 +38,9 @@
                            x86isa::byte-listp-becomes-all-unsigned-byte-p ; todo
 
                            ;; these are for speed:
-                           acl2::acl2-numberp-of-car-when-acl2-number-listp
-                           acl2::rationalp-of-car-when-rational-listp
-                           acl2::rational-listp-of-cdr-when-rational-listp
+                           ;acl2::acl2-numberp-of-car-when-acl2-number-listp
+                           ;acl2::rationalp-of-car-when-rational-listp
+                           ;acl2::rational-listp-of-cdr-when-rational-listp
                            rationalp-implies-acl2-numberp
                            canonical-address-p-hack ; todo
                            acl2::len-when-atom ; todo, comes in via defrstobj
@@ -52,12 +52,12 @@
                            x86isa::canonical-address-p-when-unsigned-byte-p
                            x86isa::canonical-address-p-between
                            x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32
-                           acl2::true-listp-of-car-when-true-list-listp
+                           ;acl2::true-listp-of-car-when-true-list-listp
                            vl::consp-when-member-equal-of-vl-namedb-nameset-p ; yuck
                            vl::consp-when-member-equal-of-vl-namedb-prefixmap-p ; yuck
-                           acl2::natp-of-car-when-nat-listp-type
-                           acl2::consp-of-car-when-pseudo-dagp
-                           acl2::symbolp-of-car-when-symbol-listp
+                           ;acl2::natp-of-car-when-nat-listp-type
+                           ;acl2::consp-of-car-when-pseudo-dagp
+                           ;acl2::symbolp-of-car-when-symbol-listp
                            acl2::consp-of-car-when-symbol-term-alistp-cheap)))
 
 (set-induction-depth-limit 1)
@@ -471,7 +471,7 @@
                               (true-listp acc))
                   :guard-hints (("Goal" :in-theory (e/d (memory-regionsp
                                                          memory-regionp)
-                                                        (acl2::acl2-numberp-of-car-when-acl2-number-listp ; todo, for speed
+                                                        (;acl2::acl2-numberp-of-car-when-acl2-number-listp ; todo, for speed
                                                          rationalp-implies-acl2-numberp))))))
   (if (endp regions)
       (mv nil (reverse acc))

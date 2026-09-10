@@ -503,7 +503,7 @@
     repeatbit-of-if-becomes-repeatbit-of-bvif-arg2))
 
 ;; These are needed only when operations like logxor or + may appear
-(defun convert-to-bv-rules ()
+(defun convert-to-bv-rules-axe ()
   (declare (xargs :guard t))
   '(bvchop-convert-arg2-to-bv-axe
     bvplus-convert-arg2-to-bv-axe-restricted ; todo: use the unrestricted ones
@@ -646,6 +646,35 @@
     bvchop-of-bvchop
     bvchop-of-bvcat-cases))
 
+;; Rules to introduce our BV operators:
+(defund bitops-to-bv-rules ()
+  (declare (xargs :guard t))
+  '(;; Rules to handle part-select-width-low:
+    ;; acl2::part-select-width-low-becomes-slice ; for when low and width are constants
+    acl2::part-select-width-low-becomes-slice-gen ; allows low and width to be non-constants (can happen with shifts)
+
+    ;; should we instead go to putbits?
+    ;; TODO: Think about the case when sizes/indices are not constant
+    acl2::slice-of-part-install-width-low ; introduces bvcat
+    acl2::bvchop-of-part-install-width-low-becomes-bvcat
+    ;; getbit rule?
+    acl2::part-install-width-low-becomes-bvcat ; gets the size of X from an assumption
+    acl2::part-install-width-low-becomes-bvcat-axe ; gets the size of X from the form of X
+    acl2::part-install-width-low-becomes-bvcat-32
+    acl2::part-install-width-low-becomes-bvcat-64
+    acl2::part-install-width-low-becomes-bvcat-128
+    acl2::part-install-width-low-becomes-bvcat-256
+    acl2::part-install-width-low-becomes-bvcat-512
+    acl2::integerp-of-part-install-width-low ; needed?
+
+    acl2::rotate-right-becomes-rightrotate
+    acl2::rotate-left-becomes-leftrotate
+    acl2::logbit-becomes-getbit
+    acl2::b-and-becomes-bitand
+    acl2::b-ior-becomes-bitor
+    acl2::b-xor-becomes-bitxor
+    acl2::b-not-becomes-bitnot))
+
 ;fixme a few of these are not -all rules...
 ;; todo: we shouldn't use these without the trim-helpers  - add them to this?
 ;; add bvlt-trim rules?
@@ -739,7 +768,10 @@
    (trim-helper-rules) ; in case some rule introduces trim (harmless if no rule does)
    (bv-function-of-bvchop-rules)
    (unsigned-byte-p-forced-rules) ; needed for some rules below
-   '(;; our normal form is to let these open up to calls to bvlt and sbvlt:
+   '(not-equal-of-constant-and-bv-term-axe
+     not-equal-of-constant-and-bv-term-alt-axe
+
+     ;; our normal form is to let these open up to calls to bvlt and sbvlt:
      bvle ;Thu Jan 19 16:35:59 2017
      bvge ;Thu Jan 19 16:35:59 2017
      bvgt ;Thu Jan 19 16:35:59 2017
@@ -767,6 +799,7 @@
      ;; getbit-of-leftrotate32-high
      leftrotate32-of-0-arg1
      leftrotate32-of-0-arg2
+     leftrotate32-normalize-amt
 
      ;; rightrotate32-trim-arg1-axe ;move to trim rules? or drop since we go to leftrotate32
      ;;i don't think we want these any more (trying without them):
@@ -824,6 +857,8 @@
      bvplus-of-ifix-arg3
      equal-of-constant-and-bvplus-of-constant
      equal-of-bvplus-of-constant-and-constant
+     equal-of-bvchop-and-bvplus-of-same ; todo: remove these 2 from downstream rule-lists
+     equal-of-bvchop-and-bvplus-of-same-alt
 
      bvand-of-0-arg2
      bvand-of-0-arg3 ; could drop if commuting constants forward
@@ -884,10 +919,10 @@
      bitxor-of-myif-arg1
      bitxor-of-myif-arg2
 
-     equal-of-bvchop-and-constant-when-bvlt-constant-1
-     equal-of-bvchop-and-constant-when-bvlt-constant-2
-     equal-of-bvchop-and-constant-when-not-bvlt-constant-1
-     equal-of-bvchop-and-constant-when-not-bvlt-constant-2
+     not-equal-of-bvchop-and-constant-when-bvlt-constant-1
+     not-equal-of-bvchop-and-constant-when-bvlt-constant-2
+     not-equal-of-bvchop-and-constant-when-not-bvlt-constant-1
+     not-equal-of-bvchop-and-constant-when-not-bvlt-constant-2
 
      getbit-identity-free ;Sun Mar 13 03:18:26 2011
 
@@ -1207,7 +1242,7 @@
      getbit-test-is-self ;make a myif version?
 
      getbit-too-high-is-0-bind-free-axe
-     getbit-too-high-cheap-free
+     getbit-too-high-when-unsigned-byte-p-free
      ;; high-getbit-of-getbit-is-0 ; handled by getbit-too-high-is-0-bind-free-axe
      getbit-of-if
 ;            getbit-of-bvif ;could be expensive? newww
@@ -1813,7 +1848,7 @@
     bvchop-list-of-bvchop-list))
 
 ;; are these all for when the logext is too big?
-;; todo: can we rely on the convert-to-bv-rules instead (make sure those are always included)?
+;; todo: can we rely on the convert-to-bv-rules-axe instead (make sure those are always included)?
 (defun bv-of-logext-rules ()
   (declare (xargs :guard t))
   '(bvplus-of-logext-arg2
@@ -3039,10 +3074,10 @@
             integerp-of-len
             bvlt-of-plus-arg1
             bvlt-of-plus-arg2
-            equal-of-bvchop-and-constant-when-bvlt-constant-1
-            equal-of-bvchop-and-constant-when-bvlt-constant-2
-            equal-of-bvchop-and-constant-when-not-bvlt-constant-1
-            equal-of-bvchop-and-constant-when-not-bvlt-constant-2
+            not-equal-of-bvchop-and-constant-when-bvlt-constant-1
+            not-equal-of-bvchop-and-constant-when-bvlt-constant-2
+            not-equal-of-bvchop-and-constant-when-not-bvlt-constant-1
+            not-equal-of-bvchop-and-constant-when-not-bvlt-constant-2
             bvlt-when-bvlt-must-be-fake-free-axe ;thu mar 17 15:36:51 2011
             bvlt-when-bvlt-must-be-gen-axe ;fri may  6 21:22:34 2011
             bvlt-of-max-arg3-axe
@@ -3134,7 +3169,7 @@
           (bvchop-list-rules)
           (lookup-rules) ;Sat Dec 25 23:52:09 2010
           (list-rules)
-          (convert-to-bv-rules)
+          (convert-to-bv-rules-axe)
           (logext-rules) ;move to parent? ; drop?
           (list-rules3)
           (alist-rules)
@@ -3157,7 +3192,7 @@
              equal-of-map-reverse-list-and-map-reverse-list ;Tue Feb  8 15:08:06 2011
 
              ;; logext can still appear (if arraycopy is called):
-             logext-when-usb-cheap
+             logext-when-unsigned-byte-p-free
              logext-identity-when-usb-smaller-axe
 
              all-unsigned-byte-p-of-take-of-subrange ;Fri Dec 17 03:22:09 2010
@@ -3325,7 +3360,7 @@
              bv-array-clear-range-of-bv-array-write-too-high
 
              bv-array-clear-length-1-of-list-zero ;Wed Apr 14 00:23:10 2010
-             bvchop-identity-cheap ;moved from prover rules
+             bvchop-identity-free ;moved from prover rules
              bvplus-of-bvcat-and-bvuminus-of-bvcat ;Tue Apr 13 16:17:40 2010
              bvminus-of-constant-and-bvplus-of-constant ;Sun Apr 11 17:17:35 2010
              true-listp-of-add-to-end
@@ -3363,7 +3398,6 @@
              boolor-of-equal-and-not-of-equal-constants
              boolor-of-equal-and-not-of-equal-constants-alt
              booland-of-booland-of-boolif
-             not-equal-constant-when-unsigned-byte-p-bind-free-axe ;was just in prover-rules ;Wed Mar 17 04:03:01 2010
              sha1-context-hack ;Wed Mar 17 03:54:02 2010 (how much does this help?)
              boolor-of-booland-same-2 ;Wed Mar 17 03:06:45 2010
              bvlt-of-constant-when-unsigned-byte-p-tighter
@@ -3737,7 +3771,7 @@
              integerp-of-myif-strong
 
              ;bvchop-of-minus-trim
-             ;bvchop-convert-arg2-to-bv-axe ; need the rest of the convert-to-bv-rules...
+             ;bvchop-convert-arg2-to-bv-axe ; need the rest of the convert-to-bv-rules-axe...
 
              sha1-hack-a-million
              subrange-of-take

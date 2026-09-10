@@ -22,6 +22,7 @@
 (include-book "delete-defs")
 (include-book "update-star-defs")
 (include-book "restrict-defs")
+(include-book "iter-defs")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

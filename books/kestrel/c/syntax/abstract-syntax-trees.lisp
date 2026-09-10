@@ -1753,7 +1753,8 @@
                (info any)))
     (:complit ((type tyname)
                (elems desiniter-list)
-               (final-comma bool)))
+               (final-comma bool)
+               (info any)))
     (:unary ((op unop)
              (arg expr)
              (info any)))
@@ -3519,6 +3520,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption ext-declon-option
+  ext-declon
+  :short "Fixtype of optional external declarations."
+  :pred ext-declon-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist ext-declon-list
   :short "Fixtype of lists of external declarations."
   :long
@@ -3691,7 +3699,14 @@
     :true-listp t
     :pred trans-item-listp
     :elementp-of-nil nil
-    :measure (two-nats-measure (acl2-count x) 0))
+    :measure (two-nats-measure (acl2-count x) 0)
+
+    ///
+
+    (defruled cdr-of-trans-item-list-fix
+      (equal (cdr (trans-item-list-fix items))
+             (trans-item-list-fix (cdr items)))
+      :enable trans-item-list-fix))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

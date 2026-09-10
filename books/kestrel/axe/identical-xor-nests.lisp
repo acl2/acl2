@@ -39,7 +39,6 @@
                         all-<-transitive-free
                         not-<-of-nth-of-dargs-of-aref1-when-pseudo-dag-arrayp-2
                         <=-of-nth-when-all-<= ;disable globally?
-                        rational-listp
                         strip-cdrs
                         ifix                   ; avoid case splits
                         rational-listp maxelem ;prevent inductions

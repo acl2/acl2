@@ -120,6 +120,15 @@ validity check of its result produces a counterexample, the SAT counterexample
 will be analyzed to try and create a counterexample to the conjecture (in terms
 of its original variables). This also affects any rewrite rules that call
 @('interp-st-run-ctrex') (it will exit without running the counterexample).")
+    (counterexample-consistency-check-enabledp
+     booleanp :default 't
+     "If T (the default) and if @('counterexample-analysis-enabledp'), then after
+a SAT counterexample is analyzed to try and create a conjecture counterexample,
+each Boolean variable binding in the Boolean variable database will be checked
+for consistency: that is, whether the truth value of a Boolean variabe under
+the SAT counterexample is the same as the truth value of the associated FGL
+symbolic object under the conjecture counterexample. Inconsistencies are
+collected and reported. Setting this to NIL disables the consistency check.")
     (prof-enabledp booleanp :default 't
                    "If T (the default), then the interpreter collects rule
 profiling information (like ACL2's @(see acl2::accumulated-persistence)) and

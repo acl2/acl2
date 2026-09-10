@@ -292,7 +292,6 @@
            :induct t
            :in-theory (e/d (bv-array-clear-range)
                            (;bv-array-clear-range-same
-                            ;update-nth-becomes-update-nth2-extend-gen
                             )))))
 
 (theory-invariant (incompatible (:rewrite bv-array-clear-of-bv-array-clear-range) (:rewrite bv-array-clear-range-of-bv-array-clear)))
@@ -363,7 +362,6 @@
 ;; ;                           BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-RANGE
 ;;                             BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-RANGE-ADJACENT1
 ;;                             BV-ARRAY-CLEAR-RANGE-OF-BV-ARRAY-CLEAR-ADJACENT1
-;;                             UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
                             )))))
 
 (defthm bv-array-clear-range-of-bv-array-write-too-high

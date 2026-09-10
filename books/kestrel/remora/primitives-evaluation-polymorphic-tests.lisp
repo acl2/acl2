@@ -11,6 +11,8 @@
 
 (in-package "REMORA")
 
+(include-book "primitives-evaluation-on-types")
+(include-book "primitives-evaluation-on-ispaces")
 (include-book "primitives-evaluation-tests")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -90,13 +92,13 @@
 (acl2::assert-event (reserrp (prim-length *tv-int* 2 nil *vec3*)))
 (acl2::assert-event (reserrp (prim-length *tv-int* 0 nil (iv 5))))
 
-; Via eval-primop-fun.
+; Via eval-primop-fun-fo.
 
 (acl2::assert-equal
- (eval-primop-fun (make-primop-value-length-t-d-s :tval *tv-int*
-                                                  :dval 3
-                                                  :sval nil)
-                  *vec3*)
+ (eval-primop-fun-fo (make-primop-value-length-t-d-s :tval *tv-int*
+                                                     :dval 3
+                                                     :sval nil)
+                     *vec3*)
  (iv 3))
 
 ; Wrong number of argument cells:
@@ -104,10 +106,10 @@
 ; not an operation applicable to another cell.
 (acl2::assert-event
  (not (expr-value-case
-       (eval-primop-fun (make-primop-value-length-t-d-s :tval *tv-int*
-                                                        :dval 3
-                                                        :sval nil)
-                        *vec3*)
+       (eval-primop-fun-fo (make-primop-value-length-t-d-s :tval *tv-int*
+                                                           :dval 3
+                                                           :sval nil)
+                           *vec3*)
        :primop)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -178,13 +180,13 @@
 (acl2::assert-event (reserrp (prim-head *tv-int* 1 nil *vec3*)))
 (acl2::assert-event (reserrp (prim-head *tv-int* 0 nil (iv 5))))
 
-; Via eval-primop-fun.
+; Via eval-primop-fun-fo.
 
 (acl2::assert-equal
- (eval-primop-fun (make-primop-value-head-t-d-s :tval *tv-int*
-                                                :dval 2
-                                                :sval nil)
-                  *vec3*)
+ (eval-primop-fun-fo (make-primop-value-head-t-d-s :tval *tv-int*
+                                                   :dval 2
+                                                   :sval nil)
+                     *vec3*)
  (iv 1))
 
 ; Wrong number of argument cells:
@@ -192,10 +194,10 @@
 ; not an operation applicable to another cell.
 (acl2::assert-event
  (not (expr-value-case
-       (eval-primop-fun (make-primop-value-head-t-d-s :tval *tv-int*
-                                                      :dval 2
-                                                      :sval nil)
-                        *vec3*)
+       (eval-primop-fun-fo (make-primop-value-head-t-d-s :tval *tv-int*
+                                                         :dval 2
+                                                         :sval nil)
+                           *vec3*)
        :primop)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -268,13 +270,13 @@
 (acl2::assert-event (reserrp (prim-tail *tv-int* 1 nil *vec3*)))
 (acl2::assert-event (reserrp (prim-tail *tv-int* 0 nil (iv 5))))
 
-; Via eval-primop-fun.
+; Via eval-primop-fun-fo.
 
 (acl2::assert-equal
- (eval-primop-fun (make-primop-value-tail-t-d-s :tval *tv-int*
-                                                :dval 2
-                                                :sval nil)
-                  *vec3*)
+ (eval-primop-fun-fo (make-primop-value-tail-t-d-s :tval *tv-int*
+                                                   :dval 2
+                                                   :sval nil)
+                     *vec3*)
  (expr-value-vector (list (iv 2) (iv 3))))
 
 ; Wrong number of argument cells:
@@ -282,10 +284,10 @@
 ; not an operation applicable to another cell.
 (acl2::assert-event
  (not (expr-value-case
-       (eval-primop-fun (make-primop-value-tail-t-d-s :tval *tv-int*
-                                                      :dval 2
-                                                      :sval nil)
-                        *vec3*)
+       (eval-primop-fun-fo (make-primop-value-tail-t-d-s :tval *tv-int*
+                                                         :dval 2
+                                                         :sval nil)
+                           *vec3*)
        :primop)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -377,23 +379,23 @@
 (acl2::assert-event (reserrp (prim-append *tv-int* 3 3 nil *vec3* *mat23*)))
 (acl2::assert-event (reserrp (prim-append *tv-int* 0 0 nil (iv 5) (iv 5))))
 
-; Via eval-primop-fun* and eval-primop-fun.
+; Via eval-primop-fun-fo* and eval-primop-fun-fo.
 
 (acl2::assert-equal
- (eval-primop-fun* (make-primop-value-append-t-m-n-s :tval *tv-int*
-                                                     :mval 3
-                                                     :nval 1
-                                                     :sval nil)
-                   *vec3* *vec1*)
+ (eval-primop-fun-fo* (make-primop-value-append-t-m-n-s :tval *tv-int*
+                                                        :mval 3
+                                                        :nval 1
+                                                        :sval nil)
+                      *vec3* *vec1*)
  (expr-value-vector (list (iv 1) (iv 2) (iv 3) (iv 1))))
 
 ; One argument cell yields the next stage (partial application).
 (acl2::assert-equal
- (eval-primop-fun (make-primop-value-append-t-m-n-s :tval *tv-int*
-                                                    :mval 3
-                                                    :nval 1
-                                                    :sval nil)
-                  *vec3*)
+ (eval-primop-fun-fo (make-primop-value-append-t-m-n-s :tval *tv-int*
+                                                       :mval 3
+                                                       :nval 1
+                                                       :sval nil)
+                     *vec3*)
  (expr-value-primop (make-primop-value-append-t-m-n-s-x :tval *tv-int*
                                                         :mval 3
                                                         :nval 1
@@ -473,13 +475,13 @@
 (acl2::assert-event (reserrp (prim-reverse *tv-int* 3 nil *mat23*)))
 (acl2::assert-event (reserrp (prim-reverse *tv-int* 0 nil (iv 5))))
 
-; Via eval-primop-fun.
+; Via eval-primop-fun-fo.
 
 (acl2::assert-equal
- (eval-primop-fun (make-primop-value-reverse-t-d-s :tval *tv-int*
-                                                   :dval 3
-                                                   :sval nil)
-                  *vec3*)
+ (eval-primop-fun-fo (make-primop-value-reverse-t-d-s :tval *tv-int*
+                                                      :dval 3
+                                                      :sval nil)
+                     *vec3*)
  (expr-value-vector (list (iv 3) (iv 2) (iv 1))))
 
 ; Wrong number of argument cells:
@@ -487,10 +489,10 @@
 ; not an operation applicable to another cell.
 (acl2::assert-event
  (not (expr-value-case
-       (eval-primop-fun (make-primop-value-reverse-t-d-s :tval *tv-int*
-                                                         :dval 3
-                                                         :sval nil)
-                        *vec3*)
+       (eval-primop-fun-fo (make-primop-value-reverse-t-d-s :tval *tv-int*
+                                                            :dval 3
+                                                            :sval nil)
+                           *vec3*)
        :primop)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -533,12 +535,12 @@
 ; Non-integer index.
 (acl2::assert-event (reserrp (prim-index *tv-int* 3 *vec3* (bv t))))
 
-; Via eval-primop-fun*.
+; Via eval-primop-fun-fo*.
 
 (acl2::assert-equal
- (eval-primop-fun* (make-primop-value-index-t-m :tval *tv-int*
-                                                :mval 3)
-                   *vec3* (iv 1))
+ (eval-primop-fun-fo* (make-primop-value-index-t-m :tval *tv-int*
+                                                   :mval 3)
+                      *vec3* (iv 1))
  (iv 2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -604,14 +606,14 @@
  (reserrp (prim-index2d *tv-int* 2 3 *vec3*
                         (expr-value-vector (list (iv 0) (iv 0))))))
 
-; Via eval-primop-fun*.
+; Via eval-primop-fun-fo*.
 
 (acl2::assert-equal
- (eval-primop-fun* (make-primop-value-index2d-t-m-n :tval *tv-int*
-                                                    :mval 2
-                                                    :nval 3)
-                   *mat23*
-                   (expr-value-vector (list (iv 1) (iv 0))))
+ (eval-primop-fun-fo* (make-primop-value-index2d-t-m-n :tval *tv-int*
+                                                       :mval 2
+                                                       :nval 3)
+                      *mat23*
+                      (expr-value-vector (list (iv 1) (iv 0))))
  (iv 4))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -655,10 +657,10 @@
 (acl2::assert-event
  (reserrp (prim-sum (list 2) (expr-value-vector (list (bv t) (bv nil))))))
 
-; Via eval-primop-fun.
+; Via eval-primop-fun-fo.
 
 (acl2::assert-equal
- (eval-primop-fun (make-primop-value-sum-s :sval (list 3)) *vec3*)
+ (eval-primop-fun-fo (make-primop-value-sum-s :sval (list 3)) *vec3*)
  (iv 6))
 
 ; Wrong number of argument cells:
@@ -666,8 +668,8 @@
 ; not an operation applicable to another cell.
 (acl2::assert-event
  (not (expr-value-case
-       (eval-primop-fun (make-primop-value-sum-s :sval (list 3))
-                        *vec3*)
+       (eval-primop-fun-fo (make-primop-value-sum-s :sval (list 3))
+                           *vec3*)
        :primop)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -745,13 +747,13 @@
 (acl2::assert-event
  (reserrp (prim-reshape *tv-int* (list 6) (list 2 3) *mat23*)))
 
-; Via eval-primop-fun.
+; Via eval-primop-fun-fo.
 
 (acl2::assert-equal
- (eval-primop-fun (make-primop-value-reshape-t-s1-s2 :tval *tv-int*
-                                                     :s1val (list 2 3)
-                                                     :s2val (list 6))
-                  *mat23*)
+ (eval-primop-fun-fo (make-primop-value-reshape-t-s1-s2 :tval *tv-int*
+                                                        :s1val (list 2 3)
+                                                        :s2val (list 6))
+                     *mat23*)
  (expr-value-vector
   (list (iv 1) (iv 2) (iv 3) (iv 4) (iv 5) (iv 6))))
 
@@ -760,10 +762,130 @@
 ; not an operation applicable to another cell.
 (acl2::assert-event
  (not (expr-value-case
-       (eval-primop-fun (make-primop-value-reshape-t-s1-s2 :tval *tv-int*
-                                                           :s1val (list 2 3)
-                                                           :s2val (list 6))
-                        *mat23*)
+       (eval-primop-fun-fo (make-primop-value-reshape-t-s1-s2 :tval *tv-int*
+                                                              :s1val (list 2 3)
+                                                              :s2val (list 6))
+                           *mat23*)
+       :primop)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The polymorphic operation flatten:
+; instantiation stage transitions and application of the final stage.
+
+(defconst *mat222*
+  (expr-value-vector
+   (list (expr-value-vector
+          (list (expr-value-vector (list (iv 1) (iv 2)))
+                (expr-value-vector (list (iv 3) (iv 4)))))
+         (expr-value-vector
+          (list (expr-value-vector (list (iv 5) (iv 6)))
+                (expr-value-vector (list (iv 7) (iv 8))))))))
+
+; Type application: flatten applied to one atom type value.
+
+(acl2::assert-equal
+ (eval-primop-tfun (primop-value-flatten) *tv-int*)
+ (expr-value-primop (primop-value-flatten-t *tv-int*)))
+
+; Ispace applications: flatten-t applied to a dimension,
+; flatten-t-m applied to another dimension,
+; then flatten-t-m-n applied to a shape.
+
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-flatten-t *tv-int*)
+                   (ispace-value-dim 2))
+ (expr-value-primop (make-primop-value-flatten-t-m :tval *tv-int*
+                                                   :mval 2)))
+
+(acl2::assert-equal
+ (eval-primop-ifun (make-primop-value-flatten-t-m :tval *tv-int*
+                                                  :mval 2)
+                   (ispace-value-dim 3))
+ (expr-value-primop (make-primop-value-flatten-t-m-n :tval *tv-int*
+                                                     :mval 2
+                                                     :nval 3)))
+
+(acl2::assert-equal
+ (eval-primop-ifun (make-primop-value-flatten-t-m-n :tval *tv-int*
+                                                    :mval 2
+                                                    :nval 3)
+                   (ispace-value-shape nil))
+ (expr-value-primop (make-primop-value-flatten-t-m-n-s :tval *tv-int*
+                                                       :mval 2
+                                                       :nval 3
+                                                       :sval nil)))
+
+; A shape where a dimension is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (primop-value-flatten-t *tv-int*)
+                            (ispace-value-shape (list 3)))))
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (make-primop-value-flatten-t-m :tval *tv-int*
+                                                           :mval 2)
+                            (ispace-value-shape (list 3)))))
+
+; A dimension where a shape is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (make-primop-value-flatten-t-m-n :tval *tv-int*
+                                                             :mval 2
+                                                             :nval 3)
+                            (ispace-value-dim 3))))
+
+; Application of the fully instantiated flatten to argument cells.
+
+; With m = 2, n = 3, and s = (), the whole matrix is the cell,
+; and flattening it combines its two dimensions into one of size 6.
+(acl2::assert-equal
+ (prim-flatten *tv-int* 2 3 nil *mat23*)
+ (expr-value-vector
+  (list (iv 1) (iv 2) (iv 3) (iv 4) (iv 5) (iv 6))))
+
+; With m = 2, n = 2, and s = (2), the cells are the 2x2x2 cube's rows,
+; and flattening combines the outer two dimensions into one of size 4,
+; keeping the trailing shape (2) unchanged.
+(acl2::assert-equal
+ (prim-flatten *tv-int* 2 2 (list 2) *mat222*)
+ (expr-value-vector
+  (list (expr-value-vector (list (iv 1) (iv 2)))
+        (expr-value-vector (list (iv 3) (iv 4)))
+        (expr-value-vector (list (iv 5) (iv 6)))
+        (expr-value-vector (list (iv 7) (iv 8))))))
+
+; Flattening with a zero dimension yields an empty vector.
+; An expr-value-vector-empty's :dims field holds the dimensions
+; *after* the implicit leading 0 (see dims-of-expr-value):
+; here the argument has dimensions (0 3) and the result (0).
+(acl2::assert-equal
+ (prim-flatten *tv-int* 0 3 nil
+               (make-expr-value-vector-empty :dims (list 3) :elem *tv-int*))
+ (make-expr-value-vector-empty :dims nil :elem *tv-int*))
+
+; Cell dimensions not matching the instantiation.
+(acl2::assert-event (reserrp (prim-flatten *tv-int* 3 2 nil *mat23*)))
+(acl2::assert-event (reserrp (prim-flatten *tv-int* 2 3 (list 1) *mat23*)))
+
+; Via eval-primop-fun-fo.
+
+(acl2::assert-equal
+ (eval-primop-fun-fo (make-primop-value-flatten-t-m-n-s :tval *tv-int*
+                                                        :mval 2
+                                                        :nval 3
+                                                        :sval nil)
+                     *mat23*)
+ (expr-value-vector
+  (list (iv 1) (iv 2) (iv 3) (iv 4) (iv 5) (iv 6))))
+
+; Wrong number of argument cells:
+; one cell already yields a final result,
+; not an operation applicable to another cell.
+(acl2::assert-event
+ (not (expr-value-case
+       (eval-primop-fun-fo (make-primop-value-flatten-t-m-n-s :tval *tv-int*
+                                                              :mval 2
+                                                              :nval 3
+                                                              :sval nil)
+                           *mat23*)
        :primop)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -859,13 +981,13 @@
 (acl2::assert-event (reserrp (prim-transpose2d *tv-int* 3 2 *mat23*)))
 (acl2::assert-event (reserrp (prim-transpose2d *tv-int* 2 3 *vec3*)))
 
-; Via eval-primop-fun.
+; Via eval-primop-fun-fo.
 
 (acl2::assert-equal
- (eval-primop-fun (make-primop-value-transpose2d-t-m-n :tval *tv-int*
-                                                       :mval 2
-                                                       :nval 3)
-                  *mat23*)
+ (eval-primop-fun-fo (make-primop-value-transpose2d-t-m-n :tval *tv-int*
+                                                          :mval 2
+                                                          :nval 3)
+                     *mat23*)
  (expr-value-vector
   (list (expr-value-vector (list (iv 1) (iv 4)))
         (expr-value-vector (list (iv 2) (iv 5)))
@@ -876,8 +998,402 @@
 ; not an operation applicable to another cell.
 (acl2::assert-event
  (not (expr-value-case
-       (eval-primop-fun (make-primop-value-transpose2d-t-m-n :tval *tv-int*
-                                                             :mval 2
-                                                             :nval 3)
-                        *mat23*)
+       (eval-primop-fun-fo (make-primop-value-transpose2d-t-m-n :tval *tv-int*
+                                                                :mval 2
+                                                                :nval 3)
+                           *mat23*)
        :primop)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The polymorphic operation iota/static:
+; a single ispace application directly yields the final array.
+
+; Ispace application to a matrix shape:
+; the result is the row-major enumeration, not a next-stage operation.
+
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-iota/static)
+                   (ispace-value-shape (list 2 3)))
+ (expr-value-vector
+  (list (expr-value-vector (list (iv 0) (iv 1) (iv 2)))
+        (expr-value-vector (list (iv 3) (iv 4) (iv 5))))))
+
+; Ispace application to the scalar shape: the rank-0 array holding 0.
+
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-iota/static)
+                   (ispace-value-shape nil))
+ (iv 0))
+
+; Ispace application to a shape with a zero dimension: the empty array.
+
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-iota/static)
+                   (ispace-value-shape (list 0)))
+ (expr-value-with-empty-dim (list 0) *tv-int*))
+
+; A dimension where a shape is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (primop-value-iota/static)
+                            (ispace-value-dim 3))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The polymorphic operation reduce:
+; instantiation stage transitions and storage of the function value.
+; The application of the final stage executes Remora code,
+; so it is tested with the evaluator (see evaluation-tests.lisp).
+
+; Type application: reduce applied to one atom type value.
+
+(acl2::assert-equal
+ (eval-primop-tfun (primop-value-reduce) *tv-int*)
+ (expr-value-primop (primop-value-reduce-t *tv-int*)))
+
+; Array type value where an atom one is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-tfun (primop-value-reduce)
+                            (make-type-value-array :elem *tv-int*
+                                                   :dims (list 3)))))
+
+; Ispace applications: reduce-t applied to a dimension,
+; then reduce-t-d applied to a shape.
+
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-reduce-t *tv-int*)
+                   (ispace-value-dim 2))
+ (expr-value-primop (make-primop-value-reduce-t-d :tval *tv-int*
+                                                  :dval 2)))
+
+(acl2::assert-equal
+ (eval-primop-ifun (make-primop-value-reduce-t-d :tval *tv-int*
+                                                 :dval 2)
+                   (ispace-value-shape nil))
+ (expr-value-primop (make-primop-value-reduce-t-d-s :tval *tv-int*
+                                                    :dval 2
+                                                    :sval nil)))
+
+; A shape where a dimension is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (primop-value-reduce-t *tv-int*)
+                            (ispace-value-shape nil))))
+
+; A dimension where a shape is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (make-primop-value-reduce-t-d :tval *tv-int*
+                                                          :dval 2)
+                            (ispace-value-dim 3))))
+
+; Value application: reduce-t-d-s stores the function value.
+
+(defconst *add-fun*
+  (expr-value-primop (primop-value-int-binary (int-binary-primop-add))))
+
+(acl2::assert-equal
+ (eval-primop-fun-fo (make-primop-value-reduce-t-d-s :tval *tv-int*
+                                                     :dval 2
+                                                     :sval nil)
+                     *add-fun*)
+ (expr-value-primop (make-primop-value-reduce-t-d-s-f :tval *tv-int*
+                                                      :dval 2
+                                                      :sval nil
+                                                      :fval *add-fun*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The polymorphic operation fold:
+; instantiation stage transitions and storage of
+; the function and initial values.
+; The application of the final stage executes Remora code,
+; so it is tested with the evaluator (see evaluation-tests.lisp).
+
+(acl2::assert-equal
+ (eval-primop-tfun (primop-value-fold) *tv-int*)
+ (expr-value-primop (primop-value-fold-t *tv-int*)))
+
+(acl2::assert-equal
+ (eval-primop-tfun (primop-value-fold-t *tv-int*) *tv-int*)
+ (expr-value-primop (make-primop-value-fold-t-t2 :tval *tv-int*
+                                                 :t2val *tv-int*)))
+
+(acl2::assert-event
+ (reserrp (eval-primop-tfun (primop-value-fold)
+                            (make-type-value-array :elem *tv-int*
+                                                   :dims (list 3)))))
+
+(acl2::assert-equal
+ (eval-primop-ifun (make-primop-value-fold-t-t2 :tval *tv-int*
+                                                :t2val *tv-int*)
+                   (ispace-value-dim 2))
+ (expr-value-primop (make-primop-value-fold-t-t2-d :tval *tv-int*
+                                                   :t2val *tv-int*
+                                                   :dval 2)))
+
+(acl2::assert-equal
+ (eval-primop-ifun (make-primop-value-fold-t-t2-d :tval *tv-int*
+                                                  :t2val *tv-int*
+                                                  :dval 2)
+                   (ispace-value-shape nil))
+ (expr-value-primop (make-primop-value-fold-t-t2-d-s :tval *tv-int*
+                                                     :t2val *tv-int*
+                                                     :dval 2
+                                                     :sval nil)))
+
+(acl2::assert-equal
+ (eval-primop-ifun (make-primop-value-fold-t-t2-d-s :tval *tv-int*
+                                                    :t2val *tv-int*
+                                                    :dval 2
+                                                    :sval nil)
+                   (ispace-value-shape nil))
+ (expr-value-primop (make-primop-value-fold-t-t2-d-s-s2 :tval *tv-int*
+                                                        :t2val *tv-int*
+                                                        :dval 2
+                                                        :sval nil
+                                                        :s2val nil)))
+
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (make-primop-value-fold-t-t2 :tval *tv-int*
+                                                         :t2val *tv-int*)
+                            (ispace-value-shape nil))))
+
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (make-primop-value-fold-t-t2-d :tval *tv-int*
+                                                           :t2val *tv-int*
+                                                           :dval 2)
+                            (ispace-value-dim 3))))
+
+(acl2::assert-equal
+ (eval-primop-fun-fo (make-primop-value-fold-t-t2-d-s-s2 :tval *tv-int*
+                                                         :t2val *tv-int*
+                                                         :dval 2
+                                                         :sval nil
+                                                         :s2val nil)
+                     *add-fun*)
+ (expr-value-primop (make-primop-value-fold-t-t2-d-s-s2-f :tval *tv-int*
+                                                          :t2val *tv-int*
+                                                          :dval 2
+                                                          :sval nil
+                                                          :s2val nil
+                                                          :fval *add-fun*)))
+
+(acl2::assert-equal
+ (eval-primop-fun-fo (make-primop-value-fold-t-t2-d-s-s2-f :tval *tv-int*
+                                                           :t2val *tv-int*
+                                                           :dval 2
+                                                           :sval nil
+                                                           :s2val nil
+                                                           :fval *add-fun*)
+                     (iv 10))
+ (expr-value-primop (make-primop-value-fold-t-t2-d-s-s2-f-z :tval *tv-int*
+                                                            :t2val *tv-int*
+                                                            :dval 2
+                                                            :sval nil
+                                                            :s2val nil
+                                                            :fval *add-fun*
+                                                            :zval (iv 10))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The polymorphic operation reify-dim:
+; a single ispace application directly yields the integer scalar.
+
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-reify-dim)
+                   (ispace-value-dim 3))
+ (iv 3))
+
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-reify-dim)
+                   (ispace-value-dim 0))
+ (iv 0))
+
+; A shape where a dimension is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (primop-value-reify-dim)
+                            (ispace-value-shape (list 3)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The polymorphic operation reify-shape:
+; a single ispace application directly yields a boxed integer vector.
+
+(defconst *reify-shape-sigma*
+  (make-type-value-sigma
+   :param (ispace-var-dim "r")
+   :body (t[] :int (shp "$r"))
+   :denv (make-type-denv :ienv (make-ispace-denv :ispaces nil)
+                         :types nil)))
+
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-reify-shape)
+                   (ispace-value-shape (list 2 3)))
+ (make-expr-value-box
+  :ispace (ispace-value-dim 2)
+  :array (expr-value-vector (list (iv 2) (iv 3)))
+  :type *reify-shape-sigma*))
+
+; The empty shape reifies to a box of the empty vector, with rank 0.
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-reify-shape)
+                   (ispace-value-shape nil))
+ (make-expr-value-box
+  :ispace (ispace-value-dim 0)
+  :array (expr-value-with-empty-dim (list 0) *tv-int*)
+  :type *reify-shape-sigma*))
+
+; A shape with zero dimensions still reifies to their vector.
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-reify-shape)
+                   (ispace-value-shape (list 0 3)))
+ (make-expr-value-box
+  :ispace (ispace-value-dim 2)
+  :array (expr-value-vector (list (iv 0) (iv 3)))
+  :type *reify-shape-sigma*))
+
+; A dimension where a shape is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (primop-value-reify-shape)
+                            (ispace-value-dim 3))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The polymorphic operation iota:
+; instantiation stage transition and application of the final stage.
+
+(defconst *iota-sigma*
+  (make-type-value-sigma
+   :param (ispace-var-shape "s")
+   :body (t[] :int "@s")
+   :denv (make-type-denv :ienv (make-ispace-denv :ispaces nil)
+                         :types nil)))
+
+(acl2::assert-equal
+ (eval-primop-ifun (primop-value-iota) (ispace-value-dim 2))
+ (expr-value-primop (make-primop-value-iota-d :dval 2)))
+
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (primop-value-iota)
+                            (ispace-value-shape (list 2)))))
+
+; The shape comes from the argument cell: [2 3] yields the 2x3 enumeration.
+(acl2::assert-equal
+ (prim-iota 2 (expr-value-vector (list (iv 2) (iv 3))))
+ (make-expr-value-box
+  :ispace (ispace-value-shape (list 2 3))
+  :array (expr-value-vector
+          (list (expr-value-vector (list (iv 0) (iv 1) (iv 2)))
+                (expr-value-vector (list (iv 3) (iv 4) (iv 5)))))
+  :type *iota-sigma*))
+
+; An empty argument vector yields the scalar shape, i.e. the scalar 0.
+(acl2::assert-equal
+ (prim-iota 0 (make-expr-value-vector-empty :dims nil :elem *tv-int*))
+ (make-expr-value-box
+  :ispace (ispace-value-shape nil)
+  :array (iv 0)
+  :type *iota-sigma*))
+
+; Argument cell dimensions not matching the instantiation.
+(acl2::assert-event
+ (reserrp (prim-iota 3 (expr-value-vector (list (iv 2) (iv 3))))))
+
+; Negative dimensions are rejected.
+(acl2::assert-event
+ (reserrp (prim-iota 2 (expr-value-vector (list (iv 2) (iv -3))))))
+
+; Via eval-primop-fun-fo.
+(acl2::assert-equal
+ (eval-primop-fun-fo (make-primop-value-iota-d :dval 1)
+                     (expr-value-vector (list (iv 3))))
+ (make-expr-value-box
+  :ispace (ispace-value-shape (list 3))
+  :array (expr-value-vector (list (iv 0) (iv 1) (iv 2)))
+  :type *iota-sigma*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The polymorphic operation trace:
+; instantiation stage transitions and application of the final stage.
+
+(acl2::assert-equal
+ (eval-primop-tfun (primop-value-trace) *tv-int*)
+ (expr-value-primop (primop-value-trace-t *tv-int*)))
+
+(acl2::assert-equal
+ (eval-primop-tfun (primop-value-trace-t *tv-int*) *tv-int*)
+ (expr-value-primop (make-primop-value-trace-t-r :tval *tv-int*
+                                                 :rval *tv-int*)))
+
+(acl2::assert-equal
+ (eval-primop-ifun (make-primop-value-trace-t-r :tval *tv-int*
+                                                :rval *tv-int*)
+                   (ispace-value-shape (list 3)))
+ (expr-value-primop (make-primop-value-trace-t-r-s :tval *tv-int*
+                                                   :rval *tv-int*
+                                                   :sval (list 3))))
+
+(acl2::assert-equal
+ (eval-primop-ifun (make-primop-value-trace-t-r-s :tval *tv-int*
+                                                  :rval *tv-int*
+                                                  :sval (list 3))
+                   (ispace-value-shape nil))
+ (expr-value-primop (make-primop-value-trace-t-r-s-q :tval *tv-int*
+                                                     :rval *tv-int*
+                                                     :sval (list 3)
+                                                     :qval nil)))
+
+; A dimension where a shape is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (make-primop-value-trace-t-r :tval *tv-int*
+                                                         :rval *tv-int*)
+                            (ispace-value-dim 3))))
+
+; The first argument cell is stored, the second one is returned.
+(acl2::assert-equal
+ (eval-primop-fun-fo (make-primop-value-trace-t-r-s-q :tval *tv-int*
+                                                      :rval *tv-int*
+                                                      :sval (list 3)
+                                                      :qval nil)
+                     *vec3*)
+ (expr-value-primop (make-primop-value-trace-t-r-s-q-x :tval *tv-int*
+                                                       :rval *tv-int*
+                                                       :sval (list 3)
+                                                       :qval nil
+                                                       :xval *vec3*)))
+
+(acl2::assert-equal
+ (prim-trace *tv-int* *tv-int* (list 3) nil *vec3* (iv 7))
+ (iv 7))
+
+; Cell dimensions not matching the instantiation.
+(acl2::assert-event
+ (reserrp (prim-trace *tv-int* *tv-int* (list 2) nil *vec3* (iv 7))))
+(acl2::assert-event
+ (reserrp (prim-trace *tv-int* *tv-int* (list 3) (list 3) *vec3* (iv 7))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The polymorphic operation undefined:
+; the last ispace application always fails.
+
+(acl2::assert-equal
+ (eval-primop-tfun (primop-value-undefined) *tv-int*)
+ (expr-value-primop (primop-value-undefined-t *tv-int*)))
+
+(acl2::assert-event
+ (reserrp (eval-primop-tfun (primop-value-undefined)
+                            (make-type-value-array :elem *tv-int*
+                                                   :dims (list 3)))))
+
+; The shape application yields an error, as in [impl].
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (primop-value-undefined-t *tv-int*)
+                            (ispace-value-shape (list 3)))))
+
+; A dimension where a shape is expected.
+(acl2::assert-event
+ (reserrp (eval-primop-ifun (primop-value-undefined-t *tv-int*)
+                            (ispace-value-dim 3))))
+
+(acl2::assert-event (reserrp (prim-undefined)))

@@ -9321,7 +9321,7 @@
    ((null runes)
     (cond ((null acc)
            (mv nil (list (cons #\p (if phrase
-                                       (msg "  " phrase)
+                                       (msg "  ")
                                      "")))))
           (t (mv (list (concatenate 'string
                                     "~@Fthe list of runes,~|~% ~YRe"

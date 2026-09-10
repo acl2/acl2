@@ -4,7 +4,7 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 ; Supporting Author: Eric Smith (eric.smith@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -44,6 +44,7 @@
 (include-book "schemalg")
 (include-book "schemalg-doc")
 (include-book "schemalg-divconq-list-0-1-doc")
+(include-book "schemalg-divconq-list-0-1-2-doc")
 (include-book "schemalg-divconq-oset-0-1-doc")
 
 (include-book "simplify")
@@ -57,6 +58,7 @@
 (include-book "solve")
 (include-book "solve-doc")
 (include-book "solve-method-acl2-rewriter")
+(include-book "solve-method-axe-rewriter")
 
 (include-book "tailrec")
 (include-book "tailrec-doc")

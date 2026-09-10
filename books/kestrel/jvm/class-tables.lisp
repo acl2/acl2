@@ -620,7 +620,6 @@
    :hints (("Goal" :in-theory (enable ALL-SUPERCLASSES-OKAYP
                                       get-superclass
                                       bound-in-class-tablep
-                                      all-superclasses-okayp
                                       SUPERCLASS-OKAYP ;memberp
                                       class-decl-superclass class-tablep)))))
 
@@ -637,7 +636,6 @@
   :hints (("Goal" :in-theory (enable ALL-SUPERCLASSES-OKAYP
                                      get-superclass
                                      bound-in-class-tablep
-                                     all-superclasses-okayp
                                      SUPERCLASS-OKAYP;memberp
                                      class-decl-superclass class-tablep)))))
 

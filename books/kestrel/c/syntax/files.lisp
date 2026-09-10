@@ -166,7 +166,7 @@
           (path-to-write (str::cat (str-fix base-dir) "/" file-string))
           ((mv erp state) (acl2::write-bytes-to-file! (filedata->bytes data)
                                                       path-to-write
-                                                      'output-files
+                                                      'write-fileset
                                                       state))
           ((when erp)
            (reterr (msg "Writing ~x0 failed." path-to-write))))

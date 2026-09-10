@@ -21,6 +21,7 @@
                 logbit
                 expt2
                 loghead
+                logtail
                 logapp
                 bfix
                 logcons

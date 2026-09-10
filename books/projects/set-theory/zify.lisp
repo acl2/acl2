@@ -165,7 +165,7 @@
         (member-eq var all-args))
     (er soft ctx
         "The :var value of ~x0 (default ~x1) must be a symbol that is ~
-         disjoint from the the arguments (both the second argument's cdr when ~
+         disjoint from the arguments (both the second argument's cdr when ~
          that argument is a list and the value of the :args keyword)."
         'zify 'p))
    (t (value nil))))

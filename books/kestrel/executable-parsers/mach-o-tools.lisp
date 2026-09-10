@@ -34,125 +34,10 @@
 (local (in-theory (disable strip-cars symbol-alistp ; prevent induction
                            natp)))
 
-(defund mach-o-sectionp (sec)
-  (declare (xargs :guard t))
-  (symbol-alistp sec))
-
-(defund mach-o-section-listp (sections)
-  (declare (xargs :guard t))
-  (if (atom sections)
-      (null sections)
-    (and (mach-o-sectionp (first sections))
-         (mach-o-section-listp (rest sections)))))
-
-(local
-  (defthm true-listp-when-mach-o-section-listp
-    (implies (mach-o-section-listp sections)
-             (true-listp sections))
-    :hints (("Goal" :in-theory (enable mach-o-section-listp)))))
-
-(defthm mach-o-section-listp-of-append
-  (implies (and (mach-o-section-listp secs1)
-                (mach-o-section-listp secs2))
-           (mach-o-section-listp (append secs1 secs2)))
-  :hints (("Goal" :in-theory (enable mach-o-section-listp))))
-
-(defund mach-o-commandp (cmd)
-  (declare (xargs :guard t))
-  (and (symbol-alistp cmd)
-       ;; todo: more
-       (keyword-listp (lookup-eq :initprot cmd))
-       (mach-o-section-listp (lookup-equal :sections cmd))))
-
-(local
-  (defthm mach-o-section-listp-when-mach-o-commandp
-    (implies (mach-o-commandp cmd)
-             (mach-o-section-listp (lookup-equal :sections cmd)))
-    :hints (("Goal" :in-theory (enable mach-o-commandp)))))
-
-(local
-  (defthm alistp-when-mach-o-commandp
-    (implies (mach-o-commandp cmd)
-             (alistp cmd))
-    :hints (("Goal" :in-theory (enable mach-o-commandp)))))
-
-(defund mach-o-command-listp (cmds)
-  (declare (xargs :guard t))
-  (if (atom cmds)
-      (null cmds)
-    (and (mach-o-commandp (first cmds))
-         (mach-o-command-listp (rest cmds)))))
-
-;move
-(defun mach-o-symbol-table-entryp (entry)
-  (declare (xargs :guard t))
-  (symbol-alistp entry))
-
-(local
-  (defthm alistp-when-mach-o-symbol-table-entryp
-    (implies (mach-o-symbol-table-entryp entry)
-             (alistp entry))
-    :hints (("Goal" :in-theory (enable mach-o-symbol-table-entryp)))))
-
-;move
-(defund mach-o-symbol-tablep (entriess)
-  (declare (xargs :guard t))
-  (if (atom entriess)
-      (null entriess)
-    (and (mach-o-symbol-table-entryp (first entriess))
-         (mach-o-symbol-tablep (rest entriess)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Gets the first element of LOAD-COMMANDS that has :cmd type CMD-TYPE.
-;; Returns a load-command, or throws an error
-(defund get-mach-o-load-command (cmd-type load-commands)
-  (declare (xargs :guard (and (symbolp cmd-type)
-                              (mach-o-command-listp load-commands))
-                  :guard-hints (("Goal" :in-theory (enable mach-o-command-listp)))
-                  ))
-  (if (endp load-commands)
-      (er hard? 'get-mach-o-load-command "Can't find a load command of type: ~x0." cmd-type)
-    (let* ((load-command (first load-commands))
-           (this-cmd-type (acl2::lookup-eq-safe :cmd load-command)))
-      (if (eq cmd-type this-cmd-type)
-          load-command
-        (get-mach-o-load-command cmd-type (rest load-commands))))))
 
 (defopeners get-mach-o-load-command) ;drop?
-
-(defthm mach-o-commandp-of-get-mach-o-load-command
-  (implies (and (symbolp cmd-type)
-                (mach-o-command-listp load-commands))
-           (mach-o-commandp (get-mach-o-load-command cmd-type load-commands)))
-  :hints (("Goal" :in-theory (enable get-mach-o-load-command
-                                     mach-o-command-listp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;move
-(defund parsed-mach-o-p (parsed-mach-o)
-  (declare (xargs :guard t))
-  (and (symbol-alistp parsed-mach-o)
-       (equal (strip-cars parsed-mach-o) '(:executable-type :magic :header :cmds :bytes))
-       (let ((executable-type (lookup-eq :executable-type parsed-mach-o))
-             (magic (lookup-eq :magic parsed-mach-o))
-             (header (lookup-eq :header parsed-mach-o))
-             (cmds (lookup-eq :cmds parsed-mach-o))
-             (bytes (lookup-eq :bytes parsed-mach-o)))
-         (and (member-eq executable-type '(:mach-o-32 :mach-o-64))
-              (or (member-eq magic *32-bit-magic-numbers*)
-                  (member-eq magic *64-bit-magic-numbers*))
-              (symbol-alistp header) ; todo: strengthen
-              (mach-o-command-listp cmds)
-              (mach-o-symbol-tablep (lookup-equal :syms (get-mach-o-load-command :lc_symtab cmds)))
-              (byte-listp bytes)))))
-
-(defthm parsed-mach-o-p-forward-to-symbol-alistp
-  (implies (parsed-mach-o-p e)
-           (symbol-alistp e))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable parsed-mach-o-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -206,10 +91,9 @@
   :hints (("Goal" :in-theory (enable mach-o-section-listp
                                      get-mach-o-section))))
 
-(local
-  (defthm alistp-when-mach-o-sectionp
-    (implies (mach-o-sectionp sec)
-             (alistp sec))))
+(defthmd alistp-when-mach-o-sectionp
+  (implies (mach-o-sectionp sec)
+           (alistp sec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -217,14 +101,14 @@
 ;; todo: return an error?
 (defund get-mach-o-code (parsed-mach-o)
   (declare (xargs :guard (parsed-mach-o-p parsed-mach-o)
-                  :guard-hints (("Goal" :in-theory (enable parsed-mach-o-p)))))
+                  :guard-hints (("Goal" :in-theory (enable parsed-mach-o-p alistp-when-mach-o-sectionp)))))
   ;; todo: what if :contents is (:zero-fill ...)?
   (acl2::lookup-eq-safe :contents (get-mach-o-section "__text" (acl2::lookup-eq-safe :SECTIONS (get-mach-o-segment "__TEXT" (acl2::lookup-eq-safe :cmds parsed-mach-o))))))
 
 ;; Get the load address for the code from the __TEXT,__text section
 (defund get-mach-o-code-address (parsed-mach-o)
   (declare (xargs :guard (parsed-mach-o-p parsed-mach-o)
-                  :guard-hints (("Goal" :in-theory (enable parsed-mach-o-p)))))
+                  :guard-hints (("Goal" :in-theory (enable parsed-mach-o-p alistp-when-mach-o-sectionp)))))
   (acl2::lookup-eq-safe :addr (get-mach-o-section "__text" (acl2::lookup-eq-safe :SECTIONS (get-mach-o-segment "__TEXT" (acl2::lookup-eq-safe :cmds parsed-mach-o))))))
 
 (defun get-all-sections-from-mach-o-load-command (cmd)
@@ -238,7 +122,7 @@
 
 (defun get-all-sections-from-mach-o-load-commands (cmds)
   (declare (xargs :guard (mach-o-command-listp cmds)
-                  :guard-hints (("Goal" :in-theory (enable mach-o-command-listp mach-o-commandp)))))
+                  :guard-hints (("Goal" :in-theory (enable mach-o-command-listp mach-o-commandp true-listp-when-mach-o-section-listp)))))
   (if (endp cmds)
       nil
     (append (get-all-sections-from-mach-o-load-command (first cmds))
@@ -380,13 +264,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(local
+  (defthm alistp-when-mach-o-symbol-table-entryp
+    (implies (mach-o-symbol-table-entryp entry)
+             (alistp entry))
+    :hints (("Goal" :in-theory (enable mach-o-symbol-table-entryp)))))
+
 ;; Get the starting address of the subroutine called subroutine-name
 ;; in the __Text,__text section of, MACH-O, which should be a parsed
 ;; Mach-O executable.
 (defund subroutine-address-mach-o (subroutine-name parsed-mach-o)
   (declare (xargs :guard (and (stringp subroutine-name)
                               (parsed-mach-o-p parsed-mach-o))
-                  :guard-hints (("Goal" :in-theory (e/d (parsed-mach-o-p) (natp))))))
+                  :guard-hints (("Goal" :in-theory (e/d (parsed-mach-o-p ) (natp))))))
   (let ((text-section-number (get-text-section-number-mach-o parsed-mach-o)))
     (if (not (natp text-section-number))
         (er hard? 'subroutine-address-mach-o "No text section found.")

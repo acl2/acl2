@@ -504,10 +504,10 @@
     "The declarations must be of objects in blocks."))
   (b* ((old (declon-fix old))
        (new (declon-fix new))
-       ((unless (declon-block-formalp old))
+       ((unless (declon-obj-block-formalp old))
         (raise "Internal error: ~x0 is not in the formalized subset." old)
         (mv '(_) nil 1))
-       ((unless (declon-block-formalp new))
+       ((unless (declon-obj-block-formalp new))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
        (vars-pre (gen-var-assertions vartys-pre 'compst))
@@ -2838,8 +2838,8 @@
                            (check-decl-spec-list-all-typespec specs-new)))
                        (and okp
                             (type-spec-list-formalp tyspecs)))
-                     (init-declor-list-block-formalp ideclors)
-                     (init-declor-list-block-formalp ideclors-new)))
+                     (init-declor-list-obj-block-formalp ideclors)
+                     (init-declor-list-obj-block-formalp ideclors-new)))
         (mv declon-new gout-no-thm))
        (initdeclor (car ideclors))
        (var (dirdeclor-ident->ident
@@ -2915,11 +2915,11 @@
                    :thm-index thm-index
                    :thm-name thm-name
                    :vartys vartys-post)))
-  :guard-hints (("Goal" :in-theory (enable declon-block-formalp
-                                           init-declor-list-block-formalp
-                                           init-declor-block-formalp
-                                           declor-block-formalp
-                                           dirdeclor-block-formalp)))
+  :guard-hints (("Goal" :in-theory (enable declon-obj-block-formalp
+                                           init-declor-list-obj-block-formalp
+                                           init-declor-obj-block-formalp
+                                           declor-obj-block-formalp
+                                           dirdeclor-obj-block-formalp)))
 
   ///
 
@@ -2946,8 +2946,8 @@
                              vartys-post gin)))
       (implies (and (gout->thm-name gout)
                     (or (not ideclors-thm-name)
-                        (and (init-declor-list-block-formalp ideclors)
-                             (init-declor-list-block-formalp ideclors-new))))
+                        (and (init-declor-list-obj-block-formalp ideclors)
+                             (init-declor-list-obj-block-formalp ideclors-new))))
                (and (b* (((mv okp tyspecs)
                           (check-decl-spec-list-all-typespec specs)))
                       (and okp
@@ -2956,9 +2956,9 @@
                           (check-decl-spec-list-all-typespec specs-new)))
                       (and okp
                            (type-spec-list-formalp tyspecs)))
-                    (init-declor-list-block-formalp ideclors)
-                    (declon-block-formalp declon))))
-    :expand (declon-block-formalp (declon-declon nil specs ideclors-new))
+                    (init-declor-list-obj-block-formalp ideclors)
+                    (declon-obj-block-formalp declon))))
+    :expand (declon-obj-block-formalp (declon-declon nil specs ideclors-new))
     :enable (irr-gout
              gout-no-thm)))
 
@@ -3105,10 +3105,10 @@
                    :thm-index thm-index
                    :thm-name thm-name
                    :vartys vartys-post)))
-  :guard-hints (("Goal" :in-theory (enable declon-block-formalp
-                                           init-declor-block-formalp
-                                           declor-block-formalp
-                                           dirdeclor-block-formalp)))
+  :guard-hints (("Goal" :in-theory (enable declon-obj-block-formalp
+                                           init-declor-obj-block-formalp
+                                           declor-obj-block-formalp
+                                           dirdeclor-obj-block-formalp)))
 
   ///
 
@@ -3130,9 +3130,9 @@
                                  info vartys-post gin)))
       (implies (and (gout->thm-name gout)
                     (or (not declon-thm-name)
-                        (and (declon-block-formalp declon)
-                             (declon-block-formalp declon-new))))
-               (and (declon-block-formalp declon)
+                        (and (declon-obj-block-formalp declon)
+                             (declon-obj-block-formalp declon-new))))
+               (and (declon-obj-block-formalp declon)
                     (block-item-formalp item))))
     :expand (block-item-formalp (block-item-declon declon-new info))
     :enable gout-no-thm))

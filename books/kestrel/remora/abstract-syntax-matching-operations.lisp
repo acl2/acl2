@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax-structurals")
 
+(local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
 (acl2::controlled-configuration)
@@ -55,7 +56,7 @@
      The only case in which this does not succeed is on array type variables,
      because we could not obtain the element atom type and the ispace."))
   (cond
-   ((type-atomp type)
+   ((type-atom-kindp type)
     (make-type+ispace :type type :ispace (ispace-shape (shape-dims nil))))
    ((type-case type :array)
     (make-type+ispace :type (type-array->elem type)
@@ -152,13 +153,12 @@
                            :type (type-forall->body type)))
        ((unless (type-case type :foralln)) (reserr nil))
        (params (type-foralln->params type))
-       (body (type-foralln->body type))
-       ((unless (consp params)) (reserr nil)))
+       (body (type-foralln->body type)))
     (make-typevar+type
      :var (car params)
-     :type (if (consp (cdr params))
-               (make-type-foralln :params (cdr params) :body body)
-             body))))
+     :type (make-type-forall/foralln (cdr params) body)))
+  :guard-hints
+  (("Goal" :in-theory (enable consp-of-cdr-of-type-foralln->params))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -188,13 +188,12 @@
                              :type (type-pi->body type)))
        ((unless (type-case type :pin)) (reserr nil))
        (params (type-pin->params type))
-       (body (type-pin->body type))
-       ((unless (consp params)) (reserr nil)))
+       (body (type-pin->body type)))
     (make-ispacevar+type
      :var (car params)
-     :type (if (consp (cdr params))
-               (make-type-pin :params (cdr params) :body body)
-             body))))
+     :type (make-type-pi/pin (cdr params) body)))
+  :guard-hints
+  (("Goal" :in-theory (enable consp-of-cdr-of-type-pin->params))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -222,7 +221,15 @@
                                    :type (type-sigma->body type))
    :sigman (make-ispacevarlist+type :vars (type-sigman->params type)
                                     :type (type-sigman->body type))
-   :otherwise (reserr nil)))
+   :otherwise (reserr nil))
+
+  ///
+
+  (defret consp-of-vars-of-type-match-sum
+    (implies (not (reserrp vars+type))
+             (consp (ispacevarlist+type->vars vars+type)))
+    :hints (("Goal" :in-theory (enable type-match-sum)))
+    :rule-classes ((:rewrite) (:type-prescription))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -242,8 +249,7 @@
   (b* (((unless (expr-case expr :array)) (reserr nil))
        ((expr-array expr) expr)
        ((unless (endp expr.dims)) (reserr nil))
-       ((unless (and (consp expr.atoms)
-                     (endp (cdr expr.atoms))))
+       ((unless (endp (cdr expr.atoms)))
         (reserr nil))
        (atom (car expr.atoms))
        ((unless (atom-case atom :box)) (reserr nil))

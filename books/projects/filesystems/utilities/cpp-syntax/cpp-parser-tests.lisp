@@ -37,6 +37,24 @@
       (mv (not erp) parstate))
     parstate))
 
+; Strict helper for expression cases where we need AST-shape checks.
+(defmacro test-parse-cpp-expr-assert (input pred)
+  `(acl2::assert!-stobj
+    (b* ((dialect (c::make-dialect :std (c::standard-c17)))
+         (parstate (c$::init-parstate ""
+                                      (acl2::string=>nats ,input)
+                                      dialect
+                                      nil
+                                      parstate))
+         ((mv erp ast ?span parstate) (parse-cpp-expr parstate))
+         ;; Ensure parse-cpp-expr consumed all tokens.
+         ((mv ?erp2 next? ?next-span parstate) (read-token parstate)))
+      (mv (and (not erp)
+               (not next?)
+               ,pred)
+          parstate))
+    parstate))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test 5a: Constructor with ctor-init list and inline body.
@@ -100,6 +118,76 @@
 (test-parse-cpp
  parse-cpp-expr
  "( uint32_t ) 7 + 9")
+
+; Test 8b: (x) * y should remain a multiplication, not a C-style cast.
+
+(test-parse-cpp-expr-assert
+ "( x ) * y"
+ (b* (((unless (cpp-expr-case ast :binary)) nil)
+      (lhs (cpp-expr-binary->lhs ast))
+      (rhs (cpp-expr-binary->rhs ast)))
+   (and (equal (cpp-expr-binary->op ast) (c$::binop-mul))
+        (cpp-expr-case lhs :paren)
+        (cpp-expr-case (cpp-expr-paren->inner lhs) :ident)
+        (equal (ident->unwrap
+                (cpp-expr-ident->name (cpp-expr-paren->inner lhs)))
+               "x")
+        (cpp-expr-case rhs :ident)
+        (equal (ident->unwrap (cpp-expr-ident->name rhs))
+               "y"))))
+
+; Test 8c: (T)7 + 9 should parse as additive with a C-style cast on lhs.
+
+(test-parse-cpp-expr-assert
+ "( uint32_t ) 7 + 9"
+ (b* (((unless (cpp-expr-case ast :binary)) nil))
+   (and (equal (cpp-expr-binary->op ast) (c$::binop-add))
+        (cpp-expr-case (cpp-expr-binary->lhs ast) :c-cast))))
+
+; Test 8d: (T)+5, (T)-5, (T)&v — ident-type cast with unary +/- and address-of.
+
+(test-parse-cpp-expr-assert
+ "( T ) + 5"
+ (cpp-expr-case ast :c-cast))
+
+(test-parse-cpp-expr-assert
+ "( T ) - 5"
+ (cpp-expr-case ast :c-cast))
+
+(test-parse-cpp-expr-assert
+ "( T ) & v"
+ (cpp-expr-case ast :c-cast))
+
+; Test 8e: (T*)x, (T&)x, (T&&)x — pointer/reference casts with an ident type.
+
+(test-parse-cpp-expr-assert
+ "( T * ) x"
+ (b* (((unless (cpp-expr-case ast :c-cast)) nil)
+      (type (cpp-expr-c-cast->type ast)))
+   (and (cpp-type-spec-case type :pointer)
+        (not (cpp-type-spec-pointer->constp type))
+        (cpp-type-spec-case (cpp-type-spec-pointer->pointee type) :name))))
+
+(test-parse-cpp-expr-assert
+ "( T & ) x"
+ (b* (((unless (cpp-expr-case ast :c-cast)) nil))
+   (cpp-type-spec-case (cpp-expr-c-cast->type ast) :lref)))
+
+(test-parse-cpp-expr-assert
+ "( T && ) x"
+ (b* (((unless (cpp-expr-case ast :c-cast)) nil))
+   (cpp-type-spec-case (cpp-expr-c-cast->type ast) :rref)))
+
+; Test 8f: (T*)*p — pointer cast of a dereference; the '*' after ')' is unary
+; dereference, unambiguously distinct from test 8b's binary multiplication.
+
+(test-parse-cpp-expr-assert
+ "( T * ) * p"
+ (b* (((unless (cpp-expr-case ast :c-cast)) nil)
+      (arg (cpp-expr-c-cast->arg ast)))
+   (and (cpp-type-spec-case (cpp-expr-c-cast->type ast) :pointer)
+        (cpp-expr-case arg :unary)
+        (equal (cpp-expr-unary->op arg) (c$::unop-indir)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -629,3 +717,28 @@
 (test-parse-cpp
  parse-cpp-expr
  "[ * this ] ( ) { return x ; }")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Test 51: C++17 structured bindings.
+
+; 51a: simple local structured binding.
+(test-parse-cpp
+ parse-cpp-block-item
+ "auto [ x , y ] = p ;")
+
+; 51b: structured binding with a qualified/reference type.
+(test-parse-cpp
+ parse-cpp-block-item
+ "auto [ a , b , c ] = make_tuple ( 1 , 2 , 3 ) ;")
+
+; 51c: structured binding in a range-based for header.
+(test-parse-cpp
+ parse-cpp-stmt
+ "for ( auto [ key , val ] : m ) { use ( key , val ) ; }")
+
+; 51d: single-name structured binding.
+(test-parse-cpp
+ parse-cpp-block-item
+ "auto [ only ] = wrap ( z ) ;")
+

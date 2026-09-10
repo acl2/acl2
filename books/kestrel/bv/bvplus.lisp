@@ -568,3 +568,16 @@
                               (bvchop size x)))))
   :hints (("Goal" :use equal-of-constant-and-bvplus-of-constant
            :in-theory (disable equal-of-constant-and-bvplus-of-constant))))
+
+(defthm equal-of-bvchop-and-bvplus-of-same
+  (implies (natp size)
+           (equal (equal (bvchop size x) (bvplus size k x))
+                  (equal 0 (bvchop size k))))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthm equal-of-bvchop-and-bvplus-of-same-alt
+  (implies (natp size)
+           (equal (equal (bvplus size k x) (bvchop size x))
+                  (equal 0 (bvchop size k))))
+  :hints (("Goal" :use (:instance equal-of-bvchop-and-bvplus-of-same)
+           :in-theory (disable equal-of-bvchop-and-bvplus-of-same))))

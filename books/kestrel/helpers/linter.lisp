@@ -998,7 +998,7 @@
        ((mv erp res state)
         (prove$ body-with-replacement :step-limit step-limit :ignore-ok t))
        ((when erp)
-        (er hard? 'try-replacing-each-subterm "Error trying to generalize ~s0." ctx)
+        (er hard? 'try-replacing-subterm "Error trying to generalize ~s0." ctx)
         state)
        ((when res)
         (cw "~%   body can be generalized by replacing ~x0 with a fresh variable." subterm)
@@ -1014,7 +1014,7 @@
        ((mv erp res state)
         (prove$ `(implies ,subterm-type-assumption ,body-with-replacement) :step-limit step-limit :ignore-ok t))
        ((when erp)
-        (er hard? 'try-replacing-each-subterm "Error trying to generalize ~s0." ctx)
+        (er hard? 'try-replacing-subterm "Error trying to generalize ~s0." ctx)
         state)
        (- (and res (cw "~%   body can be generalized by replacing ~x0 with a fresh variable, ~x1, satisfying ~x2."
                        subterm new-var

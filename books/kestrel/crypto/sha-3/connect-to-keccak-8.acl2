@@ -1,4 +1,4 @@
-; Cert params for connect-to-keccak.lisp
+; Cert flags for connect-to-keccak.lisp
 ;
 ; Copyright (C) 2023 Kestrel Institute
 ;

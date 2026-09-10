@@ -16,7 +16,10 @@
 ;; (depends-on "add.elf64")
 ;; cert_param: (uses-stp)
 
-(include-book "kestrel/axe/x86/unroller" :dir :system)
+(include-book "kestrel/axe/x86/unroller-code-only" :dir :system)
+(include-book "kestrel/x86/conditions" :dir :system)
+(include-book "kestrel/bv/bvcount" :dir :system)
+(include-book "kestrel/bv/getbit-rules" :dir :system) ; for getbit-of-+-new
 
 ;; Lifts the subroutine into logic: Creates the function add, which
 ;; represents the effect of the program on the x86 state.
@@ -62,7 +65,8 @@
   (equal (get-flag :zf (add x86))
          (if (equal 0 (bvplus 32 (rax x86) (rbx x86)))
              1
-           0)))
+           0))
+  :hints (("Goal" :in-theory (enable zf-spec$inline))))
 
 ;; The overflow flag is 1 iff the sum doesn't fit in the destination
 (defthm add-of
@@ -77,15 +81,6 @@
              )))
   :hints (("Goal" :in-theory (enable of-spec32 signed-byte-p))))
 
-;; todo: move
-(defthm pf-spec32-alt-def
-  (equal (pf-spec32 res)
-         (if (evenp (bvcount 8 res))
-             1
-           0))
-  :hints (("Goal" :in-theory (enable pf-spec32 acl2::bvcount-becomes-logcount
-                                     acl2::evenp-becomes-equal-of-0-and-getbit-0))))
-
 ;; The parity flag considers only the 8 least significant bits and is 1 iff
 ;; they contain an even number of 1s.
 (defthm add-pf
@@ -96,7 +91,7 @@
            (if (evenp (bvcount 8 sum))
                1
              0)))
-  :hints (("Goal" :in-theory (enable pf-spec32-alt-def bvplus))))
+  :hints (("Goal" :in-theory (enable pf-spec32-becomes-bvcount bvplus acl2::evenp-becomes-equal-of-0-and-getbit-0))))
 
 ;; The sign flag is just the sign bit of the result.
 (defthm add-sf
@@ -121,8 +116,7 @@
   (implies (and (member-equal flag *flags*)
                 (not (member-eq flag *standard-flags*)))
            (equal (get-flag flag (add x86))
-                  (get-flag flag x86)))
-  :hints (("Goal" :in-theory (enable acl2::memberp-of-cons-when-constant))))
+                  (get-flag flag x86))))
 
 ;; All memory addresses are unchanged
 (defthm add-memory-unchanged

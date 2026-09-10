@@ -17,17 +17,18 @@
 ;; trim-elim-rules-non-bv.lisp, which covers TRIM applied to non-BV functions.
 
 (include-book "trim")
-(include-book "bvsx")
+(include-book "bvsx-def")
 (include-book "leftrotate32")
-(include-book "bvnot")
-(include-book "bvplus")
-(include-book "bvmult")
-(include-book "bvminus")
+(include-book "bvnot-def")
+(include-book "bvplus-def")
+(include-book "bvmult-def")
+(include-book "bvuminus-def")
+(include-book "bvminus-def")
 (include-book "bvand-def")
 (include-book "bvor-def")
 (include-book "bvxor-def")
-(include-book "bvif")
-(include-book "bvshl")
+(include-book "bvif-def")
+(include-book "bvshl-def")
 (local (include-book "bvand"))
 (local (include-book "bvor"))
 (local (include-book "bvcat-rules"))
@@ -35,6 +36,7 @@
 (local (include-book "getbit"))
 (local (include-book "slice"))
 (local (include-book "bvuminus"))
+(local (include-book "bvminus"))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 (defthm trim-of-bvchop
@@ -227,3 +229,23 @@
 ;;   :hints (("Goal" :in-theory (enable trim
 ;;                                      bvshr
 ;;                                      ))))
+
+(deftheory trim-elim-rules-bv
+  '(trim-of-bvchop
+    trim-of-slice
+    trim-of-bvcat
+    trim-of-bvnot
+    trim-of-bvand
+    trim-of-bvor
+    trim-of-bvxor
+    trim-of-bvplus
+    trim-of-bvminus
+    trim-of-bvuminus
+    trim-of-bvmult
+    trim-of-bvsx
+    trim-of-leftrotate32
+    trim-of-1-and-leftrotate
+    trim-of-repeatbit
+    trim-of-bvif
+    trim-of-bvshl)
+  :redundant-okp t)

@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,6 +19,7 @@
 (include-book "overflow-and-underflow")
 (local (include-book "arith")) ; todo: drop (not easy)
 (local (include-book "bvuminus"))
+(local (include-book "bvminus"))
 ;; (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))

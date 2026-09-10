@@ -35,6 +35,7 @@
  (defthm keyword-listp-forward-to-eqlable-listp
    (implies (acl2::keyword-listp x)
             (eqlable-listp x))
+   :rule-classes :forward-chaining
    :hints (("Goal" :in-theory (enable acl2::keyword-listp)))))
 
 (in-theory (disable ;acl2::member-of-cons

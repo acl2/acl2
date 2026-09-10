@@ -14,6 +14,8 @@
 (include-book "abstract-syntax-trees")
 (include-book "identifier-syntax")
 
+(include-book "lists")
+
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -82,6 +84,7 @@
 (fty::deffold-reduce wfp
   :short "Well-formedness predicate over ASTs."
   :types (dims
+          dim-list-list
           shapes/ispaces
           ispace-list-option
           ispace-var
@@ -109,32 +112,10 @@
    (ispace-var :shape (valid-identifier-string-p ispace-var.name))
    (type-var :atom (valid-identifier-string-p type-var.name))
    (type-var :array (valid-identifier-string-p type-var.name))
-   (type :foralln (and (type-var-list-wfp type.params)
-                       (type-wfp type.body)
-                       (>= (len type.params) 2)))
-   (type :pin (and (ispace-var-list-wfp type.params)
-                   (type-wfp type.body)
-                   (>= (len type.params) 2)))
-   (type :sigman (and (ispace-var-list-wfp type.params)
-                      (type-wfp type.body)
-                      (>= (len type.params) 2)))
    (var+type? (b* (((var+type? var+type?)))
                 (and (valid-identifier-string-p var+type?.var)
                      (type-option-wfp var+type?.type?))))
    (expr :var (valid-identifier-string-p expr.name))
-   (expr :array (and (atom-list-wfp expr.atoms)
-                     (>= (len expr.atoms) 1)))
-   (expr :frame (and (expr-list-wfp expr.exprs)
-                     (>= (len expr.exprs) 1)))
-   (expr :appn (and (expr-wfp expr.fun)
-                    (expr-list-wfp expr.args)
-                    (>= (len expr.args) 2)))
-   (expr :tappn (and (expr-wfp expr.fun)
-                     (type-list-wfp expr.args)
-                     (>= (len expr.args) 2)))
-   (expr :iappn (and (expr-wfp expr.fun)
-                     (ispace-list-wfp expr.args)
-                     (>= (len expr.args) 2)))
    (expr :unbox (and (ispace-var-wfp expr.ispace)
                      (valid-identifier-string-p expr.var)
                      (expr-wfp expr.target)
@@ -144,27 +125,7 @@
                       (valid-identifier-string-p expr.var)
                       (expr-wfp expr.target)
                       (expr-wfp expr.body)
-                      (type-option-wfp expr.type?)
-                      (>= (len expr.ispaces) 2)))
-   (expr :bracket (and (expr-list-wfp expr.exprs)
-                       (>= (len expr.exprs) 1)))
-   (expr :let (and (bind-list-wfp expr.binds)
-                   (expr-wfp expr.body)
-                   (>= (len expr.binds) 1)))
-   (atom :lambdan (and (var+type?-list-wfp atom.params)
-                       (expr-wfp atom.body)
-                       (type-option-wfp atom.type?)
-                       (>= (len atom.params) 2)))
-   (atom :tlambdan (and (type-var-list-wfp atom.params)
-                        (expr-wfp atom.body)
-                        (>= (len atom.params) 2)))
-   (atom :ilambdan (and (ispace-var-list-wfp atom.params)
-                        (expr-wfp atom.body)
-                        (>= (len atom.params) 2)))
-   (atom :boxn (and (ispace-list-wfp atom.ispaces)
-                    (expr-wfp atom.array)
-                    (type-wfp atom.type)
-                    (>= (len atom.ispaces) 2)))
+                      (type-option-wfp expr.type?)))
    (bind :val (and (valid-identifier-string-p bind.var)
                    (type-option-wfp bind.type?)
                    (expr-wfp bind.expr)))
@@ -190,4 +151,19 @@
                      (var+type?-list-wfp decl.params)
                      (type-option-wfp decl.type?)
                      (expr-wfp decl.expr))))
-  :name abstract-syntax-wfp)
+  :name ast-wfp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection ast-wfp-additional-theorems
+  :short "Additional theorems about the AST well-formedness predicates."
+
+  (defruled dim-list-list-wfp-of-list-to-singletons
+    (equal (dim-list-list-wfp (list-to-singletons dims))
+           (dim-list-wfp dims))
+    :induct t
+    :enable (list-to-singletons
+             ast-wfp-rules))
+
+  (add-to-ruleset ast-wfp-rules
+                  '(dim-list-list-wfp-of-list-to-singletons)))

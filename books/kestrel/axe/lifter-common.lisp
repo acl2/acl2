@@ -22,6 +22,11 @@
 (include-book "rewriter-basic")
 (include-book "kestrel/utilities/real-time-since" :dir :system)
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
+(local (include-book "kestrel/utilities/world" :dir :system))
+(local (include-book "kestrel/utilities/globals" :dir :system))
+(local (include-book "kestrel/utilities/state" :dir :system))
+
+(local (in-theory (disable w)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -35,34 +40,36 @@
     (cw "~X01" dag nil)))
 
 ;; Returns state.
-;; restores the print-base to 10 (do better?)
-(defund print-dag-nicely-with-base (dag max-term-size descriptor untranslatep print-base state)
+(defund print-dag-nicely-with-base (dag max-term-size description untranslatep print-base state)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (natp max-term-size)
-                              (stringp descriptor)
+                              (or (stringp description)
+                                  (null description))
                               (booleanp untranslatep)
                               (member print-base '(10 16)))
                   :stobjs state))
-  (if (dag-or-quotep-size-less-than dag max-term-size) ; todo: drop the "-or-quotep"
-      (b* ((- (cw "(Term ~x0:~%" descriptor))
-           (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
-                      (set-print-base-radix print-base state)
-                    state))
-           (term (dag2term dag))
-           (term (if untranslatep (untranslate$ term nil state) term))
-           (- (cw "~X01" term nil))
-           (state (set-print-base-radix 10 state)) ;make-event sets it to 10
-           (- (cw ")~%"))) ; matches "(Term after"
-        state)
-    (b* ((- (cw "(DAG ~x0:~%" descriptor))
-         (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
-                    (set-print-base-radix print-base state)
-                  state))
-         (- (cw "~X01" dag nil))
-         (state (set-print-base-radix 10 state))
-         (- (cw "(DAG has ~x0 IF-branches.)~%" (count-top-level-if-branches-in-dag dag))) ; todo: if 1, say "no ifs"
-         (- (cw ")~%"))) ; matches "(DAG after"
-      state)))
+  (let* ((old-print-base (if (boundp-global 'print-base state) ; for guards
+                             (f-get-global 'print-base state)
+                           10))
+         (change-basep (not (eql old-print-base print-base)))
+         )
+    (if (dag-or-quotep-size-less-than dag max-term-size) ; todo: drop the "-or-quotep"
+        (b* ((- (if description (cw "(Term ~x0:~%" description) (cw "(Term:~%")))
+             (state (if change-basep (set-print-base-radix print-base state) state))
+             (term (dag2term dag))
+             (term (if untranslatep (untranslate$ term nil state) term))
+             (- (cw "~X01" term nil))
+             (state (if change-basep (set-print-base-radix old-print-base state) state))
+             (- (cw ")~%"))) ; matches "(Term after"
+          state)
+      ;; It's large, so print as a DAG:
+      (b* ((- (if description (cw "(DAG ~x0:~%" description) (cw "(DAG:~%")))
+           (state (if change-basep (set-print-base-radix print-base state) state))
+           (- (cw "~X01" dag nil))
+           (state (if change-basep (set-print-base-radix old-print-base state) state))
+           (- (cw "(DAG has ~x0 IF-branches.)~%" (count-top-level-if-branches-in-dag dag))) ; todo: if 1, say "no ifs"
+           (- (cw ")~%"))) ; matches "(DAG after"
+        state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -198,20 +205,27 @@
       ;; no special treatment:
       monitor)))
 
+(defthm symbol-listp-of-maybe-add-debug-rules
+  (implies (and (or (eq :debug monitor)
+                    (symbol-listp monitor))
+                (symbol-listp debug-rules))
+           (symbol-listp (maybe-add-debug-rules debug-rules monitor)))
+  :hints (("Goal" :in-theory (enable maybe-add-debug-rules))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Creates a custom version of the repeatedly-run-function for each unrolling lifter.
 (defun make-repeatedly-run-function-fn (name simplify-dag-name)
   (declare (xargs :guard (and (symbolp name)
                               (symbolp simplify-dag-name))))
-  ;; Repeatedly rewrites DAG to perform symbolic execution.  Repeatedly
-  ;; alternates between running some number of steps (indicated by
-  ;; STEP-INCREMENT) and pruning the DAG (usually), until the run finishes,
-  ;; STEPS-DONE reaches STEP-LIMIT, or a loop (really?) or an unsupported
-  ;; instruction is detected.  Returns (mv erp result-dag-or-quotep hits state).
   `(encapsulate ()
      (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
+     ;; Repeatedly rewrites DAG to perform symbolic execution.  Repeatedly
+     ;; alternates between running some number of steps (indicated by
+     ;; STEP-INCREMENT) and pruning the DAG (usually), until the run finishes,
+     ;; STEPS-DONE reaches STEP-LIMIT, or a loop (really?) or an unsupported
+     ;; instruction is detected.  Returns (mv erp result-dag-or-quotep hits state)
      (defund ,name (steps-done
                     step-limit
                     step-increment ; not always just a number!
@@ -257,7 +271,7 @@
                        :measure (nfix (+ 1 (- (nfix step-limit) (nfix steps-done))))
                        :stobjs state
                        :hints (("Goal" :in-theory (enable min nfix ifix)))
-                       :guard-hints (("Goal" :in-theory (e/d (acl2-numberp-when-natp) (min member-equal))))))
+                       :guard-hints (("Goal" :in-theory (e/d (acl2-numberp-when-natp) (min member-equal quotep))))))
        (if (or (not (mbt (and (natp steps-done)
                               (natp step-limit))))
                (<= step-limit steps-done))
@@ -442,10 +456,12 @@
                          (er hard? ',name "Unresolved error branches are present (see calls of ~&0 in the term or DAG above)." error-branch-functions)
                          (mv :unresolved-error-branches nil hits state))
                         ((when remaining-incomplete-run-fns)
-                         (cw "~%")
-                         (print-dag-nicely dag max-printed-term-size) ; use the print-base?
-                         (er hard? ',name " Incomplete run (see calls of ~&0 in the term or DAG above)." remaining-incomplete-run-fns)
-                         (mv :incomplete-run nil hits state)))
+                         (b* ((- (cw "~%"))
+                              (state (print-dag-nicely-with-base dag max-printed-term-size nil
+                                                                 nil ; t would turn IF into COND
+                                                                 print-base state))
+                              (- (er hard? ',name " Incomplete run (see calls of ~&0 in the term or DAG above)." remaining-incomplete-run-fns)))
+                           (mv :incomplete-run nil hits state))))
                      (mv :error-incomplete-run ; is this case possible?
                          dag hits state))
                  ;; Something changed, so continue the symbolic execution:
@@ -459,7 +475,107 @@
                           state)))
                    (,name steps-done step-limit step-increment
                           dag rule-alist pruning-rule-alist assumptions step-opener-rule rules-to-monitor prune-precise prune-approx normalize-xors count-hits hits print print-base max-printed-term-size no-warn-ground-functions fns-to-elide non-stp-assumption-functions incomplete-run-fns error-fns untranslatep memoizep
-                          state))))))))))
+                          state))))))))
+
+     (defthm ,(pack-in-package-of-first-symbol name '-return-type)
+       (implies (and (natp steps-done)
+                     (natp step-limit)
+                     (step-incrementp step-increment)
+                     (pseudo-dagp dag)
+                     (rule-alistp rule-alist)
+                     (rule-alistp pruning-rule-alist)
+                     (pseudo-term-listp assumptions)
+                     (symbolp step-opener-rule)
+                     (symbol-listp rules-to-monitor)
+                     (or (eq nil prune-precise)
+                         (eq t prune-precise)
+                         (natp prune-precise))
+                     (or (eq nil prune-approx)
+                         (eq t prune-approx)
+                         (natp prune-approx))
+                     (normalize-xors-optionp normalize-xors)
+                     (count-hits-argp count-hits)
+                     (hitsp hits)
+                     (print-levelp print)
+                     (member print-base '(10 16))
+                     (natp max-printed-term-size)
+                     (symbol-listp no-warn-ground-functions)
+                     (symbol-listp fns-to-elide)
+                     (symbol-listp non-stp-assumption-functions)
+                     (symbol-listp incomplete-run-fns)
+                     (symbol-listp error-fns)
+                     (booleanp untranslatep)
+                     (booleanp memoizep))
+                (mv-let (erp result-dag-or-quotep hits state)
+                  (,name steps-done
+                         step-limit
+                         step-increment
+                         dag
+                         rule-alist pruning-rule-alist
+                         assumptions
+                         step-opener-rule
+                         rules-to-monitor
+                         prune-precise prune-approx
+                         normalize-xors count-hits hits print print-base max-printed-term-size
+                         no-warn-ground-functions fns-to-elide non-stp-assumption-functions incomplete-run-fns error-fns
+                         untranslatep memoizep
+                         state)
+                  (declare (ignore state))
+                  (implies (not erp)
+                           (and (or (myquotep result-dag-or-quotep)
+                                    (pseudo-dagp result-dag-or-quotep))
+                                (hitsp hits)))))
+       :hints (("Goal" :in-theory (e/d (,name acl2-numberp-when-natp) (member-equal quotep)))))
+
+     (defthm ,(pack-in-package-of-symbol name 'pseudo-dagp-of- name)
+       (implies (and (natp steps-done)
+                     (natp step-limit)
+                     (step-incrementp step-increment)
+                     (pseudo-dagp dag)
+                     (rule-alistp rule-alist)
+                     (rule-alistp pruning-rule-alist)
+                     (pseudo-term-listp assumptions)
+                     (symbolp step-opener-rule)
+                     (symbol-listp rules-to-monitor)
+                     (or (eq nil prune-precise)
+                         (eq t prune-precise)
+                         (natp prune-precise))
+                     (or (eq nil prune-approx)
+                         (eq t prune-approx)
+                         (natp prune-approx))
+                     (normalize-xors-optionp normalize-xors)
+                     (count-hits-argp count-hits)
+                     (hitsp hits)
+                     (print-levelp print)
+                     (member print-base '(10 16))
+                     (natp max-printed-term-size)
+                     (symbol-listp no-warn-ground-functions)
+                     (symbol-listp fns-to-elide)
+                     (symbol-listp non-stp-assumption-functions)
+                     (symbol-listp incomplete-run-fns)
+                     (symbol-listp error-fns)
+                     (booleanp untranslatep)
+                     (booleanp memoizep))
+                (mv-let (erp result-dag-or-quotep hits state)
+                  (,name steps-done
+                         step-limit
+                         step-increment
+                         dag
+                         rule-alist pruning-rule-alist
+                         assumptions
+                         step-opener-rule
+                         rules-to-monitor
+                         prune-precise prune-approx
+                         normalize-xors count-hits hits print print-base max-printed-term-size
+                         no-warn-ground-functions fns-to-elide non-stp-assumption-functions incomplete-run-fns error-fns
+                         untranslatep memoizep
+                         state)
+                  (declare (ignore state hits))
+                  (implies (not erp)
+                           (equal (pseudo-dagp result-dag-or-quotep)
+                                  (not (myquotep result-dag-or-quotep))))))
+       :hints (("Goal" :use ,(pack-in-package-of-first-symbol name '-return-type)
+                :in-theory (disable ,(pack-in-package-of-first-symbol name '-return-type)))))))
 
 (defmacro make-repeatedly-run-function (name simplify-dag-name)
   `(make-event (make-repeatedly-run-function-fn ',name ',simplify-dag-name)))
@@ -524,3 +640,20 @@
           (cw "s.)~%"))
        (- (cw " Done simplifying assumptions)~%")))
     (mv nil assumptions hits state)))
+
+(defthm pseudo-term-listp-of-mv-nth-1-of-simplify-assumptions
+  (implies (and (pseudo-term-listp assumptions)
+                (symbol-listp rules)
+                (count-hits-argp count-hits)
+                (symbol-listp no-warn-ground-functions))
+           (pseudo-term-listp (mv-nth 1 (simplify-assumptions assumptions rules count-hits no-warn-ground-functions state))))
+  :hints (("Goal" :in-theory (enable simplify-assumptions))))
+
+(defthm w-of-mv-nth-3-of-simplify-assumptions
+  (implies (and (pseudo-term-listp assumptions)
+                (symbol-listp rules)
+                (count-hits-argp count-hits)
+                (symbol-listp no-warn-ground-functions))
+           (equal (w (mv-nth 3 (simplify-assumptions assumptions rules count-hits no-warn-ground-functions state)))
+                  (w state)))
+  :hints (("Goal" :in-theory (enable simplify-assumptions))))

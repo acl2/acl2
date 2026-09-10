@@ -19,13 +19,19 @@
   (stringp m) ;todo: add checks?
   )
 
+(defthm class-infop0-of-lookup-equal-when-class-info0-listp-of-strip-cdrs
+  (implies (class-info0-listp (strip-cdrs class-alist))
+           (iff (class-infop0 (lookup-equal name class-alist))
+                (lookup-equal name class-alist)))
+  :hints (("Goal" :in-theory (enable class-info0-listp lookup-equal))))
+
 ;; M is at least of the form ClassName.methodName.  The method signature may be
 ;; omitted if unambiguous, if which case this tool adds it.
 ;; Returns a method-designator-string.
 ;; TODO: Consider allowing the package to be omitted, but what if we have a
 ;; class in an unnamed package and we need to distinguish that from a class
 ;; in some other package with package omitted (can't treat that as ambiguous)?
-(defun elaborate-method-indicator (m class-alist)
+(defund elaborate-method-indicator (m class-alist)
   (declare (xargs :guard (and (method-indicatorp m)
                               (alistp class-alist)
                               (class-name-listp (strip-cars class-alist))
@@ -40,12 +46,16 @@
            (class-info (lookup-equal class-name class-alist)))
       (if (not class-info)
           (er hard? 'elaborate-method-indicator "Class not found: ~x0." class-name)
-        (if (not (class-infop0 class-info)) ; for guard proof
-            (er hard? 'elaborate-method-indicator "Ill-formed class: ~x0." class-name)
-          (let ((methods-matching-name (methods-matching-name class-name method-name (class-decl-methods class-info))))
-            (if (endp methods-matching-name)
-                (er hard? 'elaborate-method-indicator "No methods in ~x0 named ~x1." class-name method-name)
-              (if (consp (cdr methods-matching-name))
-                  (er hard? 'elaborate-method-indicator "More than 1 method in ~x0 named ~x1.  Matching methods: ~x2.  Disambiguate by adding a descriptor." class-name method-name methods-matching-name)
-                ;; exactly 1 matching method:
-                (first methods-matching-name)))))))))
+        (let ((methods-matching-name (methods-matching-name class-name method-name (class-decl-methods class-info))))
+          (if (endp methods-matching-name)
+              (er hard? 'elaborate-method-indicator "No methods in ~x0 named ~x1." class-name method-name)
+            (if (consp (cdr methods-matching-name))
+                (er hard? 'elaborate-method-indicator "More than 1 method in ~x0 named ~x1.  Matching methods: ~x2.  Disambiguate by adding a descriptor." class-name method-name methods-matching-name)
+              ;; exactly 1 matching method:
+              (first methods-matching-name))))))))
+
+;; todo:
+;; (thm
+;;   (implies (elaborate-method-indicator m class-alist)
+;;            (method-descriptorp (elaborate-method-indicator m class-alist)))
+;;   :hints (("Goal" :in-theory (enable elaborate-method-indicator))))

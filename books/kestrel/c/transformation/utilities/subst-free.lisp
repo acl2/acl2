@@ -111,7 +111,8 @@
                           subst bound-vars)
        (desiniter-list-subst-free (c$::expr-complit->elems expr)
                                   subst bound-vars)
-       (c$::expr-complit->final-comma expr))
+       (c$::expr-complit->final-comma expr)
+       (c$::expr-complit->info expr))
      :unary
      (c$::expr-unary (c$::expr-unary->op expr)
                      (expr-subst-free (c$::expr-unary->arg expr)

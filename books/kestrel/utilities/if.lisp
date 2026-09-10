@@ -229,3 +229,14 @@
 ;; (defthmd if-of-if-of-cons-and-nil
 ;;   (equal (if (if test (cons a b) nil) tp ep)
 ;;          (if test tp ep)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Ensures that the test of an IF is not another IF.
+;; WARNING: this duplicates TP2 and EP2.
+;; TODO: Don't do this when the inner IF represents and AND or OR?
+(defthmd if-of-if-arg1
+  (equal (if (if test tp1 ep1) tp2 ep2)
+         (if test
+             (if tp1 tp2 ep2)
+           (if ep1 tp2 ep2))))

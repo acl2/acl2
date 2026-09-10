@@ -20,9 +20,9 @@
 (include-book "bvxor-def")
 
 ;Depending on how we translate to SMT, We might prefer, for example:
-;(bvxor 8 x (bvchop 8 (foo x)) (slice 7 0 y))
+;(bvxor 8 (bvchop 8 (foo x)) (slice 7 0 y))
 ;to
-;(bvxor 8 x (foo x) (slice 7 0 y))
+;(bvxor 8 (foo x) (slice 7 0 y))
 ;even though the bvchop can be dropped, because foo might be big (say, of size 32) and the latter would give a length mismatch in stp
 ;more like this?
 ;(in-theory (disable bvxor-of-bvchop-1 bvxor-of-bvchop-2))

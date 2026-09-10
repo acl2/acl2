@@ -41,6 +41,7 @@
 (define heap<-all-l
   ((tree treep)
    x)
+  (declare (xargs :type-prescription :none))
   :parents (tree)
   :short "Check that all members of a tree are @(tsee heap<) some value."
   :returns (yes/no booleanp :rule-classes :type-prescription)
@@ -50,8 +51,6 @@
            (heap<-all-l (tree->right tree) x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t heap<-all-l)))
 
 (defrule heap<-all-l-when-tree-equiv-congruence
   (implies (tree-equiv x y)
@@ -313,16 +312,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled heapp-of-tree->left-when-tree-orderdp
+(defruled heapp-of-tree->left-when-heapp
   (implies (heapp tree)
            (heapp (tree->left tree)))
   :enable heapp)
 
-(defrule heapp-of-tree->left-when-tree-orderdp-cheap
+(defrule heapp-of-tree->left-when-heapp-cheap
   (implies (heapp tree)
            (heapp (tree->left tree)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by heapp-of-tree->left-when-tree-orderdp)
+  :by heapp-of-tree->left-when-heapp)
 
 (defruled heapp-of-tree->right-when-heapp
   (implies (heapp tree)
@@ -410,9 +409,22 @@
     heap<-of-tree->head-when-heap<-all-l))
 
 (defthy heapp-extra-rules
-  '(heapp-of-tree->left-when-tree-orderdp
+  '(heapp-of-tree->left-when-heapp
     heapp-of-tree->right-when-heapp
     heapp-when-tree-empty-p
     heapp-when-not-tree-empty-p
     heap<-of-tree->head-and-tree->head-of-tree->left
     heap<-of-tree->head-and-tree->head-of-tree->right))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The head of a heap dominates the entire heap.
+(defruled heap<-all-l-becomes-heap<-of-tree->head
+  (implies (heapp tree)
+           (equal (heap<-all-l tree x)
+                  (or (tree-empty-p tree)
+                      (heap< (tree-element->val (tree->head tree)) x))))
+  :induct t
+  :enable (heap<-all-l
+           heapp-extra-rules
+           heap<-rules))

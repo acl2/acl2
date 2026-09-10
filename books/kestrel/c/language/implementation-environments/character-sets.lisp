@@ -301,3 +301,66 @@
              charset-source-chars
              charset-exec-chars
              set::expensive-rules)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define charset-basic+lf ((std standardp))
+  :returns (charset charsetp)
+  :short "The character set consisting of
+          the basic source characters plus LF
+          and the basic execution characters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We combine @(tsee source-charset-basic+lf)
+     with @(tsee exec-charset-basic).
+     Since both character sets use ACL2 characters directly,
+     the mapping from source to execution characters is the identity."))
+  (b* ((source (source-charset-basic+lf std))
+       (exec (exec-charset-basic std))
+       (source-exec-map (omap::identity (source-chars source))))
+    (make-charset :source source
+                  :exec exec
+                  :source-exec-map source-exec-map))
+
+  ///
+
+  (defrulel ascii-basic-source-chars-subset-source-chars-lemma
+    (set::subset (ascii-basic-source-chars std)
+                 (source-chars (source-charset-basic+lf std)))
+    :enable (source-chars
+             source-charset-basic+lf
+             set::expensive-rules))
+
+  (defrulel source-chars-subset-exec-chars-lemma
+    (set::subset (source-chars (source-charset-basic+lf std))
+                 (exec-chars (exec-charset-basic std)))
+    :enable (source-chars
+             source-charset-basic+lf
+             exec-chars
+             exec-charset-basic
+             ascii-basic-exec-chars
+             set::expensive-rules))
+
+  (defrulel source-exec-map-wfp-lemma
+    (source-exec-map-wfp
+     (omap::identity (source-chars (source-charset-basic+lf std)))
+     (source-charset-basic+lf std)
+     (exec-charset-basic std)
+     std
+     uchar-format)
+    :enable (source-exec-map-wfp
+             basic-source-exec-map-wfp
+             omap::values-is-keys-when-identityp
+             omap::lookup-when-identityp
+             basic-source-char-of-source-charset-basic+lf
+             basic-exec-char-of-exec-charset-basic
+             ascii-basic-source-chars-subset-source-chars-lemma
+             ascii-basic-source-chars-subset-ascii-basic-exec-chars
+             set::subset-in
+             set::expensive-rules))
+
+  (defrule charset-wfp-of-charset-basic+lf
+    (charset-wfp (charset-basic+lf std) std uchar-format)
+    :enable (charset-wfp
+             charset-basic+lf)))

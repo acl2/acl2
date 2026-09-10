@@ -1238,7 +1238,8 @@
                   (mod (- (getbit 0 x) (bvchop 34 x)) p)))
   :hints (("Goal" :in-theory (e/d (mul-of--2-becomes-neg-of-mul-of-2
                                    neg)
-                                  (ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
+                                  (;;ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                   )))))
 
 
 ;quite specific

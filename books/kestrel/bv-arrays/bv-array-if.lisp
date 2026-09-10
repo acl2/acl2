@@ -20,6 +20,7 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/bv-lists/bvchop-list2" :dir :system))
+(local (include-book "kestrel/bv/bvchop" :dir :system))
 
 (defund bv-array-if (element-size len test array1 array2)
   (declare (xargs :guard (and (natp len)

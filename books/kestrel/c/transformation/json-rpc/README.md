@@ -31,11 +31,15 @@ Usage (socket transport):
    JSON terminated by a newline.  For example (see tests/example-request.json
    for the multi-line, human-readable form of a struct-type-split request):
 
-     {"jsonrpc": "2.0", "method": "struct-type-split", "params": {"old-dir": "input-files", "new-dir": "out", "files": ["test1.c"], "struct-tag": "point", "right-members": ["z"], "new-tag": "point_right", "unsafe": true, "preprocess": false}, "id": 1}
+     {"jsonrpc": "2.0", "method": "struct-type-split", "params": {"old-dir": "input-files", "new-dir": "out", "files": ["test1.c"], "struct-tag": "point", "right-members": ["z"], "new-tag": "point_right", "safety-checks": false, "preprocess": false}, "id": 1}
 
    A quick way to send it with netcat:
 
      cat tests/example-request.json | tr -d '\n' | (cat; echo) | nc localhost 7070
+
+  **NOTE**: This example assumes the server was started in the `tests` directory.
+  The `tests/example-request.json` request contains relative paths
+  which are resolved against the server's current working directory.
 
 Methods:
 

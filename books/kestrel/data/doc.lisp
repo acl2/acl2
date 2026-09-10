@@ -8,6 +8,7 @@
 
 (in-package "DATA")
 
+(include-book "deque/top")
 (include-book "hash/top")
 (include-book "treeset/doc")
 (include-book "treemap/doc")

@@ -565,7 +565,7 @@
   :hooks (:fix)
   ///
 
-  (defrule fundef-list-renamefun-of-statement-to-fundefs
+  (defrule fundef-list-renamefun-of-statements-to-fundefs
     (implies (not (reserrp (statement-list-renamefun old new ren)))
              (not (reserrp
                    (fundef-list-renamefun (statements-to-fundefs old)

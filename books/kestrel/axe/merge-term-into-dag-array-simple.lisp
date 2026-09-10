@@ -93,7 +93,7 @@
   (implies (and (all-myquotep (strip-cdrs var-replacement-alist))
                 (lookup-equal term var-replacement-alist))
            (consp (lookup-equal term var-replacement-alist)))
-  :hints (("Goal" :in-theory (enable lookup-equal strip-cdrs strip-cdrs assoc-equal))))
+  :hints (("Goal" :in-theory (enable lookup-equal strip-cdrs assoc-equal))))
 
 ;; (thm
 ;;  (implies (and (pseudo-termp term)
@@ -559,7 +559,7 @@
              (pseudo-dag-arrayp dag-array-name dag-array dag-len)))
   :hints (("Goal" :use merge-terms-into-dag-array-simple-return-type
            :in-theory (disable merge-terms-into-dag-array-simple-return-type ;wf-dagp-of-merge-terms-into-dag-array-simple
-                               merge-terms-into-dag-array-simple-return-type))))
+                               ))))
 
 ;rename?
 (defthm alen1-of-merge-terms-into-dag-array-simple-parent-array

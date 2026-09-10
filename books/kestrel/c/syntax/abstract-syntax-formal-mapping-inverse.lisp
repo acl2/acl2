@@ -118,7 +118,10 @@
               (:e c::iconst-base-oct)
               (:e c::iconst-length-none)
               (:e c::iconst-length-llong)
-              (:e c::iconst-length-long))))
+              (:e c::iconst-length-long)
+              (:e ldm-isuffix)
+              (:e ldm-isuffix-option)
+              (:e ldm-lsuffix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -149,18 +152,14 @@
           to a constant in the syntax for tools."
   (c::const-case
    const
-   :int (const-int (ildm-iconst (c::const-int->get const)))
-   :otherwise (prog2$ (raise "Unsupported non-integer constant ~x0."
-                             (c::const-fix const))
-                      (irr-const)))
-  :no-function nil
+   :int (const-int (ildm-iconst const.get))
+   :enum (const-enum (ildm-ident const.get)))
 
   ///
 
   (defrule ldm-const-of-ildm-const
-    (implies (c::const-case const :int)
-             (equal (ldm-const (ildm-const const))
-                    (mv nil (c::const-dec0-to-oct0 const))))
+    (equal (ldm-const (ildm-const const))
+           (mv nil (c::const-dec0-to-oct0 const)))
     :enable (ldm-const
              c::const-dec0-to-oct0)))
 
@@ -349,7 +348,30 @@
                                   :info nil)
                                nil)))))
   :measure (c::obj-declor-count declor)
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule ldm-declor-obj-of-ildm-obj-declor
+    (equal (ldm-declor-obj (ildm-obj-declor declor))
+           (mv nil (c::obj-declor-dec0-to-oct0 declor)))
+    :induct t
+    :enable (ldm-declor-obj
+             ldm-declor-obj-loop
+             ldm-dirdeclor-obj
+             check-expr-iconst
+             c::obj-declor-dec0-to-oct0
+             c::iconst-option-dec0-to-oct0
+             c::iconst-option-some->val
+             mv-nth-0-ldm-dirdeclor-obj-of-declor-to-dirdeclor
+             mv-nth-1-ldm-dirdeclor-obj-of-declor-to-dirdeclor))
+
+  (defrule ldm-declor-fun-of-ildm-obj-declor-error
+    (mv-nth 0 (ldm-declor-fun (ildm-obj-declor declor)))
+    :induct t
+    :enable (ldm-declor-fun
+             ldm-declor-fun-loop
+             ldm-dirdeclor-fun)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -378,7 +400,23 @@
                                    :info nil)
                                 nil)))))
   :measure (c::obj-adeclor-count adeclor)
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule ldm-absdeclor-obj-of-ildm-obj-adeclor
+    (equal (ldm-absdeclor-obj (ildm-obj-adeclor adeclor))
+           (mv nil (c::obj-adeclor-dec0-to-oct0 adeclor)))
+    :induct t
+    :enable (ldm-absdeclor-obj
+             ldm-absdeclor-obj-loop
+             ldm-dirabsdeclor-obj
+             absdeclor-to-dirabsdeclor?
+             check-expr-iconst
+             c::obj-adeclor-dec0-to-oct0
+             c::iconst-option-dec0-to-oct0
+             c::iconst-option-some->val
+             dirabsdeclor-option-some->val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -392,7 +430,15 @@
        (declor? (ildm-obj-adeclor tyname.declor)))
     (make-tyname :specquals specquals
                  :declor? declor?
-                 :info nil)))
+                 :info nil))
+
+  ///
+
+  (defrule ldm-tyname-of-ildm-tyname
+    (equal (ldm-tyname (ildm-tyname tyname))
+           (mv nil (c::tyname-dec0-to-oct0 tyname)))
+    :enable (ldm-tyname
+             c::tyname-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -406,7 +452,14 @@
                 :plus (unop-plus)
                 :minus (unop-minus)
                 :bitnot (unop-bitnot)
-                :lognot (unop-lognot)))
+                :lognot (unop-lognot))
+
+  ///
+
+  (defrule ldm-unop-of-ildm-unop
+    (equal (ldm-unop (ildm-unop unop))
+           (mv nil (c::unop-fix unop)))
+    :enable ldm-unop))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -443,7 +496,14 @@
                  :asg-shr (binop-asg-shr)
                  :asg-and (binop-asg-and)
                  :asg-xor (binop-asg-xor)
-                 :asg-ior (binop-asg-ior)))
+                 :asg-ior (binop-asg-ior))
+
+  ///
+
+  (defrule ldm-binop-of-ildm-binop
+    (equal (ldm-binop (ildm-binop binop))
+           (c::binop-fix binop))
+    :enable ldm-binop))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -510,7 +570,25 @@
 
   ///
 
-  (fty::deffixequiv-mutual ildm-exprs))
+  (fty::deffixequiv-mutual ildm-exprs)
+
+  (defthm-ildm-exprs-flag
+    (defthm ldm-expr-of-ildm-expr
+      (equal (ldm-expr (ildm-expr expr))
+             (mv nil (c::expr-dec0-to-oct0 expr)))
+      :flag ildm-expr)
+    (defthm ldm-expr-list-of-ildm-expr-list
+      (equal (ldm-expr-list (ildm-expr-list exprs))
+             (mv nil (c::expr-list-dec0-to-oct0 exprs)))
+      :flag ildm-expr-list)
+    :hints (("Goal"
+             :in-theory (enable ldm-expr
+                                ildm-unop
+                                ldm-expr-list
+                                check-expr-ident
+                                expr-option-some->val
+                                c::expr-dec0-to-oct0
+                                c::expr-list-dec0-to-oct0)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -520,7 +598,17 @@
           to an optional expression in the syntax for tools."
   (c::expr-option-case expr?
                        :some (ildm-expr expr?.val)
-                       :none nil))
+                       :none nil)
+
+  ///
+
+  (defrule ldm-expr-option-of-ildm-expr-option
+    (equal (ldm-expr-option (ildm-expr-option expr?))
+           (mv nil (c::expr-option-dec0-to-oct0 expr?)))
+    :enable (ldm-expr-option
+             expr-option-some->val
+             c::expr-option-some->val
+             c::expr-option-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -536,7 +624,15 @@
     (make-struct-declon-member :extension nil
                                :specquals specquals
                                :declors (list sdeclor)
-                               :attribs nil)))
+                               :attribs nil))
+
+  ///
+
+  (defrule ldm-struct-declon-of-ildm-struct-declon
+    (equal (ldm-struct-declon (ildm-struct-declon sdeclon))
+           (mv nil (c::struct-declon-dec0-to-oct0 sdeclon)))
+    :enable (ldm-struct-declon
+             c::struct-declon-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -546,7 +642,16 @@
           to a list of structure declarations in the syntax for tools."
   (cond ((endp sdeclons) nil)
         (t (cons (ildm-struct-declon (car sdeclons))
-                 (ildm-struct-declon-list (cdr sdeclons))))))
+                 (ildm-struct-declon-list (cdr sdeclons)))))
+
+  ///
+
+  (defrule ldm-struct-declon-list-of-ildm-struct-declon-list
+    (equal (ldm-struct-declon-list (ildm-struct-declon-list sdeclons))
+           (mv nil (c::struct-declon-list-dec0-to-oct0 sdeclons)))
+    :induct t
+    :enable (ldm-struct-declon-list
+             c::struct-declon-list-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -562,7 +667,16 @@
   (cond ((endp enumers) nil)
         (t (cons (make-enumer :name (ildm-ident (car enumers)) :value? nil)
                  (ildm-enumer-list (cdr enumers)))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule ldm-enumer-list-of-ildm-enumer-list
+    (equal (ldm-enumer-list (ildm-enumer-list enumers))
+           (mv nil (c::ident-list-fix enumers)))
+    :induct t
+    :enable (ldm-enumer-list
+             ldm-enumer)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -595,20 +709,48 @@
        (declspec (decl-spec-typespec tyspec)))
     (make-declon-declon :extension nil
                         :specs (list declspec)
-                        :declors nil)))
+                        :declors nil))
+
+  ///
+
+  (defrule ldm-declon-tag-of-ildm-tag-declon
+    (equal (ldm-declon-tag (ildm-tag-declon declon))
+           (mv nil (c::tag-declon-dec0-to-oct0 declon)))
+    :enable (ldm-declon-tag
+             c::tag-declon-dec0-to-oct0))
+
+  (defrule ldm-declon-fun-of-ildm-tag-declon-error
+    (mv-nth 0 (ldm-declon-fun (ildm-tag-declon declon)))
+    :enable ldm-declon-fun)
+
+  (defrule ldm-declon-obj-of-ildm-tag-declon-error
+    (mv-nth 0 (ldm-declon-obj (ildm-tag-declon declon)))
+    :enable ldm-declon-obj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ildm-param-declon ((pdeclon c::param-declonp))
   :returns (pdeclon1 param-declonp)
   :short "Map a parameter declaration in the language definition
-          to a parameter declaration in th syntax for tools."
+          to a parameter declaration in the syntax for tools."
   (b* (((c::param-declon pdeclon) pdeclon)
        (tyspecs (ildm-tyspecseq pdeclon.tyspec))
-       (declspecs (decl-spec-typespec-list tyspecs)))
+       (declspecs (decl-spec-typespec-list tyspecs))
+       (declor (ildm-obj-declor pdeclon.declor)))
     (make-param-declon :specs declspecs
-                       :declor (param-declor-none nil)
-                       :attribs nil)))
+                       :declor (make-param-declor-nonabstract
+                                :declor declor
+                                :info nil)
+                       :attribs nil))
+
+  ///
+
+  (defrule ldm-param-declon-of-ildm-param-declon
+    (equal (ldm-param-declon (ildm-param-declon pdeclon))
+           (mv nil (c::param-declon-dec0-to-oct0 pdeclon)))
+    :enable (ldm-param-declon
+             ldm-param-declor
+             c::param-declon-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -618,7 +760,16 @@
           to a list of parameter declarations in the syntax for tools."
   (cond ((endp pdeclons) nil)
         (t (cons (ildm-param-declon (car pdeclons))
-                 (ildm-param-declon-list (cdr pdeclons))))))
+                 (ildm-param-declon-list (cdr pdeclons)))))
+
+  ///
+
+  (defrule ldm-param-declon-list-of-ildm-param-declon-list
+    (equal (ldm-param-declon-list (ildm-param-declon-list pdeclons))
+           (mv nil (c::param-declon-list-dec0-to-oct0 pdeclons)))
+    :induct t
+    :enable (ldm-param-declon-list
+             c::param-declon-list-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -642,7 +793,18 @@
               (make-declor :pointers (cons nil declor1.pointers)
                            :direct declor1.direct)))
   :measure (c::fun-declor-count declor)
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule ldm-declor-fun-of-ildm-fun-declor
+    (equal (ldm-declor-fun (ildm-fun-declor declor))
+           (mv nil (c::fun-declor-dec0-to-oct0 declor)))
+    :induct t
+    :enable (ldm-declor-fun
+             ldm-declor-fun-loop
+             ldm-dirdeclor-fun
+             c::fun-declor-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -662,7 +824,19 @@
               (make-absdeclor :pointers (cons nil adeclor1.pointers)
                               :direct? adeclor1.direct?)))
   :measure (c::fun-adeclor-count adeclor)
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule ldm-absdeclor-fun-of-ildm-fun-adeclor
+    (equal (ldm-absdeclor-fun (ildm-fun-adeclor adeclor))
+           (mv nil (c::fun-adeclor-dec0-to-oct0 adeclor)))
+    :induct t
+    :enable (ldm-absdeclor-fun
+             ldm-absdeclor-fun-loop
+             ldm-dirabsdeclor-fun
+             dirabsdeclor-option-some->val
+             c::fun-adeclor-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -681,7 +855,15 @@
                                   :info nil)))
     (make-declon-declon :extension nil
                         :specs declspecs
-                        :declors (list ideclor))))
+                        :declors (list ideclor)))
+
+  ///
+
+  (defrule ldm-declon-fun-of-ildm-fun-declon
+    (equal (ldm-declon-fun (ildm-fun-declon declon))
+           (mv nil (c::fun-declon-dec0-to-oct0 declon)))
+    :enable (ldm-declon-fun
+             c::fun-declon-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -701,7 +883,17 @@
         (t (cons (make-desiniter
                   :designors nil
                   :initer (initer-single (ildm-expr (car exprs))))
-                 (ildm-desiniter-list (cdr exprs))))))
+                 (ildm-desiniter-list (cdr exprs)))))
+
+  ///
+
+  (defrule ldm-desiniter-list-of-ildm-desiniter-list
+    (equal (ldm-desiniter-list (ildm-desiniter-list exprs))
+           (mv nil (c::expr-list-dec0-to-oct0 exprs)))
+    :induct t
+    :enable (ldm-desiniter-list
+             ldm-desiniter
+             c::expr-list-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -714,7 +906,15 @@
    :single (initer-single (ildm-expr initer.get))
    :list (make-initer-list
           :elems (ildm-desiniter-list initer.get)
-          :final-comma nil)))
+          :final-comma nil))
+
+  ///
+
+  (defrule ldm-initer-of-ildm-initer
+    (equal (ldm-initer (ildm-initer initer))
+           (mv nil (c::initer-dec0-to-oct0 initer)))
+    :enable (ldm-initer
+             c::initer-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -724,7 +924,17 @@
           to an optional initializer in the syntax for tools."
   (c::initer-option-case initer?
                          :some (ildm-initer initer?.val)
-                         :none nil))
+                         :none nil)
+
+  ///
+
+  (defrule ldm-initer-option-of-ildm-initer-option
+    (equal (ldm-initer-option (ildm-initer-option initer?))
+           (mv nil (c::initer-option-dec0-to-oct0 initer?)))
+    :enable (ldm-initer-option
+             initer-option-some->val
+             c::initer-option-some->val
+             c::initer-option-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -747,7 +957,20 @@
                  :info nil)))
     (make-declon-declon :extension nil
                         :specs declspecs
-                        :declors (list ideclor))))
+                        :declors (list ideclor)))
+
+  ///
+
+  (defrule ldm-declon-obj-of-ildm-obj-declon
+    (equal (ldm-declon-obj (ildm-obj-declon declon))
+           (mv nil (c::obj-declon-dec0-to-oct0 declon)))
+    :enable (ldm-declon-obj
+             c::obj-declon-dec0-to-oct0))
+
+  (defrule ldm-declon-fun-of-ildm-obj-declon-error
+    (mv-nth 0 (ldm-declon-fun (ildm-obj-declon declon)))
+    :enable (ldm-declon-fun
+             ildm-obj-declon)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -761,7 +984,15 @@
                           :attribs nil)
    :cas (make-label-casexpr :expr (make-const-expr :expr (ildm-expr label.get))
                             :range? nil)
-   :default (label-default)))
+   :default (label-default))
+
+  ///
+
+  (defrule ldm-label-of-ildm-label
+    (equal (ldm-label (ildm-label label))
+           (mv nil (c::label-dec0-to-oct0 label)))
+    :enable (ldm-label
+             c::label-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -836,7 +1067,30 @@
 
   ///
 
-  (fty::deffixequiv-mutual ildm-stmts))
+  (fty::deffixequiv-mutual ildm-stmts)
+
+  (defthm-ildm-stmts-flag
+    (defthm ldm-stmt-of-ildm-stmt
+      (equal (ldm-stmt (ildm-stmt stmt))
+             (mv nil (c::stmt-dec0-to-oct0 stmt)))
+      :flag ildm-stmt)
+    (defthm ldm-block-item-of-ildm-block-item
+      (equal (ldm-block-item (ildm-block-item item))
+             (mv nil (c::block-item-dec0-to-oct0 item)))
+      :flag ildm-block-item)
+    (defthm ldm-block-item-list-of-ildm-block-item-list
+      (equal (ldm-block-item-list (ildm-block-item-list items))
+             (mv nil (c::block-item-list-dec0-to-oct0 items)))
+      :flag ildm-block-item-list)
+    :hints (("Goal"
+             :in-theory (enable ldm-stmt
+                                ldm-comp-stmt
+                                ldm-block-item
+                                ldm-block-item-list
+                                expr-option-some->val
+                                c::stmt-dec0-to-oct0
+                                c::block-item-dec0-to-oct0
+                                c::block-item-list-dec0-to-oct0)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -856,7 +1110,16 @@
                  :attribs nil
                  :declons nil
                  :body (make-comp-stmt :labels nil :items items)
-                 :info nil)))
+                 :info nil))
+
+  ///
+
+  (defrule ldm-fundef-of-ildm-fundef
+    (equal (ldm-fundef (ildm-fundef fundef))
+           (mv nil (c::fundef-dec0-to-oct0 fundef)))
+    :enable (ldm-fundef
+             ldm-comp-stmt
+             c::fundef-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -869,7 +1132,15 @@
    :fundef (ext-declon-fundef (ildm-fundef edeclon.get))
    :fun-declon (ext-declon-declon (ildm-fun-declon edeclon.get))
    :obj-declon (ext-declon-declon (ildm-obj-declon edeclon.get))
-   :tag-declon (ext-declon-declon (ildm-tag-declon edeclon.get))))
+   :tag-declon (ext-declon-declon (ildm-tag-declon edeclon.get)))
+
+  ///
+
+  (defrule ldm-ext-declon-of-ildm-ext-declon
+    (equal (ldm-ext-declon (ildm-ext-declon edeclon))
+           (mv nil (c::ext-declon-dec0-to-oct0 edeclon)))
+    :enable (ldm-ext-declon
+             c::ext-declon-dec0-to-oct0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

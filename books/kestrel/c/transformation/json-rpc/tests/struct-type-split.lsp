@@ -41,8 +41,8 @@
                            :value (value-array (list (value-string "z"))))
               (make-member :name "new-tag"
                            :value (value-string "point_right"))
-              (make-member :name "unsafe"
-                           :value (value-true))
+              (make-member :name "safety-checks"
+                           :value (value-false))
               (make-member :name "preprocess"
                            :value (value-false)))))
       ((mv erp res state) (struct-type-split params state))

@@ -25,8 +25,8 @@
   :parents (monomorphize)
   :returns (mv result state)
   :hooks nil
-  :guard-hints (("Goal" :in-theory (enable exprp-when-result-not-error)))
-  :short "Parse a Remora expression file, monomorphize it,
+  :guard-hints (("Goal" :in-theory (enable filep-when-result-not-error)))
+  :short "Parse a Remora source file, monomorphize it,
           and print the result."
   :long
   (xdoc::topstring
@@ -36,36 +36,32 @@
      and inspect the printed result.
      No other code depends on it.")
    (xdoc::p
-    "Parses the standalone Remora expression in @('filename')
-     (via @(tsee parse-top-exp-from-file)),
-     monomorphizes it with @(tsee monomorphize-top-expr), and prints the
-     resulting expression with @(tsee print-expr) --- unless
+    "Parses the Remora source file @('filename')
+     (via @(tsee parse-from-file)),
+     monomorphizes it with @(tsee monomorphize-file), and prints the
+     resulting file with @(tsee print-file) --- unless
      monomorphization left the
-     expression unchanged, in which case nothing is printed.  Returns
+     file unchanged, in which case nothing is printed.  Returns
      @('(mv result state)'), where @('result') is the monomorphized
-     @(tsee expr), or the input @(tsee expr) when it is unchanged, or a
+     @(tsee file), or the input @(tsee file) when it is unchanged, or a
      @(tsee reserrp) when parsing fails.")
    (xdoc::p
-    "The file must contain a standalone expression
-     (the input format of the implementation's @('monomorphize -e')):
-     the model's monomorphizer is expression-level,
-     corresponding to the implementation's @('monomorphizeExp').
-     Source files with declarations are not supported;
-     they require program-level monomorphization
-     (the implementation's @('Monomorphize.monomorphize'),
-     which hoists the collected instance bindings
-     as new @('def') declarations),
-     which the model does not have."))
-  (b* (((mv ast state) (parse-top-exp-from-file filename state))
+    "This is program-level monomorphization, corresponding to the
+     implementation's @('Monomorphize.monomorphize'): the instances of
+     the definitions that are instantiated are hoisted into new @('def')
+     declarations, replacing the polymorphic definitions they come from.
+     The file must have no imports; see @(tsee monomorphize-file), whose
+     errors (including @(':imports-not-supported')) are reported here."))
+  (b* (((mv ast state) (parse-from-file filename state))
        ((when (reserrp ast))
         (b* ((- (cw "Parse error in ~s0: ~x1~%" filename ast)))
           (mv ast state)))
-       ((mv err & new-expr) (monomorphize-top-expr ast))
+       ((mv err new-file) (monomorphize-file ast))
        ((when err)
         (b* ((- (cw "Monomorphizing ~s0 failed: ~x1~%" filename err)))
           (mv ast state)))
-       ((when (equal new-expr ast))
+       ((when (equal new-file ast))
         (b* ((- (cw "No change after monomorphizing ~s0.~%" filename)))
           (mv ast state)))
-       (- (cw "~s0~%" (print-expr new-expr))))
-    (mv new-expr state)))
+       (- (cw "~s0~%" (print-file new-file))))
+    (mv new-file state)))

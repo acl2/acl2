@@ -39,13 +39,14 @@
            (not (error arm)) ; no error yet
            (== (ArchVersion arm) 5)
            (equal *InstrSet_ARM* (isetstate arm))
-           (armp arm))
+           (armp arm)
+           (equal (library-map arm) nil))
           (equal (step arm)
                  (advance-pc (set-apsr.z (bool-to-bit (equal 0 (bvmult 32 (reg 5 arm) (reg 4 arm))))
                                          (set-apsr.n (getbit 31 (bvmult 32 (reg 5 arm) (reg 4 arm)))
                                                      (set-reg 3 (bvmult 32 (reg 5 arm) (reg 4 arm))
                                                               arm))))))
- :hints (("Goal" :in-theory (enable step arm32-decode execute-inst execute-mul-alt conditionpassed))))
+ :hints (("Goal" :in-theory (enable step-opener step-core-opener arm32-decode execute-inst execute-mul-alt conditionpassed))))
 
 ;; a 2 step program
 (thm
@@ -61,7 +62,8 @@
            (not (error arm)) ; no error yet
            (== (ArchVersion arm) 5)
            (equal *InstrSet_ARM* (isetstate arm))
-           (armp arm))
+           (armp arm)
+           (equal (library-map arm) nil))
           (equal (run 2 arm)
                  ;; state after execution:
                  (set-reg 2 ; register 2 gets (r5*r4)*r4
@@ -76,6 +78,6 @@
                                                                                         (bvmult 32 (bvmult 32 (reg 5 arm) (reg 4 arm))
                                                                                                 (reg 4 arm))))
                                                                     arm)))))))
- :hints (("Goal" :in-theory (enable run step arm32-decode execute-inst execute-mul-alt conditionpassed
+ :hints (("Goal" :in-theory (enable run step-opener step-core-opener arm32-decode execute-inst execute-mul-alt conditionpassed
                                     advance-pc
                                     add-to-address))))

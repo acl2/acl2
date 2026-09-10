@@ -38,7 +38,7 @@
 
 (defun get-clique-members (fn world)
   (or (getprop fn 'recursivep nil 'current-acl2-world world)
-      (er hard 'get-clique-members "Expected ~s0 to be in a mutually-recursive nest.~%")))
+      (er hard 'get-clique-members "Expected ~s0 to be in a mutually-recursive nest.~%" fn)))
 
 (defun get-formals (fn world)
   (getprop fn 'formals nil 'current-acl2-world world))

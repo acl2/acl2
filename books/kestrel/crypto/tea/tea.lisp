@@ -1,6 +1,6 @@
 ; A formal specification of the TEA block cipher
 ;
-; Copyright (C) 2016-2025 Kestrel Institute
+; Copyright (C) 2016-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,6 +33,7 @@
 (local (include-book "kestrel/typed-lists-light/integer-listp2" :dir :system))
 (local (include-book "kestrel/typed-lists-light/integer-listp" :dir :system))
 (local (include-book "kestrel/bv-arrays/bv-arrays" :dir :system))
+(local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 
 (in-theory (disable mv-nth))

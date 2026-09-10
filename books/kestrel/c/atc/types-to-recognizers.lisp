@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ types-to-recognizers
-  :parents (shallow-embedding)
+  :parents (atc-shallow-embedding)
   :short "Mapping from C types to their recognizers."
   :long
   (xdoc::topstring

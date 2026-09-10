@@ -43,7 +43,24 @@
 
 (local (in-theory (disable member-equal acl2::member-of-cons string-append append)))
 
-(set-induction-depth-limit 0)
+;; Generic library rewrites that the .sys/cpp-parser@useless-runes.lsp evidence
+;; shows contribute nothing to these proofs; disabling globally speeds up certs.
+;; (Arithmetic/ordinal rules are kept ENABLED: they are load-bearing for the
+;; parsize measure/termination conjectures.)
+(local (in-theory (disable acl2::default-car acl2::default-cdr
+                           acl2::consp-by-len acl2::consp-of-cdr-by-len acl2::intersectp-member
+                           acl2::subsetp-of-cons acl2::subsetp-nil
+                           acl2::subsetp-append1
+                           str::consp-of-explode str::explode-when-not-stringp
+                           str::make-character-list-when-character-listp
+                           str::make-character-list-of-append)))
+
+(in-theory (disable acl2::append-atom-under-list-equiv
+                    acl2::subsetp-member
+                    acl2::subsetp-of-cons
+                    acl2::subsetp-when-atom-left
+                    acl2::subsetp-when-atom-right
+                    acl2::subsetp-trans acl2::subsetp-trans2))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -835,6 +852,56 @@
 ;; Parse: Typed Parameter
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define parse-cpp-paren-or-plain-name ((parstate parstatep))
+  :returns (mv erp
+               (name ident-optionp)
+               (span spanp)
+               (new-parstate parstatep :hyp (parstatep parstate)))
+  :short "Parse an optional parameter name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The name is either a bare identifier or a redundant parenthesized
+     declarator @('( ident )').  The latter is the crux of the most vexing
+     parse: in a parameter, @('int(x)') is the parameter @('int x'), not a
+     functional-cast expression.  On any other token (or none) no name is
+     taken and the lookahead is restored."))
+  (b* (((reterr) nil (irr-span) parstate)
+       ((erp tok? tok-span parstate) (read-token parstate))
+       ((unless tok?) (retok nil tok-span parstate))
+       ;; '( ident )' redundant-paren declarator
+       ((when (token-punctuatorp tok? "("))
+        (b* (((erp id? id-span parstate) (read-token parstate))
+             ((erp rp? & parstate) (read-token parstate)))
+          (if (and id? (token-case id? :ident)
+                   (token-punctuatorp rp? ")"))
+              (retok (token-ident->ident id?) id-span parstate)
+            (b* ((parstate (if rp? (unread-token parstate) parstate))
+                 (parstate (if id? (unread-token parstate) parstate))
+                 (parstate (unread-token parstate)))     ; unread '('
+              (retok nil tok-span parstate)))))
+       ;; bare ident (not ',', ')', '>', '=')
+       ((when (and (token-case tok? :ident)
+                   (not (token-punctuatorp tok? ","))
+                   (not (token-punctuatorp tok? ")"))
+                   (not (token-punctuatorp tok? ">"))
+                   (not (token-punctuatorp tok? "="))))
+        (retok (token-ident->ident tok?) tok-span parstate))
+       ;; no name: restore the lookahead token
+       (parstate (unread-token parstate)))
+    (retok nil tok-span parstate))
+
+  ///
+
+  (defret parsize-of-parse-cpp-paren-or-plain-name-uncond
+    (<= (parsize new-parstate)
+        (parsize parstate))
+    :rule-classes :linear
+    :hints (("Goal"
+             :in-theory (enable c$::parsize-of-read-token-uncond
+                                c$::parsize-of-read-token-cond
+                                c$::parsize-of-unread-token)))))
+
 (define parse-cpp-param ((parstate parstatep))
   :returns (mv erp
                (param cpp-param-p)
@@ -864,21 +931,57 @@
                    (parstate (unread-token parstate))
                    ;; Parse the type
                    ((erp type-spec type-span parstate) (parse-cpp-type-spec parstate))
-                   ;; Optional: parameter name
+                   ;; Optional '...' for parameter pack (C++11)
+                   ((erp dots? dots-span parstate) (read-token parstate))
+                   (packp (token-punctuatorp dots? "..."))
+                   (parstate (if (and dots? (not packp)) (unread-token parstate) parstate))
+                   (last-span (if packp dots-span type-span))
+                   ;; Optional: parameter name (not ',', ')', '>', or '=')
                    ((erp name-token? name-span parstate) (read-token parstate))
                    (name-p (and name-token?
                                 (token-case name-token? :ident)
                                 (not (token-punctuatorp name-token? ","))
                                 (not (token-punctuatorp name-token? ")"))
-                                (not (token-punctuatorp name-token? ">"))))
+                                (not (token-punctuatorp name-token? ">"))
+                                (not (token-punctuatorp name-token? "="))))
                    (param-name (if name-p (token-ident->ident name-token?) nil))
-                   (end-span (if name-p name-span type-span))
-                   (parstate (if (and name-token? (not name-p))
-                                 (unread-token parstate)
-                               parstate))
+                   (parstate (if (and name-token? (not name-p)) (unread-token parstate) parstate))
+                   (last-span (if name-p name-span last-span))
+                   ;; Optional default: '=' const-expr
+                   ((erp eq? & parstate) (read-token parstate))
+                   ((when (not (token-punctuatorp eq? "=")))
+                    (b* ((parstate (if eq? (unread-token parstate) parstate))
+                         (span (make-span :start (span->start type-span)
+                                          :end   (span->end last-span))))
+                      (retok (make-cpp-param :type type-spec :name param-name
+                                             :packp packp :default-p nil
+                                             :default (irr-cpp-const-expr))
+                             span parstate)))
+                   ((erp val? val-span parstate) (read-token parstate))
+                   ((mv default-val ok)
+                    (cond ((token-cpp-kw-p val? "true")
+                           (mv (make-cpp-const-expr-bool :value t) t))
+                          ((token-cpp-kw-p val? "false")
+                           (mv (make-cpp-const-expr-bool :value nil) t))
+                          ((and val? (token-case val? :ident))
+                           (mv (make-cpp-const-expr-ident
+                                :name (token-ident->ident val?)) t))
+                          ((and val? (token-case val? :const)
+                                (c$::const-case (c$::token-const->const val?) :int))
+                           (mv (make-cpp-const-expr-int
+                                :iconst (c$::const-int->iconst
+                                         (c$::token-const->const val?))) t))
+                          (t (mv (irr-cpp-const-expr) nil))))
+                   ((unless ok)
+                    (reterr-msg :where (span->start val-span)
+                                :expected "constant default argument"
+                                :found val?
+                                :extra nil))
                    (span (make-span :start (span->start type-span)
-                                    :end   (span->end end-span))))
-                (retok (make-cpp-param :type type-spec :name param-name)
+                                    :end   (span->end val-span))))
+                (retok (make-cpp-param :type type-spec :name param-name
+                                       :packp packp :default-p t
+                                       :default default-val)
                        span parstate)))
              ;; Have [[: parse attribute name
              ((erp attr? attr-span parstate) (read-token parstate))
@@ -933,21 +1036,49 @@
        (parstate (if peek1? (unread-token parstate) parstate))
        ;; Parse the type
        ((erp type-spec type-span parstate) (parse-cpp-type-spec parstate))
-       ;; Optional: parameter name
-       ((erp name-token? name-span parstate) (read-token parstate))
-       (name-p (and name-token?
-                    (token-case name-token? :ident)
-                    (not (token-punctuatorp name-token? ","))
-                    (not (token-punctuatorp name-token? ")"))
-                    (not (token-punctuatorp name-token? ">"))))
-       (param-name (if name-p (token-ident->ident name-token?) nil))
-       (end-span (if name-p name-span type-span))
-       (parstate (if (and name-token? (not name-p))
-                     (unread-token parstate)
-                   parstate))
+       ;; Optional '...' for parameter pack (C++11)
+       ((erp dots? dots-span parstate) (read-token parstate))
+       (packp (token-punctuatorp dots? "..."))
+       (parstate (if (and dots? (not packp)) (unread-token parstate) parstate))
+       (last-span (if packp dots-span type-span))
+       ;; Optional parameter name: a bare ident, or a redundant parenthesized
+       ;; declarator '( ident )' (most vexing parse: the param int(x) means int x).
+       ((erp param-name name-span parstate)
+        (parse-cpp-paren-or-plain-name parstate))
+       (last-span (if param-name name-span last-span))
+       ;; Optional default: '=' const-expr
+       ((erp eq? & parstate) (read-token parstate))
+       ((when (not (token-punctuatorp eq? "=")))
+        (b* ((parstate (if eq? (unread-token parstate) parstate))
+             (span (make-span :start (span->start type-span)
+                              :end   (span->end last-span))))
+          (retok (make-cpp-param :type type-spec :name param-name
+                                 :packp packp :default-p nil
+                                 :default (irr-cpp-const-expr))
+                 span parstate)))
+       ((erp val? val-span parstate) (read-token parstate))
+       ((mv default-val ok)
+        (cond ((token-cpp-kw-p val? "true")
+               (mv (make-cpp-const-expr-bool :value t) t))
+              ((token-cpp-kw-p val? "false")
+               (mv (make-cpp-const-expr-bool :value nil) t))
+              ((and val? (token-case val? :ident))
+               (mv (make-cpp-const-expr-ident :name (token-ident->ident val?)) t))
+              ((and val? (token-case val? :const)
+                    (c$::const-case (c$::token-const->const val?) :int))
+               (mv (make-cpp-const-expr-int
+                    :iconst (c$::const-int->iconst (c$::token-const->const val?))) t))
+              (t (mv (irr-cpp-const-expr) nil))))
+       ((unless ok)
+        (reterr-msg :where (span->start val-span)
+                    :expected "constant default argument"
+                    :found val?
+                    :extra nil))
        (span (make-span :start (span->start type-span)
-                        :end   (span->end end-span))))
-    (retok (make-cpp-param :type type-spec :name param-name)
+                        :end   (span->end val-span))))
+    (retok (make-cpp-param :type type-spec :name param-name
+                           :packp packp :default-p t
+                           :default default-val)
            span parstate))
 
   ///
@@ -961,6 +1092,7 @@
              :in-theory (enable c$::parsize-of-read-token-uncond
                                 c$::parsize-of-read-token-cond
                                 c$::parsize-of-unread-token
+                                parsize-of-parse-cpp-paren-or-plain-name-uncond
                                 parsize-of-parse-cpp-type-spec-uncond))))
 
   (defret parsize-of-parse-cpp-param-cond
@@ -973,6 +1105,7 @@
              :in-theory (enable c$::parsize-of-read-token-uncond
                                 c$::parsize-of-read-token-cond
                                 c$::parsize-of-unread-token
+                                parsize-of-parse-cpp-paren-or-plain-name-uncond
                                 parsize-of-parse-cpp-type-spec-uncond
                                 parsize-of-parse-cpp-type-spec-cond)))))
 
@@ -1120,29 +1253,50 @@
                             :extra nil))
                ;; Check for empty '<>'
                ((erp peek-token? peek-span parstate) (read-token parstate))
+               ;; Helper: finish template-template param after inner params are known
+               ;; — shared by both the empty and non-empty branches below.
+               ;; We inline it here by factoring out the common tail.
                ((when (token-punctuatorp peek-token? ">"))
-                ;; Empty template params — read 'typename'/'class' + optional name
+                ;; Empty template params — read 'typename'/'class'
                 (b* (((erp kw-token? & parstate) (read-token parstate))
                      ((unless (token-cpp-template-type-kw-p kw-token?))
                       (reterr-msg :where (span->start first-span)
                                   :expected "'typename' or 'class' after template<>"
                                   :found kw-token?
                                   :extra nil))
+                     ;; Optional '...' (C++11 template template parameter pack)
+                     ((erp dots? dots-span parstate) (read-token parstate))
+                     (packp (token-punctuatorp dots? "..."))
+                     (parstate (if (and dots? (not packp)) (unread-token parstate) parstate))
+                     (last-span (if packp dots-span peek-span))
+                     ;; Optional name (not ',', '>', or '=')
                      ((erp name-token? name-span parstate) (read-token parstate))
                      (name-p (and name-token?
                                   (token-case name-token? :ident)
                                   (not (token-punctuatorp name-token? ","))
-                                  (not (token-punctuatorp name-token? ">"))))
+                                  (not (token-punctuatorp name-token? ">"))
+                                  (not (token-punctuatorp name-token? "="))))
                      (param-name (if name-p (token-ident->ident name-token?) nil))
-                     (end-span (if name-p name-span peek-span))
-                     (parstate (if (and name-token? (not name-p))
-                                   (unread-token parstate)
-                                 parstate))
+                     (parstate (if (and name-token? (not name-p)) (unread-token parstate) parstate))
+                     (last-span (if name-p name-span last-span))
+                     ;; Optional default: '=' type-spec
+                     ((erp eq? & parstate) (read-token parstate))
+                     ((when (not (token-punctuatorp eq? "=")))
+                      (b* ((parstate (if eq? (unread-token parstate) parstate))
+                           (span (make-span :start (span->start first-span)
+                                            :end   (span->end last-span))))
+                        (retok (make-cpp-template-param-template-template
+                                :params nil :name param-name
+                                :packp packp :default-p nil
+                                :default (irr-cpp-type-spec))
+                               span parstate)))
+                     ((erp default-type default-span parstate) (parse-cpp-type-spec parstate))
                      (span (make-span :start (span->start first-span)
-                                      :end   (span->end end-span))))
+                                      :end   (span->end default-span))))
                   (retok (make-cpp-template-param-template-template
-                          :params nil
-                          :name   param-name)
+                          :params nil :name param-name
+                          :packp packp :default-p t
+                          :default default-type)
                          span parstate)))
                ;; Not empty — put back and parse params
                (parstate (if peek-token? (unread-token parstate) parstate))
@@ -1158,44 +1312,78 @@
                             :expected "'typename' or 'class' after template<...>"
                             :found kw-token?
                             :extra nil))
-               ;; Optional name
+               ;; Optional '...' (C++11 template template parameter pack)
+               ((erp dots? dots-span parstate) (read-token parstate))
+               (packp (token-punctuatorp dots? "..."))
+               (parstate (if (and dots? (not packp)) (unread-token parstate) parstate))
+               (last-span (if packp dots-span first-span))
+               ;; Optional name (not ',', '>', or '=')
                ((erp name-token? name-span parstate) (read-token parstate))
                (name-p (and name-token?
                             (token-case name-token? :ident)
                             (not (token-punctuatorp name-token? ","))
-                            (not (token-punctuatorp name-token? ">"))))
+                            (not (token-punctuatorp name-token? ">"))
+                            (not (token-punctuatorp name-token? "="))))
                (param-name (if name-p (token-ident->ident name-token?) nil))
-               (end-span (if name-p name-span first-span))
-               (parstate (if (and name-token? (not name-p))
-                             (unread-token parstate)
-                           parstate))
+               (parstate (if (and name-token? (not name-p)) (unread-token parstate) parstate))
+               (last-span (if name-p name-span last-span))
+               ;; Optional default: '=' type-spec
+               ((erp eq? & parstate) (read-token parstate))
+               ((when (not (token-punctuatorp eq? "=")))
+                (b* ((parstate (if eq? (unread-token parstate) parstate))
+                     (span (make-span :start (span->start first-span)
+                                      :end   (span->end last-span))))
+                  (retok (make-cpp-template-param-template-template
+                          :params inner-params :name param-name
+                          :packp packp :default-p nil
+                          :default (irr-cpp-type-spec))
+                         span parstate)))
+               ((erp default-type default-span parstate) (parse-cpp-type-spec parstate))
                (span (make-span :start (span->start first-span)
-                                :end   (span->end end-span))))
+                                :end   (span->end default-span))))
             (retok (make-cpp-template-param-template-template
-                    :params inner-params
-                    :name   param-name)
+                    :params inner-params :name param-name
+                    :packp packp :default-p t
+                    :default default-type)
                    span parstate)))
-         ;; Type parameter introduced by 'typename' or 'class'
+         ;; Type parameter: typename/class [...] [name] [= type-spec]
          ((when (token-cpp-template-type-kw-p first-token?))
           (b* ((typenamep (token-cpp-kw-p first-token? "typename"))
+               ;; Optional '...' for type parameter pack (C++11)
+               ((erp dots? dots-span parstate) (read-token parstate))
+               (packp (token-punctuatorp dots? "..."))
+               (parstate (if (and dots? (not packp)) (unread-token parstate) parstate))
+               (last-span (if packp dots-span first-span))
+               ;; Optional name (not ',', '>', or '=')
                ((erp name-token? name-span parstate) (read-token parstate))
-               ((when (and name-token?
-                           (token-case name-token? :ident)
-                           (not (token-punctuatorp name-token? ","))
-                           (not (token-punctuatorp name-token? ">"))))
-                (b* ((name-ident (token-ident->ident name-token?))
+               (name-p (and name-token?
+                            (token-case name-token? :ident)
+                            (not (token-punctuatorp name-token? ","))
+                            (not (token-punctuatorp name-token? ">"))
+                            (not (token-punctuatorp name-token? "="))))
+               (param-name (if name-p (token-ident->ident name-token?) nil))
+               (parstate (if (and name-token? (not name-p)) (unread-token parstate) parstate))
+               (last-span (if name-p name-span last-span))
+               ;; Optional default: '=' type-spec
+               ((erp eq? & parstate) (read-token parstate))
+               ((when (not (token-punctuatorp eq? "=")))
+                (b* ((parstate (if eq? (unread-token parstate) parstate))
                      (span (make-span :start (span->start first-span)
-                                      :end   (span->end name-span))))
+                                      :end   (span->end last-span))))
                   (retok (make-cpp-template-param-type
-                          :typenamep typenamep
-                          :name name-ident)
+                          :typenamep typenamep :name param-name
+                          :packp packp :default-p nil
+                          :default (irr-cpp-type-spec))
                          span parstate)))
-               (parstate (if name-token? (unread-token parstate) parstate)))
-            (retok (make-cpp-template-param-type :typenamep typenamep :name nil)
-                   first-span parstate)))
-         ;; Non-type parameter: parse type specifier + name
-         ;; Put back the first token so parse-cpp-type-spec can read it
-         ;; The first token can be an identifier (like MyType) or keyword (like int)
+               ((erp default-type default-span parstate) (parse-cpp-type-spec parstate))
+               (span (make-span :start (span->start first-span)
+                                :end   (span->end default-span))))
+            (retok (make-cpp-template-param-type
+                    :typenamep typenamep :name param-name
+                    :packp packp :default-p t
+                    :default default-type)
+                   span parstate)))
+         ;; Non-type parameter: type-spec [...] name [= const-expr]
          ((unless (and first-token? (or (token-case first-token? :ident)
                                         (token-case first-token? :keyword))))
           (reterr-msg :where (span->start first-span)
@@ -1204,6 +1392,10 @@
                       :extra nil))
          (parstate (unread-token parstate))
          ((erp type-spec & parstate) (parse-cpp-type-spec parstate))
+         ;; Optional '...' for non-type parameter pack (C++11)
+         ((erp dots? & parstate) (read-token parstate))
+         (packp (token-punctuatorp dots? "..."))
+         (parstate (if (and dots? (not packp)) (unread-token parstate) parstate))
          ;; Parameter name (mandatory for non-type)
          ((erp name-token? name-span parstate) (read-token parstate))
          ((unless (and name-token? (token-case name-token? :ident)))
@@ -1212,10 +1404,42 @@
                       :found name-token?
                       :extra nil))
          (param-ident (token-ident->ident name-token?))
+         ;; Optional default: '=' const-expr
+         ((erp eq? & parstate) (read-token parstate))
+         ((when (not (token-punctuatorp eq? "=")))
+          (b* ((parstate (if eq? (unread-token parstate) parstate))
+               (span (make-span :start (span->start first-span)
+                                :end   (span->end name-span))))
+            (retok (make-cpp-template-param-nontype
+                    :type type-spec :param-name param-ident
+                    :packp packp :default-p nil
+                    :default (irr-cpp-const-expr))
+                   span parstate)))
+         ((erp val? val-span parstate) (read-token parstate))
+         ((mv default-val ok)
+          (cond ((token-cpp-kw-p val? "true")
+                 (mv (make-cpp-const-expr-bool :value t) t))
+                ((token-cpp-kw-p val? "false")
+                 (mv (make-cpp-const-expr-bool :value nil) t))
+                ((and val? (token-case val? :ident))
+                 (mv (make-cpp-const-expr-ident :name (token-ident->ident val?)) t))
+                ((and val? (token-case val? :const)
+                      (c$::const-case (c$::token-const->const val?) :int))
+                 (mv (make-cpp-const-expr-int
+                      :iconst (c$::const-int->iconst
+                               (c$::token-const->const val?))) t))
+                (t (mv (irr-cpp-const-expr) nil))))
+         ((unless ok)
+          (reterr-msg :where (span->start val-span)
+                      :expected "constant default value for non-type template parameter"
+                      :found val?
+                      :extra nil))
          (span (make-span :start (span->start first-span)
-                          :end   (span->end name-span))))
-      (retok (make-cpp-template-param-nontype :type type-spec
-                                              :param-name param-ident)
+                          :end   (span->end val-span))))
+      (retok (make-cpp-template-param-nontype
+              :type type-spec :param-name param-ident
+              :packp packp :default-p t
+              :default default-val)
              span parstate)))
 
   (define parse-cpp-template-param-list-rest ((open-span spanp)
@@ -1264,6 +1488,7 @@
       :flag parse-cpp-template-param-list-rest)
     :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-cond
                                        c$::parsize-of-unread-token
+                                       parsize-of-parse-cpp-type-spec-uncond
                                        parse-cpp-template-param
                                        parse-cpp-template-param-list-rest))))
 
@@ -1282,6 +1507,8 @@
       :flag parse-cpp-template-param-list-rest)
     :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-cond
                                        c$::parsize-of-unread-token
+                                       parsize-of-parse-cpp-type-spec-cond
+                                       parsize-of-parse-cpp-type-spec-uncond
                                        parse-cpp-template-param
                                        parse-cpp-template-param-list-rest))))
 

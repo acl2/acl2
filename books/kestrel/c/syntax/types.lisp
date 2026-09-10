@@ -116,6 +116,70 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum type-array-kind
+  :parents (type)
+  :short "Fixtype classifying C array types by completeness and length form."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @(':const-len') case represents array types whose size specifier
+     is an integer constant expression
+     or whose length is inferred from an initializer.
+     The @('len') field allows a @('nil') value
+     to represent an unknown length.
+     This occurs as a result of imprecise analysis.
+     In particular, the validator currently classifies
+     an array completed by its initializer as @(':const-len'),
+     but does not yet derive its numerical length from that initializer,
+     so its @('len') field is @('nil').
+     We use a positive integer instead of a natural
+     because arrays are not empty [C17:6.2.5/20] [C23:6.2.5/25],
+     and so a determined constant length must not be 0
+     (but we can revise this if we discover that
+     array types may need to track a 0 length).")
+   (xdoc::p
+    "The @(':nonconst-len') case represents complete array types
+     whose size specifier is not an integer constant expression,
+     including an unspecified size written as @('*').
+     We do not yet store any information in this case.
+     Eventually, we may wish to distinguish
+     a size specified by a nonconstant expression
+     from an unspecified size (written as @('*')),
+     and to store the size expression if there is one.")
+   (xdoc::p
+    "The @(':unknown-complete') case represents a complete array type
+     for which we do not have enough information to classify as either
+     @(':const-len') or @(':nonconst-len').")
+   (xdoc::p
+    "The @(':incomplete') case represents an incomplete array type.")
+   (xdoc::p
+    "Note that these type cases do not capture
+     whether the array type is a variable-length array (VLA).
+     VLA status depends on more than just the array length;
+     it also depends on whether the array element type has known constant size
+     [C17:6.7.6.2/4] [C23:6.7.7.3/4].
+     Therefore, a @(':nonconst-len') array is known to be a VLA,
+     but a @(':const-len') array may or may not be a VLA.")
+   (xdoc::p
+    "Finally, we clarify some terminology.
+     The standard typically uses ``size''
+     to refer to the number of array elements.
+     However, it also uses ``size'' to refer
+     to the overall size of the array type,
+     i.e. the value returned by @('sizeof').
+     To disambiguate these two concepts, we generally use ``length''
+     to refer to the number of array elements.
+     We still use ``size'' when referring to a named piece of syntax,
+     i.e. a size specifier or size expression."))
+  (:const-len ((len pos-option)))
+  (:nonconst-len ())
+  (:unknown-complete ())
+  (:incomplete ())
+  :pred type-array-kindp
+  :layout :fulltree)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftypes type/type-list
   (fty::deftagsum type
     :short "Fixtype of C types [C17:6.2.5]."
@@ -167,22 +231,9 @@
         because there are different enumeration types.")
       (xdoc::li
        "An array type [C17:6.2.5/20],
-        derived from the ``element type.'',
-        and with an optional positive size.
-        This is an approximation,
-        because variable length arrays have a size
-        that is an expression in general
-        (e.g. a declaration @('int a[n+1];'), where @('n') is a variable).
-        For now we only track array types with known constant size,
-        using @('nil') to mean `unknown size',
-        making the type partially unknown,
-        as opposed to totally unknown
-        as in the @(':unknown') case described below.
-        We use a positive integer instead of a natural
-        because arrays are not empty [C17:6.2.5/20],
-        and so a known constant size must not be 0
-        (but we can revise this if we discover that
-        array types may need to track a 0 size).")
+        derived from the ``element type''
+        and an array kind.
+        See @(tsee type-array-kind).")
       (xdoc::li
        "A pointer type [C17:6.2.5/20],
         derived from the ``referenced type.''")
@@ -250,7 +301,7 @@
              (tag/members type-struni-tag/members)))
     (:enum ())
     (:array ((of type)
-             (size pos-option)))
+             (kind type-array-kind)))
     (:pointer ((to type)))
     (:function ((ret type) (params type-params)))
     (:unknown ())
@@ -1393,6 +1444,139 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-array-kind-compatible-p ((x type-array-kindp)
+                                      (y type-array-kindp))
+  :returns (yes/no booleanp)
+  :short "Check whether two array kinds are potentially compatible."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Read literally, [C17] and [C23] require that two array types be compatible
+     iff their element types are compatible and,
+     when both size specifiers are present
+     and are integer constant expressions,
+     their values are equal [C17:6.7.6.2/6] [C23:6.7.7.3/6].
+     Under this strict reading,
+     two arrays with initializer-inferred sizes
+     would be compatible iff their element types are compatible.")
+   (xdoc::p
+    "However, the implementations we examined
+     do not follow that literal reading.
+     For compatibility, they treat an initializer-inferred size
+     as if it had been supplied
+     by an integer constant expression size specifier.
+     We follow that practice here.
+     The same treatment is proposed in "
+    (xdoc::ahref
+     "https://www.open-std.org/jtc1/sc22/WG14/www/docs/n3495.htm"
+     "WG14 N3495")
+    ", which has not been adopted.")
+   (xdoc::p
+    "Accordingly, when both array kinds
+     are @(':const-len')
+     and both lengths are determined,
+     we require the lengths to be equal.
+     In all other cases we return true.
+     This overapproximates compatibility when
+     a constant length is unknown
+     or an array kind is @(':unknown-complete')."))
+  (type-array-kind-case
+    x
+    :const-len
+    (type-array-kind-case
+      y
+      :const-len (or (not x.len)
+                     (not y.len)
+                     (equal x.len y.len))
+      :otherwise t)
+    :otherwise t))
+
+(defrule type-array-kind-compatible-p-reflexive
+  (type-array-kind-compatible-p x x)
+  :enable type-array-kind-compatible-p)
+
+(defrule type-array-kind-compatible-p-symmetric
+  (equal (type-array-kind-compatible-p y x)
+         (type-array-kind-compatible-p x y))
+  :enable type-array-kind-compatible-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-array-kind-composite ((x type-array-kindp)
+                                   (y type-array-kindp))
+  :returns (composite type-array-kindp)
+  :short "Construct the array kind of a composite array type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The input kinds are expected to come from compatible array types.
+     The rules for composite array types distinguish
+     arrays of known constant size,
+     VLAs with specified or unspecified length,
+     and incomplete arrays [C17:6.2.7/3] [C23:6.2.7/3].
+     Our array kinds retain less information.
+     In particular, @(':nonconst-len') does not distinguish
+     specified from unspecified size,
+     and we do not track whether a size expression is evaluated.")
+   (xdoc::p
+    "At the level of our abstraction,
+     a @(':const-len') kind takes precedence over every other kind.
+     When both kinds are @(':const-len'),
+     we retain a known length if either has one.
+     Otherwise, a complete kind takes precedence over @(':incomplete').")
+   (xdoc::p
+    "The composite of @(':nonconst-len')
+     and @(':unknown-complete') is @(':unknown-complete').
+     The latter could represent a @(':const-len') kind,
+     which would take precedence under the standard's rules."))
+  (type-array-kind-case
+    x
+    :const-len
+    (type-array-kind-case
+      y
+      :const-len
+      (make-type-array-kind-const-len :len (or x.len y.len))
+      :otherwise (type-array-kind-fix x))
+    :nonconst-len
+    (type-array-kind-case
+      y
+      :const-len (type-array-kind-fix y)
+      :nonconst-len (type-array-kind-nonconst-len)
+      :unknown-complete (type-array-kind-unknown-complete)
+      :incomplete (type-array-kind-nonconst-len))
+    :unknown-complete
+    (type-array-kind-case
+      y
+      :const-len (type-array-kind-fix y)
+      :otherwise (type-array-kind-unknown-complete))
+    :incomplete (type-array-kind-fix y)))
+
+(defrule type-array-kind-composite-reflexive
+  (equal (type-array-kind-composite x x)
+         (type-array-kind-fix x))
+  :enable type-array-kind-composite
+  :disable ((:e type-array-kind-const-len)))
+
+(defrule type-array-kind-composite-symmetric
+  (implies (type-array-kind-compatible-p x y)
+           (equal (type-array-kind-composite y x)
+                  (type-array-kind-composite x y)))
+  :enable (type-array-kind-compatible-p
+           type-array-kind-composite)
+  :disable ((:e type-array-kind-const-len)))
+
+(defrule type-array-kind-compatible-p-of-type-array-kind-composite-left
+  (implies (type-array-kind-compatible-p x y)
+           (type-array-kind-compatible-p (type-array-kind-composite x y) x))
+  :enable (type-array-kind-compatible-p type-array-kind-composite))
+
+(defrule type-array-kind-compatible-p-of-type-array-kind-composite-right
+  (implies (type-array-kind-compatible-p x y)
+           (type-array-kind-compatible-p (type-array-kind-composite x y) y))
+  :enable (type-array-kind-compatible-p type-array-kind-composite))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines type/type-list-compatible-p-aux
   (define type-compatible-p-aux ((x typep)
                                  (y typep)
@@ -1533,9 +1717,7 @@
                                                       completions
                                                       incomplete
                                                       ienv)
-                               (or (not x.size)
-                                   (not y.size)
-                                   (equal x.size y.size)))
+                               (type-array-kind-compatible-p x.kind y.kind))
                    :otherwise nil)
           :pointer (type-case
                      y
@@ -1896,12 +2078,16 @@
     (xdoc::li
      "Array types are considered compatible
       if their element types are compatible.
-      If they both have a size, it must be the same size [C17:6.7.6.2/6];
-      if any of them does not have a size, which means unknown size for us,
-      then we consider them compatible,
-      because we are approximating,
-      and the two sizes could be the same
-      (otherwise we may be rejecting legal code).")
+      When both outermost array kinds are @(':const-len')
+      and both lengths are known, the lengths must be equal.
+      An @(':incomplete') or @(':nonconst-len') outer kind does not impose
+      an additional static equality requirement
+      [C17:6.7.6.2/6] [C23:6.7.7.3/6].
+      We conservatively regard arrays as compatible
+      when a @(':const-len') length is unknown
+      or an array kind is @(':unknown-complete').
+      We do not check the separate undefined-behavior condition
+      concerning unequal evaluated size specifiers.")
     (xdoc::li
      "Enumeration types are considered compatible
       with <i>all</i> integer types.
@@ -2109,11 +2295,8 @@
                                            next-uid
                                            ienv
                                            (- (the unsigned-byte count) 1)))
-                      (size (cond ((equal x.size y.size) x.size)
-                                  ((not x.size) y.size)
-                                  ((not y.size) x.size)
-                                  (t nil))))
-                   (mv (make-type-array :of of-type :size size)
+                      (kind (type-array-kind-composite x.kind y.kind)))
+                   (mv (make-type-array :of of-type :kind kind)
                        completions
                        next-uid))
           :unknown (mv (type-fix x)
@@ -2381,8 +2564,9 @@
      This choice is consistent with the general pattern
      of constraints outlined by the standard
      (e.g., when taking the composite of two arrays,
-     one with a length, and the other without,
-     the composite as an array with the specified length [C17:6.2.7/2])."))
+     one of known constant size and the other of unknown size,
+     the composite has the known size
+     [C17:6.2.7/3] [C23:6.2.7/3])."))
   (type-composite-aux x
                       y
                       nil
@@ -2405,8 +2589,9 @@
     "These values largely come directly from the implementation environment.
      The size of the complex floating types is given by [C17:6.2.5/13].")
    (xdoc::p
-    "The size of an array type is known iff
-     the size of its element type and the size component of the type are."))
+    "The size of an array type is known when its kind is @(':const-len'),
+     its length is known,
+     and the size of its element type is known."))
   (b* (((ienv ienv) ienv))
     (type-case
       type
@@ -2432,10 +2617,16 @@
       :struct nil
       :union nil
       :enum nil
-      :array (b* ((elem-size (type-size-exact type.of ienv)))
-               (if (and elem-size type.size)
-                   (* elem-size type.size)
-                 nil))
+      :array (type-array-kind-case
+               type.kind
+               :const-len
+               (b* ((elem-size (type-size-exact type.of ienv))
+                    (array-len
+                      (type-array-kind-const-len->len type.kind)))
+                 (if (and elem-size array-len)
+                     (* elem-size array-len)
+                   nil))
+               :otherwise nil)
       :pointer ienv.pointer-bytes
       :function nil
       :unknown nil
@@ -2521,3 +2712,50 @@
       (type-fix type)
     (make-type-pointer :to (make-pointers-to (rest pointers) type)))
   :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-array-change-kind-at-depth ((type typep)
+                                         (depth natp)
+                                         (kind type-array-kindp))
+  :returns (new-type typep)
+  :short "Change the kind of an array at a derived-type depth."
+  :long
+  (xdoc::topstring-p
+   "At each positive depth, this follows the next type along a
+    declarator-derived spine: the element type of an array,
+    the target type of a pointer, or the return type of a function.
+    The type at depth zero must be an array type.")
+  (b* ((type (type-fix type))
+       (depth (nfix depth))
+       (kind (type-array-kind-fix kind))
+       ((when (zp depth))
+        (type-case type
+          :array (change-type-array type :kind kind)
+          :otherwise (prog2$ (raise "Internal error: expected array type ~x0."
+                                    type)
+                             type)))
+       (depth (1- depth)))
+    (type-case type
+      :array
+      (change-type-array
+       type
+       :of (type-array-change-kind-at-depth type.of depth kind))
+      :pointer
+      (change-type-pointer
+       type
+       :to (type-array-change-kind-at-depth type.to depth kind))
+      :function
+      (change-type-function
+       type
+       :ret (type-array-change-kind-at-depth type.ret depth kind))
+      :otherwise
+      (prog2$ (raise "Internal error: expected derived type ~x0." type)
+              type)))
+  :measure (nfix depth)
+  :verify-guards nil
+  :no-function nil
+  :hooks nil
+  ///
+
+  (verify-guards type-array-change-kind-at-depth))

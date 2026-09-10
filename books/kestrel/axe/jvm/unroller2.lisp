@@ -568,7 +568,7 @@
                         :assumptions assumptions
                         :check-inputs nil))
        ((when erp)
-        (er hard? 'unroll-java-code-fn "Error in unrolling.")
+        (er hard? 'unroll-java-code2-fn "Error in unrolling.")
         (mv erp nil state))
        (- (cw "  Done simplifying term.)~%"))
        ;; TODO: Handle a result-dag that is a quotep.
@@ -603,7 +603,7 @@
                       :check-inputs nil)
           (mv (erp-nil) result-dag state)))
        ((when erp) (mv erp nil state))
-       (dag-okp (dag-ok-after-symbolic-execution result-dag assumptions t state))
+       (dag-okp (dag-ok-after-symbolic-executionp result-dag assumptions t state))
        ((when (not dag-okp)) (mv :symbolic-execution-failed nil state))
 
        ;; Result-dag should be over the single variable S0 and should represent
@@ -650,13 +650,15 @@
                                          run-until-return-from-stack-height-base
                                          run-until-return-from-stack-height-opener
                                          )
-                                       ;; These are not legal ACL2 rules:
+                                       ;; These are not legal ACL2 rules (todo: consider adding legal ACL2 replacements):
                                        '(run-until-return-from-stack-height-of-myif-alt-axe
                                          run-until-return-from-stack-height-opener-axe
                                          run-until-return-from-stack-height-base-axe
                                          step-state-with-pc-and-call-stack-height-becomes-step-axe
                                          step-state-with-pc-and-call-stack-height-does-nothing-1-axe
-                                         step-state-with-pc-and-call-stack-height-does-nothing-2-axe))
+                                         step-state-with-pc-and-call-stack-height-does-nothing-2-axe
+                                         not-equal-of-constant-and-bv-term-axe
+                                         not-equal-of-constant-and-bv-term-alt-axe))
                     ;; (e/d (,@state-component-defun-names
                     ;;                           ;; ,@extra-rules
                     ;;                           jvm::step ;todo: it would be nice to use an axe rule set here (should axe rule sets be acl2 rulesets? well, the axe-syntax rules would not work..)

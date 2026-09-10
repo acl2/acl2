@@ -10,7 +10,11 @@
 
 (in-package "A")
 
-(include-book "run-until-return")
+(include-book "run-until-return-common")
+(include-book "misc/defpun" :dir :system)
+;(include-book "kestrel/bv/bvlt" :dir :system)
+(include-book "kestrel/lists-light/memberp" :dir :system)
+(local (include-book "kestrel/alists-light/acons" :dir :system))
 
 ;; TODO: Consider stopping if the error field of the state is set.
 ;; It would be nice to support the :stobjs arm below, but it is

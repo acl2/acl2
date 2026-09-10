@@ -1372,17 +1372,45 @@ an easy reduction unless the above applies anyway.
 			     (w state)))))
     (enabled-numep nume ens)))
 
+; Moore Modification: See the Essay on Moore's Use of ``Wrappers'' and Robert's
+; ``Ugly Hacks'' which may be found in lib/basic-ops/common.lisp
+
+; The following two ``ugly hacks'' by Robert select whether we're gathering or
+; scattering exponents, depending on the enabled status of a certain rule.  I
+; speculate that Robert called these two functions ``ugly hacks'' because he
+; left them in :program mode.  They are in :program mode because he probably
+; didn't want to verify the guards involved in retrieving the ens and nume.
+; That is how I feel about the functions that select between use of the old or
+; new arithmetic-5 rules.  In particular, I implemented :program mode
+; ``wrappers'' for find-matching-factors-gather-exponents and
+; find-matching-factors-scatter-exponents.  Perhaps in the spirit of Robert's
+; naming convention I should have called those :program mode functions
+; ``ugly-hack-three'' and ``ugly-hack-four'' but I instead called them
+; find-matching-factors-gather-exponents-wrapper and
+; find-matching-factors-scatter-exponents-wrapper.
+
+; But in the case of ugly-hack-one and -two, they were already in :program
+; mode, so I just modified them to select for the desired old or new rules.
+
 (defun ugly-hack-one (lhs rhs mfc state)
   (declare (xargs :mode :program))
-  (if (gather-or-scatter-dangerously mfc state)
-      (find-rational-matching-factors-gather-exponents lhs rhs mfc state)
-    (find-rational-matching-factors-scatter-exponents lhs rhs mfc state)))
+  (if (use-original-arith-5-rules mfc state)
+      (if (gather-or-scatter-dangerously mfc state)
+          (find-rational-matching-factors-gather-exponents lhs rhs nil mfc state)
+          (find-rational-matching-factors-scatter-exponents lhs rhs mfc state))
+      (if (gather-or-scatter-dangerously mfc state)
+          (find-rational-matching-factors-gather-exponents lhs rhs t mfc state)
+          (find-rational-matching-factors-scatter-exponents lhs rhs mfc state))))
 
 (defun ugly-hack-two (lhs rhs mfc state)
   (declare (xargs :mode :program))
-  (if (gather-or-scatter-dangerously mfc state)
-      (find-non-zero-rational-matching-factors-gather-exponents lhs rhs mfc state)
-    (find-non-zero-rational-matching-factors-scatter-exponents lhs rhs mfc state)))
+  (if (use-original-arith-5-rules mfc state)
+      (if (gather-or-scatter-dangerously mfc state)
+          (find-non-zero-rational-matching-factors-gather-exponents lhs rhs nil mfc state)
+          (find-non-zero-rational-matching-factors-scatter-exponents lhs rhs mfc state))
+      (if (gather-or-scatter-dangerously mfc state)
+          (find-non-zero-rational-matching-factors-gather-exponents lhs rhs t mfc state)
+          (find-non-zero-rational-matching-factors-scatter-exponents lhs rhs mfc state))))
 
 (defthm floor-cancel-*-not-rewriting-goal-literal
     (implies (and (syntaxp (not (rewriting-goal-literal lhs mfc state)))

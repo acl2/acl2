@@ -129,14 +129,16 @@
     (tactic.increment-world-index
      (if theory
          (ACL2::prog2$
-          (ACL2::cw "Warning: theory ~s0 is already defined.  Not doing anything.~%")
+          (ACL2::cw "Warning: theory ~s0 is already defined.  Not doing anything.~%"
+                     newtheoryname)
           world)
        (change-tactic.world
         world
         :theories (clean-update newtheoryname
                                 (ACL2::prog2$
                                  (if (and copyofname (not copy))
-                                     (ACL2::cw "Warning: theory ~s0 is not defined; not importing anything.~%")
+                                     (ACL2::cw "Warning: theory ~s0 is not defined; not importing anything.~%"
+                                               copyofname)
                                    nil)
                                  (cdr copy))
                                 (tactic.world->theories world)))))))
@@ -323,7 +325,7 @@
                       (ACL2::prog2$
                        (ACL2::er hard? 'tactic.collect-rules "The valid forms are (gather <criteria>) and ~
                             (gather from <theoryname> <criteria>).  Hence, a call to gather ~
-                            with with ~n0 arguments, such as ~x1, is invalid.~%" length (car x))
+                            with ~n0 arguments, such as ~x1, is invalid.~%" length (car x))
                        acc))
 
                       (t
@@ -1110,4 +1112,3 @@
                   t))
   :hints(("Goal" :in-theory (enable tactic.cheapen-compile-world
                                     tactic.cheapen-okp))))
-

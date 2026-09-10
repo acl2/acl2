@@ -1,4 +1,4 @@
-; Cert params for prune.lisp
+; Cert flags for prune.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2022 Kestrel Institute

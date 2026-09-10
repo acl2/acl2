@@ -53,7 +53,7 @@
 
 (defenum reg-type-p
   (#.*gpr-access* #.*xmm-access*)
-  :parents (decoding-utilities)
+  :parents (decoding-and-spec-utils)
   :short "Kind of register access (e.g., GPR or XMM)")
 
 (define get-operand-size

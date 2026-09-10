@@ -853,9 +853,7 @@
  (defund parse-json-array (tokens acc)
    (declare (xargs :guard (and (true-listp tokens)
                                (true-listp acc))
-                   :measure (make-ord 1 (+ 1 (len tokens)) 1)
-                   :measure-debug t
-                   ))
+                   :measure (make-ord 1 (+ 1 (len tokens)) 1)))
    (if (not (consp tokens))
        (mv :no-right-bracket nil tokens)
      (let ((first-token (first tokens)))

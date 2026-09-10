@@ -309,8 +309,7 @@
 ;; Returns an event.
 ;; todo: error checking
 (defun add-section-attr-wrapper (kv-list whole-form)
-  (declare (xargs :guard (keyword-value-listp kv-list)
-                  :guard-debug t))
+  (declare (xargs :guard (keyword-value-listp kv-list)))
   (b* ((ctx whole-form)
        ;; Pick out the args that are for input-files and output-files:
        ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list)
