@@ -145,6 +145,17 @@ int main(void) {
                        :typedef-name "nonexistent"
                        :right-members ("z")))
 
+  ;; Every right member name must exist, even when another name is valid.
+  (must-fail
+    (struct-type-split *old* *new*
+                       :struct-tag "point"
+                       :right-members ("nonexistent")))
+
+  (must-fail
+    (struct-type-split *old* *new*
+                       :struct-tag "point"
+                       :right-members ("z" "nonexistent")))
+
   ;; No right members are specified.
   (must-fail
     (struct-type-split *old*
@@ -184,6 +195,18 @@ int main(void) {
   (struct-type-split *old* *new-union*
                      :struct-tag "anonymous_union"
                      :right-members ("x" "y" "z"))
+
+  ;; Promoted names exist, but selecting only these names leaves the
+  ;; right partition empty because the anonymous member stays left.
+  (must-fail
+    (struct-type-split *old* *new*
+                       :struct-tag "anonymous_struct"
+                       :right-members ("x")))
+
+  (must-fail
+    (struct-type-split *old* *new*
+                       :struct-tag "anonymous_union"
+                       :right-members ("x" "y")))
 
   :with-output-off nil)
 
@@ -1704,6 +1727,14 @@ int main(void) {
 
  (c$::input-files :files '("opaque.c")
                   :const *old*)
+
+ ;; An incomplete selected type has no member list against which to
+ ;; validate the requested names.  Splitting its declaration is allowed.
+ (struct-type-split *old*
+                    *new-opaque*
+                    :struct-tag "opaque"
+                    :right-members ("right")
+                    :new-tag "opaque_right")
 
  (struct-type-split *old*
                     *new*
