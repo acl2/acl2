@@ -77,7 +77,7 @@ Subtopics
   [defthm], [in-theory], [xargs], [state], etc., without an [30m[47macl2::[0m[0m
   prefix.
 
-  The constant [30m[47m*acl2-exports*[0m[0m lists [30m[47m1662[0m[0m symbols, including most
+  The constant [30m[47m*acl2-exports*[0m[0m lists [30m[47m1664[0m[0m symbols, including most
   documented ACL2 system constants, functions, and macros.  You will
   typically also want to import many symbols from Common Lisp; see
   [*common-lisp-symbols-from-main-lisp-package*].
@@ -363,10 +363,11 @@ Subtopics
        if if* iff iff-implies-equal-implies-1
        iff-implies-equal-implies-2
        iff-implies-equal-not
-       iff-is-an-equivalence ifix ignorable
-       ignore illegal imagpart imagpart-complex
-       immediate-force-modep implies
-       improper-consp in-arithmetic-theory
+       iff-is-an-equivalence
+       ifix ignorable ignore illegal imagpart
+       imagpart-complex immediate-force-modep
+       implies improper-consp
+       in-arithmetic-theory in-logic-mode
        in-package in-tau-intervalp in-theory
        include-book incompatible incompatible!
        increment-file-clock increment-timer
@@ -592,6 +593,7 @@ Subtopics
        set-bogus-measure-ok
        set-bogus-mutual-recursion-ok
        set-brr-evisc-tuple
+       set-call-depth-overflow-advice
        set-case-split-limitations
        set-cbd set-check-invariant-risk
        set-checkpoint-summary-limit
