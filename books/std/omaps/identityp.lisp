@@ -108,7 +108,18 @@
              (equal (lookup key map)
                     key))
     :induct t
-    :enable lookup))
+    :enable lookup)
+
+  (defruled lookup*-when-identityp
+    (implies (and (identityp map)
+                  (set::subset keys (keys map)))
+             (equal (lookup* keys map)
+                    (set::sfix keys)))
+    :induct (lookup* keys map)
+    :enable (lookup*
+             lookup-when-identityp
+             assoc-to-in-of-keys
+             set::expensive-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
