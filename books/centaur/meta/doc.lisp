@@ -32,6 +32,9 @@
 
 (in-package "CMR")
 
+
+(include-book "xdoc/top" :dir :System)
+
 (defxdoc centaur/meta
   :parents (acl2::projects)
   :short "Umbrella topic for metareasoning utilities from the centaur/meta subdirectory.")

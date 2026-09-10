@@ -677,7 +677,7 @@ the original namespace.</li>
     ;;                            (svex-alist-vals phase5)
     ;;                            (make-overridekey-syntaxcheck-data :keys (svex-alist-keys phase5)
     ;;                                                               :values (make-fast-alist phase5))))
-    (mv nil phase5)))
+    (mv nil phase5))
   ///
   (defret netcomp-p-of-<fn>
     (netcomp-p xx x)

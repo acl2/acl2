@@ -625,8 +625,8 @@ as binders for @(see defprod)/@(see defaggregate) types.</p>")
   :long "<p>This unwraps a pseudo-term into a non-lambda-call body and a bindinglist,
 such that the evaluation of the body under the environment formed by evaluating
 the bindinglist under original environment @('env') equals the evaluation of
-the original term under @('env') -- see theorem @(see
-lambda-nest-to-bindinglist-correct).</p>"
+the original term under @('env') -- see theorem
+@('lambda-nest-to-bindinglist-correct').</p>"
   :returns (mv (bindings bindinglist-p)
                (body pseudo-termp))
   :measure (pseudo-term-count x)
@@ -864,8 +864,8 @@ lambda-nest-to-bindinglist-correct).</p>"
   :long "<p>This does the reverse of @(see lambda-nest-to-bindinglist), taking a
 bindinglist and body and creating a term by nesting lambda calls such that the
 evaluation of the new term under @('env') equals the evaluation of the body
-under the evaluation of the bindinglist under @('env'); see @(see
-bindinglist-to-lambda-nest-correct).</p>
+under the evaluation of the bindinglist under @('env'); see
+@('bindinglist-to-lambda-nest-correct').</p>
 
 <p>This has an optimized version, @(see bindinglist-to-lambda-nest-exec), that
 is logically equivalent but may perform better because it computes the set of
@@ -1235,12 +1235,11 @@ bindings of variables that aren't used.</p>"
   :short "Create a term equivalent to a bindinglist/body pair, omitting variable bindings
 that aren't used."
   :long "<p>Like @(see bindinglist-to-lambda-nest), this does the reverse of @(see
-lambda-nest-to-bindinglist), taking a
-bindinglist and body and creating a term by nesting lambda calls such that the
-evaluation of the new term under @('env') equals the evaluation of the body
-under the evaluation of the bindinglist under @('env'); see @(see
-bindinglist-to-lambda-nest-prune-correct). However, it leaves out any variable
-bindings that are unused.</p>"
+lambda-nest-to-bindinglist), taking a bindinglist and body and creating a term
+by nesting lambda calls such that the evaluation of the new term under @('env')
+equals the evaluation of the body under the evaluation of the bindinglist under
+@('env'); see @('bindinglist-to-lambda-nest-prune-correct'). However, it leaves
+out any variable bindings that are unused.</p>"
 
   :guard-hints (("goal" :expand ((bindinglist-to-lambda-nest-prune-aux x body)) ))
   :returns (term pseudo-termp)
