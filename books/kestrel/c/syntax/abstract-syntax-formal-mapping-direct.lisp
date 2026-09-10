@@ -1244,8 +1244,10 @@
      does not have a separate type for direct function declarators,
      so we return a function declarator here.
      The input direct declarator must be an identifier
-     followed by a single parenthesized list of parameter declarations,
-     or an empty list of parameter names.")
+     followed by a single parenthesized non-empty list
+     of parameter declarations.
+     The special singleton @('(void)') list is mapped to
+     an empty parameter list in the language definition.")
    (xdoc::p
     "This function will always result in a @(tsee c::fun-declor)
      of the @(':base') kind;
@@ -1254,23 +1256,20 @@
     "This function is called when we expect a function declarator,
      not an object declarator, for which we have a separate function."))
   (b* (((reterr) (c::fun-declor-base (c::ident "irrelevant") nil))
-       ((unless (or (dirdeclor-case dirdeclor :function-params)
-                    (and (dirdeclor-case dirdeclor :function-names)
-                         (endp (dirdeclor-function-names->names dirdeclor)))))
+       ((unless (and (dirdeclor-case dirdeclor :function-params)
+                     (consp (dirdeclor-function-params->params dirdeclor))))
         (reterr (msg "Unsupported direct declarator ~x0 for function."
                      (dirdeclor-fix dirdeclor))))
-       ((mv inner-dirdeclor params)
-        (if (dirdeclor-case dirdeclor :function-params)
-            (mv (dirdeclor-function-params->declor dirdeclor)
-                (dirdeclor-function-params->params dirdeclor))
-          (mv (dirdeclor-function-names->declor dirdeclor)
-              nil)))
+       (inner-dirdeclor (dirdeclor-function-params->declor dirdeclor))
+       (params (dirdeclor-function-params->params dirdeclor))
        ((unless (dirdeclor-case inner-dirdeclor :ident))
         (reterr (msg "Unsupported direct declarator ~x0 for function."
                      (dirdeclor-fix dirdeclor))))
        (ident (dirdeclor-ident->ident inner-dirdeclor))
        ((erp ident1) (ldm-ident ident))
-       ((erp params1) (ldm-param-declon-list params)))
+       ((erp params1) (if (param-declon-list-voidp params)
+                          (retok nil)
+                        (ldm-param-declon-list params))))
     (retok (c::make-fun-declor-base :name ident1 :params params1)))
 
   ///
@@ -1411,7 +1410,10 @@
      does not have a separate type for direct abstract function declarators,
      so we return an abstract function declarator here.
      The input direct abstract declarator must be a function declarator
-     with no nested direct abstract declarator.")
+     with no nested direct abstract declarator
+     and with a non-empty parameter list.
+     The special singleton @('(void)') list is mapped to
+     an empty parameter list in the language definition.")
    (xdoc::p
     "This function will always result in a @(tsee c::fun-adeclor)
      of the @(':base') kind;
@@ -1427,7 +1429,13 @@
        ((when dirabsdeclor.declor?)
         (reterr (msg "Unsupported direct abstract declarator ~x0 for function."
                      (dirabsdeclor-fix dirabsdeclor))))
-       ((erp params1) (ldm-param-declon-list dirabsdeclor.params)))
+       ((unless (consp dirabsdeclor.params))
+        (reterr (msg "Unsupported empty parameter list ~
+                      in direct abstract declarator ~x0 for function."
+                     (dirabsdeclor-fix dirabsdeclor))))
+       ((erp params1) (if (param-declon-list-voidp dirabsdeclor.params)
+                          (retok nil)
+                        (ldm-param-declon-list dirabsdeclor.params))))
     (retok (c::fun-adeclor-base params1))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

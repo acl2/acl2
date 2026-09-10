@@ -985,6 +985,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define param-declon-voidp ((param param-declonp))
+  :returns (yes/no booleanp)
+  :short "Check if a parameter declaration is just @('void')."
+  (b* (((param-declon param) param))
+    (and (equal param.specs
+                (list (decl-spec-typespec (type-spec-void))))
+         (param-declor-case param.declor :none)
+         (endp param.attribs))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define param-declon-list-voidp ((params param-declon-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of parameter declarations
+          consists of just @('(void)')."
+  (and (consp params)
+       (endp (cdr params))
+       (param-declon-voidp (car params))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define param-declon-list-formalp ((params param-declon-listp))
   :guard (param-declon-list-unambp params)
   :returns (yes/no booleanp)
@@ -1007,17 +1028,18 @@
     "It must be a function declarator with parameters,
      where the inner declarator is just a name;
      see @(tsee ldm-dirdeclor-fun).
-     The parameter declarations must be supported."))
+     The parameter declarations must be supported and non-empty;
+     we allow a singleton list of parameters consisting of just @('void'),
+     which specifies that a function has no parameters [C17:6.7.6.3/10]."))
   (dirdeclor-case
    dirdeclor
    :function-params
    (and (dirdeclor-case dirdeclor.declor :ident)
         (ident-formalp (dirdeclor-ident->ident dirdeclor.declor))
-        (param-declon-list-formalp dirdeclor.params))
-   :function-names
-   (and (dirdeclor-case dirdeclor.declor :ident)
-        (ident-formalp (dirdeclor-ident->ident dirdeclor.declor))
-        (endp dirdeclor.names))
+        (or (param-declon-list-voidp dirdeclor.params)
+            (and (consp dirdeclor.params)
+                 (param-declon-list-formalp dirdeclor.params))))
+   :function-names nil
    :otherwise nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
