@@ -109830,6 +109830,8 @@ it."
 ; For #+ and #-, changed :non-standard-analysis to non-standard-analysis as per
 ; a chat with Eric Smith.
 
+; Made updates to *acl2-exports*.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -110085,6 +110087,11 @@ it."
  input since that representation of character 12 may be printed by @(tsee
  print-object$).  Thanks to Duane Rettig for bringing this issue to our
  attention.</p>
+
+ <p>Made a change so that ACL2 can be built and run using host Lisp CCL on an
+ Arm-based Mac.  Thanks to Yahya Sohail for supplying that change, which
+ handles certain floating-point exceptions.  (ACL2 supports floating-point
+ computations; see @(see df).)</p>
 
  <h3>EMACS Support</h3>
 

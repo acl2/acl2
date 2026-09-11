@@ -54,6 +54,7 @@
 
 (include-book "all-less")
 (include-book "all-less-rules")
+(include-book "all-less-than-or-equal-def")
 (include-book "all-less-than-or-equal")
 (include-book "less-than-all")
 (include-book "less-than-or-equal-all")

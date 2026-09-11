@@ -36,6 +36,16 @@
                                      ;todo:
                                      open-output-channel-p1))))
 
+(defthm open-output-channel-any-p1-of-print-object$-fn
+  (implies (open-output-channel-any-p1 channel state)
+           (open-output-channel-any-p1 channel (print-object$-fn x control channel2 state)))
+  :hints (("Goal" :in-theory (enable open-output-channel-any-p1))))
+
+(defthm open-output-channel-any-p-of-print-object$-fn
+  (implies (open-output-channel-any-p channel state)
+           (open-output-channel-any-p channel (print-object$-fn x control channel2 state)))
+  :hints (("Goal" :in-theory (enable open-output-channel-any-p))))
+
 (defthm state-p1-of-print-object$-fn
   (implies (and (state-p1 state)
                 (open-output-channel-p channel :object state))
