@@ -1378,6 +1378,7 @@
                (darg-quoted-posp (first args)) ; disallows 0 width
                (darg-quoted-integerp (second args))
                (<= 2 (unquote (second args))) ;an array of length 1 would have 0 index bits
+               (bv-arg-okp (third args)) ; index is a BV
                )
           (let* ((data-arg (fourth args))
                  (type-of-data (get-type-of-arg-safe data-arg dag-array-name dag-array known-nodenum-type-alist)))
@@ -1400,6 +1401,8 @@
               (darg-quoted-posp (first args)) ; disallows 0 width
               (darg-quoted-integerp (second args))
               (<= 2 (unquote (second args))) ;an array of length 1 would have 0 index bits..
+              (bv-arg-okp (third args)) ; index is a BV
+              (bv-arg-okp (fourth args)) ; val is a BV
               )
          t
        (prog2$ (and (eq :verbose print)
