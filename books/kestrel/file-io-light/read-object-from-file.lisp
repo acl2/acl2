@@ -1,6 +1,6 @@
 ; A lightweight function to read an object from a file
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -49,4 +49,9 @@
   (implies (and (stringp filename)
                 (state-p state))
            (state-p (mv-nth 2 (read-object-from-file filename state))))
+  :hints (("Goal" :in-theory (enable read-object-from-file))))
+
+(defthm w-of-mv-nth-2-of-read-object-from-file
+  (equal (w (mv-nth 2 (read-object-from-file filename state)))
+         (w state))
   :hints (("Goal" :in-theory (enable read-object-from-file))))

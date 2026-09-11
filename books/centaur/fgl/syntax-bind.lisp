@@ -378,19 +378,42 @@ argument when under the equivalence.</p>"
   x)
 
 
+(define conditionalize1 (ans cond x)
+  (if cond x ans)
+  ///
+  (defthm conditionalize1-equals-x
+    (implies cond
+             (equal (conditionalize1 ans cond x) x))))
 
-(define conditionalize (ans cond x
+(define conditionalize2 (ans cond x on-unreachable)
+  :ignore-ok t
+  :irrelevant-formals-ok t
+  (if cond x ans)
+  ///
+  (defthm conditionalize2-equals-x
+    (implies cond
+             (equal (conditionalize2 ans cond x on-unreachable) x))))
+
+
+(defmacro conditionalize (ans cond x
                             &key
-                            on-unreachable)
+                            (on-unreachable 'nil on-unreachable-p))
+  (if on-unreachable-p
+      `(conditionalize2 ,ans ,cond ,x ,on-unreachable)
+    `(conditionalize1 ,ans ,cond ,x)))
+
+(defxdoc conditionalize
+  :parents (fgl-rewrite-rules)
   :short "FGL binder that returns a value equal to x when cond holds, otherwise undetermined."
   :long "<p>When a binder form @('(conditionalize free-var cond x :on-unreachable
 on-unreachable)') is encountered in a rewrite rule, FGL rewrites @('x') under
 the assumption that cond holds and returns the result. If @('cond') is found to
 be unsatisfiable under the current path condition, then FGL rewrites
-@('on-unreachable') (without assuming @('cond'), and under the @('unequiv')
-equivalence context, i.e. without any logical constraints on unsound rewriting)
-and returns that instead. This is all permissible since the answer is only
-guaranteed to equal x in the case where cond holds.</p>
+@('on-unreachable') (or @('x') if no @('on-unreachable') argument is provided),
+without assuming @('cond'), and under the @('unequiv') equivalence context,
+i.e. without any logical constraints on unsound rewriting.  This is all
+permissible since the only guarantee about the answer is that it equals x in
+the case where cond holds.</p>
 
 <p>Note @('cond') isn't automatically checked for unsatisfiability. It is
 shallowly checked for contradictions with the current path condition in the
@@ -401,18 +424,10 @@ call can be used to check for unsatisfiability of the path condition within
 
 <p>The (regular, non-binder) function @(see assume) has similar functionality,
 but can only be used under the @('unequiv') equivalence context, i.e. when
-there is no soundness requirements on the correctness of the evaluation.</p>"
-  :parents (fgl-rewrite-rules)
-  :ignore-ok t
-  :irrelevant-formals-ok t
-  (if cond x ans)
-  ///
-  (defthm conditionalize-equals-x
-    (implies cond
-             (equal (conditionalize ans cond x :on-unreachable on-unreachable) x)))
+there is no soundness requirements on the correctness of the evaluation.</p>")
 
-  (defmacro conditionalize! (&rest args)
-    `(binder (conditionalize! . ,args))))
+(defmacro conditionalize! (&rest args)
+  `(binder (conditionalize . ,args)))
 
 
 (define disallow-boolean-var-intro (x)

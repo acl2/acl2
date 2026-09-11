@@ -303,6 +303,17 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "fgl::fgl" "FGL library"))
+
+   (xdoc::p
+    "Added a feature to allow FGL to replay a proof with special attention to paths involved in some
+     <em>reference counterexample</em>.")
+
+   (xdoc::p
+    "Allow FGL metafunctions and binder metafunctions to return hypotheses")
+   
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   
    (xdoc::h3 "Documentation")
 
    (xdoc::p
