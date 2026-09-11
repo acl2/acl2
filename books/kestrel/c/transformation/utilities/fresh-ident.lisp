@@ -137,28 +137,51 @@
 (define map-ident->unwrap
   ((idents ident-setp))
   :returns (strings acl2::string-setp)
-  (map-ident->unwrap-loop (treeset::iter-min (ident-set-fix idents)))
-  :guard-hints (("Goal" :in-theory (enable treeset::fix-when-setp)))
+  (mbe :logic
+       (b* ((idents (ident-set-fix idents))
+            ((when (treeset::emptyp idents))
+             nil)
+            (ident (treeset::min idents))
+            (unwrapped (ident->unwrap ident))
+            (strings (map-ident->unwrap (treeset::delete ident idents))))
+         (if (stringp unwrapped)
+             (insert unwrapped strings)
+           strings))
+       :exec (map-ident->unwrap-loop (treeset::iter-min idents)))
+  :measure (treeset::cardinality (ident-set-fix idents))
+  :verify-guards nil
 
   :prepwork
   ((define map-ident->unwrap-loop ((iter treeset::iterp))
      :guard (ident-setp (treeset::from-iter iter))
      :returns (strings acl2::string-setp)
      :parents nil
-     (b* (((unless (treeset::has-valuep iter)) nil)
+     (b* (((unless (treeset::has-valuep iter))
+           nil)
           (unwrapped (ident->unwrap (treeset::value iter)))
           (strings (map-ident->unwrap-loop (treeset::next iter))))
        (if (stringp unwrapped)
            (insert unwrapped strings)
          strings))
-     :measure (nfix (treeset::nexts iter))
-     :hints (("Goal" :in-theory (enable nfix
-                                        treeset::nexts-linear
-                                        treeset::not-after-lastp-when-has-valuep)))
+     :measure (treeset::nexts iter)
      :guard-hints (("Goal" :use (:instance treeset::in-of-value
-                                           (treeset::iter iter))
-                           :in-theory (enable c$::identp-when-in-ident-setp-binds-free-x)))
-     :verify-guards :after-returns)))
+                                           (treeset::iter iter))))
+     :verify-guards :after-returns))
+
+  ///
+
+  (defrulel map-ident->unwrap-loop-of-next
+    (implies (and (treeset::has-valuep iter)
+                  (ident-setp (treeset::after iter)))
+             (equal (map-ident->unwrap-loop (treeset::next iter))
+                    (map-ident->unwrap (treeset::after iter))))
+    :induct (map-ident->unwrap-loop iter)
+    :enable (map-ident->unwrap-loop
+             map-ident->unwrap))
+
+  (verify-guards map-ident->unwrap
+    :hints (("Goal"
+             :expand ((map-ident->unwrap-loop (treeset::iter-min idents)))))))
 
 (define fresh-ident
   ((ident identp)
