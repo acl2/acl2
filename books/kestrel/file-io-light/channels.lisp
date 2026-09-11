@@ -95,6 +95,14 @@
                   (symbolp key)))
   :hints (("Goal" :in-theory (enable add-pair ordered-symbol-alistp))))
 
+;; Since an ordered-symbol-alistp has no duplicate keys, removing the pair for
+;; a key means that key is no longer bound.
+(defthm assoc-equal-of-remove1-assoc-equal-same-when-ordered-symbol-alistp
+  (implies (ordered-symbol-alistp channels)
+           (equal (assoc-equal channel (remove1-assoc-equal channel channels))
+                  nil))
+  :hints (("Goal" :in-theory (enable ordered-symbol-alistp remove1-assoc-equal))))
+
 ;; Avoid name clash with std
 (defthm open-channels-p-of-add-pair-strong
   (implies (open-channels-p channels output-p)
