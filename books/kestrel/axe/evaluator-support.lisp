@@ -273,7 +273,7 @@
         (car items)
       (first-non-member-unguarded (cdr items) items-to-exclude))))
 
-(defthm first-non-member-correct
+(defthm first-non-member-unguarded-correct
   (equal (first-non-member-unguarded items items-to-exclude)
          (first-non-member items items-to-exclude))
   :hints (("Goal" :in-theory (enable first-non-member-unguarded
@@ -553,7 +553,7 @@
                                 (bv-array-read bv-array-read-unguarded arg1 arg2 arg3 arg4)
                                 (bvif bvif-unguarded arg1 arg2 arg3 arg4))
                               (acons 5 '((update-subrange2 . (eval-in-logic (update-subrange2 arg1 arg2 arg3 arg4 arg5))) ;new
-                                         (bv-array-write bv-array-write-unguarded (nfix arg1) (nfix arg2) (nfix arg3) arg4 arg5) ; see bv-array-write-unguarded-correct
+                                         (bv-array-write bv-array-write-unguarded arg1 arg2 arg3 arg4 arg5) ; see bv-array-write-unguarded-correct
                                          (bv-array-clear-range . (eval-in-logic (bv-array-clear-range arg1 arg2 arg3 arg4 arg5)))
                                          )
                                      nil))))))

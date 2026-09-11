@@ -309,10 +309,7 @@
                                                arg1 arg2 arg3 arg4 arg5))))
                                  (bv-array-write
                                    (mv t
-                                       (bv-array-write-unguarded (nfix arg1)
-                                                                 (nfix arg2)
-                                                                 (nfix arg3)
-                                                                 arg4 arg5)))
+                                       (bv-array-write-unguarded arg1 arg2 arg3 arg4 arg5)))
                                  (bv-array-clear-range
                                       (mv t
                                           (eval-in-logic (bv-array-clear-range
@@ -908,10 +905,7 @@
                                               arg1 arg2 arg3 arg4 arg5))))
                                 (bv-array-write
                                    (mv t
-                                       (bv-array-write-unguarded (nfix arg1)
-                                                                 (nfix arg2)
-                                                                 (nfix arg3)
-                                                                 arg4 arg5)))
+                                       (bv-array-write-unguarded arg1 arg2 arg3 arg4 arg5)))
                                 (bv-array-clear-range
                                      (mv t
                                          (eval-in-logic (bv-array-clear-range
