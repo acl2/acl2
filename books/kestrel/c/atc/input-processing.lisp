@@ -803,6 +803,7 @@
 (define atc-process-inputs ((args true-listp) state)
   :returns (mv erp
                (targets symbol-listp)
+               (output-dir stringp)
                (file-name stringp)
                (path-wo-ext stringp)
                (header booleanp)
@@ -817,7 +818,7 @@
                state)
   :short "Process all the inputs."
   (b* (((reterr)
-        nil "" "" nil (irr-pprint-options)
+        nil "" "" "" nil (irr-pprint-options)
         nil nil nil nil nil nil nil state)
        (wrld (w state))
        ((mv erp targets options)
@@ -836,6 +837,7 @@
         (atc-process-const-name options target-fns wrld))
        ((erp print) (atc-process-print options)))
     (retok targets
+           output-dir
            file-name
            path-wo-ext
            header
