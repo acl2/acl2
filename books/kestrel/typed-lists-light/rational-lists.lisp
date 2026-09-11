@@ -1,6 +1,6 @@
 ; Mixed rules about functions/predicates over rational lists
 ;
-; Copyright (C) 2023-2025 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "all-less")
-(include-book "all-less-than-or-equal")
+(include-book "all-less-than-or-equal-def")
 
 ;; todo: make a cheap version?
 (defthm all-<=-when-all-<

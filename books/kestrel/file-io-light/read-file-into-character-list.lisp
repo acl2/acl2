@@ -1,6 +1,6 @@
 ; A fast, lightweight function to read a file's contents into a character list
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -54,4 +54,9 @@
 (defthm state-p1-of-mv-nth-1-of-read-file-into-character-list-safe
   (implies (state-p1 state)
            (state-p1 (mv-nth 1 (read-file-into-character-list-safe filename state))))
+  :hints (("Goal" :in-theory (enable read-file-into-character-list-safe))))
+
+(defthm w-of-mv-nth-1-of-read-file-into-character-list-safe
+  (equal (w (mv-nth 1 (read-file-into-character-list-safe filename state)))
+         (w state))
   :hints (("Goal" :in-theory (enable read-file-into-character-list-safe))))

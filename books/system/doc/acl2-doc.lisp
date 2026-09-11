@@ -109830,6 +109830,8 @@ it."
 ; For #+ and #-, changed :non-standard-analysis to non-standard-analysis as per
 ; a chat with Eric Smith.
 
+; Made updates to *acl2-exports*.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see

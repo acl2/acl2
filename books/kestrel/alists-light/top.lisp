@@ -18,6 +18,7 @@
 (include-book "strip-cars")
 (include-book "strip-cdrs")
 (include-book "remove-assoc-equal")
+(include-book "remove1-assoc-equal")
 
 ;; Books about new functions:
 (include-book "acons-unique")

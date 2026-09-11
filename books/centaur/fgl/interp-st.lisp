@@ -819,7 +819,7 @@
              (logicman->mode logicman)
              mode))
 
-(define interp-st-bfr-state (&optional (interp-st 'interp-st))
+(define interp-st-bfrstate (&optional (interp-st 'interp-st))
   :enabled t :hooks nil
   (stobj-let ((logicman (interp-st->logicman interp-st)))
              (bfrstate)
