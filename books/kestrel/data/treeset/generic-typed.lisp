@@ -322,9 +322,12 @@
 
 ;; If every element of the set is generic then so is every value a walk
 ;; produces, since each value it reads is an element. This is the direction a
-;; caller needs in order to conclude that a walk succeeds.
+;; caller needs in order to conclude that a walk succeeds. It is also what a
+;; typed loop needs at @(tsee value): an iterator carries no element type, so
+;; the guard there is discharged from the type of the set being walked.
+;; @('deftreeset') instantiates this rule for that purpose.
 
-(defruledl genericp-of-value-when-set-all-genericp
+(defrule genericp-of-value-when-set-all-genericp
   (implies (and (set-all-genericp (from-iter iter))
                 (has-valuep iter))
            (genericp (value iter)))
@@ -338,8 +341,7 @@
                 (not (before-firstp iter)))
            (iter-all-genericp iter))
   :induct (iter-all-genericp iter)
-  :enable (iter-all-genericp
-           genericp-of-value-when-set-all-genericp))
+  :enable iter-all-genericp)
 
 (defrule iter-all-genericp-when-after-lastp
   (implies (after-lastp iter)
