@@ -1,7 +1,7 @@
 ; Mixed rules about lists of rationals
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -20,7 +20,7 @@
 (include-book "kestrel/typed-lists-light/all-rationalp" :dir :system)
 (include-book "kestrel/utilities/polarity" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
-(include-book "kestrel/typed-lists-light/all-less-than-or-equal" :dir :system)
+(include-book "kestrel/typed-lists-light/all-less-than-or-equal-def" :dir :system)
 
 ;move
 (defthm <-of-maxelem-when-all-<-cheap
