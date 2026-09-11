@@ -16,7 +16,7 @@
 (include-book "dag-arrays")
 (include-book "kestrel/utilities/erp" :dir :system)
 (include-book "kestrel/acl2-arrays/aref1-list" :dir :system) ; for some rules below
-(include-book "kestrel/typed-lists-light/all-less-than-or-equal" :dir :system)
+(include-book "kestrel/typed-lists-light/all-less-than-or-equal-def" :dir :system)
 (local (include-book "rational-lists"))
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))

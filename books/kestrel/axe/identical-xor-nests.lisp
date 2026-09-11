@@ -35,10 +35,10 @@
                         all-<-when-not-consp
                         darg-listp-when-not-consp
                         ;; for speed:
-                        all-<=-when-not-consp
+                        ;all-<=-when-not-consp
                         all-<-transitive-free
                         not-<-of-nth-of-dargs-of-aref1-when-pseudo-dag-arrayp-2
-                        <=-of-nth-when-all-<= ;disable globally?
+                        ;<=-of-nth-when-all-<= ;disable globally?
                         strip-cdrs
                         ifix                   ; avoid case splits
                         rational-listp maxelem ;prevent inductions

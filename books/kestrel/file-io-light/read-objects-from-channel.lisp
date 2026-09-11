@@ -65,6 +65,11 @@
   :hints (("Goal" :in-theory (enable read-objects-from-channel-aux
                                      open-input-channel-any-p1))))
 
+(defthm w-of-mv-nth-1-of-read-objects-from-channel-aux
+  (equal (w (mv-nth 1 (read-objects-from-channel-aux channel acc state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable read-objects-from-channel-aux))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv objects state).
@@ -99,6 +104,11 @@
            (open-input-channel-any-p1 channel (mv-nth 1 (read-objects-from-channel channel state))))
   :hints (("Goal" :in-theory (enable read-objects-from-channel))))
 
+(defthm w-of-mv-nth-1-of-read-objects-from-channel
+  (equal (w (mv-nth 1 (read-objects-from-channel channel state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable read-objects-from-channel))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A wrapper that returns an error triple, (mv erp objects state).  Errors seem
@@ -129,4 +139,9 @@
   (implies (and (state-p1 state)
                 (open-input-channel-p1 channel :object state))
            (open-input-channel-any-p1 channel (mv-nth 2 (read-objects-from-channel-error-triple channel state))))
+  :hints (("Goal" :in-theory (enable read-objects-from-channel-error-triple))))
+
+(defthm w-of-mv-nth-2-of-read-objects-from-channel-error-triple
+  (equal (w (mv-nth 2 (read-objects-from-channel-error-triple channel state)))
+         (w state))
   :hints (("Goal" :in-theory (enable read-objects-from-channel-error-triple))))
