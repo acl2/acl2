@@ -222,9 +222,8 @@
     (implies (and (ident-listp idents)
                   (ident-setp set))
              (ident-setp (treeset::insert-all idents set)))
-    :induct (treeset::insert-all idents set)
-    :enable (treeset::insert-all
-             (:i treeset::insert-all)))
+    :induct t
+    :enable treeset::insert-all)
 
   (defrule ident-setp-of-from-list
     (implies (ident-listp idents)
