@@ -528,7 +528,7 @@
                          (sbvdivdown . (eval-in-logic (sbvdivdown arg1 arg2 arg3)))
                          (sbvrem . (eval-in-logic (sbvrem arg1 arg2 arg3)))
                          (sbvmoddown . (eval-in-logic (sbvmoddown arg1 arg2 arg3)))
-                         (sbvlt sbvlt-unguarded arg1 (ifix arg2) (ifix arg3)) ;probably okay - may not be needed if guards for the defining functions were better
+                         (sbvlt sbvlt-unguarded arg1 arg2 arg3)
                          (sbvle sbvle-unguarded arg1 arg2 arg3)
                          (s s arg1 arg2 arg3) ;unguarded
 ;;                         (nth2 nth2 arg1 arg2 arg3)

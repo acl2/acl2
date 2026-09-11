@@ -238,7 +238,7 @@
                              (sbvrem (mv t (eval-in-logic (sbvrem arg1 arg2 arg3))))
                              (sbvmoddown (mv t (eval-in-logic (sbvmoddown arg1 arg2 arg3))))
                              (sbvlt
-                                 (mv t (sbvlt-unguarded arg1 (ifix arg2) (ifix arg3))))
+                                 (mv t (sbvlt-unguarded arg1 arg2 arg3)))
                              (sbvle (mv t (sbvle-unguarded arg1 arg2 arg3)))
                              (s (mv t (s arg1 arg2 arg3)))
                              (myif (mv t (myif arg1 arg2 arg3)))
@@ -834,7 +834,7 @@
                             (sbvrem (mv t (eval-in-logic (sbvrem arg1 arg2 arg3))))
                             (sbvmoddown (mv t (eval-in-logic (sbvmoddown arg1 arg2 arg3))))
                             (sbvlt
-                                 (mv t (sbvlt-unguarded arg1 (ifix arg2) (ifix arg3))))
+                                 (mv t (sbvlt-unguarded arg1 arg2 arg3)))
                             (sbvle (mv t (sbvle-unguarded arg1 arg2 arg3)))
                             (s (mv t (s arg1 arg2 arg3)))
                             (myif (mv t (myif arg1 arg2 arg3)))
