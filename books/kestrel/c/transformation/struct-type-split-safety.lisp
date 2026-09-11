@@ -333,7 +333,7 @@
       (type-struni-tag/members-case
        tystr-tag/mems
        :tagged (b* (((when (treeset::in tystr-tag/mems.tag
-                                    (ident-set-fix tags)))
+                                        (ident-set-fix tags)))
                      nil)
                     ((mv info &)
                      (c$::valid-lookup-tag tystr-tag/mems.tag vtable))
@@ -347,7 +347,7 @@
                     ((unless members?) nil)
                     (members (cdr members?))
                     (tags (treeset::insert tystr-tag/mems.tag
-                                       (ident-set-fix tags))))
+                                           (ident-set-fix tags))))
                  (type-struni-member-list-may-refer-to-struct-spec-p
                   members spec vtable completions tags (1- limit)))
        :untagged (type-struni-member-list-may-refer-to-struct-spec-p
@@ -674,7 +674,7 @@
       (type-struni-tag/members-case
        tystr-tag/mems
        :tagged (b* (((when (treeset::in tystr-tag/mems.tag
-                                    (ident-set-fix tags)))
+                                        (ident-set-fix tags)))
                      t)
                     ((mv info &)
                      (c$::valid-lookup-tag tystr-tag/mems.tag vtable))
@@ -688,7 +688,7 @@
                     ((unless members?) t)
                     (members (cdr members?))
                     (tags (treeset::insert tystr-tag/mems.tag
-                                       (ident-set-fix tags))))
+                                           (ident-set-fix tags))))
                  (type-struni-member-list-sts-safep members
                                                     nested
                                                     spec

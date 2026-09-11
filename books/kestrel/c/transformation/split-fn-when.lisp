@@ -363,7 +363,7 @@
   (if (endp strings)
       nil
     (treeset::insert (ident (first strings))
-            (string-list-to-ident-set (rest strings))))
+                     (string-list-to-ident-set (rest strings))))
   :guard-hints (("Goal" :in-theory (enable string-listp)))
   :verify-guards :after-returns)
 

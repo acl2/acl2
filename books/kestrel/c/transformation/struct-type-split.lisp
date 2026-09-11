@@ -804,7 +804,7 @@
                             the split struct type."))
                  (sub-name (c$::designor-dot->name next))
                  (rightp (and (treeset::in sub-name
-                                  (sts-split-state->right-set st))
+                                           (sts-split-state->right-set st))
                               t)))
               (retok :route
                      (cons (if rightp right-first left-first) rest)
