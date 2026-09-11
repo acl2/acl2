@@ -26,16 +26,16 @@
                            member-equal)))
 
 (defthm state-p1-of-mv-nth-1-of-read-char$
-  (implies (and (state-p1 state)
-                (assoc-equal channel (open-input-channels state)) ;todo: instead say it's an open input channel?x
-                )
-           (state-p1 (mv-nth 1 (read-char$ channel state))))
+  (implies (state-p1 state)
+           (equal (state-p1 (mv-nth 1 (read-char$ channel state)))
+                  (if (assoc-equal channel (open-input-channels state)) ;todo: instead say it's an open input channel?
+                      t nil)))
   :hints (("Goal" :in-theory (enable read-char$))))
 
 (defthm state-p-of-mv-nth-1-of-read-char$
-  (implies (and (state-p state)
-                (assoc-equal channel (open-input-channels state)))
-           (state-p (mv-nth 1 (read-char$ channel state))))
+  (implies (state-p state)
+           (equal (state-p (mv-nth 1 (read-char$ channel state)))
+                  (if (assoc-equal channel (open-input-channels state)) t nil)))
   :hints (("Goal" :in-theory (enable state-p))))
 
 (defthm open-input-channel-p1-of-mv-nth-1-of-read-char$
