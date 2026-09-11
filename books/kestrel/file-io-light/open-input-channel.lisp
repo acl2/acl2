@@ -95,6 +95,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Opening an input channel does not affect the output channels.
+
+(defthm open-output-channels-of-mv-nth-1-of-open-input-channel
+  (equal (open-output-channels (mv-nth 1 (open-input-channel file-name typ state)))
+         (open-output-channels state))
+  :hints (("Goal" :in-theory (enable open-input-channel))))
+
+(defthm open-output-channel-p1-of-mv-nth-1-of-open-input-channel
+  (equal (open-output-channel-p1 channel typ2 (mv-nth 1 (open-input-channel file-name typ state)))
+         (open-output-channel-p1 channel typ2 state))
+  :hints (("Goal" :in-theory (enable open-output-channel-p1))))
+
+(defthm open-output-channel-p-of-mv-nth-1-of-open-input-channel
+  (equal (open-output-channel-p channel typ2 (mv-nth 1 (open-input-channel file-name typ state)))
+         (open-output-channel-p channel typ2 state))
+  :hints (("Goal" :in-theory (enable open-output-channel-p))))
+
+(defthm open-output-channel-any-p1-of-mv-nth-1-of-open-input-channel
+  (equal (open-output-channel-any-p1 channel (mv-nth 1 (open-input-channel file-name typ state)))
+         (open-output-channel-any-p1 channel state))
+  :hints (("Goal" :in-theory (enable open-output-channel-any-p1))))
+
+(defthm open-output-channel-any-p-of-mv-nth-1-of-open-input-channel
+  (equal (open-output-channel-any-p channel (mv-nth 1 (open-input-channel file-name typ state)))
+         (open-output-channel-any-p channel state))
+  :hints (("Goal" :in-theory (enable open-output-channel-any-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; See the guard of close-input-channel
 (defthm not-equal-standard-character-input-0-and-mv-nth-0-of-open-input-channel
   (implies (state-p state)
