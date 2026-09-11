@@ -15,7 +15,7 @@
 (include-book "all-natp")
 (include-book "all-integerp")
 (include-book "all-less")
-(include-book "all-less-than-or-equal")
+(include-book "all-less-than-or-equal-def")
 
 ;; Check that NUMS are strictly decreasing.
 ;; Note that this implies that NUMS contains no duplicates.
