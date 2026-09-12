@@ -135,7 +135,7 @@
   :short "An irrelevant validator state."
   :type vstatep
   :body (vstate (irr-valid-table)
-                nil
+                (treemap::empty)
                 nil
                 (irr-uid)
                 (irr-ienv)))
@@ -145,7 +145,7 @@
 (define init-vstate ((ienv ienvp)
                      (filepath filepathp)
                      &optional
-                     (externals valid-externalsp)
+                     ((externals valid-externalsp) '(treemap::empty))
                      ((completions type-completions-p) 'nil)
                      ((next-uid uidp) '(uid 0)))
   :returns (vstate vstatep)
@@ -266,7 +266,7 @@
      which has been declared in any scope or translation unit.
      See @(see valid-table)."))
   (b* (((vstate vstate) vstate))
-    (cdr (omap::assoc (ident-fix ident) vstate.externals))))
+    (treemap::lookup (ident-fix ident) vstate.externals)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -342,7 +342,7 @@
                 :declared-in (insert table.filepath nil)
                 :uid uid)))
        (new-externals
-        (omap::update (ident-fix ident) new-info vstate.externals)))
+        (treemap::update (ident-fix ident) new-info vstate.externals)))
     (change-vstate vstate :externals new-externals)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -382,9 +382,9 @@
         (vstate-fix vstate))
        (scope (car table.scopes))
        (ord-scope (valid-scope->ord scope))
-       (new-ord-scope (acons (ident-fix ident)
-                             (valid-ord-info-fix info)
-                             ord-scope))
+       (new-ord-scope (treemap::update (ident-fix ident)
+                                       (valid-ord-info-fix info)
+                                       ord-scope))
        (new-scope (change-valid-scope scope :ord new-ord-scope))
        (new-scopes (cons new-scope (cdr table.scopes)))
        (table (change-valid-table table :scopes new-scopes))
@@ -401,7 +401,7 @@
              :otherwise vstate)
           vstate)))
     vstate)
-  :guard-hints (("Goal" :in-theory (enable valid-table-num-scopes acons)))
+  :guard-hints (("Goal" :in-theory (enable valid-table-num-scopes)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -431,9 +431,9 @@
         (irr-vstate))
        (scope (car (last scopes)))
        (ord-scope (valid-scope->ord scope))
-       (new-ord-scope (acons (ident-fix ident)
-                             (valid-ord-info-fix info)
-                             ord-scope))
+       (new-ord-scope (treemap::update (ident-fix ident)
+                                       (valid-ord-info-fix info)
+                                       ord-scope))
        (new-scope (change-valid-scope scope :ord new-ord-scope))
        (new-scopes (append (butlast scopes 1) (list new-scope)))
        (table (change-valid-table table :scopes new-scopes))
@@ -450,7 +450,6 @@
              :otherwise vstate)
           vstate)))
     vstate)
-  :guard-hints (("Goal" :in-theory (enable acons)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;

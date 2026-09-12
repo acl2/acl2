@@ -48,16 +48,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled ident-listp-when-ident-setp
-  (implies (ident-setp set)
-           (ident-listp set))
-  :induct t
-  :enable ident-setp)
-
-(local (in-theory (enable ident-listp-when-ident-setp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defomap ident-param-declon-map
   :key-type ident
   :val-type param-declon
@@ -301,7 +291,7 @@
                (new-fn fundefp
                        "The new function definition."))
   (b* (((mv idents -)
-        (free-vars-block-item-list items nil))
+        (free-vars-block-item-list items (treeset::empty)))
        (decls (ident-param-declon-map-filter decls idents))
        (idents (omap::keys decls))
        ;; We use strip-cdrs instead of omap::values because we need these in
@@ -332,7 +322,7 @@
            nil)
           ((mv key val)
            (omap::head map)))
-       (if (in key idents)
+       (if (treeset::in key idents)
            (omap::update key
                          val
                          (ident-param-declon-map-filter (omap::tail map) idents))
