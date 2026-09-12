@@ -474,10 +474,10 @@
                              (,struct-value-onlr-mem sval))))))
        ((erp events) (stsp-struct-value-accs onlr (cdr mems) (cdr types))))
     (retok (cons event events)))
-  :hooks
-  ((:fix :hints (("Goal" :in-theory (enable c$::cdr-of-type-list-fix
-                                            ident-list-fix)))))
-  :verbosep t)
+  :hooks ((:fix :hints (("Goal"
+                         :induct t
+                         :in-theory (enable c$::cdr-of-type-list-fix
+                                            ident-list-fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
