@@ -95,7 +95,7 @@
 ;; todo: extract assumptions from dags?
 (defund dag-or-term-to-dag-and-assumptions (item state)
   (declare (xargs :stobjs state))
-  (if (eq nil item) ;we interpret nil as a term (not an empty dag)
+  (if (eq nil item) ; we interpret nil as a term (not an empty dag)
       (mv (erp-nil) *nil* nil state)
     (if (weak-dagp item)
         ;; TODO: Add support for getting assumptions out of a DAG that is an
@@ -111,6 +111,22 @@
            ((mv erp dag) (dagify-term term))
            ((when erp) (mv erp nil nil state)))
         (mv (erp-nil) dag assumptions state)))))
+
+;; Returns a term (untranslated).
+;; todo: see also dag-or-term-to-term
+(defund dag-or-term-to-term2 (item ; a pseudo-dag or an untranslated term
+                              wrld)
+  (declare (xargs :guard (plist-worldp wrld)))
+  (if (eq nil item) ; we interpret nil as a term (not an empty dag)
+      item
+    (if (weak-dagp item)
+        ;; it's a dag:
+        (if (< (dag-size-unguarded item) 1000)
+            ;; it's a small dag, so convert to a term:
+            (dag2term item)
+          (embed-dag-in-term item wrld))
+      ;; it's a term:
+      item)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1093,7 +1109,7 @@
        ((when (not (tacticsp tactics)))
         (er hard 'prove-with-tactics-fn "Illegal tactics: ~x0. See TACTICP." tactics)
         (mv :bad-input nil state))
-       ;; Form the dag to prove:
+       ;; Form the dag to prove: ; todo: move assumption splitting into the tactic prover?
        ((mv erp dag-or-constant assumptions2 state)
         ;; Also translates the term:
         (dag-or-term-to-dag-and-assumptions dag-or-term state))
@@ -1123,9 +1139,7 @@
              (table-event (redundancy-table-event whole-form name)) ; just using the name here, since there may be no theorem ; just use :fake or :result-not-stored?
              (maybe-theorem
                (and produce-theoremp
-                    (b* ((theorem-conclusion (if (< (dag-or-quotep-size dag-or-constant) 1000)
-                                                 (if (quotep dag-or-constant) dag-or-constant (dag-or-constant-to-term dag-or-constant))
-                                               (embed-dag-in-term dag-or-constant (w state))))
+                    (b* ((theorem-conclusion (dag-or-term-to-term2 dag-or-term (w state))) ; the original dag-or-term supplied, no assumptions split off
                          (defthm-name (or name (fresh-name-in-world-with-$s 'prove-with-tactics nil (w state))))
                          (disablep (if rule-classes t nil)) ;can't disable if :rule-classes nil ;todo: make this an option
                          (defthm-variant (if disablep 'defthmd 'defthm)))

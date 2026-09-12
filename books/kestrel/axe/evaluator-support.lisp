@@ -273,7 +273,7 @@
         (car items)
       (first-non-member-unguarded (cdr items) items-to-exclude))))
 
-(defthm first-non-member-correct
+(defthm first-non-member-unguarded-correct
   (equal (first-non-member-unguarded items items-to-exclude)
          (first-non-member items items-to-exclude))
   :hints (("Goal" :in-theory (enable first-non-member-unguarded
@@ -528,7 +528,7 @@
                          (sbvdivdown . (eval-in-logic (sbvdivdown arg1 arg2 arg3)))
                          (sbvrem . (eval-in-logic (sbvrem arg1 arg2 arg3)))
                          (sbvmoddown . (eval-in-logic (sbvmoddown arg1 arg2 arg3)))
-                         (sbvlt sbvlt-unguarded arg1 (ifix arg2) (ifix arg3)) ;probably okay - may not be needed if guards for the defining functions were better
+                         (sbvlt sbvlt-unguarded arg1 arg2 arg3)
                          (sbvle sbvle-unguarded arg1 arg2 arg3)
                          (s s arg1 arg2 arg3) ;unguarded
 ;;                         (nth2 nth2 arg1 arg2 arg3)
@@ -553,7 +553,7 @@
                                 (bv-array-read bv-array-read-unguarded arg1 arg2 arg3 arg4)
                                 (bvif bvif-unguarded arg1 arg2 arg3 arg4))
                               (acons 5 '((update-subrange2 . (eval-in-logic (update-subrange2 arg1 arg2 arg3 arg4 arg5))) ;new
-                                         (bv-array-write bv-array-write-unguarded (nfix arg1) (nfix arg2) (nfix arg3) arg4 arg5) ; see bv-array-write-unguarded-correct
+                                         (bv-array-write bv-array-write-unguarded arg1 arg2 arg3 arg4 arg5) ; see bv-array-write-unguarded-correct
                                          (bv-array-clear-range . (eval-in-logic (bv-array-clear-range arg1 arg2 arg3 arg4 arg5)))
                                          )
                                      nil))))))
