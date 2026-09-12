@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "basic-characters")
+(include-book "unicode-characters")
 (include-book "uchar-formats")
 
 (include-book "kestrel/fty/any-nat-map" :dir :system)
@@ -346,6 +347,10 @@
 
      ///
 
+     (defret character-any-mapp-of-exec-charset-basic-loop
+       (character-any-mapp map)
+       :hints (("Goal" :induct t)))
+
      (defret keys-of-exec-charset-basic-loop
        (equal (omap::keys map)
               (character-sfix chars))
@@ -570,3 +575,92 @@
     :disable ((:e exec-charset-ascii-loop))
     :enable (exec-charset-wfp
              exec-charset-ascii)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec-charset-unicode ((std standardp))
+  :returns (charset exec-charsetp)
+  :short "The execution character set defined by Unicode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use the Unicode scalar values in @(tsee unicode-chars)
+     as the execution characters, with the same codes as their numeric values.
+     Each ACL2 character representing a basic execution character
+     maps to its character code.")
+   (xdoc::p
+    "The C standard determines the set of basic execution characters.
+     Their codes fit in a byte for every @(tsee uchar-format),
+     even though the codes of extended characters may be larger."))
+  (b* ((chars-with-values (unicode-code-map))
+       (basic-chars (exec-charset-basic-loop (ascii-basic-exec-chars std))))
+    (make-exec-charset :chars-with-values chars-with-values
+                       :basic-chars basic-chars))
+
+  ///
+
+  (defruled exec-chars-of-exec-charset-unicode
+    (equal (exec-chars (exec-charset-unicode std))
+           (unicode-chars))
+    :enable (exec-chars exec-charset-unicode))
+
+  (defrulel unicode-has-basic-chars-p-lemma
+    (exec-charset-has-basic-chars-p
+     (unicode-code-map)
+     (exec-charset-basic-loop (ascii-basic-exec-chars std))
+     std)
+    :enable (exec-charset-has-basic-chars-p
+             char-code-set-subset-unicode-chars))
+
+  (defrulel unicode-basic-chars-byte-p-lemma
+    (exec-charset-basic-chars-byte-p
+     (unicode-code-map)
+     (exec-charset-basic-loop (ascii-basic-exec-chars std))
+     uchar-format)
+    :enable (exec-charset-basic-chars-byte-p
+             omap::lookup*-when-identityp
+             char-code-set-subset-unicode-chars)
+    :prep-lemmas
+    ((defrule lemma
+       (implies (set::in code (acl2::char-code-set chars))
+                (<= code (uchar-format->max uchar-format)))
+       :use (:instance acl2::char-code-set-upper-bound
+                       (acl2::code code)
+                       (acl2::chars chars)))))
+
+  (defrulel unicode-digits-in-order-p-lemma
+    (exec-charset-digits-in-order-p
+     (unicode-code-map)
+     (exec-charset-basic-loop (ascii-basic-exec-chars std)))
+    :enable (exec-charset-digits-in-order-p
+             set::in
+             lookup-of-exec-charset-basic-loop)
+    :prep-lemmas
+    ((defrule lemma
+       (implies (set::in x '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
+                (set::in x (ascii-basic-exec-chars std)))
+       :enable (digits-in-ascii-basic-exec-chars
+                set::expensive-rules))))
+
+  (defrulel unicode-null-char-zero-p-lemma
+    (exec-charset-null-char-zero-p
+     (unicode-code-map)
+     (exec-charset-basic-loop (ascii-basic-exec-chars std)))
+    :enable (exec-charset-null-char-zero-p
+             null-in-ascii-basic-exec-chars
+             lookup-of-exec-charset-basic-loop))
+
+  (defrule exec-charset-wfp-of-exec-charset-unicode
+    (exec-charset-wfp (exec-charset-unicode std) std uchar-format)
+    :enable (exec-charset-wfp exec-charset-unicode))
+
+  (defruled basic-exec-char-of-exec-charset-unicode
+    (implies (set::in bchar (ascii-basic-exec-chars std))
+             (equal (basic-exec-char bchar
+                                     (exec-charset-unicode std)
+                                     std
+                                     uchar-format)
+                    (char-code bchar)))
+    :enable (basic-exec-char
+             exec-charset-unicode
+             lookup-of-exec-charset-basic-loop)))

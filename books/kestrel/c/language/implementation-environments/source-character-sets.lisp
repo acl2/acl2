@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "basic-characters")
+(include-book "unicode-characters")
 
 (include-book "kestrel/fty/any-nat-map" :dir :system)
 (include-book "kestrel/fty/true-list-set" :dir :system)
@@ -402,3 +403,50 @@
              source-charset-has-basic-chars-p
              ascii-basic-source-chars
              acl2::char-code-set)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define source-charset-unicode ((end-of-lines true-list-setp))
+  :guard (and (not (set::emptyp end-of-lines))
+              (source-charset-end-of-lines-wfp end-of-lines
+                                               (unicode-code-map)))
+  :returns (charset source-charsetp)
+  :short "The source character set defined by
+          Unicode and a specified set of line endings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use the Unicode scalar values in @(tsee unicode-chars)
+     as the source characters, and map each one to itself as its code.
+     Unicode fixes these characters and their codes,
+     but leaves a choice of which character sequences represent new lines.")
+   (xdoc::p
+    "The parameter specifies the exact set of new-line representations.
+     The set must be non-empty,
+     and each representation must be a non-empty list of Unicode scalar values.
+     As explained in @(tsee source-charset-end-of-lines-wfp),
+     one representation may be a prefix of another,
+     with the longest matching sequence denoting a single new line."))
+  (make-source-charset :chars-with-codes (unicode-code-map)
+                       :end-of-lines end-of-lines)
+
+  ///
+
+  (defruled source-chars-of-source-charset-unicode
+    (equal (source-chars (source-charset-unicode end-of-lines))
+           (unicode-chars))
+    :enable source-chars)
+
+  (defrule source-charset-wfp-of-source-charset-unicode
+    (implies
+     (and (not (set::emptyp (true-list-set-fix end-of-lines)))
+          (source-charset-end-of-lines-wfp end-of-lines (unicode-code-map)))
+     (source-charset-wfp (source-charset-unicode end-of-lines) std))
+    :enable (source-charset-wfp
+             source-charset-has-basic-chars-p
+             char-code-set-subset-unicode-chars))
+
+  (defruled basic-source-char-of-source-charset-unicode
+    (equal (basic-source-char bchar (source-charset-unicode end-of-lines) std)
+           (char-code bchar))
+    :enable basic-source-char))

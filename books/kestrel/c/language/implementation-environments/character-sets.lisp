@@ -382,7 +382,8 @@
      so the mapping from source to execution characters is the identity.")
    (xdoc::p
     "The @('std') parameter determines the basic execution characters,
-     and @('end-of-lines') specifies the exact source new-line representations."))
+     and @('end-of-lines') specifies the exact source new-line representations
+     as sequences of ACL2 ASCII characters."))
   (b* ((source (source-charset-ascii end-of-lines))
        (exec (exec-charset-ascii std))
        (source-exec-map (omap::identity (source-chars source))))
@@ -438,3 +439,62 @@
      (charset-wfp (charset-ascii std end-of-lines) std uchar-format))
     :enable (charset-wfp
              charset-ascii)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define charset-unicode ((std standardp) (end-of-lines true-list-setp))
+  :guard (and (not (set::emptyp end-of-lines))
+              (source-charset-end-of-lines-wfp end-of-lines
+                                               (unicode-code-map)))
+  :returns (charset charsetp)
+  :short "The character set defined by
+          Unicode and a specified set of source line endings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We combine @(tsee source-charset-unicode) with @(tsee exec-charset-unicode).
+     Both character sets use the Unicode scalar values as characters,
+     so the mapping from source to execution characters is the identity.")
+   (xdoc::p
+    "The @('std') parameter determines the basic execution characters,
+     and @('end-of-lines') specifies the exact source new-line representations
+     as sequences of Unicode scalar values."))
+  (b* ((source (source-charset-unicode end-of-lines))
+       (exec (exec-charset-unicode std))
+       (source-exec-map (unicode-code-map)))
+    (make-charset :source source
+                  :exec exec
+                  :source-exec-map source-exec-map))
+
+  ///
+
+  (in-theory (disable (:e charset-unicode)))
+
+  (defruled source-chars-equal-exec-chars-unicode-lemma
+    (equal (source-chars (source-charset-unicode end-of-lines))
+           (exec-chars (exec-charset-unicode std)))
+    :enable (source-chars-of-source-charset-unicode
+             exec-chars-of-exec-charset-unicode))
+
+  (defrulel source-exec-map-unicode-wfp-lemma
+    (source-exec-map-wfp
+     (unicode-code-map)
+     (source-charset-unicode end-of-lines)
+     (exec-charset-unicode std)
+     std
+     uchar-format)
+    :enable (source-exec-map-wfp
+             basic-source-exec-map-wfp
+             source-chars-of-source-charset-unicode
+             exec-chars-of-exec-charset-unicode
+             basic-source-char-of-source-charset-unicode
+             basic-exec-char-of-exec-charset-unicode
+             ascii-basic-source-chars-subset-ascii-basic-exec-chars
+             set::subset-in))
+
+  (defrule charset-wfp-of-charset-unicode
+    (implies
+     (and (not (set::emptyp (true-list-set-fix end-of-lines)))
+          (source-charset-end-of-lines-wfp end-of-lines (unicode-code-map)))
+     (charset-wfp (charset-unicode std end-of-lines) std uchar-format))
+    :enable (charset-wfp charset-unicode)))
