@@ -465,7 +465,7 @@
                                                 c::value-struct-read
                                                 c::value-struct-read-aux))))
            ///
-           (defruled ,value-kind-of-struct-value-onlr-mem
+           (defret ,value-kind-of-struct-value-onlr-mem
              (equal (c::value-kind mval) ,(type-kind (car types)))
              :hyp (,struct-value-onlrp sval))
            (defruled ,value-struct-read-mem-when-struct-value-onlrp
