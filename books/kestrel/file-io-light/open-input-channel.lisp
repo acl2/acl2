@@ -29,37 +29,37 @@
 (in-theory (disable open-input-channel
                     open-input-channel-p1
                     mv-nth ;so that the rules below fire
-                    ))
+                    state-p1))
 
 ;; The channel name, or nil.
 (defthm symbolp-of-mv-nth-0-of-open-input-channel
   (symbolp (mv-nth 0 (open-input-channel file-name typ state)))
   :hints (("Goal" :in-theory (enable open-input-channel))))
 
+(local
+  (defthm stringp-when-assoc-equal-and-readable-files-p
+    (implies (and (assoc-equal val readable-files)
+                  (equal file-name (car val))
+                  (readable-files-p readable-files))
+             (stringp file-name))
+    :hints (("Goal" :in-theory (enable readable-files-p readable-files-listp)))))
+
+;; or could use member-equal
+(local
+  (defthm member-eq-of-files-types-when-assoc-equal-and-readable-files-p
+    (implies (and (assoc-equal val readable-files)
+                  (equal typ (cadr val))
+                  (readable-files-p readable-files))
+             (member-eq typ *file-types*))
+    :hints (("Goal" :in-theory (enable readable-files-p readable-files-listp)))))
+
 (defthm state-p1-of-mv-nth-1-of-open-input-channel
-  (implies (and (member-eq typ *file-types*)
-                (stringp file-name)
-                (state-p1 state))
+  (implies (state-p1 state)
            (state-p1 (mv-nth 1 (open-input-channel file-name typ state))))
-  :hints (("Goal" :in-theory (e/d (open-input-channel
-                                   state-p1
-                                   channel-headerp)
-                                  (add-pair
-                                   all-boundp
-                                   file-clock-p
-                                   len
-                                   make-input-channel
-                                   natp
-                                   open-channels-p
-                                   read-files-p
-                                   readable-files-p
-                                   writeable-files-p
-                                   written-files-p)))))
+  :hints (("Goal" :in-theory (enable open-input-channel))))
 
 (defthm state-p-of-mv-nth-1-of-open-input-channel
-  (implies (and (member-eq typ *file-types*)
-                (stringp file-name)
-                (state-p state))
+  (implies (state-p state)
            (state-p (mv-nth 1 (open-input-channel file-name typ state))))
   :hints (("Goal" :in-theory (enable state-p))))
 
