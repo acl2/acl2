@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "pretty-printer" :ttags ((:open-output-channel!)))
+(include-book "pretty-printing-options")
 (include-book "../syntax/abstract-syntax-formal-mapping-inverse")
 (include-book "../syntax/printer" :ttags ((:file-io!)))
 (include-book "shallow-embedding")
