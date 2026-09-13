@@ -1,10 +1,10 @@
 ; Set of Contiguous Integers
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -12,6 +12,7 @@
 
 (include-book "integers-from-to")
 
+(include-book "kestrel/fty/nat-set" :dir :system)
 (include-book "kestrel/utilities/osets" :dir :system)
 (include-book "kestrel/utilities/oset-theorems" :dir :system)
 
@@ -56,6 +57,13 @@
               (<= (ifix min) x)
               (<= x (ifix max))))
     :enable set::in-to-member-when-setp)
+
+  (defruled nat-setp-of-integers-from-to
+    (implies (natp min)
+             (nat-setp (integers-from-to min max)))
+    :induct (integers-from-to min max)
+    :enable (integers-from-to nat-setp << lexorder alphorder)
+    :hints ('(:expand ((integers-from-to (+ 1 min) max)))))
 
   (defrule integers-from-to-list-in-integers-from-to
     (implies (and (integerp min1)

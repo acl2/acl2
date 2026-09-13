@@ -1072,7 +1072,22 @@
     (implies (emptyp map)
              (equal (lookup* keys map)
                     nil))
-    :induct t))
+    :induct t)
+
+  (defruled lookup-in-lookup*-when-in
+    (implies (and (set::in key keys)
+                  (assoc key map))
+             (set::in (lookup key map) (lookup* keys map)))
+    :induct (lookup* keys map)
+    :enable (lookup* set::in))
+
+  (defruled lookup*-of-insert
+    (equal (lookup* (set::insert key keys) map)
+           (if (assoc key map)
+               (set::insert (lookup key map) (lookup* keys map))
+             (lookup* keys map)))
+    :induct (set::insert key keys)
+    :enable (lookup* lookup-in-lookup*-when-in)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
