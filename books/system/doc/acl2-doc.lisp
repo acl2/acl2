@@ -109839,6 +109839,10 @@ it."
 ; Improved the error message for bad wf-rel, to indicate whether or not the
 ; problematic :well-founded-relation is at least a known function symbol.
 
+; Fixed bad-lisp-objectp -- more specifically, bad-lisp-atomp -- to report a
+; bad character without having the error message itself cause an error (as we
+; saw when using LispWorks).
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
