@@ -62,7 +62,6 @@
 
   ///
 
-  ; Keep the full set symbolic in subsequent proofs.
   (in-theory (disable (:e unicode-chars)))
 
   (defret in-of-unicode-chars
@@ -92,7 +91,6 @@
 
   ///
 
-  ; Keep the full map symbolic in subsequent proofs.
   (in-theory (disable (:e unicode-code-map)))
 
   (defret identityp-of-unicode-code-map
