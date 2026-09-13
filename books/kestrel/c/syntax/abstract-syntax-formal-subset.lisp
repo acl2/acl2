@@ -1017,11 +1017,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dirdeclor-fun-formalp ((dirdeclor dirdeclorp))
+(define dirdeclor-fun-formalp ((dirdeclor dirdeclorp) (fundefp booleanp))
   :guard (dirdeclor-unambp dirdeclor)
   :returns (yes/no booleanp)
   :short "Check if a direct declarator has formal dynamic semantics,
-          as part of a function declaration."
+          as part of a function declaration or definition."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1030,7 +1030,15 @@
      see @(tsee ldm-dirdeclor-fun).
      The parameter declarations must be supported and non-empty;
      we allow a singleton list of parameters consisting of just @('void'),
-     which specifies that a function has no parameters [C17:6.7.6.3/10]."))
+     which specifies that a function has no parameters [C17:6.7.6.3/10].")
+   (xdoc::p
+    "The @('fundefp') flag says whether
+     the declarator is part of a function definition.
+     In that case, we also allow an empty list of parameter names,
+     which specifies that the function has no parameters [C17:6.7.6.3/14].
+     Outside a function definition,
+     an empty list of parameter names leaves the parameters unspecified,
+     which we do not support."))
   (dirdeclor-case
    dirdeclor
    :function-params
@@ -1039,24 +1047,32 @@
         (or (param-declon-list-voidp dirdeclor.params)
             (and (consp dirdeclor.params)
                  (param-declon-list-formalp dirdeclor.params))))
-   :function-names nil
+   :function-names
+   (and fundefp
+        (dirdeclor-case dirdeclor.declor :ident)
+        (ident-formalp (dirdeclor-ident->ident dirdeclor.declor))
+        (endp dirdeclor.names))
    :otherwise nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define declor-fun-formalp ((declor declorp))
+(define declor-fun-formalp ((declor declorp) (fundefp booleanp))
   :guard (declor-unambp declor)
   :returns (yes/no booleanp)
   :short "Check if a declarator has formal dynamic semantics,
-          as part of a function declaration."
+          as part of a function declaration or definition."
   :long
   (xdoc::topstring
    (xdoc::p
     "There may be any number of pointers, but without type qualifiers.
-     And the direct declarator must be supported."))
+     And the direct declarator must be supported.")
+   (xdoc::p
+    "The @('fundefp') flag says whether
+     the declarator is part of a function definition;
+     see @(tsee dirdeclor-fun-formalp)."))
   (b* (((declor declor) declor))
     (and (pointers-formalp declor.pointers)
-         (dirdeclor-fun-formalp declor.direct))))
+         (dirdeclor-fun-formalp declor.direct fundefp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1072,7 +1088,7 @@
      and the declarator must be supported.
      There must be no assembler name specifier and no attribute specifiers."))
   (b* (((init-declor initdeclor) initdeclor))
-    (and (declor-fun-formalp initdeclor.declor)
+    (and (declor-fun-formalp initdeclor.declor nil)
          (not initdeclor.asm?)
          (endp initdeclor.attribs)
          (not initdeclor.initer?))))
@@ -1142,7 +1158,7 @@
                (check-decl-spec-list-all-typespec fundef.specs)))
            (and okp
                 (type-spec-list-formalp tyspecs)))
-         (declor-fun-formalp fundef.declor)
+         (declor-fun-formalp fundef.declor t)
          (not fundef.asm?)
          (endp fundef.attribs)
          (endp fundef.declons)

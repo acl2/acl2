@@ -367,7 +367,7 @@
              mv-nth-1-ldm-dirdeclor-obj-of-declor-to-dirdeclor))
 
   (defrule ldm-declor-fun-of-ildm-obj-declor-error
-    (mv-nth 0 (ldm-declor-fun (ildm-obj-declor declor)))
+    (mv-nth 0 (ldm-declor-fun (ildm-obj-declor declor) fundefp))
     :induct t
     :enable (ldm-declor-fun
              ldm-declor-fun-loop
@@ -867,7 +867,7 @@
   ///
 
   (defrule ldm-declor-fun-of-ildm-fun-declor
-    (equal (ldm-declor-fun (ildm-fun-declor declor))
+    (equal (ldm-declor-fun (ildm-fun-declor declor) fundefp)
            (mv nil (c::fun-declor-dec0-to-oct0 declor)))
     :induct t
     :enable (ldm-declor-fun
