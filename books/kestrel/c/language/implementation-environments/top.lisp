@@ -70,13 +70,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ienv-requirep ((uchar uchar-formatp)
+(define ienv-requirep ((dialect dialectp)
+                       (uchar uchar-formatp)
                        (schar schar-formatp)
                        (short integer-formatp)
                        (int integer-formatp)
                        (long integer-formatp)
                        (llong integer-formatp)
-                       (bool bool-formatp))
+                       (bool bool-formatp)
+                       (charset charsetp))
   :returns (yes/no booleanp)
   :short "Requirements for @(tsee ienv)."
   :long
@@ -89,12 +91,13 @@
        (integer-format-int-wfp int uchar short)
        (integer-format-long-wfp long uchar int)
        (integer-format-llong-wfp llong uchar long)
-       (bool-format-wfp bool uchar))
+       (bool-format-wfp bool uchar)
+       (charset-wfp charset (dialect->std dialect) uchar))
 
   ///
 
   (defmacro ienv-requirep-call ()
-    '(ienv-requirep uchar schar short int long llong bool)))
+    '(ienv-requirep dialect uchar schar short int long llong bool charset)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -115,7 +118,9 @@
     (xdoc::li
      "The format of the boolean type
       (which is a standard unsigned integer type,
-      but has no signed counterpart)."))
+      but has no signed counterpart).")
+    (xdoc::li
+     "The (source and execution) character set."))
    (xdoc::p
     "We plan to add more information."))
   ((dialect dialectp)
@@ -133,9 +138,14 @@
    (llong integer-format
           :reqfix (if (ienv-requirep-call) llong (llong-format-64tcnt)))
    (bool bool-format
-         :reqfix (if (ienv-requirep-call) bool (bool-format-lsb))))
+         :reqfix (if (ienv-requirep-call) bool (bool-format-lsb)))
+   (charset charset
+            :reqfix (if (ienv-requirep-call)
+                        charset
+                      (charset-basic+lf (dialect->std dialect)))))
   :require (ienv-requirep-call)
-  :pred ienvp)
+  :pred ienvp
+  :prepwork ((local (in-theory (enable ienv-requirep)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
