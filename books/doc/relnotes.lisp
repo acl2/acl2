@@ -279,9 +279,11 @@
     "Fixed @(see with-supporters) to @(see disable) appropriate names of
      theorems (not merely functions), to disable some rules for functions that
      it was mistakenly failing to disable, to avoid dropping suitable
-     macro-aliases (see @(see macro-aliases-table)), and to use bodies of
-     @(tsee defconst) forms (which can avoid slow array accesses).  Eliminated
-     support for unused utility ('with-supporters-after').")
+     macro-aliases (see @(see macro-aliases-table)), to use bodies of @(tsee
+     defconst) forms (which can avoid slow array accesses), and to pull in
+     well-founded relations (and their corresponding @(see
+     well-founded-relation) rules) for definitions.  Eliminated support for
+     unused utility ('with-supporters-after').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -540,14 +540,14 @@
             (list 'quote def)
             'state
             (list 'quote event-form)
-            #+:non-standard-analysis ; std-p
+            #+non-standard-analysis ; std-p
             nil))
     (defmacro defuns (&whole event-form &rest def-lst)
       (list 'defuns-fn
             (list 'quote def-lst)
             'state
             (list 'quote event-form)
-            #+:non-standard-analysis ; std-p
+            #+non-standard-analysis ; std-p
             nil))
     (defmacro verify-termination-boot-strap (&whole event-form &rest lst)
       (list 'verify-termination-boot-strap-fn
@@ -600,7 +600,7 @@
             (list 'quote hints)
             (list 'quote otf-flg)
             (list 'quote event-form)
-            #+:non-standard-analysis ; std-p
+            #+non-standard-analysis ; std-p
             nil))
     (defmacro defaxiom (&whole event-form
                                name term
@@ -764,7 +764,7 @@
   (cond ((null actuals) nil)
         ((equal (car actuals) '(quote state))
          (cons 'state (primordial-event-macro-and-fn1 (cdr actuals))))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         ((or (equal (car actuals) nil)
              (equal (car actuals) t))
 
@@ -1162,8 +1162,8 @@
   (let ((names (strip-cars *primitive-formals-and-guards*))
         (arglists (strip-cadrs *primitive-formals-and-guards*))
         (guards (strip-caddrs *primitive-formals-and-guards*))
-        (ns-names #+:non-standard-analysis *non-standard-primitives*
-                  #-:non-standard-analysis nil))
+        (ns-names #+non-standard-analysis *non-standard-primitives*
+                  #-non-standard-analysis nil))
 
     (add-command-landmark
      :logic
@@ -1188,7 +1188,7 @@
           (putprop-defun-runic-mapping-pairs
            names nil
            (putprop-x-lst1
-            ns-names ; nil in the #-:non-standard-analysis case
+            ns-names ; nil in the #-non-standard-analysis case
             'classicalp nil
             (putprop-x-lst1
              ns-names
@@ -3194,7 +3194,7 @@
 
 (defconst *signature-keywords*
   '(:GUARD
-    #+:non-standard-analysis :CLASSICALP
+    #+non-standard-analysis :CLASSICALP
     :STOBJS :DFS :FORMALS :GLOBAL-STOBJS :TRANSPARENT))
 
 (defun duplicate-key-in-keyword-value-listp (l)
@@ -3443,7 +3443,7 @@
                     signature."
                    x)
               nil nil nil nil nil nil))
-         ((or #+:non-standard-analysis
+         ((or #+non-standard-analysis
               (not (booleanp (cadr (assoc-keyword :CLASSICALP
                                                   kwd-value-list))))
               (not (booleanp (cadr (assoc-keyword :TRANSPARENT
@@ -3456,9 +3456,9 @@
           (mv (msg "The object ~x0 is not a legal signature.  The value of ~
                     the ~x1 keyword must be Boolean; see :DOC signature."
                    x
-                   #-:non-standard-analysis
+                   #-non-standard-analysis
                    :TRANSPARENT
-                   #+:non-standard-analysis
+                   #+non-standard-analysis
                    (if (not (booleanp (cadr (assoc-keyword :CLASSICALP
                                                            kwd-value-list))))
                        :CLASSICALP
@@ -3515,7 +3515,7 @@
                     see :DOC signature."
                    x)
               nil nil nil nil nil nil))
-         ((or #+:non-standard-analysis
+         ((or #+non-standard-analysis
               (not (booleanp (cadr (assoc-keyword :CLASSICALP
                                                   kwd-value-list))))
               (not (booleanp (cadr (assoc-keyword :TRANSPARENT
@@ -3528,9 +3528,9 @@
           (mv (msg "The object ~x0 is not a legal signature.  The value of ~
                     the ~x1 keyword must be Boolean; see :DOC signature."
                    x
-                   #-:non-standard-analysis
+                   #-non-standard-analysis
                    :TRANSPARENT
-                   #+:non-standard-analysis
+                   #+non-standard-analysis
                    (if (not (booleanp (cadr (assoc-keyword :CLASSICALP
                                                            kwd-value-list))))
                        :CLASSICALP
@@ -4772,11 +4772,11 @@
                       (cons #\4 (car ev-lst))
                       (cons #\5 (term-evisc-tuple nil state))
                       (cons #\r
-                            #+:non-standard-analysis
+                            #+non-standard-analysis
                             (if (f-get-global 'script-mode state)
                                 ""
                               "(r)")
-                            #-:non-standard-analysis ""))
+                            #-non-standard-analysis ""))
                      channel state nil))))
          (mv-let
            (erp form state)
@@ -4972,13 +4972,13 @@
 
 ; For ACL2 (as opposed to ACL2(r)), we do not use kwd-value-list-lst.  It is
 ; convenient though to keep it as a formal, to avoid proliferation of
-; #-:non-standard-analysis readtime conditionals.  We are tempted to declare
+; #-non-standard-analysis readtime conditionals.  We are tempted to declare
 ; kwd-value-list-lst as IGNOREd, in order to avoid the complaint that
 ; kwd-value-list-lst is an irrelevant formal.  However, ACL2 then complains
 ; because of the recursive calls of this function.  Fortunately, declaring
 ; kwd-value-list-lst IGNORABLE also turns off the irrelevance check.
 
-  #-:non-standard-analysis
+  #-non-standard-analysis
   (declare (ignorable kwd-value-list-lst))
   (cond ((null insigs) nil)
         ((member-eq (caar insigs) udf-fns)
@@ -4994,7 +4994,7 @@
                                       (stobjs-out fn wrld))))
              (cond
               ((and (equal-insig declared-insig actual-insig)
-                    #+:non-standard-analysis
+                    #+non-standard-analysis
 
 ; If the function is specified to be classical, then it had better have a
 ; classical witness.  But in fact the converse is critical too!  Consider the
@@ -5035,15 +5035,15 @@
 ; This is just (list 'if test tbr fbr), except that we expect test always to be
 ; false in the standard case.
 
-  #+:non-standard-analysis
+  #+non-standard-analysis
   (declare (ignore ctx))
-  #-:non-standard-analysis
+  #-non-standard-analysis
   (declare (ignore tbr))
   (list 'if
         test
-        #+:non-standard-analysis
+        #+non-standard-analysis
         tbr
-        #-:non-standard-analysis
+        #-non-standard-analysis
         `(er hard ,ctx
              "Unexpected intrusion of non-standard analysis into standard ~
               ACL2!  Please contact the implementors.")
@@ -8843,7 +8843,7 @@
                                                    kwd-value-list-lst
                                                    wrld3)
                                                   wrld3 ctx state))
-                                         #+:non-standard-analysis
+                                         #+non-standard-analysis
                                          (wrld3a (value
                                                   (intro-udf-non-classicalp
                                                    insigs kwd-value-list-lst
@@ -9028,7 +9028,7 @@
                                        kwd-value-list-lst
                                        wrld3)
                                       wrld3 ctx state))
-                             #+:non-standard-analysis
+                             #+non-standard-analysis
                              (wrld3a (value (intro-udf-non-classicalp
                                              insigs kwd-value-list-lst wrld3a))))
                           (install-event (cond
@@ -18670,7 +18670,7 @@
 ;       (and tbody2
 ;            (not tbody1))))
 
-; We now outline an argument for the :non-standard-analysis case, which in fact
+; We now outline an argument for the non-standard-analysis case, which in fact
 ; provides justification for both defchoose axioms.  The idea is to assume that
 ; there is a suitable well-ordering for the ground-zero theory and that the
 ; ground-zero theory contains enough "invisible" functions so that this
@@ -18849,12 +18849,12 @@
                                (stobjs-out
                                 (compute-stobj-flags bound-vars nil nil wrld))
                                (wrld
-                                #+:non-standard-analysis
+                                #+non-standard-analysis
                                 (putprop
                                  fn 'classicalp
                                  (classical-fn-list-p (all-fnnames tbody) wrld)
                                  wrld)
-                                #-:non-standard-analysis
+                                #-non-standard-analysis
                                 wrld)
                                (wrld
                                 (putprop
@@ -18899,7 +18899,7 @@
 (defconst *defun-sk-keywords*
   '(:quant-ok :skolem-name :thm-name :rewrite :strengthen
               :constrain :verbose
-              #+:non-standard-analysis :classicalp))
+              #+non-standard-analysis :classicalp))
 
 (defun non-acceptable-defun-sk-p (name args body quant-ok rewrite exists-p
                                        dcls)
@@ -19135,9 +19135,9 @@
                                       constrained))))
                (rewrite (cdr (assoc-eq :rewrite keyword-alist)))
                (strengthen (cdr (assoc-eq :strengthen keyword-alist)))
-               #+:non-standard-analysis
+               #+non-standard-analysis
                (classicalp-p (and (assoc-eq :classicalp keyword-alist) t))
-               #+:non-standard-analysis
+               #+non-standard-analysis
                (classicalp (let ((pair (assoc-eq :classicalp keyword-alist)))
                              (if pair
                                  (cdr pair)
@@ -19219,7 +19219,7 @@
                                  (cons 'mv
                                        (make-list (length bound-vars)
                                                   :initial-element '*)))
-                              #+:non-standard-analysis
+                              #+non-standard-analysis
                               ,@(and classicalp-p
                                      `(:classicalp ,classicalp)))
                              ,@(and constrained
@@ -19243,7 +19243,7 @@
                                                  nil)
                                                 (declare (ignore ign))
                                                 `(:guard ,guard)))
-                                       #+:non-standard-analysis
+                                       #+non-standard-analysis
                                        ,@(and classicalp-p
                                               `(:classicalp ,classicalp))))))
                             (local (in-theory '(implies)))
@@ -34181,10 +34181,10 @@
 ; not have to protect the world here in case of error, though we do set the
 ; world back to the starting world when returning a non-erroneous error triple.
 ; Form should evaluate either to an ordinary value, val, or to (mv nil val
-; state stobj1 ... stobjk), where k may be 0.  If so, we return (value (list*
-; val new-kpa new-ttags-seen)), where new-kpa and new-ttags-seen are the
-; known-package-alist and value of world global 'ttags-seen immediately after
-; form is evaluated; and if not, we return a soft error.
+; state stobj1 ... stobjk), where k may be 0.  If so, we return (value (cons
+; val new-ttags-seen)), where new-ttags-seen is the value of world global
+; 'ttags-seen immediately after form is evaluated; and if not, we return a soft
+; error.
 
 ; See the comment at the call of trans-eval-default-warning, below.
 
@@ -34224,12 +34224,11 @@
 
                  (with-hcomp-bindings-protected-eval
                   (trans-eval-default-warning form ctx state aok))))
-        (let* ((new-kpa (known-package-alist state))
-               (new-ttags-seen (global-val 'ttags-seen (w state)))
+        (let* ((new-ttags-seen (global-val 'ttags-seen (w state)))
                (stobjs-out (car result))
                (vals (cdr result))
                (safep (equal stobjs-out '(nil))))
-          (cond (safep (value (list* vals new-kpa new-ttags-seen)))
+          (cond (safep (value (cons vals new-ttags-seen)))
                 ((or (null (cdr stobjs-out))
                      (not (eq (caddr stobjs-out) 'state))
                      (member-eq nil (cdddr stobjs-out)))
@@ -34262,7 +34261,7 @@
                          form))))
                 (t (pprogn
                     (set-w! original-wrld state)
-                    (value (list* (cadr vals) new-kpa new-ttags-seen)))))))))))
+                    (value (cons (cadr vals) new-ttags-seen)))))))))))
 
 (defun make-event-debug-pre (depth form on-behalf-of state)
 
@@ -34461,9 +34460,7 @@
 
 (defun make-event-fn (form expansion? check-expansion on-behalf-of
                            save-event-data whole-form state)
-  (let ((ctx (make-event-ctx whole-form))
-        #-acl2-loop-only
-        (old-kpa (known-package-alist state)))
+  (let ((ctx (make-event-ctx whole-form)))
     (with-ctx-summarized
      ctx
      (cond
@@ -34532,7 +34529,7 @@
                (new-debug-depth (1+ (f-get-global 'make-event-debug-depth state)))
                (wrld (w state)))
           (er-let*
-              ((expansion0/new-kpa/new-ttags-seen
+              ((expansion0/new-ttags-seen
                 (pprogn
                  (if make-event-debug
                      (make-event-debug-pre new-debug-depth form on-behalf-of
@@ -34555,7 +34552,7 @@
 
                                        (eq check-expansion t))
                                   (not (eq check-expansion t))))
-                    (value (list* expansion? nil nil)))
+                    (value (cons expansion? nil)))
                    (t
                     (do-proofs?
                      (or check-expansion
@@ -34581,10 +34578,9 @@
 ; occurs later at the top level of the book.
 
                      (protected-eval form on-behalf-of ctx state t)))))))
-               (expansion0 (value (car expansion0/new-kpa/new-ttags-seen)))
-               (new-kpa (value (cadr expansion0/new-kpa/new-ttags-seen)))
+               (expansion0 (value (car expansion0/new-ttags-seen)))
                (new-ttags-seen
-                (value (cddr expansion0/new-kpa/new-ttags-seen)))
+                (value (cdr expansion0/new-ttags-seen)))
                (need-event-landmark-p
                 (pprogn
                  (if make-event-debug
@@ -34690,42 +34686,13 @@
                           #-acl2-loop-only
                           (let ((msg
 
-; We now may check the expansion to see if an unknown package appears.  The
-; following example shows why this can be important.  Consider a book "foo"
-; with this event.
+; At one time we only did the following check when the known-package-alist has
+; changed.  A comment appeared here through ACL2 Version 8.7 explaining why the
+; check is needed in that case.  But we now do the check unconditionally, and a
+; very simple example explains why; see community book
+; system/tests/make-event-bad-char.lisp.
 
-; (make-event
-;  (er-progn
-;   (include-book "foo2") ; introduces "MY-PKG"
-;   (assign bad (intern$ "ABC" "MY-PKG"))
-;   (value `(make-event
-;            (list 'defconst '*a*
-;                  (list 'length
-;                        (list 'symbol-name
-;                              (list 'quote ',(@ bad)))))))))
-;
-
-; where "foo2" is as follows, with the indicated portcullis command:
-
-; (in-package "ACL2")
-;
-; ; (defpkg "MY-PKG" nil)
-;
-; (defun foo (x)
-;   x)
-
-; In ACL2 Version_3.4, we certified these books; but then, in a new ACL2
-; session, we got a raw Lisp error about unknown packages when we try to
-; include "foo".
-
-; On the other hand, the bad-lisp-objectp test is potentially expensive for
-; large objects such as are encountered at Centaur Tech. in March 2010.  The
-; value returned by expansion can be expected to be a good lisp object in the
-; world installed at the end of expansion, so if expansion doesn't extend the
-; world with any new packages, then we can avoid this check.
-
-                                 (and (not (eq old-kpa new-kpa))
-                                      (bad-lisp-objectp actual-expansion))))
+                                 (bad-lisp-objectp actual-expansion)))
                             (when msg
                               (er hard ctx
                                   "Make-event expansion for the form ~x0 has ~
@@ -34828,14 +34795,14 @@
       (er-let* ((next
                  (cond
                   (make-event-case
-                   (er-let* ((expansion0/new-kpa/new-ttags-seen
+                   (er-let* ((expansion0/new-ttags-seen
                               (revert-world-on-error
                                (protected-eval (cadr form)
                                                (cadr (assoc-keyword
                                                       :on-behalf-of
                                                       (cddr form)))
                                                ctx state t))))
-                     (value (car expansion0/new-kpa/new-ttags-seen))))
+                     (value (car expansion0/new-ttags-seen))))
                   (macrop (macroexpand1 form ctx state))
                   (transp (translate form
                                      t   ; stobjs-out

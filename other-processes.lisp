@@ -76,14 +76,14 @@
 
 (defconst *var-families-by-type*
   (list (cons *ts-integer* '(I J K L M N))
-        (cons #+:non-standard-analysis
+        (cons #+non-standard-analysis
               *ts-real*
-              #-:non-standard-analysis
+              #-non-standard-analysis
               *ts-rational*
               '(R S I J K L M N))
-        (cons #+:non-standard-analysis
+        (cons #+non-standard-analysis
               *ts-complex*
-              #-:non-standard-analysis
+              #-non-standard-analysis
               *ts-complex-rational*
               '(Z R S I J K L M N))
         (cons *ts-cons* '(L LST))

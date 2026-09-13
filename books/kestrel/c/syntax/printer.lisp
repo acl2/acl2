@@ -2194,21 +2194,23 @@
                   ;;   besides parenthesized expressions as arguments;
                   ;;   but the resulting code may look confusing
                   ;;   in those other cases without the space.
-                  ;; - After + if the argument is ++...,
-                  ;;   otherwise +++ would be lexed as ++ +.
-                  ;; - After - if the argument is --...,
-                  ;;   otherwise --- would be lexed as -- -.
+                  ;; - After + if the argument starts with +,
+                  ;;   otherwise + + would be lexed as ++,
+                  ;;   or + ++ would be lexed as ++ +.
+                  ;; - After - if the argument starts with -,
+                  ;;   otherwise - - would be lexed as --,
+                  ;;   or - -- would be lexed as -- -.
                   (spacep (or (and (or (unop-case expr.op :sizeof)
                                        (unop-case expr.op :alignof))
                                    (not (expr-case expr.arg :paren)))
                               (and (unop-case expr.op :plus)
                                    (expr-case expr.arg :unary)
                                    (unop-case (expr-unary->op expr.arg)
-                                              :preinc))
+                                              '(:plus :preinc)))
                               (and (unop-case expr.op :minus)
                                    (expr-case expr.arg :unary)
                                    (unop-case (expr-unary->op expr.arg)
-                                              :predec))))
+                                              '(:minus :predec)))))
                   (pstate (if spacep
                               (print-astring " " pstate)
                             pstate))

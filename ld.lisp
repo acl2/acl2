@@ -33,7 +33,7 @@
   ((current-package ld-level . ld-skip-proofsp)
    mode
    not-gc-off
-   #+:non-standard-analysis
+   #+non-standard-analysis
    script-mode
    .
    alist)
@@ -46,7 +46,7 @@
 ; The prompt is printed by (fmt "~@0~sr ~@1~*2" a channel state nil), where a
 ; is an alist computed from current-package, ld-level, default-defun-mode,
 ; guard-checking-on, and ld-skip-proofsp, and #\r is bound to "" except for the
-; #+:non-standard-analysis version, where it is bound to "(r)".  To keep from
+; #+non-standard-analysis version, where it is bound to "(r)".  To keep from
 ; consing up this alist every time, we memoize it, storing in 'prompt-memo the
 ; tuple (pkg level skipp defun-mode+ gc-on a), where defun-mode+ is the
 ; default-defun-mode except in raw-mode, where defun-mode+ is nil.  Thus, if
@@ -77,7 +77,7 @@
 
            (eq (access ld-prompt-memo prompt-memo :not-gc-off)
                (f-get-global 'guard-checking-on state))
-           #+:non-standard-analysis
+           #+non-standard-analysis
            (eq (access ld-prompt-memo prompt-memo :script-mode)
                (f-get-global 'script-mode state)))
       (fmt1 "~@0~sr ~@1~*2"
@@ -91,11 +91,11 @@
                                    (make-list-ac (f-get-global 'ld-level state)
                                                  nil nil)))
                    (cons #\r
-                         #+:non-standard-analysis
+                         #+non-standard-analysis
                          (if (f-get-global 'script-mode state)
                              ""
                            "(r)")
-                         #-:non-standard-analysis ""))))
+                         #-non-standard-analysis ""))))
         (pprogn
          (f-put-global
           'prompt-memo
@@ -106,9 +106,9 @@
                 :mode (and (not (raw-mode-p state))
                            (default-defun-mode (w state)))
                 :not-gc-off (not (gc-off state))
-                #+:non-standard-analysis
+                #+non-standard-analysis
                 :script-mode
-                #+:non-standard-analysis
+                #+non-standard-analysis
                 (f-get-global 'script-mode state)
                 :alist alist)
           state)
@@ -2237,8 +2237,8 @@
          (list (cons #\0 (f-get-global 'current-package state))
                (cons #\1 (defun-mode-prompt-string state))
                (cons #\r
-                     #+:non-standard-analysis "(r)"
-                     #-:non-standard-analysis "")
+                     #+non-standard-analysis "(r)"
+                     #-non-standard-analysis "")
                (cons #\2
                      (list "" ">" ">" ">"
                            (make-list-ac (- (f-get-global 'ld-level state) 1)
