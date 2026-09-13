@@ -57,10 +57,10 @@
     "We generate C abstract syntax,
      which we pretty-print to files
      and also assign to a named constant.
-     We have started migrating to use the "
+     To print the files, we map the generated abstract syntax
+     with @(tsee c$::ildm-trans-ensemble) and use the "
     (xdoc::seetopic "c$::printer" "pretty-printer for the syntax for tools")
-    "; when the migration is complete,
-     we will remove the pretty-printer under this ATC directory.")
+    ".")
    (xdoc::p
     "Given the restrictions on the target functions,
      the translation is relatively straightforward, by design.")
@@ -622,7 +622,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is part of the migration to the new pretty-printer."))
+    "We use four-space indentation and carry over ATC's option
+     for parenthesizing nested conditional expressions."))
   (c$::make-priopt
    :indent-size 4
    :paren-nested-conds
@@ -644,15 +645,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Currently ATC generates translation units
+    "ATC generates translation units
      using the ASTs in the language formalization,
-     but in order to use the pretty-printer from the syntax for tools,
-     we need to convert those to the ASTs for tools.
-     The ATC legacy pretty-printer (which we are migrating away from)
-     just prints the comment,
-     but the ASTs for tools include comments,
-     which the new pretty-printer prints,
-     so here we add the comment to the translation unit."))
+     which we convert to the ASTs for tools for printing.
+     The ASTs for tools include comments,
+     so we add the generated-file comment to the translation unit
+     after conversion and let the pretty-printer emit it."))
   (c$::change-trans-unit
    tunit
    :items (cons (c$::trans-item-line-comment
