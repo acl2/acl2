@@ -1,5 +1,7 @@
 ; This book, modified only as noted below, was produced by Claude and passed
-; along by Eric Smith.
+; along by Eric Smith.  We exclude GCL, however, since (code-char 300) returns
+; nil in a version of GCL circa 2025 or 2026.
+; cert_param: (non-gcl)
 
 ; Proof of nil exploiting MAKE-EVENT with :program-mode code.
 ;
