@@ -117,4 +117,11 @@
     (set::subset '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
                  (ascii-basic-exec-chars std))
     :enable (digits-in-ascii-basic-source-chars
-             set::expensive-rules)))
+             set::expensive-rules))
+
+  (defruled digit-in-ascii-basic-exec-chars
+    (implies (set::in char '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
+             (set::in char (ascii-basic-exec-chars std)))
+    :enable (digits-in-ascii-basic-exec-chars
+             set::expensive-rules)
+    :disable ascii-basic-exec-chars))

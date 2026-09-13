@@ -383,15 +383,10 @@
      (acl2::char-code-map (ascii-basic-exec-chars std))
      (omap::identity (ascii-basic-exec-chars std)))
     :enable (exec-charset-digits-in-order-p
+             digit-in-ascii-basic-exec-chars
              set::in
              omap::lookup-when-identityp
-             acl2::lookup-of-char-code-map)
-    :prep-lemmas
-    ((defrule lemma
-       (implies (set::in x '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
-                (set::in x (ascii-basic-exec-chars std)))
-       :enable (digits-in-ascii-basic-exec-chars
-                set::expensive-rules))))
+             acl2::lookup-of-char-code-map))
 
   (defrulel null-char-zero-p-lemma
     (exec-charset-null-char-zero-p
@@ -485,14 +480,9 @@
                                     (omap::identity
                                      (ascii-basic-exec-chars std)))
     :enable (exec-charset-digits-in-order-p
+             digit-in-ascii-basic-exec-chars
              set::in
-             omap::lookup-when-identityp)
-    :prep-lemmas
-    ((defrule lemma
-       (implies (set::in x '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
-                (set::in x (ascii-basic-exec-chars std)))
-       :enable (digits-in-ascii-basic-exec-chars
-                set::expensive-rules))))
+             omap::lookup-when-identityp))
 
   (defrulel null-char-zero-p-lemma
     (exec-charset-null-char-zero-p (ascii-code-map)
@@ -577,14 +567,9 @@
      (unicode-code-map)
      (acl2::char-code-map (ascii-basic-exec-chars std)))
     :enable (exec-charset-digits-in-order-p
+             digit-in-ascii-basic-exec-chars
              set::in
-             acl2::lookup-of-char-code-map)
-    :prep-lemmas
-    ((defrule lemma
-       (implies (set::in x '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
-                (set::in x (ascii-basic-exec-chars std)))
-       :enable (digits-in-ascii-basic-exec-chars
-                set::expensive-rules))))
+             acl2::lookup-of-char-code-map))
 
   (defrulel unicode-null-char-zero-p-lemma
     (exec-charset-null-char-zero-p
