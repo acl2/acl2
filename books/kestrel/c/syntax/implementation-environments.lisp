@@ -177,6 +177,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define charset ((std c::standardp))
+  :returns (charset c::charsetp)
+  :short "Character set of the syntax for tools."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This will be used in @(tsee ldm-ienv)
+     once we have extended
+     the implementation environments in the language formalization
+     to include a character set.")
+   (xdoc::p
+    "Our C syntax for tools uses a Unicode character set,
+     for both source and execution characters;
+     it allows LF, CR, and CR LF as new-line character sequences."))
+  (b* ((end-of-lines (set::mergesort (list (list 10) (list 13) (list 13 10)))))
+    (c::charset-unicode std end-of-lines))
+  :guard-hints (("Goal" :in-theory (enable c::source-charset-end-of-lines-wfp
+                                           (:e c::unicode-chars)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ldm-ienv ((ienv ienvp))
   :returns (ienv1 c::ienvp)
   :short "Map an implementation environment of type @(tsee ienv)
