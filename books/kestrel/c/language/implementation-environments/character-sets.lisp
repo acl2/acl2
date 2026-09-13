@@ -43,6 +43,8 @@
     (xdoc::seetopic "implementation-environments" "implementation environment")
     "."))
   :order-subtopics (basic-characters
+                    ascii-characters
+                    unicode-characters
                     source-character-sets
                     execution-character-sets
                     t)
@@ -372,7 +374,7 @@
 (define charset-ascii ((std standardp) (end-of-lines true-list-setp))
   :guard (and (not (set::emptyp end-of-lines))
               (source-charset-end-of-lines-wfp end-of-lines
-                                               (source-charset-ascii-loop 0)))
+                                               (ascii-code-map)))
   :returns (charset charsetp)
   :short "The character set defined by
           ASCII and a specified set of source line endings."
@@ -393,15 +395,16 @@
                   :exec exec
                   :source-exec-map source-exec-map))
 
+  :prepwork
+  ((local (in-theory (enable acl2::any-nat-mapp-when-character-nat-mapp))))
+
   ///
 
   (defruled source-chars-equal-exec-chars-ascii-lemma
     (equal (source-chars (source-charset-ascii end-of-lines))
            (exec-chars (exec-charset-ascii std)))
-    :enable (source-chars
-             source-charset-ascii
-             exec-chars
-             exec-charset-ascii))
+    :enable (source-chars-of-source-charset-ascii
+             exec-chars-of-exec-charset-ascii))
 
   (defrulel basic-source-exec-map-ascii-lemma
     (implies
@@ -411,15 +414,14 @@
        (basic-source-char bchar (source-charset-ascii end-of-lines) std)
        (omap::identity (source-chars (source-charset-ascii end-of-lines))))
       (basic-exec-char bchar (exec-charset-ascii std) std uchar-format)))
-    :enable (source-chars
-             source-charset-ascii
-             exec-charset-ascii
-             basic-source-char
-             basic-exec-char
-             ascii-basic-source-chars
-             ascii-basic-exec-chars
-             member-equal
-             set::in))
+    :disable in-of-ascii-chars
+    :enable (source-chars-of-source-charset-ascii
+             basic-source-char-of-source-charset-ascii
+             basic-exec-char-of-exec-charset-ascii
+             omap::lookup-when-identityp
+             ascii-basic-source-chars-subset-ascii-chars
+             ascii-basic-source-chars-subset-ascii-basic-exec-chars
+             set::subset-in))
 
   (defrulel source-exec-map-ascii-wfp-lemma
     (source-exec-map-wfp
@@ -437,7 +439,7 @@
     (implies
      (and (not (set::emptyp (true-list-set-fix end-of-lines)))
           (source-charset-end-of-lines-wfp end-of-lines
-                                           (source-charset-ascii-loop 0)))
+                                           (ascii-code-map)))
      (charset-wfp (charset-ascii std end-of-lines) std uchar-format))
     :enable (charset-wfp
              charset-ascii)))

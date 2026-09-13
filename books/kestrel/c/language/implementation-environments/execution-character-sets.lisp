@@ -11,6 +11,7 @@
 
 (in-package "C")
 
+(include-book "ascii-characters")
 (include-book "basic-characters")
 (include-book "unicode-characters")
 (include-book "uchar-formats")
@@ -24,7 +25,6 @@
 (include-book "std/omaps/injectivep" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
-(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
 
 (acl2::controlled-configuration)
@@ -426,81 +426,62 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This consists of the 128 ASCII characters,
+    "This consists of the 128 ASCII characters in @(tsee ascii-chars),
      for which we use the ACL2 characters with the respective codes as values.
      The mapping from basic characters is the identity.")
    (xdoc::p
     "This function depends on the C standard because
      the set of basic characters depends on it."))
-  (b* ((chars-with-values (exec-charset-ascii-loop 0))
+  (b* ((chars-with-values (ascii-code-map))
        (basic-chars (omap::identity (ascii-basic-exec-chars std))))
     (make-exec-charset :chars-with-values chars-with-values
                        :basic-chars basic-chars))
 
   :prepwork
-  ((define exec-charset-ascii-loop ((code natp))
-     :returns (map any-nat-mapp)
-     :parents nil
-     (if (>= (lnfix code) 128)
-         nil
-       (omap::update (code-char code)
-                     (lnfix code)
-                     (exec-charset-ascii-loop (1+ (lnfix code)))))
-     :measure (nfix (- 128 (nfix code)))
-     :prepwork ((local (in-theory (enable nfix))))
-     :verify-guards :after-returns))
+  ((local (in-theory (enable acl2::any-nat-mapp-when-character-nat-mapp))))
 
   ///
 
-  (defrulel injectivep-lemma1
-    (omap::injectivep (exec-charset-ascii-loop 0)))
+  (defruled exec-chars-of-exec-charset-ascii
+    (equal (exec-chars (exec-charset-ascii std))
+           (ascii-chars))
+    :enable exec-chars)
 
-  (defrulel injectivep-lemma2
+  (defrulel injectivep-basic-chars-lemma
     (omap::injectivep (omap::identity (ascii-basic-exec-chars std)))
     :enable omap::injectivep-when-identityp)
 
   (defrulel has-basic-chars-p-lemma
-    (exec-charset-has-basic-chars-p (exec-charset-ascii-loop 0)
+    (exec-charset-has-basic-chars-p (ascii-code-map)
                                     (omap::identity
                                      (ascii-basic-exec-chars std))
                                     std)
     :enable (exec-charset-has-basic-chars-p
              omap::values-is-keys-when-identityp
-             ascii-basic-exec-chars
-             ascii-basic-source-chars))
+             ascii-basic-exec-chars-subset-ascii-chars))
 
   (defrulel basic-chars-byte-p-lemma
-    (exec-charset-basic-chars-byte-p (exec-charset-ascii-loop 0)
+    (exec-charset-basic-chars-byte-p (ascii-code-map)
                                      (omap::identity
                                       (ascii-basic-exec-chars std))
                                      uchar-format)
     :enable (exec-charset-basic-chars-byte-p
-             omap::values-is-keys-when-identityp
-             lemma2)
-    :disable ((:e exec-charset-ascii-loop))
-
+             omap::values-is-keys-when-identityp)
     :prep-lemmas
-
-    ((defruled lemma1
-       (implies (set::in x (omap::values (exec-charset-ascii-loop 0)))
-                (<= x 127))
-       :in-theory '((:e exec-charset-ascii-loop)
-                    (:e omap::values)
-                    (:e set::head)
-                    (:e set::tail)
-                    (:e set::emptyp)
-                    set::in))
-
-     (defruled lemma2
+    ((defrule lemma
        (implies (set::in x (omap::lookup* (ascii-basic-exec-chars std)
-                                          (exec-charset-ascii-loop 0)))
+                                          (ascii-code-map)))
                 (<= x (uchar-format->max uchar-format)))
-       :use lemma1
-       :enable set::expensive-rules
-       :disable ((:e exec-charset-ascii-loop)))))
+       :use ((:instance acl2::char-code-set-upper-bound
+                        (acl2::code x)
+                        (acl2::chars (ascii-chars)))
+             (:instance omap::in-values-when-in-lookup*
+                        (omap::x x)
+                        (omap::keys (ascii-basic-exec-chars std))
+                        (omap::map (ascii-code-map)))))))
 
   (defrulel digits-in-order-p-lemma
-    (exec-charset-digits-in-order-p (exec-charset-ascii-loop 0)
+    (exec-charset-digits-in-order-p (ascii-code-map)
                                     (omap::identity
                                      (ascii-basic-exec-chars std)))
     :enable (exec-charset-digits-in-order-p
@@ -514,7 +495,7 @@
                 set::expensive-rules))))
 
   (defrulel null-char-zero-p-lemma
-    (exec-charset-null-char-zero-p (exec-charset-ascii-loop 0)
+    (exec-charset-null-char-zero-p (ascii-code-map)
                                    (omap::identity
                                     (ascii-basic-exec-chars std)))
     :enable (exec-charset-null-char-zero-p
@@ -523,9 +504,18 @@
 
   (defrule exec-charset-wfp-of-exec-charset-ascii
     (exec-charset-wfp (exec-charset-ascii std) std uchar-format)
-    :disable ((:e exec-charset-ascii-loop))
     :enable (exec-charset-wfp
-             exec-charset-ascii)))
+             exec-charset-ascii))
+
+  (defruled basic-exec-char-of-exec-charset-ascii
+    (implies (set::in bchar (ascii-basic-exec-chars std))
+             (equal (basic-exec-char bchar
+                                     (exec-charset-ascii std)
+                                     std
+                                     uchar-format)
+                    bchar))
+    :enable (basic-exec-char
+             omap::lookup-when-identityp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

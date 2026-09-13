@@ -11,6 +11,7 @@
 
 (in-package "C")
 
+(include-book "ascii-characters")
 (include-book "basic-characters")
 (include-book "unicode-characters")
 
@@ -21,7 +22,6 @@
 (include-book "std/omaps/injectivep" :dir :system)
 (include-book "std/omaps/inverse" :dir :system)
 
-(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
 
 (acl2::controlled-configuration)
@@ -305,14 +305,14 @@
 (define source-charset-ascii ((end-of-lines true-list-setp))
   :guard (and (not (set::emptyp end-of-lines))
               (source-charset-end-of-lines-wfp end-of-lines
-                                               (source-charset-ascii-loop 0)))
+                                               (ascii-code-map)))
   :returns (charset source-charsetp)
   :short "The source character set defined by
           ASCII and a specified set of line endings."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This consists of the 128 ASCII characters,
+    "This consists of the 128 ASCII characters in @(tsee ascii-chars),
      for which we use the ACL2 characters with the respective codes.
      ASCII fixes these characters and codes,
      but leaves a choice of which character sequences represent new lines.")
@@ -323,37 +323,41 @@
      As explained in @(tsee source-charset-end-of-lines-wfp),
      one representation may be a prefix of another,
      with the longest matching sequence denoting a single new line."))
-  (b* ((chars-with-codes (source-charset-ascii-loop 0)))
-    (make-source-charset :chars-with-codes chars-with-codes
-                         :end-of-lines end-of-lines))
+  (make-source-charset :chars-with-codes (ascii-code-map)
+                       :end-of-lines end-of-lines)
 
   :prepwork
-  ((define source-charset-ascii-loop ((code natp))
-     :returns (map any-nat-mapp)
-     :parents nil
-     (if (>= (lnfix code) 128)
-         nil
-       (omap::update (code-char code)
-                     (lnfix code)
-                     (source-charset-ascii-loop (1+ (lnfix code)))))
-     :measure (nfix (- 128 (nfix code)))
-     :hints (("Goal" :in-theory (enable nfix)))
-     :verify-guards :after-returns
-     :hooks ((:fix :hints (("Goal" :in-theory (enable nfix)))))))
+  ((local (in-theory (enable acl2::any-nat-mapp-when-character-nat-mapp))))
 
   ///
+
+  (defruled source-chars-of-source-charset-ascii
+    (equal (source-chars (source-charset-ascii end-of-lines))
+           (ascii-chars))
+    :enable source-chars)
 
   (defrule source-charset-wfp-of-source-charset-ascii
     (implies
      (and (not (set::emptyp (true-list-set-fix end-of-lines)))
           (source-charset-end-of-lines-wfp end-of-lines
-                                           (source-charset-ascii-loop 0)))
+                                           (ascii-code-map)))
      (source-charset-wfp (source-charset-ascii end-of-lines) std))
     :enable (source-charset-wfp
              source-charset-ascii
              source-charset-has-basic-chars-p
-             ascii-basic-source-chars
-             acl2::char-code-set)))
+             ascii-basic-source-chars-subset-ascii-chars
+             acl2::char-code-set-monotone))
+
+  (defruled basic-source-char-of-source-charset-ascii
+    (implies (set::in bchar (ascii-basic-source-chars std))
+             (equal (basic-source-char bchar
+                                       (source-charset-ascii end-of-lines)
+                                       std)
+                    bchar))
+    :disable in-of-ascii-chars
+    :enable (basic-source-char
+             ascii-basic-source-chars-subset-ascii-chars
+             set::subset-in)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
