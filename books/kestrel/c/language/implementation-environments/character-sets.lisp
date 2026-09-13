@@ -330,6 +330,7 @@
                  (source-chars (source-charset-basic+lf std)))
     :enable (source-chars
              source-charset-basic+lf
+             acl2::any-nat-mapp-when-character-nat-mapp
              set::expensive-rules))
 
   (defrulel source-chars-subset-exec-chars-lemma
@@ -340,6 +341,7 @@
              exec-chars
              exec-charset-basic
              ascii-basic-exec-chars
+             acl2::any-nat-mapp-when-character-nat-mapp
              set::expensive-rules))
 
   (defrulel source-exec-map-wfp-lemma

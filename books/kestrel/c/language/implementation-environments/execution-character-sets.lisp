@@ -18,6 +18,7 @@
 (include-book "kestrel/fty/any-nat-map" :dir :system)
 (include-book "kestrel/fty/character-any-map" :dir :system)
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
+(include-book "kestrel/utilities/strings/char-code-map" :dir :system)
 (include-book "kestrel/utilities/strings/char-code-set" :dir :system)
 (include-book "std/omaps/identity" :dir :system)
 (include-book "std/omaps/injectivep" :dir :system)
@@ -328,65 +329,15 @@
      with their character codes as values.
      The mapping from basic characters is the identity."))
   (b* ((chars-with-values
-        (exec-charset-basic-loop (ascii-basic-exec-chars std)))
+        (acl2::char-code-map (ascii-basic-exec-chars std)))
        (basic-chars (omap::identity (ascii-basic-exec-chars std))))
     (make-exec-charset :chars-with-values chars-with-values
                        :basic-chars basic-chars))
 
   :prepwork
-  ((define exec-charset-basic-loop ((chars character-setp))
-     :returns (map any-nat-mapp)
-     :parents nil
-     (b* (((when (set::emptyp (character-sfix chars))) nil)
-          (char (set::head chars)))
-       (omap::update char
-                     (char-code char)
-                     (exec-charset-basic-loop (set::tail chars))))
-     :prepwork ((local (in-theory (enable acl2::emptyp-of-character-sfix))))
-     :verify-guards :after-returns
-
-     ///
-
-     (defret character-any-mapp-of-exec-charset-basic-loop
-       (character-any-mapp map)
-       :hints (("Goal" :induct t)))
-
-     (defret keys-of-exec-charset-basic-loop
-       (equal (omap::keys map)
-              (character-sfix chars))
-       :hints (("Goal"
-                :induct t
-                :in-theory (enable set::emptyp
-                                   character-sfix))))
-
-     (defret values-of-exec-charset-basic-loop
-       (equal (omap::values map)
-              (acl2::char-code-set chars))
-       :hints (("Goal"
-                :induct t
-                :in-theory (enable acl2::char-code-set
-                                   omap::assoc-to-in-of-keys))))
-
-     (defret lookup-of-exec-charset-basic-loop
-       (implies (and (character-setp chars)
-                     (set::in char chars))
-                (equal (omap::lookup char map)
-                       (char-code char)))
-       :hints (("Goal"
-                :induct t
-                :in-theory (enable omap::lookup-of-update))))
-
-     (defret injectivep-of-exec-charset-basic-loop
-       (omap::injectivep map)
-       :hints (("Goal"
-                :induct t
-                :in-theory
-                (enable acl2::not-in-char-code-set-when-not-in-char-set))))))
+  ((local (in-theory (enable acl2::any-nat-mapp-when-character-nat-mapp))))
 
   ///
-
-  (defrulel injectivep-chars-with-values-lemma
-    (omap::injectivep (exec-charset-basic-loop (ascii-basic-exec-chars std))))
 
   (defrulel injectivep-basic-chars-lemma
     (omap::injectivep (omap::identity (ascii-basic-exec-chars std)))
@@ -394,7 +345,7 @@
 
   (defrulel has-basic-chars-p-lemma
     (exec-charset-has-basic-chars-p
-     (exec-charset-basic-loop (ascii-basic-exec-chars std))
+     (acl2::char-code-map (ascii-basic-exec-chars std))
      (omap::identity (ascii-basic-exec-chars std))
      std)
     :enable (exec-charset-has-basic-chars-p
@@ -402,7 +353,7 @@
 
   (defrulel basic-chars-byte-p-lemma
     (exec-charset-basic-chars-byte-p
-     (exec-charset-basic-loop (ascii-basic-exec-chars std))
+     (acl2::char-code-map (ascii-basic-exec-chars std))
      (omap::identity (ascii-basic-exec-chars std))
      uchar-format)
     :enable (exec-charset-basic-chars-byte-p
@@ -413,7 +364,7 @@
                  x
                  (omap::lookup*
                   (ascii-basic-exec-chars std)
-                  (exec-charset-basic-loop
+                  (acl2::char-code-map
                    (ascii-basic-exec-chars std))))
                 (<= x (uchar-format->max uchar-format)))
        :use ((:instance acl2::char-code-set-upper-bound
@@ -423,18 +374,18 @@
                         (omap::x x)
                         (omap::keys (ascii-basic-exec-chars std))
                         (omap::map
-                         (exec-charset-basic-loop
+                         (acl2::char-code-map
                           (ascii-basic-exec-chars std)))))
-       :enable values-of-exec-charset-basic-loop)))
+       :enable acl2::values-of-char-code-map)))
 
   (defrulel digits-in-order-p-lemma
     (exec-charset-digits-in-order-p
-     (exec-charset-basic-loop (ascii-basic-exec-chars std))
+     (acl2::char-code-map (ascii-basic-exec-chars std))
      (omap::identity (ascii-basic-exec-chars std)))
     :enable (exec-charset-digits-in-order-p
              set::in
              omap::lookup-when-identityp
-             lookup-of-exec-charset-basic-loop)
+             acl2::lookup-of-char-code-map)
     :prep-lemmas
     ((defrule lemma
        (implies (set::in x '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
@@ -444,12 +395,12 @@
 
   (defrulel null-char-zero-p-lemma
     (exec-charset-null-char-zero-p
-     (exec-charset-basic-loop (ascii-basic-exec-chars std))
+     (acl2::char-code-map (ascii-basic-exec-chars std))
      (omap::identity (ascii-basic-exec-chars std)))
     :enable (exec-charset-null-char-zero-p
              null-in-ascii-basic-exec-chars
              omap::lookup-when-identityp
-             lookup-of-exec-charset-basic-loop))
+             acl2::lookup-of-char-code-map))
 
   (defrule exec-charset-wfp-of-exec-charset-basic
     (exec-charset-wfp (exec-charset-basic std) std uchar-format)
@@ -593,9 +544,12 @@
      Their codes fit in a byte for every @(tsee uchar-format),
      even though the codes of extended characters may be larger."))
   (b* ((chars-with-values (unicode-code-map))
-       (basic-chars (exec-charset-basic-loop (ascii-basic-exec-chars std))))
+       (basic-chars (acl2::char-code-map (ascii-basic-exec-chars std))))
     (make-exec-charset :chars-with-values chars-with-values
                        :basic-chars basic-chars))
+
+  :prepwork
+  ((local (in-theory (enable acl2::character-any-mapp-when-character-nat-mapp))))
 
   ///
 
@@ -607,7 +561,7 @@
   (defrulel unicode-has-basic-chars-p-lemma
     (exec-charset-has-basic-chars-p
      (unicode-code-map)
-     (exec-charset-basic-loop (ascii-basic-exec-chars std))
+     (acl2::char-code-map (ascii-basic-exec-chars std))
      std)
     :enable (exec-charset-has-basic-chars-p
              char-code-set-subset-unicode-chars))
@@ -615,7 +569,7 @@
   (defrulel unicode-basic-chars-byte-p-lemma
     (exec-charset-basic-chars-byte-p
      (unicode-code-map)
-     (exec-charset-basic-loop (ascii-basic-exec-chars std))
+     (acl2::char-code-map (ascii-basic-exec-chars std))
      uchar-format)
     :enable (exec-charset-basic-chars-byte-p
              omap::lookup*-when-identityp
@@ -631,10 +585,10 @@
   (defrulel unicode-digits-in-order-p-lemma
     (exec-charset-digits-in-order-p
      (unicode-code-map)
-     (exec-charset-basic-loop (ascii-basic-exec-chars std)))
+     (acl2::char-code-map (ascii-basic-exec-chars std)))
     :enable (exec-charset-digits-in-order-p
              set::in
-             lookup-of-exec-charset-basic-loop)
+             acl2::lookup-of-char-code-map)
     :prep-lemmas
     ((defrule lemma
        (implies (set::in x '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
@@ -645,10 +599,10 @@
   (defrulel unicode-null-char-zero-p-lemma
     (exec-charset-null-char-zero-p
      (unicode-code-map)
-     (exec-charset-basic-loop (ascii-basic-exec-chars std)))
+     (acl2::char-code-map (ascii-basic-exec-chars std)))
     :enable (exec-charset-null-char-zero-p
              null-in-ascii-basic-exec-chars
-             lookup-of-exec-charset-basic-loop))
+             acl2::lookup-of-char-code-map))
 
   (defrule exec-charset-wfp-of-exec-charset-unicode
     (exec-charset-wfp (exec-charset-unicode std) std uchar-format)
@@ -663,4 +617,4 @@
                     (char-code bchar)))
     :enable (basic-exec-char
              exec-charset-unicode
-             lookup-of-exec-charset-basic-loop)))
+             acl2::lookup-of-char-code-map)))

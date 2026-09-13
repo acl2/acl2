@@ -16,6 +16,7 @@
 
 (include-book "kestrel/fty/any-nat-map" :dir :system)
 (include-book "kestrel/fty/true-list-set" :dir :system)
+(include-book "kestrel/utilities/strings/char-code-map" :dir :system)
 (include-book "kestrel/utilities/strings/char-code-set" :dir :system)
 (include-book "std/omaps/injectivep" :dir :system)
 (include-book "std/omaps/inverse" :dir :system)
@@ -267,57 +268,14 @@
      that correspond to the basic source characters,
      together with LF so that it can represent the line ending."))
   (b* ((chars-with-codes
-        (source-charset-basic+lf-loop
+        (acl2::char-code-map
          (set::insert #\Newline (ascii-basic-source-chars std))))
        (end-of-lines (set::insert (list #\Newline) nil)))
     (make-source-charset :chars-with-codes chars-with-codes
                          :end-of-lines end-of-lines))
 
   :prepwork
-  ((define source-charset-basic+lf-loop ((chars character-setp))
-     :returns (map any-nat-mapp)
-     :parents nil
-     (b* (((when (set::emptyp (character-sfix chars))) nil)
-          (char (set::head chars)))
-       (omap::update char
-                     (char-code char)
-                     (source-charset-basic+lf-loop (set::tail chars))))
-     :prepwork ((local (in-theory (enable acl2::emptyp-of-character-sfix))))
-     :verify-guards :after-returns
-
-     ///
-
-     (defret keys-of-source-charset-basic+lf-loop
-       (equal (omap::keys map)
-              (character-sfix chars))
-       :hints (("Goal"
-                :induct t
-                :in-theory (enable set::emptyp
-                                   character-sfix))))
-
-     (defret values-of-source-charset-basic+lf-loop
-       (equal (omap::values map)
-              (acl2::char-code-set chars))
-       :hints (("Goal"
-                :induct t
-                :in-theory (enable acl2::char-code-set
-                                   omap::assoc-to-in-of-keys))))
-
-     (defret lookup-of-source-charset-basic+lf-loop
-       (implies (and (character-setp chars)
-                     (set::in char chars))
-                (equal (omap::lookup char map)
-                       (char-code char)))
-       :hints (("Goal"
-                :induct t
-                :in-theory (enable omap::lookup-of-update))))
-
-     (defret injectivep-of-source-charset-basic+lf-loop
-       (omap::injectivep map)
-       :hints (("Goal"
-                :induct t
-                :in-theory
-                (enable acl2::not-in-char-code-set-when-not-in-char-set))))))
+  ((local (in-theory (enable acl2::any-nat-mapp-when-character-nat-mapp))))
 
   ///
 
@@ -336,17 +294,10 @@
                                        (source-charset-basic+lf std)
                                        std)
                     bchar))
-    :use (:instance omap::lookup-of-lookup-of-inverse
-                    (omap::map
-                     (omap::inverse
-                      (source-charset-basic+lf-loop
-                       (set::insert #\Newline
-                                    (ascii-basic-source-chars std)))))
-                    (omap::val bchar))
     :enable (basic-source-char
              source-charset-basic+lf
-             omap::inverse-inverse-when-injectivep
-             lookup-of-source-charset-basic+lf-loop
+             acl2::any-nat-mapp-when-character-nat-mapp
+             acl2::lookup-inverse-of-char-code-map
              set::expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
