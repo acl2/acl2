@@ -16,6 +16,8 @@
 (include-book "std/omaps/injectivep" :dir :system)
 (include-book "std/omaps/inverse" :dir :system)
 
+(local (include-book "std/omaps/extensionality" :dir :system))
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -63,6 +65,27 @@
     :hints (("Goal"
              :induct t
              :in-theory (enable omap::lookup-of-update))))
+
+  (defruled assoc-of-char-code-map
+    (implies (character-setp chars)
+             (equal (omap::assoc char (char-code-map chars))
+                    (and (set::in char chars)
+                         (cons char (char-code char)))))
+    :induct t)
+
+  (defruled restrict-of-char-code-map
+    (implies (and (character-setp chars)
+                  (character-setp keys)
+                  (set::subset keys chars))
+             (equal (omap::restrict keys (char-code-map chars))
+                    (char-code-map keys)))
+    :enable (omap::assoc-of-restrict
+             assoc-of-char-code-map
+             set::expensive-rules)
+    :disable char-code-map
+    :use (:instance omap::extensionality
+                    (omap::x (omap::restrict keys (char-code-map chars)))
+                    (omap::y (char-code-map keys))))
 
   (defret injectivep-of-char-code-map
     (omap::injectivep map)
