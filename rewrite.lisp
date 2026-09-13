@@ -8381,11 +8381,11 @@ its attachment is ignored during proofs"))))
                (cons #\1 (f-get-global 'current-package state))
                (cons #\2 (defun-mode-prompt-string state))
                (cons #\r
-                     #+:non-standard-analysis
+                     #+non-standard-analysis
                      (if (f-get-global 'script-mode state)
                          ""
                        "(r)")
-                     #-:non-standard-analysis ""))
+                     #-non-standard-analysis ""))
          0 channel state nil)))
 
 ; We now develop code to display type-alists nicely.
@@ -19673,7 +19673,7 @@ its attachment is ignored during proofs"))))
 ; whose rune is of the form (:DEFINITION fn); its hyps is nil, at least in the
 ; standard case; but:
 
-                            #+:non-standard-analysis
+                            #+non-standard-analysis
 
 ; In the non-standard case, we may be attempting to open up a call of a
 ; function defined by defun-std.  Hence, there may be one or more hypotheses.

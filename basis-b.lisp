@@ -652,10 +652,10 @@
 
 ; We avoid the temptation to use real/rationalp below, since it is a macro.
 
-       (if #+:non-standard-analysis (realp x)
-           #-:non-standard-analysis (rationalp x)
-         #+:non-standard-analysis (realp y)
-         #-:non-standard-analysis (rationalp y)
+       (if #+non-standard-analysis (realp x)
+           #-non-standard-analysis (rationalp x)
+         #+non-standard-analysis (realp y)
+         #-non-standard-analysis (rationalp y)
          'nil))
     (car (x) (if (consp x) 't (equal x 'nil)))
     (cdr (x) (if (consp x) 't (equal x 'nil)))
@@ -663,13 +663,13 @@
     (characterp (x) 't)
     (code-char (x) (if (integerp x) (if (< x '0) 'nil (< x '256)) 'nil))
     (complex (x y)
-             (if #+:non-standard-analysis (realp x)
-                 #-:non-standard-analysis (rationalp x)
-               #+:non-standard-analysis (realp y)
-               #-:non-standard-analysis (rationalp y)
+             (if #+non-standard-analysis (realp x)
+                 #-non-standard-analysis (rationalp x)
+               #+non-standard-analysis (realp y)
+               #-non-standard-analysis (rationalp y)
                'nil))
     (complex-rationalp (x) 't)
-    #+:non-standard-analysis
+    #+non-standard-analysis
     (complexp (x) 't)
     (coerce (x y)
             (if (equal y 'list)
@@ -681,7 +681,7 @@
     (consp (x) 't)
     (denominator (x) (rationalp x))
     (equal (x y) 't)
-    #+:non-standard-analysis
+    #+non-standard-analysis
     (floor1 (x) (realp x))
     (if (x y z) 't)
     (imagpart (x) (acl2-numberp x))
@@ -691,19 +691,19 @@
     (pkg-imports (pkg) (stringp pkg))
     (pkg-witness (pkg) (if (stringp pkg) (not (equal pkg '"")) 'nil))
     (rationalp (x) 't)
-    #+:non-standard-analysis
+    #+non-standard-analysis
     (realp (x) 't)
     (realpart (x) (acl2-numberp x))
     (stringp (x) 't)
     (symbol-name (x) (symbolp x))
     (symbol-package-name (x) (symbolp x))
     (symbolp (x) 't)
-    #+:non-standard-analysis
+    #+non-standard-analysis
     (standardp (x) 't)
-    #+:non-standard-analysis
+    #+non-standard-analysis
     (standard-part (x) ; If (x) is changed here, change cons-term1-cases.
                    (acl2-numberp x))
-    #+:non-standard-analysis
+    #+non-standard-analysis
     (i-large-integer () 't)))
 
 (defconst *primitive-monadic-booleans*
@@ -717,19 +717,19 @@
   '(acl2-numberp
     characterp
     complex-rationalp
-    #+:non-standard-analysis
+    #+non-standard-analysis
     complexp
     consp
     integerp
     rationalp
-    #+:non-standard-analysis
+    #+non-standard-analysis
     realp
     stringp
     symbolp
-    #+:non-standard-analysis
+    #+non-standard-analysis
     standardp))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defconst *non-standard-primitives*
   '(standardp
     standard-part
@@ -750,13 +750,13 @@
                         (guard (caddr trip)))
                    (list
                     fn
-                    (cond #+:non-standard-analysis
+                    (cond #+non-standard-analysis
                           ((eq fn 'i-large-integer)
                            nil) ; fall through in cons-term1-body
-                          #+:non-standard-analysis
+                          #+non-standard-analysis
                           ((eq fn 'standardp)
                            '(kwote t))
-                          #+:non-standard-analysis
+                          #+non-standard-analysis
                           ((eq fn 'standard-part)
                            (assert$
                             (eq (car formals) 'x)

@@ -17,13 +17,19 @@
 
 (include-book "floats")
 
+; Matt K. addition: needed for e0-ord-< just below
+(include-book "ordinals/e0-ordinal" :dir :system)
+
 (encapsulate ()
   (local (include-book "rtl/rel9/support/support/float" :dir :system))
 
 ; from rtl/rel9
   (defund acl2::expo (x)
     (declare (xargs :guard t
-                    :measure (:? x)))
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                  :well-founded-relation e0-ord-<
+                  :measure (:? x)))
     (cond ((or (not (rationalp x)) (equal x 0)) 0)
           ((< x 0) (acl2::expo (- x)))
           ((< x 1) (1- (acl2::expo (* 2 x))))

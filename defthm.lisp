@@ -5608,7 +5608,11 @@
   (let ((lst (unprettyify term)))
     (case-match
      lst
-     (((& . (equiv lhs rhs)))
+     (((hyps-list . (equiv lhs rhs)))
+
+; Hyps-list is a list of terms that when conjoined are equivalent to the hypotheses
+; governing the concluding (equiv lhs rhs).
+
       (cond
        ((not (equivalence-relationp equiv wrld))
         (er soft ctx
@@ -5622,6 +5626,25 @@
              because the right-hand side of its conclusion, ~x1, is ~
              not a variable symbol.  See :DOC elim."
             name rhs))
+       ((not (every-occurrence-equiv-hittablep-in-clausep equiv rhs hyps-list
+                                                          nil wrld))
+
+; Here we're treating hyps-list as a clause.  It's actually a list of terms
+; whose conjunction governs the concluding equiv.  It corresponds to the clause
+; segment obtaining by negating each term in hyps-list.  But since the
+; every-occurrence-equiv-hittablep-in-clause just checks that every occurrence
+; of rhs in hyps-list is equiv hittable while maintaining 'iff, it doesn't
+; matter whether the terms are negated or not.
+
+; Note also that we're passing in nil as the ens.  This means we check hittable
+; assuming nothing is disabled.  See filter-geneqv-lst.
+
+        (er soft ctx
+            "~x0 is an unacceptable destructor elimination rule because one ~
+             or more occurrences of ~x1 in the hypothesis are not ~
+             ~x2-hittable while maintaining IFF.  See :DOC elim."
+            name rhs equiv))
+
        (t
         (let ((dests (destructors lhs nil)))
           (cond
@@ -11989,14 +12012,14 @@
 ;; this trio of functions adds the hypothesis "(standardp x)"
 ;; for each variable x in the theorem.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun add-hyp-standardp-var-lst (vars)
   (if (consp vars)
       (cons (list 'standardp (car vars))
             (add-hyp-standardp-var-lst (cdr vars)))
     nil))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun strengthen-hyps-using-transfer-principle (hyps vars)
 
 ; Hyps is an untranslated expression.
@@ -12008,7 +12031,7 @@
                     (cdr hyps)
                     (list hyps)))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun weaken-using-transfer-principle (term)
 
 ; Term is an untranslated expression.
@@ -12032,7 +12055,7 @@
                        (cons 'and (add-hyp-standardp-var-lst vars))
                        term)))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun remove-standardp-hyp (tterm)
   (if (and (consp tterm)
            (eq (car tterm) 'standardp)
@@ -12040,7 +12063,7 @@
       (list 'eq (car (cdr tterm)) (car (cdr tterm)))
       tterm))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun remove-standardp-hyps (tterm)
   (if (and (consp tterm)
            (eq (car tterm) 'if)
@@ -12052,7 +12075,7 @@
             (list 'quote nil))
       (remove-standardp-hyp tterm)))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun remove-standardp-hyps-and-standardp-conclusion (tterm)
   (case-match tterm
               (('implies hyps ('standardp subterm))
@@ -12063,7 +12086,7 @@
                subterm)
               (& tterm)))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun chk-classical-term-or-standardp-of-classical-term (tterm term ctx wrld state)
 
 ; Tterm is the translation of term.
@@ -12117,7 +12140,7 @@
                         hints
                         otf-flg
                         event-form
-                        #+:non-standard-analysis std-p)
+                        #+non-standard-analysis std-p)
   (with-ctx-summarized
    (cons 'defthm name)
 
@@ -12158,7 +12181,7 @@
              (cert-data-flg (value (car cert-data-flg/tterm0)))
              (tterm0 (value (cdr cert-data-flg/tterm0)))
              (tterm
-              #+:non-standard-analysis
+              #+non-standard-analysis
               (if std-p
                   (er-progn
                    (chk-classical-term-or-standardp-of-classical-term
@@ -12166,11 +12189,11 @@
                    (translate (weaken-using-transfer-principle term)
                               t t t ctx wrld state))
                 (value tterm0))
-              #-:non-standard-analysis
+              #-non-standard-analysis
               (value tterm0))
              (classes
 
-; (#+:non-standard-analysis) We compute rule classes with respect to the
+; (#+non-standard-analysis) We compute rule classes with respect to the
 ; original (translated) term.  The modified term is only relevant for proof.
 
               (translate-rule-classes name rule-classes tterm0 ctx (ens state)
@@ -12227,7 +12250,7 @@
                                                       :INSTRUCTIONS and ~
                                                       :HINTS to DEFTHM."))
                                          (t (value nil)))
-                                   #+:non-standard-analysis
+                                   #+non-standard-analysis
                                    (if std-p
 
 ; How could this happen?  Presumably the user created a defthm event using the
@@ -12284,7 +12307,7 @@
                        hints
                        otf-flg
                        event-form
-                       #+:non-standard-analysis std-p)
+                       #+non-standard-analysis std-p)
 
 ; Important Note:  Don't change the formals of this function without
 ; reading the *initial-event-defmacros* discussion in axioms.lisp.
@@ -12297,7 +12320,7 @@
      hints
      otf-flg
      event-form
-     #+:non-standard-analysis std-p)))
+     #+non-standard-analysis std-p)))
 
 (defun thm-fn (term state instructions hints otf-flg event-form)
   (let ((event-form (or event-form

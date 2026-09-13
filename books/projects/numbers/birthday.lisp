@@ -18,7 +18,10 @@
 ;; (lists l m k) is a list of all sublists of m of length k that begin with a member of l:
 
 (defun lists (l m k)
-  (declare (xargs :measure (list (acl2-count k) (acl2-count l))))
+  (declare (xargs :measure (list (acl2-count k) (acl2-count l))
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                  :well-founded-relation l<))
   (if (posp k)
       (if (consp l)
           (append (conses (car l) (lists m m (1- k)))
@@ -66,7 +69,10 @@
 ;; sublist of (lists l m k) consisting of all dlists:
 
 (defun dlists (l m k)
-  (declare (xargs :measure (list (acl2-count k) (acl2-count l))))
+  (declare (xargs :measure (list (acl2-count k) (acl2-count l))
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                  :well-founded-relation l<))
   (if (posp k)
       (if (consp l)
           (append (conses (car l)
