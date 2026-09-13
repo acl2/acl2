@@ -11,7 +11,6 @@
 
 (in-package "C")
 
-(include-book "pretty-printing-options")
 (include-book "../syntax/abstract-syntax-formal-mapping-inverse")
 (include-book "../syntax/printer" :ttags ((:file-io!)))
 (include-book "shallow-embedding")
@@ -615,23 +614,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-pprint-options-to-priopt ((options pprint-options-p))
-  :returns (priopt c$::prioptp)
-  :short "Turn ATC pretty-printing options into
-          options for the pretty-printer of the syntax for tools."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We use four-space indentation and carry over ATC's option
-     for parenthesizing nested conditional expressions."))
-  (c$::make-priopt
-   :indent-size 4
-   :paren-nested-conds
-   (pprint-options->parenthesize-nested-conditionals options))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-printer-dialect ()
   :returns (dialect dialectp)
   :short "The C dialect used by the pretty-printer."
@@ -701,7 +683,7 @@
 
 (define atc-gen-fileset ((file-name stringp)
                          (tunits trans-ensemblep)
-                         (options pprint-options-p))
+                         (options c$::prioptp))
   :guard (b* ((new-tunits
                (atc-add-generated-comments-to-trans-ensemble
                 (c$::ildm-trans-ensemble file-name tunits)))
@@ -719,9 +701,8 @@
      the pretty-printing options are determined from the ones given to ATC."))
   (b* ((new-tunits (atc-add-generated-comments-to-trans-ensemble
                     (c$::ildm-trans-ensemble file-name tunits)))
-       (priopt (atc-pprint-options-to-priopt options))
        (dialect (atc-printer-dialect)))
-    (c$::print-fileset new-tunits priopt dialect))
+    (c$::print-fileset new-tunits options dialect))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -729,7 +710,7 @@
 (define atc-gen-trans-ensemble-event ((tunits trans-ensemblep)
                                       (output-dir stringp)
                                       (file-name stringp)
-                                      (pretty-printing pprint-options-p)
+                                      (pretty-printing c$::prioptp)
                                       (print evmac-input-print-p))
   :returns (event pseudo-event-formp)
   :short "Event to pretty-print the generated C code to the file system."
@@ -821,7 +802,7 @@
                             (file-name stringp)
                             (path-wo-ext stringp)
                             (header booleanp)
-                            (pretty-printing pprint-options-p)
+                            (pretty-printing c$::prioptp)
                             (proofs booleanp)
                             (prog-const symbolp)
                             (wf-thm symbolp)
