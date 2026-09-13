@@ -12,8 +12,7 @@
 
 (include-book "char-code-set")
 
-(include-book "kestrel/fty/any-nat-map" :dir :system)
-(include-book "kestrel/fty/character-any-map" :dir :system)
+(include-book "kestrel/fty/character-nat-map" :dir :system)
 (include-book "std/omaps/injectivep" :dir :system)
 (include-book "std/omaps/inverse" :dir :system)
 
@@ -22,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define char-code-map ((chars character-setp))
-  :returns (map any-nat-mapp)
+  :returns (map character-nat-mapp)
   :parents (string-utilities)
   :short "Omap from a set of characters to their character codes."
   :long
@@ -39,10 +38,6 @@
   :verify-guards :after-returns
 
   ///
-
-  (defret character-any-mapp-of-char-code-map
-    (character-any-mapp map)
-    :hints (("Goal" :induct t)))
 
   (defret keys-of-char-code-map
     (equal (omap::keys map)
