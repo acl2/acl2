@@ -1309,8 +1309,8 @@
      and then we recursively add pointer layers
      based on the pointer part of the declarator.")
    (xdoc::p
-    "The @('fundefp') flag says whether the declarator
-     is part of a function definition;
+    "The @('fundefp') flag says
+     whether the declarator is part of a function definition;
      see @(tsee ldm-dirdeclor-fun).")
    (xdoc::p
     "This function is called when we expect a function declarator,
