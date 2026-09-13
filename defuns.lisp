@@ -2190,7 +2190,7 @@
           (declare (ignore ttree))
           wrld))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun listof-standardp-macro (lst)
 
 ; If the guard for standardp is changed from t, consider changing
@@ -2208,7 +2208,7 @@
 
 (defun putprop-body-lst (names arglists bodies normalizeps
                                clique controller-alist
-                               #+:non-standard-analysis std-p
+                               #+non-standard-analysis std-p
                                ens wrld installed-wrld ttree)
 
 ; Rockwell Addition:  A major change is the handling of PROG2$ and THE
@@ -2447,16 +2447,16 @@
              (let* ((eqterm (fcons-term* 'equal
                                          (fcons-term fn args)
                                          body))
-                    (term #+:non-standard-analysis
+                    (term #+non-standard-analysis
                           (if (and std-p (consp args))
                               (fcons-term*
                                'implies
                                (listof-standardp-macro args)
                                eqterm)
                             eqterm)
-                          #-:non-standard-analysis
+                          #-non-standard-analysis
                           eqterm)
-                    #+:non-standard-analysis
+                    #+non-standard-analysis
                     (wrld (if std-p
                               (putprop fn 'constrainedp t
                                        (putprop
@@ -2481,7 +2481,7 @@
                                   (cdr bodies)
                                   (cdr normalizeps)
                                   clique controller-alist
-                                  #+:non-standard-analysis std-p
+                                  #+non-standard-analysis std-p
                                   ens
                                   wrld installed-wrld ttree)))))))
 
@@ -6676,9 +6676,18 @@
        (subsetp-eq lst2 lst1)))
 
 (defun non-identical-defp-chk-measures (name new-measures old-measures
-                                             justification)
+                                             justification wrld)
   (cond
-   ((equal new-measures old-measures)
+   ((and (equal new-measures old-measures)
+         (or (and (consp new-measures)
+                  (car new-measures)) ; :measure supplied explicitly
+             (let ((old-measure
+                    (access justification justification :measure)))
+               (ffn-symb-p old-measure
+                           (default-measure-function wrld)))))
+
+; There is no dependence on the default measure, so the actual measures agree.
+
     nil)
    (t
 
@@ -6704,32 +6713,55 @@
        ((and (consp new-measures)
              (null (cdr new-measures))
              (let ((new-measure (car new-measures)))
-               (or (equal new-measure (car old-measures))
-                   (and (true-listp new-measure)
-                        (eq (car new-measure) :?)
-                        (arglistp (cdr new-measure))
-                        (set-equalp-eq old-measured-subset
-                                       (cdr new-measure))))))
+               (and (true-listp new-measure)
+                    (eq (car new-measure) :?)
+                    (arglistp (cdr new-measure))
+                    (set-equalp-eq old-measured-subset
+                                   (cdr new-measure)))))
         nil)
        (old-measures
         (msg "the proposed and existing definitions for ~x0 differ on their ~
               measures.  The proposed measure is ~x1 but the existing measure ~
-              is ~x2.  The proposed measure needs to be specified explicitly ~
-              in fully translated form with :measure (see :DOC xargs), either ~
-              to be identical to the existing measure or to be a call of :? ~
-              on the measured subset; for example, ~x3 will serve as the ~
-              proposed :measure."
+              is ~x2.  See :DOC redundant-events."
              name
              (car new-measures)
-             (car old-measures)
-             (cons :? old-measured-subset)))
+             (car old-measures)))
        (t
         (msg "the existing definition for ~x0 does not have an explicitly ~
-              specified measure.  Either remove the :measure declaration from ~
-              your proposed definition, or else specify a :measure that ~
-              applies :? to the existing measured subset, for example, ~x1."
+              specified measure ~#1~[but the new measure is supplied as ~
+              ~x2~/and the default measure function has changed (see :DOC ~
+              set-measure-function)~].  See :DOC redundant-events."
              name
-             (cons :? old-measured-subset))))))))
+             (if (car new-measures) 0 1)
+             (car new-measures))))))))
+
+(defun non-identical-defp-chk-well-founded-relation (name new-wfrs old-wfrs
+                                                          justification wrld)
+  (let* ((new-wfr (car new-wfrs))
+         (old-wfr (car old-wfrs))
+         (proposed-actual-wfr (or new-wfr
+                                  (default-well-founded-relation wrld))))
+    (cond
+     ((eq (access justification justification :rel)
+          proposed-actual-wfr)
+      nil)
+     ((or old-wfr new-wfr)
+      (msg "the proposed and existing definitions for ~x0 differ on their ~
+            well-founded relations: ~x1~#2~[ (from the default well-founded ~
+            relation)~/~] for the proposed definition, and ~x3 for the ~
+            existing definition.  See :DOC redundant-events."
+           name
+           proposed-actual-wfr
+           (if new-wfr 1 0)
+           (access justification justification :rel)))
+     (t
+      (msg "the existing and new definitions for ~x0 do not have explicitly ~
+            specified well-founded relations, but the default well-founded ~
+            relation has changed (see :DOC set-well-founded-relation) from ~
+            ~x1 to ~x2.  See :DOC redundant-events."
+           name
+           (access justification justification :rel)
+           (default-well-founded-relation wrld))))))
 
 (defun non-identical-defp (def1 def2 chk-measure-p wrld)
 
@@ -6788,8 +6820,6 @@
             for ~x0, namely, ~x1."
            (car def1)
            (access justification justification :ruler-extenders)))
-     ((equal def1 def2) ; optimization
-      nil)
      ((not (eq (car def1) (car def2))) ; check same fn (can this fail?)
       (msg "the name of the new event, ~x0, differs from the name of the ~
             corresponding existing event, ~x1."
@@ -6957,11 +6987,16 @@
 
       nil)
      (t
-      (non-identical-defp-chk-measures
-       (car def1)
-       (fetch-dcl-field :measure all-but-body1)
-       (fetch-dcl-field :measure all-but-body2)
-       justification)))))
+      (or (non-identical-defp-chk-measures
+           (car def1)
+           (fetch-dcl-field :measure all-but-body1)
+           (fetch-dcl-field :measure all-but-body2)
+           justification wrld)
+          (non-identical-defp-chk-well-founded-relation
+           (car def1)
+           (fetch-dcl-field :well-founded-relation all-but-body1)
+           (fetch-dcl-field :well-founded-relation all-but-body2)
+           justification wrld))))))
 
 (defun identical-defp (def1 def2 chk-measure-p wrld)
 
@@ -8331,7 +8366,7 @@
 ;; This function strips out the functions which are
 ;; non-classical in a chk-acceptable-defuns "fives" structure.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun get-non-classical-fns-from-list (names wrld fns-sofar)
   (cond ((null names) fns-sofar)
         (t (let ((fns (if (or (not (symbolp (car names)))
@@ -8344,11 +8379,11 @@
 ;; This function takes in a list of terms and returns any
 ;; non-classical functions referenced in the terms.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defmacro get-non-classical-fns (lst wrld)
   `(get-non-classical-fns-aux ,lst ,wrld nil))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun get-non-classical-fns-aux (lst wrld fns-sofar)
   (cond ((null lst) fns-sofar)
         (t (get-non-classical-fns-aux
@@ -8364,7 +8399,7 @@
 ;; since it's just the acl2-count of some tuple consisting of variables in the
 ;; defun.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun strip-missing-measures (lst accum)
   (if (consp lst)
       (if (equal (car lst) *no-measure*)
@@ -8372,7 +8407,7 @@
         (strip-missing-measures (cdr lst) (cons (car lst) accum)))
     accum))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun chk-classical-measures (measures names ctx wrld state)
   (let ((non-classical-fns (get-non-classical-fns
                             (strip-missing-measures measures nil)
@@ -8394,7 +8429,7 @@
 ;; This function checks that non-classical functions only appear
 ;; on non-recursive functions.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun chk-no-recursive-non-classical (non-classical-fns names mp rel
                                                          measures
                                                          bodies ctx
@@ -10549,7 +10584,7 @@
 (defun chk-acceptable-defuns1 (names fives stobjs-in-lst defun-mode
                                      symbol-class rc non-executablep ctx wrld
                                      state
-                                     #+:non-standard-analysis std-p)
+                                     #+non-standard-analysis std-p)
 
 ; WARNING: This function installs a world, hence should only be called when
 ; protected by a revert-world-on-error (a condition that should be inherited
@@ -10627,7 +10662,7 @@
 
                         (value (append (get-guard-hints fives)
                                        default-hints))))
-         (std-hints #+:non-standard-analysis
+         (std-hints #+non-standard-analysis
                     (cond
                      ((and std-p (not assumep))
                       (translate-hints+
@@ -10636,7 +10671,7 @@
                        default-hints
                        ctx wrld2 state))
                      (t (value nil)))
-                    #-:non-standard-analysis
+                    #-non-standard-analysis
                     (value nil))
          (otf-flg (if do-not-translate-hints
                       (value nil)
@@ -10775,9 +10810,14 @@
                                    wrld2a))))
             (er soft ctx
                 "The :WELL-FOUNDED-RELATION specified by XARGS must be a ~
-                symbol which has previously been shown to be a well-founded ~
-                relation.  ~x0 has not been. See :DOC well-founded-relation."
-                rel))
+                 symbol which has previously been shown to be a well-founded ~
+                 relation.  ~x0 has not been (~#1~[although it is~/and it ~
+                 is not even~] a known function symbol).  See :DOC ~
+                 well-founded-relation."
+                rel
+                (if (and (symbolp rel) (function-symbolp rel wrld))
+                    0
+                  1)))
            (t (value nil)))
           (let ((mp (cadr (assoc-eq
                            rel
@@ -10804,7 +10844,7 @@
                      (bindings
                       (super-defun-wart-bindings
                        (cdr bodies-and-bindings)))
-                     #+:non-standard-analysis
+                     #+non-standard-analysis
                      (non-classical-fns
                       (get-non-classical-fns bodies wrld2a)))
                 (er-progn
@@ -10812,7 +10852,7 @@
                      (value nil)
                    (er-progn
                     (chk-stobjs-out-bound names bindings ctx state)
-                    #+:non-standard-analysis
+                    #+non-standard-analysis
                     (chk-no-recursive-non-classical
                      non-classical-fns
                      names mp rel measures bodies ctx wrld2a state)))
@@ -10832,13 +10872,13 @@
                  (let* ((wrld30 (store-super-defun-warts-stobjs-in
                                  names wrld2a))
                         (wrld31 (store-stobjs-out names bindings wrld30))
-                        (wrld3 #+:non-standard-analysis
+                        (wrld3 #+non-standard-analysis
                                (if (or std-p
                                        (null non-classical-fns))
                                    wrld31
                                  (putprop-x-lst1 names 'classicalp
                                                  nil wrld31))
-                               #-:non-standard-analysis
+                               #-non-standard-analysis
                                wrld31)
                         (wrld4 (if (store-cert-data t bodies wrld state)
                                    (update-translate-cert-data
@@ -11107,7 +11147,7 @@
 ;; definitions using non-classical predicates.
 
 (defun chk-acceptable-defuns (lst ctx wrld state
-                                  #+:non-standard-analysis std-p)
+                                  #+non-standard-analysis std-p)
 
 ; WARNING: This function installs a world, hence should only be called when
 ; protected by a revert-world-on-error.
@@ -11139,7 +11179,7 @@
 ;              - like hints but to be used for the guard conjectures and
 ;                untranslated
 ;    std-hints (always returned, but only of interest when
-;               #+:non-standard-analysis)
+;               #+non-standard-analysis)
 ;              - like hints but to be used for the std-p conjectures
 ;    otf-flg   - t or nil, used as "Onward Thru the Fog" arg for prove
 ;    bodies    - their translated bodies
@@ -11249,9 +11289,9 @@
          (chk-acceptable-defuns1 names fives
                                  stobjs-in-lst defun-mode symbol-class rc
                                  non-executablep ctx wrld state
-                                 #+:non-standard-analysis std-p))))))))
+                                 #+non-standard-analysis std-p))))))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun build-valid-std-usage-clause (arglist body)
   (cond ((null arglist)
          (list (mcons-term* 'standardp body)))
@@ -11259,7 +11299,7 @@
                               (mcons-term* 'standardp (car arglist)))
                  (build-valid-std-usage-clause (cdr arglist) body)))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun verify-valid-std-usage (names arglists bodies hints otf-flg
                                      ttree0 ctx ens wrld state)
   (cond
@@ -11473,7 +11513,7 @@
                          guard-simplify bodies symbol-class normalizeps
                          split-types-terms lambda-info non-executablep
                          type-prescription-lst
-                         #+:non-standard-analysis std-p
+                         #+non-standard-analysis std-p
                          ctx state)
 
 ; See defuns-fn0.
@@ -11482,7 +11522,7 @@
 ; writing because this function is only called by defuns-fn0, which is only
 ; called by defuns-fn, where that call is protected by a revert-world-on-error.
 
-  #-:non-standard-analysis
+  #-non-standard-analysis
   (declare (ignore std-hints))
   (declare (ignore docs pairs))
   (let* ((col (car tuple))
@@ -11500,30 +11540,30 @@
       (wrld4 (update-w big-mutrec
                        (putprop-x-lst2-unless names 'split-types-term
                                               split-types-terms *t* wrld3)))
-      #+:non-standard-analysis
+      #+non-standard-analysis
       (assumep
        (value (or (eq (ld-skip-proofsp state) 'include-book)
                   (eq (ld-skip-proofsp state)
                       'include-book-with-locals))))
-      #+:non-standard-analysis
+      #+non-standard-analysis
       (col/ttree1 (if (and std-p (not assumep))
                       (verify-valid-std-usage names arglists bodies
                                               std-hints otf-flg
                                               (caddr tuple)
                                               ctx ens wrld4 state)
                     (value (cons col (caddr tuple)))))
-      #+:non-standard-analysis
+      #+non-standard-analysis
       (col (value (car col/ttree1)))
-      (ttree1 #+:non-standard-analysis
+      (ttree1 #+non-standard-analysis
               (value (cdr col/ttree1))
-              #-:non-standard-analysis
+              #-non-standard-analysis
               (value (caddr tuple))))
      (mv-let
       (wrld5 ttree2)
       (putprop-body-lst names arglists bodies normalizeps
                         (getpropc (car names) 'recursivep nil wrld4)
                         (make-controller-alist names wrld4)
-                        #+:non-standard-analysis std-p
+                        #+non-standard-analysis std-p
                         ens wrld4 wrld4 nil)
       (er-progn
        (update-w big-mutrec wrld5)
@@ -11621,13 +11661,13 @@
                                     names fnnames-bodies guards wrld13))))
 
               (let ((wrld15
-                     #+:non-standard-analysis
+                     #+non-standard-analysis
                      (if std-p
                          (putprop-x-lst1
                           names 'unnormalized-body nil
                           (putprop-x-lst1 names 'def-bodies nil wrld14))
                        wrld14)
-                     #-:non-standard-analysis
+                     #-non-standard-analysis
                      wrld14))
                 (pprogn
                  (print-defun-msg names ttree2 wrld15 col state)
@@ -11671,7 +11711,7 @@
                          lambda-info
                          non-executablep
                          type-prescription-lst
-                         #+:non-standard-analysis std-p
+                         #+non-standard-analysis std-p
                          ctx wrld state)
 
 ; WARNING: This function installs a world.  That is safe at the time of this
@@ -11723,7 +11763,7 @@
          lambda-info
          non-executablep
          type-prescription-lst
-         #+:non-standard-analysis std-p
+         #+non-standard-analysis std-p
          ctx
          state))))))
 
@@ -11833,7 +11873,7 @@
 
 ; The following definition only supports non-standard analysis, but it seems
 ; reasonable to allow it in the standard version too.
-; #+:non-standard-analysis
+; #+non-standard-analysis
 (defun index-of-non-number (lst)
   (cond
    ((endp lst) nil)
@@ -11842,7 +11882,7 @@
       (and temp (1+ temp))))
    (t 0)))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun non-std-error (fn index formals actuals)
   (er hard fn
    "Function ~x0 was called with the ~n1 formal parameter, ~x2, bound to ~
@@ -11851,7 +11891,7 @@
     (standard) numbers."
    fn (list index) (nth index formals) (nth index actuals)))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun non-std-body (name formals body)
 
 ; The body below is a bit inefficient in the case that we get an error.
@@ -11865,7 +11905,7 @@
                       (list ,@formals))
      ,body))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun non-std-def-lst (def-lst)
   (if (and (consp def-lst) (null (cdr def-lst)))
       (let* ((def (car def-lst))
@@ -11999,18 +12039,18 @@
                       wrld
                       state)))
 
-(defun defun-ctx (def-lst #+:non-standard-analysis std-p)
+(defun defun-ctx (def-lst #+non-standard-analysis std-p)
   (cond ((atom def-lst)
          (msg "( DEFUNS ~x0)"
               def-lst))
         ((atom (car def-lst))
          (cons 'defuns (car def-lst)))
         ((null (cdr def-lst))
-         #+:non-standard-analysis
+         #+non-standard-analysis
          (if std-p
              (cons 'defun-std (caar def-lst))
            (cons 'defun (caar def-lst)))
-         #-:non-standard-analysis
+         #-non-standard-analysis
          (cons 'defun (caar def-lst)))
         (t (msg *mutual-recursion-ctx-string*
                 (caar def-lst)))))
@@ -12070,7 +12110,7 @@
                  (car pair)
                  state))
 
-(defun defuns-fn (def-lst state event-form #+:non-standard-analysis std-p)
+(defun defuns-fn (def-lst state event-form #+non-standard-analysis std-p)
 
 ; Important Note:  Don't change the formals of this function without
 ; reading the *initial-event-defmacros* discussion in axioms.lisp.
@@ -12133,20 +12173,20 @@
 ; be a waste of time.
 
   (with-ctx-summarized
-   (defun-ctx def-lst #+:non-standard-analysis std-p)
+   (defun-ctx def-lst #+non-standard-analysis std-p)
    (let ((wrld (w state))
          (def-lst0
-           #+:non-standard-analysis
+           #+non-standard-analysis
            (if std-p
                (non-std-def-lst def-lst)
              def-lst)
-           #-:non-standard-analysis
+           #-non-standard-analysis
            def-lst)
          (event-form (or event-form (list 'defuns def-lst))))
      (revert-world-on-error
       (er-let*
        ((tuple (chk-acceptable-defuns def-lst ctx wrld state
-                                      #+:non-standard-analysis std-p)))
+                                      #+non-standard-analysis std-p)))
 
 ; Chk-acceptable-defuns puts the 'formals, 'stobjs-in and 'stobjs-out
 ; properties (which are necessary for the translation of the bodies).
@@ -12214,7 +12254,7 @@
                           lambda-info
                           non-executablep
                           type-prescription-lst
-                          #+:non-standard-analysis std-p
+                          #+non-standard-analysis std-p
                           ctx
                           wrld
                           state)))
@@ -12289,7 +12329,7 @@
    :event-type 'defun
    :event event-form))
 
-(defun defun-fn (def state event-form #+:non-standard-analysis std-p)
+(defun defun-fn (def state event-form #+non-standard-analysis std-p)
 
 ; Important Note:  Don't change the formals of this function without
 ; reading the *initial-event-defmacros* discussion in axioms.lisp.
@@ -12299,7 +12339,7 @@
 
   (defuns-fn (list def) state
     (or event-form (cons 'defun def))
-    #+:non-standard-analysis std-p))
+    #+non-standard-analysis std-p))
 
 ; Here we develop the :args keyword command that will print all that
 ; we know about a function.
@@ -12718,7 +12758,7 @@
         defs-lst
         state
         event-form
-        #+:non-standard-analysis
+        #+non-standard-analysis
         nil))))
 
 (defun verify-termination-boot-strap-fn (lst state event-form)
@@ -12860,12 +12900,12 @@
     certify-book-fn
 ; Keep the following in sync with primitive-event-macros.
     defun-fn
-    ;; #+:non-standard-analysis
+    ;; #+non-standard-analysis
     ;; defun-std ; defun-fn
     defuns-fn ; mutual-recursion
     ;; defuns ; calls defuns-fn, above
     defthm-fn
-    ;; #+:non-standard-analysis
+    ;; #+non-standard-analysis
     ;; defthm-std ; calls defthm-fn, above
     defaxiom-fn
     defconst-fn

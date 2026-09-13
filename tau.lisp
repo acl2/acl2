@@ -278,7 +278,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-acl2-number*
               :terms '((acl2-numberp x)))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (8) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -294,7 +294,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-intersection *ts-acl2-number* (ts-complement *ts-zero*))
               :terms '((acl2-numberp x) (not (equal x '0))))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (7) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -305,7 +305,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-intersection *ts-rational* (ts-complement *ts-zero*))
               :terms '((rationalp x) (not (equal x '0))))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (5) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -316,7 +316,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-union *ts-positive-rational* *ts-zero*)
               :terms '((rationalp x) (not (< x '0))))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (4) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -337,7 +337,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-intersection *ts-integer* (ts-complement *ts-zero*))
               :terms '((integerp x) (not (equal x '0))))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (4) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -348,7 +348,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-positive-rational*
               :terms'((rationalp x) (< '0 x)))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (3) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -369,7 +369,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-union *ts-negative-integer* *ts-zero*)
               :terms '((integerp x) (not (< '0 x))))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (2) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -380,7 +380,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-ratio*
               :terms'((rationalp x) (not (integerp x))))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (1) bit
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -396,7 +396,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-negative-integer*
               :terms'((integerp x) (< x '0)))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (1) bit
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -412,7 +412,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-positive-integer*
               :terms'((integerp x) (< '0 x)))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (2) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -428,7 +428,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-complex-rational*
               :terms'((complex-rationalp x)))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (1) bit
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -6961,7 +6961,7 @@
 (defconst *non-tau-monadic-boolean-functions*
   '(NOT DEBUGGER-ENABLEDP))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun classicalp (fn wrld)
 
 ; WARNING: This function is expected to return t for fn = :?, in support of
@@ -6982,7 +6982,7 @@
 ;; of classical function names (i.e., not descended from the
 ;; non-standard function symbols)
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun classical-fn-list-p (names wrld)
   (cond ((null names) t)
         ((not (classicalp (car names) wrld))
@@ -7000,7 +7000,7 @@
 ; We exclude all non-classical functions from consideration by tau.  It is not clear
 ; that this is necessary but it's a safe thing to do until we've thought more about it.
 
-          #+:non-standard-analysis
+          #+non-standard-analysis
           (classicalp fn wrld)
 
           (equal (arity fn wrld) 1)
@@ -7761,7 +7761,7 @@
 ; are classical.  However, it is simplest to check that every function in the formula is
 ; classical.
 
-   #+:non-standard-analysis
+   #+non-standard-analysis
    ((not (classical-fn-list-p
           (all-fnnames1 nil concl
                         (all-fnnames1 t hyps nil))
@@ -7965,7 +7965,7 @@
 ; since we know that all tau predicates are classical.  However, it is simplest
 ; to check that every function in the formula is classical.
 
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (classical-fn-list-p
          (all-fnnames1 nil term nil)
          wrld)

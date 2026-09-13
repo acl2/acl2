@@ -7796,7 +7796,7 @@
                                       extra))))
         (COMPLEX-RATIONALP
          (mv nil (complex-rationalp x) latches))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (COMPLEXP
          (mv nil (complexp x) latches))
         (COERCE
@@ -7820,7 +7820,7 @@
                                       extra))))
         (EQUAL
          (mv nil (equal x y) latches))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (FLOOR1
          (cond ((or guard-checking-off
                     (realp x))
@@ -7867,7 +7867,7 @@
                                       extra))))
         (RATIONALP
          (mv nil (rationalp x) latches))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (REALP
          (mv nil (realp x) latches))
         (REALPART
@@ -7896,13 +7896,13 @@
 ; The next two functions have the obvious behavior on standard objects, which
 ; are the only ones ever present inside ACL2.
 
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (STANDARDP
          (mv nil t latches))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (STANDARD-PART
          (mv nil x latches))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (I-LARGE-INTEGER ; We could omit this case, allowing a fall-through.
          (ev-fncall-null-body-er nil fn nil latches))
         (otherwise
@@ -17877,8 +17877,8 @@
 ; sensitive to any part of state except the current ACL2 world.
 
   '(
-     #+:non-standard-analysis defthm-std
-     #+:non-standard-analysis defun-std
+     #+non-standard-analysis defthm-std
+     #+non-standard-analysis defun-std
      add-custom-keyword-hint
      add-include-book-dir add-include-book-dir!
      add-match-free-override

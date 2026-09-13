@@ -909,7 +909,7 @@
 ; functions in a body would not notice the first argument of a call, (apply
 ; 'non-classical-function ...).
 
-               #+:non-standard-analysis
+               #+non-standard-analysis
                (classicalp fn wrld)
 
                (not (member-eq fn avoid-fns))
