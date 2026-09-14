@@ -48,6 +48,20 @@
                   (cons k
                         (cdr (assoc (cdr (assoc k y)) x))))))
 
+  (defruled lookup-of-compose
+    (equal (lookup key (compose x y))
+           (if (set::in key (keys y))
+               (lookup (lookup key y) x)
+             nil))
+    :enable (lookup assoc-to-in-of-keys)
+    :disable compose)
+
+  (defruled values-of-compose
+    (equal (values (compose x y))
+           (lookup* (values y) x))
+    :induct (compose x y)
+    :enable (values lookup lookup*-of-insert))
+
   (defrule compose-associativity
       (equal (compose (compose x y) z)
              (compose x (compose y z)))

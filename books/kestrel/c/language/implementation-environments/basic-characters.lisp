@@ -11,6 +11,7 @@
 
 (in-package "C")
 
+(include-book "ascii-characters")
 (include-book "dialects")
 
 (include-book "kestrel/fty/character-set" :dir :system)
@@ -68,6 +69,10 @@
 
   ///
 
+  (defruled ascii-basic-source-chars-subset-ascii-chars
+    (set::subset (ascii-basic-source-chars std) (ascii-chars))
+    :enable set::subset)
+
   (defruled digits-in-ascii-basic-source-chars
     (set::subset '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
                  (ascii-basic-source-chars std))))
@@ -95,6 +100,12 @@
 
   ///
 
+  (defruled ascii-basic-exec-chars-subset-ascii-chars
+    (set::subset (ascii-basic-exec-chars std) (ascii-chars))
+    :enable (ascii-basic-source-chars-subset-ascii-chars
+             set::in
+             set::expensive-rules))
+
   (defrule ascii-basic-source-chars-subset-ascii-basic-exec-chars
     (set::subset (ascii-basic-source-chars std)
                  (ascii-basic-exec-chars std)))
@@ -106,4 +117,11 @@
     (set::subset '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
                  (ascii-basic-exec-chars std))
     :enable (digits-in-ascii-basic-source-chars
-             set::expensive-rules)))
+             set::expensive-rules))
+
+  (defruled digit-in-ascii-basic-exec-chars
+    (implies (set::in char '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
+             (set::in char (ascii-basic-exec-chars std)))
+    :enable (digits-in-ascii-basic-exec-chars
+             set::expensive-rules)
+    :disable ascii-basic-exec-chars))

@@ -109839,6 +109839,10 @@ it."
 ; Improved the error message for bad wf-rel, to indicate whether or not the
 ; problematic :well-founded-relation is at least a known function symbol.
 
+; Fixed bad-lisp-objectp -- more specifically, bad-lisp-atomp -- to report a
+; bad character without having the error message itself cause an error (as we
+; saw when using LispWorks).
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -109996,6 +110000,12 @@ it."
  reporting the use of of Anthropic's Claude to find these bugs; see @(see
  community-books) @('system/tests/measure-fn-redundancy.lisp') and
  @('system/tests/wfr-redundancy.lisp').</p>
+
+ <p>Fixed an assertion failure that could occur when an accessor call in a
+ @(tsee stobj-let)'s bindings was on a quoted non-numeric index.  Thanks to
+ Eric Smith for sending an example found by Anthropic's Claude.  As part of the
+ fix, extended a guard optimization for constant indices from just the numeric
+ case.</p>
 
  <p>Checks were improved to avoid raw Lisp errors in the following situations:</p>
 
