@@ -109966,12 +109966,14 @@ it."
  to Aakash Koneru for pointing us in the direction of these changes.</p>
 
  <p>(SBCL only) Soundness bugs were caused by SBCL compiler optimizations for
- the return types of functions, in cases that integer return values could be
- bounded.  These bugs are now avoided: ACL2 removes those declared bounds (by
- proclaiming less restrictive types).  Thanks to Grant Jurgensen for reporting
- the use of of Anthropic's Claude to find these bugs; see @(see
- community-books) files @('system/tests/integer-length-bad-optimization.lisp')
- and @('system/tests/length-bad-optimization.lsp').</p>
+ calls of built-in functions having types with bounded integer return values.
+ These bugs are now avoided by proclaiming those functions @('notinline').
+ Thanks to Grant Jurgensen for reporting the use of of Anthropic's Claude to
+ find these bugs; see @(see community-books) files
+ @('system/tests/integer-length-bad-optimization.lisp') and
+ @('system/tests/length-bad-optimization.lsp').  Thanks also to Stas Boukarev
+ for suggesting the use of @('notinline'), as our original solution was more
+ complicated (by modifying function types).</p>
 
  <p>An additional restriction was added to @(':')@(tsee elim) rules, namely,
  for the general form @('(implies hyp (equiv lhs x))'), all occurrences of
