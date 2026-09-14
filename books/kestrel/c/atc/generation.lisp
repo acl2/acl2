@@ -729,6 +729,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-trans-ensemble-event ((tunits trans-ensemblep)
+                                      (output-dir stringp)
                                       (file-name stringp)
                                       (pretty-printing pprint-options-p)
                                       (print evmac-input-print-p))
@@ -737,7 +738,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This serves to run @(tsee pprint-trans-ensemble)
+    "This serves to generate and write the file set
      after the constant and theorem events have been submitted.
      This function generates an event form
      that is put (by @(tsee atc-gen-everything))
@@ -753,7 +754,9 @@
      as done with the constant and theorem events.")
    (xdoc::p
     "In order to generate an embedded event form for output file generation,
-     we generate a @(tsee make-event) whose argument generates the file.
+     we generate a @(tsee make-event) whose argument
+     calls @(tsee atc-gen-fileset) to generate the file set
+     and @(tsee c$::write-fileset) to write it under @('output-dir').
      The argument must also return an embedded event form,
      so we use @(tsee value-triple) with @(':invisible'),
      so there is no extra screen output.
@@ -763,8 +766,9 @@
      In essence, we use @(tsee make-event) to turn a computation
      (the one that writes the output files)
      into an event.
-     But we cannot use just @(tsee value-triple)
-     because our computation returns an error triple."))
+     Since @(tsee c$::write-fileset) returns an error flag and state,
+     we turn any error into an error triple;
+     on success, we return the invisible value triple."))
   (b* ((progress-start?
         (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the file(s)..."))))
@@ -772,11 +776,13 @@
                            `((cw-event " done.~%"))))
        (file-gen-event
         `(make-event
-          (b* (((er &)
-                (pprint-trans-ensemble ',tunits
-                                       ,file-name
-                                       ',pretty-printing
-                                       state)))
+          (b* ((fileset
+                (atc-gen-fileset ,file-name
+                                 ',tunits
+                                 ',pretty-printing))
+               ((mv erp state)
+                (c$::write-fileset fileset ,output-dir state))
+               ((when erp) (mv erp nil state)))
             (acl2::value '(value-triple :invisible))))))
     `(progn ,@progress-start?
             ,file-gen-event
@@ -813,6 +819,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-everything ((targets symbol-listp)
+                            (output-dir stringp)
                             (file-name stringp)
                             (path-wo-ext stringp)
                             (header booleanp)
@@ -852,6 +859,7 @@
                                 prog-const wf-thm fn-thms
                                 header print names-to-avoid state))
        (tunits-gen-event (atc-gen-trans-ensemble-event tunits
+                                                       output-dir
                                                        file-name
                                                        pretty-printing
                                                        print))

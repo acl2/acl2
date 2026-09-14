@@ -6609,7 +6609,7 @@
          :all-fnnames '(acl2-count o< integerp not < equal))
 
 ; Realpart and imagpart decrease on complexps.
-   #+:non-standard-analysis
+   #+non-standard-analysis
    (make built-in-clause
          :nume nil
          :rune *fake-rune-for-anonymous-enabled-rule*
@@ -6618,7 +6618,7 @@
                    (not (complexp x)))
          :all-fnnames
          '(acl2-count realpart o< complexp not))
-   #-:non-standard-analysis
+   #-non-standard-analysis
    (make built-in-clause
          :nume nil
          :rune *fake-rune-for-anonymous-enabled-rule*
@@ -6627,7 +6627,7 @@
                    (not (complex-rationalp x)))
          :all-fnnames
          '(acl2-count realpart o< complex-rationalp not))
-   #+:non-standard-analysis
+   #+non-standard-analysis
    (make built-in-clause
          :nume nil
          :rune *fake-rune-for-anonymous-enabled-rule*
@@ -6636,7 +6636,7 @@
                    (not (complexp x)))
          :all-fnnames
          '(acl2-count imagpart o< complexp not))
-   #-:non-standard-analysis
+   #-non-standard-analysis
    (make built-in-clause
          :nume nil
          :rune *fake-rune-for-anonymous-enabled-rule*

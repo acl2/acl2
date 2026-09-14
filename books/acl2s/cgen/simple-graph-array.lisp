@@ -373,6 +373,9 @@ number (ccnum). This is used in simple-var-hyp? for finding cycles."
 
 (defun union-lsts (lsts)
   (declare (xargs :mode :logic
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                  :well-founded-relation o<
                   :guard (true-list-listp lsts)))
   (if (endp lsts)
     nil

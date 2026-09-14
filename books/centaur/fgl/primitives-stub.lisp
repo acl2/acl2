@@ -30,10 +30,9 @@
 
 (in-package "FGL")
 
-(include-book "interp-st")
 (include-book "stack-ev")
 (include-book "scratch-isomorphic")
-(include-book "interp-st-bfrs-ok")
+(include-book "interp-st-bvar-db-ok")
 (include-book "centaur/meta/world-equiv" :dir :system)
 (local (std::add-default-post-define-hook :fix))
 
@@ -43,16 +42,145 @@
 (defmacro eval-alist-extension-p (x y)
     `(acl2::sub-alistp ,y ,x))
 
-(defun-sk fgl-ev-context-equiv-forall-extensions (contexts
-                                                  obj
-                                                  term
-                                                  eval-alist)
-  (forall (ext)
-          (implies (eval-alist-extension-p ext eval-alist)
+(acl2::def-universal-equiv fgl-ev-equiv
+  :qvars (env)
+  :equiv-terms ((equal (fgl-ev x env))))
+
+(defrefinement pseudo-term-equiv fgl-ev-equiv
+  :hints(("Goal" :in-theory (enable fgl-ev-equiv))))
+
+(defcong fgl-ev-equiv equal (fgl-ev x env) 1
+  :hints(("Goal" :in-theory (enable fgl-ev-equiv-necc))))
+
+
+(acl2::def-universal-equiv fgl-ev-iff-equiv
+  :qvars (env)
+  :equiv-terms ((iff (fgl-ev x env))))
+
+(defrefinement fgl-ev-equiv fgl-ev-iff-equiv
+  :hints(("Goal" :in-theory (enable fgl-ev-iff-equiv))))
+
+(defcong fgl-ev-equiv iff (fgl-ev x env) 1
+  :hints(("Goal" :in-theory (enable fgl-ev-equiv-necc))))
+
+
+(defsection fgl-ev-context-equiv-forall-extensions
+
+  (defun-sk fgl-ev-context-equiv-forall-extensions (contexts
+                                                    obj
+                                                    term
+                                                    eval-alist)
+    (forall (ext)
+            (implies (eval-alist-extension-p ext eval-alist)
+                     (equal (fgl-ev-context-fix contexts
+                                                (fgl-ev term ext))
+                            (fgl-ev-context-fix contexts obj))))
+    :rewrite :direct)
+  (acl2::defquantexpr fgl-ev-context-equiv-forall-extensions
+    :predicate (fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist)
+    :quantifier :forall
+    :witnesses ((ext (fgl-ev-context-equiv-forall-extensions-witness
+                      contexts obj term eval-alist)))
+    :expr (implies (eval-alist-extension-p ext eval-alist)
                    (equal (fgl-ev-context-fix contexts
                                               (fgl-ev term ext))
-                          (fgl-ev-context-fix contexts obj))))
-  :rewrite :direct)
+                          (fgl-ev-context-fix contexts obj)))
+    :instance-rulename fgl-ev-context-equiv-forall-extensions-instancing
+    :wcp-witness-rulename fgl-ev-context-equiv-forall-extensions-witnessing)
+
+  (local (in-theory (disable fgl-ev-context-equiv-forall-extensions
+                             fgl-ev-context-equiv-forall-extensions-necc)))
+
+  (acl2::defexample fgl-ev-context-equiv-forall-extensions-fgl-ev-example
+    :pattern (fgl-ev x ext)
+    :templates (ext)
+    :instance-rules (fgl-ev-context-equiv-forall-extensions-instancing))
+
+  (acl2::defexample fgl-ev-context-equiv-forall-extensions-fgl-ev-list-example
+    :pattern (fgl-ev-list x ext)
+    :templates (ext)
+    :instance-rules (fgl-ev-context-equiv-forall-extensions-instancing))
+
+  (acl2::def-witness-ruleset fgl-ev-context-equiv-forall
+    '(fgl-ev-context-equiv-forall-extensions-instancing
+      fgl-ev-context-equiv-forall-extensions-witnessing
+      fgl-ev-context-equiv-forall-extensions-fgl-ev-example
+      fgl-ev-context-equiv-forall-extensions-fgl-ev-list-example))
+
+  (defcong fgl-ev-equiv equal (fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist) 3
+    :hints (("goal" :cases ((fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist)))
+            (acl2::witness :ruleset fgl-ev-context-equiv-forall)))
+  )
+
+(local (in-theory (disable fgl-ev-context-equiv-forall-extensions
+                           fgl-ev-context-equiv-forall-extensions-necc)))
+
+(defsection iff-forall-extensions
+  (defun-sk iff-forall-extensions (obj term eval-alist)
+    (forall (ext)
+            (implies (eval-alist-extension-p ext eval-alist)
+                     (iff (fgl-ev term ext)
+                          obj)))
+    :rewrite :direct)
+
+  (acl2::defquantexpr iff-forall-extensions
+    :predicate (iff-forall-extensions obj term eval-alist)
+    :quantifier :forall
+    :witnesses ((ext (iff-forall-extensions-witness
+                      obj term eval-alist)))
+    :expr (implies (eval-alist-extension-p ext eval-alist)
+                   (iff* (fgl-ev term ext)
+                         obj))
+    :instance-rulename iff-forall-extensions-instancing
+    :wcp-witness-rulename iff-forall-extensions-witnessing)
+
+
+
+  (acl2::defexample iff-forall-extensions-fgl-ev-example
+    :pattern (fgl-ev x ext)
+    :templates (ext)
+    :instance-rules (iff-forall-extensions-instancing))
+
+  (acl2::defexample iff-forall-extensions-fgl-ev-list-example
+    :pattern (fgl-ev-list x ext)
+    :templates (ext)
+    :instance-rules (iff-forall-extensions-instancing))
+
+  (local (in-theory (disable iff-forall-extensions
+                             iff-forall-extensions-necc)))
+
+  (acl2::def-witness-ruleset iff-forall
+    '(iff-forall-extensions-instancing
+      iff-forall-extensions-witnessing
+      iff-forall-extensions-fgl-ev-example
+      iff-forall-extensions-fgl-ev-list-example))
+
+  (acl2::def-witness-ruleset context-equiv-forall
+    '(iff-forall fgl-ev-context-equiv-forall))
+
+  (defcong iff equal (iff-forall-extensions obj term eval-alist) 1
+    :hints (("goal" :cases ((iff-forall-extensions obj term eval-alist)))
+            (acl2::witness :ruleset iff-forall)))
+
+  (defcong fgl-ev-iff-equiv equal (iff-forall-extensions obj term eval-alist) 2
+    :hints (("goal" :cases ((iff-forall-extensions obj term eval-alist))
+             :in-theory (enable iff*))
+            (acl2::witness :ruleset iff-forall)
+            (and stable-under-simplificationp
+                 '(:use ((:instance fgl-ev-iff-equiv-necc
+                          (x term) (y term-equiv)
+                          (env ext0)))))))
+
+  (defthm fgl-ev-context-equiv-forall-extensions-when-iff
+    (iff (fgl-ev-context-equiv-forall-extensions
+          '(iff) obj term eval-alist)
+         (iff-forall-extensions obj term eval-alist))
+    :hints ((acl2::witness :ruleset context-equiv-forall)
+            (and stable-under-simplificationp
+                 '(:in-theory (enable iff*))))))
+
+(local (in-theory (disable iff-forall-extensions
+                           iff-forall-extensions-necc)))
 
 
 (defsection fgl-major-stack-concretize-of-interp-st-logicman-extension
@@ -177,103 +305,7 @@
                     (interp-st-scratch-isomorphic old x)))))
 
 
-;; BOZO maybe doesn't belong here
-(Defsection interp-st-bvar-db-ok
-  (defun-sk interp-st-bvar-db-ok (interp-st env)
-    (forall n
-            (b* ((bvar-db (interp-st->bvar-db interp-st))
-                 (logicman (interp-st->logicman interp-st)))
-              (implies (and (<= (base-bvar$c bvar-db) (nfix n))
-                            (< (nfix n) (next-bvar$c bvar-db)))
-                       (iff* (fgl-object-eval (get-bvar->term$c n bvar-db) env logicman)
-                             (gobj-bfr-eval (bfr-var n) env logicman)))))
-    :rewrite :direct)
 
-  (in-theory (disable interp-st-bvar-db-ok))
-
-  (local (defthm bfr-listp-of-append-when-each
-           (implies (And (bfr-listp a)
-                         (bfr-listp b))
-                    (bfr-listp (append a b)))))
-
-  ;; (local (in-theory (disable not-member-of-append)))
-
-  (local (defthmd fgl-object-bfrlist-of-get-bvar->term$c-aux
-           (implies (and (not (member v (bvar-db-bfrlist-aux m bvar-db)))
-                         (< (nfix n) (nfix m))
-                         (<= (base-bvar$c bvar-db) (nfix n)))
-                    (not (member v (fgl-object-bfrlist (get-bvar->term$c n bvar-db)))))
-           :hints(("Goal" :in-theory (enable bvar-db-bfrlist-aux)))))
-
-  (local (defthm fgl-object-bfrlist-of-get-bvar->term$c
-           (implies (and (not (member v (bvar-db-bfrlist bvar-db)))
-                         (<= (base-bvar$c bvar-db) (nfix n))
-                         (< (nfix n) (next-bvar$c bvar-db)))
-                    (not (member v (fgl-object-bfrlist (get-bvar->term$c n bvar-db)))))
-           :hints (("goal" :in-theory (enable bvar-db-bfrlist)
-                    :use ((:instance fgl-object-bfrlist-of-get-bvar->term$c-aux
-                           (m (next-bvar$c bvar-db))))))))
-
-  (local (defthm bfr-listp-of-bvar-db-bfrlist-when-equal
-           (implies (and (equal bvar-db (interp-st->bvar-db interp-st))
-                         (interp-st-bfrs-ok interp-st))
-                    (bfr-listp (bvar-db-bfrlist bvar-db)
-                               (logicman->bfrstate (interp-st->logicman interp-st))))))
-
-  (local (in-theory (enable bfr-listp-when-not-member-witness)))
-  
-  (def-updater-independence-thm interp-st-bvar-db-ok-of-interp-st-logicman-extension
-    (implies (and (logicman-extension-p (interp-st->logicman new) (interp-st->logicman old))
-                  (interp-st-bfrs-ok old)
-                  (equal (interp-st->bvar-db new) (interp-st->bvar-db old)))
-             (iff (interp-st-bvar-db-ok new env)
-                  (interp-st-bvar-db-ok old env)))
-    :hints ((and stable-under-simplificationp
-                 (let* ((lit (assoc 'interp-st-bvar-db-ok clause))
-                        (other (if (eq (cadr lit) 'new) 'old 'new)))
-                   `(:expand (,lit)
-                     :use ((:instance interp-st-bvar-db-ok-necc
-                            (interp-st ,other)
-                            (n (interp-st-bvar-db-ok-witness . ,(cdr lit)))))
-                     :in-theory (e/d (bfr-varname-p)
-                                     (interp-st-bvar-db-ok-necc)))))))
-  
-  (defcong logicman-equiv equal (bfr-var n logicman) 2
-    :hints(("Goal" :in-theory (enable bfr-var))))
-
-  (local (std::make-returnspec-config :hints-sub-returnnames t))
-  
-  (defret interp-st-bvar-db-ok-of-interp-st-add-term-bvar
-    (implies (and (not (interp-st-bvar-db-ok interp-st env))
-                  (interp-st-bfrs-ok interp-st))
-             (not (interp-st-bvar-db-ok new-interp-st env)))
-    :hints(("Goal" :in-theory (e/d (interp-st-add-term-bvar
-                                    interp-st-bfrs-ok-implies
-                                    bfr-varname-p)
-                                   (interp-st-bvar-db-ok-necc))
-            :expand ((interp-st-bvar-db-ok interp-st env))
-            :use ((:instance interp-st-bvar-db-ok-necc
-                   (interp-st new-interp-st)
-                   (n (interp-st-bvar-db-ok-witness interp-st env))))
-            :cases ((bfr-varname-p (interp-st-bvar-db-ok-witness interp-st env)
-                                   (interp-st->logicman interp-st)))))
-    ;; :otf-flg t
-    :fn interp-st-add-term-bvar)
-
-  (defret interp-st-bvar-db-ok-of-interp-st-add-term-bvar-unique
-    (implies (and (not (interp-st-bvar-db-ok interp-st env))
-                  (interp-st-bfrs-ok interp-st))
-             (not (interp-st-bvar-db-ok new-interp-st env)))
-    :hints(("Goal" :in-theory (e/d (interp-st-add-term-bvar-unique bfr-varname-p)
-                                   (interp-st-bvar-db-ok-necc))
-            :expand ((interp-st-bvar-db-ok interp-st env))
-            :use ((:instance interp-st-bvar-db-ok-necc
-                   (interp-st new-interp-st)
-                   (n (interp-st-bvar-db-ok-witness interp-st env))))
-            :cases ((bfr-varname-p (interp-st-bvar-db-ok-witness interp-st env)
-                                   (interp-st->logicman interp-st)))))
-    :otf-flg t
-    :fn interp-st-add-term-bvar-unique))
 
 
 (defconst *fgl-meta-primitive-and-binder-rule-thms*
@@ -507,6 +539,9 @@
             (defret pseudo-termp-rhs-of-<fn>
               (pseudo-termp rhs))
 
+            (defret pseudo-term-listp-hyps-of-<fn>
+              (pseudo-term-listp hyps))
+
             (defret bfr-listp-of-<fn>
               (implies (and
                         (interp-st-bfrs-ok interp-st)
@@ -544,6 +579,10 @@
                                                              (interp-st->pathcond interp-st)
                                                              (interp-st->logicman interp-st))
                                      (pseudo-fnsym-p origfn)
+                                     (eval-alist-extension-p
+                                      eval-alist
+                                      (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))
+                                     (iff-forall-extensions t (conjoin hyps) eval-alist)
                                      (interp-st-bvar-db-ok new-interp-st env))
                                 (fgl-ev-context-equiv-forall-extensions
                                  contexts
@@ -552,29 +591,28 @@
                                                         args env
                                                         (interp-st->logicman interp-st))))
                                          nil)
-                                 rhs
-                                 (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))))))
+                                 rhs eval-alist)))))
    `(progn
       (defconst *fgl-meta-constraint-base-body* ',body)
-      (defun-nx fgl-meta-constraint-base (successp rhs bindings new-interp-st new-state
+      (defun-nx fgl-meta-constraint-base (successp rhs hyps bindings new-interp-st new-state
                                           origfn args interp-st state
                                           formula-check
-                                          mode env n contexts st)
+                                          mode env n contexts eval-alist st)
         ,body))))
 
-(defun-sk fgl-meta-constraint (successp rhs bindings new-interp-st new-state
+(defun-sk fgl-meta-constraint (successp rhs hyps bindings new-interp-st new-state
                                origfn args interp-st sta
                                formula-check)
-  (forall (mode env n contexts st)
+  (forall (mode env n contexts eval-alist st)
           (fgl-meta-constraint-base
-           successp rhs bindings new-interp-st new-state
+           successp rhs hyps bindings new-interp-st new-state
            origfn args interp-st sta
            formula-check
-           mode env n contexts st))
+           mode env n contexts eval-alist st))
   :rewrite :direct)
 
 (defthm fgl-meta-constraint-of-fail
-  (fgl-meta-constraint nil nil nil interp-st state
+  (fgl-meta-constraint nil nil nil nil interp-st state
                        origfn args interp-st state formula-check))
 
 (defconst *fgl-binder-rule-thms*
@@ -583,6 +621,9 @@
 
             (defret pseudo-termp-rhs-of-<fn>
               (pseudo-termp rhs))
+
+            (defret pseudo-term-listp-hyps-of-<fn>
+              (pseudo-term-listp hyps))
 
             (defret equiv-contextsp-rhs-contexts-of-<fn>
               (equiv-contextsp rhs-contexts))
@@ -627,6 +668,7 @@
                                                            (interp-st->pathcond interp-st)
                                                            (interp-st->logicman interp-st))
                                    (interp-st-bvar-db-ok new-interp-st env)
+                                   (iff-forall-extensions t (conjoin hyps) eval-alist)
                                    (fgl-ev-context-equiv-forall-extensions
                                     rhs-contexts
                                     rhs-val
@@ -642,25 +684,25 @@
                                                                           nil))
                                      (fgl-ev-context-fix contexts rhs-val))))))
    `(progn (defconst *fgl-binder-constraint-base-body* ',body)
-           (defun-nx fgl-binder-constraint-base (successp rhs bindings rhs-contexts new-interp-st new-state
+           (defun-nx fgl-binder-constraint-base (successp rhs hyps bindings rhs-contexts new-interp-st new-state
                                                  origfn args interp-st state
                                                  formula-check
                                                  mode env n contexts st rhs-val eval-alist)
              ,body))))
 
-(defun-sk fgl-binder-constraint (successp rhs bindings rhs-contexts new-interp-st new-state
+(defun-sk fgl-binder-constraint (successp rhs hyps bindings rhs-contexts new-interp-st new-state
                                  origfn args interp-st sta
                                  formula-check)
   (forall (mode env n contexts st rhs-val eval-alist)
           (fgl-binder-constraint-base
-           successp rhs bindings rhs-contexts new-interp-st new-state
+           successp rhs hyps bindings rhs-contexts new-interp-st new-state
            origfn args interp-st sta
            formula-check
            mode env n contexts st rhs-val eval-alist))
   :rewrite :direct)
 
 (defthm fgl-binder-constraint-of-fail
-  (fgl-binder-constraint nil nil nil nil interp-st state
+  (fgl-binder-constraint nil nil nil nil nil interp-st state
                          origfn args interp-st state formula-check))
 
 
@@ -676,7 +718,7 @@
                 (fgl-objectlist-p args)
                 (interp-st-bfrs-ok interp-st)
                 (interp-st-bfr-listp (fgl-objectlist-bfrlist args))))
-   ((fgl-meta-fncall-stub * * * interp-st state) => (mv * * * interp-st state)
+   ((fgl-meta-fncall-stub * * * interp-st state) => (mv * * * * interp-st state)
     :formals (primfn origfn args interp-st state)
     :guard (and (pseudo-fnsym-p primfn)
                 (pseudo-fnsym-p origfn)
@@ -684,7 +726,7 @@
                 (interp-st-bfrs-ok interp-st)
                 (interp-st-bfr-listp (fgl-objectlist-bfrlist args))))
 
-   ((fgl-binder-fncall-stub * * * interp-st state) => (mv * * * * interp-st state)
+   ((fgl-binder-fncall-stub * * * interp-st state) => (mv * * * * * interp-st state)
     :formals (primfn origfn args interp-st state)
     :guard (and (pseudo-fnsym-p primfn)
                 (pseudo-fnsym-p origfn)
@@ -759,11 +801,11 @@
     :guard (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
     :ignore-ok t
     :irrelevant-formals-ok t
-    :returns (mv successp rhs bindings new-interp-st new-state)
+    :returns (mv successp rhs hyps bindings new-interp-st new-state)
     :local-def t
     :progn t
     :hooks nil
-    (mv nil nil nil interp-st state))
+    (mv nil nil nil nil interp-st state))
 
   (local (in-theory (enable fgl-meta-fncall-stub)))
 
@@ -796,7 +838,7 @@
   ;;             (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))))
 
   (defret fgl-meta-constraint-of-<fn>
-    (fgl-meta-constraint successp rhs bindings new-interp-st new-state
+    (fgl-meta-constraint successp rhs hyps bindings new-interp-st new-state
                          origfn args interp-st state
                          (fgl-formula-checks-stub state))
     :fn fgl-meta-fncall-stub)
@@ -812,11 +854,11 @@
     :guard (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
     :ignore-ok t
     :irrelevant-formals-ok t
-    :returns (mv successp rhs bindings rhs-contexts new-interp-st new-state)
+    :returns (mv successp rhs hyps bindings rhs-contexts new-interp-st new-state)
     :local-def t
     :progn t
     :hooks nil
-    (mv nil nil nil nil interp-st state))
+    (mv nil nil nil nil nil interp-st state))
 
   (local (in-theory (enable fgl-binder-fncall-stub)))
   
@@ -852,7 +894,7 @@
   ;;                   (fgl-ev-context-fix contexts rhs-val))))
 
   (defret fgl-binder-constraint-of-<fn>
-    (fgl-binder-constraint successp rhs bindings rhs-contexts new-interp-st new-state
+    (fgl-binder-constraint successp rhs hyps bindings rhs-contexts new-interp-st new-state
                            origfn args interp-st state
                            (fgl-formula-checks-stub state))
     :fn fgl-binder-fncall-stub)
@@ -1195,7 +1237,7 @@
   (local
    (make-event
     `(defthm fgl-meta-constraint-rule
-       (b* (((mv successp rhs bindings new-interp-st new-state)
+       (b* (((mv successp rhs hyps bindings new-interp-st new-state)
              (fgl-meta-fncall-stub
               primfn origfn args interp-st state))
             (formula-check (fgl-formula-checks-stub state)))
@@ -1215,11 +1257,13 @@
                                                    primfn origfn args interp-st state)))
                               (rhs      (mv-nth 1 (fgl-meta-fncall-stub
                                                    primfn origfn args interp-st state)))
-                              (bindings (mv-nth 2 (fgl-meta-fncall-stub
+                              (hyps     (mv-nth 2 (fgl-meta-fncall-stub
                                                    primfn origfn args interp-st state)))
-                              (new-interp-st (mv-nth 3 (fgl-meta-fncall-stub
+                              (bindings (mv-nth 3 (fgl-meta-fncall-stub
+                                                   primfn origfn args interp-st state)))
+                              (new-interp-st (mv-nth 4 (fgl-meta-fncall-stub
                                                         primfn origfn args interp-st state)))
-                              (new-state (mv-nth 4 (fgl-meta-fncall-stub
+                              (new-state (mv-nth 5 (fgl-meta-fncall-stub
                                                     primfn origfn args interp-st state)))
                               (sta state)
                               (formula-check (fgl-formula-checks-stub state))))
@@ -1253,6 +1297,10 @@
                   (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                           (interp-st->pathcond interp-st)
                                           (interp-st->logicman interp-st))
+                  (eval-alist-extension-p
+                   eval-alist
+                   (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))
+                  (iff-forall-extensions t (conjoin hyps) eval-alist)
                   (pseudo-fnsym-p origfn)
                   (interp-st-bvar-db-ok new-interp-st env)
                   (not (interp-st->errmsg new-interp-st)))
@@ -1263,8 +1311,7 @@
                                      args env
                                      (interp-st->logicman interp-st))))
                       nil)
-              rhs
-              (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st))))))
+              rhs eval-alist))))
 
 
 
@@ -1276,7 +1323,7 @@
   (local
    (make-event
     `(defthm fgl-binder-constraint-rule
-       (b* (((mv successp rhs bindings rhs-contexts new-interp-st new-state)
+       (b* (((mv successp rhs hyps bindings rhs-contexts new-interp-st new-state)
              (fgl-binder-fncall-stub
               primfn origfn args interp-st state))
             (formula-check (fgl-formula-checks-stub state)))
@@ -1294,13 +1341,15 @@
                                                    primfn origfn args interp-st state)))
                               (rhs      (mv-nth 1 (fgl-binder-fncall-stub
                                                    primfn origfn args interp-st state)))
-                              (bindings (mv-nth 2 (fgl-binder-fncall-stub
+                              (hyps     (mv-nth 2 (fgl-binder-fncall-stub
                                                    primfn origfn args interp-st state)))
-                              (rhs-contexts (mv-nth 3 (fgl-binder-fncall-stub
+                              (bindings (mv-nth 3 (fgl-binder-fncall-stub
+                                                   primfn origfn args interp-st state)))
+                              (rhs-contexts (mv-nth 4 (fgl-binder-fncall-stub
                                                        primfn origfn args interp-st state)))
-                              (new-interp-st (mv-nth 4 (fgl-binder-fncall-stub
+                              (new-interp-st (mv-nth 5 (fgl-binder-fncall-stub
                                                         primfn origfn args interp-st state)))
-                              (new-state (mv-nth 5 (fgl-binder-fncall-stub
+                              (new-state (mv-nth 6 (fgl-binder-fncall-stub
                                                     primfn origfn args interp-st state)))
                               (sta state)
                               (formula-check (fgl-formula-checks-stub state))))
@@ -1334,6 +1383,7 @@
                   (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                           (interp-st->pathcond interp-st)
                                           (interp-st->logicman interp-st))
+                  (iff-forall-extensions t (conjoin hyps) eval-alist)
                   (fgl-ev-context-equiv-forall-extensions
                    rhs-contexts
                    rhs-val
@@ -1351,6 +1401,7 @@
                                                          nil))
                     (fgl-ev-context-fix contexts rhs-val)))
     :hints(("Goal" :in-theory (disable fgl-ev-context-equiv-forall-extensions)))))
+
 
 
 

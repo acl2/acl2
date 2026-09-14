@@ -190,6 +190,7 @@
        ((when (atc-table-lookup call (w state)))
         (retok '(value-triple :redundant) state))
        ((erp targets
+             output-dir
              file-name
              path-wo-ext
              header
@@ -205,6 +206,7 @@
         (atc-process-inputs args state))
        ((erp event)
         (atc-gen-everything targets
+                            output-dir
                             file-name
                             path-wo-ext
                             header

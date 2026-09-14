@@ -3369,6 +3369,12 @@
       neither does the execition of the new function,
       and they return the same results and computation states."))
    (xdoc::p
+    "We treat the special singleton @('(void)') parameter list
+     as an empty list before mapping the parameters
+     with @(tsee ldm-param-declon-list).
+     Thus both @('()') and @('(void)') function definitions
+     yield an empty parameter list in the language definition.")
+   (xdoc::p
     "We use @(tsee gen-from-params) to obtain
      certain information from the parameters,
      which is used to generate the theorems.
@@ -3419,7 +3425,6 @@
                                   (omap::update cvar ctype gin.vartys))
                               gin.vartys))
        (gout-no-thm (change-gout (gout-no-thm gin) :vartys vartys-after-fundef))
-
        ((unless (and body-thm-name
                      (not extension)
                      (b* (((mv okp tyspecs)
@@ -3430,8 +3435,8 @@
                            (check-decl-spec-list-all-typespec specs-new)))
                        (and okp
                             (type-spec-list-formalp tyspecs)))
-                     (declor-fun-formalp declor)
-                     (declor-fun-formalp declor-new)
+                     (declor-fun-formalp declor t)
+                     (declor-fun-formalp declor-new t)
                      (not asm?)
                      (endp attribs)
                      (endp declons)
@@ -3456,6 +3461,7 @@
        ((unless (stringp fun))
         (raise "Internal error: non-string identifier ~x0." fun)
         (mv new-fundef (irr-gout)))
+       (params (if (c$::param-declon-list-voidp params) nil params))
        ((mv erp ldm-params) (ldm-param-declon-list params))
        ((when erp) (mv new-fundef gout-no-thm))
        (types (fundef-types fundef))
@@ -3623,8 +3629,8 @@
                           (check-decl-spec-list-all-typespec specs-new)))
                       (and okp
                            (type-spec-list-formalp tyspecs)))
-                    (declor-fun-formalp declor)
-                    (declor-fun-formalp declor-new)
+                    (declor-fun-formalp declor t)
+                    (declor-fun-formalp declor-new t)
                     (endp attribs)
                     (endp declons)
                     (endp declons-new)

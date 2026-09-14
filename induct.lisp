@@ -6550,7 +6550,7 @@
    (t (cons (car clauses)
             (remove-trivial-clauses (cdr clauses) wrld)))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun non-standard-vector-check (vars accum)
   (if (null vars)
       accum
@@ -6558,7 +6558,7 @@
                                (cons (mcons-term* 'standardp (car vars))
                                      accum))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun merge-ns-check (checks clause accum)
   (if (null checks)
       accum
@@ -6566,7 +6566,7 @@
                                                     clause)
                                               accum))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun trap-non-standard-vector-aux (cl-set accum-cl checks wrld)
   (cond ((null cl-set) accum-cl)
         ((classical-fn-list-p (all-fnnames-lst (car cl-set)) wrld)
@@ -6614,7 +6614,7 @@
          (cons (car x)
                (remove-adjacent-duplicates-eq (cdr x))))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun non-standard-induction-vars (candidate wrld)
   (remove-adjacent-duplicates
    (merge-sort-term-order
@@ -6626,7 +6626,7 @@
 
             (measured-variables candidate wrld)))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun trap-non-standard-vector (cl-set candidate accum-cl wrld)
   (trap-non-standard-vector-aux cl-set accum-cl
                                 (non-standard-vector-check
@@ -6793,12 +6793,12 @@
                               (access candidate winning-candidate
                                       :tests-and-alists-lst)))
                             (clauses1
-                             #+:non-standard-analysis
+                             #+non-standard-analysis
                               (trap-non-standard-vector cl-set
                                                         winning-candidate
                                                         clauses0
                                                         wrld)
-                              #-:non-standard-analysis
+                              #-non-standard-analysis
                               clauses0)
                             (clauses
                              (cond ((> estimated-size *maximum-induct-size*)
@@ -6966,10 +6966,10 @@
 ; See also the Essay on Alternate Heuristics for Eliminate-Irrelevance.
 
   (or (ffnnames-subsetp-listp cl '(not consp integerp rationalp
-                                       #+:non-standard-analysis realp
+                                       #+non-standard-analysis realp
                                        acl2-numberp
                                        true-listp complex-rationalp
-                                       #+:non-standard-analysis complexp
+                                       #+non-standard-analysis complexp
                                        stringp characterp
                                        symbolp cons car cdr equal
                                        binary-+ unary-- < apply))
