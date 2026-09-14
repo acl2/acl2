@@ -11,15 +11,17 @@
 
 (in-package "C")
 
+(include-book "ascii-characters")
 (include-book "basic-characters")
+(include-book "unicode-characters")
 
 (include-book "kestrel/fty/any-nat-map" :dir :system)
 (include-book "kestrel/fty/true-list-set" :dir :system)
+(include-book "kestrel/utilities/strings/char-code-map" :dir :system)
 (include-book "kestrel/utilities/strings/char-code-set" :dir :system)
 (include-book "std/omaps/injectivep" :dir :system)
 (include-book "std/omaps/inverse" :dir :system)
 
-(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
 
 (acl2::controlled-configuration)
@@ -266,57 +268,14 @@
      that correspond to the basic source characters,
      together with LF so that it can represent the line ending."))
   (b* ((chars-with-codes
-        (source-charset-basic+lf-loop
+        (acl2::char-code-map
          (set::insert #\Newline (ascii-basic-source-chars std))))
        (end-of-lines (set::insert (list #\Newline) nil)))
     (make-source-charset :chars-with-codes chars-with-codes
                          :end-of-lines end-of-lines))
 
   :prepwork
-  ((define source-charset-basic+lf-loop ((chars character-setp))
-     :returns (map any-nat-mapp)
-     :parents nil
-     (b* (((when (set::emptyp (character-sfix chars))) nil)
-          (char (set::head chars)))
-       (omap::update char
-                     (char-code char)
-                     (source-charset-basic+lf-loop (set::tail chars))))
-     :prepwork ((local (in-theory (enable acl2::emptyp-of-character-sfix))))
-     :verify-guards :after-returns
-
-     ///
-
-     (defret keys-of-source-charset-basic+lf-loop
-       (equal (omap::keys map)
-              (character-sfix chars))
-       :hints (("Goal"
-                :induct t
-                :in-theory (enable set::emptyp
-                                   character-sfix))))
-
-     (defret values-of-source-charset-basic+lf-loop
-       (equal (omap::values map)
-              (acl2::char-code-set chars))
-       :hints (("Goal"
-                :induct t
-                :in-theory (enable acl2::char-code-set
-                                   omap::assoc-to-in-of-keys))))
-
-     (defret lookup-of-source-charset-basic+lf-loop
-       (implies (and (character-setp chars)
-                     (set::in char chars))
-                (equal (omap::lookup char map)
-                       (char-code char)))
-       :hints (("Goal"
-                :induct t
-                :in-theory (enable omap::lookup-of-update))))
-
-     (defret injectivep-of-source-charset-basic+lf-loop
-       (omap::injectivep map)
-       :hints (("Goal"
-                :induct t
-                :in-theory
-                (enable acl2::not-in-char-code-set-when-not-in-char-set))))))
+  ((local (in-theory (enable acl2::any-nat-mapp-when-character-nat-mapp))))
 
   ///
 
@@ -335,56 +294,114 @@
                                        (source-charset-basic+lf std)
                                        std)
                     bchar))
-    :use (:instance omap::lookup-of-lookup-of-inverse
-                    (omap::map
-                     (omap::inverse
-                      (source-charset-basic+lf-loop
-                       (set::insert #\Newline
-                                    (ascii-basic-source-chars std)))))
-                    (omap::val bchar))
     :enable (basic-source-char
              source-charset-basic+lf
-             omap::inverse-inverse-when-injectivep
-             lookup-of-source-charset-basic+lf-loop
+             acl2::any-nat-mapp-when-character-nat-mapp
+             acl2::lookup-inverse-of-char-code-map
              set::expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define source-charset-ascii ()
+(define source-charset-ascii ((end-of-lines true-list-setp))
+  :guard (and (not (set::emptyp end-of-lines))
+              (source-charset-end-of-lines-wfp end-of-lines
+                                               (ascii-code-map)))
   :returns (charset source-charsetp)
   :short "The source character set defined by
-          ASCII and three kinds of line endings (LF, CR, and CR LF)."
+          ASCII and a specified set of line endings."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This consists of the 128 ASCII characters,
-     for which we use the ACL2 characters with the respective codes."))
-  (b* ((chars-with-codes (source-charset-ascii-loop 0))
-       (end-of-lines (set::mergesort (list (list #\Newline)
-                                           (list #\Return)
-                                           (list #\Return #\Newline)))))
-    (make-source-charset :chars-with-codes chars-with-codes
-                         :end-of-lines end-of-lines))
+    "This consists of the 128 ASCII characters in @(tsee ascii-chars),
+     for which we use the ACL2 characters with the respective codes.
+     ASCII fixes these characters and codes,
+     but leaves a choice of which character sequences represent new lines.")
+   (xdoc::p
+    "The parameter specifies the exact set of new-line representations.
+     The set must be non-empty,
+     and each representation must be a non-empty list of ASCII characters.
+     As explained in @(tsee source-charset-end-of-lines-wfp),
+     one representation may be a prefix of another,
+     with the longest matching sequence denoting a single new line."))
+  (make-source-charset :chars-with-codes (ascii-code-map)
+                       :end-of-lines end-of-lines)
 
   :prepwork
-  ((define source-charset-ascii-loop ((code natp))
-     :returns (map any-nat-mapp)
-     :parents nil
-     (if (>= (lnfix code) 128)
-         nil
-       (omap::update (code-char code)
-                     (lnfix code)
-                     (source-charset-ascii-loop (1+ (lnfix code)))))
-     :measure (nfix (- 128 (nfix code)))
-     :hints (("Goal" :in-theory (enable nfix)))
-     :verify-guards :after-returns
-     :hooks ((:fix :hints (("Goal" :in-theory (enable nfix)))))))
+  ((local (in-theory (enable acl2::any-nat-mapp-when-character-nat-mapp))))
 
   ///
 
+  (defruled source-chars-of-source-charset-ascii
+    (equal (source-chars (source-charset-ascii end-of-lines))
+           (ascii-chars))
+    :enable source-chars)
+
   (defrule source-charset-wfp-of-source-charset-ascii
-    (source-charset-wfp (source-charset-ascii) std)
+    (implies
+     (and (not (set::emptyp (true-list-set-fix end-of-lines)))
+          (source-charset-end-of-lines-wfp end-of-lines
+                                           (ascii-code-map)))
+     (source-charset-wfp (source-charset-ascii end-of-lines) std))
+    :enable (source-charset-wfp
+             source-charset-ascii
+             source-charset-has-basic-chars-p
+             ascii-basic-source-chars-subset-ascii-chars
+             acl2::char-code-set-monotone))
+
+  (defruled basic-source-char-of-source-charset-ascii
+    (implies (set::in bchar (ascii-basic-source-chars std))
+             (equal (basic-source-char bchar
+                                       (source-charset-ascii end-of-lines)
+                                       std)
+                    bchar))
+    :disable in-of-ascii-chars
+    :enable (basic-source-char
+             ascii-basic-source-chars-subset-ascii-chars
+             set::subset-in)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define source-charset-unicode ((end-of-lines true-list-setp))
+  :guard (and (not (set::emptyp end-of-lines))
+              (source-charset-end-of-lines-wfp end-of-lines
+                                               (unicode-code-map)))
+  :returns (charset source-charsetp)
+  :short "The source character set defined by
+          Unicode and a specified set of line endings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We use the Unicode scalar values in @(tsee unicode-chars)
+     as the source characters, and map each one to itself as its code.
+     Unicode fixes these characters and their codes,
+     but leaves a choice of which character sequences represent new lines.")
+   (xdoc::p
+    "The parameter specifies the exact set of new-line representations.
+     The set must be non-empty,
+     and each representation must be a non-empty list of Unicode scalar values.
+     As explained in @(tsee source-charset-end-of-lines-wfp),
+     one representation may be a prefix of another,
+     with the longest matching sequence denoting a single new line."))
+  (make-source-charset :chars-with-codes (unicode-code-map)
+                       :end-of-lines end-of-lines)
+
+  ///
+
+  (defruled source-chars-of-source-charset-unicode
+    (equal (source-chars (source-charset-unicode end-of-lines))
+           (unicode-chars))
+    :enable source-chars)
+
+  (defrule source-charset-wfp-of-source-charset-unicode
+    (implies
+     (and (not (set::emptyp (true-list-set-fix end-of-lines)))
+          (source-charset-end-of-lines-wfp end-of-lines (unicode-code-map)))
+     (source-charset-wfp (source-charset-unicode end-of-lines) std))
     :enable (source-charset-wfp
              source-charset-has-basic-chars-p
-             ascii-basic-source-chars
-             acl2::char-code-set)))
+             char-code-set-subset-unicode-chars))
+
+  (defruled basic-source-char-of-source-charset-unicode
+    (equal (basic-source-char bchar (source-charset-unicode end-of-lines) std)
+           (char-code bchar))
+    :enable basic-source-char))

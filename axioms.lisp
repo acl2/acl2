@@ -23256,13 +23256,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Keep this code in sync with legal-acl2-character-p.
 
-                (cons "The only legal ACL2 characters are those recognized by ~
-                       the function legal-acl2-character-p.  The character ~
-                       with ~x0 = ~x1 that CLTL displays as ~s2 is not one of ~
-                       those."
-                      (list (cons #\0 'char-code)
-                            (cons #\1 (char-code x))
-                            (cons #\2 (coerce (list x) 'string)))))))
+                (let ((display (ignore-errors (coerce (list x) 'string))))
+                  (cons "The only legal ACL2 characters are those recognized ~
+                         by the function legal-acl2-character-p.  The ~
+                         character with ~x0 = ~x1~#2~[~/ that CLTL displays ~
+                         as ~s3~] is not one of those."
+                        (list (cons #\0 'char-code)
+                              (cons #\1 (char-code x))
+                              (cons #\2 (if (null display) 0 1))
+                              (cons #\3 display)))))))
         ((typep x 'ratio)
          (or (bad-lisp-atomp (numerator x))
              (bad-lisp-atomp (denominator x))))

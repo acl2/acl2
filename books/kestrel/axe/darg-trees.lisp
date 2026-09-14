@@ -24,7 +24,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
 ;; Darg-trees are like pseudo-terms but with integers (nodenums in some DAG) at
-;; the leaves instead of variable.  Constants can also appear at the leaves.
+;; the leaves instead of variables.  Constants can also appear at the leaves.
 ;; TODO: Also make bounded-darg-treep.
 (mutual-recursion
  (defun darg-treep (tree)

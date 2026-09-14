@@ -5962,7 +5962,8 @@ e2-e1+1.
                   (fetch-dcl-field :measure
                                    (butlast (cddr old-def)
                                             1))
-                  justification)
+                  justification
+                  wrld)
                  'redundant))))))
 
 (defun ccg-redundant-subset-for-defunp (chk-measurep chk-ccmsp def wrld)

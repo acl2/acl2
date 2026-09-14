@@ -251,7 +251,7 @@
            (equal (bind x xval (bind y yval alist))
                   (bind y yval (bind x xval alist))))
   :rule-classes ((:rewrite :loop-stopper ((x y))))
-  :hints (("Goal" :in-theory (enable bind assoc-equal assoc-equal))))
+  :hints (("Goal" :in-theory (enable bind assoc-equal))))
 
 (defthm bind-to-binding
   (implies (and (force (alistp alist))
@@ -259,7 +259,7 @@
                 )
            (equal (bind field (binding field alist) alist)
                   alist))
-  :hints (("goal" :in-theory (enable bind assoc-equal binding assoc-equal))))
+  :hints (("goal" :in-theory (enable bind assoc-equal binding))))
 
 ;; todo: causes many case splits in Android app proofs
 (defthm bind-to-binding-better

@@ -6033,11 +6033,11 @@
 
 (defconst *fmt-ctx-spacers*
   '(defun
-     #+:non-standard-analysis defun-std
+     #+non-standard-analysis defun-std
      mutual-recursion
      defuns
      defthm
-     #+:non-standard-analysis defthm-std
+     #+non-standard-analysis defthm-std
      defaxiom
      defconst
      defstobj defabsstobj

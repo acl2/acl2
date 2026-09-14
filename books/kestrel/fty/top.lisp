@@ -24,6 +24,7 @@
 (include-book "character-result")
 (include-book "character-set")
 (include-book "character-any-map")
+(include-book "character-nat-map")
 (include-book "database")
 (include-book "defbyte")
 (include-book "defbyte-ihs-theorems")

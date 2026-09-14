@@ -52,11 +52,11 @@
              pseudo-term-list pseudo-term-list-fix pseudo-term-list-equiv pseudo-term-list-count
              pseudo-term-null
              pseudo-term-quote pseudo-term-quote->val
+             pseudo-term-const pseudo-term-const->val
              pseudo-term-var pseudo-term-var->name
              pseudo-term-fncall pseudo-term-fncall->fn
              pseudo-term-lambda pseudo-term-lambda->formals pseudo-term-lambda->body pseudo-term-lambda->fn
              pseudo-term-call pseudo-term-call->fn pseudo-term-call->args
-             pseudo-term-const
              
              base-ev base-ev-list defthm-base-ev-flag
              pair-vars

@@ -329,5 +329,5 @@
            (equal (pfield::neg (* x1 x2) p)
                   (pfield::neg (pfield::mul x1 x2 p) p)))
   :hints (("Goal" :do-not '(preprocess)
-           :in-theory (e/d (pfield::mul pfield::sub pfield::mul)
+           :in-theory (e/d (pfield::mul pfield::sub)
                            (mod-of-*-becomes-mul)))))
