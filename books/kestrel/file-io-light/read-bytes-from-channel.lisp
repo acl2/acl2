@@ -72,6 +72,21 @@
   :hints (("Goal" :induct t
 :in-theory (enable read-bytes-from-channel))))
 
+(defthm open-input-channel-p-of-mv-nth-1-of-read-bytes-from-channel
+  (implies (open-input-channel-p channel typ state)
+           (open-input-channel-p channel typ (mv-nth 1 (read-bytes-from-channel channel2 acc state))))
+  :hints (("Goal" :in-theory (e/d (open-input-channel-p) (open-input-channel-p1)))))
+
+(defthm open-input-channel-any-p1-of-mv-nth-1-of-read-bytes-from-channel
+  (implies (open-input-channel-any-p1 channel state)
+           (open-input-channel-any-p1 channel (mv-nth 1 (read-bytes-from-channel channel2 acc state))))
+  :hints (("Goal" :in-theory (e/d (open-input-channel-any-p1) (open-input-channel-p1)))))
+
+(defthm open-input-channel-any-p-of-mv-nth-1-of-read-bytes-from-channel
+  (implies (open-input-channel-any-p channel state)
+           (open-input-channel-any-p channel (mv-nth 1 (read-bytes-from-channel channel2 acc state))))
+  :hints (("Goal" :in-theory (e/d (open-input-channel-any-p) (open-input-channel-any-p1)))))
+
 (defthm w-of-mv-nth-1-of-read-bytes-from-channel
   (equal (w (mv-nth 1 (read-bytes-from-channel channel acc state)))
          (w state))

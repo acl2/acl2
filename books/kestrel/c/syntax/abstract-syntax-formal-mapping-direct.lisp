@@ -1232,7 +1232,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-dirdeclor-fun ((dirdeclor dirdeclorp))
+(define ldm-dirdeclor-fun ((dirdeclor dirdeclorp) (fundefp booleanp))
   :guard (dirdeclor-unambp dirdeclor)
   :returns (mv erp (fundeclor c::fun-declorp))
   :short "Map a direct declarator to
@@ -1244,8 +1244,19 @@
      does not have a separate type for direct function declarators,
      so we return a function declarator here.
      The input direct declarator must be an identifier
-     followed by a single parenthesized list of parameter declarations,
-     or an empty list of parameter names.")
+     followed by a single parenthesized non-empty list
+     of parameter declarations.
+     The special singleton @('(void)') list is mapped to
+     an empty parameter list in the language definition.")
+   (xdoc::p
+    "The @('fundefp') flag says whether
+     the declarator is part of a function definition.
+     In that case, we also allow an empty list of parameter names,
+     which specifies that the function has no parameters [C17:6.7.6.3/14].
+     We map it to an empty parameter list in the language definition.
+     Outside a function definition,
+     an empty list of parameter names leaves the parameters unspecified,
+     which we do not support.")
    (xdoc::p
     "This function will always result in a @(tsee c::fun-declor)
      of the @(':base') kind;
@@ -1254,8 +1265,10 @@
     "This function is called when we expect a function declarator,
      not an object declarator, for which we have a separate function."))
   (b* (((reterr) (c::fun-declor-base (c::ident "irrelevant") nil))
-       ((unless (or (dirdeclor-case dirdeclor :function-params)
-                    (and (dirdeclor-case dirdeclor :function-names)
+       ((unless (or (and (dirdeclor-case dirdeclor :function-params)
+                         (consp (dirdeclor-function-params->params dirdeclor)))
+                    (and fundefp
+                         (dirdeclor-case dirdeclor :function-names)
                          (endp (dirdeclor-function-names->names dirdeclor)))))
         (reterr (msg "Unsupported direct declarator ~x0 for function."
                      (dirdeclor-fix dirdeclor))))
@@ -1270,19 +1283,21 @@
                      (dirdeclor-fix dirdeclor))))
        (ident (dirdeclor-ident->ident inner-dirdeclor))
        ((erp ident1) (ldm-ident ident))
-       ((erp params1) (ldm-param-declon-list params)))
+       ((erp params1) (if (param-declon-list-voidp params)
+                          (retok nil)
+                        (ldm-param-declon-list params))))
     (retok (c::make-fun-declor-base :name ident1 :params params1)))
 
   ///
 
   (defret ldm-dirdeclor-fun-ok-when-dirdeclor-fun-formalp
     (not erp)
-    :hyp (dirdeclor-fun-formalp dirdeclor)
+    :hyp (dirdeclor-fun-formalp dirdeclor fundefp)
     :hints (("Goal" :in-theory (enable dirdeclor-fun-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-declor-fun ((declor declorp))
+(define ldm-declor-fun ((declor declorp) (fundefp booleanp))
   :guard (declor-unambp declor)
   :returns (mv erp (fundeclor c::fun-declorp))
   :short "Map a declarator to
@@ -1294,11 +1309,15 @@
      and then we recursively add pointer layers
      based on the pointer part of the declarator.")
    (xdoc::p
+    "The @('fundefp') flag says whether the declarator
+     is part of a function definition;
+     see @(tsee ldm-dirdeclor-fun).")
+   (xdoc::p
     "This function is called when we expect a function declarator,
      not an object declarator, for which we have a separate function."))
   (b* (((reterr) (c::fun-declor-base (c::ident "irrelevant") nil))
        ((declor declor) declor)
-       ((erp declor1) (ldm-dirdeclor-fun declor.direct)))
+       ((erp declor1) (ldm-dirdeclor-fun declor.direct fundefp)))
     (ldm-declor-fun-loop declor1 declor.pointers))
 
   :prepwork
@@ -1327,7 +1346,7 @@
 
   (defret ldm-declor-fun-ok-when-declor-fun-formalp
     (not erp)
-    :hyp (declor-fun-formalp declor)
+    :hyp (declor-fun-formalp declor fundefp)
     :hints (("Goal" :in-theory (enable declor-fun-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1385,7 +1404,7 @@
         (reterr (msg "Unsupported attribute specifiers ~x0 ~
                       for function declaration."
                      initdeclor.attribs)))
-       ((erp fundeclor) (ldm-declor-fun initdeclor.declor)))
+       ((erp fundeclor) (ldm-declor-fun initdeclor.declor nil)))
     (retok (c::make-fun-declon :tyspec tyspecseq :declor fundeclor)))
 
   ///
@@ -1411,7 +1430,10 @@
      does not have a separate type for direct abstract function declarators,
      so we return an abstract function declarator here.
      The input direct abstract declarator must be a function declarator
-     with no nested direct abstract declarator.")
+     with no nested direct abstract declarator
+     and with a non-empty parameter list.
+     The special singleton @('(void)') list is mapped to
+     an empty parameter list in the language definition.")
    (xdoc::p
     "This function will always result in a @(tsee c::fun-adeclor)
      of the @(':base') kind;
@@ -1427,7 +1449,13 @@
        ((when dirabsdeclor.declor?)
         (reterr (msg "Unsupported direct abstract declarator ~x0 for function."
                      (dirabsdeclor-fix dirabsdeclor))))
-       ((erp params1) (ldm-param-declon-list dirabsdeclor.params)))
+       ((unless (consp dirabsdeclor.params))
+        (reterr (msg "Unsupported empty parameter list ~
+                      in direct abstract declarator ~x0 for function."
+                     (dirabsdeclor-fix dirabsdeclor))))
+       ((erp params1) (if (param-declon-list-voidp dirabsdeclor.params)
+                          (retok nil)
+                        (ldm-param-declon-list dirabsdeclor.params))))
     (retok (c::fun-adeclor-base params1))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1854,7 +1882,7 @@
                       in function definition ~x0."
                      (fundef-fix fundef))))
        ((erp tyspecseq) (ldm-type-spec-list tyspecs))
-       ((erp fundeclor) (ldm-declor-fun fundef.declor))
+       ((erp fundeclor) (ldm-declor-fun fundef.declor t))
        ((when fundef.asm?)
         (reterr (msg "Unsupported assembler name specifier ~
                       in function definition ~x0."

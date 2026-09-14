@@ -35758,12 +35758,16 @@ Miscellaneous efficiency ideas
     (implies hyp (equiv lhs x))
 
   where [30m[47mequiv[0m[0m is a known equivalence relation (see [defequiv]); [30m[47mx[0m[0m is a
-  variable symbol; and [30m[47mlhs[0m[0m contains one or more terms (called
+  variable symbol; [30m[47mlhs[0m[0m contains one or more terms (called
   ``destructor terms'') of the form [30m[47m(fn v1 ... vn)[0m[0m, where [30m[47mfn[0m[0m is a
   function symbol and the [30m[47mvi[0m[0m are distinct variable symbols, [30m[47mv1[0m[0m, ...,
   [30m[47mvn[0m[0m include all the variable symbols in the formula, no [30m[47mfn[0m[0m occurs in
-  [30m[47mlhs[0m[0m in more than one destructor term, and all occurrences of [30m[47mx[0m[0m in
-  [30m[47mlhs[0m[0m are inside destructor terms.
+  [30m[47mlhs[0m[0m in more than one destructor term, all occurrences of [30m[47mx[0m[0m in [30m[47mlhs[0m[0m
+  are inside destructor terms, and every occurrence of [30m[47mx[0m[0m in [30m[47mhyp[0m[0m can
+  be replaced any term [30m[47mequiv[0m[0m to [30m[47mx[0m[0m without changing the propositional
+  value of [30m[47mhyp[0m[0m.  (This last condition can be succinctly stated as
+  saying that all occurrences of [30m[47mx[0m[0m in [30m[47mhyp[0m[0m are [30m[47mequiv[0m[0m-hittable
+  preserving [30m[47miff[0m[0m.  We discuss this more below.)
 
   An [30m[47m:elim[0m[0m rule is available for a given destructor function (in the
   manner described below) when it is the most recently added
@@ -107019,6 +107023,50 @@ Bug Fixes
   Thanks to Aakash Koneru for pointing us in the direction of these
   changes.
 
+  (SBCL only) Soundness bugs were caused by SBCL compiler optimizations
+  for the return types of functions, in cases that integer return
+  values could be bounded.  These bugs are now avoided: ACL2 removes
+  those declared bounds (by proclaiming less restrictive types).
+  Thanks to Grant Jurgensen for reporting the use of of Anthropic's
+  Claude to find these bugs; see [community-books] files
+  [30m[47msystem/tests/integer-length-bad-optimization.lisp[0m[0m and
+  [30m[47msystem/tests/length-bad-optimization.lsp[0m[0m.
+
+  An additional restriction was added to [30m[47m:[0m[0m[30m[47m[elim][0m[0m rules, namely, for the
+  general form [30m[47m(implies hyp (equiv lhs x))[0m[0m, all occurrences of [30m[47mx[0m[0m in
+  [30m[47mhyp[0m[0m must be [30m[47mequiv[0m[0m-hittable preserving [30m[47miff[0m[0m.  See [elim].  This
+  corrected a soundness bug discovered by Eric Smith with the help of
+  Anthropic's Claude; see [community-book]
+  [30m[47msystem/tests/elim-iff-hyp.lisp[0m[0m.
+
+  When [30m[47m[make-event][0m[0m expansion takes place, the result might not be a
+  valid ACL2 object.  ACL2 checked for this situation, but only when
+  the [known-package-alist] changed.  Now the check is done
+  unconditionally.  This fixes a soundness bug discovered by Eric
+  Smith with the help of Anthropic's Claude; see [community-book]
+  [30m[47msystem/tests/make-event-bad-char.lisp[0m[0m.
+
+  A soundness bug was caused by function [30m[47m[df-string][0m[0m due to the
+  distinction in raw Lisp between 0.0 and -0.0.  Thanks to Eric Smith
+  for reporting the use of of Anthropic's Claude to find this bug;
+  see [community-book] [30m[47msystem/tests/df-negative-zero.lisp[0m[0m.
+
+  Soundness bugs were caused by inadequate redundancy checks for calls
+  of [30m[47m[defun][0m[0m (and its variants such as [30m[47m[defund][0m[0m and [30m[47m[defun-nx][0m[0m).  The
+  checks (see [redundant-events] failed to account properly for the
+  default measure function (see [set-measure-function]), and they
+  failed to account at all for the [well-founded-relation].  Thanks
+  to Eric Smith for reporting the use of of Anthropic's Claude to
+  find these bugs; see [community-books]
+  [30m[47msystem/tests/measure-fn-redundancy.lisp[0m[0m and
+  [30m[47msystem/tests/wfr-redundancy.lisp[0m[0m.
+
+  Fixed an assertion failure that could occur when an accessor call in
+  a [30m[47m[stobj-let][0m[0m's bindings was on a quoted non-numeric index.  Thanks
+  to Eric Smith for sending an example found by Anthropic's Claude.
+  As part of the fix, extended a guard optimization for constant
+  indices from just the numeric case.
+
   Checks were improved to avoid raw Lisp errors in the following
   situations:
 
@@ -107153,6 +107201,12 @@ Changes at the System Level
   on an Arm-based Mac.  Thanks to Yahya Sohail for supplying that
   change, which handles certain floating-point exceptions.  (ACL2
   supports floating-point computations; see [df].)
+
+  (CMUCL only) Fixed CMUCL builds of ACL2 so that [30m[47m\"lisp\"[0m[0m can be the
+  specified Lisp program name and to avoid a problem with
+  [30m[47m-dynamic-space-size[0m[0m on some systems.  However, the CMUCL version
+  must now be from at least 2016.  Thanks to Grant Jurgensen for
+  bringing those issues to our attention.
 
 
 EMACS Support
@@ -128726,12 +128780,12 @@ Subtopics
   each function to be introduced, there has already been introduced a
   function with the same name, formals, and body (before
   macroexpansion), and with the same values [declare]d for the
-  [30m[47m:[0m[0m[30m[47m[guard][0m[0m, [30m[47m:[0m[0m[30m[47m[measure][0m[0m, types, [30m[47m:[0m[0m[30m[47m[ruler-extenders][0m[0m, [30m[47m:non-executable[0m[0m,
-  [30m[47m:type-prescription[0m[0m, [30m[47m:[0m[0m[30m[47m[stobj][0m[0m[30m[47ms[0m[0m, and [30m[47m:[0m[0m[30m[47m[split-types][0m[0m, provided that
-  the [defun-mode]s are appropriate (see the ``Note About Appropriate
-  Modes'' below).  Moreover, the order of the combined [30m[47m:[0m[0m[30m[47m[guard][0m[0m and
-  type declarations must be the same in both cases.  Exceptions and
-  clarifications:
+  [30m[47m:[0m[0m[30m[47m[guard][0m[0m, [30m[47m:[0m[0m[30m[47m[measure][0m[0m, [30m[47m:[0m[0m[30m[47m[well-founded-relation][0m[0m, types,
+  [30m[47m:[0m[0m[30m[47m[ruler-extenders][0m[0m, [30m[47m:non-executable[0m[0m, [30m[47m:type-prescription[0m[0m, [30m[47m:[0m[0m[30m[47m[stobj][0m[0m[30m[47ms[0m[0m,
+  and [30m[47m:[0m[0m[30m[47m[split-types][0m[0m, provided that the [defun-mode]s are appropriate
+  (see the ``Note About Appropriate Modes'' below).  Moreover, the
+  order of the combined [30m[47m:[0m[0m[30m[47m[guard][0m[0m and type declarations must be the
+  same in both cases.  Exceptions and clarifications:
 
    1. If the new and existing function events have no explicit
       [ruler-extenders] (which are therefore syntactically equal),
@@ -128742,12 +128796,32 @@ Subtopics
       other to have no explicit guard (hence, the guard is implicitly
       [30m[47mt[0m[0m).
 
-   3. The [30m[47m:measure[0m[0m check is avoided if the old definition is non-recursive
-      (and not defined within a [30m[47m[mutual-recursion][0m[0m) or we are
-      skipping proofs (for example, during [30m[47m[include-book][0m[0m).
-      Otherwise, the new definition may have a [30m[47m:measure[0m[0m of [30m[47m(:? v1 ...
-      vk)[0m[0m, where [30m[47m(v1 ... vk)[0m[0m enumerates the variables occurring in
-      the measure stored for the old definition.
+   3. The [30m[47m:measure[0m[0m and [30m[47m:well-founded-relation[0m[0m checks are avoided if the old
+      definition is non-recursive (and not defined within a
+      [30m[47m[mutual-recursion][0m[0m) or we are skipping proofs (for example,
+      during [30m[47m[include-book][0m[0m).  The precise measure check requires
+      that one of the following conditions is met.
+
+        * The old and new definitions supply a (non-[30m[47mnil[0m[0m) value for the
+          [30m[47m:measure[0m[0m, and those values are identical.
+
+        * Neither the old nor the new definition supplies a value for the
+          [30m[47m:measure[0m[0m, and the current default measure function (see
+          [set-measure-function]) is the function symbol of the
+          measure stored for the old definition (from the default
+          measure function at the time it was admitted).
+
+        * The new definition specifies a [30m[47m:measure[0m[0m of [30m[47m(:? v1 ... vk)[0m[0m, where [30m[47m(v1
+          ... vk)[0m[0m enumerates, without repetition, the variables
+          occurring in the measure stored for the old definition.
+
+      The precise well-founded relation check requires that the
+      well-founded relation for the old definition is the same as the
+      well-founded relation proposed for the new definition, whether
+      the proposed well-founded relation is supplied explicitly using
+      the [30m[47m:well-founded-relation[0m[0m [30m[47m[xargs][0m[0m keyword or implicitly using
+      the current default well-founded relation (see
+      [set-well-founded-relation]).
 
    4. If either the old or new event is a [30m[47m[mutual-recursion][0m[0m event, then
       redundancy requires that both are [30m[47m[mutual-recursion][0m[0m events

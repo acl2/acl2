@@ -7796,7 +7796,7 @@
                                       extra))))
         (COMPLEX-RATIONALP
          (mv nil (complex-rationalp x) latches))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (COMPLEXP
          (mv nil (complexp x) latches))
         (COERCE
@@ -7820,7 +7820,7 @@
                                       extra))))
         (EQUAL
          (mv nil (equal x y) latches))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (FLOOR1
          (cond ((or guard-checking-off
                     (realp x))
@@ -7867,7 +7867,7 @@
                                       extra))))
         (RATIONALP
          (mv nil (rationalp x) latches))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (REALP
          (mv nil (realp x) latches))
         (REALPART
@@ -7896,13 +7896,13 @@
 ; The next two functions have the obvious behavior on standard objects, which
 ; are the only ones ever present inside ACL2.
 
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (STANDARDP
          (mv nil t latches))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (STANDARD-PART
          (mv nil x latches))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (I-LARGE-INTEGER ; We could omit this case, allowing a fall-through.
          (ev-fncall-null-body-er nil fn nil latches))
         (otherwise
@@ -16799,6 +16799,46 @@
                                lst1
                                (cons (cdar alist) lst2)))))
 
+(defun untranslated-constant-p (x)
+
+; Warning: untranslated-duplicate-free-constant-listp assumes that if x
+; satisfies this predicate, then x can be compared with eql (via a member
+; test).  Consider that fact if you add to the disjuncts below.
+
+  (declare (xargs :guard t))
+  (or (acl2-numberp x)
+      (eq x nil)
+      (eq x t)
+      (keywordp x)))
+
+(defun untranslated-duplicate-free-constant-listp (lst acc)
+
+; Acc is initially nil, and during the recursion is a duplicate-free list of
+; "normal forms" of constants, where (QUOTE x) is replaced by x when x is an
+; untranslated constant.  Return t if lst consists only of untranslated
+; constants whose list of normal forms is duplicate-free and disjoint from acc.
+; Otherwise return nil.
+
+  (declare (xargs :guard (and (true-listp lst)
+                              (true-listp acc))))
+  (cond ((endp lst) t)
+        ((untranslated-constant-p (car lst))
+         (and (not (member (car lst) acc))
+              (untranslated-duplicate-free-constant-listp
+               (cdr lst)
+               (cons (car lst) acc))))
+        (t (let* ((x (car lst)))
+             (case-match x
+               (('quote x1)
+                (let ((y (if (untranslated-constant-p x1)
+                             x1
+                           x)))
+                  (and (not (member-equal y acc))
+                       (untranslated-duplicate-free-constant-listp
+                        (cdr lst)
+                        (cons y acc)))))
+               (& nil))))))
+
 (defun no-duplicate-indices-checks-for-stobj-let-actuals/alist
     (alist producer-vars)
   (cond
@@ -16807,9 +16847,8 @@
     (let ((pairs (cdar alist)))
       (cond
        ((or (null (cdr pairs))
-            (let ((indices (strip-cdrs pairs)))
-              (and (nat-listp indices)
-                   (no-duplicatesp indices))))
+            (untranslated-duplicate-free-constant-listp (strip-cdrs pairs)
+                                                        nil))
         (no-duplicate-indices-checks-for-stobj-let-actuals/alist
          (cdr alist) producer-vars))
        (t
@@ -16901,14 +16940,10 @@
          (let ((bound-var (car bound-vars))
                (expr (car exprs)))
            (cond
-            ((eql (length expr) 3) ; array case, (fldi index st)
+            ((eql (length expr) 3)
+; array or hash-table case, e.g. (fldi index st) or (h-get i st)
              (let* ((name (car expr))
                     (index (cadr expr))
-                    (index (if (consp index)
-                               (assert$ (and (eq (car index) 'quote)
-                                             (natp (cadr index)))
-                                        (cadr index))
-                             index))
                     (fld$c (concrete-accessor name tuples-lst))
                     (entry (assoc-eq fld$c alist)))
                (put-assoc-eq fld$c
@@ -17877,8 +17912,8 @@
 ; sensitive to any part of state except the current ACL2 world.
 
   '(
-     #+:non-standard-analysis defthm-std
-     #+:non-standard-analysis defun-std
+     #+non-standard-analysis defthm-std
+     #+non-standard-analysis defun-std
      add-custom-keyword-hint
      add-include-book-dir add-include-book-dir!
      add-match-free-override

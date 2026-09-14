@@ -655,15 +655,29 @@ the original namespace.</li>
   :short "Given an alist mapping variables to assigned expressions, compose them together into full update functions."
   :returns (mv err (xx svex-alist-p))
   (b* ((phase1 (svex-assigns-compose-phase1 x))
+       ;; (- (cw "phase1: ~x0~%" (svexlist-overridekeys-syntax-check
+       ;;                         (svex-alist-vals phase1)
+       ;;                         (make-overridekey-syntaxcheck-data :keys (svex-alist-keys phase1)
+       ;;                                                            :values (make-fast-alist phase1)))))
        ((mv masks phase2) (svex-assigns-compose-phase2 phase1 :simpconf (mbe :logic (if* rewrite 20 t)
                                                                              :exec (if rewrite 20 t))))
+       ;; (- (cw "phase2: ~x0~%" (svexlist-overridekeys-syntax-check
+       ;;                         (svex-alist-vals phase2)
+       ;;                         (make-overridekey-syntaxcheck-data :keys (svex-alist-keys phase2)
+       ;;                                                            :values (make-fast-alist phase2)))))
        ((mv err phase3 splittab) (svex-assigns-compose-phase3 phase2 masks))
        ((when err) (mv err nil))
        ((unless splittab)
+        ;; (cw "phase2 final~%")
         (mv nil phase2))
        ((mv err phase4) (svex-assigns-compose-phase4 phase3 scc-selfcompose-limit))
-       ((when err) (mv err nil)))
-    (mv nil (svex-assigns-compose-phase5 phase2 phase4 splittab)))
+       ((when err) (mv err nil))
+       (phase5 (svex-assigns-compose-phase5 phase2 phase4 splittab)))
+    ;; (cw "phase5: ~x0~%" (svexlist-overridekeys-syntax-check
+    ;;                            (svex-alist-vals phase5)
+    ;;                            (make-overridekey-syntaxcheck-data :keys (svex-alist-keys phase5)
+    ;;                                                               :values (make-fast-alist phase5))))
+    (mv nil phase5))
   ///
   (defret netcomp-p-of-<fn>
     (netcomp-p xx x)
@@ -702,18 +716,144 @@ the original namespace.</li>
                 (prog2$ (raise "~@0" err)
                         (svex-alist-fix x))
               ans))
+       ;; Why do we compose the composed alist once more with the original
+       ;; alist?  Sometimes, somehow, if bar has an apparent combinational loop
+       ;; and foo doesn't but depends on bar, we fail the override transparency
+       ;; syntax check for foo. This needs more investigation but is all
+       ;; resolved by composing the original assignments with the composed
+       ;; alist one more time (which, after all, only makes things bigger in
+       ;; cases where there are combinational loops).
+       (compos-ans (with-fast-alist ans
+                     (svex-alist-compose-rw
+                      x (make-svex-substconfig
+                         :simp (if rewrite 20 t)
+                         :alist ans))))
        (final-ans (b* ((vars (svex-alist-keys x))
                        (xes-alist (svarlist-x-subst vars)))
                     (with-fast-alist xes-alist (svex-alist-compose-rw
-                                                ans
+                                                compos-ans
                                                 (make-svex-substconfig
                                                  :simp (if rewrite 20 t)
                                                  :alist xes-alist))))))
     final-ans)
   ///
   (defret netevalcomp-p-of-<fn>
-    (netevalcomp-p xx x))
+    (netevalcomp-p xx x)
+    :hints(("Goal" :in-theory (disable SVEX-ALIST-COMPOSE-OF-SVEX-ALIST-COMPOSE))))
 
   (defret svex-alist-keys-of-<fn>
     (set-equiv (svex-alist-keys xx)
                (svex-alist-keys x))))
+
+
+
+
+; Our current composition uses DFS-compose, followed by mask-compose,
+; followed by splitting and bit-level SCC composition. The problem with this,
+; in particular mask-compose, is that variables not involved in loops can be
+; innocent bystander casualties of apparent combinational loops, as in this example:
+
+; module example (input logic in,
+; 		output logic out);
+; 
+;    logic [2:0] mid;
+;    logic [2:0] between;
+;    logic [1:0] late;
+;    assign mid[0] = in;
+;    assign mid[1] = mid[0];
+;    assign mid[2] = mid[1];
+; 
+;    assign between = mid;
+;    
+;    assign late[0] = between[1];
+;    assign late[1] = late[0];
+;    
+;    assign out = late[1];
+; 
+; endmodule // example
+
+; Note that mid and late both have apparent combinational loops. Between does
+; not, but mask-compose ends up making its override syntax check not
+; work. Before mask composition, we have approximately the following
+; assignments resulting from dfs-compose -- note we're omitting override muxes
+; for other variables, but including the one for between:
+
+;    assign mid = {mid[1],mid[0],in};
+;    assign between = {mid[1],mid[0],in};
+;    assign late = { late[0], (between-test? between-val : {mid[1],mid[0],in})[0] }
+
+; This yields the following set of masks:
+;  mid = 011
+; late =  01
+
+; The next iteration's set of masks (i.e., the input caremasks under the above output caremasks) are:
+; mid = 001
+
+; And the final iteration's are empty.  Skipping over the trivial composition
+; step for the final iteration (in which mid is composed with an empty
+; substitution), we next compose mid and late with mid (all still the same as
+; in the assignments above) yielding:
+
+; assign mid = {mid[0], in, in}
+; assign late = { late[0],
+;                 (between-test? between-val : {mid[0],in,in})[0] }
+
+; Finally we compose the whole original set of assignments with this:
+
+; assign mid = {in,in,in}
+; assign between = {in, in, in}
+; assign late = { (between-test? between-val : {mid[0],in,in})[0],
+;                 (between-test? between-val : {in,in,in})[0] }.
+
+; Note the resulting discrepancy between occurrences of between's override mux.
+
+
+; A proposed solution for this problem (not yet implemented) is to deal with
+; SCCs of dependent signals in topological order. We can use the existing
+; algorithms on each SCC -- we don't expect override syntax checks to work on
+; variables that are self-dependent. In the example above, each variable is in
+; its own SCC. So first we have
+
+;    assign mid = {mid[1],mid[0],in};
+
+; We apply mask composition to this on its own --
+; mid = 011
+;   mid = 001
+;   assign mid = {mid[0], in, in}
+; assign mid = {in, in, in}
+
+; Now we have a finalized assignment for mid. We then continue to the next SCC
+; in topological order, between --
+
+; assign between = mid
+
+; This has no self-dependencies so we can just
+; compose in the assignment for mid.
+
+; assign between = {in, in, in}
+
+; Finally we continue to the SCC for late --
+
+; assign late = { late[0], between-test? between-val : between[1] }
+
+; We apply mask composition to it on its own --
+; late = 01
+; assign late = { between-test? between-val : between[1],
+;                 between-test? between-val : between[1] }
+
+; Then compose the pre-existing assignments --
+
+; assign late = { between-test? between-val : {in, in, in},
+;                 between-test? between-val : {in, in, in} }
+
+; In full:
+
+; assign mid = {in, in, in}
+; assign between = {in, in, in}
+; assign late = { between-test? between-val : {in, in, in},
+;                 between-test? between-val : {in, in, in} }
+
+; This is what we want: all instances of between's override mux are the same
+; and their else branch is the final assignment for between.
+
+

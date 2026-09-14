@@ -31,7 +31,7 @@
 
 (include-book "xdoc/archive-matching-topics" :dir :system)
 (local (include-book "top"))
-
+(local (include-book "centaur/meta/doc" :dir :system))
 
 (xdoc::archive-matching-topics
  (let* ((from (cdr (assoc :from x))))
