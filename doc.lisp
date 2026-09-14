@@ -107061,6 +107061,12 @@ Bug Fixes
   [30m[47msystem/tests/measure-fn-redundancy.lisp[0m[0m and
   [30m[47msystem/tests/wfr-redundancy.lisp[0m[0m.
 
+  Fixed an assertion failure that could occur when an accessor call in
+  a [30m[47m[stobj-let][0m[0m's bindings was on a quoted non-numeric index.  Thanks
+  to Eric Smith for sending an example found by Anthropic's Claude.
+  As part of the fix, extended a guard optimization for constant
+  indices from just the numeric case.
+
   Checks were improved to avoid raw Lisp errors in the following
   situations:
 

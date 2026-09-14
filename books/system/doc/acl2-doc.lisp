@@ -110001,6 +110001,12 @@ it."
  community-books) @('system/tests/measure-fn-redundancy.lisp') and
  @('system/tests/wfr-redundancy.lisp').</p>
 
+ <p>Fixed an assertion failure that could occur when an accessor call in a
+ @(tsee stobj-let)'s bindings was on a quoted non-numeric index.  Thanks to
+ Eric Smith for sending an example found by Anthropic's Claude.  As part of the
+ fix, extended a guard optimization for constant indices from just the numeric
+ case.</p>
+
  <p>Checks were improved to avoid raw Lisp errors in the following situations:</p>
 
  <ul>
