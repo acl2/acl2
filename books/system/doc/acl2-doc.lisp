@@ -109846,6 +109846,10 @@ it."
 ; bad character without having the error message itself cause an error (as we
 ; saw when using LispWorks).
 
+; When translating an expression (mv ... (<x> ...) ...), if <x> was not a
+; symbol, then a raw Lisp error occurred.  This has been fixed.  Thanks to Eric
+; Smith for passing along this issue from Anthropic's Claude.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
