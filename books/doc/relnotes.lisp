@@ -124,6 +124,18 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "futhark::futhark" "Futhark Library"))
+
+   (xdoc::p
+    "A new library for Futhark, currently providing a front end
+     (see @(see futhark::futhark-ir))
+     &mdash; ABNF grammar, executable parser, syntax abstraction,
+     and pretty-printer &mdash;
+     for the subset of the textual Futhark SOACS intermediate representation
+     that is emitted by the Remora compiler.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "jsonrpc::jsonrpc" "JSON-RPC Library"))
 
    (xdoc::p
@@ -133,15 +145,98 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "omp::omp"
+                             "OMP (Orthogonal Matching Pursuit) Library"))
+
+   (xdoc::p
+    "An ACL2(r) library formalizing the setting of
+     Orthogonal Matching Pursuit (OMP),
+     a greedy algorithm for sparse approximation,
+     following Tropp's ``Greed is Good'' paper:
+     dictionaries of unit-norm atoms in a real Hilbert space,
+     completeness, redundancy, and frames,
+     and the tolerance-constrained and budget-constrained
+     sparse approximation problems with their optimality predicates.
+     Although the books require ACL2(r),
+     their documentation is included in the manual
+     via a generated book of documentation topics.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Remora")
 
    (xdoc::p
     "A formalization of, and tools for, Remora,
      a rank-polymorphic higher-order programming language.")
 
+   (xdoc::p
+    "The library includes a concrete syntax front end and back end
+     (see @(see remora::parsing-and-printing)):
+     an ABNF grammar, kept in sync with the Haskell implementation of Remora;
+     an executable parser that produces concrete syntax trees;
+     post-parsing checks of extra-grammatical constraints;
+     syntax abstraction from concrete syntax trees to abstract syntax trees;
+     and a pretty-printer built on a small Wadler/Lindig-style
+     combinator engine.
+     Well-formedness predicates on abstract syntax trees
+     characterize the trees that syntax abstraction can produce.
+     Tools are provided for bulk parsing of directories of Remora source files
+     and for parse/print/reparse round-trip testing.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "rust::rust" "Rust Library"))
+
+   (xdoc::p
+    "A new library for the Rust programming language,
+     aiming at a deep embedding of Rust in ACL2.
+     Following the organization of the C library, it has two tracks.
+     The tool-oriented syntax track (see @(see rust$::syntax-for-tools))
+     currently provides an ABNF lexical grammar,
+     an executable lexer with grammar soundness theorems,
+     a tokenizer, and token trees.
+     The language formalization track provides
+     a formalization of MIR, the Rust compiler's
+     mid-level intermediate representation (see @(see rust::mir)),
+     a defensive small-step interpreter for it
+     (see @(see rust::mir-interpreter)),
+     and an importer (see @(see rust::mir-import))
+     that reads MIR extracted from the Rust compiler by Charon
+     and serialized as JSON.
+     As an end-to-end test, an AES-128 implementation from the RustCrypto
+     project is imported and run on the interpreter,
+     and checked against the FIPS-197 known-answer vectors
+     and against the ACL2 AES specification in the cryptography library.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "abnf::abnf" "ABNF Library"))
+
+   (xdoc::p
+    "The @(see abnf::defdefparse) macros that generate parsing functions
+     for repetitions now support all ABNF repetition ranges
+     (@('*'), @('n*'), @('n'), and @('n*m'))
+     via @(':min') and @(':max') keyword arguments,
+     and new @('1*') shorthand macros were added;
+     previously only @('*') (zero or more) was supported.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "acl2pl::acl2-programming-language"
+                             "ACL2 Programming Language Library"))
+
+   (xdoc::p
+    "An ABNF grammar for ACL2's reader syntax was added
+     in @('[books]/kestrel/acl2pl/grammar.abnf'),
+     consisting of lexical and syntactic sub-grammars
+     and specifying SBCL-specific behavior, with notes on CCL differences.
+     A companion book of reader tests, organized to mirror the grammar,
+     exercises the reader directly
+     (@('[books]/kestrel/acl2pl/reader-tests.lisp'), certified only on SBCL).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -231,6 +326,13 @@
     "The @(see fty::deftreeset) and @(see fty::deftreemap) type generators
      were introduced.")
 
+   (xdoc::p
+    "The @(tsee fty::defmake-self) macro was extended with
+     a @(':ctor-style') option, to emit either positional constructor calls
+     or keyword constructor macro calls,
+     and a @(':universal') option, to generate a single dispatcher function
+     that accepts a value of any of the covered types.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "HOL4 to ACL2 Translator")
@@ -255,11 +357,31 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "quicklisp" "Quicklisp"))
+
+   (xdoc::p
+    "The cause of the intermittent osicat build failure
+     (see @(see osicat) and GitHub issue #1938)
+     was removed from the bundled CFFI,
+     the manual fix instructions were corrected,
+     and the update script now reminds users to check
+     which patches need to be reapplied.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
 
    (xdoc::p
     "The new @(tsee definductive) macro event was introduced
      to define inductive predicates via inference rules.")
+
+   (xdoc::p
+    "The @(tsee defirrelevant) macro is now documented,
+     and the functions it generates no longer have
+     a built-in type-prescription rule
+     (using the new @(':type-prescription :none') option of @(tsee xargs)),
+     so that a constant body no longer defeats
+     the intended opacity of the function.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -270,6 +392,20 @@
      @(tsee omap::restrict-values), @(tsee omap::identityp),
      @(tsee omap::injectivep), and @(tsee omap::closedp),
      along with theorems about them and some other new theorems.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "terms-light" "Terms-light Library"))
+
+   (xdoc::p
+    "Documentation was added for this library of
+     lightweight utilities on pseudo-terms.
+     Two utilities were added:
+     @(tsee simple-untranslate-in-term), a readability pass that
+     unquotes self-quoting constants and replaces translated arithmetic
+     aliases such as @('binary-+') with their surface forms,
+     and @(tsee reconstruct-and-untranslate-term),
+     which composes it with @(tsee reconstruct-lets-in-term).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -284,6 +420,17 @@
      well-founded relations (and their corresponding @(see
      well-founded-relation) rules) for definitions.  Eliminated support for
      unused utility ('with-supporters-after').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "unicode" "Unicode Library"))
+
+   (xdoc::p
+    "Documentation was added for the @('[books]/unicode/') library
+     of Unicode characters and strings and UTF-8 encoding and decoding.
+     Theorems were added about @(tsee utf8=>ustring) and @(tsee ustring=>utf8)
+     on appended inputs, to support round-trip (parse-then-print) theorems
+     for parsers that consume UTF-8.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -335,6 +482,10 @@
     "The @('uses-gcc-c17') @(see build::cert_param) now
      properly generates the @('CERT_PL_USES_GCC_C17') @('make') variable.")
 
+   (xdoc::p
+    "A new @('sbcl-only') @(see build::cert_param)
+     restricts certification of a book to when the host Lisp is SBCL.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Testing")
@@ -346,6 +497,19 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Miscellaneous")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "REPL History Variables")
+
+   (xdoc::p
+    "The file @('[books]/kestrel/hacking/acl2-repl-star-history.lsp')
+     makes the Common Lisp REPL history variables
+     @('*'), @('**'), and @('***') (values of previous commands) and
+     @('+'), @('++'), and @('+++') (previous input forms)
+     usable at the ACL2 top-level loop, without entering raw mode.
+     It is loaded with @(tsee ld) from an @(see acl2-customization) file,
+     as explained in the file.")
 
    ))
 
