@@ -277,16 +277,7 @@
               c::integer-format-llong-wfp-of-integer-format-inc-sign-tcnpnt
               c::bool-format-wfp
               fix)
-     :disable ienv-requirements))
-
-  ///
-
-  (defret ienv->bool-byte-size-of-ldm-ienv
-    (equal (c::ienv->bool-byte-size ienv1)
-           (ienv->bool-bytes ienv))
-    :hints (("Goal"
-             :in-theory (enable c::ienv->bool-byte-size
-                                ldm-ienv-wfp-lemma)))))
+     :disable ienv-requirements)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
