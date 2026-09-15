@@ -314,7 +314,7 @@
                 (rest members) struct-uid)))
     (if (and member.name?
              (eq (sts-splittablep member.type struct-uid) t))
-        (insert member.name? names)
+        (treeset::insert member.name? names)
       names))
   :verify-guards :after-returns)
 
@@ -337,7 +337,7 @@
        ((c$::type-struni-member member) (first members)))
     (or (not member.name?)
         (acl2::3definitely (sts-splittablep member.type struct-uid))
-        (not (in member.name? right-members))
+        (not (treeset::in member.name? right-members))
         (sts-any-left-members-p (rest members) struct-uid right-members)))
   :verify-guards :after-returns)
 
@@ -358,7 +358,7 @@
        ((c$::type-struni-member member) (first members)))
     (or (and member.name?
              (or (acl2::3definitely (sts-splittablep member.type struct-uid))
-                 (and (in member.name? right-members) t)))
+                 (and (treeset::in member.name? right-members) t)))
         (sts-any-right-members-p (rest members) struct-uid right-members)))
   :verify-guards :after-returns)
 
@@ -847,8 +847,8 @@
                   (retmsg$ "A member designator was expected within ~
                             the split struct type."))
                  (sub-name (c$::designor-dot->name next))
-                 (rightp (and (in sub-name
-                                  (sts-split-state->right-set st))
+                 (rightp (and (treeset::in sub-name
+                                           (sts-split-state->right-set st))
                               t)))
               (retok :route
                      (cons (if rightp right-first left-first) rest)
@@ -926,7 +926,7 @@
                    desiniter
                    (sts-split-state->dialect st))))
        (name (c$::designor-dot->name designor)))
-    (retok (and (in name (sts-split-state->right-set st)) t))))
+    (retok (and (treeset::in name (sts-split-state->right-set st)) t))))
 
 (define struct-declor-sts-rightp
   ((struct-declor struct-declorp)
@@ -945,7 +945,7 @@
        ((unless struct-declor.declor?)
         nil)
        (name (declor->ident struct-declor.declor?)))
-    (and (in name (sts-split-state->right-set st)) t)))
+    (and (treeset::in name (sts-split-state->right-set st)) t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -959,7 +959,7 @@
        ((when (endp struct-declors)) acc)
        ((struct-declor sd) (car struct-declors))
        (acc (if sd.declor?
-                (insert (declor->ident sd.declor?) acc)
+                (treeset::insert (declor->ident sd.declor?) acc)
               acc)))
     (struct-declor-list-collect-names (cdr struct-declors) acc))
   :measure (struct-declor-list-count struct-declors)
@@ -1006,7 +1006,7 @@
        ((when (endp members)) acc)
        ((c$::type-struni-member member) (first members))
        (acc (if member.name?
-                (insert (ident-fix member.name?) acc)
+                (treeset::insert (ident-fix member.name?) acc)
               (type-case
                 member.type
                 :struct (c$::type-struni-tag/members-case
@@ -1323,7 +1323,7 @@
        (right-name (if freshenp
                        (fresh-ident name member-names)
                      name))
-       (member-names (insert right-name member-names))
+       (member-names (treeset::insert right-name member-names))
        (st (change-sts-split-state
              st
              :member-map (member-map-add enclosing-uid
@@ -1548,7 +1548,7 @@
                     (retok (make-expr-member :arg left-arg :name expr.name)
                            (make-expr-member :arg right-arg? :name expr.name)
                            st))
-                   (rightp (in expr.name (sts-split-state->right-set st)))
+                   (rightp (treeset::in expr.name (sts-split-state->right-set st)))
                    (expr (if rightp
                            (b* ((member-expr (make-expr-member :arg right-arg?
                                                                :name expr.name)))
@@ -1596,7 +1596,7 @@
                     (retok (make-expr-memberp :arg left-arg :name expr.name)
                            (make-expr-memberp :arg right-arg? :name expr.name)
                            st))
-                   (rightp (in expr.name (sts-split-state->right-set st)))
+                   (rightp (treeset::in expr.name (sts-split-state->right-set st)))
                    (expr (if rightp
                              (b* ((memberp-expr
                                     (make-expr-memberp :arg right-arg?
@@ -2948,7 +2948,7 @@
              (right-ident (fresh-ident dirdeclor.ident st.blacklist))
              (st (change-sts-split-state
                    st
-                   :blacklist (insert right-ident st.blacklist)
+                   :blacklist (treeset::insert right-ident st.blacklist)
                    :ident-map (omap::update uid? right-ident st.ident-map))))
           (retok t
                  (dirdeclor-fix dirdeclor)
@@ -4720,10 +4720,9 @@
                   more than one scope found: ~x0"
                  scopes))
        (scope (first scopes))
-       (lookup (assoc-equal (c$::ident-fix tag)
-                            (c$::valid-scope->tag scope))))
-    (retok (and lookup
-                (c$::valid-tag-info-fix (cdr lookup))))))
+       (info? (treemap::lookup (c$::ident-fix tag)
+                               (c$::valid-scope->tag scope))))
+    (retok info?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5074,7 +5073,7 @@
        ;; so they must be a fast alist.
        (completions (make-fast-alist
                       (c$::trans-ensemble-vinfo->completions info)))
-       (right-set (mergesort right-members))
+       (right-set (treeset::from-list right-members))
        ((mv incompletep primary-members)
         (c$::type-struni-tag/members->members
           (c$::type-struct->tag/members primary-type)
@@ -5082,21 +5081,21 @@
           completions))
        (invalid-members
          (and (not incompletep)
-              (difference
+              (treeset::diff
                 right-set
                 (type-struni-member-list-collect-names primary-members nil))))
-       ((unless (emptyp invalid-members))
+       ((unless (treeset::emptyp invalid-members))
         (retmsg$ "The names ~x0 in :RIGHT-MEMBERS are not members of the ~
                   selected struct type."
                  (map-ident->unwrap invalid-members)))
        (direct-splittable-members
          (sts-direct-splittable-member-names primary-members primary-uid))
        (selected-splittable-members
-         (intersect right-set direct-splittable-members))
+         (treeset::intersect right-set direct-splittable-members))
        ;; Directly splittable members of the target are forced into both
        ;; output struct types, so they do not participate in ordinary member
        ;; routing even when the user lists them in :right-members.
-       (right-set (difference right-set selected-splittable-members))
+       (right-set (treeset::diff right-set selected-splittable-members))
        (map (trans-ensemble->units code.trans-units))
        (blacklist (filepath-trans-unit-map-collect-idents map))
        (right-name
@@ -5110,14 +5109,14 @@
              :dialect (c$::ienv->dialect code.ienv)
              :ienv code.ienv
              :blacklist (if primary-tag?
-                            (insert right-name blacklist)
+                            (treeset::insert right-name blacklist)
                           blacklist)
              :ident-map nil
              :warnings nil
              :filepath (c$::irr-filepath)
              :member-map nil
              :completions completions))
-       (st (if (emptyp selected-splittable-members)
+       (st (if (treeset::emptyp selected-splittable-members)
                st
              (sts-split-state-add-warning
                (msg$ "The splittable self-referential members ~x0 were ~
