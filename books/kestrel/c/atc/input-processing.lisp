@@ -11,7 +11,7 @@
 
 (in-package "C")
 
-(include-book "pretty-printing-options")
+(include-book "../syntax/printer" :ttags ((:file-io!)))
 (include-book "defstruct")
 (include-book "defobject")
 
@@ -582,9 +582,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-process-pretty-printing ((options symbol-alistp))
-  :returns (mv erp (ppoptions pprint-options-p))
+  :returns (mv erp (ppoptions c$::prioptp))
   :short "Process the @(':pretty-printing') input."
-  (b* (((reterr) (irr-pprint-options))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We construct options for the pretty-printer of the syntax for tools,
+     using four-space indentation
+     and ATC's option for parenthesizing nested conditional expressions."))
+  (b* (((reterr) (c$::make-priopt :indent-size 4 :paren-nested-conds nil))
        (pretty-printing-option (assoc-eq :pretty-printing options))
        (pretty-printing (if pretty-printing-option
                             (cdr pretty-printing-option)
@@ -609,8 +615,9 @@
                       :PARENTHESIZE-NESTED-CONDITIONALS must be a boolean."
                      parenthesize-nested-conditionals))))
     (retok
-     (make-pprint-options
-      :parenthesize-nested-conditionals parenthesize-nested-conditionals))))
+     (c$::make-priopt
+      :indent-size 4
+      :paren-nested-conds parenthesize-nested-conditionals))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -807,7 +814,7 @@
                (file-name stringp)
                (path-wo-ext stringp)
                (header booleanp)
-               (pretty-printing pprint-options-p)
+               (pretty-printing c$::prioptp)
                (proofs booleanp)
                (prog-const symbolp)
                (wf-thm symbolp)
@@ -818,8 +825,7 @@
                state)
   :short "Process all the inputs."
   (b* (((reterr)
-        nil "" "" "" nil (irr-pprint-options)
-        nil nil nil nil nil nil nil state)
+        nil "" "" "" nil (c$::default-priopt) nil nil nil nil nil nil nil state)
        (wrld (w state))
        ((mv erp targets options)
         (partition-rest-and-keyword-args args *atc-allowed-options*))

@@ -1,2 +1,2 @@
-; cert-flags: ? t :ttags ((:quicklisp) (:quicklisp.osicat) (:oslib))
+; cert-flags: ? t :ttags ((:quicklisp) (:quicklisp.osicat) (:oslib) (:file-io!))
 (include-book "../portcullis")
