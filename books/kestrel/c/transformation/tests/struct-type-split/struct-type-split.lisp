@@ -145,12 +145,68 @@ int main(void) {
                        :typedef-name "nonexistent"
                        :right-members ("z")))
 
+  ;; Every right member name must exist, even when another name is valid.
+  (must-fail
+    (struct-type-split *old* *new*
+                       :struct-tag "point"
+                       :right-members ("nonexistent")))
+
+  (must-fail
+    (struct-type-split *old* *new*
+                       :struct-tag "point"
+                       :right-members ("z" "nonexistent")))
+
   ;; No right members are specified.
   (must-fail
     (struct-type-split *old*
                        *new*
                        :struct-tag "point"
                        :right-members ()))
+
+  ;; Moving every member would turn the original definition into an
+  ;; incomplete declaration, leaving the static object p with incomplete
+  ;; type.  The validator accepts this case, but a C compiler rejects it.
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :right-members ("x" "y" "z")
+                       :new-tag "point_right"))
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Unnamed members stay on the left, even when every named member
+;; (including promoted names) is selected for the right.
+
+(acl2::must-succeed*
+  (c$::input-files :files '("unnamed-left.c")
+                   :const *old*)
+
+  (struct-type-split *old* *new-bitfield*
+                     :struct-tag "bitfield"
+                     :right-members ("z"))
+
+  (struct-type-split *old* *new-struct*
+                     :struct-tag "anonymous_struct"
+                     :right-members ("x" "z"))
+
+  (struct-type-split *old* *new-union*
+                     :struct-tag "anonymous_union"
+                     :right-members ("x" "y" "z"))
+
+  ;; Promoted names exist, but selecting only these names leaves the
+  ;; right partition empty because the anonymous member stays left.
+  (must-fail
+    (struct-type-split *old* *new*
+                       :struct-tag "anonymous_struct"
+                       :right-members ("x")))
+
+  (must-fail
+    (struct-type-split *old* *new*
+                       :struct-tag "anonymous_union"
+                       :right-members ("x" "y")))
 
   :with-output-off nil)
 
@@ -1283,6 +1339,14 @@ int main(void) {
                      :right-members ("next")
                      :new-tag "point_right_only")
 
+  ;; Selecting every name still leaves the directly splittable members
+  ;; on both sides, so the original struct does not become empty.
+  (struct-type-split *old*
+                     *new-all-names*
+                     :struct-tag "point"
+                     :right-members ("x" "z" "next" "indirect" "children")
+                     :new-tag "point_right_all")
+
   :with-output-off nil)
 
 (acl2::must-succeed*
@@ -1663,6 +1727,14 @@ int main(void) {
 
  (c$::input-files :files '("opaque.c")
                   :const *old*)
+
+ ;; An incomplete selected type has no member list against which to
+ ;; validate the requested names.  Splitting its declaration is allowed.
+ (struct-type-split *old*
+                    *new-opaque*
+                    :struct-tag "opaque"
+                    :right-members ("right")
+                    :new-tag "opaque_right")
 
  (struct-type-split *old*
                     *new*

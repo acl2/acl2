@@ -107024,13 +107024,15 @@ Bug Fixes
   changes.
 
   (SBCL only) Soundness bugs were caused by SBCL compiler optimizations
-  for the return types of functions, in cases that integer return
-  values could be bounded.  These bugs are now avoided: ACL2 removes
-  those declared bounds (by proclaiming less restrictive types).
-  Thanks to Grant Jurgensen for reporting the use of of Anthropic's
-  Claude to find these bugs; see [community-books] files
+  for calls of built-in functions having types with bounded integer
+  return values.  These bugs are now avoided by proclaiming those
+  functions [30m[47mnotinline[0m[0m.  Thanks to Grant Jurgensen for reporting the
+  use of of Anthropic's Claude to find these bugs; see
+  [community-books] files
   [30m[47msystem/tests/integer-length-bad-optimization.lisp[0m[0m and
-  [30m[47msystem/tests/length-bad-optimization.lsp[0m[0m.
+  [30m[47msystem/tests/length-bad-optimization.lsp[0m[0m.  Thanks also to Stas
+  Boukarev for suggesting the use of [30m[47mnotinline[0m[0m, as our original
+  solution was more complicated (by modifying function types).
 
   An additional restriction was added to [30m[47m:[0m[0m[30m[47m[elim][0m[0m rules, namely, for the
   general form [30m[47m(implies hyp (equiv lhs x))[0m[0m, all occurrences of [30m[47mx[0m[0m in

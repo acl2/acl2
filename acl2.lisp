@@ -296,16 +296,17 @@
 ; books/system/tests/integer-length-bad-optimization.lisp
 ; books/system/tests/length-bad-optimization.lsp
 
-; Here, we undo those optimizations for all built-in functions by replacing, in
-; each return type, any expression of the form (signed-byte n) or
-; (unsigned-byte n).  These are replaced by signed-byte or unsigned-byte,
-; respectively.
+; Here, we avoid those optimizations for built-in functions by following a
+; suggestion of Stas Boukarev by proclaiming them notinline.  (An alternative
+; would be to replace, for each return type, any expression of the form
+; (signed-byte n) or (unsigned-byte n) by signed-byte or unsigned-byte,
+; respectively.)
 
 ; We are in package "CL-USER".  To avoid (very unlikely) name conficts, we
-; prefix each of these functions with "acl2tr-", to indicate that we are doing
-; Type Replacement for ACL2.
+; prefix each of these functions with "acl2tf-", to indicate that we are doing
+; Type Fixes for ACL2.
 
-(defun acl2tr-find-limited-integer-in-tree (x)
+(defun acl2tf-find-limited-integer-in-tree (x)
   (cond ((atom x) nil)
         ((and (member (car x)
 ; We could include integer as a value here for (car x), but as of this writing,
@@ -316,10 +317,10 @@
               (consp (cdr x))
               (integerp (cadr x)))
          t)
-        (t (or (acl2tr-find-limited-integer-in-tree (car x))
-               (acl2tr-find-limited-integer-in-tree (cdr x))))))
+        (t (or (acl2tf-find-limited-integer-in-tree (car x))
+               (acl2tf-find-limited-integer-in-tree (cdr x))))))
 
-(defun acl2tr-suspect-fns ()
+(defun acl2tf-suspect-fns ()
   (let (ans)
     (do-symbols (sym "COMMON-LISP")
                 (let ((type (and (eq (find-symbol (symbol-name sym)
@@ -331,49 +332,12 @@
                              (progn (assert (and (null (cdr (last type)))
                                                  (= (length type) 3)))
                                     (and (eq (car type) 'function)
-                                         (acl2tr-find-limited-integer-in-tree
+                                         (acl2tf-find-limited-integer-in-tree
                                           (caddr type)))))
-                    (push (list sym type) ans))))
+                    (push sym ans))))
     ans))
 
-(defun acl2tr-unlimit-type (type)
-  (cond ((atom type) type)
-        (t (assert (null (cdr (last type))))
-           (cond ((member (car type) '(and or values) :test #'eq)
-                  (cons (car type)
-                        (loop for x in (cdr type)
-                              collect
-                              (acl2tr-unlimit-type x))))
-                 ((member (car type) '(unsigned-byte signed-byte))
-                  (assert (consp (cdr type)))
-                  (assert (null (cddr type)))
-                  (car type))
-                 (t type)))))
-
-(defun acl2tr-unlimit-limited-integer-type (type)
-  (assert (and (consp type)
-               (eq (car type) 'function)
-               (null (cdr (last type)))
-               (= (length type) 3)))
-  (list 'function
-        (cadr type)
-        (acl2tr-unlimit-type (caddr type))))
-
-(defun acl2tr-fix-sbcl-bounded-integer-return-types ()
-  (sb-ext:with-unlocked-packages
-   ("COMMON-LISP")
-   (loop for fn/type in (acl2tr-suspect-fns)
-         do
-         (let ((old-type `(ftype ,(cadr fn/type)
-                                 ,(car fn/type)))
-               (new-type `(ftype ,(acl2tr-unlimit-limited-integer-type
-                                   (cadr fn/type))
-                                 ,(car fn/type))))
-           (handler-bind
-            ((sb-kernel:ftype-proclamation-mismatch-error #'continue))
-            (proclaim new-type))))))
-
-(acl2tr-fix-sbcl-bounded-integer-return-types)
+(eval `(declaim (notinline ,@(acl2tf-suspect-fns))))
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
