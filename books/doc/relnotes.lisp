@@ -229,7 +229,7 @@
    (xdoc::h4 "ACL2 Arrays")
 
    (xdoc::p "Rules were improved and functions renamed (e.g.,
-   @('make-empty-array') became @('new-array1').).  See
+   @('make-empty-array') became @('new-array1')).  See
    @('[books]/kestrel/acl2-arrays/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -251,7 +251,7 @@
    (xdoc::h4 "Alists Light")
 
    (xdoc::p "A new book on remove1-assoc-equal was added.  See
-   @('[books]/kestrel/alists-light/')")
+   @('[books]/kestrel/alists-light/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -417,7 +417,7 @@
      <em>reference counterexample</em>.")
 
    (xdoc::p
-    "Allow FGL metafunctions and binder metafunctions to return hypotheses")
+    "Allow FGL metafunctions and binder metafunctions to return hypotheses.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -599,7 +599,7 @@
     "We have added support for several instructions.")
 
    (xdoc::p
-    "We have made various fixed and updates to code and documentation.")
+    "We have made various fixes and updates to code and documentation.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -612,7 +612,7 @@
 
    (xdoc::p
     "The manual was improved to include some documentation that had been
-    inadvertently left out (e.g., the @(see taspi) library and @(see defstobj+).)")
+    inadvertently left out (e.g., the @(see taspi) library and @(see defstobj+)).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -631,9 +631,9 @@
      restricts certification of a book to when the host Lisp is SBCL.")
 
    (xdoc::p
-    "It is now an error for a book to tagged as needing ACL2(r) but also as
+    "It is now an error for a book to be tagged as needing ACL2(r) but also as
     incompatible with ACL2(r).  This can happen accidentally due to constraints
-    propagated from different included books")
+    propagated from different included books.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
