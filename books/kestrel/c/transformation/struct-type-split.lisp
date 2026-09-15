@@ -320,6 +320,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define sts-any-left-members-p
+  ((members c$::type-struni-member-listp)
+   (struct-uid c$::uidp)
+   (right-members ident-setp))
+  :returns (yes/no booleanp)
+  :short "Check whether any member stays in the original struct type."
+  :long
+  (xdoc::topstring-p
+   "Unnamed members, including unnamed bit-fields and anonymous structs
+    and unions, stay on the left.  We therefore inspect the structured
+    member list without flattening promoted members.
+    Directly splittable members stay on both sides.
+    Other named members stay on the left unless selected for the right.")
+  (b* (((when (endp members)) nil)
+       ((c$::type-struni-member member) (first members)))
+    (or (not member.name?)
+        (acl2::3definitely (sts-splittablep member.type struct-uid))
+        (not (in member.name? right-members))
+        (sts-any-left-members-p (rest members) struct-uid right-members)))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sts-any-right-members-p
+  ((members c$::type-struni-member-listp)
+   (struct-uid c$::uidp)
+   (right-members ident-setp))
+  :returns (yes/no booleanp)
+  :short "Check whether any member goes into the right struct type."
+  :long
+  (xdoc::topstring-p
+   "A direct named member goes right when it is selected or definitely
+    splittable.  Unnamed members stay on the left, including anonymous
+    structs and unions, even when their promoted names are selected.")
+  (b* (((when (endp members)) nil)
+       ((c$::type-struni-member member) (first members)))
+    (or (and member.name?
+             (or (acl2::3definitely (sts-splittablep member.type struct-uid))
+                 (and (in member.name? right-members) t)))
+        (sts-any-right-members-p (rest members) struct-uid right-members)))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines type/type-list-struct-occurs-unsupported-p
   :short "Check whether the split struct type occurs
           in an unsupported context within types."
@@ -4919,6 +4963,24 @@
           (retok (omap::update filepath (c$::trans-unit-fix tunit) rest)
                  st)))
        (st (change-sts-split-state st :filepath filepath))
+       ((mv incompletep members)
+        (c$::type-struni-tag/members->members
+          (c$::type-struct->tag/members current-type?) uid completions))
+       ;; An incomplete type has no definition here to empty out.
+       ((when (and (not incompletep)
+                   (consp members)
+                   (not (sts-any-left-members-p
+                          members uid (sts-split-state->right-set st)))))
+        (reterr (sts-error-in-translation-unit
+                  (msg$ "Splitting all members from a struct type is unsupported: ~
+                         the original struct type would be empty.")
+                  st)))
+       ((when (and (not incompletep)
+                   (not (sts-any-right-members-p
+                          members uid (sts-split-state->right-set st)))))
+        (reterr (sts-error-in-translation-unit
+                  (msg$ "The right struct type would have no members.")
+                  st)))
        (msg? (sts-check-completions completions uid))
        ((when msg?)
         (reterr (sts-error-in-translation-unit msg? st)))
@@ -5013,11 +5075,20 @@
        (completions (make-fast-alist
                       (c$::trans-ensemble-vinfo->completions info)))
        (right-set (mergesort right-members))
-       ((mv - primary-members)
+       ((mv incompletep primary-members)
         (c$::type-struni-tag/members->members
           (c$::type-struct->tag/members primary-type)
           primary-uid
           completions))
+       (invalid-members
+         (and (not incompletep)
+              (difference
+                right-set
+                (type-struni-member-list-collect-names primary-members nil))))
+       ((unless (emptyp invalid-members))
+        (retmsg$ "The names ~x0 in :RIGHT-MEMBERS are not members of the ~
+                  selected struct type."
+                 (map-ident->unwrap invalid-members)))
        (direct-splittable-members
          (sts-direct-splittable-member-names primary-members primary-uid))
        (selected-splittable-members
