@@ -109990,6 +109990,12 @@ it."
  of Anthropic's Claude; see @(see community-book)
  @('system/tests/elim-iff-hyp.lisp').</p>
 
+ <p>The @(see functional-instantiation) code was modified to correct a
+ soundness bug caused by our failure to completely avoid variable capture when
+ instantiating the constraints.  See the comment in
+ @('remove-capture-in-constraint-lst').  This bug was discovered by Eric Smith
+ with the help of Anthropic's Claude.</p>
+
  <p>When @(tsee make-event) expansion takes place, the result might not be a
  valid ACL2 object.  ACL2 checked for this situation, but only when the
  @(see known-package-alist) changed.  Now the check is done unconditionally.
