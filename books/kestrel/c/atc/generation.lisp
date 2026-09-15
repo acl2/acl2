@@ -11,7 +11,6 @@
 
 (in-package "C")
 
-(include-book "pretty-printer" :ttags ((:open-output-channel!)))
 (include-book "../syntax/abstract-syntax-formal-mapping-inverse")
 (include-book "../syntax/printer" :ttags ((:file-io!)))
 (include-book "shallow-embedding")
@@ -57,10 +56,10 @@
     "We generate C abstract syntax,
      which we pretty-print to files
      and also assign to a named constant.
-     We have started migrating to use the "
+     To print the files, we map the generated abstract syntax
+     with @(tsee c$::ildm-trans-ensemble) and use the "
     (xdoc::seetopic "c$::printer" "pretty-printer for the syntax for tools")
-    "; when the migration is complete,
-     we will remove the pretty-printer under this ATC directory.")
+    ".")
    (xdoc::p
     "Given the restrictions on the target functions,
      the translation is relatively straightforward, by design.")
@@ -615,22 +614,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-pprint-options-to-priopt ((options pprint-options-p))
-  :returns (priopt c$::prioptp)
-  :short "Turn ATC pretty-printing options into
-          options for the pretty-printer of the syntax for tools."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is part of the migration to the new pretty-printer."))
-  (c$::make-priopt
-   :indent-size 4
-   :paren-nested-conds
-   (pprint-options->parenthesize-nested-conditionals options))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-printer-dialect ()
   :returns (dialect dialectp)
   :short "The C dialect used by the pretty-printer."
@@ -644,15 +627,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Currently ATC generates translation units
+    "ATC generates translation units
      using the ASTs in the language formalization,
-     but in order to use the pretty-printer from the syntax for tools,
-     we need to convert those to the ASTs for tools.
-     The ATC legacy pretty-printer (which we are migrating away from)
-     just prints the comment,
-     but the ASTs for tools include comments,
-     which the new pretty-printer prints,
-     so here we add the comment to the translation unit."))
+     which we convert to the ASTs for tools for printing.
+     The ASTs for tools include comments,
+     so we add the generated-file comment to the translation unit
+     after conversion and let the pretty-printer emit it."))
   (c$::change-trans-unit
    tunit
    :items (cons (c$::trans-item-line-comment
@@ -703,7 +683,7 @@
 
 (define atc-gen-fileset ((file-name stringp)
                          (tunits trans-ensemblep)
-                         (options pprint-options-p))
+                         (options c$::prioptp))
   :guard (b* ((new-tunits
                (atc-add-generated-comments-to-trans-ensemble
                 (c$::ildm-trans-ensemble file-name tunits)))
@@ -721,9 +701,8 @@
      the pretty-printing options are determined from the ones given to ATC."))
   (b* ((new-tunits (atc-add-generated-comments-to-trans-ensemble
                     (c$::ildm-trans-ensemble file-name tunits)))
-       (priopt (atc-pprint-options-to-priopt options))
        (dialect (atc-printer-dialect)))
-    (c$::print-fileset new-tunits priopt dialect))
+    (c$::print-fileset new-tunits options dialect))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -731,7 +710,7 @@
 (define atc-gen-trans-ensemble-event ((tunits trans-ensemblep)
                                       (output-dir stringp)
                                       (file-name stringp)
-                                      (pretty-printing pprint-options-p)
+                                      (pretty-printing c$::prioptp)
                                       (print evmac-input-print-p))
   :returns (event pseudo-event-formp)
   :short "Event to pretty-print the generated C code to the file system."
@@ -823,7 +802,7 @@
                             (file-name stringp)
                             (path-wo-ext stringp)
                             (header booleanp)
-                            (pretty-printing pprint-options-p)
+                            (pretty-printing c$::prioptp)
                             (proofs booleanp)
                             (prog-const symbolp)
                             (wf-thm symbolp)
