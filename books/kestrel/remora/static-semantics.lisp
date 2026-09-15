@@ -21,6 +21,7 @@
 (include-book "ispace-equivalence-normalizations")
 (include-book "type-equivalence")
 (include-book "type-equivalence-derived-rules")
+(include-book "type-equivalence-normalizations")
 (include-book "expression-validity")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -48,4 +49,5 @@
                     ispace-equivalence-normalizations
                     type-equivalence
                     type-equivalence-derived-rules
+                    type-equivalence-normalizations
                     expression-validity))

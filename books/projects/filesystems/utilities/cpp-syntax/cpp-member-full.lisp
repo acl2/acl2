@@ -11,6 +11,10 @@
 
 (include-book "cpp-expr-parser")
 
+;; Generic library rewrites that the .sys/cpp-member-full@useless-runes.lsp
+;; evidence shows contribute nothing to these proofs.
+(local (in-theory (disable acl2::default-car acl2::default-cdr)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Directed token-kind lemmas: derive token-kind from specific predicates.
 ;; C$::TOKEN-KIND-POSSIBILITIES is a forward-chaining rule triggered by

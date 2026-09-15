@@ -40,3 +40,24 @@
      (see @(see ullbc-to-mir-mapping))."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc mir-import-tests
+  :parents (mir-import)
+  :short "Tests of the MIR importer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The importer is exercised by @('import/aes-import-test.lisp'),
+     run by the ACL2 regression (@('make regression') in @('books/'))
+     but deliberately not included by @('import/top'), so building the
+     library does not require running it or fetching its input.")
+   (xdoc::p
+    "It decompresses the committed serialized AES-128 crate
+     (see @(see ullbc-to-mir-mapping) and @('samples/README.md')),
+     runs the importer, and checks that the resulting MIR program is
+     exactly the committed fixture @('*aes-fixslice-program*') that the
+     interpreter tests (see @(see mir-tests)) run on.  This ties the
+     two together: the importer is validated against the very program
+     the interpreter is tested on.")))

@@ -158,7 +158,6 @@
   (implies (and (alist-subsetp (hta0) hta)
                 (hpp (cons val (typ (:list (:hash :num :num)))) hta))
            (weak-polyp (finseq-to-list val)))
-  :hints (("Goal" :in-theory (enable hpp hol-valuep hol-type-eval)))
   :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop diff$prop
               restrict$prop))
 
@@ -192,11 +191,11 @@
                            :num)))
   :hints
   (("Goal"
-    :in-theory (disable hpp-monotone-for-alist-subsetp)
+    :in-theory (disable hpp-monotone-for-alist-subsetp hpp)
     :do-not '(eliminate-destructors) ; necessary
     :induct (eval_poly-reduction-induction x xa))
 ; The following became necessary when forcing hypotheses in hpp-hap.
-   ("[1]Subgoal 1'''" :in-theory (enable hpp-monotone-for-alist-subsetp))))
+   ("[1]Subgoal 1'" :in-theory (enable hpp-monotone-for-alist-subsetp))))
 
 (defun sum_polys-reduction-induction (x xa y ya)
   (declare (xargs :measure (+ (len xa) (len ya))))
@@ -230,7 +229,7 @@
   (implies (force (hol::eval-poly$prop))
            (hol::sum_polys *sum_polys-type*))
   :hints (("Goal"
-           :in-theory (e/d (hpp) (hol::sum_polys$type))
+           :in-theory (disable hol::sum_polys$type)
            :use hol::sum_polys$type))))
 
 (defthm sum_polys-reduction-1 ; follows from SUM_POLYS$TYPE
@@ -243,7 +242,7 @@
                                  x)
                             y))
                   (typ (:list (:hash :num :num)))))
-  :hints (("Goal" :in-theory (enable hap hp-cons hpp hol-valuep hol-type-eval)))))
+  :hints (("Goal" :in-theory (enable hap)))))
 
 (defthm sum_polys-type-properties-lemma-1
 
@@ -261,6 +260,8 @@
                        '(:list (:hash :num :num)))
                 (force (hol::eval-poly$prop)))
            (hpp (hap* fn x y) hta)))
+
+(local (in-theory (disable hpp)))
 
 (defthm funp-apply-sum_polys
 

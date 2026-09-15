@@ -673,6 +673,9 @@
     (:binding ((type  cpp-type-spec)         ; C++17 structured binding
                (names c$::ident-list)
                (init  cpp-expr)))
+    (:func-decl ((ret-type cpp-type-spec)    ; most-vexing-parse: int i(int(x));
+                 (name     ident)
+                 (params   cpp-param-list)))
     :pred cpp-block-item-p
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 1))

@@ -603,7 +603,7 @@
                       :check-inputs nil)
           (mv (erp-nil) result-dag state)))
        ((when erp) (mv erp nil state))
-       (dag-okp (dag-ok-after-symbolic-execution result-dag assumptions t state))
+       (dag-okp (dag-ok-after-symbolic-executionp result-dag assumptions t state))
        ((when (not dag-okp)) (mv :symbolic-execution-failed nil state))
 
        ;; Result-dag should be over the single variable S0 and should represent

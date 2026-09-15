@@ -102,3 +102,8 @@
            (< (len (cddr (assoc-equal channel (open-input-channels (mv-nth 2 (read-object channel state))))))
               (len (cddr (assoc-equal channel (open-input-channels state))))))
   :hints (("Goal" :in-theory (enable read-object))))
+
+(defthm w-of-mv-nth-2-of-read-object
+  (equal (w (mv-nth 2 (read-object channel state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable read-object))))

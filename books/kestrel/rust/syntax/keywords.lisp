@@ -190,11 +190,11 @@
   :returns (keywords string-listp)
   :short "Strict keywords of an edition."
   (rust::edition-case edition
-                      :e2021 *strict-keywords-common*
-                      :e2024 (cons "gen" *strict-keywords-common*)))
+                      :2021 *strict-keywords-common*
+                      :2024 (cons "gen" *strict-keywords-common*)))
 
-(assert-event (equal (len (strict-keywords (rust::edition-e2021))) 38))
-(assert-event (equal (len (strict-keywords (rust::edition-e2024))) 39))
+(assert-event (equal (len (strict-keywords (rust::edition-2021))) 38))
+(assert-event (equal (len (strict-keywords (rust::edition-2024))) 39))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -248,14 +248,14 @@
 
 ; Spot checks of the edition-dependent classification.
 
-(assert-event (strict-keyword-p "gen" (rust::edition-e2024)))
-(assert-event (not (strict-keyword-p "gen" (rust::edition-e2021))))
-(assert-event (strict-keyword-p "dyn" (rust::edition-e2021)))
-(assert-event (strict-keyword-p "Self" (rust::edition-e2021)))
-(assert-event (not (strict-keyword-p "SELF" (rust::edition-e2021))))
-(assert-event (reserved-keyword-p "try" (rust::edition-e2021)))
-(assert-event (keyword-p "true" (rust::edition-e2021)))
-(assert-event (not (keyword-p "union" (rust::edition-e2024))))
+(assert-event (strict-keyword-p "gen" (rust::edition-2024)))
+(assert-event (not (strict-keyword-p "gen" (rust::edition-2021))))
+(assert-event (strict-keyword-p "dyn" (rust::edition-2021)))
+(assert-event (strict-keyword-p "Self" (rust::edition-2021)))
+(assert-event (not (strict-keyword-p "SELF" (rust::edition-2021))))
+(assert-event (reserved-keyword-p "try" (rust::edition-2021)))
+(assert-event (keyword-p "true" (rust::edition-2021)))
+(assert-event (not (keyword-p "union" (rust::edition-2024))))
 (assert-event (weak-keyword-p "union"))
 (assert-event (not (weak-keyword-p "fn")))
-(assert-event (not (keyword-p "_" (rust::edition-e2024))))
+(assert-event (not (keyword-p "_" (rust::edition-2024))))

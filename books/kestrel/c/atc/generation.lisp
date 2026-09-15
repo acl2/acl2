@@ -11,7 +11,6 @@
 
 (in-package "C")
 
-(include-book "pretty-printer" :ttags ((:open-output-channel!)))
 (include-book "../syntax/abstract-syntax-formal-mapping-inverse")
 (include-book "../syntax/printer" :ttags ((:file-io!)))
 (include-book "shallow-embedding")
@@ -57,10 +56,10 @@
     "We generate C abstract syntax,
      which we pretty-print to files
      and also assign to a named constant.
-     We have started migrating to use the "
+     To print the files, we map the generated abstract syntax
+     with @(tsee c$::ildm-trans-ensemble) and use the "
     (xdoc::seetopic "c$::printer" "pretty-printer for the syntax for tools")
-    "; when the migration is complete,
-     we will remove the pretty-printer under this ATC directory.")
+    ".")
    (xdoc::p
     "Given the restrictions on the target functions,
      the translation is relatively straightforward, by design.")
@@ -615,22 +614,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-pprint-options-to-priopt ((options pprint-options-p))
-  :returns (priopt c$::prioptp)
-  :short "Turn ATC pretty-printing options into
-          options for the pretty-printer of the syntax for tools."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is part of the migration to the new pretty-printer."))
-  (c$::make-priopt
-   :indent-size 4
-   :paren-nested-conds
-   (pprint-options->parenthesize-nested-conditionals options))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define atc-printer-dialect ()
   :returns (dialect dialectp)
   :short "The C dialect used by the pretty-printer."
@@ -644,15 +627,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Currently ATC generates translation units
+    "ATC generates translation units
      using the ASTs in the language formalization,
-     but in order to use the pretty-printer from the syntax for tools,
-     we need to convert those to the ASTs for tools.
-     The ATC legacy pretty-printer (which we are migrating away from)
-     just prints the comment,
-     but the ASTs for tools include comments,
-     which the new pretty-printer prints,
-     so here we add the comment to the translation unit."))
+     which we convert to the ASTs for tools for printing.
+     The ASTs for tools include comments,
+     so we add the generated-file comment to the translation unit
+     after conversion and let the pretty-printer emit it."))
   (c$::change-trans-unit
    tunit
    :items (cons (c$::trans-item-line-comment
@@ -703,7 +683,7 @@
 
 (define atc-gen-fileset ((file-name stringp)
                          (tunits trans-ensemblep)
-                         (options pprint-options-p))
+                         (options c$::prioptp))
   :guard (b* ((new-tunits
                (atc-add-generated-comments-to-trans-ensemble
                 (c$::ildm-trans-ensemble file-name tunits)))
@@ -721,23 +701,23 @@
      the pretty-printing options are determined from the ones given to ATC."))
   (b* ((new-tunits (atc-add-generated-comments-to-trans-ensemble
                     (c$::ildm-trans-ensemble file-name tunits)))
-       (priopt (atc-pprint-options-to-priopt options))
        (dialect (atc-printer-dialect)))
-    (c$::print-fileset new-tunits priopt dialect))
+    (c$::print-fileset new-tunits options dialect))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-trans-ensemble-event ((tunits trans-ensemblep)
+                                      (output-dir stringp)
                                       (file-name stringp)
-                                      (pretty-printing pprint-options-p)
+                                      (pretty-printing c$::prioptp)
                                       (print evmac-input-print-p))
   :returns (event pseudo-event-formp)
   :short "Event to pretty-print the generated C code to the file system."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This serves to run @(tsee pprint-trans-ensemble)
+    "This serves to generate and write the file set
      after the constant and theorem events have been submitted.
      This function generates an event form
      that is put (by @(tsee atc-gen-everything))
@@ -753,7 +733,9 @@
      as done with the constant and theorem events.")
    (xdoc::p
     "In order to generate an embedded event form for output file generation,
-     we generate a @(tsee make-event) whose argument generates the file.
+     we generate a @(tsee make-event) whose argument
+     calls @(tsee atc-gen-fileset) to generate the file set
+     and @(tsee c$::write-fileset) to write it under @('output-dir').
      The argument must also return an embedded event form,
      so we use @(tsee value-triple) with @(':invisible'),
      so there is no extra screen output.
@@ -763,8 +745,9 @@
      In essence, we use @(tsee make-event) to turn a computation
      (the one that writes the output files)
      into an event.
-     But we cannot use just @(tsee value-triple)
-     because our computation returns an error triple."))
+     Since @(tsee c$::write-fileset) returns an error flag and state,
+     we turn any error into an error triple;
+     on success, we return the invisible value triple."))
   (b* ((progress-start?
         (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the file(s)..."))))
@@ -772,11 +755,13 @@
                            `((cw-event " done.~%"))))
        (file-gen-event
         `(make-event
-          (b* (((er &)
-                (pprint-trans-ensemble ',tunits
-                                       ,file-name
-                                       ',pretty-printing
-                                       state)))
+          (b* ((fileset
+                (atc-gen-fileset ,file-name
+                                 ',tunits
+                                 ',pretty-printing))
+               ((mv erp state)
+                (c$::write-fileset fileset ,output-dir state))
+               ((when erp) (mv erp nil state)))
             (acl2::value '(value-triple :invisible))))))
     `(progn ,@progress-start?
             ,file-gen-event
@@ -813,10 +798,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-everything ((targets symbol-listp)
+                            (output-dir stringp)
                             (file-name stringp)
                             (path-wo-ext stringp)
                             (header booleanp)
-                            (pretty-printing pprint-options-p)
+                            (pretty-printing c$::prioptp)
                             (proofs booleanp)
                             (prog-const symbolp)
                             (wf-thm symbolp)
@@ -852,6 +838,7 @@
                                 prog-const wf-thm fn-thms
                                 header print names-to-avoid state))
        (tunits-gen-event (atc-gen-trans-ensemble-event tunits
+                                                       output-dir
                                                        file-name
                                                        pretty-printing
                                                        print))

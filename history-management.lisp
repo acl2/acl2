@@ -1608,7 +1608,7 @@
                  PRIMITIVE-RECURSIVE-DEFUNP
                  CONSTRAINEDP
                  HEREDITARILY-CONSTRAINED-FNNAMES
-                 #+:non-standard-analysis CLASSICALP
+                 #+non-standard-analysis CLASSICALP
                  DEF-BODIES
                  INDUCTION-MACHINE
                  JUSTIFICATION
@@ -3065,7 +3065,7 @@
      ((eq event-type 'defun)
       (cond
        ((member-eq (car event) '(defuns mutual-recursion
-                                  #+:non-standard-analysis
+                                  #+non-standard-analysis
                                   defuns-std))
         (let ((def ; first definition, without leading defun
                (if (eq (car event) 'mutual-recursion)
@@ -3076,7 +3076,7 @@
               (car def)
             :no-event-data-name)))
        ((or (eq (car event) 'defun)
-            #+:non-standard-analysis
+            #+non-standard-analysis
             (eq (car event) 'defun-std))
         (cadr event))
        (t (er hard 'event-data-name
@@ -9191,7 +9191,7 @@
         (t (append (get-guard-hints1 (fourth (car lst)))
                    (get-guard-hints (cdr lst))))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun get-std-hints1 (edcls)
 
 ; A typical edcls might be
@@ -9220,7 +9220,7 @@
                         (cadr temp))))))
         (t (get-std-hints1 (cdr edcls)))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun get-std-hints (lst)
 
 ; Lst is a list of tuples of the form (name args doc edcls body).  We
@@ -10865,12 +10865,12 @@
 
 ; We do not want vestiges of the non-standard version in the standard version.
 
-        #+:non-standard-analysis STANDARDP
-        #+:non-standard-analysis STANDARD-PART
-        #+:non-standard-analysis I-LARGE-INTEGER
-        #+:non-standard-analysis REALFIX
-        #+:non-standard-analysis I-LARGE
-        #+:non-standard-analysis I-SMALL
+        #+non-standard-analysis STANDARDP
+        #+non-standard-analysis STANDARD-PART
+        #+non-standard-analysis I-LARGE-INTEGER
+        #+non-standard-analysis REALFIX
+        #+non-standard-analysis I-LARGE
+        #+non-standard-analysis I-SMALL
 
         ))
 
@@ -11216,7 +11216,7 @@
 ;; This checks to see whether two function symbols are both
 ;; classical or both non-classical
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun@par chk-equiv-classicalp (fn1 fn2 termp ctx wrld state)
   (let ((cp1 (classicalp fn1 wrld))
         (cp2 (if termp ; fn2 is a term, not a function symbol
@@ -11308,7 +11308,7 @@
                     (chk-equal-arities@par fn1 (arity fn1 wrld)
                                            fn2 (arity fn2 wrld)
                                            ctx state)
-                    #+:non-standard-analysis
+                    #+non-standard-analysis
                     (chk-equiv-classicalp@par fn1 fn2 nil ctx wrld state)
                     (value@par (cons fn1 fn2))))
                   (t (er@par soft ctx str (car substn) fn2)))))
@@ -11324,7 +11324,7 @@
                  (chk-equal-arities@par fn1 (arity fn1 wrld)
                                         fn2 (length (cadr fn2))
                                         ctx state)
-                 #+:non-standard-analysis
+                 #+non-standard-analysis
                  (chk-equiv-classicalp@par fn1 body t ctx wrld state)
                  (value@par (cons fn1 (make-lambda (cadr fn2) body))))))
               (t (er@par soft ctx str (car substn) fn2))))
@@ -11344,7 +11344,7 @@
 ; After Version_3.4, Ruben Gamboa added the variable allow-freevars-p, with the
 ; following explanation:
 
-; Allow-freevars-p should be set to t in the #-:non-standard-analysis case, but
+; Allow-freevars-p should be set to t in the #-non-standard-analysis case, but
 ; otherwise set to nil when we are trying to apply the substitution to a
 ; non-classical formula.  In those cases, free variables in the body can
 ; capture non-standard objects, resulting in invalid theorems.  For example,
@@ -12308,9 +12308,9 @@
                                     bad-vars-alist))
                   (t (state-mac@par)))
             (let ((allow-freevars-p
-                   #-:non-standard-analysis
+                   #-non-standard-analysis
                    t
-                   #+:non-standard-analysis
+                   #+non-standard-analysis
                    (classical-fn-list-p (all-fnnames formula) wrld)))
               (mv-let
                 (erp0 formula0)
@@ -15174,16 +15174,16 @@
     binary-* binary-+ unary-- unary-/ < car cdr
     char-code characterp code-char complex
     complex-rationalp
-    #+:non-standard-analysis complexp
+    #+non-standard-analysis complexp
     coerce cons consp denominator equal
-    #+:non-standard-analysis floor1
+    #+non-standard-analysis floor1
     if imagpart integerp
     intern-in-package-of-symbol numerator pkg-witness pkg-imports rationalp
-    #+:non-standard-analysis realp
+    #+non-standard-analysis realp
     realpart stringp symbol-name symbol-package-name symbolp
-    #+:non-standard-analysis standardp
-    #+:non-standard-analysis standard-part
-    ;; #+:non-standard-analysis i-large-integer
+    #+non-standard-analysis standardp
+    #+non-standard-analysis standard-part
+    ;; #+non-standard-analysis i-large-integer
     not))
 
 (defconst *s-prop-theory*

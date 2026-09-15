@@ -86,6 +86,9 @@
      has the same range as @('signed char') or not [C17:6.2.5/15].
      If the flag is false, it has the same range as @('unsigned char').")
    (xdoc::p
+    "We always use a Unicode character set with certain new lines,
+     so there is no variability information here.")
+   (xdoc::p
     "This fixtype will likely be expanded in the future
      to include further information about the environment.
      This may include details about standard library types
@@ -177,6 +180,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define charset ((std c::standardp))
+  :returns (charset c::charsetp)
+  :short "Character set of the syntax for tools."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Our C syntax for tools uses a Unicode character set,
+     for both source and execution characters;
+     it allows LF, CR, and CR LF as new-line character sequences;
+     see the @(see grammar)."))
+  (b* ((end-of-lines (set::mergesort (list (list 10) (list 13) (list 13 10)))))
+    (c::charset-unicode std end-of-lines))
+  :guard-hints (("Goal" :in-theory (enable c::source-charset-end-of-lines-wfp
+                                           (:e c::unicode-chars))))
+
+  ///
+
+  (defret charset-wfp-of-charset
+    (c::charset-wfp charset std uchar-format)
+    :hints (("Goal" :in-theory (enable c::source-charset-end-of-lines-wfp
+                                       (:e c::unicode-chars))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ldm-ienv ((ienv ienvp))
   :returns (ienv1 c::ienvp)
   :short "Map an implementation environment of type @(tsee ienv)
@@ -210,7 +237,8 @@
        (int-format (c::integer-format-inc-sign-tcnpnt (* 8 ienv.int-bytes)))
        (long-format (c::integer-format-inc-sign-tcnpnt (* 8 ienv.long-bytes)))
        (llong-format (c::integer-format-inc-sign-tcnpnt (* 8 ienv.llong-bytes)))
-       (bool-format (c::bool-format-lsb)))
+       (bool-format (c::bool-format-lsb))
+       (charset (charset (c::dialect->std ienv.dialect))))
     (c::make-ienv
      :dialect ienv.dialect
      :uchar uchar-format
@@ -220,19 +248,22 @@
      :int int-format
      :long long-format
      :llong llong-format
-     :bool bool-format))
+     :bool bool-format
+     :charset charset))
   :guard-hints (("Goal" :in-theory (enable ldm-ienv-wfp-lemma)))
 
   :prepwork
   ((defruled ldm-ienv-wfp-lemma
      (c::ienv-requirep
+      (ienv->dialect ienv)
       '((c::size . 8))
       '((c::signed :twos-complement) (c::trap))
       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->short-bytes ienv)))
       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->int-bytes ienv)))
       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->long-bytes ienv)))
       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->llong-bytes ienv)))
-      '((byte-size . 1) (c::value-index . 0) (c::trap)))
+      '((byte-size . 1) (c::value-index . 0) (c::trap))
+      (charset (c::dialect->std (ienv->dialect ienv))))
      :use (:instance ienv-requirements (x ienv))
      :enable (c::ienv-requirep
               c::integer-format-short-wfp-of-integer-format-inc-sign-tcnpnt

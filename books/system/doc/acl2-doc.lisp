@@ -100,6 +100,7 @@
     (DEVELOPERS-GUIDE-UTILITIES "[books]/system/doc/developers-guide.lisp")
     (DO-NOT-HINT "[books]/tools/do-not.lisp")
     (EASY-SIMPLIFY-TERM "[books]/tools/easy-simplify.lisp")
+    (EMACS-WORKFLOW "[books]/doc/practices.lisp")
     (ER-SOFT+ "[books]/kestrel/utilities/er-soft-plus.lisp")
     (FINAL-CDR "[books]/std/lists/final-cdr.lisp")
     (FTY "[books]/centaur/fty/top.lisp")
@@ -112,6 +113,7 @@
     (LIST-EQUIV "[books]/std/lists/equiv.lisp")
     (LIST-FIX "[books]/std/lists/list-fix.lisp")
     (LOGBITP-REASONING "[books]/centaur/bitops/equal-by-logbitp.lisp")
+    (MAGIC-EV "[books]/clause-processors/meta-extract-user.lisp")
     (MAKE-FLAG "[books]/tools/flag.lisp")
     (MAKE-TERMINATION-THEOREM
      "[books]/kestrel/utilities/make-termination-theorem.lisp")
@@ -133,6 +135,7 @@
     (NOTE-8-5-BOOKS "[books]/doc/relnotes.lisp")
     (NOTE-8-6-BOOKS "[books]/doc/relnotes.lisp")
     (NOTE-8-7-BOOKS "[books]/doc/relnotes.lisp")
+    (NOTE-8-8-BOOKS "[books]/doc/relnotes.lisp")
     (STR::NUMBERS "[books]/std/strings/top.lisp")
     (OPEN-TRACE-FILE! "[books]/tools/open-trace-file-bang.lisp")
     (ORACLE-TIMELIMIT "[books]/tools/oracle-timelimit.lisp")
@@ -32300,12 +32303,16 @@ ld) and @(tsee include-book)"
  })
 
  <p>where @('equiv') is a known equivalence relation (see @(see defequiv));
- @('x') is a variable symbol; and @('lhs') contains one or more terms (called
+ @('x') is a variable symbol; @('lhs') contains one or more terms (called
  ``destructor terms'') of the form @('(fn v1 ... vn)'), where @('fn') is a
  function symbol and the @('vi') are distinct variable symbols, @('v1'), ...,
  @('vn') include all the variable symbols in the formula, no @('fn') occurs in
- @('lhs') in more than one destructor term, and all occurrences of @('x') in
- @('lhs') are inside destructor terms.</p>
+ @('lhs') in more than one destructor term, all occurrences of @('x') in
+ @('lhs') are inside destructor terms, and every occurrence of @('x') in
+ @('hyp') can be replaced any term @('equiv') to @('x') without changing the
+ propositional value of @('hyp').  (This last condition can be succinctly
+ stated as saying that all occurrences of @('x') in @('hyp') are
+ @('equiv')-hittable preserving @('iff').  We discuss this more below.)</p>
 
  <p>An @(':elim') rule is available for a given destructor function (in the
  manner described below) when it is the most recently added @(see enable)d
@@ -109830,6 +109837,15 @@ it."
 ; For #+ and #-, changed :non-standard-analysis to non-standard-analysis as per
 ; a chat with Eric Smith.
 
+; Made updates to *acl2-exports*.
+
+; Improved the error message for bad wf-rel, to indicate whether or not the
+; problematic :well-founded-relation is at least a known function symbol.
+
+; Fixed bad-lisp-objectp -- more specifically, bad-lisp-atomp -- to report a
+; bad character without having the error message itself cause an error (as we
+; saw when using LispWorks).
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -109879,7 +109895,7 @@ it."
  <p>Improved error messages for ill-formed first and second arguments of @(tsee
  defund), @(tsee defun-nx), and @(tsee defund-nx).  The case of @('defund-nx')
  was reported by Claude Code as showing no error message at all, for example
- when evaluting the form, @('(defund-nx 42 (x) x)').  Thanks to Eric Smith for
+ when evaluating the form, @('(defund-nx 42 (x) x)').  Thanks to Eric Smith for
  bringing these to our attention.</p>
 
  <p>Improved the @(see guard), as well as the guard violation message, for
@@ -109951,6 +109967,50 @@ it."
  output (which allows for a channel of type @(':character') with
  &ldquo;filename&rdquo; @(':string')) but false when considering input.  Thanks
  to Aakash Koneru for pointing us in the direction of these changes.</p>
+
+ <p>(SBCL only) Soundness bugs were caused by SBCL compiler optimizations for
+ calls of built-in functions having types with bounded integer return values.
+ These bugs are now avoided by proclaiming those functions @('notinline').
+ Thanks to Grant Jurgensen for reporting the use of of Anthropic's Claude to
+ find these bugs; see @(see community-books) files
+ @('system/tests/integer-length-bad-optimization.lisp') and
+ @('system/tests/length-bad-optimization.lsp').  Thanks also to Stas Boukarev
+ for suggesting the use of @('notinline'), as our original solution was more
+ complicated (by modifying function types).</p>
+
+ <p>An additional restriction was added to @(':')@(tsee elim) rules, namely,
+ for the general form @('(implies hyp (equiv lhs x))'), all occurrences of
+ @('x') in @('hyp') must be @('equiv')-hittable preserving @('iff').  See @(see
+ elim).  This corrected a soundness bug discovered by Eric Smith with the help
+ of Anthropic's Claude; see @(see community-book)
+ @('system/tests/elim-iff-hyp.lisp').</p>
+
+ <p>When @(tsee make-event) expansion takes place, the result might not be a
+ valid ACL2 object.  ACL2 checked for this situation, but only when the
+ @(see known-package-alist) changed.  Now the check is done unconditionally.
+ This fixes a soundness bug discovered by Eric Smith with the help
+ of Anthropic's Claude; see @(see community-book)
+ @('system/tests/make-event-bad-char.lisp').</p>
+
+ <p>A soundness bug was caused by function @(tsee df-string) due to the
+ distinction in raw Lisp between 0.0 and -0.0.  Thanks to Eric Smith for
+ reporting the use of of Anthropic's Claude to find this bug; see @(see
+ community-book) @('system/tests/df-negative-zero.lisp').</p>
+
+ <p>Soundness bugs were caused by inadequate redundancy checks for calls of
+ @(tsee defun) (and its variants such as @(tsee defund) and @(tsee defun-nx)).
+ The checks (see @(see redundant-events) failed to account properly for the
+ default measure function (see @(see set-measure-function)), and they failed to
+ account at all for the @(see well-founded-relation).  Thanks to Eric Smith for
+ reporting the use of of Anthropic's Claude to find these bugs; see @(see
+ community-books) @('system/tests/measure-fn-redundancy.lisp') and
+ @('system/tests/wfr-redundancy.lisp').</p>
+
+ <p>Fixed an assertion failure that could occur when an accessor call in a
+ @(tsee stobj-let)'s bindings was on a quoted non-numeric index.  Thanks to
+ Eric Smith for sending an example found by Anthropic's Claude.  As part of the
+ fix, extended a guard optimization for constant indices from just the numeric
+ case.</p>
 
  <p>Checks were improved to avoid raw Lisp errors in the following situations:</p>
 
@@ -110051,7 +110111,7 @@ it."
  as evaluating @('(set-debugger-enable :never)') &mdash; in particular, @(tsee
  break$) does not enter the Lisp debugger &mdash; except that in addition, you
  cannot exit the ACL2 loop.  This effectively disables @(':q') as a means for
- going into raw Lisp (and also @('(value :q)'), etc.; see @(see q).</li>
+ going into raw Lisp (and also @('(value :q)'), etc.; see @(see q)).</li>
 
  <li>So to avoid the possibility of interaction with raw Lisp for ACL2 built on
  CCL or SBCL, provided trust tags are avoided (see @(see defttag)), you can do
@@ -110065,7 +110125,7 @@ it."
  #+sbcl (setq sb-ext:*invoke-debugger-hook* 'our-abort)
  #+sbcl (lp)
 
- ; Disable entering the debugger and disable existing the ACL2 loop:
+ ; Disable entering the debugger and disable exiting the ACL2 loop:
  (set-debugger-enable :never!)
  (push-untouchable set-debugger-enable-fn t)
  (push-untouchable debugger-enable nil)
@@ -110085,6 +110145,17 @@ it."
  input since that representation of character 12 may be printed by @(tsee
  print-object$).  Thanks to Duane Rettig for bringing this issue to our
  attention.</p>
+
+ <p>Made a change so that ACL2 can be built and run using host Lisp CCL on an
+ Arm-based Mac.  Thanks to Yahya Sohail for supplying that change, which
+ handles certain floating-point exceptions.  (ACL2 supports floating-point
+ computations; see @(see df).)</p>
+
+ <p>(CMUCL only) Fixed CMUCL builds of ACL2 so that @('\"lisp\"') can be the
+ specified Lisp program name and to avoid a problem with
+ @('-dynamic-space-size') on some systems.  However, the CMUCL version must now
+ be from at least 2016.  Thanks to Grant Jurgensen for bringing those issues to
+ our attention.</p>
 
  <h3>EMACS Support</h3>
 
@@ -129170,12 +129241,13 @@ work on <tt>(q x)</tt>.</p>
  redundant if for each function to be introduced, there has already been
  introduced a function with the same name, formals, and body (before
  macroexpansion), and with the same values @(see declare)d for the @(':')@(tsee
- guard), @(':')@(tsee measure), types, @(':')@(tsee ruler-extenders),
- @(':non-executable'), @(':type-prescription'), @(':')@(tsee stobj)@('s'), and
- @(':')@(tsee split-types), provided that the @(see defun-mode)s are
- appropriate (see the ``Note About Appropriate Modes'' below).  Moreover, the
- order of the combined @(':')@(tsee guard) and type declarations must be the
- same in both cases.  Exceptions and clarifications:</p>
+ guard), @(':')@(tsee measure), @(':')@(tsee well-founded-relation), types,
+ @(':')@(tsee ruler-extenders), @(':non-executable'), @(':type-prescription'),
+ @(':')@(tsee stobj)@('s'), and @(':')@(tsee split-types), provided that the
+ @(see defun-mode)s are appropriate (see the ``Note About Appropriate Modes''
+ below).  Moreover, the order of the combined @(':')@(tsee guard) and type
+ declarations must be the same in both cases.  Exceptions and
+ clarifications:</p>
 
  <ol>
 
@@ -129188,11 +129260,35 @@ work on <tt>(q x)</tt>.</p>
  @('t') and the other to have no explicit guard (hence, the guard is implicitly
  @('t')).</li>
 
- <li>The @(':measure') check is avoided if the old definition is non-recursive
- (and not defined within a @(tsee mutual-recursion)) or we are skipping proofs
- (for example, during @(tsee include-book)).  Otherwise, the new definition may
- have a @(':measure') of @('(:? v1 ... vk)'), where @('(v1 ... vk)') enumerates
- the variables occurring in the measure stored for the old definition.</li>
+ <li>The @(':measure') and @(':well-founded-relation') checks are avoided if
+ the old definition is non-recursive (and not defined within a @(tsee
+ mutual-recursion)) or we are skipping proofs (for example, during @(tsee
+ include-book)).  The precise measure check requires that one of the following
+ conditions is met.
+
+ <ul>
+
+ <li>The old and new definitions supply a (non-@('nil')) value for the
+ @(':measure'), and those values are identical.</li>
+
+ <li>Neither the old nor the new definition supplies a value for the
+ @(':measure'), and the current default measure function (see @(see
+ set-measure-function)) is the function symbol of the measure stored for the
+ old definition (from the default measure function at the time it was
+ admitted).</li>
+
+ <li>The new definition specifies a @(':measure') of @('(:? v1 ... vk)'), where
+ @('(v1 ... vk)') enumerates, without repetition, the variables occurring in
+ the measure stored for the old definition.</li>
+
+ </ul>
+
+ The precise well-founded relation check requires that the well-founded
+ relation for the old definition is the same as the well-founded relation
+ proposed for the new definition, whether the proposed well-founded relation is
+ supplied explicitly using the @(':well-founded-relation') @(tsee xargs)
+ keyword or implicitly using the current default well-founded relation (see
+ @(see set-well-founded-relation)).</li>
 
  <li>If either the old or new event is a @(tsee mutual-recursion) event, then
  redundancy requires that both are @(tsee mutual-recursion) events that define

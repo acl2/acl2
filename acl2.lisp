@@ -282,6 +282,64 @@
 
 (proclaim *acl2-optimize-form*)
 
+#+sbcl
+(require :sb-introspect) ; for the progn form below
+
+#+sbcl
+(progn
+
+; SBCL Version 2.6.8 (and probably earlier versions) performs optimizations
+; that are problematic for ACL2.  This made it possible to certify the original
+; versions of the following files in the community books, each proving nil, in
+; ACL2 Version 8.7 (as described in those books):
+
+; books/system/tests/integer-length-bad-optimization.lisp
+; books/system/tests/length-bad-optimization.lsp
+
+; Here, we avoid those optimizations for built-in functions by following a
+; suggestion of Stas Boukarev by proclaiming them notinline.  (An alternative
+; would be to replace, for each return type, any expression of the form
+; (signed-byte n) or (unsigned-byte n) by signed-byte or unsigned-byte,
+; respectively.)
+
+; We are in package "CL-USER".  To avoid (very unlikely) name conficts, we
+; prefix each of these functions with "acl2tf-", to indicate that we are doing
+; Type Fixes for ACL2.
+
+(defun acl2tf-find-limited-integer-in-tree (x)
+  (cond ((atom x) nil)
+        ((and (member (car x)
+; We could include integer as a value here for (car x), but as of this writing,
+; none of the integer cases were relevant to the task of avoiding undesirable
+; compiler optimizations.
+                      '(signed-byte unsigned-byte)
+                      :test #'eq)
+              (consp (cdr x))
+              (integerp (cadr x)))
+         t)
+        (t (or (acl2tf-find-limited-integer-in-tree (car x))
+               (acl2tf-find-limited-integer-in-tree (cdr x))))))
+
+(defun acl2tf-suspect-fns ()
+  (let (ans)
+    (do-symbols (sym "COMMON-LISP")
+                (let ((type (and (eq (find-symbol (symbol-name sym)
+                                                  "COMMON-LISP")
+                                     sym)
+                                 (fboundp sym)
+                                 (sb-introspect:function-type sym))))
+                  (when (and (consp type)
+                             (progn (assert (and (null (cdr (last type)))
+                                                 (= (length type) 3)))
+                                    (and (eq (car type) 'function)
+                                         (acl2tf-find-limited-integer-in-tree
+                                          (caddr type)))))
+                    (push sym ans))))
+    ans))
+
+(eval `(declaim (notinline ,@(acl2tf-suspect-fns))))
+)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                               FILES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

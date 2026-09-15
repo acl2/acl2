@@ -14,6 +14,8 @@
 
 (include-book "std/util/definductive" :dir :system)
 
+(local (include-book "std/lists/len" :dir :system))
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -26,13 +28,15 @@
    (xdoc::p
     "We formalize the equivalence of ispaces via inference rules.
      Although [thesis], [arxiv], and [esop] do not explicate these rules,
-     their existence is arguably implied;
-     those publications make use of judgements
-     asserting the equivalence of ispaces (called `indices' there),
-     and describe the equations according to which
-     dimensions are considered equivalent.
-     Unlike [impl], those publications only have addition of dimensions,
-     but our rules also include their multiplication and subtraction."))
+     their existence is arguably implied.
+     [thesis] makes use of judgements of the form
+     @($\\models \\iota \\equiv \\iota'$),
+     where @($\\iota$) and @($\\iota'$) are ispaces (called `indices' there),
+     asserting the equivalence of @($\\iota$) and @($\\iota'$),
+     while [arxiv] uses a slightly different form,
+     and [esop] omits explicit judgements.
+     Instead of inference rules, those publications describe
+     the equations according to which ispaces are considered equivalent."))
   :order-subtopics t
   :default-parent t)
 
@@ -663,3 +667,408 @@
              (and (ispace-listp ispaces1)
                   (ispace-listp ispaces2)))
     :enable (ispaces-eq ispace-listp-when-ispaces-eq-proof-validp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-list-equivalence-same-length
+  :short "The equivalence of lists of dimensions
+          holds only on lists of the same length."
+
+  (defthm-dim-eq-proof-validp-clique-flag
+    (defthmd same-len-when-dims-eq-proof-validp
+      (implies (dims-eq-proof-validp proof concl.dims1 concl.dims2)
+               (equal (len concl.dims1)
+                      (len concl.dims2)))
+      :flag dims-eq-proof-validp)
+    :skip-others t
+    :hints
+    (("Goal" :in-theory (enable* dim-equivalence-definition-validp-defs))))
+
+  (defruled same-len-when-dims-eq
+    (implies (dims-eq dims1 dims2)
+             (equal (len dims1)
+                    (len dims2)))
+    :enable (dims-eq same-len-when-dims-eq-proof-validp))
+
+  (defruled consp-when-dims-eq-proof-validp
+    (implies (dims-eq-proof-validp proof concl.dims1 concl.dims2)
+             (equal (consp concl.dims2)
+                    (consp concl.dims1)))
+    :use same-len-when-dims-eq-proof-validp
+    :expand ((len concl.dims1)
+             (len concl.dims2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection shape/ispace-list-equivalence-same-length
+  :short "The equivalence of lists of shapes and lists of ispaces
+          holds only on lists of the same length."
+
+  (defthm-shape-eq-proof-validp-clique-flag
+    (defthmd same-len-when-shapes-eq-proof-validp
+      (implies (shapes-eq-proof-validp proof concl.shapes1 concl.shapes2)
+               (equal (len concl.shapes1)
+                      (len concl.shapes2)))
+      :flag shapes-eq-proof-validp)
+    (defthmd same-len-when-ispaces-eq-proof-validp
+      (implies (ispaces-eq-proof-validp proof concl.ispaces1 concl.ispaces2)
+               (equal (len concl.ispaces1)
+                      (len concl.ispaces2)))
+      :flag ispaces-eq-proof-validp)
+    :skip-others t
+    :hints (("Goal"
+             :in-theory
+             (enable* shape/ispace-equivalence-definition-validp-defs))))
+
+  (defruled same-len-when-shapes-eq
+    (implies (shapes-eq shapes1 shapes2)
+             (equal (len shapes1)
+                    (len shapes2)))
+    :enable (shapes-eq same-len-when-shapes-eq-proof-validp))
+
+  (defruled same-len-when-ispaces-eq
+    (implies (ispaces-eq ispaces1 ispaces2)
+             (equal (len ispaces1)
+                    (len ispaces2)))
+    :enable (ispaces-eq same-len-when-ispaces-eq-proof-validp))
+
+  (defruled consp-when-shapes-eq-proof-validp
+    (implies (shapes-eq-proof-validp proof concl.shapes1 concl.shapes2)
+             (equal (consp concl.shapes2)
+                    (consp concl.shapes1)))
+    :use same-len-when-shapes-eq-proof-validp
+    :expand ((len concl.shapes1)
+             (len concl.shapes2)))
+
+  (defruled consp-when-ispaces-eq-proof-validp
+    (implies (ispaces-eq-proof-validp proof concl.ispaces1 concl.ispaces2)
+             (equal (consp concl.ispaces2)
+                    (consp concl.ispaces1)))
+    :use same-len-when-ispaces-eq-proof-validp
+    :expand ((len concl.ispaces1)
+             (len concl.ispaces2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-equivalence-stronger-rules
+  :short "Stronger versions of
+          some of the defining rules of dimension equivalence."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are analogous to @(see dim-validity-stronger-rules)."))
+
+  ;; equivalence of dimensions:
+
+  (defruled dim-eq-symm!
+    (implies (dim-eq dim1 dim2)
+             (dim-eq dim2 dim1))
+    :use dim-eq-symm
+    :enable dimp-when-dim-eq)
+
+  (defruled dim-eq-trans!
+    (implies (and (dim-eq dim1 dim2)
+                  (dim-eq dim2 dim3))
+             (dim-eq dim1 dim3))
+    :use dim-eq-trans
+    :enable dimp-when-dim-eq)
+
+  ;; equivalence of lists of dimensions:
+
+  (defruled dims-eq-symm!
+    (implies (dims-eq dims1 dims2)
+             (dims-eq dims2 dims1))
+    :use dims-eq-symm
+    :enable dim-listp-when-dims-eq)
+
+  (defruled dims-eq-trans!
+    (implies (and (dims-eq dims1 dims2)
+                  (dims-eq dims2 dims3))
+             (dims-eq dims1 dims3))
+    :use dims-eq-trans
+    :enable dim-listp-when-dims-eq)
+
+  ;; congruence of dimensions:
+
+  (defruled dim-eq-cong-add!
+    (implies (dims-eq dims1 dims2)
+             (dim-eq (dim-add dims1) (dim-add dims2)))
+    :use dim-eq-cong-add
+    :enable dim-listp-when-dims-eq)
+
+  (defruled dim-eq-cong-sub!
+    (implies (dims-eq dims1 dims2)
+             (dim-eq (dim-sub dims1) (dim-sub dims2)))
+    :use dim-eq-cong-sub
+    :enable dim-listp-when-dims-eq)
+
+  (defruled dim-eq-cong-mul!
+    (implies (dims-eq dims1 dims2)
+             (dim-eq (dim-mul dims1) (dim-mul dims2)))
+    :use dim-eq-cong-mul
+    :enable dim-listp-when-dims-eq)
+
+  ;; congruence of lists of dimensions:
+
+  (defruled dims-eq-cong-cons!
+    (implies (and (dim-eq dim1 dim2)
+                  (dims-eq dims1 dims2))
+             (dims-eq (cons dim1 dims1) (cons dim2 dims2)))
+    :use dims-eq-cong-cons
+    :enable (dimp-when-dim-eq dim-listp-when-dims-eq))
+
+  ;; normalization of addition:
+
+  (defruled dim-eq-add3m!
+    (implies (consp dims)
+             (dim-eq (dim-add (list* dim1 dim2 dims))
+                     (dim-add (cons (dim+ dim1 dim2) dims))))
+    :use (:instance dim-eq-add3m
+                    (dim1 (dim-fix dim1))
+                    (dim2 (dim-fix dim2))
+                    (dims (dim-list-fix dims))))
+
+  ;; normalization of multiplication:
+
+  (defruled dim-eq-mul3m!
+    (implies (consp dims)
+             (dim-eq (dim-mul (list* dim1 dim2 dims))
+                     (dim-mul (cons (dim* dim1 dim2) dims))))
+    :use (:instance dim-eq-mul3m
+                    (dim1 (dim-fix dim1))
+                    (dim2 (dim-fix dim2))
+                    (dims (dim-list-fix dims))))
+
+  ;; normalization of subtraction:
+
+  (defruled dim-eq-sub2m!
+    (implies (consp dims)
+             (dim-eq (dim-sub (cons dim dims))
+                     (dim+ dim (dim- (dim-add dims)))))
+    :use (:instance dim-eq-sub2m
+                    (dim (dim-fix dim))
+                    (dims (dim-list-fix dims))))
+
+  ;; abelian group properties of addition:
+
+  (defruled dim-eq-add-comm!
+    (dim-eq (dim+ dim1 dim2)
+            (dim+ dim2 dim1))
+    :use (:instance dim-eq-add-comm
+                    (dim1 (dim-fix dim1))
+                    (dim2 (dim-fix dim2))))
+
+  (defruled dim-eq-add-assoc!
+    (dim-eq (dim+ (dim+ dim1 dim2) dim3)
+            (dim+ dim1 (dim+ dim2 dim3)))
+    :use (:instance dim-eq-add-assoc
+                    (dim1 (dim-fix dim1))
+                    (dim2 (dim-fix dim2))
+                    (dim3 (dim-fix dim3))))
+
+  (defruled dim-eq-add-inv!
+    (dim-eq (dim+ dim (dim- dim))
+            (dim-const 0))
+    :use (:instance dim-eq-add-inv (dim (dim-fix dim))))
+
+  ;; commutative monoid properties of multiplication:
+
+  (defruled dim-eq-mul-comm!
+    (dim-eq (dim* dim1 dim2)
+            (dim* dim2 dim1))
+    :use (:instance dim-eq-mul-comm
+                    (dim1 (dim-fix dim1))
+                    (dim2 (dim-fix dim2))))
+
+  (defruled dim-eq-mul-assoc!
+    (dim-eq (dim* (dim* dim1 dim2) dim3)
+            (dim* dim1 (dim* dim2 dim3)))
+    :use (:instance dim-eq-mul-assoc
+                    (dim1 (dim-fix dim1))
+                    (dim2 (dim-fix dim2))
+                    (dim3 (dim-fix dim3))))
+
+  ;; distributivity of multiplication over addition:
+
+  (defruled dim-eq-distrib!
+    (dim-eq (dim* dim (dim+ dim1 dim2))
+            (dim+ (dim* dim dim1) (dim* dim dim2)))
+    :use (:instance dim-eq-distrib
+                    (dim (dim-fix dim))
+                    (dim1 (dim-fix dim1))
+                    (dim2 (dim-fix dim2)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection shape/ispace-equivalence-stronger-rules
+  :short "Stronger versions of
+          some of the defining rules of shape and ispace equivalence."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are analogous to @(see dim-validity-stronger-rules)."))
+
+  ;; equivalence of shapes:
+
+  (defruled shape-eq-symm!
+    (implies (shape-eq shape1 shape2)
+             (shape-eq shape2 shape1))
+    :use shape-eq-symm
+    :enable shapep-when-shape-eq)
+
+  (defruled shape-eq-trans!
+    (implies (and (shape-eq shape1 shape2)
+                  (shape-eq shape2 shape3))
+             (shape-eq shape1 shape3))
+    :use shape-eq-trans
+    :enable shapep-when-shape-eq)
+
+  ;; equivalence of lists of shapes:
+
+  (defruled shapes-eq-symm!
+    (implies (shapes-eq shapes1 shapes2)
+             (shapes-eq shapes2 shapes1))
+    :use shapes-eq-symm
+    :enable shape-listp-when-shapes-eq)
+
+  (defruled shapes-eq-trans!
+    (implies (and (shapes-eq shapes1 shapes2)
+                  (shapes-eq shapes2 shapes3))
+             (shapes-eq shapes1 shapes3))
+    :use shapes-eq-trans
+    :enable shape-listp-when-shapes-eq)
+
+  ;; equivalence of ispaces:
+
+  (defruled ispace-eq-symm!
+    (implies (ispace-eq ispace1 ispace2)
+             (ispace-eq ispace2 ispace1))
+    :use ispace-eq-symm
+    :enable ispacep-when-ispace-eq)
+
+  (defruled ispace-eq-trans!
+    (implies (and (ispace-eq ispace1 ispace2)
+                  (ispace-eq ispace2 ispace3))
+             (ispace-eq ispace1 ispace3))
+    :use ispace-eq-trans
+    :enable ispacep-when-ispace-eq)
+
+  ;; equivalence of lists of ispaces:
+
+  (defruled ispaces-eq-symm!
+    (implies (ispaces-eq ispaces1 ispaces2)
+             (ispaces-eq ispaces2 ispaces1))
+    :use ispaces-eq-symm
+    :enable ispace-listp-when-ispaces-eq)
+
+  (defruled ispaces-eq-trans!
+    (implies (and (ispaces-eq ispaces1 ispaces2)
+                  (ispaces-eq ispaces2 ispaces3))
+             (ispaces-eq ispaces1 ispaces3))
+    :use ispaces-eq-trans
+    :enable ispace-listp-when-ispaces-eq)
+
+  ;; congruence of shapes:
+
+  (defruled shape-eq-cong-dims!
+    (implies (dims-eq dims1 dims2)
+             (shape-eq (shape-dims dims1) (shape-dims dims2)))
+    :use shape-eq-cong-dims
+    :enable dim-listp-when-dims-eq)
+
+  (defruled shape-eq-cong-append!
+    (implies (shapes-eq shapes1 shapes2)
+             (shape-eq (shape-append shapes1) (shape-append shapes2)))
+    :use shape-eq-cong-append
+    :enable shape-listp-when-shapes-eq)
+
+  (defruled shape-eq-cong-splice!
+    (implies (ispaces-eq ispaces1 ispaces2)
+             (shape-eq (shape-splice ispaces1) (shape-splice ispaces2)))
+    :use shape-eq-cong-splice
+    :enable ispace-listp-when-ispaces-eq)
+
+  ;; congruence of ispaces:
+
+  (defruled ispace-eq-cong-dim!
+    (implies (dim-eq dim1 dim2)
+             (ispace-eq (ispace-dim dim1) (ispace-dim dim2)))
+    :use ispace-eq-cong-dim
+    :enable dimp-when-dim-eq)
+
+  (defruled ispace-eq-cong-shape!
+    (implies (shape-eq shape1 shape2)
+             (ispace-eq (ispace-shape shape1) (ispace-shape shape2)))
+    :use ispace-eq-cong-shape
+    :enable shapep-when-shape-eq)
+
+  ;; congruence of lists of shapes:
+
+  (defruled shapes-eq-cong-cons!
+    (implies (and (shape-eq shape1 shape2)
+                  (shapes-eq shapes1 shapes2))
+             (shapes-eq (cons shape1 shapes1) (cons shape2 shapes2)))
+    :use shapes-eq-cong-cons
+    :enable (shapep-when-shape-eq shape-listp-when-shapes-eq))
+
+  ;; congruence of lists of ispaces:
+
+  (defruled ispaces-eq-cong-cons!
+    (implies (and (ispace-eq ispace1 ispace2)
+                  (ispaces-eq ispaces1 ispaces2))
+             (ispaces-eq (cons ispace1 ispaces1) (cons ispace2 ispaces2)))
+    :use ispaces-eq-cong-cons
+    :enable (ispacep-when-ispace-eq ispace-listp-when-ispaces-eq))
+
+  ;; normalization of shapes built from dimensions:
+
+  (defruled shape-eq-dims2m!
+    (implies (consp dims)
+             (shape-eq (shape-dims (cons dim dims))
+                       (shp++ (shp dim) (shape-dims dims))))
+    :use (:instance shape-eq-dims2m
+                    (dim (dim-fix dim))
+                    (dims (dim-list-fix dims))))
+
+  ;; normalization of non-empty and non-binary concatenations:
+
+  (defruled shape-eq-append3m!
+    (implies (consp shapes)
+             (shape-eq (shape-append (list* shape1 shape2 shapes))
+                       (shape-append (cons (shp++ shape1 shape2) shapes))))
+    :use (:instance shape-eq-append3m
+                    (shape1 (shape-fix shape1))
+                    (shape2 (shape-fix shape2))
+                    (shapes (shape-list-fix shapes))))
+
+  ;; normalization of splices:
+
+  (defruled shape-eq-splice1m-dim!
+    (shape-eq (shape-splice (cons (ispace-dim dim) ispaces))
+              (shp++ (shp dim) (shape-splice ispaces)))
+    :use (:instance shape-eq-splice1m-dim
+                    (dim (dim-fix dim))
+                    (ispaces (ispace-list-fix ispaces))))
+
+  (defruled shape-eq-splice1m-shape!
+    (shape-eq (shape-splice (cons (ispace-shape shape) ispaces))
+              (shp++ shape (shape-splice ispaces)))
+    :use (:instance shape-eq-splice1m-shape
+                    (shape (shape-fix shape))
+                    (ispaces (ispace-list-fix ispaces))))
+
+  ;; monoid properties of concatenation:
+
+  (defruled shape-eq-append-assoc!
+    (shape-eq (shp++ (shp++ shape1 shape2) shape3)
+              (shp++ shape1 (shp++ shape2 shape3)))
+    :use (:instance shape-eq-append-assoc
+                    (shape1 (shape-fix shape1))
+                    (shape2 (shape-fix shape2))
+                    (shape3 (shape-fix shape3))))
+
+  ;; equivalence of dimension ispace and singleton shape ispace:
+
+  (defruled ispace-eq-ispace-dim-shape!
+    (ispace-eq (ispace-dim dim) (ispace-shape (shp dim)))
+    :use (:instance ispace-eq-ispace-dim-shape (dim (dim-fix dim)))))

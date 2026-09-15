@@ -299,6 +299,9 @@ BOZO what is going on here?
         state))
     state))
 
+; Matt K.: Formerly removed the following test for ACL2 built on CCL on
+; Arm-based Macs (and other Arm machines) due to mishandling of stack overflow,
+; but that bug has been fixed (see https://github.com/Clozure/ccl/issues/632).
 (make-event
  (let ((state (test7 state)))
    (value '(value-triple :success))))

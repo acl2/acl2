@@ -270,28 +270,34 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define binarize-add-dims ((dims dim-listp))
-  :returns (new-dim dimp)
+  :returns (mv (new-dim dimp)
+               (proof dim-eq-proofp))
   :short "Turn a list of dimensions in an addition
-          into a dimension with only binary additions."
+          into a dimension with only binary additions,
+          and construct a proof tree demonstrating equivalence."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is called on the dimension arguments of an addition dimension.")
    (xdoc::p
-    "We show that the resulting dimension is equivalent to
-     the addition of the argument dimensions.")
+    "The proof tree proves the equivalence of
+     @('(dim-add dims)') and the new dimension.
+     Its structure mirrors the recursion of this function:
+     the base cases use the rules
+     @('add0'), @('add1'), and @('refl'),
+     while the recursive case chains, via the rule @('trans'),
+     an instance of the rule @('add3m')
+     with the recursively built proof tree.")
+   (xdoc::p
+    "We use the constructed proof tree to show the equivalence,
+     as we do in the related @(tsee binarize-add-in-dims).")
    (xdoc::p
     "We show that the resulting dimension
      only has binary additions if the argument dimensions do.
      This function is called after binarizing the dimensions
      passed as arguments to this function (see caller);
-     that establishes the hypothesis of the theorem.")
-   (xdoc::p
-    "The equivalence theorem,
-     and the related ones in @(tsee binarize-add-in-dims),
-     are proved using the inference rule theorems.
-     In the analogous theorems for multiplications,
-     we used a different proof approach, for comparison.")
+     that establishes the hypothesis of the theorem.
+     This is proved without using the proof trees.")
    (xdoc::p
     "We also show that this function preserves
      the binary status of multiplications
@@ -299,28 +305,39 @@
      which this function does not affect.
      This serves to compose this transformation
      with the ones for multiplications and subtractions."))
-  (cond ((endp dims) (dim-const 0))
-        ((endp (cdr dims)) (dim-fix (car dims)))
-        ((endp (cddr dims)) (dim-add dims))
-        (t (binarize-add-dims (cons (dim-add (list (car dims)
-                                                   (cadr dims)))
-                                    (cddr dims)))))
+  (cond ((endp dims) (mv (dim-const 0)
+                         (dim-eq-proof-add0)))
+        ((endp (cdr dims)) (mv (dim-fix (car dims))
+                               (dim-eq-proof-add1 (dim-fix (car dims)))))
+        ((endp (cddr dims)) (mv (dim-add dims)
+                                (dim-eq-proof-refl (dim-add dims))))
+        (t (b* ((dims1 (cons (dim-add (list (car dims)
+                                            (cadr dims)))
+                             (cddr dims)))
+                ((mv new-dim proof) (binarize-add-dims dims1)))
+             (mv new-dim
+                 (make-dim-eq-proof-trans
+                  :dim1 (dim-add dims)
+                  :dim2 (dim-add dims1)
+                  :dim3 new-dim
+                  :premise1-proof (make-dim-eq-proof-add3m
+                                   :dim1 (dim-fix (car dims))
+                                   :dim2 (dim-fix (cadr dims))
+                                   :dims (dim-list-fix (cddr dims)))
+                  :premise2-proof proof)))))
   :measure (len dims)
   :verify-guards :after-returns
 
   ///
 
-  (defret dim-eq-of-binarize-add-dims
+  (defret dim-eq-proof-validp-of-binarize-add-dims
     (implies (dim-listp dims)
-             (dim-eq (dim-add dims) new-dim))
+             (dim-eq-proof-validp proof
+                                  (dim-add dims)
+                                  new-dim))
     :hints (("Goal"
              :induct t
-             :in-theory (enable binarize-add-dims
-                                dim-eq-refl
-                                dim-eq-add1
-                                dim-eq-add3m
-                                dim-eq-trans-swapped))
-            '(:use (dim-eq-add0))))
+             :in-theory (enable* dim-equivalence-definition-validp-defs))))
 
   (defret dim-binaddp-of-binarize-add-dims
     (implies (dim-list-binaddp dims)
@@ -356,12 +373,15 @@
 ;;;;;;;;;;
 
 (defines binarize-add-in-dims
-  :short "Turn dimensions into equivalent ones with only binary additions."
+  :short "Turn dimensions into equivalent ones
+          with only binary additions,
+          and construct proof trees demonstrating the equivalence."
   :long
   (xdoc::topstring
    (xdoc::p
     "We show that the resulting dimensions are equivalent to
-     the argument ones.")
+     the argument ones.
+     This is done via the constructed proof trees.")
    (xdoc::p
     "We show that the resulting dimensions only have binary additions.")
    (xdoc::p
@@ -373,27 +393,62 @@
      with the ones for multiplications and subtractions."))
 
   (define binarize-add-in-dim ((dim dimp))
-    :returns (new-dim dimp)
+    :returns (mv (new-dim dimp)
+                 (proof dim-eq-proofp))
     :parents (ispace-equivalence-normalizations binarize-add-in-dims)
     :short "Turn a dimension into
-            an equivalent one with only binary additions."
+            an equivalent one with only binary additions,
+            and construct a proof tree demonstrating the equivalence."
     (dim-case
      dim
-     :var (dim-var dim.name)
-     :const (dim-const dim.val)
-     :add (binarize-add-dims (binarize-add-in-dim-list dim.dims))
-     :mul (dim-mul (binarize-add-in-dim-list dim.dims))
-     :sub (dim-sub (binarize-add-in-dim-list dim.dims)))
+     :var (mv (dim-var dim.name)
+              (dim-eq-proof-refl (dim-var dim.name)))
+     :const (mv (dim-const dim.val)
+                (dim-eq-proof-refl (dim-const dim.val)))
+     :add (b* (((mv new-dims proof) (binarize-add-in-dim-list dim.dims))
+               ((mv new-dim proof1) (binarize-add-dims new-dims)))
+            (mv new-dim
+                (make-dim-eq-proof-trans
+                 :dim1 (dim-add dim.dims)
+                 :dim2 (dim-add new-dims)
+                 :dim3 new-dim
+                 :premise1-proof (make-dim-eq-proof-cong-add
+                                  :dims1 dim.dims
+                                  :dims2 new-dims
+                                  :premise1-proof proof)
+                 :premise2-proof proof1)))
+     :mul (b* (((mv new-dims proof) (binarize-add-in-dim-list dim.dims)))
+            (mv (dim-mul new-dims)
+                (make-dim-eq-proof-cong-mul
+                 :dims1 dim.dims
+                 :dims2 new-dims
+                 :premise1-proof proof)))
+     :sub (b* (((mv new-dims proof) (binarize-add-in-dim-list dim.dims)))
+            (mv (dim-sub new-dims)
+                (make-dim-eq-proof-cong-sub
+                 :dims1 dim.dims
+                 :dims2 new-dims
+                 :premise1-proof proof))))
     :measure (dim-count dim))
 
   (define binarize-add-in-dim-list ((dims dim-listp))
-    :returns (new-dims dim-listp)
+    :returns (mv (new-dims dim-listp)
+                 (proof dims-eq-proofp))
     :parents (ispace-equivalence-normalizations binarize-add-in-dims)
     :short "Turn a list of dimensions into
-            an equivalent one with only binary additions."
-    (cond ((endp dims) nil)
-          (t (cons (binarize-add-in-dim (car dims))
-                   (binarize-add-in-dim-list (cdr dims)))))
+            an equivalent one with only binary additions,
+            and construct a proof tree demonstrating the equivalence."
+    (b* (((when (endp dims)) (mv nil (dims-eq-proof-refl nil)))
+         ((mv new-dim proof1) (binarize-add-in-dim (car dims)))
+         ((mv new-dims proof2) (binarize-add-in-dim-list (cdr dims))))
+      (mv (cons new-dim new-dims)
+          (make-dims-eq-proof-cong-cons
+           :dim1 (dim-fix (car dims))
+           :dim2 new-dim
+           :dims1 (dim-list-fix (cdr dims))
+           :dims2 new-dims
+           :premise1-proof proof1
+           :premise2-proof proof2)))
     :measure (dim-list-count dims)
 
     ///
@@ -416,36 +471,21 @@
 
   (fty::deffixequiv-mutual binarize-add-in-dims)
 
-  (defret-mutual dim-eq-of-binarize-add-in-dims
-    (defret dim-eq-of-binarize-add-in-dim
+  (defret-mutual dim-eq-proof-validp-of-binarize-add-in-dims
+    (defret dim-eq-proof-validp-of-binarize-add-in-dim
       (implies (dimp dim)
-               (dim-eq dim new-dim))
+               (dim-eq-proof-validp proof
+                                    dim
+                                    new-dim))
       :fn binarize-add-in-dim)
-    (defret dims-eq-of-binarize-add-in-dim-list
+    (defret dims-eq-proof-validp-of-binarize-add-in-dim-list
       (implies (dim-listp dims)
-               (dims-eq dims new-dims))
+               (dims-eq-proof-validp proof
+                                     dims
+                                     new-dims))
       :fn binarize-add-in-dim-list)
     :hints (("Goal"
-             :in-theory (e/d (dim-eq-refl
-                              dim-eq-trans-swapped
-                              dims-eq-refl
-                              dims-eq-cong-cons)
-                             (dim-eq-of-binarize-add-dims)))
-            '(:use ((:instance dim-eq-of-binarize-add-dims
-                               (dims (binarize-add-in-dim-list
-                                      (dim-add->dims dim))))
-                    (:instance dim-eq-cong-add
-                               (dims1 (dim-add->dims dim))
-                               (dims2 (binarize-add-in-dim-list
-                                       (dim-add->dims dim))))
-                    (:instance dim-eq-cong-mul
-                               (dims1 (dim-mul->dims dim))
-                               (dims2 (binarize-add-in-dim-list
-                                       (dim-mul->dims dim))))
-                    (:instance dim-eq-cong-sub
-                               (dims1 (dim-sub->dims dim))
-                               (dims2 (binarize-add-in-dim-list
-                                       (dim-sub->dims dim))))))))
+             :in-theory (enable* dim-equivalence-definition-validp-defs))))
 
   (defret-mutual dim-binaddp-of-binarize-add-in-dims
     (defret dim-binaddp-of-binarize-add-in-dim
@@ -470,8 +510,9 @@
     :hints (("Goal"
              :in-theory (enable* ast-binmulp-rules))
             '(:expand ((dim-binmulp dim)
-                       (dim-binmulp (dim-mul (binarize-add-in-dim-list
-                                              (dim-mul->dims dim))))))))
+                       (dim-binmulp
+                        (dim-mul (mv-nth 0 (binarize-add-in-dim-list
+                                            (dim-mul->dims dim)))))))))
 
   (defret-mutual dim-unisubp-of-binarize-add-in-dims
     (defret dim-unisubp-of-binarize-add-in-dim
@@ -485,8 +526,9 @@
     :hints (("Goal"
              :in-theory (enable* ast-unisubp-rules))
             '(:expand ((dim-unisubp dim)
-                       (dim-unisubp (dim-sub (binarize-add-in-dim-list
-                                              (dim-sub->dims dim))))))))
+                       (dim-unisubp
+                        (dim-sub (mv-nth 0 (binarize-add-in-dim-list
+                                            (dim-sub->dims dim)))))))))
 
   (defret-mutual dim-nonullsubp-of-binarize-add-in-dims
     (defret dim-nonullsubp-of-binarize-add-in-dim
@@ -500,8 +542,9 @@
     :hints (("Goal"
              :in-theory (enable* ast-nonullsubp-rules))
             '(:expand ((dim-nonullsubp dim)
-                       (dim-nonullsubp (dim-sub (binarize-add-in-dim-list
-                                                 (dim-sub->dims dim)))))))))
+                       (dim-nonullsubp
+                        (dim-sub (mv-nth 0 (binarize-add-in-dim-list
+                                            (dim-sub->dims dim))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -526,17 +569,14 @@
      with the recursively built proof tree.")
    (xdoc::p
     "We use the constructed proof tree to show the equivalence,
-     as we do in the related @(tsee binarize-mul-in-dims).
-     This is a different approach than used for additions,
-     for comparison of the two approaches.")
+     as we do in the related @(tsee binarize-mul-in-dims).")
    (xdoc::p
     "We show that the resulting dimension
      only has binary multiplications if the argument dimensions do.
      This function is called after binarizing the dimensions
      passed as arguments to this function (see caller);
      that establishes the hypothesis of the theorem.
-     This is proved without using the proof trees,
-     similarly to additions.")
+     This is proved without using the proof trees.")
    (xdoc::p
     "We also show that this function preserves
      the binary status of additions
@@ -2427,8 +2467,12 @@
      described in @(see dim-equivalence-definition)."))
   (implies (dimp dim)
            (dim-eq-to-binadd-p dim))
-  :use (:instance dim-eq-to-binadd-p-suff
-                  (dim1 (binarize-add-in-dim dim))))
+  :use ((:instance dim-eq-to-binadd-p-suff
+                   (dim1 (mv-nth 0 (binarize-add-in-dim dim))))
+        (:instance dim-eq-when-proof-validp
+                   (proof (mv-nth 1 (binarize-add-in-dim dim)))
+                   (concl.dim1 dim)
+                   (concl.dim2 (mv-nth 0 (binarize-add-in-dim dim))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2509,26 +2553,34 @@
            (dim-eq-to-binadd-binmul-unisub-p dim))
   :use ((:instance dim-eq-to-binadd-binmul-unisub-p-suff
                    (dim1 (mv-nth 0 (binarize-mul-in-dim
-                                    (binarize-add-in-dim
-                                     (mv-nth 0 (unarize-sub-in-dim dim)))))))
+                                    (mv-nth 0 (binarize-add-in-dim
+                                               (mv-nth 0 (unarize-sub-in-dim
+                                                          dim))))))))
         (:instance dim-eq-when-proof-validp
                    (proof (mv-nth 1 (unarize-sub-in-dim dim)))
                    (concl.dim1 dim)
                    (concl.dim2 (mv-nth 0 (unarize-sub-in-dim dim))))
-        (:instance dim-eq-of-binarize-add-in-dim
-                   (dim (mv-nth 0 (unarize-sub-in-dim dim))))
+        (:instance dim-eq-when-proof-validp
+                   (proof (mv-nth 1 (binarize-add-in-dim
+                                     (mv-nth 0 (unarize-sub-in-dim dim)))))
+                   (concl.dim1 (mv-nth 0 (unarize-sub-in-dim dim)))
+                   (concl.dim2 (mv-nth 0 (binarize-add-in-dim
+                                          (mv-nth 0 (unarize-sub-in-dim
+                                                     dim))))))
         (:instance dim-eq-when-proof-validp
                    (proof (mv-nth 1 (binarize-mul-in-dim
-                                     (binarize-add-in-dim
-                                      (mv-nth 0 (unarize-sub-in-dim dim))))))
-                   (concl.dim1 (binarize-add-in-dim
-                                (mv-nth 0 (unarize-sub-in-dim dim))))
+                                     (mv-nth 0 (binarize-add-in-dim
+                                                (mv-nth 0 (unarize-sub-in-dim
+                                                           dim)))))))
+                   (concl.dim1 (mv-nth 0 (binarize-add-in-dim
+                                          (mv-nth 0 (unarize-sub-in-dim
+                                                     dim)))))
                    (concl.dim2 (mv-nth 0 (binarize-mul-in-dim
-                                          (binarize-add-in-dim
-                                           (mv-nth 0 (unarize-sub-in-dim
-                                                      dim))))))))
-  :enable dim-eq-trans-swapped
-  :disable dim-eq-of-binarize-add-in-dim)
+                                          (mv-nth 0 (binarize-add-in-dim
+                                                     (mv-nth 0
+                                                             (unarize-sub-in-dim
+                                                              dim)))))))))
+  :enable dim-eq-trans-swapped)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

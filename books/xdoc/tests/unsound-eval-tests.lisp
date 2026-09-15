@@ -94,7 +94,11 @@
 ; enough to avoid the stack overflow in CMUCL or any other Lisp for which this
 ; turns out to be an issue.  In fact we've seen problems here with Allegro CL
 ; and CLISP, so we exclude those, too.
- (if (member-eq (@ host-lisp) '(:CMU :ALLEGRO :CLISP))
+ (if (member-eq (@ host-lisp)
+; Matt K.: Formerly removed this test for ACL2 built on CCL on Arm-based Macs
+; (and other Arm machines) due to mishandling of stack overflow, but that bug
+; has been fixed (see https://github.com/Clozure/ccl/issues/632).
+                '(:CMU :ALLEGRO :CLISP))
      (f 3)
    (infinite 3)))
 

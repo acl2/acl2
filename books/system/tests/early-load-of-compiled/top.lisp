@@ -34,4 +34,7 @@
 
 (include-book "ttag")
 
+; Matt K.: Formerly excluded for ACL2 built on CCL on Arm-based Macs (and other
+; Arm machines), but no longer after a CCL bug fix
+; (see https://github.com/Clozure/ccl/pull/630).
 (include-book "eq-test")

@@ -419,9 +419,17 @@
     :true-listp t
     :elementp-of-nil nil
     :pred type-listp
-    :measure (two-nats-measure (acl2-count x) 0))
+    :measure (two-nats-measure (acl2-count x) 0)
+
+    ///
+
+    (defruled cdr-of-type-list-fix
+      (equal (cdr (type-list-fix x))
+             (type-list-fix (cdr x)))
+      :enable type-list-fix))
 
   ///
+
   (defrule type-struni-member-list-count-of-append
     (equal (type-struni-member-list-count (append x y))
            (+ (type-struni-member-list-count x)

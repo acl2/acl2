@@ -1,4 +1,4 @@
-; Cert params for translate-dag-to-stp.lisp
+; Cert flags for translate-dag-to-stp.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2020 Kestrel Institute

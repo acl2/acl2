@@ -24,6 +24,7 @@
 (include-book "character-result")
 (include-book "character-set")
 (include-book "character-any-map")
+(include-book "character-nat-map")
 (include-book "database")
 (include-book "defbyte")
 (include-book "defbyte-ihs-theorems")
@@ -116,6 +117,7 @@
 (include-book "symbol-pseudoeventform-alist")
 (include-book "symbol-pseudoterm-alist")
 (include-book "string-option")
+(include-book "symbol-option")
 (include-book "ubyte32-option")
 (include-book "true-list-set")
 

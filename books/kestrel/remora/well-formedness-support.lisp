@@ -144,6 +144,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; The executable counterpart of TYPE-MAP-WFP, which is quantified and so
+; cannot be run.  It checks, by recursion over the omap, that every type in
+; the map is well formed; the bridge theorem connects the two.
+
+(define type-map-all-wfp ((tenv string-type-mapp))
+  :returns (yes/no booleanp)
+  :short "Check, executably, that every type in a map is well formed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the executable counterpart of @(tsee type-map-wfp), which is
+     quantified and so cannot be run.  It guards the types that the type
+     environment operations supply (see @(tsee extend-tenv-with-binds)),
+     and lets the well-formedness of the primitive operations' types be
+     settled by evaluation."))
+  (b* ((tenv (string-type-map-fix tenv))
+       ((when (omap::emptyp tenv)) t)
+       ((mv & type) (omap::head tenv)))
+    (and (type-wfp type)
+         (type-map-all-wfp (omap::tail tenv))))
+  :measure (acl2-count (string-type-map-fix tenv)))
+
+; The executable check implies the quantified invariant: the assoc of any
+; key is a pair the check visited.
+
+(defruled type-map-wfp-when-type-map-all-wfp
+  :short "The executable check establishes @(tsee type-map-wfp)."
+  (implies (type-map-all-wfp tenv)
+           (type-map-wfp tenv))
+  :enable (type-map-wfp)
+  :use ((:instance type-wfp-of-assoc-when-type-map-all-wfp
+                   (key (type-map-wfp-witness tenv))))
+  :prep-lemmas
+  ((defruled type-wfp-of-assoc-when-type-map-all-wfp
+     (implies (and (type-map-all-wfp tenv)
+                   (omap::assoc key (string-type-map-fix tenv)))
+              (type-wfp (cdr (omap::assoc key (string-type-map-fix tenv)))))
+     :induct (type-map-all-wfp tenv)
+     :enable (type-map-all-wfp omap::assoc))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Type substitution preserves well-formedness under the invariant.
 
 (defsection wfp-of-subst-type-vars
