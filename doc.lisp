@@ -107045,6 +107045,12 @@ Bug Fixes
   Anthropic's Claude; see [community-book]
   [30m[47msystem/tests/elim-iff-hyp.lisp[0m[0m.
 
+  The [functional-instantiation] code was modified to correct a
+  soundness bug caused by our failure to completely avoid variable
+  capture when instantiating the constraints.  See the comment in
+  [30m[47mremove-capture-in-constraint-lst[0m[0m.  This bug was discovered by Eric
+  Smith with the help of Anthropic's Claude.
+
   When [30m[47m[make-event][0m[0m expansion takes place, the result might not be a
   valid ACL2 object.  ACL2 checked for this situation, but only when
   the [known-package-alist] changed.  Now the check is done
