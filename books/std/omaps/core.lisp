@@ -753,6 +753,11 @@
     (equal (consp (assoc key map))
            (and (assoc key map) t)))
 
+  (defrule car-of-assoc-when-assoc
+    (implies (assoc key map)
+             (equal (car (assoc key map)) key))
+    :induct t)
+
   (defrule assoc-of-head
     (iff (assoc (mv-nth 0 (head map)) map)
          (not (emptyp map))))
