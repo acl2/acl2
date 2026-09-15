@@ -285,7 +285,7 @@
              source-charset-end-of-lines-wfp
              acl2::char-code-set-monotone
              set::in
-             set::expensive-rules)))
+             set::expensive-rules))
 
   (defruled basic-source-char-of-source-charset-basic+lf
     (implies (set::in bchar (ascii-basic-source-chars std))
@@ -294,10 +294,8 @@
                                        std)
                     bchar))
     :enable (basic-source-char
-             source-charset-basic+lf
-             acl2::any-nat-mapp-when-character-nat-mapp
              acl2::lookup-inverse-of-char-code-map
-             set::expensive-rules))
+             set::expensive-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
