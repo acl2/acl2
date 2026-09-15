@@ -14,7 +14,7 @@
 (include-book "types")
 (include-book "macro-tables")
 
-(local (include-book "std/alists/top" :dir :system))
+(include-book "kestrel/fty/deftreemap" :dir :system)
 
 (acl2::controlled-configuration)
 
@@ -167,7 +167,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defalist valid-ord-scope
+(fty::deftreemap valid-ord-scope
   :short "Fixtype of validation scopes of ordinary identifiers."
   :long
   (xdoc::topstring
@@ -175,24 +175,18 @@
     "Identifiers have scopes [C17:6.2.1], which the validator tracks.
      In each scope, for each name space,
      each identifier must have one meaning (if any) [C17:6.2.1/2].
-     Thus, we use an alist from identifiers
+     Thus, we use a map from identifiers
      to the validation information about ordinary identifiers,
      to track each scope in the name space of ordinary identifiers."))
   :key-type ident
   :val-type valid-ord-info
-  :true-listp t
-  :keyp-of-nil nil
-  :valp-of-nil nil
   :pred valid-ord-scopep
-  :prepwork ((set-induction-depth-limit 1))
   ///
 
-  (defrule valid-ord-infop-of-cdr-assoc-when-valid-ord-scopep
-    (implies (and (valid-ord-scopep scope)
-                  (assoc-equal ident scope))
-             (valid-ord-infop (cdr (assoc-equal ident scope))))
-    :induct t
-    :enable (valid-ord-scopep assoc-equal)))
+  (defrule valid-ord-info-optionp-of-lookup-when-valid-ord-scopep
+    (implies (valid-ord-scopep scope)
+             (valid-ord-info-optionp (treemap::lookup ident scope)))
+    :cases ((treeset::in ident (treemap::keys scope)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -236,30 +230,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defalist valid-tag-scope
+(fty::deftreemap valid-tag-scope
   :short "Fixtype of validation scopes of tags."
   :long
   (xdoc::topstring
    (xdoc::p
     "The same tag may refer to different types in different scopes.
-     Therefore, we use an alist from identifiers
+     Therefore, we use a map from identifiers
      to the validation information for tags
      to track the meaning of tags in each scope."))
   :key-type ident
   :val-type valid-tag-info
-  :true-listp t
-  :keyp-of-nil nil
-  :valp-of-nil nil
   :pred valid-tag-scopep
-  :prepwork ((set-induction-depth-limit 1))
   ///
 
-  (defrule valid-tag-infop-of-cdr-assoc-when-valid-tag-scopep
-    (implies (and (valid-tag-scopep scope)
-                  (assoc-equal ident scope))
-             (valid-tag-infop (cdr (assoc-equal ident scope))))
-    :induct t
-    :enable (valid-tag-scopep assoc-equal)))
+  (defrule valid-tag-info-optionp-of-lookup-when-valid-tag-scopep
+    (implies (valid-tag-scopep scope)
+             (valid-tag-info-optionp (treemap::lookup ident scope)))
+    :cases ((treeset::in ident (treemap::keys scope)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -274,16 +262,7 @@
      and the name space of tags."))
   ((ord valid-ord-scope)
    (tag valid-tag-scope))
-  :pred valid-scopep
-  ///
-
-  (defrule alistp-of-valid-scope->ord
-    (alistp (valid-scope->ord x))
-    :enable alistp-when-valid-ord-scopep-rewrite)
-
-  (defrule alistp-of-valid-scope->tag
-    (alistp (valid-scope->tag x))
-    :enable alistp-when-valid-tag-scopep-rewrite))
+  :pred valid-scopep)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -348,7 +327,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap valid-externals
+(fty::deftreemap valid-externals
   :short "Fixtype of validation information associated with identifiers with
           external linkage."
   :key-type ident
@@ -356,11 +335,10 @@
   :pred valid-externalsp
   ///
 
-  (defrule valid-ext-info-optionp-of-cdr-assoc-when-valid-externalsp
+  (defrule valid-ext-info-optionp-of-lookup-when-valid-externalsp
     (implies (valid-externalsp externals)
-             (valid-ext-info-optionp (cdr (omap::assoc ident externals))))
-    :induct t
-    :enable (valid-externalsp omap::assoc valid-ext-info-optionp)))
+             (valid-ext-info-optionp (treemap::lookup ident externals)))
+    :cases ((treeset::in ident (treemap::keys externals)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -413,7 +391,7 @@
    (xdoc::p
     "Scopes always start empty, i.e. with no identifiers.
      This function returns the empty scope."))
-  (make-valid-scope :ord nil))
+  (make-valid-scope :ord (treemap::empty) :tag (treemap::empty)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -511,8 +489,8 @@
      (b* (((when (endp scopes)) (mv nil nil))
           (scope (car scopes))
           (ord-scope (valid-scope->ord scope))
-          (ident+info (assoc-equal (ident-fix ident) ord-scope))
-          ((when ident+info) (mv (cdr ident+info) (bool-fix currentp))))
+          (info? (treemap::lookup (ident-fix ident) ord-scope))
+          ((when info?) (mv info? (bool-fix currentp))))
        (valid-lookup-ord-loop ident (cdr scopes) nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -529,11 +507,8 @@
      It is used in some situations."))
   (b* ((scopes (valid-table->scopes table))
        ((when (endp scopes)) (raise "Internal error: no scopes."))
-       (scope (car (last scopes)))
-       (ident+info (assoc-equal (ident-fix ident)
-                                (valid-scope->ord scope)))
-       ((when ident+info) (cdr ident+info)))
-    nil)
+       (scope (car (last scopes))))
+    (treemap::lookup (ident-fix ident) (valid-scope->ord scope)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -557,8 +532,8 @@
      (b* (((when (endp scopes)) (mv nil nil))
           (scope (car scopes))
           (tag-scope (valid-scope->tag scope))
-          (ident+info (assoc-equal (ident-fix ident) tag-scope))
-          ((when ident+info) (mv (cdr ident+info) (bool-fix currentp))))
+          (info? (treemap::lookup (ident-fix ident) tag-scope))
+          ((when info?) (mv info? (bool-fix currentp))))
        (valid-lookup-tag-loop ident (cdr scopes) nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -581,14 +556,14 @@
         (valid-table-fix table))
        (scope (car table.scopes))
        (tag-scope (valid-scope->tag scope))
-       (new-tag-scope (acons (ident-fix ident)
-                             (valid-tag-info-fix info)
-                             tag-scope))
+       (new-tag-scope (treemap::update (ident-fix ident)
+                                       (valid-tag-info-fix info)
+                                       tag-scope))
        (new-scope (change-valid-scope scope :tag new-tag-scope))
        (new-scopes (cons new-scope (cdr table.scopes)))
        (table (change-valid-table table :scopes new-scopes)))
     table)
-  :guard-hints (("Goal" :in-theory (enable valid-table-num-scopes acons)))
+  :guard-hints (("Goal" :in-theory (enable valid-table-num-scopes)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
