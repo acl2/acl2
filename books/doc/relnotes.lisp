@@ -226,6 +226,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "ACL2 Arrays")
+
+   (xdoc::p "Rules were improved and functions renamed (e.g.,
+   @('make-empty-array') became @('new-array1').).  See
+   @('[books]/kestrel/acl2-arrays/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "acl2pl::acl2-programming-language"
                              "ACL2 Programming Language Library"))
 
@@ -240,12 +248,78 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Alists Light")
+
+   (xdoc::p "A new book on remove1-assoc-equal was added.  See
+   @('[books]/kestrel/alists-light/')")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "apt::apt" "APT"))
+
+   (xdoc::p "Several transformations were added (@('remove-nesting'),
+   @('add-return-values'), @('arrange-ifs-and-mbts'), and
+   @('annotate-c-locals')).  Various improvements were made to transformations,
+   utilities, and tests.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "arithmetic-5" "Arithmetic-5 library"))
 
    (xdoc::p
     "The @(see arithmetic-5) library has been improved.  See the new section of
      @('arithmetic-5/README') entitled, &ldquo;1.D. The Moore Modifications to
      Prevent Some Rewrite Loops&rdquo;.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "arithmetic-light" "Arithmetic-light"))
+
+   (xdoc::p "Rules were added/improved, and ACL2(r) support was improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "arm::arm32" "ARM32 Model"))
+
+   (xdoc::p "Instruction models were added/fixed, and rules were improved.
+   Some support for library calls was added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "axe" "Axe Toolkit"))
+
+   (xdoc::p "Many improvements and fixes were made to the Axe toolkit,
+   including the core tools and the JVM, x86, and ARM variants. Tests and
+   examples were added and documentation was improved.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Booleans")
+
+   (xdoc::p "Rules were added, improved, and organized.  See
+   @('[books]/kestrel/booleans/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "bv" "Bit-vectors"))
+
+   (xdoc::p "Rules were improved/fixed.  New rules were added and some subsumed
+   ones were removed.  A new book on @('logbitp') was created.  Some
+   definitions were split out into separate books.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Bit-vector Arrays")
+
+   (xdoc::p "Material on arrays of bit-vectors was split out from
+   @('[books]/kestrel/bv-lists') into this new directory.  See
+   @('[books]/kestrel/bv-arrays/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Bit-vector Lists")
+
+   (xdoc::p "Rules were added and improved.  See @('[books]/kestrel/bv-lists/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -281,6 +355,15 @@
 
    (xdoc::p
     "We have introduced a JSON-RPC interface to C-to-C transformations.")
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5
+    "APT Support for ATC")
+
+   (xdoc::p "Rewrite rules and theories were added that support using
+    @(see apt::apt) to prepare to generate code with @(see
+    c::atc). See @('[books]/kestrel/c/atc/support').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -318,6 +401,19 @@
    (xdoc::p
     "Benchmark suites were added for various operations in the library.")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (xdoc::h4 "Executable Parsers")
+
+  (xdoc::p "A proof was added that Mach-o parsing produces a proper parsed
+  Mach-o file.  See @('[books]/kestrel/executable-parsers/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (xdoc::h4 (xdoc::seetopic "file-io-light" "File-io-light"))
+
+  (xdoc::p "Rules were improved and quite a few were added.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "acl2::fty" "FTY Library"))
@@ -343,6 +439,27 @@
      file, @('soundness/hol-in-acl2-supplement.pdf'), presents a soundness
      argument; see file @('README.txt') in that @('soundness') subdirectory for
      context.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (xdoc::h4 "JVM model")
+
+  (xdoc::p "Various clarifications and improvements were made, including to the
+  classfile parser, the invariants over the JVM state, and the checking of
+  individual instructions and sequences.  See @('[books]/kestrel/jvm/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (xdoc::h4 (xdoc::seetopic "kestrel-books" "(Other) Kestrel Libraries"))
+
+  (xdoc::p "Many other fixes and improvements were made to the Kestrel books,
+  including many in response to AI code reviews.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (xdoc::h4 (xdoc::seetopic "lists-light" "Lists-light"))
+
+  (xdoc::p "Rules were added (e.g., about @('all-same') and @('all-equal$')).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -393,6 +510,11 @@
      @(tsee omap::injectivep), and @(tsee omap::closedp),
      along with theorems about them and some other new theorems.")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (xdoc::h4 "Strings-light")
+  (xdoc::p "New rules and tests were added.  See @('[books]/kestrel/strings-light/').")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "terms-light" "Terms-light Library"))
@@ -405,7 +527,8 @@
      unquotes self-quoting constants and replaces translated arithmetic
      aliases such as @('binary-+') with their surface forms,
      and @(tsee reconstruct-and-untranslate-term),
-     which composes it with @(tsee reconstruct-lets-in-term).")
+     which composes it with @(tsee reconstruct-lets-in-term).  Also, various
+     rules were added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -421,6 +544,11 @@
      well-founded-relation) rules) for definitions.  Eliminated support for
      unused utility ('with-supporters-after').")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (xdoc::h4 (xdoc::seetopic "typed-lists-light" "Typed-lists-light"))
+  (xdoc::p "Rules were added, improved, and organized.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "unicode" "Unicode Library"))
@@ -431,6 +559,22 @@
      Theorems were added about @(tsee utf8=>ustring) and @(tsee ustring=>utf8)
      on appended inputs, to support round-trip (parse-then-print) theorems
      for parsers that consume UTF-8.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (xdoc::h4 "(Kestrel) Utilities")
+
+  (xdoc::p "Various rules were added (e.g., about margins, the @('print-base')
+  global, and @('flatten-ands-in-lit')).  Utilities were added to translate
+  terms in @(':logic) mode.  See @('[books]/kestrel/utilities/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (xdoc::h4 "(Kestrel) x86 Library")
+
+  (xdoc::p "Various rules were added, as were the functions @('esi') and
+  @('edi') and some 8-bit and 16-bit register readers.  See
+  @('[books]/kestrel/x86/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -460,15 +604,19 @@
 
    (xdoc::p
     "Allow FGL metafunctions and binder metafunctions to return hypotheses")
-   
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-   
+
    (xdoc::h3 "Documentation")
 
    (xdoc::p
     "A SQL injection vulnerability was fixed in the "
     (xdoc::ahref "https://acl2.org/doc" "web manual")
     " SEO PHP script.")
+
+   (xdoc::p
+    "The manual was improved to include some documentation that had been
+    inadvertently left out (e.g., the @(see taspi) library and @(see defstobj+).)")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -485,6 +633,11 @@
    (xdoc::p
     "A new @('sbcl-only') @(see build::cert_param)
      restricts certification of a book to when the host Lisp is SBCL.")
+
+   (xdoc::p
+    "It is now an error for a book to tagged as needing ACL2(r) but also as
+    incompatible with ACL2(r).  This can happen accidentally due to constraints
+    propagated from different included books")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
