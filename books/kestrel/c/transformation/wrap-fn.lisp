@@ -85,7 +85,7 @@
             :abstract
             (b* ((ident
                    (fresh-ident fresh-ident-base blacklist :force-suffix t)))
-              (retok (insert ident blacklist)
+              (retok (treeset::insert ident blacklist)
                      (c$::change-param-declon
                        (first params)
                        :declor (make-param-declor-nonabstract
@@ -96,7 +96,7 @@
             :none
             (b* ((ident
                    (fresh-ident fresh-ident-base blacklist :force-suffix t)))
-              (retok (insert ident blacklist)
+              (retok (treeset::insert ident blacklist)
                      (c$::change-param-declon
                        (first params)
                        :declor (make-param-declor-nonabstract
