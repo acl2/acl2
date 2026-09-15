@@ -294,21 +294,6 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Booleans")
-
-   (xdoc::p "Rules were added, improved, and organized.  See
-   @('[books]/kestrel/booleans/').")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-   (xdoc::h4 (xdoc::seetopic "bv" "Bit-vectors"))
-
-   (xdoc::p "Rules were improved/fixed.  New rules were added and some subsumed
-   ones were removed.  A new book on @('logbitp') was created.  Some
-   definitions were split out into separate books.")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
    (xdoc::h4 "Bit-vector Arrays")
 
    (xdoc::p "Material on arrays of bit-vectors was split out from
@@ -320,6 +305,21 @@
    (xdoc::h4 "Bit-vector Lists")
 
    (xdoc::p "Rules were added and improved.  See @('[books]/kestrel/bv-lists/').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "bv" "Bit-vectors"))
+
+   (xdoc::p "Rules were improved/fixed.  New rules were added and some subsumed
+   ones were removed.  A new book on @('logbitp') was created.  Some
+   definitions were split out into separate books.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Booleans")
+
+   (xdoc::p "Rules were added, improved, and organized.  See
+   @('[books]/kestrel/booleans/').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -410,6 +410,17 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "fgl::fgl" "FGL library"))
+
+   (xdoc::p
+    "Added a feature to allow FGL to replay a proof with special attention to paths involved in some
+     <em>reference counterexample</em>.")
+
+   (xdoc::p
+    "Allow FGL metafunctions and binder metafunctions to return hypotheses")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (xdoc::h4 (xdoc::seetopic "file-io-light" "File-io-light"))
 
   (xdoc::p "Rules were improved and quite a few were added.")
@@ -429,7 +440,7 @@
      and a @(':universal') option, to generate a single dispatcher function
      that accepts a value of any of the covered types.")
 
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 "HOL4 to ACL2 Translator")
 
@@ -455,22 +466,11 @@
   (xdoc::p "Many other fixes and improvements were made to the Kestrel books,
   including many in response to AI code reviews.")
 
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (xdoc::h4 (xdoc::seetopic "lists-light" "Lists-light"))
 
   (xdoc::p "Rules were added (e.g., about @('all-same') and @('all-equal$')).")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-   (xdoc::h4 (xdoc::seetopic "omap::omaps"
-                             "Standard Ordered Maps (Omaps) Library"))
-
-   (xdoc::p
-    "The omap equivalence, @(tsee omap::mequiv),
-     is now defined in the @('core') book.
-     As a result, the @('with-fixing-theorems') book was removed
-     and congruence rules are proved within @('core').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -483,6 +483,31 @@
      the manual fix instructions were corrected,
      and the update script now reminds users to check
      which patches need to be reapplied.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "zfc" "Set Theory Library"))
+
+   (xdoc::p
+    "Set theory development has continued in @('projects/set-theory/'), including
+     new subdirectories for finiteness and basic topology.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "omap::omaps"
+                             "Standard Ordered Maps (Omaps) Library"))
+
+   (xdoc::p
+    "The omap equivalence, @(tsee omap::mequiv),
+     is now defined in the @('core') book.
+     As a result, the @('with-fixing-theorems') book was removed
+     and congruence rules are proved within @('core').")
+
+   (xdoc::p
+    "Added @(tsee omap::compose), @(tsee omap::inverse),
+     @(tsee omap::restrict-values), @(tsee omap::identityp),
+     @(tsee omap::injectivep), and @(tsee omap::closedp),
+     along with theorems about them and some other new theorems.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -502,20 +527,10 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
-
-   (xdoc::p
-    "Added @(tsee omap::compose), @(tsee omap::inverse),
-     @(tsee omap::restrict-values), @(tsee omap::identityp),
-     @(tsee omap::injectivep), and @(tsee omap::closedp),
-     along with theorems about them and some other new theorems.")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
   (xdoc::h4 "Strings-light")
   (xdoc::p "New rules and tests were added.  See @('[books]/kestrel/strings-light/').")
 
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "terms-light" "Terms-light Library"))
 
@@ -549,7 +564,7 @@
   (xdoc::h4 (xdoc::seetopic "typed-lists-light" "Typed-lists-light"))
   (xdoc::p "Rules were added, improved, and organized.")
 
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "unicode" "Unicode Library"))
 
@@ -560,7 +575,7 @@
      on appended inputs, to support round-trip (parse-then-print) theorems
      for parsers that consume UTF-8.")
 
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (xdoc::h4 "(Kestrel) Utilities")
 
@@ -568,7 +583,7 @@
   global, and @('flatten-ands-in-lit')).  Utilities were added to translate
   terms in @(':logic) mode.  See @('[books]/kestrel/utilities/').")
 
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (xdoc::h4 "(Kestrel) x86 Library")
 
@@ -585,25 +600,6 @@
 
    (xdoc::p
     "We have made various fixed and updates to code and documentation.")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-   (xdoc::h4 (xdoc::seetopic "zfc" "Set Theory Library"))
-
-   (xdoc::p
-    "Set theory development has continued in @('projects/set-theory/'), including
-     new subdirectories for finiteness and basic topology.")
-
-   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-   (xdoc::h4 (xdoc::seetopic "fgl::fgl" "FGL library"))
-
-   (xdoc::p
-    "Added a feature to allow FGL to replay a proof with special attention to paths involved in some
-     <em>reference counterexample</em>.")
-
-   (xdoc::p
-    "Allow FGL metafunctions and binder metafunctions to return hypotheses")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
