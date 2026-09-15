@@ -107035,7 +107035,8 @@ Bug Fixes
   [30m[47msystem/tests/integer-length-bad-optimization.lisp[0m[0m and
   [30m[47msystem/tests/length-bad-optimization.lsp[0m[0m.  Thanks also to Stas
   Boukarev for suggesting the use of [30m[47mnotinline[0m[0m, as our original
-  solution was more complicated (by modifying function types).
+  solution was more complicated (by modifying function types), and to
+  Eric Smith for pointing out a bug in our initial implementation.
 
   An additional restriction was added to [30m[47m:[0m[0m[30m[47m[elim][0m[0m rules, namely, for the
   general form [30m[47m(implies hyp (equiv lhs x))[0m[0m, all occurrences of [30m[47mx[0m[0m in

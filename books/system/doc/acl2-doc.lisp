@@ -109980,7 +109980,8 @@ it."
  @('system/tests/integer-length-bad-optimization.lisp') and
  @('system/tests/length-bad-optimization.lsp').  Thanks also to Stas Boukarev
  for suggesting the use of @('notinline'), as our original solution was more
- complicated (by modifying function types).</p>
+ complicated (by modifying function types), and to Eric Smith for pointing out
+ a bug in our initial implementation.</p>
 
  <p>An additional restriction was added to @(':')@(tsee elim) rules, namely,
  for the general form @('(implies hyp (equiv lhs x))'), all occurrences of
