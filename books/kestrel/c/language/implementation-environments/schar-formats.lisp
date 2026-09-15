@@ -110,7 +110,12 @@
     :rule-classes :linear
     :hints (("Goal"
              :in-theory
-             (enable expt-of-one-less-than-uchar-format->size-lower-bound)))))
+             (enable expt-of-one-less-than-uchar-format->size-lower-bound))))
+
+  (defret schar-format->max-lt-uchar-format->max
+    (< max (uchar-format->max uchar-format))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable uchar-format->max)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
