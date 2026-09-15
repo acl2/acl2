@@ -100,6 +100,7 @@
     (DEVELOPERS-GUIDE-UTILITIES "[books]/system/doc/developers-guide.lisp")
     (DO-NOT-HINT "[books]/tools/do-not.lisp")
     (EASY-SIMPLIFY-TERM "[books]/tools/easy-simplify.lisp")
+    (EMACS-WORKFLOW "[books]/doc/practices.lisp")
     (ER-SOFT+ "[books]/kestrel/utilities/er-soft-plus.lisp")
     (FINAL-CDR "[books]/std/lists/final-cdr.lisp")
     (FTY "[books]/centaur/fty/top.lisp")
@@ -112,6 +113,7 @@
     (LIST-EQUIV "[books]/std/lists/equiv.lisp")
     (LIST-FIX "[books]/std/lists/list-fix.lisp")
     (LOGBITP-REASONING "[books]/centaur/bitops/equal-by-logbitp.lisp")
+    (MAGIC-EV "[books]/clause-processors/meta-extract-user.lisp")
     (MAKE-FLAG "[books]/tools/flag.lisp")
     (MAKE-TERMINATION-THEOREM
      "[books]/kestrel/utilities/make-termination-theorem.lisp")
@@ -133,6 +135,7 @@
     (NOTE-8-5-BOOKS "[books]/doc/relnotes.lisp")
     (NOTE-8-6-BOOKS "[books]/doc/relnotes.lisp")
     (NOTE-8-7-BOOKS "[books]/doc/relnotes.lisp")
+    (NOTE-8-8-BOOKS "[books]/doc/relnotes.lisp")
     (STR::NUMBERS "[books]/std/strings/top.lisp")
     (OPEN-TRACE-FILE! "[books]/tools/open-trace-file-bang.lisp")
     (ORACLE-TIMELIMIT "[books]/tools/oracle-timelimit.lisp")
@@ -109892,7 +109895,7 @@ it."
  <p>Improved error messages for ill-formed first and second arguments of @(tsee
  defund), @(tsee defun-nx), and @(tsee defund-nx).  The case of @('defund-nx')
  was reported by Claude Code as showing no error message at all, for example
- when evaluting the form, @('(defund-nx 42 (x) x)').  Thanks to Eric Smith for
+ when evaluating the form, @('(defund-nx 42 (x) x)').  Thanks to Eric Smith for
  bringing these to our attention.</p>
 
  <p>Improved the @(see guard), as well as the guard violation message, for
@@ -110106,7 +110109,7 @@ it."
  as evaluating @('(set-debugger-enable :never)') &mdash; in particular, @(tsee
  break$) does not enter the Lisp debugger &mdash; except that in addition, you
  cannot exit the ACL2 loop.  This effectively disables @(':q') as a means for
- going into raw Lisp (and also @('(value :q)'), etc.; see @(see q).</li>
+ going into raw Lisp (and also @('(value :q)'), etc.; see @(see q)).</li>
 
  <li>So to avoid the possibility of interaction with raw Lisp for ACL2 built on
  CCL or SBCL, provided trust tags are avoided (see @(see defttag)), you can do
@@ -110120,7 +110123,7 @@ it."
  #+sbcl (setq sb-ext:*invoke-debugger-hook* 'our-abort)
  #+sbcl (lp)
 
- ; Disable entering the debugger and disable existing the ACL2 loop:
+ ; Disable entering the debugger and disable exiting the ACL2 loop:
  (set-debugger-enable :never!)
  (push-untouchable set-debugger-enable-fn t)
  (push-untouchable debugger-enable nil)
