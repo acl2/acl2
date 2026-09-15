@@ -56,7 +56,7 @@
                           (not (mv t (not arg1)))
                           (power-of-2p (mv t (power-of-2p arg1)))
                           (lg (mv t (lg-unguarded arg1)))
-                          (bool-to-bit (mv t (eval-in-logic (bool-to-bit arg1))))
+                          (bool-to-bit (mv t (bool-to-bit-unguarded arg1)))
                           (char-code (mv t (char-code-unguarded arg1)))
                           (code-char (mv t (code-char-unguarded arg1)))
                           (symbol-package-name
@@ -193,7 +193,7 @@
                            (ceiling (mv t (ceiling-unguarded arg1 arg2)))
                            (group (mv t (eval-in-logic (group arg1 arg2))))
                            (group2 (mv t (eval-in-logic (group2 arg1 arg2))))
-                           (set::in (mv t (eval-in-logic (set::in-unguarded arg1 arg2))))
+                           (set::in (mv t (set::in-unguarded arg1 arg2)))
                            (symbol< (mv t (symbol<-unguarded arg1 arg2)))
                            (t (mv nil nil))))
                          (let ((args-to-walk-down (cdr args-to-walk-down)))
@@ -235,7 +235,7 @@
                              (bvsx (mv t (bvsx-unguarded arg1 arg2 arg3)))
                              (sbvdiv (mv t (sbvdiv-unguarded arg1 arg2 arg3)))
                              (sbvdivdown (mv t (eval-in-logic (sbvdivdown arg1 arg2 arg3))))
-                             (sbvrem (mv t (eval-in-logic (sbvrem arg1 arg2 arg3))))
+                             (sbvrem (mv t (sbvrem-unguarded arg1 arg2 arg3)))
                              (sbvmoddown (mv t (eval-in-logic (sbvmoddown arg1 arg2 arg3))))
                              (sbvlt
                                  (mv t (sbvlt-unguarded arg1 arg2 arg3)))
@@ -656,7 +656,7 @@
                         (not (mv t (not arg1)))
                         (power-of-2p (mv t (power-of-2p arg1)))
                         (lg (mv t (lg-unguarded arg1)))
-                        (bool-to-bit (mv t (eval-in-logic (bool-to-bit arg1))))
+                        (bool-to-bit (mv t (bool-to-bit-unguarded arg1)))
                         (char-code (mv t (char-code-unguarded arg1)))
                         (code-char (mv t (code-char-unguarded arg1)))
                         (symbol-package-name
@@ -792,7 +792,7 @@
                            (ceiling (mv t (ceiling-unguarded arg1 arg2)))
                            (group (mv t (eval-in-logic (group arg1 arg2))))
                            (group2 (mv t (eval-in-logic (group2 arg1 arg2))))
-                           (set::in (mv t (eval-in-logic (set::in-unguarded arg1 arg2))))
+                           (set::in (mv t (set::in-unguarded arg1 arg2)))
                            (symbol< (mv t (symbol<-unguarded arg1 arg2)))
                            (t (mv nil nil))))
                         (let ((args-to-walk-down (cdr args-to-walk-down)))
@@ -831,7 +831,7 @@
                             (bvsx (mv t (bvsx-unguarded arg1 arg2 arg3)))
                             (sbvdiv (mv t (sbvdiv-unguarded arg1 arg2 arg3)))
                             (sbvdivdown (mv t (eval-in-logic (sbvdivdown arg1 arg2 arg3))))
-                            (sbvrem (mv t (eval-in-logic (sbvrem arg1 arg2 arg3))))
+                            (sbvrem (mv t (sbvrem-unguarded arg1 arg2 arg3)))
                             (sbvmoddown (mv t (eval-in-logic (sbvmoddown arg1 arg2 arg3))))
                             (sbvlt
                                  (mv t (sbvlt-unguarded arg1 arg2 arg3)))

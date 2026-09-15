@@ -356,7 +356,7 @@
            (not not arg1)                         ;unguarded
            (power-of-2p power-of-2p arg1)         ;unguarded
            (lg lg-unguarded arg1)                 ;see lg-unguarded-correct
-           (bool-to-bit . (eval-in-logic (bool-to-bit arg1)))
+           (bool-to-bit . (bool-to-bit-unguarded arg1)) ; see bool-to-bit-unguarded-correct
            (char-code char-code-unguarded arg1) ;see char-code-unguarded-correct
            (code-char code-char-unguarded arg1) ;see code-char-unguarded-correct
            (symbol-package-name symbol-package-name-unguarded arg1) ;see symbol-package-name-unguarded-correct
@@ -490,7 +490,7 @@
                   (ceiling ceiling-unguarded arg1 arg2)
                   (group . (eval-in-logic (group arg1 arg2)))
                   (group2 . (eval-in-logic (group2 arg1 arg2)))
-                  (set::in . (eval-in-logic (set::in-unguarded arg1 arg2)))
+                  (set::in . (set::in-unguarded arg1 arg2)) ; see set::in-unguarded-correct
                   (symbol< symbol<-unguarded arg1 arg2))
                 (acons 3
                        '((repeat-tail repeat-tail arg1 arg2 arg3) ;; can this blow up?
@@ -524,9 +524,9 @@
                          (bvdiv bvdiv-unguarded arg1 arg2 arg3) ;see bvdiv-unguarded-correct
 
                          (bvsx bvsx-unguarded arg1 arg2 arg3)
-                         (sbvdiv sbvdiv-unguarded arg1 arg2 arg3)
+                         (sbvdiv sbvdiv-unguarded arg1 arg2 arg3) ; see sbvdiv-unguarded-correct
                          (sbvdivdown . (eval-in-logic (sbvdivdown arg1 arg2 arg3)))
-                         (sbvrem . (eval-in-logic (sbvrem arg1 arg2 arg3)))
+                         (sbvrem . (sbvrem-unguarded arg1 arg2 arg3)) ; see sbvrem-unguarded-correct
                          (sbvmoddown . (eval-in-logic (sbvmoddown arg1 arg2 arg3)))
                          (sbvlt sbvlt-unguarded arg1 arg2 arg3)
                          (sbvle sbvle-unguarded arg1 arg2 arg3)
