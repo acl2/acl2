@@ -616,7 +616,7 @@
 
    (xdoc::p
     "The manual was improved to include some documentation that had been
-    inadvertently left out (e.g., the @(see taspi) library and @(see defstob+).)")
+    inadvertently left out (e.g., the @(see taspi) library and @(see defstobj+).)")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
