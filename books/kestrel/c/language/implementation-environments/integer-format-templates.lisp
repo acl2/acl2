@@ -424,9 +424,11 @@
      See [C17:6.2.6.2/1].")
    (xdoc::p
     "The format definition includes a list of bit roles,
-     which should be thought as the juxtaposition of
+     which should be thought of as the juxtaposition of
      the bytes that form the unsigned integer object,
-     in little endian order, i.e. from lower to higher address.
+     in order of increasing address.
+     The roles specify the significance of the value bits,
+     allowing different choices of byte order.
      The length of the list of bit roles
      must be a multiple of @('CHAR_BIT'),
      which we capture in @(tsee uchar-format):
@@ -458,9 +460,11 @@
      See [C17:6.2.6.2/2].")
    (xdoc::p
     "The format definition includes a list of bit roles,
-     which should be thought as the juxtaposition of
+     which should be thought of as the juxtaposition of
      the bytes that form the signed integer object,
-     in little endian order, i.e. from lower to higher address.
+     in order of increasing address.
+     The roles specify the significance of the value bits,
+     allowing different choices of byte order.
      The length of the list of bit roles
      must be a multiple of @('CHAR_BIT'),
      which we capture in @(tsee uchar-format):

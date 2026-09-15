@@ -38,8 +38,8 @@
      subject to certain constraints and correspondences.")
    (xdoc::p
     "We formalize the possible choices of
-     source and execution character sets.
-     This will become part of the "
+     source and execution character sets,
+     used as a component of the "
     (xdoc::seetopic "implementation-environments" "implementation environment")
     "."))
   :order-subtopics (basic-characters
