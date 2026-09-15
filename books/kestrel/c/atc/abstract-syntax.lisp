@@ -117,7 +117,7 @@
       in concrete syntax a function declaration has to end with a semicolon
       (and that is why the grammar rule in [C17:6.9.1/1]
       does not use a declaration, but rather its components):
-      thus, for the ATC pretty-printer,
+      thus, when mapping to the abstract syntax for tools,
       we want to differentiate between
       the type specifier sequences and declarators
       that form a full function declaration,
