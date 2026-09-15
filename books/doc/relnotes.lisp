@@ -460,9 +460,9 @@
 
    (xdoc::p
     "Allow FGL metafunctions and binder metafunctions to return hypotheses")
-   
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-   
+
    (xdoc::h3 "Documentation")
 
    (xdoc::p
