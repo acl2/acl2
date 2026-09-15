@@ -463,7 +463,8 @@
            (c::value-fix (c::value-struct-read ',cmem sval))
            :prepwork ((local (in-theory (enable ,struct-value-onlrp
                                                 c::value-struct-read
-                                                c::value-struct-read-aux))))
+                                                c::value-struct-read-aux
+                                                nth))))
            ///
            (defret ,value-kind-of-struct-value-onlr-mem
              (equal (c::value-kind mval) ,(type-kind (car types)))
