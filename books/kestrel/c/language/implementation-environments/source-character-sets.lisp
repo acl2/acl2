@@ -247,7 +247,6 @@
                                       charset)
                     (char-code bchar)))
     :enable (source-char-code
-             basic-source-char
              source-charset-wfp
              source-charset-has-basic-chars-p
              acl2::code-in-char-code-set-when-char-in-char-set
@@ -343,7 +342,6 @@
                                            (ascii-code-map)))
      (source-charset-wfp (source-charset-ascii end-of-lines) std))
     :enable (source-charset-wfp
-             source-charset-ascii
              source-charset-has-basic-chars-p
              ascii-basic-source-chars-subset-ascii-chars
              acl2::char-code-set-monotone))

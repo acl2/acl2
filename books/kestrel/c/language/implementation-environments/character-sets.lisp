@@ -244,8 +244,7 @@
                   (set::in bchar (ascii-basic-source-chars std)))
              (set::in (charset-basic-source-char bchar charset std uchar-format)
                       (charset-source-chars charset)))
-    :enable (charset-basic-source-char
-             charset-source-chars
+    :enable (charset-source-chars
              charset-wfp
              basic-source-char-in-source-chars)))
 
@@ -269,8 +268,7 @@
                   (set::in bchar (ascii-basic-exec-chars std)))
              (set::in (charset-basic-exec-char bchar charset std uchar-format)
                       (charset-exec-chars charset)))
-    :enable (charset-basic-exec-char
-             charset-exec-chars
+    :enable (charset-exec-chars
              charset-wfp
              basic-exec-char-in-exec-chars)))
 
@@ -366,8 +364,7 @@
 
   (defrule charset-wfp-of-charset-basic+lf
     (charset-wfp (charset-basic+lf std) std uchar-format)
-    :enable (charset-wfp
-             charset-basic+lf)))
+    :enable charset-wfp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -441,8 +438,7 @@
           (source-charset-end-of-lines-wfp end-of-lines
                                            (ascii-code-map)))
      (charset-wfp (charset-ascii std end-of-lines) std uchar-format))
-    :enable (charset-wfp
-             charset-ascii)))
+    :enable charset-wfp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -501,4 +497,4 @@
      (and (not (set::emptyp (true-list-set-fix end-of-lines)))
           (source-charset-end-of-lines-wfp end-of-lines (unicode-code-map)))
      (charset-wfp (charset-unicode std end-of-lines) std uchar-format))
-    :enable (charset-wfp charset-unicode)))
+    :enable charset-wfp))

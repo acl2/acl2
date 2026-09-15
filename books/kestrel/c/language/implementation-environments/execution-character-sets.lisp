@@ -174,7 +174,6 @@
              (exec-charset-basic-chars-byte-p chars-with-values
                                               basic-chars
                                               uchar-format))
-    :enable exec-charset-basic-chars-byte-p
     :use (:instance omap::values-of-compose
                     (omap::x chars-with-values)
                     (omap::y basic-chars))

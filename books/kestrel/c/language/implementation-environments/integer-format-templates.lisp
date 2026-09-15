@@ -293,14 +293,12 @@
     (implies (uinteger-bit-roles-wfp roles)
              (posp (uinteger-bit-roles-value-count roles)))
     :rule-classes (:rewrite :type-prescription)
-    :enable (uinteger-bit-roles-wfp
-             uinteger-bit-roles-value-count-alt-def))
+    :enable uinteger-bit-roles-value-count-alt-def)
 
   (defruled len-gt-0-when-uinteger-bit-roles-wfp
     (implies (uinteger-bit-roles-wfp roles)
              (> (len roles) 0))
-    :enable (uinteger-bit-roles-wfp
-             uinteger-bit-roles-value-count-alt-def
+    :enable (uinteger-bit-roles-value-count-alt-def
              uinteger-bit-roles-value-count-upper-bound)
     :disable (acl2::|(< 0 (len x))|)))
 
@@ -341,14 +339,12 @@
     (implies (sinteger-bit-roles-wfp roles)
              (posp (sinteger-bit-roles-value-count roles)))
     :rule-classes (:rewrite :type-prescription)
-    :enable (sinteger-bit-roles-wfp
-             sinteger-bit-roles-value-count-alt-def))
+    :enable sinteger-bit-roles-value-count-alt-def)
 
   (defruled len-gt-1-when-sinteger-bit-roles-wfp
     (implies (sinteger-bit-roles-wfp roles)
              (> (len roles) 1))
-    :enable (sinteger-bit-roles-wfp
-             sinteger-bit-roles-value-count-alt-def
+    :enable (sinteger-bit-roles-value-count-alt-def
              sinteger-bit-roles-value/sign-count-upper-bound)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
