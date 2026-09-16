@@ -3485,6 +3485,7 @@
  (3 3 (:REWRITE |(< (+ c/d x) y)|))
  (3 3 (:REWRITE |(< (+ (- c) x) y)|))
  (3 3 (:REWRITE |(* (expt c m) (expt d n))|))
+ (3 3 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  )
 (DM::POWERP-LOG
  (407 11 (:LINEAR EXPT-<=-1-TWO))

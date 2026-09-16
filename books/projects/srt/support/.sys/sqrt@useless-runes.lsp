@@ -13669,6 +13669,7 @@
  (8 8 (:REWRITE |(equal c (- x))|))
  (8 8 (:REWRITE |(equal (- x) c)|))
  (8 8 (:REWRITE |(/ (/ x))|))
+ (4 4 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  (2 2 (:REWRITE EXPT-IS-WEAKLY-DECREASING-FOR-POS-BASE-<-1))
  )
 (RTL::LEMMA-3-4-CONVERSE
@@ -20476,6 +20477,7 @@
  (189 27 (:REWRITE SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL))
  (180 180 (:TYPE-PRESCRIPTION FMT-TO-COMMENT-WINDOW))
  (180 180 (:REWRITE |(* c (expt d n))|))
+ (180 180 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  (119 119 (:REWRITE REDUCE-RATIONALP-+))
  (119 119 (:REWRITE REDUCE-RATIONALP-*))
  (119 119 (:REWRITE RATIONALP-MINUS-X))
@@ -21824,6 +21826,7 @@
  (80 3 (:LINEAR EXPT-X->-X))
  (72 72 (:TYPE-PRESCRIPTION FMT-TO-COMMENT-WINDOW))
  (72 72 (:REWRITE |(* c (expt d n))|))
+ (72 72 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  (63 63 (:REWRITE |(< (+ c/d x) y)|))
  (63 63 (:REWRITE |(< (+ (- c) x) y)|))
  (56 56 (:REWRITE REDUCE-RATIONALP-+))
