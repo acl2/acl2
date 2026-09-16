@@ -109846,6 +109846,10 @@ it."
 ; bad character without having the error message itself cause an error (as we
 ; saw when using LispWorks).
 
+; When translating an expression (mv ... (<x> ...) ...), if <x> was not a
+; symbol, then a raw Lisp error occurred.  This has been fixed.  Thanks to Eric
+; Smith for passing along this issue from Anthropic's Claude.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -109976,7 +109980,8 @@ it."
  @('system/tests/integer-length-bad-optimization.lisp') and
  @('system/tests/length-bad-optimization.lsp').  Thanks also to Stas Boukarev
  for suggesting the use of @('notinline'), as our original solution was more
- complicated (by modifying function types).</p>
+ complicated (by modifying function types), and to Eric Smith for pointing out
+ a bug in our initial implementation.</p>
 
  <p>An additional restriction was added to @(':')@(tsee elim) rules, namely,
  for the general form @('(implies hyp (equiv lhs x))'), all occurrences of
@@ -109984,6 +109989,12 @@ it."
  elim).  This corrected a soundness bug discovered by Eric Smith with the help
  of Anthropic's Claude; see @(see community-book)
  @('system/tests/elim-iff-hyp.lisp').</p>
+
+ <p>The @(see functional-instantiation) code was modified to correct a
+ soundness bug caused by our failure to completely avoid variable capture when
+ instantiating the constraints.  See the comment in
+ @('remove-capture-in-constraint-lst').  This bug was discovered by Eric Smith
+ with the help of Anthropic's Claude.</p>
 
  <p>When @(tsee make-event) expansion takes place, the result might not be a
  valid ACL2 object.  ACL2 checked for this situation, but only when the

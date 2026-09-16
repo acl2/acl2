@@ -73,6 +73,7 @@
 (define ienv-requirep ((dialect dialectp)
                        (uchar uchar-formatp)
                        (schar schar-formatp)
+                       (char char-formatp)
                        (short integer-formatp)
                        (int integer-formatp)
                        (long integer-formatp)
@@ -92,12 +93,13 @@
        (integer-format-long-wfp long uchar int)
        (integer-format-llong-wfp llong uchar long)
        (bool-format-wfp bool uchar)
-       (charset-wfp charset (dialect->std dialect) uchar))
+       (charset-wfp charset (dialect->std dialect) uchar schar char))
 
   ///
 
   (defmacro ienv-requirep-call ()
-    '(ienv-requirep dialect uchar schar short int long llong bool charset)))
+    '(ienv-requirep
+      dialect uchar schar char short int long llong bool charset)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
