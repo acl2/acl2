@@ -263,6 +263,23 @@ void f() {
 }
 ")
 
+;; As in assignment, GCC and Clang allow a function pointer
+;; to be passed for a void pointer, but standard C does not.
+(test-valid
+ "void f(void * x);
+void g(void) {
+  f(g);
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "void f(void * x);
+void g(void) {
+  f(g);
+}
+")
+
 (test-valid-fail
  "void f() {
   *0;
