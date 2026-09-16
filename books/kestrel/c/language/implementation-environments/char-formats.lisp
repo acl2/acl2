@@ -68,6 +68,10 @@
 
   (defret char-format->max-lower-bound
     (>= max 127)
+    :rule-classes :linear)
+
+  (defret char-format->max-lte-uchar-format->max
+    (<= max (uchar-format->max uchar-format))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
