@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "ispace-equivalence")
+(include-book "ispace-equivalence-derived-rules")
 
 (acl2::controlled-configuration)
 
@@ -51,8 +51,7 @@
      it is reflexive and transitive (and thus a preorder),
      but it is antisymmetric only up to shape equivalence.")
    (xdoc::p
-    "We still need to prove transitivity,
-     and antisymmetry modulo shape equivalence."))
+    "We still need to prove antisymmetry modulo shape equivalence."))
   (exists (shape3)
           (and (shapep shape3)
                (shape-eq (shp++ shape1 shape3)
@@ -75,7 +74,33 @@
                        (shape2 shape)
                        (shape3 (shp++)))
        :enable shape-eq-append-id-right
-       :disable ((:e shape-append))))))
+       :disable ((:e shape-append)))))
+
+  (defruled shape-ord-trans
+    (implies (and (shape-ord shape1 shape2)
+                  (shape-ord shape2 shape3))
+             (shape-ord shape1 shape3))
+    :use (:instance lemma
+                    (shape1 (shape-fix shape1))
+                    (shape2 (shape-fix shape2))
+                    (shape3 (shape-fix shape3)))
+    :prep-lemmas
+    ((defrule lemma
+       (implies (and (shapep shape1)
+                     (shapep shape2)
+                     (shapep shape3)
+                     (shape-ord shape1 shape2)
+                     (shape-ord shape2 shape3))
+                (shape-ord shape1 shape3))
+       :expand ((shape-ord shape1 shape2)
+                (shape-ord shape2 shape3))
+       :use (:instance shape-ord-suff
+                       (shape1 shape1)
+                       (shape2 shape3)
+                       (shape3 (shp++ (shape-ord-witness shape1 shape2)
+                                      (shape-ord-witness shape2 shape3))))
+       :enable (shape-eq-append-extend-right
+                shape-eq-trans-swapped)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
