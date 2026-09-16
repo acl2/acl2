@@ -12,6 +12,7 @@
 
 (include-book "static-environments")
 (include-book "ispace-equivalence-checker")
+(include-book "ispace-matcher")
 (include-book "type-equivalence-checker")
 (include-book "type-checker")
 (include-book "ispace-validity")
@@ -40,6 +41,7 @@
      we plan to prove this equivalence."))
   :order-subtopics (static-environments
                     ispace-equivalence-checker
+                    ispace-matcher
                     type-equivalence-checker
                     type-checker
                     ispace-validity
