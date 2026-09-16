@@ -391,7 +391,7 @@
    (xdoc::p
     "In C, a byte is defined by the number of bits of @('unsigned char').")
    (xdoc::p
-    "This predicates is not part of the definition of @(tsee exec-charset-wfp),
+    "This predicate is not part of the definition of @(tsee exec-charset-wfp),
      but it is a consequence of it, as we prove here."))
   (forall (val)
           (implies (set::in val
