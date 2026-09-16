@@ -65,12 +65,17 @@
 
   (defrule shape-ord-refl
     (shape-ord shape shape)
-    :use ((:instance shape-ord-suff
-                     (shape1 shape)
-                     (shape2 shape)
-                     (shape3 (shp++)))
-          (:instance shape-eq-append-id-right
-                     (shape (shape-fix shape))))))
+    :use (:instance lemma (shape (shape-fix shape)))
+    :prep-lemmas
+    ((defrule lemma
+       (implies (shapep shape)
+                (shape-ord shape shape))
+       :use (:instance shape-ord-suff
+                       (shape1 shape)
+                       (shape2 shape)
+                       (shape3 (shp++)))
+       :enable shape-eq-append-id-right
+       :disable ((:e shape-append))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
