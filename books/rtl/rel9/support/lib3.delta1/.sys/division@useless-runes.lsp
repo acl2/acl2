@@ -9723,6 +9723,7 @@
  (8 4 (:REWRITE COLLECT-*-PROBLEM-FINDER))
  (4 4 (:TYPE-PRESCRIPTION FMT-TO-COMMENT-WINDOW))
  (4 4 (:REWRITE |(* c (expt d n))|))
+ (4 4 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  (2 2 (:REWRITE EXPT-IS-WEAKLY-DECREASING-FOR-POS-BASE-<-1))
  )
 (CONVERSE-56
@@ -9823,6 +9824,7 @@
  (16 16 (:REWRITE |(equal (/ x) (/ y))|))
  (16 16 (:REWRITE |(equal (- x) (- y))|))
  (16 16 (:REWRITE |(* c (expt d n))|))
+ (16 16 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  (12 12 (:REWRITE |(<= (/ x) y) with (< x 0)|))
  (12 12 (:REWRITE |(<= (/ x) y) with (< 0 x)|))
  (12 12 (:REWRITE |(< x (/ y)) with (< y 0)|))
@@ -9928,6 +9930,7 @@
  (14 7 (:REWRITE COLLECT-*-PROBLEM-FINDER))
  (7 7 (:TYPE-PRESCRIPTION FMT-TO-COMMENT-WINDOW))
  (7 7 (:REWRITE |(* c (expt d n))|))
+ (7 7 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  )
 (CONVERSE-58
  (44 44 (:TYPE-PRESCRIPTION NOT-INTEGERP-4A))
@@ -10752,6 +10755,7 @@
  (4 4 (:REWRITE |(equal (- x) c)|))
  (4 4 (:REWRITE |(/ (/ x))|))
  (4 4 (:REWRITE |(* c (expt d n))|))
+ (4 4 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  (2 2 (:REWRITE EXPT-IS-WEAKLY-DECREASING-FOR-POS-BASE-<-1))
  )
 (LEMMA-2-2-CONVERSE

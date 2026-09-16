@@ -1,0 +1,8 @@
+(H
+ (1 1 (:TYPE-PRESCRIPTION H))
+ )
+(TOBOOL)
+(H-INV
+ (3 3 (:TYPE-PRESCRIPTION H))
+ )
+(H-ELIM)
