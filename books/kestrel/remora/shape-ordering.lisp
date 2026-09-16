@@ -47,7 +47,9 @@
      when concatenated after the first shape,
      yields a shape equivalent to the second shape.")
    (xdoc::p
-    "We should prove that this is indeed a partial order."))
+    "We should prove that this is a partial order modulo shape equivalence.
+     That is, this relation is reflexive and transitive (and thus a preorder),
+     but it is antisymmetric only up to shape equivalence."))
   (exists (shape3)
           (and (shapep shape3)
                (shape-eq (shp++ shape1 shape3)
