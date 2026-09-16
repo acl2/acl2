@@ -1148,11 +1148,11 @@
      (xdoc::p
       "There are
        base literals,
-       lambda abstractions of expressions over variables with types
+       lambda abstractions of expressions over variables with optional types
        with an optional type of the body (not of the abstraction),
        lambda abstractions of expressions over type variables,
        lambda abstractions of expressions over ispace variables,
-       and boxed arrays with given ispaces and type.")
+       and boxed arrays with given ispaces and optional type.")
      (xdoc::p
       "The @(':lambda'), @(':tlambda'), and @(':ilambda') summands are
        the main, core form of expression, type, and ispace lambda abstraction,
@@ -1173,13 +1173,16 @@
        it always contains two or more ispaces
        (because there must be at least one ispace,
        and if there is just one we use the unary form).
-       The type of a unary box is optional:
+       The type of a box, unary or n-ary, is optional:
        it is always present in the concrete syntax,
        but it is absent in the inner boxes of
        the nest that an n-ary box desugars to,
        because those types can only be computed during type checking;
        this matches [impl].
-       The type of an n-ary box is instead always present.")
+       Unlike the optional types of abstractions and unboxing expressions,
+       the type of a box cannot be calculated from its array,
+       so the type checker accepts a box without a type
+       only as an inner box of such a nest.")
      (xdoc::p
       "[impl] has only unary ASTs for abstractions and boxing."))
     (:base ((lit base-lit)))
@@ -1219,7 +1222,7 @@
                                  ispaces
                                (list (ispace-fix nil) (ispace-fix nil))))
             (array expr)
-            (type type))
+            (type? type-option))
      :require (>= (len ispaces) 2))
     :pred atomp
 
