@@ -8508,17 +8508,25 @@
           (tumap (filepath-trans-unit-map-fix tumap))
           (path (set::head paths))
           (tunit (omap::lookup path tumap))
-          ((mv erp new-tunit vstate)
+          ((mv erp new-tunit new-vstate)
            (valid-trans-unit path tunit vstate))
+          ;; On error, continue with the validation state as it was before
+          ;; the call, not with the irrelevant value returned on failure.
           ((when erp)
            (if keep-going
-               (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
+               (b* ((- (cw "Error in translation unit ~x0: ~@1~%"
                            (filepath->string path)
-                           erp)
-                       (valid-filepath-trans-unit-map-loop (set::tail paths)
-                                                           tumap
-                                                           keep-going
-                                                           vstate))
+                           erp))
+                    ;; Roll back the fast alist: the failed call moved the
+                    ;; hash table off the completions we resume from.
+                    (vstate (change-vstate
+                             vstate
+                             :completions
+                             (make-fast-alist (vstate->completions vstate)))))
+                 (valid-filepath-trans-unit-map-loop (set::tail paths)
+                                                     tumap
+                                                     keep-going
+                                                     vstate))
              (retmsg$ "Error in translation unit ~x0: ~@1"
                       (filepath->string path)
                       erp)))
@@ -8526,7 +8534,7 @@
            (valid-filepath-trans-unit-map-loop (set::tail paths)
                                                 tumap
                                                 keep-going
-                                                vstate)))
+                                                new-vstate)))
        (retok (omap::update path new-tunit new-tumap)
               final-vstate))
      :no-function nil
