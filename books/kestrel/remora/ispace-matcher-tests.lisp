@@ -28,15 +28,15 @@
 
 ; An unbound pattern variable matches any dimension, and is bound to it.
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-match (dim-var "k") (dim-var "i") nil))
  (list t (omap::update "i" (dim-var "k") nil)))
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-match (dim-const 3) (dim-var "i") nil))
  (list t (omap::update "i" (dim-const 3) nil)))
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-match (dim-add (list (dim-const 3) (dim-var "k")))
                        (dim-var "i")
                        nil))
@@ -44,13 +44,13 @@
 
 ; A bound pattern variable matches only the dimension bound to it.
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-match (dim-var "k")
                        (dim-var "i")
                        (omap::update "i" (dim-var "k") nil)))
  (list t (omap::update "i" (dim-var "k") nil)))
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-match (dim-var "l")
                        (dim-var "i")
                        (omap::update "i" (dim-var "k") nil)))
@@ -63,24 +63,24 @@
 ; A pattern constant matches only the same constant;
 ; the substitution is unchanged.
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-match (dim-const 3) (dim-const 3) nil))
  (list t nil))
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-match (dim-const 3)
                        (dim-const 3)
                        (omap::update "i" (dim-var "k") nil)))
  (list t (omap::update "i" (dim-var "k") nil)))
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-match (dim-const 4) (dim-const 3) nil))
  (list nil nil))
 
 ; Variables in the dimension being matched are not pattern variables:
 ; a variable dimension does not match a constant pattern.
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-match (dim-var "k") (dim-const 3) nil))
  (list nil nil))
 
@@ -90,7 +90,7 @@
 
 ; The dimensions of the addition are matched element-wise, in order.
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-match (dim-add (list (dim-const 3) (dim-var "k")))
                        (dim-add (list (dim-var "i") (dim-var "j")))
                        nil))
@@ -99,13 +99,13 @@
 
 ; A repeated pattern variable must match equal dimensions.
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-match (dim-add (list (dim-var "k") (dim-var "k")))
                        (dim-add (list (dim-var "i") (dim-var "i")))
                        nil))
  (list t (omap::update "i" (dim-var "k") nil)))
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-match (dim-add (list (dim-var "k") (dim-var "l")))
                        (dim-add (list (dim-var "i") (dim-var "i")))
                        nil))
@@ -113,14 +113,14 @@
 
 ; The initial substitution constrains the match.
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-match (dim-add (list (dim-const 3) (dim-var "k")))
                        (dim-add (list (dim-var "i") (dim-var "j")))
                        (omap::update "i" (dim-const 3) nil)))
  (list t (omap::update "i" (dim-const 3)
                        (omap::update "j" (dim-var "k") nil))))
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-match (dim-add (list (dim-const 3) (dim-var "k")))
                        (dim-add (list (dim-var "i") (dim-var "j")))
                        (omap::update "i" (dim-const 4) nil)))
@@ -128,7 +128,7 @@
 
 ; The addition and the pattern addition must have the same number of dimensions.
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-match (dim-add (list (dim-const 3)
                                       (dim-var "k")
                                       (dim-var "l")))
@@ -136,7 +136,7 @@
                        nil))
  (list nil nil))
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-match (dim-add (list (dim-const 3) (dim-var "k")))
                        (dim-add (list (dim-var "i")
                                       (dim-var "j")
@@ -146,13 +146,13 @@
 
 ; A pattern addition matches only an addition.
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-match (dim-var "k")
                        (dim-add (list (dim-var "i") (dim-var "j")))
                        nil))
  (list nil nil))
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-match (dim-const 3)
                        (dim-add (list (dim-var "i") (dim-var "j")))
                        nil))
@@ -164,28 +164,28 @@
 
 ; Empty lists match, and a non-empty list does not match an empty one.
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-list-match nil nil nil))
  (list t nil))
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-list-match (list (dim-var "k")) nil nil))
  (list nil nil))
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-list-match nil (list (dim-var "i")) nil))
  (list nil nil))
 
 ; The substitution is threaded through the elements:
 ; the binding of i from the first element is checked against the second.
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-list-match (list (dim-var "k") (dim-var "k"))
                             (list (dim-var "i") (dim-var "i"))
                             nil))
  (list t (omap::update "i" (dim-var "k") nil)))
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (dim-list-match (list (dim-var "k") (dim-const 3))
                             (list (dim-var "i") (dim-var "i"))
                             nil))
