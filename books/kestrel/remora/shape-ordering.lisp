@@ -22,14 +22,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Shape denote sequences of natural numbers.
+    "Shapes denote sequences of natural numbers.
      Dynamically, lifting involves calculating
      the least upper bound of such sequences of natural numbers,
      according to the prefix relation on them, which is a partial order.
      Statically, shapes may include (shape and dimension) variables,
      so the calculation of the least upper bound,
      as well as the notion of partial order,
-     must be performed in terms of shape equivalence."))
+     must be expressed in terms of shape equivalence."))
   :order-subtopics t
   :default-parent t)
 
@@ -69,7 +69,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "That is, check every shape @('shape-ub')
+    "That is, check that every shape @('shape-ub')
      that is above or equal to both @('shape1') and @('shape2')
      is also above or equal to @('shape').
      This is used in the definition of least upper bound below."))
