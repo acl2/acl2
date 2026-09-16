@@ -76,9 +76,12 @@
                                       (source-charset source-charsetp)
                                       (exec-charset exec-charsetp)
                                       (std standardp)
-                                      (uchar-format uchar-formatp))
+                                      (uchar-format uchar-formatp)
+                                      (schar-format schar-formatp)
+                                      (char-format char-formatp))
   :guard (and (source-charset-wfp source-charset std)
-              (exec-charset-wfp exec-charset std uchar-format)
+              (exec-charset-wfp exec-charset std
+                                uchar-format schar-format char-format)
               (equal (omap::keys source-exec-map)
                      (source-chars source-charset)))
   :returns (yes/no booleanp)
@@ -101,7 +104,9 @@
                         (ebchar (basic-exec-char bchar
                                                  exec-charset
                                                  std
-                                                 uchar-format)))
+                                                 uchar-format
+                                                 schar-format
+                                                 char-format)))
                      (equal (omap::lookup sbchar source-exec-map)
                             ebchar))))
   :guard-hints (("Goal" :in-theory (enable ascii-basic-exec-chars
@@ -113,7 +118,9 @@
            (source-charset source-charsetp)
            (exec-charset exec-charsetp)
            (std standardp)
-           (uchar-format uchar-formatp))))
+           (uchar-format uchar-formatp)
+           (schar-format schar-formatp)
+           (char-format char-formatp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -121,9 +128,12 @@
                              (source-charset source-charsetp)
                              (exec-charset exec-charsetp)
                              (std standardp)
-                             (uchar-format uchar-formatp))
+                             (uchar-format uchar-formatp)
+                             (schar-format schar-formatp)
+                             (char-format char-formatp))
   :guard (and (source-charset-wfp source-charset std)
-              (exec-charset-wfp exec-charset std uchar-format))
+              (exec-charset-wfp exec-charset std
+                                uchar-format schar-format char-format))
   :returns (yes/no booleanp)
   :short "Check the constraints on the map from source to execution characters."
   :long
@@ -167,13 +177,17 @@
                                   source-charset
                                   exec-charset
                                   std
-                                  uchar-format)))
+                                  uchar-format
+                                  schar-format
+                                  char-format)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define charset-wfp ((charset charsetp)
                      (std standardp)
-                     (uchar-format uchar-formatp))
+                     (uchar-format uchar-formatp)
+                     (schar-format schar-formatp)
+                     (char-format char-formatp))
   :returns (yes/no booleanp)
   :short "Check that a character set is well-formed."
   :long
@@ -184,12 +198,15 @@
      and the mapping between them must be well-formed."))
   (b* (((charset charset)))
     (and (source-charset-wfp charset.source std)
-         (exec-charset-wfp charset.exec std uchar-format)
+         (exec-charset-wfp charset.exec std
+                           uchar-format schar-format char-format)
          (source-exec-map-wfp charset.source-exec-map
                               charset.source
                               charset.exec
                               std
-                              uchar-format))))
+                              uchar-format
+                              schar-format
+                              char-format))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -228,21 +245,25 @@
 (define charset-basic-source-char ((bchar characterp)
                                    (charset charsetp)
                                    (std standardp)
-                                   (uchar-format uchar-formatp))
+                                   (uchar-format uchar-formatp)
+                                   (schar-format schar-formatp)
+                                   (char-format char-formatp))
   :guard (and (set::in bchar (ascii-basic-source-chars std))
-              (charset-wfp charset std uchar-format))
+              (charset-wfp charset std uchar-format schar-format char-format))
   :returns source-char
   :short "Basic source character corresponding to an ACL2 character."
-  (declare (ignore uchar-format))
+  (declare (ignore uchar-format schar-format char-format))
   (basic-source-char bchar (charset->source charset) std)
   :guard-hints (("Goal" :in-theory (enable charset-wfp)))
 
   ///
 
   (defruled charset-basic-source-char-in-charset-source-chars
-    (implies (and (charset-wfp charset std uchar-format)
+    (implies (and (charset-wfp charset std
+                               uchar-format schar-format char-format)
                   (set::in bchar (ascii-basic-source-chars std)))
-             (set::in (charset-basic-source-char bchar charset std uchar-format)
+             (set::in (charset-basic-source-char
+                       bchar charset std uchar-format schar-format char-format)
                       (charset-source-chars charset)))
     :enable (charset-source-chars
              charset-wfp
@@ -253,20 +274,25 @@
 (define charset-basic-exec-char ((bchar characterp)
                                  (charset charsetp)
                                  (std standardp)
-                                 (uchar-format uchar-formatp))
+                                 (uchar-format uchar-formatp)
+                                 (schar-format schar-formatp)
+                                 (char-format char-formatp))
   :guard (and (set::in bchar (ascii-basic-exec-chars std))
-              (charset-wfp charset std uchar-format))
+              (charset-wfp charset std uchar-format schar-format char-format))
   :returns exec-char
   :short "Basic execution character corresponding to an ACL2 character."
-  (basic-exec-char bchar (charset->exec charset) std uchar-format)
+  (basic-exec-char bchar (charset->exec charset) std
+                   uchar-format schar-format char-format)
   :guard-hints (("Goal" :in-theory (enable charset-wfp)))
 
   ///
 
   (defruled charset-basic-exec-char-in-charset-exec-chars
-    (implies (and (charset-wfp charset std uchar-format)
+    (implies (and (charset-wfp charset std
+                               uchar-format schar-format char-format)
                   (set::in bchar (ascii-basic-exec-chars std)))
-             (set::in (charset-basic-exec-char bchar charset std uchar-format)
+             (set::in (charset-basic-exec-char
+                       bchar charset std uchar-format schar-format char-format)
                       (charset-exec-chars charset)))
     :enable (charset-exec-chars
              charset-wfp
@@ -277,12 +303,14 @@
 (define charset-source-to-exec (source-char
                                 (charset charsetp)
                                 (std standardp)
-                                (uchar-format uchar-formatp))
-  :guard (and (charset-wfp charset std uchar-format)
+                                (uchar-format uchar-formatp)
+                                (schar-format schar-formatp)
+                                (char-format char-formatp))
+  :guard (and (charset-wfp charset std uchar-format schar-format char-format)
               (set::in source-char (charset-source-chars charset)))
   :returns exec-char
   :short "Map a source character to an execution character."
-  (declare (ignore std uchar-format))
+  (declare (ignore std uchar-format schar-format char-format))
   (omap::lookup source-char (charset->source-exec-map charset))
   :guard-hints (("Goal" :in-theory (enable charset-wfp
                                            source-exec-map-wfp
@@ -291,10 +319,12 @@
   ///
 
   (defrule charset-source-to-exec-in-charset-exec-chars
-    (implies (and (charset-wfp charset std uchar-format)
+    (implies (and (charset-wfp charset std
+                               uchar-format schar-format char-format)
                   (set::in source-char (charset-source-chars charset)))
              (set::in (charset-source-to-exec
-                       source-char charset std uchar-format)
+                       source-char charset std
+                       uchar-format schar-format char-format)
                       (charset-exec-chars charset)))
     :enable (charset-wfp
              source-exec-map-wfp
@@ -350,7 +380,9 @@
      (source-charset-basic+lf std)
      (exec-charset-basic std)
      std
-     uchar-format)
+     uchar-format
+     schar-format
+     char-format)
     :enable (source-exec-map-wfp
              basic-source-exec-map-wfp
              omap::values-is-keys-when-identityp
@@ -363,7 +395,8 @@
              set::expensive-rules))
 
   (defrule charset-wfp-of-charset-basic+lf
-    (charset-wfp (charset-basic+lf std) std uchar-format)
+    (charset-wfp (charset-basic+lf std) std
+                 uchar-format schar-format char-format)
     :enable charset-wfp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -410,7 +443,8 @@
       (omap::lookup
        (basic-source-char bchar (source-charset-ascii end-of-lines) std)
        (omap::identity (source-chars (source-charset-ascii end-of-lines))))
-      (basic-exec-char bchar (exec-charset-ascii std) std uchar-format)))
+      (basic-exec-char bchar (exec-charset-ascii std) std
+                       uchar-format schar-format char-format)))
     :disable in-of-ascii-chars
     :enable (source-chars-of-source-charset-ascii
              basic-source-char-of-source-charset-ascii
@@ -426,7 +460,9 @@
      (source-charset-ascii end-of-lines)
      (exec-charset-ascii std)
      std
-     uchar-format)
+     uchar-format
+     schar-format
+     char-format)
     :use source-chars-equal-exec-chars-ascii-lemma
     :enable (source-exec-map-wfp
              basic-source-exec-map-wfp
@@ -437,7 +473,8 @@
      (and (not (set::emptyp (true-list-set-fix end-of-lines)))
           (source-charset-end-of-lines-wfp end-of-lines
                                            (ascii-code-map)))
-     (charset-wfp (charset-ascii std end-of-lines) std uchar-format))
+     (charset-wfp (charset-ascii std end-of-lines) std
+                  uchar-format schar-format char-format))
     :enable charset-wfp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -482,7 +519,9 @@
      (source-charset-unicode end-of-lines)
      (exec-charset-unicode std)
      std
-     uchar-format)
+     uchar-format
+     schar-format
+     char-format)
     :enable (source-exec-map-wfp
              basic-source-exec-map-wfp
              source-chars-of-source-charset-unicode
@@ -496,5 +535,6 @@
     (implies
      (and (not (set::emptyp (true-list-set-fix end-of-lines)))
           (source-charset-end-of-lines-wfp end-of-lines (unicode-code-map)))
-     (charset-wfp (charset-unicode std end-of-lines) std uchar-format))
+     (charset-wfp (charset-unicode std end-of-lines) std
+                  uchar-format schar-format char-format))
     :enable charset-wfp))

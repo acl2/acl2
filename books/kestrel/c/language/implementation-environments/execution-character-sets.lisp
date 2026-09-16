@@ -14,7 +14,7 @@
 (include-book "ascii-characters")
 (include-book "basic-characters")
 (include-book "unicode-characters")
-(include-book "uchar-formats")
+(include-book "char-formats")
 
 (include-book "kestrel/fty/any-nat-map" :dir :system)
 (include-book "kestrel/fty/character-any-map" :dir :system)
@@ -74,8 +74,11 @@
      for execution characters we do not need to indicate
      the possible ways in which new-line characters are encoded.")
    (xdoc::p
-    "We require the values of the execution basic characters
-     to fit in a byte [C17:5.2.1.2/1] [C23:5.3.2].")
+    "We require the values of the basic execution characters
+     to be representable as nonnegative values of plain @('char')
+     [C17:6.2.5/3] [C23:6.2.5].
+     This implies that they fit in a byte
+     [C17:5.2.1.2/1] [C23:5.3.2].")
    (xdoc::p
     "We require the null character to have value zero
      [C17:5.2.1/2] [C23:5.3.1].")
@@ -187,6 +190,98 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define-sk exec-charset-basic-chars-char-p ((chars-with-values any-nat-mapp)
+                                            (basic-chars character-any-mapp)
+                                            (uchar-format uchar-formatp)
+                                            (schar-format schar-formatp)
+                                            (char-format char-formatp))
+  :guard (set::subset (omap::values basic-chars)
+                      (omap::keys chars-with-values))
+  :returns (yes/no booleanp)
+  :short "Check if the value of each basic character
+          of an execution character set
+          fits in plain @('char')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The values are already natural numbers.
+     Requiring them to be at most @('CHAR_MAX') ensures that
+     they are representable as nonnegative values of plain @('char')
+     [C17:6.2.5/3] [C23:6.2.5]."))
+  (forall (val)
+          (implies (set::in val
+                            (omap::lookup* (omap::values
+                                            (character-any-mfix basic-chars))
+                                           (any-nat-mfix chars-with-values)))
+                   (<= val (char-format->max char-format
+                                             uchar-format
+                                             schar-format))))
+  :guard-hints (("Goal"
+                 :in-theory (enable omap::in*-alt-def
+                                    acl2::nat-setp-of-values-when-any-nat-mapp
+                                    acl2::rationalp-when-natp)
+                 :use (:instance acl2::nat-setp-of-subset-when-superset
+                                 (a (omap::lookup*
+                                     (omap::values
+                                      (character-any-mfix basic-chars))
+                                     (any-nat-mfix chars-with-values)))
+                                 (b (omap::values
+                                     (any-nat-mfix chars-with-values))))))
+
+  ///
+
+  (fty::deffixequiv-sk exec-charset-basic-chars-char-p
+    :args ((chars-with-values any-nat-mapp)
+           (basic-chars character-any-mapp)
+           (uchar-format uchar-formatp)
+           (schar-format schar-formatp)
+           (char-format char-formatp)))
+
+  (defruled exec-charset-basic-chars-byte-p-when-char-p
+    (implies (exec-charset-basic-chars-char-p chars-with-values
+                                              basic-chars
+                                              uchar-format
+                                              schar-format
+                                              char-format)
+             (exec-charset-basic-chars-byte-p chars-with-values
+                                              basic-chars
+                                              uchar-format))
+    :enable exec-charset-basic-chars-byte-p
+    :disable exec-charset-basic-chars-char-p
+    :use (:instance exec-charset-basic-chars-char-p-necc
+                    (val (exec-charset-basic-chars-byte-p-witness
+                          chars-with-values basic-chars uchar-format))))
+
+  (defruled exec-charset-basic-chars-char-p-when-char-code-map
+    (implies (and (any-nat-mapp chars-with-values)
+                  (character-any-mapp basic-chars)
+                  (equal (omap::compose chars-with-values basic-chars)
+                         (acl2::char-code-map chars))
+                  (character-setp chars)
+                  (set::subset chars (ascii-chars)))
+             (exec-charset-basic-chars-char-p chars-with-values
+                                              basic-chars
+                                              uchar-format
+                                              schar-format
+                                              char-format))
+    :enable char-code-set-of-ascii-chars
+    :disable (set::subset-in
+              (:e acl2::integers-from-to))
+    :use ((:instance omap::values-of-compose
+                     (omap::x chars-with-values)
+                     (omap::y basic-chars))
+          (:instance acl2::char-code-set-monotone
+                     (acl2::chars1 chars)
+                     (acl2::chars2 (ascii-chars)))
+          (:instance set::subset-in
+                     (set::a (exec-charset-basic-chars-char-p-witness
+                              chars-with-values basic-chars
+                              uchar-format schar-format char-format))
+                     (set::x (acl2::char-code-set chars))
+                     (set::y (acl2::integers-from-to 0 127))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec-charset-null-char-zero-p ((chars-with-values any-nat-mapp)
                                        (basic-chars character-any-mapp))
   :guard (and (set::in (code-char 0) (omap::keys basic-chars))
@@ -289,7 +384,9 @@
 
 (define exec-charset-wfp ((charset exec-charsetp)
                           (std standardp)
-                          (uchar-format uchar-formatp))
+                          (uchar-format uchar-formatp)
+                          (schar-format schar-formatp)
+                          (char-format char-formatp))
   :returns (yes/no booleanp)
   :short "Check the constraints on an execution character set."
   :long
@@ -297,7 +394,7 @@
    (xdoc::p
     "The map from characters to values must be injective.
      The character set must include the basic characters,
-     whose values must all fit in a byte.
+     whose values must all fit in plain @('char').
      The null character must have value zero.
      The digit values must be in order.
      The map from ASCII characters to execution characters must be injective.")
@@ -307,7 +404,8 @@
      Together with the coverage and injectivity requirements,
      it suffices for the composition of the two maps to equal
      the character-code map on @(tsee ascii-basic-exec-chars).
-     This implies the byte bound, null value, and digit ordering requirements,
+     This implies
+     the plain-@('char') bound, null value, and digit ordering requirements,
      independently of the representation of execution characters
      and the choice of extended characters."))
   (b* (((exec-charset charset)))
@@ -315,9 +413,11 @@
          (exec-charset-has-basic-chars-p charset.chars-with-values
                                          charset.basic-chars
                                          std)
-         (exec-charset-basic-chars-byte-p charset.chars-with-values
+         (exec-charset-basic-chars-char-p charset.chars-with-values
                                           charset.basic-chars
-                                          uchar-format)
+                                          uchar-format
+                                          schar-format
+                                          char-format)
          (exec-charset-null-char-zero-p charset.chars-with-values
                                         charset.basic-chars)
          (exec-charset-digits-in-order-p charset.chars-with-values
@@ -331,6 +431,15 @@
 
   ///
 
+  (defruled exec-charset-basic-chars-byte-p-when-exec-charset-wfp
+    (implies (exec-charset-wfp
+              charset std uchar-format schar-format char-format)
+             (exec-charset-basic-chars-byte-p
+              (exec-charset->chars-with-values charset)
+              (exec-charset->basic-chars charset)
+              uchar-format))
+    :enable exec-charset-basic-chars-byte-p-when-char-p)
+
   (defruled exec-charset-wfp-when-ascii-basic-values
     (b* (((exec-charset charset)))
       (implies (and (omap::injectivep charset.chars-with-values)
@@ -341,9 +450,11 @@
                                           charset.basic-chars)
                            (acl2::char-code-map (ascii-basic-exec-chars std)))
                     (omap::injectivep charset.basic-chars))
-               (exec-charset-wfp charset std uchar-format)))
+               (exec-charset-wfp
+                charset std uchar-format schar-format char-format)))
     :enable (exec-charset-has-basic-chars-p
-             exec-charset-basic-chars-byte-p-when-char-code-map
+             exec-charset-basic-chars-char-p-when-char-code-map
+             ascii-basic-exec-chars-subset-ascii-chars
              exec-charset-null-char-zero-p-when-ascii-basic-values
              exec-charset-digits-in-order-p-when-ascii-basic-values)))
 
@@ -376,12 +487,15 @@
 (define basic-exec-char ((bchar characterp)
                          (charset exec-charsetp)
                          (std standardp)
-                         (uchar-format uchar-formatp))
+                         (uchar-format uchar-formatp)
+                         (schar-format schar-formatp)
+                         (char-format char-formatp))
   :guard (and (set::in bchar (ascii-basic-exec-chars std))
-              (exec-charset-wfp charset std uchar-format))
+              (exec-charset-wfp
+               charset std uchar-format schar-format char-format))
   :returns exec-char
   :short "Basic execution character corresponding to an ACL2 character."
-  (declare (ignore std uchar-format))
+  (declare (ignore std uchar-format schar-format char-format))
   (omap::lookup (acl2::char-fix bchar) (exec-charset->basic-chars charset))
   :guard-hints (("Goal" :in-theory (enable exec-charset-wfp
                                            exec-charset-has-basic-chars-p)))
@@ -389,9 +503,11 @@
   ///
 
   (defruled basic-exec-char-in-exec-chars
-    (implies (and (exec-charset-wfp charset std uchar-format)
+    (implies (and (exec-charset-wfp
+                   charset std uchar-format schar-format char-format)
                   (set::in bchar (ascii-basic-exec-chars std)))
-             (set::in (basic-exec-char bchar charset std uchar-format)
+             (set::in (basic-exec-char bchar charset std
+                                       uchar-format schar-format char-format)
                       (exec-chars charset)))
     :enable (exec-chars
              exec-charset-wfp
@@ -427,7 +543,8 @@
   ///
 
   (defrule exec-charset-wfp-of-exec-charset-basic
-    (exec-charset-wfp (exec-charset-basic std) std uchar-format)
+    (exec-charset-wfp (exec-charset-basic std) std
+                      uchar-format schar-format char-format)
     :enable (exec-charset-wfp-when-ascii-basic-values
              exec-charset-has-basic-chars-p
              omap::injectivep-when-identityp
@@ -440,7 +557,9 @@
              (equal (basic-exec-char bchar
                                      (exec-charset-basic std)
                                      std
-                                     uchar-format)
+                                     uchar-format
+                                     schar-format
+                                     char-format)
                     bchar))
     :enable (basic-exec-char
              omap::lookup-when-identityp)))
@@ -475,7 +594,8 @@
     :enable exec-chars)
 
   (defrule exec-charset-wfp-of-exec-charset-ascii
-    (exec-charset-wfp (exec-charset-ascii std) std uchar-format)
+    (exec-charset-wfp (exec-charset-ascii std) std
+                      uchar-format schar-format char-format)
     :enable (exec-charset-wfp-when-ascii-basic-values
              exec-charset-has-basic-chars-p
              ascii-code-map
@@ -490,7 +610,9 @@
              (equal (basic-exec-char bchar
                                      (exec-charset-ascii std)
                                      std
-                                     uchar-format)
+                                     uchar-format
+                                     schar-format
+                                     char-format)
                     bchar))
     :enable (basic-exec-char
              omap::lookup-when-identityp)))
@@ -509,7 +631,7 @@
      maps to its character code.")
    (xdoc::p
     "The C standard determines the set of basic execution characters.
-     Their codes fit in a byte for every @(tsee uchar-format),
+     Their codes fit in plain @('char') for every choice of character formats,
      even though the codes of extended characters may be larger."))
   (b* ((chars-with-values (unicode-code-map))
        (basic-chars (acl2::char-code-map (ascii-basic-exec-chars std))))
@@ -527,7 +649,8 @@
     :enable exec-chars)
 
   (defrule exec-charset-wfp-of-exec-charset-unicode
-    (exec-charset-wfp (exec-charset-unicode std) std uchar-format)
+    (exec-charset-wfp (exec-charset-unicode std) std
+                      uchar-format schar-format char-format)
     :enable (exec-charset-wfp-when-ascii-basic-values
              exec-charset-has-basic-chars-p
              omap::compose-when-identityp-left
@@ -538,7 +661,9 @@
              (equal (basic-exec-char bchar
                                      (exec-charset-unicode std)
                                      std
-                                     uchar-format)
+                                     uchar-format
+                                     schar-format
+                                     char-format)
                     (char-code bchar)))
     :enable (basic-exec-char
              acl2::lookup-of-char-code-map)))

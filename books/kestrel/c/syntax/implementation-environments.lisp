@@ -198,7 +198,7 @@
   ///
 
   (defret charset-wfp-of-charset
-    (c::charset-wfp charset std uchar-format)
+    (c::charset-wfp charset std uchar-format schar-format char-format)
     :hints (("Goal" :in-theory (enable c::source-charset-end-of-lines-wfp
                                        (:e c::unicode-chars))))))
 
@@ -263,6 +263,7 @@
       (ienv->dialect ienv)
       '((c::size . 8))
       '((c::signed :twos-complement) (c::trap))
+      (c::char-format (ienv->plain-char-signedp ienv))
       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->short-bytes ienv)))
       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->int-bytes ienv)))
       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->long-bytes ienv)))
