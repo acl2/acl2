@@ -86,7 +86,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define shape-lub ((shape shapep) (shape1 shapep) (shape2 shapep))
+(define shape-lubp ((shape shapep) (shape1 shapep) (shape2 shapep))
   :returns (yes/no booleanp)
   :short "Check if a shape is the least upper bound of two shapes."
   :long
