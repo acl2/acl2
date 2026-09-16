@@ -131,65 +131,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk exec-charset-basic-chars-byte-p ((chars-with-values any-nat-mapp)
-                                            (basic-chars character-any-mapp)
-                                            (uchar-format uchar-formatp))
-  :guard (set::subset (omap::values basic-chars)
-                      (omap::keys chars-with-values))
-  :returns (yes/no booleanp)
-  :short "Check if the value of each basic character
-          of an execution character set
-          fits in a byte."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "In C, a byte is defined by the number of bits of @('unsigned char')."))
-  (forall (val)
-          (implies (set::in val
-                            (omap::lookup* (omap::values
-                                            (character-any-mfix basic-chars))
-                                           (any-nat-mfix chars-with-values)))
-                   (<= val (uchar-format->max uchar-format))))
-  :guard-hints (("Goal"
-                 :in-theory (enable omap::in*-alt-def
-                                    acl2::nat-setp-of-values-when-any-nat-mapp
-                                    acl2::rationalp-when-natp)
-                 :use (:instance acl2::nat-setp-of-subset-when-superset
-                                 (a (omap::lookup*
-                                     (omap::values
-                                      (character-any-mfix basic-chars))
-                                     (any-nat-mfix chars-with-values)))
-                                 (b (omap::values
-                                     (any-nat-mfix chars-with-values))))))
-
-  ///
-
-  (fty::deffixequiv-sk exec-charset-basic-chars-byte-p
-    :args ((chars-with-values any-nat-mapp)
-           (basic-chars character-any-mapp)
-           (uchar-format uchar-formatp)))
-
-  (defruled exec-charset-basic-chars-byte-p-when-char-code-map
-    (implies (and (any-nat-mapp chars-with-values)
-                  (character-any-mapp basic-chars)
-                  (equal (omap::compose chars-with-values basic-chars)
-                         (acl2::char-code-map chars)))
-             (exec-charset-basic-chars-byte-p chars-with-values
-                                              basic-chars
-                                              uchar-format))
-    :use (:instance omap::values-of-compose
-                    (omap::x chars-with-values)
-                    (omap::y basic-chars))
-    :prep-lemmas
-    ((defrule lemma
-       (implies (set::in val (acl2::char-code-set chars))
-                (<= val (uchar-format->max uchar-format)))
-       :use (:instance acl2::char-code-set-upper-bound
-                       (acl2::code val)
-                       (acl2::chars chars))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define-sk exec-charset-basic-chars-char-p ((chars-with-values any-nat-mapp)
                                             (basic-chars character-any-mapp)
                                             (uchar-format uchar-formatp)
@@ -236,21 +177,6 @@
            (uchar-format uchar-formatp)
            (schar-format schar-formatp)
            (char-format char-formatp)))
-
-  (defruled exec-charset-basic-chars-byte-p-when-char-p
-    (implies (exec-charset-basic-chars-char-p chars-with-values
-                                              basic-chars
-                                              uchar-format
-                                              schar-format
-                                              char-format)
-             (exec-charset-basic-chars-byte-p chars-with-values
-                                              basic-chars
-                                              uchar-format))
-    :enable exec-charset-basic-chars-byte-p
-    :disable exec-charset-basic-chars-char-p
-    :use (:instance exec-charset-basic-chars-char-p-necc
-                    (val (exec-charset-basic-chars-byte-p-witness
-                          chars-with-values basic-chars uchar-format))))
 
   (defruled exec-charset-basic-chars-char-p-when-char-code-map
     (implies (and (any-nat-mapp chars-with-values)
@@ -431,15 +357,6 @@
 
   ///
 
-  (defruled exec-charset-basic-chars-byte-p-when-exec-charset-wfp
-    (implies (exec-charset-wfp
-              charset std uchar-format schar-format char-format)
-             (exec-charset-basic-chars-byte-p
-              (exec-charset->chars-with-values charset)
-              (exec-charset->basic-chars charset)
-              uchar-format))
-    :enable exec-charset-basic-chars-byte-p-when-char-p)
-
   (defruled exec-charset-wfp-when-ascii-basic-values
     (b* (((exec-charset charset)))
       (implies (and (omap::injectivep charset.chars-with-values)
@@ -457,6 +374,91 @@
              ascii-basic-exec-chars-subset-ascii-chars
              exec-charset-null-char-zero-p-when-ascii-basic-values
              exec-charset-digits-in-order-p-when-ascii-basic-values)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk exec-charset-basic-chars-byte-p ((chars-with-values any-nat-mapp)
+                                            (basic-chars character-any-mapp)
+                                            (uchar-format uchar-formatp))
+  :guard (set::subset (omap::values basic-chars)
+                      (omap::keys chars-with-values))
+  :returns (yes/no booleanp)
+  :short "Check if the value of each basic character
+          of an execution character set
+          fits in a byte."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In C, a byte is defined by the number of bits of @('unsigned char').")
+   (xdoc::p
+    "This predicates is not part of the definition of @(tsee exec-charset-wfp),
+     but it is a consequence of it, as we prove here."))
+  (forall (val)
+          (implies (set::in val
+                            (omap::lookup* (omap::values
+                                            (character-any-mfix basic-chars))
+                                           (any-nat-mfix chars-with-values)))
+                   (<= val (uchar-format->max uchar-format))))
+  :guard-hints (("Goal"
+                 :in-theory (enable omap::in*-alt-def
+                                    acl2::nat-setp-of-values-when-any-nat-mapp
+                                    acl2::rationalp-when-natp)
+                 :use (:instance acl2::nat-setp-of-subset-when-superset
+                                 (a (omap::lookup*
+                                     (omap::values
+                                      (character-any-mfix basic-chars))
+                                     (any-nat-mfix chars-with-values)))
+                                 (b (omap::values
+                                     (any-nat-mfix chars-with-values))))))
+
+  ///
+
+  (fty::deffixequiv-sk exec-charset-basic-chars-byte-p
+    :args ((chars-with-values any-nat-mapp)
+           (basic-chars character-any-mapp)
+           (uchar-format uchar-formatp)))
+
+  (defruled exec-charset-basic-chars-byte-p-when-char-code-map
+    (implies (and (any-nat-mapp chars-with-values)
+                  (character-any-mapp basic-chars)
+                  (equal (omap::compose chars-with-values basic-chars)
+                         (acl2::char-code-map chars)))
+             (exec-charset-basic-chars-byte-p chars-with-values
+                                              basic-chars
+                                              uchar-format))
+    :use (:instance omap::values-of-compose
+                    (omap::x chars-with-values)
+                    (omap::y basic-chars))
+    :prep-lemmas
+    ((defrule lemma
+       (implies (set::in val (acl2::char-code-set chars))
+                (<= val (uchar-format->max uchar-format)))
+       :use (:instance acl2::char-code-set-upper-bound
+                       (acl2::code val)
+                       (acl2::chars chars)))))
+
+  (defruled exec-charset-basic-chars-byte-p-when-char-p
+    (implies (exec-charset-basic-chars-char-p chars-with-values
+                                              basic-chars
+                                              uchar-format
+                                              schar-format
+                                              char-format)
+             (exec-charset-basic-chars-byte-p chars-with-values
+                                              basic-chars
+                                              uchar-format))
+    :use (:instance exec-charset-basic-chars-char-p-necc
+                    (val (exec-charset-basic-chars-byte-p-witness
+                          chars-with-values basic-chars uchar-format))))
+
+  (defruled exec-charset-basic-chars-byte-p-when-exec-charset-wfp
+    (implies (exec-charset-wfp
+              charset std uchar-format schar-format char-format)
+             (exec-charset-basic-chars-byte-p
+              (exec-charset->chars-with-values charset)
+              (exec-charset->basic-chars charset)
+              uchar-format))
+    :enable (exec-charset-wfp exec-charset-basic-chars-byte-p-when-char-p)
+    :disable exec-charset-basic-chars-byte-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
