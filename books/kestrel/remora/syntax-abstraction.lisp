@@ -2276,7 +2276,7 @@
              (reserrf (list :box-expr-no-ispaces array)))
             ((endp (cdr ispaces))
              (make-atom-box :ispace (car ispaces) :array array :type? ty))
-            (t (make-atom-boxn :ispaces ispaces :array array :type ty))))
+            (t (make-atom-boxn :ispaces ispaces :array array :type? ty))))
     :measure (abnf::tree-count tree))
 
   ;; ------------------------------------------------------------------

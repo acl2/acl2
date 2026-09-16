@@ -1000,7 +1000,7 @@
                  (mv err fn-info-map (atom-box x.ispace new-array x.type?)))
       :boxn    (b* (((mv err fn-info-map new-array)
                      (mono-expr x.array defs fn-info-map denv type-map)))
-                 (mv err fn-info-map (atom-boxn x.ispaces new-array x.type)))))
+                 (mv err fn-info-map (atom-boxn x.ispaces new-array x.type?)))))
 
   (define mono-atom-list ((x atom-listp) (defs bind-mapp)
                           (fn-info-map fn-info-mapp) (denv ispace-denvp) (type-map string-type-mapp))
