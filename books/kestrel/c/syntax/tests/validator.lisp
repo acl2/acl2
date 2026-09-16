@@ -2075,3 +2075,13 @@ int (*f(int))[20];
   "void g(int a[static 10], int b[const static 20]);
 void h(int [static 10], int [const static 20]);
 ")
+
+(test-valid
+ "int f(double x) {
+  return __builtin_isinf(x);
+}
+void * g(void) {
+  return __builtin_frame_address(0);
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
