@@ -50,7 +50,7 @@
     "We should prove that this is indeed a partial order."))
   (exists (shape3)
           (and (shapep shape3)
-               (shape-eq (shp++ (shape-fix shape1) shape3)
+               (shape-eq (shp++ shape1 shape3)
                          (shape-fix shape2))))
 
   ///
@@ -75,8 +75,8 @@
      This is used in the definition of least upper bound below."))
   (forall (shape-ub)
           (implies (and (shapep shape-ub)
-                        (shape-ord (shape-fix shape1) shape-ub)
-                        (shape-ord (shape-fix shape2) shape-ub))
+                        (shape-ord shape1 shape-ub)
+                        (shape-ord shape2 shape-ub))
                    (shape-ord shape shape-ub)))
 
   ///
@@ -98,6 +98,6 @@
     "Two shapes may or may not have a least upper bound.
      For instance, the two concrete sequences @('[1 2]') and @('[1 3]')
      do not have any upper bound at all."))
-  (and (shape-ord (shape-fix shape1) (shape-fix shape))
-       (shape-ord (shape-fix shape2) (shape-fix shape))
+  (and (shape-ord shape1 shape)
+       (shape-ord shape2 shape)
        (shape-ord-all-upper-bounds-p shape shape1 shape2)))
