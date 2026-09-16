@@ -33,11 +33,8 @@
      to formalize the possible formats of the integer types
      other than @('unsigned'), @('signed'), and plain @('char') types,
      namely @('short'), @('int'), and larger types.
-     We also put these together with
-     our formalization of the possible formats of
-     the @('unsigned'), @('signed'), and plain @('char') types,
-     to form data structures for the possible formats of most integer types
-     (we plan to add the remaining ones at some point)."))
+     These formats are combined with the character and boolean formats
+     in @(tsee ienv), which captures their mutual constraints."))
   :order-subtopics t
   :default-parent t)
 

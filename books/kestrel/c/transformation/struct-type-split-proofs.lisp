@@ -463,7 +463,8 @@
            (c::value-fix (c::value-struct-read ',cmem sval))
            :prepwork ((local (in-theory (enable ,struct-value-onlrp
                                                 c::value-struct-read
-                                                c::value-struct-read-aux))))
+                                                c::value-struct-read-aux
+                                                nth))))
            ///
            (defret ,value-kind-of-struct-value-onlr-mem
              (equal (c::value-kind mval) ,(type-kind (car types)))
@@ -692,7 +693,40 @@
                     (old-static (c::compustate->static old-compst))
                     (new-static (c::compustate->static new-compst))))
              :enable
-             c::assoc-static-when-compustate-has-static-var-with-type-p))))
+             c::assoc-static-when-compustate-has-static-var-with-type-p)
+           (defruled compustate-has-var-with-type-p-when-compustate-equivp
+             (implies (and (compustate-equivp old-compst new-compst)
+                           (c::identp var)
+                           (not (equal var ',old-cname))
+                           (not (equal var ',newl-cname))
+                           (not (equal var ',newr-cname)))
+                      (equal (c::compustate-has-var-with-type-p var
+                                                                type
+                                                                new-compst)
+                             (c::compustate-has-var-with-type-p var
+                                                                type
+                                                                old-compst)))
+             :enable (c::compustate-has-var-with-type-p
+                      c::objdesign-of-var
+                      c::read-object
+                      c::top-frame
+                      c::compustate-frames-number
+                      compustate-equivp)
+             :use (:instance lemma
+                             (old-static (c::compustate->static old-compst))
+                             (new-static (c::compustate->static new-compst)))
+             :prep-lemmas
+             ((defruled lemma
+                (implies (and (c::scopep old-static)
+                              (c::scopep new-static)
+                              (static-equivp old-static new-static)
+                              (not (equal var ',old-cname))
+                              (not (equal var ',newl-cname))
+                              (not (equal var ',newr-cname)))
+                         (equal (omap::assoc var old-static)
+                                (omap::assoc var new-static)))
+                :induct t
+                :enable (static-equivp omap::assoc)))))))
     (retok event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

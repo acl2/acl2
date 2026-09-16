@@ -247,7 +247,6 @@
                                       charset)
                     (char-code bchar)))
     :enable (source-char-code
-             basic-source-char
              source-charset-wfp
              source-charset-has-basic-chars-p
              acl2::code-in-char-code-set-when-char-in-char-set
@@ -286,7 +285,7 @@
              source-charset-end-of-lines-wfp
              acl2::char-code-set-monotone
              set::in
-             set::expensive-rules)))
+             set::expensive-rules))
 
   (defruled basic-source-char-of-source-charset-basic+lf
     (implies (set::in bchar (ascii-basic-source-chars std))
@@ -295,10 +294,8 @@
                                        std)
                     bchar))
     :enable (basic-source-char
-             source-charset-basic+lf
-             acl2::any-nat-mapp-when-character-nat-mapp
              acl2::lookup-inverse-of-char-code-map
-             set::expensive-rules))
+             set::expensive-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -343,7 +340,6 @@
                                            (ascii-code-map)))
      (source-charset-wfp (source-charset-ascii end-of-lines) std))
     :enable (source-charset-wfp
-             source-charset-ascii
              source-charset-has-basic-chars-p
              ascii-basic-source-chars-subset-ascii-chars
              acl2::char-code-set-monotone))
