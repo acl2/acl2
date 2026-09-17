@@ -1736,6 +1736,7 @@
        This treatment corresponds to @('checkAtom') in [impl].")
      (xdoc::p
       "For an n-ary boxing atom, the treatment is analogous,
+       including the requirement that the type be present,
        but all the parameters of the sum type are matched
        against the ispaces of the boxing atom at once,
        and the array expression is checked directly."))
@@ -1825,9 +1826,12 @@
      :boxn
      (b* (((unless (check-ispace-list atom.ispaces senv)) (reserr nil))
           (ispaces (senv-expand-ispace-list atom.ispaces senv))
-          ((unless (type-atom-kindp atom.type)) (reserr nil))
-          ((unless (check-type atom.type senv)) (reserr nil))
-          ((ok box-type) (senv-expand-type atom.type senv))
+          ((ok type) (type-option-case atom.type?
+                                       :some atom.type?.val
+                                       :none (reserr nil)))
+          ((unless (type-atom-kindp type)) (reserr nil))
+          ((unless (check-type type senv)) (reserr nil))
+          ((ok box-type) (senv-expand-type type senv))
           ((ok vars+type) (type-match-sum box-type))
           (vars (ispacevarlist+type->vars vars+type))
           (body-type (ispacevarlist+type->type vars+type))
@@ -1843,7 +1847,7 @@
         :type box-type
         :atom (make-atom-boxn :ispaces atom.ispaces
                               :array ae.expr
-                              :type atom.type))))
+                              :type? atom.type?))))
     :measure (atom-count atom))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

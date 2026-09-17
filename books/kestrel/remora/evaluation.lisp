@@ -993,7 +993,7 @@
       "A box evaluates to a box value:
        the ispaces are evaluated to ispace values,
        the array is evaluated to an expression value,
-       and the type is evaluated to a type value."))
+       and the type, which must be present, is evaluated to a type value."))
     (b* (((when (zp limit)) (reserr :limit)))
       (atom-case
        atom
@@ -1071,7 +1071,11 @@
                                                 (type-denv->ienv
                                                  (expr-denv->tenv denv))))
                   ((ok arrayval) (eval-expr atom.array denv (1- limit)))
-                  ((ok tval) (eval-type atom.type (expr-denv->tenv denv))))
+                  ((ok tval) (type-option-case
+                              atom.type?
+                              :some (eval-type atom.type?.val
+                                               (expr-denv->tenv denv))
+                              :none (reserr nil))))
                (box-nest ivals arrayval tval))))
     :measure (nfix limit))
 

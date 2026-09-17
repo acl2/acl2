@@ -480,7 +480,7 @@
       :box (b* (((mv new-a lifted used) (ll-expr x.array tenv locals lmap used)))
              (mv (atom-box x.ispace new-a x.type?) lifted used))
       :boxn (b* (((mv new-a lifted used) (ll-expr x.array tenv locals lmap used)))
-              (mv (atom-boxn x.ispaces new-a x.type) lifted used))
+              (mv (atom-boxn x.ispaces new-a x.type?) lifted used))
       :otherwise (mv (atom-fix x) nil (string-sfix used)))
     :measure (two-nats-measure (atom-count x) 0))
 
