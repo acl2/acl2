@@ -12,6 +12,7 @@
 
 (include-book "type-validity")
 (include-book "type-equivalence")
+(include-book "shape-ordering")
 
 (include-book "nat-lists")
 
@@ -77,7 +78,17 @@
      The rule for empty arrays, in contrast,
      needs the requirement on the type, which is part of the expression.
      The rules for non-empty and empty frames
-     follow a similar pattern in that respect."))
+     follow a similar pattern in that respect.")
+   (xdoc::p
+    "For expression application,
+     we use @(tsee shape-lubp) to say that the principal shape is
+     the least upper bound of the function and argument shapes.
+     While [thesis] and [arxiv] use
+     an equality to the least upper bound operator,
+     that least upper bound may not exist,
+     so our use of a predicate is more clear
+     (the intention of that equality in [thesis] and [arxiv]
+     is to imply that the least upper bound exists)."))
 
   :preds ((expr-ok ivars tvars evars expr type)
           (atom-ok ivars tvars evars atom type)
@@ -231,6 +242,7 @@
           (shapep shape-out)
           (shapep shape-fun)
           (shapep shape-arg)
+          (shapep shape-princ)
           (expr-ok ivars tvars evars
                    fun
                    (type-array (type-fun (type-array type-in
@@ -242,9 +254,7 @@
                    arg
                    (type-array type-in
                                (ispace-shape (shp++ shape-arg shape-in))))
-          (shape-eq shape-arg (shp)) ; TODO: remove
-          (equal shape-princ shape-fun) ; TODO: generalize
-         )
+          (shape-lubp shape-princ shape-fun shape-arg))
          (expr-ok ivars tvars evars
                   (expr-app fun arg)
                   (type-array type-out
