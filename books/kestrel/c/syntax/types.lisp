@@ -22,10 +22,14 @@
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
 
+(include-book "kestrel/abstract-domains/many-valued-logics/3vl-defs" :dir :system)
+
 (acl2::controlled-configuration)
 
 (local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/omaps/delete" :dir :system))
+
+(local (include-book "kestrel/abstract-domains/many-valued-logics/3vl" :dir :system))
 
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
@@ -761,6 +765,79 @@
       (type-case type :unknown-builtin)
       (type-case type :unknown-scalar)
       (type-case type :unknown-arithmetic)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines type/type-list-has-some-unknownp
+  (define type-has-some-unknownp ((type typep))
+    :returns (yes/no booleanp)
+    :short "Check if a type is or is derived from one of the unknown types."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This does not check for unknown types in completions."))
+    (type-case
+     type
+     :array (type-has-some-unknownp type.of)
+     :struct (type-struni-tag/members-case
+              type.tag/members
+              :tagged t
+              :untagged (type-struni-member-list-has-some-unknownp
+                         type.tag/members.members))
+     :union (type-struni-tag/members-case
+              type.tag/members
+              :tagged t
+              :untagged (type-struni-member-list-has-some-unknownp
+                         type.tag/members.members))
+     :function (or (type-has-some-unknownp type.ret)
+                   (type-params-case
+                    type.params
+                    :prototype (type-list-has-some-unknownp type.params.params)
+                    :old-style (type-list-has-some-unknownp type.params.params)
+                    :unspecified nil))
+     :otherwise (type-some-unknownp type))
+    :measure (type-count type))
+
+  (define type-struni-member-list-has-some-unknownp ((members
+                                                      type-struni-member-listp))
+    (and (not (endp members))
+         (or (type-has-some-unknownp (type-struni-member->type (first members)))
+             (type-struni-member-list-has-some-unknownp (rest members))))
+    :measure (type-struni-member-list-count members))
+
+  (define type-list-has-some-unknownp ((types type-listp))
+    (and (not (endp types))
+         (or (type-has-some-unknownp (first types))
+             (type-list-has-some-unknownp (rest types))))
+    :measure (type-list-count types)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-derived-3p ((type typep))
+  :returns (3vl 3p)
+  :short "Check if the type is a derived type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The standard defines a <emph>derived type</emph>
+     as an array, structure, union, function, pointer, or atomic type
+     [C17:6.2.5/20].
+     Since we do not currently have a representation of atomic types,
+     atomicity is not considered.
+     The result is a "
+    (xdoc::seetopic "acl2::3vl" "three-valued generalized boolean")
+    " in order to reflect uncertainty around certain of the unknown types."))
+  (type-case
+   type
+   :array t
+   :struct t
+   :union t
+   :function t
+   :pointer t
+   :unknown :unknown
+   :unknown-builtin :unknown
+   :unknown-scalar :unknown
+   :otherwise nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
