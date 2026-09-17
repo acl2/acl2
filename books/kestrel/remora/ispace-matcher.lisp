@@ -55,7 +55,20 @@
      it is initially empty.
      If the matching succeeds, the resulting substitution is returned;
      if the matching fails, @('nil') is returned as the substitution,
-     which is irrelevant in that case."))
+     which is irrelevant in that case.")
+   (xdoc::p
+    "The substitution is meant to be applied simultaneously,
+     as @(tsee dim-subst-dim-vars) does:
+     applying it to the pattern yields the dimension.
+     The variables of the dimension are not pattern variables,
+     but they may have the same names as pattern variables,
+     in which case the dimensions in the substitution mention those names;
+     thus, the substitution must not be applied repeatedly
+     or composed with itself.
+     For instance, matching @('(+ 3 i)') to the pattern @('(+ i j)')
+     yields a substitution that maps @('i') to @('3') and @('j') to @('i'):
+     applying it to the pattern yields @('(+ 3 i)'),
+     but applying it once more would yield @('(+ 3 3)')."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
