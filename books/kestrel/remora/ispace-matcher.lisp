@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "ispace-equivalence-checker")
+(include-book "abstract-syntax-derived-fixtypes")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 

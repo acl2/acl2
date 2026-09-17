@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "ispace-matcher")
+(include-book "abstract-syntax-structurals")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
