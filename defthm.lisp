@@ -5605,6 +5605,10 @@
      (chk-acceptable-elim-rule1 name vars (cdr dests) ctx wrld state)))))
 
 (defun chk-acceptable-elim-rule (name term ctx wrld state)
+
+; Warning: If you change this, see the discussion in add-elim-rule and consider
+; making whether a corresponding change is needed there.
+
   (let ((lst (unprettyify term)))
     (case-match
      lst
@@ -5714,13 +5718,48 @@
                                  wrld))))))
 
 (defun add-elim-rule (rune nume term wrld)
-  (let* ((lst (unprettyify term))
-         (hyps (caar lst))
-         (equiv (ffn-symb (cdar lst)))
-         (lhs (fargn (cdar lst) 1))
-         (rhs (fargn (cdar lst) 2))
-         (dests (reverse (destructors lhs nil))))
-    (add-elim-rule1 rune nume hyps equiv lhs rhs dests dests wrld)))
+
+; Warning: If you change this, consider changing chk-acceptable-elim-rule.  See
+; comment below.
+
+; Before we add this elim rule we must (re-)check the conditions that depend on
+; the world, since they might have changed between pass 1 and pass 2 of an
+; encapsulate.  See similar code in add-rewrite-rule2.  Also see the
+; Claude-generated test in books/system/tests/elim-iff-hyp-2.lisp.  The case
+; structure below is taken from chk-acceptable-elim-rule, where the only
+; conditions checked here are those that depend on wrld.
+
+  (let ((lst (unprettyify term))
+        (name (base-symbol rune)))
+    (case-match
+      lst
+      (((hyps-list . (equiv lhs rhs)))
+       (cond
+        ((not (equivalence-relationp equiv wrld))
+         (er hard 'add-elim-rule
+             "~x0 is an unacceptable :ELIM rule.  The conclusion of the ~
+              proposed rule uses ~x1 as an equivalence relation. That symbol ~
+              was a known equivalence relation when this rule was originally ~
+              processed, but that is no longer the case.  Perhaps you can fix ~
+              this problem by making ~x1 an equivalence relation non-locally."
+             name equiv))
+        ((not (every-occurrence-equiv-hittablep-in-clausep equiv rhs hyps-list
+                                                           nil wrld))
+         (er hard 'add-elim-rule
+             "~x0 is an unacceptable :ELIM rule.  Every occurrence of ~x1 in ~
+              the hypotheses of the rule must be ~x2-hittable while ~
+              maintaining IFF.  That was known when this rule was originally ~
+              processed, but it is no longer known.  Perhaps you can fix this ~
+              problem by making the appropriate :CONGRUENCE rules non-local."
+             name rhs equiv))
+        (t
+         (let ((dests (reverse (destructors lhs nil))))
+           (add-elim-rule1 rune nume hyps-list equiv lhs rhs dests dests wrld)))))
+      (& (er hard 'add-elim-rule
+             "~x0 is an unacceptable :ELIM rule.  This error cannot happen ~
+              because the syntactic form of a term ~ cannot change between ~
+              pass 1 and pass 2 of encapsulate!"
+             name)))))
 
 ;---------------------------------------------------------------------------
 ; Section:  :GENERALIZE Rules
@@ -6447,6 +6486,10 @@
 ; Section:  :REFINEMENT Rules
 
 (defun chk-acceptable-refinement-rule (name term ctx wrld state)
+
+; Warning: If you change this, see the discussion in add-refinement-rule and
+; consider making whether a corresponding change is needed there.
+
   (let ((str "~x0 does not have the form of a :REFINEMENT rule.  See :DOC refinement."))
     (case-match term
                 (('implies (equiv1 x y) (equiv2 x y))
@@ -6568,21 +6611,45 @@
           (t (close-value-sets new-alist)))))
 
 (defun add-refinement-rule (name nume term wrld)
-  (declare (ignore name nume))
-  (let ((equiv1 (ffn-symb (fargn term 1)))
-        (equiv2 (ffn-symb (fargn term 2))))
 
-; We collect all the 'coarsenings properties into an alist, add equiv2
-; to the end of the pot for equiv1, close that as discussed above, and
-; then put the resulting 'coarsenings properties back into the world.
+; Warning: If you change this, consider changing
+; chk-acceptable-refinement-rule.  See comment below.
 
-    (putprop-coarsenings
-     (close-value-sets
-      (put-assoc-eq equiv1
-                    (append (getpropc equiv1 'coarsenings nil wrld)
-                            (list equiv2))
-                    (collect-coarsenings wrld)))
-     wrld)))
+; The case analysis is taken from chk-acceptable-refinement-rule but here we
+; only check world-sensitive properties.  We know term is of the form
+; below so the &-clause of the case-match is never taken.
+
+  (case-match term
+    (('implies (equiv1 x y) (equiv2 x y))
+     (cond
+      ((and (equivalence-relationp equiv1 wrld)
+            (equivalence-relationp equiv2 wrld))
+       (cond
+        ((refinementp equiv1 equiv2 wrld)
+         (er hard 'add-refinement-rule
+             "~x0 is already known to be a refinement of ~x1.  But we don't ~
+              understand how this could happen!  Please report it to the ~
+              implementors of ACL2."
+             equiv1 equiv2))
+        (t (putprop-coarsenings
+            (close-value-sets
+             (put-assoc-eq equiv1
+                           (append (getpropc equiv1 'coarsenings nil wrld)
+                                   (list equiv2))
+                           (collect-coarsenings wrld)))
+            wrld))))
+      (t (er hard 'add-refinement-rule
+             "~x0 does not have the form of a :REFINEMENT rule.  This ~
+              probably happened because at least one of the two equivalence ~
+              relations, ~x1 and ~x2, was proved to be an equivalence ~
+              relation only locally."
+             name equiv1 equiv2))))
+    (& (er hard 'add-refinement-rule
+           "This error is thought to be impossible.  Here we see name = ~x0, ~
+            nume = ~x1, and term = ~x2, and term is not of the form ~
+            previously checked by chk-acceptable-refinement-rule.  Please ~
+            show the ACL2 implementors how to reproduce this error!"
+           name nume term))))
 
 ;---------------------------------------------------------------------------
 ; Section:  :CONGRUENCE Rules

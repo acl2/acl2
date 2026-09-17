@@ -23626,11 +23626,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                (list (cons #\0 val)))
                    state))))
 
+(defmacro default-measure-function-from-table (alist)
+  `(or (cdr (assoc-eq :measure-function ,alist))
+       'acl2-count))
+
 (defun default-measure-function (wrld)
   (declare (xargs :guard (and (plist-worldp wrld)
-                              (alistp (table-alist 'acl2-defaults-table wrld)))))
-  (or (cdr (assoc-eq :measure-function (table-alist 'acl2-defaults-table wrld)))
-      'acl2-count))
+                              (alistp (table-alist 'acl2-defaults-table
+                                                   wrld)))))
+  (default-measure-function-from-table (table-alist 'acl2-defaults-table
+                                                    wrld)))
 
 #+acl2-loop-only
 (defmacro set-measure-function (name)
@@ -23644,11 +23649,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (ignore name))
   nil)
 
+(defmacro default-well-founded-relation-from-table (alist)
+  `(or (cdr (assoc-eq :well-founded-relation ,alist))
+       'o<))
+
 (defun default-well-founded-relation (wrld)
   (declare (xargs :guard (and (plist-worldp wrld)
-                              (alistp (table-alist 'acl2-defaults-table wrld)))))
-  (or (cdr (assoc-eq :well-founded-relation (table-alist 'acl2-defaults-table wrld)))
-      'o<))
+                              (alistp (table-alist 'acl2-defaults-table
+                                                   wrld)))))
+  (default-well-founded-relation-from-table (table-alist 'acl2-defaults-table
+                                                         wrld)))
 
 #+acl2-loop-only
 (defmacro set-well-founded-relation (rel)

@@ -6765,15 +6765,18 @@
 
 (defun non-identical-defp (def1 def2 chk-measure-p wrld)
 
-; This predicate is used in recognizing redundant definitions.  In our intended
-; application, def2 will have been successfully processed and def1 is merely
-; proposed, where def1 and def2 are each of the form (fn args ...dcls... body)
-; and everything is untranslated.  Two such tuples are "identical" if their
-; fns, args, bodies, types, stobjs, guards, and (if chk-measure-p is true)
-; measures are equal -- except that the new measure can be (:? v1 ... vk) if
-; (v1 ... vk) is the measured subset for the old definition.  We return nil if
-; def1 is thus redundant with ("identical" to) def2.  Otherwise we return a
-; message suitable for printing using " Note that ~@k.".
+; This predicate is used in recognizing redundant definitions; see :DOC
+; redundant-events.  In our intended application, def2 will have been
+; successfully processed and def1 is merely proposed, where def1 and def2 are
+; each of the form (fn args ...dcls... body) and everything is untranslated.
+; Two such tuples are "identical" if the following are equal: fns, args,
+; bodies, types, stobjs, and guards; and, if def2 is recursive or
+; mutually-recursive and we are not skipping proofs, then also the
+; ruler-extenders, well-founded relations, and measures -- except that the new
+; measure can be (:? v1 ... vk) if (v1 ... vk) is the measured subset for the
+; old definition.  We return nil if def1 is thus redundant with ("identical"
+; to) def2.  Otherwise we return a message suitable for printing using " Note
+; that ~@k.".
 
 ; Note that def1 might actually be syntactically illegal, e.g., it might
 ; specify two different :measures.  But it is possible that we will still
@@ -7141,7 +7144,7 @@
 ; the definition is installed, it will be in program mode and hence its measure
 ; presents no concern for soundness.
 
-                      (eq (cadr val) :logic)
+                      (not (eq (cadr val) :program)) ; include nil for defun-nx
                       (eq defun-mode :logic))))
 
 ; The 'cltl-command val for a defun is (defuns :defun-mode ignorep . def-lst)
