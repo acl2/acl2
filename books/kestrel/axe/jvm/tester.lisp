@@ -468,7 +468,7 @@
     ))
 
 ;; Returns (mv erp failedp state)
-(defun run-formal-test-on-method (method-id class-name methods-expected-to-fail error-on-unexpectedp method-info-alist assumptions root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor state)
+(defun run-formal-test-on-method (method-id class-name methods-expected-to-fail error-on-unexpectedp method-info-alist assumptions classes-to-assume-initialized root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor state)
   (declare (xargs :guard (and (jvm::method-idp method-id)
                               (jvm::class-namep class-name)
                               (or (eq :any methods-expected-to-fail)
@@ -478,6 +478,7 @@
                               (jvm::method-info-alistp method-info-alist)
                               (lookup-equal method-id method-info-alist)
                               ;; TODO: translate the assumptions!
+                              (classes-to-assume-initialized-optionp classes-to-assume-initialized)
                               (stringp root-of-class-hierarchy) ;a directory name
                               (count-hits-argp count-hits)
                               ;;print
@@ -545,7 +546,7 @@
                                ;; todo: think about these:
                                assert-assumptions ;; nil ;user-assumptions
                                t ;normalize-xors
-                               :all ;'("java.lang.Object" "java.lang.System") ;classes-to-assume-initialized
+                               classes-to-assume-initialized
                                nil ; ignore-exceptions
                                nil ; ignore-errors
                                count-hits
@@ -672,7 +673,7 @@
                   state)))))
 
 ;; Returns (mv erp results state).
-(defun run-formal-tests-on-methods (method-ids class-name methods-expected-to-fail error-on-unexpectedp method-info-alist root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor results-acc state)
+(defun run-formal-tests-on-methods (method-ids class-name methods-expected-to-fail error-on-unexpectedp method-info-alist classes-to-assume-initialized root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor results-acc state)
   (declare (xargs :guard (and (jvm::method-id-listp method-ids)
                               (jvm::class-namep class-name)
                               (or (eq :any methods-expected-to-fail)
@@ -680,6 +681,7 @@
                                   (string-listp methods-expected-to-fail))
                               (booleanp error-on-unexpectedp)
                               (jvm::method-info-alistp method-info-alist)
+                              (classes-to-assume-initialized-optionp classes-to-assume-initialized)
                               (stringp root-of-class-hierarchy) ;a directory name
                               (count-hits-argp count-hits)
                               ;;print
@@ -693,12 +695,12 @@
       (mv (erp-nil) (reverse results-acc) state)
     (let ((method-id (first method-ids)))
       (mv-let (erp failedp state)
-        (run-formal-test-on-method method-id class-name methods-expected-to-fail error-on-unexpectedp method-info-alist nil root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor state)
+        (run-formal-test-on-method method-id class-name methods-expected-to-fail error-on-unexpectedp method-info-alist nil classes-to-assume-initialized root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor state)
         (if erp
             (mv erp nil state)
           (run-formal-tests-on-methods (rest method-ids)
                                        class-name
-                                       methods-expected-to-fail error-on-unexpectedp method-info-alist root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor
+                                       methods-expected-to-fail error-on-unexpectedp method-info-alist classes-to-assume-initialized root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor
                                        (cons (cons method-id (if failedp "FAILED" "PASSED")) results-acc)
                                        state))))))
 
@@ -706,6 +708,7 @@
 ;; empty progn.  This may need to be called inside a make-event.
 (defun test-file-fn (path-to-java-file ;; we prepend the cbd if this is not an absolute path (TODO: Perhaps instead just take the name of the class and use the classpath to find it?)
                      methods-to-test
+                     classes-to-assume-initialized
                      methods-expected-to-fail ;todo: check that these are all methods in the class
                      error-on-unexpectedp
                      ;;assumptions
@@ -722,6 +725,7 @@
                   :guard (and (or (eq :auto methods-to-test)
                                   (string-listp methods-to-test) ;these are just bare names, for now
                                   )
+                              (classes-to-assume-initialized-optionp classes-to-assume-initialized)
                               (or (eq :any methods-expected-to-fail) ; no checking of whether methods that should fail actually do
                                   (eq :auto methods-expected-to-fail) ; methods whose names start with "fail_test" should fail
                                   (string-listp methods-expected-to-fail) ;these are just bare names, for now
@@ -791,7 +795,7 @@
        ;; (- (cw ")~%"))
        ;; Run the tests:
        ((mv erp results state)
-        (run-formal-tests-on-methods test-method-ids class-name methods-expected-to-fail error-on-unexpectedp method-info-alist root-of-user-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor
+        (run-formal-tests-on-methods test-method-ids class-name methods-expected-to-fail error-on-unexpectedp method-info-alist classes-to-assume-initialized root-of-user-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor
                       nil ;empty accumulator
                       state))
        ((when erp) (mv erp nil state))
@@ -811,6 +815,7 @@
 (defmacro test-file (path-to-java-file &key
                                        ;;(assumptions 'nil)
                                        (methods ':auto) ;;which methods to test (default is ones whose names start with "test" or "fail_test")
+                                       (classes-to-assume-initialized ':all)
                                        (expected-failures ':auto)
                                        (error-on-unexpectedp 't) ; for interactive use, cause hard error on unexpected result
                                        (count-hits 'nil)
@@ -823,6 +828,7 @@
   `(make-event-quiet (test-file-fn ,path-to-java-file
                                    ;;',assumptions
                                    ,methods
+                                   ,classes-to-assume-initialized
                                    ,expected-failures
                                    ,error-on-unexpectedp
                                    ,count-hits
@@ -843,6 +849,7 @@
 (defmacro test-file-and-exit (path-to-java-file &key
                                                 ;;(assumptions 'nil)
                                                 (methods ':auto) ;;which methods to test (default is ones whose names start with "test" or "fail_test")
+                                                (classes-to-assume-initialized ':all)
                                                 (count-hits 'nil)
                                                 (extra-rules 'nil)
                                                 (remove-rules 'nil)
@@ -855,6 +862,7 @@
      (test-file-fn ,path-to-java-file
                    ;;',assumptions
                    ,methods
+                   ,classes-to-assume-initialized
                    :auto ; methods-expected-to-fail
                    nil ; error-on-unexpectedp, don't cause hard error on unexpected result
                    ,count-hits
