@@ -272,7 +272,7 @@
           (string-type-mapp evars)
           (exprp fun)
           (type-varp param)
-          (typep type)
+          (typep type-arg)
           (typep type-body)
           (shapep shape-body)
           (shapep shape-fun)
@@ -283,22 +283,26 @@
                                                         (ispace-shape
                                                          shape-body)))
                                (ispace-shape shape-fun)))
-          (type-ok ivars tvars type)
+          (type-ok ivars tvars type-arg)
           (implies (type-var-case param :atom)
-                   (type-atom-kindp type))
+                   (type-atom-kindp type-arg))
           (type-var-case
            param
            :atom
            (and (equal atom-subst
-                       (omap::update (type-var-atom->name param) type nil))
+                       (omap::update (type-var-atom->name param)
+                                     type-arg
+                                     nil))
                 (equal array-subst nil))
            :array
            (and (equal atom-subst nil)
                 (equal array-subst
-                       (omap::update (type-var-array->name param) type nil))))
+                       (omap::update (type-var-array->name param)
+                                     type-arg
+                                     nil))))
           (type-subst-type-vars-no-capture-p type-body atom-subst array-subst))
          (expr-ok ivars tvars evars
-                  (expr-tapp fun type)
+                  (expr-tapp fun type-arg)
                   (type-array (type-subst-type-vars type-body
                                                     atom-subst
                                                     array-subst)
