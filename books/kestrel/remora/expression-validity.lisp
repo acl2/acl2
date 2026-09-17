@@ -91,7 +91,7 @@
      is to imply that the least upper bound exists).
      The rule has a premise requiring the principal shape to be valid
      because that does not follow from the least upper bound predicate
-     (e.g. it could include a variable not in @('ivars').)."))
+     (e.g. it could include a variable not in @('ivars'))."))
 
   :preds ((expr-ok ivars tvars evars expr type)
           (atom-ok ivars tvars evars atom type)
