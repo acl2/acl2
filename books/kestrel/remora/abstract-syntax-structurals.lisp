@@ -1137,7 +1137,7 @@
              :sigma 1
              :sigman (len type.params)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-peel-binders ((type typep))
   :returns (mv (vars type/ispace-var-listp)
@@ -1172,6 +1172,22 @@
    :sigma (mv nil (type-fix type))
    :sigman (mv nil (type-fix type)))
   :measure (type-count type)
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type/ispace-var-list-to-sets ((vars type/ispace-var-listp))
+  :returns (mv (ivars ispace-var-setp)
+               (tvars type-var-setp))
+  :short "Split a list of type and ispace variables
+          into a set of ispace variables and a set of type variables."
+  (b* (((when (endp vars)) (mv nil nil))
+       ((mv ivars tvars) (type/ispace-var-list-to-sets (cdr vars)))
+       (var (car vars)))
+    (type/ispace-var-case
+     var
+     :type (mv ivars (set::insert var.var tvars))
+     :ispace (mv (set::insert var.var ivars) tvars)))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
