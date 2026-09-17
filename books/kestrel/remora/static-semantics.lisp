@@ -13,6 +13,8 @@
 (include-book "static-environments")
 (include-book "ispace-equivalence-checker")
 (include-book "type-equivalence-checker")
+(include-book "ispace-matcher")
+(include-book "type-matcher")
 (include-book "type-checker")
 (include-book "ispace-validity")
 (include-book "type-validity")
@@ -42,6 +44,8 @@
   :order-subtopics (static-environments
                     ispace-equivalence-checker
                     type-equivalence-checker
+                    ispace-matcher
+                    type-matcher
                     type-checker
                     ispace-validity
                     type-validity
