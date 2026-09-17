@@ -1042,6 +1042,16 @@
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (stmt-case ast :return-attrib))
 
+(test-parse
+ parse-statement
+ "return __extension__ (int) x;"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-parse
+ parse-statement
+ "return __extension__ (int) { 0 };"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-block-item
