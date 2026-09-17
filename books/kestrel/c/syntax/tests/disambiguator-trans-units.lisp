@@ -306,6 +306,59 @@
               (binop-case (expr-binary->op expr) :sub))))
 
 (test-dimb
+ "int f(int x, int y) {
+    return __extension__ (x) + y;
+  }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
+ :cond (b* ((item (car (trans-unit->items ast)))
+            (edecl (trans-item-declon->declon item))
+            (fundef (ext-declon-fundef->fundef edecl))
+            (item (car (comp-stmt->items (fundef->body fundef))))
+            (stmt (block-item-stmt->stmt item))
+            (expr (stmt-return->expr? stmt)))
+         (and (expr-case expr :binary)
+              (binop-case (expr-binary->op expr) :add)
+              (expr-case (expr-binary->arg1 expr) :extension)
+              (expr-case (expr-extension->expr (expr-binary->arg1 expr))
+                         :paren))))
+
+(test-dimb
+ "int f(int x, int y, int z) {
+    return __extension__ (x) * (y) + z;
+  }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t)
+ :cond (b* ((item (car (trans-unit->items ast)))
+            (edecl (trans-item-declon->declon item))
+            (fundef (ext-declon-fundef->fundef edecl))
+            (item (car (comp-stmt->items (fundef->body fundef))))
+            (stmt (block-item-stmt->stmt item))
+            (expr (stmt-return->expr? stmt))
+            (left (expr-binary->arg1 expr)))
+         (and (expr-case expr :binary)
+              (binop-case (expr-binary->op expr) :add)
+              (expr-case left :binary)
+              (binop-case (expr-binary->op left) :mul)
+              (expr-case (expr-binary->arg1 left) :extension))))
+
+(test-dimb
+ "typedef int T;
+  int f(int x) {
+    return __extension__ (T) +x;
+  }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
+ :cond (b* ((item (cadr (trans-unit->items ast)))
+            (edecl (trans-item-declon->declon item))
+            (fundef (ext-declon-fundef->fundef edecl))
+            (item (car (comp-stmt->items (fundef->body fundef))))
+            (stmt (block-item-stmt->stmt item))
+            (expr (stmt-return->expr? stmt)))
+         (and (expr-case expr :extension)
+              (expr-case (expr-extension->expr expr) :cast))))
+
+(test-dimb
  "int foo (int a, int b, int c) {
  return a + (b) + c;
 }

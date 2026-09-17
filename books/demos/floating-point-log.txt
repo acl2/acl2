@@ -2009,18 +2009,16 @@ ACL2 Error [Failure] in ( THM ...):  See :DOC failure.
 ACL2 !>>(THM (IMPLIES (DFP* X Y)
                       (OR (DF< X Y) (DF< Y X) (DF= X Y))))
 Goal'
+Goal''
 
 Q.E.D.
 
 Summary
 Form:  ( THM ...)
-Rules: ((:COMPOUND-RECOGNIZER DFP-IMPLIES-RATIONALP)
-        (:DEFINITION DF<-FN)
+Rules: ((:DEFINITION DF<-FN)
         (:DEFINITION DF=-FN)
-        (:FAKE-RUNE-FOR-LINEAR-EQUALITIES NIL)
-        (:FAKE-RUNE-FOR-TYPE-SET NIL)
-        (:LINEAR TO-DF-MONOTONICITY)
-        (:REWRITE DFP-IMPLIES-TO-DF-IS-IDENTITY))
+        (:DEFINITION NOT)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM))
 
 Proof succeeded.
 ACL2 !>>(DF+ 3602879701896397/36028797018963968

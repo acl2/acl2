@@ -72,3 +72,52 @@
          :info nil)
    :info nil))
  "- --x")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; __extension__ has unary priority and takes a cast expression as operand.
+
+(acl2::assert-equal
+ (printer-test-render-expr
+  (expr-extension
+   (make-expr-unary :op (unop-minus) :arg *printer-test-ident*)))
+ "__extension__ -x")
+
+(acl2::assert-equal
+ (printer-test-render-expr
+  (expr-extension
+   (make-expr-cast
+    :type (make-tyname :specquals (list (spec/qual-typespec (type-spec-int))))
+    :arg *printer-test-ident*)))
+ "__extension__ (int) x")
+
+(acl2::assert-equal
+ (printer-test-render-expr
+  (expr-extension
+   (make-expr-binary :op (binop-add)
+                     :arg1 *printer-test-ident*
+                     :arg2 *printer-test-ident*)))
+ "__extension__ (x + x)")
+
+(acl2::assert-equal
+ (printer-test-render-expr
+  (expr-extension
+   (make-expr-funcall :fun *printer-test-ident* :args nil)))
+ "__extension__ x()")
+
+(acl2::assert-equal
+ (printer-test-render-expr
+  (make-expr-funcall :fun (expr-extension *printer-test-ident*) :args nil))
+ "(__extension__ x)()")
+
+(acl2::assert-equal
+ (printer-test-render-expr
+  (make-expr-arrsub :arg1 (expr-extension *printer-test-ident*)
+                    :arg2 *printer-test-ident*))
+ "(__extension__ x)[x]")
+
+(acl2::assert-equal
+ (printer-test-render-expr
+  (make-expr-unary :op (unop-postinc)
+                   :arg (expr-extension *printer-test-ident*)))
+ "(__extension__ x)++")

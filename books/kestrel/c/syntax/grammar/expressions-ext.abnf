@@ -48,23 +48,11 @@
 ;   Although normal function calls are postfix expressions,
 ;   this is not a normal function because it takes a type name as argument,
 ;   so it seems reasonable that they are primary expressions.
-;
-; - Primary expressions preceded by '__extension__'
-;   [GCCM](https://gcc.gnu.org/onlinedocs/gcc/Alternate-Keywords.html)
-;   [CLE](https://clang.llvm.org/docs/LanguageExtensions.html#implementation-defined-keywords).
-;   Experiments suggest that this keyword only applies to
-;   the subsequent primary expression,
-;   and not to a larger expression.
-;   The '__extension__' keyword and the expression are juxtaposed,
-;   without required parentheses;
-;   if there are parentheses, they belong to the expression,
-;   which is therefore a parenthesized primary expression.
 
 primary-expression-ext = "(" compound-statement ")"
                        / types-compatible-call
                        / offsetof-call
                        / va-arg-call
-                       / %s"__extension__" primary-expression
 
 types-compatible-call =
     %s"__builtin_types_compatible_p" "(" type-name "," type-name ")"
@@ -97,6 +85,15 @@ va-arg-call = %s"__builtin_va_arg" "(" assignment-expression "," type-name ")"
 ;   Like the other numeric unary operators,
 ;   for which the standard grammar rules require cast expression operands,
 ;   we require the operands of these extensions to be cast expressions.
+;   Thus, these operators can apply
+;   to a following cast, unary, or postfix expression,
+;   but not to an unparenthesized binary, conditional, or comma expression;
+;   parentheses around the operand are not required.
+;
+; - '__extension__' as a unary operator
+;   [GCCM](https://gcc.gnu.org/onlinedocs/gcc/Alternate-Keywords.html)
+;   [CLE](https://clang.llvm.org/docs/LanguageExtensions.html#implementation-defined-keywords).
+;   We treat it the same as '__real__' and '__imag__'.
 ;
 ; - '&&' applied to a label to obtain its address
 ;   [GCC:6.12.3](https://gcc.gnu.org/onlinedocs/gcc/Labels-as-Values.html).
@@ -105,6 +102,7 @@ va-arg-call = %s"__builtin_va_arg" "(" assignment-expression "," type-name ")"
 unary-expression-ext = alignof-keyword unary-expression
                      / %s"__real__" cast-expression
                      / %s"__imag__" cast-expression
+                     / %s"__extension__" cast-expression
                      / "&&" identifier
 
 ; As a GCC and C extension, we allow contiional expressions

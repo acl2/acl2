@@ -2319,7 +2319,7 @@
              pstate)
            :extension
            (b* ((pstate (print-astring "__extension__ " pstate))
-                (pstate (print-expr expr.expr (expr-priority-primary) pstate)))
+                (pstate (print-expr expr.expr (expr-priority-cast) pstate)))
              pstate)))
          (pstate (if parenp
                      (print-astring ")" pstate)

@@ -36,7 +36,7 @@
 ; A multi-dimensional shape argument is ONE ispace value, not one value
 ; per dimension.
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (eval-iargs
              (list (ispace-shape
                     (shape-dims (list (dim-const 2) (dim-const 3)))))
@@ -45,7 +45,7 @@
 
 ; The one shape parameter is bound to the whole 2-by-3 shape.
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (extend-ispace-denv (list (ispace-var-shape "s"))
                                 (list (ispace-value-shape (list 2 3)))
                                 *empty-denv*))
@@ -58,7 +58,7 @@
 ; parameter was bound to the first dimension alone and this came out as
 ; the one-dimensional shape (dims 2).)
 
-(acl2::assert-equal
+(assert-equal
  (b* (((mv & denv) (extend-ispace-denv
                     (list (ispace-var-shape "s"))
                     (list (ispace-value-shape (list 2 3)))
@@ -71,7 +71,7 @@
 ; The same thing end to end: an :IFUN with a shape parameter S, declared
 ; to return an array of shape S, applied to the shape 2-by-3.
 
-(acl2::assert-equal
+(assert-equal
  (b* ((params (list (ispace-var-shape "s")))
       (decl-type (type-array (type-base (base-type-int))
                              (ispace-shape (shape-var "s"))))
@@ -88,13 +88,13 @@
 ; A compound dim argument is evaluated, not decomposed: (+ 2 3) is one
 ; value, 5.
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (eval-iargs
              (list (ispace-dim (dim-add (list (dim-const 2) (dim-const 3)))))
              *empty-denv*))
  (list nil (list (ispace-value-dim 5))))
 
-(acl2::assert-equal
+(assert-equal
  (b* (((mv & denv) (extend-ispace-denv (list (ispace-var-dim "n"))
                                        (list (ispace-value-dim 5))
                                        *empty-denv*)))
@@ -106,11 +106,11 @@
 ; A shape with no dimensions is the empty shape, not the absence of an
 ; argument: the parameter is bound, to the empty list of dimensions.
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (eval-iargs (list (ispace-shape (shape-dims nil))) *empty-denv*))
  (list nil (list (ispace-value-shape nil))))
 
-(acl2::assert-equal
+(assert-equal
  (b* (((mv & denv) (extend-ispace-denv (list (ispace-var-shape "s"))
                                        (list (ispace-value-shape nil))
                                        *empty-denv*)))
@@ -122,7 +122,7 @@
 ; Arity and sort are both checked.  Too many arguments, too few, and an
 ; argument of the wrong sort for its parameter are all rejected.
 
-(acl2::assert-equal
+(assert-equal
  (b* (((mv err &) (extend-ispace-denv (list (ispace-var-shape "s"))
                                (list (ispace-value-shape (list 2))
                                      (ispace-value-dim 3))
@@ -130,7 +130,7 @@
    err)
  t)
 
-(acl2::assert-equal
+(assert-equal
  (b* (((mv err &) (extend-ispace-denv (list (ispace-var-shape "s")
                                      (ispace-var-dim "n"))
                                (list (ispace-value-shape (list 2)))
@@ -140,14 +140,14 @@
 
 ; A :SHAPE value does not instantiate a :DIM parameter, nor conversely.
 
-(acl2::assert-equal
+(assert-equal
  (b* (((mv err &) (extend-ispace-denv (list (ispace-var-dim "n"))
                                (list (ispace-value-shape (list 2 3)))
                                *empty-denv*)))
    err)
  t)
 
-(acl2::assert-equal
+(assert-equal
  (b* (((mv err &) (extend-ispace-denv (list (ispace-var-shape "s"))
                                (list (ispace-value-dim 2))
                                *empty-denv*)))
@@ -160,7 +160,7 @@
 ; everywhere else in the library: the same name bound at one sort does not
 ; affect a variable of the other sort.
 
-(acl2::assert-equal
+(assert-equal
  (b* (((mv & denv) (extend-ispace-denv (list (ispace-var-dim "n"))
                                        (list (ispace-value-dim 7))
                                        *empty-denv*)))
@@ -173,10 +173,10 @@
 ; An ispace variable that is not bound is an error at a call site, and is
 ; left alone by substitution.
 
-(acl2::assert-equal
+(assert-equal
  (mv-list 2 (eval-iargs (list (ispace-shape (shape-var "s"))) *empty-denv*))
  (list t nil))
 
-(acl2::assert-equal
+(assert-equal
  (shape-partial-eval-dims (shape-var "s") *empty-denv*)
  (shape-var "s"))
