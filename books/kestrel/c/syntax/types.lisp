@@ -764,57 +764,59 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-standard-signed-integerp ((type typep))
+(define type-definitely-standard-signed-integerp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a standard signed integer type [C17:6.2.5/4]."
+  :short "Check if a type is definitely a standard signed integer type
+          [C17:6.2.5/4]."
   (and (member-eq (type-kind type) '(:schar :sshort :sint :slong :sllong))
        t)
 
   ///
 
-  (defrule type-standard-signed-integerp-when-type-kind-syntaxp
+  (defrule type-definitely-standard-signed-integerp-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-standard-signed-integerp type)
+             (equal (type-definitely-standard-signed-integerp type)
                     (and (member-equal kind
                                        '(:schar :sshort :sint :slong :sllong))
                          t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-signed-integerp ((type typep))
+(define type-definitely-signed-integerp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a signed integer type [C17:6.2.5/4]."
+  :short "Check if a type is definitely a signed integer type [C17:6.2.5/4]."
   :long
   (xdoc::topstring
    (xdoc::p
     "For now we do not model any extended signed integer types,
      so the signed integer types coincide with
      the standard signed integer types."))
-  (type-standard-signed-integerp type)
+  (type-definitely-standard-signed-integerp type)
 
   ///
 
-  (defrule type-signed-integerp-when-type-kind-syntaxp
+  (defrule type-definitely-signed-integerp-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-signed-integerp type)
-                    (type-standard-signed-integerp type)))))
+             (equal (type-definitely-signed-integerp type)
+                    (type-definitely-standard-signed-integerp type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-standard-unsigned-integerp ((type typep))
+(define type-definitely-standard-unsigned-integerp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a standard unsigned integer type [C17:6.2.5/6]."
+  :short "Check if a type is definitely a standard unsigned integer type
+          [C17:6.2.5/6]."
   (and (member-eq (type-kind type) '(:bool :uchar :ushort :uint :ulong :ullong))
        t)
 
   ///
 
-  (defrule type-standard-unsigned-integerp-when-type-kind-syntaxp
+  (defrule type-definitely-standard-unsigned-integerp-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-standard-unsigned-integerp type)
+             (equal (type-definitely-standard-unsigned-integerp type)
                     (and (member-equal
                            kind
                            '(:bool :uchar :ushort :uint :ulong :ullong))
@@ -822,232 +824,232 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-unsigned-integerp ((type typep))
+(define type-definitely-unsigned-integerp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is an unsigned integer type [C17:6.2.5/6]."
+  :short "Check if a type is definitely an unsigned integer type [C17:6.2.5/6]."
   :long
   (xdoc::topstring
    (xdoc::p
     "For now we do not model any extended unsigned integer types,
      so the unsigned integer types coincide with
      the standard unsigned integer types."))
-  (type-standard-unsigned-integerp type)
+  (type-definitely-standard-unsigned-integerp type)
 
   ///
 
-  (defrule type-unsigned-integerp-when-type-kind-syntaxp
+  (defrule type-definitely-unsigned-integerp-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-unsigned-integerp type)
-                    (type-standard-unsigned-integerp type)))))
+             (equal (type-definitely-unsigned-integerp type)
+                    (type-definitely-standard-unsigned-integerp type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-standard-integerp ((type typep))
+(define type-definitely-standard-integerp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a standard integer type [C17:6.2.5/7]."
-  (or (type-standard-signed-integerp type)
-      (type-standard-unsigned-integerp type))
+  :short "Check if a type is definitely a standard integer type [C17:6.2.5/7]."
+  (or (type-definitely-standard-signed-integerp type)
+      (type-definitely-standard-unsigned-integerp type))
 
   ///
 
-  (defrule type-standard-integerp-when-type-kind-syntaxp
+  (defrule type-definitely-standard-integerp-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-standard-integerp type)
-                    (or (type-standard-signed-integerp type)
-                        (type-standard-unsigned-integerp type))))))
+             (equal (type-definitely-standard-integerp type)
+                    (or (type-definitely-standard-signed-integerp type)
+                        (type-definitely-standard-unsigned-integerp type))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-real-floatingp ((type typep))
+(define type-definitely-real-floatingp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a real floating type [C17:6.2.5/10]."
+  :short "Check if a type is definitely a real floating type [C17:6.2.5/10]."
   (and (member-eq (type-kind type) '(:float :double :ldouble))
        t)
 
   ///
 
-  (defrule type-real-floatingp-when-type-kind-syntaxp
+  (defrule type-definitely-real-floatingp-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-real-floatingp type)
+             (equal (type-definitely-real-floatingp type)
                     (and (member-equal kind '(:float :double :ldouble))
                          t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-complexp ((type typep))
+(define type-definitely-complexp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a complex type [C17:6.2.5/11]."
+  :short "Check if a type is definitely a complex type [C17:6.2.5/11]."
   (and (member-eq (type-kind type) '(:floatc :doublec :ldoublec))
        t)
 
   ///
 
-  (defrule type-complexp-when-type-kind-syntaxp
+  (defrule type-definitely-complexp-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-complexp type)
+             (equal (type-definitely-complexp type)
                     (and (member-equal kind '(:floatc :doublec :ldoublec))
                          t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-floatingp ((type typep))
+(define type-definitely-floatingp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a floating type [C17:6.2.5/11]."
-  (or (type-real-floatingp type)
-      (type-complexp type))
+  :short "Check if a type is definitely a floating type [C17:6.2.5/11]."
+  (or (type-definitely-real-floatingp type)
+      (type-definitely-complexp type))
 
   ///
 
-  (defrule type-floatingp-when-type-kind-syntaxp
+  (defrule type-definitely-floatingp-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-floatingp type)
-                    (or (type-real-floatingp type)
-                        (type-complexp type))))))
+             (equal (type-definitely-floatingp type)
+                    (or (type-definitely-real-floatingp type)
+                        (type-definitely-complexp type))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-basicp ((type typep))
+(define type-definitely-basicp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a basic type [C17:6.2.5/14]."
+  :short "Check if a type is definitely a basic type [C17:6.2.5/14]."
   (or (type-case type :char)
-      (type-signed-integerp type)
-      (type-unsigned-integerp type)
-      (type-floatingp type))
+      (type-definitely-signed-integerp type)
+      (type-definitely-unsigned-integerp type)
+      (type-definitely-floatingp type))
 
   ///
 
-  (defrule type-basicp-when-type-kind-syntaxp
+  (defrule type-definitely-basicp-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-basicp type)
+             (equal (type-definitely-basicp type)
                     (or (equal kind :char)
-                        (type-signed-integerp type)
-                        (type-unsigned-integerp type)
-                        (type-floatingp type))))))
+                        (type-definitely-signed-integerp type)
+                        (type-definitely-unsigned-integerp type)
+                        (type-definitely-floatingp type))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-characterp ((type typep))
+(define type-definitely-characterp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a character type [C17:6.2.5/15]."
+  :short "Check if a type is definitely a character type [C17:6.2.5/15]."
   (and (member-eq (type-kind type) '(:char :schar :uchar))
        t)
 
   ///
 
-  (defrule type-characterp-when-type-kind-syntaxp
+  (defrule type-definitely-characterp-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-characterp type)
+             (equal (type-definitely-characterp type)
                     (and (member-equal kind '(:char :schar :uchar))
                          t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-integerp ((type typep))
+(define type-definitely-integerp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is an integer type [C17:6.2.5/17]."
+  :short "Check if a type is definitely an integer type [C17:6.2.5/17]."
   (or (type-case type :char)
-      (type-signed-integerp type)
-      (type-unsigned-integerp type)
+      (type-definitely-signed-integerp type)
+      (type-definitely-unsigned-integerp type)
       (type-case type :enum))
 
   ///
 
-  (defrule type-integerp-when-type-kind-syntaxp
+  (defrule type-definitely-integerp-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-integerp type)
+             (equal (type-definitely-integerp type)
                     (or (equal kind :char)
-                        (type-signed-integerp type)
-                        (type-unsigned-integerp type)
+                        (type-definitely-signed-integerp type)
+                        (type-definitely-unsigned-integerp type)
                         (type-case type :enum))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-realp ((type typep))
+(define type-definitely-realp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a real type [C17:6.2.5/17]."
-  (or (type-integerp type)
-      (type-real-floatingp type))
+  :short "Check if a type is definitely a real type [C17:6.2.5/17]."
+  (or (type-definitely-integerp type)
+      (type-definitely-real-floatingp type))
 
   ///
 
-  (defrule type-realp-when-type-kind-syntaxp
+  (defrule type-definitely-realp-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-realp type)
-                    (or (type-integerp type)
-                        (type-real-floatingp type))))))
+             (equal (type-definitely-realp type)
+                    (or (type-definitely-integerp type)
+                        (type-definitely-real-floatingp type))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-arithmeticp ((type typep))
+(define type-definitely-arithmeticp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is an arithmetic type [C17:6.2.5/18]."
-  (or (type-integerp type)
-      (type-floatingp type)
+  :short "Check if a type is definitely an arithmetic type [C17:6.2.5/18]."
+  (or (type-definitely-integerp type)
+      (type-definitely-floatingp type)
       (type-case type :unknown-arithmetic))
 
   ///
 
-  (defrule type-arithmeticp-when-type-kind-syntaxp
+  (defrule type-definitely-arithmeticp-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-arithmeticp type)
-                    (or (type-integerp type)
-                        (type-floatingp type)
+             (equal (type-definitely-arithmeticp type)
+                    (or (type-definitely-integerp type)
+                        (type-definitely-floatingp type)
                         (type-case type :unknown-arithmetic)))))
 
-  (defrule type-arithmeticp-when-type-integerp
-    (implies (type-integerp type)
-             (type-arithmeticp type))))
+  (defrule type-definitely-arithmeticp-when-type-definitely-integerp
+    (implies (type-definitely-integerp type)
+             (type-definitely-arithmeticp type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-scalarp ((type typep))
+(define type-definitely-scalarp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a scalar type [C17:6.2.5/21]."
-  (or (type-arithmeticp type)
+  :short "Check if a type is definitely a scalar type [C17:6.2.5/21]."
+  (or (type-definitely-arithmeticp type)
       (type-case type :pointer)
       (type-case type :unknown-scalar))
 
   ///
 
-  (defrule type-scalarp-when-type-kind-syntaxp
+  (defrule type-definitely-scalarp-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-scalarp type)
-                    (or (type-arithmeticp type)
+             (equal (type-definitely-scalarp type)
+                    (or (type-definitely-arithmeticp type)
                         (type-case type :pointer)
                         (type-case type :unknown-scalar))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-aggregatep ((type typep))
+(define type-definitely-aggregatep ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is an aggregate type [C17:6.2.5/21]."
+  :short "Check if a type is definitely an aggregate type [C17:6.2.5/21]."
   (or (type-case type :array)
       (type-case type :struct))
 
   ///
 
-  (defrule type-aggregatep-when-type-kind-syntaxp
+  (defrule type-definitely-aggregatep-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-aggregatep type)
+             (equal (type-definitely-aggregatep type)
                     (or (type-case type :array)
                         (type-case type :struct))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-integer-promotedp ((type typep))
-  :guard (type-arithmeticp type)
+  :guard (type-definitely-arithmeticp type)
   :returns (yes/no booleanp)
   :short "Check if an arithmetic type is a promoted one."
   :long
@@ -1072,7 +1074,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-default-arg-promotedp ((type typep))
-  :guard (type-arithmeticp type)
+  :guard (type-definitely-arithmeticp type)
   :returns (yes/no booleanp)
   :short "Check if type is a default argument promoted type."
   :long
@@ -1127,7 +1129,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-integer-promote ((type typep) (ienv ienvp))
-  :guard (type-arithmeticp type)
+  :guard (type-definitely-arithmeticp type)
   :returns (new-type typep)
   :short "Perform integer promotions on an arithmetic type [C17:6.3.1.1/2]."
   :long
@@ -1183,8 +1185,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-uaconvert-signed ((type1 typep) (type2 typep))
-  :guard (and (type-signed-integerp type1)
-              (type-signed-integerp type2)
+  :guard (and (type-definitely-signed-integerp type1)
+              (type-definitely-signed-integerp type2)
               (type-integer-promotedp type1)
               (type-integer-promotedp type2))
   :returns (new-type typep)
@@ -1203,14 +1205,14 @@
         (type-case type2 :slong))
     (type-slong))
    (t (type-sint)))
-  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
-                                           type-integerp))))
+  :guard-hints (("Goal" :in-theory (enable type-definitely-arithmeticp
+                                           type-definitely-integerp))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (define type-uaconvert-unsigned ((type1 typep) (type2 typep))
-  :guard (and (type-unsigned-integerp type1)
-              (type-unsigned-integerp type2)
+  :guard (and (type-definitely-unsigned-integerp type1)
+              (type-definitely-unsigned-integerp type2)
               (type-integer-promotedp type1)
               (type-integer-promotedp type2))
   :returns (new-type typep)
@@ -1229,16 +1231,16 @@
         (type-case type2 :ulong))
     (type-ulong))
    (t (type-uint)))
-  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
-                                           type-integerp))))
+  :guard-hints (("Goal" :in-theory (enable type-definitely-arithmeticp
+                                           type-definitely-integerp))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (define type-uaconvert-signed-unsigned ((type1 typep)
                                         (type2 typep)
                                         (ienv ienvp))
-  :guard (and (type-signed-integerp type1)
-              (type-unsigned-integerp type2)
+  :guard (and (type-definitely-signed-integerp type1)
+              (type-definitely-unsigned-integerp type2)
               (type-integer-promotedp type1)
               (type-integer-promotedp type2))
   :returns (new-type typep)
@@ -1291,19 +1293,20 @@
              (type-ulong)))
           (t (type-uint))))
    (t (prog2$ (impossible) (irr-type))))
-  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
-                                           type-integerp
-                                           type-integer-promotedp
-                                           type-unsigned-integerp
-                                           type-signed-integerp
-                                           type-standard-unsigned-integerp
-                                           type-standard-signed-integerp))))
+  :guard-hints
+  (("Goal" :in-theory (enable type-definitely-arithmeticp
+                              type-definitely-integerp
+                              type-integer-promotedp
+                              type-definitely-unsigned-integerp
+                              type-definitely-signed-integerp
+                              type-definitely-standard-unsigned-integerp
+                              type-definitely-standard-signed-integerp))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (define type-uaconvert ((type1 typep) (type2 typep) (ienv ienvp))
-  :guard (and (type-arithmeticp type1)
-              (type-arithmeticp type2))
+  :guard (and (type-definitely-arithmeticp type1)
+              (type-definitely-arithmeticp type2))
   :returns (new-type typep)
   :short "Perform the usual arithmetic conversions on two arithmetic types
           [C17:6.3.1.8]."
@@ -1368,33 +1371,33 @@
          ((or (type-case type1 :unknown-arithmetic)
               (type-case type2 :unknown-arithmetic))
           (type-unknown-arithmetic))
-         ((and (type-signed-integerp type1)
-               (type-signed-integerp type2))
+         ((and (type-definitely-signed-integerp type1)
+               (type-definitely-signed-integerp type2))
           (type-uaconvert-signed type1 type2))
-         ((and (type-unsigned-integerp type1)
-               (type-unsigned-integerp type2))
+         ((and (type-definitely-unsigned-integerp type1)
+               (type-definitely-unsigned-integerp type2))
           (type-uaconvert-unsigned type1 type2))
-         ((and (type-signed-integerp type1)
-               (type-unsigned-integerp type2))
+         ((and (type-definitely-signed-integerp type1)
+               (type-definitely-unsigned-integerp type2))
           (type-uaconvert-signed-unsigned type1 type2 ienv))
-         ((and (type-unsigned-integerp type1)
-               (type-signed-integerp type2))
+         ((and (type-definitely-unsigned-integerp type1)
+               (type-definitely-signed-integerp type2))
           (type-uaconvert-signed-unsigned type2 type1 ienv))
          (t (prog2$ (impossible) (irr-type)))))))
   :guard-hints (("Goal"
                  :do-not '(preprocess)
                  :in-theory (e/d (type-some-unknownp
-                                  type-arithmeticp
-                                  type-integerp
-                                  type-unsigned-integerp
-                                  type-signed-integerp
-                                  type-standard-unsigned-integerp
-                                  type-standard-signed-integerp
+                                  type-definitely-arithmeticp
+                                  type-definitely-integerp
+                                  type-definitely-unsigned-integerp
+                                  type-definitely-signed-integerp
+                                  type-definitely-standard-unsigned-integerp
+                                  type-definitely-standard-signed-integerp
                                   type-integer-promote
                                   type-integer-promotedp
-                                  type-floatingp
-                                  type-real-floatingp
-                                  type-complexp)
+                                  type-definitely-floatingp
+                                  type-definitely-real-floatingp
+                                  type-definitely-complexp)
                                  ((:e tau-system))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1405,7 +1408,7 @@
   (type-case
    type
    :float (type-double)
-   :otherwise (if (type-arithmeticp type)
+   :otherwise (if (type-definitely-arithmeticp type)
                   (type-integer-promote type ienv)
                 (type-fix type)))
 
@@ -1604,13 +1607,13 @@
         (type-case y :unknown)
         (type-case y :unknown-builtin)
         (and (type-case x :unknown-scalar)
-             (type-scalarp y))
+             (type-definitely-scalarp y))
         (and (type-case y :unknown-scalar)
-             (type-scalarp x))
+             (type-definitely-scalarp x))
         (and (type-case x :unknown-arithmetic)
-             (type-arithmeticp y))
+             (type-definitely-arithmeticp y))
         (and (type-case y :unknown-arithmetic)
-             (type-arithmeticp x))
+             (type-definitely-arithmeticp x))
         (type-case
           x
           :struct
@@ -1742,8 +1745,10 @@
                    x.params y.params completions incomplete ienv))
             :otherwise nil)
           :otherwise (or (equal (type-fix x) (type-fix y))
-                         (and (type-integerp x) (type-case y :enum))
-                         (and (type-case x :enum) (type-integerp y)))))
+                         (and (type-definitely-integerp x)
+                              (type-case y :enum))
+                         (and (type-case x :enum)
+                              (type-definitely-integerp y)))))
     :measure (two-nats-measure
               (cardinality
                 (difference
