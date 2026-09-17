@@ -307,12 +307,15 @@
 ; Type Fixes for ACL2.
 
 (defun acl2tf-find-limited-integer-in-tree (x)
+
+; Note that even (integer n) could be problematic, as such a number is bounded
+; below.  Also note that type bit need not be included: quite possibly no
+; built-in function with a bit output is called by an ACL2 function, but even
+; if it is, its type would be valid even in ACL2.
+
   (cond ((atom x) nil)
         ((and (member (car x)
-; We could include integer as a value here for (car x), but as of this writing,
-; none of the integer cases were relevant to the task of avoiding undesirable
-; compiler optimizations.
-                      '(signed-byte unsigned-byte)
+                      '(signed-byte unsigned-byte mod integer)
                       :test #'eq)
               (consp (cdr x))
               (integerp (cadr x)))

@@ -198,7 +198,7 @@
   ///
 
   (defret charset-wfp-of-charset
-    (c::charset-wfp charset std uchar-format)
+    (c::charset-wfp charset std uchar-format schar-format char-format)
     :hints (("Goal" :in-theory (enable c::source-charset-end-of-lines-wfp
                                        (:e c::unicode-chars))))))
 
@@ -220,7 +220,8 @@
     "Given our assumptions (stated in @(tsee ienv))
      that bytes are 8 bits,
      that signed integers are two's complement,
-     and that there are no padding bits and no trap representations,
+     and that there are no padding bits (except for @('_Bool'))
+     or trap representations,
      this mapping could still be defined in different ways,
      based on the exact choice of bit layouts,
      which is captured in @(tsee c::ienv) but not in @(tsee ienv).
@@ -228,7 +229,11 @@
      consisting of increasing bit values,
      ended by the sign bit for signed integers.
      The exact choice of bit layout does not matter,
-     since the main purpose of the mapping is to exhibit a correspondence."))
+     since the main purpose of the mapping is to exhibit a correspondence.")
+   (xdoc::p
+    "For @('_Bool'), we use the specified number of bytes,
+     with bit index 0 as the value bit
+     and all remaining bits as padding."))
   (b* (((ienv ienv) ienv)
        (uchar-format (c::uchar-format-8))
        (schar-format (c::schar-format-8tcnt))
@@ -237,7 +242,7 @@
        (int-format (c::integer-format-inc-sign-tcnpnt (* 8 ienv.int-bytes)))
        (long-format (c::integer-format-inc-sign-tcnpnt (* 8 ienv.long-bytes)))
        (llong-format (c::integer-format-inc-sign-tcnpnt (* 8 ienv.llong-bytes)))
-       (bool-format (c::bool-format-lsb))
+       (bool-format (c::bool-format ienv.bool-bytes 0 nil))
        (charset (charset (c::dialect->std ienv.dialect))))
     (c::make-ienv
      :dialect ienv.dialect
@@ -258,11 +263,12 @@
       (ienv->dialect ienv)
       '((c::size . 8))
       '((c::signed :twos-complement) (c::trap))
+      (c::char-format (ienv->plain-char-signedp ienv))
       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->short-bytes ienv)))
       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->int-bytes ienv)))
       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->long-bytes ienv)))
       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->llong-bytes ienv)))
-      '((byte-size . 1) (c::value-index . 0) (c::trap))
+      (c::bool-format (ienv->bool-bytes ienv) 0 nil)
       (charset (c::dialect->std (ienv->dialect ienv))))
      :use (:instance ienv-requirements (x ienv))
      :enable (c::ienv-requirep

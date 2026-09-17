@@ -115,8 +115,7 @@
                     :stmt
                     :tycompat
                     :offsetof
-                    :va-arg
-                    :extension))
+                    :va-arg))
        t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -279,7 +278,7 @@
    :tycompat (expr-priority-primary)
    :offsetof (expr-priority-primary)
    :va-arg (expr-priority-primary)
-   :extension (expr-priority-primary)))
+   :extension (expr-priority-unary)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

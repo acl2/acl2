@@ -1388,7 +1388,8 @@
                    (pdoc-concat (pdoc-paren (ispace-var-list-to-pdoc a.params))
                                 (pdoc-concat (pdoc-line) body))))
       ;; The box-expr grammar rule requires the type,
-      ;; so we fail when the optional type is absent:
+      ;; so we fail when the optional type is absent,
+      ;; in both the unary and the n-ary form:
       ;; there is no concrete syntax that renders it.
       :box (type-option-case
             a.type?
@@ -1404,17 +1405,20 @@
                         array
                         (pdoc-concat (pdoc-line)
                                      (type-to-pdoc a.type?.val))))))))
-      :boxn (b* (((ok array) (expr-to-pdoc a.array)))
-              (pdoc-prefix-form
-               "box"
-               (pdoc-concat
-                (pdoc-paren (ispace-list-to-pdoc a.ispaces))
-                (pdoc-concat
-                 (pdoc-line)
-                 (pdoc-concat
-                  array
-                  (pdoc-concat (pdoc-line)
-                               (type-to-pdoc a.type))))))))
+      :boxn (type-option-case
+             a.type?
+             :none (reserr (list :box-without-type (atom-fix a)))
+             :some (b* (((ok array) (expr-to-pdoc a.array)))
+                     (pdoc-prefix-form
+                      "box"
+                      (pdoc-concat
+                       (pdoc-paren (ispace-list-to-pdoc a.ispaces))
+                       (pdoc-concat
+                        (pdoc-line)
+                        (pdoc-concat
+                         array
+                         (pdoc-concat (pdoc-line)
+                                      (type-to-pdoc a.type?.val)))))))))
     :measure (atom-count a))
 
   (define atom-list-to-pdoc ((as atom-listp))

@@ -340,17 +340,78 @@
 (test-parse
  parse-expression
  "__extension__ x"
- :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
+ :cond (and (expr-case ast :extension)
+            (expr-case (expr-extension->expr ast) :ident)))
 
 (test-parse
  parse-expression
  "__extension__ x + y"
- :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
+ :cond (and (expr-case ast :binary)
+            (expr-case (expr-binary->arg1 ast) :extension)
+            (expr-case (expr-binary->arg2 ast) :ident)))
 
 (test-parse
  parse-expression
  "__extension__ (x + y)"
- :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
+ :cond (and (expr-case ast :extension)
+            (expr-case (expr-extension->expr ast) :paren)))
+
+(test-parse
+ parse-expression
+ "__extension__ -x"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
+ :cond (and (expr-case ast :extension)
+            (expr-case (expr-extension->expr ast) :unary)))
+
+(test-parse
+ parse-expression
+ "__extension__ (int)x"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
+ :cond (and (expr-case ast :extension)
+            (expr-case (expr-extension->expr ast) :cast)))
+
+(test-parse
+ parse-expression
+ "__extension__ f(x)"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
+ :cond (and (expr-case ast :extension)
+            (expr-case (expr-extension->expr ast) :funcall)))
+
+(test-parse
+ parse-expression
+ "__extension__ p[0].m++"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
+ :cond (and (expr-case ast :extension)
+            (b* ((arg (expr-extension->expr ast)))
+              (and (expr-case arg :unary)
+                   (unop-case (expr-unary->op arg) :postinc)
+                   (expr-case (expr-unary->arg arg) :member)))))
+
+(test-parse
+ parse-expression
+ "__extension__ __extension__ *p"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t)
+ :cond (and (expr-case ast :extension)
+            (expr-case (expr-extension->expr ast) :extension)))
+
+(test-parse
+ parse-expression
+ "__extension__ (int)x + y"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t)
+ :cond (and (expr-case ast :binary)
+            (expr-case (expr-binary->arg1 ast) :extension)
+            (expr-case (expr-binary->arg2 ast) :ident)))
+
+(test-parse
+ parse-expression
+ "sizeof __extension__ (int)x"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
+ :cond (and (expr-case ast :unary)
+            (unop-case (expr-unary->op ast) :sizeof)
+            (expr-case (expr-unary->arg ast) :extension)))
 
 (test-parse
  parse-expression
@@ -873,6 +934,31 @@
 
 (test-parse
  parse-statement
+ "return __extension__ -x;"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
+ :cond (and (stmt-case ast :return)
+            (expr-case (stmt-return->expr? ast) :extension)
+            (equal (position->column (span->start span)) 0)
+            (equal (position->column (span->end span)) 23)))
+
+(test-parse
+ parse-statement
+ "return __extension__ (int)x;"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t)
+ :cond (and (stmt-case ast :return)
+            (expr-case (stmt-return->expr? ast) :extension)))
+
+(test-parse-fail
+ parse-statement
+ "return __extension__ ;"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-parse-fail
+ parse-statement
+ "return __extension__ x;")
+
+(test-parse
+ parse-statement
  "   printf(\"exploit_read_from_file(): \"
           \"bytes_read=%zd is supposed to be bytes_expected_to_be_read=%zd, \"
           \"pre_offset=%ld is supposed to be post_offset=%ld, \"
@@ -955,6 +1041,16 @@
  "__attribute__((musttail)) return bar();"
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (stmt-case ast :return-attrib))
+
+(test-parse
+ parse-statement
+ "return __extension__ (int) x;"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-parse
+ parse-statement
+ "return __extension__ (int) { 0 };"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

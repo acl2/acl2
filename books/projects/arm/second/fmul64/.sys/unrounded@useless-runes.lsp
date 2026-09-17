@@ -3411,6 +3411,7 @@
  (52 52 (:TYPE-PRESCRIPTION INTP-+))
  (48 48 (:TYPE-PRESCRIPTION FMT-TO-COMMENT-WINDOW))
  (48 48 (:REWRITE |(* (expt x m) (expt x n))|))
+ (48 48 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  (41 41 (:REWRITE |(< (* x y) 0)|))
  (40 40 (:REWRITE BUBBLE-DOWN-*-MATCH-3))
  (35 35 (:REWRITE |(< (+ c/d x) y)|))

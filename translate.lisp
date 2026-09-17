@@ -18067,6 +18067,8 @@
       ((('lambda & body) . &)
        (find-stobj-out-and-call-1 body known-stobjs ctx wrld state-vars))
       (& nil)))
+   ((not (symbolp (car uterm))) ; protects getpropc and stobjs-out calls below
+    nil)
    ((member-eq (car uterm)
                '(let let*)) ; !! others?
     (find-stobj-out-and-call-1 (car (last uterm)) known-stobjs ctx wrld

@@ -4052,6 +4052,7 @@
  (2 2 (:LINEAR EXPT-<-1-ONE))
  (1 1 (:REWRITE DEFAULT-MINUS))
  (1 1 (:REWRITE |(* (expt c m) (expt d n))|))
+ (1 1 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  )
 (DM::ORDER-SYLOW-3
  (830 13 (:DEFINITION DM::LOG))

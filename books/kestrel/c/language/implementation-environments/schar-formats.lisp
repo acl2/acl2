@@ -105,16 +105,17 @@
     :rule-classes :type-prescription
     :hints (("Goal" :in-theory (enable posp))))
 
-  (defrulel lemma
-    (>= (expt 2 (1- (uchar-format->size uchar-format))) 128)
-    :rule-classes :linear
-    :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                    (x 2) (m 7) (n (1- (uchar-format->size uchar-format))))
-    :disable acl2::expt-is-weakly-increasing-for-base->-1)
-
   (defret schar-format->max-lower-bound
     (>= max 127)
-    :rule-classes :linear))
+    :rule-classes :linear
+    :hints (("Goal"
+             :in-theory
+             (enable expt-of-one-less-than-uchar-format->size-lower-bound))))
+
+  (defret schar-format->max-lt-uchar-format->max
+    (< max (uchar-format->max uchar-format))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable uchar-format->max)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -154,18 +155,14 @@
          (< min 0))
     :rule-classes :type-prescription)
 
-  (defrulel lemma
-    (>= (expt 2 (1- (uchar-format->size uchar-format))) 128)
-    :rule-classes :linear
-    :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                    (x 2) (m 7) (n (1- (uchar-format->size uchar-format))))
-    :disable acl2::expt-is-weakly-increasing-for-base->-1)
-
   (defret schar-format->min-upper-bound
     (<= min -127)
     :rule-classes
     ((:linear
-      :trigger-terms ((schar-format->min schar-format uchar-format))))))
+      :trigger-terms ((schar-format->min schar-format uchar-format))))
+    :hints (("Goal"
+             :in-theory
+             (enable expt-of-one-less-than-uchar-format->size-lower-bound)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

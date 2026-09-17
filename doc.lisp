@@ -15837,6 +15837,7 @@ Subtopics
             \"[books]/system/doc/developers-guide.lisp\")
        (do-not-hint \"[books]/tools/do-not.lisp\")
        (easy-simplify-term \"[books]/tools/easy-simplify.lisp\")
+       (emacs-workflow \"[books]/doc/practices.lisp\")
        (er-soft+ \"[books]/kestrel/utilities/er-soft-plus.lisp\")
        (final-cdr \"[books]/std/lists/final-cdr.lisp\")
        (fty \"[books]/centaur/fty/top.lisp\")
@@ -15849,6 +15850,7 @@ Subtopics
        (list-equiv \"[books]/std/lists/equiv.lisp\")
        (list-fix \"[books]/std/lists/list-fix.lisp\")
        (logbitp-reasoning \"[books]/centaur/bitops/equal-by-logbitp.lisp\")
+       (magic-ev \"[books]/clause-processors/meta-extract-user.lisp\")
        (make-flag \"[books]/tools/flag.lisp\")
        (make-termination-theorem
             \"[books]/kestrel/utilities/make-termination-theorem.lisp\")
@@ -15870,6 +15872,7 @@ Subtopics
        (note-8-5-books \"[books]/doc/relnotes.lisp\")
        (note-8-6-books \"[books]/doc/relnotes.lisp\")
        (note-8-7-books \"[books]/doc/relnotes.lisp\")
+       (note-8-8-books \"[books]/doc/relnotes.lisp\")
        (str::numbers \"[books]/std/strings/top.lisp\")
        (open-trace-file! \"[books]/tools/open-trace-file-bang.lisp\")
        (oracle-timelimit \"[books]/tools/oracle-timelimit.lisp\")
@@ -35807,7 +35810,7 @@ Miscellaneous efficiency ideas
 
   Many successful users of ACL2 take advantage of the Emacs editor, for
   example by running ACL2 in an Emacs shell buffer.  See
-  emacs-workflow.  If you use ACL2 with Emacs, then you may wish to
+  [emacs-workflow].  If you use ACL2 with Emacs, then you may wish to
   load the file [30m[47memacs-acl2.el[0m[0m, which provides many helpful
   ACL2-specific commands and settings.  Most users should use the
   following Emacs command:
@@ -56787,12 +56790,12 @@ Frequent Contributors
 
   See also [magic-ev-fncall] for a related utility that is a bit less
   general (operating only on function calls applied to argument
-  lists; but see also magic-ev) but has the advantage of having some
-  logical content (see [meta-extract]).  Unlike [30m[47mmagic-ev-fncall[0m[0m and
-  [30m[47mmagic-ev[0m[0m, [30m[47min-logic-mode[0m[0m does not cause errors that can be caused by
-  [safe-mode].  [30m[47mIn-logic-mode[0m[0m also has a simpler interface than those
-  utilities, but unlike those utilities, [30m[47min-logic-mode[0m[0m not only takes
-  [30m[47m[state][0m[0m but also returns [30m[47mstate[0m[0m.
+  lists; but see also [magic-ev]) but has the advantage of having
+  some logical content (see [meta-extract]).  Unlike [30m[47mmagic-ev-fncall[0m[0m
+  and [30m[47mmagic-ev[0m[0m, [30m[47min-logic-mode[0m[0m does not cause errors that can be
+  caused by [safe-mode].  [30m[47mIn-logic-mode[0m[0m also has a simpler interface
+  than those utilities, but unlike those utilities, [30m[47min-logic-mode[0m[0m not
+  only takes [30m[47m[state][0m[0m but also returns [30m[47mstate[0m[0m.
 
     General Form:
     (in-logic-mode <form> state &optional (quote <variable-list>))
@@ -75148,7 +75151,7 @@ Subtopics
     * A reasonable model for [30m[47m(magic-ev-fncall 'fn (list a1 a2 ...) state h
       aokp)[0m[0m is [30m[47m(ec-call (fn a1 a2 ...))[0m[0m.
 
-    * See also magic-ev and [in-logic-mode] for related utilities.")
+    * See also [magic-ev] and [in-logic-mode] for related utilities.")
  (MAILING-LISTS
   (ACL2 ABOUT-ACL2 COMMUNITY)
   "Mailing lists for ACL2 users
@@ -106908,8 +106911,8 @@ Experimental Versions
   many changes could be placed in more than one category.
 
   Note that only ACL2 system changes are listed below.  See also
-  note-8-8-books for a summary of changes made to the ACL2 Community
-  Books since ACL2 8.7, including the build system.
+  [note-8-8-books] for a summary of changes made to the ACL2
+  Community Books since ACL2 8.7, including the build system.
 
 
 Changes to Existing Features
@@ -106942,7 +106945,7 @@ Changes to Existing Features
   Improved error messages for ill-formed first and second arguments of
   [30m[47m[defund][0m[0m, [30m[47m[defun-nx][0m[0m, and [30m[47m[defund-nx][0m[0m.  The case of [30m[47mdefund-nx[0m[0m was
   reported by Claude Code as showing no error message at all, for
-  example when evaluting the form, [30m[47m(defund-nx 42 (x) x)[0m[0m.  Thanks to
+  example when evaluating the form, [30m[47m(defund-nx 42 (x) x)[0m[0m.  Thanks to
   Eric Smith for bringing these to our attention.
 
   Improved the [guard], as well as the guard violation message, for
@@ -107032,14 +107035,28 @@ Bug Fixes
   [30m[47msystem/tests/integer-length-bad-optimization.lisp[0m[0m and
   [30m[47msystem/tests/length-bad-optimization.lsp[0m[0m.  Thanks also to Stas
   Boukarev for suggesting the use of [30m[47mnotinline[0m[0m, as our original
-  solution was more complicated (by modifying function types).
+  solution was more complicated (by modifying function types), and to
+  Eric Smith for pointing out a bug in our initial implementation.
 
   An additional restriction was added to [30m[47m:[0m[0m[30m[47m[elim][0m[0m rules, namely, for the
   general form [30m[47m(implies hyp (equiv lhs x))[0m[0m, all occurrences of [30m[47mx[0m[0m in
   [30m[47mhyp[0m[0m must be [30m[47mequiv[0m[0m-hittable preserving [30m[47miff[0m[0m.  See [elim].  This
   corrected a soundness bug discovered by Eric Smith with the help of
-  Anthropic's Claude; see [community-book]
-  [30m[47msystem/tests/elim-iff-hyp.lisp[0m[0m.
+  Anthropic's Claude; see [community-books]
+  [30m[47msystem/tests/elim-iff-hyp.lisp[0m[0m and
+  [30m[47msystem/tests/elim-iff-hyp-2.lisp[0m[0m.
+
+  A restriction on [refinement] rules was erroneously not being made in
+  the second pass of an [30m[47m[encapsulate][0m[0m event.  This has been remedied,
+  correcting a soundness bug discovered by Eric Smith with the help
+  of Anthropic's Claude; see [community-book]
+  [30m[47msystem/tests/refine.lisp[0m[0m.
+
+  The [functional-instantiation] code was modified to correct a
+  soundness bug caused by our failure to completely avoid variable
+  capture when instantiating the constraints.  See the comment in
+  [30m[47mremove-capture-in-constraint-lst[0m[0m.  This bug was discovered by Eric
+  Smith with the help of Anthropic's Claude.
 
   When [30m[47m[make-event][0m[0m expansion takes place, the result might not be a
   valid ACL2 object.  ACL2 checked for this situation, but only when
@@ -107053,15 +107070,37 @@ Bug Fixes
   for reporting the use of of Anthropic's Claude to find this bug;
   see [community-book] [30m[47msystem/tests/df-negative-zero.lisp[0m[0m.
 
-  Soundness bugs were caused by inadequate redundancy checks for calls
-  of [30m[47m[defun][0m[0m (and its variants such as [30m[47m[defund][0m[0m and [30m[47m[defun-nx][0m[0m).  The
-  checks (see [redundant-events] failed to account properly for the
-  default measure function (see [set-measure-function]), and they
-  failed to account at all for the [well-founded-relation].  Thanks
-  to Eric Smith for reporting the use of of Anthropic's Claude to
-  find these bugs; see [community-books]
-  [30m[47msystem/tests/measure-fn-redundancy.lisp[0m[0m and
-  [30m[47msystem/tests/wfr-redundancy.lisp[0m[0m.
+  Soundness bugs were caused by inadequate redundancy checks (see
+  [redundant-events]) for calls of [30m[47m[defun][0m[0m and its variants,
+  including [30m[47m[defun-nx][0m[0m).  Thanks to Eric Smith for reporting the use
+  of Anthropic's Claude to find these bugs.  The redundancy checks,
+  which have been fixed, failed to account properly for the
+  following, as explained in the indicated [community-books]:
+
+    * the default measure function (see [set-measure-function]) in checking
+      redundancy of a [30m[47mdefun[0m[0m (incomplete checking) --- see
+      [30m[47msystem/tests/measure-fn-redundancy.lisp[0m[0m;
+
+    * the [well-founded-relation] in checking redundancy of a [30m[47mdefun[0m[0m; see
+      [30m[47msystem/tests/wfr-redundancy.lisp[0m[0m;
+
+    * the measure in checking redundance of a [30m[47mdefun-nx[0m[0m event; see
+      [30m[47msystem/tests/nx2.lisp[0m[0m; and
+
+    * both the default measure function and the default
+      well-founded-relation in checking redundancy of an
+      [30m[47m[encapsulate][0m[0m event; see
+      [30m[47msystem/tests/measure-fn-redundancy-encap.lisp[0m[0m.
+
+  Monotonicity properties of [30m[47m[df-round][0m[0m and [30m[47m[to-df][0m[0m ---
+  [30m[47mconstrained-to-df-monotonicity[0m[0m, [30m[47mto-df-monotonicity[0m[0m, and
+  [30m[47mdf-round-monotonicity[0m[0m --- have been removed, because they are
+  (surprisingly, to us) not supported by some Common Lisp
+  implementations and in fact render ACL2 unsound in those host
+  Lisps.  The issue is described in a comment in the event
+  [30m[47mconstrained-to-df-monotonicity) in ACL2 source file
+  @('float-a.lisp[0m[0m.  This issue was discovered by Eric Smith with the
+  help of Anthropic's Claude.
 
   Fixed an assertion failure that could occur when an accessor call in
   a [30m[47m[stobj-let][0m[0m's bindings was on a quoted non-numeric index.  Thanks
@@ -107168,7 +107207,7 @@ Changes at the System Level
       particular, [30m[47m[break$][0m[0m does not enter the Lisp debugger ---
       except that in addition, you cannot exit the ACL2 loop.  This
       effectively disables [30m[47m:q[0m[0m as a means for going into raw Lisp (and
-      also [30m[47m(value :q)[0m[0m, etc.; see [q].
+      also [30m[47m(value :q)[0m[0m, etc.; see [q]).
 
     * So to avoid the possibility of interaction with raw Lisp for ACL2
       built on CCL or SBCL, provided trust tags are avoided (see
@@ -107181,7 +107220,7 @@ Changes at the System Level
           #+sbcl (setq sb-ext:*invoke-debugger-hook* 'our-abort)
           #+sbcl (lp)
 
-          ; Disable entering the debugger and disable existing the ACL2 loop:
+          ; Disable entering the debugger and disable exiting the ACL2 loop:
           (set-debugger-enable :never!)
           (push-untouchable set-debugger-enable-fn t)
           (push-untouchable debugger-enable nil)
@@ -128555,14 +128594,15 @@ Subtopics
 
   The typical way for an [30m[47mencapsulate[0m[0m event to be redundant is when a
   syntactically identical [30m[47mencapsulate[0m[0m has already been executed under
-  the same [30m[47m[default-defun-mode][0m[0m, [30m[47m[default-ruler-extenders][0m[0m, and
-  [30m[47m[default-verify-guards-eagerness][0m[0m.  But more generally, the
-  [30m[47mencapsulate[0m[0m events need not be syntactically identical; for
-  example, it suffices that they agree when the contents of [30m[47m[local][0m[0m
-  sub-events are ignored.  Detailed criteria for redundancy are given
-  below, but let us first look at a consequence of the point just
-  made about ignoring the contents of [30m[47m[local][0m[0m sub-events.  Consider
-  the following sequence of two events.
+  the same [30m[47m[default-defun-mode][0m[0m, [30m[47m[default-ruler-extenders][0m[0m,
+  [30m[47m[default-verify-guards-eagerness][0m[0m, default measure-function (see
+  [set-measure-function]), and default [well-founded-relation].  But
+  more generally, the [30m[47mencapsulate[0m[0m events need not be syntactically
+  identical; for example, it suffices that they agree when the
+  contents of [30m[47m[local][0m[0m sub-events are ignored.  Detailed criteria for
+  redundancy are given below, but let us first look at a consequence
+  of the point just made about ignoring the contents of [30m[47m[local][0m[0m
+  sub-events.  Consider the following sequence of two events.
 
     (encapsulate
      ()

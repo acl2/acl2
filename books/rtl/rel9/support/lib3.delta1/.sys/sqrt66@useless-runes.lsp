@@ -7453,6 +7453,7 @@
  (4 4 (:REWRITE |(equal (- x) c)|))
  (4 4 (:REWRITE |(equal (- x) (- y))|))
  (4 4 (:REWRITE |(* (expt c m) (expt d n))|))
+ (4 4 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  (3 3 (:REWRITE |(< (+ (- c) x) y)|))
  (2 2 (:REWRITE EXPT-IS-INCREASING-FOR-BASE->-1))
  (2 2 (:REWRITE EXPT-IS-DECREASING-FOR-POS-BASE-<-1))

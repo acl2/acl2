@@ -11,6 +11,9 @@
 
 (in-package "C$")
 
+; Avoid ACL2(p) proof failure.
+(acl2::set-waterfall-parallelism nil)
+
 (include-book "types")
 (include-book "macro-tables")
 

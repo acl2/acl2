@@ -109846,6 +109846,20 @@ it."
 ; bad character without having the error message itself cause an error (as we
 ; saw when using LispWorks).
 
+; When translating an expression (mv ... (<x> ...) ...), if <x> was not a
+; symbol, then a raw Lisp error occurred.  This has been fixed.  Thanks to Eric
+; Smith for passing along this issue from Anthropic's Claude.
+
+; Function filter-disabled-expand-terms was missing a recursive call, albeit in
+; a case that might well be impossible.  That call has been added.  Thanks to
+; Eric Smith for passing along a comment from Anthropic's Claude leading to
+; this change.
+
+; Fixed function pc-command-table-guard to guard its call of function-symbolp
+; properly.  The missing symbolp test showed up in a raw Lisp error when
+; evaluating (table pc-command-table 3 3).  Thanks to Eric Smith for passing
+; along a comment from Anthropic's Claude leading to this change.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -109976,14 +109990,28 @@ it."
  @('system/tests/integer-length-bad-optimization.lisp') and
  @('system/tests/length-bad-optimization.lsp').  Thanks also to Stas Boukarev
  for suggesting the use of @('notinline'), as our original solution was more
- complicated (by modifying function types).</p>
+ complicated (by modifying function types), and to Eric Smith for pointing out
+ a bug in our initial implementation.</p>
 
  <p>An additional restriction was added to @(':')@(tsee elim) rules, namely,
  for the general form @('(implies hyp (equiv lhs x))'), all occurrences of
  @('x') in @('hyp') must be @('equiv')-hittable preserving @('iff').  See @(see
  elim).  This corrected a soundness bug discovered by Eric Smith with the help
- of Anthropic's Claude; see @(see community-book)
- @('system/tests/elim-iff-hyp.lisp').</p>
+ of Anthropic's Claude; see @(see community-books)
+ @('system/tests/elim-iff-hyp.lisp') and
+ @('system/tests/elim-iff-hyp-2.lisp').</p>
+
+ <p>A restriction on @(see refinement) rules was erroneously not being made in
+ the second pass of an @(tsee encapsulate) event.  This has been remedied,
+ correcting a soundness bug discovered by Eric Smith with the help of
+ Anthropic's Claude; see @(see community-book)
+ @('system/tests/refine.lisp').</p>
+
+ <p>The @(see functional-instantiation) code was modified to correct a
+ soundness bug caused by our failure to completely avoid variable capture when
+ instantiating the constraints.  See the comment in
+ @('remove-capture-in-constraint-lst').  This bug was discovered by Eric Smith
+ with the help of Anthropic's Claude.</p>
 
  <p>When @(tsee make-event) expansion takes place, the result might not be a
  valid ACL2 object.  ACL2 checked for this situation, but only when the
@@ -109997,14 +110025,39 @@ it."
  reporting the use of of Anthropic's Claude to find this bug; see @(see
  community-book) @('system/tests/df-negative-zero.lisp').</p>
 
- <p>Soundness bugs were caused by inadequate redundancy checks for calls of
- @(tsee defun) (and its variants such as @(tsee defund) and @(tsee defun-nx)).
- The checks (see @(see redundant-events) failed to account properly for the
- default measure function (see @(see set-measure-function)), and they failed to
- account at all for the @(see well-founded-relation).  Thanks to Eric Smith for
- reporting the use of of Anthropic's Claude to find these bugs; see @(see
- community-books) @('system/tests/measure-fn-redundancy.lisp') and
- @('system/tests/wfr-redundancy.lisp').</p>
+ <p>Soundness bugs were caused by inadequate redundancy checks (see @(see
+ redundant-events)) for calls of @(tsee defun) and its variants, including
+ @(tsee defun-nx)).  Thanks to Eric Smith for reporting the use of Anthropic's
+ Claude to find these bugs.  The redundancy checks, which have been fixed,
+ failed to account properly for the following, as explained in the indicated
+ @(see community-books):</p>
+
+ <ul>
+
+ <li>the default measure function (see @(see set-measure-function)) in checking
+ redundancy of a @('defun') (incomplete checking) &mdash; see
+ @('system/tests/measure-fn-redundancy.lisp');</li>
+
+ <li>the @(see well-founded-relation) in checking redundancy of a @('defun');
+ see @('system/tests/wfr-redundancy.lisp');</li>
+
+ <li>the measure in checking redundance of a @('defun-nx') event; see
+ @('system/tests/nx2.lisp'); and</li>
+
+ <li>both the default measure function and the default well-founded-relation
+ in checking redundancy of an @(tsee encapsulate) event; see
+ @('system/tests/measure-fn-redundancy-encap.lisp').</li>
+
+ </ul>
+
+ <p>Monotonicity properties of @(tsee df-round) and @(tsee to-df) &mdash;
+ @('constrained-to-df-monotonicity'), @('to-df-monotonicity'), and
+ @('df-round-monotonicity') &mdash; have been removed, because they are
+ (surprisingly, to us) not supported by some Common Lisp implementations and in
+ fact render ACL2 unsound in those host Lisps.  The issue is described in a
+ comment in the event @('constrained-to-df-monotonicity) in ACL2 source file
+ @('float-a.lisp').  This issue was discovered by Eric Smith with the help of
+ Anthropic's Claude.</p>
 
  <p>Fixed an assertion failure that could occur when an accessor call in a
  @(tsee stobj-let)'s bindings was on a quoted non-numeric index.  Thanks to
@@ -129006,13 +129059,15 @@ work on <tt>(q x)</tt>.</p>
 
  <p>The typical way for an @('encapsulate') event to be redundant is when a
  syntactically identical @('encapsulate') has already been executed under the
- same @(tsee default-defun-mode), @(tsee default-ruler-extenders), and @(tsee
- default-verify-guards-eagerness).  But more generally, the @('encapsulate')
- events need not be syntactically identical; for example, it suffices that they
- agree when the contents of @(tsee local) sub-events are ignored.  Detailed
- criteria for redundancy are given below, but let us first look at a
- consequence of the point just made about ignoring the contents of @(tsee
- local) sub-events.  Consider the following sequence of two events.</p>
+ same @(tsee default-defun-mode), @(tsee default-ruler-extenders), @(tsee
+ default-verify-guards-eagerness), default measure-function (see @(see
+ set-measure-function)), and default @(see well-founded-relation).  But more
+ generally, the @('encapsulate') events need not be syntactically identical;
+ for example, it suffices that they agree when the contents of @(tsee local)
+ sub-events are ignored.  Detailed criteria for redundancy are given below, but
+ let us first look at a consequence of the point just made about ignoring the
+ contents of @(tsee local) sub-events.  Consider the following sequence of two
+ events.</p>
 
  @({
   (encapsulate

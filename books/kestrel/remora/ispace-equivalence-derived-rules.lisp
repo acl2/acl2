@@ -1354,3 +1354,92 @@
                                                     premise2-proof)
     `(shape-eq-proof-trans-swapped
       ,shape1 ,shape2 ,shape3 ,premise1-proof ,premise2-proof)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection shape-eq-append-extend-right
+  :short "Right extension of an equivalence of a concatenation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the concatenation of two shapes is equivalent to a third shape,
+     the equivalence is preserved by concatenating a fourth shape
+     after the second shape on the left side
+     and after the third shape on the right side.
+     This combines associativity and congruence of concatenation."))
+
+  (define shape-eq-proof-append-extend-right (shape1
+                                              shape2
+                                              shape3
+                                              shape4
+                                              (premise1-proof shape-eq-proofp))
+    :returns (proof shape-eq-proofp)
+    :parents nil
+    (b* (((unless (and (shapep shape1)
+                       (shapep shape2)
+                       (shapep shape3)
+                       (shapep shape4)))
+          (shape-eq-proof-refl nil)))
+      (make-shape-eq-proof-trans
+       :shape1 (shp++ shape1 (shp++ shape2 shape4))
+       :shape2 (shp++ (shp++ shape1 shape2) shape4)
+       :shape3 (shp++ shape3 shape4)
+       :premise1-proof
+       (make-shape-eq-proof-symm
+        :shape1 (shp++ (shp++ shape1 shape2) shape4)
+        :shape2 (shp++ shape1 (shp++ shape2 shape4))
+        :premise1-proof (make-shape-eq-proof-append-assoc :shape1 shape1
+                                                          :shape2 shape2
+                                                          :shape3 shape4))
+       :premise2-proof
+       (make-shape-eq-proof-cong-append
+        :shapes1 (list (shp++ shape1 shape2) shape4)
+        :shapes2 (list shape3 shape4)
+        :premise1-proof
+        (make-shapes-eq-proof-cong-cons
+         :shape1 (shp++ shape1 shape2)
+         :shape2 shape3
+         :shapes1 (list shape4)
+         :shapes2 (list shape4)
+         :premise1-proof premise1-proof
+         :premise2-proof (make-shapes-eq-proof-refl :shapes (list shape4))))))
+
+    ///
+
+    (defret shape-eq-proof-validp-of-shape-eq-proof-append-extend-right
+      (implies (and (shapep shape1)
+                    (shapep shape2)
+                    (shapep shape4)
+                    (shape-eq-proof-validp premise1-proof
+                                           (shp++ shape1 shape2)
+                                           shape3))
+               (shape-eq-proof-validp proof
+                                      (shp++ shape1 (shp++ shape2 shape4))
+                                      (shp++ shape3 shape4)))
+      :hints
+      (("Goal"
+        :in-theory (enable* shape/ispace-equivalence-definition-validp-defs
+                            shapep-when-shape-eq-proof-validp)))))
+
+  (defruled shape-eq-append-extend-right
+    (implies (and (shapep shape1)
+                  (shapep shape2)
+                  (shapep shape4)
+                  (shape-eq (shp++ shape1 shape2) shape3))
+             (shape-eq (shp++ shape1 (shp++ shape2 shape4))
+                       (shp++ shape3 shape4)))
+    :use ((:instance shape-eq (shape1 (shp++ shape1 shape2)) (shape2 shape3))
+          (:instance shape-eq-when-proof-validp
+                     (proof (shape-eq-proof-append-extend-right
+                             shape1 shape2 shape3 shape4
+                             (shape-eq-proof (shp++ shape1 shape2) shape3)))
+                     (concl.shape1 (shp++ shape1 (shp++ shape2 shape4)))
+                     (concl.shape2 (shp++ shape3 shape4)))))
+
+  (defmacro make-shape-eq-proof-append-extend-right (&key shape1
+                                                          shape2
+                                                          shape3
+                                                          shape4
+                                                          premise1-proof)
+    `(shape-eq-proof-append-extend-right
+      ,shape1 ,shape2 ,shape3 ,shape4 ,premise1-proof)))

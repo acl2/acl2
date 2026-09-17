@@ -174,6 +174,26 @@
 ")
 
 (test-valid
+ "int f(int x, int *p) {
+    int y = __extension__ (int)*p;
+    if (__extension__ !x)
+      return __extension__ -y;
+    return __extension__ p[x]++ + __extension__ sizeof(int);
+  }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "int f(int x) {
+    return __extension__ __extension__ (int)-x;
+  }
+  int g(int x) {
+    return __extension__ f(x);
+  }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-valid
  "void f();
 ")
 

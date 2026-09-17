@@ -31,6 +31,7 @@
                                        value
                                        values))
                   '(all-equalp
+                    assert-equal
                     bool
                     boolean-resultp
                     booleanp-when-result-not-error
