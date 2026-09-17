@@ -264,7 +264,17 @@
                   (type-array type-out
                               (ispace-shape (shp++ shape-princ shape-out)))))
 
-   ;; TODO: other application expressions
+   ;; TODO: eappn
+
+   ;; TODO: tapp
+
+   ;; TODO: tappn
+
+   ;; TODO: iapp
+
+   ;; TODO: iappn
+
+   ;; TODO: capp
 
    ;; unboxing expressions:
 
