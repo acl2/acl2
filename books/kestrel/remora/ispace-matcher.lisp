@@ -38,7 +38,14 @@
   (xdoc::topstring
    (xdoc::p
     "For now we perform a purely syntactical match,
-     but we will need to extend that.")
+     which is incomplete with respect to dimension equivalence.
+     For instance, the pattern @('(+ 1 n)')
+     is not matched by the dimension @('5'),
+     even though replacing @('n') with @('4') in the pattern
+     yields a dimension equivalent to @('5').
+     We will need to extend this to matching modulo equivalence,
+     i.e. to finding a substitution that makes the pattern
+     equivalent (not just equal) to the dimension.")
    (xdoc::p
     "The variables in the patterns are the pattern variables.
      The matching builds a substitution for the pattern variables,
