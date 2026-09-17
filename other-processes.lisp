@@ -911,12 +911,82 @@
 ; clause.  The generalization step above may involve adding additional
 ; hypotheses to the clause and using generalization rules in wrld.
 
-; We return three things.  The first is the clause described above, which
-; implies cl when the hyps of the rule are known to be true, the second is the
-; set of elim variables we have just introduced into it, and the third is a
-; list describing this application of the rune of the rule, as explained below.
+; We return four things.  The first is a flag where t means we couldn't
+; actually apply the rule; see below.  Otherwise, the second is the clause
+; described above, which implies cl when the hyps of the rule are known to be
+; true, the third is the set of elim variables we have just introduced into it,
+; and the fourth is a list describing this application of the rune of the rule,
+; as explained below.
 
-; The list returned as the third value will become an element in the
+; We return a flag of t if, after assuming the hyps and generalizing away the
+; destructor terms (and before we substitute the generalized constructor term
+; for the rhs) we determine that the rhs is no longer equiv-hittable in the
+; generalized clause.  The fact that one can have an acceptable :elim with that
+; can sometimes produce unhittable occurrences was discovered by Claude (under
+; Eric Smith's prompts).
+
+; (defun d1 (x) x)             ; the "destructor" (kept disabled during the proof)
+; (defun mk (y) (if y t nil))  ; the "constructor": booleanizes
+
+; A true :GENERALIZE rule.  X occurs nakedly in (EQUAL X T) -- an EQUAL
+; position, which IFF may not hit -- and also inside the destructor (D1 X).
+; (defthm gen-rule
+;   (implies (equal x t)
+;            (equal (d1 x) t))
+;   :rule-classes :generalize)
+
+; A true :ELIM rule with :equiv = IFF.  Accepted by CHK-ACCEPTABLE-ELIM-RULE:
+; IFF is an equivalence relation, RHS X is a variable, there are no hypotheses,
+; (D1 X) is a legal destructor term, and X does not occur in (MK (D1 X))
+; outside that destructor term.
+
+; (defthm mk-elim
+;   (iff (mk (d1 x)) x)
+;   :rule-classes :elim)
+
+; Bad could be proved in v8.7+, but is actually invalid (consider x = 5).
+
+; (defthm bad
+;   (implies (d1 x) (equal (d1 x) t))
+;   :hints (("Goal" :in-theory (disable d1)))
+;   :rule-classes nil)
+
+; After generalizing the destructor term, (d1 x), to a new variable, say d1,
+; and restricting the new variable as specified by gen-rule, we get the
+; following clause
+
+;  ((EQUAL D1 'T)
+;   (EQUAL D1 'NIL)
+;   (NOT (IMPLIES (EQUAL X 'T) (EQUAL D1 'T)))
+;   (NOT D1))
+
+; And then we substitute the generalized constructor, (mk d1), for X, getting
+
+;  ((EQUAL D1 'T)
+;   (EQUAL D1 'NIL)
+;   (NOT (IMPLIES (EQUAL (MK D1) 'T)
+;                 (EQUAL D1 'T)))
+;   (NOT D1))
+
+; But (MK D1) is only IFF-equivalent to X and we just hit an occurrence of X
+; that is not IFF hittable.
+
+; Having proved an invalid theorem, we prove nil.
+
+; (defthm nil-proved
+;   nil
+;   :hints (("Goal" :use ((:instance bad (x 5)))))
+;   :rule-classes nil)
+
+; It is not clear that mk-elim should be prohibited as an elim rule nor that
+; gen-rule is a ``bad'' generalization rule.  But their combination introduces,
+; midway through the elimination, an occurrence of X that is not IFF-hittable
+; and if we ignore that fine point, we turn an invalid formula into a valid
+; one.  So now we check at runtime, below (before the subst-var-lst) that all
+; occurrences of X in the generalized intermediate clause are equiv-hittable or
+; else we refuse to apply the rule (by returning a first value of t).
+
+; The list returned as the fourth value will become an element in the
 ; 'elim-sequence list in the ttree of the history entry for this elimination
 ; process.  The "elim-sequence element" we return has the form:
 
@@ -930,6 +1000,7 @@
 
   (let* ((rune (access elim-rule rule :rune))
          (hyps (access elim-rule rule :hyps))
+         (equiv (access elim-rule rule :equiv))
          (lhs (access elim-rule rule :lhs))
          (rhs (access elim-rule rule :rhs))
          (dests (access elim-rule rule :destructor-terms))
@@ -979,7 +1050,8 @@
 ; of the hyps implies the clause.  That is, *true-clause* implies cl when the
 ; hyps of the rule are known to be true.
 
-         (mv *true-clause*
+         (mv nil ; flag meaning we hit cl
+             *true-clause*
              nil ; actual-elim-vars
              (list rune rhs
                    generalized-lhs
@@ -993,24 +1065,30 @@
                                                   (all-vars1-lst cl-with-hyps
                                                                  avoid-vars)
                                                   type-alist ens wrld)))
-           (mv-let (generalized-cl-with-hyps
-                    restricted-vars
-                    var-to-runes-alist
-                    ttree)
-                   (generalize1 cl-with-hyps type-alist dests elim-vars ens wrld)
-                   (let* ((final-cl
-                           (subst-var-lst generalized-lhs
-                                          rhs
-                                          generalized-cl-with-hyps))
-                          (actual-elim-vars
-                           (intersection-eq elim-vars
-                                            (all-vars1-lst final-cl nil))))
-                     (mv final-cl
-                         actual-elim-vars
-                         (list rune rhs generalized-lhs alist
-                               restricted-vars
-                               var-to-runes-alist
-                               (cons-tag-trees ttree0 ttree))))))))))))
+             (mv-let (generalized-cl-with-hyps
+                      restricted-vars
+                      var-to-runes-alist
+                      ttree)
+               (generalize1 cl-with-hyps type-alist dests elim-vars ens wrld)
+               (cond
+                ((every-occurrence-equiv-hittablep-in-clausep
+                  equiv rhs generalized-cl-with-hyps ens wrld)
+                 (let* ((final-cl
+                         (subst-var-lst generalized-lhs
+                                        rhs
+                                        generalized-cl-with-hyps))
+                        (actual-elim-vars
+                         (intersection-eq elim-vars
+                                          (all-vars1-lst final-cl nil))))
+                   (mv nil ; we hit cl
+                       final-cl
+                       actual-elim-vars
+                       (list rune rhs generalized-lhs alist
+                             restricted-vars
+                             var-to-runes-alist
+                             (cons-tag-trees ttree0 ttree)))))
+                (t (mv t ; unhittablep: cl is unhittable by this rule
+                       cl nil nil)))))))))))
 
 (defun eliminate-destructors-clause1 (cl eliminables avoid-vars ens wrld
                                          top-flg)
@@ -1119,12 +1197,21 @@
       (let ((rule (select-instantiated-elim-rule cl type-alist eliminables
                                                  ens wrld)))
         (cond ((null rule) (mv (list cl) nil nil))
-              (t (mv-let (new-clause elim-vars1 ele)
+              (t (mv-let (unhittablep new-clause elim-vars1 ele)
                    (apply-instantiated-elim-rule rule cl type-alist
                                                  avoid-vars ens wrld)
-                   (let ((clauses1 (split-on-assumptions
-                                    (access elim-rule rule :hyps)
-                                    cl nil)))
+                   (cond
+                    (unhittablep
+
+; Unhittablep means that when we were about to replace the rhs of rule with the
+; generalized constructor term (known to preserve equiv) we discovered
+; occurrences of rhs in the generalized clause that are not equiv-hittable.  In
+; that case, we want to abandon the attempt to apply rule.
+
+                     (mv (list cl) nil nil))
+                   (t (let ((clauses1 (split-on-assumptions
+                                       (access elim-rule rule :hyps)
+                                       cl nil)))
 
 ; Clauses1 is a set of clauses obtained by splitting on the instantiated hyps
 ; of the rule.  It contains n clauses, each obtained by adding one member of
@@ -1136,26 +1223,26 @@
 ; contradictionp is true, meaning that we have ascertained that the
 ; pathological cases are all impossible.
 
-                     (cond
-                      ((equal new-clause *true-clause*)
-                       (mv clauses1 elim-vars1 (list ele)))
-                      (t
-                       (mv-let (clauses2 elim-vars2 elim-seq)
-                         (eliminate-destructors-clause1
-                          new-clause
-                          (if top-flg
-                              elim-vars1
-                            (union-eq elim-vars1
-                                      (remove1-eq
-                                       (access elim-rule rule :rhs)
-                                       eliminables)))
-                          avoid-vars
-                          ens
-                          wrld
-                          nil)
-                         (mv (conjoin-clause-sets clauses1 clauses2)
-                             (union-eq elim-vars1 elim-vars2)
-                             (cons ele elim-seq))))))))))))))
+                        (cond
+                         ((equal new-clause *true-clause*)
+                          (mv clauses1 elim-vars1 (list ele)))
+                         (t
+                          (mv-let (clauses2 elim-vars2 elim-seq)
+                            (eliminate-destructors-clause1
+                             new-clause
+                             (if top-flg
+                                 elim-vars1
+                                 (union-eq elim-vars1
+                                           (remove1-eq
+                                            (access elim-rule rule :rhs)
+                                            eliminables)))
+                             avoid-vars
+                             ens
+                             wrld
+                             nil)
+                            (mv (conjoin-clause-sets clauses1 clauses2)
+                                (union-eq elim-vars1 elim-vars2)
+                                (cons ele elim-seq))))))))))))))))
 
 (defun owned-vars (process mine-flg history)
 

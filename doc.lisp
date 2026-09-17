@@ -107042,9 +107042,12 @@ Bug Fixes
   general form [30m[47m(implies hyp (equiv lhs x))[0m[0m, all occurrences of [30m[47mx[0m[0m in
   [30m[47mhyp[0m[0m must be [30m[47mequiv[0m[0m-hittable preserving [30m[47miff[0m[0m.  See [elim].  This
   corrected a soundness bug discovered by Eric Smith with the help of
-  Anthropic's Claude; see [community-books]
+  Anthropic's Claude, which resulted in [community-books]
   [30m[47msystem/tests/elim-iff-hyp.lisp[0m[0m and
-  [30m[47msystem/tests/elim-iff-hyp-2.lisp[0m[0m.
+  [30m[47msystem/tests/elim-iff-hyp-2.lisp[0m[0m.  These illustrate the restriction
+  added when an [30m[47m:elim[0m[0m rule is submitted; comments in source function
+  [30m[47mapply-instantiated-elim-rule[0m[0m illustrate a corresponding restriction
+  when the rule is applied.
 
   A restriction on [refinement] rules was erroneously not being made in
   the second pass of an [30m[47m[encapsulate][0m[0m event.  This has been remedied,

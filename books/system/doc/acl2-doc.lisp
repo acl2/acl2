@@ -109997,9 +109997,11 @@ it."
  for the general form @('(implies hyp (equiv lhs x))'), all occurrences of
  @('x') in @('hyp') must be @('equiv')-hittable preserving @('iff').  See @(see
  elim).  This corrected a soundness bug discovered by Eric Smith with the help
- of Anthropic's Claude; see @(see community-books)
- @('system/tests/elim-iff-hyp.lisp') and
- @('system/tests/elim-iff-hyp-2.lisp').</p>
+ of Anthropic's Claude, which resulted in @(see community-books)
+ @('system/tests/elim-iff-hyp.lisp') and @('system/tests/elim-iff-hyp-2.lisp').
+ These illustrate the restriction added when an @(':elim') rule is submitted;
+ comments in source function @('apply-instantiated-elim-rule') illustrate a
+ corresponding restriction when the rule is applied.</p>
 
  <p>A restriction on @(see refinement) rules was erroneously not being made in
  the second pass of an @(tsee encapsulate) event.  This has been remedied,
