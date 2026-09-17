@@ -8471,7 +8471,7 @@
 (defun filter-disabled-expand-terms (terms ens wrld)
 
 ; We build expand hint structures, throwing certain terms out of terms.
-; Variables and constants are kept (but they should never be there).  Lambda
+; Variables and constants are dropped (but they should never be there).  Lambda
 ; applications are kept.  Function symbol applications are kept provided the
 ; symbol has a non-nil, enabled def-body.  There is no point in keeping on
 ; :expand-lst a term whose function symbol has no def-body, because it is there
@@ -8486,7 +8486,7 @@
     nil)
    ((or (variablep (car terms))
         (fquotep (car terms)))
-    nil)
+    (filter-disabled-expand-terms (cdr terms) ens wrld))
    (t
     (cond ((flambdap (ffn-symb (car terms)))
            (cons (make expand-hint
