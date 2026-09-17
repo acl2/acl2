@@ -484,16 +484,28 @@
 ;; This is separate to avoid causing case splits in the slow guard proof for unroll-java-code-core.
 (defund classes-to-assume-initialized-optionp (classes-to-assume-initialized)
   (declare (xargs :guard t))
-  (or (eq :all classes-to-assume-initialized)
+  (or (eq :basic classes-to-assume-initialized)
+      (eq :all classes-to-assume-initialized)
       (jvm::class-name-listp classes-to-assume-initialized)))
 
 ;; This is separate to avoid causing case splits in the slow guard proof for unroll-java-code-core.
 (defund choose-classes-to-assume-initialized (classes-to-assume-initialized class-alist)
   (declare (xargs :guard (and (classes-to-assume-initialized-optionp classes-to-assume-initialized)
                               (class-table-alistp class-alist))))
-  (if (eq :all classes-to-assume-initialized)
-      (strip-cars class-alist)
-    classes-to-assume-initialized))
+  (if (eq :basic classes-to-assume-initialized)
+      '("java.lang.Object" "java.lang.System") ; might need to expand this later
+    (if (eq :all classes-to-assume-initialized)
+        (strip-cars class-alist)
+      ;; must be an explicit list of class names:
+      classes-to-assume-initialized)))
+
+(defthm class-name-listp-of-choose-classes-to-assume-initialized
+  (implies (and (classes-to-assume-initialized-optionp classes-to-assume-initialized)
+                (class-table-alistp class-alist))
+           (jvm::class-name-listp (choose-classes-to-assume-initialized classes-to-assume-initialized class-alist)))
+  :hints (("Goal" :in-theory (enable choose-classes-to-assume-initialized))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; is this defined elsewhere too?
 (defund steps-optionp (steps)
@@ -865,8 +877,7 @@
                              state)
   (declare (xargs :guard (and (nice-output-indicatorp nice-output-indicator)
                               (jvm::method-indicatorp method-indicator)
-                              (or (eq :all classes-to-assume-initialized)
-                                  (jvm::class-name-listp classes-to-assume-initialized))
+                              (classes-to-assume-initialized-optionp classes-to-assume-initialized)
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
                               (symbol-listp extra-assumption-rules)
@@ -1029,7 +1040,7 @@
                                       ;; Options affecting what is proved:
                                       (assumptions 'nil) ;TODO: What variables are these over? 'locals'?  well, at least the params of the function ; todo: rename extra-assumptions
                                       (array-length-alist 'nil)
-                                      (classes-to-assume-initialized ''("java.lang.Object" "java.lang.System")) ;TODO; Try making :all the default
+                                      (classes-to-assume-initialized ':basic) ;TODO; Try making :all the default
                                       (ignore-exceptions 'nil)
                                       (ignore-errors 'nil)
                                       (count-hits 'nil)
@@ -1108,7 +1119,7 @@
           "The Java method to unroll (a string like \"java.lang.Object.foo(IB)V\").  The descriptor (input and output type) can be omitted if only one method in the given class has the given name.")
          (assumptions             "Terms to assume true when unrolling.  These assumptions can mention the method's parameter names (symbols), the byte-variables and/or bit-variables in the contents of array parameters, and the special variables @('locals'), @('initial-heap'), @('initial-static-field-map'), and @('initial-intern-table').")
          (array-length-alist      "An alist pairing array parameter names (symbols) with their lengths.")
-         (classes-to-assume-initialized "Classes to assume the JVM has already initialized (or @(':all'))")
+         (classes-to-assume-initialized "The set of classes to assume that the JVM has already initialized.  A list of class names (strings), or @(':basic'), or @(':all').  The value @(':basic') means to assume that the inititialzed classes are exactly the set containing java.lang.Object and java.lang.System (we may in the future extend this set with other fundamental classes).")
          (ignore-exceptions       "Whether to assume exceptions do not happen (e.g., out-of-bounds array accesses)")
          (ignore-errors           "Whether to assume JVM errors do not happen")
          (count-hits "Whether to count rule hits.")
