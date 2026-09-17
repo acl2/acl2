@@ -107042,8 +107042,15 @@ Bug Fixes
   general form [30m[47m(implies hyp (equiv lhs x))[0m[0m, all occurrences of [30m[47mx[0m[0m in
   [30m[47mhyp[0m[0m must be [30m[47mequiv[0m[0m-hittable preserving [30m[47miff[0m[0m.  See [elim].  This
   corrected a soundness bug discovered by Eric Smith with the help of
-  Anthropic's Claude; see [community-book]
-  [30m[47msystem/tests/elim-iff-hyp.lisp[0m[0m.
+  Anthropic's Claude; see [community-books]
+  [30m[47msystem/tests/elim-iff-hyp.lisp[0m[0m and
+  [30m[47msystem/tests/elim-iff-hyp-2.lisp[0m[0m.
+
+  A restriction on [refinement] rules was erroneously not being made in
+  the second pass of an [30m[47m[encapsulate][0m[0m event.  This has been remedied,
+  correcting a soundness bug discovered by Eric Smith with the help
+  of Anthropic's Claude; see [community-book]
+  [30m[47msystem/tests/refine.lisp[0m[0m.
 
   The [functional-instantiation] code was modified to correct a
   soundness bug caused by our failure to completely avoid variable
@@ -107063,15 +107070,37 @@ Bug Fixes
   for reporting the use of of Anthropic's Claude to find this bug;
   see [community-book] [30m[47msystem/tests/df-negative-zero.lisp[0m[0m.
 
-  Soundness bugs were caused by inadequate redundancy checks for calls
-  of [30m[47m[defun][0m[0m (and its variants such as [30m[47m[defund][0m[0m and [30m[47m[defun-nx][0m[0m).  The
-  checks (see [redundant-events] failed to account properly for the
-  default measure function (see [set-measure-function]), and they
-  failed to account at all for the [well-founded-relation].  Thanks
-  to Eric Smith for reporting the use of of Anthropic's Claude to
-  find these bugs; see [community-books]
-  [30m[47msystem/tests/measure-fn-redundancy.lisp[0m[0m and
-  [30m[47msystem/tests/wfr-redundancy.lisp[0m[0m.
+  Soundness bugs were caused by inadequate redundancy checks (see
+  [redundant-events]) for calls of [30m[47m[defun][0m[0m and its variants,
+  including [30m[47m[defun-nx][0m[0m).  Thanks to Eric Smith for reporting the use
+  of Anthropic's Claude to find these bugs.  The redundancy checks,
+  which have been fixed, failed to account properly for the
+  following, as explained in the indicated [community-books]:
+
+    * the default measure function (see [set-measure-function]) in checking
+      redundancy of a [30m[47mdefun[0m[0m (incomplete checking) --- see
+      [30m[47msystem/tests/measure-fn-redundancy.lisp[0m[0m;
+
+    * the [well-founded-relation] in checking redundancy of a [30m[47mdefun[0m[0m; see
+      [30m[47msystem/tests/wfr-redundancy.lisp[0m[0m;
+
+    * the measure in checking redundance of a [30m[47mdefun-nx[0m[0m event; see
+      [30m[47msystem/tests/nx2.lisp[0m[0m; and
+
+    * both the default measure function and the default
+      well-founded-relation in checking redundancy of an
+      [30m[47m[encapsulate][0m[0m event; see
+      [30m[47msystem/tests/measure-fn-redundancy-encap.lisp[0m[0m.
+
+  Monotonicity properties of [30m[47m[df-round][0m[0m and [30m[47m[to-df][0m[0m ---
+  [30m[47mconstrained-to-df-monotonicity[0m[0m, [30m[47mto-df-monotonicity[0m[0m, and
+  [30m[47mdf-round-monotonicity[0m[0m --- have been removed, because they are
+  (surprisingly, to us) not supported by some Common Lisp
+  implementations and in fact render ACL2 unsound in those host
+  Lisps.  The issue is described in a comment in the event
+  [30m[47mconstrained-to-df-monotonicity) in ACL2 source file
+  @('float-a.lisp[0m[0m.  This issue was discovered by Eric Smith with the
+  help of Anthropic's Claude.
 
   Fixed an assertion failure that could occur when an accessor call in
   a [30m[47m[stobj-let][0m[0m's bindings was on a quoted non-numeric index.  Thanks
@@ -128565,14 +128594,15 @@ Subtopics
 
   The typical way for an [30m[47mencapsulate[0m[0m event to be redundant is when a
   syntactically identical [30m[47mencapsulate[0m[0m has already been executed under
-  the same [30m[47m[default-defun-mode][0m[0m, [30m[47m[default-ruler-extenders][0m[0m, and
-  [30m[47m[default-verify-guards-eagerness][0m[0m.  But more generally, the
-  [30m[47mencapsulate[0m[0m events need not be syntactically identical; for
-  example, it suffices that they agree when the contents of [30m[47m[local][0m[0m
-  sub-events are ignored.  Detailed criteria for redundancy are given
-  below, but let us first look at a consequence of the point just
-  made about ignoring the contents of [30m[47m[local][0m[0m sub-events.  Consider
-  the following sequence of two events.
+  the same [30m[47m[default-defun-mode][0m[0m, [30m[47m[default-ruler-extenders][0m[0m,
+  [30m[47m[default-verify-guards-eagerness][0m[0m, default measure-function (see
+  [set-measure-function]), and default [well-founded-relation].  But
+  more generally, the [30m[47mencapsulate[0m[0m events need not be syntactically
+  identical; for example, it suffices that they agree when the
+  contents of [30m[47m[local][0m[0m sub-events are ignored.  Detailed criteria for
+  redundancy are given below, but let us first look at a consequence
+  of the point just made about ignoring the contents of [30m[47m[local][0m[0m
+  sub-events.  Consider the following sequence of two events.
 
     (encapsulate
      ()

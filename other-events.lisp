@@ -7753,6 +7753,8 @@
         (t x)))
 
 (defun redundant-encapsulate-tuplep (event-form mode ruler-extenders vge
+                                                measure-function
+                                                well-founded-relation
                                                 event-number wrld wrld0 state
                                                 r-e-p)
 
@@ -7788,12 +7790,17 @@
                                ruler-extenders)
                         (eql (default-verify-guards-eagerness-from-table adt)
                              vge)
+                        (eq (default-well-founded-relation-from-table adt)
+                            well-founded-relation)
+                        (eq (default-measure-function-from-table adt)
+                            measure-function)
                         (redundant-encapsulatep-result
                          (if (eq equal? :expanded)
                              old-event-form
                            t)
                          wrld wrld0 state)))))))
         (t (redundant-encapsulate-tuplep event-form mode ruler-extenders vge
+                                         measure-function well-founded-relation
                                          event-number (cdr wrld) wrld0 state
                                          r-e-p))))
 
@@ -7861,6 +7868,14 @@
                         old-adt)
                       (default-verify-guards-eagerness-from-table
                         new-adt))
+                 (eq (default-measure-function-from-table
+                       old-adt)
+                     (default-measure-function-from-table
+                       new-adt))
+                 (eq (default-well-founded-relation-from-table
+                       old-adt)
+                     (default-well-founded-relation-from-table
+                       new-adt))
                  (redundant-encapsulatep-result (if (eq equal? :expanded)
                                                     old-event-form
                                                   t)
@@ -7884,6 +7899,8 @@
                 (default-defun-mode-from-table new-adt)
                 (default-ruler-extenders-from-table new-adt)
                 (default-verify-guards-eagerness-from-table new-adt)
+                (default-measure-function-from-table new-adt)
+                (default-well-founded-relation-from-table new-adt)
                 (and name
                      (getpropc name 'absolute-event-number nil wrld))
                 wrld
