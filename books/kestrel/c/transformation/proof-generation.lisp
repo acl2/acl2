@@ -1608,7 +1608,7 @@
       (b* (((unless (and (expr-case arg1 :ident)
                          (equal (expr-type arg1)
                                 (expr-type arg2))
-                         (type-definitely-integerp (expr-type arg1))))
+                         (3definitely (type-integer-3p (expr-type arg1)))))
             (mv expr-new gout-no-thm))
            ((mv & cvar) (ldm-ident (expr-ident->ident arg1))) ; ERP must be NIL
            ((mv & old-arg2) (ldm-expr arg2)) ; ERP must be NIL

@@ -812,7 +812,7 @@
 
     type-formalp
     type-to-value-kind
-    type-definitely-integerp
+    type-integer-3p
 
     iconst-vinfo
 

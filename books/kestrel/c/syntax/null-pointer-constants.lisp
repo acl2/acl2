@@ -62,7 +62,7 @@
                            :non-null nil
                            :null t)
                 :otherwise nil))
-   :otherwise (b* (((unless (type-definitely-integerp type))
+   :otherwise (b* (((unless (3definitely (type-integer-3p type)))
                     nil)
                    (val (const-eval-expr expr ienv))
                    ((when (value-case val :unknown))
