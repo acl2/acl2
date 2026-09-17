@@ -909,6 +909,48 @@
     :hyp (expr-unambp arg)
     :hints (("Goal" :induct t))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-make/adjust-expr-extension ((arg exprp))
+  :guard (expr-unambp arg)
+  :returns (expr exprp)
+  :short "Build, and adjust if needed, an extension expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee dimb-make/adjust-expr-unary).
+     The @('__extension__') keyword expects a cast expression as operand,
+     but an ambiguous cast may be disambiguated to a binary expression.
+     For instance, if @('x') is an object,
+     @('__extension__ (x) + y') must become
+     @('[ __extension__ (x) ] + y'),
+     where square brackets indicate grouping.
+     We recursively move the keyword into the left operand
+     until the operand has at least cast priority."))
+  (b* (((when (expr-priority->= (expr->priority arg) (expr-priority-cast)))
+        (expr-extension arg))
+       ((unless (expr-case arg :binary))
+        (raise "Internal error: ~
+                non-binary expression ~x0 ~
+                used as argument of __extension__."
+               (expr-fix arg))
+        (expr-extension arg)))
+    (make-expr-binary :op (expr-binary->op arg)
+                      :arg1 (dimb-make/adjust-expr-extension
+                             (expr-binary->arg1 arg))
+                      :arg2 (expr-binary->arg2 arg)
+                      :info nil))
+  :no-function nil
+  :measure (expr-count arg)
+  :verify-guards :after-returns
+
+  ///
+
+  (defret expr-unambp-of-dimb-make/adjust-expr-extension
+    (expr-unambp expr)
+    :hyp (expr-unambp arg)
+    :hints (("Goal" :induct t))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-cast/call-to-cast ((tyname tynamep)
@@ -1654,7 +1696,7 @@
          (retok (make-expr-va-arg :list list :type type) dstate))
        :extension
        (b* (((erp expr dstate) (dimb-expr expr.expr dstate)))
-         (retok (expr-extension expr) dstate))))
+         (retok (dimb-make/adjust-expr-extension expr) dstate))))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -706,8 +706,7 @@
      or a string literal (which is a token),
      or a parenthesizes expression (which starts with a certain punctuator),
      or a generic selection (which starts a certain keyword),
-     or a call of a GCC built-in special function,
-     or another primary expression preceded by @('__extension__')."))
+     or a call of a GCC built-in special function."))
   (and token?
        (or (token-case token? :ident)
            (token-case token? :const)
@@ -717,7 +716,6 @@
            (token-keywordp token? "__builtin_offsetof")
            (token-keywordp token? "__builtin_types_compatible_p")
            (token-keywordp token? "__builtin_va_arg")
-           (token-keywordp token? "__extension__")
            (token-keywordp token? "true") ; C23
            (token-keywordp token? "false"))) ; C23
   ///
@@ -761,7 +759,7 @@
      would be an identifier token, not a keyword token.")
    (xdoc::p
     "We also include, in the comparison,
-     the @('__real__') and @('__imag__') operators,
+     the @('__real__'), @('__imag__'), and @('__extension__') operators,
      which are keyword tokens only if GCC/Clang extensions are enabled.")
    (xdoc::p
     "If GCC/Clang extensions are enabled,
@@ -781,6 +779,7 @@
       (token-keywordp token? "__alignof__")
       (token-keywordp token? "__real__")
       (token-keywordp token? "__imag__")
+      (token-keywordp token? "__extension__")
       (and gcc/clang (token-punctuatorp token? "&&")))
   ///
 
@@ -3139,7 +3138,11 @@
        we parse an expression or type name via a separate function,
        and based on the result we return
        a @('sizeof') or @('_Alignof') expression with
-       an expression, a type name, or an ambiguous type name or expression."))
+       an expression, a type name, or an ambiguous type name or expression.")
+     (xdoc::p
+      "If the token is the GCC/Clang keyword @('__extension__'),
+       we parse a cast expression as its operand,
+       just as for @('__real__') and @('__imag__')."))
     (b* (((reterr) (irr-expr) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
@@ -3316,6 +3319,15 @@
           (retok (make-expr-unary :op unop :arg expr :info nil)
                  (span-join span last-span)
                  parstate)))
+       ;; If token is '__extension__',
+       ;; which can only happen with GCC/Clang extensions,
+       ;; we recursively parse a cast expression as operand.
+       ((token-keywordp token "__extension__") ; __extension__
+        (b* (((erp expr last-span parstate) ; __extension__ expr
+              (parse-cast-expression parstate)))
+          (retok (expr-extension expr)
+                 (span-join span last-span)
+                 parstate)))
        ;; If token is anything else, it is an error.
        (t ; other
         (reterr-msg :where (span->start span)
@@ -3327,7 +3339,8 @@
                                _Generic, ~
                                sizeof,~
                                __real__,~
-                               __imag__~
+                               __imag__,~
+                               __extension__~
                                } ~
                                or a punctuator in {~
                                \"++\", ~
@@ -3806,9 +3819,6 @@
        we parse a call of this built-in function,
        which has an expression and a type name as arguments.")
      (xdoc::p
-      "If the token is the GCC keyword @('__extension__'),
-       we parse the primary expression after it, recursively.")
-     (xdoc::p
       "If the token is none of the above,
        including the token being absent,
        it is an error.")
@@ -3973,12 +3983,6 @@
               ;; __builtin_va_arg ( list , type )
               (read-punctuator ")" parstate)))
           (retok (make-expr-va-arg :list list :type type)
-                 (span-join span last-span)
-                 parstate)))
-       ((token-keywordp token "__extension__") ; __extension__
-        (b* (((erp expr last-span parstate) ; __extension__ expr
-              (parse-primary-expression parstate)))
-          (retok (expr-extension expr)
                  (span-join span last-span)
                  parstate)))
        (t ; other
