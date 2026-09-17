@@ -82,7 +82,7 @@
    (xdoc::p
     "For expression application,
      we use @(tsee shape-lubp) to say that the principal shape is
-     the least upper bound of the function and argument shapes.
+     the least upper bound of the function shape and argument frame.
      While [thesis] and [arxiv] use
      an equality to the least upper bound operator,
      that least upper bound may not exist,
