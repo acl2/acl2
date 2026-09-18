@@ -24,6 +24,7 @@
 (std::defredundant
   :names (tree-update
           tree-singleton
+          tree-update-with-hash
           acl2-number-tree-update
           symbol-tree-update
           eqlable-tree-update))
