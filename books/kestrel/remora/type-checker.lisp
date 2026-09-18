@@ -67,7 +67,17 @@
    (xdoc::p
     "This type checker is not designed for efficiency
      or to provide informative error messages.
-     It is designed for simplicity."))
+     It is designed for simplicity.")
+   (xdoc::p
+    "Besides checking, this type checker performs
+     a limited form of type inference:
+     when a function with a universal or product type
+     is applied to an argument
+     without explicit type and ispace applications,
+     the type and ispace arguments are inferred from the argument type,
+     and the corresponding applications are added to the expression
+     (see @(tsee check/infer-app)).
+     We plan to extend this inference."))
   :order-subtopics t
   :default-parent t)
 
@@ -1418,11 +1428,15 @@
      (xdoc::p
       "For a unary term application,
        first we check the function and argument expressions,
-       and then we use @(tsee check-app) to check
+       and then we use @(tsee check/infer-app) to check
        the argument type against the function type,
-       and to obtain the type of the application expression.
-       For an n-ary term application, we proceed the same way,
-       but via @(tsee check-appn).")
+       inferring type and ispace applications of the function if needed,
+       and to obtain the type of the application expression
+       along with the (possibly augmented) application expression.
+       For an n-ary term application,
+       we check the function and argument expressions,
+       and then we use @(tsee check-appn),
+       which performs no inference for now.")
      (xdoc::p
       "For a unary type application,
        first we check the function expression,
@@ -1584,10 +1598,8 @@
       :expr (expr-fix expr))
      :app
      (b* (((ok (type+expr fe)) (check-expr expr.fun senv))
-          ((ok (type+expr ae)) (check-expr expr.arg senv))
-          ((ok type) (check-app fe.type ae.type)))
-       (make-type+expr :type type
-                       :expr (make-expr-app :fun fe.expr :arg ae.expr)))
+          ((ok (type+expr ae)) (check-expr expr.arg senv)))
+       (check/infer-app fe.type fe.expr ae.type ae.expr senv))
      :appn
      (b* (((ok (type+expr fe)) (check-expr expr.fun senv))
           ((ok (types+exprs aes)) (check-expr-list expr.args senv))
