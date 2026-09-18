@@ -12,6 +12,7 @@
 
 (include-book "ispace-matcher")
 (include-book "abstract-syntax-structurals")
+(include-book "variable-substitution-operations")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -642,3 +643,102 @@
   ///
 
   (fty::deffixequiv-mutual types-match))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-match-vars ((type typep)
+                         (pat typep)
+                         (ivars ispace-var-setp)
+                         (tvars type-var-setp))
+  :returns (mv (okp booleanp)
+               (dim-subst string-dim-mapp)
+               (shape-subst string-shape-mapp)
+               (atom-subst string-type-mapp)
+               (array-subst string-type-mapp))
+  :short "Match a type to a pattern (another type),
+          with respect to given pattern variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee type-match),
+     but the pattern variables are exactly
+     the ispace variables in @('ivars') and the type variables in @('tvars'):
+     any other free variable of the pattern is rigid,
+     i.e. it matches only itself.
+     The substitutions are initially empty.")
+   (xdoc::p
+    "We achieve this by binding the rigid variables to themselves
+     (via @(tsee dim/shape-subst-self-bind)
+     and @(tsee atom/array-subst-self-bind))
+     before the matching,
+     and by removing them from the resulting substitutions
+     (via @(tsee dim/shape-subst-remove-bound)
+     and @(tsee atom/array-subst-remove-bound))
+     after the matching.
+     Thus, the resulting substitutions only bind pattern variables;
+     a pattern variable that does not occur free in the pattern
+     is not bound in the resulting substitutions.")
+   (xdoc::p
+    "The kind rules of @(tsee type-var-match) apply to rigid variables too:
+     e.g. a rigid array-kind variable does not match an atom-kind type,
+     because the type is lifted to a scalar array type,
+     which differs from the variable."))
+  (b* ((rigid-ivars (set::difference (type-free-ispace-vars pat)
+                                     (ispace-var-set-fix ivars)))
+       (rigid-tvars (set::difference (type-free-type-vars pat)
+                                     (type-var-set-fix tvars)))
+       ((mv dim-subst shape-subst)
+        (dim/shape-subst-self-bind rigid-ivars nil nil))
+       ((mv atom-subst array-subst)
+        (atom/array-subst-self-bind rigid-tvars nil nil))
+       ((mv okp dim-subst shape-subst atom-subst array-subst)
+        (type-match type pat dim-subst shape-subst atom-subst array-subst))
+       ((unless okp) (mv nil nil nil nil nil))
+       ((mv dim-subst shape-subst)
+        (dim/shape-subst-remove-bound rigid-ivars dim-subst shape-subst))
+       ((mv atom-subst array-subst)
+        (atom/array-subst-remove-bound rigid-tvars atom-subst array-subst)))
+    (mv t dim-subst shape-subst atom-subst array-subst)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-list-match-vars ((types type-listp)
+                              (pats type-listp)
+                              (ivars ispace-var-setp)
+                              (tvars type-var-setp))
+  :returns (mv (okp booleanp)
+               (dim-subst string-dim-mapp)
+               (shape-subst string-shape-mapp)
+               (atom-subst string-type-mapp)
+               (array-subst string-type-mapp))
+  :short "Match a list of types to a list of patterns (other types),
+          with respect to given pattern variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee type-list-match),
+     but with the pattern variables restricted to the given ones,
+     as in @(tsee type-match-vars); see that function for details.
+     The rigid variables are the free variables of all the patterns,
+     other than the pattern variables."))
+  (b* ((rigid-ivars (set::difference (type-list-free-ispace-vars pats)
+                                     (ispace-var-set-fix ivars)))
+       (rigid-tvars (set::difference (type-list-free-type-vars pats)
+                                     (type-var-set-fix tvars)))
+       ((mv dim-subst shape-subst)
+        (dim/shape-subst-self-bind rigid-ivars nil nil))
+       ((mv atom-subst array-subst)
+        (atom/array-subst-self-bind rigid-tvars nil nil))
+       ((mv okp dim-subst shape-subst atom-subst array-subst)
+        (type-list-match types
+                         pats
+                         dim-subst
+                         shape-subst
+                         atom-subst
+                         array-subst))
+       ((unless okp) (mv nil nil nil nil nil))
+       ((mv dim-subst shape-subst)
+        (dim/shape-subst-remove-bound rigid-ivars dim-subst shape-subst))
+       ((mv atom-subst array-subst)
+        (atom/array-subst-remove-bound rigid-tvars atom-subst array-subst)))
+    (mv t dim-subst shape-subst atom-subst array-subst)))

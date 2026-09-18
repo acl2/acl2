@@ -24408,6 +24408,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard (plist-worldp wrld)))
   (table-alist 'untrans-table wrld))
 
+(table untrans-table nil nil
+       :guard
+       (and (symbolp key)
+            (consp val)
+            (symbolp (car val))
+            (booleanp (cdr val))))
+
 (table untrans-table nil
        '((binary-+ + . t)
          (binary-* * . t)

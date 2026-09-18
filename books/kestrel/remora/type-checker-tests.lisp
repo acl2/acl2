@@ -288,3 +288,103 @@
 (test-check-top-expr
  "(let ((fun (@f (&t) ($d) (x (A &t $d)) : (A &t $d)) x))
   (@f (Int) (3) [1 2 3]))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Inference of type and ispace applications (see check/infer-app):
+; a function with a universal or product type
+; is applied directly to an argument,
+; and the type and ispace arguments are inferred from the argument type.
+; Since the argument type must match the parameter type syntactically,
+; the arguments are explicit arrays, whose types have plain dimensions,
+; rather than bracket expressions, whose types have concatenated shapes.
+
+; Universal type over product type,
+; as in the explicit instantiation just above.
+(test-check-top-expr
+ "(let ((fun (@f (&t) ($d) (x (A &t (dims $d))) : (A &t (dims $d))) x))
+  (f (array [3] 1 2 3)))")
+
+; The same, with a different element type.
+(test-check-top-expr
+ "(let ((fun (@f (&t) ($d) (x (A &t (dims $d))) : (A &t (dims $d))) x))
+  (f (array [2] #t #f)))")
+
+; Product type over universal type, via explicit abstractions.
+(test-check-top-expr
+ "((i-fn ($d) (t-fn (&t) (fn ((x (A &t (dims $d)))) x))) (array [3] 1 2 3))")
+
+; Universal type only.
+(test-check-top-expr
+ "(let ((fun (@f (&t) () (x (A &t (dims))) : (A &t (dims))) x))
+  (f 7))")
+
+; Product type only.
+(test-check-top-expr
+ "(let ((fun (@f () ($d) (x (A Int (dims $d))) : (A Int (dims $d))) x))
+  (f (array [3] 1 2 3)))")
+
+; A shape variable is inferred as the whole shape of the argument.
+(test-check-top-expr
+ "(let ((fun (@f (&t) (@s) (x (A &t @s)) : (A &t @s)) x))
+  (f (array [2 3] 1 2 3 4 5 6)))")
+
+; Two ispace parameters, in an n-ary product type.
+(test-check-top-expr
+ "(let ((fun (@f (&t) ($m $n) (x (A &t (dims $m $n))) : (A &t (dims $m $n)))
+        x))
+  (f (array [2 3] 1 2 3 4 5 6)))")
+
+; An array-kind type variable is inferred as the whole argument type.
+(test-check-top-expr
+ "(let ((fun (@f (*x) () (v *x) : *x) v))
+  (f (array [3] 1 2 3)))")
+
+; The inferred applications precede the term application,
+; so a two-parameter function is applied to its arguments in a chain:
+; the first (unary) application infers the instantiation,
+; and the second one is an ordinary application.
+(test-check-top-expr
+ "(let ((fun (@f (&t) ($d) (x (A &t (dims $d))) (y (A &t (dims $d)))
+             : (A &t (dims $d)))
+        x))
+  ((f (array [3] 1 2 3)) (array [3] 4 5 6)))")
+
+; An n-ary term application performs no inference, for now.
+(test-check-top-expr-fail
+ "(let ((fun (@f (&t) ($d) (x (A &t (dims $d))) (y (A &t (dims $d)))
+             : (A &t (dims $d)))
+        x))
+  (f (array [3] 1 2 3) (array [3] 4 5 6)))")
+
+; Parameters that do not occur in the parameter type
+; cannot be inferred from the argument;
+; explicit instantiation is still possible.
+(test-check-top-expr-fail
+ "(let ((fun (@f (&t) ($d) (x (A Int (dims))) : Int) 5))
+  (f 7))")
+(test-check-top-expr
+ "(let ((fun (@f (&t) ($d) (x (A Int (dims))) : Int) 5))
+  (@f (Int) (3) 7))")
+
+; A mismatched argument.
+(test-check-top-expr-fail
+ "(let ((fun (@f (&t) ($d) (x (A &t (dims $d))) : (A &t (dims $d))) x))
+  (f 7))")
+
+; An argument with a non-empty frame is not accepted, for now:
+; the argument type must match the whole parameter type.
+(test-check-top-expr-fail
+ "(let ((fun (@f (&t) ($d) (x (A &t (dims $d))) : (A &t (dims $d))) x))
+  (f (array [2 3] 1 2 3 4 5 6)))")
+
+; A bracket expression has a concatenated shape,
+; which does not match the plain dimensions of the parameter type, for now.
+(test-check-top-expr-fail
+ "(let ((fun (@f (&t) ($d) (x (A &t (dims $d))) : (A &t (dims $d))) x))
+  (f [1 2 3]))")
+
+; The types of the primitive operations use bracket types and splices,
+; which the syntactic matching does not handle, for now.
+(test-check-top-expr-fail
+ "(length (array [3] 1 2 3))")

@@ -13,6 +13,7 @@
 (include-book "type-validity")
 (include-book "type-equivalence")
 (include-book "shape-ordering")
+(include-book "variable-substitution-operations")
 
 (include-book "nat-lists")
 
@@ -266,9 +267,46 @@
 
    ;; TODO: eappn
 
-   ;; TODO: tapp
-
-   ;; TODO: tappn
+   (tapp ((ispace-var-setp ivars)
+          (type-var-setp tvars)
+          (string-type-mapp evars)
+          (exprp fun)
+          (type-varp param)
+          (typep type-arg)
+          (typep type-body)
+          (shapep shape-body)
+          (shapep shape-fun)
+          (expr-ok ivars tvars evars
+                   fun
+                   (type-array (type-forall param
+                                            (type-array type-body
+                                                        (ispace-shape
+                                                         shape-body)))
+                               (ispace-shape shape-fun)))
+          (type-ok ivars tvars type-arg)
+          (type-var-case
+           param
+           :atom
+           (and (type-atom-kindp type-arg)
+                (equal atom-subst
+                       (omap::update (type-var-atom->name param)
+                                     type-arg
+                                     nil))
+                (equal array-subst nil))
+           :array
+           (and (type-array-kindp type-arg)
+                (equal atom-subst nil)
+                (equal array-subst
+                       (omap::update (type-var-array->name param)
+                                     type-arg
+                                     nil))))
+          (type-subst-type-vars-no-capture-p type-body atom-subst array-subst))
+         (expr-ok ivars tvars evars
+                  (expr-tapp fun type-arg)
+                  (type-array (type-subst-type-vars type-body
+                                                    atom-subst
+                                                    array-subst)
+                              (ispace-shape (shp++ shape-fun shape-body)))))
 
    ;; TODO: iapp
 
@@ -376,6 +414,7 @@
   (verify-guards expr-ok-frame-empty-validp)
   (verify-guards expr-ok-string-validp)
   (verify-guards expr-ok-eapp-validp)
+  (verify-guards expr-ok-tapp-validp)
   (verify-guards atom-ok-bool-validp)
   (verify-guards atom-ok-int-validp)
   (verify-guards atom-ok-float-validp)
