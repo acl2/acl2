@@ -2201,11 +2201,11 @@
   (define type-composite-is-input-p ((x typep)
                                       (y typep)
                                       (completions type-completions-p)
-                                      (visited uid-uid-mapp)
+                                      (visited uid-pair-setp)
                                       (count natp))
     :returns (mv (leftp booleanp)
                  (rightp booleanp)
-                 (new-visited uid-uid-mapp))
+                 (new-visited uid-pair-setp))
     :short "Check whether either of two @(see type)s is already
             a composite of the two."
     :long
@@ -2221,14 +2221,14 @@
      (xdoc::p
       "Since the struct types reachable through @('completions')
        may be cyclic,
-       the @('visited') map records the pairs of struct @(see UID)s
+       the @('visited') set records the pairs of struct @(see UID)s
        already encountered, and a revisited pair is accepted,
        analogously to the deletion in @(tsee type-compatible-p).
        As in @(tsee type-composite-aux),
        termination is ensured by @('count');
        when it is exhausted, the check fails in both directions,
        which is always safe."))
-    (b* ((visited (uid-uid-mfix visited))
+    (b* ((visited (uid-pair-sfix visited))
          (completions (type-completions-fix completions))
          ((when (= (the unsigned-byte (lnfix count)) 0))
           (mv nil nil visited)))
@@ -2246,8 +2246,8 @@
               (type-struni-tag/members-case
                 y.tag/members
                 :tagged
-                (b* (((mv foundp y-uid) (treemap::lookup? x.uid visited))
-                     ((when (and foundp (equal y-uid y.uid)))
+                (b* ((pair (make-uid-pair :first x.uid :second y.uid))
+                     ((when (treeset::in pair visited))
                       (mv t t visited))
                      ((mv x-foundp x-members)
                       (treemap::lookup? x.uid completions))
@@ -2261,7 +2261,7 @@
                       (mv (not y-foundp) t visited))
                      ((unless y-foundp)
                       (mv t nil visited))
-                     (visited (treemap::update x.uid y.uid visited)))
+                     (visited (treeset::insert pair visited)))
                   (type-struni-member-list-composite-is-input-p
                     x-members
                     y-members
@@ -2349,11 +2349,11 @@
     ((x type-struni-member-listp)
      (y type-struni-member-listp)
      (completions type-completions-p)
-     (visited uid-uid-mapp)
+     (visited uid-pair-setp)
      (count natp))
     :returns (mv (leftp booleanp)
                  (rightp booleanp)
-                 (new-visited uid-uid-mapp))
+                 (new-visited uid-pair-setp))
     :short "Check whether either of two @(tsee type-struni-member-list)s
             is already a composite of the two."
     :long
@@ -2361,7 +2361,7 @@
      (xdoc::p
       "The composite member list is as long as the shorter list,
        so a list is a composite only if it is at most as long as the other."))
-    (b* ((visited (uid-uid-mfix visited))
+    (b* ((visited (uid-pair-sfix visited))
          ((when (endp x)) (mv t (endp y) visited))
          ((when (endp y)) (mv nil t visited))
          ((when (= (the unsigned-byte (lnfix count)) 0))
@@ -2388,18 +2388,18 @@
   (define type-params-composite-is-input-p ((x type-params-p)
                                              (y type-params-p)
                                              (completions type-completions-p)
-                                             (visited uid-uid-mapp)
+                                             (visited uid-pair-setp)
                                              (count natp))
     :returns (mv (leftp booleanp)
                  (rightp booleanp)
-                 (new-visited uid-uid-mapp))
+                 (new-visited uid-pair-setp))
     :short "Check whether either of two @(tsee type-params)
             is already a composite of the two."
     :long
     (xdoc::topstring
      (xdoc::p
       "See @(tsee type-params-composite-aux) for the composite rules."))
-    (b* ((visited (uid-uid-mfix visited))
+    (b* ((visited (uid-pair-sfix visited))
          ((when (= (the unsigned-byte (lnfix count)) 0))
           (mv nil nil visited)))
       (type-params-case
@@ -2426,14 +2426,14 @@
   (define type-list-composite-is-input-p ((x type-listp)
                                            (y type-listp)
                                            (completions type-completions-p)
-                                           (visited uid-uid-mapp)
+                                           (visited uid-pair-setp)
                                            (count natp))
     :returns (mv (leftp booleanp)
                  (rightp booleanp)
-                 (new-visited uid-uid-mapp))
+                 (new-visited uid-pair-setp))
     :short "Check whether either of two @(tsee type-list)s
             is already a composite of the two."
-    (b* ((visited (uid-uid-mfix visited))
+    (b* ((visited (uid-pair-sfix visited))
          ((when (endp x)) (mv t (endp y) visited))
          ((when (endp y)) (mv nil t visited))
          ((when (= (the unsigned-byte (lnfix count)) 0))
@@ -2466,7 +2466,7 @@
 (defines type/type-list-composite-aux
   (define type-composite-aux ((x typep)
                               (y typep)
-                              (composites uid-uid-mapp)
+                              (composites uid-pair-uid-mapp)
                               (completions type-completions-p)
                               (next-uid uidp)
                               (ienv ienvp)
@@ -2490,10 +2490,16 @@
        with a fresh @(see UID) and an entry in the completions map,
        only when two tagged structs with different UIDs are composed.")
      (xdoc::p
+      "The @('composites') map associates
+       each pair of struct @(see UID)s whose composite is being constructed
+       with the fresh UID of that composite,
+       so that the pair, when encountered again through cyclic struct types,
+       refers to the composite under construction.")
+     (xdoc::p
       "The termination argument for this clique is nontrivial.
-       A sufficient measure would be the size of the @('completions') map,
-       with the @(see UID)s from the @('composites') map removed,
-       and restricted to @(see UID)s below @('next-uid').
+       A sufficient measure would be the number of
+       pairs of @(see UID)s in the @('completions') map below @('next-uid')
+       that are not in the @('composites') map.
        For the moment, we simply add a @('count') argument."))
     (b* ((x (type-fix x))
          (y (type-fix y))
@@ -2508,7 +2514,7 @@
           (type-composite-is-input-p x
                                      y
                                      completions
-                                     (treemap::empty)
+                                     (treeset::empty)
                                      (- (the unsigned-byte count) 1)))
          ((when leftp)
           (mv x completions next-uid))
@@ -2530,17 +2536,14 @@
               (type-struni-tag/members-case
                 y.tag/members
                 :tagged
-                (b* ((composites (uid-uid-mfix composites))
+                (b* ((composites (uid-pair-uid-mfix composites))
                      (completions (type-completions-fix completions))
-                     ((mv x-foundp x-composite)
-                      (treemap::lookup? x.uid composites))
-                     ((mv y-foundp y-composite)
-                      (treemap::lookup? y.uid composites))
-                     ((when (and x-foundp
-                                 y-foundp
-                                 (equal x-composite y-composite)))
+                     (pair (make-uid-pair :first x.uid :second y.uid))
+                     ((mv foundp composite-uid)
+                      (treemap::lookup? pair composites))
+                     ((when foundp)
                       (mv (make-type-struct
-                            :uid x-composite
+                            :uid composite-uid
                             :tunit? nil
                             :tag/members x.tag/members)
                           completions
@@ -2560,11 +2563,7 @@
                      (composite-uid (uid-fix next-uid))
                      (next-uid (uid-increment next-uid))
                      (composites
-                       (treemap::update x.uid
-                                        composite-uid
-                                        (treemap::update y.uid
-                                                         composite-uid
-                                                         composites)))
+                       (treemap::update pair composite-uid composites))
                      ((mv members-composite completions next-uid)
                       (type-struni-member-list-composite-aux
                         x-members
@@ -2735,7 +2734,7 @@
     (define type-struni-member-list-composite-aux
       ((x type-struni-member-listp)
        (y type-struni-member-listp)
-       (composites uid-uid-mapp)
+       (composites uid-pair-uid-mapp)
        (completions type-completions-p)
        (next-uid uidp)
        (ienv ienvp)
@@ -2773,7 +2772,7 @@
 
   (define type-params-composite-aux ((x type-params-p)
                                      (y type-params-p)
-                                     (composites uid-uid-mapp)
+                                     (composites uid-pair-uid-mapp)
                                      (completions type-completions-p)
                                      (next-uid uidp)
                                      (ienv ienvp)
@@ -2841,7 +2840,7 @@
 
   (define type-list-composite-aux ((x type-listp)
                                    (y type-listp)
-                                   (composites uid-uid-mapp)
+                                   (composites uid-pair-uid-mapp)
                                    (completions type-completions-p)
                                    (next-uid uidp)
                                    (ienv ienvp)

@@ -497,3 +497,114 @@
                                              (ident "my_struct"))))
          (equal next-uid
                 (uid 44)))))
+
+;; Cyclic struct types across three translation units:
+;; the first points to itself, and the second and third point to each other.
+;; Composing the first two reaches the pair of the first and third,
+;; which reaches the first pair again.
+;; Each type is a composite of the two, so the first is returned as is.
+(acl2::assert!
+  (b* ((tag/members (type-struni-tag/members-tagged (ident "my_struct")))
+       (foo (make-type-struct :uid (uid 42)
+                              :tunit? (filepath "foo.c")
+                              :tag/members tag/members))
+       (bar (make-type-struct :uid (uid 43)
+                              :tunit? (filepath "bar.c")
+                              :tag/members tag/members))
+       (baz (make-type-struct :uid (uid 44)
+                              :tunit? (filepath "baz.c")
+                              :tag/members tag/members))
+       (completions
+        (treemap::update
+          (uid 42)
+          (list (make-type-struni-member :name? (ident "p")
+                                         :type (make-type-pointer :to foo)))
+          (treemap::update
+            (uid 43)
+            (list (make-type-struni-member :name? (ident "p")
+                                           :type (make-type-pointer :to baz)))
+            (treemap::update
+              (uid 44)
+              (list (make-type-struni-member :name? (ident "p")
+                                             :type (make-type-pointer :to bar)))
+              nil))))
+       ((mv composite & next-uid)
+        (type-composite foo bar completions (uid 45) (irr-ienv))))
+    (and (equal composite foo)
+         (equal next-uid (uid 45)))))
+
+;; As above, but the first two types each have a member
+;; more specific than the other's, so neither is a composite of the two:
+;; a struct type is created for the first pair,
+;; another for the pair of the first and third reached through the members,
+;; and the first pair, reached again, refers to its struct type.
+(acl2::assert!
+  (b* ((tag/members (type-struni-tag/members-tagged (ident "my_struct")))
+       (foo (make-type-struct :uid (uid 42)
+                              :tunit? (filepath "foo.c")
+                              :tag/members tag/members))
+       (bar (make-type-struct :uid (uid 43)
+                              :tunit? (filepath "bar.c")
+                              :tag/members tag/members))
+       (baz (make-type-struct :uid (uid 44)
+                              :tunit? (filepath "baz.c")
+                              :tag/members tag/members))
+       (prototype (make-type-pointer
+                    :to (make-type-function
+                          :ret (type-sint)
+                          :params (make-type-params-prototype
+                                    :params (list (type-sint))))))
+       (unspecified (make-type-pointer
+                      :to (make-type-function
+                            :ret (type-sint)
+                            :params (type-params-unspecified))))
+       (f-prototype (make-type-struni-member :name? (ident "f")
+                                             :type prototype))
+       (f-unspecified (make-type-struni-member :name? (ident "f")
+                                               :type unspecified))
+       (g-prototype (make-type-struni-member :name? (ident "g")
+                                             :type prototype))
+       (g-unspecified (make-type-struni-member :name? (ident "g")
+                                               :type unspecified))
+       (completions
+        (treemap::update
+          (uid 42)
+          (list f-prototype
+                g-unspecified
+                (make-type-struni-member :name? (ident "p")
+                                         :type (make-type-pointer :to foo)))
+          (treemap::update
+            (uid 43)
+            (list f-unspecified
+                  g-prototype
+                  (make-type-struni-member :name? (ident "p")
+                                           :type (make-type-pointer :to baz)))
+            (treemap::update
+              (uid 44)
+              (list f-prototype
+                    g-unspecified
+                    (make-type-struni-member :name? (ident "p")
+                                             :type (make-type-pointer :to bar)))
+              nil))))
+       ((mv composite completions next-uid)
+        (type-composite foo bar completions (uid 45) (irr-ienv)))
+       (composite45 (make-type-struct :uid (uid 45)
+                                      :tunit? nil
+                                      :tag/members tag/members))
+       (composite46 (make-type-struct :uid (uid 46)
+                                      :tunit? nil
+                                      :tag/members tag/members)))
+    (and (equal composite composite45)
+         (equal (treemap::lookup (uid 45) completions)
+                (list f-prototype
+                      g-prototype
+                      (make-type-struni-member
+                        :name? (ident "p")
+                        :type (make-type-pointer :to composite46))))
+         (equal (treemap::lookup (uid 46) completions)
+                (list f-prototype
+                      g-unspecified
+                      (make-type-struni-member
+                        :name? (ident "p")
+                        :type (make-type-pointer :to composite45))))
+         (equal next-uid (uid 47)))))

@@ -13,6 +13,7 @@
 (include-book "centaur/fty/basetypes" :dir :system)
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "kestrel/fty/deftreemap" :dir :system)
+(include-book "kestrel/fty/deftreeset" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
 
 (include-book "std/basic/controlled-configuration" :dir :system)
@@ -63,12 +64,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftreemap uid-uid-map
+(fty::defprod uid-pair
   :parents (uid)
-  :key-type uid
+  :short "Fixtype of pairs of unique identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Unique identifiers are defined in @(tsee uid)."))
+  ((first uid)
+   (second uid))
+  :pred uid-pairp
+  :layout :fulltree)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftreeset uid-pair-set
+  :parents (uid)
+  :elt-type uid-pair
+  :pred uid-pair-setp
+  :fix uid-pair-sfix)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftreemap uid-pair-uid-map
+  :parents (uid)
+  :key-type uid-pair
   :val-type uid
-  :pred uid-uid-mapp
-  :fix uid-uid-mfix)
+  :pred uid-pair-uid-mapp
+  :fix uid-pair-uid-mfix)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
