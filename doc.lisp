@@ -14771,7 +14771,7 @@ Subtopics
             ((eql op *boole-nor*) (lognor i1 i2))
             ((eql op *boole-orc1*) (logorc1 i1 i2))
             ((eql op *boole-orc2*) (logorc2 i1 i2))
-            ((eql op *boole-set*) 1)
+            ((eql op *boole-set*) -1)
             ((eql op *boole-xor*) (logxor i1 i2))
             (t 0)))")
  (BOOLEAN-LISTP
@@ -107105,6 +107105,16 @@ Bug Fixes
   @('float-a.lisp[0m[0m.  This issue was discovered by Eric Smith with the
   help of Anthropic's Claude.
 
+  Fixed two related soundness bugs in the application of [30m[47m:[0m[0m[30m[47m[bdd][0m[0m
+  [hints].  Thanks to Eric Smith for discovering the first of these
+  bugs with the help of Anthropic's Claude.  See [community-books]
+  [30m[47msystem/tests/bdd-1.lisp[0m[0m and [30m[47msystem/tests/bdd-2.lisp[0m[0m.
+
+  Fixed a soundness bugs in [30m[47m[boole$][0m[0m, which axiomatized [30m[47m(boole$
+  *boole-set* x y)[0m[0m to be [30m[47m1[0m[0m instead of the correct value, [30m[47m-1[0m[0m.  Thanks
+  to Eric Smith for discovering this bug with the help of Anthropic's
+  Claude.  See [community-book] [30m[47msystem/tests/boole-set.lisp[0m[0m.
+
   Fixed an assertion failure that could occur when an accessor call in
   a [30m[47m[stobj-let][0m[0m's bindings was on a quoted non-numeric index.  Thanks
   to Eric Smith for sending an example found by Anthropic's Claude.
@@ -129183,14 +129193,51 @@ Subtopics
   [break-rewrite] to determine that a rule failed the refinement
   check and for advice about how to ``fix'' such a problem.
 
-  [30m[47m:refinement[0m[0m lemmas cannot be disabled.  That is, once one equivalence
+  [30m[47m:Refinement[0m[0m lemmas cannot be disabled.  That is, once one equivalence
   relation has been shown to be a refinement of another, there is no
   way to prevent the system from using that information.
   Furthermore, [30m[47m:refinement[0m[0m lemmas are not tracked and are thus not
   reported in the [summary].  Of course, individual [30m[47m:[0m[0m[30m[47m[rewrite][0m[0m rules
   can be disabled.
 
-  More will be written about this as we develop the techniques.")
+  Finally, we discuss the following sort of error that you might see on
+  rare occasions.
+
+    HARD ACL2 ERROR in ADD-REFINEMENT-RULE:  E1 is already known to be
+    a refinement of E2.  This was not the case when the :REFINEMENT rule
+    named E1-REFINES-E2 was admitted during certification of the book
+    \"/Users/smith/work/bk.lisp\" but it is the case now, during an
+    attempt to include that book.  See :DOC refinement.
+
+  To see how this could happen, create a book, [30m[47mbk.lisp[0m[0m, containing the
+  following forms.
+
+    ;;; bk.lisp
+    (in-package \"ACL2\")
+    (defun e1 (x y) (declare (ignore x y)) t)
+    (defun e2 (x y) (declare (ignore x y)) t)
+    (defequiv e1)
+    (defequiv e2)
+    (defrefinement e1 e2) ; E1-REFINES-E2: (IMPLIES (E1 X Y) (E2 X Y))
+
+  Then in a fresh ACL2 session, evaluate the following events.
+
+    (defun e1 (x y) (declare (ignore x y)) t)
+    (defun e2 (x y) (declare (ignore x y)) t)
+    (defun e3 (x y) (declare (ignore x y)) t)
+    (defequiv e1)
+    (defequiv e2)
+    (defequiv e3)
+    (defrefinement e1 e3) ; E1-REFINES-E3: (IMPLIES (E1 X Y) (E3 X Y))
+    (defrefinement e3 e2) ; E3-REFINES-E2: (IMPLIES (E3 X Y) (E2 X Y))
+    (include-book \"bk\")   ; E1-REFINES-E2: (IMPLIES (E1 X Y) (E2 X Y))
+
+  The final event (the [30m[47minclude-book[0m[0m) will cause the error shown above.
+  Notice that when [30m[47mbk.lisp[0m[0m was certified, the [30m[47m:refinement[0m[0m rule
+  E1-REFINES-E2 was perfectly legal.  But at the time the form
+  [30m[47m(include-book \"bk\")[0m[0m is evaluated above, E1 already refines E3 which
+  already refines E2, so E1 already refines E2; thus the proposed
+  rule E1-REFINES-E2 is illegal.")
  (REFINEMENT-FAILURE
   (INTRODUCTION-TO-THE-THEOREM-PROVER BREAK-REWRITE)
   "what to do when a rewrite rule fails the refinement check

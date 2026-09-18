@@ -17205,7 +17205,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ((eql op *BOOLE-NOR*)    (lognor i1 i2))
     ((eql op *BOOLE-ORC1*)   (logorc1 i1 i2))
     ((eql op *BOOLE-ORC2*)   (logorc2 i1 i2))
-    ((eql op *BOOLE-SET*)    1)
+    ((eql op *BOOLE-SET*)    -1)
     ((eql op *BOOLE-XOR*)    (logxor i1 i2))
     (t 0) ; added so that we get an integer type for integer i1 and i2
     ))
