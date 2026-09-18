@@ -158,6 +158,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define atom/array-subst-no-ispace-capture-p ((vars ispace-var-setp)
+                                              (atom-subst string-type-mapp)
+                                              (array-subst string-type-mapp))
+  :returns (yes/no booleanp)
+  :short "Check that a set of bound ispace variables is not captured
+          by an atom-kind and an array-kind type substitution."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The values of a type substitution are types, which contain ispaces.
+     When a substitution of type variables descends under a construct
+     that binds the ispace variables in @('vars'),
+     none of the bound variables must occur free
+     among the values of the substitution maps,
+     otherwise substituting under the binder would capture them.
+     We check that @('vars') is disjoint from the free ispace variables
+     of the atom-kind and array-kind type substitutions.
+     Unlike @(tsee atom/array-subst-no-type-capture-p),
+     there are no bound variables to remove from the substitution first,
+     because these constructs bind no type variables.")
+   (xdoc::p
+    "This is shared by the cases of @(tsee ast-subst-type-vars-no-capture-p)
+     for the constructs that bind ispace variables."))
+  (set::emptyp
+   (set::intersect
+    (ispace-var-set-fix vars)
+    (set::union (string-type-map-free-ispace-vars atom-subst)
+                (string-type-map-free-ispace-vars array-subst)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define expr-subst-no-capture-p ((vars string-setp) (subst string-expr-mapp))
   :returns (yes/no booleanp)
   :short "Check that a set of bound expression variables is not captured
