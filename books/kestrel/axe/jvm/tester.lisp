@@ -815,7 +815,7 @@
 (defmacro test-file (path-to-java-file &key
                                        ;;(assumptions 'nil)
                                        (methods ':auto) ;;which methods to test (default is ones whose names start with "test" or "fail_test")
-                                       (classes-to-assume-initialized ':all)
+                                       (classes-to-assume-initialized ':all) ; todo: consider :basic but that caused problems
                                        (expected-failures ':auto)
                                        (error-on-unexpectedp 't) ; for interactive use, cause hard error on unexpected result
                                        (count-hits 'nil)
@@ -841,15 +841,17 @@
                                    state
                                   )))
 
-;; Test all methods in the given file whose names start with "test" or "fail_test".  This
-;; variant of the tool should be called from the shell or from an IDE.  This
-;; does not check whether the tests get the right answers (it allows any of the
-;; tests to fail). By contrast, test-file lets you indicate which tests should
-;; fail (and thus which tests must not fail).
+;; Test all methods in the given file whose names start with "test" or
+;; "fail_test".  This variant of the tool should be called from the shell or
+;; from an IDE, but not from the ACL2 REPL or in a book, because it causes
+;; ACL2 to exit once it has done its work.  This does not check whether the
+;; tests get the right answers (it allows any of the tests to fail). By
+;; contrast, test-file lets you indicate which tests should fail (and thus
+;; which tests must not fail).
 (defmacro test-file-and-exit (path-to-java-file &key
                                                 ;;(assumptions 'nil)
                                                 (methods ':auto) ;;which methods to test (default is ones whose names start with "test" or "fail_test")
-                                                (classes-to-assume-initialized ':all)
+                                                (classes-to-assume-initialized ':all) ; todo: consider :basic but that caused problems
                                                 (count-hits 'nil)
                                                 (extra-rules 'nil)
                                                 (remove-rules 'nil)
