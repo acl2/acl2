@@ -146,7 +146,7 @@
                                                      setp
                                                      fix))))
   (mv-let (inp set$)
-          (tree-insert x (hash x) (fix set))
+          (tree-insert x (fix set))
     (declare (ignore inp))
     set$)
   :guard-hints (("Goal" :in-theory (enable* break-abstraction)))
@@ -720,7 +720,7 @@
    (set acl2-number-setp))
   (mbe :logic (insert x set)
        :exec (mv-let (inp set$)
-                     (acl2-number-tree-insert x (acl2-number-hash x) set)
+                     (acl2-number-tree-insert x set)
                (declare (ignore inp))
                set$))
   :enabled t
@@ -734,7 +734,7 @@
    (set symbol-setp))
   (mbe :logic (insert x set)
        :exec (mv-let (inp set$)
-                     (symbol-tree-insert x (symbol-hash x) set)
+                     (symbol-tree-insert x set)
                (declare (ignore inp))
                set$))
   :enabled t
@@ -748,7 +748,7 @@
    (set eqlable-setp))
   (mbe :logic (insert x set)
        :exec (mv-let (inp set$)
-                     (eqlable-tree-insert x (eqlable-hash x) set)
+                     (eqlable-tree-insert x set)
                (declare (ignore inp))
                set$))
   :enabled t
@@ -767,7 +767,7 @@
               :exec (data::u32-equal (hash x) hash))
   (mbe :logic (insert x set)
        :exec (mv-let (inp set$)
-                     (tree-insert x hash set)
+                     (tree-insert-with-hash x hash set)
                (declare (ignore inp))
                set$))
   :enabled t

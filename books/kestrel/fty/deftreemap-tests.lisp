@@ -380,3 +380,35 @@
     (fty::deftreemap sym-mixed-map
       :key-type symbol
       :val-type mixed)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A loop over a typed treemap. An iterator carries no key or value type, so
+;; the guards of symbol-name at (treemap::entry-key iter) and of nat-id at
+;; (treemap::entry-val iter) are discharged by the generated
+;; symbolp-of-entry-key-when-sym-nat-map-p-of-from-iter and
+;; natp-of-entry-val-when-sym-nat-map-p-of-from-iter, with no hints.
+
+(include-book "kestrel/data/treemap/iter" :dir :system)
+
+(must-succeed*
+  (fty::deftreemap sym-nat-map
+    :key-type symbol
+    :val-type nat)
+
+  (define nat-id ((n natp))
+    (mbe :logic (nfix n) :exec n))
+
+  (define sym-nat-map-loop ((iter treemap::iterp))
+    :guard (sym-nat-map-p (treemap::from-iter iter))
+    (if (treemap::has-valuep iter)
+        (cons (cons (symbol-name (treemap::entry-key iter))
+                    (nat-id (treemap::entry-val iter)))
+              (sym-nat-map-loop (treemap::next iter)))
+      nil)
+    :measure (treemap::nexts iter))
+
+  (assert! (equal (sym-nat-map-loop
+                   (treemap::iter-min
+                    (treemap::update 'b 2 (treemap::update 'a 1 (treemap::empty)))))
+                  '(("A" . 1) ("B" . 2)))))
