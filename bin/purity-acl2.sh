@@ -27,17 +27,7 @@ echo "-----"
 
 $basecmd \
   --author='Matt Kaufmann <matthew.j.kaufmann@gmail.com>' \
-  --author='Matt Kaufmann <kaufmann@wireless-10-147-200-122.public.utexas.edu>' \
-  --author='Matt Kaufmann <kaufmann@horatio-123.cs.utexas.edu>' \
-  --author='Matt Kaufmann <kaufmann@horatio-217.cs.utexas.edu>' \
-  --author='Matt Kaufmann <kaufmann@horatio-168.cs.utexas.edu>' \
   --author='Matt Kaufmann <kaufmann@cs.utexas.edu>' \
-  --author='MattKaufmann <matthew.j.kaufmann@gmail.com>' \
-  --author='kaufmann <kaufmann@unknown58b035fde782.attlocal.net>' \
-  --author='Matt Kaufmann <kaufmann@matts-mbp.attlocal.net>' \
-  --author='Matt Kaufmann <kaufmann@Matts-MBP.attlocal.net>' \
-  --author="Matt Kaufmann <kaufmann@Matts-MacBook-Pro.local>" \
-  --author="Matt Kaufmann <kaufmann@Matts-MBP.home>" \
   --author="Matt Kaufmann <kaufmann@kestrel.edu>" \
   --author="Matt Kaufmann <kaufmann@frost.home.arpa>" \
   --author="Eric Smith <ewsmith@gmail.com>" \
