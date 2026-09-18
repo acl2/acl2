@@ -31,6 +31,8 @@ $basecmd \
   --author="Matt Kaufmann <kaufmann@kestrel.edu>" \
   --author="Matt Kaufmann <kaufmann@frost.home.arpa>" \
   --author="Eric Smith <ewsmith@gmail.com>" \
+  --author="Grant Jurgensen <grant@jurgensen.dev>" \
+  --author="Grant Jurgensen <grant@kestrel.edu>" \
   | grep -v '^[a-z0-9]\{40\}' \
   | grep -v '^books/' \
   | grep -v '^README[.]md' \
