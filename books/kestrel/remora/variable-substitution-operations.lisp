@@ -100,6 +100,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define dim/shape-subst-lookup ((var ispace-varp)
+                                (dim-subst string-dim-mapp)
+                                (shape-subst string-shape-mapp))
+  :returns (ispace? ispace-optionp)
+  :short "Look up an ispace variable
+          in a dimension substitution and a shape substitution."
+  (ispace-var-case
+   var
+   :dim (b* ((dim-subst (string-dim-map-fix dim-subst))
+             (var+dim (omap::assoc var.name dim-subst)))
+          (and var+dim
+               (ispace-dim (cdr var+dim))))
+   :shape (b* ((shape-subst (string-shape-map-fix shape-subst))
+               (var+shape (omap::assoc var.name shape-subst)))
+            (and var+shape
+                 (ispace-shape (cdr var+shape))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atom/array-subst-lookup ((var type-varp)
+                                 (atom-subst string-type-mapp)
+                                 (array-subst string-type-mapp))
+  :returns (type? type-optionp)
+  :short "Look up a type variable
+          in an atom-kind and an array-kind type substitution."
+  (type-var-case
+   var
+   :atom (b* ((atom-subst (string-type-map-fix atom-subst))
+              (var+type (omap::assoc var.name atom-subst)))
+           (and var+type
+                (cdr var+type)))
+   :array (b* ((array-subst (string-type-map-fix array-subst))
+               (var+type (omap::assoc var.name array-subst)))
+            (and var+type
+                 (cdr var+type)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define dim/shape-subst-no-capture-p ((vars ispace-var-setp)
                                       (dim-subst string-dim-mapp)
                                       (shape-subst string-shape-mapp))

@@ -16,7 +16,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Tests of TYPE-VAR-MATCH, TYPE-MATCH, and TYPE-LIST-MATCH.
+; Tests of TYPE-VAR-MATCH, TYPE-MATCH, TYPE-LIST-MATCH,
+; TYPE-MATCH-VARS, and TYPE-LIST-MATCH-VARS.
 ; Each test compares the results (success flag and substitutions)
 ; with the expected ones.
 ; The substitutions are, in order, for
@@ -664,4 +665,131 @@
  (mv-list 5 (type-list-match (list *int* *bool*)
                              (list *atom-a* *atom-a*)
                              nil nil nil nil))
+ (list nil nil nil nil nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Matching with respect to given pattern variables
+; (TYPE-MATCH-VARS and TYPE-LIST-MATCH-VARS).
+
+; Only the given variables are pattern variables;
+; the other free variables of the pattern are rigid,
+; i.e. they match only themselves,
+; and they do not appear in the resulting substitutions.
+
+(assert-equal
+ (mv-list 5 (type-match-vars (make-type-fun :in *int* :out *atom-u*)
+                             (make-type-fun :in *atom-a* :out *atom-u*)
+                             nil
+                             (set::insert (type-var-atom "a") nil)))
+ (list t nil nil (omap::update "a" *int* nil) nil))
+
+(assert-equal
+ (mv-list 5 (type-match-vars (make-type-fun :in *int* :out *bool*)
+                             (make-type-fun :in *atom-a* :out *atom-u*)
+                             nil
+                             (set::insert (type-var-atom "a") nil)))
+ (list nil nil nil nil nil))
+
+; A variable that TYPE-MATCH would treat as a pattern variable
+; is rigid if it is not among the given ones.
+
+(assert-equal
+ (mv-list 5 (type-match-vars *int* *atom-a* nil nil))
+ (list nil nil nil nil nil))
+
+(assert-equal
+ (mv-list 5 (type-match-vars *atom-a* *atom-a* nil nil))
+ (list t nil nil nil nil))
+
+; A rigid array-kind variable does not match an atom-kind type.
+
+(assert-equal
+ (mv-list 5 (type-match-vars *int* *array-v* nil nil))
+ (list nil nil nil nil nil))
+
+; Rigid ispace variables.
+
+(assert-equal
+ (mv-list 5 (type-match-vars (array-of *int* (dim-const 3) (dim-var "k"))
+                             (array-of *atom-a* (dim-var "i") (dim-var "k"))
+                             (set::insert (ispace-var-dim "i") nil)
+                             (set::insert (type-var-atom "a") nil)))
+ (list t
+       (omap::update "i" (dim-const 3) nil)
+       nil
+       (omap::update "a" *int* nil)
+       nil))
+
+(assert-equal
+ (mv-list 5 (type-match-vars (array-of *int* (dim-const 3) (dim-const 4))
+                             (array-of *atom-a* (dim-var "i") (dim-var "k"))
+                             (set::insert (ispace-var-dim "i") nil)
+                             (set::insert (type-var-atom "a") nil)))
+ (list nil nil nil nil nil))
+
+; A pattern variable that does not occur free in the pattern
+; is not bound in the resulting substitutions,
+; including when it is shadowed by a binder.
+
+(assert-equal
+ (mv-list 5 (type-match-vars *int*
+                             *atom-a*
+                             (set::insert (ispace-var-dim "i") nil)
+                             (set::insert (type-var-atom "a")
+                                          (set::insert (type-var-array "x")
+                                                       nil))))
+ (list t nil nil (omap::update "a" *int* nil) nil))
+
+(assert-equal
+ (mv-list 5 (type-match-vars (make-type-forall :param (type-var-atom "a")
+                                               :body *atom-a*)
+                             (make-type-forall :param (type-var-atom "a")
+                                               :body *atom-a*)
+                             nil
+                             (set::insert (type-var-atom "a") nil)))
+ (list t nil nil nil nil))
+
+; Lists: the substitutions are threaded through the elements.
+
+(assert-equal
+ (mv-list 5 (type-list-match-vars (list *int-vec3*
+                                        (array-of *bool* (dim-const 3)))
+                                  (list (array-of *atom-a* (dim-var "i"))
+                                        (array-of *atom-b* (dim-var "i")))
+                                  (set::insert (ispace-var-dim "i") nil)
+                                  (set::insert (type-var-atom "a")
+                                               (set::insert (type-var-atom "b")
+                                                            nil))))
+ (list t
+       (omap::update "i" (dim-const 3) nil)
+       nil
+       (omap::update "a" *int* (omap::update "b" *bool* nil))
+       nil))
+
+(assert-equal
+ (mv-list 5 (type-list-match-vars (list *int-vec3*
+                                        (array-of *bool* (dim-const 4)))
+                                  (list (array-of *atom-a* (dim-var "i"))
+                                        (array-of *atom-b* (dim-var "i")))
+                                  (set::insert (ispace-var-dim "i") nil)
+                                  (set::insert (type-var-atom "a")
+                                               (set::insert (type-var-atom "b")
+                                                            nil))))
+ (list nil nil nil nil nil))
+
+; Lists: the rigid variables are the free variables of all the patterns.
+
+(assert-equal
+ (mv-list 5 (type-list-match-vars (list *int* *atom-u*)
+                                  (list *atom-a* *atom-u*)
+                                  nil
+                                  (set::insert (type-var-atom "a") nil)))
+ (list t nil nil (omap::update "a" *int* nil) nil))
+
+(assert-equal
+ (mv-list 5 (type-list-match-vars (list *int* *bool*)
+                                  (list *atom-a* *atom-u*)
+                                  nil
+                                  (set::insert (type-var-atom "a") nil)))
  (list nil nil nil nil nil))

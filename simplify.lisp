@@ -8486,7 +8486,20 @@
     nil)
    ((or (variablep (car terms))
         (fquotep (car terms)))
-    (filter-disabled-expand-terms (cdr terms) ens wrld))
+
+; We believe that each list (of terms) supplied to this function contains only
+; terms that were at one point considered induction candidates as selected by
+; get-induction-cands, which adds no variables or quotes to the answer.  Then
+; those terms are passed around through and combined with various fields of
+; candidate records, e.g., induction-term, xinduction-term, and xother-terms.
+
+; If we are proved wrong in that belief, we can simply replace the following
+; hard error with (filter-disabled-expand-terms (cdr terms) ens wrld).
+
+    (er hard! 'filter-disabled-expand-terms
+        "Implementation error: Encountered ~#0~[variable~/quotep~], ~x1."
+        (if (variablep (car terms)) 0 1)
+        (car terms)))
    (t
     (cond ((flambdap (ffn-symb (car terms)))
            (cons (make expand-hint

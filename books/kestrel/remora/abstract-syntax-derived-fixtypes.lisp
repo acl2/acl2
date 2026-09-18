@@ -629,3 +629,20 @@
           and (ii) errors."
   :ok stringdimmap+stringshapemap
   :pred stringdimmap+stringshapemap-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum type/ispace-var
+  :short "Fixtype of type variables and ispace variables."
+  (:type ((var type-var)))
+  (:ispace ((var ispace-var)))
+  :pred type/ispace-varp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist type/ispace-var-list
+  :short "Fixtype of lists of type variables and ispace variables."
+  :elt-type type/ispace-var
+  :true-listp t
+  :elementp-of-nil nil
+  :pred type/ispace-var-listp)

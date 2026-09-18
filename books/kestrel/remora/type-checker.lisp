@@ -16,6 +16,7 @@
 (include-book "abstract-syntax-matching-operations")
 (include-book "abstract-syntax-variable-operations")
 (include-book "type-equivalence-checker")
+(include-book "type-matcher")
 (include-book "static-environments")
 (include-book "nat-lists")
 
@@ -66,7 +67,17 @@
    (xdoc::p
     "This type checker is not designed for efficiency
      or to provide informative error messages.
-     It is designed for simplicity."))
+     It is designed for simplicity.")
+   (xdoc::p
+    "Besides checking, this type checker performs
+     a limited form of type inference:
+     when a function with a universal or product type
+     is applied to an argument
+     without explicit type and ispace applications,
+     the type and ispace arguments are inferred from the argument type,
+     and the corresponding applications are added to the expression
+     (see @(tsee check/infer-app)).
+     We plan to extend this inference."))
   :order-subtopics t
   :default-parent t)
 
@@ -1198,6 +1209,128 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check/infer-app ((fun-type typep)
+                         (fun-expr exprp)
+                         (arg-type typep)
+                         (arg-expr exprp)
+                         (senv senvp))
+  :returns (type+expr type+expr-resultp)
+  :short "Check a unary term application,
+          inferring the type and ispace applications of the function if needed;
+          if successful,
+          return the type of the application and the application expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is given the types and the (already checked) expressions
+     of the function and of the argument.")
+   (xdoc::p
+    "If the type of the function has
+     no leading universal or product binders (see @(tsee type-peel-binders)),
+     we just use @(tsee check-app),
+     and we return the application of the function to the argument.")
+   (xdoc::p
+    "Otherwise, we infer the type and ispace arguments
+     that instantiate those binders.
+     The type under the binders must be a function type with an input:
+     the argument type must match its first input type,
+     with the peeled variables as the only pattern variables
+     (see @(tsee type-match-vars)).
+     Each peeled variable must be bound by the resulting substitutions,
+     i.e. it must occur in the input type;
+     otherwise, the argument does not determine its instantiation,
+     and we fail.
+     We instantiate the binders in order,
+     via @(tsee check-tapp) and @(tsee check-iapp),
+     which validate the inferred arguments and calculate the resulting types,
+     while we wrap the function expression
+     in the corresponding type and ispace applications.
+     Finally, we use @(tsee check-app) on the instantiated function type,
+     and we return the application of the wrapped function to the argument.")
+   (xdoc::p
+    "Since the matching is purely syntactical (see @(see type-matcher)),
+     and since the argument type must match the whole input type
+     (i.e. without any frame prefix),
+     this inference is limited for now."))
+  (b* (((mv vars rest) (type-peel-binders fun-type))
+       ((unless (consp vars))
+        (b* (((ok type) (check-app fun-type arg-type)))
+          (make-type+expr :type type
+                          :expr (make-expr-app :fun fun-expr :arg arg-expr))))
+       ((ok in+rest) (type-match-fun rest))
+       (in-type (type+type->type1 in+rest))
+       ((mv ivars tvars) (type/ispace-var-list-to-sets vars))
+       ((mv okp dim-subst shape-subst atom-subst array-subst)
+        (type-match-vars arg-type in-type ivars tvars))
+       ((unless okp) (reserr nil))
+       ((ok (type+expr fun)) (check/infer-app-loop vars
+                                                   fun-type
+                                                   fun-expr
+                                                   dim-subst
+                                                   shape-subst
+                                                   atom-subst
+                                                   array-subst
+                                                   senv))
+       ((ok type) (check-app fun.type arg-type)))
+    (make-type+expr :type type
+                    :expr (make-expr-app :fun fun.expr :arg arg-expr)))
+
+  :prepwork
+
+  ((define check/infer-app-loop ((vars type/ispace-var-listp)
+                                 (fun-type typep)
+                                 (fun-expr exprp)
+                                 (dim-subst string-dim-mapp)
+                                 (shape-subst string-shape-mapp)
+                                 (atom-subst string-type-mapp)
+                                 (array-subst string-type-mapp)
+                                 (senv senvp))
+     :returns (type+expr type+expr-resultp)
+     :parents nil
+     (b* (((when (endp vars))
+           (make-type+expr :type fun-type :expr fun-expr))
+          (var (car vars)))
+       (type/ispace-var-case
+        var
+        :type
+        (b* ((type? (atom/array-subst-lookup var.var atom-subst array-subst)))
+          (type-option-case
+           type?
+           :none (reserr nil)
+           :some (b* (((ok fun-type) (check-tapp fun-type type?.val senv))
+                      (fun-expr (make-expr-tapp :fun fun-expr :arg type?.val)))
+                   (check/infer-app-loop (cdr vars)
+                                         fun-type
+                                         fun-expr
+                                         dim-subst
+                                         shape-subst
+                                         atom-subst
+                                         array-subst
+                                         senv))))
+        :ispace
+        (b* ((ispace? (dim/shape-subst-lookup var.var dim-subst shape-subst)))
+          (ispace-option-case
+           ispace?
+           :none (reserr nil)
+           :some (b* (((ok fun-type) (check-iapp fun-type ispace?.val senv))
+                      (fun-expr (make-expr-iapp :fun fun-expr
+                                                :arg ispace?.val)))
+                   (check/infer-app-loop (cdr vars)
+                                         fun-type
+                                         fun-expr
+                                         dim-subst
+                                         shape-subst
+                                         atom-subst
+                                         array-subst
+                                         senv))))))
+     :measure (len vars)
+     :verify-guards :after-returns
+     :hooks ((:fix :hints (("Goal"
+                            :induct t
+                            :in-theory (enable type/ispace-var-list-fix))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines check-exprs/atoms/binds
   :short "Check expressions, atoms, and lists thereof,
           returning the input ASTs augmented with some type information."
@@ -1295,11 +1428,15 @@
      (xdoc::p
       "For a unary term application,
        first we check the function and argument expressions,
-       and then we use @(tsee check-app) to check
+       and then we use @(tsee check/infer-app) to check
        the argument type against the function type,
-       and to obtain the type of the application expression.
-       For an n-ary term application, we proceed the same way,
-       but via @(tsee check-appn).")
+       inferring type and ispace applications of the function if needed,
+       and to obtain the type of the application expression
+       along with the (possibly augmented) application expression.
+       For an n-ary term application,
+       we check the function and argument expressions,
+       and then we use @(tsee check-appn),
+       which performs no inference for now.")
      (xdoc::p
       "For a unary type application,
        first we check the function expression,
@@ -1461,10 +1598,8 @@
       :expr (expr-fix expr))
      :app
      (b* (((ok (type+expr fe)) (check-expr expr.fun senv))
-          ((ok (type+expr ae)) (check-expr expr.arg senv))
-          ((ok type) (check-app fe.type ae.type)))
-       (make-type+expr :type type
-                       :expr (make-expr-app :fun fe.expr :arg ae.expr)))
+          ((ok (type+expr ae)) (check-expr expr.arg senv)))
+       (check/infer-app fe.type fe.expr ae.type ae.expr senv))
      :appn
      (b* (((ok (type+expr fe)) (check-expr expr.fun senv))
           ((ok (types+exprs aes)) (check-expr-list expr.args senv))
