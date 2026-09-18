@@ -611,6 +611,10 @@
                                                         dim-subst
                                                         shape-subst
                                                         avoid))
+              (type? (type-option-subst-ispace-vars-alpha-aux expr.type?
+                                                              dim-subst
+                                                              shape-subst
+                                                              avoid))
               ((mv fresh-ispaces dim-subst shape-subst)
                (dim/shape-subst-alpha-bound (list expr.ispace)
                                             dim-subst
@@ -623,12 +627,17 @@
             :body (expr-subst-ispace-vars-alpha-aux expr.body
                                                     dim-subst
                                                     shape-subst
-                                                    avoid))))
+                                                    avoid)
+            :type? type?)))
    (expr :unboxn
          (b* ((target (expr-subst-ispace-vars-alpha-aux expr.target
                                                         dim-subst
                                                         shape-subst
                                                         avoid))
+              (type? (type-option-subst-ispace-vars-alpha-aux expr.type?
+                                                              dim-subst
+                                                              shape-subst
+                                                              avoid))
               ((mv fresh-ispaces dim-subst shape-subst)
                (dim/shape-subst-alpha-bound expr.ispaces
                                             dim-subst
@@ -641,7 +650,8 @@
             :body (expr-subst-ispace-vars-alpha-aux expr.body
                                                     dim-subst
                                                     shape-subst
-                                                    avoid))))
+                                                    avoid)
+            :type? type?)))
    (expr :let
          (b* ((avoid2 (set::union
                        (ispace-var-set-fix avoid)
@@ -1287,7 +1297,8 @@
             :ispace expr.ispace
             :var (car fresh)
             :target target
-            :body (expr-subst-expr-vars-alpha-aux expr.body subst avoid))))
+            :body (expr-subst-expr-vars-alpha-aux expr.body subst avoid)
+            :type? expr.type?)))
    (expr :unboxn
          (b* ((target (expr-subst-expr-vars-alpha-aux expr.target subst avoid))
               ((mv fresh subst)
@@ -1298,7 +1309,8 @@
             :ispaces expr.ispaces
             :var (car fresh)
             :target target
-            :body (expr-subst-expr-vars-alpha-aux expr.body subst avoid))))
+            :body (expr-subst-expr-vars-alpha-aux expr.body subst avoid)
+            :type? expr.type?)))
    (expr :let
          (b* ((avoid2 (set::union
                        (string-sfix avoid)

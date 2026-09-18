@@ -306,6 +306,9 @@
          (and (expr-subst-ispace-vars-no-capture-p expr.target
                                                    dim-subst
                                                    shape-subst)
+              (type-option-subst-ispace-vars-no-capture-p expr.type?
+                                                          dim-subst
+                                                          shape-subst)
               (b* (((mv dim-subst shape-subst)
                     (dim/shape-subst-remove-bound (set::insert expr.ispace nil)
                                                   dim-subst
@@ -320,6 +323,9 @@
          (and (expr-subst-ispace-vars-no-capture-p expr.target
                                                    dim-subst
                                                    shape-subst)
+              (type-option-subst-ispace-vars-no-capture-p expr.type?
+                                                          dim-subst
+                                                          shape-subst)
               (b* (((mv dim-subst shape-subst)
                     (dim/shape-subst-remove-bound (set::mergesort expr.ispaces)
                                                   dim-subst
