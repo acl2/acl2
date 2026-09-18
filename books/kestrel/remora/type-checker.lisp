@@ -1277,8 +1277,7 @@
                                  (senv senvp))
      :returns (type+expr type+expr-resultp)
      :parents nil
-     (b* ((vars (type/ispace-var-list-fix vars))
-          ((when (endp vars))
+     (b* (((when (endp vars))
            (make-type+expr :type fun-type :expr fun-expr))
           (var (car vars)))
        (type/ispace-var-case
@@ -1315,7 +1314,10 @@
                                          array-subst
                                          senv))))))
      :measure (len vars)
-     :verify-guards :after-returns)))
+     :verify-guards :after-returns
+     :hooks ((:fix :hints (("Goal"
+                            :induct t
+                            :in-theory (enable type/ispace-var-list-fix))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
