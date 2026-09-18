@@ -284,18 +284,18 @@
                                                          shape-body)))
                                (ispace-shape shape-fun)))
           (type-ok ivars tvars type-arg)
-          (implies (type-var-case param :atom)
-                   (type-atom-kindp type-arg))
           (type-var-case
            param
            :atom
-           (and (equal atom-subst
+           (and (type-atom-kindp type-arg)
+                (equal atom-subst
                        (omap::update (type-var-atom->name param)
                                      type-arg
                                      nil))
                 (equal array-subst nil))
            :array
-           (and (equal atom-subst nil)
+           (and (type-array-kindp type-arg)
+                (equal atom-subst nil)
                 (equal array-subst
                        (omap::update (type-var-array->name param)
                                      type-arg
