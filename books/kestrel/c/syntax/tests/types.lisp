@@ -382,16 +382,84 @@
                 nil))
             (uid 44)
             (irr-ienv))
+    ;; Both types satisfy the requirements of the composite,
+    ;; so the first is returned as is, and nothing is created.
+    (declare (ignore completions))
+    (and (equal composite
+                (make-type-struct :uid (uid 42)
+                                  :tunit? (filepath "foo.c")
+                                  :tag/members (type-struni-tag/members-tagged
+                                                 (ident "my_struct"))))
+         (equal next-uid
+                (uid 44)))))
+
+;; Neither type is a composite of the two
+;; (each has a member more specific than the other's),
+;; so a new struct type is created with the composite members.
+(acl2::assert!
+  (mv-let (composite completions next-uid)
+          (type-composite
+            (make-type-struct :uid (uid 42)
+                              :tunit? (filepath "foo.c")
+                              :tag/members (type-struni-tag/members-tagged
+                                             (ident "my_struct")))
+            (make-type-struct :uid (uid 43)
+                              :tunit? (filepath "bar.c")
+                              :tag/members (type-struni-tag/members-tagged
+                                             (ident "my_struct")))
+            (treemap::update
+              (uid 42)
+              (list (make-type-struni-member
+                      :name? (ident "x")
+                      :type (make-type-pointer
+                              :to (make-type-function
+                                    :ret (type-sint)
+                                    :params (make-type-params-prototype
+                                              :params (list (type-sint))))))
+                    (make-type-struni-member
+                      :name? (ident "y")
+                      :type (make-type-pointer
+                              :to (make-type-function
+                                    :ret (type-sint)
+                                    :params (type-params-unspecified)))))
+              (treemap::update
+                (uid 43)
+                (list (make-type-struni-member
+                        :name? (ident "x")
+                        :type (make-type-pointer
+                                :to (make-type-function
+                                      :ret (type-sint)
+                                      :params (type-params-unspecified))))
+                      (make-type-struni-member
+                        :name? (ident "y")
+                        :type (make-type-pointer
+                                :to (make-type-function
+                                      :ret (type-sint)
+                                      :params (make-type-params-prototype
+                                                :params (list (type-sint)))))))
+                nil))
+            (uid 44)
+            (irr-ienv))
     (and (equal composite
                 (make-type-struct :uid (uid 44)
                                   :tunit? nil
                                   :tag/members (type-struni-tag/members-tagged
                                                  (ident "my_struct"))))
          (equal (treemap::lookup (uid 44) completions)
-                (list (make-type-struni-member :name? (ident "x")
-                                               :type (type-char))
-                      (make-type-struni-member :name? (ident "y")
-                                               :type (type-ulong))))
+                (list (make-type-struni-member
+                        :name? (ident "x")
+                        :type (make-type-pointer
+                                :to (make-type-function
+                                      :ret (type-sint)
+                                      :params (make-type-params-prototype
+                                                :params (list (type-sint))))))
+                      (make-type-struni-member
+                        :name? (ident "y")
+                        :type (make-type-pointer
+                                :to (make-type-function
+                                      :ret (type-sint)
+                                      :params (make-type-params-prototype
+                                                :params (list (type-sint))))))))
          (equal next-uid
                 (uid 45)))))
 

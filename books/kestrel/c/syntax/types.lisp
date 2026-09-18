@@ -763,7 +763,7 @@
 (define type-standard-signed-integer-3p ((type typep))
   :returns (3vl 3p)
   :short "Check if a type is a standard signed integer type [C17:6.2.5/4]."
-  (cond ((member-eq (type-kind type) 
+  (cond ((member-eq (type-kind type)
                     '(:schar :sshort :sint :slong :sllong))
          t)
         ((member-eq (type-kind type)
@@ -818,7 +818,7 @@
   :returns (3vl 3p)
   :short "Check if a type is a standard unsigned integer type
           [C17:6.2.5/6]."
-  (cond ((member-eq (type-kind type) 
+  (cond ((member-eq (type-kind type)
                     '(:bool :uchar :ushort :uint :ulong :ullong))
          t)
         ((member-eq (type-kind type)
@@ -2159,6 +2159,310 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-composite-is-input-p-base ((x typep) (y typep))
+  :returns (yes/no booleanp)
+  :short "The base case for @('type-composite-is-input-p'),
+          covering when the two types are not the same kind of derived type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This mirrors the non-recursive cases of @(tsee type-composite-aux):
+     when one of the types is an unknown variant,
+     the composite is the more specific type,
+     and otherwise it is the first type.
+     The result for incompatible types is immaterial."))
+  (type-case
+    x
+    :struct (type-case y :unknown t :unknown-builtin t :otherwise nil)
+    :union t
+    :array (type-case y :unknown t :unknown-builtin t :otherwise nil)
+    :pointer (type-case y
+                        :unknown t
+                        :unknown-builtin t
+                        :unknown-scalar t
+                        :otherwise nil)
+    :function (type-case y :unknown t :unknown-builtin t :otherwise nil)
+    :unknown (type-case y :unknown)
+    :unknown-builtin (and (type-case y '(:unknown :unknown-builtin)) t)
+    :unknown-scalar (and (type-case y '(:unknown
+                                        :unknown-builtin
+                                        :unknown-scalar))
+                         t)
+    :unknown-arithmetic (and (type-case y '(:unknown
+                                            :unknown-builtin
+                                            :unknown-scalar
+                                            :unknown-arithmetic))
+                             t)
+    :otherwise t))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defines type/type-list-composite-is-input-p
+  (define type-composite-is-input-p ((x typep)
+                                      (y typep)
+                                      (completions type-completions-p)
+                                      (visited uid-uid-mapp)
+                                      (count natp))
+    :returns (mv (leftp booleanp)
+                 (rightp booleanp)
+                 (new-visited uid-uid-mapp))
+    :short "Check whether either of two @(see type)s is already
+            a composite of the two."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The first result says whether @('x') satisfies every requirement
+       of a composite of @('x') and @('y') [C17:6.2.7/3] [C23:6.2.7/3],
+       so that @('x') itself may serve as the composite [C23:6.2.7/4];
+       the second result says the same of @('y').
+       The case analysis mirrors that of @(tsee type-composite-aux),
+       with @(tsee type-composite-is-input-p-base)
+       covering the non-recursive cases.")
+     (xdoc::p
+      "Since the struct types reachable through @('completions')
+       may be cyclic,
+       the @('visited') map records the pairs of struct @(see UID)s
+       already encountered, and a revisited pair is accepted,
+       analogously to the deletion in @(tsee type-compatible-p).
+       As in @(tsee type-composite-aux),
+       termination is ensured by @('count');
+       when it is exhausted, the check fails in both directions,
+       which is always safe."))
+    (b* ((visited (uid-uid-mfix visited))
+         (completions (type-completions-fix completions))
+         ((when (= (the unsigned-byte (lnfix count)) 0))
+          (mv nil nil visited)))
+      (type-case
+        x
+        :struct
+        (type-case
+          y
+          :struct
+          (if (uid-equal x.uid y.uid)
+              (mv t t visited)
+            (type-struni-tag/members-case
+              x.tag/members
+              :tagged
+              (type-struni-tag/members-case
+                y.tag/members
+                :tagged
+                (b* (((mv foundp y-uid) (treemap::lookup? x.uid visited))
+                     ((when (and foundp (equal y-uid y.uid)))
+                      (mv t t visited))
+                     ((mv x-foundp x-members)
+                      (treemap::lookup? x.uid completions))
+                     ((mv y-foundp y-members)
+                      (treemap::lookup? y.uid completions))
+                     ;; An incomplete type is a composite
+                     ;; only if the other is incomplete too;
+                     ;; a complete type is a composite
+                     ;; if the other is incomplete.
+                     ((unless x-foundp)
+                      (mv (not y-foundp) t visited))
+                     ((unless y-foundp)
+                      (mv t nil visited))
+                     (visited (treemap::update x.uid y.uid visited)))
+                  (type-struni-member-list-composite-is-input-p
+                    x-members
+                    y-members
+                    completions
+                    visited
+                    (- (the unsigned-byte count) 1)))
+                :untagged (mv t t visited))
+              :untagged
+              (type-struni-tag/members-case
+                y.tag/members
+                :tagged (mv t t visited)
+                :untagged
+                (type-struni-member-list-composite-is-input-p
+                  x.tag/members.members
+                  y.tag/members.members
+                  completions
+                  visited
+                  (- (the unsigned-byte count) 1)))))
+          :otherwise (mv (type-composite-is-input-p-base x y)
+                         (type-composite-is-input-p-base y x)
+                         visited))
+        :array
+        (type-case
+          y
+          :array
+          (b* ((kind (type-array-kind-composite x.kind y.kind))
+               (kind-leftp (equal kind x.kind))
+               (kind-rightp (equal kind y.kind))
+               ((unless (or kind-leftp kind-rightp))
+                (mv nil nil visited))
+               ((mv leftp rightp visited)
+                (type-composite-is-input-p x.of
+                                           y.of
+                                           completions
+                                           visited
+                                           (- (the unsigned-byte count) 1))))
+            (mv (and kind-leftp leftp)
+                (and kind-rightp rightp)
+                visited))
+          :otherwise (mv (type-composite-is-input-p-base x y)
+                         (type-composite-is-input-p-base y x)
+                         visited))
+        :pointer
+        (type-case
+          y
+          :pointer (type-composite-is-input-p x.to
+                                              y.to
+                                              completions
+                                              visited
+                                              (- (the unsigned-byte count) 1))
+          :otherwise (mv (type-composite-is-input-p-base x y)
+                         (type-composite-is-input-p-base y x)
+                         visited))
+        :function
+        (type-case
+          y
+          :function
+          (b* (((mv leftp rightp visited)
+                (type-composite-is-input-p x.ret
+                                           y.ret
+                                           completions
+                                           visited
+                                           (- (the unsigned-byte count) 1)))
+               ((unless (or leftp rightp))
+                (mv nil nil visited))
+               ((mv params-leftp params-rightp visited)
+                (type-params-composite-is-input-p
+                  x.params
+                  y.params
+                  completions
+                  visited
+                  (- (the unsigned-byte count) 1))))
+            (mv (and leftp params-leftp)
+                (and rightp params-rightp)
+                visited))
+          :otherwise (mv (type-composite-is-input-p-base x y)
+                         (type-composite-is-input-p-base y x)
+                         visited))
+        :otherwise (mv (type-composite-is-input-p-base x y)
+                       (type-composite-is-input-p-base y x)
+                       visited)))
+    :measure (nfix count))
+
+  (define type-struni-member-list-composite-is-input-p
+    ((x type-struni-member-listp)
+     (y type-struni-member-listp)
+     (completions type-completions-p)
+     (visited uid-uid-mapp)
+     (count natp))
+    :returns (mv (leftp booleanp)
+                 (rightp booleanp)
+                 (new-visited uid-uid-mapp))
+    :short "Check whether either of two @(tsee type-struni-member-list)s
+            is already a composite of the two."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The composite member list is as long as the shorter list,
+       so a list is a composite only if it is at most as long as the other."))
+    (b* ((visited (uid-uid-mfix visited))
+         ((when (endp x)) (mv t (endp y) visited))
+         ((when (endp y)) (mv nil t visited))
+         ((when (= (the unsigned-byte (lnfix count)) 0))
+          (mv nil nil visited))
+         ((mv leftp rightp visited)
+          (type-composite-is-input-p (type-struni-member->type (first x))
+                                     (type-struni-member->type (first y))
+                                     completions
+                                     visited
+                                     (- (the unsigned-byte count) 1)))
+         ((unless (or leftp rightp)) (mv nil nil visited))
+         ((mv rest-leftp rest-rightp visited)
+          (type-struni-member-list-composite-is-input-p
+            (rest x)
+            (rest y)
+            completions
+            visited
+            (- (the unsigned-byte count) 1))))
+      (mv (and leftp rest-leftp)
+          (and rightp rest-rightp)
+          visited))
+    :measure (nfix count))
+
+  (define type-params-composite-is-input-p ((x type-params-p)
+                                             (y type-params-p)
+                                             (completions type-completions-p)
+                                             (visited uid-uid-mapp)
+                                             (count natp))
+    :returns (mv (leftp booleanp)
+                 (rightp booleanp)
+                 (new-visited uid-uid-mapp))
+    :short "Check whether either of two @(tsee type-params)
+            is already a composite of the two."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "See @(tsee type-params-composite-aux) for the composite rules."))
+    (b* ((visited (uid-uid-mfix visited))
+         ((when (= (the unsigned-byte (lnfix count)) 0))
+          (mv nil nil visited)))
+      (type-params-case
+        x
+        :prototype
+        (type-params-case
+          y
+          :prototype (type-list-composite-is-input-p
+                       x.params
+                       y.params
+                       completions
+                       visited
+                       (- (the unsigned-byte count) 1))
+          :otherwise (mv t nil visited))
+        :old-style
+        (type-params-case
+          y
+          :prototype (mv nil t visited)
+          :old-style (mv t t visited)
+          :unspecified (mv t nil visited))
+        :unspecified (mv (type-params-case y :unspecified) t visited)))
+    :measure (nfix count))
+
+  (define type-list-composite-is-input-p ((x type-listp)
+                                           (y type-listp)
+                                           (completions type-completions-p)
+                                           (visited uid-uid-mapp)
+                                           (count natp))
+    :returns (mv (leftp booleanp)
+                 (rightp booleanp)
+                 (new-visited uid-uid-mapp))
+    :short "Check whether either of two @(tsee type-list)s
+            is already a composite of the two."
+    (b* ((visited (uid-uid-mfix visited))
+         ((when (endp x)) (mv t (endp y) visited))
+         ((when (endp y)) (mv nil t visited))
+         ((when (= (the unsigned-byte (lnfix count)) 0))
+          (mv nil nil visited))
+         ((mv leftp rightp visited)
+          (type-composite-is-input-p (first x)
+                                     (first y)
+                                     completions
+                                     visited
+                                     (- (the unsigned-byte count) 1)))
+         ((unless (or leftp rightp)) (mv nil nil visited))
+         ((mv rest-leftp rest-rightp visited)
+          (type-list-composite-is-input-p (rest x)
+                                          (rest y)
+                                          completions
+                                          visited
+                                          (- (the unsigned-byte count) 1))))
+      (mv (and leftp rest-leftp)
+          (and rightp rest-rightp)
+          visited))
+    :measure (nfix count))
+
+  :verify-guards :after-returns
+  ///
+
+  (fty::deffixequiv-mutual type/type-list-composite-is-input-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines type/type-list-composite-aux
   (define type-composite-aux ((x typep)
                               (y typep)
@@ -2177,15 +2481,39 @@
      (xdoc::p
       "See @(tsee type-composite) for a description type composites.")
      (xdoc::p
+      "Before the case analysis,
+       @(tsee type-composite-is-input-p) checks whether
+       either input already satisfies the requirements of the composite,
+       in which case that input is returned.
+       The case analysis constructs a composite only otherwise,
+       and creates a new struct type,
+       with a fresh @(see UID) and an entry in the completions map,
+       only when two tagged structs with different UIDs are composed.")
+     (xdoc::p
       "The termination argument for this clique is nontrivial.
        A sufficient measure would be the size of the @('completions') map,
        with the @(see UID)s from the @('composites') map removed,
        and restricted to @(see UID)s below @('next-uid').
        For the moment, we simply add a @('count') argument."))
-    (if (= (the unsigned-byte (lnfix count)) 0)
-        (mv (type-fix x)
-            (type-completions-fix completions)
-            (uid-fix next-uid))
+    (b* ((x (type-fix x))
+         (y (type-fix y))
+         (completions (type-completions-fix completions))
+         (next-uid (uid-fix next-uid))
+         ((when (= (the unsigned-byte (lnfix count)) 0))
+          (mv x completions next-uid))
+         ;; An input that already satisfies the requirements
+         ;; of the composite is the composite [C23:6.2.7/4].
+         ;; A composite is constructed only otherwise.
+         ((mv leftp rightp &)
+          (type-composite-is-input-p x
+                                     y
+                                     completions
+                                     (treemap::empty)
+                                     (- (the unsigned-byte count) 1)))
+         ((when leftp)
+          (mv x completions next-uid))
+         ((when rightp)
+          (mv y completions next-uid)))
       (type-case
         x
         :struct
@@ -2579,7 +2907,19 @@
      (e.g., when taking the composite of two arrays,
      one of known constant size and the other of unknown size,
      the composite has the known size
-     [C17:6.2.7/3] [C23:6.2.7/3])."))
+     [C17:6.2.7/3] [C23:6.2.7/3]).")
+   (xdoc::p
+    "Before constructing a composite,
+     we check via @(tsee type-composite-is-input-p)
+     whether one of the two types
+     already satisfies the requirements of the composite,
+     in which case that type is the composite [C23:6.2.7/4].
+     This matters for tagged struct types with different @(see UID)s
+     (which arise across translation units; see @(tsee type-compatible-p)),
+     which are composed member-wise [C23:6.2.7/3]:
+     only when neither type is a composite do we create a new struct type,
+     with a fresh UID and with the composite of the members
+     recorded in the completions map."))
   (type-composite-aux x
                       y
                       (treemap::empty)
