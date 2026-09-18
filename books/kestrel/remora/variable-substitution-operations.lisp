@@ -446,6 +446,19 @@
      We then recurse into the body of the binder
      with the restricted substitution.")
    (xdoc::p
+    "The values of the substitution are types, which contain ispaces,
+     so the substitution can also capture ispace variables.
+     At each ispace-binding construct,
+     we check that the bound variables do not appear
+     among the free ispace variables of the values of the substitution,
+     and we then recurse into the body of the binder
+     with the substitution unchanged,
+     because these constructs bind no type variables.
+     Currently we do this only for the ispace-binding constructs of types,
+     i.e. product and sum types;
+     the ispace-binding constructs of expressions, atoms, and bindings
+     are not covered yet.")
+   (xdoc::p
     "Since @('let') bindings are sequential,
      we override the function for @(tsee bind-list)
      so that, for a non-empty list of bindings,
@@ -493,6 +506,34 @@
                 (type-subst-type-vars-no-capture-p type.body
                                                    atom-subst
                                                    array-subst))))
+   (type :pi
+         (and (atom/array-subst-no-ispace-capture-p (set::insert type.param nil)
+                                                    atom-subst
+                                                    array-subst)
+              (type-subst-type-vars-no-capture-p type.body
+                                                 atom-subst
+                                                 array-subst)))
+   (type :pin
+         (and (atom/array-subst-no-ispace-capture-p (set::mergesort type.params)
+                                                    atom-subst
+                                                    array-subst)
+              (type-subst-type-vars-no-capture-p type.body
+                                                 atom-subst
+                                                 array-subst)))
+   (type :sigma
+         (and (atom/array-subst-no-ispace-capture-p (set::insert type.param nil)
+                                                    atom-subst
+                                                    array-subst)
+              (type-subst-type-vars-no-capture-p type.body
+                                                 atom-subst
+                                                 array-subst)))
+   (type :sigman
+         (and (atom/array-subst-no-ispace-capture-p (set::mergesort type.params)
+                                                    atom-subst
+                                                    array-subst)
+              (type-subst-type-vars-no-capture-p type.body
+                                                 atom-subst
+                                                 array-subst)))
    (expr :let
          (and (bind-list-subst-type-vars-no-capture-p expr.binds
                                                       atom-subst
