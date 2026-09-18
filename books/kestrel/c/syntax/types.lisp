@@ -31,9 +31,6 @@
 
 (local (include-book "kestrel/abstract-domains/many-valued-logics/3vl" :dir :system))
 
-(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
-(local (include-book "kestrel/alists-light/strip-cars" :dir :system))
-
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -95,15 +92,6 @@
          (not (posp x)))
   :enable nfix)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defrulel hons-assoc-equal-when-assoc-equal
-  (implies (alistp alist)
-           (equal (hons-assoc-equal x alist)
-                  (assoc-equal x alist)))
-  :induct t
-  :enable (hons-assoc-equal
-           alistp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -672,7 +660,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defalist type-completions
+(fty::deftreemap type-completions
   :short "A map from @(see UID)s to struct/union members."
   :long
   (xdoc::topstring
@@ -685,31 +673,7 @@
      to its @(tsee type-struni-member-list)."))
   :key-type uid
   :val-type type-struni-member-list
-  :true-listp t
-  :keyp-of-nil nil
-  :valp-of-nil t
-  :pred type-completions-p
-  :prepwork ((set-induction-depth-limit 1)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule alistp-when-type-completions-p-forward-chaining
-  (implies (type-completions-p x)
-           (alistp x))
-  :rule-classes :forward-chaining
-  :by alistp-when-type-completions-p-rewrite)
-
-(defrule alistp-of-type-completions-fix
-  (alistp (type-completions-fix x))
-  :induct t
-  :enable (type-completions-fix
-           alistp))
-
-(defrule type-struni-member-listp-of-cdr-of-assoc-equal
-  (implies (type-completions-p completions)
-           (type-struni-member-listp (cdr (assoc-equal key completions))))
-  :induct t
-  :enable assoc-equal)
+  :pred type-completions-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -730,9 +694,9 @@
     tag/members
     :tagged (b* ((uid (uid-fix uid))
                  (completions (type-completions-fix completions))
-                 (members? (hons-get uid completions)))
-              (if members?
-                  (mv nil (cdr members?))
+                 ((mv foundp members) (treemap::lookup? uid completions)))
+              (if foundp
+                  (mv nil members)
                 (mv t nil)))
     :untagged (mv nil tag/members.members))
 
@@ -1788,16 +1752,17 @@
                              ((when (or (in x.uid incomplete)
                                         (in y.uid incomplete)))
                               t)
-                             (x-members? (hons-get x.uid completions))
-                             (y-members? (hons-get y.uid completions))
-                             ((unless (and (consp x-members?)
-                                           (consp y-members?)))
+                             ((mv x-foundp x-members)
+                              (treemap::lookup? x.uid completions))
+                             ((mv y-foundp y-members)
+                              (treemap::lookup? y.uid completions))
+                             ((unless (and x-foundp y-foundp))
                               t)
                              (incomplete
                                (insert x.uid (insert y.uid incomplete))))
                           (type-struni-member-list-compatible-p-aux
-                            (cdr x-members?)
-                            (cdr y-members?)
+                            x-members
+                            y-members
                             completions
                             incomplete
                             ienv))
@@ -1820,15 +1785,16 @@
                        ((when (or (in x.uid incomplete)
                                   (in y.uid incomplete)))
                         t)
-                       (x-members? (hons-get x.uid completions))
-                       (y-members? (hons-get y.uid completions))
-                       ((unless (and (consp x-members?)
-                                     (consp y-members?)))
+                       ((mv x-foundp x-members)
+                        (treemap::lookup? x.uid completions))
+                       ((mv y-foundp y-members)
+                        (treemap::lookup? y.uid completions))
+                       ((unless (and x-foundp y-foundp))
                         t)
                        (incomplete (insert x.uid (insert y.uid incomplete))))
                     (type-struni-member-list-compatible-p-aux
-                      (cdr x-members?)
-                      (cdr y-members?)
+                      x-members
+                      y-members
                       completions
                       incomplete
                       ienv))
@@ -1904,7 +1870,8 @@
     :measure (two-nats-measure
               (cardinality
                 (difference
-                  (mergesort (strip-cars (type-completions-fix completions)))
+                  (treeset::to-oset
+                    (treemap::keys (type-completions-fix completions)))
                   (uid-set-fix incomplete)))
               (max (type-count x) (type-count y))))
 
@@ -1936,7 +1903,8 @@
     :measure (two-nats-measure
               (cardinality
                 (difference
-                  (mergesort (strip-cars (type-completions-fix completions)))
+                  (treeset::to-oset
+                    (treemap::keys (type-completions-fix completions)))
                   (uid-set-fix incomplete)))
               (max (type-struni-member-list-count x)
                    (type-struni-member-list-count y))))
@@ -2034,7 +2002,8 @@
     :measure (two-nats-measure
               (cardinality
                 (difference
-                  (mergesort (strip-cars (type-completions-fix completions)))
+                  (treeset::to-oset
+                    (treemap::keys (type-completions-fix completions)))
                   (uid-set-fix incomplete)))
               (max (type-params-count x)
                    (type-params-count y))))
@@ -2062,13 +2031,13 @@
     :measure (two-nats-measure
               (cardinality
                 (difference
-                  (mergesort (strip-cars (type-completions-fix completions)))
+                  (treeset::to-oset
+                    (treemap::keys (type-completions-fix completions)))
                   (uid-set-fix incomplete)))
               (max (type-list-count x)
                    (type-list-count y))))
 
   :hints (("Goal" :in-theory (e/d (max
-                                   acl2::member-equal-of-strip-cars-iff
                                    proper-subset-cardinality-case-split)
                                   (set::expand-cardinality-of-difference
                                    set::delete-cardinality
@@ -2373,13 +2342,15 @@
                             :tag/members x.tag/members)
                           completions
                           (uid-fix next-uid)))
-                     (x-members? (hons-get x.uid completions))
-                     (y-members? (hons-get y.uid completions))
-                     ((unless (consp x-members?))
+                     ((mv x-foundp x-members)
+                      (treemap::lookup? x.uid completions))
+                     ((mv y-foundp y-members)
+                      (treemap::lookup? y.uid completions))
+                     ((unless x-foundp)
                       (mv (type-fix y)
                           completions
                           (uid-fix next-uid)))
-                     ((unless (consp y-members?))
+                     ((unless y-foundp)
                       (mv (type-fix x)
                           completions
                           (uid-fix next-uid)))
@@ -2393,16 +2364,16 @@
                                                          composites)))
                      ((mv members-composite completions next-uid)
                       (type-struni-member-list-composite-aux
-                        (cdr x-members?)
-                        (cdr y-members?)
+                        x-members
+                        y-members
                         composites
                         completions
                         next-uid
                         ienv
                         (- (the unsigned-byte count) 1)))
-                     (completions (hons-acons composite-uid
-                                              members-composite
-                                              completions)))
+                     (completions (treemap::update composite-uid
+                                                   members-composite
+                                                   completions)))
                   (mv (make-type-struct
                         :uid composite-uid
                         :tunit? nil

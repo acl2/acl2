@@ -16,6 +16,8 @@
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (include-book "kestrel/abstract-domains/many-valued-logics/3vl" :dir :system)
+(include-book "kestrel/data/treemap/iter-defs" :dir :system)
+(include-book "kestrel/data/treemap/size-defs" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "kestrel/utilities/ordinals" :dir :system)
@@ -38,7 +40,11 @@
 (local (acl2::controlled-configuration :hooks nil))
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 
-(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
+(local (include-book "kestrel/data/treemap/top" :dir :system))
+(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
+(local (include-book "kestrel/data/treeset/delete" :dir :system))
+(local (include-book "kestrel/data/treeset/in" :dir :system))
+(local (include-book "kestrel/data/treeset/min-max" :dir :system))
 (local (include-book "std/system/w" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -640,6 +646,29 @@
                struct type, not e.g. in a union or function type.")))
     (sts-check-completion-members (rest members) struct-uid targetp)))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define sts-check-completions-loop
+  ((iter treemap::iterp)
+   (struct-uid c$::uidp))
+  :guard (and (not (treemap::before-firstp iter))
+              (c$::type-completions-p (treemap::from-iter iter)))
+  :returns (er? maybe-msgp)
+  :short "Iterator loop implementing @(tsee sts-check-completions)."
+  :measure (treemap::nexts iter)
+  :guard-hints (("Goal" :cases ((treemap::after-lastp iter))))
+  (b* (((when (mbe :logic (not (treemap::has-valuep iter))
+                   :exec (treemap::after-lastp iter)))
+        nil)
+       (msg? (sts-check-completion-members
+               (treemap::entry-val iter)
+               struct-uid
+               (c$::uid-equal (treemap::entry-key iter) struct-uid)))
+       ((when msg?) msg?))
+    (sts-check-completions-loop (treemap::next iter) struct-uid)))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (define sts-check-completions
   ((completions c$::type-completions-p)
    (struct-uid c$::uidp))
@@ -647,21 +676,59 @@
   :short "Check that the split struct type appears in the members of
           struct or union types only as a directly splittable member."
   :long
-  (xdoc::topstring-p
-   "See @(tsee sts-check-completion-members) for the per-type check.")
-  (b* (((when (endp completions))
-        nil)
-       (entry (first completions))
-       ((unless (consp entry))
-        (sts-check-completions (rest completions) struct-uid))
-       (entry-uid (c$::uid-fix (car entry)))
-       (members (c$::type-struni-member-list-fix (cdr entry)))
-       (msg? (sts-check-completion-members
-               members
-               struct-uid
-               (c$::uid-equal entry-uid struct-uid)))
-       ((when msg?) msg?))
-    (sts-check-completions (rest completions) struct-uid)))
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee sts-check-completion-members) for the per-type check.")
+   (xdoc::p
+    "The logical definition walks the map
+     by repeatedly removing its least key.
+     The executable definition is a single forward pass
+     with an iterator (see @(tsee sts-check-completions-loop))."))
+  :measure (treemap::size completions)
+  :verify-guards nil
+  (mbe :logic
+       (b* (((when (treemap::emptyp completions))
+             nil)
+            (entry-uid (treemap::min-key completions))
+            (members (treemap::min-val completions))
+            (msg? (sts-check-completion-members
+                    members
+                    struct-uid
+                    (c$::uid-equal entry-uid struct-uid)))
+            ((when msg?) msg?))
+         (sts-check-completions (treemap::delete entry-uid completions)
+                                struct-uid))
+       :exec (sts-check-completions-loop (treemap::iter-min completions)
+                                         struct-uid))
+
+  ///
+
+  (defruled sts-check-completions-loop-becomes-sts-check-completions
+    (implies (not (treemap::before-firstp iter))
+             (equal (sts-check-completions-loop iter struct-uid)
+                    (if (treemap::has-valuep iter)
+                        (b* ((msg? (sts-check-completion-members
+                                     (treemap::entry-val iter)
+                                     struct-uid
+                                     (c$::uid-equal (treemap::entry-key iter)
+                                                    struct-uid))))
+                          (or msg?
+                              (sts-check-completions (treemap::after iter)
+                                                     struct-uid)))
+                      nil)))
+    :induct (sts-check-completions-loop iter struct-uid)
+    :enable sts-check-completions-loop
+    :expand ((sts-check-completions (treemap::after iter) struct-uid)))
+
+  (defrule sts-check-completions-loop-of-iter-min
+    (equal (sts-check-completions-loop (treemap::iter-min completions)
+                                       struct-uid)
+           (sts-check-completions completions struct-uid))
+    :enable sts-check-completions-loop-becomes-sts-check-completions
+    :expand ((sts-check-completions completions struct-uid)))
+
+  (verify-guards sts-check-completions
+    :hints (("Goal" :expand ((sts-check-completions completions struct-uid))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1041,10 +1108,11 @@
     completions, e.g. an untagged struct type,
     whose members are instead collected syntactically.")
   (b* ((completions (sts-split-state->completions st))
-       (pair (hons-get (c$::uid-fix host-uid) completions))
-       ((unless pair) nil))
+       ((mv foundp members)
+        (treemap::lookup? (c$::uid-fix host-uid) completions))
+       ((unless foundp) nil))
     (type-struni-member-list-collect-names
-      (c$::type-struni-member-list-fix (cdr pair))
+      (c$::type-struni-member-list-fix members)
       nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5069,10 +5137,7 @@
        (primary-uid (c$::type-struct->uid primary-type))
        (primary-tag? (c$::type-struct->tag? primary-type))
        (info (c$::trans-ensemble->info code.trans-units))
-       ;; type-compatible-p accesses the completions with hons-get,
-       ;; so they must be a fast alist.
-       (completions (make-fast-alist
-                      (c$::trans-ensemble-vinfo->completions info)))
+       (completions (c$::trans-ensemble-vinfo->completions info))
        (right-set (treeset::from-list right-members))
        ((mv incompletep primary-members)
         (c$::type-struni-tag/members->members
@@ -5127,7 +5192,6 @@
        ((erp map st)
         (sts-split-trans-units
           tag? typedef-name? primary-type completions code.ienv safety-checks map st))
-       (- (fast-alist-free completions))
        (warnings (sts-split-state->warnings st))
        (new-trans-units (c$::change-trans-ensemble code.trans-units
                                                    :units map))

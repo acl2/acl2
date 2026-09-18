@@ -3820,9 +3820,11 @@
                           ((unless (and info? currentp))
                            (mv nil nil))
                           (uid (valid-tag-info->uid info?))
-                          (members? (hons-get (valid-tag-info->uid info?)
-                                              (vstate->completions vstate))))
-                       (mv uid (consp members?))))
+                          ((mv completep &)
+                              (treemap::lookup?
+                               (valid-tag-info->uid info?)
+                               (vstate->completions vstate))))
+                       (mv uid completep)))
                     ((when current+completep)
                      (retmsg$ "A type is already defined in this scope ~
                                with tag ~x0. ~
@@ -3856,7 +3858,7 @@
                                            type-struni-members))))
                     (vstate (change-vstate
                              vstate
-                             :completions (hons-acons
+                             :completions (treemap::update
                                            uid
                                            type-struni-members
                                            (vstate->completions vstate))))
@@ -3929,9 +3931,11 @@
                          ((unless (and info? currentp))
                           (mv nil nil))
                          (uid (valid-tag-info->uid info?))
-                         (members? (hons-get (valid-tag-info->uid info?)
-                                             (vstate->completions vstate))))
-                      (mv uid (consp members?))))
+                         ((mv completep &)
+                             (treemap::lookup?
+                              (valid-tag-info->uid info?)
+                              (vstate->completions vstate))))
+                      (mv uid completep)))
                    ((when current+completep)
                     (retmsg$ "A type is already defined in this scope ~
                               with tag ~x0. ~
@@ -3965,7 +3969,7 @@
                                           type-struni-members))))
                    (vstate (change-vstate
                             vstate
-                            :completions (hons-acons
+                            :completions (treemap::update
                                           uid
                                           type-struni-members
                                           (vstate->completions vstate))))
@@ -4036,10 +4040,11 @@
                                 ((unless (and info? currentp))
                                  (mv nil nil))
                                 (uid (valid-tag-info->uid info?))
-                                (members?
-                                 (hons-get (valid-tag-info->uid info?)
-                                           (vstate->completions vstate))))
-                             (mv uid (consp members?))))
+                                ((mv completep &)
+                                 (treemap::lookup?
+                                  (valid-tag-info->uid info?)
+                                  (vstate->completions vstate))))
+                             (mv uid completep)))
                           ((when current+completep)
                            (retmsg$ "A type is already defined in this scope ~
                                      with tag ~x0.
@@ -4073,7 +4078,7 @@
                           (vstate
                            (change-vstate
                             vstate
-                            :completions (hons-acons
+                            :completions (treemap::update
                                           uid
                                           nil
                                           (vstate->completions vstate))))
