@@ -40,6 +40,7 @@ $basecmd \
   --author="Matt Kaufmann <kaufmann@Matts-MBP.home>" \
   --author="Matt Kaufmann <kaufmann@kestrel.edu>" \
   --author="Matt Kaufmann <kaufmann@frost.home.arpa>" \
+  --author="Eric Smith <ewsmith@gmail.com>" \
   | grep -v '^[a-z0-9]\{40\}' \
   | grep -v '^books/' \
   | grep -v '^README[.]md' \
