@@ -454,10 +454,10 @@
      and we then recurse into the body of the binder
      with the substitution unchanged,
      because these constructs bind no type variables.
-     Currently we do this only for the ispace-binding constructs of types,
-     i.e. product and sum types;
-     the ispace-binding constructs of expressions, atoms, and bindings
-     are not covered yet.")
+     For the ispace variables bound in @('let') bindings,
+     we perform the same check where we handle
+     the type variables bound in those bindings (see below),
+     but without removing anything from the substitution.")
    (xdoc::p
     "Since @('let') bindings are sequential,
      we override the function for @(tsee bind-list)
@@ -534,11 +534,40 @@
               (type-subst-type-vars-no-capture-p type.body
                                                  atom-subst
                                                  array-subst)))
+   (expr :unbox
+         (and (expr-subst-type-vars-no-capture-p expr.target
+                                                 atom-subst
+                                                 array-subst)
+              (atom/array-subst-no-ispace-capture-p
+               (set::insert expr.ispace nil)
+               atom-subst
+               array-subst)
+              (expr-subst-type-vars-no-capture-p expr.body
+                                                 atom-subst
+                                                 array-subst)
+              (type-option-subst-type-vars-no-capture-p expr.type?
+                                                        atom-subst
+                                                        array-subst)))
+   (expr :unboxn
+         (and (expr-subst-type-vars-no-capture-p expr.target
+                                                 atom-subst
+                                                 array-subst)
+              (atom/array-subst-no-ispace-capture-p
+               (set::mergesort expr.ispaces)
+               atom-subst
+               array-subst)
+              (expr-subst-type-vars-no-capture-p expr.body
+                                                 atom-subst
+                                                 array-subst)
+              (type-option-subst-type-vars-no-capture-p expr.type?
+                                                        atom-subst
+                                                        array-subst)))
    (expr :let
          (and (bind-list-subst-type-vars-no-capture-p expr.binds
                                                       atom-subst
                                                       array-subst)
               (b* ((bound-type-vars (bind-list-bound-type-vars expr.binds))
+                   (bound-ispace-vars (bind-list-bound-ispace-vars expr.binds))
                    ((mv atom-subst array-subst)
                     (atom/array-subst-remove-bound bound-type-vars
                                                    atom-subst
@@ -546,6 +575,9 @@
                 (and (atom/array-subst-no-type-capture-p bound-type-vars
                                                          atom-subst
                                                          array-subst)
+                     (atom/array-subst-no-ispace-capture-p bound-ispace-vars
+                                                           atom-subst
+                                                           array-subst)
                      (expr-subst-type-vars-no-capture-p expr.body
                                                         atom-subst
                                                         array-subst)))))
@@ -571,6 +603,20 @@
                 (expr-subst-type-vars-no-capture-p atom.body
                                                    atom-subst
                                                    array-subst))))
+   (atom :ilambda
+         (and (atom/array-subst-no-ispace-capture-p (set::insert atom.param nil)
+                                                    atom-subst
+                                                    array-subst)
+              (expr-subst-type-vars-no-capture-p atom.body
+                                                 atom-subst
+                                                 array-subst)))
+   (atom :ilambdan
+         (and (atom/array-subst-no-ispace-capture-p (set::mergesort atom.params)
+                                                    atom-subst
+                                                    array-subst)
+              (expr-subst-type-vars-no-capture-p atom.body
+                                                 atom-subst
+                                                 array-subst)))
    (bind :tfun
          (b* (((mv atom-subst array-subst)
                (atom/array-subst-remove-bound (set::mergesort bind.params)
@@ -585,6 +631,16 @@
                 (expr-subst-type-vars-no-capture-p bind.expr
                                                    atom-subst
                                                    array-subst))))
+   (bind :ifun
+         (and (atom/array-subst-no-ispace-capture-p (set::mergesort bind.params)
+                                                    atom-subst
+                                                    array-subst)
+              (type-option-subst-type-vars-no-capture-p bind.type?
+                                                        atom-subst
+                                                        array-subst)
+              (expr-subst-type-vars-no-capture-p bind.expr
+                                                 atom-subst
+                                                 array-subst)))
    (bind :cfun
          (type-var-list-option-case
           bind.tparams?
@@ -597,6 +653,13 @@
                         (set::mergesort bind.tparams?.val)
                         atom-subst
                         array-subst)
+                       (ispace-var-list-option-case
+                        bind.iparams?
+                        :some (atom/array-subst-no-ispace-capture-p
+                               (set::mergesort bind.iparams?.val)
+                               atom-subst
+                               array-subst)
+                        :none t)
                        (var+type?-list-subst-type-vars-no-capture-p
                         bind.params
                         atom-subst
@@ -607,7 +670,14 @@
                        (expr-subst-type-vars-no-capture-p bind.expr
                                                           atom-subst
                                                           array-subst)))
-          :none (and (var+type?-list-subst-type-vars-no-capture-p bind.params
+          :none (and (ispace-var-list-option-case
+                      bind.iparams?
+                      :some (atom/array-subst-no-ispace-capture-p
+                             (set::mergesort bind.iparams?.val)
+                             atom-subst
+                             array-subst)
+                      :none t)
+                     (var+type?-list-subst-type-vars-no-capture-p bind.params
                                                                   atom-subst
                                                                   array-subst)
                      (type-subst-type-vars-no-capture-p bind.type
@@ -626,6 +696,10 @@
              (and (atom/array-subst-no-type-capture-p bound
                                                       atom-subst
                                                       array-subst)
+                  (atom/array-subst-no-ispace-capture-p
+                   (bind-bound-ispace-vars bind)
+                   atom-subst
+                   array-subst)
                   (bind-list-subst-type-vars-no-capture-p (cdr bind-list)
                                                           atom-subst
                                                           array-subst)))))))
