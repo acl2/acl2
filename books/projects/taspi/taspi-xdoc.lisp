@@ -1522,13 +1522,6 @@ false positives between the two trees input."
 
  <p>Details: Trees input may have branch lengths (see also symm-diff).</p>")
 
-(defxdoc taspi
-  :parents (taspi)
-  :short "Documentation for TASPI."
-  :long "<p>Tree Analysis System for Phylogenetic Inquiry</p>
-
- <p>A suite a functions for working with trees.</p>")
-
 (defxdoc taspip
   :parents (taspi)
   :short "Recognizes well formed trees with no branch lengths

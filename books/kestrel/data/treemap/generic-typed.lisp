@@ -31,6 +31,7 @@
 (include-book "delete-defs")
 (include-book "restrict-defs")
 (include-book "submap-defs")
+(include-book "iter-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -63,6 +64,7 @@
 (local (include-book "delete"))
 (local (include-book "restrict"))
 (local (include-book "submap"))
+(local (include-book "iter"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -130,6 +132,15 @@
   (implies (and (treeset::set-all-genericp (keys map))
                 (not (emptyp map)))
            (treeset::genericp (head-key map))))
+
+;; The key an @(see iterator) is at, for a walk over a map whose keys are all
+;; generic. An iterator carries no key type, so this is what discharges the
+;; guard of a typed loop at @(tsee entry-key); @('deftreemap') instantiates it.
+
+(defrule genericp-of-entry-key-when-set-all-genericp-of-keys
+  (implies (and (treeset::set-all-genericp (keys (from-iter iter)))
+                (has-valuep iter))
+           (treeset::genericp (entry-key iter))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -299,6 +310,18 @@
   (implies (and (treeset::set-all-genericp (values map))
                 (not (emptyp map)))
            (treeset::genericp (head-val map))))
+
+;; The value an @(see iterator) is at, for a walk over a map whose values are
+;; all generic. The mirror of the key rule above, for @(tsee entry-val).
+
+(defrule genericp-of-entry-val-when-set-all-genericp-of-values
+  (implies (and (treeset::set-all-genericp (values (from-iter iter)))
+                (has-valuep iter))
+           (treeset::genericp (entry-val iter)))
+  :use (:instance genericp-of-lookup-when-set-all-genericp-of-values
+                  (k (entry-key iter))
+                  (map (from-iter iter)))
+  :disable genericp-of-lookup-when-set-all-genericp-of-values)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
