@@ -129,9 +129,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atom/array-subst-no-capture-p ((vars type-var-setp)
-                                       (atom-subst string-type-mapp)
-                                       (array-subst string-type-mapp))
+(define atom/array-subst-no-type-capture-p ((vars type-var-setp)
+                                            (atom-subst string-type-mapp)
+                                            (array-subst string-type-mapp))
   :returns (yes/no booleanp)
   :short "Check that a set of bound type variables is not captured
           by an atom-kind and an array-kind type substitution."
@@ -445,9 +445,9 @@
                (atom/array-subst-remove-bound (set::insert type.param nil)
                                               atom-subst
                                               array-subst)))
-           (and (atom/array-subst-no-capture-p (set::insert type.param nil)
-                                               atom-subst
-                                               array-subst)
+           (and (atom/array-subst-no-type-capture-p (set::insert type.param nil)
+                                                    atom-subst
+                                                    array-subst)
                 (type-subst-type-vars-no-capture-p type.body
                                                    atom-subst
                                                    array-subst))))
@@ -456,9 +456,9 @@
                (atom/array-subst-remove-bound (set::mergesort type.params)
                                               atom-subst
                                               array-subst)))
-           (and (atom/array-subst-no-capture-p (set::mergesort type.params)
-                                               atom-subst
-                                               array-subst)
+           (and (atom/array-subst-no-type-capture-p (set::mergesort type.params)
+                                                    atom-subst
+                                                    array-subst)
                 (type-subst-type-vars-no-capture-p type.body
                                                    atom-subst
                                                    array-subst))))
@@ -471,9 +471,9 @@
                     (atom/array-subst-remove-bound bound-type-vars
                                                    atom-subst
                                                    array-subst)))
-                (and (atom/array-subst-no-capture-p bound-type-vars
-                                                    atom-subst
-                                                    array-subst)
+                (and (atom/array-subst-no-type-capture-p bound-type-vars
+                                                         atom-subst
+                                                         array-subst)
                      (expr-subst-type-vars-no-capture-p expr.body
                                                         atom-subst
                                                         array-subst)))))
@@ -482,9 +482,9 @@
                (atom/array-subst-remove-bound (set::insert atom.param nil)
                                               atom-subst
                                               array-subst)))
-           (and (atom/array-subst-no-capture-p (set::insert atom.param nil)
-                                               atom-subst
-                                               array-subst)
+           (and (atom/array-subst-no-type-capture-p (set::insert atom.param nil)
+                                                    atom-subst
+                                                    array-subst)
                 (expr-subst-type-vars-no-capture-p atom.body
                                                    atom-subst
                                                    array-subst))))
@@ -493,9 +493,9 @@
                (atom/array-subst-remove-bound (set::mergesort atom.params)
                                               atom-subst
                                               array-subst)))
-           (and (atom/array-subst-no-capture-p (set::mergesort atom.params)
-                                               atom-subst
-                                               array-subst)
+           (and (atom/array-subst-no-type-capture-p (set::mergesort atom.params)
+                                                    atom-subst
+                                                    array-subst)
                 (expr-subst-type-vars-no-capture-p atom.body
                                                    atom-subst
                                                    array-subst))))
@@ -504,9 +504,9 @@
                (atom/array-subst-remove-bound (set::mergesort bind.params)
                                               atom-subst
                                               array-subst)))
-           (and (atom/array-subst-no-capture-p (set::mergesort bind.params)
-                                               atom-subst
-                                               array-subst)
+           (and (atom/array-subst-no-type-capture-p (set::mergesort bind.params)
+                                                    atom-subst
+                                                    array-subst)
                 (type-option-subst-type-vars-no-capture-p bind.type?
                                                           atom-subst
                                                           array-subst)
@@ -521,7 +521,7 @@
                        (set::mergesort bind.tparams?.val)
                        atom-subst
                        array-subst)))
-                  (and (atom/array-subst-no-capture-p
+                  (and (atom/array-subst-no-type-capture-p
                         (set::mergesort bind.tparams?.val)
                         atom-subst
                         array-subst)
@@ -551,7 +551,9 @@
            (b* ((bound (bind-bound-type-vars bind))
                 ((mv atom-subst array-subst)
                  (atom/array-subst-remove-bound bound atom-subst array-subst)))
-             (and (atom/array-subst-no-capture-p bound atom-subst array-subst)
+             (and (atom/array-subst-no-type-capture-p bound
+                                                      atom-subst
+                                                      array-subst)
                   (bind-list-subst-type-vars-no-capture-p (cdr bind-list)
                                                           atom-subst
                                                           array-subst)))))))
