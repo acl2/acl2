@@ -80,12 +80,15 @@
                           (set::mergesort type.params)))
    (expr :unbox
          (set::union (expr-free-ispace-vars expr.target)
-                     (set::delete expr.ispace
-                                  (expr-free-ispace-vars expr.body))))
+                     (set::union (set::delete expr.ispace
+                                              (expr-free-ispace-vars expr.body))
+                                 (type-option-free-ispace-vars expr.type?))))
    (expr :unboxn
          (set::union (expr-free-ispace-vars expr.target)
-                     (set::difference (expr-free-ispace-vars expr.body)
-                                      (set::mergesort expr.ispaces))))
+                     (set::union (set::difference
+                                  (expr-free-ispace-vars expr.body)
+                                  (set::mergesort expr.ispaces))
+                                 (type-option-free-ispace-vars expr.type?))))
    (expr :let
          (set::union
           (bind-list-free-ispace-vars expr.binds)
@@ -392,9 +395,11 @@
             (nest-unbox-exprs ispaces var target body type?))
            (if (consp ispaces)
                (set::union (expr-free-ispace-vars target)
-                           (set::difference
-                            (expr-free-ispace-vars body)
-                            (set::mergesort (ispace-var-list-fix ispaces))))
+                           (set::union
+                            (set::difference
+                             (expr-free-ispace-vars body)
+                             (set::mergesort (ispace-var-list-fix ispaces)))
+                            (type-option-free-ispace-vars type?)))
              (expr-free-ispace-vars body)))
     :enable (nest-unbox-exprs
              expr-free-ispace-vars
