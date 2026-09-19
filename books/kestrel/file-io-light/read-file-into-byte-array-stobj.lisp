@@ -35,11 +35,11 @@
 
 ;; Copies bytes from CHANNEL into elements NEXT-INDEX through LIMIT-1 of the stobj array.
 ;; Returns (mv byte-array-stobj state).
-;; TODO: Generalize to just pass in the number of bytes to read (don't require filling the rest of the stobj).
+;; TODO: Instead of limit, pass in a max-index or a num-bytes.
 (defund read-bytes-into-byte-array-stobj (next-index limit channel byte-array-stobj state)
   (declare (xargs :guard (and (unsigned-byte-p 59 next-index) ; so that adding 1 still gives a fixnum
                               (unsigned-byte-p 59 limit)
-                              (equal limit (bytes-length byte-array-stobj))
+                              (<= limit (bytes-length byte-array-stobj))
                               (symbolp channel)
                               (open-input-channel-p channel :byte state))
                   :stobjs (byte-array-stobj state)
