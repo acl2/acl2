@@ -63,6 +63,13 @@
                                             byte-array-stobj
                                             state))))))
 
+(defthm bytes-length-of-mv-nth-0-of-read-bytes-into-byte-array-stobj
+  (implies (and (natp next-index)
+                (<= limit (bytes-length byte-array-stobj)))
+           (equal (bytes-length (mv-nth 0 (read-bytes-into-byte-array-stobj next-index limit channel byte-array-stobj state)))
+                  (bytes-length byte-array-stobj)))
+  :hints (("Goal" :in-theory (enable read-bytes-into-byte-array-stobj))))
+
 (local
  (defthm state-p1-of-mv-nth-1-of-read-bytes-into-byte-array-stobj
    (implies (and (open-input-channel-p channel :byte state) ; should this be open-input-channel-p1?
@@ -84,8 +91,9 @@
             (open-input-channel-any-p1 channel (mv-nth 1 (read-bytes-into-byte-array-stobj next-index limit channel byte-array-stobj state))))
    :hints (("Goal" :in-theory (enable open-input-channel-any-p1)))))
 
-;; Returns (mv erp byte-array-stobj state) where either ERP is non-nil (meaning an error
-;; occurred) or else the bytes field of BYTE-ARRAY-STOBJ contains the contents of FILENAME.
+;; Returns (mv erp numbytes byte-array-stobj state) where either ERP is non-nil
+;; (meaning an error occurred) or else the first NUMBYTES elements of the
+;; bytes field of BYTE-ARRAY-STOBJ contain the contents of FILENAME.
 (defund read-file-into-byte-array-stobj (filename byte-array-stobj state)
   (declare (xargs :guard (stringp filename)
                   :stobjs (byte-array-stobj state)))
@@ -94,14 +102,14 @@
   (mv-let (file-length state)
     (file-length$ filename state)
     (if (not file-length)
-        (mv `(:failed-to-get-file-length ,filename) byte-array-stobj state)
+        (mv `(:failed-to-get-file-length ,filename) 0 byte-array-stobj state)
       (if (not (unsigned-byte-p 59 file-length)) ; we could weaken this check, but it lets the indexing use fixnums
-          (mv `(:file-too-long ,filename) byte-array-stobj state)
+          (mv `(:file-too-long ,filename) 0 byte-array-stobj state)
         (mv-let (channel state)
           (open-input-channel filename :byte state)
           (if (not channel)
               ;; Error:
-              (mv `(:could-not-open-channel ,filename) byte-array-stobj state)
+              (mv `(:could-not-open-channel ,filename) 0 byte-array-stobj state)
             (let* (;; TODO: Consider reusing the array if it's already the
                    ;; right size (or perhaps larger, but in that case ensure that callers
                    ;; don't use the array length to mean the number of valid elements):
@@ -113,5 +121,17 @@
                 (read-bytes-into-byte-array-stobj 0 file-length channel byte-array-stobj state)
                 (let ((state (close-input-channel channel state)))
                   (mv nil ; no error
+                      file-length
                       byte-array-stobj
                       state))))))))))
+
+(defthm natp-of-mv-nth-1-of-read-file-into-byte-array-stobj
+  (natp (mv-nth 1 (read-file-into-byte-array-stobj filename byte-array-stobj state)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable read-file-into-byte-array-stobj))))
+
+(defthm <=-of-mv-nth-1-of-read-file-into-byte-array-stobj-and-byte-length-of-mv-nth-2-of-read-file-into-byte-array-stobj
+  (<= (mv-nth 1 (read-file-into-byte-array-stobj filename byte-array-stobj state))
+      (bytes-length (mv-nth 2 (read-file-into-byte-array-stobj filename byte-array-stobj state))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable read-file-into-byte-array-stobj))))
