@@ -1715,7 +1715,7 @@
                                    'chk-no-stobj-index-aliasing)
                                  x1 x2)))
                           ,dups-check)
-                        temp))
+                        ,temp))
               (t temp)))))
    ((member-eq (car x) '(let #+acl2-par plet))
     (let* (#+acl2-par
