@@ -3800,11 +3800,19 @@ To certify this book, first, create a world with the following package:
 		       deg lc FUMON::nulop FUPOL::*-monomio FUPOL::+-monomio
 		       |p + q = mp(p) +Mo (resto(p) + q)|))))
 
-(in-theory (disable deg lc rem))
-
 (defthm
   quot-rem-rewrite
   (implies (polinomiop (double-rewrite p1))
 	   (= (+ (rem p1 p2)
 		 (* p2 (quot p1 p2)))
-	      p1)))
+	      p1))
+; Matt K. comment, 9/17/2026: This lemma was formerly proved without the
+; :hints.  However, a fix for the application of :elim rules no longer allowed
+; that proof to go through; so, we simply give the same :hints here that are on
+; the :elim rule just above.
+  :hints (("Goal"
+	   :in-theory (disable
+		       deg lc FUMON::nulop FUPOL::*-monomio FUPOL::+-monomio
+		       |p + q = mp(p) +Mo (resto(p) + q)|))))
+
+(in-theory (disable deg lc rem))

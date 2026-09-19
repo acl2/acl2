@@ -133,6 +133,20 @@
     (atom-list-wfp atoms)
     :hints (("Goal" :induct t))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection type/ispace-var-type-list ((x type-var-listp))
+  :returns (vars type/ispace-var-listp)
+  :short "Lift @(tsee type/ispace-var-type) to lists."
+  (type/ispace-var-type x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection type/ispace-var-ispace-list ((x ispace-var-listp))
+  :returns (vars type/ispace-var-listp)
+  :short "Lift @(tsee type/ispace-var-ispace) to lists."
+  (type/ispace-var-ispace x))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection dim-const-list->val ((x dim-listp))
@@ -1122,6 +1136,59 @@
              :pin (len type.params)
              :sigma 1
              :sigman (len type.params)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-peel-binders ((type typep))
+  :returns (mv (vars type/ispace-var-listp)
+               (rest typep))
+  :short "Peel off the leading universal and product binders of a type,
+          through array types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We peel off universal and product types,
+     collecting their bound variables in order, outermost first,
+     and we traverse array and bracket types to their element types,
+     disregarding their ispaces.
+     Any other type stops the peeling,
+     and is returned along with the collected variables."))
+  (type-case
+   type
+   :var (mv nil (type-fix type))
+   :base (mv nil (type-fix type))
+   :array (type-peel-binders type.elem)
+   :bracket (type-peel-binders type.elem)
+   :fun (mv nil (type-fix type))
+   :funn (mv nil (type-fix type))
+   :forall (b* (((mv vars rest) (type-peel-binders type.body)))
+             (mv (cons (type/ispace-var-type type.param) vars) rest))
+   :foralln (b* (((mv vars rest) (type-peel-binders type.body)))
+              (mv (append (type/ispace-var-type-list type.params) vars) rest))
+   :pi (b* (((mv vars rest) (type-peel-binders type.body)))
+         (mv (cons (type/ispace-var-ispace type.param) vars) rest))
+   :pin (b* (((mv vars rest) (type-peel-binders type.body)))
+          (mv (append (type/ispace-var-ispace-list type.params) vars) rest))
+   :sigma (mv nil (type-fix type))
+   :sigman (mv nil (type-fix type)))
+  :measure (type-count type)
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type/ispace-var-list-to-sets ((vars type/ispace-var-listp))
+  :returns (mv (ivars ispace-var-setp)
+               (tvars type-var-setp))
+  :short "Split a list of type and ispace variables
+          into a set of ispace variables and a set of type variables."
+  (b* (((when (endp vars)) (mv nil nil))
+       ((mv ivars tvars) (type/ispace-var-list-to-sets (cdr vars)))
+       (var (car vars)))
+    (type/ispace-var-case
+     var
+     :type (mv ivars (set::insert var.var tvars))
+     :ispace (mv (set::insert var.var ivars) tvars)))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

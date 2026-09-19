@@ -109851,14 +109851,19 @@ it."
 ; Smith for passing along this issue from Anthropic's Claude.
 
 ; Function filter-disabled-expand-terms was missing a recursive call, albeit in
-; a case that might well be impossible.  That call has been added.  Thanks to
-; Eric Smith for passing along a comment from Anthropic's Claude leading to
-; this change.
+; a case that might well be impossible.  We now cause a hard error in that
+; case, where a comment explains the situation.  Thanks to Eric Smith for
+; passing along a comment from Anthropic's Claude leading to this change.
 
 ; Fixed function pc-command-table-guard to guard its call of function-symbolp
 ; properly.  The missing symbolp test showed up in a raw Lisp error when
 ; evaluating (table pc-command-table 3 3).  Thanks to Eric Smith for passing
 ; along a comment from Anthropic's Claude leading to this change.
+
+; Added a table guard to untrans-table.  Thanks to Eric Smith for passing along
+; the following example from Anthropic's Claude.
+;   (table untrans-table 'binary-append 3)      ; accepted, no complaint
+;   (thm (equal (append x y) (append y x)))     ; -> Memory fault
 
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
@@ -109997,9 +110002,11 @@ it."
  for the general form @('(implies hyp (equiv lhs x))'), all occurrences of
  @('x') in @('hyp') must be @('equiv')-hittable preserving @('iff').  See @(see
  elim).  This corrected a soundness bug discovered by Eric Smith with the help
- of Anthropic's Claude; see @(see community-books)
- @('system/tests/elim-iff-hyp.lisp') and
- @('system/tests/elim-iff-hyp-2.lisp').</p>
+ of Anthropic's Claude, which resulted in @(see community-books)
+ @('system/tests/elim-iff-hyp.lisp') and @('system/tests/elim-iff-hyp-2.lisp').
+ These illustrate the restriction added when an @(':elim') rule is submitted;
+ comments in source function @('apply-instantiated-elim-rule') illustrate a
+ corresponding restriction when the rule is applied.</p>
 
  <p>A restriction on @(see refinement) rules was erroneously not being made in
  the second pass of an @(tsee encapsulate) event.  This has been remedied,

@@ -236,6 +236,9 @@
          (and (expr-rename-ispace-vars-no-capture-p expr.target
                                                     dim-renam
                                                     shape-renam)
+              (type-option-rename-ispace-vars-no-capture-p expr.type?
+                                                           dim-renam
+                                                           shape-renam)
               (b* (((mv bound-dim-vars bound-shape-vars dim-renam shape-renam)
                     (dim/shape-rename-remove-bound (set::insert expr.ispace nil)
                                                    dim-renam
@@ -249,6 +252,9 @@
          (and (expr-rename-ispace-vars-no-capture-p expr.target
                                                     dim-renam
                                                     shape-renam)
+              (type-option-rename-ispace-vars-no-capture-p expr.type?
+                                                           dim-renam
+                                                           shape-renam)
               (b* (((mv bound-dim-vars bound-shape-vars dim-renam shape-renam)
                     (dim/shape-rename-remove-bound (set::mergesort expr.ispaces)
                                                    dim-renam

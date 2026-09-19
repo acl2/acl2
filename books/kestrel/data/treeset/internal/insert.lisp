@@ -45,7 +45,6 @@
 
 (define tree-insert
   (x
-   (hash (unsigned-byte-p 32 hash))
    (tree treep))
   :parents (implementation)
   :short "Insert a value into the tree."
@@ -53,23 +52,27 @@
   (xdoc::topstring
    (xdoc::p
      "The element is inserted with respect to the binary search tree ordering
-      and then rebalanced with respect to the @(tsee heapp) property."))
-  :guard (mbe :logic (equal (hash x) hash)
-              :exec (data::u32-equal (hash x) hash))
+      and then rebalanced with respect to the @(tsee heapp) property.")
+   (xdoc::p
+     "The hash of @('x') is computed lazily, only once the insertion point has
+      been found. In particular, if @('x') is already present in the tree, it
+      is never hashed. The rebalancing on the way back up compares the hashes
+      stored in the nodes, so no further hashing is required. See @(tsee
+      tree-insert-with-hash) for a variant which accepts a precomputed
+      hash."))
   :returns (mv (inp booleanp)
                (tree$ treep))
   (if (tree-empty-p tree)
       (mv nil
-          (tree-node (tree-element hash x) nil nil))
-    (let* ((hash (mbe :logic (hash x) :exec hash))
-           (head (tree->head tree))
+          (tree-node (tree-element (hash x) x) nil nil))
+    (let* ((head (tree->head tree))
            (head-elem (tree-element->val head)))
       (cond ((equal x head-elem)
              (mv t
                  (tree-fix tree)))
             ((<< x head-elem)
              (mv-let (inp left$)
-                     (tree-insert x hash (tree->left tree))
+                     (tree-insert x (tree->left tree))
                (if inp
                    (mv t (tree-fix tree))
                  (let ((head-left$ (tree->head left$))
@@ -86,7 +89,7 @@
                          tree$))))))
             (t
              (mv-let (inp right$)
-                     (tree-insert x hash (tree->right tree))
+                     (tree-insert x (tree->right tree))
                (if inp
                    (mv t (tree-fix tree))
                  (let ((head-right$ (tree->head right$))
@@ -107,15 +110,14 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule tree-empty-p-of-tree-insert.tree$
-  (not (tree-empty-p (mv-nth 1 (tree-insert x hash tree))))
+  (not (tree-empty-p (mv-nth 1 (tree-insert x tree))))
   :induct t
   :enable tree-insert)
 
-(verify-guards tree-insert
-  :hints (("Goal" :in-theory (enable data::u32-equal))))
+(verify-guards tree-insert)
 
 (defrule tree-insert.tree$-type-prescription
-  (consp (mv-nth 1 (tree-insert x hash tree)))
+  (consp (mv-nth 1 (tree-insert x tree)))
   :rule-classes :type-prescription
   :use tree-empty-p-of-tree-insert.tree$
   :enable tree-empty-p
@@ -123,46 +125,32 @@
 
 (defrule tree-insert-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)
-           (equal (tree-insert x hash tree0)
-                  (tree-insert x hash tree1)))
+           (equal (tree-insert x tree0)
+                  (tree-insert x tree1)))
   :rule-classes :congruence
   :induct t
   :enable tree-insert)
 
-;; Logically, the second argument is ignored. We choose to arbitrarily
-;; normalize it to nil.
-(defruled tree-insert-arg2-becomes-nil
-  (equal (tree-insert x hash tree)
-         (tree-insert x nil tree))
-  :induct t
-  :enable tree-insert)
-
-(defrule tree-insert-when-arg2-not-nil-syntaxp
-  (implies (syntaxp (not (equal hash ''nil)))
-           (equal (tree-insert x hash tree)
-                  (tree-insert x nil tree)))
-  :by tree-insert-arg2-becomes-nil)
-
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule tree-insert.inp
-  (equal (mv-nth 0 (tree-insert x hash tree))
+  (equal (mv-nth 0 (tree-insert x tree))
          (tree-search-in x tree))
   :induct t
   :enable (tree-insert
            tree-search-in))
 
 (defruled tree-insert.tree$-when-tree-insert.inp
-  (implies (mv-nth 0 (tree-insert x hash tree))
-           (equal (mv-nth 1 (tree-insert x hash tree))
+  (implies (mv-nth 0 (tree-insert x tree))
+           (equal (mv-nth 1 (tree-insert x tree))
                   (tree-fix tree)))
   :induct t
   :enable (tree-insert
            tree-search-in))
 
 (defrule tree-insert.tree$-when-tree-insert.inp-cheap
-  (implies (mv-nth 0 (tree-insert x hash tree))
-           (equal (mv-nth 1 (tree-insert x hash tree))
+  (implies (mv-nth 0 (tree-insert x tree))
+           (equal (mv-nth 1 (tree-insert x tree))
                   (tree-fix tree)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by tree-insert.tree$-when-tree-insert.inp)
@@ -170,7 +158,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule tree-in-of-tree-insert.tree$
-  (equal (tree-in x (mv-nth 1 (tree-insert y hash tree)))
+  (equal (tree-in x (mv-nth 1 (tree-insert y tree)))
          (or (equal x y)
              (tree-in x tree)))
   :induct t
@@ -179,7 +167,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule <<-all-l-of-tree-insert.tree$
-  (equal (<<-all-l (mv-nth 1 (tree-insert y hash tree)) x)
+  (equal (<<-all-l (mv-nth 1 (tree-insert y tree)) x)
          (and (<< y x)
               (<<-all-l tree x)))
   :induct t
@@ -187,7 +175,7 @@
            tree-insert))
 
 (defrule <<-all-r-of-tree-insert.tree$
-  (equal (<<-all-r x (mv-nth 1 (tree-insert y hash tree)))
+  (equal (<<-all-r x (mv-nth 1 (tree-insert y tree)))
          (and (<< x y)
               (<<-all-r x tree)))
   :induct t
@@ -196,7 +184,7 @@
 
 (defrule bstp-of-tree-insert.tree$-when-bstp
   (implies (bstp tree)
-           (bstp (mv-nth 1 (tree-insert x hash tree))))
+           (bstp (mv-nth 1 (tree-insert x tree))))
   :induct t
   :enable (tree-insert
            bstp
@@ -205,7 +193,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule heap<-all-l-of-tree-insert.tree$
-  (equal (heap<-all-l (mv-nth 1 (tree-insert y hash tree)) x)
+  (equal (heap<-all-l (mv-nth 1 (tree-insert y tree)) x)
          (and (heap< y x)
               (heap<-all-l tree x)))
   :induct t
@@ -217,7 +205,7 @@
 ;; TODO: improve proof
 (defrule heapp-of-tree-insert.tree$-when-heapp
   (implies (heapp tree)
-           (heapp (mv-nth 1 (tree-insert x hash tree))))
+           (heapp (mv-nth 1 (tree-insert x tree))))
   :induct t
   :enable (tree-insert
            heap<-rules
@@ -234,13 +222,13 @@
                    (heap<-all-l tree a))
               (if (or (tree-empty-p tree)
                       (heap< (tree-element->val (tree->head tree)) x))
-                  (and (equal (tree-element->val (tree->head (mv-nth 1 (tree-insert x hash tree))))
+                  (and (equal (tree-element->val (tree->head (mv-nth 1 (tree-insert x tree))))
                               x)
-                       (heap<-all-l (tree->left (mv-nth 1 (tree-insert x hash tree)))
+                       (heap<-all-l (tree->left (mv-nth 1 (tree-insert x tree)))
                                     a)
-                       (heap<-all-l (tree->right (mv-nth 1 (tree-insert x hash tree)))
+                       (heap<-all-l (tree->right (mv-nth 1 (tree-insert x tree)))
                                     a))
-                (heap<-all-l (mv-nth 1 (tree-insert x hash tree)) a)))
+                (heap<-all-l (mv-nth 1 (tree-insert x tree)) a)))
      :induct t
      :enable (tree-insert
               heapp
@@ -250,7 +238,7 @@
 
 (defrule tree-nodes-count-of-tree-insert.tree$
   (implies (bstp tree)
-           (equal (tree-nodes-count (mv-nth 1 (tree-insert x hash tree)))
+           (equal (tree-nodes-count (mv-nth 1 (tree-insert x tree)))
                   (if (tree-in x tree)
                       (tree-nodes-count tree)
                     (+ 1 (tree-nodes-count tree)))))
@@ -264,7 +252,7 @@
 
 (defruled tree-min-of-tree-insert-when-<<-all-r
   (implies (<<-all-r x tree)
-           (equal (tree-min (mv-nth 1 (tree-insert x hash tree)))
+           (equal (tree-min (mv-nth 1 (tree-insert x tree)))
                   x))
   :induct t
   :enable tree-insert)
@@ -277,7 +265,7 @@
   :guard (mbe :logic (equal (hash x) hash)
               :exec (data::u32-equal (hash x) hash))
   (mbe :logic (mv-let (inp tree)
-                      (tree-insert x nil nil)
+                      (tree-insert x nil)
                 (declare (ignore inp))
                 tree)
        :exec (tree-node (tree-element hash x) nil nil))
@@ -288,26 +276,90 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define acl2-number-tree-insert
-  ((x acl2-numberp)
+(define tree-insert-with-hash
+  (x
    (hash (unsigned-byte-p 32 hash))
-   (tree acl2-number-treep))
+   (tree treep))
+  :parents (implementation)
+  :short "Insert a value into the tree, given its hash."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "Logically identical to @(tsee tree-insert). In execution, the hash of
+      @('x') is supplied by the caller instead of being computed at the
+      insertion point. This is preferable when the hash is already known,
+      e.g. because @('x') was taken from another tree."))
   :guard (mbe :logic (equal (hash x) hash)
               :exec (data::u32-equal (hash x) hash))
-  (mbe :logic (tree-insert x hash tree)
+  (mbe :logic (tree-insert x tree)
        :exec
        (if (tree-empty-p tree)
            (mv nil
                (tree-node (tree-element hash x) nil nil))
-         (let* ((hash (mbe :logic (hash x) :exec hash))
-                (head (tree->head tree))
+         (let* ((head (tree->head tree))
+                (head-elem (tree-element->val head)))
+           (cond ((equal x head-elem)
+                  (mv t
+                      (tree-fix tree)))
+                 ((<< x head-elem)
+                  (mv-let (inp left$)
+                          (tree-insert-with-hash x hash (tree->left tree))
+                    (if inp
+                        (mv t (tree-fix tree))
+                      (let ((head-left$ (tree->head left$))
+                            (tree$ (tree-node head
+                                              left$
+                                              (tree->right tree))))
+                        (mv nil
+                            (if (heap<-with-hashes
+                                  head-elem
+                                  (tree-element->val head-left$)
+                                  (tree-element->hash head)
+                                  (tree-element->hash head-left$))
+                                (rotate-right tree$)
+                              tree$))))))
+                 (t
+                  (mv-let (inp right$)
+                          (tree-insert-with-hash x hash (tree->right tree))
+                    (if inp
+                        (mv t (tree-fix tree))
+                      (let ((head-right$ (tree->head right$))
+                            (tree$ (tree-node head
+                                              (tree->left tree)
+                                              right$)))
+                        (mv nil
+                            (if (heap<-with-hashes
+                                  head-elem
+                                  (tree-element->val head-right$)
+                                  (tree-element->hash head)
+                                  (tree-element->hash head-right$))
+                                (rotate-left tree$)
+                              tree$))))))))))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable data::u32-equal
+                                           tree-insert
+                                           tree-insert-with-hash)
+                        ;; TODO: avoid expand hint
+                        :expand (tree-insert x tree))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define acl2-number-tree-insert
+  ((x acl2-numberp)
+   (tree acl2-number-treep))
+  (mbe :logic (tree-insert x tree)
+       :exec
+       (if (tree-empty-p tree)
+           (mv nil
+               (tree-node (tree-element (acl2-number-hash x) x) nil nil))
+         (let* ((head (tree->head tree))
                 (head-elem (tree-element->val head)))
            (cond ((= x head-elem)
                   (mv t
                       (tree-fix tree)))
                  ((data::acl2-number-<< x head-elem)
                   (mv-let (inp left$)
-                          (acl2-number-tree-insert x hash (tree->left tree))
+                          (acl2-number-tree-insert x (tree->left tree))
                     (if inp
                         (mv t (tree-fix tree))
                       (let ((head-left$ (tree->head left$))
@@ -324,7 +376,7 @@
                               tree$))))))
                  (t
                   (mv-let (inp right$)
-                          (acl2-number-tree-insert x hash (tree->right tree))
+                          (acl2-number-tree-insert x (tree->right tree))
                     (if inp
                         (mv t (tree-fix tree))
                       (let ((head-right$ (tree->head right$))
@@ -340,35 +392,30 @@
                                 (rotate-left tree$)
                               tree$))))))))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable data::u32-equal
-                                           tree-insert
+  :guard-hints (("Goal" :in-theory (enable tree-insert
                                            acl2-number-tree-insert
                                            tree-all-acl2-numberp)
                         ;; TODO: avoid expand hint
-                        :expand (tree-insert x nil tree))))
+                        :expand (tree-insert x tree))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define symbol-tree-insert
   ((x symbolp)
-   (hash (unsigned-byte-p 32 hash))
    (tree symbol-treep))
-  :guard (mbe :logic (equal (hash x) hash)
-              :exec (data::u32-equal (hash x) hash))
-  (mbe :logic (tree-insert x hash tree)
+  (mbe :logic (tree-insert x tree)
        :exec
        (if (tree-empty-p tree)
            (mv nil
-               (tree-node (tree-element hash x) nil nil))
-         (let* ((hash (mbe :logic (hash x) :exec hash))
-                (head (tree->head tree))
+               (tree-node (tree-element (symbol-hash x) x) nil nil))
+         (let* ((head (tree->head tree))
                 (head-elem (tree-element->val head)))
            (cond ((eq x head-elem)
                   (mv t
                       (tree-fix tree)))
                  ((data::symbol-<< x head-elem)
                   (mv-let (inp left$)
-                          (symbol-tree-insert x hash (tree->left tree))
+                          (symbol-tree-insert x (tree->left tree))
                     (if inp
                         (mv t (tree-fix tree))
                       (let ((head-left$ (tree->head left$))
@@ -385,7 +432,7 @@
                               tree$))))))
                  (t
                   (mv-let (inp right$)
-                          (symbol-tree-insert x hash (tree->right tree))
+                          (symbol-tree-insert x (tree->right tree))
                     (if inp
                         (mv t (tree-fix tree))
                       (let ((head-right$ (tree->head right$))
@@ -401,35 +448,30 @@
                                 (rotate-left tree$)
                               tree$))))))))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable data::u32-equal
-                                           tree-insert
+  :guard-hints (("Goal" :in-theory (enable tree-insert
                                            symbol-tree-insert
                                            tree-all-symbolp)
                         ;; TODO: avoid expand hint
-                        :expand (tree-insert x nil tree))))
+                        :expand (tree-insert x tree))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eqlable-tree-insert
   ((x eqlablep)
-   (hash (unsigned-byte-p 32 hash))
    (tree eqlable-treep))
-  :guard (mbe :logic (equal (hash x) hash)
-              :exec (data::u32-equal (hash x) hash))
-  (mbe :logic (tree-insert x hash tree)
+  (mbe :logic (tree-insert x tree)
        :exec
        (if (tree-empty-p tree)
            (mv nil
-               (tree-node (tree-element hash x) nil nil))
-         (let* ((hash (mbe :logic (hash x) :exec hash))
-                (head (tree->head tree))
+               (tree-node (tree-element (eqlable-hash x) x) nil nil))
+         (let* ((head (tree->head tree))
                 (head-elem (tree-element->val head)))
            (cond ((eql x head-elem)
                   (mv t
                       (tree-fix tree)))
                  ((data::eqlable-<< x head-elem)
                   (mv-let (inp left$)
-                          (eqlable-tree-insert x hash (tree->left tree))
+                          (eqlable-tree-insert x (tree->left tree))
                     (if inp
                         (mv t (tree-fix tree))
                       (let ((head-left$ (tree->head left$))
@@ -446,7 +488,7 @@
                               tree$))))))
                  (t
                   (mv-let (inp right$)
-                          (eqlable-tree-insert x hash (tree->right tree))
+                          (eqlable-tree-insert x (tree->right tree))
                     (if inp
                         (mv t (tree-fix tree))
                       (let ((head-right$ (tree->head right$))
@@ -462,9 +504,8 @@
                                 (rotate-left tree$)
                               tree$))))))))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable data::u32-equal
-                                           tree-insert
+  :guard-hints (("Goal" :in-theory (enable tree-insert
                                            eqlable-tree-insert
                                            tree-all-eqlablep)
                         ;; TODO: avoid expand hint
-                        :expand (tree-insert x nil tree))))
+                        :expand (tree-insert x tree))))
