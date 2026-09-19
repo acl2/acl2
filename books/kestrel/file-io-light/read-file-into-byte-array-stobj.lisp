@@ -102,8 +102,13 @@
           (if (not channel)
               ;; Error:
               (mv `(:could-not-open-channel ,filename) byte-array-stobj state)
-            (let ( ;; make the array the right size:
-                  (byte-array-stobj (resize-bytes file-length byte-array-stobj)))
+            (let* (;; TODO: Consider reusing the array if it's already the
+                   ;; right size (or perhaps larger, but in that case ensure that callers
+                   ;; don't use the array length to mean the number of valid elements):
+                   ;; Discard old contents, so the call to resize-bytes below doesn't copy them:
+                   (byte-array-stobj (resize-bytes 0 byte-array-stobj))
+                   ;; Make the array the right size:
+                   (byte-array-stobj (resize-bytes file-length byte-array-stobj)))
               (mv-let (byte-array-stobj state)
                 (read-bytes-into-byte-array-stobj 0 file-length channel byte-array-stobj state)
                 (let ((state (close-input-channel channel state)))
