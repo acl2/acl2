@@ -127,6 +127,11 @@
              (axe-tree-listp trees))
     :flag darg-tree-listp))
 
+(defthmd darg-treep-when-dargp
+  (implies (dargp x)
+           (darg-treep x))
+  :hints (("Goal" :expand (darg-treep x))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (mutual-recursion
