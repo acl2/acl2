@@ -3435,7 +3435,7 @@
                          (hide-lambdas non-rec-fns-inst-hyps)
                          (non-rec-def-rules-msg non-rec-fns-inst-hyps-alist)))
               (t state))
-             (chk-triggers match-free name hyps (cdr terms)
+             (chk-triggers name match-free hyps (cdr terms)
                            hyps-vars concls-vars ctx ens wrld state)))))))
 
 (defun destructure-forward-chaining-term (term wrld)
