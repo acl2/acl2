@@ -19,7 +19,9 @@
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
 
+(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -74,7 +76,18 @@
   ((first uid)
    (second uid))
   :pred uid-pairp
-  :layout :fulltree)
+  :layout :fulltree
+  ///
+
+  (defrule car-of-uid-pair
+    (equal (car (uid-pair first second))
+           (uid-fix first))
+    :enable uid-pair)
+
+  (defrule cdr-of-uid-pair
+    (equal (cdr (uid-pair first second))
+           (uid-fix second))
+    :enable uid-pair))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -83,6 +96,70 @@
   :elt-type uid-pair
   :pred uid-pair-setp
   :fix uid-pair-sfix)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uid-pair-swap ((pair uid-pairp))
+  :returns (new-pair uid-pairp)
+  :parents (uid-pair)
+  :short "Swap the components of a pair of unique identifiers."
+  (b* (((uid-pair pair) pair))
+    (make-uid-pair :first pair.second :second pair.first))
+
+  ///
+
+  (defrule uid-pair->first-of-uid-pair-swap
+    (equal (uid-pair->first (uid-pair-swap pair))
+           (uid-pair->second pair)))
+
+  (defrule uid-pair->second-of-uid-pair-swap
+    (equal (uid-pair->second (uid-pair-swap pair))
+           (uid-pair->first pair)))
+
+  (defrule uid-pair-swap-of-uid-pair
+    (equal (uid-pair-swap (uid-pair first second))
+           (uid-pair second first)))
+
+  (defrule uid-pair-swap-of-uid-pair-swap
+    (equal (uid-pair-swap (uid-pair-swap pair))
+           (uid-pair-fix pair)))
+
+  (defrule equal-of-uid-pair-swap
+    (equal (equal (uid-pair-swap pair1) (uid-pair-fix pair2))
+           (equal (uid-pair-fix pair1) (uid-pair-swap pair2)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define uid-pair-set-swap ((set uid-pair-setp))
+  :returns (new-set uid-pair-setp)
+  :parents (uid-pair-set)
+  :short "Swap the components of every pair in a set of pairs
+          of unique identifiers."
+  (b* ((set (uid-pair-sfix set))
+       ((when (treeset::emptyp set)) (treeset::empty))
+       (min (treeset::min set)))
+    (treeset::insert (uid-pair-swap min)
+                     (uid-pair-set-swap (treeset::delete min set))))
+  :measure (treeset::cardinality (uid-pair-sfix set))
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule in-of-uid-pair-set-swap
+    (equal (treeset::in pair (uid-pair-set-swap set))
+           (and (uid-pairp pair)
+                (treeset::in (uid-pair-swap pair) (uid-pair-sfix set))))
+    :induct t)
+
+  (defrule uid-pair-set-swap-of-empty
+    (equal (uid-pair-set-swap (treeset::empty))
+           (treeset::empty)))
+
+  (defrule insert-of-uid-pair-and-uid-pair-set-swap
+    (equal (treeset::insert (uid-pair first second) (uid-pair-set-swap set))
+           (uid-pair-set-swap (treeset::insert (uid-pair second first)
+                                               (uid-pair-sfix set))))
+    :enable treeset::extensionality-no-backchain-limit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
