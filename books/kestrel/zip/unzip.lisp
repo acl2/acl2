@@ -510,7 +510,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp path-to-decompressed-bytes-alist).
-;; Go through the central-directory-headers.  For each, if it'sin the target-paths, read its and decompress corresponding file, including its local-file-header.
+;; Go through the central-directory-headers.  For each, if it's in the target-paths, read and decompress its corresponding file, including its local-file-header.
 ;; TODO: What if the same path appears multiple times in the .zip?  There are security issues related that that (e.g., in Android).
 ;; Is index really more of an offset?
 (defund unzip-files (target-paths
@@ -529,7 +529,7 @@
                   :stobjs byte-array-stobj))
   (if (zp num-headers)
       (mv (erp-nil) (reverse acc)) ; could skip the reverse if desired
-    (b* (                            ;; Read the next central directory header:
+    (b* (;; Read the next central directory header:
          ((mv erp header index) (read-central-directory-header index byte-array-stobj)) ; todo: we could process less than the whole header, but they are variable size
          ((when erp) (mv erp nil))
          ;; Get the file path:
@@ -567,6 +567,7 @@
                     (mv :bad-bytes nil))
                    )
                 (mv (erp-nil) (acons filename decompressed-file-bytes acc)))
+            ;; skip this one:
             (mv (erp-nil) acc)))
          ((when erp) (mv erp nil)))
       (unzip-files target-paths (+ -1 num-headers) index verbosep byte-array-stobj acc))))
