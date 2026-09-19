@@ -12,8 +12,14 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
+(include-book "kestrel/utilities/arith-fix-and-equiv-defs" :dir :system)
+
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
+
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
+(local (include-book "kestrel/utilities/acl2-count" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -22,27 +28,43 @@
   :short "A three-valued logic."
   :long
   (xdoc::topstring
-    (xdoc::p
-      "This logic extends booleans and boolean operations with a third value,
-       @(':unknown'). As the symbol name suggests, this value indicates the
-       result may be @('nil') or @('t'), but we are uncertain which. You might
-       also read it as ``maybe''.")
-    (xdoc::p
-      "When applied to boolean values, the three-valued logic operators behave
-       exactly like their traditional boolean counterparts.")
-    (xdoc::p
-      "The partial order @(tsee 3<) relates more specific values to less
-       specific values. More specifically, we have just @('(3< nil :unknown)')
-       and @('(3< t :unknown)'). This three-valued logic forms a
-       join-semilattice, where @(tsee 3join) is the join.")
-    (xdoc::p
-      "(There is no meet, because there is no lower bound for @('nil') and
-       @('t'). If we wished to add a meet, we would need to introduce a bottom
-       element, which we might call ``contradiction''. The interpretation of
-       this element is more complicated &mdash; it would indicate that the
-       value is <i>both</i> @('nil') <i>and</i> @('t'). This would make a
-       sensible four-valued logic, which we may add at some point in the
-       future. For now, we avoid the complication.)")))
+   (xdoc::p
+    "This logic extends booleans and boolean operations with a third value,
+     @(':unknown').
+     As the symbol name suggests,
+     this value indicates the result may be @('nil') or @('t'),
+     but we are uncertain which.
+     You might also read it as ``maybe''.")
+   (xdoc::p
+    "When applied to boolean values,
+     the three-valued logic operators behave
+     exactly like their traditional boolean counterparts.")
+   (xdoc::p
+    "Two partial orders are defined on this logic.
+     The information order @(tsee 3info<), also known as the knowledge order,
+     relates more specific values to less specific values.
+     That is, we have
+     just @('(3info< nil :unknown)') and @('(3info< t :unknown)').
+     Under this order, the logic forms a join-semilattice,
+     where @(tsee 3join) is the join.")
+   (xdoc::p
+    "(There is no meet under @(tsee 3info<),
+     because there is no lower bound for @('nil') and @('t').
+     If we wished to add a meet, we would need to introduce a bottom element,
+     which we might call ``contradiction''.
+     The interpretation of this element is more complicated &mdash;
+     it would indicate that the value is
+     <em>both</em> @('nil') <em>and</em> @('t').
+     This would make a sensible four-valued logic,
+     which we may add at some point in the future.
+     For now, we avoid the complication.)")
+   (xdoc::p
+    "The truth order @(tsee 3truth<) instead relates
+     ``falser'' values to ``truer' values:
+     @('(3truth< nil :unknown)'), @('(3truth< :unknown t)'),
+     and so @('(3truth< nil t)').
+     Under this order, the logic forms a lattice, where
+     @(tsee 3and) is the meet and @(tsee 3or) is the join.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -51,16 +73,14 @@
   :parents (3vl)
   :short "Recognizer for three-value logic values."
   :long
-  (xdoc::topstring
-   (xdoc::p
-     "Checks that the recognized value is @('nil'), @('t'), or @(':unknown')."))
+  (xdoc::topstring-p
+   "Checks that the recognized value is @('nil'), @('t'), or @(':unknown').")
   (or (eq x t)
       (eq x nil)
-      (eq x :unknown)))
+      (eq x :unknown))
+  :type-prescription :none)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t 3p)))
 
 (defrule 3p-type-prescription
   (booleanp (3p x))
@@ -99,18 +119,16 @@
   :parents (3vl)
   :short "A fixing function for @(see 3p)s."
   :long
-  (xdoc::topstring
-   (xdoc::p
-     "If the argument is not a @(see 3p), we default to @(':unknown')."))
+  (xdoc::topstring-p
+   "If the argument is not a @(see 3p), we default to @(':unknown').")
   (mbe :logic (if (3p x)
                   x
                 :unknown)
        :exec x)
-  :inline t)
+  :inline t
+  :type-prescription :none)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t 3fix)))
 
 (defrule 3fix-type-prescription
   (3p (3fix x))
@@ -155,331 +173,326 @@
 
 (defrule 3fix-under-iff
   (iff (3fix x)
-       x)
+       (double-rewrite x))
   :enable 3fix)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define 3=
+(define 3equiv
   ((x 3p)
    (y 3p))
   :returns (yes/no booleanp)
   :parents (3vl)
   :short "Equivalence of @(see 3p)s."
   :long
-  (xdoc::topstring
-   (xdoc::p
-     "This is a typical equality of fixers. Note that this is <i>not</i> the
-      same as @(tsee 3iff)."))
+  (xdoc::topstring-p
+   "This is a typical equality of fixers.
+    Note that this is <em>not</em> the same as @(tsee 3iff).")
   (eq (3fix x)
       (3fix y))
-  :inline t)
+  :inline t
+  :type-prescription :none)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t 3=)))
+(defrule 3equiv-type-prescription
+  (booleanp (3equiv x y))
+  :rule-classes ((:type-prescription :typed-term (3equiv x y))))
 
-(defrule 3=-type-prescription
-  (booleanp (3= x y))
-  :rule-classes ((:type-prescription :typed-term (3= x y))))
+(defequiv 3equiv
+  :hints (("Goal" :in-theory (enable 3equiv))))
 
-(defequiv 3=
-  :hints (("Goal" :in-theory (enable 3=))))
-
-(defrule 3fix-when-3=-congruence
-  (implies (3= tri0 tri1)
+(defrule 3fix-when-3equiv-congruence
+  (implies (3equiv tri0 tri1)
            (equal (3fix tri0)
                   (3fix tri1)))
   :rule-classes :congruence
-  :enable 3=)
+  :enable 3equiv)
 
-(defrule 3fix-under-3=
-  (3= (3fix x)
-      x)
-  :enable 3=)
+(defrule 3fix-under-3equiv
+  (3equiv (3fix x)
+          x)
+  :enable 3equiv)
 
-(defrule iff-when-3=
-  (implies (3= x y)
+(defrule iff-when-3equiv
+  (implies (3equiv x y)
            (iff x y))
   :rule-classes :refinement
-  :enable 3=)
+  :enable 3equiv)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define 3<
+(define 3info<
   ((x 3p)
    (y 3p))
   :returns (yes/no booleanp)
   :parents (3vl)
   :short "Compare specificity of @(see 3p)s."
   :long
-  (xdoc::topstring
-   (xdoc::p
-     "This forms a join-semilattice on @(see 3p)s. See @(see 3vl) for more
-      detail."))
+  (xdoc::topstring-p
+   "This forms a join-semilattice on @(see 3p)s.
+    See @(see 3vl) for more detail.")
   (let ((x (3fix x))
         (y (3fix y)))
     (and (not (eq x :unknown))
          (eq y :unknown)))
-  :inline t)
+  :inline t
+  :type-prescription :none)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t 3<)))
+(defrule 3info<-type-prescription
+  (booleanp (3info< x y))
+  :rule-classes ((:type-prescription :typed-term (3info< x y))))
 
-(defrule 3<-type-prescription
-  (booleanp (3< x y))
-  :rule-classes ((:type-prescription :typed-term (3< x y))))
-
-(defrule 3<-when-3=-of-arg1-congruence
-  (implies (3= x0 x1)
-           (equal (3< x0 y)
-                  (3< x1 y)))
+(defrule 3info<-when-3equiv-of-arg1-congruence
+  (implies (3equiv x0 x1)
+           (equal (3info< x0 y)
+                  (3info< x1 y)))
   :rule-classes :congruence
-  :enable 3<)
+  :enable 3info<)
 
-(defrule 3<-when-3=-of-arg2-congruence
-  (implies (3= y0 y1)
-           (equal (3< x y0)
-                  (3< x y1)))
+(defrule 3info<-when-3equiv-of-arg2-congruence
+  (implies (3equiv y0 y1)
+           (equal (3info< x y0)
+                  (3info< x y1)))
   :rule-classes :congruence
-  :enable 3<)
+  :enable 3info<)
 
-(defruled 3<-when-booleanp-of-arg1
+(defruled 3info<-when-booleanp-of-arg1
   (implies (booleanp x)
-           (equal (3< x y)
+           (equal (3info< x y)
                   (not (booleanp y))))
-  :enable 3<)
+  :enable 3info<)
 
-(defrule 3<-when-booleanp-of-arg1-cheap
+(defrule 3info<-when-booleanp-of-arg1-cheap
   (implies (booleanp x)
-           (equal (3< x y)
+           (equal (3info< x y)
                   (not (booleanp y))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by 3<-when-booleanp-of-arg1)
+  :by 3info<-when-booleanp-of-arg1)
 
-(defruled 3<-when-booleanp-of-arg2
+(defruled 3info<-when-booleanp-of-arg2
   (implies (booleanp y)
-           (not (3< x y)))
-  :enable 3<)
+           (not (3info< x y)))
+  :enable 3info<)
 
-(defrule 3<-when-booleanp-of-arg2-cheap
+(defrule 3info<-when-booleanp-of-arg2-cheap
   (implies (booleanp y)
-           (not (3< x y)))
+           (not (3info< x y)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by 3<-when-booleanp-of-arg2)
+  :by 3info<-when-booleanp-of-arg2)
 
-(defruled 3<-when-not-booleanp-of-arg1
+(defruled 3info<-when-not-booleanp-of-arg1
   (implies (not (booleanp x))
-           (not (3< x y)))
-  :enable 3<)
+           (not (3info< x y)))
+  :enable 3info<)
 
-(defrule 3<-when-not-booleanp-of-arg1-cheap
+(defrule 3info<-when-not-booleanp-of-arg1-cheap
   (implies (not (booleanp x))
-           (not (3< x y)))
+           (not (3info< x y)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by 3<-when-not-booleanp-of-arg1)
+  :by 3info<-when-not-booleanp-of-arg1)
 
-(defruled 3<-when-not-booleanp-of-arg2
+(defruled 3info<-when-not-booleanp-of-arg2
   (implies (not (booleanp y))
-           (equal (3< x y)
+           (equal (3info< x y)
                   (booleanp x)))
-  :enable 3<)
+  :enable 3info<)
 
-(defrule 3<-when-not-booleanp-of-arg2-cheap
+(defrule 3info<-when-not-booleanp-of-arg2-cheap
   (implies (not (booleanp y))
-           (equal (3< x y)
+           (equal (3info< x y)
                   (booleanp x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by 3<-when-not-booleanp-of-arg2)
+  :by 3info<-when-not-booleanp-of-arg2)
 
-(defrule irreflexivity-of-3<
-  (not (3< x x))
-  :enable 3<)
+(defrule irreflexivity-of-3info<
+  (not (3info< x x))
+  :enable 3info<)
 
-(defruled asymmetry-of-3<
-  (implies (3< x y)
-           (not (3< y x)))
-  :enable 3<)
+(defruled asymmetry-of-3info<
+  (implies (3info< x y)
+           (not (3info< y x)))
+  :enable 3info<)
 
-(defrule asymmetry-of-3<-forward-chaining
-  (implies (3< x y)
-           (not (3< y x)))
+(defrule asymmetry-of-3info<-forward-chaining
+  (implies (3info< x y)
+           (not (3info< y x)))
   :rule-classes :forward-chaining
-  :by asymmetry-of-3<)
+  :by asymmetry-of-3info<)
 
-(defruled 3fix-when-3<
-  (implies (3< x y)
+(defruled 3fix-when-3info<
+  (implies (3info< x y)
            (equal (3fix y)
                   :unknown))
-  :enable 3<)
+  :enable 3info<)
 
-(defrule arg2-under-3=-when-3<-forward-chaining
-  (implies (3< x y)
-           (3= y :unknown))
+(defrule arg2-under-3equiv-when-3info<-forward-chaining
+  (implies (3info< x y)
+           (3equiv y :unknown))
   :rule-classes :forward-chaining
-  :enable (3<
-           3=))
+  :enable (3info<
+           3equiv))
 
-;; 3< is technically transitive, but it isn't a useful rule, since it is
-;; trivialized by arg2-under-3=-when-3<-forward-chaining.
-(defruled transitivity-of-3<
-  (implies (and (3< x y)
-                (3< y z))
-           (3< x z)))
+;; 3info< is technically transitive, but it isn't a useful rule, since it is
+;; trivialized by arg2-under-3equiv-when-3info<-forward-chaining.
+(defruled transitivity-of-3info<
+  (implies (and (3info< x y)
+                (3info< y z))
+           (3info< x z)))
 
-(defruled booleanp-when-3<
-  (implies (3< x y)
+(defruled booleanp-when-3info<
+  (implies (and (3equiv x$ (double-rewrite x))
+                (3info< x y))
            (booleanp x))
-  :enable 3<)
+  :enable 3info<)
 
-(defrule booleanp-when-3<-forward-chaining
-  (implies (3< x y)
+(defrule booleanp-when-3info<-forward-chaining
+  (implies (3info< x y)
            (booleanp x))
   :rule-classes :forward-chaining
-  :by booleanp-when-3<)
+  :use booleanp-when-3info<)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define 3<=
+(define 3info<=
   ((x 3p)
    (y 3p))
   :returns (yes/no booleanp)
   :parents (3vl)
   :short "Compare weak specificity of @(see 3p)s."
   :long
-  (xdoc::topstring
-   (xdoc::p
-     "Recognizes values that are either @(tsee 3<) or @(tsee 3=)."))
+  (xdoc::topstring-p
+   "Recognizes values that are either @(tsee 3info<) or @(tsee 3equiv).")
   (mbe :logic (or (equal (3fix x)
                          (3fix y))
-                  (3< x y))
+                  (3info< x y))
        :exec (or (eq x y)
                  (eq y :unknown)))
   :inline t
-  :guard-hints (("Goal" :in-theory (enable 3<))))
+  :guard-hints (("Goal" :in-theory (enable 3info<)))
+  :type-prescription :none)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t 3<=)))
+(defrule 3info<=-type-prescription
+  (booleanp (3info<= x y))
+  :rule-classes ((:type-prescription :typed-term (3info<= x y))))
 
-(defrule 3<=-type-prescription
-  (booleanp (3<= x y))
-  :rule-classes ((:type-prescription :typed-term (3<= x y))))
-
-(defrule 3<=-when-3=-of-arg1-congruence
-  (implies (3= x0 x1)
-           (equal (3<= x0 y)
-                  (3<= x1 y)))
+(defrule 3info<=-when-3equiv-of-arg1-congruence
+  (implies (3equiv x0 x1)
+           (equal (3info<= x0 y)
+                  (3info<= x1 y)))
   :rule-classes :congruence
-  :enable 3<=)
+  :enable 3info<=)
 
-(defrule 3<=-when-3=-of-arg2-congruence
-  (implies (3= y0 y1)
-           (equal (3<= x y0)
-                  (3<= x y1)))
+(defrule 3info<=-when-3equiv-of-arg2-congruence
+  (implies (3equiv y0 y1)
+           (equal (3info<= x y0)
+                  (3info<= x y1)))
   :rule-classes :congruence
-  :enable 3<=)
+  :enable 3info<=)
 
-(defruled 3<=-when-booleanp-of-arg2
+(defruled 3info<=-when-booleanp-of-arg2
   (implies (booleanp y)
-           (equal (3<= x y)
+           (equal (3info<= x y)
                   (equal x y)))
-  :enable 3<=)
+  :enable 3info<=)
 
-(defrule 3<=-when-booleanp-of-arg2-cheap
+(defrule 3info<=-when-booleanp-of-arg2-cheap
   (implies (booleanp y)
-           (equal (3<= x y)
+           (equal (3info<= x y)
                   (equal x y)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by 3<=-when-booleanp-of-arg2)
+  :by 3info<=-when-booleanp-of-arg2)
 
-(defruled 3<=-when-not-booleanp-of-arg1
+(defruled 3info<=-when-not-booleanp-of-arg1
   (implies (not (booleanp x))
-           (equal (3<= x y)
+           (equal (3info<= x y)
                   (not (booleanp y))))
-  :enable 3<=)
+  :enable 3info<=)
 
-(defrule 3<=-when-not-booleanp-of-arg1-cheap
+(defrule 3info<=-when-not-booleanp-of-arg1-cheap
   (implies (not (booleanp x))
-           (equal (3<= x y)
+           (equal (3info<= x y)
                   (not (booleanp y))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by 3<=-when-not-booleanp-of-arg1)
+  :by 3info<=-when-not-booleanp-of-arg1)
 
-(defruled 3<=-when-not-booleanp-of-arg2
+(defruled 3info<=-when-not-booleanp-of-arg2
   (implies (not (booleanp y))
-           (3<= x y))
-  :enable 3<=)
+           (3info<= x y))
+  :enable 3info<=)
 
-(defrule 3<=-when-not-booleanp-of-arg2-cheap
+(defrule 3info<=-when-not-booleanp-of-arg2-cheap
   (implies (not (booleanp y))
-           (3<= x y))
+           (3info<= x y))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by 3<=-when-not-booleanp-of-arg2)
+  :by 3info<=-when-not-booleanp-of-arg2)
 
-(defruled 3<=-of-nil
-  (equal (3<= nil y)
+(defruled 3info<=-of-nil
+  (equal (3info<= nil y)
          (not (equal y t)))
-  :enable (3<=
+  :enable (3info<=
            booleanp))
 
-(defruled 3<=-of-t
-  (equal (3<= t y)
-         (and y t))
-  :enable 3<=)
+(defruled 3info<=-of-t
+  (equal (3info<= t y)
+         (and (double-rewrite y) t))
+  :enable 3info<=)
 
-(defrule reflexivity-of-3<=
-  (3<= x x)
-  :enable 3<=)
+(defrule reflexivity-of-3info<=
+  (3info<= x x)
+  :enable 3info<=)
 
-(defruled antisymmetry-of-3<=-weak
-  (implies (and (3<= x y)
-                (3<= y x))
-           (3= x y))
-  :enable (3<=
-           3=))
+(defruled antisymmetry-of-3info<=-weak
+  (implies (and (3info<= x y)
+                (3info<= y x))
+           (3equiv x y))
+  :enable (3info<=
+           3equiv))
 
-(defruled antisymmetry-of-3<=
-  (equal (and (3<= x y)
-              (3<= y x))
-         (3= x y))
-  :use antisymmetry-of-3<=-weak)
+(defruled antisymmetry-of-3info<=
+  (equal (and (3info<= x y)
+              (3info<= y x))
+         (3equiv x y))
+  :use antisymmetry-of-3info<=-weak)
 
-(defrule antisymmetry-of-3<=-forward-chaining
-  (implies (and (3<= x y)
-                (3<= y x))
-           (3= x y))
+(defrule antisymmetry-of-3info<=-forward-chaining
+  (implies (and (3info<= x y)
+                (3info<= y x))
+           (3equiv x y))
   :rule-classes :forward-chaining
-  :by antisymmetry-of-3<=-weak)
+  :by antisymmetry-of-3info<=-weak)
 
-(defrule transitivity-of-3<=
-  (implies (and (3<= x y)
-                (3<= y z))
-           (3<= x z))
-  :enable (3<=
+(defrule transitivity-of-3info<=
+  (implies (and (3info<= x y)
+                (3info<= y z))
+           (3info<= x z))
+  :enable (3info<=
            3fix))
 
-(defrule 3<=-when-3<
-  (implies (3< x y)
-           (3<= x y))
-  :enable 3<=)
+(defrule 3info<=-when-3info<
+  (implies (3info< x y)
+           (3info<= x y))
+  :enable 3info<=)
 
-(defruled 3<-when-not-3<=
-  (implies (not (3<= x y))
-           (not (3< x y))))
+(defruled 3info<-when-not-3info<=
+  (implies (not (3info<= x y))
+           (not (3info< x y))))
 
-(defrule 3<-when-not-3<=-forward-chaining
-  (implies (not (3<= x y))
-           (not (3< x y)))
+(defrule 3info<-when-not-3info<=-forward-chaining
+  (implies (not (3info<= x y))
+           (not (3info< x y)))
   :rule-classes :forward-chaining
-  :by 3<-when-not-3<=)
+  :by 3info<-when-not-3info<=)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection 3join
   :parents (3vl)
-  :short "The join on the @(tsee 3<) semilattice."
+  :short "The join on the @(tsee 3info<) semilattice."
 
   (define binary-3join$inline
     ((x 3p)
@@ -490,6 +503,7 @@
       (if (eq x y)
           x
         :unknown))
+    :type-prescription :none
     ///
 
     (defmacro 3join (x &rest rest)
@@ -501,21 +515,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t 3join)))
-
 (defrule 3join-type-prescription
   (3p (3join x y))
   :rule-classes ((:type-prescription :typed-term (3join x y))))
 
-(defrule 3join-when-3=-of-arg1-congruence
-  (implies (3= x0 x1)
+(defrule 3join-when-3equiv-of-arg1-congruence
+  (implies (3equiv x0 x1)
            (equal (3join x0 y)
                   (3join x1 y)))
   :rule-classes :congruence
   :enable 3join)
 
-(defrule 3join-when-3=-of-arg2-congruence
-  (implies (3= y0 y1)
+(defrule 3join-when-3equiv-of-arg2-congruence
+  (implies (3equiv y0 y1)
            (equal (3join x y0)
                   (3join x y1)))
   :rule-classes :congruence
@@ -573,21 +585,21 @@
   :by 3join-when-not-booleanp-of-arg2)
 
 (defruled monotonicity-of-3join-left
-  (implies (and (3<= x0 x1))
-           (3<= (3join x0 y)
+  (implies (and (3info<= x0 x1))
+           (3info<= (3join x0 y)
                 (3join x1 y)))
   :enable 3join)
 
 (defruled monotonicity-of-3join-right
-  (implies (and (3<= y0 y1))
-           (3<= (3join x y0)
+  (implies (and (3info<= y0 y1))
+           (3info<= (3join x y0)
                 (3join x y1)))
   :enable 3join)
 
 (defrule monotonicity-of-3join
-  (implies (and (3<= x0 x1)
-                (3<= y0 y1))
-           (3<= (3join x0 y0)
+  (implies (and (3info<= x0 x1)
+                (3info<= y0 y1))
+           (3info<= (3join x0 y0)
                 (3join x1 y1)))
   :enable 3join)
 
@@ -601,18 +613,17 @@
     (if (eq x :unknown)
         :unknown
       (not x)))
-  :inline t)
+  :inline t
+  :type-prescription :none)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t 3not)))
 
 (defrule 3not-type-prescription
   (3p (3not x))
   :rule-classes ((:type-prescription :typed-term (3not x))))
 
-(defrule 3not-when-3=-congruence
-  (implies (3= x0 x1)
+(defrule 3not-when-3equiv-congruence
+  (implies (3equiv x0 x1)
            (equal (3not x0)
                   (3not x1)))
   :rule-classes :congruence
@@ -632,17 +643,17 @@
            3p))
 
 (defruled monotonicity-of-3not-weak
-  (implies (3<= x0 x1)
-           (3<= (3not x0)
+  (implies (3info<= x0 x1)
+           (3info<= (3not x0)
                 (3not x1)))
   :enable (3not
-           3<=
-           3<))
+           3info<=
+           3info<))
 
 (defrule monotonicity-of-3not
-  (equal (3<= (3not x0)
+  (equal (3info<= (3not x0)
               (3not x1))
-         (3<= x0 x1))
+         (3info<= x0 x1))
   :enable (3not
            3fix
            3p))
@@ -650,13 +661,13 @@
 (defruled 3not-when-booleanp
   (implies (booleanp x)
            (equal (3not x)
-                  (not x)))
+                  (not (double-rewrite x))))
   :enable 3not)
 
 (defrule 3not-when-booleanp-cheap
   (implies (booleanp x)
            (equal (3not x)
-                  (not x)))
+                  (not (double-rewrite x))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by 3not-when-booleanp)
 
@@ -675,6 +686,7 @@
       (cond ((or (not x) (not y)) nil)
             ((or (eq x :unknown) (eq y :unknown)) :unknown)
             (t t)))
+    :type-prescription :none
     ///
 
     (defmacro 3and (&rest rest)
@@ -689,21 +701,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t 3and)))
-
 (defrule 3and-type-prescription
   (3p (3and x y))
   :rule-classes ((:type-prescription :typed-term (3and x y))))
 
-(defrule 3and-when-3=-of-arg1-congruence
-  (implies (3= x0 x1)
+(defrule 3and-when-3equiv-of-arg1-congruence
+  (implies (3equiv x0 x1)
            (equal (3and x0 y)
                   (3and x1 y)))
   :rule-classes :congruence
   :enable 3and)
 
-(defrule 3and-when-3=-of-arg2-congruence
-  (implies (3= y0 y1)
+(defrule 3and-when-3equiv-of-arg2-congruence
+  (implies (3equiv y0 y1)
            (equal (3and x y0)
                   (3and x y1)))
   :rule-classes :congruence
@@ -711,8 +721,8 @@
 
 (defrule booleanp-of-3and
   (equal (booleanp (3and x y))
-         (or (not x)
-             (not y)
+         (or (not (double-rewrite x))
+             (not (double-rewrite y))
              (and (equal x t)
                   (equal y t))))
   :enable (3and
@@ -768,26 +778,26 @@
   :enable 3and)
 
 (defrule monotonicity-of-3and
-  (implies (and (3<= x0 x1)
-                (3<= y0 y1))
-           (3<= (3and x0 y0)
+  (implies (and (3info<= x0 x1)
+                (3info<= y0 y1))
+           (3info<= (3and x0 y0)
                 (3and x1 y1)))
   :enable (3and
-           3<=
-           3<))
+           3info<=
+           3info<))
 
 (defruled 3and-when-booleanp
   (implies (and (booleanp x)
                 (booleanp y))
            (equal (3and x y)
-                  (and x y)))
+                  (and (double-rewrite x) y)))
   :enable 3and)
 
 (defrule 3and-when-booleanp-cheap
   (implies (and (booleanp x)
                 (booleanp y))
            (equal (3and x y)
-                  (and x y)))
+                  (and (double-rewrite x) y)))
   :rule-classes ((:rewrite :backchain-limit-lst (0 0)))
   :by 3and-when-booleanp)
 
@@ -806,6 +816,7 @@
       (cond ((or (eq x t) (eq y t)) t)
             ((or (eq x :unknown) (eq y :unknown)) :unknown)
             (t nil)))
+    :type-prescription :none
     ///
 
     (defmacro 3or (&rest rest)
@@ -820,21 +831,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t 3or)))
-
 (defrule 3or-type-prescription
   (3p (3or x y))
   :rule-classes ((:type-prescription :typed-term (3or x y))))
 
-(defrule 3or-when-3=-of-arg1-congruence
-  (implies (3= x0 x1)
+(defrule 3or-when-3equiv-of-arg1-congruence
+  (implies (3equiv x0 x1)
            (equal (3or x0 y)
                   (3or x1 y)))
   :rule-classes :congruence
   :enable 3or)
 
-(defrule 3or-when-3=-of-arg2-congruence
-  (implies (3= y0 y1)
+(defrule 3or-when-3equiv-of-arg2-congruence
+  (implies (3equiv y0 y1)
            (equal (3or x y0)
                   (3or x y1)))
   :rule-classes :congruence
@@ -901,26 +910,26 @@
   :enable 3or)
 
 (defrule monotonicity-of-3or
-  (implies (and (3<= x0 x1)
-                (3<= y0 y1))
-           (3<= (3or x0 y0)
+  (implies (and (3info<= x0 x1)
+                (3info<= y0 y1))
+           (3info<= (3or x0 y0)
                 (3or x1 y1)))
   :enable (3or
-           3<=
-           3<))
+           3info<=
+           3info<))
 
 (defruled 3or-when-booleanp
   (implies (and (booleanp x)
                 (booleanp y))
            (equal (3or x y)
-                  (or x y)))
+                  (or (double-rewrite x) y)))
   :enable 3or)
 
 (defrule 3or-when-booleanp-cheap
   (implies (and (booleanp x)
                 (booleanp y))
            (equal (3or x y)
-                  (or x y)))
+                  (or (double-rewrite x) y)))
   :rule-classes ((:rewrite :backchain-limit-lst (0 0)))
   :by 3or-when-booleanp)
 
@@ -940,6 +949,7 @@
               (eq y :unknown))
           :unknown
         (not (eq x y))))
+    :type-prescription :none
     ///
 
     (defmacro 3xor (&rest rest)
@@ -954,21 +964,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t 3xor)))
-
 (defrule 3xor-type-prescription
   (3p (3xor x y))
   :rule-classes ((:type-prescription :typed-term (3xor x y))))
 
-(defrule 3xor-when-3=-of-arg1-congruence
-  (implies (3= x0 x1)
+(defrule 3xor-when-3equiv-of-arg1-congruence
+  (implies (3equiv x0 x1)
            (equal (3xor x0 y)
                   (3xor x1 y)))
   :rule-classes :congruence
   :enable 3xor)
 
-(defrule 3xor-when-3=-of-arg2-congruence
-  (implies (3= y0 y1)
+(defrule 3xor-when-3equiv-of-arg2-congruence
+  (implies (3equiv y0 y1)
            (equal (3xor x y0)
                   (3xor x y1)))
   :rule-classes :congruence
@@ -1026,13 +1034,13 @@
          (3not x)))
 
 (defrule monotonicity-of-3xor
-  (implies (and (3<= x0 x1)
-                (3<= y0 y1))
-           (3<= (3xor x0 y0)
+  (implies (and (3info<= x0 x1)
+                (3info<= y0 y1))
+           (3info<= (3xor x0 y0)
                 (3xor x1 y1)))
   :enable (3xor
-           3<=
-           3<))
+           3info<=
+           3info<))
 
 (defruled 3xor-when-booleanp
   (implies (and (booleanp x)
@@ -1065,25 +1073,24 @@
         (if (eq x t)
             y
           :unknown)))
-  :inline t)
+  :inline t
+  :type-prescription :none)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t 3implies)))
 
 (defrule 3implies-type-prescription
   (3p (3implies x y))
   :rule-classes ((:type-prescription :typed-term (3implies x y))))
 
-(defrule 3implies-when-3=-of-arg1-congruence
-  (implies (3= x0 x1)
+(defrule 3implies-when-3equiv-of-arg1-congruence
+  (implies (3equiv x0 x1)
            (equal (3implies x0 y)
                   (3implies x1 y)))
   :rule-classes :congruence
   :enable 3implies)
 
-(defrule 3implies-when-3=-of-arg2-congruence
-  (implies (3= y0 y1)
+(defrule 3implies-when-3equiv-of-arg2-congruence
+  (implies (3equiv y0 y1)
            (equal (3implies x y0)
                   (3implies x y1)))
   :rule-classes :congruence
@@ -1091,10 +1098,10 @@
 
 (defrule booleanp-of-3implies
   (equal (booleanp (3implies x y))
-         (or (not x)
+         (or (not (double-rewrite x))
              (equal y t)
              (and (equal x t)
-                  (not y))))
+                  (not (double-rewrite y)))))
   :enable (3implies
            3fix
            3p))
@@ -1123,13 +1130,13 @@
   :enable 3implies)
 
 (defrule monotonicity-of-3implies
-  (implies (and (3<= x0 x1)
-                (3<= y0 y1))
-           (3<= (3implies x0 y0)
+  (implies (and (3info<= x0 x1)
+                (3info<= y0 y1))
+           (3info<= (3implies x0 y0)
                 (3implies x1 y1)))
   :enable (3implies
-           3<=
-           3<))
+           3info<=
+           3info<))
 
 (defrule 3implies-becomes-3or-definition
   (equal (3implies x y)
@@ -1145,13 +1152,15 @@
   (implies (and (booleanp x)
                 (booleanp y))
            (equal (3implies x y)
-                  (implies x y))))
+                  (implies (double-rewrite x)
+                           (double-rewrite y)))))
 
 (defrule 3implies-when-booleanp-cheap
   (implies (and (booleanp x)
                 (booleanp y))
            (equal (3implies x y)
-                  (implies x y)))
+                  (implies (double-rewrite x)
+                           (double-rewrite y))))
   :rule-classes ((:rewrite :backchain-limit-lst (0 0)))
   :by 3implies-when-booleanp)
 
@@ -1171,6 +1180,7 @@
               (eq y :unknown))
           :unknown
         (eq x y)))
+    :type-prescription :none
     ///
 
     (defmacro 3iff (&rest rest)
@@ -1185,21 +1195,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t 3iff)))
-
 (defrule 3iff-type-prescription
   (3p (3iff x y))
   :rule-classes ((:type-prescription :typed-term (3iff x y))))
 
-(defrule 3iff-when-3=-of-arg1-congruence
-  (implies (3= x0 x1)
+(defrule 3iff-when-3equiv-of-arg1-congruence
+  (implies (3equiv x0 x1)
            (equal (3iff x0 y)
                   (3iff x1 y)))
   :rule-classes :congruence
   :enable 3iff)
 
-(defrule 3iff-when-3=-of-arg2-congruence
-  (implies (3= y0 y1)
+(defrule 3iff-when-3equiv-of-arg2-congruence
+  (implies (3equiv y0 y1)
            (equal (3iff x y0)
                   (3iff x y1)))
   :rule-classes :congruence
@@ -1282,13 +1290,13 @@
          (3fix x)))
 
 (defrule monotonicity-of-3iff
-  (implies (and (3<= x0 x1)
-                (3<= y0 y1))
-           (3<= (3iff x0 y0)
+  (implies (and (3info<= x0 x1)
+                (3info<= y0 y1))
+           (3info<= (3iff x0 y0)
                 (3iff x1 y1)))
   :enable (3iff
-           3<=
-           3<))
+           3info<=
+           3info<))
 
 (defruled 3iff-becomes-3not-of-3xor-definition
   (equal (3iff x y)
@@ -1314,13 +1322,15 @@
   (implies (and (booleanp x)
                 (booleanp y))
            (equal (3iff x y)
-                  (iff x y))))
+                  (iff (double-rewrite x)
+                       (double-rewrite y)))))
 
 (defrule 3iff-when-booleanp-cheap
   (implies (and (booleanp x)
                 (booleanp y))
            (equal (3iff x y)
-                  (iff x y)))
+                  (iff (double-rewrite x)
+                       (double-rewrite y))))
   :rule-classes ((:rewrite :backchain-limit-lst (0 0)))
   :by 3iff-when-booleanp)
 
@@ -1333,23 +1343,23 @@
   :long
   (xdoc::topstring
    (xdoc::p
-     "This holds of @('t') and @(':unknown'), but not of @('nil').")
+    "This holds of @('t') and @(':unknown'), but not of @('nil').")
    (xdoc::p
-     "This is one of the two boolean projections of a @(see 3p), the other
-      being @(tsee 3definitely). The two are dual under @(tsee 3not)."))
-  (not (3= x nil))
-  :inline t)
+    "This is one of the two boolean projections of a @(see 3p),
+     the other being @(tsee 3definitely).
+     The two are dual under @(tsee 3not)."))
+  (not (3equiv x nil))
+  :inline t
+  :type-prescription :none)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t 3possibly)))
 
 (defrule 3possibly-type-prescription
   (booleanp (3possibly x))
   :rule-classes ((:type-prescription :typed-term (3possibly x))))
 
-(defrule 3possibly-when-3=-congruence
-  (implies (3= x0 x1)
+(defrule 3possibly-when-3equiv-congruence
+  (implies (3equiv x0 x1)
            (equal (3possibly x0)
                   (3possibly x1)))
   :rule-classes :congruence
@@ -1372,7 +1382,7 @@
   (implies (not (booleanp x))
            (3possibly x))
   :enable (3possibly
-           3=))
+           3equiv))
 
 (defrule 3possibly-when-not-booleanp-cheap
   (implies (not (booleanp x))
@@ -1387,11 +1397,11 @@
   :enable 3possibly)
 
 (defruled monotonicity-of-3possibly
-  (implies (and (3<= x0 x1)
+  (implies (and (3info<= x0 x1)
                 (3possibly x0))
            (3possibly x1))
   :enable (3possibly
-           3<=))
+           3info<=))
 
 (defrule 3possibly-of-3join
   (equal (3possibly (3join x y))
@@ -1425,24 +1435,23 @@
   :long
   (xdoc::topstring
    (xdoc::p
-     "This holds of @('t') only, and so of neither @('nil') nor
-      @(':unknown').")
+    "This holds of @('t') only, and so of neither @('nil') nor @(':unknown').")
    (xdoc::p
-     "This is one of the two boolean projections of a @(see 3p), the other
-      being @(tsee 3possibly). The two are dual under @(tsee 3not)."))
-  (3= x t)
-  :inline t)
+    "This is one of the two boolean projections of a @(see 3p),
+     the other being @(tsee 3possibly).
+     The two are dual under @(tsee 3not)."))
+  (3equiv x t)
+  :inline t
+  :type-prescription :none)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t 3definitely)))
 
 (defrule 3definitely-type-prescription
   (booleanp (3definitely x))
   :rule-classes ((:type-prescription :typed-term (3definitely x))))
 
-(defrule 3definitely-when-3=-congruence
-  (implies (3= x0 x1)
+(defrule 3definitely-when-3equiv-congruence
+  (implies (3equiv x0 x1)
            (equal (3definitely x0)
                   (3definitely x1)))
   :rule-classes :congruence
@@ -1453,7 +1462,7 @@
            (equal (3definitely x)
                   x))
   :enable (3definitely
-           3=))
+           3equiv))
 
 (defrule 3definitely-when-booleanp-cheap
   (implies (booleanp x)
@@ -1466,7 +1475,7 @@
   (implies (not (booleanp x))
            (not (3definitely x)))
   :enable (3definitely
-           3=))
+           3equiv))
 
 (defrule 3definitely-when-not-booleanp-cheap
   (implies (not (booleanp x))
@@ -1481,18 +1490,18 @@
   :enable 3definitely)
 
 (defruled antimonotonicity-of-3definitely
-  (implies (and (3<= x0 x1)
+  (implies (and (3info<= x0 x1)
                 (3definitely x1))
            (3definitely x0))
   :enable (3definitely
-           3<=))
+           3info<=))
 
 (defrule 3definitely-of-3join
   (equal (3definitely (3join x y))
          (and (3definitely x)
               (3definitely y)))
   :enable (3definitely
-           3=
+           3equiv
            3join))
 
 (defrule 3definitely-of-3and
@@ -1500,7 +1509,7 @@
          (and (3definitely x)
               (3definitely y)))
   :enable (3definitely
-           3=
+           3equiv
            3and
            3fix
            3p))
@@ -1510,7 +1519,7 @@
          (or (3definitely x)
              (3definitely y)))
   :enable (3definitely
-           3=
+           3equiv
            3or))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1542,7 +1551,7 @@
          (not (3definitely x)))
   :enable (3possibly
            3definitely
-           3=
+           3equiv
            3not
            3fix
            3p))
@@ -1560,7 +1569,7 @@
              (and (3possibly y) (not (3definitely x)))))
   :enable (3possibly
            3definitely
-           3=
+           3equiv
            3xor
            3fix
            3p))
@@ -1571,7 +1580,7 @@
              (and (3definitely y) (not (3possibly x)))))
   :enable (3possibly
            3definitely
-           3=
+           3equiv
            3xor
            3fix
            3p))
@@ -1592,7 +1601,7 @@
              (and (not (3definitely x)) (not (3definitely y)))))
   :enable (3possibly
            3definitely
-           3=
+           3equiv
            3iff
            3fix
            3p))
@@ -1603,7 +1612,442 @@
              (and (not (3possibly x)) (not (3possibly y)))))
   :enable (3possibly
            3definitely
-           3=
+           3equiv
            3iff
            3fix
            3p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define 3truth<
+  ((x 3p)
+   (y 3p))
+  :returns (yes/no booleanp)
+  :parents (3vl)
+  :short "Compare truth of @(see 3p)s."
+  :long
+  (xdoc::topstring-p
+   "This is the strict truth order:
+    @('nil') is below @(':unknown'), which is below @('t').
+    It is the counterpart of the information order @(tsee 3info<).
+    See @(see 3vl) for more detail.")
+  (let ((x (3fix x))
+        (y (3fix y)))
+    (cond ((not x) (and y t))
+          ((eq x :unknown) (eq y t))
+          (t nil)))
+  :inline t
+  :type-prescription :none)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule 3truth<-type-prescription
+  (booleanp (3truth< x y))
+  :rule-classes ((:type-prescription :typed-term (3truth< x y))))
+
+(defrule 3truth<-when-3equiv-of-arg1-congruence
+  (implies (3equiv x0 x1)
+           (equal (3truth< x0 y)
+                  (3truth< x1 y)))
+  :rule-classes :congruence
+  :enable 3truth<)
+
+(defrule 3truth<-when-3equiv-of-arg2-congruence
+  (implies (3equiv y0 y1)
+           (equal (3truth< x y0)
+                  (3truth< x y1)))
+  :rule-classes :congruence
+  :enable 3truth<)
+
+(defrule 3truth<-of-nil
+  (equal (3truth< nil y)
+         (and (3fix y) t))
+  :enable 3truth<)
+
+(defrule 3truth<-of-t
+  (not (3truth< t y))
+  :enable 3truth<)
+
+(defrule 3truth<-of-arg1-and-nil
+  (not (3truth< x nil))
+  :enable 3truth<)
+
+(defrule 3truth<-of-arg1-and-t
+  (equal (3truth< x t)
+         (not (equal (3fix x) t)))
+  :enable (3truth<
+           3fix
+           3p))
+
+(defrule irreflexivity-of-3truth<
+  (not (3truth< x x))
+  :enable 3truth<)
+
+(defruled asymmetry-of-3truth<
+  (implies (3truth< x y)
+           (not (3truth< y x)))
+  :enable 3truth<)
+
+(defrule asymmetry-of-3truth<-forward-chaining
+  (implies (3truth< x y)
+           (not (3truth< y x)))
+  :rule-classes :forward-chaining
+  :by asymmetry-of-3truth<)
+
+(defrule transitivity-of-3truth<
+  (implies (and (3truth< x y)
+                (3truth< y z))
+           (3truth< x z))
+  :enable 3truth<)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define 3truth<=
+  ((x 3p)
+   (y 3p))
+  :returns (yes/no booleanp)
+  :parents (3vl)
+  :short "Compare weak truth of @(see 3p)s."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Recognizes values that are either @(tsee 3truth<) or @(tsee 3equiv).")
+   (xdoc::p
+    "This is the order under which
+     @(tsee 3and) is the meet and @(tsee 3or) is the join,
+     and under which both are monotone.
+     It is characterized by the two boolean projections:
+     @('x') is below @('y') exactly when
+     @(tsee 3possibly) and @(tsee 3definitely) of @('x')
+     each imply the same of @('y')."))
+  (mbe :logic (or (equal (3fix x)
+                         (3fix y))
+                  (3truth< x y))
+       :exec (or (eq x y)
+                 (not x)
+                 (eq y t)))
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable 3truth< 3fix 3p)))
+  :type-prescription :none)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule 3truth<=-type-prescription
+  (booleanp (3truth<= x y))
+  :rule-classes ((:type-prescription :typed-term (3truth<= x y))))
+
+(defrule 3truth<=-when-3equiv-of-arg1-congruence
+  (implies (3equiv x0 x1)
+           (equal (3truth<= x0 y)
+                  (3truth<= x1 y)))
+  :rule-classes :congruence
+  :enable 3truth<=)
+
+(defrule 3truth<=-when-3equiv-of-arg2-congruence
+  (implies (3equiv y0 y1)
+           (equal (3truth<= x y0)
+                  (3truth<= x y1)))
+  :rule-classes :congruence
+  :enable 3truth<=)
+
+(defrule 3truth<=-of-nil
+  (3truth<= nil y)
+  :enable 3truth<=)
+
+(defrule 3truth<=-of-t
+  (equal (3truth<= t y)
+         (equal (3fix y) t))
+  :enable (3truth<=
+           3truth<
+           3fix
+           3p))
+
+(defrule 3truth<=-of-arg1-and-nil
+  (equal (3truth<= x nil)
+         (not (3fix x)))
+  :enable (3truth<=
+           3truth<
+           3fix
+           3p))
+
+(defrule 3truth<=-of-arg1-and-t
+  (3truth<= x t)
+  :enable (3truth<=
+           3truth<
+           3fix
+           3p))
+
+(defruled 3truth<=-when-booleanp
+  (implies (and (booleanp x)
+                (booleanp y))
+           (equal (3truth<= x y)
+                  (implies (double-rewrite x)
+                           (double-rewrite y))))
+  :enable (3truth<=
+           3truth<
+           3fix))
+
+(defrule reflexivity-of-3truth<=
+  (3truth<= x x)
+  :enable 3truth<=)
+
+(defruled antisymmetry-of-3truth<=-weak
+  (implies (and (3truth<= x y)
+                (3truth<= y x))
+           (3equiv x y))
+  :enable (3truth<=
+           3truth<
+           3equiv))
+
+(defruled antisymmetry-of-3truth<=
+  (equal (and (3truth<= x y)
+              (3truth<= y x))
+         (3equiv x y))
+  :use antisymmetry-of-3truth<=-weak)
+
+(defrule antisymmetry-of-3truth<=-forward-chaining
+  (implies (and (3truth<= x y)
+                (3truth<= y x))
+           (3equiv x y))
+  :rule-classes :forward-chaining
+  :by antisymmetry-of-3truth<=-weak)
+
+(defrule transitivity-of-3truth<=
+  (implies (and (3truth<= x y)
+                (3truth<= y z))
+           (3truth<= x z))
+  :enable (3truth<=
+           3truth<
+           3fix))
+
+(defrule 3truth<=-when-3truth<
+  (implies (3truth< x y)
+           (3truth<= x y))
+  :enable 3truth<=)
+
+(defruled 3truth<-when-not-3truth<=
+  (implies (not (3truth<= x y))
+           (not (3truth< x y))))
+
+(defrule 3truth<-when-not-3truth<=-forward-chaining
+  (implies (not (3truth<= x y))
+           (not (3truth< x y)))
+  :rule-classes :forward-chaining
+  :by 3truth<-when-not-3truth<=)
+
+;; The lattice structure.
+
+(defruled 3truth<=-becomes-3equiv-of-3and
+  (equal (3truth<= x y)
+         (3equiv (3and x y) x))
+  :enable (3truth<=
+           3truth<
+           3and
+           3equiv
+           3fix
+           3p))
+
+(defruled 3truth<=-becomes-3equiv-of-3or
+  (equal (3truth<= x y)
+         (3equiv (3or x y) y))
+  :enable (3truth<=
+           3truth<
+           3or
+           3equiv
+           3fix
+           3p))
+
+(defrule 3truth<=-of-3and
+  (and (3truth<= (3and x y) x)
+       (3truth<= (3and x y) y))
+  :enable (3truth<=
+           3truth<
+           3and
+           3fix
+           3p))
+
+(defrule 3truth<=-of-arg1-and-3or
+  (and (3truth<= x (3or x y))
+       (3truth<= y (3or x y)))
+  :enable (3truth<=
+           3truth<
+           3or
+           3fix
+           3p))
+
+(defrule truth-monotonicity-of-3and
+  (implies (and (3truth<= x0 x1)
+                (3truth<= y0 y1))
+           (3truth<= (3and x0 y0) (3and x1 y1)))
+  :enable (3truth<=
+           3truth<
+           3and
+           3fix
+           3p))
+
+(defrule truth-monotonicity-of-3or
+  (implies (and (3truth<= x0 x1)
+                (3truth<= y0 y1))
+           (3truth<= (3or x0 y0) (3or x1 y1)))
+  :enable (3truth<=
+           3truth<
+           3or
+           3fix
+           3p))
+
+(defrule 3truth<=-of-3not
+  (equal (3truth<= (3not x) (3not y))
+         (3truth<= y x))
+  :enable (3truth<=
+           3truth<
+           3not
+           3fix
+           3p))
+
+;; The boolean projections.
+
+(defruled 3truth<=-becomes-3possibly-and-3definitely
+  (equal (3truth<= x y)
+         (and (implies (3possibly x) (3possibly y))
+              (implies (3definitely x) (3definitely y))))
+  :enable (3truth<=
+           3truth<
+           3possibly
+           3definitely
+           3equiv
+           3fix
+           3p))
+
+(defrule 3possibly-when-3truth<=
+  (implies (and (3truth<= x y)
+                (3possibly x))
+           (3possibly y))
+  :use 3truth<=-becomes-3possibly-and-3definitely)
+
+(defrule 3definitely-when-3truth<=
+  (implies (and (3truth<= x y)
+                (3definitely x))
+           (3definitely y))
+  :use 3truth<=-becomes-3possibly-and-3definitely)
+
+;; The relation to implication: the truth order sits strictly between the two
+;; projections of 3implies.
+
+(defruled 3truth<=-when-3definitely-of-3implies
+  (implies (3definitely (3implies x y))
+           (3truth<= x y))
+  :enable (3truth<=
+           3truth<
+           3implies
+           3not
+           3or
+           3definitely
+           3equiv
+           3fix
+           3p))
+
+(defrule 3truth<=-when-3definitely-of-3implies-forward-chaining
+  (implies (3definitely (3implies x y))
+           (3truth<= x y))
+  :rule-classes :forward-chaining
+  :by 3truth<=-when-3definitely-of-3implies)
+
+(defruled 3possibly-of-3implies-when-3truth<=
+  (implies (3truth<= x y)
+           (3possibly (3implies x y)))
+  :enable (3truth<=
+           3truth<
+           3implies
+           3not
+           3or
+           3possibly
+           3equiv
+           3fix
+           3p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc 3and$
+  :parents (3and)
+  :short "A lazy variant of @(tsee 3and)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Logically, @('3and$') is @(tsee 3and),
+     but in execution an argument is evaluated
+     only if no earlier argument is @('nil').
+     Theorems should be stated in terms of @(tsee 3and).")
+   (xdoc::p
+    "The macro expands to an @(tsee mbe)
+     whose proof obligation is discharged by @('3and-of-nil')
+     during guard verification.")))
+
+(defmacro binary-3and$ (x y)
+  `(mbe :logic (3and ,x ,y)
+        :exec (let ((__3vl_3and$_temp ,x))
+                (if __3vl_3and$_temp
+                    (3and __3vl_3and$_temp ,y)
+                  (mbe :logic (3and __3vl_3and$_temp ,y)
+                       :exec nil)))))
+
+(defmacro 3and$ (&rest rest)
+  (cond ((endp rest) t)
+        ((endp (cdr rest)) `(3fix ,(car rest)))
+        ((endp (cddr rest)) `(binary-3and$ ,(car rest) ,(cadr rest)))
+        (t `(binary-3and$ ,(car rest) (3and$ ,@(cdr rest))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc 3or$
+  :parents (3or)
+  :short "A lazy variant of @(tsee 3or)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Logically, @('3or$') is @(tsee 3or),
+     but in execution an argument is evaluated
+     only if no earlier argument is @('t').
+     Theorems should be stated in terms of @(tsee 3or).")
+   (xdoc::p
+    "The macro expands to an @(tsee mbe)
+     whose proof obligation is discharged by @('3or-of-t')
+     during guard verification.")))
+
+(defmacro binary-3or$ (x y)
+  `(mbe :logic (3or ,x ,y)
+        :exec (let ((__3vl_3or$_temp ,x))
+                (if (eq __3vl_3or$_temp t)
+                    (mbe :logic (3or __3vl_3or$_temp ,y)
+                         :exec t)
+                  (3or __3vl_3or$_temp ,y)))))
+
+(defmacro 3or$ (&rest rest)
+  (cond ((endp rest) nil)
+        ((endp (cdr rest)) `(3fix ,(car rest)))
+        ((endp (cddr rest)) `(binary-3or$ ,(car rest) ,(cadr rest)))
+        (t `(binary-3or$ ,(car rest) (3or$ ,@(cdr rest))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc 3implies$
+  :parents (3implies)
+  :short "A lazy variant of @(tsee 3implies)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Logically, @('3implies$') is @(tsee 3implies),
+     but in execution the second argument is evaluated
+     only if the first is not @('nil').
+     Theorems should be stated in terms of @(tsee 3implies).")
+   (xdoc::p
+    "The macro expands to an @(tsee mbe)
+     whose proof obligation is discharged by @('3implies-of-nil')
+     during guard verification.")))
+
+(defmacro 3implies$ (x y)
+  `(mbe :logic (3implies ,x ,y)
+        :exec (let ((__3vl_3implies$_temp ,x))
+                (if __3vl_3implies$_temp
+                    (3implies __3vl_3implies$_temp ,y)
+                  (mbe :logic (3implies __3vl_3implies$_temp ,y)
+                       :exec t)))))
