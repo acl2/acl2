@@ -245,6 +245,24 @@
                   (+ 1 (cardinality set))))
   :enable cardinality-of-insert)
 
+(defrule cardinality-of-insert-when-not-in-linear
+  (implies (not (in x set))
+           (< (cardinality set)
+              (cardinality (insert x set))))
+  :rule-classes :linear)
+
+(defrule cardinality-of-insert-lower-bound-linear
+  (<= (cardinality set)
+      (cardinality (insert x set)))
+  :rule-classes :linear
+  :enable cardinality-of-insert)
+
+(defrule cardinality-of-insert-upper-bound-linear
+  (<= (cardinality (insert x set))
+      (+ 1 (cardinality set)))
+  :rule-classes :linear
+  :enable cardinality-of-insert)
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule subset-of-insert
