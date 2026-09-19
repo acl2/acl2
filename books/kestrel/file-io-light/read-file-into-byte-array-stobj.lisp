@@ -1,6 +1,6 @@
 ; A lightweight function to read a file's bytes into a stobj array of bytes
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,55 +33,55 @@
                            open-input-channel-any-p1
                            mv-nth)))
 
+;; Copies bytes from CHANNEL into elements NEXT-INDEX through LIMIT-1 of the stobj array.
 ;; Returns (mv byte-array-stobj state).
 ;; TODO: Generalize to just pass in the number of bytes to read (don't require filling the rest of the stobj).
-(defund read-bytes-into-byte-array-stobj (next-index len channel byte-array-stobj state)
+(defund read-bytes-into-byte-array-stobj (next-index limit channel byte-array-stobj state)
   (declare (xargs :guard (and (unsigned-byte-p 59 next-index) ; so that adding 1 still gives a fixnum
-                              (unsigned-byte-p 59 len)
-                              (equal len (bytes-length byte-array-stobj))
+                              (unsigned-byte-p 59 limit)
+                              (equal limit (bytes-length byte-array-stobj))
                               (symbolp channel)
                               (open-input-channel-p channel :byte state))
                   :stobjs (byte-array-stobj state)
-                  :measure (nfix (+ 1 (- len next-index)))
+                  :measure (nfix (+ 1 (- limit next-index)))
                   :hints (("Goal" :in-theory (enable channel-contents)))
                   :guard-hints (("Goal" :in-theory (enable open-input-channel-p unsigned-byte-p)))
                   :split-types t)
-           (type (unsigned-byte 59) len)
-           (type (unsigned-byte 59) next-index))
-  (if (or (not (mbt (and (natp next-index) (natp len))))
-          (<= len next-index))
+           (type (unsigned-byte 59) limit next-index))
+  (if (or (not (mbt (and (natp next-index) (natp limit))))
+          (<= limit next-index))
       (mv byte-array-stobj state)
     (mv-let (maybe-byte state)
       (read-byte$ channel state)
       (if (not maybe-byte) ; no more bytes
-          (prog2$ (er hard? 'read-bytes-into-byte-array-stobj "Too few bytes in file.") ; should not happen since LEN is the file length
+          (prog2$ (er hard? 'read-bytes-into-byte-array-stobj "Too few bytes in file.") ; should not happen if LIMIT is the file length
                   (mv byte-array-stobj state))
         (let ((byte-array-stobj (update-bytesi next-index maybe-byte byte-array-stobj)))
           (read-bytes-into-byte-array-stobj (the (unsigned-byte 59) (+ 1 next-index))
-                                               len
-                                               channel
-                                               byte-array-stobj
-                                               state))))))
+                                            limit
+                                            channel
+                                            byte-array-stobj
+                                            state))))))
 
 (local
  (defthm state-p1-of-mv-nth-1-of-read-bytes-into-byte-array-stobj
    (implies (and (open-input-channel-p channel :byte state) ; should this be open-input-channel-p1?
                  (state-p1 state))
-            (state-p1 (mv-nth 1 (read-bytes-into-byte-array-stobj next-index len channel byte-array-stobj state))))
+            (state-p1 (mv-nth 1 (read-bytes-into-byte-array-stobj next-index limit channel byte-array-stobj state))))
    :hints (("Goal" :in-theory (enable read-bytes-into-byte-array-stobj open-input-channel-p)))))
 
 (local
  (defthm open-input-channel-p1-of-mv-nth-1-of-read-bytes-into-byte-array-stobj
    (implies (and (open-input-channel-p1 channel typ state)
                  (state-p1 state))
-            (open-input-channel-p1 channel typ (mv-nth 1 (read-bytes-into-byte-array-stobj next-index len channel byte-array-stobj state))))
+            (open-input-channel-p1 channel typ (mv-nth 1 (read-bytes-into-byte-array-stobj next-index limit channel byte-array-stobj state))))
    :hints (("Goal" :in-theory (enable read-bytes-into-byte-array-stobj)))))
 
 (local
  (defthm open-input-channel-any-p1-of-mv-nth-1-of-read-bytes-into-byte-array-stobj
    (implies (and (open-input-channel-any-p1 channel state)
                  (state-p1 state))
-            (open-input-channel-any-p1 channel (mv-nth 1 (read-bytes-into-byte-array-stobj next-index len channel byte-array-stobj state))))
+            (open-input-channel-any-p1 channel (mv-nth 1 (read-bytes-into-byte-array-stobj next-index limit channel byte-array-stobj state))))
    :hints (("Goal" :in-theory (enable open-input-channel-any-p1)))))
 
 ;; Returns (mv erp byte-array-stobj state) where either ERP is non-nil (meaning an error
@@ -105,7 +105,7 @@
             (let ( ;; make the array the right size:
                   (byte-array-stobj (resize-bytes file-length byte-array-stobj)))
               (mv-let (byte-array-stobj state)
-                (read-bytes-into-byte-array-stobj 0 (bytes-length byte-array-stobj) channel byte-array-stobj state)
+                (read-bytes-into-byte-array-stobj 0 file-length channel byte-array-stobj state)
                 (let ((state (close-input-channel channel state)))
                   (mv nil ; no error
                       byte-array-stobj
