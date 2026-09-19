@@ -278,9 +278,9 @@
 ;really want this for every unary function (unsigned-byte-p with a constant n is effectively unary).
 ;we also do this if just one branch is a constant
 (defthm unsigned-byte-p-of-if-two-constants
-  (implies (and (syntaxp (and (quotep size)
-                              (quotep x1)
-                              (quotep x2))))
+  (implies (syntaxp (and (quotep size)
+                         (quotep x1)
+                         (quotep x2)))
            (equal (unsigned-byte-p size (if test x1 x2))
                   (if test
                       (unsigned-byte-p size x1)
