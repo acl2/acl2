@@ -202,7 +202,7 @@
   (declare (xargs :guard (and (natp index)
                               (natp n))
                   :stobjs byte-array-stobj))
-  (if (<= (bytes-length byte-array-stobj) (+ index n))
+  (if (< (bytes-length byte-array-stobj) (+ index n))
       (mv :not-enough-bytes nil
           (+ n index) ; irrelevant, for uniformity
           )
@@ -211,7 +211,7 @@
 
 (defthm mv-nth-0-of-readnbytes-from-byte-array-stobj
   (equal (mv-nth 0 (readnbytes-from-byte-array-stobj n index byte-array-stobj))
-         (if (<= (bytes-length byte-array-stobj) (+ index n))
+         (if (< (bytes-length byte-array-stobj) (+ index n))
              :not-enough-bytes
            nil))
   :hints (("Goal" :in-theory (enable readnbytes-from-byte-array-stobj))))
