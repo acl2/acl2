@@ -907,6 +907,9 @@
      the substitution avoids variable capture
      by automatically alpha-renaming bound variables as needed
      (see @(tsee type-subst-type-vars-alpha)).
+     Besides the type binders,
+     this also alpha-renames the ispace binders in the rest,
+     which could otherwise capture free ispace variables of the type argument.
      The substituted rest must be an array type,
      possibly via the automatic lifting of atom types
      performed by @(tsee type-match-array):
