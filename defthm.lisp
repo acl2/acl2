@@ -6626,11 +6626,38 @@
             (equivalence-relationp equiv2 wrld))
        (cond
         ((refinementp equiv1 equiv2 wrld)
-         (er hard 'add-refinement-rule
-             "~x0 is already known to be a refinement of ~x1.  But we don't ~
-              understand how this could happen!  Please report it to the ~
-              implementors of ACL2."
-             equiv1 equiv2))
+
+; We have already checked that the underlying defthm is not redundant as an
+; event.  But we cannot add a new refinement rule, because the indicated
+; refinement already exists (perhaps by transitivity).  So an error is the only
+; reasonable option.
+
+         (let* ((active-book-name ; essentially (active-book-name wrld <any-state>)
+                 (car (global-val 'include-book-path wrld)))
+                (active-book-string
+                 (if (sysfile-p active-book-name)
+                     (book-name-to-filename active-book-name wrld nil)
+                   active-book-name)))
+           (er hard 'add-refinement-rule
+               "~x0 is already known to be a refinement of ~x1.  This was not ~
+                the case when the :REFINEMENT rule named E1-REFINES-E2 was ~
+                admitted ~#2~[during certification of the book ~x3~/during ~
+                certification of the book ~x4 (which surprisingly ~
+                cannot be converted to a full pathname, which is an implementation ~
+                error; please contact the ACL2 implementors)~/previously ~
+                (presumably when certifying a book now being included, which ~
+                however cannot be determined, which is an implementation ~
+                error; please contact the ACL2 implementors)~] but it is the ~
+                case now, during an attempt to include that book.  See :DOC ~
+                refinement."
+               equiv1
+               equiv2
+               (cond (active-book-string 0)
+                     (active-book-name 1)
+                     (t 2))
+               active-book-string
+               (and (sysfile-p active-book-name)
+                    (sysfile-filename active-book-name)))))
         (t (putprop-coarsenings
             (close-value-sets
              (put-assoc-eq equiv1
