@@ -1251,23 +1251,23 @@
        (invariant-event
         `(progn
            (theory-invariant
-            (incompatible (:rewrite lendian-to-nat-as-bendian-to-nat)
-                          (:rewrite bendian-to-nat-as-lendian-to-nat)))
+            (incompatible (:rewrite ,lendian-to-nat-as-bendian-to-nat)
+                          (:rewrite ,bendian-to-nat-as-lendian-to-nat)))
            (theory-invariant
-            (incompatible (:rewrite lendian-to-nat-as-bendian-to-nat)
-                          (:rewrite lendian-to-nat-of-rev)))
+            (incompatible (:rewrite ,lendian-to-nat-as-bendian-to-nat)
+                          (:rewrite ,lendian-to-nat-of-rev)))
            (theory-invariant
-            (incompatible (:rewrite lendian-to-nat-as-bendian-to-nat)
-                          (:rewrite bendian-to-nat-of-rev)))
+            (incompatible (:rewrite ,lendian-to-nat-as-bendian-to-nat)
+                          (:rewrite ,bendian-to-nat-of-rev)))
            (theory-invariant
-            (incompatible (:rewrite bendian-to-nat-as-lendian-to-nat)
-                          (:rewrite lendian-to-nat-of-rev)))
+            (incompatible (:rewrite ,bendian-to-nat-as-lendian-to-nat)
+                          (:rewrite ,lendian-to-nat-of-rev)))
            (theory-invariant
-            (incompatible (:rewrite bendian-to-nat-as-lendian-to-nat)
-                          (:rewrite bendian-to-nat-of-rev)))
+            (incompatible (:rewrite ,bendian-to-nat-as-lendian-to-nat)
+                          (:rewrite ,bendian-to-nat-of-rev)))
            (theory-invariant
-            (incompatible (:rewrite lendian-to-nat-of-rev)
-                          (:rewrite bendian-to-nat-of-rev)))))
+            (incompatible (:rewrite ,lendian-to-nat-of-rev)
+                          (:rewrite ,bendian-to-nat-of-rev)))))
        (name-event
         `(defxdoc ,name
            ,@(and parents (list :parents parents))

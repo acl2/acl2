@@ -159,7 +159,7 @@
   :returns (map$ mapp
                  :hints (("Goal" :in-theory (enable* break-abstraction
                                                      mapp))))
-  (tree-update key (hash key) val (fix map))
+  (tree-update key val (fix map))
   :guard-hints (("Goal" :in-theory (enable* break-abstraction)))
 
   ///
@@ -898,10 +898,7 @@
    val
    (map acl2-number-mapp))
   (mbe :logic (update key val map)
-       :exec (acl2-number-tree-update key
-                                      (acl2-number-hash key)
-                                      val
-                                      map))
+       :exec (acl2-number-tree-update key val map))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
@@ -913,10 +910,7 @@
    val
    (map symbol-mapp))
   (mbe :logic (update key val map)
-       :exec (symbol-tree-update key
-                                 (symbol-hash key)
-                                 val
-                                 map))
+       :exec (symbol-tree-update key val map))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
@@ -927,10 +921,7 @@
    val
    (map eqlable-mapp))
   (mbe :logic (update key val map)
-       :exec (eqlable-tree-update key
-                                 (eqlable-hash key)
-                                 val
-                                 map))
+       :exec (eqlable-tree-update key val map))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
@@ -947,7 +938,7 @@
   :guard (mbe :logic (equal (hash key) hash)
               :exec (data::u32-equal (hash key) hash))
   (mbe :logic (update key val map)
-       :exec (tree-update key hash val (fix map)))
+       :exec (tree-update-with-hash key hash val (fix map)))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* data::u32-equal
