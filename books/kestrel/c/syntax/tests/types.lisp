@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-(include-book "../types")
+(include-book "../types-compatibility")
 
 (include-book "std/testing/assert-bang" :dir :system)
 (include-book "std/testing/assert-equal" :dir :system)
@@ -23,68 +23,72 @@
 
 ;; Array types
 
-(acl2::assert!
-  (type-compatible-p
+(acl2::assert-equal
+  (type-compatible-3p
     (make-type-array :of (type-sint)
                      :kind (make-type-array-kind-const-len :len 10))
     (make-type-array :of (type-sint)
                      :kind (make-type-array-kind-const-len :len 10))
     nil
-    (irr-ienv)))
+    (irr-ienv))
+  t)
 
-(acl2::assert!
-  (not
-    (type-compatible-p
-      (make-type-array :of (type-sint)
-                       :kind (make-type-array-kind-const-len :len 10))
-      (make-type-array :of (type-sint)
-                       :kind (make-type-array-kind-const-len :len 20))
-      nil
-      (irr-ienv))))
+(acl2::assert-equal
+  (type-compatible-3p
+    (make-type-array :of (type-sint)
+                     :kind (make-type-array-kind-const-len :len 10))
+    (make-type-array :of (type-sint)
+                     :kind (make-type-array-kind-const-len :len 20))
+    nil
+    (irr-ienv))
+  nil)
 
-(acl2::assert!
-  (type-compatible-p
+(acl2::assert-equal
+  (type-compatible-3p
     (make-type-array :of (type-sint)
                      :kind (make-type-array-kind-const-len :len 10))
     (make-type-array :of (type-sint)
                      :kind (make-type-array-kind-const-len :len nil))
     nil
-    (irr-ienv)))
+    (irr-ienv))
+  :unknown)
 
-(acl2::assert!
-  (type-compatible-p
+(acl2::assert-equal
+  (type-compatible-3p
     (make-type-array :of (type-sint)
                      :kind (make-type-array-kind-const-len :len 10))
     (make-type-array :of (type-sint)
                      :kind (type-array-kind-nonconst-len))
     nil
-    (irr-ienv)))
+    (irr-ienv))
+  t)
 
-(acl2::assert!
-  (type-compatible-p
+(acl2::assert-equal
+  (type-compatible-3p
     (make-type-array :of (type-sint)
                      :kind (type-array-kind-unknown-complete))
     (make-type-array :of (type-sint)
                      :kind (type-array-kind-incomplete))
     nil
-    (irr-ienv)))
+    (irr-ienv))
+  t)
 
-(acl2::assert!
-  (not
-    (type-compatible-p
-      (make-type-array :of (type-sint)
-                       :kind (type-array-kind-incomplete))
-      (make-type-array :of (type-uint)
-                       :kind (type-array-kind-incomplete))
-      nil
-      (irr-ienv))))
+(acl2::assert-equal
+  (type-compatible-3p
+    (make-type-array :of (type-sint)
+                     :kind (type-array-kind-incomplete))
+    (make-type-array :of (type-uint)
+                     :kind (type-array-kind-incomplete))
+    nil
+    (irr-ienv))
+  nil)
 
 ;;;;;;;;;;;;;;;;;;;;
 
 ;; Function types
 
-(acl2::assert!
-  (type-compatible-p
+(acl2::assert-equal
+  (type-compatible-3p
     (make-type-function :ret (type-sint)
                         :params (make-type-params-prototype
                                   :params (list (type-uint)
@@ -98,63 +102,81 @@
                                                   :to (type-ldoublec)))
                                   :ellipsis t))
     nil
-    (irr-ienv)))
+    (irr-ienv))
+  :unknown)
 
-(acl2::assert!
-  (not
-    (type-compatible-p
-      (make-type-function :ret (type-sint)
-                          :params (make-type-params-prototype
-                                    :params (list (type-uint)
-                                                  (make-type-pointer
-                                                    :to (type-unknown)))
-                                    :ellipsis t))
-      (make-type-function :ret (type-unknown)
-                          :params (make-type-params-prototype
-                                    :params (list (type-uint)
-                                                  (make-type-pointer
-                                                    :to (type-ldoublec)))
-                                    :ellipsis nil))
-      nil
-      (irr-ienv))))
-
-(acl2::assert!
-  (not
-    (type-compatible-p
-      (make-type-function :ret (type-sint)
-                          :params (make-type-params-prototype
-                                    :params (list (type-uint)
-                                                  (make-type-pointer
-                                                    :to (type-unknown)))
-                                    :ellipsis t))
-      (make-type-function :ret (type-unknown)
-                          :params (make-type-params-old-style
-                                    :params (list (type-uint)
-                                                  (make-type-pointer
-                                                    :to (type-ldoublec)))))
-      nil
-      (irr-ienv))))
-
-(acl2::assert!
-  (type-compatible-p
+(acl2::assert-equal
+  (type-compatible-3p
     (make-type-function :ret (type-sint)
                         :params (make-type-params-prototype
                                   :params (list (type-uint)
                                                 (make-type-pointer
-                                                  :to (type-unknown)))))
+                                                  :to (type-unknown)))
+                                  :ellipsis t))
+    (make-type-function :ret (type-unknown)
+                        :params (make-type-params-prototype
+                                  :params (list (type-uint)
+                                                (make-type-pointer
+                                                  :to (type-ldoublec)))
+                                  :ellipsis nil))
+    nil
+    (irr-ienv))
+  nil)
+
+(acl2::assert-equal
+  (type-compatible-3p
+    (make-type-function :ret (type-sint)
+                        :params (make-type-params-prototype
+                                  :params (list (type-uint)
+                                                (make-type-pointer
+                                                  :to (type-unknown)))
+                                  :ellipsis t))
     (make-type-function :ret (type-unknown)
                         :params (make-type-params-old-style
                                   :params (list (type-uint)
                                                 (make-type-pointer
                                                   :to (type-ldoublec)))))
     nil
-    (irr-ienv)))
+    (irr-ienv))
+  nil)
 
-(acl2::assert!
-  (type-compatible-p
+(acl2::assert-equal
+  (type-compatible-3p
+    (make-type-function :ret (type-sint)
+                        :params (make-type-params-prototype
+                                  :params (list (type-uint)
+                                                (make-type-pointer
+                                                  :to (type-ldoublec)))))
+    (make-type-function :ret (type-sint)
+                        :params (make-type-params-old-style
+                                  :params (list (type-uint)
+                                                (make-type-pointer
+                                                  :to (type-ldoublec)))))
+    nil
+    (irr-ienv))
+  t)
+
+(acl2::assert-equal
+  (type-compatible-3p
     (make-type-function :ret (type-sint)
                         :params (make-type-params-prototype
                                   :params (list (type-sint)
+                                                (make-type-pointer
+                                                  :to (type-ldoublec)))))
+    (make-type-function :ret (type-sint)
+                        :params (make-type-params-old-style
+                                  :params (list (type-schar)
+                                                (make-type-pointer
+                                                  :to (type-ldoublec)))))
+    nil
+    (irr-ienv))
+  t)
+
+(acl2::assert-equal
+  (type-compatible-3p
+    (make-type-function :ret (type-sint)
+                        :params (make-type-params-prototype
+                                  :params (list (type-slong)
                                                 (make-type-pointer
                                                   :to (type-unknown)))))
     (make-type-function :ret (type-unknown)
@@ -163,42 +185,28 @@
                                                 (make-type-pointer
                                                   :to (type-ldoublec)))))
     nil
-    (irr-ienv)))
+    (irr-ienv))
+  nil)
 
-(acl2::assert!
-  (not
-    (type-compatible-p
-      (make-type-function :ret (type-sint)
-                          :params (make-type-params-prototype
-                                    :params (list (type-slong)
-                                                  (make-type-pointer
-                                                    :to (type-unknown)))))
-      (make-type-function :ret (type-unknown)
-                          :params (make-type-params-old-style
-                                    :params (list (type-schar)
-                                                  (make-type-pointer
-                                                    :to (type-ldoublec)))))
-      nil
-      (irr-ienv))))
-
-(acl2::assert!
-  (type-compatible-p
+(acl2::assert-equal
+  (type-compatible-3p
     (make-type-function :ret (type-sint)
                         :params (make-type-params-prototype
                                   :params (list (type-sint)
                                                 (make-type-pointer
-                                                  :to (type-unknown)))))
-    (make-type-function :ret (type-unknown)
+                                                  :to (type-ldoublec)))))
+    (make-type-function :ret (type-sint)
                         :params (type-params-unspecified))
     nil
-    (irr-ienv)))
+    (irr-ienv))
+  t)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-;; Struct types
+;; Struct and union types
 
-(acl2::assert!
-  (type-compatible-p
+(acl2::assert-equal
+  (type-compatible-3p
     (make-type-struct :uid (uid 42)
                       :tunit? (filepath "foo.c")
                       :tag/members (type-struni-tag/members-tagged
@@ -220,36 +228,37 @@
               (make-type-struni-member :name? (ident "y")
                                        :type (type-ulong)))
         nil))
-    (irr-ienv)))
+    (irr-ienv))
+  t)
 
-(acl2::assert!
-  (not
-    (type-compatible-p
-      (make-type-struct :uid (uid 42)
-                        :tunit? (filepath "foo.c")
-                        :tag/members (type-struni-tag/members-tagged
-                                       (ident "my_struct")))
-      (make-type-struct :uid (uid 43)
-                        :tunit? (filepath "foo.c")
-                        :tag/members (type-struni-tag/members-tagged
-                                       (ident "my_struct")))
+(acl2::assert-equal
+  (type-compatible-3p
+    (make-type-struct :uid (uid 42)
+                      :tunit? (filepath "foo.c")
+                      :tag/members (type-struni-tag/members-tagged
+                                     (ident "my_struct")))
+    (make-type-struct :uid (uid 43)
+                      :tunit? (filepath "foo.c")
+                      :tag/members (type-struni-tag/members-tagged
+                                     (ident "my_struct")))
+    (treemap::update
+      (uid 42)
+      (list (make-type-struni-member :name? (ident "x")
+                                     :type (type-char))
+            (make-type-struni-member :name? (ident "y")
+                                     :type (type-ulong)))
       (treemap::update
-        (uid 42)
+        (uid 43)
         (list (make-type-struni-member :name? (ident "x")
                                        :type (type-char))
               (make-type-struni-member :name? (ident "y")
                                        :type (type-ulong)))
-        (treemap::update
-          (uid 43)
-          (list (make-type-struni-member :name? (ident "x")
-                                         :type (type-char))
-                (make-type-struni-member :name? (ident "y")
-                                         :type (type-ulong)))
-          nil))
-      (irr-ienv))))
+        nil))
+    (irr-ienv))
+  nil)
 
-(acl2::assert!
-  (type-compatible-p
+(acl2::assert-equal
+  (type-compatible-3p
     (make-type-struct :uid (uid 42)
                       :tunit? (filepath "foo.c")
                       :tag/members (type-struni-tag/members-tagged
@@ -271,7 +280,180 @@
               (make-type-struni-member :name? (ident "y")
                                        :type (type-ulong)))
         nil))
-    (irr-ienv)))
+    (irr-ienv))
+  t)
+
+
+;; Untagged structs declared in separate translation units
+;; are compatible if their members are [C17:6.2.7/1] [C23:6.2.7/1].
+(acl2::assert-equal
+  (type-compatible-3p
+    (make-type-struct :uid (uid 1)
+                      :tunit? (filepath "foo.c")
+                      :tag/members (type-struni-tag/members-untagged
+                                     (list (make-type-struni-member
+                                             :name? (ident "x")
+                                             :type (type-sint)))))
+    (make-type-struct :uid (uid 2)
+                      :tunit? (filepath "bar.c")
+                      :tag/members (type-struni-tag/members-untagged
+                                     (list (make-type-struni-member
+                                             :name? (ident "x")
+                                             :type (type-sint)))))
+    nil
+    (irr-ienv))
+  t)
+
+;; Untagged structs declared in the same translation unit are distinct types.
+(acl2::assert-equal
+  (type-compatible-3p
+    (make-type-struct :uid (uid 1)
+                      :tunit? (filepath "foo.c")
+                      :tag/members (type-struni-tag/members-untagged
+                                     (list (make-type-struni-member
+                                             :name? (ident "x")
+                                             :type (type-sint)))))
+    (make-type-struct :uid (uid 2)
+                      :tunit? (filepath "foo.c")
+                      :tag/members (type-struni-tag/members-untagged
+                                     (list (make-type-struni-member
+                                             :name? (ident "x")
+                                             :type (type-sint)))))
+    nil
+    (irr-ienv))
+  nil)
+
+;; A tagged struct that is incomplete in its translation unit
+;; is compatible with a complete one with the same tag.
+(acl2::assert-equal
+  (type-compatible-3p
+    (make-type-struct :uid (uid 1)
+                      :tunit? (filepath "foo.c")
+                      :tag/members (type-struni-tag/members-tagged
+                                     (ident "my_struct")))
+    (make-type-struct :uid (uid 2)
+                      :tunit? (filepath "bar.c")
+                      :tag/members (type-struni-tag/members-tagged
+                                     (ident "my_struct")))
+    (treemap::update (uid 1)
+                     (list (make-type-struni-member :name? (ident "x")
+                                                    :type (type-sint)))
+                     nil)
+    (irr-ienv))
+  t)
+
+;; A member of unknown type makes the answer unknown.
+(acl2::assert-equal
+  (type-compatible-3p
+    (make-type-struct :uid (uid 1)
+                      :tunit? (filepath "foo.c")
+                      :tag/members (type-struni-tag/members-tagged
+                                     (ident "my_struct")))
+    (make-type-struct :uid (uid 2)
+                      :tunit? (filepath "bar.c")
+                      :tag/members (type-struni-tag/members-tagged
+                                     (ident "my_struct")))
+    (treemap::update (uid 1)
+                     (list (make-type-struni-member :name? (ident "x")
+                                                    :type (type-sint)))
+                     (treemap::update (uid 2)
+                                      (list (make-type-struni-member
+                                              :name? (ident "x")
+                                              :type (type-unknown)))
+                                      nil))
+    (irr-ienv))
+  :unknown)
+
+;; Cyclic struct types across three translation units:
+;; the first points to itself, and the second and third point to each other.
+;; The pair of the first two is reached again through the members,
+;; where it is assumed compatible.
+(acl2::assert-equal
+  (b* ((tag/members (type-struni-tag/members-tagged (ident "my_struct")))
+       (foo (make-type-struct :uid (uid 1)
+                              :tunit? (filepath "foo.c")
+                              :tag/members tag/members))
+       (bar (make-type-struct :uid (uid 2)
+                              :tunit? (filepath "bar.c")
+                              :tag/members tag/members))
+       (baz (make-type-struct :uid (uid 3)
+                              :tunit? (filepath "baz.c")
+                              :tag/members tag/members))
+       (completions
+        (treemap::update
+          (uid 1)
+          (list (make-type-struni-member :name? (ident "p")
+                                         :type (make-type-pointer :to foo)))
+          (treemap::update
+            (uid 2)
+            (list (make-type-struni-member :name? (ident "p")
+                                           :type (make-type-pointer :to baz)))
+            (treemap::update
+              (uid 3)
+              (list (make-type-struni-member :name? (ident "p")
+                                             :type (make-type-pointer :to bar)))
+              nil)))))
+    (type-compatible-3p foo bar completions (irr-ienv)))
+  t)
+
+;; The struct type of one translation unit points to itself,
+;; while a block-scope struct type of another translation unit
+;; points, through a typedef, to the file-scope struct type with the same tag,
+;; whose members differ.
+;; The pair of the first and the file-scope type is not the pair being assumed,
+;; so it is compared, and found incompatible.
+(acl2::assert-equal
+  (b* ((tag/members (type-struni-tag/members-tagged (ident "my_struct")))
+       (foo (make-type-struct :uid (uid 1)
+                              :tunit? (filepath "foo.c")
+                              :tag/members tag/members))
+       (bar-file (make-type-struct :uid (uid 2)
+                                   :tunit? (filepath "bar.c")
+                                   :tag/members tag/members))
+       (bar-block (make-type-struct :uid (uid 3)
+                                    :tunit? (filepath "bar.c")
+                                    :tag/members tag/members))
+       (completions
+        (treemap::update
+          (uid 1)
+          (list (make-type-struni-member :name? (ident "p")
+                                         :type (make-type-pointer :to foo)))
+          (treemap::update
+            (uid 2)
+            (list (make-type-struni-member :name? (ident "x")
+                                           :type (type-sint)))
+            (treemap::update
+              (uid 3)
+              (list (make-type-struni-member
+                      :name? (ident "p")
+                      :type (make-type-pointer :to bar-file)))
+              nil)))))
+    (type-compatible-3p foo bar-block completions (irr-ienv)))
+  nil)
+
+;; Complete unions with the same tag in separate translation units
+;; are compatible if their members correspond in some order,
+;; which is not checked yet.
+(acl2::assert-equal
+  (type-compatible-3p
+    (make-type-union :uid (uid 1)
+                     :tunit? (filepath "foo.c")
+                     :tag/members (type-struni-tag/members-tagged
+                                    (ident "my_union")))
+    (make-type-union :uid (uid 2)
+                     :tunit? (filepath "bar.c")
+                     :tag/members (type-struni-tag/members-tagged
+                                    (ident "my_union")))
+    (treemap::update (uid 1)
+                     (list (make-type-struni-member :name? (ident "x")
+                                                    :type (type-sint)))
+                     (treemap::update (uid 2)
+                                      (list (make-type-struni-member
+                                              :name? (ident "x")
+                                              :type (type-sint)))
+                                      nil))
+    (irr-ienv))
+  :unknown)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -5016,11 +5016,12 @@
                 (c$::type-struct->uid current-type?)
               (c$::irr-uid)))
        ((when (or (not current-type?)
-                  (not (c$::type-compatible-p
-                         primary-type
-                         current-type?
-                         completions
-                         ienv))))
+                  (not (3possibly
+                        (c$::type-compatible-3p
+                          primary-type
+                          current-type?
+                          completions
+                          ienv)))))
         ;; The selected name does not denote a compatible struct type
         ;; in this translation unit, which is left unchanged.
         (b* (((erp rest st)

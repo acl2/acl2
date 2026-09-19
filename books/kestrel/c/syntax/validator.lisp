@@ -24,6 +24,7 @@
 (include-book "constant-expressions")
 (include-book "null-pointer-constants")
 (include-book "translation-unit-comparison")
+(include-book "types-compatibility")
 
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
@@ -1348,13 +1349,15 @@
                  (3definitely (type-arithmetic-3p type-arg)))
             (and (or (type-case type-param :struct)
                      (type-case type-param :union))
-                 (type-compatible-p type-param type-arg completions ienv))
+                 (3possibly
+                  (type-compatible-3p type-param type-arg completions ienv)))
             (and (type-case type-param :pointer)
                  (or (and (type-case type-arg :pointer)
                           (let ((type-to-param (type-pointer->to type-param))
                                 (type-to-arg (type-pointer->to type-arg)))
-                            (or (type-compatible-p
-                                 type-to-param type-to-arg completions ienv)
+                            (or (3possibly
+                                 (type-compatible-3p
+                                  type-to-param type-to-arg completions ienv))
                                 (and (type-case type-to-param :void)
                                      (not (type-case type-to-arg :function)))
                                 (and (type-case type-to-arg :void)
@@ -1790,14 +1793,15 @@
                      (3definitely (type-arithmetic-3p type2))))
             (and (or (type-case type1 :struct)
                      (type-case type1 :union))
-                 (type-compatible-p type1 type2 completions ienv))
+                 (3possibly (type-compatible-3p type1 type2 completions ienv)))
             (and (type-case type1 :pointer)
                  (or (type-case type2 :unknown-scalar) ; could be pointer
                      (and (type-case type2 :pointer)
                           (let ((type-to1 (type-pointer->to type1))
                                 (type-to2 (type-pointer->to type2)))
-                            (or (type-compatible-p
-                                 type-to1 type-to2 completions ienv)
+                            (or (3possibly
+                                 (type-compatible-3p
+                                  type-to1 type-to2 completions ienv))
                                 (and (type-case type-to1 :void)
                                      (or (ienv->gcc/clang ienv)
                                          (not (type-case type-to2
@@ -2034,8 +2038,12 @@
                                         (type-to2 (type-pointer->to type2)))
                                     (and (not (type-case type-to1 :function))
                                          (not (type-case type-to2 :function))
-                                         (type-compatible-p
-                                          type-to1 type-to2 completions ienv))))
+                                         (3possibly
+                                          (type-compatible-3p
+                                           type-to1
+                                           type-to2
+                                           completions
+                                           ienv)))))
                            (and (ienv->gcc/clang ienv)
                                 (expr-null-pointer-constp
                                  (expr-binary->arg1 expr) type1 ienv)
@@ -2051,8 +2059,9 @@
             ((unless (or (and (3definitely (type-arithmetic-3p type1))
                               (3definitely (type-arithmetic-3p type2)))
                          (if (type-case type1 :pointer)
-                             (or (type-compatible-p
-                                  type1 type2 completions ienv)
+                             (or (3possibly
+                                  (type-compatible-3p
+                                   type1 type2 completions ienv))
                                  (and (type-case type2 :pointer)
                                       (let ((type-to1 (type-pointer->to type1))
                                             (type-to2 (type-pointer->to type2)))
@@ -2267,10 +2276,11 @@
         (retok (type-uaconvert type2 type3 ienv) (vstate-fix vstate)))
        ((when (and (type-case type2 :struct)
                    (type-case type3 :struct)))
-        (b* (((unless (type-compatible-p type2
-                                         type3
-                                         (vstate->completions vstate)
-                                         ienv))
+        (b* (((unless (3possibly
+                       (type-compatible-3p type2
+                                           type3
+                                           (vstate->completions vstate)
+                                           ienv)))
               (retmsg$ "Struct types ~x0 and ~x1 are incompatible."
                        type2
                        type3))
@@ -2279,10 +2289,11 @@
           (retok composite vstate)))
        ((when (and (type-case type2 :union)
                    (type-case type3 :union)))
-        (b* (((unless (type-compatible-p type2
-                                         type3
-                                         (vstate->completions vstate)
-                                         ienv))
+        (b* (((unless (3possibly
+                       (type-compatible-3p type2
+                                           type3
+                                           (vstate->completions vstate)
+                                           ienv)))
               (retmsg$ "Struct types ~x0 and ~x1 are incompatible."
                        type2
                        type3))
@@ -2290,10 +2301,11 @@
               (vstate-make-type-composite type2 type3 vstate)))
           (retok composite vstate)))
        ((when (and (type-case type2 :pointer)
-                   (type-compatible-p type2
-                                      type3
-                                      (vstate->completions vstate)
-                                      ienv)))
+                   (3possibly
+                    (type-compatible-3p type2
+                                        type3
+                                        (vstate->completions vstate)
+                                        ienv))))
         (b* (((mv composite vstate)
               (vstate-make-type-composite type2 type3 vstate)))
           (retok composite vstate)))
@@ -3153,11 +3165,12 @@
                          ((erp str-type)
                           (valid-stringlit-list
                            (expr-string->strings str-expr) ienv))
-                         ((unless (and (type-compatible-p
-                                        (type-array->of target-type)
-                                        (type-array->of str-type)
-                                        (vstate->completions vstate)
-                                        ienv)
+                         ((unless (and (3possibly
+                                        (type-compatible-3p
+                                         (type-array->of target-type)
+                                         (type-array->of str-type)
+                                         (vstate->completions vstate)
+                                         ienv))
                                        ;; The element type of the str-type
                                        ;; array may be unknown, representing
                                        ;; one of the wide character types we
@@ -4688,11 +4701,12 @@
                                  (3possibly
                                    (type-character-3p
                                      (type-array->of target-type)))
-                               (type-compatible-p
-                                (type-array->of target-type)
-                                (type-array->of str-type)
-                                (vstate->completions vstate)
-                                ienv)))
+                               (3possibly
+                                (type-compatible-3p
+                                 (type-array->of target-type)
+                                 (type-array->of str-type)
+                                 (vstate->completions vstate)
+                                 ienv))))
                          (retok nil nil nil nil nil))
                         (info (make-type-vinfo :type str-type)))
                      (retok t
@@ -4740,11 +4754,12 @@
                              ;; context.
                              (initer-context-unknown)
                            (initer-context-fix ctx)))
-                        ((unless (and (type-compatible-p
-                                       (type-array->of target-type)
-                                       (type-array->of str-type)
-                                       (vstate->completions vstate)
-                                       ienv)
+                        ((unless (and (3possibly
+                                       (type-compatible-3p
+                                        (type-array->of target-type)
+                                        (type-array->of str-type)
+                                        (vstate->completions vstate)
+                                        ienv))
                                       ;; The element type of the str-type array
                                       ;; may be unknown, representing one of
                                       ;; the wide character types we are not
@@ -4775,10 +4790,12 @@
                         (lifetime-case lifetime :auto))
                    (b* (((erp new-expr type types vstate)
                          (valid-expr (initer-single->expr initer) vstate))
-                        ((unless (type-compatible-p type
-                                                    target-type
-                                                    (vstate->completions vstate)
-                                                    ienv))
+                        ((unless (3possibly
+                                  (type-compatible-3p
+                                   type
+                                   target-type
+                                   (vstate->completions vstate)
+                                   ienv)))
                          (retok nil nil nil nil nil)))
                      (retok t
                             (initer-single new-expr)
@@ -6836,11 +6853,12 @@
                ((when (and info?
                            currentp
                            (or (not (valid-ord-info-case info? :typedef))
-                               (not (type-compatible-p
-                                     (valid-ord-info-typedef->def info?)
-                                     type
-                                     (vstate->completions vstate)
-                                     ienv)))))
+                               (not (3possibly
+                                     (type-compatible-3p
+                                      (valid-ord-info-typedef->def info?)
+                                      type
+                                      (vstate->completions vstate)
+                                      ienv))))))
                 (retmsg$ "The typedef name ~x0 ~
                           is already declared in the current scope ~
                           with associated information ~x1."
@@ -6875,11 +6893,12 @@
          (ext-info? (vstate-lookup-ext ident vstate))
          ((when (and (linkage-case linkage :external)
                      ext-info?
-                     (not (type-compatible-p
-                           (valid-ext-info->type ext-info?)
-                           type
-                           (vstate->completions vstate)
-                           ienv))))
+                     (not (3possibly
+                           (type-compatible-3p
+                            (valid-ext-info->type ext-info?)
+                            type
+                            (vstate->completions vstate)
+                            ienv)))))
           (retmsg$ "The identifier ~x0 with external linkage and type ~x1 ~
                     was previously declared with incompatible type ~x2."
                    ident
@@ -6924,11 +6943,12 @@
                     with associated information ~x1."
                    ident info?))
          ((when (and linked-redecl-p
-                     (not (type-compatible-p
-                           type
-                           (valid-ord-info-objfun->type info?)
-                           (vstate->completions vstate)
-                           ienv))))
+                     (not (3possibly
+                           (type-compatible-3p
+                            type
+                            (valid-ord-info-objfun->type info?)
+                            (vstate->completions vstate)
+                            ienv)))))
           (retmsg$ "The identifier ~x0 ~
                     is declared with type ~x1 ~
                     after being declared with type ~x2."
@@ -8030,11 +8050,12 @@
        (ext-info? (vstate-lookup-ext ident vstate))
        ((when (and (linkage-case linkage :external)
                    ext-info?
-                   (not (type-compatible-p
-                         (valid-ext-info->type ext-info?)
-                         type
-                         (vstate->completions vstate)
-                         ienv))))
+                   (not (3possibly
+                         (type-compatible-3p
+                          (valid-ext-info->type ext-info?)
+                          type
+                          (vstate->completions vstate)
+                          ienv)))))
         (retmsg$ "The function definition ~x0 ~
                   with external linkage and type ~x1 ~
                   was previously declared with incompatible type ~x2."
@@ -8082,10 +8103,11 @@
                         its associated information is ~x1."
                        (fundef-fix fundef) info))
              ((valid-ord-info-objfun info) info)
-             ((unless (type-compatible-p info.type
-                                         type
-                                         (vstate->completions vstate)
-                                         ienv))
+             ((unless (3possibly
+                       (type-compatible-3p info.type
+                                           type
+                                           (vstate->completions vstate)
+                                           ienv)))
               (retmsg$ "The name of the function definition ~x0 ~
                         is already in the file scope, ~
                         but it has type ~x1."
