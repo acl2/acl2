@@ -110066,6 +110066,16 @@ it."
  @('float-a.lisp').  This issue was discovered by Eric Smith with the help of
  Anthropic's Claude.</p>
 
+ <p>Fixed two related soundness bugs in the application of @(':')@(tsee bdd)
+ @(see hints).  Thanks to Eric Smith for discovering the first of these bugs
+ with the help of Anthropic's Claude.  See @(see community-books)
+ @('system/tests/bdd-1.lisp') and @('system/tests/bdd-2.lisp').</p>
+
+ <p>Fixed a soundness bugs in @(tsee boole$), which axiomatized @('(boole$
+ *boole-set* x y)') to be @('1') instead of the correct value, @('-1').  Thanks
+ to Eric Smith for discovering this bug with the help of Anthropic's Claude.
+ See @(see community-book) @('system/tests/boole-set.lisp').</p>
+
  <p>Fixed an assertion failure that could occur when an accessor call in a
  @(tsee stobj-let)'s bindings was on a quoted non-numeric index.  Thanks to
  Eric Smith for sending an example found by Anthropic's Claude.  As part of the
@@ -129663,13 +129673,56 @@ work on <tt>(q x)</tt>.</p>
  determine that a rule failed the refinement check and for advice about how to
  ``fix'' such a problem.</p>
 
- <p>@(':refinement') lemmas cannot be disabled.  That is, once one equivalence
+ <p>@(':Refinement') lemmas cannot be disabled.  That is, once one equivalence
  relation has been shown to be a refinement of another, there is no way to
  prevent the system from using that information.  Furthermore, @(':refinement')
  lemmas are not tracked and are thus not reported in the @(see summary).  Of
  course, individual @(':')@(tsee rewrite) rules can be disabled.</p>
 
- <p>More will be written about this as we develop the techniques.</p>")
+ <p>Finally, we discuss the following sort of error that you might see on rare
+ occasions.</p>
+
+ @({
+ HARD ACL2 ERROR in ADD-REFINEMENT-RULE:  E1 is already known to be
+ a refinement of E2.  This was not the case when the :REFINEMENT rule
+ named E1-REFINES-E2 was admitted during certification of the book 
+ \"/Users/smith/work/bk.lisp\" but it is the case now, during an
+ attempt to include that book.  See :DOC refinement.
+ })
+
+ <p>To see how this could happen, create a book, @('bk.lisp'), containing the
+ following forms.</p>
+
+ @({
+ ;;; bk.lisp
+ (in-package \"ACL2\")
+ (defun e1 (x y) (declare (ignore x y)) t)
+ (defun e2 (x y) (declare (ignore x y)) t)
+ (defequiv e1)
+ (defequiv e2)
+ (defrefinement e1 e2) ; E1-REFINES-E2: (IMPLIES (E1 X Y) (E2 X Y))
+ })
+
+ <p>Then in a fresh ACL2 session, evaluate the following events.</p>
+
+ @({
+ (defun e1 (x y) (declare (ignore x y)) t)
+ (defun e2 (x y) (declare (ignore x y)) t)
+ (defun e3 (x y) (declare (ignore x y)) t)
+ (defequiv e1)
+ (defequiv e2)
+ (defequiv e3)
+ (defrefinement e1 e3) ; E1-REFINES-E3: (IMPLIES (E1 X Y) (E3 X Y))
+ (defrefinement e3 e2) ; E3-REFINES-E2: (IMPLIES (E3 X Y) (E2 X Y))
+ (include-book \"bk\")   ; E1-REFINES-E2: (IMPLIES (E1 X Y) (E2 X Y))
+ })
+
+ <p>The final event (the @('include-book')) will cause the error shown above.
+ Notice that when @('bk.lisp') was certified, the @(':refinement') rule
+ E1-REFINES-E2 was perfectly legal.  But at the time the form @('(include-book
+ \"bk\")') is evaluated above, E1 already refines E3 which already refines E2,
+ so E1 already refines E2; thus the proposed rule E1-REFINES-E2 is
+ illegal.</p>")
 
 (defxdoc refinement-failure
   :parents (introduction-to-the-theorem-prover break-rewrite)
