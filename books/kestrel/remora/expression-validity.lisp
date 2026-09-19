@@ -92,7 +92,29 @@
      is to imply that the least upper bound exists).
      The rule has a premise requiring the principal shape to be valid
      because that does not follow from the least upper bound predicate
-     (e.g. it could include a variable not in @('ivars'))."))
+     (e.g. it could include a variable not in @('ivars')).")
+   (xdoc::p
+    "For type application,
+     the type argument must have the same kind as
+     the parameter of the universal type,
+     as in [thesis] [arxiv].
+     We do not lift an atom-kinded argument to a scalar array type
+     when the parameter is array-kinded.
+     This differs from [impl],
+     where an array-kinded type parameter stands for
+     an atom type variable and a shape variable,
+     so that an atom-kinded argument instantiates just the former,
+     leaving the latter abstracted;
+     we plan to conform to [impl] at some point.
+     The two substitution maps are set up
+     as in the @('forall') rule of @(see type-equivalence-definition).
+     The substitution is @(tsee type-subst-type-vars),
+     guarded by @(tsee type-subst-type-vars-no-capture-p):
+     when the substitution would capture variables,
+     the rule does not apply directly,
+     but the binders in the type of the function
+     can be alpha-renamed via the @('eqv') rule first,
+     so no generality is lost."))
 
   :preds ((expr-ok ivars tvars evars expr type)
           (atom-ok ivars tvars evars atom type)
