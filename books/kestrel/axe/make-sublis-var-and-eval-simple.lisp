@@ -1,7 +1,7 @@
 ; A tool to generate substitution code that calls a given evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -21,6 +21,8 @@
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "bounded-darg-listp")
 (include-book "axe-trees")
+(include-book "kestrel/axe/darg-trees" :dir :system)
+(include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 
 (defun make-sublis-var-and-eval-simple-fn (suffix evaluator-base-name)
   (declare (xargs :guard (and (symbolp suffix)
@@ -31,7 +33,9 @@
     `(encapsulate ()
        (local (include-book "kestrel/axe/replace-var-rules" :dir :system))
        (local (include-book "kestrel/lists-light/len" :dir :system))
+       (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
        (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
+       (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 
        ;; for speed:
        (local (in-theory (disable pseudo-termp
@@ -178,6 +182,33 @@
                                   (term (cadr term)))
                   :in-theory (disable myquotep symbol-alistp strip-cdrs ,(pack$ 'myquotep-of- sublis-var-and-eval-name)))))
 
+       (,(pack$ 'defthm-flag- sublis-var-and-eval-name)
+         (defthm ,(pack$ 'darg-treep-of- sublis-var-and-eval-name)
+           (implies (and (subsetp-equal (free-vars-in-term term)
+                                        (strip-cars alist))
+                         (darg-listp (strip-cdrs alist))
+                         (alistp alist)
+                         (pseudo-termp term))
+                    (darg-treep (,sublis-var-and-eval-name alist term interpreted-function-alist)))
+           :flag ,sublis-var-and-eval-name)
+         (defthm ,(pack$ 'darg-tree-listp-of-mv-nth-1-of- sublis-var-and-eval-lst-name)
+           (implies (and (subsetp-equal (free-vars-in-terms terms)
+                                        (strip-cars alist))
+                         (darg-listp (strip-cdrs alist))
+                         (alistp alist)
+                         (pseudo-term-listp terms))
+                    (darg-tree-listp (mv-nth 1 (,sublis-var-and-eval-lst-name alist terms interpreted-function-alist))))
+           :flag ,sublis-var-and-eval-lst-name)
+         :hints (("Goal" :in-theory (e/d (,sublis-var-and-eval-name ,sublis-var-and-eval-lst-name
+                                                                    pseudo-termp-when-not-consp-cheap
+                                                                    pseudo-termp
+                                                                    darg-treep
+                                                                    darg-tree-listp
+                                                                    darg-treep-when-dargp
+                                                                    member-equal-of-strip-cars-iff-assoc-equal)
+                                         (myquotep ,(pack$ 'myquotep-of- sublis-var-and-eval-name))))))
+
+       ;;  todo: prove from the previous one
        (,(pack$ 'defthm-flag- sublis-var-and-eval-name)
          (defthm ,(pack$ 'axe-treep-of- sublis-var-and-eval-name)
            (implies (and (darg-listp (strip-cdrs alist))
