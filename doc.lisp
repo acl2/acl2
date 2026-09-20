@@ -106905,10 +106905,11 @@ Experimental Versions
 
   Below we roughly organize the changes to ACL2 since Version 8.7 into
   the following categories of changes: existing features, new
-  features, heuristic and efficiency improvements, bug fixes, changes
-  at the system level, Emacs support, and experimental versions.
-  Each change is described in just one category, though of course
-  many changes could be placed in more than one category.
+  features, heuristic and efficiency improvements, bug fixes (two
+  sections), changes at the system level, Emacs support, and
+  experimental versions.  Each change is described in just one
+  category, though of course many changes could be placed in more
+  than one category.
 
   Note that only ACL2 system changes are listed below.  See also
   [note-8-8-books] for a summary of changes made to the ACL2
@@ -106999,7 +107000,128 @@ New Features
 Heuristic and Efficiency Improvements
 
 
-Bug Fixes
+Bug Fixes From AI via Eric Smith
+
+  [3mThe bugs described in this section were all reported by Eric Smith,
+  who used Anthropic's Claude to find the bugs.  We thank Eric for
+  his persistence and skilled queries of Claude, and for filtering
+  out false positives.  (There are also some Claude-inspired fixes in
+  other sections besides bug fixes.)[0m
+
+  An additional restriction was added to [30m[47m:[0m[0m[30m[47m[elim][0m[0m rules, namely, for the
+  general form [30m[47m(implies hyp (equiv lhs x))[0m[0m, all occurrences of [30m[47mx[0m[0m in
+  [30m[47mhyp[0m[0m must be [30m[47mequiv[0m[0m-hittable preserving [30m[47miff[0m[0m.  See [elim].  This
+  corrected a soundness bug; see [community-books]
+  [30m[47msystem/tests/elim-iff-hyp.lisp[0m[0m and
+  [30m[47msystem/tests/elim-iff-hyp-2.lisp[0m[0m.  These illustrate the restriction
+  added when an [30m[47m:elim[0m[0m rule is submitted; comments in source function
+  [30m[47mapply-instantiated-elim-rule[0m[0m illustrate a corresponding restriction
+  when the rule is applied.
+
+  Restrictions on [refinement] and [compound-recognizer] rules were
+  erroneously not being made in the second pass of an [30m[47m[encapsulate][0m[0m
+  event, resulting in a soundness bug that we have fixed; see
+  [community-books] [30m[47msystem/tests/refine.lisp[0m[0m and
+  [30m[47msystem/tests/compound-recognizer-pass-2.lisp[0m[0m.
+
+  The [functional-instantiation] code was modified to correct a
+  soundness bug caused by our failure to completely avoid variable
+  capture when instantiating the constraints.  See the comment in
+  [30m[47mremove-capture-in-constraint-lst[0m[0m.
+
+  When [30m[47m[make-event][0m[0m expansion takes place, the result might not be a
+  valid ACL2 object.  ACL2 checked for this situation, but only when
+  the [known-package-alist] changed.  Now the check is done
+  unconditionally, which fixes a soundness bug.  See [community-book]
+  [30m[47msystem/tests/make-event-bad-char.lisp[0m[0m.
+
+  A soundness bug was caused by function [30m[47m[df-string][0m[0m due to the
+  distinction in raw Lisp between 0.0 and -0.0.  See [community-book]
+  [30m[47msystem/tests/df-negative-zero.lisp[0m[0m.
+
+  Soundness bugs were caused by inadequate redundancy checks (see
+  [redundant-events]) for calls of [30m[47m[defun][0m[0m and its variants,
+  including [30m[47m[defun-nx][0m[0m).  The redundancy checks, which have been
+  fixed, failed to account properly for the following, as explained
+  in the indicated [community-books]:
+
+    * the default measure function (see [set-measure-function]) in checking
+      redundancy of a [30m[47mdefun[0m[0m (incomplete checking) --- see
+      [30m[47msystem/tests/measure-fn-redundancy.lisp[0m[0m;
+
+    * the [well-founded-relation] in checking redundancy of a [30m[47mdefun[0m[0m; see
+      [30m[47msystem/tests/wfr-redundancy.lisp[0m[0m;
+
+    * the measure and the verify-guards status in checking redundancy of a
+      [30m[47mdefun-nx[0m[0m event or other [non-executable] definition; see
+      [30m[47msystem/tests/nx2.lisp[0m[0m and
+      [30m[47msystem/tests/nonexec-requiring-verify-guards.lisp[0m[0m; and
+
+    * both the default measure function and the default
+      well-founded-relation in checking redundancy of an
+      [30m[47m[encapsulate][0m[0m event; see
+      [30m[47msystem/tests/measure-fn-redundancy-encap.lisp[0m[0m.
+
+  Monotonicity properties of [30m[47m[df-round][0m[0m and [30m[47m[to-df][0m[0m ---
+  [30m[47mconstrained-to-df-monotonicity[0m[0m, [30m[47mto-df-monotonicity[0m[0m, and
+  [30m[47mdf-round-monotonicity[0m[0m --- have been removed, because they are
+  (surprisingly, to us) not supported by some Common Lisp
+  implementations and in fact render ACL2 unsound in those host
+  Lisps.  The issue is described in a comment in the event
+  [30m[47mconstrained-to-df-monotonicity) in ACL2 source file
+  @('float-a.lisp[0m[0m.
+
+  Fixed two related soundness bugs in the application of [30m[47m:[0m[0m[30m[47m[bdd][0m[0m
+  [hints].  See [community-books] [30m[47msystem/tests/bdd-1.lisp[0m[0m and
+  [30m[47msystem/tests/bdd-2.lisp[0m[0m.
+
+  Fixed a soundness bug in [30m[47m[boole$][0m[0m, which axiomatized [30m[47m(boole$
+  *boole-set* x y)[0m[0m to be [30m[47m1[0m[0m instead of the correct value, [30m[47m-1[0m[0m.  See
+  [community-book] [30m[47msystem/tests/boole-set.lisp[0m[0m.
+
+  Fixed an assertion failure that could occur when an accessor call in
+  a [30m[47m[stobj-let][0m[0m's bindings was on a quoted non-numeric index.  As
+  part of the fix, extended a guard optimization for constant indices
+  from just the numeric case.
+
+  Checks were improved to avoid raw Lisp errors in the following
+  situations.  (Aside: Claude reported, for the first two: ``Four
+  subagents tested ~270 malformed inputs across nearly every ACL2
+  event type.... Out of ~270 tests, only 2 bugs were found''.)
+
+    * when the first argument of a call of [30m[47m[table][0m[0m is not a symbol;
+
+    * when a [computed-hint] evaluates to an expression of the form
+      [30m[47m(:computed-hint-replacement x ...)[0m[0m where [30m[47mx[0m[0m is neither [30m[47mt[0m[0m, [30m[47mnil[0m[0m,
+      nor a true list; and
+
+    * when the second argument of [30m[47m[defevaluator][0m[0m is ill-formed.
+
+  Fixed many dozens of typos in comments and error messages.
+
+  Applied fixes from Claude for bugs in the raw Lisp definitions
+  supporting [30m[47m[mfc-rw+][0m[0m and [30m[47m[mfc-relieve-hyp][0m[0m.
+
+  Fixed a bug that could mangle messages from [30m[47m[theory-invariant][0m[0m
+  [events].  Closes PR #2042.
+
+  Fixed a bug in the creation of executable-counterpart functions (see
+  [evaluation] for [30m[47m[stobj-let][0m[0m.  See [community-book]
+  [30m[47msystem/tests/oneify-stobj-let.lisp[0m[0m.  Closes PR #2043.
+
+  Fixed a bug (in source function [30m[47mtau-like-propositionp[0m[0m that could
+  prevent creation of some [tau-system] rules.  Closes PR #2044.
+
+  Fixed bugs (missing commas inside backquotes) in an ACL2 source
+  function [30m[47minfo-for-lemmas[0m[0m that could affect output from utilities
+  [30m[47m:[0m[0m[30m[47m[pl][0m[0m, [30m[47m:[0m[0m[30m[47m[pr][0m[0m, [30m[47m:[0m[0m[30m[47m[pr!][0m[0m, and [30m[47m:[0m[0m[30m[47m[show-bodies][0m[0m.  Closes PR #2045.
+
+  Fixed a bug that could cause free variable warnings to be suppressed
+  when a [30m[47m:[0m[0m[30m[47m[forward-chaining][0m[0m rule has more than one trigger term.
+  Closes PR #2046.
+
+
+Other Bug Fixes
 
   Fixed a soundness bug caused by creation of a character that is not
   an ACL2 character.  All ACL2 characters have codes less than 256,
@@ -107030,126 +107152,17 @@ Bug Fixes
   for calls of built-in functions having types with bounded integer
   return values.  These bugs are now avoided by proclaiming those
   functions [30m[47mnotinline[0m[0m.  Thanks to Grant Jurgensen for reporting the
-  use of of Anthropic's Claude to find these bugs; see
-  [community-books] files
-  [30m[47msystem/tests/integer-length-bad-optimization.lisp[0m[0m and
+  use of Anthropic's Claude to find these bugs; see [community-books]
+  files [30m[47msystem/tests/integer-length-bad-optimization.lisp[0m[0m and
   [30m[47msystem/tests/length-bad-optimization.lsp[0m[0m.  Thanks also to Stas
   Boukarev for suggesting the use of [30m[47mnotinline[0m[0m, as our original
   solution was more complicated (by modifying function types), and to
   Eric Smith for pointing out a bug in our initial implementation.
 
-  An additional restriction was added to [30m[47m:[0m[0m[30m[47m[elim][0m[0m rules, namely, for the
-  general form [30m[47m(implies hyp (equiv lhs x))[0m[0m, all occurrences of [30m[47mx[0m[0m in
-  [30m[47mhyp[0m[0m must be [30m[47mequiv[0m[0m-hittable preserving [30m[47miff[0m[0m.  See [elim].  This
-  corrected a soundness bug discovered by Eric Smith with the help of
-  Anthropic's Claude, which resulted in [community-books]
-  [30m[47msystem/tests/elim-iff-hyp.lisp[0m[0m and
-  [30m[47msystem/tests/elim-iff-hyp-2.lisp[0m[0m.  These illustrate the restriction
-  added when an [30m[47m:elim[0m[0m rule is submitted; comments in source function
-  [30m[47mapply-instantiated-elim-rule[0m[0m illustrate a corresponding restriction
-  when the rule is applied.
-
-  A restriction on [refinement] rules was erroneously not being made in
-  the second pass of an [30m[47m[encapsulate][0m[0m event.  This has been remedied,
-  correcting a soundness bug discovered by Eric Smith with the help
-  of Anthropic's Claude; see [community-book]
-  [30m[47msystem/tests/refine.lisp[0m[0m.
-
-  The [functional-instantiation] code was modified to correct a
-  soundness bug caused by our failure to completely avoid variable
-  capture when instantiating the constraints.  See the comment in
-  [30m[47mremove-capture-in-constraint-lst[0m[0m.  This bug was discovered by Eric
-  Smith with the help of Anthropic's Claude.
-
-  When [30m[47m[make-event][0m[0m expansion takes place, the result might not be a
-  valid ACL2 object.  ACL2 checked for this situation, but only when
-  the [known-package-alist] changed.  Now the check is done
-  unconditionally.  This fixes a soundness bug discovered by Eric
-  Smith with the help of Anthropic's Claude; see [community-book]
-  [30m[47msystem/tests/make-event-bad-char.lisp[0m[0m.
-
-  A soundness bug was caused by function [30m[47m[df-string][0m[0m due to the
-  distinction in raw Lisp between 0.0 and -0.0.  Thanks to Eric Smith
-  for reporting the use of of Anthropic's Claude to find this bug;
-  see [community-book] [30m[47msystem/tests/df-negative-zero.lisp[0m[0m.
-
-  Soundness bugs were caused by inadequate redundancy checks (see
-  [redundant-events]) for calls of [30m[47m[defun][0m[0m and its variants,
-  including [30m[47m[defun-nx][0m[0m).  Thanks to Eric Smith for reporting the use
-  of Anthropic's Claude to find these bugs.  The redundancy checks,
-  which have been fixed, failed to account properly for the
-  following, as explained in the indicated [community-books]:
-
-    * the default measure function (see [set-measure-function]) in checking
-      redundancy of a [30m[47mdefun[0m[0m (incomplete checking) --- see
-      [30m[47msystem/tests/measure-fn-redundancy.lisp[0m[0m;
-
-    * the [well-founded-relation] in checking redundancy of a [30m[47mdefun[0m[0m; see
-      [30m[47msystem/tests/wfr-redundancy.lisp[0m[0m;
-
-    * the measure in checking redundance of a [30m[47mdefun-nx[0m[0m event; see
-      [30m[47msystem/tests/nx2.lisp[0m[0m; and
-
-    * both the default measure function and the default
-      well-founded-relation in checking redundancy of an
-      [30m[47m[encapsulate][0m[0m event; see
-      [30m[47msystem/tests/measure-fn-redundancy-encap.lisp[0m[0m.
-
-  Monotonicity properties of [30m[47m[df-round][0m[0m and [30m[47m[to-df][0m[0m ---
-  [30m[47mconstrained-to-df-monotonicity[0m[0m, [30m[47mto-df-monotonicity[0m[0m, and
-  [30m[47mdf-round-monotonicity[0m[0m --- have been removed, because they are
-  (surprisingly, to us) not supported by some Common Lisp
-  implementations and in fact render ACL2 unsound in those host
-  Lisps.  The issue is described in a comment in the event
-  [30m[47mconstrained-to-df-monotonicity) in ACL2 source file
-  @('float-a.lisp[0m[0m.  This issue was discovered by Eric Smith with the
-  help of Anthropic's Claude.
-
-  Fixed two related soundness bugs in the application of [30m[47m:[0m[0m[30m[47m[bdd][0m[0m
-  [hints].  Thanks to Eric Smith for discovering the first of these
-  bugs with the help of Anthropic's Claude.  See [community-books]
-  [30m[47msystem/tests/bdd-1.lisp[0m[0m and [30m[47msystem/tests/bdd-2.lisp[0m[0m.
-
-  Fixed a soundness bugs in [30m[47m[boole$][0m[0m, which axiomatized [30m[47m(boole$
-  *boole-set* x y)[0m[0m to be [30m[47m1[0m[0m instead of the correct value, [30m[47m-1[0m[0m.  Thanks
-  to Eric Smith for discovering this bug with the help of Anthropic's
-  Claude.  See [community-book] [30m[47msystem/tests/boole-set.lisp[0m[0m.
-
-  Fixed an assertion failure that could occur when an accessor call in
-  a [30m[47m[stobj-let][0m[0m's bindings was on a quoted non-numeric index.  Thanks
-  to Eric Smith for sending an example found by Anthropic's Claude.
-  As part of the fix, extended a guard optimization for constant
-  indices from just the numeric case.
-
-  Checks were improved to avoid raw Lisp errors in the following
-  situations:
-
-    * when the first argument of a call of [30m[47m[table][0m[0m is not a symbol;
-
-    * when a [computed-hint] evaluates to an expression of the form
-      [30m[47m(:computed-hint-replacement x ...)[0m[0m where [30m[47mx[0m[0m is neither [30m[47mt[0m[0m, [30m[47mnil[0m[0m,
-      nor a true list; and
-
-    * when the second argument of [30m[47m[defevaluator][0m[0m is ill-formed.
-
-  Thanks to Eric Smith for passing along these bug reports from Claude
-  Code (which reported, for the first two: ``Four subagents tested
-  ~270 malformed inputs across nearly every ACL2 event type.... Out
-  of ~270 tests, only 2 bugs were found'').
-
-  Fixed many dozens of typos in comments and error messages, as
-  reported by Eric Smith, who used Claude Code and filtered out some
-  false positives.
-
   Fixed the behavior of aborts to avoid printing a newline to the
   terminal when, like everything else, it should be printed to
   standard output.  Thanks to Eric McCarthy for finding this bug as
   well as providing a detailed explanation and the fix.
-
-  Fixed bugs in the raw Lisp definitions supporting [30m[47m[mfc-rw+][0m[0m and
-  [30m[47m[mfc-relieve-hyp][0m[0m.  Thanks to Eric Smith for sending a report he
-  produced with Claude Code that points out the bugs and provides the
-  fixes.
 
   A release note item in [note-8-7] mentions a new feature in the
   preceding ACL2 release, for which ``definitions are saved in the
@@ -129198,46 +129211,7 @@ Subtopics
   way to prevent the system from using that information.
   Furthermore, [30m[47m:refinement[0m[0m lemmas are not tracked and are thus not
   reported in the [summary].  Of course, individual [30m[47m:[0m[0m[30m[47m[rewrite][0m[0m rules
-  can be disabled.
-
-  Finally, we discuss the following sort of error that you might see on
-  rare occasions.
-
-    HARD ACL2 ERROR in ADD-REFINEMENT-RULE:  E1 is already known to be
-    a refinement of E2.  This was not the case when the :REFINEMENT rule
-    named E1-REFINES-E2 was admitted during certification of the book
-    \"/Users/smith/work/bk.lisp\" but it is the case now, during an
-    attempt to include that book.  See :DOC refinement.
-
-  To see how this could happen, create a book, [30m[47mbk.lisp[0m[0m, containing the
-  following forms.
-
-    ;;; bk.lisp
-    (in-package \"ACL2\")
-    (defun e1 (x y) (declare (ignore x y)) t)
-    (defun e2 (x y) (declare (ignore x y)) t)
-    (defequiv e1)
-    (defequiv e2)
-    (defrefinement e1 e2) ; E1-REFINES-E2: (IMPLIES (E1 X Y) (E2 X Y))
-
-  Then in a fresh ACL2 session, evaluate the following events.
-
-    (defun e1 (x y) (declare (ignore x y)) t)
-    (defun e2 (x y) (declare (ignore x y)) t)
-    (defun e3 (x y) (declare (ignore x y)) t)
-    (defequiv e1)
-    (defequiv e2)
-    (defequiv e3)
-    (defrefinement e1 e3) ; E1-REFINES-E3: (IMPLIES (E1 X Y) (E3 X Y))
-    (defrefinement e3 e2) ; E3-REFINES-E2: (IMPLIES (E3 X Y) (E2 X Y))
-    (include-book \"bk\")   ; E1-REFINES-E2: (IMPLIES (E1 X Y) (E2 X Y))
-
-  The final event (the [30m[47minclude-book[0m[0m) will cause the error shown above.
-  Notice that when [30m[47mbk.lisp[0m[0m was certified, the [30m[47m:refinement[0m[0m rule
-  E1-REFINES-E2 was perfectly legal.  But at the time the form
-  [30m[47m(include-book \"bk\")[0m[0m is evaluated above, E1 already refines E3 which
-  already refines E2, so E1 already refines E2; thus the proposed
-  rule E1-REFINES-E2 is illegal.")
+  can be disabled.")
  (REFINEMENT-FAILURE
   (INTRODUCTION-TO-THE-THEOREM-PROVER BREAK-REWRITE)
   "what to do when a rewrite rule fails the refinement check
@@ -155421,11 +155395,11 @@ Introductory Examples
 Documentation
 
     General Forms:
-    :trans t form
-    :trans nil form
-    :trans n form
-    :trans -n form
-    :trans (x) form ; for x = t, nil, n, or -n
+    :trans* t form
+    :trans* nil form
+    :trans* n form
+    :trans* -n form
+    :trans* (x) form ; for x = t, nil, n, or -n
 
   where [30m[47mn[0m[0m is a positive integer and [30m[47mform[0m[0m is any ACL2 expression (i.e.,
   any untranslated term; see [term]).  These commands repeat
