@@ -7282,6 +7282,9 @@
                    ((and (eq (symbol-class name wrld) :program)
                          (eq defun-mode :logic))
                     'reclassifying)
+                   ((and (eq symbol-class :common-lisp-compliant)
+                         (eq (symbol-class name wrld) :ideal))
+                    'verify-guards)
                    (t
 
 ; We allow "redefinition" from :logic to :program mode by treating the latter
