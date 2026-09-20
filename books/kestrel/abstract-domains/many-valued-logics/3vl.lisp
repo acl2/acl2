@@ -1895,6 +1895,17 @@
            3fix
            3p))
 
+(defrule truth-monotonicity-of-3join
+  (implies (and (3truth<= x0 x1)
+                (3truth<= y0 y1))
+           (3truth<= (3join x0 y0)
+                     (3join x1 y1)))
+  :enable (3truth<=
+           3truth<
+           3join
+           3fix
+           3p))
+
 (defrule 3truth<=-of-3not
   (equal (3truth<= (3not x) (3not y))
          (3truth<= y x))
@@ -1905,6 +1916,26 @@
            3p))
 
 ;; The boolean projections.
+
+(defrule 3truth<=-of-unknown
+  (equal (3truth<= :unknown y)
+         (3possibly y))
+  :enable (3truth<=
+           3truth<
+           3possibly
+           3equiv
+           3fix
+           3p))
+
+(defrule 3truth<=-of-arg1-and-unknown
+  (equal (3truth<= x :unknown)
+         (not (3definitely x)))
+  :enable (3truth<=
+           3truth<
+           3definitely
+           3equiv
+           3fix
+           3p))
 
 (defruled 3truth<=-becomes-3possibly-and-3definitely
   (equal (3truth<= x y)
