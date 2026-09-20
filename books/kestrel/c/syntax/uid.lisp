@@ -163,6 +163,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod uid-triple
+  :parents (uid)
+  :short "Fixtype of triples of unique identifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Unique identifiers are defined in @(tsee uid)."))
+  ((first uid)
+   (second uid)
+   (third uid))
+  :pred uid-triplep
+  :layout :fulltree
+  ///
+
+  (defrule car-of-uid-triple
+    (equal (car (uid-triple first second third))
+           (uid-fix first))
+    :enable uid-triple)
+
+  (defrule cdr-of-uid-triple
+    (equal (cdr (uid-triple first second third))
+           (cons (uid-fix second) (uid-fix third)))
+    :enable uid-triple))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftreeset uid-triple-set
+  :parents (uid)
+  :elt-type uid-triple
+  :pred uid-triple-setp
+  :fix uid-triple-sfix)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftreemap uid-pair-uid-map
   :parents (uid)
   :key-type uid-pair
