@@ -132,7 +132,7 @@
        but only an approximate version of them,
        which still lets us perform some validation.
        We plan to refine the types, and the rest of the validator,
-       to cover exactly all the validity checks prescribed by [C17]
+       to cover exactly all the validity checks prescribed by C17
        (as well as applicable GCC extensions).")
      (xdoc::p
       "We capture the following types:")
@@ -1114,6 +1114,275 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-array-kind-equal-3p ((x type-array-kindp)
+                                  (y type-array-kindp))
+  :returns (3vl 3p)
+  :short "Check whether two array kinds are equal."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is equality of array kinds,
+     accommodating the imprecision of the representation.
+     Two constant lengths are equal if both are known and equal;
+     if either is unknown, we cannot tell.
+     Two nonconstant lengths may or may not be equal,
+     since we do not track their size expressions.
+     A kind that is complete but otherwise unknown
+     may be equal to any complete kind.
+     Two incomplete kinds are equal, and any other combination differs."))
+  (type-array-kind-case
+    x
+    :const-len
+    (type-array-kind-case
+      y
+      :const-len (if (and x.len y.len)
+                     (equal x.len y.len)
+                   :unknown)
+      :unknown-complete :unknown
+      :otherwise nil)
+    :nonconst-len
+    (type-array-kind-case
+      y
+      :nonconst-len :unknown
+      :unknown-complete :unknown
+      :otherwise nil)
+    :unknown-complete
+    (type-array-kind-case
+      y
+      :incomplete nil
+      :otherwise :unknown)
+    :incomplete
+    (type-array-kind-case y :incomplete)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines type/type-list-equal-3p
+  (define type-equal-3p ((x typep)
+                         (y typep))
+    :returns (3vl 3p)
+    :short "Check whether two types are equal."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is equality of types,
+       accommodating the imprecision of the representation")
+     (xdoc::p
+      "If either type is one of the unknown types,
+       the types may be equal if the other type
+       may be of the kind that the unknown type stands for.
+       Otherwise, two types of different kinds are different.
+       Two types of the same kind are equal if their components are.
+       Structure and union types are equal if they have the same UID.
+       Two enumerated types may or may not be equal,
+       since we do not currently distinguish different enumerations.
+       The remaining types are equal
+       if they are represented identically."))
+    (cond ((or (type-case x :unknown)
+               (type-case x :unknown-builtin)
+               (type-case y :unknown)
+               (type-case y :unknown-builtin))
+           :unknown)
+          ((type-case x :unknown-scalar)
+           (3and (type-scalar-3p y) :unknown))
+          ((type-case y :unknown-scalar)
+           (3and (type-scalar-3p x) :unknown))
+          ((type-case x :unknown-arithmetic)
+           (3and (type-arithmetic-3p y) :unknown))
+          ((type-case y :unknown-arithmetic)
+           (3and (type-arithmetic-3p x) :unknown))
+          (t (type-case
+               x
+               :array
+               (type-case
+                 y
+                 :array (3and$ (type-array-kind-equal-3p x.kind y.kind)
+                               (type-equal-3p x.of y.of))
+                 :otherwise nil)
+               :pointer
+               (type-case
+                 y
+                 :pointer (type-equal-3p x.to y.to)
+                 :otherwise nil)
+               :function
+               (type-case
+                 y
+                 :function (3and$ (type-equal-3p x.ret y.ret)
+                                  (type-params-equal-3p
+                                   x.params y.params))
+                 :otherwise nil)
+               :struct
+               (type-case
+                 y
+                 :struct (uid-equal x.uid y.uid)
+                 :otherwise nil)
+               :union
+               (type-case
+                 y
+                 :union (uid-equal x.uid y.uid)
+                 :otherwise nil)
+               :enum
+               (type-case
+                 y
+                 :enum :unknown
+                 :otherwise nil)
+               :otherwise
+               (type-equiv x y))))
+    :measure (+ (type-count x)
+                (type-count y)))
+
+  (define type-params-equal-3p ((x type-params-p)
+                                (y type-params-p))
+    :returns (3vl 3p)
+    :short "Check whether the parameter portions of two function types
+            are equal."
+    (type-params-case
+      x
+      :prototype
+      (type-params-case
+        y
+        :prototype (if (equal x.ellipsis y.ellipsis)
+                       (type-list-equal-3p x.params y.params)
+                     nil)
+        :otherwise nil)
+      :old-style
+      (type-params-case
+        y
+        :old-style (type-list-equal-3p x.params y.params)
+        :otherwise nil)
+      :unspecified (type-params-case y :unspecified))
+    :measure (+ (type-params-count x)
+                (type-params-count y)))
+
+  (define type-list-equal-3p ((x type-listp)
+                              (y type-listp))
+    :returns (3vl 3p)
+    :short "Check whether two lists of types are equal."
+    (b* (((when (endp x))
+          (endp y))
+         ((when (endp y))
+          nil))
+      (3and$ (type-equal-3p (first x) (first y))
+             (type-list-equal-3p (rest x) (rest y))))
+    :measure (+ (type-list-count x)
+                (type-list-count y)))
+
+  :flag-local nil
+  :verify-guards :after-returns
+  ///
+
+  (fty::deffixequiv-mutual type/type-list-equal-3p
+    :hints (("Goal" :in-theory (disable type-fix-when-enum)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define type-struni-member-list-equal-3p ((x type-struni-member-listp)
+                                          (y type-struni-member-listp))
+  :returns (3vl 3p)
+  :short "Check whether two lists of structure or union members are equal."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The names must be the same, in the same order,
+     and the types must be equal in the sense of @(tsee type-equal-3p)."))
+  (b* (((when (endp x))
+        (endp y))
+       ((when (endp y))
+        nil)
+       ((type-struni-member member-x) (first x))
+       ((type-struni-member member-y) (first y))
+       ((unless (equal member-x.name? member-y.name?))
+        nil))
+    (3and$ (type-equal-3p member-x.type member-y.type)
+           (type-struni-member-list-equal-3p (rest x) (rest y))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule type-array-kind-equal-3p-under-iff-when-same
+  (iff (type-array-kind-equal-3p x x)
+       t)
+  :enable type-array-kind-equal-3p)
+
+(defrule 3possibly-type-array-kind-equal-3p-when-same
+  (3possibly (type-array-kind-equal-3p x x))
+  :enable type-array-kind-equal-3p)
+
+(defrule type-array-kind-equal-3p-symmetric
+  (equal (type-array-kind-equal-3p y x)
+         (type-array-kind-equal-3p x y))
+  :enable type-array-kind-equal-3p)
+
+(encapsulate ()
+  (local
+    (defthm-type/type-list-equal-3p-flag
+      (defthm type-equal-3p-when-same-lemma
+        (implies (equal x y)
+                 (iff (type-equal-3p x y)
+                      t))
+        :flag type-equal-3p)
+      (defthm type-params-equal-3p-when-same-lemma
+        (implies (equal x y)
+                 (iff (type-params-equal-3p x y)
+                      t))
+        :flag type-params-equal-3p)
+      (defthm type-list-equal-3p-when-same-lemma
+        (implies (equal x y)
+                 (iff (type-list-equal-3p x y)
+                      t))
+        :flag type-list-equal-3p)
+      :hints (("Goal"
+               :in-theory (enable 3and
+                                  type-equal-3p
+                                  type-params-equal-3p
+                                  type-list-equal-3p
+                                  (:i type/type-list-equal-3p-flag))))))
+
+  (defrule type-equal-3p-under-iff-when-same
+    (iff (type-equal-3p x x)
+         t))
+
+  (defrule type-params-equal-3p-under-iff-when-same
+    (iff (type-params-equal-3p x x)
+         t))
+
+  (defrule type-list-equal-3p-under-iff-when-same
+    (iff (type-list-equal-3p x x)
+         t)))
+
+(defrule 3possibly-type-equal-3p-when-same
+  (3possibly (type-equal-3p x x))
+  :enable (3possibly 3equiv))
+
+(defrule 3possibly-type-params-equal-3p-when-same
+  (3possibly (type-params-equal-3p x x))
+  :enable (3possibly 3equiv))
+
+(defrule 3possibly-type-list-equal-3p-when-same
+  (3possibly (type-list-equal-3p x x))
+  :enable (3possibly 3equiv))
+
+(defthm-type/type-list-equal-3p-flag
+  (defthm type-equal-3p-symmetric
+    (equal (type-equal-3p y x)
+           (type-equal-3p x y))
+    :flag type-equal-3p)
+  (defthm type-params-equal-3p-symmetric
+    (equal (type-params-equal-3p y x)
+           (type-params-equal-3p x y))
+    :flag type-params-equal-3p)
+  (defthm type-list-equal-3p-symmetric
+    (equal (type-list-equal-3p y x)
+           (type-list-equal-3p x y))
+    :flag type-list-equal-3p)
+  :hints (("Goal"
+           :in-theory (enable type-equal-3p
+                              type-params-equal-3p
+                              type-list-equal-3p
+                              uid-equal
+                              (:i type/type-list-equal-3p-flag)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-integer-promotedp ((type typep))
   :guard (3definitely (type-arithmetic-3p type))
   :returns (yes/no booleanp)
@@ -1657,7 +1926,7 @@
     (make-type-pointer :to (make-pointers-to (rest pointers) type)))
   :verify-guards :after-returns)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-array-change-kind-at-depth ((type typep)
                                          (depth natp)
