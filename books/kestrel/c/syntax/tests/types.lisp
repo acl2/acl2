@@ -283,7 +283,6 @@
     (irr-ienv))
   t)
 
-
 ;; Untagged structs declared in separate translation units
 ;; are compatible if their members are [C17:6.2.7/1] [C23:6.2.7/1].
 (acl2::assert-equal
@@ -790,280 +789,512 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-;; Array types
-
-(acl2::assert!
-  (mv-let (composite completions next-uid)
-          (type-composite
-            (make-type-array
-              :of (type-unknown)
-              :kind (make-type-array-kind-const-len :len nil))
-            (make-type-array
-              :of (type-sint)
-              :kind (make-type-array-kind-const-len :len 10))
-            nil
-            (uid 42)
-            (irr-ienv))
-    (and (equal composite
-                (make-type-array
-                  :of (type-sint)
-                  :kind (make-type-array-kind-const-len :len 10)))
-         (equal completions nil)
-         (equal next-uid (uid 42)))))
+;; The composite of two types, constructed from an empty composites map,
+;; along with the composite relation on it.
+(define type-composite-and-relation ((x typep) (y typep) (ienv ienvp))
+  (b* (((mv composite completions & &)
+        (type-composite x y nil (treemap::empty) (uid 1) ienv)))
+    (list composite
+          (type-composite-3p x y composite completions ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-;; Struct types
+;; Array types
 
-(acl2::assert!
-  (mv-let (composite completions next-uid)
-          (type-composite
-            (make-type-struct :uid (uid 42)
-                              :tunit? (filepath "foo.c")
-                              :tag/members (type-struni-tag/members-tagged
-                                             (ident "my_struct")))
-            (make-type-struct :uid (uid 43)
-                              :tunit? (filepath "bar.c")
-                              :tag/members (type-struni-tag/members-tagged
-                                             (ident "my_struct")))
-            (treemap::update
-              (uid 42)
-              (list (make-type-struni-member :name? (ident "x")
-                                             :type (type-char))
-                    (make-type-struni-member :name? (ident "y")
-                                             :type (type-ulong)))
-              (treemap::update
-                (uid 43)
-                (list (make-type-struni-member :name? (ident "x")
-                                               :type (type-char))
-                      (make-type-struni-member :name? (ident "y")
-                                               :type (type-ulong)))
-                nil))
-            (uid 44)
-            (irr-ienv))
-    ;; Both types satisfy the requirements of the composite,
-    ;; so the first is returned as is, and nothing is created.
-    (declare (ignore completions))
-    (and (equal composite
-                (make-type-struct :uid (uid 42)
-                                  :tunit? (filepath "foo.c")
-                                  :tag/members (type-struni-tag/members-tagged
-                                                 (ident "my_struct"))))
-         (equal next-uid
-                (uid 44)))))
+;; The array of known size is the composite with an incomplete array,
+;; in either order.
+(acl2::assert-equal
+  (b* ((array-10 (make-type-array
+                   :of (type-sint)
+                   :kind (make-type-array-kind-const-len :len 10)))
+       (array-inc (make-type-array
+                    :of (type-sint)
+                    :kind (type-array-kind-incomplete))))
+    (list (type-composite-and-relation array-10 array-inc (irr-ienv))
+          (type-composite-and-relation array-inc array-10 (irr-ienv))))
+  (let ((array-10 (make-type-array
+                    :of (type-sint)
+                    :kind (make-type-array-kind-const-len :len 10))))
+    (list (list array-10 t)
+          (list array-10 t))))
 
-;; Neither type is a composite of the two
-;; (each has a member more specific than the other's),
-;; so a new struct type is created with the composite members.
-(acl2::assert!
-  (mv-let (composite completions next-uid)
-          (type-composite
-            (make-type-struct :uid (uid 42)
-                              :tunit? (filepath "foo.c")
-                              :tag/members (type-struni-tag/members-tagged
-                                             (ident "my_struct")))
-            (make-type-struct :uid (uid 43)
-                              :tunit? (filepath "bar.c")
-                              :tag/members (type-struni-tag/members-tagged
-                                             (ident "my_struct")))
-            (treemap::update
-              (uid 42)
-              (list (make-type-struni-member
-                      :name? (ident "x")
-                      :type (make-type-pointer
-                              :to (make-type-function
-                                    :ret (type-sint)
-                                    :params (make-type-params-prototype
-                                              :params (list (type-sint))))))
-                    (make-type-struni-member
-                      :name? (ident "y")
-                      :type (make-type-pointer
-                              :to (make-type-function
-                                    :ret (type-sint)
-                                    :params (type-params-unspecified)))))
-              (treemap::update
-                (uid 43)
-                (list (make-type-struni-member
-                        :name? (ident "x")
-                        :type (make-type-pointer
-                                :to (make-type-function
-                                      :ret (type-sint)
-                                      :params (type-params-unspecified))))
-                      (make-type-struni-member
-                        :name? (ident "y")
-                        :type (make-type-pointer
-                                :to (make-type-function
-                                      :ret (type-sint)
-                                      :params (make-type-params-prototype
-                                                :params (list (type-sint)))))))
-                nil))
-            (uid 44)
-            (irr-ienv))
-    (and (equal composite
-                (make-type-struct :uid (uid 44)
-                                  :tunit? nil
-                                  :tag/members (type-struni-tag/members-tagged
-                                                 (ident "my_struct"))))
-         (equal (treemap::lookup (uid 44) completions)
-                (list (make-type-struni-member
-                        :name? (ident "x")
-                        :type (make-type-pointer
-                                :to (make-type-function
-                                      :ret (type-sint)
-                                      :params (make-type-params-prototype
-                                                :params (list (type-sint))))))
-                      (make-type-struni-member
-                        :name? (ident "y")
-                        :type (make-type-pointer
-                                :to (make-type-function
-                                      :ret (type-sint)
-                                      :params (make-type-params-prototype
-                                                :params (list (type-sint))))))))
-         (equal next-uid
-                (uid 45)))))
+;; A variable length array is the composite with an incomplete array,
+;; although the relation cannot tell, as its size may be unevaluated.
+(acl2::assert-equal
+  (type-composite-and-relation
+    (make-type-array :of (type-sint) :kind (type-array-kind-nonconst-len))
+    (make-type-array :of (type-sint) :kind (type-array-kind-incomplete))
+    (irr-ienv))
+  (list (make-type-array :of (type-sint) :kind (type-array-kind-nonconst-len))
+        :unknown))
 
-(acl2::assert!
-  (mv-let (composite completions next-uid)
-          (type-composite
-            (make-type-struct :uid (uid 42)
-                              :tunit? (filepath "foo.c")
-                              :tag/members (type-struni-tag/members-tagged
-                                             (ident "my_struct")))
-            (make-type-struct :uid (uid 42)
-                              :tunit? (filepath "foo.c")
-                              :tag/members (type-struni-tag/members-tagged
-                                             (ident "my_struct")))
-            (treemap::update
-              (uid 42)
-              (list (make-type-struni-member :name? (ident "x")
-                                             :type (type-char))
-                    (make-type-struni-member :name? (ident "y")
-                                             :type (type-ulong)))
-              (treemap::update
-                (uid 43)
-                (list (make-type-struni-member :name? (ident "x")
-                                               :type (type-char))
-                      (make-type-struni-member :name? (ident "y")
-                                               :type (type-ulong)))
-                nil))
-            (uid 44)
-            (irr-ienv))
-    (declare (ignore completions))
-    (and (equal composite
-                (make-type-struct :uid (uid 42)
-                              :tunit? (filepath "foo.c")
-                              :tag/members (type-struni-tag/members-tagged
-                                             (ident "my_struct"))))
-         (equal next-uid
-                (uid 44)))))
+;;;;;;;;;;;;;;;;;;;;
 
-;; Cyclic struct types across three translation units:
-;; the first points to itself, and the second and third point to each other.
-;; Composing the first two reaches the pair of the first and third,
-;; which reaches the first pair again.
-;; Each type is a composite of the two, so the first is returned as is.
-(acl2::assert!
-  (b* ((tag/members (type-struni-tag/members-tagged (ident "my_struct")))
-       (foo (make-type-struct :uid (uid 42)
+;; Pointer types
+
+;; The referenced types are composed.
+(acl2::assert-equal
+  (type-composite-and-relation
+    (make-type-pointer :to (make-type-array
+                             :of (type-sint)
+                             :kind (type-array-kind-incomplete)))
+    (make-type-pointer :to (make-type-array
+                             :of (type-sint)
+                             :kind (make-type-array-kind-const-len :len 10)))
+    (irr-ienv))
+  (list (make-type-pointer :to (make-type-array
+                                 :of (type-sint)
+                                 :kind (make-type-array-kind-const-len
+                                         :len 10)))
+        t))
+
+;;;;;;;;;;;;;;;;;;;;
+
+;; Function types
+
+;; The prototype is the composite with an unspecified or old-style
+;; parameter list, in either order.
+(acl2::assert-equal
+  (b* ((proto (make-type-function
+                :ret (type-sint)
+                :params (make-type-params-prototype
+                          :params (list (type-sint))
+                          :ellipsis nil)))
+       (unspec (make-type-function
+                 :ret (type-sint)
+                 :params (type-params-unspecified)))
+       (old (make-type-function
+              :ret (type-sint)
+              :params (make-type-params-old-style
+                        :params (list (type-sint))))))
+    (list (type-composite-and-relation proto unspec (irr-ienv))
+          (type-composite-and-relation unspec proto (irr-ienv))
+          (type-composite-and-relation proto old (irr-ienv))
+          (type-composite-and-relation old proto (irr-ienv))))
+  (let ((proto (make-type-function
+                 :ret (type-sint)
+                 :params (make-type-params-prototype
+                           :params (list (type-sint))
+                           :ellipsis nil))))
+    (list (list proto t)
+          (list proto t)
+          (list proto t)
+          (list proto t))))
+
+;; Either an old-style or an unspecified parameter list is a composite
+;; of the two; the old-style list is constructed, as the more specific.
+(acl2::assert-equal
+  (b* ((unspec (make-type-function
+                 :ret (type-sint)
+                 :params (type-params-unspecified)))
+       (old (make-type-function
+              :ret (type-sint)
+              :params (make-type-params-old-style
+                        :params (list (type-sint))))))
+    (list (type-composite-3p old unspec unspec nil (irr-ienv))
+          (type-composite-and-relation old unspec (irr-ienv))
+          (type-composite-and-relation unspec old (irr-ienv))))
+  (let ((old (make-type-function
+               :ret (type-sint)
+               :params (make-type-params-old-style
+                         :params (list (type-sint))))))
+    (list t
+          (list old t)
+          (list old t))))
+
+;; Parameters are composed.
+(acl2::assert-equal
+  (b* ((array-inc (make-type-pointer
+                    :to (make-type-array
+                          :of (type-sint)
+                          :kind (type-array-kind-incomplete))))
+       (array-10 (make-type-pointer
+                   :to (make-type-array
+                         :of (type-sint)
+                         :kind (make-type-array-kind-const-len :len 10))))
+       (f-inc (make-type-function
+                :ret (type-sint)
+                :params (make-type-params-prototype
+                          :params (list array-inc)
+                          :ellipsis nil)))
+       (f-10 (make-type-function
+               :ret (type-sint)
+               :params (make-type-params-prototype
+                         :params (list array-10)
+                         :ellipsis nil))))
+    (type-composite-and-relation f-inc f-10 (irr-ienv)))
+  (list (make-type-function
+          :ret (type-sint)
+          :params (make-type-params-prototype
+                    :params (list (make-type-pointer
+                                    :to (make-type-array
+                                          :of (type-sint)
+                                          :kind (make-type-array-kind-const-len
+                                                  :len 10))))
+                    :ellipsis nil))
+        t))
+
+;; An unknown parameter type is refined by the other function's;
+;; the relation cannot confirm the result.
+(acl2::assert-equal
+  (type-composite-and-relation
+    (make-type-function
+      :ret (type-sint)
+      :params (make-type-params-prototype
+                :params (list (type-unknown) (type-sint))
+                :ellipsis nil))
+    (make-type-function
+      :ret (type-sint)
+      :params (make-type-params-prototype
+                :params (list (type-sint) (type-unknown))
+                :ellipsis nil))
+    (irr-ienv))
+  (list (make-type-function
+          :ret (type-sint)
+          :params (make-type-params-prototype
+                    :params (list (type-sint) (type-sint))
+                    :ellipsis nil))
+        :unknown))
+
+;;;;;;;;;;;;;;;;;;;;
+
+;; Enumerated types
+
+;; The enumerated type is the composite with an integer type,
+;; in either order; the relation cannot confirm it,
+;; as the underlying type is unknown.
+(acl2::assert-equal
+  (list (type-composite-and-relation (type-enum) (type-sint) (irr-ienv))
+        (type-composite-and-relation (type-sint) (type-enum) (irr-ienv)))
+  (list (list (type-enum) :unknown)
+        (list (type-enum) :unknown)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+;; Unknown types
+
+;; The more specific type is the composite with a less specific unknown type,
+;; in either order; the relation cannot confirm it.
+(acl2::assert-equal
+  (list (type-composite-and-relation
+          (type-unknown-scalar) (type-sint) (irr-ienv))
+        (type-composite-and-relation
+          (type-sint) (type-unknown-scalar) (irr-ienv))
+        (type-composite-and-relation
+          (type-unknown) (type-unknown-arithmetic) (irr-ienv)))
+  (list (list (type-sint) :unknown)
+        (list (type-sint) :unknown)
+        (list (type-unknown-arithmetic) :unknown)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+;; Structure and union types
+
+;; Complete structs across translation units
+;; whose members are not composites of each other
+;; compose member-wise into a new structure type,
+;; which is completed and recorded for the pair of inputs.
+(acl2::assert-equal
+  (b* ((tag/members (type-struni-tag/members-tagged (ident "s")))
+       (foo (make-type-struct :uid (uid 1)
                               :tunit? (filepath "foo.c")
                               :tag/members tag/members))
-       (bar (make-type-struct :uid (uid 43)
+       (bar (make-type-struct :uid (uid 2)
                               :tunit? (filepath "bar.c")
                               :tag/members tag/members))
-       (baz (make-type-struct :uid (uid 44)
-                              :tunit? (filepath "baz.c")
-                              :tag/members tag/members))
+       (array-inc (make-type-pointer
+                    :to (make-type-array
+                          :of (type-sint)
+                          :kind (type-array-kind-incomplete))))
+       (array-10 (make-type-pointer
+                   :to (make-type-array
+                         :of (type-sint)
+                         :kind (make-type-array-kind-const-len :len 10))))
        (completions
         (treemap::update
-          (uid 42)
-          (list (make-type-struni-member :name? (ident "p")
-                                         :type (make-type-pointer :to foo)))
+          (uid 1)
+          (list (make-type-struni-member :name? (ident "p") :type array-inc)
+                (make-type-struni-member :name? (ident "q") :type array-10))
           (treemap::update
-            (uid 43)
-            (list (make-type-struni-member :name? (ident "p")
-                                           :type (make-type-pointer :to baz)))
-            (treemap::update
-              (uid 44)
+            (uid 2)
+            (list (make-type-struni-member :name? (ident "p") :type array-10)
+                  (make-type-struni-member :name? (ident "q") :type array-inc))
+            nil)))
+       ((mv composite completions composites next-uid)
+        (type-composite foo bar completions (treemap::empty) (uid 3)
+                        (irr-ienv))))
+    (list composite
+          (treemap::lookup (uid 3) completions)
+          (treemap::lookup (make-uid-pair :first (uid 1) :second (uid 2))
+                           composites)
+          next-uid
+          (type-composite-3p foo bar composite completions (irr-ienv))))
+  (b* ((array-10 (make-type-pointer
+                   :to (make-type-array
+                         :of (type-sint)
+                         :kind (make-type-array-kind-const-len :len 10)))))
+    (list (make-type-struct :uid (uid 3)
+                            :tunit? nil
+                            :tag/members (type-struni-tag/members-tagged
+                                           (ident "s")))
+          (list (make-type-struni-member :name? (ident "p") :type array-10)
+                (make-type-struni-member :name? (ident "q") :type array-10))
+          (uid 3)
+          (uid 4)
+          t)))
+
+;; An input whose members are the composites is the composite itself,
+;; in either order; nothing is built.
+(acl2::assert-equal
+  (b* ((tag/members (type-struni-tag/members-tagged (ident "s")))
+       (foo (make-type-struct :uid (uid 1)
+                              :tunit? (filepath "foo.c")
+                              :tag/members tag/members))
+       (bar (make-type-struct :uid (uid 2)
+                              :tunit? (filepath "bar.c")
+                              :tag/members tag/members))
+       (member-inc (make-type-struni-member
+                     :name? (ident "p")
+                     :type (make-type-pointer
+                             :to (make-type-array
+                                   :of (type-sint)
+                                   :kind (type-array-kind-incomplete)))))
+       (member-10 (make-type-struni-member
+                    :name? (ident "p")
+                    :type (make-type-pointer
+                            :to (make-type-array
+                                  :of (type-sint)
+                                  :kind (make-type-array-kind-const-len
+                                          :len 10)))))
+       (completions (treemap::update (uid 1) (list member-inc)
+                                     (treemap::update (uid 2) (list member-10)
+                                                      nil)))
+       ((mv composite1 & & next-uid1)
+        (type-composite foo bar completions (treemap::empty) (uid 3)
+                        (irr-ienv)))
+       ((mv composite2 & & next-uid2)
+        (type-composite bar foo completions (treemap::empty) (uid 3)
+                        (irr-ienv))))
+    (list composite1 next-uid1 composite2 next-uid2))
+  (let ((bar (make-type-struct :uid (uid 2)
+                               :tunit? (filepath "bar.c")
+                               :tag/members (type-struni-tag/members-tagged
+                                              (ident "s")))))
+    (list bar (uid 3) bar (uid 3))))
+
+;; With exactly one complete input, the composite is that input.
+(acl2::assert-equal
+  (b* ((tag/members (type-struni-tag/members-tagged (ident "s")))
+       (foo (make-type-struct :uid (uid 1)
+                              :tunit? (filepath "foo.c")
+                              :tag/members tag/members))
+       (bar (make-type-struct :uid (uid 2)
+                              :tunit? (filepath "bar.c")
+                              :tag/members tag/members))
+       (member (make-type-struni-member :name? (ident "x") :type (type-sint)))
+       (completions (treemap::update (uid 1) (list member) nil))
+       ((mv composite1 & & &)
+        (type-composite foo bar completions (treemap::empty) (uid 3)
+                        (irr-ienv)))
+       ((mv composite2 & & &)
+        (type-composite bar foo completions (treemap::empty) (uid 3)
+                        (irr-ienv))))
+    (list composite1 composite2))
+  (let ((foo (make-type-struct :uid (uid 1)
+                               :tunit? (filepath "foo.c")
+                               :tag/members (type-struni-tag/members-tagged
+                                              (ident "s")))))
+    (list foo foo)))
+
+;; The composite of cyclic struct types points to itself:
+;; the pair of inputs is recorded before the members are composed,
+;; so that it is found when reached again through the members,
+;; however many times.
+(acl2::assert-equal
+  (b* ((tag/members (type-struni-tag/members-tagged (ident "s")))
+       (foo (make-type-struct :uid (uid 1)
+                              :tunit? (filepath "foo.c")
+                              :tag/members tag/members))
+       (bar (make-type-struct :uid (uid 2)
+                              :tunit? (filepath "bar.c")
+                              :tag/members tag/members))
+       (array-inc (make-type-pointer
+                    :to (make-type-array
+                          :of (type-sint)
+                          :kind (type-array-kind-incomplete))))
+       (array-10 (make-type-pointer
+                   :to (make-type-array
+                         :of (type-sint)
+                         :kind (make-type-array-kind-const-len :len 10))))
+       (completions
+        (treemap::update
+          (uid 1)
+          (list (make-type-struni-member :name? (ident "prev")
+                                         :type (make-type-pointer :to foo))
+                (make-type-struni-member :name? (ident "next")
+                                         :type (make-type-pointer :to foo))
+                (make-type-struni-member :name? (ident "p") :type array-inc)
+                (make-type-struni-member :name? (ident "q") :type array-10))
+          (treemap::update
+            (uid 2)
+            (list (make-type-struni-member :name? (ident "prev")
+                                           :type (make-type-pointer :to bar))
+                  (make-type-struni-member :name? (ident "next")
+                                           :type (make-type-pointer :to bar))
+                  (make-type-struni-member :name? (ident "p") :type array-10)
+                  (make-type-struni-member :name? (ident "q") :type array-inc))
+            nil)))
+       ((mv composite completions & next-uid)
+        (type-composite foo bar completions (treemap::empty) (uid 3)
+                        (irr-ienv))))
+    (list (treemap::lookup (uid 3) completions)
+          next-uid
+          (type-composite-3p foo bar composite completions (irr-ienv))))
+  (b* ((composite (make-type-struct :uid (uid 3)
+                                    :tunit? nil
+                                    :tag/members
+                                    (type-struni-tag/members-tagged
+                                      (ident "s"))))
+       (array-10 (make-type-pointer
+                   :to (make-type-array
+                         :of (type-sint)
+                         :kind (make-type-array-kind-const-len :len 10)))))
+    (list (list (make-type-struni-member
+                  :name? (ident "prev")
+                  :type (make-type-pointer :to composite))
+                (make-type-struni-member
+                  :name? (ident "next")
+                  :type (make-type-pointer :to composite))
+                (make-type-struni-member :name? (ident "p") :type array-10)
+                (make-type-struni-member :name? (ident "q") :type array-10))
+          (uid 4)
+          t)))
+
+;; Untagged structs across translation units compose
+;; into a new untagged structure type with the composite members,
+;; which needs no completion.
+(acl2::assert-equal
+  (b* ((array-inc (make-type-pointer
+                    :to (make-type-array
+                          :of (type-sint)
+                          :kind (type-array-kind-incomplete))))
+       (array-10 (make-type-pointer
+                   :to (make-type-array
+                         :of (type-sint)
+                         :kind (make-type-array-kind-const-len :len 10))))
+       (foo (make-type-struct
+              :uid (uid 1)
+              :tunit? (filepath "foo.c")
+              :tag/members
+              (type-struni-tag/members-untagged
+                (list (make-type-struni-member :name? (ident "p")
+                                               :type array-inc)
+                      (make-type-struni-member :name? (ident "q")
+                                               :type array-10)))))
+       (bar (make-type-struct
+              :uid (uid 2)
+              :tunit? (filepath "bar.c")
+              :tag/members
+              (type-struni-tag/members-untagged
+                (list (make-type-struni-member :name? (ident "p")
+                                               :type array-10)
+                      (make-type-struni-member :name? (ident "q")
+                                               :type array-inc)))))
+       ((mv composite completions & next-uid)
+        (type-composite foo bar nil (treemap::empty) (uid 3) (irr-ienv))))
+    (list composite
+          completions
+          next-uid
+          (type-composite-3p foo bar composite completions (irr-ienv))))
+  (b* ((array-10 (make-type-pointer
+                   :to (make-type-array
+                         :of (type-sint)
+                         :kind (make-type-array-kind-const-len :len 10)))))
+    (list (make-type-struct
+            :uid (uid 3)
+            :tunit? nil
+            :tag/members
+            (type-struni-tag/members-untagged
               (list (make-type-struni-member :name? (ident "p")
-                                             :type (make-type-pointer :to bar)))
-              nil))))
-       ((mv composite & next-uid)
-        (type-composite foo bar completions (uid 45) (irr-ienv))))
-    (and (equal composite foo)
-         (equal next-uid (uid 45)))))
+                                             :type array-10)
+                    (make-type-struni-member :name? (ident "q")
+                                             :type array-10))))
+          nil
+          (uid 4)
+          t)))
 
-;; As above, but the first two types each have a member
-;; more specific than the other's, so neither is a composite of the two:
-;; a struct type is created for the first pair,
-;; another for the pair of the first and third reached through the members,
-;; and the first pair, reached again, refers to its struct type.
-(acl2::assert!
-  (b* ((tag/members (type-struni-tag/members-tagged (ident "my_struct")))
-       (foo (make-type-struct :uid (uid 42)
-                              :tunit? (filepath "foo.c")
-                              :tag/members tag/members))
-       (bar (make-type-struct :uid (uid 43)
-                              :tunit? (filepath "bar.c")
-                              :tag/members tag/members))
-       (baz (make-type-struct :uid (uid 44)
-                              :tunit? (filepath "baz.c")
-                              :tag/members tag/members))
-       (prototype (make-type-pointer
-                    :to (make-type-function
-                          :ret (type-sint)
-                          :params (make-type-params-prototype
-                                    :params (list (type-sint))))))
-       (unspecified (make-type-pointer
-                      :to (make-type-function
-                            :ret (type-sint)
-                            :params (type-params-unspecified))))
-       (f-prototype (make-type-struni-member :name? (ident "f")
-                                             :type prototype))
-       (f-unspecified (make-type-struni-member :name? (ident "f")
-                                               :type unspecified))
-       (g-prototype (make-type-struni-member :name? (ident "g")
-                                             :type prototype))
-       (g-unspecified (make-type-struni-member :name? (ident "g")
-                                               :type unspecified))
-       (completions
-        (treemap::update
-          (uid 42)
-          (list f-prototype
-                g-unspecified
-                (make-type-struni-member :name? (ident "p")
-                                         :type (make-type-pointer :to foo)))
-          (treemap::update
-            (uid 43)
-            (list f-unspecified
-                  g-prototype
-                  (make-type-struni-member :name? (ident "p")
-                                           :type (make-type-pointer :to baz)))
-            (treemap::update
-              (uid 44)
-              (list f-prototype
-                    g-unspecified
-                    (make-type-struni-member :name? (ident "p")
-                                             :type (make-type-pointer :to bar)))
-              nil))))
-       ((mv composite completions next-uid)
-        (type-composite foo bar completions (uid 45) (irr-ienv)))
-       (composite45 (make-type-struct :uid (uid 45)
-                                      :tunit? nil
-                                      :tag/members tag/members))
-       (composite46 (make-type-struct :uid (uid 46)
-                                      :tunit? nil
-                                      :tag/members tag/members)))
-    (and (equal composite composite45)
-         (equal (treemap::lookup (uid 45) completions)
-                (list f-prototype
-                      g-prototype
-                      (make-type-struni-member
-                        :name? (ident "p")
-                        :type (make-type-pointer :to composite46))))
-         (equal (treemap::lookup (uid 46) completions)
-                (list f-prototype
-                      g-unspecified
-                      (make-type-struni-member
-                        :name? (ident "p")
-                        :type (make-type-pointer :to composite45))))
-         (equal next-uid (uid 47)))))
+;; Complete unions are not composed yet, and the first input is returned;
+;; with exactly one complete input, the composite is that input.
+(acl2::assert-equal
+  (b* ((tag/members (type-struni-tag/members-tagged (ident "u")))
+       (foo (make-type-union :uid (uid 1)
+                             :tunit? (filepath "foo.c")
+                             :tag/members tag/members))
+       (bar (make-type-union :uid (uid 2)
+                             :tunit? (filepath "bar.c")
+                             :tag/members tag/members))
+       (member-inc (make-type-struni-member
+                     :name? (ident "p")
+                     :type (make-type-pointer
+                             :to (make-type-array
+                                   :of (type-sint)
+                                   :kind (type-array-kind-incomplete)))))
+       (member-10 (make-type-struni-member
+                    :name? (ident "p")
+                    :type (make-type-pointer
+                            :to (make-type-array
+                                  :of (type-sint)
+                                  :kind (make-type-array-kind-const-len
+                                          :len 10)))))
+       (completions (treemap::update (uid 1) (list member-inc)
+                                     (treemap::update (uid 2) (list member-10)
+                                                      nil)))
+       ((mv composite1 & & &)
+        (type-composite foo bar completions (treemap::empty) (uid 3)
+                        (irr-ienv)))
+       ((mv composite2 & & &)
+        (type-composite foo bar (treemap::update (uid 2) (list member-10) nil)
+                        (treemap::empty) (uid 3) (irr-ienv))))
+    (list composite1
+          (type-composite-3p foo bar composite1 completions (irr-ienv))
+          composite2))
+  (b* ((tag/members (type-struni-tag/members-tagged (ident "u")))
+       (foo (make-type-union :uid (uid 1)
+                             :tunit? (filepath "foo.c")
+                             :tag/members tag/members))
+       (bar (make-type-union :uid (uid 2)
+                             :tunit? (filepath "bar.c")
+                             :tag/members tag/members)))
+    (list foo :unknown bar)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+;; Same types
+
+;; A type is the composite with itself,
+;; even when the relation cannot tell.
+(acl2::assert-equal
+  (list (type-composite-and-relation (type-sint) (type-sint) (irr-ienv))
+        (type-composite-and-relation
+          (make-type-array :of (type-sint)
+                           :kind (type-array-kind-nonconst-len))
+          (make-type-array :of (type-sint)
+                           :kind (type-array-kind-nonconst-len))
+          (irr-ienv)))
+  (list (list (type-sint) t)
+        (list (make-type-array :of (type-sint)
+                               :kind (type-array-kind-nonconst-len))
+              :unknown)))
+
+;; Without struct or union types, the composites map is unchanged
+;; and no UIDs are minted.
+(acl2::assert-equal
+  (b* (((mv & & composites next-uid)
+        (type-composite
+          (make-type-array :of (type-sint)
+                           :kind (type-array-kind-incomplete))
+          (make-type-array :of (type-sint)
+                           :kind (make-type-array-kind-const-len :len 10))
+          nil (treemap::empty) (uid 1) (irr-ienv))))
+    (list composites next-uid))
+  (list (treemap::empty) (uid 1)))

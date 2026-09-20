@@ -521,8 +521,12 @@
      extracting the @('completions') @('next-uid') from the validation state,
      and updating the values accordingly."))
   (b* (((vstate vstate) vstate)
-       ((mv composite completions next-uid)
-        (type-composite x y vstate.completions vstate.next-uid vstate.ienv)))
+       ((mv composite completions & next-uid)
+        (type-composite x y
+                        vstate.completions
+                        (treemap::empty)
+                        vstate.next-uid
+                        vstate.ienv)))
     (mv composite
         (change-vstate
          vstate
