@@ -4,7 +4,6 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (www.alessandrocoglio.info)
 ; Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -52,6 +51,101 @@
   :order-subtopics t
   :default-parent t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc types-compatibility-notes
+  :short "Notes on interpreting C type compatibility."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Type compatibility is not as well-behaved as one would hope.
+     At first glance, one might expect an equivalence relation,
+     but this is certainly not the case.
+     Compatibility is reflexive and symmetric,
+     but not transitive.
+     For instance, consider the following functions.")
+   (xdoc::codeblock
+    "int foo();"
+    ""
+    "int bar(int x);"
+    ""
+    "int baz(double x);")
+   (xdoc::p
+    "In this example, the types of @('bar') and @('baz')
+     are both compatible with the type of @('foo').
+     However, the types of @('bar') and @('baz')
+     are not compatible with each other.")
+   (xdoc::p
+    "Perhaps a better way to view compatibility
+     is in terms of the existence of some common lower bound
+     according to some imagined notion of type ordering.
+     We might say that type @('int [10]') ``refines'' @('int []'),
+     that the type of @('int foo(int x)') refines the type of @('int foo()'),
+     etc.
+     Furthermore, the greatest common lower bound
+     would be a type composite,
+     making this notion very attractive.
+     Unfortunately, it is an imperfect model.
+     It works for C23, but not for C17,
+     where old-style function types obstruct any such order.")
+   (xdoc::p
+    "Recall that two old-style function types are compatible
+     regardless of their parameter types,
+     while a prototype is compatible with an old-style function type
+     only if their parameter types agree after default argument promotion
+     [C17:6.7.6.3/15, footnote 149].
+     Consider the following functions.")
+   (xdoc::codeblock
+    "int f(x) int x; { return x; }"
+    ""
+    "int g(x) double x; { return x; }"
+    ""
+    "int p(int x);"
+    ""
+    "int q(double x);")
+   (xdoc::p
+    "The types of @('f') and @('g') are compatible.
+     The type of @('p') is compatible with that of @('f') but not @('g'),
+     and the type of @('q') is compatible with that of @('g') but not @('f').
+     Indeed, no prototype is compatible with the types of both @('f') and @('g'),
+     since its parameter type would have to be compatible
+     with both @('int') and @('double').")
+   (xdoc::p
+    "Now suppose that two types are compatible exactly when
+     they have a common lower bound under some pre-order.
+     Then a type is compatible with everything its lower bounds are:
+     if @('z') is a lower bound of @('x')
+     and @('y') is compatible with @('z'),
+     their common lower bound is, by transitivity,
+     also a common lower bound of @('x') and @('y'),
+     so @('y') is compatible with @('x').
+     In particular, @('z') itself is compatible with @('x'),
+     being a common lower bound of the two.")
+   (xdoc::p
+    "Since the types of @('f') and @('g') are compatible,
+     they have a common lower bound @('z'),
+     which is therefore compatible with both
+     and hence a function type.
+     Every function type is compatible with some prototype:
+     a prototype is compatible with itself,
+     @('int ()') is compatible with the type of @('p'),
+     and an old-style function type is compatible with the prototype
+     whose parameter types are its own after default argument promotion.
+     A prototype @('s') compatible with @('z')
+     is then also compatible with the types of both @('f') and @('g'),
+     which we saw is impossible.
+     Hence no such pre-order exists.")
+   (xdoc::p
+    "C23 removes identifier lists from function declarators
+     and makes @('()') equivalent to @('(void)'),
+     so old-style function types no longer exist there
+     and the model is not obstructed.")
+   (xdoc::p
+    "Because this order-based notion is well-behaved on all but
+     C17 old-style function types,
+     it may be useful to define such a type ordering
+     which relates to compatbility/composites in all but this corner case.")))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-array-kind-compatible-3p ((x type-array-kindp)
@@ -61,7 +155,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Read literally, [C17] and [C23] require that two array types be compatible
+    "Read literally, C17 and C23 require that two array types be compatible
      iff their element types are compatible and,
      when both size specifiers are present
      and are integer constant expressions,
@@ -78,7 +172,7 @@
      We follow that practice here.
      The same treatment is proposed in "
     (xdoc::ahref
-     "https://www.open-std.org/jtc1/sc22/WG14/www/docs/n3495.htm"
+     "https://www.open-std.org/jtc1/sc23p2/WG14/www/docs/n3495.htm"
      "WG14 N3495")
     ", which has not been adopted.")
    (xdoc::p
@@ -121,15 +215,14 @@
          (type-array-kind-compatible-3p x y))
   :enable type-array-kind-compatible-3p)
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines type/type-list-compatible-3p-aux
   (define type-compatible-3p-aux ((x typep)
-                              (y typep)
-                              (completions type-completions-p)
-                              (assumed uid-pair-setp)
-                              (ienv ienvp))
+                                  (y typep)
+                                  (completions type-completions-p)
+                                  (assumed uid-pair-setp)
+                                  (ienv ienvp))
     :returns (3vl 3p)
     :short "Auxiliary function for checking whether
             two @(see type)s are compatible."
@@ -171,7 +264,7 @@
                (same-tunit? (and x.tunit?
                                  y.tunit?
                                  (equal x.tunit? y.tunit?)))
-               (c23? (equal (ienv->std ienv) (c::standard-c23))))
+               (c23p? (c::standard-case (ienv->std ienv) :c23)))
             (type-struni-tag/members-case
               x.tag/members
               :tagged
@@ -181,7 +274,7 @@
                 (b* (((unless (equal x.tag/members.tag y.tag/members.tag))
                       nil)
                      ;; Distinct types in the same translation unit.
-                     ((when (and same-tunit? (not c23?)))
+                     ((when (and same-tunit? (not c23p?)))
                       nil)
                      (assumed (uid-pair-sfix assumed))
                      (pair (make-uid-pair :first x.uid :second y.uid))
@@ -227,7 +320,7 @@
                (same-tunit? (and x.tunit?
                                  y.tunit?
                                  (equal x.tunit? y.tunit?)))
-               (c23? (equal (ienv->std ienv) (c::standard-c23))))
+               (c23p? (c::standard-case (ienv->std ienv) :c23)))
             (type-struni-tag/members-case
               x.tag/members
               :tagged
@@ -237,7 +330,7 @@
                 (b* (((unless (equal x.tag/members.tag y.tag/members.tag))
                       nil)
                      ;; Distinct types in the same translation unit.
-                     ((when (and same-tunit? (not c23?)))
+                     ((when (and same-tunit? (not c23p?)))
                       nil)
                      (completions (type-completions-fix completions))
                      ;; An incomplete union is compatible
@@ -977,7 +1070,7 @@
   :use type-list-compatible-3p-aux-when-subset
   :disable type-list-compatible-3p-aux-when-subset)
 
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-compatible-3p ((x typep)
                             (y typep)
@@ -1170,102 +1263,494 @@
     :use type-compatible-3p-when-submap
     :disable type-compatible-3p-when-submap))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc type-compatibility-notes
-  :parents (type-compatible-3p)
-  :short "Notes on interpreting C type compatibility."
+(define type-array-kind-composite-conditions-3p ((x type-array-kindp)
+                                                 (y type-array-kindp)
+                                                 (composite type-array-kindp))
+  :returns (3vl 3p)
+  :short "Check whether an array kind satisfies the conditions
+          for being the composite of two array kinds,
+          other than compatibility."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Type compatibility is not as well-behaved as one would hope.
-     At first glance, one might expect an equivalence relation,
-     but this is certainly not the case.
-     Compatibility is reflexive and symmetric,
-     but not transitive.
-     For instance, consider the following functions.")
-   (xdoc::codeblock
-    "int foo();"
-    ""
-    "int bar(int x);"
-    ""
-    "int baz(double x);")
+    "This captures the rules for the sizes of composite array types
+     [C17:6.2.7/3] [C23:6.2.7/3];
+     the element types are handled in @(tsee type-composite-conditions-3p).
+     As there, the input kinds are assumed to be compatible.")
    (xdoc::p
-    "In this example, the types of @('bar') and @('baz')
-     are both compatible with the type of @('foo').
-     However, the types of @('bar') and @('baz')
-     are not compatible with each other.")
-   (xdoc::p
-    "Perhaps a better way to view compatibility
-     is in terms of the existence of some common lower bound
-     according to some imagined notion of type ordering.
-     We might say that type @('int [10]') ``refines'' @('int []'),
-     that the type of @('int foo(int x)') refines the type of @('int foo()'),
-     etc.
-     Furthermore, the greatest common lower bound
-     would be a type composite,
-     making this notion very attractive.
-     Unfortunately, it is an imperfect model.
-     It works for C23, but not for C17,
-     where old-style function types obstruct any such order.")
-   (xdoc::p
-    "Recall that two old-style function types are compatible
-     regardless of their parameter types,
-     while a prototype is compatible with an old-style function type
-     only if their parameter types agree after default argument promotion
-     [C17:6.7.6.3/15, footnote 149].
-     Consider the following functions.")
-   (xdoc::codeblock
-    "int f(x) int x; { return x; }"
-    ""
-    "int g(x) double x; { return x; }"
-    ""
-    "int p(int x);"
-    ""
-    "int q(double x);")
-   (xdoc::p
-    "The types of @('f') and @('g') are compatible.
-     The type of @('p') is compatible with that of @('f') but not @('g'),
-     and the type of @('q') is compatible with that of @('g') but not @('f').
-     Indeed, no prototype is compatible with the types of both @('f') and @('g'),
-     since its parameter type would have to be compatible
-     with both @('int') and @('double').")
-   (xdoc::p
-    "Now suppose that two types are compatible exactly when
-     they have a common lower bound under some pre-order.
-     Then a type is compatible with everything its lower bounds are:
-     if @('z') is a lower bound of @('x')
-     and @('y') is compatible with @('z'),
-     their common lower bound is, by transitivity,
-     also a common lower bound of @('x') and @('y'),
-     so @('y') is compatible with @('x').
-     In particular, @('z') itself is compatible with @('x'),
-     being a common lower bound of the two.")
-   (xdoc::p
-    "Since the types of @('f') and @('g') are compatible,
-     they have a common lower bound @('z'),
-     which is therefore compatible with both
-     and hence a function type.
-     Every function type is compatible with some prototype:
-     a prototype is compatible with itself,
-     @('int ()') is compatible with the type of @('p'),
-     and an old-style function type is compatible with the prototype
-     whose parameter types are its own after default argument promotion.
-     A prototype @('s') compatible with @('z')
-     is then also compatible with the types of both @('f') and @('g'),
-     which we saw is impossible.
-     Hence no such pre-order exists.")
-   (xdoc::p
-    "C23 removes identifier lists from function declarators
-     and makes @('()') equivalent to @('(void)'),
-     so old-style function types no longer exist there
-     and the model is not obstructed.")
-   (xdoc::p
-    "Because this order-based notion is well-behaved on all but
-     C17 old-style function types,
-     it may be useful to define such a type ordering
-     which relates to compatbility/composites in all but this corner case.")))
+    "If either input has constant length, the composite has constant length,
+     and the same length as the input whose length is known, if any;
+     if no length is known, we cannot tell whether the lengths agree.
+     Otherwise, if either input has nonconstant length,
+     its size expression may be one that is not evaluated,
+     in which case the behavior is undefined,
+     and since we cannot tell, the result is unknown.
+     The same applies if either input is complete of unknown kind,
+     which may have nonconstant length.
+     Otherwise both inputs are incomplete, and so must be the composite."))
+  (b* ((x-len? (type-array-kind-case x :const-len x.len :otherwise nil))
+       (y-len? (type-array-kind-case y :const-len y.len :otherwise nil))
+       (len? (or x-len? y-len?)))
+    (cond ((or (type-array-kind-case x :const-len)
+               (type-array-kind-case y :const-len))
+           (type-array-kind-case
+             composite
+             :const-len (if (and len? composite.len)
+                            (equal len? composite.len)
+                          :unknown)
+             :otherwise nil))
+          ((and (type-array-kind-case x :incomplete)
+                (type-array-kind-case y :incomplete))
+           (type-array-kind-case composite :incomplete))
+          (t :unknown))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines type/type-list-composite-conditions-3p
+  (define type-composite-conditions-3p ((x typep)
+                                        (y typep)
+                                        (composite typep)
+                                        (completions type-completions-p)
+                                        (assumed uid-triple-setp)
+                                        (ienv ienvp))
+    :returns (3vl 3p)
+    :short "Check whether a type satisfies the conditions
+            for being a composite of two types,
+            other than compatibility [C17:6.2.7/3] [C23:6.2.7/3]."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "These are the conditions on the composite
+       beyond its being compatible with the two input types,
+       which are themselves compatible;
+       @(tsee type-composite-3p) checks compatibility too.
+       Here compatibility is assumed, also for the component types,
+       since compatibility is recursive.")
+     (xdoc::p
+      "In C23, if the two input types are the same type,
+       the composite is that type [C23:6.2.7/3];
+       C17 has no such rule.
+       When we cannot tell whether the types are the same,
+       we do not know which case of the rule applies,
+       so the result is definite only if both cases give the same answer,
+       i.e. it is the join of the two answers.")
+     (xdoc::p
+      "The remaining conditions are by the kinds of the input types,
+       which must agree with the kind of the composite;
+       otherwise, the result is unknown.
+       The conditions are as follows,
+       which apply recursively to the component types
+       [C17:6.2.7/3] [C23:6.2.7/3].")
+     (xdoc::ul
+      (xdoc::li
+       "For array types, the array kinds must satisfy
+        @(tsee type-array-kind-composite-conditions-3p),
+        and the element type must be a composite of the element types
+        [C17:6.2.7/3] [C23:6.2.7/3].")
+      (xdoc::li
+       "For pointer types, the referenced type
+        must be a composite of the referenced types.")
+      (xdoc::li
+       "For function types, the return type
+        must be a composite of the return types,
+        and the parameters must satisfy
+        @(tsee type-params-composite-conditions-3p)
+        [C17:6.2.7/3] [C23:6.2.7/3].")
+      (xdoc::li
+       "For structure types, the composite is formed member-wise
+        [C23:6.2.7/3],
+        which C17 leaves to the recursive application
+        of its rules to the member types [C17:6.2.7/3]:
+        if both inputs are complete, so is the composite,
+        and its members satisfy
+        @(tsee type-struni-member-list-composite-conditions-3p);
+        if exactly one input is complete, the composite is complete
+        and its members are equal to that input's;
+        if both inputs are incomplete, so is the composite.")
+      (xdoc::li
+       "Union types are treated like structure types,
+        except that the members of two complete unions
+        may correspond in any order,
+        which is not checked yet, so the result is unknown.")
+      (xdoc::li
+       "For enumerated types, in C23 the composite is an enumerated type
+        [C23:6.2.7/3], so a composite of another known kind
+        is definitely rejected;
+        in C17 the composite may also be an integer type
+        compatible with both, which we cannot determine.")
+      (xdoc::li
+       "For all other types, compatibility is the only requirement."))
+     (xdoc::p
+      "The @('assumed') set contains the triples of @(see UID)s
+       of the tagged structure types whose members are being checked,
+       i.e. whose composite relation is currently assumed,
+       analogously to the pairs in @(tsee type-compatible-3p-aux).
+       When such a triple is encountered again while checking the members,
+       it is accepted.
+       The set only grows along the recursion,
+       and only by triples of UIDs of complete types,
+       i.e. of keys of the completions map,
+       so the number of triples of keys not in the set
+       serves as the first component of the measure.")
+     (xdoc::p
+      "If the requirements cannot be checked
+       because of unknown components of the types,
+       the result is unknown."))
+    (b* ((c23p (c::standard-case (ienv->std ienv) :c23))
+         (conditions-by-kind
+          (b* (;; We assume the types are compatible,
+               ;; so the kinds are only different
+               ;; if one or both is one of the unknown types,
+               ;; in which case we cannot check any of the conditions.
+               ((unless (equal (type-kind x) (type-kind y)))
+                :unknown)
+               ((unless (equal (type-kind composite) (type-kind x)))
+                ;; In C23, two enumerated types
+                ;; compose to an enumerated type.
+                (if (and c23p
+                         (type-case x :enum)
+                         (not (type-some-unknownp composite)))
+                    nil
+                  :unknown)))
+          (type-case
+            x
+            :array
+            (b* (((type-array y) y)
+                 ((type-array composite) composite))
+              (3and$ (type-array-kind-composite-conditions-3p
+                       x.kind y.kind composite.kind)
+                     (type-composite-conditions-3p
+                       x.of y.of composite.of completions assumed ienv)))
+            :pointer
+            (b* (((type-pointer y) y)
+                 ((type-pointer composite) composite))
+              (type-composite-conditions-3p
+                x.to y.to composite.to completions assumed ienv))
+            :function
+            (b* (((type-function y) y)
+                 ((type-function composite) composite))
+              (3and$ (type-composite-conditions-3p
+                       x.ret y.ret composite.ret
+                       completions assumed ienv)
+                     (type-params-composite-conditions-3p
+                       x.params y.params composite.params
+                       completions assumed ienv)))
+            :struct
+            (b* (((type-struct y) y)
+                 ((type-struct composite) composite)
+                 (kind (type-struni-tag/members-kind x.tag/members))
+                 ((unless (and (equal (type-struni-tag/members-kind
+                                        y.tag/members)
+                                      kind)
+                               (equal (type-struni-tag/members-kind
+                                        composite.tag/members)
+                                      kind)))
+                  :unknown))
+              (type-struni-tag/members-case
+                x.tag/members
+                :tagged
+                (b* ((completions (type-completions-fix completions))
+                     (assumed (uid-triple-sfix assumed))
+                     ((mv x-foundp x-members)
+                      (treemap::lookup? x.uid completions))
+                     ((mv y-foundp y-members)
+                      (treemap::lookup? y.uid completions))
+                     ((mv composite-foundp composite-members)
+                      (treemap::lookup? composite.uid completions))
+                     ((when (and (not x-foundp) (not y-foundp)))
+                      ;; Both inputs are incomplete,
+                      ;; so the composite must be as well.
+                      (not composite-foundp))
+                     ;; Some input is complete,
+                     ;; so the composite must be as well.
+                     ((unless composite-foundp)
+                      nil)
+                     ((unless x-foundp)
+                      ;; Only y is complete,
+                      ;; so the composite has its members.
+                      (type-struni-member-list-equal-3p
+                        composite-members y-members))
+                     ((unless y-foundp)
+                      ;; Only x is complete,
+                      ;; so the composite has its members.
+                      (type-struni-member-list-equal-3p
+                        composite-members x-members))
+                     ;; Both x and y are complete.
+                     (triple (make-uid-triple :first x.uid
+                                              :second y.uid
+                                              :third composite.uid))
+                     ;; The triple is already assumed.
+                     ((when (treeset::in triple assumed))
+                      t))
+                  (type-struni-member-list-composite-conditions-3p
+                    x-members
+                    y-members
+                    composite-members
+                    completions
+                    (treeset::insert triple assumed)
+                    ienv))
+                :untagged
+                (type-struni-member-list-composite-conditions-3p
+                 x.tag/members.members
+                 (type-struni-tag/members-untagged->members y.tag/members)
+                 (type-struni-tag/members-untagged->members
+                  composite.tag/members)
+                 completions
+                 assumed
+                 ienv)))
+            :union
+            (b* (((type-union y) y)
+                 ((type-union composite) composite)
+                 (kind (type-struni-tag/members-kind x.tag/members))
+                 ((unless (and (equal (type-struni-tag/members-kind
+                                        y.tag/members)
+                                      kind)
+                               (equal (type-struni-tag/members-kind
+                                        composite.tag/members)
+                                      kind)))
+                  :unknown))
+              (type-struni-tag/members-case
+                x.tag/members
+                :tagged
+                (b* ((completions (type-completions-fix completions))
+                     (assumed (uid-triple-sfix assumed))
+                     ((mv x-foundp x-members)
+                      (treemap::lookup? x.uid completions))
+                     ((mv y-foundp y-members)
+                      (treemap::lookup? y.uid completions))
+                     ((mv composite-foundp composite-members)
+                      (treemap::lookup? composite.uid completions))
+                     ((when (and (not x-foundp) (not y-foundp)))
+                      ;; Both inputs are incomplete,
+                      ;; so the composite must be as well.
+                      (not composite-foundp))
+                     ;; Some input is complete,
+                     ;; so the composite must be as well.
+                     ((unless composite-foundp)
+                      nil)
+                     ((unless x-foundp)
+                      ;; Only y is complete,
+                      ;; so the composite has its members.
+                      (type-struni-member-list-equal-3p
+                        composite-members y-members))
+                     ((unless y-foundp)
+                      ;; Only x is complete,
+                      ;; so the composite has its members.
+                      (type-struni-member-list-equal-3p
+                        composite-members x-members))
+                     ;; Both x and y are complete.
+                     (triple (make-uid-triple :first x.uid
+                                              :second y.uid
+                                              :third composite.uid))
+                     ;; The triple is already assumed.
+                     ((when (treeset::in triple assumed))
+                      t))
+                  ;; Members may correspond in any order,
+                  ;; not checked yet.
+                  :unknown)
+                :untagged
+                ;; Members may correspond in any order,
+                ;; not checked yet.
+                :unknown))
+            :otherwise t)))
+         ;; [C23:6.2.7/3]: if the input types are the same type,
+         ;; the composite is that type; otherwise the conditions apply.
+         ;; C17 has no such rule.
+         (c23p-and-same (3and$ c23p (type-equal-3p x y)))
+         ((unless (3possibly c23p-and-same))
+          conditions-by-kind)
+         (composite-is-input (3and$ (type-equal-3p composite x)
+                                    (type-equal-3p composite y)))
+         ((when (3definitely c23p-and-same))
+          composite-is-input))
+      ;; We cannot tell whether the input types are the same type,
+      ;; so we do not know which case applies.
+      ;; The result is definite only if both cases give the same answer.
+      (3join composite-is-input conditions-by-kind))
+    :measure (two-nats-measure
+              (treeset::cardinality
+                (treeset::diff
+                  (let ((keys (treemap::keys
+                                (type-completions-fix completions))))
+                    (treeset::product keys (treeset::product keys keys)))
+                  (uid-triple-sfix assumed)))
+              (+ (type-count x)
+                 (type-count y)
+                 (type-count composite))))
+
+  (define type-struni-member-list-composite-conditions-3p
+    ((x type-struni-member-listp)
+     (y type-struni-member-listp)
+     (composite type-struni-member-listp)
+     (completions type-completions-p)
+     (assumed uid-triple-setp)
+     (ienv ienvp))
+    :returns (3vl 3p)
+    :short "Check whether a list of structure or union members
+            satisfies the conditions for consisting of composites
+            of the corresponding members of two lists of members."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The lists must have the same length,
+       the names must correspond,
+       and each member type must be a composite
+       of the corresponding member types."))
+    (b* (((when (endp x))
+          (and (endp y) (endp composite)))
+         ((when (or (endp y) (endp composite)))
+          nil)
+         ((type-struni-member member-x) (first x))
+         ((type-struni-member member-y) (first y))
+         ((type-struni-member member-composite) (first composite))
+         ((unless (and (equal member-x.name? member-y.name?)
+                       (equal member-composite.name? member-x.name?)))
+          nil))
+      (3and$ (type-composite-conditions-3p
+               member-x.type member-y.type member-composite.type
+               completions assumed ienv)
+             (type-struni-member-list-composite-conditions-3p
+               (rest x) (rest y) (rest composite)
+               completions assumed ienv)))
+    :measure (two-nats-measure
+              (treeset::cardinality
+                (treeset::diff
+                  (let ((keys (treemap::keys
+                                (type-completions-fix completions))))
+                    (treeset::product keys (treeset::product keys keys)))
+                  (uid-triple-sfix assumed)))
+              (+ (type-struni-member-list-count x)
+                 (type-struni-member-list-count y)
+                 (type-struni-member-list-count composite))))
+
+  (define type-params-composite-conditions-3p ((x type-params-p)
+                                               (y type-params-p)
+                                               (composite type-params-p)
+                                               (completions type-completions-p)
+                                               (assumed uid-triple-setp)
+                                               (ienv ienvp))
+    :returns (3vl 3p)
+    :short "Check whether the parameter portion of a function type
+            satisfies the conditions for being the composite
+            of the parameter portions of two function types
+            [C17:6.2.7/3] [C23:6.2.7/3]."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If both inputs are prototypes, the composite is a prototype
+       with the same ellipsis terminator
+       whose parameters are composites of the corresponding parameters.
+       If exactly one input is a prototype,
+       the composite is a prototype with the same parameter list.
+       If neither input is a prototype,
+       there is no requirement beyond compatibility,
+       which is checked in @(tsee type-composite-3p)."))
+    (b* ((x-prototypep (type-params-case x :prototype))
+         (y-prototypep (type-params-case y :prototype))
+         ((unless (or x-prototypep y-prototypep))
+          t)
+         ((unless (type-params-case composite :prototype))
+          nil)
+         ((type-params-prototype composite) composite)
+         ((when (and x-prototypep y-prototypep))
+          (b* (((type-params-prototype x) x)
+               ((type-params-prototype y) y))
+            (if (equal composite.ellipsis x.ellipsis)
+                (type-list-composite-conditions-3p
+                  x.params y.params composite.params completions assumed ienv)
+              nil)))
+         (prototype (if x-prototypep x y))
+         ((type-params-prototype prototype) prototype))
+      (if (equal composite.ellipsis prototype.ellipsis)
+          (type-list-equal-3p composite.params prototype.params)
+        nil))
+    :measure (two-nats-measure
+              (treeset::cardinality
+                (treeset::diff
+                  (let ((keys (treemap::keys
+                                (type-completions-fix completions))))
+                    (treeset::product keys (treeset::product keys keys)))
+                  (uid-triple-sfix assumed)))
+              (+ (type-params-count x)
+                 (type-params-count y)
+                 (type-params-count composite))))
+
+  (define type-list-composite-conditions-3p ((x type-listp)
+                                             (y type-listp)
+                                             (composite type-listp)
+                                             (completions type-completions-p)
+                                             (assumed uid-triple-setp)
+                                             (ienv ienvp))
+    :returns (3vl 3p)
+    :short "Check whether a list of types satisfies the conditions
+            for consisting of composites
+            of the corresponding elements of two lists of types."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The lists must have the same length."))
+    (b* (((when (endp x))
+          (and (endp y) (endp composite)))
+         ((when (or (endp y) (endp composite)))
+          nil))
+      (3and$ (type-composite-conditions-3p
+               (first x) (first y) (first composite)
+               completions assumed ienv)
+             (type-list-composite-conditions-3p
+               (rest x) (rest y) (rest composite)
+               completions assumed ienv)))
+    :measure (two-nats-measure
+              (treeset::cardinality
+                (treeset::diff
+                  (let ((keys (treemap::keys
+                                (type-completions-fix completions))))
+                    (treeset::product keys (treeset::product keys keys)))
+                  (uid-triple-sfix assumed)))
+              (+ (type-list-count x)
+                 (type-list-count y)
+                 (type-list-count composite))))
+
+  :hints (("Goal" :in-theory (e/d (max)
+                                  (treeset::cardinality-of-delete-when-in
+                                   treeset::cardinality-of-diff))))
+  :ruler-extenders :all
+  :verify-guards :after-returns
+  ///
+
+  (fty::deffixequiv-mutual type/type-list-composite-conditions-3p
+    :hints (("Goal" :in-theory (disable type-fix-when-enum)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define type-composite-3p ((x typep)
+                           (y typep)
+                           (composite typep)
+                           (completions type-completions-p)
+                           (ienv ienvp))
+  :returns (3vl 3p)
+  :short "Check whether a type is a composite of two types
+          [C17:6.2.7/3] [C23:6.2.7/3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a specification of composite types,
+     as opposed to @(tsee type-composite),
+     which constructs one such satisfying composite.
+     The standard allows more than one type to serve as the composite
+     of two compatible types [C23:6.2.7/4],
+     so this relation accepts any type satisfying the requirements.")
+   (xdoc::p
+    "The two input types must be compatible,
+     and the putative composite must be compatible with both.
+     The remaining conditions are checked by
+     @(tsee type-composite-conditions-3p)."))
+  (3and$ (type-compatible-3p x y completions ienv)
+         (type-compatible-3p composite x completions ienv)
+         (type-compatible-3p composite y completions ienv)
+         (type-composite-conditions-3p
+           x y composite completions (treeset::empty) ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1353,8 +1838,6 @@
            type-array-kind-composite
            type-array-kind-fix-when-const-len)
   :disable type-array-kind-const-len-of-fields)
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2078,7 +2561,7 @@
 
   (fty::deffixequiv-mutual type/type-list-composite-aux))
 
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-composite ((x typep)
                         (y typep)
