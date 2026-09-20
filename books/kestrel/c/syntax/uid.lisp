@@ -197,6 +197,78 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define uid-triple-swap ((triple uid-triplep))
+  :returns (new-triple uid-triplep)
+  :parents (uid-triple)
+  :short "Swap the first two components of a triple of unique identifiers."
+  (b* (((uid-triple triple) triple))
+    (make-uid-triple :first triple.second
+                     :second triple.first
+                     :third triple.third))
+
+  ///
+
+  (defrule uid-triple->first-of-uid-triple-swap
+    (equal (uid-triple->first (uid-triple-swap triple))
+           (uid-triple->second triple)))
+
+  (defrule uid-triple->second-of-uid-triple-swap
+    (equal (uid-triple->second (uid-triple-swap triple))
+           (uid-triple->first triple)))
+
+  (defrule uid-triple->third-of-uid-triple-swap
+    (equal (uid-triple->third (uid-triple-swap triple))
+           (uid-triple->third triple)))
+
+  (defrule uid-triple-swap-of-uid-triple
+    (equal (uid-triple-swap (uid-triple first second third))
+           (uid-triple second first third)))
+
+  (defrule uid-triple-swap-of-uid-triple-swap
+    (equal (uid-triple-swap (uid-triple-swap triple))
+           (uid-triple-fix triple)))
+
+  (defrule equal-of-uid-triple-swap
+    (equal (equal (uid-triple-swap triple1) (uid-triple-fix triple2))
+           (equal (uid-triple-fix triple1) (uid-triple-swap triple2)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define uid-triple-set-swap ((set uid-triple-setp))
+  :returns (new-set uid-triple-setp)
+  :parents (uid-triple-set)
+  :short "Swap the first two components of every triple
+          in a set of triples of unique identifiers."
+  (b* ((set (uid-triple-sfix set))
+       ((when (treeset::emptyp set)) (treeset::empty))
+       (min (treeset::min set)))
+    (treeset::insert (uid-triple-swap min)
+                     (uid-triple-set-swap (treeset::delete min set))))
+  :measure (treeset::cardinality (uid-triple-sfix set))
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule in-of-uid-triple-set-swap
+    (equal (treeset::in triple (uid-triple-set-swap set))
+           (and (uid-triplep triple)
+                (treeset::in (uid-triple-swap triple)
+                             (uid-triple-sfix set))))
+    :induct t)
+
+  (defrule uid-triple-set-swap-of-empty
+    (equal (uid-triple-set-swap (treeset::empty))
+           (treeset::empty)))
+
+  (defrule insert-of-uid-triple-and-uid-triple-set-swap
+    (equal (treeset::insert (uid-triple first second third)
+                            (uid-triple-set-swap set))
+           (uid-triple-set-swap (treeset::insert (uid-triple second first third)
+                                                 (uid-triple-sfix set))))
+    :enable treeset::extensionality-no-backchain-limit))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftreemap uid-pair-uid-map
   :parents (uid)
   :key-type uid-pair

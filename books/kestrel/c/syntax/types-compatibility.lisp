@@ -37,6 +37,25 @@
          (not (posp x)))
   :enable nfix)
 
+;; The fixers of the completions map and of the sets of UIDs
+;; map ill-typed values to the empty map or set,
+;; which is a submap or subset of anything.
+
+(defrule submap-of-type-completions-fix-when-submap
+  (implies (treemap::submap x y)
+           (treemap::submap (type-completions-fix x) y))
+  :enable type-completions-fix)
+
+(defrule subset-of-uid-pair-sfix-when-subset
+  (implies (treeset::subset x y)
+           (treeset::subset (uid-pair-sfix x) y))
+  :enable uid-pair-sfix)
+
+(defrule subset-of-uid-triple-sfix-when-subset
+  (implies (treeset::subset x y)
+           (treeset::subset (uid-triple-sfix x) y))
+  :enable uid-triple-sfix)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ types-compatibility
@@ -681,7 +700,7 @@
 ;; Anti-monotonicity in the completions map.
 
 (defthm-type/type-list-compatible-3p-aux-flag
-  (defthmd type-compatible-3p-aux-when-submap-fix
+  (defthm type-compatible-3p-aux-when-submap
     (implies (treemap::submap (type-completions-fix completions1)
                               (type-completions-fix completions))
              (3truth<= (type-compatible-3p-aux
@@ -693,7 +712,7 @@
                          x y completions assumed ienv)
                        (type-compatible-3p-aux
                          x y completions1 assumed ienv)))))
-  (defthmd type-struni-member-list-compatible-3p-aux-when-submap-fix
+  (defthm type-struni-member-list-compatible-3p-aux-when-submap
     (implies (treemap::submap (type-completions-fix completions1)
                               (type-completions-fix completions))
              (3truth<= (type-struni-member-list-compatible-3p-aux
@@ -705,7 +724,7 @@
                          x y completions assumed ienv)
                        (type-struni-member-list-compatible-3p-aux
                          x y completions1 assumed ienv)))))
-  (defthmd type-params-compatible-3p-aux-when-submap-fix
+  (defthm type-params-compatible-3p-aux-when-submap
     (implies (treemap::submap (type-completions-fix completions1)
                               (type-completions-fix completions))
              (3truth<= (type-params-compatible-3p-aux
@@ -717,7 +736,7 @@
                          x y completions assumed ienv)
                        (type-params-compatible-3p-aux
                          x y completions1 assumed ienv)))))
-  (defthmd type-list-compatible-3p-aux-when-submap-fix
+  (defthm type-list-compatible-3p-aux-when-submap
     (implies (treemap::submap (type-completions-fix completions1)
                               (type-completions-fix completions))
              (3truth<= (type-list-compatible-3p-aux
@@ -730,57 +749,18 @@
                        (type-list-compatible-3p-aux
                          x y completions1 assumed ienv)))))
   :hints (("Goal"
-           :in-theory (enable treemap::lookup-when-submap-and-in-of-keys
-                              type-compatible-3p-aux
-                              type-struni-member-list-compatible-3p-aux
-                              type-params-compatible-3p-aux
-                              type-list-compatible-3p-aux
-                              (:i type/type-list-compatible-3p-aux-flag)))))
-
-(defrule type-compatible-3p-aux-when-submap
-  (implies (and (type-completions-p completions1)
-                (type-completions-p completions)
-                (treemap::submap completions1 completions))
-           (3truth<= (type-compatible-3p-aux
-                       x y completions assumed ienv)
-                     (type-compatible-3p-aux
-                       x y completions1 assumed ienv)))
-  :use type-compatible-3p-aux-when-submap-fix)
-
-(defrule type-struni-member-list-compatible-3p-aux-when-submap
-  (implies (and (type-completions-p completions1)
-                (type-completions-p completions)
-                (treemap::submap completions1 completions))
-           (3truth<= (type-struni-member-list-compatible-3p-aux
-                       x y completions assumed ienv)
-                     (type-struni-member-list-compatible-3p-aux
-                       x y completions1 assumed ienv)))
-  :use type-struni-member-list-compatible-3p-aux-when-submap-fix)
-
-(defrule type-params-compatible-3p-aux-when-submap
-  (implies (and (type-completions-p completions1)
-                (type-completions-p completions)
-                (treemap::submap completions1 completions))
-           (3truth<= (type-params-compatible-3p-aux
-                       x y completions assumed ienv)
-                     (type-params-compatible-3p-aux
-                       x y completions1 assumed ienv)))
-  :use type-params-compatible-3p-aux-when-submap-fix)
-
-(defrule type-list-compatible-3p-aux-when-submap
-  (implies (and (type-completions-p completions1)
-                (type-completions-p completions)
-                (treemap::submap completions1 completions))
-           (3truth<= (type-list-compatible-3p-aux
-                       x y completions assumed ienv)
-                     (type-list-compatible-3p-aux
-                       x y completions1 assumed ienv)))
-  :use type-list-compatible-3p-aux-when-submap-fix)
+           :in-theory
+           (enable treemap::lookup-when-submap-and-in-of-keys
+                   type-compatible-3p-aux
+                   type-struni-member-list-compatible-3p-aux
+                   type-params-compatible-3p-aux
+                   type-list-compatible-3p-aux
+                   (:i type/type-list-compatible-3p-aux-flag)))))
 
 ;; Monotonicity in the assumed pairs.
 
 (defthm-type/type-list-compatible-3p-aux-flag
-  (defthmd type-compatible-3p-aux-of-union-fix
+  (defthm type-compatible-3p-aux-of-union
     (3truth<= (type-compatible-3p-aux
                 x y completions assumed ienv)
               (type-compatible-3p-aux
@@ -796,7 +776,7 @@
                          (treeset::union (uid-pair-sfix assumed)
                                          (uid-pair-sfix extra))
                          ienv)))))
-  (defthmd type-struni-member-list-compatible-3p-aux-of-union-fix
+  (defthm type-struni-member-list-compatible-3p-aux-of-union
     (3truth<= (type-struni-member-list-compatible-3p-aux
                 x y completions assumed ienv)
               (type-struni-member-list-compatible-3p-aux
@@ -812,7 +792,7 @@
                          (treeset::union (uid-pair-sfix assumed)
                                          (uid-pair-sfix extra))
                          ienv)))))
-  (defthmd type-params-compatible-3p-aux-of-union-fix
+  (defthm type-params-compatible-3p-aux-of-union
     (3truth<= (type-params-compatible-3p-aux
                 x y completions assumed ienv)
               (type-params-compatible-3p-aux
@@ -828,7 +808,7 @@
                          (treeset::union (uid-pair-sfix assumed)
                                          (uid-pair-sfix extra))
                          ienv)))))
-  (defthmd type-list-compatible-3p-aux-of-union-fix
+  (defthm type-list-compatible-3p-aux-of-union
     (3truth<= (type-list-compatible-3p-aux
                 x y completions assumed ienv)
               (type-list-compatible-3p-aux
@@ -845,230 +825,383 @@
                                          (uid-pair-sfix extra))
                          ienv)))))
   :hints (("Goal"
-           :in-theory (enable type-compatible-3p-aux
-                              type-struni-member-list-compatible-3p-aux
-                              type-params-compatible-3p-aux
-                              type-list-compatible-3p-aux
-                              (:i type/type-list-compatible-3p-aux-flag)))))
+           :in-theory
+           (enable type-compatible-3p-aux
+                   type-struni-member-list-compatible-3p-aux
+                   type-params-compatible-3p-aux
+                   type-list-compatible-3p-aux
+                   (:i type/type-list-compatible-3p-aux-flag)))))
 
 (defrule type-compatible-3p-aux-when-subset
-  (implies (and (uid-pair-setp assumed)
-                (uid-pair-setp assumed2)
-                (treeset::subset assumed assumed2))
+  (implies (treeset::subset (uid-pair-sfix assumed)
+                            (uid-pair-sfix assumed2))
            (3truth<= (type-compatible-3p-aux
                        x y completions assumed ienv)
                      (type-compatible-3p-aux
                        x y completions assumed2 ienv)))
-  :use (:instance type-compatible-3p-aux-of-union-fix (extra assumed2)))
+  :use (:instance type-compatible-3p-aux-of-union
+                  (extra assumed2))
+  :disable type-compatible-3p-aux-of-union)
 
 (defrule type-struni-member-list-compatible-3p-aux-when-subset
-  (implies (and (uid-pair-setp assumed)
-                (uid-pair-setp assumed2)
-                (treeset::subset assumed assumed2))
+  (implies (treeset::subset (uid-pair-sfix assumed)
+                            (uid-pair-sfix assumed2))
            (3truth<= (type-struni-member-list-compatible-3p-aux
                        x y completions assumed ienv)
                      (type-struni-member-list-compatible-3p-aux
                        x y completions assumed2 ienv)))
-  :use (:instance type-struni-member-list-compatible-3p-aux-of-union-fix
-                  (extra assumed2)))
+  :use (:instance type-struni-member-list-compatible-3p-aux-of-union
+                  (extra assumed2))
+  :disable type-struni-member-list-compatible-3p-aux-of-union)
 
 (defrule type-params-compatible-3p-aux-when-subset
-  (implies (and (uid-pair-setp assumed)
-                (uid-pair-setp assumed2)
-                (treeset::subset assumed assumed2))
+  (implies (treeset::subset (uid-pair-sfix assumed)
+                            (uid-pair-sfix assumed2))
            (3truth<= (type-params-compatible-3p-aux
                        x y completions assumed ienv)
                      (type-params-compatible-3p-aux
                        x y completions assumed2 ienv)))
-  :use (:instance type-params-compatible-3p-aux-of-union-fix (extra assumed2)))
+  :use (:instance type-params-compatible-3p-aux-of-union
+                  (extra assumed2))
+  :disable type-params-compatible-3p-aux-of-union)
 
 (defrule type-list-compatible-3p-aux-when-subset
-  (implies (and (uid-pair-setp assumed)
-                (uid-pair-setp assumed2)
-                (treeset::subset assumed assumed2))
+  (implies (treeset::subset (uid-pair-sfix assumed)
+                            (uid-pair-sfix assumed2))
            (3truth<= (type-list-compatible-3p-aux
                        x y completions assumed ienv)
                      (type-list-compatible-3p-aux
                        x y completions assumed2 ienv)))
-  :use (:instance type-list-compatible-3p-aux-of-union-fix (extra assumed2)))
+  :use (:instance type-list-compatible-3p-aux-of-union
+                  (extra assumed2))
+  :disable type-list-compatible-3p-aux-of-union)
 
-;; The boolean projections of the two monotonicity properties.
+;; The boolean projections of the two monotonicity properties,
+;; binding the free map or set either from the projected fact
+;; (the -fix versions, with fixed hypotheses)
+;; or from the submap or subset hypothesis.
+
+(defrule 3possibly-type-compatible-3p-aux-when-submap-fix
+  (implies (and (3possibly (type-compatible-3p-aux
+                       x y completions assumed ienv))
+                (treemap::submap (type-completions-fix completions1)
+                                 (type-completions-fix completions)))
+           (3possibly (type-compatible-3p-aux
+                   x y completions1 assumed ienv)))
+  :use type-compatible-3p-aux-when-submap
+  :disable type-compatible-3p-aux-when-submap)
 
 (defrule 3possibly-type-compatible-3p-aux-when-submap
-  (implies (and (type-completions-p completions1)
+  (implies (and (treemap::submap completions1 completions)
                 (type-completions-p completions)
-                (treemap::submap completions1 completions)
                 (3possibly (type-compatible-3p-aux
-                        x y completions assumed ienv)))
+                       x y completions assumed ienv)))
            (3possibly (type-compatible-3p-aux
                    x y completions1 assumed ienv)))
-  :use type-compatible-3p-aux-when-submap
-  :disable type-compatible-3p-aux-when-submap)
+  :use 3possibly-type-compatible-3p-aux-when-submap-fix
+  :disable 3possibly-type-compatible-3p-aux-when-submap-fix)
+
+(defrule 3possibly-type-struni-member-list-compatible-3p-aux-when-submap-fix
+  (implies (and (3possibly (type-struni-member-list-compatible-3p-aux
+                       x y completions assumed ienv))
+                (treemap::submap (type-completions-fix completions1)
+                                 (type-completions-fix completions)))
+           (3possibly (type-struni-member-list-compatible-3p-aux
+                   x y completions1 assumed ienv)))
+  :use type-struni-member-list-compatible-3p-aux-when-submap
+  :disable type-struni-member-list-compatible-3p-aux-when-submap)
 
 (defrule 3possibly-type-struni-member-list-compatible-3p-aux-when-submap
-  (implies (and (type-completions-p completions1)
+  (implies (and (treemap::submap completions1 completions)
                 (type-completions-p completions)
-                (treemap::submap completions1 completions)
                 (3possibly (type-struni-member-list-compatible-3p-aux
-                        x y completions assumed ienv)))
+                       x y completions assumed ienv)))
            (3possibly (type-struni-member-list-compatible-3p-aux
                    x y completions1 assumed ienv)))
-  :use type-struni-member-list-compatible-3p-aux-when-submap
-  :disable type-struni-member-list-compatible-3p-aux-when-submap)
+  :use 3possibly-type-struni-member-list-compatible-3p-aux-when-submap-fix
+  :disable 3possibly-type-struni-member-list-compatible-3p-aux-when-submap-fix)
 
-(defrule 3possibly-type-params-compatible-3p-aux-when-submap
-  (implies (and (type-completions-p completions1)
-                (type-completions-p completions)
-                (treemap::submap completions1 completions)
-                (3possibly (type-params-compatible-3p-aux
-                        x y completions assumed ienv)))
+(defrule 3possibly-type-params-compatible-3p-aux-when-submap-fix
+  (implies (and (3possibly (type-params-compatible-3p-aux
+                       x y completions assumed ienv))
+                (treemap::submap (type-completions-fix completions1)
+                                 (type-completions-fix completions)))
            (3possibly (type-params-compatible-3p-aux
                    x y completions1 assumed ienv)))
   :use type-params-compatible-3p-aux-when-submap
   :disable type-params-compatible-3p-aux-when-submap)
 
-(defrule 3possibly-type-list-compatible-3p-aux-when-submap
-  (implies (and (type-completions-p completions1)
+(defrule 3possibly-type-params-compatible-3p-aux-when-submap
+  (implies (and (treemap::submap completions1 completions)
                 (type-completions-p completions)
-                (treemap::submap completions1 completions)
-                (3possibly (type-list-compatible-3p-aux
-                        x y completions assumed ienv)))
+                (3possibly (type-params-compatible-3p-aux
+                       x y completions assumed ienv)))
+           (3possibly (type-params-compatible-3p-aux
+                   x y completions1 assumed ienv)))
+  :use 3possibly-type-params-compatible-3p-aux-when-submap-fix
+  :disable 3possibly-type-params-compatible-3p-aux-when-submap-fix)
+
+(defrule 3possibly-type-list-compatible-3p-aux-when-submap-fix
+  (implies (and (3possibly (type-list-compatible-3p-aux
+                       x y completions assumed ienv))
+                (treemap::submap (type-completions-fix completions1)
+                                 (type-completions-fix completions)))
            (3possibly (type-list-compatible-3p-aux
                    x y completions1 assumed ienv)))
   :use type-list-compatible-3p-aux-when-submap
   :disable type-list-compatible-3p-aux-when-submap)
 
-(defrule 3definitely-type-compatible-3p-aux-when-submap
-  (implies (and (type-completions-p completions1)
+(defrule 3possibly-type-list-compatible-3p-aux-when-submap
+  (implies (and (treemap::submap completions1 completions)
                 (type-completions-p completions)
-                (treemap::submap completions1 completions)
-                (3definitely (type-compatible-3p-aux
-                        x y completions assumed ienv)))
+                (3possibly (type-list-compatible-3p-aux
+                       x y completions assumed ienv)))
+           (3possibly (type-list-compatible-3p-aux
+                   x y completions1 assumed ienv)))
+  :use 3possibly-type-list-compatible-3p-aux-when-submap-fix
+  :disable 3possibly-type-list-compatible-3p-aux-when-submap-fix)
+
+(defrule 3definitely-type-compatible-3p-aux-when-submap-fix
+  (implies (and (3definitely (type-compatible-3p-aux
+                       x y completions assumed ienv))
+                (treemap::submap (type-completions-fix completions1)
+                                 (type-completions-fix completions)))
            (3definitely (type-compatible-3p-aux
                    x y completions1 assumed ienv)))
   :use type-compatible-3p-aux-when-submap
   :disable type-compatible-3p-aux-when-submap)
 
-(defrule 3definitely-type-struni-member-list-compatible-3p-aux-when-submap
-  (implies (and (type-completions-p completions1)
+(defrule 3definitely-type-compatible-3p-aux-when-submap
+  (implies (and (treemap::submap completions1 completions)
                 (type-completions-p completions)
-                (treemap::submap completions1 completions)
-                (3definitely (type-struni-member-list-compatible-3p-aux
-                        x y completions assumed ienv)))
+                (3definitely (type-compatible-3p-aux
+                       x y completions assumed ienv)))
+           (3definitely (type-compatible-3p-aux
+                   x y completions1 assumed ienv)))
+  :use 3definitely-type-compatible-3p-aux-when-submap-fix
+  :disable 3definitely-type-compatible-3p-aux-when-submap-fix)
+
+(defrule 3definitely-type-struni-member-list-compatible-3p-aux-when-submap-fix
+  (implies (and (3definitely (type-struni-member-list-compatible-3p-aux
+                       x y completions assumed ienv))
+                (treemap::submap (type-completions-fix completions1)
+                                 (type-completions-fix completions)))
            (3definitely (type-struni-member-list-compatible-3p-aux
                    x y completions1 assumed ienv)))
   :use type-struni-member-list-compatible-3p-aux-when-submap
   :disable type-struni-member-list-compatible-3p-aux-when-submap)
 
-(defrule 3definitely-type-params-compatible-3p-aux-when-submap
-  (implies (and (type-completions-p completions1)
+(defrule 3definitely-type-struni-member-list-compatible-3p-aux-when-submap
+  (implies (and (treemap::submap completions1 completions)
                 (type-completions-p completions)
-                (treemap::submap completions1 completions)
-                (3definitely (type-params-compatible-3p-aux
-                        x y completions assumed ienv)))
+                (3definitely (type-struni-member-list-compatible-3p-aux
+                       x y completions assumed ienv)))
+           (3definitely (type-struni-member-list-compatible-3p-aux
+                   x y completions1 assumed ienv)))
+  :use 3definitely-type-struni-member-list-compatible-3p-aux-when-submap-fix
+  :disable
+  3definitely-type-struni-member-list-compatible-3p-aux-when-submap-fix)
+
+(defrule 3definitely-type-params-compatible-3p-aux-when-submap-fix
+  (implies (and (3definitely (type-params-compatible-3p-aux
+                       x y completions assumed ienv))
+                (treemap::submap (type-completions-fix completions1)
+                                 (type-completions-fix completions)))
            (3definitely (type-params-compatible-3p-aux
                    x y completions1 assumed ienv)))
   :use type-params-compatible-3p-aux-when-submap
   :disable type-params-compatible-3p-aux-when-submap)
 
-(defrule 3definitely-type-list-compatible-3p-aux-when-submap
-  (implies (and (type-completions-p completions1)
+(defrule 3definitely-type-params-compatible-3p-aux-when-submap
+  (implies (and (treemap::submap completions1 completions)
                 (type-completions-p completions)
-                (treemap::submap completions1 completions)
-                (3definitely (type-list-compatible-3p-aux
-                        x y completions assumed ienv)))
+                (3definitely (type-params-compatible-3p-aux
+                       x y completions assumed ienv)))
+           (3definitely (type-params-compatible-3p-aux
+                   x y completions1 assumed ienv)))
+  :use 3definitely-type-params-compatible-3p-aux-when-submap-fix
+  :disable 3definitely-type-params-compatible-3p-aux-when-submap-fix)
+
+(defrule 3definitely-type-list-compatible-3p-aux-when-submap-fix
+  (implies (and (3definitely (type-list-compatible-3p-aux
+                       x y completions assumed ienv))
+                (treemap::submap (type-completions-fix completions1)
+                                 (type-completions-fix completions)))
            (3definitely (type-list-compatible-3p-aux
                    x y completions1 assumed ienv)))
   :use type-list-compatible-3p-aux-when-submap
   :disable type-list-compatible-3p-aux-when-submap)
 
-(defrule 3possibly-type-compatible-3p-aux-when-subset
-  (implies (and (uid-pair-setp assumed)
-                (uid-pair-setp assumed2)
-                (treeset::subset assumed assumed2)
-                (3possibly (type-compatible-3p-aux
-                        x y completions assumed ienv)))
+(defrule 3definitely-type-list-compatible-3p-aux-when-submap
+  (implies (and (treemap::submap completions1 completions)
+                (type-completions-p completions)
+                (3definitely (type-list-compatible-3p-aux
+                       x y completions assumed ienv)))
+           (3definitely (type-list-compatible-3p-aux
+                   x y completions1 assumed ienv)))
+  :use 3definitely-type-list-compatible-3p-aux-when-submap-fix
+  :disable 3definitely-type-list-compatible-3p-aux-when-submap-fix)
+
+(defrule 3possibly-type-compatible-3p-aux-when-subset-fix
+  (implies (and (3possibly (type-compatible-3p-aux
+                       x y completions assumed ienv))
+                (treeset::subset (uid-pair-sfix assumed)
+                                 (uid-pair-sfix assumed2)))
            (3possibly (type-compatible-3p-aux
                    x y completions assumed2 ienv)))
   :use type-compatible-3p-aux-when-subset
   :disable type-compatible-3p-aux-when-subset)
 
-(defrule 3possibly-type-struni-member-list-compatible-3p-aux-when-subset
-  (implies (and (uid-pair-setp assumed)
+(defrule 3possibly-type-compatible-3p-aux-when-subset
+  (implies (and (treeset::subset assumed assumed2)
                 (uid-pair-setp assumed2)
-                (treeset::subset assumed assumed2)
-                (3possibly (type-struni-member-list-compatible-3p-aux
-                        x y completions assumed ienv)))
+                (3possibly (type-compatible-3p-aux
+                       x y completions assumed ienv)))
+           (3possibly (type-compatible-3p-aux
+                   x y completions assumed2 ienv)))
+  :use 3possibly-type-compatible-3p-aux-when-subset-fix
+  :disable 3possibly-type-compatible-3p-aux-when-subset-fix)
+
+(defrule 3possibly-type-struni-member-list-compatible-3p-aux-when-subset-fix
+  (implies (and (3possibly (type-struni-member-list-compatible-3p-aux
+                       x y completions assumed ienv))
+                (treeset::subset (uid-pair-sfix assumed)
+                                 (uid-pair-sfix assumed2)))
            (3possibly (type-struni-member-list-compatible-3p-aux
                    x y completions assumed2 ienv)))
   :use type-struni-member-list-compatible-3p-aux-when-subset
   :disable type-struni-member-list-compatible-3p-aux-when-subset)
 
-(defrule 3possibly-type-params-compatible-3p-aux-when-subset
-  (implies (and (uid-pair-setp assumed)
+(defrule 3possibly-type-struni-member-list-compatible-3p-aux-when-subset
+  (implies (and (treeset::subset assumed assumed2)
                 (uid-pair-setp assumed2)
-                (treeset::subset assumed assumed2)
-                (3possibly (type-params-compatible-3p-aux
-                        x y completions assumed ienv)))
+                (3possibly (type-struni-member-list-compatible-3p-aux
+                       x y completions assumed ienv)))
+           (3possibly (type-struni-member-list-compatible-3p-aux
+                   x y completions assumed2 ienv)))
+  :use 3possibly-type-struni-member-list-compatible-3p-aux-when-subset-fix
+  :disable 3possibly-type-struni-member-list-compatible-3p-aux-when-subset-fix)
+
+(defrule 3possibly-type-params-compatible-3p-aux-when-subset-fix
+  (implies (and (3possibly (type-params-compatible-3p-aux
+                       x y completions assumed ienv))
+                (treeset::subset (uid-pair-sfix assumed)
+                                 (uid-pair-sfix assumed2)))
            (3possibly (type-params-compatible-3p-aux
                    x y completions assumed2 ienv)))
   :use type-params-compatible-3p-aux-when-subset
   :disable type-params-compatible-3p-aux-when-subset)
 
-(defrule 3possibly-type-list-compatible-3p-aux-when-subset
-  (implies (and (uid-pair-setp assumed)
+(defrule 3possibly-type-params-compatible-3p-aux-when-subset
+  (implies (and (treeset::subset assumed assumed2)
                 (uid-pair-setp assumed2)
-                (treeset::subset assumed assumed2)
-                (3possibly (type-list-compatible-3p-aux
-                        x y completions assumed ienv)))
+                (3possibly (type-params-compatible-3p-aux
+                       x y completions assumed ienv)))
+           (3possibly (type-params-compatible-3p-aux
+                   x y completions assumed2 ienv)))
+  :use 3possibly-type-params-compatible-3p-aux-when-subset-fix
+  :disable 3possibly-type-params-compatible-3p-aux-when-subset-fix)
+
+(defrule 3possibly-type-list-compatible-3p-aux-when-subset-fix
+  (implies (and (3possibly (type-list-compatible-3p-aux
+                       x y completions assumed ienv))
+                (treeset::subset (uid-pair-sfix assumed)
+                                 (uid-pair-sfix assumed2)))
            (3possibly (type-list-compatible-3p-aux
                    x y completions assumed2 ienv)))
   :use type-list-compatible-3p-aux-when-subset
   :disable type-list-compatible-3p-aux-when-subset)
 
-(defrule 3definitely-type-compatible-3p-aux-when-subset
-  (implies (and (uid-pair-setp assumed)
+(defrule 3possibly-type-list-compatible-3p-aux-when-subset
+  (implies (and (treeset::subset assumed assumed2)
                 (uid-pair-setp assumed2)
-                (treeset::subset assumed assumed2)
-                (3definitely (type-compatible-3p-aux
-                        x y completions assumed ienv)))
+                (3possibly (type-list-compatible-3p-aux
+                       x y completions assumed ienv)))
+           (3possibly (type-list-compatible-3p-aux
+                   x y completions assumed2 ienv)))
+  :use 3possibly-type-list-compatible-3p-aux-when-subset-fix
+  :disable 3possibly-type-list-compatible-3p-aux-when-subset-fix)
+
+(defrule 3definitely-type-compatible-3p-aux-when-subset-fix
+  (implies (and (3definitely (type-compatible-3p-aux
+                       x y completions assumed ienv))
+                (treeset::subset (uid-pair-sfix assumed)
+                                 (uid-pair-sfix assumed2)))
            (3definitely (type-compatible-3p-aux
                    x y completions assumed2 ienv)))
   :use type-compatible-3p-aux-when-subset
   :disable type-compatible-3p-aux-when-subset)
 
-(defrule 3definitely-type-struni-member-list-compatible-3p-aux-when-subset
-  (implies (and (uid-pair-setp assumed)
+(defrule 3definitely-type-compatible-3p-aux-when-subset
+  (implies (and (treeset::subset assumed assumed2)
                 (uid-pair-setp assumed2)
-                (treeset::subset assumed assumed2)
-                (3definitely (type-struni-member-list-compatible-3p-aux
-                        x y completions assumed ienv)))
+                (3definitely (type-compatible-3p-aux
+                       x y completions assumed ienv)))
+           (3definitely (type-compatible-3p-aux
+                   x y completions assumed2 ienv)))
+  :use 3definitely-type-compatible-3p-aux-when-subset-fix
+  :disable 3definitely-type-compatible-3p-aux-when-subset-fix)
+
+(defrule 3definitely-type-struni-member-list-compatible-3p-aux-when-subset-fix
+  (implies (and (3definitely (type-struni-member-list-compatible-3p-aux
+                       x y completions assumed ienv))
+                (treeset::subset (uid-pair-sfix assumed)
+                                 (uid-pair-sfix assumed2)))
            (3definitely (type-struni-member-list-compatible-3p-aux
                    x y completions assumed2 ienv)))
   :use type-struni-member-list-compatible-3p-aux-when-subset
   :disable type-struni-member-list-compatible-3p-aux-when-subset)
 
-(defrule 3definitely-type-params-compatible-3p-aux-when-subset
-  (implies (and (uid-pair-setp assumed)
+(defrule 3definitely-type-struni-member-list-compatible-3p-aux-when-subset
+  (implies (and (treeset::subset assumed assumed2)
                 (uid-pair-setp assumed2)
-                (treeset::subset assumed assumed2)
-                (3definitely (type-params-compatible-3p-aux
-                        x y completions assumed ienv)))
+                (3definitely (type-struni-member-list-compatible-3p-aux
+                       x y completions assumed ienv)))
+           (3definitely (type-struni-member-list-compatible-3p-aux
+                   x y completions assumed2 ienv)))
+  :use 3definitely-type-struni-member-list-compatible-3p-aux-when-subset-fix
+  :disable
+  3definitely-type-struni-member-list-compatible-3p-aux-when-subset-fix)
+
+(defrule 3definitely-type-params-compatible-3p-aux-when-subset-fix
+  (implies (and (3definitely (type-params-compatible-3p-aux
+                       x y completions assumed ienv))
+                (treeset::subset (uid-pair-sfix assumed)
+                                 (uid-pair-sfix assumed2)))
            (3definitely (type-params-compatible-3p-aux
                    x y completions assumed2 ienv)))
   :use type-params-compatible-3p-aux-when-subset
   :disable type-params-compatible-3p-aux-when-subset)
 
-(defrule 3definitely-type-list-compatible-3p-aux-when-subset
-  (implies (and (uid-pair-setp assumed)
+(defrule 3definitely-type-params-compatible-3p-aux-when-subset
+  (implies (and (treeset::subset assumed assumed2)
                 (uid-pair-setp assumed2)
-                (treeset::subset assumed assumed2)
-                (3definitely (type-list-compatible-3p-aux
-                        x y completions assumed ienv)))
+                (3definitely (type-params-compatible-3p-aux
+                       x y completions assumed ienv)))
+           (3definitely (type-params-compatible-3p-aux
+                   x y completions assumed2 ienv)))
+  :use 3definitely-type-params-compatible-3p-aux-when-subset-fix
+  :disable 3definitely-type-params-compatible-3p-aux-when-subset-fix)
+
+(defrule 3definitely-type-list-compatible-3p-aux-when-subset-fix
+  (implies (and (3definitely (type-list-compatible-3p-aux
+                       x y completions assumed ienv))
+                (treeset::subset (uid-pair-sfix assumed)
+                                 (uid-pair-sfix assumed2)))
            (3definitely (type-list-compatible-3p-aux
                    x y completions assumed2 ienv)))
   :use type-list-compatible-3p-aux-when-subset
   :disable type-list-compatible-3p-aux-when-subset)
+
+(defrule 3definitely-type-list-compatible-3p-aux-when-subset
+  (implies (and (treeset::subset assumed assumed2)
+                (uid-pair-setp assumed2)
+                (3definitely (type-list-compatible-3p-aux
+                       x y completions assumed ienv)))
+           (3definitely (type-list-compatible-3p-aux
+                   x y completions assumed2 ienv)))
+  :use 3definitely-type-list-compatible-3p-aux-when-subset-fix
+  :disable 3definitely-type-list-compatible-3p-aux-when-subset-fix)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1229,39 +1362,45 @@
                     (assumed (treeset::empty)))
     :disable type-compatible-3p-aux-symmetric)
 
-  (defruled type-compatible-3p-when-submap-fix
+  (defrule type-compatible-3p-when-submap
     (implies (treemap::submap (type-completions-fix completions1)
                               (type-completions-fix completions))
              (3truth<= (type-compatible-3p x y completions ienv)
                        (type-compatible-3p x y completions1 ienv)))
     :enable (type-compatible-3p
-             type-compatible-3p-aux-when-submap-fix))
+             type-compatible-3p-aux-when-submap))
 
-  (defrule type-compatible-3p-when-submap
-    (implies (and (type-completions-p completions1)
-                  (type-completions-p completions)
-                  (treemap::submap completions1 completions))
-             (3truth<= (type-compatible-3p x y completions ienv)
-                       (type-compatible-3p x y completions1 ienv)))
-    :use type-compatible-3p-when-submap-fix)
-
-  (defrule 3possibly-type-compatible-3p-when-submap
-    (implies (and (type-completions-p completions1)
-                  (type-completions-p completions)
-                  (treemap::submap completions1 completions)
-                  (3possibly (type-compatible-3p x y completions ienv)))
+  (defrule 3possibly-type-compatible-3p-when-submap-fix
+    (implies (and (3possibly (type-compatible-3p x y completions ienv))
+                  (treemap::submap (type-completions-fix completions1)
+                                   (type-completions-fix completions)))
              (3possibly (type-compatible-3p x y completions1 ienv)))
     :use type-compatible-3p-when-submap
     :disable type-compatible-3p-when-submap)
 
-  (defrule 3definitely-type-compatible-3p-when-submap
-    (implies (and (type-completions-p completions1)
+  (defrule 3possibly-type-compatible-3p-when-submap
+    (implies (and (treemap::submap completions1 completions)
                   (type-completions-p completions)
-                  (treemap::submap completions1 completions)
-                  (3definitely (type-compatible-3p x y completions ienv)))
+                  (3possibly (type-compatible-3p x y completions ienv)))
+             (3possibly (type-compatible-3p x y completions1 ienv)))
+    :use 3possibly-type-compatible-3p-when-submap-fix
+    :disable 3possibly-type-compatible-3p-when-submap-fix)
+
+  (defrule 3definitely-type-compatible-3p-when-submap-fix
+    (implies (and (3definitely (type-compatible-3p x y completions ienv))
+                  (treemap::submap (type-completions-fix completions1)
+                                   (type-completions-fix completions)))
              (3definitely (type-compatible-3p x y completions1 ienv)))
     :use type-compatible-3p-when-submap
-    :disable type-compatible-3p-when-submap))
+    :disable type-compatible-3p-when-submap)
+
+  (defrule 3definitely-type-compatible-3p-when-submap
+    (implies (and (treemap::submap completions1 completions)
+                  (type-completions-p completions)
+                  (3definitely (type-compatible-3p x y completions ienv)))
+             (3definitely (type-compatible-3p x y completions1 ienv)))
+    :use 3definitely-type-compatible-3p-when-submap-fix
+    :disable 3definitely-type-compatible-3p-when-submap-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1292,6 +1431,9 @@
      Otherwise both inputs are incomplete, and so must be the composite."))
   (b* ((x-len? (type-array-kind-case x :const-len x.len :otherwise nil))
        (y-len? (type-array-kind-case y :const-len y.len :otherwise nil))
+       ;; Two known lengths that differ are not even compatible.
+       ((when (and x-len? y-len? (not (equal x-len? y-len?))))
+        nil)
        (len? (or x-len? y-len?)))
     (cond ((or (type-array-kind-case x :const-len)
                (type-array-kind-case y :const-len))
@@ -1305,6 +1447,20 @@
                 (type-array-kind-case y :incomplete))
            (type-array-kind-case composite :incomplete))
           (t :unknown))))
+
+(defrule type-array-kind-composite-conditions-3p-under-iff-when-same
+  (iff (type-array-kind-composite-conditions-3p x x x)
+       t)
+  :enable type-array-kind-composite-conditions-3p)
+
+(defrule 3possibly-type-array-kind-composite-conditions-3p-when-same
+  (3possibly (type-array-kind-composite-conditions-3p x x x))
+  :enable type-array-kind-composite-conditions-3p)
+
+(defrule type-array-kind-composite-conditions-3p-symmetric
+  (equal (type-array-kind-composite-conditions-3p y x composite)
+         (type-array-kind-composite-conditions-3p x y composite))
+  :enable type-array-kind-composite-conditions-3p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1657,7 +1813,8 @@
          ((when (and x-prototypep y-prototypep))
           (b* (((type-params-prototype x) x)
                ((type-params-prototype y) y))
-            (if (equal composite.ellipsis x.ellipsis)
+            (if (and (equal composite.ellipsis x.ellipsis)
+                     (equal composite.ellipsis y.ellipsis))
                 (type-list-composite-conditions-3p
                   x.params y.params composite.params completions assumed ienv)
               nil)))
@@ -1717,10 +1874,436 @@
                                    treeset::cardinality-of-diff))))
   :ruler-extenders :all
   :verify-guards :after-returns
+  :flag-local nil
   ///
 
   (fty::deffixequiv-mutual type/type-list-composite-conditions-3p
     :hints (("Goal" :in-theory (disable type-fix-when-enum)))))
+
+;; Symmetry in the two input types.
+
+(defthm-type/type-list-composite-conditions-3p-flag
+  (defthm type-composite-conditions-3p-symmetric
+    (equal (type-composite-conditions-3p
+             y x composite completions (uid-triple-set-swap assumed) ienv)
+           (type-composite-conditions-3p
+             x y composite completions assumed ienv))
+    :flag type-composite-conditions-3p
+    :hints ('(:expand (type-composite-conditions-3p
+                        y x composite completions
+                        (uid-triple-set-swap assumed) ienv))))
+  (defthm type-struni-member-list-composite-conditions-3p-symmetric
+    (equal (type-struni-member-list-composite-conditions-3p
+             y x composite completions (uid-triple-set-swap assumed) ienv)
+           (type-struni-member-list-composite-conditions-3p
+             x y composite completions assumed ienv))
+    :flag type-struni-member-list-composite-conditions-3p
+    :hints ('(:expand (type-struni-member-list-composite-conditions-3p
+                        y x composite completions
+                        (uid-triple-set-swap assumed) ienv))))
+  (defthm type-params-composite-conditions-3p-symmetric
+    (equal (type-params-composite-conditions-3p
+             y x composite completions (uid-triple-set-swap assumed) ienv)
+           (type-params-composite-conditions-3p
+             x y composite completions assumed ienv))
+    :flag type-params-composite-conditions-3p
+    :hints ('(:expand (type-params-composite-conditions-3p
+                        y x composite completions
+                        (uid-triple-set-swap assumed) ienv))))
+  (defthm type-list-composite-conditions-3p-symmetric
+    (equal (type-list-composite-conditions-3p
+             y x composite completions (uid-triple-set-swap assumed) ienv)
+           (type-list-composite-conditions-3p
+             x y composite completions assumed ienv))
+    :flag type-list-composite-conditions-3p
+    :hints ('(:expand (type-list-composite-conditions-3p
+                        y x composite completions
+                        (uid-triple-set-swap assumed) ienv))))
+  :hints (("Goal"
+           :in-theory
+           (enable type-composite-conditions-3p
+                   type-struni-member-list-composite-conditions-3p
+                   type-params-composite-conditions-3p
+                   type-list-composite-conditions-3p
+                   uid-equal
+                   (:i type/type-list-composite-conditions-3p-flag)))))
+
+;; Reflexivity: a type is never definitely not a composite of itself
+;; with itself.
+
+(encapsulate ()
+  (local
+    (defthm-type/type-list-composite-conditions-3p-flag
+      (defthm type-composite-conditions-3p-when-same-lemma
+        (implies (and (equal y x)
+                      (equal composite x))
+                 (iff (type-composite-conditions-3p
+                        x y composite completions assumed ienv)
+                      t))
+        :flag type-composite-conditions-3p)
+      (defthm type-struni-member-list-composite-conditions-3p-when-same-lemma
+        (implies (and (equal y x)
+                      (equal composite x))
+                 (iff (type-struni-member-list-composite-conditions-3p
+                        x y composite completions assumed ienv)
+                      t))
+        :flag type-struni-member-list-composite-conditions-3p)
+      (defthm type-params-composite-conditions-3p-when-same-lemma
+        (implies (and (equal y x)
+                      (equal composite x))
+                 (iff (type-params-composite-conditions-3p
+                        x y composite completions assumed ienv)
+                      t))
+        :flag type-params-composite-conditions-3p)
+      (defthm type-list-composite-conditions-3p-when-same-lemma
+        (implies (and (equal y x)
+                      (equal composite x))
+                 (iff (type-list-composite-conditions-3p
+                        x y composite completions assumed ienv)
+                      t))
+        :flag type-list-composite-conditions-3p)
+      :hints (("Goal"
+               :in-theory
+               (enable 3and
+                       3join
+                       type-composite-conditions-3p
+                       type-struni-member-list-composite-conditions-3p
+                       type-params-composite-conditions-3p
+                       type-list-composite-conditions-3p
+                       (:i type/type-list-composite-conditions-3p-flag))))))
+
+  (defrule type-composite-conditions-3p-under-iff-when-same
+    (iff (type-composite-conditions-3p
+           x x x completions assumed ienv)
+         t))
+
+  (defrule type-struni-member-list-composite-conditions-3p-under-iff-when-same
+    (iff (type-struni-member-list-composite-conditions-3p
+           x x x completions assumed ienv)
+         t))
+
+  (defrule type-params-composite-conditions-3p-under-iff-when-same
+    (iff (type-params-composite-conditions-3p
+           x x x completions assumed ienv)
+         t))
+
+  (defrule type-list-composite-conditions-3p-under-iff-when-same
+    (iff (type-list-composite-conditions-3p
+           x x x completions assumed ienv)
+         t)))
+
+(defrule 3possibly-type-composite-conditions-3p-when-same
+  (3possibly (type-composite-conditions-3p
+               x x x completions assumed ienv))
+  :enable (3possibly 3equiv))
+
+(defrule 3possibly-type-struni-member-list-composite-conditions-3p-when-same
+  (3possibly (type-struni-member-list-composite-conditions-3p
+               x x x completions assumed ienv))
+  :enable (3possibly 3equiv))
+
+(defrule 3possibly-type-params-composite-conditions-3p-when-same
+  (3possibly (type-params-composite-conditions-3p
+               x x x completions assumed ienv))
+  :enable (3possibly 3equiv))
+
+(defrule 3possibly-type-list-composite-conditions-3p-when-same
+  (3possibly (type-list-composite-conditions-3p
+               x x x completions assumed ienv))
+  :enable (3possibly 3equiv))
+
+;; Monotonicity in the assumed triples.
+
+(defthm-type/type-list-composite-conditions-3p-flag
+  (defthm type-composite-conditions-3p-of-union
+    (3truth<= (type-composite-conditions-3p
+                x y composite completions assumed ienv)
+              (type-composite-conditions-3p
+                x y composite completions
+                (treeset::union (uid-triple-sfix assumed)
+                                (uid-triple-sfix extra))
+                ienv))
+    :flag type-composite-conditions-3p
+    :hints ('(:expand
+              ((type-composite-conditions-3p
+                 x y composite completions assumed ienv)
+               (type-composite-conditions-3p
+                 x y composite completions
+                 (treeset::union (uid-triple-sfix assumed)
+                                 (uid-triple-sfix extra))
+                 ienv)))))
+  (defthm type-struni-member-list-composite-conditions-3p-of-union
+    (3truth<= (type-struni-member-list-composite-conditions-3p
+                x y composite completions assumed ienv)
+              (type-struni-member-list-composite-conditions-3p
+                x y composite completions
+                (treeset::union (uid-triple-sfix assumed)
+                                (uid-triple-sfix extra))
+                ienv))
+    :flag type-struni-member-list-composite-conditions-3p
+    :hints ('(:expand
+              ((type-struni-member-list-composite-conditions-3p
+                 x y composite completions assumed ienv)
+               (type-struni-member-list-composite-conditions-3p
+                 x y composite completions
+                 (treeset::union (uid-triple-sfix assumed)
+                                 (uid-triple-sfix extra))
+                 ienv)))))
+  (defthm type-params-composite-conditions-3p-of-union
+    (3truth<= (type-params-composite-conditions-3p
+                x y composite completions assumed ienv)
+              (type-params-composite-conditions-3p
+                x y composite completions
+                (treeset::union (uid-triple-sfix assumed)
+                                (uid-triple-sfix extra))
+                ienv))
+    :flag type-params-composite-conditions-3p
+    :hints ('(:expand
+              ((type-params-composite-conditions-3p
+                 x y composite completions assumed ienv)
+               (type-params-composite-conditions-3p
+                 x y composite completions
+                 (treeset::union (uid-triple-sfix assumed)
+                                 (uid-triple-sfix extra))
+                 ienv)))))
+  (defthm type-list-composite-conditions-3p-of-union
+    (3truth<= (type-list-composite-conditions-3p
+                x y composite completions assumed ienv)
+              (type-list-composite-conditions-3p
+                x y composite completions
+                (treeset::union (uid-triple-sfix assumed)
+                                (uid-triple-sfix extra))
+                ienv))
+    :flag type-list-composite-conditions-3p
+    :hints ('(:expand
+              ((type-list-composite-conditions-3p
+                 x y composite completions assumed ienv)
+               (type-list-composite-conditions-3p
+                 x y composite completions
+                 (treeset::union (uid-triple-sfix assumed)
+                                 (uid-triple-sfix extra))
+                 ienv)))))
+  :hints (("Goal"
+           :in-theory
+           (enable type-composite-conditions-3p
+                   type-struni-member-list-composite-conditions-3p
+                   type-params-composite-conditions-3p
+                   type-list-composite-conditions-3p
+                   (:i type/type-list-composite-conditions-3p-flag)))))
+
+(defrule type-composite-conditions-3p-when-subset
+  (implies (treeset::subset (uid-triple-sfix assumed)
+                            (uid-triple-sfix assumed2))
+           (3truth<= (type-composite-conditions-3p
+                       x y composite completions assumed ienv)
+                     (type-composite-conditions-3p
+                       x y composite completions assumed2 ienv)))
+  :use (:instance type-composite-conditions-3p-of-union
+                  (extra assumed2))
+  :disable type-composite-conditions-3p-of-union)
+
+(defrule type-struni-member-list-composite-conditions-3p-when-subset
+  (implies (treeset::subset (uid-triple-sfix assumed)
+                            (uid-triple-sfix assumed2))
+           (3truth<= (type-struni-member-list-composite-conditions-3p
+                       x y composite completions assumed ienv)
+                     (type-struni-member-list-composite-conditions-3p
+                       x y composite completions assumed2 ienv)))
+  :use (:instance type-struni-member-list-composite-conditions-3p-of-union
+                  (extra assumed2))
+  :disable type-struni-member-list-composite-conditions-3p-of-union)
+
+(defrule type-params-composite-conditions-3p-when-subset
+  (implies (treeset::subset (uid-triple-sfix assumed)
+                            (uid-triple-sfix assumed2))
+           (3truth<= (type-params-composite-conditions-3p
+                       x y composite completions assumed ienv)
+                     (type-params-composite-conditions-3p
+                       x y composite completions assumed2 ienv)))
+  :use (:instance type-params-composite-conditions-3p-of-union
+                  (extra assumed2))
+  :disable type-params-composite-conditions-3p-of-union)
+
+(defrule type-list-composite-conditions-3p-when-subset
+  (implies (treeset::subset (uid-triple-sfix assumed)
+                            (uid-triple-sfix assumed2))
+           (3truth<= (type-list-composite-conditions-3p
+                       x y composite completions assumed ienv)
+                     (type-list-composite-conditions-3p
+                       x y composite completions assumed2 ienv)))
+  :use (:instance type-list-composite-conditions-3p-of-union
+                  (extra assumed2))
+  :disable type-list-composite-conditions-3p-of-union)
+
+;; The boolean projections of monotonicity,
+;; binding the free set either from the projected fact
+;; (the -fix versions, with a fixed hypothesis)
+;; or from the subset hypothesis.
+
+(defrule 3possibly-type-composite-conditions-3p-when-subset-fix
+  (implies (and (3possibly (type-composite-conditions-3p
+                       x y composite completions assumed ienv))
+                (treeset::subset (uid-triple-sfix assumed)
+                                 (uid-triple-sfix assumed2)))
+           (3possibly (type-composite-conditions-3p
+                   x y composite completions assumed2 ienv)))
+  :use type-composite-conditions-3p-when-subset
+  :disable type-composite-conditions-3p-when-subset)
+
+(defrule 3possibly-type-composite-conditions-3p-when-subset
+  (implies (and (treeset::subset assumed assumed2)
+                (uid-triple-setp assumed2)
+                (3possibly (type-composite-conditions-3p
+                       x y composite completions assumed ienv)))
+           (3possibly (type-composite-conditions-3p
+                   x y composite completions assumed2 ienv)))
+  :use 3possibly-type-composite-conditions-3p-when-subset-fix
+  :disable 3possibly-type-composite-conditions-3p-when-subset-fix)
+
+(defrule
+  3possibly-type-struni-member-list-composite-conditions-3p-when-subset-fix
+  (implies (and (3possibly (type-struni-member-list-composite-conditions-3p
+                       x y composite completions assumed ienv))
+                (treeset::subset (uid-triple-sfix assumed)
+                                 (uid-triple-sfix assumed2)))
+           (3possibly (type-struni-member-list-composite-conditions-3p
+                   x y composite completions assumed2 ienv)))
+  :use type-struni-member-list-composite-conditions-3p-when-subset
+  :disable type-struni-member-list-composite-conditions-3p-when-subset)
+
+(defrule 3possibly-type-struni-member-list-composite-conditions-3p-when-subset
+  (implies (and (treeset::subset assumed assumed2)
+                (uid-triple-setp assumed2)
+                (3possibly (type-struni-member-list-composite-conditions-3p
+                       x y composite completions assumed ienv)))
+           (3possibly (type-struni-member-list-composite-conditions-3p
+                   x y composite completions assumed2 ienv)))
+  :use 3possibly-type-struni-member-list-composite-conditions-3p-when-subset-fix
+  :disable
+  3possibly-type-struni-member-list-composite-conditions-3p-when-subset-fix)
+
+(defrule 3possibly-type-params-composite-conditions-3p-when-subset-fix
+  (implies (and (3possibly (type-params-composite-conditions-3p
+                       x y composite completions assumed ienv))
+                (treeset::subset (uid-triple-sfix assumed)
+                                 (uid-triple-sfix assumed2)))
+           (3possibly (type-params-composite-conditions-3p
+                   x y composite completions assumed2 ienv)))
+  :use type-params-composite-conditions-3p-when-subset
+  :disable type-params-composite-conditions-3p-when-subset)
+
+(defrule 3possibly-type-params-composite-conditions-3p-when-subset
+  (implies (and (treeset::subset assumed assumed2)
+                (uid-triple-setp assumed2)
+                (3possibly (type-params-composite-conditions-3p
+                       x y composite completions assumed ienv)))
+           (3possibly (type-params-composite-conditions-3p
+                   x y composite completions assumed2 ienv)))
+  :use 3possibly-type-params-composite-conditions-3p-when-subset-fix
+  :disable 3possibly-type-params-composite-conditions-3p-when-subset-fix)
+
+(defrule 3possibly-type-list-composite-conditions-3p-when-subset-fix
+  (implies (and (3possibly (type-list-composite-conditions-3p
+                       x y composite completions assumed ienv))
+                (treeset::subset (uid-triple-sfix assumed)
+                                 (uid-triple-sfix assumed2)))
+           (3possibly (type-list-composite-conditions-3p
+                   x y composite completions assumed2 ienv)))
+  :use type-list-composite-conditions-3p-when-subset
+  :disable type-list-composite-conditions-3p-when-subset)
+
+(defrule 3possibly-type-list-composite-conditions-3p-when-subset
+  (implies (and (treeset::subset assumed assumed2)
+                (uid-triple-setp assumed2)
+                (3possibly (type-list-composite-conditions-3p
+                       x y composite completions assumed ienv)))
+           (3possibly (type-list-composite-conditions-3p
+                   x y composite completions assumed2 ienv)))
+  :use 3possibly-type-list-composite-conditions-3p-when-subset-fix
+  :disable 3possibly-type-list-composite-conditions-3p-when-subset-fix)
+
+(defrule 3definitely-type-composite-conditions-3p-when-subset-fix
+  (implies (and (3definitely (type-composite-conditions-3p
+                       x y composite completions assumed ienv))
+                (treeset::subset (uid-triple-sfix assumed)
+                                 (uid-triple-sfix assumed2)))
+           (3definitely (type-composite-conditions-3p
+                   x y composite completions assumed2 ienv)))
+  :use type-composite-conditions-3p-when-subset
+  :disable type-composite-conditions-3p-when-subset)
+
+(defrule 3definitely-type-composite-conditions-3p-when-subset
+  (implies (and (treeset::subset assumed assumed2)
+                (uid-triple-setp assumed2)
+                (3definitely (type-composite-conditions-3p
+                       x y composite completions assumed ienv)))
+           (3definitely (type-composite-conditions-3p
+                   x y composite completions assumed2 ienv)))
+  :use 3definitely-type-composite-conditions-3p-when-subset-fix
+  :disable 3definitely-type-composite-conditions-3p-when-subset-fix)
+
+(defrule
+  3definitely-type-struni-member-list-composite-conditions-3p-when-subset-fix
+  (implies (and (3definitely (type-struni-member-list-composite-conditions-3p
+                       x y composite completions assumed ienv))
+                (treeset::subset (uid-triple-sfix assumed)
+                                 (uid-triple-sfix assumed2)))
+           (3definitely (type-struni-member-list-composite-conditions-3p
+                   x y composite completions assumed2 ienv)))
+  :use type-struni-member-list-composite-conditions-3p-when-subset
+  :disable type-struni-member-list-composite-conditions-3p-when-subset)
+
+(defrule 3definitely-type-struni-member-list-composite-conditions-3p-when-subset
+  (implies (and (treeset::subset assumed assumed2)
+                (uid-triple-setp assumed2)
+                (3definitely (type-struni-member-list-composite-conditions-3p
+                       x y composite completions assumed ienv)))
+           (3definitely (type-struni-member-list-composite-conditions-3p
+                   x y composite completions assumed2 ienv)))
+  :use
+  3definitely-type-struni-member-list-composite-conditions-3p-when-subset-fix
+  :disable
+  3definitely-type-struni-member-list-composite-conditions-3p-when-subset-fix)
+
+(defrule 3definitely-type-params-composite-conditions-3p-when-subset-fix
+  (implies (and (3definitely (type-params-composite-conditions-3p
+                       x y composite completions assumed ienv))
+                (treeset::subset (uid-triple-sfix assumed)
+                                 (uid-triple-sfix assumed2)))
+           (3definitely (type-params-composite-conditions-3p
+                   x y composite completions assumed2 ienv)))
+  :use type-params-composite-conditions-3p-when-subset
+  :disable type-params-composite-conditions-3p-when-subset)
+
+(defrule 3definitely-type-params-composite-conditions-3p-when-subset
+  (implies (and (treeset::subset assumed assumed2)
+                (uid-triple-setp assumed2)
+                (3definitely (type-params-composite-conditions-3p
+                       x y composite completions assumed ienv)))
+           (3definitely (type-params-composite-conditions-3p
+                   x y composite completions assumed2 ienv)))
+  :use 3definitely-type-params-composite-conditions-3p-when-subset-fix
+  :disable 3definitely-type-params-composite-conditions-3p-when-subset-fix)
+
+(defrule 3definitely-type-list-composite-conditions-3p-when-subset-fix
+  (implies (and (3definitely (type-list-composite-conditions-3p
+                       x y composite completions assumed ienv))
+                (treeset::subset (uid-triple-sfix assumed)
+                                 (uid-triple-sfix assumed2)))
+           (3definitely (type-list-composite-conditions-3p
+                   x y composite completions assumed2 ienv)))
+  :use type-list-composite-conditions-3p-when-subset
+  :disable type-list-composite-conditions-3p-when-subset)
+
+(defrule 3definitely-type-list-composite-conditions-3p-when-subset
+  (implies (and (treeset::subset assumed assumed2)
+                (uid-triple-setp assumed2)
+                (3definitely (type-list-composite-conditions-3p
+                       x y composite completions assumed ienv)))
+           (3definitely (type-list-composite-conditions-3p
+                   x y composite completions assumed2 ienv)))
+  :use 3definitely-type-list-composite-conditions-3p-when-subset-fix
+  :disable 3definitely-type-list-composite-conditions-3p-when-subset-fix)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1751,6 +2334,23 @@
          (type-compatible-3p composite y completions ienv)
          (type-composite-conditions-3p
            x y composite completions (treeset::empty) ienv)))
+
+(defrule type-composite-3p-symmetric
+  (equal (type-composite-3p y x composite completions ienv)
+         (type-composite-3p x y composite completions ienv))
+  :enable type-composite-3p
+  :use (:instance type-composite-conditions-3p-symmetric
+                  (assumed (treeset::empty)))
+  :disable type-composite-conditions-3p-symmetric)
+
+(defrule type-composite-3p-under-iff-when-same
+  (iff (type-composite-3p x x x completions ienv)
+       t)
+  :enable (type-composite-3p 3and))
+
+(defrule 3possibly-type-composite-3p-when-same
+  (3possibly (type-composite-3p x x x completions ienv))
+  :enable (3possibly 3equiv))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
