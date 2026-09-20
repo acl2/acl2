@@ -525,8 +525,7 @@
         (type-composite x y
                         vstate.completions
                         (treemap::empty)
-                        vstate.next-uid
-                        vstate.ienv)))
+                        vstate.next-uid)))
     (mv composite
         (change-vstate
          vstate

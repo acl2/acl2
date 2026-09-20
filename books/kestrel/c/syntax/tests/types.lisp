@@ -793,7 +793,7 @@
 ;; along with the composite relation on it.
 (define type-composite-and-relation ((x typep) (y typep) (ienv ienvp))
   (b* (((mv composite completions & &)
-        (type-composite x y nil (treemap::empty) (uid 1) ienv)))
+        (type-composite x y nil (treemap::empty) (uid 1))))
     (list composite
           (type-composite-3p x y composite completions ienv))))
 
@@ -1021,8 +1021,7 @@
                   (make-type-struni-member :name? (ident "q") :type array-inc))
             nil)))
        ((mv composite completions composites next-uid)
-        (type-composite foo bar completions (treemap::empty) (uid 3)
-                        (irr-ienv))))
+        (type-composite foo bar completions (treemap::empty) (uid 3))))
     (list composite
           (treemap::lookup (uid 3) completions)
           (treemap::lookup (make-uid-pair :first (uid 1) :second (uid 2))
@@ -1070,11 +1069,9 @@
                                      (treemap::update (uid 2) (list member-10)
                                                       nil)))
        ((mv composite1 & & next-uid1)
-        (type-composite foo bar completions (treemap::empty) (uid 3)
-                        (irr-ienv)))
+        (type-composite foo bar completions (treemap::empty) (uid 3)))
        ((mv composite2 & & next-uid2)
-        (type-composite bar foo completions (treemap::empty) (uid 3)
-                        (irr-ienv))))
+        (type-composite bar foo completions (treemap::empty) (uid 3))))
     (list composite1 next-uid1 composite2 next-uid2))
   (let ((bar (make-type-struct :uid (uid 2)
                                :tunit? (filepath "bar.c")
@@ -1094,11 +1091,9 @@
        (member (make-type-struni-member :name? (ident "x") :type (type-sint)))
        (completions (treemap::update (uid 1) (list member) nil))
        ((mv composite1 & & &)
-        (type-composite foo bar completions (treemap::empty) (uid 3)
-                        (irr-ienv)))
+        (type-composite foo bar completions (treemap::empty) (uid 3)))
        ((mv composite2 & & &)
-        (type-composite bar foo completions (treemap::empty) (uid 3)
-                        (irr-ienv))))
+        (type-composite bar foo completions (treemap::empty) (uid 3))))
     (list composite1 composite2))
   (let ((foo (make-type-struct :uid (uid 1)
                                :tunit? (filepath "foo.c")
@@ -1145,8 +1140,7 @@
                   (make-type-struni-member :name? (ident "q") :type array-inc))
             nil)))
        ((mv composite completions & next-uid)
-        (type-composite foo bar completions (treemap::empty) (uid 3)
-                        (irr-ienv))))
+        (type-composite foo bar completions (treemap::empty) (uid 3))))
     (list (treemap::lookup (uid 3) completions)
           next-uid
           (type-composite-3p foo bar composite completions (irr-ienv))))
@@ -1201,7 +1195,7 @@
                       (make-type-struni-member :name? (ident "q")
                                                :type array-inc)))))
        ((mv composite completions & next-uid)
-        (type-composite foo bar nil (treemap::empty) (uid 3) (irr-ienv))))
+        (type-composite foo bar nil (treemap::empty) (uid 3))))
     (list composite
           completions
           next-uid
@@ -1250,11 +1244,10 @@
                                      (treemap::update (uid 2) (list member-10)
                                                       nil)))
        ((mv composite1 & & &)
-        (type-composite foo bar completions (treemap::empty) (uid 3)
-                        (irr-ienv)))
+        (type-composite foo bar completions (treemap::empty) (uid 3)))
        ((mv composite2 & & &)
         (type-composite foo bar (treemap::update (uid 2) (list member-10) nil)
-                        (treemap::empty) (uid 3) (irr-ienv))))
+                        (treemap::empty) (uid 3))))
     (list composite1
           (type-composite-3p foo bar composite1 completions (irr-ienv))
           composite2))
@@ -1295,6 +1288,6 @@
                            :kind (type-array-kind-incomplete))
           (make-type-array :of (type-sint)
                            :kind (make-type-array-kind-const-len :len 10))
-          nil (treemap::empty) (uid 1) (irr-ienv))))
+          nil (treemap::empty) (uid 1))))
     (list composites next-uid))
   (list (treemap::empty) (uid 1)))
