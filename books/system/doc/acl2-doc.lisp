@@ -110129,6 +110129,10 @@ it."
  an example of the issue, see @(see community-book)
  @('system/tests/memoize-invoke-macro-alias.lisp').</p>
 
+ <p>Fixed a soundness bug due to allowing @(tsee double-float) type @(see
+ declaration)s that were not at the top level.  For an example, see @(see
+ community-book) @('system/tests/double-float-type-is-atomic.lisp').</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2

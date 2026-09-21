@@ -11776,7 +11776,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                                      (caddr x) tflg))
         ((eq x 'rational) (list 'rationalp var))
         ((eq x 'real) (list 'real/rationalp var))
-        ((eq x 'double-float) (list 'dfp var))
         ((eq x 'complex) (list 'complex/complex-rationalp var))
         ((eq x 'number) (list 'acl2-numberp var))
         ((and (consp x)
@@ -11978,18 +11977,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
  ;; This was modified to change the moniker 'complex to use
  ;; complexp instead of complex-rationalp.
 
-(defun translate-declaration-to-guard-gen (x var tflg wrld)
+(defun translate-declaration-to-guard-gen-rec (x var tflg wrld)
 
 ; Warning: Keep this in sync with non-common-lisp-compliants-in-satisfies.
 
 ; This function is typically called on the sort of x you might write in a TYPE
-; declaration, e.g., (DECLARE (TYPE x var1 ... varn)).  Thus, x might be
-; something like '(or symbol cons (integer 0 128)) meaning that var is either a
-; symbolp, a consp, or an integer in the given range.  X is taken as a
-; declaration about the variable symbol var and is converted into an either an
-; untranslated term or a translated term about var (depending on tflg), except
-; that we return nil if x is seen not to be a valid type-spec for ACL2.  See
-; get-guards2 for a discussion of tflg.
+; declaration, e.g., (DECLARE (TYPE x var1 ... varn)).  (Exception: This
+; doesn't comprehend double-float, which is handled in
+; translate-declaration-to-guard-gen.)  Thus, x might be something like '(or
+; symbol cons (integer 0 128)) meaning that var is either a symbolp, a consp,
+; or an integer in the given range.  X is taken as a declaration about the
+; variable symbol var and is converted into an either an untranslated term or a
+; translated term about var (depending on tflg), except that we return nil if x
+; is seen not to be a valid type-spec for ACL2.  See get-guards2 for a
+; discussion of tflg.
 
 ; Wrld is an ACL2 logical world or a symbol (typically, nil), the difference
 ; being that a symbol indicates that we should do a weaker check.  This extra
@@ -12010,7 +12011,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq (car x) 'not)
          (cond ((and (true-listp x)
                      (equal (length x) 2))
-                (let ((term (translate-declaration-to-guard-gen
+                (let ((term (translate-declaration-to-guard-gen-rec
                              (cadr x)
                              var
                              tflg
@@ -12043,12 +12044,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq (car x) 'complex)
          (cond ((and (consp (cdr x))
                      (null (cddr x)))
-                (let ((r (translate-declaration-to-guard-gen
+                (let ((r (translate-declaration-to-guard-gen-rec
                           (cadr x)
                           (list 'realpart var)
                           tflg
                           wrld))
-                      (i (translate-declaration-to-guard-gen
+                      (i (translate-declaration-to-guard-gen-rec
                           (cadr x)
                           (list 'imagpart var)
                           tflg
@@ -12064,7 +12065,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun translate-declaration-to-guard-gen-lst (l var tflg wrld)
 
 ; Wrld is an ACL2 logical world or a symbol; see
-; translate-declaration-to-guard-gen.
+; translate-declaration-to-guard-gen-rec.
 
   (declare (xargs ; :measure (acl2-count l)
             :guard (and (true-listp l)
@@ -12073,7 +12074,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                             (plist-worldp wrld)))
             :mode :program))
   (and (consp l)
-       (let ((frst (translate-declaration-to-guard-gen
+       (let ((frst (translate-declaration-to-guard-gen-rec
                     (car l)
                     var
                     tflg
@@ -12092,6 +12093,23 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
  )
 
+(defun translate-declaration-to-guard-gen (x var tflg wrld)
+
+; This is just translate-declaration-to-guard-gen-rec, except that double-float
+; cannot occur within other type expressions, so it is handled here.
+
+  (declare (xargs :guard (or (symbolp wrld)
+                             (plist-worldp wrld))
+                  :mode :program
+
+; See the comment above translate-declaration-to-guard/integer-gen.
+
+;                  :measure (acl2-count x)
+                  ))
+  (cond ((eq x 'double-float)
+         (list 'dfp var))
+        (t (translate-declaration-to-guard-gen-rec x var tflg wrld))))
+
 (defun translate-declaration-to-guard (x var wrld)
   (declare (xargs :guard (or (symbolp wrld)
                              (plist-worldp wrld))
@@ -12106,20 +12124,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; = nil for backwards compatibility.  See get-guards2 for a discussion of tflg.
 
   (translate-declaration-to-guard-gen x var nil wrld))
-
-(defun translate-declaration-to-guard-lst (l var wrld)
-  (declare (xargs ; :measure (acl2-count l)
-            :guard (and (true-listp l)
-                        (consp l)
-                        (or (null wrld)
-                            (plist-worldp wrld)))
-            :mode :program))
-
-; This is just the special case of translate-declaration-to-guard-gen-lst for
-; tflg = nil for backwards compatibility.  See get-guards2 for a discussion of
-; tflg.
-
-  (translate-declaration-to-guard-gen-lst l var nil wrld))
 
 (defun the-check (guard x y)
 
