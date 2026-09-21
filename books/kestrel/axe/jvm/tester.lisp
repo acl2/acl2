@@ -492,7 +492,13 @@
                   ))
   (b* ((method-name (jvm::method-id-name method-id))
        (method-descriptor (jvm::method-id-descriptor method-id))
-       (method-info (lookup-equal method-id method-info-alist)) ; must be pressent, per the guard
+       (method-info (lookup-equal method-id method-info-alist)) ; must be present, per the guard
+       ;; We had thought that perhaps test harnesses should always be static, but that would prevent them
+       ;; from easily calling instance methods (see for example the Packing.java example).
+       ;; (staticp (jvm::method-staticp method-info))
+       ;; ((when (not staticp))
+       ;;  (er hard? 'run-formal-test-on-method "Methods being tested must be static, but ~x0 (in class ~x1)is not." method-name class-name)
+       ;;  (mv :method-not-static t state))
        (method-designator-string (concatenate 'string class-name "." method-name method-descriptor)) ;todo: use fully qualified name?
        (method-return-type (jvm::return-type-from-method-descriptor method-descriptor))
        (variant (if (eq method-return-type :void)
