@@ -525,7 +525,7 @@
                 (cw "~x0)~%" darg))
               (print-alist-elided (rest alist))))))
 
-(defun make-rewriter-simple-fn (suffix ;; gets added to generated names
+(defund make-rewriter-simple-fn (suffix ;; gets added to generated names
                                 evaluator-base-name
                                 syntaxp-evaluator-suffix
                                 bind-free-evaluator-suffix
@@ -6843,7 +6843,7 @@
          ;; DAGs).  Returns (mv erp new-terms ,@maybe-state), where the new-terms correspond 1-to-1
          ;; to the original TERMS.
          ;; WARNING: The terms returned might be huge!
-         (defun ,simplify-terms-to-terms-name (terms
+         (defund ,simplify-terms-to-terms-name (terms
                                                assumptions
                                                rule-alist
                                                interpreted-function-alist
