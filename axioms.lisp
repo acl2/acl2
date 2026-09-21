@@ -9891,7 +9891,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro verify-termination (&rest lst)
   `(make-event
-    (verify-termination-fn ',lst state)))
+    (verify-termination-fn ',lst state)
+    :on-behalf-of :quiet!))
 
 #+acl2-loop-only
 (defmacro verify-termination-boot-strap (&whole event-form &rest lst)

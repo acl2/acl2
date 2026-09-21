@@ -109875,6 +109875,14 @@ it."
 ; ill-formed call of compress1 in ACL2 source function accessor-array, which
 ; has been fixed.
 
+; Avoided a generic make-event error message when verify-termination gives an
+; error.  Thanks to Eric Smith for reporting this bug found by Anthropic's
+; Claude.
+
+; Improved error reporting from unexpected calls of system function
+; recover-defs-lst.  Thanks to Eric Smith for reporting this bug found by Anthropic's
+; Claude.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -110132,6 +110140,11 @@ it."
  <p>Fixed a soundness bug due to allowing @(tsee double-float) type @(see
  declaration)s that were not at the top level.  For an example, see @(see
  community-book) @('system/tests/double-float-type-is-atomic.lisp').</p>
+
+ <p>Improved error messages from @(tsee verify-termination) in two situations:
+ when the function symbol is built in without a defining event (like @('car'));
+ and when the function symbol was introduced in support of a @(see stobj),
+ i.e., with a @(tsee defstobj) or @(tsee defabsstobj) event.</p>
 
  <h3>Other Bug Fixes</h3>
 
@@ -163124,12 +163137,14 @@ introduction-to-the-tau-system) for more information about Tau.</dd>
 
  <p>Note that if @('fn1') is already in @(':')@(tsee logic) mode, then the
  @('verify-termination') call has no effect.  It is generally considered to be
- redundant, in the sense that it returns without error; but if the @('fn1') is
- a constrained function (i.e., introduced in the signature of an @(tsee
- encapsulate), or by @(tsee defchoose)), then an error occurs.  This error is
- intended to highlight unintended uses of @('verify-termination'); but if you
- do not want to see an error in this case, you can write and use your own macro
- in place of @('verify-termination').  The following explanation of the
+ redundant, in the sense that it returns without error; but an error occurs in
+ the following cases: if @('fn1') is a constrained function (i.e., introduced
+ in the signature of an @(tsee encapsulate), or by @(tsee defchoose)), a
+ built-in function without a defining event (like @(tsee car)), or a function
+ introduced with a @(tsee defstobj) or @(tsee defabsstobj) event.  This error
+ is intended to highlight unintended uses of @('verify-termination'); but if
+ you do not want to see an error in this case, you can write and use your own
+ macro in place of @('verify-termination').  The following explanation of the
  implementation of @('verify-termination') may help with such a task.</p>
 
  <p>We conclude with a discussion of the use of @(tsee make-event) to implement
@@ -163137,8 +163152,8 @@ introduction-to-the-tau-system) for more information about Tau.</dd>
  for those who want to create variants of @('verify-termination'), or who are
  interested in seeing an application of @(tsee make-event).</p>
 
- <p>Consider the following proof of @('nil'), which succeeded up through
- Version_3.4 of ACL2.</p>
+ <p>Consider the following attempt to prove @('nil'), which succeeded up
+ through Version_3.4 of ACL2.</p>
 
  @({
   (encapsulate
