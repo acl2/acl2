@@ -1,5 +1,6 @@
 ; This book, modified only as noted below and by deleting some initial
-; comments, was produced by Claude and passed along by Eric Smith.
+; comments, was produced by Claude and passed along by Eric Smith.  It
+; illustrates a soundness bug fixed before ACL2 Version 8.8.
 
 (in-package "ACL2")
 
@@ -15,16 +16,17 @@
     :rule-classes :compound-recognizer))
 )
 
-; The rest, commented out by Matt K., is no longer admissible after the bug fix.
-#|
+(must-fail ; The must-fail wrapper was added by Matt Kaufmann:
 (defthm rec-t
   (implies (rec x) (equal (rec x) t))
   :rule-classes nil)
+)
 
+(must-fail ; The must-fail wrapper was added by Matt Kaufmann:
 (defthm nil-proved
   nil
   :hints (("Goal" :use ((:instance (:functional-instance rec-t
                                      (rec (lambda (x) (if (consp x) 5 nil))))
                                    (x (cons 1 2))))))
   :rule-classes nil)
-|#
+)

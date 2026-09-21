@@ -109871,6 +109871,10 @@ it."
 ; https://github.com/acl2/acl2/pull/2047.  Thanks to Eric Smith for getting
 ; this bug reported from Anthropic's Claude and then fixing it.
 
+; The bug fix for compress1 in which "recompression was required" caught an
+; ill-formed call of compress1 in ACL2 source function accessor-array, which
+; has been fixed.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -110092,6 +110096,38 @@ it."
  <p>Fixed a bug that could cause free variable warnings to be suppressed when a
  @(':')@(tsee forward-chaining) rule has more than one trigger term.  Closes PR
  #2046.</p>
+
+ <p>Fixed a soundness bug by adding a check in each of @(tsee compress1) and
+ @(tsee compress2) that its arguments satisfy its @(tsee array1p) or @(tsee
+ array2p) @(see guard), respectively.  To see why this is necessary, see @(see
+ community-book) @('system/tests/compress1-invariant-risk.lisp').  (Note: This
+ did not observably slow down running of the complete ACL2 regression
+ suite.)</p>
+
+ <p>Fixed a soundness bug in @(tsee compress1) in the case of an array whose
+ @(':order') is either @('<') (the default) or @('>') and whose indices are
+ already in order, but whose length exceeds the @(':maximum-length'):
+ recompression was required but was not performed.  See @(see community-book)
+ @('system/tests/compress1-length-bug.lisp').</p>
+
+ <p>Fixed a soundness bug in @(tsee compress2) due to an inadequate ordering
+ check in raw Lisp; see @(see community-book)
+ @('system/tests/compress2-order-bug.lisp').</p>
+
+ <p>Fixed a soundness bug due to careless generation of a fresh variable, in
+ particular when supporting the processing of a @(':')@(tsee
+ compound-recognizer) rule.  Thanks to Eric McCarthy and Jim McDonald for an
+ idea leading to Eric Smith's prompt to Claude.  For an example of the issue,
+ see @(see community-book) @('system/tests/cr-empty.lisp').</p>
+
+ <p>Fixed a soundness bug that could occur when a type declaration has the form
+ @('(type (or t <type>) <var>)').  For an example, see @(see community-book)
+ @('system/tests/dcl-guardian-nil.lisp').</p>
+
+ <p>Fixed a soundness bug based on the interaction between the @(see
+ macro-aliases-table) and @(tsee memoize) with the @(':invoke') argument.  For
+ an example of the issue, see @(see community-book)
+ @('system/tests/memoize-invoke-macro-alias.lisp').</p>
 
  <h3>Other Bug Fixes</h3>
 

@@ -2534,16 +2534,16 @@
 ; The ttree returned is 'assumption-free (provided the initial ttree
 ; is also).
 
-  (let* ((new-var (genvar 'genvar "EMPTY" nil (all-vars term)))
-         (type-alist (list (list* new-var *ts-empty* nil))))
-    (mv-let (normal-term ttree)
-            (normalize term t nil ens wrld ttree
-                       (backchain-limit wrld :ts))
-            (type-set
-             (type-set-implied-by-term1 normal-term
-                                        (if not-flg new-var var)
-                                        (if not-flg var new-var))
-             nil nil type-alist ens wrld ttree nil nil))))
+  (mv-let (normal-term ttree)
+    (normalize term t nil ens wrld ttree
+               (backchain-limit wrld :ts))
+    (let* ((new-var (genvar 'genvar "EMPTY" nil
+                            (cons var (all-vars normal-term))))
+           (type-alist (list (list* new-var *ts-empty* nil))))
+      (type-set (type-set-implied-by-term1 normal-term
+                                           (if not-flg new-var var)
+                                           (if not-flg var new-var))
+                nil nil type-alist ens wrld ttree nil nil))))
 
 (defun putprop-initial-type-prescriptions (names type-prescription-lst wrld)
 
