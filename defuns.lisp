@@ -7329,12 +7329,13 @@
 ; for :logic mode functions, where we store t.
 
   (let ((err-str "For technical reasons, we do not attempt to recover the ~
-                  definition of a ~s0 function such as ~x1.  It is surprising ~
-                  actually that you are seeing this message; please contact ~
-                  the ACL2 implementors unless you have called ~x2 yourself.")
+                  definition of a~s0 function symbol such as ~x1.  It is ~
+                  surprising actually that you are seeing this message; ~
+                  please contact the ACL2 implementors unless you have called ~
+                  ~x2 yourself.")
         (ctx 'recover-defs-lst))
     (cond
-     ((getpropc fn 'non-executablep nil wrld)
+     ((getpropc fn "non-executablep" nil wrld)
 
 ; We shouldn't be seeing this message, as something between verify-termination
 ; and this lower-level function should be handling the non-executable case
@@ -7343,7 +7344,7 @@
 
       (er hard ctx
           err-str
-          "non-executable" fn 'recover-defs-lst))
+          " non-executable" fn 'recover-defs-lst))
      (t
       (let ((val
              (scan-to-cltl-command
@@ -7366,13 +7367,17 @@
                (cond ((cadr val) (cdddr val))
                      (t (er hard ctx
                             err-str
-                            "non-executable or :LOGIC mode"
+                            " non-executable or :LOGIC mode"
                             fn
                             'recover-defs-lst))))
               (t (er hard ctx
                      "We failed to find the expected CLTL-COMMAND for the ~
-                      introduction of ~x0."
-                     fn))))))))
+                      introduction of ~x0.  ~@1"
+                     fn
+                     (msg err-str
+                          ""
+                          fn
+                          'recover-defs-lst)))))))))
 
 (defun get-clique (fn wrld)
 
@@ -12604,15 +12609,26 @@
 ; except: as a courtesy to the user, we may cause an error here if the function
 ; could not have been upgraded from :program mode.
 
-           (getpropc (caar lst) 'constrainedp nil wrld))
+           (or (getpropc (caar lst) 'constrainedp nil wrld)
+               (getpropc (caar lst) 'stobj-function nil wrld)
+               (assoc-eq (caar lst) *primitive-formals-and-guards*)))
       (er soft ctx
           "The :LOGIC mode function symbol ~x0 was originally introduced not ~
-           with DEFUN, but ~#1~[as a constrained function~/with DEFCHOOSE~].  ~
-           So VERIFY-TERMINATION does not make sense for this function symbol."
+           with DEFUN, but ~#1~[as a constrained function~/with DEFCHOOSE~/as ~
+           a primitive, built into ACL2 without a defining event~/with a ~
+           ~#2~[DEFSTOBJ~/DEFABSSTOBJ~] event~].  So VERIFY-TERMINATION does ~
+           not make sense for this function symbol.  See :DOC ~
+           verify-termination."
           (caar lst)
-          (cond ((getpropc (caar lst) 'defchoose-axiom nil wrld)
+          (cond ((getpropc (caar lst) 'stobj-function nil wrld)
+                 3)
+                ((assoc-eq (caar lst) *primitive-formals-and-guards*)
+                 2)
+                ((getpropc (caar lst) 'defchoose-axiom nil wrld)
                  1)
-                (t 0))))
+                (t 0))
+          (let ((st (getpropc (caar lst) 'stobj-function nil wrld)))
+            (if (and st (getpropc st 'absstobj-info nil wrld)) 1 0))))
      ((getpropc (caar lst) 'non-executablep nil wrld)
       (er soft ctx
           "The :PROGRAM mode function symbol ~x0 is declared non-executable, ~

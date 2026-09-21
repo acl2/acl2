@@ -107157,6 +107157,11 @@ Bug Fixes From AI via Eric Smith
   [declaration]s that were not at the top level.  For an example, see
   [community-book] [30m[47msystem/tests/double-float-type-is-atomic.lisp[0m[0m.
 
+  Improved error messages from [30m[47m[verify-termination][0m[0m in two situations:
+  when the function symbol is built in without a defining event (like
+  [30m[47mcar[0m[0m); and when the function symbol was introduced in support of a
+  [stobj], i.e., with a [30m[47m[defstobj][0m[0m or [30m[47m[defabsstobj][0m[0m event.
+
 
 Other Bug Fixes
 
@@ -162666,10 +162671,12 @@ Subtopics
 
   Note that if [30m[47mfn1[0m[0m is already in [30m[47m:[0m[0m[30m[47m[logic][0m[0m mode, then the
   [30m[47mverify-termination[0m[0m call has no effect.  It is generally considered
-  to be redundant, in the sense that it returns without error; but if
-  the [30m[47mfn1[0m[0m is a constrained function (i.e., introduced in the
-  signature of an [30m[47m[encapsulate][0m[0m, or by [30m[47m[defchoose][0m[0m), then an error
-  occurs.  This error is intended to highlight unintended uses of
+  to be redundant, in the sense that it returns without error; but an
+  error occurs in the following cases: if [30m[47mfn1[0m[0m is a constrained
+  function (i.e., introduced in the signature of an [30m[47m[encapsulate][0m[0m, or
+  by [30m[47m[defchoose][0m[0m), a built-in function without a defining event (like
+  [30m[47m[car][0m[0m), or a function introduced with a [30m[47m[defstobj][0m[0m or [30m[47m[defabsstobj][0m[0m
+  event.  This error is intended to highlight unintended uses of
   [30m[47mverify-termination[0m[0m; but if you do not want to see an error in this
   case, you can write and use your own macro in place of
   [30m[47mverify-termination[0m[0m.  The following explanation of the
@@ -162680,8 +162687,8 @@ Subtopics
   only for those who want to create variants of [30m[47mverify-termination[0m[0m,
   or who are interested in seeing an application of [30m[47m[make-event][0m[0m.
 
-  Consider the following proof of [30m[47mnil[0m[0m, which succeeded up through
-  Version_3.4 of ACL2.
+  Consider the following attempt to prove [30m[47mnil[0m[0m, which succeeded up
+  through Version_3.4 of ACL2.
 
     (encapsulate
      ()
