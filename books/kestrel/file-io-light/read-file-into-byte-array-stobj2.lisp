@@ -43,8 +43,9 @@
     (let ((byte-array-stobj (update-bytesi index (char-code (char str index)) byte-array-stobj)))
       (write-string-chars-to-byte-array-stobj (the (unsigned-byte 60) (+ 1 index)) len str byte-array-stobj))))
 
-;; Returns (mv erp byte-array-stobj state) where either ERP is non-nil (meaning an error
-;; occurred) or else the bytes field of BYTE-ARRAY-STOBJ contains the contents of FILENAME.
+;; Returns (mv erp numbytes byte-array-stobj state) where either ERP is non-nil
+;; (meaning an error occurred) or else the first NUMBYTES elements of the
+;; bytes field of BYTE-ARRAY-STOBJ contain the contents of FILENAME.
 (defund read-file-into-byte-array-stobj2 (filename byte-array-stobj state)
   (declare (xargs :guard (stringp filename)
                   :stobjs (byte-array-stobj state)))
@@ -53,16 +54,22 @@
   (mv-let (file-length state)
     (file-length$ filename state)
     (if (not file-length)
-        (mv `(:failed-to-get-file-length ,filename) byte-array-stobj state)
+        (mv `(:failed-to-get-file-length ,filename) 0 byte-array-stobj state)
       (if (not (unsigned-byte-p 59 file-length)) ; we could weaken this check, but it lets the indexing use fixnums
-          (mv `(:file-too-long ,filename) byte-array-stobj state)
+          (mv `(:file-too-long ,filename) 0 byte-array-stobj state)
         (let ((str (read-file-into-string2 filename 0 nil :default state)))
-          (if (or (not str)
-                  (< (length str) file-length))
-              (mv :error-reading-file byte-array-stobj state)
-            (let* (;; make the array the right size:
-                   (byte-array-stobj (resize-bytes file-length byte-array-stobj))
-                   (byte-array-stobj (write-string-chars-to-byte-array-stobj 0 file-length str byte-array-stobj)))
-              (mv nil ; no error
-                  byte-array-stobj
-                  state))))))))
+          (if (not str)
+              (mv :error-reading-file 0 byte-array-stobj state)
+            (let ((str-len (length str)))
+              (if (< str-len file-length)
+                  (mv :error-reading-file-not-enough-bytes 0 byte-array-stobj state)
+                (if (> str-len file-length)
+                    (mv :error-reading-file-too-many-bytes 0 byte-array-stobj state)
+                  (let* (;; make the array the right size (see comment in read-file-into-byte-array-stobj):
+                         (byte-array-stobj (resize-bytes 0 byte-array-stobj))
+                         (byte-array-stobj (resize-bytes file-length byte-array-stobj))
+                         (byte-array-stobj (write-string-chars-to-byte-array-stobj 0 file-length str byte-array-stobj)))
+                    (mv nil ; no error
+                        file-length
+                        byte-array-stobj
+                        state)))))))))))

@@ -59,6 +59,11 @@
                 (lookup-equal class-name class-table-alist)))
   :hints (("Goal" :in-theory (enable lookup-equal class-table-alistp))))
 
+(defthm class-name-listp-of-strip-cars-when-class-table-alistp
+  (implies (class-table-alistp class-table-alist)
+           (jvm::class-name-listp (strip-cars class-table-alist)))
+  :hints (("Goal" :in-theory (enable class-table-alistp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Checks that PAIR, a class-name + field-id pair is valid wrt the class-table-alist.
