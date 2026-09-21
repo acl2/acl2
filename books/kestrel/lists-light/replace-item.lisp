@@ -1,6 +1,6 @@
 ; Replacing all instances of an item in a list
 ;
-; Copyright (C) 2015-2021 Kestrel Institute
+; Copyright (C) 2015-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,7 @@
 
 ;; Replace all instances of OLD with NEW in ITEMS.
 (defun replace-item (old new items)
-  (declare (xargs :guard (and (true-listp items))))
+  (declare (xargs :guard (true-listp items)))
   (if (endp items)
       items
     (cons (if (equal (first items) old)

@@ -883,10 +883,10 @@
                 t)))
 
 (defthmd hack11
-  (IMPLIES (AND (EQUAL :ARRAY (NTH 0
-                                   (GET-FIELD ad
-                                              '(:SPECIAL-DATA . :CLASS)
-                                              HEAP))))
+  (IMPLIES (EQUAL :ARRAY (NTH 0
+                              (GET-FIELD ad
+                                         '(:SPECIAL-DATA . :CLASS)
+                                         HEAP)))
            (CLR (array-contents-pair)
                 (G ad HEAP)))
   :hints (("goal" :use ((:instance CLR-NON-NIL-WHEN-GET-FIELD-2 (a (array-contents-pair)) (pair '(:SPECIAL-DATA . :CLASS)))
