@@ -107120,6 +107120,39 @@ Bug Fixes From AI via Eric Smith
   when a [30m[47m:[0m[0m[30m[47m[forward-chaining][0m[0m rule has more than one trigger term.
   Closes PR #2046.
 
+  Fixed a soundness bug by adding a check in each of [30m[47m[compress1][0m[0m and
+  [30m[47m[compress2][0m[0m that its arguments satisfy its [30m[47m[array1p][0m[0m or [30m[47m[array2p][0m[0m
+  [guard], respectively.  To see why this is necessary, see
+  [community-book] [30m[47msystem/tests/compress1-invariant-risk.lisp[0m[0m.
+  (Note: This did not observably slow down running of the complete
+  ACL2 regression suite.)
+
+  Fixed a soundness bug in [30m[47m[compress1][0m[0m in the case of an array whose
+  [30m[47m:order[0m[0m is either [30m[47m<[0m[0m (the default) or [30m[47m>[0m[0m and whose indices are already
+  in order, but whose length exceeds the [30m[47m:maximum-length[0m[0m:
+  recompression was required but was not performed.  See
+  [community-book] [30m[47msystem/tests/compress1-length-bug.lisp[0m[0m.
+
+  Fixed a soundness bug in [30m[47m[compress2][0m[0m due to an inadequate ordering
+  check in raw Lisp; see [community-book]
+  [30m[47msystem/tests/compress2-order-bug.lisp[0m[0m.
+
+  Fixed a soundness bug due to careless generation of a fresh variable,
+  in particular when supporting the processing of a
+  [30m[47m:[0m[0m[30m[47m[compound-recognizer][0m[0m rule.  Thanks to Eric McCarthy and Jim
+  McDonald for an idea leading to Eric Smith's prompt to Claude.  For
+  an example of the issue, see [community-book]
+  [30m[47msystem/tests/cr-empty.lisp[0m[0m.
+
+  Fixed a soundness bug that could occur when a type declaration has
+  the form [30m[47m(type (or t <type>) <var>)[0m[0m.  For an example, see
+  [community-book] [30m[47msystem/tests/dcl-guardian-nil.lisp[0m[0m.
+
+  Fixed a soundness bug based on the interaction between the
+  [macro-aliases-table] and [30m[47m[memoize][0m[0m with the [30m[47m:invoke[0m[0m argument.  For
+  an example of the issue, see [community-book]
+  [30m[47msystem/tests/memoize-invoke-macro-alias.lisp[0m[0m.
+
 
 Other Bug Fixes
 

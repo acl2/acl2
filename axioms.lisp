@@ -13248,7 +13248,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (num ; to be the number of elements in the compressed alist
           1))
     (declare (type (integer 0 #.*array-maximum-length-bound*) num))
+    (when (not (array1p name l))
 
+; We avoid having to mark compress1 with 'invariant-risk (see
+; *boot-strap-invariant-risk-alist*) by checking array1p before compressing.
+; See community book books/system/tests/compress1-invariant-risk.lisp.
+
+      (hard-error 'compress1
+                  "Attempted to compress an alleged one-dimensional array ~
+                   that fails to satisfy (array1p name x) where:~|name = ~y0~
+                   x = ~Y12"
+                  (list (cons #\0 name)
+                        (cons #\1 l)
+                        (cons #\2 (evisc-tuple 4 12 nil nil)))))
     (when (and (null order)
                (> (length l) maximum-length))
       (hard-error 'compress1
@@ -13339,7 +13351,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
           ((null tl))
           (setf (svref ar (caar tl))
                 (cdar tl)))
-      (setq num (length (cdr l))))
+      (setq num (length l)))
      (t
       (do ((tl l (cdr tl)))
 ; The following termination test is true immediately if l consists only of the
@@ -13710,6 +13722,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          ar
          in-order)
 
+    (when (not (array2p name l))
+
+; As with compress1, we avoid having to mark compress2 with 'invariant-risk
+; (see *boot-strap-invariant-risk-alist*) by checking array2p before
+; compressing.
+
+      (hard-error 'compress2
+                  "Attempted to compress an alleged two-dimensional array ~
+                   that fails to satisfy (array2p name x) where:~|name = ~y0~
+                   x = ~Y12"
+                  (list (cons #\0 name)
+                        (cons #\1 l)
+                        (cons #\2 (evisc-tuple 4 12 nil nil)))))
+
 ;  Get an array that is filled with the special mark *invisible-array-mark*.
 
     (cond ((and old
@@ -13777,10 +13803,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                     (caaar tl))
                                (the (integer 0 #.*array-maximum-length-bound*)
                                     (caaadr tl)))
-                            (> (the (integer 0 #.*array-maximum-length-bound*)
-                                    (cdaar tl))
-                               (the (integer 0 #.*array-maximum-length-bound*)
-                                    (cdaadr tl)))))
+                            (>= (the (integer 0 #.*array-maximum-length-bound*)
+                                     (cdaar tl))
+                                (the (integer 0 #.*array-maximum-length-bound*)
+                                     (cdaadr tl)))))
                    (setq in-order nil)
                    (return nil)))))
             (t (setq in-order nil)))

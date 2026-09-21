@@ -20947,11 +20947,17 @@
           (defconst-name-alist (cdr lst) (1+ n)))))
 
 (defun accessor-array (name field-names)
-  (let ((len (length field-names)))
+  (let ((len (max 1 (length field-names)))) ; :dimensions must be positive
     (compress1 name
                (cons `(:HEADER :DIMENSIONS (,len)
                                :MAXIMUM-LENGTH ,(+ 1 len)
-                               :DEFAULT nil ; should be ignored
+
+; The :DEFAULT of nil is generally irrelevant.  However, in the case that
+; field-names is nil for a stobj st, function accessor-root will return this
+; default when untranslating the first argument of (nth '0 st), so that the
+; untranslation is (nth 0 st) rather than (nth 17 st).
+
+                               :DEFAULT nil
                                :NAME ,name
                                :ORDER :none)
                      (defconst-name-alist field-names 0)))))
@@ -36455,13 +36461,14 @@
     (msg "~@0The function to be memoized, ~x1, has a different signature from ~
           the function to be :INVOKEd, ~x2."
          str key invoke))
-   ((skip-proofs-due-to-system state)
 
-; By conservativity it is sound to skip the theorem checks (for equality and
-; guard implication) when we are including a book or in the second pass of
-; encapsulate.
+; At one time we returned nil here if (skip-proofs-due-to-system state) is
+; true.  After all, by conservativity it is sound to skip the theorem checks
+; (for equality and guard implication) when we are including a book or in the
+; second pass of encapsulate.  But that does not account for macro-aliases,
+; which are allowed in the first argument of memoize; see community book
+; system/tests/memoize-invoke-macro-alias.lisp.
 
-    nil)
    (t (let ((eq-thm-p (memoize-invoke-equality-exists key invoke wrld wrld))
             (gd-thm-p (memoize-invoke-guard-thm-exists key invoke wrld)))
         (cond

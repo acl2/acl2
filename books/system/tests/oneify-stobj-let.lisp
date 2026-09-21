@@ -1,7 +1,8 @@
 ; This book, modified only as noted below, was produced by Claude and passed
-; along by Eric Smith.  The bug was in oneify, case (eq (car x) 'stobj-let),
-; where the prog2$ form in dups-check finished with "temp" rather than the
-; correct ",temp".
+; along by Eric Smith.  It illustrates a soundness bug fixed before ACL2
+; Version 8.8.  The bug was in oneify, case (eq (car x) 'stobj-let), where the
+; prog2$ form in dups-check finished with "temp" rather than the correct
+; ",temp".
 
 (in-package "ACL2") ; Added by Matt K. to make this into a book
 
@@ -29,7 +30,6 @@
   :rule-classes nil)
 )
 
-; The rest, commented out by Matt K., is no longer admissible after the bug fix.
-#|
+(must-fail ; The must-fail wrapper was added by Matt Kaufmann:
 (defthm contradiction nil :rule-classes nil :hints (("Goal" :use (is-10 is-not-10))))
-|#
+)

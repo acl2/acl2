@@ -1,5 +1,6 @@
 ; This book, modified only as noted below, was produced by Claude and passed
-; along by Eric Smith.
+; along by Eric Smith.  It illustrates a soundness bug fixed before ACL2
+; Version 8.8.
 
 ; Soundness bug: :REFINEMENT rule stored in pass 2 of ENCAPSULATE without the
 ; equivalence-relationp check (chk-acceptable-rules skips everything except

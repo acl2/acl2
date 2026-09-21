@@ -1,5 +1,6 @@
 ; This book, modified only as noted below, was produced by Claude and passed
-; along by Eric Smith.
+; along by Eric Smith.  It illustrates a soundness bug fixed before ACL2
+; Version 8.8.
 
 (in-package "ACL2")
 
@@ -22,12 +23,9 @@
   :hints (("Goal" :bdd (:vars nil))))
 )
 
-;; Commented out by Matt Kaufmann (as the rest of the file is irrelevant after
-; the bug fix):
-
-#|
+(must-fail ; The must-fail wrapper was added by Matt Kaufmann:
 (defthm nil-proved nil
   :rule-classes nil
   :hints (("Goal" :use ((:instance bad (x t) (y nil)))
                   :in-theory (enable f))))
-|#
+)

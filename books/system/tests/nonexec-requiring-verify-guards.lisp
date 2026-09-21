@@ -1,5 +1,6 @@
 ; This book, modified only as noted below, was produced by Claude and passed
-; along by Eric Smith.
+; along by Eric Smith.  It illustrates a soundness bug fixed before ACL2
+; Version 8.8.
 
 ; PROOF OF NIL.  Certifies from scratch on f79f828568.  No ttag, no skip-proofs,
 ; no defaxiom, no include-book.
@@ -63,15 +64,16 @@
             (car x))))
 )
 
-; The rest, commented out by Matt K., is no longer admissible after the bug fix.
-#|
+(must-fail ; The must-fail wrapper was added by Matt Kaufmann:
 (defthm bad
   (or (consp x) (equal x nil))
   :rule-classes nil
   :hints (("Goal" :use (:guard-theorem f))))
+)
 
+(must-fail ; The must-fail wrapper was added by Matt Kaufmann:
 (defthm nil-proved
   nil
   :rule-classes nil
   :hints (("Goal" :use (:instance bad (x 0)))))
-|#
+)
