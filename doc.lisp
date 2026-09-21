@@ -107153,6 +107153,10 @@ Bug Fixes From AI via Eric Smith
   an example of the issue, see [community-book]
   [30m[47msystem/tests/memoize-invoke-macro-alias.lisp[0m[0m.
 
+  Fixed a soundness bug due to allowing [30m[47m[double-float][0m[0m type
+  [declaration]s that were not at the top level.  For an example, see
+  [community-book] [30m[47msystem/tests/double-float-type-is-atomic.lisp[0m[0m.
+
 
 Other Bug Fixes
 
