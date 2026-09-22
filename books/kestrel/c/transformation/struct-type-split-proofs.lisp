@@ -730,8 +730,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stsp-exec-strct-thm ((onlr (member-eq onlr '(old newl newr)))
-                             (name identp))
+(define stsp-exec-struct-thm ((onlr (member-eq onlr '(old newl newr)))
+                              (name identp))
   :returns (mv (erp maybe-msgp)
                (event pseudo-event-formp))
   :short "Generate the theorem saying
@@ -979,9 +979,9 @@
        ((erp compustate-equiv-pred)
         (stsp-compustate-equiv old-name newl-name newr-name
                                old-tag newl-tag newr-tag))
-       ((erp exec-old-struct) (stsp-exec-strct-thm 'old old-name))
-       ((erp exec-newl-struct) (stsp-exec-strct-thm 'newl newl-name))
-       ((erp exec-newr-struct) (stsp-exec-strct-thm 'newr newr-name))
+       ((erp exec-old-struct) (stsp-exec-struct-thm 'old old-name))
+       ((erp exec-newl-struct) (stsp-exec-struct-thm 'newl newl-name))
+       ((erp exec-newr-struct) (stsp-exec-struct-thm 'newr newr-name))
        ((erp exec-members)
         (stsp-exec-mem-eq mems lmems old-name newl-name newr-name)))
     (retok (list* static-equiv-pred
