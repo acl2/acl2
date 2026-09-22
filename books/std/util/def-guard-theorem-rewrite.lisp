@@ -103,7 +103,13 @@
    (xdoc::p
     "We call @('expand-some-non-rec-fns')
      to turn @(tsee implies) calls into @(tsee if) calls,
-     because @('clausify') operates on @(tsee if) structures."))
+     because @('clausify') operates on @(tsee if) structures.")
+   (xdoc::p
+    "We always perform the subsumption/replacement step of @('clausify'),
+     independently of @(tsee case-split-limitations).
+     The generated @(':by') hint uses the same unlimited setting
+     so that it sees matching clauses,
+     while preserving the world's case-splitting limit."))
   (b* ((wrld (w state))
        ((unless (and (symbolp fn)
                      (function-symbolp fn wrld)
@@ -132,7 +138,7 @@
          (clausify (expand-some-non-rec-fns '(implies) term wrld)
                    nil
                    t ; expand inside LETs (i.e. LAMBDAs)
-                   (car (case-split-limitations wrld)))
+                   nil) ; always perform subsumption/replacement
          state
          '(term wrld)))
        ((when erp) (mv erp nil state))
@@ -154,13 +160,19 @@
                        "The theorem name must be a symbol, ~
                         but received ~x0."
                        name))
+       (wrld (w state))
+       ((mv erp case-limit state)
+        (in-logic-mode (case-limit wrld) state '(wrld)))
+       ((when erp) (mv erp nil state))
        ((mv erp formula state) (guard-theorem-rewrite fn simplify state))
        ((when erp) (mv erp nil state)))
     (value
      `(,(if (eq formula t) 'defthm 'defthmd) ,name
         ,formula
         :rule-classes ,(if (eq formula t) nil :rewrite)
-        :hints (("Goal" :by (:guard-theorem ,fn ,simplify)))))))
+        :hints (("Goal"
+                 :by (:guard-theorem ,fn ,simplify)
+                 :case-split-limitations (nil ,case-limit)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

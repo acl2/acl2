@@ -285,6 +285,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Subsumption/replacement combines the identical obligations on both branches.
+; Both generation and the :BY proof must do this even when the world's limit
+; would prevent it. The resulting rule must not require a branch condition.
+
+(defun grw-common-branches (xs x)
+  (declare (xargs :guard (my-natp x)))
+  (if (consp xs)
+      (grw-nat-id x)
+    (cons (grw-nat-id x) nil)))
+
+(encapsulate
+  ()
+  (set-case-split-limitations '(0 7))
+
+  (def-guard-theorem-rewrite grw-common-branches-rules
+    grw-common-branches :simplify nil)
+
+  (defthm grw-common-branches-rewrite-only
+    (implies (my-natp x)
+             (natp x))
+    :rule-classes nil
+    :hints (("Goal" :in-theory '(grw-common-branches-rules)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Invalid inputs.
 
 (defun grw-unverified (x)
