@@ -3935,7 +3935,7 @@
 ;; the signature is "(Ljava/lang/String;)Ljava/lang/Class;"
 ;; TODO: If the class object needs to be built, this doesn't finish the execution; it just pushes the frame.
 (defund execute-java.lang.Class.getPrimitiveClass (th s)
-  (declare (xargs :guard (and (jvm-statep s))
+  (declare (xargs :guard (jvm-statep s)
                   :verify-guards nil))
   (let* ((op-stack (stack (thread-top-frame th s)))
          (string-ref (top-operand op-stack))

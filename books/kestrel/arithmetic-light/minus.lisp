@@ -44,8 +44,8 @@
                        (equal (fix x) (- k))))))
 
 (defthm equal-of---when-variable
-  (implies (and (syntaxp (and (symbolp x)
-                              (not (symbolp k)))))
+  (implies (syntaxp (and (symbolp x)
+                         (not (symbolp k))))
            (equal (equal k (- x))
                   (and (acl2-numberp k)
                        (equal (fix x) (- k))))))
