@@ -388,6 +388,7 @@
              ((unless (not (c::value-struct->flexiblep sval))) nil))
           t)
         :guard-hints (("Goal" :in-theory (enable len)))
+        :hooks (:fix)
         ///
         (defruled ,value-kind-when-struct-value-onlrp
           (implies (,struct-value-onlrp sval)
@@ -465,6 +466,7 @@
                                                 c::value-struct-read
                                                 c::value-struct-read-aux
                                                 nth))))
+           :hooks (:fix)
            ///
            (defret ,value-kind-of-struct-value-onlr-mem
              (equal (c::value-kind mval) ,(type-kind (car types)))
@@ -506,7 +508,8 @@
            (and (struct-value-oldp old-val)
                 (struct-value-newlp newl-val)
                 (struct-value-newrp newr-val)
-                ,@conjuncts))))
+                ,@conjuncts)
+           :hooks (:fix))))
     (retok event))
 
   :prepwork
@@ -599,6 +602,7 @@
                     (new-static
                      (omap::delete var (c::scope-fix new-static))))
                  (static-equivp old-static new-static))))
+           :hooks (:fix)
            ///
            (defruled struct-value-equivp-when-static-equivp
              (b* ((old-var+val (omap::assoc ',old-cname old-static))
@@ -671,6 +675,7 @@
                  ',newl-cname (c::type-struct ',newl-ctag) new-compst)
                 (c::compustate-has-static-var-with-type-p
                  ',newr-cname (c::type-struct ',newr-ctag) new-compst))
+           :hooks (:fix)
            ///
            (defruled struct-value-equivp-when-compustate-equivp
              (b* ((old-val
@@ -763,6 +768,62 @@
                              (old-static (c::compustate->static old-compst))
                              (new-static (c::compustate->static new-compst)))))))
     (retok event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-exec-expr-congruences ((old-name identp)
+                                    (newl-name identp)
+                                    (newr-name identp))
+  :returns (mv (erp maybe-msgp)
+               (events pseudo-event-form-listp))
+  :short "Generate congruence theorems for expression execution."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are similar to the generic rules in @(see exec-congruence-theorems),
+     but they relax the equality of the old and new computation states,
+     using equivalence instead.
+     Since the equivalence is specific to the struct type and objects,
+     these theorems are generated for each call of the proof generator.")
+   (xdoc::p
+    "We should generalize these theorems,
+     along with the computation state equivalence predicates,
+     and along with several other artifacts we generate here.
+     The current version is preliminary, as we are exploring approaches."))
+  (b* (((reterr) nil)
+       ((erp old-cname) (ldm-ident old-name) :iferr "")
+       ((erp newl-cname) (ldm-ident newl-name) :iferr "")
+       ((erp newr-cname) (ldm-ident newr-name) :iferr "")
+       (events
+        `((defruled expr-ident-congruence-under-compustate-equivp
+            (b* ((expr (c::expr-ident var))
+                 ((mv old-eval old-compst1)
+                  (c::exec-expr expr old-compst old-fenv limit))
+                 ((mv new-eval new-compst1)
+                  (c::exec-expr expr new-compst new-fenv limit))
+                 (old-val (c::expr-value->value old-eval))
+                 (new-val (c::expr-value->value new-eval)))
+              (implies (and (not (equal (c::ident-fix var) ',old-cname))
+                            (not (equal (c::ident-fix var) ',newl-cname))
+                            (not (equal (c::ident-fix var) ',newr-cname))
+                            (not (c::errorp old-eval))
+                            (compustate-equivp old-compst new-compst)
+                            (c::compustate-has-var-with-type-p var
+                                                               type
+                                                               old-compst))
+                       (and (not (c::errorp new-eval))
+                            (iff old-eval new-eval)
+                            (equal old-val new-val)
+                            (compustate-equivp old-compst1 new-compst1)
+                            old-eval
+                            (equal (c::type-of-value old-val)
+                                   (c::type-fix type)))))
+            :enable (c::exec-expr
+                     c::exec-ident
+                     c::compustate-has-var-with-type-p)
+            :use (objdesign-of-var-when-compustate-equivp
+                  read-object-when-compustate-equivp)))))
+    (retok events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1015,17 +1076,23 @@
        ((erp compustate-equiv-pred)
         (stsp-compustate-equiv old-name newl-name newr-name
                                old-tag newl-tag newr-tag))
+       ((erp exec-congs)
+        (stsp-exec-expr-congruences old-name newl-name newr-name))
        ((erp exec-old-struct) (stsp-exec-struct-thm 'old old-name))
        ((erp exec-newl-struct) (stsp-exec-struct-thm 'newl newl-name))
        ((erp exec-newr-struct) (stsp-exec-struct-thm 'newr newr-name))
        ((erp exec-members)
         (stsp-exec-mem-eq mems lmems old-name newl-name newr-name)))
-    (retok (list* static-equiv-pred
-                  compustate-equiv-pred
-                  exec-old-struct
-                  exec-newl-struct
-                  exec-newr-struct
-                  exec-members))))
+    (retok (append (list static-equiv-pred
+                         compustate-equiv-pred)
+                   exec-congs
+                   (list exec-old-struct
+                         exec-newl-struct
+                         exec-newr-struct)
+                   exec-members)))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
