@@ -338,7 +338,7 @@
              (negate-assumptions-and-add-to-dag-array assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc)
              (declare (ignore negated-assumptions new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
              (implies (not erp)
-                      (and (natp new-dag-len)))))
+                      (natp new-dag-len))))
   :hints (("Goal" :use negate-assumptions-and-add-to-dag-array-return-type
            :in-theory (disable negate-assumptions-and-add-to-dag-array-return-type))))
 

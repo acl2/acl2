@@ -1052,7 +1052,7 @@
                          result-to-push ;removal of the operands is handled according to delta
                          guard-hints
                          )
-  (declare (xargs :guard (and (member-eq mnemonic *valid-mnemonics*))
+  (declare (xargs :guard (member-eq mnemonic *valid-mnemonics*)
                   :guard-hints (("Goal" :in-theory (enable acl2::memberp-of-cons-when-constant)))))
   (let* ((name (symbol-name mnemonic))
          (fn (acl2::pack-in-package-of-symbol 'def-simple-op-fn 'execute- name))

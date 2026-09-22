@@ -102,8 +102,7 @@
            :in-theory (disable all-<=-of-keep-nodenum-dargs))))
 
 (defthm ALL-<=-ALL-when-ALL-<=-ALL-of-cdr-arg2
-  (implies (and (ALL-<=-ALL x (cdr y))
-                )
+  (implies (ALL-<=-ALL x (cdr y))
            (equal (ALL-<=-ALL x y)
                   (or (not (consp y))
                       (all-<= x (car y)))))

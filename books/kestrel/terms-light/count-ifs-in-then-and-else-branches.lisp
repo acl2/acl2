@@ -1,6 +1,6 @@
 ; A utility to count IFs in then and else branches
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -52,8 +52,7 @@
   :hints (("Goal" :expand (count-ifs-in-then-and-else-branches term))))
 
 (defthm <=-of-count-ifs-in-then-and-else-branches-of-lambda-body-of-car
-  (implies (and (consp (car term))
-                )
+  (implies (consp (car term))
            (<= (count-ifs-in-then-and-else-branches (lambda-body (car term)))
                (count-ifs-in-then-and-else-branches term)))
   :rule-classes :linear
