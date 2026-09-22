@@ -99,7 +99,11 @@
    (xdoc::p
     "We call @('remove-guard-holders') mainly to match
      the fact that the @(':by') hint does the same;
-     this is the hint we use to prove the generated theorem."))
+     this is the hint we use to prove the generated theorem.")
+   (xdoc::p
+    "We call @('expand-some-non-rec-fns')
+     to turn @(tsee implies) calls into @(tsee if) calls,
+     because @('clausify') operates on @(tsee if) structures."))
   (b* ((wrld (w state))
        ((unless (and (symbolp fn)
                      (function-symbolp fn wrld)
@@ -127,7 +131,7 @@
         (in-logic-mode
          (clausify (expand-some-non-rec-fns '(implies) term wrld)
                    nil
-                   t
+                   t ; expand inside LETs (i.e. LAMBDAs)
                    (car (case-split-limitations wrld)))
          state
          '(term wrld)))
