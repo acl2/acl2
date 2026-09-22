@@ -809,7 +809,7 @@
   `(acl2::make-event-quiet (get-advice-option-fn ,option-name (w state))))
 
 (defund set-advice-option-fn (option-name val)
-  (declare (xargs :guard (and (symbolp option-name))
+  (declare (xargs :guard (symbolp option-name)
                   :verify-guards nil))
   (if (not (member-eq option-name *option-names*))
       (er hard? 'set-advice-option-fn "Unknown option: ~x0." option-name)

@@ -74134,7 +74134,15 @@ it."
  @('nil') for @(':condition') and @(':stats') can avoid memoization overhead
  when one simply wishes to call @('g') in place of @('fn'); you may override
  those defaults if you actually want to save computed values and use
- @('(memsum)') to see statistics.</p>
+ @('(memsum)') to see statistics.  WARNING: As noted above, the required
+ theorems need to be in the current ACL2 @(see world).  Hence, the following
+ event fails to be admitted.</p>
+
+ @({
+ (encapsulate ()
+   (local (defthm f-is-g (equal (f x) (g x)) :rule-classes nil))
+   (memoize 'f :invoke 'g))
+ })
 
  <p>Keyword parameter @(':recursive') is @('t') by default, which means that
  recursive calls of @('fn') will be memoized just as ``top-level'' calls of
@@ -109883,6 +109891,16 @@ it."
 ; recover-defs-lst.  Thanks to Eric Smith for reporting this bug found by Anthropic's
 ; Claude.
 
+; Clarified an error message produced by source function
+; translate11-lambda-object in the case of a LAMBDA object, when some TYPE
+; expression derived from the TYPE specifiers is not an explicit conjunct in
+; the :GUARD.
+
+; Tweaked an error message when memoize with option :invoke requires a theorem,
+; but that theorem is missing.  So for example, the message may now mention the
+; need for a theorem F-IS-G, rather than |F-is-G|.  The error message also
+; notes that the supporting theorem must be admitted non-locally.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -110133,8 +110151,10 @@ it."
  @('system/tests/dcl-guardian-nil.lisp').</p>
 
  <p>Fixed a soundness bug based on the interaction between the @(see
- macro-aliases-table) and @(tsee memoize) with the @(':invoke') argument.  For
- an example of the issue, see @(see community-book)
+ macro-aliases-table) and @(tsee memoize) with the @(':invoke') argument.  The
+ fix is to check for the required theorems even during the second pass of
+ @(tsee encapsulate) and the include-book pass of @(tsee certify-book).  For an
+ example of the issue, see @(see community-book)
  @('system/tests/memoize-invoke-macro-alias.lisp').</p>
 
  <p>Fixed a soundness bug due to allowing @(tsee double-float) type @(see
@@ -110145,6 +110165,10 @@ it."
  when the function symbol is built in without a defining event (like @('car'));
  and when the function symbol was introduced in support of a @(see stobj),
  i.e., with a @(tsee defstobj) or @(tsee defabsstobj) event.</p>
+
+ <p>Fixed a soundness bug in the evaluation of lambda forms, specifically with
+ respect to their @(tsee type) @(see declaration)s.  See
+ @('system/tests/exploit-lambda-guard-typedecl.lisp').</p>
 
  <h3>Other Bug Fixes</h3>
 

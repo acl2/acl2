@@ -1,6 +1,6 @@
 ; Reading the objects in a book
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -34,7 +34,7 @@
 ;; Consider calling full-book-path before calling this.
 (defund read-book-contents (full-book-path ; with .lisp extension
                             state)
-  (declare (xargs :guard (and (stringp full-book-path))
+  (declare (xargs :guard (stringp full-book-path)
                   :mode :program ; todo
                   :stobjs state))
   (mv-let (existsp state)

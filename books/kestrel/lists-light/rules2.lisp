@@ -617,7 +617,7 @@
          (equal (cdr lst) rest)))
 
 (defthm update-nth-with-last-val
-  (implies (and (syntaxp (and (quotep n)))
+  (implies (and (syntaxp (quotep n))
                 (equal (+ n 1) (len lst))
                 (true-listp lst)
                 (natp n))

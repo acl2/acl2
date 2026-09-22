@@ -77897,7 +77897,13 @@ Subtopics
   [30m[47mnil[0m[0m for [30m[47m:condition[0m[0m and [30m[47m:stats[0m[0m can avoid memoization overhead when
   one simply wishes to call [30m[47mg[0m[0m in place of [30m[47mfn[0m[0m; you may override those
   defaults if you actually want to save computed values and use
-  [30m[47m(memsum)[0m[0m to see statistics.
+  [30m[47m(memsum)[0m[0m to see statistics.  WARNING: As noted above, the required
+  theorems need to be in the current ACL2 [world].  Hence, the
+  following event fails to be admitted.
+
+    (encapsulate ()
+      (local (defthm f-is-g (equal (f x) (g x)) :rule-classes nil))
+      (memoize 'f :invoke 'g))
 
   Keyword parameter [30m[47m:recursive[0m[0m is [30m[47mt[0m[0m by default, which means that
   recursive calls of [30m[47mfn[0m[0m will be memoized just as ``top-level'' calls
@@ -107149,8 +107155,10 @@ Bug Fixes From AI via Eric Smith
   [community-book] [30m[47msystem/tests/dcl-guardian-nil.lisp[0m[0m.
 
   Fixed a soundness bug based on the interaction between the
-  [macro-aliases-table] and [30m[47m[memoize][0m[0m with the [30m[47m:invoke[0m[0m argument.  For
-  an example of the issue, see [community-book]
+  [macro-aliases-table] and [30m[47m[memoize][0m[0m with the [30m[47m:invoke[0m[0m argument.  The
+  fix is to check for the required theorems even during the second
+  pass of [30m[47m[encapsulate][0m[0m and the include-book pass of [30m[47m[certify-book][0m[0m.
+  For an example of the issue, see [community-book]
   [30m[47msystem/tests/memoize-invoke-macro-alias.lisp[0m[0m.
 
   Fixed a soundness bug due to allowing [30m[47m[double-float][0m[0m type
@@ -107161,6 +107169,10 @@ Bug Fixes From AI via Eric Smith
   when the function symbol is built in without a defining event (like
   [30m[47mcar[0m[0m); and when the function symbol was introduced in support of a
   [stobj], i.e., with a [30m[47m[defstobj][0m[0m or [30m[47m[defabsstobj][0m[0m event.
+
+  Fixed a soundness bug in the evaluation of lambda forms, specifically
+  with respect to their [30m[47m[type][0m[0m [declaration]s.  See
+  [30m[47msystem/tests/exploit-lambda-guard-typedecl.lisp[0m[0m.
 
 
 Other Bug Fixes

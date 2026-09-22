@@ -9448,8 +9448,7 @@
 ; anyway because quoted LAMBDA objects are not translated.
 
       (mv `(LAMBDA ,formals
-                   (DECLARE (IGNORABLE ,@formals)
-                            ,@(remove-double-float-types (cdr dcl)))
+                   (DECLARE (IGNORABLE ,@formals))
                    ,(logic-code-to-runnable-code
                      nil
                      (remove-guard-holders

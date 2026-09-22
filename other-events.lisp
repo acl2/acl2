@@ -36465,8 +36465,9 @@
 ; At one time we returned nil here if (skip-proofs-due-to-system state) is
 ; true.  After all, by conservativity it is sound to skip the theorem checks
 ; (for equality and guard implication) when we are including a book or in the
-; second pass of encapsulate.  But that does not account for macro-aliases,
-; which are allowed in the first argument of memoize; see community book
+; second pass of encapsulate.  But that does not account for using
+; macro-aliases in the first argument of memoize, or other ways for that
+; argument to depend on the world; see community book
 ; system/tests/memoize-invoke-macro-alias.lisp.
 
    (t (let ((eq-thm-p (memoize-invoke-equality-exists key invoke wrld wrld))
@@ -36478,7 +36479,7 @@
                          `(defthm ,(intern-in-package-of-symbol
                                     (concatenate 'string
                                                  (symbol-name key)
-                                                 "-is-"
+                                                 "-IS-"
                                                  (symbol-name invoke))
                                     invoke)
                             ,(let ((formals (formals key wrld)))
@@ -36497,9 +36498,9 @@
                                     thm-formula
                                     guard-thm-formula)))))
               (msg "~@0The following event~#1~[~/s~] must be admitted ~
-                    (possibly with differing name or macro) before memoizing ~
-                    function ~x2 with :INVOKE value ~x3.  See :DOC ~
-                    memoize.~|~%~@4"
+                    (possibly with differing name or macro), non-locally, ~
+                    before memoizing function ~x2 with :INVOKE value ~x3.  ~
+                    See :DOC memoize.~|~%~@4"
                    str
                    (if (or eq-thm-p gd-thm-p) 0 1)
                    key invoke msg))))))))
@@ -36543,8 +36544,22 @@
              (msg
               (cond
                ((eq key-formals t)
-                (msg "~@0~x1 is not a function symbol."
-                     str key))
+                (msg "~@0~x1 is not a function symbol.~#2~[~/~@3~]"
+                     str key
+                     (if (and invoke
+                              (function-symbolp
+                               (deref-macro-name key (macro-aliases wrld))
+                               wrld))
+                         1
+                       0)
+                     (msg "  Note that because of the non-nil :INVOKE ~
+                           argument, the first argument of your ~x0 call must ~
+                           be a function symbol.  That first argument, ~x1, ~
+                           is a macro-alias for the function symbol, ~x2, ~
+                           which you should use instead as the first argument."
+                          'memoize
+                          key
+                          (deref-macro-name key (macro-aliases wrld)))))
                ((and (or condition (cdr (assoc-eq :inline val)))
 
 ; The preceding term says that we are not profiling.  Why not replace it simply
