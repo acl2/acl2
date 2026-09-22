@@ -110170,6 +110170,9 @@ it."
  respect to their @(tsee type) @(see declaration)s.  See
  @('system/tests/exploit-lambda-guard-typedecl.lisp').</p>
 
+ <p>Fixed a soundness bug where the @('keys') function for a @(see stobj-table)
+ field returned internal stand-in symbols instead of the real stobj names.</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2
