@@ -22,6 +22,7 @@
 (include-book "character-sets")
 
 (local (include-book "arithmetic-3/top" :dir :system))
+(local (include-book "kestrel/utilities/defopeners" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
 
@@ -149,11 +150,19 @@
   :require (ienv-requirep-call)
   :pred ienvp
   :prepwork
-  ((local (in-theory (enable ienv-requirep
+  ((local
+    (acl2::defopeners integer-format-short-wfp ; for speed
+      :hyps ((syntaxp (and (quotep short-format)
+                           (quotep uchar-format)
+                           (quotep schar-format))))))
+   (local
+    (acl2::defopeners integer-format-int-wfp ; for speed
+      :hyps ((syntaxp (and (quotep int-format)
+                           (quotep uchar-format)
+                           (quotep short-format))))))
+   (local (in-theory (enable ienv-requirep
                              schar-format-wfp
                              signed-format-wfp
-                             integer-format-short-wfp
-                             integer-format-int-wfp
                              integer-format-wfp
                              sinteger-format-wfp)))))
 
