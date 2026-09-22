@@ -89,7 +89,7 @@
      multiple components of @(tsee ienv),
      used in the @(':require') of that fixtype definition."))
   (and (schar-format-wfp schar (dialect->std dialect))
-       (integer-format-short-wfp short uchar schar)
+       (integer-format-short-wfp short uchar schar (dialect->std dialect))
        (integer-format-int-wfp int uchar short)
        (integer-format-long-wfp long uchar int)
        (integer-format-llong-wfp llong uchar long)
@@ -151,7 +151,10 @@
   :prepwork
   ((local (in-theory (enable ienv-requirep
                              schar-format-wfp
-                             signed-format-wfp)))))
+                             signed-format-wfp
+                             integer-format-short-wfp
+                             integer-format-wfp
+                             sinteger-format-wfp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
