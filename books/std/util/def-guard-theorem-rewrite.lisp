@@ -208,10 +208,10 @@
      that implication is omitted.
      For example, a conclusion @('(equal x nil)') would rewrite a variable,
      so it is skipped.
-     Conclusions coule be ``repaired'' by adding @(tsee iff) wrappers,
+     Conclusions could be ``repaired'' by adding @(tsee iff) wrappers,
      but this utility does not do that,
      partly so that the generated theorem can be proved efficiently
-     via a @(':by') hint intead of a @(':use') hint;
+     via a @(':by') hint instead of a @(':use') hint;
      the latter can lead to many case splits,
      with fairly large guard theorems for fairly large functions.
      Because of this filtering of implications,
