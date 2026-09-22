@@ -95,7 +95,11 @@
      It does not submit an event.
      @('fn') must name a guard-verified function.
      @('simplify') must be @(':limited') or @('nil'),
-     with the meaning described in @(tsee def-guard-theorem-rewrite)."))
+     with the meaning described in @(tsee def-guard-theorem-rewrite).")
+   (xdoc::p
+    "We call @('remove-guard-holders') mainly to match
+     the fact that the @(':by') hint does the same;
+     this is the hint we use to prove the generated theorem."))
   (b* ((wrld (w state))
        ((unless (and (symbolp fn)
                      (function-symbolp fn wrld)
