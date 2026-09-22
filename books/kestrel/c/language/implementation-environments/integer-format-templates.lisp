@@ -721,7 +721,42 @@
             (sinteger-format->bits signed))
   :pred integer-formatp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-format-wfp ((format integer-formatp)
+                            (std standardp))
+  :returns (yes/no booleanp)
+  :short "Check if an integer format is well-formed for a C standard."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The signed component must be well-formed for the standard,
+     as checked by @(tsee sinteger-format-wfp).")
+   (xdoc::p
+    "The number of signed value bits must be at most
+     the number of unsigned value bits in C17 [C17:6.2.6.2/2].
+     This is already ensured by the @(tsee integer-format) fixtype.
+     C23 requires exactly one more unsigned value bit,
+     so that the signed and unsigned widths are equal [C23:6.2.6.2]."))
+  (b* ((unsigned (integer-format->unsigned format))
+       (signed (integer-format->signed format)))
+    (and (sinteger-format-wfp signed std)
+         (standard-case
+          std
+          :c17 t
+          :c23 (equal (uinteger-bit-roles-value-count
+                       (uinteger-format->bits unsigned))
+                      (1+ (sinteger-bit-roles-value-count
+                           (sinteger-format->bits signed)))))))
+
+  ///
+
+  (defrule integer-format-wfp-of-standard-c17
+    (integer-format-wfp format (standard-c17))
+    :use (:instance sinteger-format-wfp-of-standard-c17
+                    (format (integer-format->signed format)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define integer-format->bit-size ((format integer-formatp))
   :returns (size posp
@@ -1083,6 +1118,22 @@
       (enable
        uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
        posp))))
+
+  (defrule integer-format-wfp-of-integer-format-inc-sign-tcnpnt
+    (implies (and (posp size)
+                  (not (equal size 1)))
+             (integer-format-wfp (integer-format-inc-sign-tcnpnt size) std))
+    :enable (integer-format-wfp
+             uinteger-format-inc-npnt
+             sinteger-format-inc-sign-tcnpnt
+             uinteger-sinteger-bit-roles-wfp-of-inc-n-and-sign
+             sinteger-bit-roles-wfp-of-sinteger-bit-roles-inc-n-and-sign
+             uinteger-bit-roles-value-count-of-uinteger-bit-roles-inc-n
+             sinteger-bit-roles-value-count-of-sinteger-bit-roles-inc-n-and-sign
+             posp
+             (:e tau-system))
+    :use (:instance sinteger-format-wfp-of-sinteger-format-inc-sign-tcnpnt
+                    (n (1- (pos-fix size)))))
 
   (defruled integer-format->bit-size-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)
