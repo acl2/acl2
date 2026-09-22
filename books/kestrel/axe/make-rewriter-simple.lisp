@@ -1307,10 +1307,10 @@
                    (mv (erp-nil)
                        new-nodenum-or-quotep
                        rewrite-stobj2 ,@maybe-state
-                       (and memoization ; we could save this cons:
-                            (add-pairs-to-memoization (cons-if-not-equal-car expr trees-equal-to-tree) ; might be the same as tree if the args aren't simplified?) well, each arg should be simplified and memoed.
-                                                      new-nodenum-or-quotep ;the nodenum-or-quotep they are all equal to
-                                                      memoization))
+                       (maybe-add-pairs-to-memoization ; we could save this cons:
+                         (cons-if-not-equal-car expr trees-equal-to-tree) ; might be the same as tree if the args aren't simplified?) well, each arg should be simplified and memoed.
+                         new-nodenum-or-quotep ;the nodenum-or-quotep they are all equal to
+                         memoization)
                        hit-counts tries limits node-replacement-array)))))
 
            ;; Helper function for rewriting a tree that is an IF or MYIF or BOOLIF (used for both if/myif and boolif).  This is separate just to keep the caller small.
@@ -2005,10 +2005,9 @@
                          (mv (erp-nil)
                              new-nodenum-or-quotep
                              rewrite-stobj2 ,@maybe-state
-                             (and memoization
-                                  (add-pairs-to-memoization trees-equal-to-tree ;the items (TODO: Can this be non-empty?) ; We cannot add a memoization entry for TREE itself, because it is not a function call.
-                                                            new-nodenum-or-quotep ;the nodenum-or-quotep they are all equal to
-                                                            memoization))
+                             (maybe-add-pairs-to-memoization trees-equal-to-tree ;the items (TODO: Can this be non-empty?) ; We cannot add a memoization entry for TREE itself, because it is not a function call.
+                                                             new-nodenum-or-quotep ;the nodenum-or-quotep they are all equal to
+                                                             memoization)
                              hit-counts tries limits
                              node-replacement-array))
                      ;; TREE is a nodenum (because it's an atom but not a symbol):
@@ -2018,14 +2017,9 @@
                        (mv (erp-nil)
                            tree
                            rewrite-stobj2 ,@maybe-state
-                           (if (and memoization
-                                    ;; todo: drop this check?:
-                                    trees-equal-to-tree ; could check just this, but then it *must* always be nil if we are not memoizing
-                                    )
-                               (add-pairs-to-memoization trees-equal-to-tree ; We cannot add a memoization entry for TREE itself, because it is not a function call.
-                                                         tree ; the nodenum to which all the TREES-EQUAL-TO-TREE rewrote
-                                                         memoization)
-                             memoization)
+                           (maybe-add-pairs-to-memoization trees-equal-to-tree ; We cannot add a memoization entry for TREE itself, because it is not a function call.
+                                                           tree ; the nodenum to which all the TREES-EQUAL-TO-TREE rewrote
+                                                           memoization)
                            hit-counts tries limits
                            node-replacement-array)))
                  ;; TREE is a cons:
@@ -2035,11 +2029,9 @@
                        (mv (erp-nil)
                            tree ; return the quoted constant
                            rewrite-stobj2 ,@maybe-state
-                           (if (and memoization trees-equal-to-tree)
-                               (add-pairs-to-memoization trees-equal-to-tree ; We cannot add a memoization entry for TREE itself, because it is not a function call.
-                                                         tree ; the constant to which all the TREES-EQUAL-TO-TREE rewrote
-                                                         memoization)
-                             memoization)
+                           (maybe-add-pairs-to-memoization trees-equal-to-tree ; We cannot add a memoization entry for TREE itself, because it is not a function call.
+                                                           tree ; the constant to which all the TREES-EQUAL-TO-TREE rewrote
+                                                           memoization)
                            hit-counts tries limits
                            node-replacement-array)
                      ;; TREE is a function call:
@@ -3450,8 +3442,10 @@
                      (:rewrite ,(pack$ 'len-of-mv-nth-1-of-simplify-trees-and-add-to-dag- suffix))
                      (:rewrite maybe-bounded-memoizationp-monotone)
                      (:rewrite maybe-bounded-memoizationp-of-add-pairs-to-memoization)
+                     (:rewrite maybe-bounded-memoizationp-of-maybe-add-pairs-to-memoization)
                      (:rewrite maybe-bounded-memoizationp-of-add-pair-and-pairs-to-memoization)
                      (:rewrite maybe-bounded-memoizationp-of-nil)
+                     (:rewrite maybe-add-pairs-to-memoization-iff)
                      (:rewrite member-equal-when-member-equal-and-subsetp-equal)
                      (:rewrite mv-nth-of-cons-safe)
                      (:rewrite mv-nth-of-if)
@@ -3534,6 +3528,7 @@
                      (:rewrite wf-dagp-after-add-function-call-expr-to-dag-array)
                      (:rewrite wf-dagp-after-add-variable-to-dag-array)
                      (:type-prescription add-pairs-to-memoization)
+                     ;; (:type-prescription maybe-add-pairs-to-memoization)
                      (:type-prescription add-pair-and-pairs-to-memoization$inline)
                      (:type-prescription alist-suitable-for-hyp-args-and-hypsp)
                      (:type-prescription alist-suitable-for-hypsp)
