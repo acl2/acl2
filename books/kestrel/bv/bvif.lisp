@@ -507,8 +507,8 @@
 
 ;weird but showed up in the sha1 loop proof (during backchaining)
 (defthm bvif-of-equal-of-bvchop-same
-  (implies (and (syntaxp (and (quotep k)
-                              (not (quotep x)))))
+  (implies (syntaxp (and (quotep k)
+                         (not (quotep x))))
            (equal (bvif size (equal k (bvchop size x)) x y)
                   (bvif size (equal k (bvchop size x)) k y)))
   :hints (("Goal" :in-theory (enable bvif))))

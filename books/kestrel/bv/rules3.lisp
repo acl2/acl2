@@ -1450,7 +1450,7 @@
 
 ;bozo could go back and use something like this in the jvm model?
 (defthmd <-of-logext-when-signed-byte-p
-  (implies (and (signed-byte-p 32 y))
+  (implies (signed-byte-p 32 y)
            (equal (< (logext 32 x) y)
                   (sbvlt 32 x y)))
   :hints (("Goal" :in-theory (enable sbvlt))))
@@ -1458,7 +1458,7 @@
 (theory-invariant (incompatible (:definition sbvlt) (:rewrite <-of-logext-when-signed-byte-p)))
 
 (defthmd <-of-logext-when-signed-byte-p-alt
-  (implies (and (signed-byte-p 32 y))
+  (implies (signed-byte-p 32 y)
            (equal (< y (logext 32 x))
                   (sbvlt 32 y x)))
   :hints (("Goal" :in-theory (enable sbvlt))))

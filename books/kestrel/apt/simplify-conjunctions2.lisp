@@ -1,4 +1,4 @@
-; A transformation to simplify conjunctions in function bodies
+; New variant of a transformation to simplify conjunctions in function bodies
 ;
 ; Copyright (C) 2022-2026 Kestrel Institute
 ;
@@ -10,47 +10,31 @@
 
 (in-package "ACL2") ; todo: Use APT package?
 
+;; See also simplify-conjunctions.lisp.
+
 ;; TODO: Handle conjunctions not at the top-level of the body.
 
 ;; TODO: Make the proof more automatic/robust.
 
 (include-book "utilities/def-equality-transformation")
 (include-book "kestrel/axe/rewriter-basic" :dir :system)
+(include-book "kestrel/axe/strengthen-facts" :dir :system)
 (include-book "kestrel/utilities/directed-untranslate-dollar" :dir :system)
 (include-book "kestrel/utilities/defthm-forms" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
+(include-book "simplify-conjunctions")
 (local (include-book "kestrel/terms-light/all-fnnames1" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
-;; Extracts the bodies of all the named "rules" (which can be defthms and/or defuns).
-;move
-(defund rule-bodies (names wrld)
-  (declare (xargs :guard (and (symbol-listp names)
-                              (plist-worldp wrld))))
-
-  (if (endp names)
-      nil
-    (let ((name (first names)))
-      (cons (if (and (function-symbolp name wrld)
-                     (fn-definedp name wrld))
-                (fn-body name t wrld)
-              (if (defthm-or-defaxiom-symbolp name wrld)
-                  (defthm-body name wrld)
-                (er hard? 'rule-bodies "Unknown kind of item: ~x0." name)))
-            (rule-bodies (rest names) wrld)))))
-
-(defthm pseudo-term-listp-of-rule-bodies
-  (pseudo-term-listp (rule-bodies names wrld))
-  :hints (("Goal" :in-theory (enable rule-bodies))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The core function for simplify-conjunctions.  Such functions always take:
+;; The core function for simplify-conjunctions2.  Such functions always take:
 ;; fn, untranslated-body, state, and then transformation-specific args (none
-;; for simplify-conjunctions).
+;; for simplify-conjunctions2).
 ;; Returns (mv new-body info state).
 ;; TODO: Check that the rule-names are non-Axe-specific rules (since we need them in the proof).
-(defun simplify-conjunctions-function-body-transformer (fn
+(defun simplify-conjunctions2-function-body-transformer (fn
                                                         untranslated-body
                                                         state
                                                         ;; extra-function-renaming
@@ -65,28 +49,36 @@
                   :stobjs state
                   :mode :program ;; because of untranslate and directed-untranslate$
                   )
-           (ignore fn))
+           (ignore fn
+                   monitor ; todo
+                   ))
   (b* ((wrld (w state))
        ((mv erp translated-body state)
-        (translate-term-in-logic-mode untranslated-body 'simplify-conjunctions-function-body-transformer state)) ; todo: untranslate later
+        (translate-term-in-logic-mode untranslated-body 'simplify-conjunctions2-function-body-transformer state)) ; todo: untranslate later
        ((when erp)
-        (er hard? 'simplify-conjunctions-function-body-transformer "Error translating: ~x0." erp)
+        (er hard? 'simplify-conjunctions2-function-body-transformer "Error translating: ~x0." erp)
         (mv nil nil state))
        ;; needed for the body of a defun-nx, for example:
        (translated-body (remove-guard-holders-and-clean-up-lambdas translated-body))
        (conjuncts (get-conjuncts-of-term2 translated-body))
        ;; todo: handle conjunctions not at the top level:
-       ((mv erp new-conjuncts &) (simplify-conjunction-basic conjuncts
-                                                             (make-rule-alist! rule-names (w state))
-                                                             (known-booleans wrld)
-                                                             monitor
-                                                             nil ; no-warn-ground-functions
-                                                             nil ; memoizep
-                                                             nil ; count-hits
-                                                             t ; warn-missingp
-                                                             ))
+       ((mv erp new-conjuncts state)
+        (strengthen-facts conjuncts
+                          :brief ; print
+                          (make-rule-alist! rule-names (w state))
+                          state))
+
+;; ((mv erp new-conjuncts &) (simplify-conjunction-basic conjuncts
+;;                                                              (make-rule-alist! rule-names (w state))
+;;                                                              (known-booleans wrld)
+;;                                                              monitor
+;;                                                              nil ; no-warn-ground-functions
+;;                                                              nil ; memoizep
+;;                                                              nil ; count-hits
+;;                                                              t ; warn-missingp
+;;                                                              ))
        ((when erp)
-        (er hard? 'simplify-conjunctions-function-body-transformer "Error simplifying conjunctions: ~x0." erp)
+        (er hard? 'simplify-conjunctions2-function-body-transformer "Error simplifying conjunctions: ~x0." erp)
         (mv nil nil state))
        (new-body (if nil ;; (perm new-conjuncts conjuncts) ;todo: get this to work, but consider duplicate removal when getting conjuncts
                      (prog2$ (cw "No change!~%")
@@ -102,7 +94,7 @@
     (mv new-body (acons :enables rule-names nil) state)))
 
 
-(defund simplify-conjunctions-enables (fn rule-names wrld)
+(defund simplify-conjunctions2-enables (fn rule-names wrld)
   (declare (xargs :guard (and (symbolp fn)
                               (symbol-listp rule-names)
                               (plist-worldp wrld))))
@@ -114,8 +106,8 @@
     (make-doublets (repeat (len fns) :executable-counterpart) fns)))
 
 (def-equality-transformation
-  simplify-conjunctions ; name of the transformation to create
-  simplify-conjunctions-function-body-transformer ; core function to transform a function body
+  simplify-conjunctions2 ; name of the transformation to create
+  simplify-conjunctions2-function-body-transformer ; core function to transform a function body
   ;; transform-specific-required-args:
   (;extra-function-renaming ; required arg, can't be called "function-renaming" since there already is one (TODO: maybe rename the other one to "recursive-call-renaming")
    )

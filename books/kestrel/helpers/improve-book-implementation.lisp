@@ -1,6 +1,6 @@
 ; Replaying the events in a book (perhaps with changes).
 ;
-; Copyright (C) 2022-2025 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -93,7 +93,7 @@
 ;move
 ;; Returns (mv erp nil state).
 (defun submit-event-error-triple (event print state)
-  (declare (xargs :guard (and (member-eq print '(nil :brief :verbose)))
+  (declare (xargs :guard (member-eq print '(nil :brief :verbose))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
   (mv-let (erp state)
@@ -443,7 +443,7 @@
 ;; Returns (mv erp state).
 ;; TODO: Use limits based on how many steps were needed for the original proof.
 (defun improve-defthm-event (event rest-events print state)
-  (declare (xargs :guard (and (member-eq print '(nil :brief :verbose)))
+  (declare (xargs :guard (member-eq print '(nil :brief :verbose))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state)
            (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
@@ -493,7 +493,7 @@
 ;; Returns (mv erp state).
 ;; TODO: Check for redundant.
 (defun improve-defun-event (event rest-events print state)
-  (declare (xargs :guard (and (member-eq print '(nil :brief :verbose)))
+  (declare (xargs :guard (member-eq print '(nil :brief :verbose))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state)
            (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
@@ -518,7 +518,7 @@
 ;;TODO: Do more here, like we do for defthm!
 ;; Returns (mv erp state).
 (defun improve-defrule-event (event rest-events print state)
-  (declare (xargs :guard (and (member-eq print '(nil :brief :verbose)))
+  (declare (xargs :guard (member-eq print '(nil :brief :verbose))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state)
            (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement

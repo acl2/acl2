@@ -1195,9 +1195,9 @@
 ;returns (mv min max)
 ;calls logext 32 on list elems before comparing - fixme gen
 (defun min-and-max-integer-list (list min-so-far max-so-far)
-  (declare (xargs :guard (and (and (integer-listp list)
-                                   (integerp min-so-far)
-                                   (integerp max-so-far)))))
+  (declare (xargs :guard (and (integer-listp list)
+                              (integerp min-so-far)
+                              (integerp max-so-far))))
   (if (endp list)
       (mv min-so-far max-so-far)
     (let* ((item (first list))
@@ -1211,9 +1211,9 @@
 ;returns (mv min max)
 ;calls logext 32 on list elems before comparing - fixme gen
 (defun min-and-max-integer-list-list (list-of-lists min-so-far max-so-far)
-  (declare (xargs :guard (and (and (integer-list-listp list-of-lists)
-                                   (integerp min-so-far)
-                                   (integerp max-so-far)))))
+  (declare (xargs :guard (and (integer-list-listp list-of-lists)
+                              (integerp min-so-far)
+                              (integerp max-so-far))))
   (if (endp list-of-lists)
       (mv min-so-far max-so-far)
     (mv-let (min-so-far max-so-far)
@@ -1272,7 +1272,7 @@
 
 ;dup
 (defun g-list (key records)
-  (declare (xargs :guard (and (true-listp records)))) ; strengthen?
+  (declare (xargs :guard (true-listp records))) ; strengthen?
   (if (endp records)
       nil
     (cons (g key (car records))
@@ -1287,7 +1287,7 @@
 ;; (skip -proofs (verify-guards bvminus-list))
 
 (defun g-list-list (key vals)
-  (declare (xargs :guard (and (true-list-listp vals)))) ; strengthen?
+  (declare (xargs :guard (true-list-listp vals))) ; strengthen?
   (if (endp vals)
       nil
     (cons (g-list key (car vals))
@@ -11403,8 +11403,7 @@
 ;returns (mv lst rand)
 (defun merge-rand (l1 l2 acc rand)
   (declare (xargs :measure (+ (len l1) (len l2))
-                  :guard (and
-                              (true-listp acc))
+                  :guard (true-listp acc)
                   :stobjs rand))
   (cond ((atom l1) (mv (revappend acc l2) rand)) ; todo: would null be faster than atom?
         ((atom l2) (mv (revappend acc l1) rand))

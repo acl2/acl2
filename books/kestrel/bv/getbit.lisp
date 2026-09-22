@@ -552,9 +552,9 @@
   :hints (("Goal" :in-theory (enable getbit bvchop))))
 
 (defthm getbit-of-if-two-constants
-  (implies (and (syntaxp (and (quotep n)
-                              (quotep x1)
-                              (quotep x2))))
+  (implies (syntaxp (and (quotep n)
+                         (quotep x1)
+                         (quotep x2)))
            (equal (getbit n (if test x1 x2))
                   (if test (getbit n x1)
                     (getbit n x2)))))

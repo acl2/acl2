@@ -154,7 +154,7 @@
                                   (update-nth-of-update-subrange-diff)))))
 
 (defthm update-subrange-start-start
-  (implies (and (natp start))
+  (implies (natp start)
            (equal (update-subrange start start vals lst)
                   (update-nth start (car vals) lst)))
   :hints (("Goal" :in-theory (enable nth update-subrange)
@@ -319,7 +319,7 @@
                            (UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF)))))
 
 (defthm cdr-of-update-subrange-from-zero
-  (implies (and (natp end))
+  (implies (natp end)
            (equal (cdr (update-subrange 0 end vals lst))
                   (update-subrange 0 (+ -1 end) (cdr vals) (CDR lst))))
   :hints (("Goal" :expand (update-subrange 0 end vals lst)

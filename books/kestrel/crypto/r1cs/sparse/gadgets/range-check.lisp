@@ -1486,7 +1486,7 @@
   :hints (("Goal" :in-theory (enable renaming-correctp))))
 
 (defthm lookup-equal-of-cdr-of-assoc-equal-when-renaming-correctp
-  (implies (and (renaming-correctp pivar-renaming c n avars valuation p))
+  (implies (renaming-correctp pivar-renaming c n avars valuation p)
            (equal (lookup-equal (cdr (assoc-equal i pivar-renaming)) valuation)
                   (if (member-equal i (strip-cars pivar-renaming))
                       (pi i c n avars valuation p)

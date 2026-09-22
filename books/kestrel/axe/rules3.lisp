@@ -3450,12 +3450,12 @@
            :in-theory (disable bvuminus-when-smaller))))
 
 (defthm slice-equal-0-polarity2
-  (implies (and (syntaxp (want-to-weaken (equal (slice n n x) 0))))
+  (implies (syntaxp (want-to-weaken (equal (slice n n x) 0)))
            (equal (equal 0 (slice n n x))
                   (not (equal 1 (slice n n x))))))
 
 (defthm slice-equal-0-polarity
-  (implies (and (syntaxp (want-to-weaken (equal 0 (slice n n x)))))
+  (implies (syntaxp (want-to-weaken (equal 0 (slice n n x))))
            (equal (equal 0 (slice n n x))
                   (not (equal 1 (slice n n x))))))
 
@@ -3590,7 +3590,7 @@
 
 ;gen
 (defthm equal-0-and-slice-polarity
-  (implies (and (syntaxp (want-to-weaken (equal 0 (slice 4 2 x)))))
+  (implies (syntaxp (want-to-weaken (equal 0 (slice 4 2 x))))
            (equal (equal 0 (slice 4 2 x))
                   (not (bvlt 3 0 (slice 4 2 x)))))
   :hints (("Goal" :in-theory (e/d (BVLT-OF-0-ARG2) (SLICE-BOUND-LEMMA-GEN2)))))
@@ -3679,7 +3679,7 @@
 
 ;gen!
 (defthm slice-equal-0-when-top-bit-known
-  (implies (and (and (syntaxp (want-to-weaken (equal (slice 4 3 x) 0))))
+  (implies (and (syntaxp (want-to-weaken (equal (slice 4 3 x) 0)))
                 (equal (getbit 3 x) 0))
            (equal (equal (slice 4 3 x) 0)
                   (equal (slice 4 4 x) 0)))
@@ -4413,8 +4413,7 @@
 
 ;fixme gen!
 (defthm UNSIGNED-BYTE-P-of-bvplus-8-9-1
-  (implies (and (UNSIGNED-BYTE-P 8 x)
-                )
+  (implies (UNSIGNED-BYTE-P 8 x)
            (equal (UNSIGNED-BYTE-P 8 (BVPLUS 9 1 x))
                   (not (equal x 255))))
   :hints (("Goal" :in-theory (e/d (bvlt bvplus
@@ -5721,9 +5720,9 @@
   :hints (("Goal" :in-theory (enable myif bvif))))
 
 (defthm sbvlt-of-myif-arg2-safe
-  (implies (and (syntaxp (and (quotep x) ;prevents explosion if x is a large term
-                              ;;(or (quotep a) (quotep b))
-                              (quotep size))))
+  (implies (syntaxp (and (quotep x) ;prevents explosion if x is a large term
+                         ;;(or (quotep a) (quotep b))
+                         (quotep size)))
            (equal (sbvlt size (myif test a b) x)
                   (boolif test
                           (sbvlt size a x)
@@ -5731,9 +5730,9 @@
   :hints (("Goal" :in-theory (enable myif))))
 
 (defthm sbvlt-of-myif-arg3-safe
-  (implies (and (syntaxp (and (quotep x) ;prevents explosion if x is a large term
-                              ;;(or (quotep a) (quotep b))
-                              (quotep size))))
+  (implies (syntaxp (and (quotep x) ;prevents explosion if x is a large term
+                         ;;(or (quotep a) (quotep b))
+                         (quotep size)))
            (equal (sbvlt size x (myif test a b))
                   (boolif test
                           (sbvlt size x a)
@@ -5835,7 +5834,7 @@
                       (bvle 32 (+ (expt 2 32) (- k)) x)))))
 
 (defthm equal-of-bvplus-move-bvminus-2
-  (IMPLIES (AND (NATP SIZE))
+  (IMPLIES (NATP SIZE)
            (equal (EQUAL (BVPLUS SIZE K2 (BVPLUS SIZE X (BVUMINUS SIZE K1)))
                          (BVCHOP SIZE Y))
                   (EQUAL (BVPLUS SIZE K2 X)

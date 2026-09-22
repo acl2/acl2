@@ -1,7 +1,7 @@
 ; Rule about bvif together with other functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -69,10 +69,10 @@
   :hints (("Goal" :in-theory (enable bvif boolif))))
 
 (defthm bvlt-of-bvif-arg2-safe
-  (implies (and (syntaxp (and (quotep x)
-                              (or (quotep a) (quotep b))
-                              (quotep size)
-                              (quotep size2))))
+  (implies (syntaxp (and (quotep x)
+                         (or (quotep a) (quotep b))
+                         (quotep size)
+                         (quotep size2)))
            (equal (bvlt size (bvif size2 test a b) x)
                   (boolif test
                           ;; at least one of these two branches gets computed:
@@ -97,10 +97,10 @@
   :hints (("Goal" :in-theory (enable bvif boolif))))
 
 (defthm bvlt-of-bvif-arg3-safe
-  (implies (and (syntaxp (and (quotep x)
-                              (or (quotep a) (quotep b))
-                              (quotep size)
-                              (quotep size2))))
+  (implies (syntaxp (and (quotep x)
+                         (or (quotep a) (quotep b))
+                         (quotep size)
+                         (quotep size2)))
            (equal (bvlt size x (bvif size2 test a b))
                   (boolif test
                           ;; at least one of these two branches gets computed:
