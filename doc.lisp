@@ -77771,10 +77771,15 @@ Subtopics
   literally be [30m[47mt[0m[0m; see below).
 
   Generally [30m[47mfn[0m[0m must evaluate to a defined function symbol.  However,
-  this value can be the name of a macro that is associated with such
-  a function symbol; see [macro-aliases-table].  That associated
-  function symbol is the one called ``memoized'' in the discussion
-  below, but we make no more mention of this subtlety.
+  with one exception for [30m[47m:invoke[0m[0m noted below, this value can be the
+  name of a macro that is associated with such a function symbol; see
+  [macro-aliases-table].  That associated function symbol is the one
+  called ``memoized'' in the discussion below, but we make no more
+  mention of this subtlety other than to explain the exception for
+  [30m[47m:invoke[0m[0m noted above: when the value of keyword parameter [30m[47m:invoke[0m[0m is
+  non-[30m[47mnil[0m[0m, then [30m[47mfn[0m[0m must be a function symbol, not a macro-alias for a
+  function symbol.  To see why that exception is important, see
+  [community-book] [30m[47msystem/tests/memoize-invoke-macro-alias.lisp[0m[0m.
 
   In the most common case, [30m[47mmemoize[0m[0m takes a single argument, which
   evaluates to a function symbol.  We call this function symbol the
@@ -107149,9 +107154,11 @@ Bug Fixes From AI via Eric Smith
   [community-book] [30m[47msystem/tests/dcl-guardian-nil.lisp[0m[0m.
 
   Fixed a soundness bug based on the interaction between the
-  [macro-aliases-table] and [30m[47m[memoize][0m[0m with the [30m[47m:invoke[0m[0m argument.  For
-  an example of the issue, see [community-book]
-  [30m[47msystem/tests/memoize-invoke-macro-alias.lisp[0m[0m.
+  [macro-aliases-table] and [30m[47m[memoize][0m[0m with the [30m[47m:invoke[0m[0m argument.  The
+  fix is to require, when option [30m[47m:invoke[0m[0m is supplied and not [30m[47mnil[0m[0m,
+  that the first argument of [30m[47mmemoize[0m[0m be a function symbol, not a
+  macro-alias for a function symbols.  For an example of the issue,
+  see [community-book] [30m[47msystem/tests/memoize-invoke-macro-alias.lisp[0m[0m.
 
   Fixed a soundness bug due to allowing [30m[47m[double-float][0m[0m type
   [declaration]s that were not at the top level.  For an example, see
@@ -107161,6 +107168,10 @@ Bug Fixes From AI via Eric Smith
   when the function symbol is built in without a defining event (like
   [30m[47mcar[0m[0m); and when the function symbol was introduced in support of a
   [stobj], i.e., with a [30m[47m[defstobj][0m[0m or [30m[47m[defabsstobj][0m[0m event.
+
+  Fixed a soundness bug in the evaluation of lambda forms, specifically
+  with respect to their [30m[47m[type][0m[0m [declaration]s.  See
+  [30m[47msystem/tests/exploit-lambda-guard-typedecl.lisp[0m[0m.
 
 
 Other Bug Fixes

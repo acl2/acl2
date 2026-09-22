@@ -48,7 +48,7 @@ table:  The following event must be admitted (possibly with differing
 name or macro) before memoizing function F1 with :INVOKE value G1.
 See :DOC memoize.
 
-(DEFTHM |F1-is-G1| (EQUAL (F1 X) (G1 X)) :RULE-CLASSES NIL)
+(DEFTHM F1-IS-G1 (EQUAL (F1 X) (G1 X)) :RULE-CLASSES NIL)
 
 
 ACL2 Error [Failure] in ( TABLE MEMOIZE-TABLE ...):  See :DOC failure.
@@ -186,7 +186,7 @@ table:  The following event must be admitted (possibly with differing
 name or macro) before memoizing function FIB with :INVOKE value FIB2.
 See :DOC memoize.
 
-(DEFTHM |FIB-is-FIB2| (EQUAL (FIB N) (FIB2 N)) :RULE-CLASSES NIL)
+(DEFTHM FIB-IS-FIB2 (EQUAL (FIB N) (FIB2 N)) :RULE-CLASSES NIL)
 
 
 ACL2 Error [Failure] in ( TABLE MEMOIZE-TABLE ...):  See :DOC failure.

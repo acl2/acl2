@@ -74014,10 +74014,15 @@ it."
  literally be @('t'); see below).</p>
 
  <p>Generally @('fn') must evaluate to a defined function symbol.  However,
- this value can be the name of a macro that is associated with such a function
- symbol; see @(see macro-aliases-table).  That associated function symbol is
- the one called ``memoized'' in the discussion below, but we make no more
- mention of this subtlety.</p>
+ with one exception for @(':invoke') noted below, this value can be the name of
+ a macro that is associated with such a function symbol; see @(see
+ macro-aliases-table).  That associated function symbol is the one called
+ ``memoized'' in the discussion below, but we make no more mention of this
+ subtlety other than to explain the exception for @(':invoke') noted above:
+ when the value of keyword parameter @(':invoke') is non-@('nil'), then @('fn')
+ must be a function symbol, not a macro-alias for a function symbol.  To see
+ why that exception is important, see @(see community-book)
+ @('system/tests/memoize-invoke-macro-alias.lisp').</p>
 
  <p>In the most common case, @('memoize') takes a single argument, which
  evaluates to a function symbol.  We call this function symbol the ``memoized
@@ -109883,6 +109888,15 @@ it."
 ; recover-defs-lst.  Thanks to Eric Smith for reporting this bug found by Anthropic's
 ; Claude.
 
+; Clarified an error message produced by source function
+; translate11-lambda-object in the case of a LAMBDA object, when some TYPE
+; expression derived from the TYPE specifiers is not an explicit conjunct in
+; the :GUARD.
+
+; Tweaked an error message when memoize with option :invoke requires a theorem,
+; but that theorem is missing.  So that for example the message now mentions
+; the need for a theorem F-IS-G, rather than |F-is-G|.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -110133,8 +110147,10 @@ it."
  @('system/tests/dcl-guardian-nil.lisp').</p>
 
  <p>Fixed a soundness bug based on the interaction between the @(see
- macro-aliases-table) and @(tsee memoize) with the @(':invoke') argument.  For
- an example of the issue, see @(see community-book)
+ macro-aliases-table) and @(tsee memoize) with the @(':invoke') argument.  The
+ fix is to require, when option @(':invoke') is supplied and not @('nil'), that
+ the first argument of @('memoize') be a function symbol, not a macro-alias for
+ a function symbols.  For an example of the issue, see @(see community-book)
  @('system/tests/memoize-invoke-macro-alias.lisp').</p>
 
  <p>Fixed a soundness bug due to allowing @(tsee double-float) type @(see
@@ -110145,6 +110161,10 @@ it."
  when the function symbol is built in without a defining event (like @('car'));
  and when the function symbol was introduced in support of a @(see stobj),
  i.e., with a @(tsee defstobj) or @(tsee defabsstobj) event.</p>
+
+ <p>Fixed a soundness bug in the evaluation of lambda forms, specifically with
+ respect to their @(tsee type) @(see declaration)s.  See
+ @('system/tests/exploit-lambda-guard-typedecl.lisp').</p>
 
  <h3>Other Bug Fixes</h3>
 
