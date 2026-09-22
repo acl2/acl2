@@ -1,7 +1,7 @@
 ; MYIF, an alias for IF
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -297,6 +297,19 @@
   (equal (myif (myif test t nil) a b)
          (myif test a b))
   :hints (("Goal" :in-theory (enable myif))))
+
+(defthm myif-of-myif-of-nil-arg1-arg2
+  (implies x
+           (equal (myif (myif test nil x) a b)
+                  (myif (not test) a b)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthm myif-of-myif-of-nil-arg1-arg3
+  (implies x
+           (equal (myif (myif test x nil) a b)
+                  (myif test a b)))
+  :hints (("Goal" :in-theory (enable myif))))
+
 
 ;i suppose we could use any predicate here in place of booleanp
 ;shouldn't we turn myif into boolif in this case?

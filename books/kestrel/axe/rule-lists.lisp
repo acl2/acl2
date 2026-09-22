@@ -181,6 +181,8 @@
             myif-same-test
             myif-same-test2
             myif-same-arg1-arg2-when-booleanp
+            myif-of-myif-of-nil-arg1-arg2
+            myif-of-myif-of-nil-arg1-arg3
 
             ;; todo: compare to the myif rules:
             if-of-t
@@ -4318,7 +4320,9 @@
      if-becomes-bvif-1-axe
      if-becomes-bvif-2-axe
      if-becomes-bvif-3-axe
-     if-becomes-bvif-4-axe)
+     if-becomes-bvif-4-axe
+     ;; needed for rotate example:
+     acl2::slice-out-of-order)
    (bv-function-of-bvchop-rules)
    (type-rules)
    (unsigned-byte-p-forced-rules)))
