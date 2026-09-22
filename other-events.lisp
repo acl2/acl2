@@ -36461,14 +36461,15 @@
     (msg "~@0The function to be memoized, ~x1, has a different signature from ~
           the function to be :INVOKEd, ~x2."
          str key invoke))
+   ((skip-proofs-due-to-system state)
 
-; At one time we returned nil here if (skip-proofs-due-to-system state) is
-; true.  After all, by conservativity it is sound to skip the theorem checks
-; (for equality and guard implication) when we are including a book or in the
-; second pass of encapsulate.  But that does not account for macro-aliases,
-; which are allowed in the first argument of memoize; see community book
+; By conservativity it is sound to skip the theorem checks (for equality and
+; guard implication) when we are including a book or in the second pass of
+; encapsulate.  Note that we are relying on the illegality of a macro-alias as
+; the first argument of memoize when :invoke is supplied; see community book
 ; system/tests/memoize-invoke-macro-alias.lisp.
 
+    nil)
    (t (let ((eq-thm-p (memoize-invoke-equality-exists key invoke wrld wrld))
             (gd-thm-p (memoize-invoke-guard-thm-exists key invoke wrld)))
         (cond
@@ -36478,7 +36479,7 @@
                          `(defthm ,(intern-in-package-of-symbol
                                     (concatenate 'string
                                                  (symbol-name key)
-                                                 "-is-"
+                                                 "-IS-"
                                                  (symbol-name invoke))
                                     invoke)
                             ,(let ((formals (formals key wrld)))
@@ -36543,8 +36544,22 @@
              (msg
               (cond
                ((eq key-formals t)
-                (msg "~@0~x1 is not a function symbol."
-                     str key))
+                (msg "~@0~x1 is not a function symbol.~#2~[~/~@3~]"
+                     str key
+                     (if (and invoke
+                              (function-symbolp
+                               (deref-macro-name key (macro-aliases wrld))
+                               wrld))
+                         1
+                       0)
+                     (msg "  Note that because of the non-nil :INVOKE ~
+                           argument, the first argument of your ~x0 call must ~
+                           be a function symbol.  That first argument, ~x1, ~
+                           is a macro-alias for the function symbol, ~x2, ~
+                           which you should use instead as the first argument."
+                          'memoize
+                          key
+                          (deref-macro-name key (macro-aliases wrld)))))
                ((and (or condition (cdr (assoc-eq :inline val)))
 
 ; The preceding term says that we are not profiling.  Why not replace it simply
