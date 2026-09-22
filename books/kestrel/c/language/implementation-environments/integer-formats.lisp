@@ -155,12 +155,17 @@
 
 (define integer-format-long-wfp ((long-format integer-formatp)
                                  (uchar-format uchar-formatp)
-                                 (int-format integer-formatp))
+                                 (int-format integer-formatp)
+                                 (std standardp))
   :returns (yes/no booleanp)
   :short "Check if an integer format is well-formed
-          when used for (signed and unsigned) @('long')."
+          when used for (signed and unsigned) @('long')
+          for a C standard."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "The format must be well-formed for the standard,
+     as checked by @(tsee integer-format-wfp).")
    (xdoc::p
     "The number of bits must be a multiple of @('CHAR_BIT') [C17:6.2.6.1/4].")
    (xdoc::p
@@ -182,7 +187,8 @@
        (signed-int-min (integer-format->signed-min int-format))
        (signed-int-max (integer-format->signed-max int-format))
        (unsigned-int-max (integer-format->unsigned-max int-format)))
-    (and (integerp (/ bit-size (uchar-format->size uchar-format)))
+    (and (integer-format-wfp long-format std)
+         (integerp (/ bit-size (uchar-format->size uchar-format)))
          (<= signed-long-min -2147483647)
          (<= +2147483647 signed-long-max)
          (<= 4294967295 unsigned-long-max)
@@ -193,7 +199,7 @@
   ///
 
   (defrule integer-format-long-wf-bit-size-lower-bound
-    (implies (integer-format-long-wfp long-format uchar-format int-format)
+    (implies (integer-format-long-wfp long-format uchar-format int-format std)
              (>= (integer-format->bit-size long-format)
                  32))
     :rule-classes :linear
@@ -345,11 +351,13 @@
              (equal (integer-format-long-wfp
                      (integer-format-inc-sign-tcnpnt size)
                      uchar-format
-                     (integer-format-inc-sign-tcnpnt size0))
+                     (integer-format-inc-sign-tcnpnt size0)
+                     std)
                     (and (integerp (/ size (uchar-format->size uchar-format)))
                          (>= size 32)
                          (>= size size0))))
     :enable (integer-format-long-wfp
+             integer-format-wfp-of-integer-format-inc-sign-tcnpnt
              integer-format->bit-size-of-integer-format-inc-sign-tcnpnt
              integer-format->signed-min-of-integer-format-inc-sign-tcnpnt
              integer-format->signed-max-of-integer-format-inc-sign-tcnpnt
@@ -540,7 +548,13 @@
   (defrule integer-format-long-wfp-of-long-format-32tcnt
     (integer-format-long-wfp (long-format-32tcnt)
                              (uchar-format-8)
-                             (int-format-16tcnt)))
+                             (int-format-16tcnt)
+                             std)
+    :enable (int-format-16tcnt
+             integer-format-long-wfp-of-integer-format-inc-sign-tcnpnt)
+    :disable ((:e long-format-32tcnt)
+              (:e int-format-16tcnt)
+              (:e integer-format-inc-sign-tcnpnt)))
 
   (defruled integer-format->bit-size-of-long-format-32tcnt
     (equal (integer-format->bit-size (long-format-32tcnt))

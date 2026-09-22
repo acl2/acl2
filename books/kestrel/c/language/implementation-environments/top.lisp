@@ -92,7 +92,7 @@
   (and (schar-format-wfp schar (dialect->std dialect))
        (integer-format-short-wfp short uchar schar (dialect->std dialect))
        (integer-format-int-wfp int uchar short (dialect->std dialect))
-       (integer-format-long-wfp long uchar int)
+       (integer-format-long-wfp long uchar int (dialect->std dialect))
        (integer-format-llong-wfp llong uchar long)
        (bool-format-wfp bool uchar)
        (charset-wfp charset (dialect->std dialect) uchar schar char))
@@ -160,6 +160,11 @@
       :hyps ((syntaxp (and (quotep int-format)
                            (quotep uchar-format)
                            (quotep short-format))))))
+   (local
+    (acl2::defopeners integer-format-long-wfp ; for speed
+      :hyps ((syntaxp (and (quotep long-format)
+                           (quotep uchar-format)
+                           (quotep int-format))))))
    (local (in-theory (enable ienv-requirep
                              schar-format-wfp
                              signed-format-wfp
