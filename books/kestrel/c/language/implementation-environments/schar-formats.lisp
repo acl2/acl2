@@ -78,7 +78,33 @@
    (trap bool))
   :pred schar-formatp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define schar-format-wfp ((format schar-formatp)
+                          (std standardp))
+  :returns (yes/no booleanp)
+  :short "Check if a @('signed char') format is well-formed for a C standard."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The signed format must be well-formed for the standard,
+     as checked by @(tsee signed-format-wfp).")
+   (xdoc::p
+    "C17 allows either choice of the trap flag [C17:6.2.6.2/2],
+     while C23 requires it to be false [C23:6.2.6.2]."))
+  (and (signed-format-wfp (schar-format->signed format) std)
+       (standard-case std
+                      :c17 t
+                      :c23 (not (schar-format->trap format))))
+
+  ///
+
+  (defrule schar-format-wfp-of-standard-c17
+    (schar-format-wfp format (standard-c17))
+    :use (:instance signed-format-wfp-of-standard-c17
+                    (format (schar-format->signed format)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define schar-format->max ((schar-format schar-formatp)
                            (uchar-format uchar-formatp))
@@ -178,6 +204,11 @@
                      :trap nil)
 
   ///
+
+  (defrule schar-format-wfp-of-schar-format-8tcnt
+    (schar-format-wfp (schar-format-8tcnt) std)
+    :enable schar-format-wfp
+    :use signed-format-wfp-of-signed-format-twos-complement)
 
   (defruled schar-format->max-of-schar-format-8tcnt
     (equal (schar-format->max (schar-format-8tcnt) (uchar-format-8))
