@@ -707,24 +707,23 @@
              c::assoc-static-when-compustate-has-static-var-with-type-p)
            (defruled objdesign-of-var-when-compustate-equivp
              (implies (and (compustate-equivp old-compst new-compst)
-                           (c::identp var)
-                           (not (equal var ',old-cname))
-                           (not (equal var ',newl-cname))
-                           (not (equal var ',newr-cname)))
+                           (not (equal (c::ident-fix var) ',old-cname))
+                           (not (equal (c::ident-fix var) ',newl-cname))
+                           (not (equal (c::ident-fix var) ',newr-cname)))
                       (equal (c::objdesign-of-var var old-compst)
                              (c::objdesign-of-var var new-compst)))
              :enable (c::objdesign-of-var
                       c::top-frame
                       c::compustate-frames-number)
              :use (:instance assoc-when-static-equivp
+                             (var (c::ident-fix var))
                              (old-static (c::compustate->static old-compst))
                              (new-static (c::compustate->static new-compst))))
            (defruled read-object-when-compustate-equivp
              (implies (and (compustate-equivp old-compst new-compst)
-                           (c::identp var)
-                           (not (equal var ',old-cname))
-                           (not (equal var ',newl-cname))
-                           (not (equal var ',newr-cname))
+                           (not (equal (c::ident-fix var) ',old-cname))
+                           (not (equal (c::ident-fix var) ',newl-cname))
+                           (not (equal (c::ident-fix var) ',newr-cname))
                            (c::compustate-has-var-with-type-p var
                                                               type
                                                               old-compst))
@@ -740,14 +739,14 @@
                       c::top-frame
                       c::compustate-frames-number)
              :use ((:instance assoc-when-static-equivp
+                              (var (c::ident-fix var))
                               (old-static (c::compustate->static old-compst))
                               (new-static (c::compustate->static new-compst)))))
            (defruled compustate-has-var-with-type-p-when-compustate-equivp
              (implies (and (compustate-equivp old-compst new-compst)
-                           (c::identp var)
-                           (not (equal var ',old-cname))
-                           (not (equal var ',newl-cname))
-                           (not (equal var ',newr-cname)))
+                           (not (equal (c::ident-fix var) ',old-cname))
+                           (not (equal (c::ident-fix var) ',newl-cname))
+                           (not (equal (c::ident-fix var) ',newr-cname)))
                       (equal (c::compustate-has-var-with-type-p var
                                                                 type
                                                                 new-compst)
@@ -760,6 +759,7 @@
                       c::top-frame
                       c::compustate-frames-number)
              :use (:instance assoc-when-static-equivp
+                             (var (c::ident-fix var))
                              (old-static (c::compustate->static old-compst))
                              (new-static (c::compustate->static new-compst)))))))
     (retok event)))
