@@ -613,7 +613,18 @@
                              (struct-value-equivp (cdr old-var+val)
                                                   (cdr newl-var+val)
                                                   (cdr newr-var+val)))))
-             :induct (static-equivp old-static new-static)))))
+             :induct (static-equivp old-static new-static))
+           (defruled assoc-when-static-equivp
+             (implies (and (c::scopep old-static)
+                           (c::scopep new-static)
+                           (static-equivp old-static new-static)
+                           (not (equal var ',old-cname))
+                           (not (equal var ',newl-cname))
+                           (not (equal var ',newr-cname)))
+                      (equal (omap::assoc var old-static)
+                             (omap::assoc var new-static)))
+             :induct t
+             :enable omap::assoc))))
     (retok event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -712,21 +723,9 @@
                       c::top-frame
                       c::compustate-frames-number
                       compustate-equivp)
-             :use (:instance lemma
+             :use (:instance assoc-when-static-equivp
                              (old-static (c::compustate->static old-compst))
-                             (new-static (c::compustate->static new-compst)))
-             :prep-lemmas
-             ((defruled lemma
-                (implies (and (c::scopep old-static)
-                              (c::scopep new-static)
-                              (static-equivp old-static new-static)
-                              (not (equal var ',old-cname))
-                              (not (equal var ',newl-cname))
-                              (not (equal var ',newr-cname)))
-                         (equal (omap::assoc var old-static)
-                                (omap::assoc var new-static)))
-                :induct t
-                :enable (static-equivp omap::assoc)))))))
+                             (new-static (c::compustate->static new-compst)))))))
     (retok event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
