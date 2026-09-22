@@ -130,12 +130,8 @@
   (let ((condition (cond ((equal condition ''t) t)
                          ((equal condition ''nil) nil)
                          (t condition)))
-        (key-expr1 (if invoke
-                       fn
-                     `(deref-macro-name ,fn (macro-aliases world))))
-        (key-expr2 (if invoke
-                       fn
-                     `(deref-macro-name ,fn (macro-aliases (w state))))))
+        (key-expr1 `(deref-macro-name ,fn (macro-aliases world)))
+        (key-expr2 `(deref-macro-name ,fn (macro-aliases (w state)))))
     (cond
      ((and condition-fn (null condition-p))
       `(progn (table memoize-table
