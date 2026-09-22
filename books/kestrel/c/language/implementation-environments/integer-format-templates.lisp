@@ -506,6 +506,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define sinteger-format-wfp ((format sinteger-formatp)
+                             (std standardp))
+  :returns (yes/no booleanp)
+  :short "Check if a signed integer format is well-formed for a C standard."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The signed format must be well-formed for the standard,
+     as checked by @(tsee signed-format-wfp).")
+   (xdoc::p
+    "C17 allows either choice of the @('special-trap') flag [C17:6.2.6.2/2],
+     while C23 requires it to be false [C23:6.2.6.2].
+     See @(tsee sinteger-format).")
+   (xdoc::p
+    "The @('other-traps') component remains unconstrained,
+     pending a model of padding-related trap representations."))
+  (and (signed-format-wfp (sinteger-format->signed format) std)
+       (standard-case std
+                      :c17 t
+                      :c23 (not (sinteger-format->special-trap format))))
+
+  ///
+
+  (defrule sinteger-format-wfp-of-standard-c17
+    (sinteger-format-wfp format (standard-c17))
+    :use (:instance signed-format-wfp-of-standard-c17
+                    (format (sinteger-format->signed format)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define uinteger-format->max ((format uinteger-formatp))
   :returns (max posp
                 :rule-classes (:rewrite :type-prescription)
@@ -990,6 +1020,11 @@
   :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
 
   ///
+
+  (defrule sinteger-format-wfp-of-sinteger-format-inc-sign-tcnpnt
+    (sinteger-format-wfp (sinteger-format-inc-sign-tcnpnt n) std)
+    :enable sinteger-format-wfp
+    :use signed-format-wfp-of-signed-format-twos-complement)
 
   (defruled sinteger-format->max-of-sinteger-format-inc-sign-tcnpnt
     (equal (sinteger-format->max (sinteger-format-inc-sign-tcnpnt n))
