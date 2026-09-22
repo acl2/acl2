@@ -163,8 +163,7 @@
 
 (defthm legal-let-bindingsp-of-make-let-bindings
   (equal (legal-let-bindingsp (make-let-bindings vars terms))
-         (and (legal-variable-listp (true-list-fix vars))
-              ))
+         (legal-variable-listp (true-list-fix vars)))
   :hints (("Goal" :in-theory (enable legal-let-bindingsp))))
 
 (defthm let-binding-terms-of-make-let-bindings

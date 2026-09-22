@@ -2630,7 +2630,7 @@
        ((when (eq :none loop-alist))
         (er hard? 'lift-subroutine-fn "No :loops supplied (should be a loop-alist).")
         (mv (erp-t) nil state))
-       ((when (not (and (loop-alistp loop-alist))))
+       ((when (not (loop-alistp loop-alist)))
         (prog2$ (er hard? 'lift-subroutine-fn "Bad value for loop-alist: ~x0" loop-alist)
                 (mv (erp-t) nil state)))
        ;; Check the monitor argument:
