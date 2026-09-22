@@ -36461,15 +36461,15 @@
     (msg "~@0The function to be memoized, ~x1, has a different signature from ~
           the function to be :INVOKEd, ~x2."
          str key invoke))
-   ((skip-proofs-due-to-system state)
 
-; By conservativity it is sound to skip the theorem checks (for equality and
-; guard implication) when we are including a book or in the second pass of
-; encapsulate.  Note that we are relying on the illegality of a macro-alias as
-; the first argument of memoize when :invoke is supplied; see community book
+; At one time we returned nil here if (skip-proofs-due-to-system state) is
+; true.  After all, by conservativity it is sound to skip the theorem checks
+; (for equality and guard implication) when we are including a book or in the
+; second pass of encapsulate.  But that does not account for using
+; macro-aliases in the first argument of memoize, or other ways for that
+; argument to depend on the world; see community book
 ; system/tests/memoize-invoke-macro-alias.lisp.
 
-    nil)
    (t (let ((eq-thm-p (memoize-invoke-equality-exists key invoke wrld wrld))
             (gd-thm-p (memoize-invoke-guard-thm-exists key invoke wrld)))
         (cond
@@ -36498,9 +36498,9 @@
                                     thm-formula
                                     guard-thm-formula)))))
               (msg "~@0The following event~#1~[~/s~] must be admitted ~
-                    (possibly with differing name or macro) before memoizing ~
-                    function ~x2 with :INVOKE value ~x3.  See :DOC ~
-                    memoize.~|~%~@4"
+                    (possibly with differing name or macro), non-locally, ~
+                    before memoizing function ~x2 with :INVOKE value ~x3.  ~
+                    See :DOC memoize.~|~%~@4"
                    str
                    (if (or eq-thm-p gd-thm-p) 0 1)
                    key invoke msg))))))))

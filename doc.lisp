@@ -77771,15 +77771,10 @@ Subtopics
   literally be [30m[47mt[0m[0m; see below).
 
   Generally [30m[47mfn[0m[0m must evaluate to a defined function symbol.  However,
-  with one exception for [30m[47m:invoke[0m[0m noted below, this value can be the
-  name of a macro that is associated with such a function symbol; see
-  [macro-aliases-table].  That associated function symbol is the one
-  called ``memoized'' in the discussion below, but we make no more
-  mention of this subtlety other than to explain the exception for
-  [30m[47m:invoke[0m[0m noted above: when the value of keyword parameter [30m[47m:invoke[0m[0m is
-  non-[30m[47mnil[0m[0m, then [30m[47mfn[0m[0m must be a function symbol, not a macro-alias for a
-  function symbol.  To see why that exception is important, see
-  [community-book] [30m[47msystem/tests/memoize-invoke-macro-alias.lisp[0m[0m.
+  this value can be the name of a macro that is associated with such
+  a function symbol; see [macro-aliases-table].  That associated
+  function symbol is the one called ``memoized'' in the discussion
+  below, but we make no more mention of this subtlety.
 
   In the most common case, [30m[47mmemoize[0m[0m takes a single argument, which
   evaluates to a function symbol.  We call this function symbol the
@@ -77902,7 +77897,13 @@ Subtopics
   [30m[47mnil[0m[0m for [30m[47m:condition[0m[0m and [30m[47m:stats[0m[0m can avoid memoization overhead when
   one simply wishes to call [30m[47mg[0m[0m in place of [30m[47mfn[0m[0m; you may override those
   defaults if you actually want to save computed values and use
-  [30m[47m(memsum)[0m[0m to see statistics.
+  [30m[47m(memsum)[0m[0m to see statistics.  WARNING: As noted above, the required
+  theorems need to be in the current ACL2 [world].  Hence, the
+  following event fails to be admitted.
+
+    (encapsulate ()
+      (local (defthm f-is-g (equal (f x) (g x)) :rule-classes nil))
+      (memoize 'f :invoke 'g))
 
   Keyword parameter [30m[47m:recursive[0m[0m is [30m[47mt[0m[0m by default, which means that
   recursive calls of [30m[47mfn[0m[0m will be memoized just as ``top-level'' calls
@@ -107155,10 +107156,10 @@ Bug Fixes From AI via Eric Smith
 
   Fixed a soundness bug based on the interaction between the
   [macro-aliases-table] and [30m[47m[memoize][0m[0m with the [30m[47m:invoke[0m[0m argument.  The
-  fix is to require, when option [30m[47m:invoke[0m[0m is supplied and not [30m[47mnil[0m[0m,
-  that the first argument of [30m[47mmemoize[0m[0m be a function symbol, not a
-  macro-alias for a function symbols.  For an example of the issue,
-  see [community-book] [30m[47msystem/tests/memoize-invoke-macro-alias.lisp[0m[0m.
+  fix is to check for the required theorems even during the second
+  pass of [30m[47m[encapsulate][0m[0m and the include-book pass of [30m[47m[certify-book][0m[0m.
+  For an example of the issue, see [community-book]
+  [30m[47msystem/tests/memoize-invoke-macro-alias.lisp[0m[0m.
 
   Fixed a soundness bug due to allowing [30m[47m[double-float][0m[0m type
   [declaration]s that were not at the top level.  For an example, see
