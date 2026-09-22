@@ -89,8 +89,6 @@
   :short "Inspect the rewrite-rule formula for a function's guard theorem."
   :long
   (xdoc::topstring
-   (xdoc::codeblock
-    "(guard-theorem-rewrite 'fn :limited state)")
    (xdoc::p
     "This returns an error triple whose value, on success, is
      the untranslated formula used by @(tsee def-guard-theorem-rewrite).
