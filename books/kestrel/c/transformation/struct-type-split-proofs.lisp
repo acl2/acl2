@@ -705,6 +705,43 @@
                     (new-static (c::compustate->static new-compst))))
              :enable
              c::assoc-static-when-compustate-has-static-var-with-type-p)
+           (defruled objdesign-of-var-when-compustate-equivp
+             (implies (and (compustate-equivp old-compst new-compst)
+                           (c::identp var)
+                           (not (equal var ',old-cname))
+                           (not (equal var ',newl-cname))
+                           (not (equal var ',newr-cname)))
+                      (equal (c::objdesign-of-var var old-compst)
+                             (c::objdesign-of-var var new-compst)))
+             :enable (c::objdesign-of-var
+                      c::top-frame
+                      c::compustate-frames-number)
+             :use (:instance assoc-when-static-equivp
+                             (old-static (c::compustate->static old-compst))
+                             (new-static (c::compustate->static new-compst))))
+           (defruled read-object-when-compustate-equivp
+             (implies (and (compustate-equivp old-compst new-compst)
+                           (c::identp var)
+                           (not (equal var ',old-cname))
+                           (not (equal var ',newl-cname))
+                           (not (equal var ',newr-cname))
+                           (c::compustate-has-var-with-type-p var
+                                                              type
+                                                              old-compst))
+                      (equal (c::read-object (c::objdesign-of-var var
+                                                                  old-compst)
+                                             old-compst)
+                             (c::read-object (c::objdesign-of-var var
+                                                                  new-compst)
+                                             new-compst)))
+             :enable (c::compustate-has-var-with-type-p
+                      c::read-object
+                      c::objdesign-of-var
+                      c::top-frame
+                      c::compustate-frames-number)
+             :use ((:instance assoc-when-static-equivp
+                              (old-static (c::compustate->static old-compst))
+                              (new-static (c::compustate->static new-compst)))))
            (defruled compustate-has-var-with-type-p-when-compustate-equivp
              (implies (and (compustate-equivp old-compst new-compst)
                            (c::identp var)
@@ -721,8 +758,7 @@
                       c::objdesign-of-var
                       c::read-object
                       c::top-frame
-                      c::compustate-frames-number
-                      compustate-equivp)
+                      c::compustate-frames-number)
              :use (:instance assoc-when-static-equivp
                              (old-static (c::compustate->static old-compst))
                              (new-static (c::compustate->static new-compst)))))))
