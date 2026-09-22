@@ -599,8 +599,7 @@
        ;;  (er hard? 'apply-tactic-stp "DAG too big.")
        ;;  (mv *error* nil state))
        ;; Replace stuff that STP can't handle (todo: push this into the STP translation)?:
-       ((mv erp rule-alist) (add-to-rule-alist (pre-stp-rules) (empty-rule-alist) ; rule-alist
-                                               (w state)))
+       ((mv erp rule-alist) (make-rule-alist (pre-stp-rules) (w state)))
        ((when erp)
         (er hard? 'apply-tactic-stp "ERROR making pre-stp rule-alist.~%")
         (mv *error* nil state))
