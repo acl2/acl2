@@ -88,7 +88,8 @@
     "This captures requirements involving
      multiple components of @(tsee ienv),
      used in the @(':require') of that fixtype definition."))
-  (and (integer-format-short-wfp short uchar schar)
+  (and (schar-format-wfp schar (dialect->std dialect))
+       (integer-format-short-wfp short uchar schar)
        (integer-format-int-wfp int uchar short)
        (integer-format-long-wfp long uchar int)
        (integer-format-llong-wfp llong uchar long)
@@ -147,7 +148,10 @@
                       (charset-basic+lf (dialect->std dialect)))))
   :require (ienv-requirep-call)
   :pred ienvp
-  :prepwork ((local (in-theory (enable ienv-requirep)))))
+  :prepwork
+  ((local (in-theory (enable ienv-requirep
+                             schar-format-wfp
+                             signed-format-wfp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -270,7 +270,9 @@
       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->llong-bytes ienv)))
       (c::bool-format (ienv->bool-bytes ienv) 0 nil)
       (charset (c::dialect->std (ienv->dialect ienv))))
-     :use (:instance ienv-requirements (x ienv))
+     :use ((:instance ienv-requirements (x ienv))
+           (:instance c::schar-format-wfp-of-schar-format-8tcnt
+                      (c::std (c::dialect->std (ienv->dialect ienv)))))
      :enable (c::ienv-requirep
               c::integer-format-short-wfp-of-integer-format-inc-sign-tcnpnt
               c::integer-format-int-wfp-of-integer-format-inc-sign-tcnpnt
