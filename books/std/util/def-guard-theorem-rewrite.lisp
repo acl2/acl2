@@ -17,14 +17,14 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defmacro-plus" :dir :system)
 (include-book "tools/er-soft-logic" :dir :system)
-(include-book "xdoc/constructors" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "std/system/w" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc def-guard-theorem-rewrite-implementation
+(defxdoc+ def-guard-theorem-rewrite-implementation
   :parents (def-guard-theorem-rewrite)
   :short "Implementation of @(tsee def-guard-theorem-rewrite)."
   :long
@@ -32,14 +32,15 @@
    "The implementation functions are in logic mode and guard-verified.
     Calls of program-mode system utilities are made via
     @(tsee in-logic-mode) or @(tsee untranslate$).
-    Results used as terms are checked before further processing."))
+    Results used as terms are checked before further processing.")
+  :order-subtopics t
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define guard-theorem-rewrite-clause ((clause pseudo-term-listp))
   :returns (mv (hyps pseudo-term-listp :hyp :guard)
                (concl pseudo-termp :hyp :guard))
-  :parents (def-guard-theorem-rewrite-implementation)
   :short "Extract the hypotheses and conclusion of a guard theorem clause."
   :long
   (xdoc::topstring-p
@@ -56,7 +57,6 @@
 
 (define guard-theorem-rewrite-filter ((clauses true-listp) state)
   :returns (mv erp (terms pseudo-term-listp) state)
-  :parents (def-guard-theorem-rewrite-implementation)
   :short "Retain the implications that can be installed as rewrite rules."
   :long
   (xdoc::topstring-p
@@ -86,7 +86,6 @@
 
 (define guard-theorem-rewrite (fn simplify state)
   :returns (mv erp (formula t) state)
-  :parents (def-guard-theorem-rewrite)
   :short "Inspect the rewrite-rule formula for a function's guard theorem."
   :long
   (xdoc::topstring
@@ -143,7 +142,6 @@
 
 (define def-guard-theorem-rewrite-fn (name fn simplify state)
   :returns (mv erp (event t) state)
-  :parents (def-guard-theorem-rewrite-implementation)
   :short "Generate the theorem event."
   (b* (((unless (symbolp name))
         (er-soft-logic 'def-guard-theorem-rewrite
@@ -161,7 +159,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection def-guard-theorem-rewrite-definition
-  :parents (def-guard-theorem-rewrite-implementation)
   :short "Definition of the @(tsee def-guard-theorem-rewrite) macro."
   (defmacro def-guard-theorem-rewrite (name fn &key (simplify ':limited))
     `(make-event
