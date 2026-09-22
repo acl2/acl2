@@ -90,7 +90,7 @@
      used in the @(':require') of that fixtype definition."))
   (and (schar-format-wfp schar (dialect->std dialect))
        (integer-format-short-wfp short uchar schar (dialect->std dialect))
-       (integer-format-int-wfp int uchar short)
+       (integer-format-int-wfp int uchar short (dialect->std dialect))
        (integer-format-long-wfp long uchar int)
        (integer-format-llong-wfp llong uchar long)
        (bool-format-wfp bool uchar)
@@ -153,6 +153,7 @@
                              schar-format-wfp
                              signed-format-wfp
                              integer-format-short-wfp
+                             integer-format-int-wfp
                              integer-format-wfp
                              sinteger-format-wfp)))))
 
