@@ -6202,7 +6202,7 @@
                     ((when erp) (mv erp nil limits nil ,@maybe-state))
                     (- (and print (cw ")~%"))) ; balances "(Simplifying DAG with internal contexts ..."
                     )
-                 (mv (erp-nil) dag-or-quotep limits (combine-hits hits1 hits2) ,@maybe-state)))))
+                 (mv (erp-nil) dag-or-quotep limits (combine-hits hits hits2) ,@maybe-state)))))
 
          (defthm ,(pack$ simplify-dag-name '-return-type)
            (implies (and (pseudo-dagp dag)
