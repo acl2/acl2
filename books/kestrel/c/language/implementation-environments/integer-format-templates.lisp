@@ -477,8 +477,21 @@
      within an implementation, use that same signed format,
      but our model allows them to differ.")
    (xdoc::p
-    "We also include a placeholder component meant to define
-     which bit values are trap representations [C17:6.2.6.2/5].
+    "The @('special-trap') component is a boolean flag
+     saying whether the special pattern of sign and value bits
+     described in [C17:6.2.6.2/2] is a trap representation.
+     The sign bit is 1 in this pattern;
+     the value bits are all 0 for sign and magnitude and two's complement,
+     and all 1 for ones' complement.
+     When not reserved as a trap, this pattern represents
+     the most negative value for two's complement,
+     and negative zero for the other signed formats.
+     This component corresponds to the @('trap') component
+     of @(tsee schar-format).")
+   (xdoc::p
+    "The @('other-traps') component is a placeholder for
+     trap representations caused by combinations of padding bits
+     [C17:6.2.6.2/5] [C23:6.2.6.2].
      We plan to flesh this out in the future."))
   ((bits sinteger-bit-role-listp
          :reqfix (if (sinteger-bit-roles-wfp bits)
@@ -486,7 +499,8 @@
                    (list (sinteger-bit-role-sign)
                          (sinteger-bit-role-value 0))))
    (signed signed-format)
-   traps)
+   (special-trap bool)
+   other-traps)
   :require (sinteger-bit-roles-wfp bits)
   :pred sinteger-formatp)
 
@@ -586,17 +600,15 @@
      is a trap representation,
      the minimum value is @('- (2^M - 1)');
      otherwise, it is @('- 2^M').
-     As explained in @(tsee sinteger-format),
-     currently we do not have a detailed model of trap representations;
-     as a placeholder, for now we regard that representation to be a trap one
-     iff the @('traps') component of @(tsee sinteger-format) is not @('nil').")
+     The @('special-trap') component of @(tsee sinteger-format)
+     determines which case applies.")
    (xdoc::p
     "Since @('M <= T - 1'), where @('T') is the total number of bits,
      and where the 1 accounts for the sign bit,
      the minimum value cannot be below @('- 2^(T-1)')."))
   (if (and (equal (signed-format-kind (sinteger-format->signed format))
                   :twos-complement)
-           (not (sinteger-format->traps format)))
+           (not (sinteger-format->special-trap format)))
       (- (expt 2 (sinteger-bit-roles-value-count
                   (sinteger-format->bits format))))
     (- (1- (expt 2 (sinteger-bit-roles-value-count
@@ -672,7 +684,8 @@
                       :bits (list (sinteger-bit-role-value 0)
                                   (sinteger-bit-role-sign))
                       :signed (signed-format-twos-complement)
-                      :traps nil))))
+                      :special-trap nil
+                      :other-traps nil))))
   :require (uinteger-sinteger-bit-roles-wfp
             (uinteger-format->bits unsigned)
             (sinteger-format->bits signed))
@@ -972,7 +985,8 @@
   (make-sinteger-format
    :bits (sinteger-bit-roles-inc-n-and-sign (pos-fix n))
    :signed (signed-format-twos-complement)
-   :traps nil)
+   :special-trap nil
+   :other-traps nil)
   :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
 
   ///
