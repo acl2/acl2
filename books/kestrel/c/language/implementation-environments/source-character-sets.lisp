@@ -328,6 +328,8 @@
 
   ///
 
+  (in-theory (disable (:e source-charset-ascii)))
+
   (defruled source-chars-of-source-charset-ascii
     (equal (source-chars (source-charset-ascii end-of-lines))
            (ascii-chars))

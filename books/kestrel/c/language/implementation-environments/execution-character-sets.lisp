@@ -590,6 +590,8 @@
 
   ///
 
+  (in-theory (disable (:e exec-charset-ascii)))
+
   (defruled exec-chars-of-exec-charset-ascii
     (equal (exec-chars (exec-charset-ascii std))
            (ascii-chars))
