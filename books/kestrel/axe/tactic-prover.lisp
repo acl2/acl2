@@ -557,14 +557,12 @@
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
 ;; A true counterexample returned in the info is fixed up to bind vars, not nodenums
 (defun apply-tactic-stp (problem
-                         rule-alist ; do we want this?  it may apply unrelated rules
                          interpreted-function-alist ; do we want this?  maybe it can't hurt
                          monitor normalize-xors print max-conflicts
                          counterexamplep
                          print-cex-as-signedp
                          state)
   (declare (xargs :guard (and (proof-problemp problem)
-                              (rule-alistp rule-alist)
                               (interpreted-function-alistp interpreted-function-alist)
                               (symbol-listp monitor)
                               (booleanp normalize-xors)
@@ -601,7 +599,7 @@
        ;;  (er hard? 'apply-tactic-stp "DAG too big.")
        ;;  (mv *error* nil state))
        ;; Replace stuff that STP can't handle (todo: push this into the STP translation)?:
-       ((mv erp rule-alist) (add-to-rule-alist (pre-stp-rules) rule-alist (w state)))
+       ((mv erp rule-alist) (make-rule-alist (pre-stp-rules) (w state)))
        ((when erp)
         (er hard? 'apply-tactic-stp "ERROR making pre-stp rule-alist.~%")
         (mv *error* nil state))
@@ -843,7 +841,7 @@
           (if (eq :acl2 tactic)
               (apply-tactic-acl2 problem print state)
             (if (eq :stp tactic)
-                (apply-tactic-stp problem rule-alist interpreted-function-alist monitor normalize-xors print max-conflicts counterexamplep print-cex-as-signedp state)
+                (apply-tactic-stp problem interpreted-function-alist monitor normalize-xors print max-conflicts counterexamplep print-cex-as-signedp state)
               (if (and (consp tactic)
                        (eq :cases (car tactic)))
                   (apply-tactic-cases problem (fargs tactic) print state)
@@ -886,8 +884,10 @@
                    nil)
                  (mv *unknown* info-acc state)))
      (b* ((tactic (first tactics))
+          (- (cw "(Applying tactic ~x0.~%" tactic))
           ((mv result info state)
            (apply-proof-tactic problem tactic rule-alist interpreted-function-alist monitor normalize-xors print max-conflicts call-stp-when-pruning counterexamplep print-cex-as-signedp state))
+          (- (cw ")~%" tactic))
           (info-acc (add-to-end info info-acc)))
        (if (eq *valid* result)
            (prog2$ (and (rest tactics) (cw "(Tactics not used: ~x0)~%" (rest tactics)))

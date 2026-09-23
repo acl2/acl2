@@ -4,7 +4,8 @@
 
 ; This book was inspired by bdd-1.lisp, which was produced by Claude and passed
 ; along by Eric Smith.  Like that book, it exploits bugs in ACL2 source
-; functions first-boolean-type-prescription and bool-mask.
+; functions first-boolean-type-prescription and bool-mask, illustrating a
+; soundness bug fixed before ACL2 Version 8.8.
 
 (in-package "ACL2")
 
@@ -27,9 +28,9 @@
   :hints (("Goal" :bdd (:vars nil))))
 )
 
-#|
+(must-fail
 (defthm nil-proved nil
   :rule-classes nil
   :hints (("Goal" :use ((:instance bad (a 7) (b 7)))
                   :in-theory (enable f))))
-|#
+)

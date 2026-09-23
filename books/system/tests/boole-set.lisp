@@ -1,5 +1,6 @@
 ; This book, modified only as noted below, was produced by Claude and passed
-; along by Eric Smith.
+; along by Eric Smith.  It illustrates a soundness bug fixed before ACL2
+; Version 8.8.
 
 ; a1.lisp -- certified proof of NIL from the boole$ logic/raw drift.
 ;
@@ -60,7 +61,7 @@
 ;; Commented out by Matt Kaufmann (as the rest of the file is irrelevant after
 ; the bug fix):
 
-#|
+(must-fail ; The must-fail wrapper was added by Matt Kaufmann:
 ; (3) 1 /= -1.
 
 (defthm nil-proved
@@ -69,4 +70,4 @@
   :hints (("Goal"
            :use (boole-set-is-1-by-definition
                  boole-set-is-minus-1-by-evaluation))))
-|#
+)

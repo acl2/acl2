@@ -338,7 +338,7 @@
              (negate-assumptions-and-add-to-dag-array assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc)
              (declare (ignore negated-assumptions new-dag-array new-dag-parent-array new-dag-constant-alist new-dag-variable-alist))
              (implies (not erp)
-                      (and (natp new-dag-len)))))
+                      (natp new-dag-len))))
   :hints (("Goal" :use negate-assumptions-and-add-to-dag-array-return-type
            :in-theory (disable negate-assumptions-and-add-to-dag-array-return-type))))
 
@@ -525,7 +525,7 @@
                 (cw "~x0)~%" darg))
               (print-alist-elided (rest alist))))))
 
-(defun make-rewriter-simple-fn (suffix ;; gets added to generated names
+(defund make-rewriter-simple-fn (suffix ;; gets added to generated names
                                 evaluator-base-name
                                 syntaxp-evaluator-suffix
                                 bind-free-evaluator-suffix
@@ -6202,7 +6202,7 @@
                     ((when erp) (mv erp nil limits nil ,@maybe-state))
                     (- (and print (cw ")~%"))) ; balances "(Simplifying DAG with internal contexts ..."
                     )
-                 (mv (erp-nil) dag-or-quotep limits (combine-hits hits2 hits2) ,@maybe-state)))))
+                 (mv (erp-nil) dag-or-quotep limits (combine-hits hits hits2) ,@maybe-state)))))
 
          (defthm ,(pack$ simplify-dag-name '-return-type)
            (implies (and (pseudo-dagp dag)
@@ -6843,7 +6843,7 @@
          ;; DAGs).  Returns (mv erp new-terms ,@maybe-state), where the new-terms correspond 1-to-1
          ;; to the original TERMS.
          ;; WARNING: The terms returned might be huge!
-         (defun ,simplify-terms-to-terms-name (terms
+         (defund ,simplify-terms-to-terms-name (terms
                                                assumptions
                                                rule-alist
                                                interpreted-function-alist

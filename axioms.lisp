@@ -9891,7 +9891,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro verify-termination (&rest lst)
   `(make-event
-    (verify-termination-fn ',lst state)))
+    (verify-termination-fn ',lst state)
+    :on-behalf-of :quiet!))
 
 #+acl2-loop-only
 (defmacro verify-termination-boot-strap (&whole event-form &rest lst)
@@ -11776,7 +11777,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                                      (caddr x) tflg))
         ((eq x 'rational) (list 'rationalp var))
         ((eq x 'real) (list 'real/rationalp var))
-        ((eq x 'double-float) (list 'dfp var))
         ((eq x 'complex) (list 'complex/complex-rationalp var))
         ((eq x 'number) (list 'acl2-numberp var))
         ((and (consp x)
@@ -11978,18 +11978,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
  ;; This was modified to change the moniker 'complex to use
  ;; complexp instead of complex-rationalp.
 
-(defun translate-declaration-to-guard-gen (x var tflg wrld)
+(defun translate-declaration-to-guard-gen-rec (x var tflg wrld)
 
 ; Warning: Keep this in sync with non-common-lisp-compliants-in-satisfies.
 
 ; This function is typically called on the sort of x you might write in a TYPE
-; declaration, e.g., (DECLARE (TYPE x var1 ... varn)).  Thus, x might be
-; something like '(or symbol cons (integer 0 128)) meaning that var is either a
-; symbolp, a consp, or an integer in the given range.  X is taken as a
-; declaration about the variable symbol var and is converted into an either an
-; untranslated term or a translated term about var (depending on tflg), except
-; that we return nil if x is seen not to be a valid type-spec for ACL2.  See
-; get-guards2 for a discussion of tflg.
+; declaration, e.g., (DECLARE (TYPE x var1 ... varn)).  (Exception: This
+; doesn't comprehend double-float, which is handled in
+; translate-declaration-to-guard-gen.)  Thus, x might be something like '(or
+; symbol cons (integer 0 128)) meaning that var is either a symbolp, a consp,
+; or an integer in the given range.  X is taken as a declaration about the
+; variable symbol var and is converted into an either an untranslated term or a
+; translated term about var (depending on tflg), except that we return nil if x
+; is seen not to be a valid type-spec for ACL2.  See get-guards2 for a
+; discussion of tflg.
 
 ; Wrld is an ACL2 logical world or a symbol (typically, nil), the difference
 ; being that a symbol indicates that we should do a weaker check.  This extra
@@ -12010,7 +12012,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq (car x) 'not)
          (cond ((and (true-listp x)
                      (equal (length x) 2))
-                (let ((term (translate-declaration-to-guard-gen
+                (let ((term (translate-declaration-to-guard-gen-rec
                              (cadr x)
                              var
                              tflg
@@ -12043,12 +12045,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq (car x) 'complex)
          (cond ((and (consp (cdr x))
                      (null (cddr x)))
-                (let ((r (translate-declaration-to-guard-gen
+                (let ((r (translate-declaration-to-guard-gen-rec
                           (cadr x)
                           (list 'realpart var)
                           tflg
                           wrld))
-                      (i (translate-declaration-to-guard-gen
+                      (i (translate-declaration-to-guard-gen-rec
                           (cadr x)
                           (list 'imagpart var)
                           tflg
@@ -12064,7 +12066,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun translate-declaration-to-guard-gen-lst (l var tflg wrld)
 
 ; Wrld is an ACL2 logical world or a symbol; see
-; translate-declaration-to-guard-gen.
+; translate-declaration-to-guard-gen-rec.
 
   (declare (xargs ; :measure (acl2-count l)
             :guard (and (true-listp l)
@@ -12073,7 +12075,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                             (plist-worldp wrld)))
             :mode :program))
   (and (consp l)
-       (let ((frst (translate-declaration-to-guard-gen
+       (let ((frst (translate-declaration-to-guard-gen-rec
                     (car l)
                     var
                     tflg
@@ -12092,6 +12094,23 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
  )
 
+(defun translate-declaration-to-guard-gen (x var tflg wrld)
+
+; This is just translate-declaration-to-guard-gen-rec, except that double-float
+; cannot occur within other type expressions, so it is handled here.
+
+  (declare (xargs :guard (or (symbolp wrld)
+                             (plist-worldp wrld))
+                  :mode :program
+
+; See the comment above translate-declaration-to-guard/integer-gen.
+
+;                  :measure (acl2-count x)
+                  ))
+  (cond ((eq x 'double-float)
+         (list 'dfp var))
+        (t (translate-declaration-to-guard-gen-rec x var tflg wrld))))
+
 (defun translate-declaration-to-guard (x var wrld)
   (declare (xargs :guard (or (symbolp wrld)
                              (plist-worldp wrld))
@@ -12106,20 +12125,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; = nil for backwards compatibility.  See get-guards2 for a discussion of tflg.
 
   (translate-declaration-to-guard-gen x var nil wrld))
-
-(defun translate-declaration-to-guard-lst (l var wrld)
-  (declare (xargs ; :measure (acl2-count l)
-            :guard (and (true-listp l)
-                        (consp l)
-                        (or (null wrld)
-                            (plist-worldp wrld)))
-            :mode :program))
-
-; This is just the special case of translate-declaration-to-guard-gen-lst for
-; tflg = nil for backwards compatibility.  See get-guards2 for a discussion of
-; tflg.
-
-  (translate-declaration-to-guard-gen-lst l var nil wrld))
 
 (defun the-check (guard x y)
 
@@ -13248,7 +13253,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (num ; to be the number of elements in the compressed alist
           1))
     (declare (type (integer 0 #.*array-maximum-length-bound*) num))
+    (when (not (array1p name l))
 
+; We avoid having to mark compress1 with 'invariant-risk (see
+; *boot-strap-invariant-risk-alist*) by checking array1p before compressing.
+; See community book books/system/tests/compress1-invariant-risk.lisp.
+
+      (hard-error 'compress1
+                  "Attempted to compress an alleged one-dimensional array ~
+                   that fails to satisfy (array1p name x) where:~|name = ~y0~
+                   x = ~Y12"
+                  (list (cons #\0 name)
+                        (cons #\1 l)
+                        (cons #\2 (evisc-tuple 4 12 nil nil)))))
     (when (and (null order)
                (> (length l) maximum-length))
       (hard-error 'compress1
@@ -13339,7 +13356,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
           ((null tl))
           (setf (svref ar (caar tl))
                 (cdar tl)))
-      (setq num (length (cdr l))))
+      (setq num (length l)))
      (t
       (do ((tl l (cdr tl)))
 ; The following termination test is true immediately if l consists only of the
@@ -13710,6 +13727,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          ar
          in-order)
 
+    (when (not (array2p name l))
+
+; As with compress1, we avoid having to mark compress2 with 'invariant-risk
+; (see *boot-strap-invariant-risk-alist*) by checking array2p before
+; compressing.
+
+      (hard-error 'compress2
+                  "Attempted to compress an alleged two-dimensional array ~
+                   that fails to satisfy (array2p name x) where:~|name = ~y0~
+                   x = ~Y12"
+                  (list (cons #\0 name)
+                        (cons #\1 l)
+                        (cons #\2 (evisc-tuple 4 12 nil nil)))))
+
 ;  Get an array that is filled with the special mark *invisible-array-mark*.
 
     (cond ((and old
@@ -13777,10 +13808,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                     (caaar tl))
                                (the (integer 0 #.*array-maximum-length-bound*)
                                     (caaadr tl)))
-                            (> (the (integer 0 #.*array-maximum-length-bound*)
-                                    (cdaar tl))
-                               (the (integer 0 #.*array-maximum-length-bound*)
-                                    (cdaadr tl)))))
+                            (>= (the (integer 0 #.*array-maximum-length-bound*)
+                                     (cdaar tl))
+                                (the (integer 0 #.*array-maximum-length-bound*)
+                                     (cdaadr tl)))))
                    (setq in-order nil)
                    (return nil)))))
             (t (setq in-order nil)))

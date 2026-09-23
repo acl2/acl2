@@ -3274,15 +3274,28 @@
 ; symbol in place.
 
   (mv-let (parity fn var term1)
-          (destructure-compound-recognizer term)
-          (mv-let (recog-tuple ttree)
-                  (make-recognizer-tuple rune nume parity fn var term1 ens
-                                         wrld)
-                  (declare (ignore ttree))
-                  (putprop fn 'recognizer-alist
-                           (cons recog-tuple
-                                 (getpropc fn 'recognizer-alist nil wrld))
-                           wrld))))
+    (destructure-compound-recognizer term)
+    (mv-let
+      (ts ttree1)
+      (type-set (mcons-term* fn var) nil nil nil ens wrld nil nil nil)
+      (declare (ignore ttree1))
+      (cond ((not (ts-subsetp ts *ts-boolean*))
+             (er hard 'add-compound-recognizer-rule
+                 "A function can be treated as a :COMPOUND-RECOGNIZER only if ~
+                  it is Boolean valued.  ~x0 is not known to be Boolean.  ~
+                  That was known when this rule was originally processed, but ~
+                  it is no longer known.  Perhaps you can fix this problem by ~
+                  making appropriate :TYPE-PRESCRIPTION rules non-local."
+                 fn))
+            (t
+             (mv-let (recog-tuple ttree)
+               (make-recognizer-tuple rune nume parity fn var term1 ens
+                                      wrld)
+               (declare (ignore ttree))
+               (putprop fn 'recognizer-alist
+                        (cons recog-tuple
+                              (getpropc fn 'recognizer-alist nil wrld))
+                        wrld)))))))
 
 ;---------------------------------------------------------------------------
 ; Section:  :FORWARD-CHAINING Rules
@@ -3435,7 +3448,7 @@
                          (hide-lambdas non-rec-fns-inst-hyps)
                          (non-rec-def-rules-msg non-rec-fns-inst-hyps-alist)))
               (t state))
-             (chk-triggers match-free name hyps (cdr terms)
+             (chk-triggers name match-free hyps (cdr terms)
                            hyps-vars concls-vars ctx ens wrld state)))))))
 
 (defun destructure-forward-chaining-term (term wrld)
@@ -6610,7 +6623,7 @@
     (cond ((equal new-alist alist) alist)
           (t (close-value-sets new-alist)))))
 
-(defun add-refinement-rule (name nume term wrld)
+(defun add-refinement-rule (rune nume term wrld)
 
 ; Warning: If you change this, consider changing
 ; chk-acceptable-refinement-rule.  See comment below.
@@ -6629,35 +6642,46 @@
 
 ; We have already checked that the underlying defthm is not redundant as an
 ; event.  But we cannot add a new refinement rule, because the indicated
-; refinement already exists (perhaps by transitivity).  So an error is the only
-; reasonable option.
+; refinement already exists (perhaps by transitivity).  This is probably
+; happening during include-book, so an observation would likely be distracting.
+; In case it seems like a good idea after all to print an observation, we
+; include the code for that below as a comment.  If any such code is restored,
+; see the comment in (defxdoc refinement ...) in
+; books/system/doc/acl2-doc.lisp.
 
-         (let* ((active-book-name ; essentially (active-book-name wrld <any-state>)
-                 (car (global-val 'include-book-path wrld)))
-                (active-book-string
-                 (if (sysfile-p active-book-name)
-                     (book-name-to-filename active-book-name wrld nil)
-                   active-book-name)))
-           (er hard 'add-refinement-rule
-               "~x0 is already known to be a refinement of ~x1.  This was not ~
-                the case when the :REFINEMENT rule named E1-REFINES-E2 was ~
-                admitted ~#2~[during certification of the book ~x3~/during ~
-                certification of the book ~x4 (which surprisingly ~
-                cannot be converted to a full pathname, which is an implementation ~
-                error; please contact the ACL2 implementors)~/previously ~
-                (presumably when certifying a book now being included, which ~
-                however cannot be determined, which is an implementation ~
-                error; please contact the ACL2 implementors)~] but it is the ~
-                case now, during an attempt to include that book.  See :DOC ~
-                refinement."
-               equiv1
-               equiv2
-               (cond (active-book-string 0)
-                     (active-book-name 1)
-                     (t 2))
-               active-book-string
-               (and (sysfile-p active-book-name)
-                    (sysfile-filename active-book-name)))))
+;        (let* ((active-book-name ; essentially (active-book-name wrld <any-state>)
+;                (car (global-val 'include-book-path wrld)))
+;               (active-book-string
+;                (if (sysfile-p active-book-name)
+;                    (book-name-to-filename active-book-name wrld nil)
+;                  active-book-name)))
+;          (prog2$ (observation-cw
+;                   'add-refinement-rule
+;                   "The proposed refinement rule with name ~x0 is a no-op, ~
+;                    because ~x1 is already known to be a refinement of ~x2.  ~
+;                    This was not the case when the proposed rule was ~
+;                    admitted ~#3~[during certification of the ~
+;                    book~|~x4~|~/during certification of the ~
+;                    book~|~x5~|(which surprisingly cannot be converted to a ~
+;                    full pathname, which is an implementation error; please ~
+;                    contact the ACL2 implementors) ~/previously (presumably ~
+;                    when certifying a book now being included, which however ~
+;                    cannot be determined, which is an implementation error; ~
+;                    please contact the ACL2 implementors) ~]but it is the ~
+;                    case now, during an attempt to include that book.  See ~
+;                    :DOC refinement."
+;                   (base-symbol rune)
+;                   equiv1
+;                   equiv2
+;                   (cond (active-book-string 0)
+;                         (active-book-name 1)
+;                         (t 2))
+;                   active-book-string
+;                   (and (sysfile-p active-book-name)
+;                        (sysfile-filename active-book-name)))
+;                  wrld))
+
+         wrld)
         (t (putprop-coarsenings
             (close-value-sets
              (put-assoc-eq equiv1
@@ -6670,13 +6694,13 @@
               probably happened because at least one of the two equivalence ~
               relations, ~x1 and ~x2, was proved to be an equivalence ~
               relation only locally."
-             name equiv1 equiv2))))
+             (base-symbol rune) equiv1 equiv2))))
     (& (er hard 'add-refinement-rule
-           "This error is thought to be impossible.  Here we see name = ~x0, ~
+           "This error is thought to be impossible.  Here we see rune = ~x0, ~
             nume = ~x1, and term = ~x2, and term is not of the form ~
             previously checked by chk-acceptable-refinement-rule.  Please ~
             show the ACL2 implementors how to reproduce this error!"
-           name nume term))))
+           rune nume term))))
 
 ;---------------------------------------------------------------------------
 ; Section:  :CONGRUENCE Rules
@@ -10649,13 +10673,13 @@
           (cons `((:rune            ,rune :rewrite ,nume)
                   (:enabled         ,(and (enabled-runep rune ens wrld) t))
                   ,@(if (eq subclass 'meta)
-                        `((:hyp-fn  ,(or hyps :none) hyps)
+                        `((:hyp-fn  ,(or hyps :none) ,hyps)
                           (:equiv   ,equiv)
                           (:meta-fn ,lhs))
-                      `((:hyps  ,(untranslate-hyps hyps wrld) hyps)
+                      `((:hyps  ,(untranslate-hyps hyps wrld) ,hyps)
                         (:equiv ,equiv)
-                        (:lhs   ,(untranslate lhs nil wrld) lhs)
-                        (:rhs   ,(untranslate rhs nil wrld) rhs)))
+                        (:lhs   ,(untranslate lhs nil wrld) ,lhs)
+                        (:rhs   ,(untranslate rhs nil wrld) ,rhs)))
                   (:backchain-limit-lst ,backchain-limit-lst)
                   (:subclass            ,subclass)
                   ,@(cond ((eq subclass 'backchain)

@@ -1,5 +1,6 @@
 ; This book, modified only as noted below, was produced by Claude and passed
-; along by Eric Smith.
+; along by Eric Smith.  It illustrates a soundness bug fixed before ACL2
+; Version 8.8.
 
 (in-package "ACL2")
 
@@ -28,15 +29,16 @@
         (f (cons 1 x) (cdr y))
       (list x y)))))
 
-; Commented out by Matt Kaufmann:
-#|
+(must-fail ; The must-fail wrapper was added by Matt Kaufmann:
 (defthm bad
   (not (and (consp x) (consp y)))
   :rule-classes nil
   :hints (("Goal" :use (:termination-theorem f))))
+)
 
+(must-fail ; The must-fail wrapper was added by Matt Kaufmann:
 (defthm nil-proved
   nil
   :rule-classes nil
   :hints (("Goal" :use (:instance bad (x '(1)) (y '(2))))))
-|#
+)

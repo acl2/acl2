@@ -371,14 +371,18 @@
 ;;status is :ready, then PC and STACK-HEIGHT are integers.  Normally, MYIf
 ;;branches will be eventually be merged, leading to a term that is not a MYIF.
 ;;TODO: Consider adding support for regular old IF in addition to myif.
-(defund get-stack-height-and-pc-to-step-from-myif-nest-helper (nest base-stack dag-array)
+(defund get-stack-height-and-pc-to-step-from-myif-nest-helper (nest
+                                                               base-stack
+                                                               whole-nest ; for error printing
+                                                               dag-array)
   (declare (xargs :guard (and (or (myquotep nest)
                                   (and (natp nest)
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nest))))
                               (or (myquotep base-stack)
                                   (and (natp base-stack)
-                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 base-stack)))))
-
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 base-stack))))
+                              (and (natp whole-nest)
+                                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 whole-nest))))
                   :verify-guards nil ;done below
                   :measure (if (quotep nest)
                                0
@@ -414,10 +418,10 @@
                                                 (< else-branch nest))))))
                         (mv :error nil nil) ;; can't happen
                       (b* (((mv left-status left-sh left-pc)
-                            (get-stack-height-and-pc-to-step-from-myif-nest-helper then-branch base-stack dag-array))
+                            (get-stack-height-and-pc-to-step-from-myif-nest-helper then-branch base-stack whole-nest dag-array))
                            ((when (eq :error left-status)) (mv :error nil nil))
                            ((mv right-status right-sh right-pc)
-                            (get-stack-height-and-pc-to-step-from-myif-nest-helper else-branch base-stack dag-array))
+                            (get-stack-height-and-pc-to-step-from-myif-nest-helper else-branch base-stack whole-nest dag-array))
                            ((when (eq :error right-status)) (mv :error nil nil))
                            ;; There is a :step-present, so there is an unsimplified step around a make-state!
                            ;; Maybe we hit a step limit.
@@ -477,7 +481,8 @@
                                     ;; Avoid printing anything here, because steps can stack up around a call to jvm::obtain-and-throw-exception.
                                     (if (member-eq stripped-expr-fn '(jvm::obtain-and-throw-exception jvm::execute-new)) ; todo: what about jvm::error-state?
                                         (mv :finished nil nil)
-                                      (prog2$ (er hard? 'get-stack-height-and-pc-to-step-from-myif-nest-helper "Unexpected state term: ~x0, after stripping step calls.~%" stripped-expr)
+                                      (progn$ (print-dag-array-node-and-supporters 'dag-array dag-array whole-nest)
+                                              (er hard? 'get-stack-height-and-pc-to-step-from-myif-nest-helper "Unexpected state term: ~x0, after stripping step calls (see DAG just above).~%" stripped-expr)
                                               (mv :error nil nil)))))))))
                       (progn$ (print-dag-array-node-and-supporters 'dag-array dag-array nest)
                               ;;(er hard? 'get-stack-height-and-pc-to-step-from-myif-nest-helper "Unexpected state term: ~X01.~%" expr nil)
@@ -486,13 +491,13 @@
                               (mv :error nil nil))))))))))))))
 
 (defthm rationalp-of-mv-nth-1-of-get-stack-height-and-pc-to-step-from-myif-nest-helper
-  (implies (eq :ready (mv-nth 0 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack dag-array)))
-           (rationalp (mv-nth 1 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack dag-array))))
+  (implies (eq :ready (mv-nth 0 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack whole-nest dag-array)))
+           (rationalp (mv-nth 1 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack whole-nest dag-array))))
   :hints (("Goal" :in-theory (enable get-stack-height-and-pc-to-step-from-myif-nest-helper rationalp-when-natp))))
 
 (defthm rationalp-of-mv-nth-2-of-get-stack-height-and-pc-to-step-from-myif-nest-helper
-  (implies (eq :ready (mv-nth 0 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack dag-array)))
-           (rationalp (mv-nth 2 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack dag-array))))
+  (implies (eq :ready (mv-nth 0 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack whole-nest dag-array)))
+           (rationalp (mv-nth 2 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack whole-nest dag-array))))
   :hints (("Goal" :in-theory (enable get-stack-height-and-pc-to-step-from-myif-nest-helper
                                      get-stack-height-and-pc-from-call-stack
                                      get-stack-height-and-pc-from-thread-table
@@ -578,7 +583,7 @@
      ;; (cw "(~x0 branches in myif nest.)~%" (count-myif-branches nest dag-array))
      ;;(cw "Dag: ~x0.~%" (print-dag-array-node-and-supporters-list (list nest) 'dag-array dag-array))
      (mv-let (status stack-height pc)
-       (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack dag-array)
+       (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack nest dag-array)
        (if (eq :ready status)
            (acons 'sh2 (list 'quote stack-height)
                   (acons 'pc (list 'quote pc) nil))
@@ -601,7 +606,7 @@
   (if (consp nest)    ;check for quotep
       (er hard? 'no-state-to-step-p "Unexpected (constant) argument.")
     (mv-let (status stack-height pc)
-      (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack dag-array)
+      (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack nest dag-array)
       ;; (declare (ignore stack-height pc)) ;todo: don't bother to compute these?
       (declare (ignore pc)) ;todo: don't bother to compute?
       (if (and (eq :ready status)

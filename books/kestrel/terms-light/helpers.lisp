@@ -218,8 +218,7 @@
   :hints (("Goal" :in-theory (enable bad-guy-for-alists-equiv-on))))
 
 (defthm bad-guy-for-alists-equiv-on-not-nil
-  (implies (and (not (member-equal nil keys))
-                )
+  (implies (not (member-equal nil keys))
            (iff (bad-guy-for-alists-equiv-on keys a1 a2)
                 (consp keys)))
   :hints (("Goal" :in-theory (enable bad-guy-for-alists-equiv-on member-equal))))

@@ -73,8 +73,6 @@
 ;; reentered as if by execution of a monitorenter instruction
 ;; (monitorenter) in the current thread."
 
-;fixme: make this an alist instead of a map?
-
 ;fixme check that the heap object is in fact right?
 (defforall all-heapref-table-entryp (x)
   (and (consp x)
@@ -123,6 +121,19 @@
                 (get-class-object class-name heapref-table) ; the class is present
                 )
            (addressp (get-class-object class-name heapref-table)))
+  :hints (("Goal" :in-theory (enable get-class-object))))
+
+(defthm not-null-refp-of-get-classs-object
+  (implies (heapref-tablep heapref-table)
+           (not (null-refp (get-class-object class-name heapref-table))))
+  :hints (("Goal" :in-theory (enable get-class-object heapref-tablep))))
+
+;; todo: use something better than acons
+(defthm get-class-object-of-acons
+  (equal (get-class-object class-name (acons class-name2 ad heapref-table))
+         (if (equal class-name class-name2)
+             ad
+           (get-class-object class-name heapref-table)))
   :hints (("Goal" :in-theory (enable get-class-object))))
 
 ;;

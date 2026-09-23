@@ -185,7 +185,7 @@
            :in-theory (disable return-type-of-open-problem->last-step-limit))))
 
 (defthm open-problem->benefit-linear
-  (implies (and (open-problemp prob))
+  (implies (open-problemp prob)
            (<= (open-problem->benefit prob) 1000))
   :rule-classes :linear)
 
@@ -195,7 +195,7 @@
   :rule-classes :type-prescription)
 
 (defthm open-problem->chance-linear
-  (implies (and (open-problemp prob))
+  (implies (open-problemp prob)
            (<= (open-problem->chance prob) 1000))
   :rule-classes :linear)
 

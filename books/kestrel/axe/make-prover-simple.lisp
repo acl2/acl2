@@ -1010,7 +1010,8 @@
                                     axe-treep-of-cadr axe-treep-of-caddr axe-treep-of-cadddr
                                     state-p
                                     alistp
-                                    mv-nth)))
+                                    mv-nth
+                                    state-p-implies-and-forward-to-state-p1)))
 
          (local (in-theory (enable natp-of-+-of-1-alt
                                    natp-of-car-when-bounded-darg-listp-gen

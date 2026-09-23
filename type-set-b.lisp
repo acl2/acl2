@@ -1396,7 +1396,7 @@
      (case-match y
        (('and . b)
         `(and ,@a ,@b))
-       (& `(and ,@a y))))
+       (& `(and ,@a ,y))))
     (&
      (case-match y
        (('and . a)
