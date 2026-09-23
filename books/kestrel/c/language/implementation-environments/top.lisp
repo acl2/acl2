@@ -357,8 +357,7 @@
                                   ienv->char-size
                                   ienv->short-bit-size)
                                  (ienv-requirements))
-                 :use (:instance ienv-requirements (x ienv))
-                )))
+                 :use (:instance ienv-requirements (x ienv)))))
   :short "Number of bytes of unsigned and signed @('short') objects."
   (/ (ienv->short-bit-size ienv)
      (ienv->char-size ienv))
@@ -404,8 +403,7 @@
                                   ienv->char-size
                                   ienv->int-bit-size)
                                  (ienv-requirements))
-                 :use (:instance ienv-requirements (x ienv))
-                )))
+                 :use (:instance ienv-requirements (x ienv)))))
   :short "Number of bytes of unsigned and signed @('int') objects."
   (/ (ienv->int-bit-size ienv)
      (ienv->char-size ienv))
@@ -451,8 +449,7 @@
                                   ienv->char-size
                                   ienv->long-bit-size)
                                  (ienv-requirements))
-                 :use (:instance ienv-requirements (x ienv))
-                )))
+                 :use (:instance ienv-requirements (x ienv)))))
   :short "Number of bytes of unsigned and signed @('long') objects."
   (/ (ienv->long-bit-size ienv)
      (ienv->char-size ienv))
@@ -498,8 +495,7 @@
                                   ienv->char-size
                                   ienv->llong-bit-size)
                                  (ienv-requirements))
-                 :use (:instance ienv-requirements (x ienv))
-                )))
+                 :use (:instance ienv-requirements (x ienv)))))
   :short "Number of bytes of unsigned and signed @('long long') objects."
   (/ (ienv->llong-bit-size ienv)
      (ienv->char-size ienv))
