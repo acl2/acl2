@@ -4,6 +4,19 @@ describes how to use the script tests/doit to run tests, as this was
 originally not included in regression testing (though it was added on
 3/4/2026).
 
+NOTE: It is probably normal for tests/inputs/PKGS.lsp and
+tests/inputs/PKGS.sml to be updated when *acl2-exports* changes.  The
+developer who commits an update to *acl2-exports* should be prepared
+to commit updated tests/inputs/PKGS.lsp and tests/inputs/PKGS.sml at
+the same time.  That should happen naturally if a clean regression is
+run (either regression-fresh or a variant of that, such as cleaning
+the books bofore "make regression-everything"), since cleaning should
+remove tests/success.txt.  Note that files lisp/workxxx* will be left
+over after a run and not cleaned until the next build of
+tests/success.txt -- that's OK, since lisp/Makefile will remove those
+lisp/workxxx* before certifying books in that directory -- but this
+might be cleaned up some day.
+
 .....
 
 This directory contains replacements for portions of the
