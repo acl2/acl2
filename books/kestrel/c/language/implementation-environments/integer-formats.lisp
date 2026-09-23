@@ -61,6 +61,11 @@
      The possible unsigned values must cover at least
      the range from 0 to 65535 (both inclusive) [C17:5.2.4.2.1/1].")
    (xdoc::p
+    "For C23, the signed range must also include -32768 [C23:5.2.5.3.2].
+     This follows from the lower bound on the signed maximum
+     and the C23 minimum/maximum relation documented with
+     @(tsee integer-format->signed-min), as proved below.")
+   (xdoc::p
     "The possible signed values must at least include
      those of @('signed char'),
      and the possible unsigned values must at least include
@@ -125,6 +130,11 @@
      the range from -32767 to +32767 (both inclusive) [C17:5.2.4.2.1/1].
      The possible unsigned values must cover at least
      the range from 0 to 65535 (both inclusive) [C17:5.2.4.2.1/1].")
+   (xdoc::p
+    "For C23, the signed range must also include -32768 [C23:5.2.5.3.2].
+     This follows from the lower bound on the signed maximum
+     and the C23 minimum/maximum relation documented with
+     @(tsee integer-format->signed-min), as proved below.")
    (xdoc::p
     "The possible signed values must at least include
      those of @('signed short'),
@@ -191,6 +201,11 @@
      The possible unsigned values must cover at least
      the range from 0 to 4294967295 (both inclusive) [C17:5.2.4.2.1/1].")
    (xdoc::p
+    "For C23, the signed range must also include -2147483648 [C23:5.2.5.3.2].
+     This follows from the lower bound on the signed maximum
+     and the C23 minimum/maximum relation documented with
+     @(tsee integer-format->signed-min), as proved below.")
+   (xdoc::p
     "The possible signed values must at least include
      those of @('signed int'),
      and the possible unsigned values must at least include
@@ -256,6 +271,12 @@
      The possible unsigned values must cover at least
      the range from 0 to 18446744073709551615 (both inclusive)
      [C17:5.2.4.2.1/1].")
+   (xdoc::p
+    "For C23, the signed range must also include -9223372036854775808
+     [C23:5.2.5.3.2].
+     This follows from the lower bound on the signed maximum
+     and the C23 minimum/maximum relation documented with
+     @(tsee integer-format->signed-min), as proved below.")
    (xdoc::p
     "The possible signed values must at least include
      those of @('signed long'),
@@ -462,14 +483,16 @@
   (xdoc::topstring
    (xdoc::p
     "This is the simplest and smallest format for @('short') integers,
-     with two's complement being the most common signed format.
+     with two's complement being the most common signed format in C17
+     and the only one allowed in C23.
      There cannot be any padding bits,
      otherwise the value bits would not suffice to cover
      the required ranges of values.
-     With no padding bits, there is only one possible trap representation,
+     In C17, with no padding bits,
+     there is only one possible trap representation,
      namely the one with sign bit 1 and all value bits 0,
-     but the simplest and most common choice is that it is a valid value instead
-     (the smallest signed value representable in the type)."))
+     but this format uses it for the smallest signed value.
+     This choice is required in C23."))
   (integer-format-inc-sign-tcnpnt 16)
 
   ///
@@ -517,14 +540,16 @@
   (xdoc::topstring
    (xdoc::p
     "This is the simplest and smallest format for @('int') integers,
-     with two's complement being the most common signed format.
+     with two's complement being the most common signed format in C17
+     and the only one allowed in C23.
      There cannot be any padding bits,
      otherwise the value bits would not suffice to cover
      the required ranges of values.
-     With no padding bits, there is only one possible trap representation,
+     In C17, with no padding bits,
+     there is only one possible trap representation,
      namely the one with sign bit 1 and all value bits 0,
-     but the simplest and most common choice is that it is a valid value instead
-     (the smallest signed value representable in the type)."))
+     but this format uses it for the smallest signed value.
+     This choice is required in C23."))
   (integer-format-inc-sign-tcnpnt 16)
 
   ///
@@ -574,14 +599,16 @@
   (xdoc::topstring
    (xdoc::p
     "This is the simplest and smallest format for @('long') integers,
-     with two's complement being the most common signed format.
+     with two's complement being the most common signed format in C17
+     and the only one allowed in C23.
      There cannot be any padding bits,
      otherwise the value bits would not suffice to cover
      the required ranges of values.
-     With no padding bits, there is only one possible trap representation,
+     In C17, with no padding bits,
+     there is only one possible trap representation,
      namely the one with sign bit 1 and all value bits 0,
-     but the simplest and most common choice is that it is a valid value instead
-     (the smallest signed value representable in the type)."))
+     but this format uses it for the smallest signed value.
+     This choice is required in C23."))
   (integer-format-inc-sign-tcnpnt 32)
 
   ///
@@ -631,14 +658,16 @@
   (xdoc::topstring
    (xdoc::p
     "This is the simplest and smallest format for @('long long') integers,
-     with two's complement being the most common signed format.
+     with two's complement being the most common signed format in C17
+     and the only one allowed in C23.
      There cannot be any padding bits,
      otherwise the value bits would not suffice to cover
      the required ranges of values.
-     With no padding bits, there is only one possible trap representation,
+     In C17, with no padding bits,
+     there is only one possible trap representation,
      namely the one with sign bit 1 and all value bits 0,
-     but the simplest and most common choice is that it is a valid value instead
-     (the smallest signed value representable in the type)."))
+     but this format uses it for the smallest signed value.
+     This choice is required in C23."))
   (integer-format-inc-sign-tcnpnt 64)
 
   ///

@@ -40,7 +40,12 @@
    (xdoc::p
     "[C17:6.2.6.2/2] lists three possible ways in which a sign bit equal to 1
      modifies the value of the integer value whose sign bit is 0.
-     We call these `signed formats', even though [C17] does not use this term."))
+     We call these `signed formats', even though [C17] does not use this term.")
+   (xdoc::p
+    "This fixtype includes all three choices to support C17.
+     The choices allowed by a particular standard
+     are checked by @(tsee signed-format-wfp),
+     which restricts C23 to two's complement."))
   (:sign-magnitude ())
   (:ones-complement ())
   (:twos-complement ())

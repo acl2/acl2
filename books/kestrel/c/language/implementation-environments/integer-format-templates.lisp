@@ -473,7 +473,7 @@
      The list of bit roles must be well-formed.")
    (xdoc::p
     "The format description also identifies one of the three signed formats.
-     It is not clear from [C17] whether all the signed integer type,
+     It is not clear from [C17] whether all the signed integer types,
      within an implementation, use that same signed format,
      but our model allows them to differ.")
    (xdoc::p
@@ -488,6 +488,10 @@
      and negative zero for the other signed formats.
      This component corresponds to the @('trap') component
      of @(tsee schar-format).")
+   (xdoc::p
+    "These representation choices support C17.
+     For C23, @(tsee sinteger-format-wfp) requires two's complement
+     and a false @('special-trap') flag.")
    (xdoc::p
     "The @('other-traps') component is a placeholder for
      trap representations caused by combinations of padding bits
@@ -633,6 +637,11 @@
      The @('special-trap') component of @(tsee sinteger-format)
      determines which case applies.")
    (xdoc::p
+    "When @(tsee sinteger-format-wfp) holds for C23,
+     the minimum is always @('- 2^M'),
+     i.e. one less than the negation of @(tsee sinteger-format->max).
+     This relation is proved below.")
+   (xdoc::p
     "Since @('M <= T - 1'), where @('T') is the total number of bits,
      and where the 1 accounts for the sign bit,
      the minimum value cannot be below @('- 2^(T-1)')."))
@@ -746,7 +755,9 @@
      the number of unsigned value bits in C17 [C17:6.2.6.2/2].
      This is already ensured by the @(tsee integer-format) fixtype.
      C23 requires exactly one more unsigned value bit,
-     so that the signed and unsigned widths are equal [C23:6.2.6.2]."))
+     so that the signed and unsigned widths are equal [C23:6.2.6.2].
+     Here width counts the value bits and, for a signed type, the sign bit;
+     it excludes padding bits."))
   (b* ((unsigned (integer-format->unsigned format))
        (signed (integer-format->signed format)))
     (and (sinteger-format-wfp signed std)
@@ -804,6 +815,13 @@
   :returns (max posp :rule-classes (:rewrite :type-prescription))
   :short "The ACL2 integer value of
           the maximum unsigned value representable in an integer format."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When @(tsee integer-format-wfp) holds for C23,
+     this is one plus twice @(tsee integer-format->signed-max).
+     This follows from the relation between the signed and unsigned
+     value-bit counts, and is proved below."))
   (uinteger-format->max (integer-format->unsigned format))
 
   ///
@@ -850,6 +868,13 @@
   :returns (min integerp)
   :short "The ACL2 integer value of
           the minimum signed value representable in an integer format."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee sinteger-format->min) for the representation-dependent cases.
+     When @(tsee integer-format-wfp) holds for C23,
+     this is one less than the negation of @(tsee integer-format->signed-max).
+     This relation is proved below."))
   (sinteger-format->min (integer-format->signed format))
 
   ///

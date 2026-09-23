@@ -73,7 +73,11 @@
    (xdoc::p
     "We formalize the format of @('signed char') as consisting of
      a specification of signed format
-     and a boolean flag saying whether the aforementioned pattern is a trap."))
+     and a boolean flag saying whether the aforementioned pattern is a trap.")
+   (xdoc::p
+    "These choices support the alternatives allowed by C17.
+     For C23, @(tsee schar-format-wfp) requires two's complement
+     and a false trap flag."))
   ((signed signed-format)
    (trap bool))
   :pred schar-formatp)
@@ -162,6 +166,12 @@
      or it is two's complement
      but the pattern with sign bit 1 and all value bits 0
      is a trap representation).")
+   (xdoc::p
+    "When @(tsee schar-format-wfp) holds for C23,
+     the minimum is always @($- 2^{\\mathtt{CHAR\\_BIT}-1}$),
+     i.e. @('-SCHAR_MAX - 1').
+     Since @('CHAR_BIT') is at least 8, this minimum is at most -128.
+     These consequences are proved below.")
    (xdoc::p
     "Like @(tsee schar-format->max),
      this function also depends on the @('unsigned char') format.

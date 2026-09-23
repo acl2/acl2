@@ -49,6 +49,9 @@
      Although it does not seem reasonable to use more than one byte,
      nothing seems to prevent @('_Bool') object to take two or more bytes.")
    (xdoc::p
+    "C23 explicitly requires @('bool') to have one value bit [C23:6.2.6.2].
+     This is already built into our format.")
+   (xdoc::p
     "Thus, to capture the possible formats of @('_Bool') objects,
      we need the number of bytes (normally 1),
      and the index of the value bit,
