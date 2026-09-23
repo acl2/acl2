@@ -23,7 +23,9 @@
 (local (include-book "kestrel/utilities/read-acl2-oracle" :dir :system))
 (local (include-book "std/system/all-vars" :dir :system))
 (local (include-book "std/system/w" :dir :system))
+(local (include-book "std/typed-alists/symbol-alistp" :dir :system))
 (local (include-book "std/typed-lists/pseudo-term-listp" :dir :system))
+(local (include-book "system/sublis-var" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -200,7 +202,10 @@
 
 (define guard-theorem-rewrite-substitution ((vars symbol-listp)
                                             (tag-fn symbolp))
-  :returns (subst alistp)
+  :guard (not (eq tag-fn 'quote))
+  :returns (subst (and (symbol-alistp subst)
+                       (pseudo-term-listp (strip-cdrs subst)))
+                  :hyp :guard)
   :short "Map each variable to a call of the tagging function."
   :long
   (xdoc::topstring-p
@@ -219,6 +224,8 @@
 
 (define def-guard-theorem-rewrite-fn (name fn simplify state)
   :returns (mv erp (event t) state)
+  :guard-hints (("Goal" :in-theory (enable sublis-var
+                                           alistp-when-symbol-alistp)))
   :short "Generate the theorem event."
   :long
   (xdoc::topstring
@@ -275,14 +282,12 @@
        ((mv aux-name &)
         (fresh-logical-name-with-$s-suffix
          (add-suffix name "$AUX") nil names-to-avoid wrld))
-       (subst (guard-theorem-rewrite-substitution (all-vars term) tag-fn))
-       ((mv erp tagged-formula state)
-        (in-logic-mode (sublis-var subst formula) state '(subst formula)))
-       ((when erp) (mv erp nil state))
-       ((unless (pseudo-termp tagged-formula))
+       ((when (eq tag-fn 'quote))
         (er-soft-logic 'def-guard-theorem-rewrite
-                       "Internal error: malformed tagged formula ~x0."
-                       tagged-formula))
+                       "Internal error: invalid tagging function name ~x0."
+                       tag-fn))
+       (subst (guard-theorem-rewrite-substitution (all-vars term) tag-fn))
+       (tagged-formula (sublis-var subst formula))
        (bindings (pairlis$ (strip-cars subst)
                            (pairlis$ (strip-cdrs subst) nil))))
     (value
