@@ -248,6 +248,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "ACL2-IN-HOL Link Support")
+
+   (xdoc::p "Tweaked makefile support in @('[books]/projects/acl2-in-hol/') to
+   do a better job of cleaning, and tweaked @('README-acl2') to explain
+   updating of @('tests/inputs/PKGS.lsp') and @('tests/inputs/PKGS.sml').")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Alists Light")
 
    (xdoc::p "A new book on remove1-assoc-equal was added.  See

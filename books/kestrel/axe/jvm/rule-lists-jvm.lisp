@@ -743,7 +743,10 @@
             jvm::field-is-staticp
             jvm::resolve-class-base-1 jvm::resolve-class-base-2 jvm::resolve-class-unroll
             jvm::resolve-non-array-class
-            jvm::get-class-object
+            ;; jvm::get-class-object
+            jvm::addressp-of-get-classs-object
+            jvm::not-null-refp-of-get-classs-object
+            jvm::get-class-object-of-acons
             equal-of-minus-1-and-null-ref
             jvm::is-array-typep
             ;;very new:
