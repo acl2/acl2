@@ -110170,6 +110170,10 @@ it."
  respect to their @(tsee type) @(see declaration)s.  See
  @('system/tests/exploit-lambda-guard-typedecl.lisp').</p>
 
+ <p>Fixed a soundness bug in non-linear arithmetic, specifically in function
+  @('inverse-polys').  See @('system/tests/linear-inverse-polys.lisp').
+  Thanks to Eric Smith for supplying the fix.</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2
