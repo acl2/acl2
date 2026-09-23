@@ -61,7 +61,7 @@
      The possible unsigned values must cover at least
      the range from 0 to 65535 (both inclusive) [C17:5.2.4.2.1/1].")
    (xdoc::p
-    "For C23, the signed range must also include -32768 [C23:5.2.5.3.2].
+    "For C23, the signed range must also include -32768 [C23:5.3.5.3.2].
      This follows from the lower bound on the signed maximum
      and the C23 minimum/maximum relation documented with
      @(tsee integer-format->signed-min), as proved below.")
@@ -131,7 +131,7 @@
      The possible unsigned values must cover at least
      the range from 0 to 65535 (both inclusive) [C17:5.2.4.2.1/1].")
    (xdoc::p
-    "For C23, the signed range must also include -32768 [C23:5.2.5.3.2].
+    "For C23, the signed range must also include -32768 [C23:5.3.5.3.2].
      This follows from the lower bound on the signed maximum
      and the C23 minimum/maximum relation documented with
      @(tsee integer-format->signed-min), as proved below.")
@@ -201,7 +201,7 @@
      The possible unsigned values must cover at least
      the range from 0 to 4294967295 (both inclusive) [C17:5.2.4.2.1/1].")
    (xdoc::p
-    "For C23, the signed range must also include -2147483648 [C23:5.2.5.3.2].
+    "For C23, the signed range must also include -2147483648 [C23:5.3.5.3.2].
      This follows from the lower bound on the signed maximum
      and the C23 minimum/maximum relation documented with
      @(tsee integer-format->signed-min), as proved below.")
@@ -273,7 +273,7 @@
      [C17:5.2.4.2.1/1].")
    (xdoc::p
     "For C23, the signed range must also include -9223372036854775808
-     [C23:5.2.5.3.2].
+     [C23:5.3.5.3.2].
      This follows from the lower bound on the signed maximum
      and the C23 minimum/maximum relation documented with
      @(tsee integer-format->signed-min), as proved below.")
