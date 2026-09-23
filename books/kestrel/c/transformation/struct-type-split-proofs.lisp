@@ -822,7 +822,34 @@
                      c::exec-ident
                      c::compustate-has-var-with-type-p)
             :use (objdesign-of-var-when-compustate-equivp
-                  read-object-when-compustate-equivp)))))
+                  read-object-when-compustate-equivp))
+          (defruled expr-const-congruence-under-compustate-equivp
+            (b* ((expr (c::expr-const const))
+                 ((mv old-eval old-compst1)
+                  (c::exec-expr expr old-compst old-fenv limit))
+                 ((mv new-eval new-compst1)
+                  (c::exec-expr expr new-compst new-fenv limit))
+                 (old-val (c::expr-value->value old-eval))
+                 (new-val (c::expr-value->value new-eval))
+                 (iconst (c::const-int->get const))
+                 (type (c::check-iconst iconst)))
+              (implies (and (equal (c::const-kind const) :int)
+                            (c::typep type)
+                            (not (c::errorp old-eval))
+                            (compustate-equivp old-compst new-compst))
+                       (and (not (c::errorp new-eval))
+                            (iff old-eval new-eval)
+                            (equal old-val new-val)
+                            (compustate-equivp old-compst1 new-compst1)
+                            old-eval
+                            (equal (c::type-of-value old-val) type))))
+            :enable (c::exec-expr
+                     c::exec-const
+                     c::eval-const
+                     c::eval-iconst
+                     c::check-iconst
+                     c::type-of-value)
+            :disable ((:e tau-system))))))
     (retok events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
