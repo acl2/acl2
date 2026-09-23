@@ -110176,6 +110176,14 @@ it."
  @('system/tests/stobj-table-keys.lisp').  Thanks to Grant Jurgensen for
  supplying the bug fix (in PR #2049).</p>
 
+ <p>Fixed a soundness bug that allowed a @(see congruence) rule whose
+ hypothesis has the form @('(equiv x x)'), with the same variable as both
+ arguments.  Such a rule is vacuous, yet it was accepted as a @(see
+ patterned-congruence) rule with the same effect as a genuine congruence rule.
+ For an example, see @(see community-book)
+ @('system/tests/congruence-same-var.lisp').  Thanks to Grant Jurgensen for
+ supplying the bug fix.</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2
