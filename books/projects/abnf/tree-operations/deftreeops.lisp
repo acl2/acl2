@@ -479,7 +479,13 @@
   :short "Process the @(':prefix') input."
   (b* (((reterr) nil)
        ((unless (acl2::symbolp prefix))
-        (reterr (msg "The :PREFIX input ~x0 must be a symbol." prefix))))
+        (reterr (msg "The :PREFIX input ~x0 must be a symbol." prefix)))
+       ((when (or (equal (symbol-package-name prefix) "COMMON-LISP")
+                  (keywordp prefix)))
+        (reterr (msg "The :PREFIX input ~x0 must be a symbol ~
+                      in a package different from ~
+                      the Common Lisp package and the keyword package."
+                     prefix))))
     (retok prefix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
