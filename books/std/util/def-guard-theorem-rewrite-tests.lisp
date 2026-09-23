@@ -194,7 +194,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The guard theorem of a mutually recursive function covers its whole clique.
+; The guard theorem of a mutually recursive function covers its whole clique,
+; including formal variables that only occur in another member of the clique.
 
 (defun grw-listp (xs)
   (declare (xargs :guard t))
@@ -204,9 +205,9 @@
  (defun grw-even (xs)
    (declare (xargs :guard (grw-listp xs)))
    (if (endp xs) t (grw-odd (cdr xs))))
- (defun grw-odd (xs)
-   (declare (xargs :guard (grw-listp xs)))
-   (if (endp xs) nil (grw-even (cdr xs)))))
+ (defun grw-odd (ys)
+   (declare (xargs :guard (grw-listp ys)))
+   (if (endp ys) nil (grw-even (cdr ys)))))
 
 (def-guard-theorem-rewrite grw-clique-rules grw-even)
 
@@ -307,6 +308,78 @@
              (natp x))
     :rule-classes nil
     :hints (("Goal" :in-theory '(grw-common-branches-rules)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Repeated guard predicates make failed subsumption matches expensive.
+; Distinct variable tags prevent the expensive variable permutations in :BY.
+
+(defun grw-many-obligations (a b c d e f g h i j)
+  (declare (xargs :guard (and (my-natp a)
+                              (my-natp b)
+                              (my-natp c)
+                              (my-natp d)
+                              (my-natp e)
+                              (my-natp f)
+                              (my-natp g)
+                              (my-natp h)
+                              (my-natp i)
+                              (my-natp j)))
+           (ignore a b c d e f g h i j))
+  (list (grw-nat-id 1)
+        (grw-nat-id 2)
+        (grw-nat-id 3)
+        (grw-nat-id 4)
+        (grw-nat-id 5)
+        (grw-nat-id 6)
+        (grw-nat-id 7)
+        (grw-nat-id 8)
+        (grw-nat-id 9)
+        (grw-nat-id 10)))
+
+(def-guard-theorem-rewrite grw-many-obligations-rules
+  grw-many-obligations :simplify nil)
+
+; The tagging function and auxiliary theorem must remain local.
+
+(assert-event
+ (and (not (logical-namep 'grw-many-obligations-rules$tag (w state)))
+      (not (logical-namep 'grw-many-obligations-rules$aux (w state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Fresh helper names must avoid existing functions and theorems.
+
+(defun grw-collision-rules$tag (tag x)
+  (declare (xargs :guard t))
+  (cons tag x))
+
+(defthm grw-collision-rules$aux
+  t
+  :rule-classes nil)
+
+(def-guard-theorem-rewrite grw-collision-rules grw-flat)
+
+(defthm grw-collision-rewrite-only
+  (implies (grw-inputp x)
+           (and (natp (car x))
+                (natp (cdr x))))
+  :rule-classes nil
+  :hints (("Goal" :in-theory '(grw-collision-rules))))
+
+(assert-event
+ (and (not (logical-namep 'grw-collision-rules$tag$ (w state)))
+      (not (logical-namep 'grw-collision-rules$aux$ (w state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; An unsimplified guard theorem can have obligations but no free variables.
+
+(defun grw-constant ()
+  (declare (xargs :guard t))
+  (grw-nat-id 1))
+
+(def-guard-theorem-rewrite grw-constant-rules grw-constant :simplify nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
