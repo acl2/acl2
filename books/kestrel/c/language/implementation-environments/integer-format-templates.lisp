@@ -439,7 +439,14 @@
      which should be thought of as the juxtaposition of
      the bytes that form the unsigned integer object,
      in order of increasing address.
-     The roles specify the significance of the value bits,
+     Within each byte, we order the bits from least to most significant,
+     according to the pure binary representation of @('unsigned char').
+     All indices start at 0.
+     Thus, for @('i = q * CHAR_BIT + r'), where @('0 <= r < CHAR_BIT'),
+     list index @('i') denotes bit @('r') of byte @('q').")
+   (xdoc::p
+    "The roles specify the significance of the value bits
+     in the unsigned integer value,
      allowing different choices of byte order.
      The length of the list of bit roles
      must be a multiple of @('CHAR_BIT'),
@@ -472,9 +479,8 @@
      See [C17:6.2.6.2/2].")
    (xdoc::p
     "The format definition includes a list of bit roles,
-     which should be thought of as the juxtaposition of
-     the bytes that form the signed integer object,
-     in order of increasing address.
+     with the same ordering and indexing convention
+     as in @(tsee uinteger-format).
      The roles specify the significance of the value bits,
      allowing different choices of byte order.
      The length of the list of bit roles

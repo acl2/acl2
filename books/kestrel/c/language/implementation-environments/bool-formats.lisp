@@ -55,8 +55,9 @@
     "Thus, to capture the possible formats of @('_Bool') objects,
      we need the number of bytes (normally 1),
      and the index of the value bit,
-     where the significance of the index is the same as
-     in the lists of bit roles in @(tsee uinteger-format).
+     using the indexing convention described in @(tsee uinteger-format).
+     In particular, index 0 denotes the least significant bit
+     of the byte at the lowest address.
      We also include information (for now unconstrained)
      about possible trap representations [C17:6.2.6.1/5]."))
   ((byte-size pos)
