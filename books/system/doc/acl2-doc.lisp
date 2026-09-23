@@ -110171,7 +110171,9 @@ it."
  @('system/tests/exploit-lambda-guard-typedecl.lisp').</p>
 
  <p>Fixed a soundness bug where the @('keys') function for a @(see stobj-table)
- field returned internal stand-in symbols instead of the real stobj names.</p>
+ field returned internal stand-in symbols instead of the real stobj names.  For
+ an example of the issue, see @(see community-book)
+ @('system/tests/stobj-table-keys.lisp').</p>
 
  <h3>Other Bug Fixes</h3>
 
