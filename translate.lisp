@@ -23751,8 +23751,8 @@
 
                 (trans-er+? cform x
                             ctx
-                            "In a LAMBDA object or a lambda$ term with ~
-                             :SPLIT-TYPES T, every TYPE expression derived ~
+                            "In a lambda$ term with :SPLIT-TYPES T or a ~
+                             LAMBDA object, every TYPE expression derived ~
                              from the TYPE specifiers must be an explicit ~
                              conjunct in the :GUARD, and the guard ~x0 is ~
                              missing ~&1.  ~@2"

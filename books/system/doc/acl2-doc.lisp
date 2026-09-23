@@ -74014,15 +74014,10 @@ it."
  literally be @('t'); see below).</p>
 
  <p>Generally @('fn') must evaluate to a defined function symbol.  However,
- with one exception for @(':invoke') noted below, this value can be the name of
- a macro that is associated with such a function symbol; see @(see
- macro-aliases-table).  That associated function symbol is the one called
- ``memoized'' in the discussion below, but we make no more mention of this
- subtlety other than to explain the exception for @(':invoke') noted above:
- when the value of keyword parameter @(':invoke') is non-@('nil'), then @('fn')
- must be a function symbol, not a macro-alias for a function symbol.  To see
- why that exception is important, see @(see community-book)
- @('system/tests/memoize-invoke-macro-alias.lisp').</p>
+ this value can be the name of a macro that is associated with such a function
+ symbol; see @(see macro-aliases-table).  That associated function symbol is
+ the one called ``memoized'' in the discussion below, but we make no more
+ mention of this subtlety.</p>
 
  <p>In the most common case, @('memoize') takes a single argument, which
  evaluates to a function symbol.  We call this function symbol the ``memoized
@@ -74139,7 +74134,15 @@ it."
  @('nil') for @(':condition') and @(':stats') can avoid memoization overhead
  when one simply wishes to call @('g') in place of @('fn'); you may override
  those defaults if you actually want to save computed values and use
- @('(memsum)') to see statistics.</p>
+ @('(memsum)') to see statistics.  WARNING: As noted above, the required
+ theorems need to be in the current ACL2 @(see world).  Hence, the following
+ event fails to be admitted.</p>
+
+ @({
+ (encapsulate ()
+   (local (defthm f-is-g (equal (f x) (g x)) :rule-classes nil))
+   (memoize 'f :invoke 'g))
+ })
 
  <p>Keyword parameter @(':recursive') is @('t') by default, which means that
  recursive calls of @('fn') will be memoized just as ``top-level'' calls of
@@ -109894,8 +109897,9 @@ it."
 ; the :GUARD.
 
 ; Tweaked an error message when memoize with option :invoke requires a theorem,
-; but that theorem is missing.  So that for example the message now mentions
-; the need for a theorem F-IS-G, rather than |F-is-G|.
+; but that theorem is missing.  So for example, the message may now mention the
+; need for a theorem F-IS-G, rather than |F-is-G|.  The error message also
+; notes that the supporting theorem must be admitted non-locally.
 
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
@@ -110148,9 +110152,9 @@ it."
 
  <p>Fixed a soundness bug based on the interaction between the @(see
  macro-aliases-table) and @(tsee memoize) with the @(':invoke') argument.  The
- fix is to require, when option @(':invoke') is supplied and not @('nil'), that
- the first argument of @('memoize') be a function symbol, not a macro-alias for
- a function symbols.  For an example of the issue, see @(see community-book)
+ fix is to check for the required theorems even during the second pass of
+ @(tsee encapsulate) and the include-book pass of @(tsee certify-book).  For an
+ example of the issue, see @(see community-book)
  @('system/tests/memoize-invoke-macro-alias.lisp').</p>
 
  <p>Fixed a soundness bug due to allowing @(tsee double-float) type @(see
