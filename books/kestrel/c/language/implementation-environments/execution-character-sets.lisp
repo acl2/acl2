@@ -544,6 +544,8 @@
 
   ///
 
+  (in-theory (disable (:e exec-charset-basic)))
+
   (defrule exec-charset-wfp-of-exec-charset-basic
     (exec-charset-wfp (exec-charset-basic std) std
                       uchar-format schar-format char-format)

@@ -278,6 +278,8 @@
 
   ///
 
+  (in-theory (disable (:e source-charset-basic+lf)))
+
   (defrule source-charset-wfp-of-source-charset-basic+lf
     (source-charset-wfp (source-charset-basic+lf std) std)
     :enable (source-charset-wfp

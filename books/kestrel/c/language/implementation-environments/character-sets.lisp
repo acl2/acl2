@@ -355,6 +355,8 @@
 
   ///
 
+  (in-theory (disable (:e charset-basic+lf)))
+
   (defrulel ascii-basic-source-chars-subset-source-chars-lemma
     (set::subset (ascii-basic-source-chars std)
                  (source-chars (source-charset-basic+lf std)))
