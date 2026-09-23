@@ -1305,7 +1305,6 @@
 ;; todo: check more?
 ;; TODO: Consider printing a warning if a BV op with a size argument of 0 arises.
 ;; TODO: Compare this to pure-fn-call-exprp (currently, this takes the dag-array for checking bv-array operations -- why?)
-;; todo: add bvequal, once we can translate it
 (defund can-always-translate-expr-to-stp (fn args dag-array-name dag-array dag-len known-nodenum-type-alist print)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (symbolp fn)
