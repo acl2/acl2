@@ -2689,8 +2689,7 @@
     :flag sublis-var-untranslated-term-list)
   :hints (("goal" :in-theory (enable untranslated-lambda-exprp
                                      legal-case-match-casesp)
-           :expand ((sublis-var-untranslated-term term alist)
-                    (SUBLIS-VAR-CASE-MATCH-CASES ALIST CASES)))))
+           :expand ((sublis-var-case-match-cases alist cases)))))
 
 (local
  (defthm last-when-equal-of-len
