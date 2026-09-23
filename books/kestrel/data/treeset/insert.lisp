@@ -273,8 +273,9 @@
            pick-a-point-polar))
 
 (defrule subset-of-arg1-and-insert
-  (subset set (insert x set))
-  :enable pick-a-point)
+  (implies (subset y set)
+           (subset y (insert x set)))
+  :enable pick-a-point-polar)
 
 (defrule monotonicity-of-insert
   (implies (subset x0 x1)

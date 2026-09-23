@@ -276,8 +276,9 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule subset-of-delete
-  (subset (delete x set) set)
-  :enable pick-a-point)
+  (implies (subset set y)
+           (subset (delete x set) y))
+  :enable pick-a-point-polar)
 
 (defrule subset-of-arg1-and-delete
   (equal (subset set (delete x set))
