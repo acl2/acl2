@@ -93,7 +93,15 @@
     :hints (("Goal"
              :use (:instance integer-format->unsigned-max-upper-bound
                              (format short-format))
-             :in-theory (disable integer-format->unsigned-max-upper-bound)))))
+             :in-theory (disable integer-format->unsigned-max-upper-bound))))
+
+  (defruled integer-format-short-wf-signed-min-upper-bound-when-c23
+    (implies (integer-format-short-wfp
+              short-format uchar-format schar-format (standard-c23))
+             (<= (integer-format->signed-min short-format)
+                 -32768))
+    :rule-classes :linear
+    :enable integer-format->signed-min-as-signed-max-when-c23))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -149,7 +157,15 @@
     :hints (("Goal"
              :use (:instance integer-format->unsigned-max-upper-bound
                              (format int-format))
-             :in-theory (disable integer-format->unsigned-max-upper-bound)))))
+             :in-theory (disable integer-format->unsigned-max-upper-bound))))
+
+  (defruled integer-format-int-wf-signed-min-upper-bound-when-c23
+    (implies (integer-format-int-wfp
+              int-format uchar-format short-format (standard-c23))
+             (<= (integer-format->signed-min int-format)
+                 -32768))
+    :rule-classes :linear
+    :enable integer-format->signed-min-as-signed-max-when-c23))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -206,7 +222,15 @@
     :hints (("Goal"
              :use (:instance integer-format->unsigned-max-upper-bound
                              (format long-format))
-             :in-theory (disable integer-format->unsigned-max-upper-bound)))))
+             :in-theory (disable integer-format->unsigned-max-upper-bound))))
+
+  (defruled integer-format-long-wf-signed-min-upper-bound-when-c23
+    (implies (integer-format-long-wfp
+              long-format uchar-format int-format (standard-c23))
+             (<= (integer-format->signed-min long-format)
+                 -2147483648))
+    :rule-classes :linear
+    :enable integer-format->signed-min-as-signed-max-when-c23))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -265,7 +289,15 @@
     :hints (("Goal"
              :use (:instance integer-format->unsigned-max-upper-bound
                              (format llong-format))
-             :in-theory (disable integer-format->unsigned-max-upper-bound)))))
+             :in-theory (disable integer-format->unsigned-max-upper-bound))))
+
+  (defruled integer-format-llong-wf-signed-min-upper-bound-when-c23
+    (implies (integer-format-llong-wfp
+              llong-format uchar-format long-format (standard-c23))
+             (<= (integer-format->signed-min llong-format)
+                 -9223372036854775808))
+    :rule-classes :linear
+    :enable integer-format->signed-min-as-signed-max-when-c23))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

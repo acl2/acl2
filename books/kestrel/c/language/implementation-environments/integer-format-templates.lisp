@@ -675,7 +675,16 @@
                            (sinteger-format->bits format)))
                        (n (1- (len (sinteger-format->bits format)))))
             (:instance sinteger-bit-roles-value-count-upper-bound
-                       (roles (sinteger-format->bits format))))))))
+                       (roles (sinteger-format->bits format)))))))
+
+  (std::defretd sinteger-format->min-as-max-when-c23
+    (implies (sinteger-format-wfp format (standard-c23))
+             (equal min
+                    (- (1+ (sinteger-format->max format)))))
+    :hints (("Goal"
+             :in-theory (enable sinteger-format-wfp
+                                signed-format-wfp
+                                sinteger-format->max)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -823,6 +832,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection integer-format->unsigned-max-ext
+  :extension integer-format->unsigned-max
+  (defruled integer-format->unsigned-max-as-signed-max-when-c23
+    (implies (integer-format-wfp format (standard-c23))
+             (equal (integer-format->unsigned-max format)
+                    (1+ (* 2 (integer-format->signed-max format)))))
+    :enable (integer-format-wfp
+             integer-format->unsigned-max
+             integer-format->signed-max
+             uinteger-format->max
+             sinteger-format->max)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define integer-format->signed-min ((format integer-formatp))
   :returns (min integerp)
   :short "The ACL2 integer value of
@@ -839,7 +862,16 @@
   (defret integer-format->signed-min-lower-bound
     (>= min
         (- (expt 2 (1- (integer-format->bit-size format)))))
-    :hints (("Goal" :in-theory (enable integer-format->bit-size-alt-def)))))
+    :hints (("Goal" :in-theory (enable integer-format->bit-size-alt-def))))
+
+  (std::defretd integer-format->signed-min-as-signed-max-when-c23
+    (implies (integer-format-wfp format (standard-c23))
+             (equal min
+                    (- (1+ (integer-format->signed-max format)))))
+    :hints (("Goal"
+             :in-theory (enable integer-format-wfp
+                                integer-format->signed-max
+                                sinteger-format->min-as-max-when-c23)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

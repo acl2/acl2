@@ -188,7 +188,24 @@
       :trigger-terms ((schar-format->min schar-format uchar-format))))
     :hints (("Goal"
              :in-theory
-             (enable expt-of-one-less-than-uchar-format->size-lower-bound)))))
+             (enable expt-of-one-less-than-uchar-format->size-lower-bound))))
+
+  (std::defretd schar-format->min-as-max-when-c23
+    (implies (schar-format-wfp schar-format (standard-c23))
+             (equal min
+                    (- (1+ (schar-format->max schar-format uchar-format)))))
+    :hints (("Goal"
+             :in-theory (enable schar-format-wfp
+                                signed-format-wfp
+                                schar-format->max))))
+
+  (std::defretd schar-format->min-upper-bound-when-c23
+    (implies (schar-format-wfp schar-format (standard-c23))
+             (<= min -128))
+    :rule-classes
+    ((:linear
+      :trigger-terms ((schar-format->min schar-format uchar-format))))
+    :hints (("Goal" :in-theory (enable schar-format->min-as-max-when-c23)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
