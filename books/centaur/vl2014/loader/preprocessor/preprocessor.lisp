@@ -608,7 +608,7 @@ the defines table, and make the appropriate changes to the @('istack') and
        ((when (vl-is-compiler-directive-p name))
         ;; Special prohibition of compiler directive names in ifdefs, ifndefs,
         ;; etc.  See :xdoc preprocessor-ifdef-minutia for why.
-        (mv (cw "Preprocessor error (~s0): cowardly refusing to permit `s1 ~s2.~%"
+        (mv (cw "Preprocessor error (~s0): cowardly refusing to permit `~s1 ~s2.~%"
                 (vl-location-string loc) directive name)
             istack activep echars))
 
@@ -1908,7 +1908,7 @@ to enforce this restriction since it is somewhat awkward to do so.</p>"
        (char1  (vl-echar->char echar1))
        ((when (zp n))
         (mv (cw "Preprocessor error (~s0): ran out of steps. Macro expansion ~
-                 or file inclusion loop?")
+                 or file inclusion loop?" (vl-location-string (vl-echar->loc echar1)))
             defines filemap acc echars state))
 
 ; Preliminaries.  We need to be sure to treat strings, escaped identifiers, and
@@ -2357,5 +2357,3 @@ out of memory before running out of clock.</p>"
         filemap
         nil
         state)))
-
-
