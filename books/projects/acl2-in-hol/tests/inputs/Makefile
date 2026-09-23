@@ -38,3 +38,4 @@ clean: clean-pkgs
 
 clean-pkgs:
 	rm -f pkg-check.*
+	rm -f PKGS.lsp PKGS.sml
