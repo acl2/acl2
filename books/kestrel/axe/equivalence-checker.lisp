@@ -16973,7 +16973,7 @@
 
 
 ;; TODO: Consider supporting miters that are not boolean-valued; currently we must prove the miter is T (not merely non-nil).
-; Returns (mv erp provedp all-assumptions state rand).
+; Returns (mv erp provedp all-assumptions state).
 ; todo: separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
 (defun prove-with-axe-core (dag-or-quotep
                             assumptions ; (untranslated) terms we can assume are true (non-nil)
