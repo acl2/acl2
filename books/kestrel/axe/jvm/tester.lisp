@@ -389,10 +389,18 @@
            (jvm::get-static-field ',class-name
                                   '("$assertionsDisabled" . :boolean)
                                   initial-static-field-map))
-    (lookup-equal ',class-name initial-heapref-table)
-    (not (null-refp (lookup-equal ',class-name initial-heapref-table)))
-    (equal (get-field (lookup-equal ',class-name
-                                    initial-heapref-table)
+    ;; (lookup-equal ',class-name initial-heapref-table)
+    ;; (not (null-refp (lookup-equal ',class-name initial-heapref-table)))
+    ;; (equal (get-field (lookup-equal ',class-name
+    ;;                                 initial-heapref-table)
+    ;;                   '(:special-data . :class)
+    ;;                   initial-heap)
+    ;;        '"java.lang.Class")
+
+    (jvm::get-class-object ',class-name initial-heapref-table)
+    ;; (not (null-refp (lookup-equal ',class-name initial-heapref-table)))
+    ;; it would be nice to know this by construction:
+    (equal (get-field (jvm::get-class-object ',class-name initial-heapref-table)
                       '(:special-data . :class)
                       initial-heap)
            '"java.lang.Class")))
