@@ -4306,15 +4306,16 @@
       nil ; won't be 2 nodes with the same var
     (let ((fn1 (ffn-symb expr1))
           (fn2 (ffn-symb expr2)))
-      (if (or (eq 'quote fn1)
-              (eq 'quote fn2))
-          (equal (unquote expr1) (unquote expr2))
-        ;; both are function calls:
-        (and (eq fn1 fn2)
-             (let ((dargs1 (dargs expr1))
-                   (dargs2 (dargs expr2)))
-               (identical-darg-lists-up-to-constant-inlining dargs1 dargs2 dag-array-name dag-array dag-len)))))))
-
+      (if (eq 'quote fn1)
+          (and (eq 'quote fn2)
+               (equal (unquote expr1) (unquote expr2)))
+        (if (eq 'quote fn2)
+            nil
+          ;; both are function calls:
+          (and (eq fn1 fn2)
+               (let ((dargs1 (dargs expr1))
+                     (dargs2 (dargs expr2)))
+                 (identical-darg-lists-up-to-constant-inlining dargs1 dargs2 dag-array-name dag-array dag-len))))))))
 
 ;; (defun clean-up-hyps (hyps)
 ;;   (declare (xargs :guard (pseudo-term-listp hyps)))
