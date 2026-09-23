@@ -3447,7 +3447,18 @@
      which is needed anyway
      because a premise or an argument of the conclusion
      could make a formal irrelevant,
-     e.g. a premise @('(or t ...)')."))
+     e.g. a premise @('(or t ...)').")
+   (xdoc::p
+    "The function is defined with @(':normalize nil'),
+     so that its body keeps every premise as a conjunct.
+     Otherwise, ACL2's normalization of the body
+     would remove a premise that it can prove by type reasoning,
+     e.g. a call of a function whose type prescription says that
+     it always returns @('t');
+     the proofs of the @('p[i]-alt-when-proof-validp') theorems,
+     which use the constraint theorems under a restricted theory
+     in which such a premise cannot be proved,
+     would then fail to relieve that premise."))
   (b* (((defind-irule-info info))
        ((defind-conclusion-info cinfo) info.conclusion)
        (fn-name (defind-irule-valid-fn-name cinfo.name info.name name))
@@ -3471,6 +3482,7 @@
                              "'), except for the proofs of its premises.")))
            ,body
            :verify-guards nil
+           :normalize nil
            :ignore-ok t
            :irrelevant-formals-ok t))
        (print-event?

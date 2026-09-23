@@ -424,6 +424,11 @@
       "These predicates are currently not guard-verified,
        because they may involve arbitrary user-supplied terms.")
      (xdoc::p
+      "These predicates are defined without normalization
+       (see @(see acl2::normalize)),
+       so that their bodies keep all the conditions as conjuncts,
+       even the ones that ACL2 could prove by type reasoning.")
+     (xdoc::p
       "These predicates are disabled;
        they are added to the ruleset described below."))
 
