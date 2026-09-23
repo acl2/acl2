@@ -110173,7 +110173,8 @@ it."
  <p>Fixed a soundness bug where the @('keys') function for a @(see stobj-table)
  field returned internal stand-in symbols instead of the real stobj names.  For
  an example of the issue, see @(see community-book)
- @('system/tests/stobj-table-keys.lisp').</p>
+ @('system/tests/stobj-table-keys.lisp').  Thanks to Grant Jurgensen for
+ supplying the bug fix (in PR #2049).</p>
 
  <h3>Other Bug Fixes</h3>
 
