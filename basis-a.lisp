@@ -8693,6 +8693,20 @@
              ht)
     (merge-sort-lexorder keys)))
 
+; The keys of a stobj-table field are stand-in symbols, not the stobj names.
+; We therefore must consult *current-stobj-gensym-ht* to find the proper
+; stobj names to return.
+
+#-acl2-loop-only
+(defun stobj-table-sorted-keys (ht)
+  (declare (type hash-table ht))
+  (let ((keys nil))
+    (maphash (lambda (name sym)
+               (when (nth-value 1 (gethash sym ht))
+                 (push name keys)))
+             (the hash-table *current-stobj-gensym-ht*))
+    (merge-sort-lexorder keys)))
+
 (defun defstobj-field-fns-raw-defs (var flush-var inline n field-templates)
 
 ; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
@@ -8844,7 +8858,10 @@
              (,keys-name
               (,var)
               ,@(and inline (list *stobj-inline-declare*))
-              (hash-table-sorted-keys (the hash-table ,fld)))
+              (,(if hashp
+                    'hash-table-sorted-keys
+                  (assert$ stobj-tablep 'stobj-table-sorted-keys))
+               (the hash-table ,fld)))
              ,@(and hashp ; skip this for a stobj-table
 ; Keep the following in sync with the accessor-name case above.
                     `((,accessor?-name
