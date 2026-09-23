@@ -874,6 +874,7 @@
   (defret integer-format->signed-min-lower-bound
     (>= min
         (- (expt 2 (1- (integer-format->bit-size format)))))
+    :rule-classes :linear
     :hints (("Goal" :in-theory (enable integer-format->bit-size-alt-def))))
 
   (defretd integer-format->signed-min-as-signed-max-when-c23
