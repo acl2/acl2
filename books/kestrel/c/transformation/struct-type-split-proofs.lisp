@@ -849,7 +849,74 @@
                      c::eval-iconst
                      c::check-iconst
                      c::type-of-value)
-            :disable ((:e tau-system))))))
+            :disable ((:e tau-system)))
+          (defruled expr-binary-pure-strict-congruence-under-compustate-equivp
+            (b* ((old (c::expr-binary op old-arg1 old-arg2))
+                 (new (c::expr-binary op new-arg1 new-arg2))
+                 ((mv old-arg1-eval old-arg1-compst)
+                  (c::exec-expr old-arg1 old-compst old-fenv (1- limit)))
+                 ((mv old-arg2-eval old-arg2-compst)
+                  (c::exec-expr old-arg2 old-arg1-compst old-fenv (1- limit)))
+                 ((mv new-arg1-eval new-arg1-compst)
+                  (c::exec-expr new-arg1 new-compst new-fenv (1- limit)))
+                 ((mv new-arg2-eval new-arg2-compst)
+                  (c::exec-expr new-arg2 new-arg1-compst new-fenv (1- limit)))
+                 (old-arg1-val (c::expr-value->value old-arg1-eval))
+                 (old-arg2-val (c::expr-value->value old-arg2-eval))
+                 (new-arg1-val (c::expr-value->value new-arg1-eval))
+                 (new-arg2-val (c::expr-value->value new-arg2-eval))
+                 ((mv old-eval old-compst1)
+                  (c::exec-expr old old-compst old-fenv limit))
+                 ((mv new-eval new-compst1)
+                  (c::exec-expr new new-compst new-fenv limit))
+                 (old-val (c::expr-value->value old-eval))
+                 (new-val (c::expr-value->value new-eval))
+                 (type1 (c::type-of-value old-arg1-val))
+                 (type2 (c::type-of-value old-arg2-val)))
+              (implies (and (c::binop-purep op)
+                            (c::binop-strictp op)
+                            (c::expr-purep new-arg1)
+                            (c::expr-purep new-arg2)
+                            (not (c::errorp old-eval))
+                            (not (c::errorp new-arg1-eval))
+                            (not (c::errorp new-arg2-eval))
+                            (iff old-arg1-eval new-arg1-eval)
+                            (iff old-arg2-eval new-arg2-eval)
+                            (equal old-arg1-val new-arg1-val)
+                            (equal old-arg2-val new-arg2-val)
+                            (compustate-equivp old-compst new-compst)
+                            (compustate-equivp old-arg1-compst new-arg1-compst)
+                            (compustate-equivp old-arg2-compst new-arg2-compst)
+                            (c::type-nonchar-integerp type1)
+                            (c::type-nonchar-integerp type2))
+                       (and (not (c::errorp new-eval))
+                            (iff old-eval new-eval)
+                            (equal old-val new-val)
+                            (compustate-equivp old-compst1 new-compst1)
+                            old-eval
+                            (equal (c::type-of-value old-val)
+                                   (cond ((member-equal (c::binop-kind op)
+                                                        '(:mul :div :rem :add :sub
+                                                          :bitand :bitxor :bitior))
+                                          (c::uaconvert-types type1 type2))
+                                         ((member-equal (c::binop-kind op)
+                                                        '(:shl :shr))
+                                          (c::promote-type type1))
+                                         (t (c::type-sint)))))))
+            :expand ((c::exec-expr
+                      (c::expr-binary op old-arg1 old-arg2)
+                      old-compst old-fenv limit)
+                     (c::exec-expr
+                      (c::expr-binary op new-arg1 new-arg2)
+                      new-compst new-fenv limit))
+            :disable ((:e c::type-sint))
+            :enable (c::binop-purep
+                     c::binop-strictp
+                     c::exec-binary-strict-pure
+                     c::eval-binary-strict-pure
+                     c::not-errorp-when-expr-valuep
+                     c::apconvert-expr-value-when-not-array
+                     c::value-kind-not-array-when-value-integerp)))))
     (retok events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
