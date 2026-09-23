@@ -345,7 +345,19 @@
     (implies (sinteger-bit-roles-wfp roles)
              (> (len roles) 1))
     :enable (sinteger-bit-roles-value-count-alt-def
-             sinteger-bit-roles-value/sign-count-upper-bound)))
+             sinteger-bit-roles-value/sign-count-upper-bound))
+
+  (defruled expt-of-sinteger-bit-roles-value-count-upper-bound
+    (implies (sinteger-bit-roles-wfp roles)
+             (<= (expt 2 (sinteger-bit-roles-value-count roles))
+                 (expt 2 (1- (len roles)))))
+    :rule-classes :linear
+    :use (sinteger-bit-roles-value-count-upper-bound
+          (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (x 2)
+                     (m (sinteger-bit-roles-value-count roles))
+                     (n (1- (len roles)))))
+    :disable acl2::expt-is-weakly-increasing-for-base->-1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -594,24 +606,8 @@
     :rule-classes :linear
     :hints
     (("Goal"
-      :in-theory (e/d (sinteger-bit-roles-wfp)
-                      (sinteger-format-requirements
-                       acl2::expt-is-weakly-increasing-for-base->-1
-                       acl2::|(* (expt x m) (/ (expt x n)))|
-                       acl2::|(* a (/ a))|
-                       acl2::bubble-down-*-match-1
-                       acl2::bubble-down-*-match-2
-                       acl2::simplify-products-gather-exponents-<
-                       acl2::expt-is-weakly-increasing-for-base->-1
-                       acl2::expt-is-increasing-for-base->-1))
-      :use ((:instance sinteger-format-requirements (x format))
-            (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                       (x 2)
-                       (m (sinteger-bit-roles-value-count
-                           (sinteger-format->bits format)))
-                       (n (1- (len (sinteger-format->bits format)))))
-            (:instance sinteger-bit-roles-value-count-upper-bound
-                       (roles (sinteger-format->bits format))))))))
+      :use (:instance expt-of-sinteger-bit-roles-value-count-upper-bound
+                      (roles (sinteger-format->bits format)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -667,24 +663,9 @@
     :rule-classes :linear
     :hints
     (("Goal"
-      :in-theory (e/d (sinteger-bit-roles-wfp)
-                      (sinteger-format-requirements
-                       acl2::expt-is-weakly-increasing-for-base->-1
-                       acl2::|(* (expt x m) (/ (expt x n)))|
-                       acl2::|(* a (/ a))|
-                       acl2::bubble-down-*-match-1
-                       acl2::bubble-down-*-match-2
-                       acl2::simplify-products-gather-exponents-<
-                       acl2::expt-is-weakly-increasing-for-base->-1
-                       acl2::expt-is-increasing-for-base->-1))
-      :use ((:instance sinteger-format-requirements (x format))
-            (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                       (x 2)
-                       (m (sinteger-bit-roles-value-count
-                           (sinteger-format->bits format)))
-                       (n (1- (len (sinteger-format->bits format)))))
-            (:instance sinteger-bit-roles-value-count-upper-bound
-                       (roles (sinteger-format->bits format)))))))
+      :in-theory (disable acl2::simplify-products-gather-exponents-<)
+      :use (:instance expt-of-sinteger-bit-roles-value-count-upper-bound
+                      (roles (sinteger-format->bits format))))))
 
   (defretd sinteger-format->min-as-max-when-c23
     (implies (sinteger-format-wfp format (standard-c23))
