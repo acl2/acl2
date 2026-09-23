@@ -24,6 +24,7 @@
 (acl2::controlled-configuration)
 
 (local (include-book "kestrel/abstract-domains/many-valued-logics/3vl" :dir :system))
+(local (include-book "kestrel/data/treemap/delete" :dir :system))
 (local (include-book "kestrel/data/treemap/submap" :dir :system))
 (local (include-book "kestrel/data/treeset/subset" :dir :system))
 (local (include-book "kestrel/data/treeset/cardinality" :dir :system))
@@ -37,134 +38,6 @@
 
 (local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Library extensions
-
-;; The fixers of the completions map and of the sets of UIDs
-;; map ill-typed values to the empty map or set,
-;; which is a submap or subset of anything.
-
-;; TODO: should these theorems be generated to deftreeset/deftreemap?
-
-(defrule submap-of-type-completions-fix-when-submap
-  (implies (treemap::submap x y)
-           (treemap::submap (type-completions-fix x) y))
-  :enable type-completions-fix)
-
-(defrule subset-of-uid-pair-sfix-when-subset
-  (implies (treeset::subset x y)
-           (treeset::subset (uid-pair-sfix x) y))
-  :enable uid-pair-sfix)
-
-(defrule subset-of-uid-triple-sfix-when-subset
-  (implies (treeset::subset x y)
-           (treeset::subset (uid-triple-sfix x) y))
-  :enable uid-triple-sfix)
-
-;; A map extended with a new key is a submap of another map
-;; only if the map itself is.
-
-(defrulel submap-when-submap-of-update-with-new-key
-  (implies (and (treemap::submap (treemap::update key val map) map2)
-                (not (treeset::in key (treemap::keys map))))
-           (treemap::submap map map2))
-  :use (:instance treemap::submap-transitivity
-                  (x map)
-                  (y (treemap::update key val map))
-                  (z map2)))
-
-;; Extending a set shrinks the difference of a set with it.
-
-(defrulel cardinality-of-diff-when-subset
-  (implies (treeset::subset x y)
-           (<= (treeset::cardinality (treeset::diff set y))
-               (treeset::cardinality (treeset::diff set x))))
-  :rule-classes :linear
-  :use (:instance treeset::cardinality-when-subset-linear
-                  (x (treeset::diff set y))
-                  (y (treeset::diff set x))))
-
-;; Deleting from the smaller set preserves a subset relation.
-
-(defrulel subset-of-delete-when-subset
-  (implies (treeset::subset x y)
-           (treeset::subset (treeset::delete a x) y))
-  :enable treeset::pick-a-point)
-
-;; A subset and the rest of a superset cover the superset.
-
-(defrulel union-of-arg1-and-diff-when-subset
-  (implies (treeset::subset s s1)
-           (equal (treeset::union s (treeset::diff s1 s))
-                  (treeset::fix s1)))
-  :enable treeset::extensionality)
-
-;; The difference of a set with itself is empty.
-
-(defrulel diff-of-arg1-and-arg1
-  (equal (treeset::diff s s)
-         (treeset::empty))
-  :enable treeset::extensionality)
-
-;; Removing a common subset from both sides of a difference
-;; leaves it unchanged.
-
-(defrulel diff-of-diff-when-subset
-  (implies (treeset::subset s s1)
-           (equal (treeset::diff (treeset::diff s2 s) (treeset::diff s1 s))
-                  (treeset::diff s2 s1)))
-  :enable treeset::extensionality)
-
-;; The truth order and the conjunction form a meet-semilattice:
-;; a value is below a conjunction iff it is below both conjuncts,
-;; and a conjunction is below whatever either conjunct is below.
-;; Transitivity is restated with the upper bound first,
-;; so that the middle term is found from a known bound on the upper side.
-;; Conjoining a common value to both of two values
-;; keeps their bounds conjoined.
-;; These are proved by cases on the three values.
-
-(defruled 3truth<=-of-arg1-and-3and
-  (equal (3truth<= x (3and y z))
-         (and (3truth<= x y)
-              (3truth<= x z)))
-  :enable (3p 3truth<= 3truth< 3and 3fix))
-
-(defruled 3truth<=-of-3and-when-3truth<=-of-arg1
-  (implies (3truth<= x z)
-           (3truth<= (3and x y) z))
-  :enable (3p 3and 3fix))
-
-(defruled 3truth<=-of-3and-when-3truth<=-of-arg2
-  (implies (3truth<= y z)
-           (3truth<= (3and x y) z))
-  :enable (3p 3and 3fix))
-
-(defruled transitivity-of-3truth<=-upper-bound-first
-  (implies (and (3truth<= y z)
-                (3truth<= x y))
-           (3truth<= x z))
-  :by acl2::transitivity-of-3truth<=)
-
-(defruled 3truth<=-of-3and-of-3and-and-arg3
-  (implies (and (3truth<= (3and a q) c)
-                (3truth<= (3and b q) d))
-           (3truth<= (3and (3and a b) q)
-                     (3and c d)))
-  :enable 3and)
-
-;; Conjoining a value with either of two values that bound each other
-;; gives the same result, when conjoining the larger one with it
-;; brings it below the smaller.
-
-(defruled 3and-of-arg2-and-upper-bound
-  (implies (and (3truth<= (3and p b) a)
-                (3truth<= a b))
-           (equal (3and p b)
-                  (3and p a)))
-  :enable (3truth<= 3truth< 3and))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1471,10 +1344,10 @@
 
 ;; Assuming more pairs compatible can only raise the check,
 ;; which stops at those pairs instead of comparing their members,
-;; and conjoining the comparisons of those pairs brings it back down:
-;; the check under the larger set, conjoined with any value
-;; below the conjunction of those comparisons,
-;; is below the check under the smaller set.
+;; but only where their comparisons would have brought it down:
+;; given a value below the conjunction of those comparisons,
+;; either that value is below the check under the smaller set,
+;; or the check under the larger set is.
 ;; This is first shown for a single pair as the check reaches it,
 ;; using the monotonicity of the check in the assumed set;
 ;; then for the whole check, by induction;
@@ -1493,17 +1366,18 @@
   :disable 3truth<=-of-uid-pair-set-compatible-3p-aux-when-in)
 
 (defthm-type/type-list-compatible-3p-aux-flag
-  (defthmd 3truth<=-of-3and-of-type-compatible-3p-aux-of-union
+  (defthmd 3truth<=-of-type-compatible-3p-aux-of-union
     (implies (and (treeset::subset (uid-pair-sfix base)
                                    (uid-pair-sfix assumed))
                   (3truth<= 3vl (uid-pair-set-compatible-3p-aux
-                                  pairs completions base ienv)))
-             (3truth<= (3and (type-compatible-3p-aux
-                               x y completions
-                               (treeset::union (uid-pair-sfix assumed)
-                                               (uid-pair-sfix pairs))
-                               ienv)
-                             3vl)
+                                  pairs completions base ienv))
+                  (not (3truth<= 3vl (type-compatible-3p-aux
+                                       x y completions assumed ienv))))
+             (3truth<= (type-compatible-3p-aux
+                         x y completions
+                         (treeset::union (uid-pair-sfix assumed)
+                                         (uid-pair-sfix pairs))
+                         ienv)
                        (type-compatible-3p-aux
                          x y completions assumed ienv)))
     :flag type-compatible-3p-aux
@@ -1514,76 +1388,79 @@
                          (treeset::union (uid-pair-sfix assumed)
                                          (uid-pair-sfix pairs))
                          ienv)))))
-  (defthmd
-    3truth<=-of-3and-of-type-struni-member-list-compatible-3p-aux-of-union
+  (defthmd 3truth<=-of-type-struni-member-list-compatible-3p-aux-of-union
     (implies (and (treeset::subset (uid-pair-sfix base)
                                    (uid-pair-sfix assumed))
                   (3truth<= 3vl (uid-pair-set-compatible-3p-aux
-                                  pairs completions base ienv)))
-             (3truth<= (3and (type-struni-member-list-compatible-3p-aux
-                               x y completions
-                               (treeset::union (uid-pair-sfix assumed)
-                                               (uid-pair-sfix pairs))
-                               ienv)
-                             3vl)
+                                  pairs completions base ienv))
+                  (not (3truth<= 3vl (type-struni-member-list-compatible-3p-aux
+                                       x y completions assumed ienv))))
+             (3truth<= (type-struni-member-list-compatible-3p-aux
+                         x y completions
+                         (treeset::union (uid-pair-sfix assumed)
+                                         (uid-pair-sfix pairs))
+                         ienv)
                        (type-struni-member-list-compatible-3p-aux
                          x y completions assumed ienv)))
     :flag type-struni-member-list-compatible-3p-aux)
-  (defthmd 3truth<=-of-3and-of-type-params-compatible-3p-aux-of-union
+  (defthmd 3truth<=-of-type-params-compatible-3p-aux-of-union
     (implies (and (treeset::subset (uid-pair-sfix base)
                                    (uid-pair-sfix assumed))
                   (3truth<= 3vl (uid-pair-set-compatible-3p-aux
-                                  pairs completions base ienv)))
-             (3truth<= (3and (type-params-compatible-3p-aux
-                               x y completions
-                               (treeset::union (uid-pair-sfix assumed)
-                                               (uid-pair-sfix pairs))
-                               ienv)
-                             3vl)
+                                  pairs completions base ienv))
+                  (not (3truth<= 3vl (type-params-compatible-3p-aux
+                                       x y completions assumed ienv))))
+             (3truth<= (type-params-compatible-3p-aux
+                         x y completions
+                         (treeset::union (uid-pair-sfix assumed)
+                                         (uid-pair-sfix pairs))
+                         ienv)
                        (type-params-compatible-3p-aux
                          x y completions assumed ienv)))
     :flag type-params-compatible-3p-aux)
-  (defthmd 3truth<=-of-3and-of-type-list-compatible-3p-aux-of-union
+  (defthmd 3truth<=-of-type-list-compatible-3p-aux-of-union
     (implies (and (treeset::subset (uid-pair-sfix base)
                                    (uid-pair-sfix assumed))
                   (3truth<= 3vl (uid-pair-set-compatible-3p-aux
-                                  pairs completions base ienv)))
-             (3truth<= (3and (type-list-compatible-3p-aux
-                               x y completions
-                               (treeset::union (uid-pair-sfix assumed)
-                                               (uid-pair-sfix pairs))
-                               ienv)
-                             3vl)
+                                  pairs completions base ienv))
+                  (not (3truth<= 3vl (type-list-compatible-3p-aux
+                                       x y completions assumed ienv))))
+             (3truth<= (type-list-compatible-3p-aux
+                         x y completions
+                         (treeset::union (uid-pair-sfix assumed)
+                                         (uid-pair-sfix pairs))
+                         ienv)
                        (type-list-compatible-3p-aux
                          x y completions assumed ienv)))
     :flag type-list-compatible-3p-aux)
   :hints
   (("Goal"
     :in-theory
-    (e/d (type-struni-member-list-compatible-3p-aux
-          type-params-compatible-3p-aux
-          type-list-compatible-3p-aux
-          type-struni-member-list-compatible-3p-aux-becomes-uid-pair
-          3truth<=-of-3and-of-3and-and-arg3
-          type/type-list-compatible-3p-aux-flag)
-         (acl2::associativity-of-3and
-          acl2::commutativity-of-3and)))))
+    (enable type-struni-member-list-compatible-3p-aux
+            type-params-compatible-3p-aux
+            type-list-compatible-3p-aux
+            type-struni-member-list-compatible-3p-aux-becomes-uid-pair
+            type/type-list-compatible-3p-aux-flag))))
 
-(defruled 3truth<=-of-3and-of-uid-pair-compatible-3p-aux-of-union
+(defruled 3truth<=-of-uid-pair-compatible-3p-aux-of-union
   (implies (and (treeset::subset (uid-pair-sfix base) (uid-pair-sfix assumed))
                 (3truth<= 3vl (uid-pair-set-compatible-3p-aux
-                                pairs completions base ienv)))
-           (3truth<= (3and (uid-pair-compatible-3p-aux
-                             pair completions
-                             (treeset::union (uid-pair-sfix assumed)
-                                             (uid-pair-sfix pairs))
-                             ienv)
-                           3vl)
-                     (uid-pair-compatible-3p-aux
-                       pair completions assumed ienv)))
-  :enable uid-pair-compatible-3p-aux
+                                pairs completions base ienv))
+                (not (3truth<= 3vl (uid-pair-compatible-3p-aux
+                                     pair completions assumed ienv)))
+                (3truth<= (uid-pair-compatible-3p-aux
+                            pair completions assumed ienv)
+                          z))
+           (3truth<= (uid-pair-compatible-3p-aux
+                       pair completions
+                       (treeset::union (uid-pair-sfix assumed)
+                                       (uid-pair-sfix pairs))
+                       ienv)
+                     z))
+  :enable (uid-pair-compatible-3p-aux
+           acl2::transitivity-of-3truth<=-swapped)
   :use (:instance
-         3truth<=-of-3and-of-type-struni-member-list-compatible-3p-aux-of-union
+         3truth<=-of-type-struni-member-list-compatible-3p-aux-of-union
          (x (treemap::lookup (uid-pair->first pair)
                              (type-completions-fix completions)))
          (y (treemap::lookup (uid-pair->second pair)
@@ -1591,26 +1468,30 @@
          (assumed (treeset::insert (uid-pair-fix pair)
                                    (uid-pair-sfix assumed)))))
 
-(defruled 3truth<=-of-3and-of-uid-pair-set-compatible-3p-aux-of-union
+(defruled 3truth<=-of-uid-pair-set-compatible-3p-aux-of-union
   (implies (and (uid-pair-setp pairs2)
                 (treeset::subset (uid-pair-sfix base) (uid-pair-sfix assumed))
                 (3truth<= 3vl (uid-pair-set-compatible-3p-aux
-                                pairs completions base ienv)))
-           (3truth<= (3and (uid-pair-set-compatible-3p-aux
-                             pairs2 completions
-                             (treeset::union (uid-pair-sfix assumed)
-                                             (uid-pair-sfix pairs))
-                             ienv)
-                           3vl)
+                                pairs completions base ienv))
+                (not (3truth<= 3vl (uid-pair-set-compatible-3p-aux
+                                     pairs2 completions assumed ienv))))
+           (3truth<= (uid-pair-set-compatible-3p-aux
+                       pairs2 completions
+                       (treeset::union (uid-pair-sfix assumed)
+                                       (uid-pair-sfix pairs))
+                       ienv)
                      (uid-pair-set-compatible-3p-aux
                        pairs2 completions assumed ienv)))
-  :induct (treeset::min-delete-induction pairs2)
-  :enable (treeset::min-delete-induction
-           uid-pair-set-compatible-3p-aux
-           3truth<=-of-3and-of-uid-pair-compatible-3p-aux-of-union
-           3truth<=-of-3and-of-3and-and-arg3)
-  :disable (acl2::associativity-of-3and
-            acl2::commutativity-of-3and))
+  :hints
+  (("Goal"
+    :induct (treeset::min-delete-induction pairs2)
+    :in-theory
+    (enable treeset::min-delete-induction
+            uid-pair-set-compatible-3p-aux
+            3truth<=-of-uid-pair-compatible-3p-aux-of-union))
+   ("Subgoal *1/2"
+    :cases ((3truth<= 3vl (uid-pair-compatible-3p-aux
+                            (treeset::min pairs2) completions assumed ienv))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1959,7 +1840,7 @@
 ;; as they appear once the results of the threaded checks
 ;; are replaced by them.
 
-(defruled 3truth<=-of-3and-and-uid-pair-set-compatible-3p-aux-of-diff
+(defruled 3truth<=-and-uid-pair-set-compatible-3p-aux-of-diff
   (implies (and (3truth<= p (uid-pair-set-compatible-3p-aux
                               (treeset::diff s1 (uid-pair-sfix s))
                               completions s ienv))
@@ -1969,8 +1850,11 @@
                 (uid-pair-setp s1)
                 (uid-pair-setp s2)
                 (treeset::subset (uid-pair-sfix s) s1)
-                (treeset::subset s1 s2))
-           (3truth<= (3and p b)
+                (treeset::subset s1 s2)
+                (not (3truth<= p (uid-pair-set-compatible-3p-aux
+                                   (treeset::diff s2 (uid-pair-sfix s))
+                                   completions s ienv))))
+           (3truth<= b
                      (uid-pair-set-compatible-3p-aux
                        (treeset::diff s2 (uid-pair-sfix s))
                        completions s ienv)))
@@ -1978,15 +1862,14 @@
                    (d (treeset::diff s1 (uid-pair-sfix s)))
                    (e (treeset::diff s2 (uid-pair-sfix s)))
                    (assumed s))
-        (:instance 3truth<=-of-3and-of-uid-pair-set-compatible-3p-aux-of-union
+        (:instance 3truth<=-of-uid-pair-set-compatible-3p-aux-of-union
                    (3vl p)
                    (pairs2 (treeset::diff s2 s1))
                    (assumed s)
                    (pairs (treeset::diff s1 (uid-pair-sfix s)))
                    (base s)))
-  :enable (3truth<=-of-arg1-and-3and
-           3truth<=-of-3and-when-3truth<=-of-arg1
-           transitivity-of-3truth<=-upper-bound-first))
+  :enable (acl2::transitivity-of-3truth<=-swapped
+           treeset::diff-of-diff-and-diff-becomes-diff-of-union))
 
 (defruled 3and-of-type-struni-member-list-compatible-3p-aux-of-visited
   (implies (and (uid-pair-setp s1)
@@ -1998,13 +1881,18 @@
                             x y completions s1 ienv))
                   (3and p (type-struni-member-list-compatible-3p-aux
                             x y completions s ienv))))
-  :use (:instance
-         3truth<=-of-3and-of-type-struni-member-list-compatible-3p-aux-of-union
-         (3vl p)
-         (assumed s)
-         (pairs (treeset::diff s1 (uid-pair-sfix s)))
-         (base s))
-  :enable 3and-of-arg2-and-upper-bound)
+  :use ((:instance
+          3truth<=-of-type-struni-member-list-compatible-3p-aux-of-union
+          (3vl p)
+          (assumed s)
+          (pairs (treeset::diff s1 (uid-pair-sfix s)))
+          (base s))
+        (:instance acl2::antisymmetry-of-3truth<=-weak
+                   (x (3and p (type-struni-member-list-compatible-3p-aux
+                                x y completions s1 ienv)))
+                   (y (3and p (type-struni-member-list-compatible-3p-aux
+                                x y completions s ienv)))))
+  :enable acl2::3equiv)
 
 (defruled 3and-of-type-params-compatible-3p-aux-of-visited
   (implies (and (uid-pair-setp s1)
@@ -2016,12 +1904,17 @@
                             x y completions s1 ienv))
                   (3and p (type-params-compatible-3p-aux
                             x y completions s ienv))))
-  :use (:instance 3truth<=-of-3and-of-type-params-compatible-3p-aux-of-union
-                  (3vl p)
-                  (assumed s)
-                  (pairs (treeset::diff s1 (uid-pair-sfix s)))
-                  (base s))
-  :enable 3and-of-arg2-and-upper-bound)
+  :use ((:instance 3truth<=-of-type-params-compatible-3p-aux-of-union
+                   (3vl p)
+                   (assumed s)
+                   (pairs (treeset::diff s1 (uid-pair-sfix s)))
+                   (base s))
+        (:instance acl2::antisymmetry-of-3truth<=-weak
+                   (x (3and p (type-params-compatible-3p-aux
+                                x y completions s1 ienv)))
+                   (y (3and p (type-params-compatible-3p-aux
+                                x y completions s ienv)))))
+  :enable acl2::3equiv)
 
 (defruled 3and-of-type-list-compatible-3p-aux-of-visited
   (implies (and (uid-pair-setp s1)
@@ -2033,12 +1926,17 @@
                             x y completions s1 ienv))
                   (3and p (type-list-compatible-3p-aux
                             x y completions s ienv))))
-  :use (:instance 3truth<=-of-3and-of-type-list-compatible-3p-aux-of-union
-                  (3vl p)
-                  (assumed s)
-                  (pairs (treeset::diff s1 (uid-pair-sfix s)))
-                  (base s))
-  :enable 3and-of-arg2-and-upper-bound)
+  :use ((:instance 3truth<=-of-type-list-compatible-3p-aux-of-union
+                   (3vl p)
+                   (assumed s)
+                   (pairs (treeset::diff s1 (uid-pair-sfix s)))
+                   (base s))
+        (:instance acl2::antisymmetry-of-3truth<=-weak
+                   (x (3and p (type-list-compatible-3p-aux
+                                x y completions s1 ienv)))
+                   (y (3and p (type-list-compatible-3p-aux
+                                x y completions s ienv)))))
+  :enable acl2::3equiv)
 
 (defruled 3truth<=-of-uid-pair-compatible-3p-aux-and-set-of-diff
   (b* ((comparison (uid-pair-compatible-3p-aux pair completions s ienv))
@@ -2055,7 +1953,7 @@
                        (uid-pair-set-compatible-3p-aux
                          (treeset::diff s1 (uid-pair-sfix s))
                          completions s ienv))))
-  :use ((:instance 3truth<=-of-3and-of-uid-pair-set-compatible-3p-aux-of-union
+  :use ((:instance 3truth<=-of-uid-pair-set-compatible-3p-aux-of-union
                    (3vl (uid-pair-compatible-3p-aux pair completions s ienv))
                    (pairs2 (treeset::diff s1 (treeset::insert
                                                pair (uid-pair-sfix s))))
@@ -2064,9 +1962,7 @@
                    (base s))
         (:instance uid-pair-set-compatible-3p-aux-when-in
                    (pairs (treeset::diff s1 (uid-pair-sfix s)))
-                   (assumed s)))
-  :enable (3truth<=-of-arg1-and-3and
-           transitivity-of-3truth<=-upper-bound-first))
+                   (assumed s))))
 
 (defthm-type/type-list-compatible-3p-exec-flag
   (defthm type-compatible-3p-exec-correct
@@ -2135,15 +2031,13 @@
   :hints
   (("Goal"
     :in-theory
-    (e/d (type/type-list-compatible-3p-exec-flag
-          type-struni-member-list-compatible-3p-aux-becomes-uid-pair
-          3truth<=-of-3and-and-uid-pair-set-compatible-3p-aux-of-diff
-          3and-of-type-struni-member-list-compatible-3p-aux-of-visited
-          3and-of-type-params-compatible-3p-aux-of-visited
-          3and-of-type-list-compatible-3p-aux-of-visited
-          3truth<=-of-uid-pair-compatible-3p-aux-and-set-of-diff
-          3truth<=-of-3and-when-3truth<=-of-arg2)
-         (acl2::commutativity-of-3and)))))
+    (enable type/type-list-compatible-3p-exec-flag
+            type-struni-member-list-compatible-3p-aux-becomes-uid-pair
+            3truth<=-and-uid-pair-set-compatible-3p-aux-of-diff
+            3and-of-type-struni-member-list-compatible-3p-aux-of-visited
+            3and-of-type-params-compatible-3p-aux-of-visited
+            3and-of-type-list-compatible-3p-aux-of-visited
+            3truth<=-of-uid-pair-compatible-3p-aux-and-set-of-diff))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
