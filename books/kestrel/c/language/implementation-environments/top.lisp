@@ -265,7 +265,7 @@
     (<= min -127)
     :rule-classes ((:linear :trigger-terms ((ienv->schar-min ienv)))))
 
-  (std::defretd ienv->schar-min-as-schar-max-when-c23
+  (defretd ienv->schar-min-as-schar-max-when-c23
     (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
              (equal min (- (1+ (ienv->schar-max ienv)))))
     :hints
@@ -276,7 +276,7 @@
                       (ienv-requirements))
       :use (:instance ienv-requirements (x ienv)))))
 
-  (std::defretd ienv->schar-min-upper-bound-when-c23
+  (defretd ienv->schar-min-upper-bound-when-c23
     (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
              (<= min -128))
     :rule-classes ((:linear :trigger-terms ((ienv->schar-min ienv))))
@@ -573,7 +573,7 @@
 
   ///
 
-  (std::defretd ienv->sshort-min-as-sshort-max-when-c23
+  (defretd ienv->sshort-min-as-sshort-max-when-c23
     (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
              (equal min (- (1+ (ienv->sshort-max ienv)))))
     :hints
@@ -585,7 +585,7 @@
                       (ienv-requirements))
       :use (:instance ienv-requirements (x ienv)))))
 
-  (std::defretd ienv->sshort-min-upper-bound-when-c23
+  (defretd ienv->sshort-min-upper-bound-when-c23
     (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
              (<= min -32768))
     :rule-classes ((:linear :trigger-terms ((ienv->sshort-min ienv))))
@@ -637,7 +637,7 @@
 
   ///
 
-  (std::defretd ienv->sint-min-as-sint-max-when-c23
+  (defretd ienv->sint-min-as-sint-max-when-c23
     (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
              (equal min (- (1+ (ienv->sint-max ienv)))))
     :hints
@@ -649,7 +649,7 @@
                       (ienv-requirements))
       :use (:instance ienv-requirements (x ienv)))))
 
-  (std::defretd ienv->sint-min-upper-bound-when-c23
+  (defretd ienv->sint-min-upper-bound-when-c23
     (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
              (<= min -32768))
     :rule-classes ((:linear :trigger-terms ((ienv->sint-min ienv))))
@@ -701,7 +701,7 @@
 
   ///
 
-  (std::defretd ienv->slong-min-as-slong-max-when-c23
+  (defretd ienv->slong-min-as-slong-max-when-c23
     (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
              (equal min (- (1+ (ienv->slong-max ienv)))))
     :hints
@@ -713,7 +713,7 @@
                       (ienv-requirements))
       :use (:instance ienv-requirements (x ienv)))))
 
-  (std::defretd ienv->slong-min-upper-bound-when-c23
+  (defretd ienv->slong-min-upper-bound-when-c23
     (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
              (<= min -2147483648))
     :rule-classes ((:linear :trigger-terms ((ienv->slong-min ienv))))
@@ -765,7 +765,7 @@
 
   ///
 
-  (std::defretd ienv->sllong-min-as-sllong-max-when-c23
+  (defretd ienv->sllong-min-as-sllong-max-when-c23
     (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
              (equal min (- (1+ (ienv->sllong-max ienv)))))
     :hints
@@ -777,7 +777,7 @@
                       (ienv-requirements))
       :use (:instance ienv-requirements (x ienv)))))
 
-  (std::defretd ienv->sllong-min-upper-bound-when-c23
+  (defretd ienv->sllong-min-upper-bound-when-c23
     (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
              (<= min -9223372036854775808))
     :rule-classes ((:linear :trigger-terms ((ienv->sllong-min ienv))))

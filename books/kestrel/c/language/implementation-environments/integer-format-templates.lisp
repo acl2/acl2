@@ -677,7 +677,7 @@
             (:instance sinteger-bit-roles-value-count-upper-bound
                        (roles (sinteger-format->bits format)))))))
 
-  (std::defretd sinteger-format->min-as-max-when-c23
+  (defretd sinteger-format->min-as-max-when-c23
     (implies (sinteger-format-wfp format (standard-c23))
              (equal min
                     (- (1+ (sinteger-format->max format)))))
@@ -864,7 +864,7 @@
         (- (expt 2 (1- (integer-format->bit-size format)))))
     :hints (("Goal" :in-theory (enable integer-format->bit-size-alt-def))))
 
-  (std::defretd integer-format->signed-min-as-signed-max-when-c23
+  (defretd integer-format->signed-min-as-signed-max-when-c23
     (implies (integer-format-wfp format (standard-c23))
              (equal min
                     (- (1+ (integer-format->signed-max format)))))
