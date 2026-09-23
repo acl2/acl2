@@ -1,5 +1,6 @@
 ; This book, modified only as noted below, was produced by Claude and passed
-; along by Eric Smith.
+; along by Eric Smith.  It illustrates a soundness bug fixed before ACL2
+; Version 8.8.
 
 ; ============================================================================
 ; PROOF OF NIL: defun redundancy ignores :WELL-FOUNDED-RELATION
@@ -47,17 +48,18 @@
     (if (consp x) (f (cdr x)) x))
   ))
 
-; Commented out by Matt Kaufmann:
-#|
+(must-fail ; The must-fail wrapper was added by Matt Kaufmann:
 ;; f's bogus termination-theorem: nothing decreases under NEVER<, so f "proves"
 ;; that it never recurs, i.e. no argument is a cons.
 (defthm no-conses
   (not (consp x))
   :rule-classes nil
   :hints (("Goal" :use (:termination-theorem f))))
+)
 
+(must-fail ; The must-fail wrapper was added by Matt Kaufmann:
 (defthm nil-proved
   nil
   :rule-classes nil
   :hints (("Goal" :use (:instance no-conses (x '(1))))))
-|#
+)

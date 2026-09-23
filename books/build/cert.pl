@@ -617,6 +617,20 @@ USEFUL ENVIRONMENT VARIABLES
     CERT_PL_NO_COLOR (default: "")
          Can be set to disable ANSI color coded output.
 
+    CERT_PL_TERSE (default: "")
+         Can be set to 1 to shorten the "Making" and "Built" lines printed
+         for each book, for build logs that are limited in size: books under
+         the system books directory are named by their path relative to it,
+         without the .cert extension; the "Making" line has no timestamp;
+         the "Built" line keeps the elapsed time and ends with a plain
+         "YYYY-MM-DD HH:MM:SS" time; and no color codes are emitted.  For
+         example:
+             Making kestrel/c/transformation/struct-type-split-proofs2
+             Built kestrel/c/transformation/struct-type-split-proofs2 (15.897s) at 2026-09-21 22:52:23
+         Books outside the system books directory are named as usual.  This
+         also applies when certifying with make (e.g. make regression
+         CERT_PL_TERSE=1), since make_cert_help.pl prints these lines.
+
     CERT_PL_SHOW_HOSTNAME (default: "")
          Off by default.  Set to 1 to instruct cert.pl to include hostname
          information in its output.  Potentially useful if you are using a

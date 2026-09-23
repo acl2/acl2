@@ -3,6 +3,7 @@
 
 ; Help dependency scanner.
 #||
+(include-book "kestrel/utilities/brr-data-all" :dir :system)
 (depends-on "brr-data-input.lsp")
 (depends-on "brr-data-log.txt")
 ||#

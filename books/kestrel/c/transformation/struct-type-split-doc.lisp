@@ -38,6 +38,11 @@
       A self-referential member of the target struct type is duplicated across
       the two resulting struct types, with its type adjusted to refer to the
       corresponding left or right type.
+      When a member that stays in the left struct type may refer to
+      the target struct type without being split itself,
+      as with a function pointer taking the struct type as a parameter,
+      the tag of the right struct type is declared
+      ahead of the declaration that defines the two struct types.
       Struct types with the same tag in other translation units
       which are compatible with the targeted struct type
       are also split, consistently,
