@@ -501,8 +501,8 @@
                   `'(:use ((:instance in-rangelist-of-rangelist-absorb
                             (x ,(hq next-first)) (y ,(hq x)))))))
               nil)))))
-        
-  
+
+
 
 
 (define rangelist-union ((x rangelist-p)
@@ -665,7 +665,7 @@
          :hints (("goal" :in-theory (enable* ihsext-inductions
                                              ihsext-recursive-redefs
                                              bitops::trailing-0-count)))))
-       
+
 (local (defthmd logbitp-of-trailing-0-count-logtail
          (implies (< (nfix idx) (integer-length x))
                   (logbitp (+ (nfix idx) (bitops::trailing-0-count (logtail idx x))) x))
@@ -701,7 +701,7 @@
 ;;                   (< n (integer-length x)))
 ;;          :hints(("Goal" :in-theory (enable* ihsext-inductions
 ;;                                             ihsext-recursive-redefs)))))
-        
+
 (define mask-to-ranges-aux ((x sparseint-p)
                             (len (eql len (sparseint-length x)))
                             (idx natp))
@@ -745,7 +745,7 @@
   ;;                 (logtail n (lognot x)))))
   ;; (local (in-theory (disable bitops::logtail-of-lognot)))
   ;; (local (defthm mask-to-ranges-aux-of-integer-length
-  ;;          (equal (mask-to-ranges-aux x ~x 
+  ;;          (equal (mask-to-ranges-aux x ~x
 
   (local (defthm trailing-0-count-when-not-logbitp
            (implies (not (logbitp idx x))
@@ -872,7 +872,7 @@
            (not (in-rangelist n nil))
            :hints(("Goal" :in-theory (enable in-rangelist)))))
 
-  
+
   (local (defthm greater-than-trailing-0-count-when-logbitp
            (implies (logbitp n x)
                     (<= (bitops::trailing-0-count x)
@@ -885,7 +885,7 @@
   (defret in-rangelist-of-mask-to-ranges
     (iff (in-rangelist n ranges)
          (logbitp n (sparseint-val x)))))
-       
+
 
 
 (define svex-mask-alist-to-rangemap ((x svex-mask-alist-p)
@@ -1035,8 +1035,8 @@
 
   ;; for fix hook
   (local (in-theory (disable (:d rangelist-apply-alias)))))
-       
-       
+
+
 
 ;; Ranges are uses/sets of a variable whose tail at offset is aliased to the
 ;; given lhs.  This function finds the ranges that overlap each segment of the
@@ -1076,7 +1076,7 @@
         (rangemap-fix acc))
        (sorted-ranges (rangelist-simplify ranges)))
     (rangelist-map-lhs lhs 0 sorted-ranges acc)))
-       
+
 
 (define rangemap-norm ((x rangemap-p)
                        (modidx natp)
@@ -1104,7 +1104,7 @@
     (and (proper-rangelist-p (cdar x))
          (proper-rangemap-p (cdr x))))
   ///
-  
+
   (defthm proper-rangelist-p-of-lookup-in-proper-rangemap
     (implies (and (proper-rangemap-p x)
                   (rangemap-p x))
@@ -1159,7 +1159,7 @@
                  (mv nil nil))
                 ((mv item item-ss) (vl::vl-scopestack-find-item/ss path.namespace ss))
                 ((unless item)
-                 (cw "in path-find-vl-item, didn't find a scope item for namespace ~x0"
+                 (cw "in path-find-vl-item, didn't find a scope item for namespace ~x0: ~x1~%"
                      path.namespace path)
                  (mv nil nil))
                 ((when (eq (tag item) :vl-genbegin))
@@ -1366,7 +1366,7 @@
         (b* ((range1 (make-range :lsb x1.lsb :width (- y1.lsb x1.lsb))))
           (cons range1 rest))))
     rest)
-  /// 
+  ///
   (local (defret lsb-of-rangelist-chop
            (implies (and (consp chop)
                          (proper-rangelist-p x))
@@ -1596,7 +1596,7 @@
 #!vl
 (local
  (defsection vl-structmemberlist-sizes
-   
+
 
   (local (in-theory (disable member acl2::subsetp-member
                              acl2::member-when-atom
@@ -1652,7 +1652,7 @@
                     (vl-datatype-size-noerr x)))
     :hints (("goal" :in-theory (enable vl-datatype-size-noerr)
              :expand ((vl-datatype-size x)))))
-  
+
   (local (defthm sum-nats-of-rev
            (Equal (sum-nats (rev x))
                   (sum-nats x))))
@@ -1680,7 +1680,7 @@
          (not (member nil sizes))
          (max-nats sizes)))
   ///
-  
+
   (defret vl-structmemberlist-size-max-of-cons
     (equal (vl-structmemberlist-size-max (cons a b))
            (b* ((first (vl-datatype-size-noerr (vl-structmember->type a)))
@@ -1714,7 +1714,7 @@
 ;;         ;; lsb of datatype is above msb of first range
 ;;         nil))
 ;;     t))
-       
+
          ;; ((when (atom ranges)) nil)
          ;; ((sv::range r1) (car ranges))
          ;; ((when (and r1.width (<= (+ r1.lsb r1.width) offset)))
@@ -1727,7 +1727,7 @@
          ;; ((when (or (<= size offset)
          ;;            (<= size r1.lsb)))
          ;;  nil))
-       
+
 #!vl
 (defthm vl-structmemberlist-count-of-append
   (equal (vl-structmemberlist-count (append x y))
@@ -1809,20 +1809,20 @@
     (b* ((dims (append-without-guard
                 (vl-datatype->udims x)
                 (vl-datatype->pdims x))))
-         
+
       ;; (mbe :logic (b* (((mv res &)
       ;;                   (sv-range-to-vl-chunks-dims dims x name lsb width))
       ;;                  ((mv & size) (vl-datatype-size x)))
       ;;               (mv res size))
       ;;      :exec
       (sv-range-to-vl-chunks-dims dims (vl-datatype-update-dims nil nil x) name lsb width)))
-  
+
   (define sv-range-to-vl-chunks-dims ((dims vl-dimensionlist-p)
                                       (x vl-datatype-p)
                                       (name vl-printedtree-p)
                                       (lsb natp)
                                       (width posp))
-    
+
     :guard (and (vl-datatype-resolved-p x)
                 (vl-dimensionlist-resolved-p dims)
                 (vl-datatype-size-noerr x)
@@ -1903,7 +1903,7 @@
                                     "]")))))
       (append msb-chunk (cons middle-entry-ans lsb-chunk))))
 
-  
+
   (define sv-range-to-vl-chunks-nodims ((x vl-datatype-p)
                                         (name vl-printedtree-p)
                                         (lsb natp)
@@ -1980,7 +1980,7 @@
       (sv-range-to-vl-chunks-unionmembers (cdr x) name size lsb width)))
   ///
   (local (include-book "centaur/bitops/floor" :dir :system))
-   
+
   (local (defthm floor-monotonic-inst
            (implies (and (posp width) (posp y) (natp lsb))
                     (<= (floor lsb y) (floor (+ -1 lsb width) y)))
@@ -2013,7 +2013,7 @@
            (implies (stringp x)
                     (vl-printedtree-p x))
            :hints(("Goal" :in-theory (enable vl-printedtree-p)))))
-  
+
   (local (defthm x0
            (implies (mv-nth 1 (vl-dimension-size x))
                     (and (equal (vl-dimension-kind x) :range)
@@ -2037,8 +2037,8 @@
     :hints(("Goal" :in-theory (enable vl-printedlist->string))))
 
   (deffixequiv-mutual sv-range-to-vl-chunks-datatype))
-    
-                       
+
+
 #!vl
 (define sv-rangelist-to-vl-chunks ((x sv::rangelist-p)
                                    (type vl-datatype-p)
@@ -2180,7 +2180,7 @@
                (vl-msg "~@0.<unnamed-~x1>"
                        (list (vl-scopestack-path-msg ss.super)
                              (tag ss.top)))))))
-                             
+
 
 
 
@@ -2218,7 +2218,7 @@
     (implies (and (path< x y)
                   (path< y z))
              (path< x z)))
-  
+
   (defthm path<=-transitive
     (implies (and (not (path< x y))
                   (not (path< y z)))
@@ -2296,7 +2296,7 @@
 
   (fty::deffixequiv path-alist-count :hints(("Goal" :in-theory (enable path-alist-fix
                                                                        path-alist-count)))))
-  
+
 
 (define path-alist-split-wires ((x path-alist-p) (acc name-alist-p))
   :measure (len x)
@@ -2414,7 +2414,7 @@
     (implies namespace
              (< (path-alist-count rest) (path-alist-count x)))
     :rule-classes :linear))
- 
+
 
 
 (defines path-alist-to-scopetree
@@ -2444,8 +2444,8 @@
 
 (defprojection addresslist->paths ((x addresslist-p))
   :returns (paths pathlist-p)
-  (address->path x))    
-  
+  (address->path x))
+
 
 #!vl
 (define nest-hier-prefix ((prev-prefix stringp)
@@ -2636,7 +2636,7 @@
      (sv::item-use/set-warnings item ss
                                 hier-prefix name (cdr useds-pair) (cdr sets-pair) dir instance-scope-p)
      warnings)))
-       
+
 
 #!vl
 (define scope-leaves-use/set-warnings ((x sv::name-alist-p)
@@ -2661,7 +2661,7 @@
     (scope-leaves-use/set-warnings (cdr x) ss hier-prefix uses sets ports instance-scope-p warnings))
   ///
   (local (in-theory (enable sv::name-alist-fix))))
-                                              
+
 
 ;; (local (defthm scopetree-alist-count-of-cdr-strong
 ;;          (implies (consp x)
@@ -2678,7 +2678,7 @@
       (:vl-module (vl-module->portdecls x))
       (:vl-interface (vl-interface->portdecls x))
       (t nil))))
-  
+
 #!vl
 (defines scopetree-collect-use/set-warnings
   :prepwork ((local (defthm vl-scope-p-when-vl-module-p-strong
@@ -2833,7 +2833,7 @@
          ((unless new-prefix)
           (scopetree-collect-use/set-warnings-genarray-scopes
            (cdr x) blocks ss hier-prefix uses sets warnings))
-         
+
          (block (vl::vl-genblocklist-find-block name blocks))
          ((unless block)
           (cw "in ~x0, expected to find a genarray block for index ~x1, but didn't, under ~s2~%"
@@ -2919,9 +2919,9 @@
       (fty::deffixequiv-mutual scopetree-collect-use/set-warnings :args (sets))
       (fty::deffixequiv-mutual scopetree-collect-use/set-warnings :args (warnings))
       (fty::deffixequiv-mutual scopetree-collect-use/set-warnings :omit (uses sets warnings)))))
-         
-                                                       
-         
+
+
+
 
 
 
@@ -2969,10 +2969,10 @@
      (if (eql (address->scope (car x)) 0)
          (cons (address-fix (car x)) acc)
        acc))))
-              
-             
-  
-  
+
+
+
+
 #!vl
 (define vl-scopedef-is-scope ((x vl-scopedef-p))
   (case (tag (vl-scopedef-fix x))
@@ -2983,7 +2983,7 @@
     (implies (and (vl-scopedef-is-scope x)
                   (vl-scopedef-p x))
              (vl-scope-p x))
-    :hints (("goal" 
+    :hints (("goal"
              :in-theory (e/d (vl-scope-p vl-scopedef-fix))))))
 
 
@@ -3023,7 +3023,7 @@
                    (hons-get x1.name alist)))
         (filter-portdecl-wires (cdr x) alist (cons (wire-fix x1) (wirelist-fix acc)))))
     (filter-portdecl-wires (cdr x) alist acc)))
-                
+
 
 (local (defthm addresslist-p-of-remove-adjacent-duplicates
          (implies (addresslist-p x)
@@ -3079,8 +3079,8 @@
                                              (svexlist-mask-alist x))))))
      :hints(("Goal" :in-theory (e/d (svexlist-mask-alist)
                                     (svexlist-mask-alist/toposort-to-mask-alist)))))
-     
-     
+
+
 
      ))
 
@@ -3092,7 +3092,7 @@
   :hints(("Goal" :in-theory (enable pairlis$))))
 
 
-                
+
 (define lhs-collect-addresses ((x lhs-p)
                            (addresses-acc address-alist-p))
   :guard (svarlist-addr-p (lhs-vars x))
@@ -3178,7 +3178,7 @@
             __function__ name (tag vlmod))
         (mv moddb aliases svexarr (make-use-set) nil mod))
        (ss (vl::vl-scopestack-push vlmod ss))
-       
+
        (modidx (moddb-modname-get-index name moddb))
        ((unless modidx)
         (cw "In ~x0, ~x1 was not found in the moddb~%"
@@ -3197,7 +3197,7 @@
 
        (assigns-sets (assigns-to-sets norm-assigns nil))
 
-       ((mv assigns-uses warnings) (svex-mask-alist-to-rangemap 
+       ((mv assigns-uses warnings) (svex-mask-alist-to-rangemap
                                     (svexlist-mask-alist assign-rhses)
                                     nil nil))
        ;; (- (cw "assigns-uses: ~x0~%" (rangemap-simplify assigns-uses nil))
@@ -3237,16 +3237,16 @@
                   (svarlist-addr-p (module-vars mod)))
              (svarlist-addr-p (module-vars stub-mod)))))
 
-       
-
-       
 
 
 
-       
-       
-         
-  
+
+
+
+
+
+
+
 
 ;; Process SV modules depth-first/post-order according to the instantiation
 ;; hierarchy.  For each proper module (corresponding to a VL module/interface,
@@ -3417,7 +3417,7 @@
     :hints (("goal" :expand ((:free (a b) (modalist-vars (cons a b)))))))
 
   (fty::deffixequiv-mutual sv-use-set-analyze-rec))
-                     
+
 
 
 (define sv-use-set-analyze-all ((tail modalist-p)

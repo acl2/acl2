@@ -4663,13 +4663,15 @@
           (path (set::head paths))
           (tunit (omap::lookup path tumap))
           (dstate (init-dstate path ienv))
-          ((mv erp new-tunit & tumap-dimb)
+          ((mv erp new-tunit & new-tumap-dimb)
            (dimb-trans-unit tunit
                             dstate
                             tumap
                             resolved-includes
                             tumap-dimb
                             1000000000))
+          ;; On error, continue with the accumulator as it was before the
+          ;; call, not with the irrelevant value returned on failure.
           ((when erp)
            (if keep-going
                (prog2$ (cw "Error in translation unit ~x0: ~@1~%" path erp)
@@ -4680,7 +4682,7 @@
                                                           keep-going
                                                           tumap-dimb))
              (retmsg$ "Error in translation unit ~x0: ~@1" path erp)))
-          (tumap-dimb (omap::update path new-tunit tumap-dimb)))
+          (tumap-dimb (omap::update path new-tunit new-tumap-dimb)))
        (dimb-filepath-trans-unit-map-loop (set::tail paths)
                                           tumap
                                           resolved-includes

@@ -440,6 +440,9 @@
    (built-in-fun "__builtin_return_address"
                  (type-pointer (type-void))
                  (type-params-unspecified))
+   (built-in-fun "__builtin_frame_address"
+                 (type-pointer (type-void))
+                 (type-params-unspecified))
    (built-in-fun "__builtin_extract_return_addr"
                  (type-pointer (type-void))
                  (type-params-unspecified))
@@ -659,6 +662,11 @@
    ;; https://gcc.gnu.org/pipermail/gcc-cvs/2021-March/343981.html:
    (built-in-fun "__builtin_ia32_rdtsc"
                  (type-ullong)
+                 (type-params-unspecified))
+   ;; Not found in [GCCM], but accepted by GCC and Clang,
+   ;; corresponding to the isinf macro [C17:7.12.3.3] [C23:7.12.3.4]:
+   (built-in-fun "__builtin_isinf"
+                 (type-sint)
                  (type-params-unspecified))
    ;; Not found in [GCCM], but corresponding to [C23:7.16.1] [C23:7.16.2]:
    (built-in-fun "__builtin_va_copy"

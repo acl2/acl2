@@ -24,6 +24,7 @@
 ;; LONG-BYTES is the number of bytes of longs (default 8).
 ;; LLONG-BYTES is the number of bytes of long longs (default 8).
 ;; PLAIN-CHAR-SIGNEDP is T if plain chars are signed, else NIL (the default).
+;; KEEP-GOING is T to continue past a failing unit, else NIL (the default).
 ;; Optional COND may be over variables AST.
 
 (defconst *test-valid-allowed-options*
@@ -33,6 +34,7 @@
     :long-bytes
     :llong-bytes
     :plain-char-signedp
+    :keep-going
     :cond))
 
 (defconst *test-valid-fail-allowed-options*
@@ -82,6 +84,7 @@
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
        (dialect (or (cdr (assoc-eq :dialect options))
                     '(c::make-dialect :std (c::standard-c17))))
+       (keep-going (cdr (assoc-eq :keep-going options)))
        (cond (cdr (assoc-eq :cond options)))
        (bool-bytes 1)
        (float-bytes 4)
@@ -101,9 +104,9 @@
                              :ldouble-bytes ,ldouble-bytes
                              :pointer-bytes ,pointer-bytes
                              :plain-char-signedp ,plain-char-signedp))
-            ((mv erp1 ast) (parse-fileset ',fileset ,dialect t nil))
-            ((mv erp2 ast) (dimb-trans-ensemble ast ienv nil))
-            ((mv erp3 ?ast) (valid-trans-ensemble ast ienv nil)))
+            ((mv erp1 ast) (parse-fileset ',fileset ,dialect t ,keep-going))
+            ((mv erp2 ast) (dimb-trans-ensemble ast ienv ,keep-going))
+            ((mv erp3 ?ast) (valid-trans-ensemble ast ienv ,keep-going)))
          (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
                (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2))
                (erp3 (cw "~%VALIDATOR ERROR: ~@0~%" erp3))
@@ -257,6 +260,23 @@ void f() {
 (test-valid
  "void f(void * x) {
   f(0);
+}
+")
+
+;; As in assignment, GCC and Clang allow a function pointer
+;; to be passed for a void pointer, but standard C does not.
+(test-valid
+ "void f(void * x);
+void g(void) {
+  f(g);
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "void f(void * x);
+void g(void) {
+  f(g);
 }
 ")
 
@@ -2075,3 +2095,41 @@ int (*f(int))[20];
   "void g(int a[static 10], int b[const static 20]);
 void h(int [static 10], int [const static 20]);
 ")
+
+(test-valid
+ "int f(double x) {
+  return __builtin_isinf(x);
+}
+void * g(void) {
+  return __builtin_frame_address(0);
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; Under :keep-going, a unit that fails disambiguation
+;; does not discard the units disambiguated before it.
+(test-valid
+ "int a;
+"
+ "int i = sizeof(x);
+"
+ "int b;
+"
+ :keep-going t
+ :cond (equal (omap::size (trans-ensemble->units ast)) 2))
+
+;; Nor does a unit that fails validation discard
+;; the information from the units validated before it.
+(test-valid
+ "int a;
+"
+ "int e = ~1.0;
+"
+ "int b;
+"
+ :keep-going t
+ :cond (b* ((externals (trans-ensemble-vinfo->externals
+                        (trans-ensemble->info ast))))
+         (and (equal (omap::size (trans-ensemble->units ast)) 2)
+              (treemap::lookup (ident "a") externals)
+              (treemap::lookup (ident "b") externals))))
