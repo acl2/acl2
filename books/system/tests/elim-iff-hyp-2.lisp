@@ -1,5 +1,6 @@
 ; This book, modified only as noted below, was produced by Claude and passed
-; along by Eric Smith.
+; along by Eric Smith.  It illustrates a soundness bug fixed before ACL2
+; Version 8.8.
 
 ; SOUNDNESS BUG: the Sept-2026 :ELIM soundness fix is bypassable via
 ; ENCAPSULATE pass 2 (and equally via INCLUDE-BOOK).

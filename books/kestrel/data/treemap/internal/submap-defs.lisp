@@ -18,6 +18,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Matt K. mod: Two necessary additions because of verify-guards fix, 9/19/2026.
+; Perhaps these could std::defredundant could be improved to make these
+; unnecessary.
+
+(DEFUN-SK TREE-SUBMAP-P-SK (X Y)
+  (DECLARE (XARGS :VERIFY-GUARDS NIL))
+  (DECLARE (XARGS :GUARD T))
+  (FORALL
+   (KEY)
+   (NON-EXEC (IMPLIES (TREESET::IN KEY (TREE-KEY-SET X))
+                      (AND (TREESET::IN KEY (TREE-KEY-SET Y))
+                           (EQUAL (TREE-LOOKUP KEY X)
+                                  (TREE-LOOKUP KEY Y))))))
+  :REWRITE
+  (IMPLIES
+   (TREE-SUBMAP-P-SK X Y)
+   (NON-EXEC (IMPLIES (TREESET::IN KEY (TREE-KEY-SET X))
+                      (AND (TREESET::IN KEY (TREE-KEY-SET Y))
+                           (EQUAL (TREE-LOOKUP KEY X)
+                                  (TREE-LOOKUP KEY Y))))))
+  :SKOLEM-NAME TREE-SUBMAP-P-SK-WITNESS
+  :THM-NAME TREE-SUBMAP-P-SK-NECC)
+
+(verify-guards TREE-SUBMAP-P-SK)
+
 (std::defredundant
   :names (tree-submap-p
           tree-submap-p-sk-witness

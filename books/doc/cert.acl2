@@ -67,5 +67,12 @@
 (include-book "kestrel/risc-v/portcullis" :dir :system)
 (include-book "kestrel/data/portcullis" :dir :system)
 (include-book "kestrel/data/treemap/portcullis" :dir :system)
+(include-book "kestrel/futhark/portcullis" :dir :system)
+(include-book "projects/omp/portcullis" :dir :system)
+(include-book "kestrel/remora/portcullis" :dir :system)
+(include-book "kestrel/rust/portcullis" :dir :system)
+(include-book "kestrel/rust/syntax/portcullis" :dir :system)
+(include-book "kestrel/arm/portcullis" :dir :system)
+(include-book "centaur/fgl/portcullis" :dir :system)
 
 ; cert-flags: ? t :ttags :all

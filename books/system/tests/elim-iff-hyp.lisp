@@ -1,5 +1,6 @@
 ; This book, modified only as noted below, was produced by Claude and passed
-; along by Eric Smith.
+; along by Eric Smith.  It illustrates a soundness bug fixed before ACL2
+; Version 8.8.
 
 (in-package "ACL2")
 
@@ -37,18 +38,18 @@
   :rule-classes :elim)
 )
 
-; Commented out by Matt Kaufmann:
-
-#|
+(must-fail ; The must-fail wrapper was added by Matt Kaufmann:
 ; FALSE: (not (equal (h x) 3)) is false at x=3, yet ACL2 proves it via the bogus
 ; :ELIM rule (the hyp (equal x 3) becomes (equal (tobool d) 3), always false, so
 ; the "normal" elim clause collapses to T; the pathological clause closes via h-inv).
 (defthm bad
   (not (equal (h x) 3))
   :rule-classes nil)
+)
 
+(must-fail ; The must-fail wrapper was added by Matt Kaufmann:
 (defthm nil-proved
   nil
   :hints (("Goal" :use ((:instance bad (x 3)))))
   :rule-classes nil)
-|#
+)
