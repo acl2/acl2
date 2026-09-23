@@ -92,7 +92,35 @@
      is to imply that the least upper bound exists).
      The rule has a premise requiring the principal shape to be valid
      because that does not follow from the least upper bound predicate
-     (e.g. it could include a variable not in @('ivars'))."))
+     (e.g. it could include a variable not in @('ivars')).")
+   (xdoc::p
+    "For type application,
+     the type argument must have the same kind as
+     the parameter of the universal type,
+     as in [thesis] [arxiv].
+     We do not lift an atom-kinded argument to a scalar array type
+     when the parameter is array-kinded.
+     This differs from [impl],
+     where an array-kinded type parameter stands for
+     an atom type variable and a shape variable,
+     so that an atom-kinded argument instantiates just the former,
+     leaving the latter abstracted;
+     we plan to conform to [impl] at some point.
+     The two substitution maps are set up
+     as in the @('forall') rule of @(see type-equivalence-definition).
+     The substitution is @(tsee type-subst-type-vars),
+     guarded by @(tsee type-subst-type-vars-no-capture-p):
+     when the substitution would capture variables,
+     the rule does not apply directly,
+     but the binders in the type of the function
+     can be alpha-renamed via the @('eqv') rule first,
+     so no generality is lost.")
+   (xdoc::p
+    "Ispace application is similar to type application,
+     but the function must have a product type instead of a universal one,
+     and we apply an ispace substitution instead of a type substitution.
+     Furthermore, there is an additional application of the ispace substitution,
+     namely to the shape of the body type of the product type."))
 
   :preds ((expr-ok ivars tvars evars expr type)
           (atom-ok ivars tvars evars atom type)
@@ -308,7 +336,58 @@
                                                     array-subst)
                               (ispace-shape (shp++ shape-fun shape-body)))))
 
-   ;; TODO: iapp
+   ;; TODO: tappn
+
+   ;; TODO: fails
+   ;; (iapp ((ispace-var-setp ivars)
+   ;;        (type-var-setp tvars)
+   ;;        (string-type-mapp evars)
+   ;;        (exprp fun)
+   ;;        (ispace-varp param)
+   ;;        (ispacep ispace-arg)
+   ;;        (typep type-body)
+   ;;        (shapep shape-body)
+   ;;        (shapep shape-fun)
+   ;;        (expr-ok ivars tvars evars
+   ;;                 fun
+   ;;                 (type-array (type-pi param
+   ;;                                      (type-array type-body
+   ;;                                                  (ispace-shape
+   ;;                                                   shape-body)))
+   ;;                             (ispace-shape shape-fun)))
+   ;;        (ispace-ok ivars ispace-arg)
+   ;;        (ispace-var-case
+   ;;         param
+   ;;         :dim
+   ;;         (and (ispace-case ispace-arg :dim)
+   ;;              (equal dim-subst
+   ;;                     (omap::update (ispace-var-dim->name param)
+   ;;                                   ispace-arg
+   ;;                                   nil))
+   ;;              (equal shape-subst nil))
+   ;;         :shape
+   ;;         (and (ispace-case ispace-arg :shape)
+   ;;              (equal dim-subst nil)
+   ;;              (equal shape-subst
+   ;;                     (omap::update (ispace-var-shape->name param)
+   ;;                                   ispace-arg
+   ;;                                   nil))))
+   ;;        (type-subst-ispace-vars-no-capture-p type-body
+   ;;                                             dim-subst
+   ;;                                             shape-subst)
+   ;;        (ispace-subst-ispace-vars-no-capture-p shape-body
+   ;;                                               dim-subst
+   ;;                                               shape-subst))
+   ;;       (expr-ok ivars tvars evars
+   ;;                (expr-iapp fun ispace-arg)
+   ;;                (type-array (type-subst-type-vars type-body
+   ;;                                                  dim-subst
+   ;;                                                  shape-subst)
+   ;;                            (ispace-shape (shp++ shape-fun
+   ;;                                                 (shape-subst-ispace-vars
+   ;;                                                  shape-body
+   ;;                                                  dim-subst
+   ;;                                                  shape-subst))))))
 
    ;; TODO: iappn
 
@@ -415,6 +494,7 @@
   (verify-guards expr-ok-string-validp)
   (verify-guards expr-ok-eapp-validp)
   (verify-guards expr-ok-tapp-validp)
+  ;; (verify-guards expr-ok-iapp-validp)
   (verify-guards atom-ok-bool-validp)
   (verify-guards atom-ok-int-validp)
   (verify-guards atom-ok-float-validp)
