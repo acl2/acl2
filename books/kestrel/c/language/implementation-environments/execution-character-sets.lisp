@@ -645,6 +645,8 @@
 
   ///
 
+  (in-theory (disable (:e exec-charset-unicode)))
+
   (defruled exec-chars-of-exec-charset-unicode
     (equal (exec-chars (exec-charset-unicode std))
            (unicode-chars))

@@ -383,6 +383,8 @@
 
   ///
 
+  (in-theory (disable (:e source-charset-unicode)))
+
   (defruled source-chars-of-source-charset-unicode
     (equal (source-chars (source-charset-unicode end-of-lines))
            (unicode-chars))
