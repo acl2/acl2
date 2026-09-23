@@ -198,25 +198,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define guard-theorem-rewrite (fn simplify state)
-  :returns (mv erp (formula t) state)
-  :short "Compute the rewrite-rule formula for a function's guard theorem."
-  :long
-  (xdoc::topstring-p
-   "This returns an error triple whose value, on success, is
-    the untranslated formula used by @(tsee def-guard-theorem-rewrite).
-    It does not submit an event.
-    @('fn') must name a guard-verified function.
-    @('simplify') must be @(':limited') or @('nil'),
-    with the meaning described in @(tsee def-guard-theorem-rewrite).")
-  (b* (((mv erp term state) (guard-theorem-rewrite-term fn simplify state))
-       ((when erp) (mv erp nil state))
-       ((mv erp formula state) (guard-theorem-rewrite-formula term state))
-       ((when erp) (mv erp nil state)))
-    (value (untranslate$ formula t state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define guard-theorem-rewrite-substitution ((vars symbol-listp)
                                             (tag-fn symbolp))
   :returns (subst alistp)
