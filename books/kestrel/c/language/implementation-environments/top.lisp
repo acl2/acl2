@@ -49,15 +49,7 @@
      and therefore it seems simpler to have one notion.")
    (xdoc::p
     "We start by capturing some aspects of the C implementation environment.
-     More will be added in the future.")
-   (xdoc::p
-    "Initially, our formalization of implementation environments
-     is not used in other parts of the C formalization;
-     furthermore, it captures notions already captured elsewhere,
-     such as the "
-    (xdoc::seetopic "integer-formats" "integer formats")
-    ". But we plan to update the rest of the formalization to use this,
-     also removing those then-redundant parts."))
+     More will be added in the future."))
   :order-subtopics (uchar-formats
                     signed-formats
                     schar-formats
