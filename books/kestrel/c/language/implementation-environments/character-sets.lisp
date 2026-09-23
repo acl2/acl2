@@ -430,6 +430,8 @@
 
   ///
 
+  (in-theory (disable (:e charset-ascii)))
+
   (defruled source-chars-equal-exec-chars-ascii-lemma
     (equal (source-chars (source-charset-ascii end-of-lines))
            (exec-chars (exec-charset-ascii std)))

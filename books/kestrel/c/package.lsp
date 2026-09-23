@@ -220,4 +220,5 @@
                fty::okf
                fty::reserrf
                fty::reserrp
-               std::defret-mutual)))
+               std::defret-mutual
+               std::defretd)))
