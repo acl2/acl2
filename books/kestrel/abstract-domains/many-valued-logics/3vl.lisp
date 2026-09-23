@@ -1812,6 +1812,20 @@
   :rule-classes :forward-chaining
   :by antisymmetry-of-3truth<=-weak)
 
+(defruled totality-of-3truth<=
+  (implies (not (3truth<= x y))
+           (3truth<= y x))
+  :enable (3truth<=
+           3truth<
+           3fix
+           3p))
+
+(defrule totality-of-3truth<=-forward-chaining
+  (implies (not (3truth<= x y))
+           (3truth<= y x))
+  :rule-classes :forward-chaining
+  :by totality-of-3truth<=)
+
 (defrule transitivity-of-3truth<=
   (implies (and (3truth<= x y)
                 (3truth<= y z))
@@ -1819,6 +1833,14 @@
   :enable (3truth<=
            3truth<
            3fix))
+
+;; The same rule with the hypotheses in the other order,
+;; so that the free variable is bound from a known upper bound.
+(defruled transitivity-of-3truth<=-swapped
+  (implies (and (3truth<= y z)
+                (3truth<= x y))
+           (3truth<= x z))
+  :by transitivity-of-3truth<=)
 
 (defrule 3truth<=-when-3truth<
   (implies (3truth< x y)
@@ -1857,9 +1879,16 @@
            3fix
            3p))
 
+;; Since the truth order is total, 3and is a minimum and 3or a maximum.
+;; These rules must precede the meet and join laws below,
+;; so that those laws, being newer, are tried first:
+;; e.g. splitting the left side of (3truth<= (3and x y) (3and x y)) first
+;; would give (or (3truth<= x y) (3truth<= y x)), which needs totality.
+
 (defrule 3truth<=-of-3and
-  (and (3truth<= (3and x y) x)
-       (3truth<= (3and x y) y))
+  (equal (3truth<= (3and x y) z)
+         (or (3truth<= x z)
+             (3truth<= y z)))
   :enable (3truth<=
            3truth<
            3and
@@ -1867,8 +1896,29 @@
            3p))
 
 (defrule 3truth<=-of-arg1-and-3or
-  (and (3truth<= x (3or x y))
-       (3truth<= y (3or x y)))
+  (equal (3truth<= x (3or y z))
+         (or (3truth<= x y)
+             (3truth<= x z)))
+  :enable (3truth<=
+           3truth<
+           3or
+           3fix
+           3p))
+
+(defrule 3truth<=-of-arg1-and-3and
+  (equal (3truth<= x (3and y z))
+         (and (3truth<= x y)
+              (3truth<= x z)))
+  :enable (3truth<=
+           3truth<
+           3and
+           3fix
+           3p))
+
+(defrule 3truth<=-of-3or
+  (equal (3truth<= (3or x y) z)
+         (and (3truth<= x z)
+              (3truth<= y z)))
   :enable (3truth<=
            3truth<
            3or
