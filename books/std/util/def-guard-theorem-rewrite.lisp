@@ -200,7 +200,7 @@
 
 (define guard-theorem-rewrite (fn simplify state)
   :returns (mv erp (formula t) state)
-  :short "Inspect the rewrite-rule formula for a function's guard theorem."
+  :short "Compute the rewrite-rule formula for a function's guard theorem."
   :long
   (xdoc::topstring-p
    "This returns an error triple whose value, on success, is
