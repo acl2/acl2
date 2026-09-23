@@ -52,7 +52,12 @@
                   (not (nat-string-map-p (treemap::update 'a "x" (treemap::empty))))
                   (not (nat-string-map-p (treemap::update 1 'x (treemap::empty))))
                   (not (nat-string-map-p 7))
-                  (equal (nat-string-map-fix m) m)))))
+                  (equal (nat-string-map-fix m) m))))
+  ;; The fixer is bounded by any bound of its argument.
+  (defthm submap-of-nat-string-map-fix-test
+    (implies (treemap::submap x y)
+             (treemap::submap (nat-string-map-fix x) y))
+    :hints (("Goal" :in-theory '(submap-of-nat-string-map-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
