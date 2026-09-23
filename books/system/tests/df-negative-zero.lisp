@@ -1,5 +1,6 @@
 ; This book, modified only as noted below, was produced by Claude and passed
-; along by Eric Smith.
+; along by Eric Smith.  It illustrates a soundness bug fixed before ACL2
+; Version 8.8.
 
 ; Proof of nil: IEEE negative zero is observable through DF-STRING.
 ;
@@ -33,10 +34,9 @@
   :rule-classes nil)
 )
 
-; Commented out by Matt Kaufmann:
-#|
+(must-fail ; The must-fail wrapper was added by Matt Kaufmann:
 (defthm nil-proved
   nil
   :rule-classes nil
   :hints (("Goal" :use (bad-is-good bad-is-not-good))))
-|#
+)

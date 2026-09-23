@@ -1,5 +1,6 @@
 ; This book, modified only as noted below, was produced by Claude and passed
-; along by Eric Smith.  See also measure-fn-redundancy.lisp.
+; along by Eric Smith.  It illustrates a soundness bug fixed before ACL2
+; Version 8.8.  See also measure-fn-redundancy.lisp.
 
 ; NEW variant: the ENCAPSULATE-level redundancy check (redundant-encapsulate-tuplep,
 ; other-events.lisp ~7783) compares the ambient acl2-defaults-table only for
@@ -34,15 +35,16 @@
       (if (consp x) (f (cdr x)) x))
     )))
 
-; Commented out by Matt Kaufmann:
-#|
+(must-fail ; The must-fail wrapper was added by Matt Kaufmann:
 (defthm bad
   (not (consp x))
   :rule-classes nil
   :hints (("Goal" :use (:termination-theorem f))))
+)
 
+(must-fail ; The must-fail wrapper was added by Matt Kaufmann:
 (defthm nil-proved
   nil
   :rule-classes nil
   :hints (("Goal" :use (:instance bad (x '(1))))))
-|#
+)

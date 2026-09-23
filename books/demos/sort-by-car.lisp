@@ -47,6 +47,11 @@
 (encapsulate
   ( ((indexp *) => *) )
   (local (defun indexp (x) (rationalp x)))
+; We need the following type-prescription rule to avoid an error when
+; indexp-implies-rationalp is processed in pass 2 of this encapsulate.
+  (defthm booleanp-indexp
+    (booleanp (indexp x))
+    :rule-classes :type-prescription)
   (defthm indexp-implies-rationalp
     (implies (indexp x)
              (rationalp x))

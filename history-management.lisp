@@ -13176,7 +13176,7 @@
                          wrld
                          (all-vars!1 (lambda-object-guard obj)
                                      wrld
-                                     (union-eq (lambda-object-formals (ffn-symb term))
+                                     (union-eq (lambda-object-formals obj)
                                                ans)))))
           (t ans)))
         ((flambdap (ffn-symb term))

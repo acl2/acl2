@@ -15223,7 +15223,12 @@
 ; We produce an expression that evaluates to t if the conjunction of the
 ; terms is true and returns a call of illegal otherwise.
 
-  (cond ((or (null term-lst)
+  (cond ((null term-lst)
+         *t*)
+        ((let ((term (car term-lst)))
+           (and (ffn-symb-p term 'if)
+                (equal (fargn term 1) *t*)
+                (equal (fargn term 2) *t*)))
 
 ; A special case is when term-list comes from (the (type type-dcl) x).  The
 ; expansion of this call of THE results in a declaration of the form (declare
@@ -15236,11 +15241,7 @@
 ; dcl-guardian to create (prog2$ type-test u), we instead simply create u if
 ; type-test is t.
 
-             (let ((term (car term-lst)))
-               (and (ffn-symb-p term 'if)
-                    (equal (fargn term 1) *t*)
-                    (equal (fargn term 2) *t*))))
-         *t*)
+         (dcl-guardian (cdr term-lst))) 
         ((null (cdr term-lst))
          (fcons-term* 'check-dcl-guardian
                       (car term-lst)
@@ -23750,8 +23751,8 @@
 
                 (trans-er+? cform x
                             ctx
-                            "In a LAMBDA object or a lambda$ term with ~
-                             :SPLIT-TYPES T, every TYPE expression derived ~
+                            "In a lambda$ term with :SPLIT-TYPES T or a ~
+                             LAMBDA object, every TYPE expression derived ~
                              from the TYPE specifiers must be an explicit ~
                              conjunct in the :GUARD, and the guard ~x0 is ~
                              missing ~&1.  ~@2"

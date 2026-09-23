@@ -681,7 +681,8 @@ CLEAN_FILES_EXPLICIT := \
    projects/apply-model-2/ex1/evaluation-apply.lisp \
    projects/apply-model-2/ex1/evaluation-user-defs.lisp \
    projects/apply-model-2/ex2/evaluation-apply.lisp \
-   projects/apply-model-2/ex2/evaluation-user-defs.lisp
+   projects/apply-model-2/ex2/evaluation-user-defs.lisp \
+   projects/acl2-in-hol/tests/success.txt
 
 MORECLEAN_FILES_EXPLICIT := \
    doc/manual \

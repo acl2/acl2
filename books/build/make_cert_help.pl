@@ -115,6 +115,42 @@ sub timestr {
 
 my $SCRIPT_START_TIME = mytime();
 
+# CERT_PL_TERSE: shorter "Making" and "Built" lines, for build logs that are
+# limited in size (a full regression prints two such lines per book -- over 2
+# MB in the usual format, which is more than some CI systems keep).  When
+# set, a book under the system books directory (the parent of this script's
+# directory) is named by its path relative to that directory, without the
+# ".cert" extension (other target extensions are kept, since they identify
+# the certification step); the "Making" line has no timestamp; the "Built"
+# line keeps the elapsed time and ends with a plain "YYYY-MM-DD HH:MM:SS"
+# time; and no ANSI color codes are emitted.  Books outside the system books
+# directory are named as usual (absolute path with extension).  For example:
+#
+#   Making kestrel/c/transformation/struct-type-split-proofs2
+#   Built kestrel/c/transformation/struct-type-split-proofs2 (15.897s) at 2026-09-21 22:52:23
+#
+# CERT_PL_HIDE_ENDTIME and CERT_PL_SHOW_HOSTNAME are honored as usual;
+# CERT_PL_PARSEABLE_TIMESTAMPS is not applied to the terse end time.
+my $terse = $ENV{'CERT_PL_TERSE'} ? 1 : 0;
+my $terse_books_dir = $terse ? Cwd::abs_path(File::Spec->catdir($RealBin, File::Spec->updir())) : "";
+
+# Given a target's absolute path without extension and its extension,
+# return the name to print for it under CERT_PL_TERSE.
+sub terse_goal {
+    my ($absfile, $ext) = @_;
+    # Compare real paths: $absfile may contain ".." components (cert.pl names
+    # targets relative to the books directory) or symlinks.
+    my ($vol, $dir, $base) = File::Spec->splitpath($absfile);
+    my $realdir = Cwd::abs_path(File::Spec->catpath($vol, $dir, ""));
+    my $prefix = $terse_books_dir . "/";
+    if ($terse_books_dir ne "" && defined($realdir)
+        && index("$realdir/", $prefix) == 0) {
+        my $rel = substr("$realdir/$base", length($prefix));
+        return ($ext eq "cert") ? $rel : "$rel.$ext";
+    }
+    return path_export("$absfile.$ext");
+}
+
 binmode(STDOUT,':utf8');
 
 
@@ -555,9 +591,14 @@ if ($DEBUG)
 my $full_file = File::Spec->rel2abs($TARGET);
 (my $vol, my $dir, my $file) = File::Spec->splitpath($full_file);
 my $goal = "$file.$TARGETEXT";
-my $printgoal = path_export("$full_file.$TARGETEXT");
+my $printgoal = $terse ? terse_goal($full_file, $TARGETEXT)
+                       : path_export("$full_file.$TARGETEXT");
 
-print "Making $printgoal on " . timestr($SCRIPT_START_TIME) . "\n";
+if ($terse) {
+    print "Making $printgoal\n";
+} else {
+    print "Making $printgoal on " . timestr($SCRIPT_START_TIME) . "\n";
+}
 
 my $fulldir = File::Spec->canonpath(File::Spec->catpath($vol, $dir, ""));
 print "-- Entering directory $fulldir\n" if $DEBUG;
@@ -853,7 +894,7 @@ if ($success) {
 	      : ($ELAPSED > 10) ? $boldgreen
 	      : $green;
 
-    if ($ENV{"CERT_PL_NO_COLOR"}) {
+    if ($ENV{"CERT_PL_NO_COLOR"} || $terse) {
 	$color = "";
 	$black = "";
     }
@@ -870,7 +911,9 @@ if ($success) {
     my $endtime = "";
     if (! $ENV{"CERT_PL_HIDE_ENDTIME"}) {
 	my $SCRIPT_END_TIME = mytime();
-	$endtime = sprintf(' at %s', timestr($SCRIPT_END_TIME));
+	$endtime = $terse
+	    ? strftime(' at %Y-%m-%d %H:%M:%S', localtime $SCRIPT_END_TIME)
+	    : sprintf(' at %s', timestr($SCRIPT_END_TIME));
     }
     printf("%sBuilt %s (%.3fs%s)%s%s\n", $color, $printgoal, $ELAPSED, $hostname, $endtime, $black);
 

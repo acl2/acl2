@@ -652,6 +652,11 @@
 ; arbitrary, chosen in the hope that it suffices for relieving of hyps related
 ; to widths of bit vectors
 
+; Also, the following in-theory was added by Matt K. on 9/19/2026 to avoid an
+; error from the include-book, due to an ACL2 fix for compound-recognizer
+; rules.
+
+(local (in-theory (enable (:t natp))))
 (local (include-book "../../arithmetic/basic"))
 
 (defun expt-exec (r i)
