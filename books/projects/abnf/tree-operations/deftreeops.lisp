@@ -901,12 +901,12 @@
     (xdoc::li
      "If the alternation consists of exactly two concatenations,
       one of which is a singleton of a repetition with range 1
-      whose element is numeric or character value notation,
+      whose element is a character value notation,
       and the other is a singleton of a repetition with range 1
       whose element is a rule name:
       then we return two terms,
       one that checks whether the one subtree is a terminal leaf
-      (for the numeric or character value notation case),
+      (for the character value notation case),
       and the other that checks whether the one subtree is a non-leaf
       (for the other case).")))
   (b* (((when (endp alt)) (mv nil 0)) ; never happens
