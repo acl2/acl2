@@ -2070,12 +2070,15 @@
                         *invalid*)
                       state))
               (if (or ;(equal chars '(#\T #\i #\m #\e #\d #\Space #\O #\u #\t #\, #\Space  #\e #\x #\i #\t #\i #\n #\g #\.)) ;add newline??
-                   (equal chars '(#\T #\i #\m #\e #\d #\Space #\O #\u #\t #\. #\Newline))) ;;Look for "Timed Out."
+                    (equal chars '(#\T #\i #\m #\e #\d #\Space #\O #\u #\t #\. #\Newline)) ;;Look for "Timed Out."
+                    ;; This has been reported using a recent STP:
+                    (equal chars '(#\U #\n #\k #\n #\o #\w #\n #\. #\Newline)) ;;Look for "Unknown."
+                    )
                   (prog2$ (and print (progn$ (cw "  STP timed out (max conflicts) in ")
                                              (print-to-hundredths elapsed-time)
                                              (cw "s.~%")))
                           (mv *timedout* state))
-                (prog2$ (er hard? 'call-stp-on-file "STP returned an unexpected result (~x0).  Check the .out file: ~x1.~%" chars output-filename)
+                (prog2$ (er hard? 'call-stp-on-file "STP returned an unexpected result (~X01).  Check the .out file: ~x2.~%" chars nil output-filename)
                         (mv *error* state))))))))))
 
 (local
