@@ -373,10 +373,7 @@
                                      nil))))
           (type-subst-ispace-vars-no-capture-p type-body
                                                dim-subst
-                                               shape-subst)
-          (shape-subst-ispace-vars-no-capture-p shape-body
-                                                dim-subst
-                                                shape-subst))
+                                               shape-subst))
          (expr-ok ivars tvars evars
                   (expr-iapp fun ispace-arg)
                   (type-array (type-subst-ispace-vars type-body
