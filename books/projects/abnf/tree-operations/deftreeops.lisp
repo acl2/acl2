@@ -2120,7 +2120,7 @@
         (and check-conc-fn-event?
              (append check-conc-fn-event?
                      (and (evmac-input-print->= print :result)
-                          `((cw-event "Theorem ~x0.~%"
+                          `((cw-event "Function ~x0.~%"
                                       ',info.check-conc-fn)))))))
     (mv nonleaf-thm-events
         rulename-thm-events
