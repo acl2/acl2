@@ -22,7 +22,7 @@
            (eq 'implies (ffn-symb term)))
       (mv-let (hyps1 conc)
         (get-hyps-and-conc (fargn term 2))
-        ;; todo: call union-equal here?:
+        ;; todo: call union-equal here (but first change get-conjuncts)?:
         (mv (append (get-conjuncts (fargn term 1))
                     hyps1)
             conc))
