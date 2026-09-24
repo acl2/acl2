@@ -191,6 +191,21 @@
       a sub-topic of the XDOC topic for the grammar
       (this assumes that that parent topic exists).")
 
+    (xdoc::p
+     "Each generated theorem is a rewrite rule,
+      except for the ones described below as having a different rule class.
+      The generated theorems whose names end in @('-match'),
+      the @('<prefix>-<rulename>-conc?-possibilities') theorems,
+      the @('<prefix>-%<b><min>-<max>-nat-bounds') theorems,
+      and the @(tsee fty::deffixequiv) theorems
+      are enabled;
+      all the other generated theorems are disabled.
+      Furthermore, the generated functions are introduced via @(tsee define)
+      with @(':returns') specifications,
+      and thus each generated function also comes with
+      an enabled rewrite rule about the type of its result,
+      whose name follows the @(tsee define) conventions.")
+
     (xdoc::desc
      (list
       "@('<prefix>-matchp')"
@@ -246,7 +261,9 @@
       (xdoc::seetopic "acl2::macro-aliases-table" "Macro aliases")
       " are also generated that link the macro names to the function names:
        this way, the predicates can be opened (in proofs)
-       via their macro names."))
+       via their macro names.
+       The intermediate predicates are accompanied by
+       @(tsee fty::deffixequiv) theorems."))
 
     (xdoc::desc
      "@('<prefix>-<rulename>-nonleaf')"
@@ -335,7 +352,9 @@
         one of the numbers 1, ..., @('n'),
         where @('n') is the number of concatenations
         that form the alternation that defines the rule name.
-        This is a disjunctive theorem.")
+        This is a disjunctive theorem,
+        generated as an enabled forward chaining rule
+        triggered by calls of @('<prefix>-<rulename>-conc?').")
       (xdoc::li
        "@('<prefix>-<rulename>-conc?-<i>-iff-match-conc'),
         for each concatenation @('<i>') (numbered starting from 1)
@@ -523,7 +542,7 @@
        "@('<prefix>-%<b><min>-<max>-nat-bounds'),
         which asserts that the natural number returned by the function
         has @('<min>') as lower bound and @('<max>') as upper bound.
-        This theorem is generated as a linear rule.")
+        This theorem is generated as an enabled linear rule.")
       (xdoc::li
        "@(tsee fty::deffixequiv) theorems for the function.")))
 
