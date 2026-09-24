@@ -123,13 +123,31 @@
      namely to the shape of the body type of the product type.")
    (xdoc::p
     "The rule for unboxing includes the requirement that
-     the bound ispace variable is not in the environment,
-     otherwise type safety can be broken due to variable confusion;
-     this is arguably implicit in [thesis],
-     as a form of alpha equivalence.
+     the bound ispace variable is not already in the sort environment,
+     otherwise the bound variable is confused with the one already in scope,
+     in the types of the type environment and in the type of the expression,
+     which breaks type safety;
+     this is implicit in [thesis] [arxiv],
+     via the usual convention that
+     bound variables differ from the variables in scope,
+     which alpha equivalence makes possible.
+     The renaming of the bound variable of the sum type
+     to the bound variable of the unboxing expression
+     is @(tsee type-rename-ispace-vars),
+     with the two renaming maps set up as in the application rules,
+     guarded by @(tsee type-rename-ispace-vars-no-capture-p);
+     when the renaming would capture variables,
+     the binders in the type of the target
+     can be alpha-renamed via the @('eqv') rule first.
      The rule requires the type annotation to be present,
-     and to be equivalent to the type that the rule in [thesis]
-     assigns to the unboxing expression."))
+     and to be equivalent to the type that the rule in [thesis] [arxiv]
+     assigns to the unboxing expression.
+     The requirement in [thesis] [arxiv] that
+     the resulting type is valid in the enclosing environments,
+     which prevents the bound ispace variable from escaping,
+     is applied to the annotation,
+     because that is the type assigned to the expression,
+     and validity is not preserved by type equivalence."))
 
   :preds ((expr-ok ivars tvars evars expr type)
           (atom-ok ivars tvars evars atom type)
