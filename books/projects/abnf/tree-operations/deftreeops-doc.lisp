@@ -429,8 +429,9 @@
        the @('<j>') is absent from the names of the function and theorems.")
      (xdoc::p
       "Currently this is generated if and only if
-       (i) the concatenation consists of one repetition and
-       (ii) the alternation that defines the rule name
+       (i) the concatenation consists of one repetition,
+       (ii) the repetition has a range of 1, and
+       (iii) the alternation that defines the rule name
        consists of one concatenation
        or otherwise @('<prefix>-<rulename>-conc?') is generated:
        see the conditions for this above."))
