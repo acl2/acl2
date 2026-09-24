@@ -110184,6 +110184,14 @@ it."
  @('system/tests/congruence-same-var.lisp').  Thanks to Grant Jurgensen for
  supplying the bug fix.</p>
 
+ <p>Fixed a soundness bug in the rewriter's handling of @(tsee implies).  When
+ the conclusion of @('(implies test concl)') rewrote to @('nil'), the whole
+ implication was unconditionally rewritten to an @('iff')-equivalent of the
+ negation of the test.  Therefore, the Boolean implication could be rewritten
+ to a non-Boolean.  For an example, see @(see community-book)
+ @('system/tests/implies-not-nil.lisp').  Thanks to Grant Jurgensen for
+ supplying the bug fix.</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2
