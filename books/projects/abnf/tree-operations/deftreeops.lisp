@@ -471,12 +471,12 @@
                       but its value ~x0 is not a non-empty ABNF grammar."
                      rules)))
        ((unless (rulelist-wfp rules))
-        (reterr (msg "The *GRAMMAR* input denotes and ABNF grammar, ~
-                      but the grammar is not well-formed
+        (reterr (msg "The *GRAMMAR* input denotes an ABNF grammar, ~
+                      but the grammar is not well-formed ~
                       (see :DOC ABNF::WELL-FORMEDNESS).")))
        ((unless (rulelist-closedp rules))
         (reterr (msg "The *GRAMMAR* input denotes an ABNF grammar, ~
-                      but the grammar is not closed
+                      but the grammar is not closed ~
                       (see :DOC ABNF::CLOSURE)."))))
     (retok nil grammar rules)))
 
