@@ -100,6 +100,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Tests of DIM-ADDENDS.
+; Each test compares the two results (constant and addends)
+; with the expected ones.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; An addition yields the sum of its constants and its other addends, in order.
+
+(assert-equal (mv-list 2 (dim-addends (dim+ 3 "$i" (dim* "$m" "$n"))))
+              (list 3 (list (dim-var "i") (dim* "$m" "$n"))))
+
+(assert-equal (mv-list 2 (dim-addends (dim+ 1 "$j" 2 "$i")))
+              (list 3 (list (dim-var "j") (dim-var "i"))))
+
+(assert-equal (mv-list 2 (dim-addends (dim+)))
+              (list 0 nil))
+
+; A constant yields itself and no addends.
+
+(assert-equal (mv-list 2 (dim-addends (dim-const 3)))
+              (list 3 nil))
+
+; A variable, multiplication, or subtraction yields 0 and itself.
+
+(assert-equal (mv-list 2 (dim-addends (dim-var "i")))
+              (list 0 (list (dim-var "i"))))
+
+(assert-equal (mv-list 2 (dim-addends (dim* "$m" "$n")))
+              (list 0 (list (dim* "$m" "$n"))))
+
+(assert-equal (mv-list 2 (dim-addends (dim- "$m" 1)))
+              (list 0 (list (dim- "$m" 1))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Tests of NORMALIZE-SHAPE and NORMALIZE-ISPACE.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
