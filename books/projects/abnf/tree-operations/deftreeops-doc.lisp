@@ -411,7 +411,9 @@
        in the alternation that defines the rule name,
        and for each repetition @('<j>') (numbered starting from 1)
        in the concatenation:
-       a function that, given a tree matching the rule name,
+       a function that, given a tree matching the rule name
+       whose subtrees match the concatenation @('<i>')
+       (expressed via @('<prefix>-<rulename>-conc?') above),
        returns the list of trees corresponding to the repetition.
        The generated function is accompanied by the following theorems:")
      (xdoc::ul
@@ -469,7 +471,9 @@
        in the alternation that defines the rule name,
        and for each repetition @('<j>') (numbered starting from 1)
        in the concatenation:
-       a function that, given a tree matching the rule name,
+       a function that, given a tree matching the rule name
+       whose subtrees match the concatenation @('<i>')
+       (expressed via @('<prefix>-<rulename>-conc?') above),
        and a natural number index below
        the length of the list of trees that matches the repetition,
        returns the tree at the given index
