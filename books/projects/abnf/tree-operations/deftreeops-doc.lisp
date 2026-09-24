@@ -93,9 +93,9 @@
        whose value is a grammar, i.e. a value of type @(tsee rulelist).
        It could be a grammar introduced by @(tsee defgrammar).")
      (xdoc::p
-      "The grammar must be "
+      "The grammar must be non-empty, "
       (xdoc::seetopic "well-formedness" "well-formed")
-      " and "
+      ", and "
       (xdoc::seetopic "closure" "closed")
       ".")
      (xdoc::p
@@ -103,7 +103,12 @@
        with the same @('*grammar*') input,
        this call must be identical to that call,
        in which case it is redundant.
-       If the calls differ, it is an error."))
+       If the calls differ, it is an error.
+       Note that the calls must be syntactically identical:
+       for instance, if the calls differ only in the @(':print') input,
+       or if one of them explicitly passes a default value for an input
+       while the other one omits that input,
+       the calls are not identical, and the second one is an error."))
 
     (xdoc::desc
      "@(':prefix') &mdash; no default"
