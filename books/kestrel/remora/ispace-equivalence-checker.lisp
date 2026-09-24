@@ -26,39 +26,25 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The static semantics of Remora involves
-     the equivalence of ispaces used in types,
-     which in turn determines the equivalence of types.
-     If we restrict dimensions to not use multiplication and subtraction,
-     but only addition, then ispace equivalence in Remora is decidable,
-     as described in [thesis].")
+    "We partially implement the ispace equivalence
+     defined in @(see ispace-equivalence),
+     by normalizing ispaces and then comparing them syntactically.
+     The implementation is partial because currently
+     it treats dimension multiplication and subtraction
+     as uninterpreted operations:
+     no rule about them is applied, except the congruence rules.
+     Thus, the equivalence checks are intended to be sound in general,
+     since each normalization step is an instance of a rule,
+     and complete when there are no multiplications and subtractions,
+     which is the case covered by [thesis];
+     we have not proved either yet.")
    (xdoc::p
-    "[thesis] describes the decidable equivalence of ispaces
-     in terms of normalization of ispaces:
-     two ispaces are equivalent iff they normalize to the same ispace.
-     We plan to formalize this notion at a higher level,
-     and to prove that it is correct with respect to
-     a suitable evaluation semantics of ispaces.
-     We start by defining high-level executable code
-     to normalize ispaces,
-     and then define ispace equivalence based on that.
-     We plan to verify the correctness of this normalization code.")
-   (xdoc::p
-    "The normalization code is defined on all ispaces,
-     including ones with multiplications and subtractions of dimensions,
-     which are treated as uninterpreted operators:
-     the additions in their operands are normalized,
-     but no law of multiplication or subtraction is applied,
-     and a multiplication or subtraction is otherwise treated like a variable
-     (e.g. as an addend of an addition).
-     Since the normalization only applies laws of addition and congruence,
-     two ispaces that normalize to the same ispace are always equivalent;
-     the converse holds for ispaces that only use addition,
-     as described in [thesis].")
-   (xdoc::p
-    "We are also formalizing a more general notion of ispace equivalence,
-     also involving multiplication and subtraction of dimensions,
-     without necessarily requiring decidability."))
+    "The normalization code is defined on all ispaces.
+     The additions in the operands of a multiplication or subtraction
+     are normalized,
+     but the multiplication or subtraction is otherwise
+     treated like a variable,
+     e.g. as an addend of an addition."))
   :order-subtopics t
   :default-parent t)
 
