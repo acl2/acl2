@@ -338,56 +338,55 @@
 
    ;; TODO: tappn
 
-   ;; TODO: fails
-   ;; (iapp ((ispace-var-setp ivars)
-   ;;        (type-var-setp tvars)
-   ;;        (string-type-mapp evars)
-   ;;        (exprp fun)
-   ;;        (ispace-varp param)
-   ;;        (ispacep ispace-arg)
-   ;;        (typep type-body)
-   ;;        (shapep shape-body)
-   ;;        (shapep shape-fun)
-   ;;        (expr-ok ivars tvars evars
-   ;;                 fun
-   ;;                 (type-array (type-pi param
-   ;;                                      (type-array type-body
-   ;;                                                  (ispace-shape
-   ;;                                                   shape-body)))
-   ;;                             (ispace-shape shape-fun)))
-   ;;        (ispace-ok ivars ispace-arg)
-   ;;        (ispace-var-case
-   ;;         param
-   ;;         :dim
-   ;;         (and (ispace-case ispace-arg :dim)
-   ;;              (equal dim-subst
-   ;;                     (omap::update (ispace-var-dim->name param)
-   ;;                                   ispace-arg
-   ;;                                   nil))
-   ;;              (equal shape-subst nil))
-   ;;         :shape
-   ;;         (and (ispace-case ispace-arg :shape)
-   ;;              (equal dim-subst nil)
-   ;;              (equal shape-subst
-   ;;                     (omap::update (ispace-var-shape->name param)
-   ;;                                   ispace-arg
-   ;;                                   nil))))
-   ;;        (type-subst-ispace-vars-no-capture-p type-body
-   ;;                                             dim-subst
-   ;;                                             shape-subst)
-   ;;        (ispace-subst-ispace-vars-no-capture-p shape-body
-   ;;                                               dim-subst
-   ;;                                               shape-subst))
-   ;;       (expr-ok ivars tvars evars
-   ;;                (expr-iapp fun ispace-arg)
-   ;;                (type-array (type-subst-type-vars type-body
-   ;;                                                  dim-subst
-   ;;                                                  shape-subst)
-   ;;                            (ispace-shape (shp++ shape-fun
-   ;;                                                 (shape-subst-ispace-vars
-   ;;                                                  shape-body
-   ;;                                                  dim-subst
-   ;;                                                  shape-subst))))))
+   (iapp ((ispace-var-setp ivars)
+          (type-var-setp tvars)
+          (string-type-mapp evars)
+          (exprp fun)
+          (ispace-varp param)
+          (ispacep ispace-arg)
+          (typep type-body)
+          (shapep shape-body)
+          (shapep shape-fun)
+          (expr-ok ivars tvars evars
+                   fun
+                   (type-array (type-pi param
+                                        (type-array type-body
+                                                    (ispace-shape
+                                                     shape-body)))
+                               (ispace-shape shape-fun)))
+          (ispace-ok ivars ispace-arg)
+          (ispace-var-case
+           param
+           :dim
+           (and (ispace-case ispace-arg :dim)
+                (equal dim-subst
+                       (omap::update (ispace-var-dim->name param)
+                                     (ispace-dim->dim ispace-arg)
+                                     nil))
+                (equal shape-subst nil))
+           :shape
+           (and (ispace-case ispace-arg :shape)
+                (equal dim-subst nil)
+                (equal shape-subst
+                       (omap::update (ispace-var-shape->name param)
+                                     (ispace-shape->shape ispace-arg)
+                                     nil))))
+          (type-subst-ispace-vars-no-capture-p type-body
+                                               dim-subst
+                                               shape-subst)
+          (shape-subst-ispace-vars-no-capture-p shape-body
+                                                dim-subst
+                                                shape-subst))
+         (expr-ok ivars tvars evars
+                  (expr-iapp fun ispace-arg)
+                  (type-array (type-subst-ispace-vars type-body
+                                                      dim-subst
+                                                      shape-subst)
+                              (ispace-shape (shp++ shape-fun
+                                                   (shape-subst-ispace-vars
+                                                    shape-body
+                                                    dim-subst
+                                                    shape-subst))))))
 
    ;; TODO: iappn
 
@@ -494,7 +493,7 @@
   (verify-guards expr-ok-string-validp)
   (verify-guards expr-ok-eapp-validp)
   (verify-guards expr-ok-tapp-validp)
-  ;; (verify-guards expr-ok-iapp-validp)
+  (verify-guards expr-ok-iapp-validp)
   (verify-guards atom-ok-bool-validp)
   (verify-guards atom-ok-int-validp)
   (verify-guards atom-ok-float-validp)
