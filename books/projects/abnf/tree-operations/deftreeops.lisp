@@ -438,6 +438,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define deftreeops-rulenames-with-duplicate-concs ((rules rulelistp)
+                                                   (all-rules rulelistp))
+  :returns (rulename-strings acl2::string-listp)
+  :short "Find the rule names, among the ones of the given rules,
+          whose defining alternations contain duplicate concatenations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('rules') input is a suffix of the @('all-rules') input,
+     which is the whole grammar;
+     the latter is used to look up the defining alternation of each rule name,
+     which may span multiple rules in the grammar
+     (the first one non-incremental, the others incremental).
+     We return the rule names as strings, for use in error messages,
+     without duplicates.")
+   (xdoc::p
+    "Duplicate concatenations in a defining alternation
+     would make it impossible to define
+     the @('<prefix>-<rulename>-conc?') function
+     described in @(tsee deftreeops),
+     because identical concatenations are matched by
+     exactly the same lists of lists of trees."))
+  (b* (((when (endp rules)) nil)
+       (rulename (rule->name (car rules)))
+       (rulename-string (rulename->get rulename))
+       (more (deftreeops-rulenames-with-duplicate-concs (cdr rules) all-rules))
+       ((when (member-equal rulename-string more)) more)
+       (alt (lookup-rulename rulename all-rules))
+       ((when (no-duplicatesp-equal alt)) more))
+    (cons rulename-string more))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define deftreeops-process-grammar (grammar
                                     (call pseudo-event-formp)
                                     (wrld plist-worldp))
@@ -477,7 +511,14 @@
        ((unless (rulelist-closedp rules))
         (reterr (msg "The *GRAMMAR* input denotes an ABNF grammar, ~
                       but the grammar is not closed ~
-                      (see :DOC ABNF::CLOSURE)."))))
+                      (see :DOC ABNF::CLOSURE).")))
+       (rulename-strings
+        (deftreeops-rulenames-with-duplicate-concs rules rules))
+       ((when rulename-strings)
+        (reterr (msg "The *GRAMMAR* input denotes an ABNF grammar, ~
+                      but the alternations that define the rule names ~&0 ~
+                      contain duplicate concatenations."
+                     rulename-strings))))
     (retok nil grammar rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

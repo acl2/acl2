@@ -99,6 +99,15 @@
       (xdoc::seetopic "closure" "closed")
       ".")
      (xdoc::p
+      "Furthermore, the alternation that defines each rule name
+       (i.e. the alternation consisting of all the concatenations
+       in all the rules for the rule name,
+       in the order in which they appear in the grammar)
+       must not contain duplicate concatenations.
+       Duplicate concatenations are redundant anyway,
+       and they would make it impossible to define
+       the @('<prefix>-<rulename>-conc?') functions described below.")
+     (xdoc::p
       "If there is a previous successful call of @('deftreeops')
        with the same @('*grammar*') input,
        this call must be identical to that call,
