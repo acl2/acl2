@@ -6912,6 +6912,7 @@
           (cond
            ((and (variablep xk)
                  (variablep yk)
+                 (not (eq xk yk))
                  (equivalence-relationp equiv1 wrld))
             (case-match
              concl
