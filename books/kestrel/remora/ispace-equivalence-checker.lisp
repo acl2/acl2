@@ -727,12 +727,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the case iff they only use addition
-     and they normalize to the same shape."))
-  (and (shape-addp shape1)
-       (shape-addp shape2)
-       (equal (normalize-shape shape1)
-              (normalize-shape shape2))))
+    "We check whether the two shapes normalize to the same shape."))
+  (equal (normalize-shape shape1)
+         (normalize-shape shape2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -742,9 +739,6 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the case iff they only use addition
-     and they normalize to the same ispace."))
-  (and (ispace-addp ispace1)
-       (ispace-addp ispace2)
-       (equal (normalize-ispace ispace1)
-              (normalize-ispace ispace2))))
+    "We check whether the two ispaces normalize to the same ispace."))
+  (equal (normalize-ispace ispace1)
+         (normalize-ispace ispace2)))
