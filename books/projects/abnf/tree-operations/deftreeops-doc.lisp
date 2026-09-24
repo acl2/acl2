@@ -346,8 +346,15 @@
        "@(tsee fty::deffixequiv) theorems for the function."))
      (xdoc::p
       "Currently this is generated if and only if
-       @('<prefix>-<rulename>-conc-equivs') is generated:
-       see the conditions for this above."))
+       the alternation consists of two or more concatenations
+       each of which is a singleton,
+       each consisting of a repetition with range 1
+       whose element is a rule name.
+       This is the first of the two conditions, listed above,
+       under which @('<prefix>-<rulename>-conc-equivs') is generated.
+       Under the second of those two conditions,
+       @('<prefix>-<rulename>-conc-equivs') is generated
+       but @('<prefix>-<rulename>-conc?') is not."))
 
     (xdoc::desc
      "@('<prefix>-<rulename>-conc<i>')"
@@ -374,7 +381,7 @@
      (xdoc::p
       "Currently this is generated if and only if
        the alternation that defines the rule name consists of one concatenation
-       or otherwise @('<prefix>-<rulename>-conc-equivs') is generated:
+       or otherwise @('<prefix>-<rulename>-conc?') is generated:
        see the conditions for this above."))
 
     (xdoc::desc
@@ -425,7 +432,7 @@
        (i) the concatenation consists of one repetition and
        (ii) the alternation that defines the rule name
        consists of one concatenation
-       or otherwise @('<prefix>-<rulename>-conc-equivs') is generated:
+       or otherwise @('<prefix>-<rulename>-conc?') is generated:
        see the conditions for this above."))
 
     (xdoc::desc
@@ -490,7 +497,7 @@
        (ii) the repetition has a range of 1, and
        (iii) the alternation that defines the rule name
        consists of one concatenation
-       or otherwise @('<prefix>-<rulename>-conc-equivs') is generated:
+       or otherwise @('<prefix>-<rulename>-conc?') is generated:
        see the conditions for this above."))
 
     (xdoc::desc
