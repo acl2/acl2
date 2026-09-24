@@ -28,6 +28,7 @@
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
+(local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
@@ -464,7 +465,8 @@
     "These are added to the file scope.")
    (xdoc::p
     "Built-in functions have external linkage and are fully defined."))
-  (b* (((when (endp funs)) (vstate-fix vstate))
+  (b* ((funs (built-in-fun-list-fix funs))
+       ((when (endp funs)) (vstate-fix vstate))
        ((built-in-fun fun) (car funs))
        (ident (ident fun.name))
        (linkage (linkage-external))
@@ -477,7 +479,8 @@
               :defstatus defstatus
               :uid uid))
        (vstate (vstate-add-ord-file-scope ident info vstate)))
-    (vstate-add-built-in-funs (cdr funs) vstate)))
+    (vstate-add-built-in-funs (cdr funs) vstate))
+  :measure (acl2-count (built-in-fun-list-fix funs)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -491,7 +494,8 @@
     "These are added to the file scope.")
    (xdoc::p
     "Built-in functions have external linkage and are fully defined."))
-  (b* (((when (endp vars)) (vstate-fix vstate))
+  (b* ((vars (built-in-var-list-fix vars))
+       ((when (endp vars)) (vstate-fix vstate))
        ((built-in-var var) (car vars))
        (ident (ident var.name))
        (linkage (linkage-external))
@@ -503,7 +507,8 @@
               :defstatus defstatus
               :uid uid))
        (vstate (vstate-add-ord-file-scope ident info vstate)))
-    (vstate-add-built-in-vars (cdr vars) vstate)))
+    (vstate-add-built-in-vars (cdr vars) vstate))
+  :measure (acl2-count (built-in-var-list-fix vars)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1287,6 +1292,92 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-simple-assignment ((type-arg1 typep)
+                                 (type-arg2 typep)
+                                 (expr-arg2 exprp)
+                                 (completions type-completions-p)
+                                 (ienv ienvp))
+  :returns (erp booleanp)
+  :short "Validate two types according to the rules of simple assignment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In addition to actual simple assignment expressions,
+     the constraints of simple assignment are also used
+     for certain initializers (see @(tsee valid-initer)).
+     Therefore, we introduce a dedicated function
+     for checking said type constraints.")
+   (xdoc::p
+    "In our currently approximate type system,
+     the requirements in [C17:6.5.16.1/1] reduce
+     to the following simplified cases.")
+   (xdoc::ol
+    (xdoc::li
+     "Both operands have arithmetic types.")
+    (xdoc::li
+     "The left operand has a structure or union type, and the two operand types
+      are compatible.")
+    (xdoc::li
+     "Both operands have compatible pointer types.")
+    (xdoc::li
+     "One operand is a pointer to an object type
+      and the other is a pointer to the @('void') type.
+      As a GCC/Clang extension,
+      we also allow one operand to be a pointer to the @('void') type,
+      and the other to be a pointer to <i>any</i> type
+      (either object or function).
+      We are not aware of explicit GCC documentation of this feature,
+      but a related feature is listed by the standard
+      as a common extension [C17:J.5.7].")
+    (xdoc::li
+     "The left operand is a pointer type
+      and the right operand is a null pointer constant
+      (approximated as anything of an integer type).")
+    (xdoc::li
+     "The left operand has the boolean type and the right operand has the
+      pointer type."))
+   (xdoc::p
+    "We do not perform array-to-pointer or function-to-pointer conversion
+     on the left operand, because the result would not be an lvalue."))
+  (b* (((reterr))
+       ((when (or (type-case type-arg1 '(:unknown :unknown-builtin))
+                  (type-case type-arg2 '(:unknown :unknown-builtin))))
+        (retok))
+       (type1 type-arg1)
+       (type2 (type-fpconvert (type-apconvert type-arg2))))
+    (if (or (and (type-case type1 :unknown-scalar)
+                 (type-scalarp type2)) ; includes unknown scalar
+            (and (type-arithmeticp type1) ; includes unknown arithmetic
+                 (or (type-case type2 :unknown-scalar)
+                     (type-arithmeticp type2))) ; includes unknown arithmetic
+            (and (or (type-case type1 :struct)
+                     (type-case type1 :union))
+                 (type-compatible-p type1 type2 completions ienv))
+            (and (type-case type1 :pointer)
+                 (or (type-case type2 :unknown-scalar) ; could be pointer
+                     (and (type-case type2 :pointer)
+                          (let ((type-to1 (type-pointer->to type1))
+                                (type-to2 (type-pointer->to type2)))
+                            (or (type-compatible-p
+                                 type-to1 type-to2 completions ienv)
+                                (and (type-case type-to1 :void)
+                                     (or (ienv->gcc/clang ienv)
+                                         (not (type-case type-to2
+                                                         :function))))
+                                (and (type-case type-to2 :void)
+                                     (or (ienv->gcc/clang ienv)
+                                         (not (type-case type-to1
+                                                         :function)))))))
+                     (expr-null-pointer-constp expr-arg2 type2 ienv)))
+            (and (type-case type1 :bool)
+                 (or (type-case type2 :unknown-arithmetic)
+                     (type-case type2 :unknown-scalar)
+                     (type-case type2 :pointer))))
+        (retok)
+      (reterr t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define valid-prototype-args ((types-param type-listp)
                               (args expr-listp)
                               (types-arg type-listp)
@@ -1318,11 +1409,13 @@
       more arguments than declared parameters when there is an ellipsis.")
     (xdoc::li
      "For each parameter/argument pair,
-      the same restrictions apply as in the case of simple assignment.
-      See @(tsee valid-binary) for details on these restrictions.
-      When validating with GCC/Clang extensions enabled,
-      these restrictions are slightly weakened.
-      See the following section."))
+      the same restrictions apply as in the case of simple assignment:
+      the arguments are implicitly converted, as if by assignment,
+      to the types of the parameters [C17:6.5.2.2/7] [C23:6.5.3.3/6].
+      Thus we defer to @(tsee valid-simple-assignment),
+      including its weakenings for GCC/Clang extensions.
+      A further weakening applies to parameters only,
+      described in the following section."))
    (xdoc::section
     "GCC/Clang Extensions"
     (xdoc::p
@@ -1357,32 +1450,12 @@
        (arg (first args))
        (type-arg (type-fpconvert (type-apconvert (first types-arg))))
        (gcc/clang (ienv->gcc/clang ienv)))
-    (if (or (type-case type-param '(:unknown :unknown-builtin))
-            (and gcc/clang (type-case type-param :union))
-            (type-case type-arg '(:unknown :unknown-builtin))
-            (and (type-case type-param :unknown-scalar)
-                 (type-scalarp type-arg))
-            (and (type-case type-arg :unknown-scalar)
-                 (type-scalarp type-param))
-            (and (type-arithmeticp type-param)
-                 (type-arithmeticp type-arg))
-            (and (or (type-case type-param :struct)
-                     (type-case type-param :union))
-                 (type-compatible-p type-param type-arg completions ienv))
-            (and (type-case type-param :pointer)
-                 (or (and (type-case type-arg :pointer)
-                          (let ((type-to-param (type-pointer->to type-param))
-                                (type-to-arg (type-pointer->to type-arg)))
-                            (or (type-compatible-p
-                                 type-to-param type-to-arg completions ienv)
-                                (and (type-case type-to-param :void)
-                                     (not (type-case type-to-arg :function)))
-                                (and (type-case type-to-arg :void)
-                                     (not
-                                      (type-case type-to-param :function))))))
-                     (expr-null-pointer-constp arg type-arg ienv)))
-            (and (type-case type-param :bool)
-                 (type-case type-arg :pointer)))
+    (if (or (and gcc/clang (type-case type-param :union))
+            (not (valid-simple-assignment type-param
+                                          (first types-arg)
+                                          arg
+                                          completions
+                                          ienv)))
         (valid-prototype-args (rest types-param)
                               (rest args)
                               (rest types-arg)
@@ -1395,8 +1468,7 @@
                type-arg
                type-param)))
   :measure (len (type-list-fix types-param))
-  :hints (("Goal" :in-theory (enable type-list-fix len)))
-  :guard-hints (("Goal" :in-theory (enable len)))
+  :hints (("Goal" :in-theory (enable type-list-fix)))
   :hooks ((:fix
            :hints (("Goal" :induct t
                     :expand (valid-prototype-args
@@ -1748,92 +1820,6 @@
       (t (prog2$ (impossible) (retmsg$ ""))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define valid-simple-assignment ((type-arg1 typep)
-                                 (type-arg2 typep)
-                                 (expr-arg2 exprp)
-                                 (completions type-completions-p)
-                                 (ienv ienvp))
-  :returns (erp booleanp)
-  :short "Validate two types according to the rules of simple assignment."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "In addition to actual simple assignment expressions,
-     the constraints of simple assignment are also used
-     for certain initializers (see @(tsee valid-initer)).
-     Therefore, we introduce a dedicated function
-     for checking said type constraints.")
-   (xdoc::p
-    "In our currently approximate type system,
-     the requirements in [C17:6.5.16.1/1] reduce
-     to the following simplified cases.")
-   (xdoc::ol
-    (xdoc::li
-     "Both operands have arithmetic types.")
-    (xdoc::li
-     "The left operand has a structure or union type, and the two operand types
-      are compatible.")
-    (xdoc::li
-     "Both operands have compatible pointer types.")
-    (xdoc::li
-     "One operand is a pointer to an object type
-      and the other is a pointer to the @('void') type.
-      As a GCC/Clang extension,
-      we also allow one operand to be a pointer to the @('void') type,
-      and the other to be a pointer to <i>any</i> type
-      (either object or function).
-      We are not aware of explicit GCC documentation of this feature,
-      but a related feature is listed by the standard
-      as a common extension [C17:J.5.7].")
-    (xdoc::li
-     "The left operand is a pointer type
-      and the right operand is a null pointer constant
-      (approximated as anything of an integer type).")
-    (xdoc::li
-     "The left operand has the boolean type and the right operand has the
-      pointer type."))
-   (xdoc::p
-    "We do not perform array-to-pointer or function-to-pointer conversion
-     on the left operand, because the result would not be an lvalue."))
-  (b* (((reterr))
-       ((when (or (type-case type-arg1 '(:unknown :unknown-builtin))
-                  (type-case type-arg2 '(:unknown :unknown-builtin))))
-        (retok))
-       (type1 type-arg1)
-       (type2 (type-fpconvert (type-apconvert type-arg2))))
-    (if (or (and (type-case type1 :unknown-scalar)
-                 (type-scalarp type2)) ; includes unknown scalar
-            (and (type-arithmeticp type1) ; includes unknown arithmetic
-                 (or (type-case type2 :unknown-scalar)
-                     (type-arithmeticp type2))) ; includes unknown arithmetic
-            (and (or (type-case type1 :struct)
-                     (type-case type1 :union))
-                 (type-compatible-p type1 type2 completions ienv))
-            (and (type-case type1 :pointer)
-                 (or (type-case type2 :unknown-scalar) ; could be pointer
-                     (and (type-case type2 :pointer)
-                          (let ((type-to1 (type-pointer->to type1))
-                                (type-to2 (type-pointer->to type2)))
-                            (or (type-compatible-p
-                                 type-to1 type-to2 completions ienv)
-                                (and (type-case type-to1 :void)
-                                     (or (ienv->gcc/clang ienv)
-                                         (not (type-case type-to2
-                                                         :function))))
-                                (and (type-case type-to2 :void)
-                                     (or (ienv->gcc/clang ienv)
-                                         (not (type-case type-to1
-                                                         :function)))))))
-                     (expr-null-pointer-constp expr-arg2 type2 ienv)))
-            (and (type-case type1 :bool)
-                 (or (type-case type2 :unknown-arithmetic)
-                     (type-case type2 :unknown-scalar)
-                     (type-case type2 :pointer))))
-        (retok)
-      (reterr t))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-binary ((expr exprp)
                       (op binopp)
@@ -3404,7 +3390,6 @@
       :fn valid-expr-list
       :hints (("Goal" :induct (induct-valid-expr-list exprs vstate)
                :in-theory (enable (:i induct-valid-expr-list)
-                                  len
                                   fix)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -8508,17 +8493,25 @@
           (tumap (filepath-trans-unit-map-fix tumap))
           (path (set::head paths))
           (tunit (omap::lookup path tumap))
-          ((mv erp new-tunit vstate)
+          ((mv erp new-tunit new-vstate)
            (valid-trans-unit path tunit vstate))
+          ;; On error, continue with the validation state as it was before
+          ;; the call, not with the irrelevant value returned on failure.
           ((when erp)
            (if keep-going
-               (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
+               (b* ((- (cw "Error in translation unit ~x0: ~@1~%"
                            (filepath->string path)
-                           erp)
-                       (valid-filepath-trans-unit-map-loop (set::tail paths)
-                                                           tumap
-                                                           keep-going
-                                                           vstate))
+                           erp))
+                    ;; Roll back the fast alist: the failed call moved the
+                    ;; hash table off the completions we resume from.
+                    (vstate (change-vstate
+                             vstate
+                             :completions
+                             (make-fast-alist (vstate->completions vstate)))))
+                 (valid-filepath-trans-unit-map-loop (set::tail paths)
+                                                     tumap
+                                                     keep-going
+                                                     vstate))
              (retmsg$ "Error in translation unit ~x0: ~@1"
                       (filepath->string path)
                       erp)))
@@ -8526,7 +8519,7 @@
            (valid-filepath-trans-unit-map-loop (set::tail paths)
                                                 tumap
                                                 keep-going
-                                                vstate)))
+                                                new-vstate)))
        (retok (omap::update path new-tunit new-tumap)
               final-vstate))
      :no-function nil
