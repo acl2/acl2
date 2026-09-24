@@ -1248,6 +1248,8 @@
 (defun jvm-simplification-rules ()
   (declare (xargs :guard t))
   (append (list-rules) ;; for array dimensions (e.g., consp-of-cons)
+          '(myif-becomes-bvif-when-unsigned-byte-p-arg1
+            myif-becomes-bvif-when-unsigned-byte-p-arg2)
           (jvm-simplification-rules-jvm)))
 
 ;; ;; Core JVM rules, for symbolic execution, etc.
