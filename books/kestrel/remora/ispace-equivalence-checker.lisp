@@ -12,8 +12,6 @@
 
 (include-book "abstract-syntax-structurals")
 
-(include-book "kestrel/fty/deffold-reduce" :dir :system)
-
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 (acl2::controlled-configuration)
@@ -47,46 +45,6 @@
      e.g. as an addend of an addition."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deffold-reduce addp
-  :short "Check if dimensions, shapes, and ispaces only contains additions
-          (no multiplications or subtractions)."
-  :types (dims
-          shapes/ispaces)
-  :result booleanp
-  :default t
-  :combine and
-  :override
-  ((dim :mul nil)
-   (dim :sub nil))
-  :name ispaces-addp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection addp-additional-theorems
-  :short "Theorems about the @(see ispaces-addp) functions."
-
-  (defruled dim-kind-not-mul-when-dim-addp
-    (implies (dim-addp dim)
-             (not (equal (dim-kind dim) :mul)))
-    :rule-classes :forward-chaining
-    :enable dim-addp)
-
-  (defruled dim-kind-not-sub-when-dim-addp
-    (implies (dim-addp dim)
-             (not (equal (dim-kind dim) :sub)))
-    :rule-classes :forward-chaining
-    :enable dim-addp)
-
-  (add-to-ruleset ispaces-addp-rules
-                  '(dim-kind-not-mul-when-dim-addp
-                    dim-kind-not-sub-when-dim-addp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(local (in-theory (enable* ispaces-addp-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -214,19 +172,7 @@
 
   ///
 
-  (fty::deffixequiv-mutual flatten-add-in-dims)
-
-  ;;;;;;;;;;;;;;;;;;;;
-
-  (defret-mutual dim-addp-of-flatten-add-in-dims
-    (defret dim-addp-of-flatten-add-in-dim
-      (dim-addp new-dim)
-      :hyp (dim-addp dim)
-      :fn flatten-add-in-dim)
-    (defret dim-list-addp-of-flatten-add-in-dim-list
-      (dim-list-addp new-dims)
-      :hyp (dim-list-addp dims)
-      :fn flatten-add-in-dim-list)))
+  (fty::deffixequiv-mutual flatten-add-in-dims))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
