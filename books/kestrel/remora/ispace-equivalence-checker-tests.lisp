@@ -127,12 +127,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Tests of SHAPE-EQUIVP and ISPACE-EQUIVP.
+; Tests of DIM-EQUIVP, SHAPE-EQUIVP, and ISPACE-EQUIVP.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Shapes and ispaces that only use addition are equivalent
-; iff they normalize to the same shape or ispace.
+; Dimensions, shapes, and ispaces that only use addition are equivalent
+; iff they normalize to the same dimension, shape, or ispace.
+
+(assert-equal (dim-equivp (dim+ "$n" 1)
+                          (dim+ 1 "$n"))
+              t)
+
+(assert-equal (dim-equivp (dim+ 1 (dim+ 2 "$n"))
+                          (dim+ 3 "$n"))
+              t)
+
+(assert-equal (dim-equivp (dim+ "$n" 1)
+                          (dim+ "$n" 2))
+              nil)
 
 (assert-equal (shape-equivp (shp 2 1)
                             (shp++ (shp 2) (shp 1)))
@@ -151,9 +163,17 @@
               t)
 
 ; Multiplications and subtractions are uninterpreted:
-; a shape with a multiplication is equivalent to itself,
-; and to the same shape with the operands of the multiplication normalized,
+; a dimension or shape with a multiplication is equivalent to itself,
+; and to the same one with the operands of the multiplication normalized,
 ; but a multiplication of constants is not equivalent to their product.
+
+(assert-equal (dim-equivp (dim* "$m" (dim+ 1 2))
+                          (dim* "$m" 3))
+              t)
+
+(assert-equal (dim-equivp (dim* 2 3)
+                          (dim-const 6))
+              nil)
 
 (assert-equal (shape-equivp (shp (dim* "$m" "$n"))
                             (shp (dim* "$m" "$n")))
