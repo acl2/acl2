@@ -324,7 +324,10 @@
      among the free ispace variables of the values
      of the resulting (restricted) substitution.
      We then recurse into the body of the binder
-     with the restricted substitution.")
+     with the restricted substitution.
+     Since shapes and ispaces contain no binders,
+     substituting into them cannot capture any variables,
+     and thus the fold starts at types.")
    (xdoc::p
     "Since @('let') bindings are sequential,
      we override the function for @(tsee bind-list)
@@ -339,9 +342,7 @@
     "This is a conservative check:
      it does not depend on which keys of the substitution
      are actually free in the body of each binder."))
-  :types (shapes/ispaces
-          ispace-list-option
-          types
+  :types (types
           type-option
           type-list-option
           var+type?
