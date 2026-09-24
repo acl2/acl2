@@ -160,7 +160,12 @@
     The @('completions') field holds the struct/union type completions
     of the code ensemble (constant);
     it is used to look up the types of struct members
-    when transforming initializers.")
+    when transforming initializers.
+    The @('vtable') field holds the validation table
+    at the end of the translation unit being transformed;
+    it is used to resolve the tags of struct types reachable
+    from the members of the target struct type
+    (see @(tsee sts-right-forward-needed-p)).")
   ((target-struct-uid c$::uid)
    (right-set ident-set)
    (right-name ident)
@@ -171,7 +176,8 @@
    (warnings acl2::msg-list)
    (filepath c$::filepath)
    (member-map member-map)
-   (completions c$::type-completions))
+   (completions c$::type-completions)
+   (vtable c$::valid-table))
   :pred sts-split-statep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -361,6 +367,76 @@
                  (and (treeset::in member.name? right-members) t)))
         (sts-any-right-members-p (rest members) struct-uid right-members)))
   :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sts-right-forward-members-refer-p
+  ((members c$::type-struni-member-listp)
+   (struct-uid c$::uidp)
+   (right-members ident-setp)
+   (vtable c$::valid-tablep)
+   (completions c$::type-completions-p))
+  :returns (yes/no booleanp)
+  :short "Check whether a member retained in the left struct type
+          may refer to the target struct type."
+  :long
+  (xdoc::topstring-p
+   "A splittable member is duplicated across the two struct types,
+    so its left copy refers only to the original type
+    and needs no forward declaration.
+    Any other member that may refer to the target struct type
+    may be rewritten in place to mention the right struct type,
+    either because it is a function type whose parameters are split,
+    or because it is an anonymous or untagged struct type
+    whose own members are split in place.
+    Unnamed members always stay on the left;
+    named members stay on the left when they are not selected.")
+  (b* (((when (endp members)) nil)
+       ((c$::type-struni-member member) (first members)))
+    (or (and (or (not member.name?)
+                 (not (treeset::in member.name? right-members)))
+             (not (acl2::3definitely (sts-splittablep member.type struct-uid)))
+             (type-may-refer-to-struct-spec-p
+               member.type
+               (make-sts-struct-spec :uid struct-uid)
+               vtable
+               completions
+               nil
+               1000000))
+        (sts-right-forward-members-refer-p
+          (rest members) struct-uid right-members vtable completions)))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sts-right-forward-needed-p
+  ((struct-type c$::typep)
+   (st sts-split-statep))
+  :guard (c$::type-case struct-type :struct)
+  :returns (yes/no booleanp)
+  :short "Check whether defining the right struct type
+          requires declaring its tag beforehand."
+  :long
+  (xdoc::topstring-p
+   "The left struct type is defined before the right one,
+    so a member retained in the left struct type
+    that is rewritten to mention the right struct type
+    mentions a tag that has not been declared yet.
+    Where that mention is inside a function prototype,
+    the tag has prototype scope [C17:6.2.1/7],
+    and therefore denotes a type distinct from the right struct type.
+    We check this conservatively,
+    and may declare the tag when it would not be necessary.")
+  (b* (((sts-split-state st) st)
+       (uid (c$::type-struct->uid struct-type))
+       ((mv & members)
+        (c$::type-struni-tag/members->members
+          (c$::type-struct->tag/members struct-type) uid st.completions)))
+    (sts-right-forward-members-refer-p members
+                                       uid
+                                       st.right-set
+                                       st.vtable
+                                       st.completions)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1399,6 +1475,31 @@
                  st)))
         (retok (c$::attrib-fix attrib) st)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sts-right-forward-declon
+  ((tag identp))
+  :returns (declon declonp)
+  :short "Declaration of the tag of the right struct type."
+  :long
+  (xdoc::topstring-p
+   "This is the declaration @('struct <tag>;'),
+    which declares the tag without completing the type.
+    It is emitted just before the declaration
+    that defines the right struct type,
+    when that definition is preceded by a mention of the tag
+    (see @(tsee struni-spec-sts-split)).")
+  (c$::make-declon-declon
+    :extension nil
+    :specs (list (c$::make-decl-spec-typespec
+                   :spec (c$::make-type-spec-struct
+                           :spec (c$::make-struni-spec :attribs nil
+                                                       :name? tag
+                                                       :members nil))))
+    :declors nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines sts-split
   :short "The core splitting phase of STS."
 
@@ -2079,6 +2180,7 @@
     :returns (mv (er? maybe-msgp)
                  (left-type-spec type-specp)
                  (right-type-spec? type-spec-optionp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a type specifier."
@@ -2091,31 +2193,31 @@
       are registered; otherwise it is @('nil') and the struct's own
       unique identifier is used (see @(tsee struct-declon-sts-split)).")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) (type-spec-fix type-spec) nil st))
+         ((reterr) (type-spec-fix type-spec) nil nil st))
       (type-spec-case
         type-spec
         :void
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :char
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :short
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :int
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :long
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :float
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :double
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :signed
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :unsigned
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :bool
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :complex
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :atomic
         (b* (((erp tyname-splitp left-tyname right-tyname st)
               (tyname-sts-split type-spec.type st)))
@@ -2123,37 +2225,46 @@
                  (if tyname-splitp
                      (c$::make-type-spec-atomic :type right-tyname)
                    nil)
+                 nil
                  st))
         :struct
         (b* (((c$::type-spec-struct-vinfo info) type-spec.info)
              (uid (c$::type-struct->uid info.type))
              (splitp (c$::uid-equal uid (sts-split-state->target-struct-uid st)))
-             ((erp left-spec right-spec st)
-              (struni-spec-sts-split type-spec.spec splitp
+             ;; The validation information for this type specifier is only
+             ;; available here, so this is where we decide whether defining
+             ;; the right struct type needs its tag declared beforehand.
+             (forward-neededp
+               (and splitp
+                    (sts-right-forward-needed-p info.type st)))
+             ((erp left-spec right-spec requested st)
+              (struni-spec-sts-split type-spec.spec splitp forward-neededp
                                      (or host-override? uid)
                                      st)))
           (retok (c$::make-type-spec-struct :spec left-spec)
                  (if splitp
                      (c$::make-type-spec-struct :spec right-spec)
                    nil)
+                 requested
                  st))
         :union
-        (b* (((erp spec - st)
-              (struni-spec-sts-split type-spec.spec nil nil st)))
+        (b* (((erp spec - - st)
+              (struni-spec-sts-split type-spec.spec nil nil nil st)))
           (retok (c$::make-type-spec-union :spec spec)
+                 nil
                  nil
                  st))
         :enum
         (b* (((erp spec st)
               (enum-spec-sts-split type-spec.spec st)))
-          (retok (c$::make-type-spec-enum :spec spec) nil st))
+          (retok (c$::make-type-spec-enum :spec spec) nil nil st))
         :typedef
         (b* (((type+uid-vinfo info) type-spec.info)
              ((unless (eq (sts-splittablep
                             info.type
                             (sts-split-state->target-struct-uid st))
                           t))
-              (retok (type-spec-fix type-spec) nil st))
+              (retok (type-spec-fix type-spec) nil nil st))
              (right-ident? (omap::assoc info.uid
                                         (sts-split-state->ident-map st)))
              ((unless right-ident?)
@@ -2166,31 +2277,32 @@
                          (sts-split-state->dialect st)))))
           (retok (type-spec-fix type-spec)
                  (c$::make-type-spec-typedef :name (cdr right-ident?))
+                 nil
                  st))
         :int128
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :locase-float80
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :locase-float128
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :float16
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :float16x
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :float32
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :float32x
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :float64
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :float64x
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :float128
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :float128x
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :builtin-va-list
-        (retok (type-spec-fix type-spec) nil st)
+        (retok (type-spec-fix type-spec) nil nil st)
         :struct-empty
         (b* (((c$::type-spec-struct-vinfo info) type-spec.info)
              (uid (c$::type-struct->uid info.type))
@@ -2205,6 +2317,7 @@
                        :name? (and type-spec.name?
                                    (sts-split-state->right-name st)))
                    nil)
+                 nil
                  st))
         :typeof-expr
         (b* (((erp left-expr right-expr? st)
@@ -2215,6 +2328,7 @@
                      (make-type-spec-typeof-expr :expr right-expr?
                                                  :uscores type-spec.uscores)
                    nil)
+                 nil
                  st))
         :typeof-type
         (b* (((erp splitp left-tyname right-tyname st)
@@ -2225,6 +2339,7 @@
                      (make-type-spec-typeof-type :type right-tyname
                                                  :uscores type-spec.uscores)
                    nil)
+                 nil
                  st))
         :typeof-ambig
         (retmsg$ "Ambiguous ASTs are unsupported.")
@@ -2241,6 +2356,7 @@
                  (splitp booleanp)
                  (left-spec/qual spec/qual-p)
                  (right-spec/qual spec/qual-p)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a specifier or qualifier."
@@ -2248,31 +2364,35 @@
     (xdoc::topstring-p
      "See @(tsee type-spec-sts-split) for @('host-override?').")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil (spec/qual-fix specqual) (spec/qual-fix specqual) st))
+         ((reterr) nil (spec/qual-fix specqual) (spec/qual-fix specqual) nil
+           st))
       (spec/qual-case
         specqual
         :typespec
-        (b* (((erp left-spec right-spec? st)
+        (b* (((erp left-spec right-spec? requested st)
               (type-spec-sts-split specqual.spec host-override? st)))
           (retok (if right-spec? t nil)
                  (c$::make-spec/qual-typespec :spec left-spec)
                  (if right-spec?
                      (c$::make-spec/qual-typespec :spec right-spec?)
                    (spec/qual-fix specqual))
+                 requested
                  st))
         :typequal
-        (retok nil (spec/qual-fix specqual) (spec/qual-fix specqual) st)
+        (retok nil (spec/qual-fix specqual) (spec/qual-fix specqual) nil st)
         :align
         (b* (((erp spec st) (align-spec-sts-split specqual.spec st)))
           (retok nil
                  (c$::make-spec/qual-align :spec spec)
                  (c$::make-spec/qual-align :spec spec)
+                 nil
                  st))
         :attrib
         (b* (((erp spec st) (attrib-spec-sts-split specqual.spec st)))
           (retok nil
                  (c$::make-spec/qual-attrib :spec spec)
                  (c$::make-spec/qual-attrib :spec spec)
+                 nil
                  st))))
     :measure (spec/qual-count specqual))
 
@@ -2285,6 +2405,7 @@
                  (splitp booleanp)
                  (left-spec/qual-list spec/qual-listp)
                  (right-spec/qual-list spec/qual-listp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a specifier/qualifier list."
@@ -2299,17 +2420,19 @@
       contribute their left transformation to both lists.
       See @(tsee type-spec-sts-split) for @('host-override?').")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil nil nil st)
+         ((reterr) nil nil nil nil
+           st)
          ((when (endp specquals))
-          (retok nil nil nil st))
-        ((erp first-splitp left-specqual right-specqual st)
+          (retok nil nil nil nil st))
+        ((erp first-splitp left-specqual right-specqual first-requested st)
          (spec/qual-sts-split (car specquals) host-override? st))
-        ((erp rest-splitp left-rest right-rest st)
+        ((erp rest-splitp left-rest right-rest rest-requested st)
          (spec/qual-list-sts-split (cdr specquals) host-override? st)))
       (retok (or first-splitp rest-splitp)
              (cons left-specqual left-rest)
              (cons (if first-splitp right-specqual left-specqual)
                    right-rest)
+             (or first-requested rest-requested)
              st))
     :measure (spec/qual-list-count specquals))
 
@@ -2355,44 +2478,49 @@
                  (splitp booleanp)
                  (left-decl-spec decl-specp)
                  (right-decl-spec decl-specp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a declaration specifier."
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil (decl-spec-fix decl-spec) (decl-spec-fix decl-spec) st))
+         ((reterr) nil (decl-spec-fix decl-spec) (decl-spec-fix decl-spec) nil
+           st))
       (decl-spec-case
         decl-spec
         :stoclass
-        (retok nil (decl-spec-fix decl-spec) (decl-spec-fix decl-spec) st)
+        (retok nil (decl-spec-fix decl-spec) (decl-spec-fix decl-spec) nil st)
         :typespec
-        (b* (((erp left-spec right-spec? st)
+        (b* (((erp left-spec right-spec? requested st)
               (type-spec-sts-split decl-spec.spec nil st)))
           (retok (if right-spec? t nil)
                  (c$::make-decl-spec-typespec :spec left-spec)
                  (if right-spec?
                      (c$::make-decl-spec-typespec :spec right-spec?)
                    (decl-spec-fix decl-spec))
+                 requested
                  st))
         :typequal
-        (retok nil (decl-spec-fix decl-spec) (decl-spec-fix decl-spec) st)
+        (retok nil (decl-spec-fix decl-spec) (decl-spec-fix decl-spec) nil st)
         :function
-        (retok nil (decl-spec-fix decl-spec) (decl-spec-fix decl-spec) st)
+        (retok nil (decl-spec-fix decl-spec) (decl-spec-fix decl-spec) nil st)
         :align
         (b* (((erp spec st) (align-spec-sts-split decl-spec.spec st)))
           (retok nil
                  (c$::make-decl-spec-align :spec spec)
                  (c$::make-decl-spec-align :spec spec)
+                 nil
                  st))
         :attrib
         (b* (((erp spec st) (attrib-spec-sts-split decl-spec.spec st)))
           (retok nil
                  (c$::make-decl-spec-attrib :spec spec)
                  (c$::make-decl-spec-attrib :spec spec)
+                 nil
                  st))
         :stdcall
-        (retok nil (decl-spec-fix decl-spec) (decl-spec-fix decl-spec) st)
+        (retok nil (decl-spec-fix decl-spec) (decl-spec-fix decl-spec) nil st)
         :declspec
-        (retok nil (decl-spec-fix decl-spec) (decl-spec-fix decl-spec) st)))
+        (retok nil (decl-spec-fix decl-spec) (decl-spec-fix decl-spec) nil st)))
     :measure (decl-spec-count decl-spec))
 
   (define decl-spec-list-sts-split
@@ -2403,6 +2531,7 @@
                  (splitp booleanp)
                  (left-decl-spec-list decl-spec-listp)
                  (right-decl-spec-list decl-spec-listp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a declaration specifier list."
@@ -2417,17 +2546,19 @@
       elements which do not split
       contribute their left transformation to both lists.")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil nil nil st)
+         ((reterr) nil nil nil nil
+           st)
          ((when (endp decl-specs))
-          (retok nil nil nil st))
-         ((erp first-splitp left-decl-spec right-decl-spec st)
+          (retok nil nil nil nil st))
+         ((erp first-splitp left-decl-spec right-decl-spec first-requested st)
           (decl-spec-sts-split (car decl-specs) st))
-         ((erp rest-splitp left-rest right-rest st)
+         ((erp rest-splitp left-rest right-rest rest-requested st)
           (decl-spec-list-sts-split (cdr decl-specs) st)))
       (retok (or first-splitp rest-splitp)
              (cons left-decl-spec left-rest)
              (cons (if first-splitp right-decl-spec left-decl-spec)
                    right-rest)
+             (or first-requested rest-requested)
              st))
     :measure (decl-spec-list-count decl-specs))
 
@@ -2861,15 +2992,17 @@
     :returns (mv (er? maybe-msgp)
                  (left-declor declorp)
                  (right-declor? declor-optionp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a declarator."
     (b* ((st (sts-split-state-fix st))
-         ((reterr) (declor-fix declor) nil st)
+         ((reterr) (declor-fix declor) nil nil
+           st)
          ((declor declor) declor)
          ((erp pointers st)
           (typequal/attribspec-list-list-sts-split declor.pointers st))
-         ((erp splitp left-dirdeclor right-dirdeclor st)
+         ((erp splitp left-dirdeclor right-dirdeclor requested st)
           (dirdeclor-sts-split declor.direct splitp uid? st)))
       (retok (c$::make-declor :pointers pointers
                               :direct left-dirdeclor)
@@ -2877,6 +3010,7 @@
                  (c$::make-declor :pointers pointers
                                   :direct right-dirdeclor)
                nil)
+             requested
              st))
     :measure (declor-count declor))
 
@@ -2889,14 +3023,15 @@
     :returns (mv (er? maybe-msgp)
                  (left-declor? declor-optionp)
                  (right-declor? declor-optionp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform an optional declarator."
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil nil st))
+         ((reterr) nil nil nil st))
       (declor-option-case
         declor?
-        :none (retok nil nil st)
+        :none (retok nil nil nil st)
         :some (declor-sts-split (c$::declor-option-some->val declor?)
                                 splitp
                                 uid?
@@ -2913,6 +3048,7 @@
                  (splitp booleanp)
                  (left-dirdeclor dirdeclorp)
                  (right-dirdeclor dirdeclorp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a direct declarator."
@@ -2923,7 +3059,8 @@
       with the newly generated right identifier
       (unless an association already exists, in which case it is reused).")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil (dirdeclor-fix dirdeclor) (dirdeclor-fix dirdeclor) st))
+         ((reterr)
+          nil (dirdeclor-fix dirdeclor) (dirdeclor-fix dirdeclor) nil st))
       (dirdeclor-case
         dirdeclor
         :ident
@@ -2931,6 +3068,7 @@
               (retok nil
                      (dirdeclor-fix dirdeclor)
                      (dirdeclor-fix dirdeclor)
+                     nil
                      st))
              ((unless uid?)
               (retmsg$ "INTERNAL ERROR. ~
@@ -2944,6 +3082,7 @@
               (retok t
                      (dirdeclor-fix dirdeclor)
                      (c$::make-dirdeclor-ident :ident (cdr lookup))
+                     nil
                      st))
              (right-ident (fresh-ident dirdeclor.ident st.blacklist))
              (st (change-sts-split-state
@@ -2953,9 +3092,10 @@
           (retok t
                  (dirdeclor-fix dirdeclor)
                  (c$::make-dirdeclor-ident :ident right-ident)
+                 nil
                  st))
         :paren
-        (b* (((erp left-inner right-inner? st)
+        (b* (((erp left-inner right-inner? requested st)
               (declor-sts-split dirdeclor.inner splitp uid? st))
              (left-dirdeclor (c$::make-dirdeclor-paren :inner left-inner)))
           (retok (if right-inner? t nil)
@@ -2963,9 +3103,10 @@
                  (if right-inner?
                      (c$::make-dirdeclor-paren :inner right-inner?)
                    left-dirdeclor)
+                 requested
                  st))
         :array
-        (b* (((erp dsplitp left-declor right-declor st)
+        (b* (((erp dsplitp left-declor right-declor requested st)
               (dirdeclor-sts-split dirdeclor.declor splitp uid? st))
              ((erp qualspecs st)
               (typequal/attribspec-list-sts-split dirdeclor.qualspecs st))
@@ -2993,9 +3134,10 @@
                                                :qualspecs qualspecs
                                                :size? left-size?)
                    left-dirdeclor)
+                 requested
                  st))
         :array-static1
-        (b* (((erp dsplitp left-declor right-declor st)
+        (b* (((erp dsplitp left-declor right-declor requested st)
               (dirdeclor-sts-split dirdeclor.declor splitp uid? st))
              ((erp qualspecs st)
               (typequal/attribspec-list-sts-split dirdeclor.qualspecs st))
@@ -3023,9 +3165,10 @@
                                                        :qualspecs qualspecs
                                                        :size left-size)
                    left-dirdeclor)
+                 requested
                  st))
         :array-static2
-        (b* (((erp dsplitp left-declor right-declor st)
+        (b* (((erp dsplitp left-declor right-declor requested st)
               (dirdeclor-sts-split dirdeclor.declor splitp uid? st))
              ((erp qualspecs st)
               (typequal/attribspec-list-sts-split dirdeclor.qualspecs st))
@@ -3053,9 +3196,10 @@
                                                        :qualspecs qualspecs
                                                        :size left-size)
                    left-dirdeclor)
+                 requested
                  st))
         :array-star
-        (b* (((erp dsplitp left-declor right-declor st)
+        (b* (((erp dsplitp left-declor right-declor requested st)
               (dirdeclor-sts-split dirdeclor.declor splitp uid? st))
              ((erp qualspecs st)
               (typequal/attribspec-list-sts-split dirdeclor.qualspecs st))
@@ -3068,11 +3212,12 @@
                      (c$::make-dirdeclor-array-star :declor right-declor
                                                     :qualspecs qualspecs)
                    left-dirdeclor)
+                 requested
                  st))
         :function-params
-        (b* (((erp dsplitp left-declor right-declor st)
+        (b* (((erp dsplitp left-declor right-declor requested st)
               (dirdeclor-sts-split dirdeclor.declor splitp uid? st))
-             ((erp params st)
+             ((erp params params-requested st)
               (param-declon-list-sts-split dirdeclor.params st))
              (left-dirdeclor
                (c$::make-dirdeclor-function-params
@@ -3087,9 +3232,10 @@
                        :params params
                        :ellipsis dirdeclor.ellipsis)
                    left-dirdeclor)
+                 (or requested params-requested)
                  st))
         :function-names
-        (b* (((erp dsplitp left-declor right-declor st)
+        (b* (((erp dsplitp left-declor right-declor requested st)
               (dirdeclor-sts-split dirdeclor.declor splitp uid? st))
              (left-dirdeclor
                (c$::make-dirdeclor-function-names :declor left-declor
@@ -3100,6 +3246,7 @@
                      (c$::make-dirdeclor-function-names :declor right-declor
                                                         :names dirdeclor.names)
                    left-dirdeclor)
+                 requested
                  st))))
     :measure (dirdeclor-count dirdeclor))
 
@@ -3111,15 +3258,17 @@
     :returns (mv (er? maybe-msgp)
                  (left-absdeclor absdeclorp)
                  (right-absdeclor? absdeclor-optionp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform an abstract declarator."
     (b* ((st (sts-split-state-fix st))
-         ((reterr) (absdeclor-fix absdeclor) nil st)
+         ((reterr) (absdeclor-fix absdeclor) nil nil
+           st)
          ((absdeclor absdeclor) absdeclor)
          ((erp pointers st)
           (typequal/attribspec-list-list-sts-split absdeclor.pointers st))
-         ((erp left-direct? right-direct? st)
+         ((erp left-direct? right-direct? requested st)
           (dirabsdeclor-option-sts-split absdeclor.direct? splitp st)))
       (retok (c$::make-absdeclor :pointers pointers
                                  :direct? left-direct?)
@@ -3127,6 +3276,7 @@
                  (c$::make-absdeclor :pointers pointers
                                      :direct? right-direct?)
                nil)
+             requested
              st))
     :measure (absdeclor-count absdeclor))
 
@@ -3138,14 +3288,16 @@
     :returns (mv (er? maybe-msgp)
                  (left-absdeclor? absdeclor-optionp)
                  (right-absdeclor? absdeclor-optionp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform an optional abstract declarator."
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil nil st))
+         ((reterr) nil nil nil
+           st))
       (absdeclor-option-case
         absdeclor?
-        :none (retok nil nil st)
+        :none (retok nil nil nil st)
         :some (absdeclor-sts-split (c$::absdeclor-option-some->val absdeclor?)
                                    splitp
                                    st)))
@@ -3160,6 +3312,7 @@
                  (splitp booleanp)
                  (left-dirabsdeclor dirabsdeclorp)
                  (right-dirabsdeclor dirabsdeclorp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a direct abstract declarator."
@@ -3168,16 +3321,18 @@
           nil
           (dirabsdeclor-fix dirabsdeclor)
           (dirabsdeclor-fix dirabsdeclor)
-          st))
+          nil
+           st))
       (dirabsdeclor-case
         dirabsdeclor
         :dummy-base
         (retok nil
                (dirabsdeclor-fix dirabsdeclor)
                (dirabsdeclor-fix dirabsdeclor)
+               nil
                st)
         :paren
-        (b* (((erp left-inner right-inner? st)
+        (b* (((erp left-inner right-inner? requested st)
               (absdeclor-sts-split dirabsdeclor.inner splitp st))
              (left-dirabsdeclor
                (c$::make-dirabsdeclor-paren :inner left-inner)))
@@ -3186,9 +3341,10 @@
                  (if right-inner?
                      (c$::make-dirabsdeclor-paren :inner right-inner?)
                    left-dirabsdeclor)
+                 requested
                  st))
         :array
-        (b* (((erp left-declor? right-declor? st)
+        (b* (((erp left-declor? right-declor? requested st)
               (dirabsdeclor-option-sts-split dirabsdeclor.declor? splitp st))
              ((erp qualspecs st)
               (typequal/attribspec-list-sts-split dirabsdeclor.qualspecs st))
@@ -3217,9 +3373,10 @@
                                                   :qualspecs qualspecs
                                                   :size? left-size?)
                    left-dirabsdeclor)
+                 requested
                  st))
         :array-static1
-        (b* (((erp left-declor? right-declor? st)
+        (b* (((erp left-declor? right-declor? requested st)
               (dirabsdeclor-option-sts-split dirabsdeclor.declor? splitp st))
              ((erp qualspecs st)
               (typequal/attribspec-list-sts-split dirabsdeclor.qualspecs st))
@@ -3248,9 +3405,10 @@
                                                           :qualspecs qualspecs
                                                           :size left-size)
                    left-dirabsdeclor)
+                 requested
                  st))
         :array-static2
-        (b* (((erp left-declor? right-declor? st)
+        (b* (((erp left-declor? right-declor? requested st)
               (dirabsdeclor-option-sts-split dirabsdeclor.declor? splitp st))
              ((erp qualspecs st)
               (typequal/attribspec-list-sts-split dirabsdeclor.qualspecs st))
@@ -3280,9 +3438,10 @@
                        :qualspecs qualspecs
                        :size left-size)
                    left-dirabsdeclor)
+                 requested
                  st))
         :array-star
-        (b* (((erp left-declor? right-declor? st)
+        (b* (((erp left-declor? right-declor? requested st)
               (dirabsdeclor-option-sts-split dirabsdeclor.declor? splitp st))
              (left-dirabsdeclor
                (c$::make-dirabsdeclor-array-star :declor? left-declor?)))
@@ -3291,11 +3450,12 @@
                  (if right-declor?
                      (c$::make-dirabsdeclor-array-star :declor? right-declor?)
                    left-dirabsdeclor)
+                 requested
                  st))
         :function
-        (b* (((erp left-declor? right-declor? st)
+        (b* (((erp left-declor? right-declor? requested st)
               (dirabsdeclor-option-sts-split dirabsdeclor.declor? splitp st))
-             ((erp params st)
+             ((erp params params-requested st)
               (param-declon-list-sts-split dirabsdeclor.params st))
              (left-dirabsdeclor
                (c$::make-dirabsdeclor-function
@@ -3310,6 +3470,7 @@
                        :params params
                        :ellipsis dirabsdeclor.ellipsis)
                    left-dirabsdeclor)
+                 (or requested params-requested)
                  st))))
     :measure (dirabsdeclor-count dirabsdeclor))
 
@@ -3321,20 +3482,23 @@
     :returns (mv (er? maybe-msgp)
                  (left-dirabsdeclor? dirabsdeclor-optionp)
                  (right-dirabsdeclor? dirabsdeclor-optionp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform an optional direct abstract declarator."
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil nil st))
+         ((reterr) nil nil nil
+           st))
       (dirabsdeclor-option-case
         dirabsdeclor?
-        :none (retok nil nil st)
+        :none (retok nil nil nil st)
         :some
-        (b* (((erp out-splitp left-dirabsdeclor right-dirabsdeclor st)
+        (b* (((erp out-splitp left-dirabsdeclor right-dirabsdeclor requested st)
               (dirabsdeclor-sts-split
                 (c$::dirabsdeclor-option-some->val dirabsdeclor?) splitp st)))
           (retok left-dirabsdeclor
                  (if out-splitp right-dirabsdeclor nil)
+                 requested
                  st))))
     :measure (dirabsdeclor-option-count dirabsdeclor?))
 
@@ -3346,6 +3510,7 @@
                  (splitp booleanp)
                  (left-param-declon param-declonp)
                  (right-param-declon param-declonp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a parameter declaration."
@@ -3354,7 +3519,8 @@
           nil
           (param-declon-fix param-declon)
           (param-declon-fix param-declon)
-          st)
+          nil
+           st)
          ((param-declon param-declon) param-declon)
          (type (sts-param-declon-type param-declon))
          ((mv erp splitp)
@@ -3364,9 +3530,9 @@
                    erp
                    (context-msg-param-declon param-declon
                                              (sts-split-state->dialect st))))
-         ((erp - left-specs right-specs st)
+         ((erp - left-specs right-specs requested st)
           (decl-spec-list-sts-split param-declon.specs st))
-         ((erp - left-declor right-declor st)
+         ((erp - left-declor right-declor declor-requested st)
           (param-declor-sts-split param-declon.declor splitp st))
          ((erp attribs st)
           (attrib-spec-list-sts-split param-declon.attribs st))
@@ -3383,6 +3549,7 @@
                                         :attribs attribs
                                         :info param-declon.info)
                left-param-declon)
+             (or requested declor-requested)
              st))
     :measure (param-declon-count param-declon))
 
@@ -3392,6 +3559,7 @@
     :guard (param-declon-list-annop params)
     :returns (mv (er? maybe-msgp)
                  (params$ param-declon-listp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a parameter declaration list."
@@ -3399,16 +3567,17 @@
     (xdoc::topstring-p
      "Splits are spliced into the list in-place.")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) (param-declon-list-fix params) st)
+         ((reterr) (param-declon-list-fix params) nil st)
          ((when (endp params))
-          (retok nil st))
-         ((erp splitp left right st)
+          (retok nil nil st))
+         ((erp splitp left right first-requested st)
           (param-declon-sts-split (car params) st))
-         ((erp rest st)
-          (param-declon-list-sts-split (cdr params) st)))
+         ((erp rest rest-requested st)
+          (param-declon-list-sts-split (cdr params) st))
+         (requested (or first-requested rest-requested)))
       (if splitp
-          (retok (list* left right rest) st)
-        (retok (cons left rest) st)))
+          (retok (list* left right rest) requested st)
+        (retok (cons left rest) requested st)))
     :measure (param-declon-list-count params))
 
   (define param-declor-sts-split
@@ -3420,6 +3589,7 @@
                  (splitp booleanp)
                  (left-param-declor param-declorp)
                  (right-param-declor param-declorp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a parameter declarator."
@@ -3435,12 +3605,13 @@
           nil
           (param-declor-fix param-declor)
           (param-declor-fix param-declor)
+          nil
           st))
       (param-declor-case
         param-declor
         :nonabstract
         (b* (((type+uid-vinfo info) param-declor.info)
-             ((erp left-declor right-declor? st)
+             ((erp left-declor right-declor? requested st)
               (declor-sts-split param-declor.declor
                                 splitp
                                 (and splitp info.uid)
@@ -3462,9 +3633,10 @@
                        :declor right-declor?
                        :info param-declor.info)
                    left-param-declor)
+                 requested
                  st))
         :abstract
-        (b* (((erp left-absdeclor right-absdeclor? st)
+        (b* (((erp left-absdeclor right-absdeclor? requested st)
               (absdeclor-sts-split param-declor.declor splitp st)))
           (retok (if right-absdeclor? t nil)
                  (c$::make-param-declor-abstract
@@ -3473,11 +3645,13 @@
                  (c$::make-param-declor-abstract
                   :declor (or right-absdeclor? left-absdeclor)
                   :info param-declor.info)
+                 requested
                  st))
         :none
         (retok nil
                (param-declor-fix param-declor)
                (param-declor-fix param-declor)
+               nil
                st)
         :ambig
         (retmsg$ "Ambiguous ASTs are unsupported.")))
@@ -3504,10 +3678,24 @@
           (retmsg$ "~@0~%~@1"
                    erp
                    (context-msg-tyname tyname (sts-split-state->dialect st))))
-         ((erp - left-specquals right-specquals st)
+         ((erp - left-specquals right-specquals specqual-requested st)
           (spec/qual-list-sts-split tyname.specquals nil st))
-         ((erp left-declor? right-declor? st)
-          (absdeclor-option-sts-split tyname.declor? splitp st)))
+         ((erp left-declor? right-declor? declor-requested st)
+          (absdeclor-option-sts-split tyname.declor? splitp st))
+         ;; The target struct type may be referenced within a type name,
+         ;; but not defined there:
+         ;; a type name in an expression has no enclosing declaration list
+         ;; that could receive a declaration of the right struct tag.
+         ;; This also rejects a definition within the type name of
+         ;; @('_Atomic'), @('typeof'), and @('_Alignas'),
+         ;; which do occur within declarations,
+         ;; and which could therefore be supported
+         ;; by carrying the request through type names as well.
+         ((when (or specqual-requested declor-requested))
+          (retmsg$ "The split struct type may not be defined ~
+                    within a type name.~%~@0"
+                   (context-msg-tyname tyname
+                                       (sts-split-state->dialect st)))))
       (retok splitp
              (c$::make-tyname :specquals left-specquals
                               :declor? left-declor?
@@ -3523,12 +3711,14 @@
   (define struni-spec-sts-split
     ((struni-spec struni-specp)
      (splitp booleanp)
+     (forward-neededp booleanp)
      (enclosing-uid? c$::uid-optionp)
      (st sts-split-statep))
     :guard (struni-spec-annop struni-spec)
     :returns (mv (er? maybe-msgp)
                  (left-struni-spec struni-specp)
                  (right-struni-spec struni-specp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a struct or union specifier."
@@ -3552,6 +3742,7 @@
          ((reterr)
           (struni-spec-fix struni-spec)
           (struni-spec-fix struni-spec)
+          nil
           st)
          ((struni-spec struni-spec) struni-spec)
          ((erp attribs st)
@@ -3569,7 +3760,7 @@
                     (sts-host-member-names enclosing-uid? st))
                (struct-declon-list-collect-member-names
                  struni-spec.members nil)))
-         ((erp left-members right-members st)
+         ((erp left-members right-members members-requested st)
           (struct-declon-list-sts-split splitp
                                         enclosing-uid?
                                         member-names
@@ -3587,6 +3778,16 @@
                                (sts-split-state->right-name st))
                    :members right-members)
                left-struni-spec)
+             ;; When this is the definition of the tagged right struct type,
+             ;; request a forward declaration of its tag before the enclosing
+             ;; declaration.  A request from a nested struct definition among
+             ;; the members is passed along as well.
+             (or (and splitp
+                      forward-neededp
+                      struni-spec.name?
+                      (consp struni-spec.members)
+                      t)
+                 members-requested)
              st))
     :measure (struni-spec-count struni-spec))
 
@@ -3603,6 +3804,7 @@
                  (left-struct-declon struct-declonp)
                  (right-struct-declon struct-declonp)
                  (member-names$ ident-setp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a struct declaration."
@@ -3643,7 +3845,8 @@
           (struct-declon-fix struct-declon)
           (struct-declon-fix struct-declon)
           member-names
-          st))
+          nil
+           st))
       (struct-declon-case
         struct-declon
         :member
@@ -3651,7 +3854,8 @@
              ;; promotes its members into the enclosing struct type;
              ;; split members within it are registered under the enclosing
              ;; struct's unique identifier, not the anonymous struct's own.
-             ((erp specquals-splitp left-specquals right-specquals st)
+             ((erp specquals-splitp left-specquals right-specquals
+                   specqual-requested st)
               (spec/qual-list-sts-split
                 struct-declon.specquals
                 (sts-member-host-override struct-declon.declors enclosing-uid?)
@@ -3689,8 +3893,9 @@
                          :declors right-declors
                          :attribs attribs)
                        member-names
+                       specqual-requested
                        st)))
-             ((erp left-declors right-declors st)
+             ((erp left-declors right-declors declor-requested st)
               (struct-declor-list-sts-split splitp struct-declon.declors st))
              ((erp attribs st)
               (attrib-spec-list-sts-split struct-declon.attribs st))
@@ -3711,6 +3916,7 @@
                        :attribs attribs)
                    left-struct-declon)
                  member-names
+                 (or specqual-requested declor-requested)
                  st))
         :statassert
         (b* (((when splitp)
@@ -3723,13 +3929,14 @@
               (statassert-sts-split struct-declon.statassert st))
              (new-struct-declon
                (c$::make-struct-declon-statassert :statassert statassert)))
-          (retok nil nil new-struct-declon new-struct-declon member-names st))
+          (retok nil nil new-struct-declon new-struct-declon member-names nil st))
         :empty
         (retok nil
                nil
                (struct-declon-fix struct-declon)
                (struct-declon-fix struct-declon)
                member-names
+               nil
                st)))
     :measure (struct-declon-count struct-declon))
 
@@ -3743,6 +3950,7 @@
     :returns (mv (er? maybe-msgp)
                  (left-struct-declon-list struct-declon-listp)
                  (right-struct-declon-list struct-declon-listp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a struct declaration list."
@@ -3757,24 +3965,28 @@
       The @('member-names') of the struct are threaded through,
       extended with the right member names as they are chosen.")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil nil st)
+         ((reterr) nil nil nil
+           st)
          ((when (endp struct-declons))
-          (retok nil nil st))
+          (retok nil nil nil st))
          ((erp dsplitp inplacep left-struct-declon right-struct-declon
-               member-names st)
+               member-names first-requested st)
           (struct-declon-sts-split (car struct-declons)
                                    splitp enclosing-uid? member-names st))
-         ((erp left-rest right-rest st)
+         ((erp left-rest right-rest rest-requested st)
           (struct-declon-list-sts-split splitp enclosing-uid? member-names
                                         (cdr struct-declons) st))
+         (requested (or first-requested rest-requested))
          ((when inplacep)
           (retok (cons left-struct-declon
                        (cons right-struct-declon left-rest))
                  right-rest
+                 requested
                  st))
          ((unless dsplitp)
           (retok (cons left-struct-declon left-rest)
                  (cons right-struct-declon right-rest)
+                 requested
                  st))
          (orig-emptyp
            (and (struct-declon-case (car struct-declons) :member)
@@ -3795,6 +4007,7 @@
              (if right-emptyp
                  right-rest
                (cons right-struct-declon right-rest))
+             requested
              st))
     :measure (struct-declon-list-count struct-declons))
 
@@ -3807,6 +4020,7 @@
                  (rightp booleanp)
                  (left-struct-declor struct-declorp)
                  (right-struct-declor struct-declorp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a struct declarator."
@@ -3822,9 +4036,10 @@
           nil
           (struct-declor-fix struct-declor)
           (struct-declor-fix struct-declor)
-          st)
+          nil
+           st)
          ((struct-declor struct-declor) struct-declor)
-         ((erp left-declor? right-declor? st)
+         ((erp left-declor? right-declor? requested st)
           (declor-option-sts-split struct-declor.declor? nil nil st))
          ((when right-declor?)
           (retmsg$ "INTERNAL ERROR. ~
@@ -3841,9 +4056,9 @@
                                                     :expr? left-expr?
                                                     :info struct-declor.info))
          ((unless splitp)
-          (retok nil new-struct-declor new-struct-declor st))
+          (retok nil new-struct-declor new-struct-declor requested st))
          (rightp (struct-declor-sts-rightp new-struct-declor st)))
-      (retok rightp new-struct-declor new-struct-declor st))
+      (retok rightp new-struct-declor new-struct-declor requested st))
     :measure (struct-declor-count struct-declor))
 
   (define struct-declor-list-sts-split
@@ -3854,6 +4069,7 @@
     :returns (mv (er? maybe-msgp)
                  (left-struct-declor-list struct-declor-listp)
                  (right-struct-declor-list struct-declor-listp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a struct declarator list."
@@ -3865,24 +4081,29 @@
       When @('splitp') is @('nil'),
       both lists hold the same transformed struct declarators.")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil nil st)
+         ((reterr) nil nil nil
+           st)
          ((when (endp struct-declors))
-          (retok nil nil st))
-         ((erp rightp left-struct-declor right-struct-declor st)
+          (retok nil nil nil st))
+         ((erp rightp left-struct-declor right-struct-declor first-requested st)
           (struct-declor-sts-split (car struct-declors) splitp st))
-         ((erp left-rest right-rest st)
-          (struct-declor-list-sts-split splitp (cdr struct-declors) st)))
+         ((erp left-rest right-rest rest-requested st)
+          (struct-declor-list-sts-split splitp (cdr struct-declors) st))
+         (requested (or first-requested rest-requested)))
       (cond ((not splitp)
              (retok (cons left-struct-declor left-rest)
                     (cons right-struct-declor right-rest)
+                    requested
                     st))
             (rightp
              (retok left-rest
                     (cons right-struct-declor right-rest)
+                    requested
                     st))
             (t
              (retok (cons left-struct-declor left-rest)
                     right-rest
+                    requested
                     st))))
     :measure (struct-declor-list-count struct-declors))
 
@@ -4028,6 +4249,7 @@
                  (splitp booleanp)
                  (left-init-declor init-declorp)
                  (right-init-declor init-declorp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform an initializer declarator."
@@ -4036,7 +4258,8 @@
           nil
           (init-declor-fix init-declor)
           (init-declor-fix init-declor)
-          st)
+          nil
+           st)
          ((init-declor init-declor) init-declor)
          ((c$::init-declor-vinfo info) init-declor.info)
          ((mv erp type-splitp)
@@ -4052,7 +4275,7 @@
                     assembler name specifiers.~%~@0"
                    (context-msg-init-declor init-declor
                                             (sts-split-state->dialect st))))
-         ((erp left-declor right-declor? st)
+         ((erp left-declor right-declor? requested st)
           (declor-sts-split init-declor.declor
                             splitp
                             (and splitp info.uid)
@@ -4093,6 +4316,7 @@
                                        :initer? right-initer?
                                        :info init-declor.info)
                left-init-declor)
+             requested
              st))
     :measure (init-declor-count init-declor))
 
@@ -4103,6 +4327,7 @@
     :returns (mv (er? maybe-msgp)
                  (left-init-declor-list init-declor-listp)
                  (right-init-declor-list init-declor-listp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform an initializer declarator list."
@@ -4112,17 +4337,18 @@
       the right list holds the right counterparts
       of just those initializer declarators which split.")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil nil st)
+         ((reterr) nil nil nil st)
          ((when (endp init-declors))
-          (retok nil nil st))
-         ((erp isplitp left-init-declor right-init-declor st)
+          (retok nil nil nil st))
+         ((erp isplitp left-init-declor right-init-declor first-requested st)
           (init-declor-sts-split (car init-declors) st))
-         ((erp left-rest right-rest st)
+         ((erp left-rest right-rest rest-requested st)
           (init-declor-list-sts-split (cdr init-declors) st)))
       (retok (cons left-init-declor left-rest)
              (if isplitp
                  (cons right-init-declor right-rest)
                right-rest)
+             (or first-requested rest-requested)
              st))
     :measure (init-declor-list-count init-declors))
 
@@ -4134,11 +4360,12 @@
                  (splitp booleanp)
                  (left-declon declonp)
                  (right-declon declonp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a declaration."
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil (declon-fix declon) (declon-fix declon) st))
+         ((reterr) nil (declon-fix declon) (declon-fix declon) nil st))
       (declon-case
         declon
         :declon
@@ -4148,11 +4375,12 @@
         ;; i.e. when they include a type specifier
         ;; denoting the target struct type,
         ;; even if there are no declarators.
-        (b* (((erp left-declors right-declors st)
+        (b* (((erp left-declors right-declors declors-requested st)
               (init-declor-list-sts-split declon.declors st))
              (declors-splitp (and (consp right-declors) t))
-             ((erp specs-splitp left-specs right-specs st)
+             ((erp specs-splitp left-specs right-specs specs-requested st)
               (decl-spec-list-sts-split declon.specs st))
+             (requested (or specs-requested declors-requested))
              (splitp (or declors-splitp specs-splitp))
              (left-declon
                (c$::make-declon-declon :extension declon.extension
@@ -4165,12 +4393,13 @@
                                              :specs right-specs
                                              :declors right-declors)
                    left-declon)
+                 requested
                  st))
         :statassert
         (b* (((erp statassert st)
               (statassert-sts-split declon.statassert st))
              (new-declon (c$::make-declon-statassert :statassert statassert)))
-          (retok nil new-declon new-declon st))))
+          (retok nil new-declon new-declon nil st))))
     :measure (declon-count declon))
 
   (define label-sts-split
@@ -4215,6 +4444,7 @@
                  (splitp booleanp)
                  (left-stmt stmtp)
                  (right-stmt stmtp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a statement."
@@ -4230,25 +4460,26 @@
       and @('for') loop initializers and update expressions)
       are not supported.")
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil (stmt-fix stmt) (stmt-fix stmt) st))
+         ((reterr) nil (stmt-fix stmt) (stmt-fix stmt) nil st))
       (stmt-case
         stmt
         :labeled
         (b* (((erp label st)
               (label-sts-split stmt.label st))
-             ((erp ssplitp left-inner right-inner st)
+             ((erp ssplitp left-inner right-inner inner-requested st)
               (stmt-sts-split stmt.stmt st))
              (left-stmt (c$::make-stmt-labeled :label label
                                                :stmt left-inner)))
           (retok ssplitp
                  left-stmt
                  (if ssplitp right-inner left-stmt)
+                 inner-requested
                  st))
         :compound
         (b* (((erp comp-stmt st)
               (comp-stmt-sts-split stmt.stmt st))
              (new-stmt (c$::make-stmt-compound :stmt comp-stmt)))
-          (retok nil new-stmt new-stmt st))
+          (retok nil new-stmt new-stmt nil st))
         :expr
         (b* (((erp left-expr? right-expr? st)
               (expr-option-sts-split stmt.expr? st))
@@ -4260,37 +4491,38 @@
                      (c$::make-stmt-expr :expr? right-expr?
                                          :info stmt.info)
                    left-stmt)
+                 nil
                  st))
         :null-attrib
         (b* (((erp attrib st)
               (attrib-spec-sts-split stmt.attrib st))
              (new-stmt (c$::make-stmt-null-attrib :attrib attrib)))
-          (retok nil new-stmt new-stmt st))
+          (retok nil new-stmt new-stmt nil st))
         :if
         (b* (((erp left-test right-test? st)
               (expr-sts-split stmt.test st))
              ((when right-test?)
               (retmsg$ "Splits are not supported in if tests.~%~@0"
                        (context-msg-stmt stmt (sts-split-state->dialect st))))
-             ((erp tsplitp left-then right-then st)
+             ((erp tsplitp left-then right-then then-requested st)
               (stmt-sts-split stmt.then st))
              (then (if tsplitp
                        (stmts-to-compound left-then right-then)
                      left-then))
              (new-stmt (c$::make-stmt-if :test left-test :then then)))
-          (retok nil new-stmt new-stmt st))
+          (retok nil new-stmt new-stmt then-requested st))
         :ifelse
         (b* (((erp left-test right-test? st)
               (expr-sts-split stmt.test st))
              ((when right-test?)
               (retmsg$ "Splits are not supported in if tests.~%~@0"
                        (context-msg-stmt stmt (sts-split-state->dialect st))))
-             ((erp tsplitp left-then right-then st)
+             ((erp tsplitp left-then right-then then-requested st)
               (stmt-sts-split stmt.then st))
              (then (if tsplitp
                        (stmts-to-compound left-then right-then)
                      left-then))
-             ((erp esplitp left-else right-else st)
+             ((erp esplitp left-else right-else else-requested st)
               (stmt-sts-split stmt.else st))
              (else (if esplitp
                        (stmts-to-compound left-else right-else)
@@ -4298,36 +4530,36 @@
              (new-stmt (c$::make-stmt-ifelse :test left-test
                                              :then then
                                              :else else)))
-          (retok nil new-stmt new-stmt st))
+          (retok nil new-stmt new-stmt (or then-requested else-requested) st))
         :switch
         (b* (((erp left-target right-target? st)
               (expr-sts-split stmt.target st))
              ((when right-target?)
               (retmsg$ "Splits are not supported in switch targets.~%~@0"
                        (context-msg-stmt stmt (sts-split-state->dialect st))))
-             ((erp bsplitp left-body right-body st)
+             ((erp bsplitp left-body right-body body-requested st)
               (stmt-sts-split stmt.body st))
              (body (if bsplitp
                        (stmts-to-compound left-body right-body)
                      left-body))
              (new-stmt (c$::make-stmt-switch :target left-target
                                              :body body)))
-          (retok nil new-stmt new-stmt st))
+          (retok nil new-stmt new-stmt body-requested st))
         :while
         (b* (((erp left-test right-test? st)
               (expr-sts-split stmt.test st))
              ((when right-test?)
               (retmsg$ "Splits are not supported in loop tests.~%~@0"
                        (context-msg-stmt stmt (sts-split-state->dialect st))))
-             ((erp bsplitp left-body right-body st)
+             ((erp bsplitp left-body right-body body-requested st)
               (stmt-sts-split stmt.body st))
              (body (if bsplitp
                        (stmts-to-compound left-body right-body)
                      left-body))
              (new-stmt (c$::make-stmt-while :test left-test :body body)))
-          (retok nil new-stmt new-stmt st))
+          (retok nil new-stmt new-stmt body-requested st))
         :dowhile
-        (b* (((erp bsplitp left-body right-body st)
+        (b* (((erp bsplitp left-body right-body body-requested st)
               (stmt-sts-split stmt.body st))
              (body (if bsplitp
                        (stmts-to-compound left-body right-body)
@@ -4338,7 +4570,7 @@
               (retmsg$ "Splits are not supported in loop tests.~%~@0"
                        (context-msg-stmt stmt (sts-split-state->dialect st))))
              (new-stmt (c$::make-stmt-dowhile :body body :test left-test)))
-          (retok nil new-stmt new-stmt st))
+          (retok nil new-stmt new-stmt body-requested st))
         :for-expr
         (b* (((erp left-init? right-init? st)
               (expr-option-sts-split stmt.init st))
@@ -4356,7 +4588,7 @@
               (retmsg$ "Splits are not supported in ~
                         for loop update expressions.~%~@0"
                        (context-msg-stmt stmt (sts-split-state->dialect st))))
-             ((erp bsplitp left-body right-body st)
+             ((erp bsplitp left-body right-body body-requested st)
               (stmt-sts-split stmt.body st))
              (body (if bsplitp
                        (stmts-to-compound left-body right-body)
@@ -4365,9 +4597,9 @@
                                                :test left-test?
                                                :next left-next?
                                                :body body)))
-          (retok nil new-stmt new-stmt st))
+          (retok nil new-stmt new-stmt body-requested st))
         :for-declon
-        (b* (((erp dsplitp left-init ?right-init st)
+        (b* (((erp dsplitp left-init ?right-init requested st)
               (declon-sts-split stmt.init st))
              ((when dsplitp)
               (retmsg$ "Splits are not supported in for loop initializers.~%~@0"
@@ -4383,7 +4615,7 @@
               (retmsg$ "Splits are not supported in ~
                         for loop update expressions.~%~@0"
                        (context-msg-stmt stmt (sts-split-state->dialect st))))
-             ((erp bsplitp left-body right-body st)
+             ((erp bsplitp left-body right-body body-requested st)
               (stmt-sts-split stmt.body st))
              (body (if bsplitp
                        (stmts-to-compound left-body right-body)
@@ -4392,11 +4624,13 @@
                                                  :test left-test?
                                                  :next left-next?
                                                  :body body)))
-          (retok nil new-stmt new-stmt st))
+          (retok nil new-stmt new-stmt
+                 (or requested body-requested)
+                 st))
         :for-ambig
         (retmsg$ "Ambiguous ASTs are unsupported.")
         :goto
-        (retok nil (stmt-fix stmt) (stmt-fix stmt) st)
+        (retok nil (stmt-fix stmt) (stmt-fix stmt) nil st)
         :gotoe
         (b* (((erp left-label right-label? st)
               (expr-sts-split stmt.label st))
@@ -4405,11 +4639,11 @@
                         goto label expressions.~%~@0"
                        (context-msg-stmt stmt (sts-split-state->dialect st))))
              (new-stmt (c$::make-stmt-gotoe :label left-label)))
-          (retok nil new-stmt new-stmt st))
+          (retok nil new-stmt new-stmt nil st))
         :continue
-        (retok nil (stmt-fix stmt) (stmt-fix stmt) st)
+        (retok nil (stmt-fix stmt) (stmt-fix stmt) nil st)
         :break
-        (retok nil (stmt-fix stmt) (stmt-fix stmt) st)
+        (retok nil (stmt-fix stmt) (stmt-fix stmt) nil st)
         :return
         (b* (((erp left-expr? right-expr? st)
               (expr-option-sts-split stmt.expr? st))
@@ -4418,7 +4652,7 @@
                        (context-msg-stmt stmt (sts-split-state->dialect st))))
              (new-stmt (c$::make-stmt-return :expr? left-expr?
                                              :info stmt.info)))
-          (retok nil new-stmt new-stmt st))
+          (retok nil new-stmt new-stmt nil st))
         :return-attrib
         (b* (((erp attrib st)
               (attrib-spec-sts-split stmt.attrib st))
@@ -4429,13 +4663,13 @@
                        (context-msg-stmt stmt (sts-split-state->dialect st))))
              (new-stmt (c$::make-stmt-return-attrib :attrib attrib
                                                     :expr left-expr)))
-          (retok nil new-stmt new-stmt st))
+          (retok nil new-stmt new-stmt nil st))
         :asm
         (b* ((st (sts-split-state-add-warning
                    (msg$ "Not transforming assembler statement.~%~@0"
                          (context-msg-stmt stmt (sts-split-state->dialect st)))
                    st)))
-          (retok nil (stmt-fix stmt) (stmt-fix stmt) st))))
+          (retok nil (stmt-fix stmt) (stmt-fix stmt) nil st))))
     :measure (stmt-count stmt))
 
   (define comp-stmt-sts-split
@@ -4462,15 +4696,17 @@
                  (splitp booleanp)
                  (left-block-item block-itemp)
                  (right-block-item block-itemp)
+                 (requested booleanp)
                  (st$ sts-split-statep))
     :parents (sts-split)
     :short "Transform a block item."
     (b* ((st (sts-split-state-fix st))
-         ((reterr) nil (block-item-fix block-item) (block-item-fix block-item) st))
+         ((reterr)
+          nil (block-item-fix block-item) (block-item-fix block-item) nil st))
       (block-item-case
         block-item
         :declon
-        (b* (((erp dsplitp left-declon right-declon st)
+        (b* (((erp dsplitp left-declon right-declon requested st)
               (declon-sts-split block-item.declon st))
              (left-block-item
                (c$::make-block-item-declon :declon left-declon
@@ -4481,9 +4717,10 @@
                      (c$::make-block-item-declon :declon right-declon
                                                  :info block-item.info)
                    left-block-item)
+                 requested
                  st))
         :stmt
-        (b* (((erp ssplitp left-stmt right-stmt st)
+        (b* (((erp ssplitp left-stmt right-stmt stmt-requested st)
               (stmt-sts-split block-item.stmt st))
              (left-block-item
                (c$::make-block-item-stmt :stmt left-stmt
@@ -4494,6 +4731,7 @@
                      (c$::make-block-item-stmt :stmt right-stmt
                                                :info block-item.info)
                    left-block-item)
+                 stmt-requested
                  st))
         :ambig
         (retmsg$ "Ambiguous ASTs are unsupported.")))
@@ -4515,13 +4753,20 @@
          ((reterr) (block-item-list-fix block-items) st)
          ((when (endp block-items))
           (retok nil st))
-         ((erp splitp left right st)
+         ((erp splitp left right requested st)
           (block-item-sts-split (car block-items) st))
          ((erp rest st)
-          (block-item-list-sts-split (cdr block-items) st)))
-      (if splitp
-          (retok (list* left right rest) st)
-        (retok (cons left rest) st)))
+          (block-item-list-sts-split (cdr block-items) st))
+         (items (if splitp (list left right) (list left)))
+         ;; A request from this item is satisfied here, by declaring the tag
+         ;; of the right struct type ahead of the item that mentions it.
+         (items (if requested
+                    (cons (c$::make-block-item-declon
+                            :declon (sts-right-forward-declon
+                                      (sts-split-state->right-name st)))
+                          items)
+                  items)))
+      (retok (append items rest) st))
     :measure (block-item-list-count block-items))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4537,21 +4782,28 @@
   :guard (c$::fundef-annop fundef)
   :returns (mv (er? maybe-msgp)
                (fundef$ fundefp)
+               (requested booleanp)
                (st$ sts-split-statep))
   :short "Transform a function definition."
+  :long
+  (xdoc::topstring-p
+   "A definition of the right struct type inside a parameter list
+    of the function declarator cannot be preceded by a declaration of
+    its tag within the declarator itself,
+    so the request is passed to the enclosing translation item.")
   (b* ((st (sts-split-state-fix st))
-       ((reterr) (c$::fundef-fix fundef) st)
+       ((reterr) (c$::fundef-fix fundef) nil st)
        ((fundef fundef) fundef)
        ((when fundef.declons)
         (retmsg$ "K&R-style function definitions are not supported.~%~@0"
                  (context-msg-fundef fundef (sts-split-state->dialect st))))
-       ((erp specs-splitp left-specs - st)
+       ((erp specs-splitp left-specs - specs-requested st)
         (decl-spec-list-sts-split fundef.specs st))
        ((when specs-splitp)
         (retmsg$ "The split struct type is not supported in ~
                   the return type of a function definition.~%~@0"
                  (context-msg-fundef fundef (sts-split-state->dialect st))))
-       ((erp left-declor right-declor? st)
+       ((erp left-declor right-declor? declor-requested st)
         (declor-sts-split fundef.declor nil nil st))
        ((when right-declor?)
         (retmsg$ "INTERNAL ERROR. ~
@@ -4569,6 +4821,7 @@
                             :declons nil
                             :body body
                             :info fundef.info)
+           (or specs-requested declor-requested)
            st)))
 
 (define ext-declon-sts-split
@@ -4579,6 +4832,7 @@
                (splitp booleanp)
                (left-ext-declon ext-declonp)
                (right-ext-declon ext-declonp)
+               (requested booleanp)
                (st$ sts-split-statep))
   :short "Transform an external declaration."
   (b* ((st (sts-split-state-fix st))
@@ -4586,16 +4840,17 @@
         nil
         (c$::ext-declon-fix ext-declon)
         (c$::ext-declon-fix ext-declon)
-        st))
+        nil
+           st))
     (ext-declon-case
       ext-declon
       :fundef
-      (b* (((erp fundef st)
+      (b* (((erp fundef requested st)
             (fundef-sts-split ext-declon.fundef st))
            (new-ext-declon (c$::make-ext-declon-fundef :fundef fundef)))
-        (retok nil new-ext-declon new-ext-declon st))
+        (retok nil new-ext-declon new-ext-declon requested st))
       :declon
-      (b* (((erp dsplitp left-declon right-declon st)
+      (b* (((erp dsplitp left-declon right-declon requested st)
             (declon-sts-split ext-declon.declon st))
            (left-ext-declon (c$::make-ext-declon-declon :declon left-declon)))
         (retok dsplitp
@@ -4603,11 +4858,13 @@
                (if dsplitp
                    (c$::make-ext-declon-declon :declon right-declon)
                  left-ext-declon)
+               requested
                st))
       :empty
       (retok nil
              (c$::ext-declon-fix ext-declon)
              (c$::ext-declon-fix ext-declon)
+             nil
              st)
       :asm
       (b* ((st (sts-split-state-add-warning
@@ -4618,6 +4875,7 @@
         (retok nil
                (c$::ext-declon-fix ext-declon)
                (c$::ext-declon-fix ext-declon)
+               nil
                st)))))
 
 (define trans-item-sts-split
@@ -4637,12 +4895,20 @@
     (trans-item-case
       item
       :declon
-      (b* (((erp splitp left-ext-declon right-ext-declon st)
-            (ext-declon-sts-split item.declon st)))
-        (retok (c$::trans-item-list-declon
-                 (if splitp
-                     (list left-ext-declon right-ext-declon)
-                   (list left-ext-declon)))
+      (b* (((erp splitp left-ext-declon right-ext-declon requested st)
+            (ext-declon-sts-split item.declon st))
+           (declons (if splitp
+                        (list left-ext-declon right-ext-declon)
+                      (list left-ext-declon)))
+           ;; A request from this item is satisfied here, by declaring the
+           ;; tag of the right struct type ahead of the item that mentions it.
+           (declons (if requested
+                        (cons (c$::make-ext-declon-declon
+                                :declon (sts-right-forward-declon
+                                          (sts-split-state->right-name st)))
+                              declons)
+                      declons)))
+        (retok (c$::trans-item-list-declon declons)
                st))
       :include (retmsg$ "#include directives are not supported.")
       :define (retmsg$ "#define directives are not supported.")
@@ -4994,7 +5260,9 @@
                   st)))
        ((mv erp tunit st)
         (trans-unit-sts-split tunit
-                              (change-sts-split-state st :target-struct-uid uid)))
+                              (change-sts-split-state st
+                                                      :target-struct-uid uid
+                                                      :vtable tunit-vtable)))
        ((when erp)
         (reterr (sts-error-in-translation-unit erp st)))
        ((erp rest st)
@@ -5115,7 +5383,9 @@
              :warnings nil
              :filepath (c$::irr-filepath)
              :member-map nil
-             :completions completions))
+             :completions completions
+             ;; Set per translation unit, in sts-split-trans-units.
+             :vtable (c$::irr-valid-table)))
        (st (if (treeset::emptyp selected-splittable-members)
                st
              (sts-split-state-add-warning

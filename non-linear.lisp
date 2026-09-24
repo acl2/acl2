@@ -438,7 +438,7 @@
 ; 1. If we can determine that (< 4 x), we can add both (< 0 (/ x)) and
 ; (< (/ x) 1/4).
 ; 2. If we can determine that (< 0 x) and (< x 4), we can add
-; (< 0 (/ x)) and (< (/ x) 1/4).
+; (< 0 (/ x)) and (< 1/4 (/ x)).
 ; 3. If we can only determine that (< -2 x), we cannot add anything about
 ; (/ x) to the pot-lst.
 
@@ -575,7 +575,7 @@
                              bounds-polys1)))
                      (bounds-polys3
                       (cond ((and var-lbd
-                                  (not (eql var-lbd 0))
+                                  (< 0 var-lbd)
                                   (or (null inv-var-ubd)
                                       (< (/ var-lbd) inv-var-ubd)))
                              (cons
@@ -591,7 +591,7 @@
                              bounds-polys2)))
                      (bounds-polys4
                       (cond ((and inv-var-lbd
-                                  (not (eql inv-var-lbd 0))
+                                  (< 0 inv-var-lbd)
                                   (or (null var-ubd)
                                       (< (/ inv-var-lbd) var-ubd)))
                              (cons
@@ -673,7 +673,7 @@
                              bounds-polys1)))
                      (bounds-polys3
                       (cond ((and var-ubd
-                                  (not (eql var-ubd 0))
+                                  (< var-ubd 0)
                                   (or (null inv-var-lbd)
                                       (< inv-var-lbd (/ var-ubd))))
                              (cons
@@ -689,7 +689,7 @@
                              bounds-polys2)))
                      (bounds-polys4
                       (cond ((and inv-var-ubd
-                                  (not (eql inv-var-ubd 0))
+                                  (< inv-var-ubd 0)
                                   (or (null var-lbd)
                                       (< var-lbd (/ inv-var-ubd))))
                              (cons

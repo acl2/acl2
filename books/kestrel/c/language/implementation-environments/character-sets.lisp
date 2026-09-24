@@ -355,6 +355,8 @@
 
   ///
 
+  (in-theory (disable (:e charset-basic+lf)))
+
   (defrulel ascii-basic-source-chars-subset-source-chars-lemma
     (set::subset (ascii-basic-source-chars std)
                  (source-chars (source-charset-basic+lf std)))
@@ -429,6 +431,8 @@
   ((local (in-theory (enable acl2::any-nat-mapp-when-character-nat-mapp))))
 
   ///
+
+  (in-theory (disable (:e charset-ascii)))
 
   (defruled source-chars-equal-exec-chars-ascii-lemma
     (equal (source-chars (source-charset-ascii end-of-lines))

@@ -227,7 +227,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-subst-no-capture-p ((vars string-setp) (subst string-expr-mapp))
+(define expr-subst-no-expr-capture-p ((vars string-setp)
+                                      (subst string-expr-mapp))
   :returns (yes/no booleanp)
   :short "Check that a set of bound expression variables is not captured
           by an expression substitution."
@@ -247,6 +248,62 @@
      for the constructs that bind expression variables."))
   (set::emptyp (set::intersect (string-sfix vars)
                                (string-expr-map-free-expr-vars subst))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-subst-no-type-capture-p ((vars type-var-setp)
+                                      (subst string-expr-mapp))
+  :returns (yes/no booleanp)
+  :short "Check that a set of bound type variables is not captured
+          by an expression substitution."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The values of an expression substitution are expressions,
+     which contain types.
+     When a substitution of expression variables descends under a construct
+     that binds the type variables in @('vars'),
+     none of the bound variables must occur free
+     among the values of the substitution,
+     otherwise substituting under the binder would capture them.
+     We check that @('vars') is disjoint from the free type variables
+     of the substitution.
+     Unlike @(tsee expr-subst-no-expr-capture-p),
+     there are no bound variables to remove from the substitution first,
+     because these constructs bind no expression variables.")
+   (xdoc::p
+    "This is shared by the cases of @(tsee ast-subst-expr-vars-no-capture-p)
+     for the constructs that bind type variables."))
+  (set::emptyp (set::intersect (type-var-set-fix vars)
+                               (string-expr-map-free-type-vars subst))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-subst-no-ispace-capture-p ((vars ispace-var-setp)
+                                        (subst string-expr-mapp))
+  :returns (yes/no booleanp)
+  :short "Check that a set of bound ispace variables is not captured
+          by an expression substitution."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The values of an expression substitution are expressions,
+     which contain ispaces.
+     When a substitution of expression variables descends under a construct
+     that binds the ispace variables in @('vars'),
+     none of the bound variables must occur free
+     among the values of the substitution,
+     otherwise substituting under the binder would capture them.
+     We check that @('vars') is disjoint from the free ispace variables
+     of the substitution.
+     Unlike @(tsee expr-subst-no-expr-capture-p),
+     there are no bound variables to remove from the substitution first,
+     because these constructs bind no expression variables.")
+   (xdoc::p
+    "This is shared by the cases of @(tsee ast-subst-expr-vars-no-capture-p)
+     for the constructs that bind ispace variables."))
+  (set::emptyp (set::intersect (ispace-var-set-fix vars)
+                               (string-expr-map-free-ispace-vars subst))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -769,6 +826,20 @@
      We then recurse into the body of the binder
      with the restricted substitution.")
    (xdoc::p
+    "The values of the substitution are expressions,
+     which contain types and ispaces,
+     so the substitution can also capture type and ispace variables.
+     At each type-binding or ispace-binding construct,
+     we check that the bound variables do not appear
+     among the free type or ispace variables of the values of the substitution,
+     and we then recurse into the body of the binder
+     with the substitution unchanged,
+     because these constructs bind no expression variables.
+     For the type and ispace variables bound in @('let') bindings,
+     we perform the same checks where we handle
+     the expression variables bound in those bindings (see below),
+     but without removing anything from the substitution.")
+   (xdoc::p
     "Since @('let') bindings are sequential,
      we override the function for @(tsee bind-list)
      so that, for a non-empty list of bindings,
@@ -790,39 +861,84 @@
   :override
   ((expr :unbox
          (and (expr-subst-expr-vars-no-capture-p expr.target subst)
+              (expr-subst-no-ispace-capture-p (set::insert expr.ispace nil)
+                                              subst)
               (b* ((subst (omap::delete expr.var (string-expr-map-fix subst))))
-                (and (expr-subst-no-capture-p (set::insert expr.var nil) subst)
+                (and (expr-subst-no-expr-capture-p (set::insert expr.var nil)
+                                                   subst)
                      (expr-subst-expr-vars-no-capture-p expr.body subst)))))
    (expr :unboxn
          (and (expr-subst-expr-vars-no-capture-p expr.target subst)
+              (expr-subst-no-ispace-capture-p (set::mergesort expr.ispaces)
+                                              subst)
               (b* ((subst (omap::delete expr.var (string-expr-map-fix subst))))
-                (and (expr-subst-no-capture-p (set::insert expr.var nil) subst)
+                (and (expr-subst-no-expr-capture-p (set::insert expr.var nil)
+                                                   subst)
                      (expr-subst-expr-vars-no-capture-p expr.body subst)))))
    (expr :let
          (and (bind-list-subst-expr-vars-no-capture-p expr.binds subst)
               (b* ((bound (bind-list-bound-expr-vars expr.binds))
                    (subst (omap::delete* bound (string-expr-map-fix subst))))
-                (and (expr-subst-no-capture-p bound subst)
+                (and (expr-subst-no-expr-capture-p bound subst)
+                     (expr-subst-no-type-capture-p
+                      (bind-list-bound-type-vars expr.binds)
+                      subst)
+                     (expr-subst-no-ispace-capture-p
+                      (bind-list-bound-ispace-vars expr.binds)
+                      subst)
                      (expr-subst-expr-vars-no-capture-p expr.body subst)))))
    (atom :lambda
          (b* ((bound (set::insert (var+type?->var atom.param) nil))
               (subst (omap::delete* bound (string-expr-map-fix subst))))
-           (and (expr-subst-no-capture-p bound subst)
+           (and (expr-subst-no-expr-capture-p bound subst)
                 (expr-subst-expr-vars-no-capture-p atom.body subst))))
    (atom :lambdan
          (b* ((bound (set::mergesort (var+type?-list->var atom.params)))
               (subst (omap::delete* bound (string-expr-map-fix subst))))
-           (and (expr-subst-no-capture-p bound subst)
+           (and (expr-subst-no-expr-capture-p bound subst)
                 (expr-subst-expr-vars-no-capture-p atom.body subst))))
+   (atom :tlambda
+         (and (expr-subst-no-type-capture-p (set::insert atom.param nil) subst)
+              (expr-subst-expr-vars-no-capture-p atom.body subst)))
+   (atom :tlambdan
+         (and (expr-subst-no-type-capture-p (set::mergesort atom.params) subst)
+              (expr-subst-expr-vars-no-capture-p atom.body subst)))
+   (atom :ilambda
+         (and (expr-subst-no-ispace-capture-p (set::insert atom.param nil)
+                                              subst)
+              (expr-subst-expr-vars-no-capture-p atom.body subst)))
+   (atom :ilambdan
+         (and (expr-subst-no-ispace-capture-p (set::mergesort atom.params)
+                                              subst)
+              (expr-subst-expr-vars-no-capture-p atom.body subst)))
    (bind :fun
          (b* ((bound (set::mergesort (var+type?-list->var bind.params)))
               (subst (omap::delete* bound (string-expr-map-fix subst))))
-           (and (expr-subst-no-capture-p bound subst)
+           (and (expr-subst-no-expr-capture-p bound subst)
                 (expr-subst-expr-vars-no-capture-p bind.expr subst))))
+   (bind :tfun
+         (and (expr-subst-no-type-capture-p (set::mergesort bind.params) subst)
+              (expr-subst-expr-vars-no-capture-p bind.expr subst)))
+   (bind :ifun
+         (and (expr-subst-no-ispace-capture-p (set::mergesort bind.params)
+                                              subst)
+              (expr-subst-expr-vars-no-capture-p bind.expr subst)))
    (bind :cfun
          (b* ((bound (set::mergesort (var+type?-list->var bind.params)))
               (subst (omap::delete* bound (string-expr-map-fix subst))))
-           (and (expr-subst-no-capture-p bound subst)
+           (and (expr-subst-no-expr-capture-p bound subst)
+                (type-var-list-option-case
+                 bind.tparams?
+                 :some (expr-subst-no-type-capture-p
+                        (set::mergesort bind.tparams?.val)
+                        subst)
+                 :none t)
+                (ispace-var-list-option-case
+                 bind.iparams?
+                 :some (expr-subst-no-ispace-capture-p
+                        (set::mergesort bind.iparams?.val)
+                        subst)
+                 :none t)
                 (expr-subst-expr-vars-no-capture-p bind.expr subst))))
    (bind-list
     (b* (((when (endp bind-list)) t)
@@ -830,7 +946,11 @@
       (and (bind-subst-expr-vars-no-capture-p bind subst)
            (b* ((bound (bind-bound-expr-vars bind))
                 (subst (omap::delete* bound (string-expr-map-fix subst))))
-             (and (expr-subst-no-capture-p bound subst)
+             (and (expr-subst-no-expr-capture-p bound subst)
+                  (expr-subst-no-type-capture-p (bind-bound-type-vars bind)
+                                                subst)
+                  (expr-subst-no-ispace-capture-p (bind-bound-ispace-vars bind)
+                                                  subst)
                   (bind-list-subst-expr-vars-no-capture-p (cdr bind-list)
                                                           subst)))))))
   :name ast-subst-expr-vars-no-capture-p)
