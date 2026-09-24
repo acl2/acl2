@@ -1379,6 +1379,90 @@ int main(void) {
   :with-output-off nil)
 
 (acl2::must-succeed*
+  ;; A nonsplittable self-referential member: a function pointer whose
+  ;; parameter type is the target struct type.  The member is routed by name
+  ;; and stays on the left, but its parameter list splits, so the definition
+  ;; of the left struct type mentions the tag of the right struct type.
+  ;; A tag first declared inside a function prototype has prototype scope
+  ;; [C17:6.2.1/7], so without a forward declaration it would denote a type
+  ;; distinct from the right struct type.
+  (c$::input-files :files '("self-ref-callback.c")
+                   :const *old*)
+
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/self-ref-callback.c"
+    :content "struct point_right;
+
+struct point {
+  int x;
+  void (*setz)(struct point *p, struct point_right *p_0);
+};
+
+struct point_right {
+  int z;
+};
+
+void setz(struct point *p, struct point_right *p_1) {
+  p_1->z = 2;
+}
+
+int main(void) {
+  struct point p;
+  struct point_right p_2;
+  p.setz = setz;
+  p.setz(&p, &p_2);
+  return p_2.z;
+}
+")
+
+  ;; When the callback goes right, the definition of the right struct type
+  ;; declares its own tag before the callback prototype that mentions it,
+  ;; so no forward declaration is requested.
+  (struct-type-split *old*
+                     *new-right*
+                     :struct-tag "point"
+                     :right-members ("z" "setz")
+                     :new-tag "point_right")
+
+  (c$::output-files :const *new-right*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/self-ref-callback.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+  void (*setz)(struct point *p, struct point_right *p_0);
+};
+
+void setz(struct point *p, struct point_right *p_1) {
+  p_1->z = 2;
+}
+
+int main(void) {
+  struct point p;
+  struct point_right p_2;
+  p_2.setz = setz;
+  p_2.setz(&p, &p_2);
+  return p_2.z;
+}
+")
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
   ;; A splittable member of an untagged (e.g. typedef'd) struct type
   ;; is split in place, like a member of a tagged struct type.
   (c$::input-files :files '("untagged-member.c")
