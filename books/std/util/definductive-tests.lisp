@@ -232,6 +232,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; A predicate premise that mentions a variable
+; equated to a term by another premise (here x1 = x - 1).
+; ACL2 replaces the variable with the term throughout the goal
+; of the rule theorem, before rewriting its hypotheses.
+
+(must-succeed*
+
+ (definductive down-nats
+   :preds ((dn x))
+   :irules ((zero ()
+                  (dn 0))
+            (down ((posp x)
+                   (equal x1 (1- x))
+                   (dn x1))
+                  (dn x))))
+
+ (must-be-redundant
+  (defthm dn-zero
+    (dn 0)))
+
+ (must-be-redundant
+  (defthm dn-down
+    (implies (and (dn x1)
+                  (posp x)
+                  (equal x1 (1- x)))
+             (dn x))))
+
+ (must-be-redundant
+  (defthm dn-alt-when-dn
+    (implies (dn x)
+             (dn-alt x)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (must-fail
  (definductive duplicate-formals
    :preds ((p x x))
