@@ -371,3 +371,21 @@
                   (treeset::set-all-genericp (values map))))
   :enable (values
            tree-all-vals-genericp-becomes-set-all-genericp-of-tree-val-set))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The fixer of a typed map, with treeset::genericp standing for the type of
+;; the whole map. @('deftreemap') instantiates its laws for each fixer it
+;; generates.
+
+(define generic-fix (map)
+  (if (treeset::genericp map)
+      map
+    (empty)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule submap-of-generic-fix
+  (implies (submap map y)
+           (submap (generic-fix map) y))
+  :enable generic-fix)
