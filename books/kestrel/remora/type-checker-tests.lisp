@@ -388,3 +388,21 @@
 ; which the syntactic matching does not handle, for now.
 (test-check-top-expr-fail
  "(length (array [3] 1 2 3))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Shapes with multiplications, like the one of the result of flatten,
+; are handled by the suffix check and by the join of shapes
+; (see check-shape-suffix and join-shapes),
+; with the multiplications treated as uninterpreted
+; (see ispace-equivalence-checker).
+
+; The result of flatten, of shape [(* 2 3)],
+; is passed to length instantiated at the same shape.
+(test-check-top-expr
+ "(@length (Int) ((* 2 3) [])
+   (@flatten (Int) (2 3 []) (array [2 3] 1 2 3 4 5 6)))")
+
+; The result of flatten is the frame of an application of +.
+(test-check-top-expr
+ "(+ (@flatten (Int) (2 3 []) (array [2 3] 1 2 3 4 5 6)) 1)")
