@@ -120,7 +120,16 @@
      but the function must have a product type instead of a universal one,
      and we apply an ispace substitution instead of a type substitution.
      Furthermore, there is an additional application of the ispace substitution,
-     namely to the shape of the body type of the product type."))
+     namely to the shape of the body type of the product type.")
+   (xdoc::p
+    "The rule for unboxing includes the requirement that
+     the bound ispace variable is not in the environment,
+     otherwise type safety can be broken due to variable confusion;
+     this is arguably implicit in [thesis],
+     as a form of alpha equivalence.
+     The rule requires the type annotation to be present,
+     and to be equivalent to the type that the rule in [thesis]
+     assigns to the unboxing expression."))
 
   :preds ((expr-ok ivars tvars evars expr type)
           (atom-ok ivars tvars evars atom type)
@@ -389,9 +398,63 @@
 
    ;; TODO: capp
 
-   ;; unboxing expressions:
+   (unbox ((ispace-var-setp ivars)
+           (type-var-setp tvars)
+           (string-type-mapp evars)
+           (ispace-varp ivar)
+           (ispace-varp param)
+           (stringp evar)
+           (exprp target)
+           (exprp body)
+           (typep type)
+           (typep type-target)
+           (typep type-body)
+           (shapep shape-target)
+           (shapep shape-body)
+           (expr-ok ivars tvars evars
+                    target
+                    (type-array (type-sigma param type-target)
+                                (ispace-shape shape-target)))
+           (ispace-var-case
+            param
+            :dim
+            (and (ispace-var-case ivar :dim)
+                 (equal dim-ren
+                        (omap::update (ispace-var-dim->name param)
+                                      (ispace-var-dim->name ivar)
+                                      nil))
+                 (equal shape-ren nil))
+            :shape
+            (and (ispace-var-case ivar :shape)
+                 (equal dim-ren nil)
+                 (equal shape-ren
+                        (omap::update (ispace-var-shape->name param)
+                                      (ispace-var-shape->name ivar)
+                                      nil))))
+           (type-rename-ispace-vars-no-capture-p type-target
+                                                 dim-ren
+                                                 shape-ren)
+           (not (set::in ivar ivars))
+           (equal ivars1 (set::insert ivar ivars))
+           (equal evars1 (omap::update evar
+                                       (type-rename-ispace-vars type-target
+                                                                dim-ren
+                                                                shape-ren)
+                                       evars))
+           (expr-ok ivars1 tvars evars1
+                    body
+                    (type-array type-body
+                                (ispace-shape shape-body)))
+           (type-ok ivars tvars type)
+           (type-eq type
+                    (type-array type-body
+                                (ispace-shape (shp++ shape-target
+                                                     shape-body)))))
+          (expr-ok ivars tvars evars
+                   (expr-unbox ivar evar target body type)
+                   type))
 
-   ;; TODO
+   ;; TODO: unboxn
 
    ;; splice expressions:
 
@@ -491,6 +554,7 @@
   (verify-guards expr-ok-eapp-validp)
   (verify-guards expr-ok-tapp-validp)
   (verify-guards expr-ok-iapp-validp)
+  (verify-guards expr-ok-unbox-validp)
   (verify-guards atom-ok-bool-validp)
   (verify-guards atom-ok-int-validp)
   (verify-guards atom-ok-float-validp)
