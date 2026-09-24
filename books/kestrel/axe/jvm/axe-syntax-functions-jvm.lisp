@@ -479,7 +479,7 @@
                                   (if (eq 'jvm::make-state stripped-expr-fn)
                                       (mv :step-present nil nil)
                                     ;; Avoid printing anything here, because steps can stack up around a call to jvm::obtain-and-throw-exception.
-                                    (if (member-eq stripped-expr-fn '(jvm::obtain-and-throw-exception jvm::execute-new)) ; todo: what about jvm::error-state?
+                                    (if (member-eq stripped-expr-fn '(jvm::obtain-and-throw-exception jvm::execute-new jvm::error-state))
                                         (mv :finished nil nil)
                                       (progn$ (print-dag-array-node-and-supporters 'dag-array dag-array whole-nest)
                                               (er hard? 'get-stack-height-and-pc-to-step-from-myif-nest-helper "Unexpected state term: ~x0, after stripping step calls (see DAG just above).~%" stripped-expr)
