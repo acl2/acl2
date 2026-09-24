@@ -474,10 +474,12 @@
        a function that, given a tree matching the rule name
        whose subtrees match the concatenation @('<i>')
        (expressed via @('<prefix>-<rulename>-conc?') above),
-       and a natural number index below
-       the length of the list of trees that matches the repetition,
-       returns the tree at the given index
-       in the list of trees that matches the repetition.
+       returns the tree in the list of trees that matches the repetition.
+       Since this function is only generated
+       when the repetition has a range of 1 (see below),
+       the list of trees that matches the repetition
+       always consists of exactly one tree,
+       which is the one returned by this function.
        The generated function is accompanied by the following theorems:")
      (xdoc::ul
       (xdoc::li
@@ -486,10 +488,6 @@
         matches the element of the repetition.")
       (xdoc::li
        "@(tsee fty::deffixequiv) theorems for the function."))
-     (xdoc::p
-      "This function does not take an index as input
-       if the repetition consists of the singleton range 1,
-       because the index input would be always 0.")
      (xdoc::p
       "If the alternation that defines the rule name
        consists of just one concatenation,
