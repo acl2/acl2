@@ -44,6 +44,18 @@
      and then define ispace equivalence based on that.
      We plan to verify the correctness of this normalization code.")
    (xdoc::p
+    "The normalization code is defined on all ispaces,
+     including ones with multiplications and subtractions of dimensions,
+     which are treated as uninterpreted operators:
+     the additions in their operands are normalized,
+     but no law of multiplication or subtraction is applied,
+     and a multiplication or subtraction is otherwise treated like a variable
+     (e.g. as an addend of an addition).
+     Since the normalization only applies laws of addition and congruence,
+     two ispaces that normalize to the same ispace are always equivalent;
+     the converse holds for ispaces that only use addition,
+     as described in [thesis].")
+   (xdoc::p
     "We are also formalizing a more general notion of ispace equivalence,
      also involving multiplication and subtraction of dimensions,
      without necessarily requiring decidability."))
@@ -150,15 +162,15 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (define flatten-add-in-dim ((dim dimp))
-    :guard (dim-addp dim)
     :returns (new-dim dimp)
     :parents (ispace-equivalence-checker flatten-add-in-dims)
     :short "Flatten all the nested additions in a dimension."
     :long
     (xdoc::topstring
      (xdoc::p
-      "Variables and constants are left alone.
-       For an addition, we recursively flatten the additions in the addends,
+      "Variables and constants are left alone.")
+     (xdoc::p
+      "For an addition, we recursively flatten the additions in the addends,
        and we also splice any resulting flattened sub-additions
        into the super-addition.
        For instance, given @('(+ i (+ (+ j k) l) 3)'),
@@ -166,20 +178,25 @@
        but then we also need to splice the sub-addition,
        obtaining @('(+ i j k l 3)').
        The splicing is done by @(tsee flatten-add-in-dim-list),
-       based on whether the @('addp') flag is @('t') or @('nil')."))
+       based on whether the @('addp') flag is @('t') or @('nil').")
+     (xdoc::p
+      "For a multiplication or subtraction,
+       we recursively flatten the additions in the operands,
+       but we do not splice any resulting flattened additions
+       into the multiplication or subtraction,
+       whose operands are left separate."))
     (dim-case
      dim
      :var (dim-var dim.name)
      :const (dim-const dim.val)
      :add (dim-add (flatten-add-in-dim-list dim.dims t))
-     :mul (prog2$ (impossible) (dim-var "irrelevant"))
-     :sub (prog2$ (impossible) (dim-var "irrelevant")))
+     :mul (dim-mul (flatten-add-in-dim-list dim.dims nil))
+     :sub (dim-sub (flatten-add-in-dim-list dim.dims nil)))
     :measure (dim-count dim))
 
   ;;;;;;;;;;;;;;;;;;;;
 
   (define flatten-add-in-dim-list ((dims dim-listp) (addp booleanp))
-    :guard (dim-list-addp dims)
     :returns (new-dims dim-listp)
     :parents (ispace-equivalence-checker flatten-add-in-dims)
     :short "Flatten all the nested additions in a list of dimensions,
@@ -193,7 +210,9 @@
        we splice any obtained sub-addition into the current list,
        which is put into the super-addition by @(tsee flatten-add-in-dim).
        The @('addp') flag is @('t') exactly when
-       the ispaces passed to this function are addends of an addition."))
+       the dimensions passed to this function are addends of an addition,
+       and @('nil') when they are the operands of
+       a multiplication or subtraction."))
     (b* (((when (endp dims)) nil)
          (new-dim (flatten-add-in-dim (car dims)))
          (new-dims (flatten-add-in-dim-list (cdr dims) addp)))
@@ -274,56 +293,92 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define normalize-add-in-dim ((dim dimp))
-  :guard (dim-addp dim)
-  :returns (new-dim dimp)
-  :short "Normalize additions in a dimension."
+(defines normalize-add-in-dims
+  :short "Normalize additions in dimensions and lists of dimensions."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is intended for use
-     after all additions have been flattened via @(tsee flatten-add-in-dims).
-     We use @(tsee normalize-add-dims)
-     to normalize the dimensions of all the additions.
-     We also replace empty additions with 0,
-     and singleton additions with their only element."))
-  (dim-case
-   dim
-   :var (dim-var dim.name)
-   :const (dim-const dim.val)
-   :add (b* ((dims (normalize-add-dims dim.dims))
-             ((when (endp dims)) (dim-const 0)) ; no dimensions
-             ((when (endp (cdr dims))) (car dims))) ; one dimension
-          (dim-add dims)) ; two or more dimensions
-   :mul (prog2$ (impossible) (dim-var "irrelevant"))
-   :sub (prog2$ (impossible) (dim-var "irrelevant"))))
+     after all additions have been flattened via @(tsee flatten-add-in-dims)."))
 
-;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;;;;;;;;
 
-(define normalize-add-in-dim-list ((dims dim-listp))
-  :guard (dim-list-addp dims)
-  :returns (new-dims dim-listp)
-  :short "Normalize additions in a list of dimensions."
-  (cond ((endp dims) nil)
-        (t (cons (normalize-add-in-dim (car dims))
-                 (normalize-add-in-dim-list (cdr dims))))))
+  (define normalize-add-in-dim ((dim dimp))
+    :returns (new-dim dimp)
+    :parents (ispace-equivalence-checker normalize-add-in-dims)
+    :short "Normalize additions in a dimension."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Variables and constants are left alone.")
+     (xdoc::p
+      "For an addition,
+       we first normalize the additions in the addends,
+       and then we use @(tsee normalize-add-dims) on the resulting addends.
+       We also replace empty additions with 0,
+       and singleton additions with their only element.")
+     (xdoc::p
+      "For a multiplication or subtraction,
+       we normalize the additions in the operands,
+       but we do not apply any law of multiplication or subtraction.
+       A multiplication or subtraction that is an addend of an addition
+       is treated like a variable by @(tsee normalize-add-dims):
+       it is not a constant, and it is sorted with the variables.")
+     (xdoc::p
+      "Normalizing the addends of a flattened addition
+       does not introduce nested additions,
+       because variables and constants are unchanged,
+       and multiplications and subtractions remain such.
+       Thus, the flattening is preserved."))
+    (dim-case
+     dim
+     :var (dim-var dim.name)
+     :const (dim-const dim.val)
+     :add (b* ((dims (normalize-add-in-dim-list dim.dims))
+               (dims (normalize-add-dims dims))
+               ((when (endp dims)) (dim-const 0)) ; no dimensions
+               ((when (endp (cdr dims))) (car dims))) ; one dimension
+            (dim-add dims)) ; two or more dimensions
+     :mul (dim-mul (normalize-add-in-dim-list dim.dims))
+     :sub (dim-sub (normalize-add-in-dim-list dim.dims)))
+    :measure (dim-count dim))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (define normalize-add-in-dim-list ((dims dim-listp))
+    :returns (new-dims dim-listp)
+    :parents (ispace-equivalence-checker normalize-add-in-dims)
+    :short "Normalize additions in a list of dimensions."
+    (cond ((endp dims) nil)
+          (t (cons (normalize-add-in-dim (car dims))
+                   (normalize-add-in-dim-list (cdr dims)))))
+    :measure (dim-list-count dims))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv-mutual normalize-add-in-dims))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define normalize-dim ((dim dimp))
-  :guard (dim-addp dim)
   :returns (new-dim dimp)
   :short "Normalize a dimension."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We flatten and normalize all the additions."))
+    "We flatten and normalize all the additions,
+     including the ones in the operands of
+     multiplications and subtractions,
+     which are otherwise left as they are."))
   (normalize-add-in-dim (flatten-add-in-dim dim)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (define normalize-dim-list ((dims dim-listp))
-  :guard (dim-list-addp dims)
   :returns (new-dims dim-listp)
   :short "Normalize a list of dimensions."
   (cond ((endp dims) nil)
@@ -338,7 +393,6 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (define normalize-dims-in-shape ((shape shapep))
-    :guard (shape-addp shape)
     :returns (new-shape shapep)
     :parents (ispace-equivalence-checker normalize-dims-in-shapes/ispaces)
     :short "Normalize dimensions in a shape."
@@ -353,7 +407,6 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (define normalize-dims-in-shape-list ((shapes shape-listp))
-    :guard (shape-list-addp shapes)
     :returns (new-shapes shape-listp)
     :parents (ispace-equivalence-checker normalize-dims-in-shapes/ispaces)
     :short "Normalize dimensions in a list of shapes."
@@ -365,7 +418,6 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (define normalize-dims-in-ispace ((ispace ispacep))
-    :guard (ispace-addp ispace)
     :returns (new-ispace ispacep)
     :parents (ispace-equivalence-checker normalize-dims-in-shapes/ispaces)
     :short "Normalize dimensions in an ispace."
@@ -378,7 +430,6 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   (define normalize-dims-in-ispace-list ((ispaces ispace-listp))
-    :guard (ispace-list-addp ispaces)
     :returns (new-ispaces ispace-listp)
     :parents (ispace-equivalence-checker normalize-dims-in-shapes/ispaces)
     :short "Normalize dimensions in a list of ispaces."
@@ -599,7 +650,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define normalize-shape ((shape shapep))
-  :guard (shape-addp shape)
   :returns (new-shape shapep)
   :short "Normalize a shape."
   :long
@@ -624,7 +674,6 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (define normalize-shape-list ((shapes shape-listp))
-  :guard (shape-list-addp shapes)
   :returns (new-shapes shape-listp)
   :short "Lift @(tsee normalize-shape) to lists."
   (cond ((endp shapes) nil)
@@ -640,7 +689,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define normalize-ispace ((ispace ispacep))
-  :guard (ispace-addp ispace)
   :returns (new-ispace ispacep)
   :short "Normalize an ispace."
   :long
@@ -669,7 +717,6 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (define normalize-ispace-list ((ispaces ispace-listp))
-  :guard (ispace-list-addp ispaces)
   :returns (new-ispaces ispace-listp)
   :short "Lift @(tsee normalize-ispace) to lists."
   (cond ((endp ispaces) nil)
