@@ -16715,9 +16715,20 @@ its attachment is ignored during proofs"))))
                                  :pequiv-info nil)
                   (cond
                    ((equal rewritten-concl *nil*)
-                    (mv step-limit
-                        (dumb-negate-lit rewritten-test)
-                        ttree))
+
+; (Implies test nil) is (not test), which is Boolean.  But dumb-negate-lit may
+; return a non-Boolean term, for example p for (not p), which is only
+; iff-equivalent to (not rewritten-test).  So as in the (quotep rewritten-test)
+; case below, we use it only when iff refines geneqv.
+
+                    (let ((rune (geneqv-refinementp 'iff geneqv wrld)))
+                      (cond
+                       (rune (mv step-limit
+                                 (dumb-negate-lit rewritten-test)
+                                 (push-lemma rune ttree)))
+                       (t (mv step-limit
+                              (fcons-term* 'not rewritten-test)
+                              ttree)))))
                    ((or (quotep rewritten-concl) ; not *nil*
                         (equal rewritten-test rewritten-concl))
                     (mv step-limit *t* ttree))
