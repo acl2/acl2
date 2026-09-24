@@ -667,6 +667,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define dim-equivp ((dim1 dimp) (dim2 dimp))
+  :returns (yes/no booleanp)
+  :short "Check if two dimensions are equivalent."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check whether the two dimensions normalize to the same dimension."))
+  (equal (normalize-dim dim1)
+         (normalize-dim dim2)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define shape-equivp ((shape1 shapep) (shape2 shapep))
   :returns (yes/no booleanp)
   :short "Check if two shapes are equivalent."
