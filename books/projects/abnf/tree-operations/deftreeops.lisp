@@ -177,8 +177,14 @@
      "The discriminant term used in
       the @('<prefix>-<rulename>-conc-equivs') theorem
       described in @(tsee deftreeops).
+      This is @('t') if the rule name is defined by
+      an alternation of just one concatenation,
+      since there is nothing to discriminate in that case.
       This is @('nil') if the rule name is defined by
-      an alternation of just one concatenation.")
+      an alternation of two or more concatenations
+      that does not have one of the supported forms,
+      i.e. if the @('<prefix>-<rulename>-conc-equivs') theorem
+      is not generated.")
     (xdoc::li
      "The name of the @('<prefix>-<rulename>-conc?-<i>-iff-match-conc') theorem
       described in @(tsee deftreeops).
