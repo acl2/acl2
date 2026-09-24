@@ -1307,10 +1307,10 @@
                    (mv (erp-nil)
                        new-nodenum-or-quotep
                        rewrite-stobj2 ,@maybe-state
-                       (and memoization ; we could save this cons:
-                            (add-pairs-to-memoization (cons-if-not-equal-car expr trees-equal-to-tree) ; might be the same as tree if the args aren't simplified?) well, each arg should be simplified and memoed.
-                                                      new-nodenum-or-quotep ;the nodenum-or-quotep they are all equal to
-                                                      memoization))
+                       (maybe-add-pairs-to-memoization ; we could save this cons:
+                         (cons-if-not-equal-car expr trees-equal-to-tree) ; might be the same as tree if the args aren't simplified?) well, each arg should be simplified and memoed.
+                         new-nodenum-or-quotep ;the nodenum-or-quotep they are all equal to
+                         memoization)
                        hit-counts tries limits node-replacement-array)))))
 
            ;; Helper function for rewriting a tree that is an IF or MYIF or BOOLIF (used for both if/myif and boolif).  This is separate just to keep the caller small.
@@ -2005,10 +2005,9 @@
                          (mv (erp-nil)
                              new-nodenum-or-quotep
                              rewrite-stobj2 ,@maybe-state
-                             (and memoization
-                                  (add-pairs-to-memoization trees-equal-to-tree ;the items (TODO: Can this be non-empty?) ; We cannot add a memoization entry for TREE itself, because it is not a function call.
-                                                            new-nodenum-or-quotep ;the nodenum-or-quotep they are all equal to
-                                                            memoization))
+                             (maybe-add-pairs-to-memoization trees-equal-to-tree ;the items (TODO: Can this be non-empty?) ; We cannot add a memoization entry for TREE itself, because it is not a function call.
+                                                             new-nodenum-or-quotep ;the nodenum-or-quotep they are all equal to
+                                                             memoization)
                              hit-counts tries limits
                              node-replacement-array))
                      ;; TREE is a nodenum (because it's an atom but not a symbol):
@@ -2018,14 +2017,9 @@
                        (mv (erp-nil)
                            tree
                            rewrite-stobj2 ,@maybe-state
-                           (if (and memoization
-                                    ;; todo: drop this check?:
-                                    trees-equal-to-tree ; could check just this, but then it *must* always be nil if we are not memoizing
-                                    )
-                               (add-pairs-to-memoization trees-equal-to-tree ; We cannot add a memoization entry for TREE itself, because it is not a function call.
-                                                         tree ; the nodenum to which all the TREES-EQUAL-TO-TREE rewrote
-                                                         memoization)
-                             memoization)
+                           (maybe-add-pairs-to-memoization trees-equal-to-tree ; We cannot add a memoization entry for TREE itself, because it is not a function call.
+                                                           tree ; the nodenum to which all the TREES-EQUAL-TO-TREE rewrote
+                                                           memoization)
                            hit-counts tries limits
                            node-replacement-array)))
                  ;; TREE is a cons:
@@ -2035,11 +2029,9 @@
                        (mv (erp-nil)
                            tree ; return the quoted constant
                            rewrite-stobj2 ,@maybe-state
-                           (if (and memoization trees-equal-to-tree)
-                               (add-pairs-to-memoization trees-equal-to-tree ; We cannot add a memoization entry for TREE itself, because it is not a function call.
-                                                         tree ; the constant to which all the TREES-EQUAL-TO-TREE rewrote
-                                                         memoization)
-                             memoization)
+                           (maybe-add-pairs-to-memoization trees-equal-to-tree ; We cannot add a memoization entry for TREE itself, because it is not a function call.
+                                                           tree ; the constant to which all the TREES-EQUAL-TO-TREE rewrote
+                                                           memoization)
                            hit-counts tries limits
                            node-replacement-array)
                      ;; TREE is a function call:
@@ -3450,8 +3442,10 @@
                      (:rewrite ,(pack$ 'len-of-mv-nth-1-of-simplify-trees-and-add-to-dag- suffix))
                      (:rewrite maybe-bounded-memoizationp-monotone)
                      (:rewrite maybe-bounded-memoizationp-of-add-pairs-to-memoization)
+                     (:rewrite maybe-bounded-memoizationp-of-maybe-add-pairs-to-memoization)
                      (:rewrite maybe-bounded-memoizationp-of-add-pair-and-pairs-to-memoization)
                      (:rewrite maybe-bounded-memoizationp-of-nil)
+                     (:rewrite maybe-add-pairs-to-memoization-iff)
                      (:rewrite member-equal-when-member-equal-and-subsetp-equal)
                      (:rewrite mv-nth-of-cons-safe)
                      (:rewrite mv-nth-of-if)
@@ -3534,6 +3528,7 @@
                      (:rewrite wf-dagp-after-add-function-call-expr-to-dag-array)
                      (:rewrite wf-dagp-after-add-variable-to-dag-array)
                      (:type-prescription add-pairs-to-memoization)
+                     ;; (:type-prescription maybe-add-pairs-to-memoization)
                      (:type-prescription add-pair-and-pairs-to-memoization$inline)
                      (:type-prescription alist-suitable-for-hyp-args-and-hypsp)
                      (:type-prescription alist-suitable-for-hypsp)
@@ -6598,58 +6593,53 @@
                      & & & & ; dag-len dag-parent-array dag-constant-alist dag-variable-alist
                      memoization hits
                      tries & & ; limits node-replacement-array
-                     ,@maybe-state
-                     )
-                 (with-local-stobjs (rewrite-stobj rewrite-stobj2)
-                                    (mv-let (erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hits tries limits node-replacement-array rewrite-stobj rewrite-stobj2 ,@maybe-state)
-                                      (let* (;; Initialize rewrite-stobj:
-                                             (rewrite-stobj (put-monitored-symbols monitored-symbols rewrite-stobj))
-                                             (rewrite-stobj (put-no-warn-ground-functions no-warn-ground-functions rewrite-stobj))
-                                             (rewrite-stobj (put-fns-to-elide fns-to-elide rewrite-stobj))
-                                             (rewrite-stobj (put-known-booleans known-booleans ;skip if memoizing since we can't use contexts?
-                                                                                rewrite-stobj))
-                                             (rewrite-stobj (put-normalize-xors normalize-xors rewrite-stobj))
-                                             (rewrite-stobj (put-interpreted-function-alist interpreted-function-alist rewrite-stobj))
-                                             ;; (rewrite-stobj (put-rule-alist rule-alist rewrite-stobj))
-                                             (rewrite-stobj (load-rule-db rule-alist rewrite-stobj))
-                                             (rewrite-stobj (put-print print rewrite-stobj))
-                                             ;; Initialize rewrite-stobj2:
-                                             (rewrite-stobj2 (load-dag dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist rewrite-stobj2))
-                                             ;; (rewrite-stobj2 (put-dag-array dag-array rewrite-stobj2))
-                                             ;; (rewrite-stobj2 (put-dag-len dag-len rewrite-stobj2))
-                                             ;; (rewrite-stobj2 (put-dag-parent-array dag-parent-array rewrite-stobj2))
-                                             ;; (rewrite-stobj2 (put-dag-constant-alist dag-constant-alist rewrite-stobj2))
-                                             ;; (rewrite-stobj2 (put-dag-variable-alist dag-variable-alist rewrite-stobj2))
-                                             (rewrite-stobj2 (if (eq :compact (get-normalize-xors rewrite-stobj))
-                                                                 (set-xor-signature-fields 0 rewrite-stobj2)
-                                                               rewrite-stobj2))
-                                             ,@(and smtp '((rewrite-stobj2 (put-negated-smt-assumptions negated-smt-assumptions rewrite-stobj2))))
-                                             ;; Decide whether to count and print tries:
-                                             (tries (if (print-level-at-least-verbosep print) (zero-tries) nil)))
-                                        (mv-let (erp new-nodenum-or-quotep rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array)
-                                          ;; TODO: Consider making a version of ,simplify-tree-and-add-to-dag-name that applies only to terms, not axe-trees, and calling it here.
-                                          ;; TODO: Or consider handling vars separately and then dropping support for vars in ,simplify-tree-and-add-to-dag-name (and in the memoization).
-                                          (,simplify-tree-and-add-to-dag-name term
-                                                                              nil ;trees-equal-to-tree
-                                                                              rewrite-stobj2 ,@maybe-state
-                                                                              (if memoizep
-                                                                                  (empty-memoization)
-                                                                                ;; not memoizing:
-                                                                                nil)
-                                                                              (initialize-hit-counts count-hits)
-                                                                              tries
-                                                                              limits
-                                                                              node-replacement-array node-replacement-count refined-assumption-alist
-                                                                              rewrite-stobj
-                                                                              1000000000 ;count
-                                                                              )
-                                          (mv erp new-nodenum-or-quotep
-                                              (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) (get-dag-parent-array rewrite-stobj2) (get-dag-constant-alist rewrite-stobj2) (get-dag-variable-alist rewrite-stobj2)
-                                              memoization
-                                              (hit-counts-to-hits hit-counts) ; can't really do this in ,simplify-tree-and-add-to-dag-name because it is called by other internal rewriter functions
-                                              tries limits node-replacement-array rewrite-stobj rewrite-stobj2 ,@maybe-state)))
-                                      (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hits tries limits node-replacement-array ,@maybe-state) ; no rewriter stobjs
-                                      )))
+                     ,@maybe-state)
+                 (with-local-stobjs
+                   (rewrite-stobj rewrite-stobj2)
+                   (mv-let (erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hits tries limits node-replacement-array rewrite-stobj rewrite-stobj2 ,@maybe-state)
+                     (let* (;; Initialize rewrite-stobj:
+                            (rewrite-stobj (put-monitored-symbols monitored-symbols rewrite-stobj))
+                            (rewrite-stobj (put-no-warn-ground-functions no-warn-ground-functions rewrite-stobj))
+                            (rewrite-stobj (put-fns-to-elide fns-to-elide rewrite-stobj))
+                            (rewrite-stobj (put-known-booleans known-booleans ;skip if memoizing since we can't use contexts?
+                                                               rewrite-stobj))
+                            (rewrite-stobj (put-normalize-xors normalize-xors rewrite-stobj))
+                            (rewrite-stobj (put-interpreted-function-alist interpreted-function-alist rewrite-stobj))
+                            ;; (rewrite-stobj (put-rule-alist rule-alist rewrite-stobj))
+                            (rewrite-stobj (load-rule-db rule-alist rewrite-stobj))
+                            (rewrite-stobj (put-print print rewrite-stobj))
+                            ;; Initialize rewrite-stobj2:
+                            (rewrite-stobj2 (load-dag dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist rewrite-stobj2))
+                            (rewrite-stobj2 (if (eq :compact (get-normalize-xors rewrite-stobj))
+                                                (set-xor-signature-fields 0 rewrite-stobj2)
+                                              rewrite-stobj2))
+                            ,@(and smtp '((rewrite-stobj2 (put-negated-smt-assumptions negated-smt-assumptions rewrite-stobj2))))
+                            ;; Decide whether to count and print tries:
+                            (tries (if (print-level-at-least-verbosep print) (zero-tries) nil)))
+                       (mv-let (erp new-nodenum-or-quotep rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array)
+                         ;; TODO: Consider making a version of ,simplify-tree-and-add-to-dag-name that applies only to terms, not axe-trees, and calling it here.
+                         ;; TODO: Or consider handling vars separately and then dropping support for vars in ,simplify-tree-and-add-to-dag-name (and in the memoization).
+                         (,simplify-tree-and-add-to-dag-name term
+                                                             nil ; trees-equal-to-tree
+                                                             rewrite-stobj2 ,@maybe-state
+                                                             (if memoizep
+                                                                 (empty-memoization)
+                                                               ;; not memoizing:
+                                                               nil)
+                                                             (initialize-hit-counts count-hits)
+                                                             tries
+                                                             limits
+                                                             node-replacement-array node-replacement-count refined-assumption-alist
+                                                             rewrite-stobj
+                                                             1000000000 ;count
+                                                             )
+                         (mv erp new-nodenum-or-quotep
+                             (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) (get-dag-parent-array rewrite-stobj2) (get-dag-constant-alist rewrite-stobj2) (get-dag-variable-alist rewrite-stobj2)
+                             memoization
+                             (hit-counts-to-hits hit-counts) ; can't really do this in ,simplify-tree-and-add-to-dag-name because it is called by other internal rewriter functions
+                             tries limits node-replacement-array rewrite-stobj rewrite-stobj2 ,@maybe-state)))
+                     (mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hits tries limits node-replacement-array ,@maybe-state) ; no rewriter stobjs
+                     )))
                 ((when erp) (mv erp nil nil ,@maybe-state))
                 (- (maybe-print-hits hits))
                 (- (and tries (cw "~%Total rule tries: ~x0.~%" tries)))
