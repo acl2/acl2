@@ -115735,12 +115735,12 @@ arithmetic) for libraries of @(see books) for arithmetic reasoning.</p>")
  which (as in the classic case) we call the ``inner'' and ``outer''
  equivalences, respectively.  The terms @('lhs') and @('rhs') are function
  calls, and we call these the @('lhs') and @('rhs') of the rule, respectively.
- The variable @('x') occurs in @('lhs') and the variable @('y') occurs in
- @('rhs').  These must be the only occurrences of @('x') and @('y') in either
- @('lhs') or @('rhs'), and @('rhs') must be the result of substituting @('y')
- for @('x') in @('lhs').  None of the following may occur as a function symbol
- of @('lhs') (or, equivalently, @('rhs')): @('if'), @('implies'), @('equal'),
- or a @(tsee lambda).</p>
+ The variables @('x') and @('y') are distinct, @('x') occurs in @('lhs'), and
+ @('y') occurs in @('rhs').  These must be the only occurrences of @('x') and
+ @('y') in either @('lhs') or @('rhs'), and @('rhs') must be the result of
+ substituting @('y') for @('x') in @('lhs').  None of the following may occur
+ as a function symbol of @('lhs') (or, equivalently, @('rhs')): @('if'),
+ @('implies'), @('equal'), or a @(tsee lambda).</p>
 
  <p>Patterned congruence rules are used, much like classic congruence rules, by
  the ACL2 rewriter to determine which equivalence relations to maintain as it
