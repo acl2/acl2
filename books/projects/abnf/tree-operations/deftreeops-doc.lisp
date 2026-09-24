@@ -155,7 +155,7 @@
         the internal operation of @('deftreeops').
         (Currently there is no difference between
         the @(':info') and the @(':result') outputs,
-        but we plan to add @(':info') outputs.).")
+        but we plan to add @(':info') outputs.)")
       (xdoc::li
        "@(':all'), to print,
         besides any error output,
@@ -314,9 +314,7 @@
        (ii) some term over the branches
        that discriminates among the concatenations that define the rule name;
        there is an equivalence for each concatenation,
-       and the theorem consists of the conjunction of the equivalences.
-       This theorem is a conjunction of equivalences,
-       one for each concatenation that defines the rule name.")
+       and the theorem consists of the conjunction of the equivalences.")
      (xdoc::p
       "Currently this is generated if and only if
        one of the following conditions holds:")
