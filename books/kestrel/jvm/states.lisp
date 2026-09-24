@@ -116,14 +116,14 @@
             (addressp (lookup-equal class-name heapref-table)))
    :hints (("Goal" :in-theory (enable heapref-tablep)))))
 
-(defthm addressp-of-get-classs-object
+(defthm addressp-of-get-class-object
   (implies (and (heapref-tablep heapref-table)
                 (get-class-object class-name heapref-table) ; the class is present
                 )
            (addressp (get-class-object class-name heapref-table)))
   :hints (("Goal" :in-theory (enable get-class-object))))
 
-(defthm not-null-refp-of-get-classs-object
+(defthm not-null-refp-of-get-class-object
   (implies (heapref-tablep heapref-table)
            (not (null-refp (get-class-object class-name heapref-table))))
   :hints (("Goal" :in-theory (enable get-class-object heapref-tablep))))
