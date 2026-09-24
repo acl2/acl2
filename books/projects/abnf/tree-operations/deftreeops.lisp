@@ -137,9 +137,11 @@
       described in @(tsee deftreeops).
       This is @('nil') if the theorem is not generated.")
     (xdoc::li
-     "The name of the @('<prefix>-<rulename>-conc<i>-rep<j>-len') function
-      described in @(tsee deftreeops).
-      This is @('nil') if the function is not generated.")
+     "The name of a @('<prefix>-<rulename>-conc<i>-rep<j>-len') function
+      that we plan to generate,
+      but that is currently never generated,
+      and thus not yet described in @(tsee deftreeops).
+      This is currently always @('nil').")
     (xdoc::li
      "The name of the @('<prefix>-<rulename>-conc<i>-rep<j>-elem') function
       described in @(tsee deftreeops).
@@ -1010,7 +1012,7 @@
 
 (define deftreeops-gen-rep-info
   ((rep repetitionp)
-   (i posp "Indentifies the concatenation that this repetition is part of,
+   (i posp "Identifies the concatenation that this repetition is part of,
             starting from 1.")
    (check-conc-fn acl2::symbolp
                   "The @('check-conc-fn') component of
@@ -1093,7 +1095,7 @@
 
 (define deftreeops-gen-conc-info
   ((conc concatenationp)
-   (i posp "Indentifies the concatenation, starting from 1.")
+   (i posp "Identifies the concatenation, starting from 1.")
    (discriminant-term "The discriminant term for the concatenation.")
    (check-conc-fn acl2::symbolp
                   "The @('check-conc-fn') component of
@@ -1195,7 +1197,7 @@
 
 (define deftreeops-gen-rulename-info
   ((rulename rulenamep)
-   (alt alternationp "The alternation that define @('rulename').")
+   (alt alternationp "The alternation that defines @('rulename').")
    (prefix acl2::symbolp))
   :returns (info deftreeops-rulename-infop)
   :short "Generate the information for a rule name."
@@ -1401,7 +1403,7 @@
                            described in @(tsee deftreeops).")
    (get-tree-list-list-fn-match-thm acl2::symbolp
                                     "The theorem saying that
-                                     @('get-tree-list-list-fn'))
+                                     @('get-tree-list-list-fn')
                                      matches the concatenation.")
    (conc-matching-thm acl2::symbolp)
    (check-conc-fn acl2::symbolp)
@@ -1599,7 +1601,7 @@
                            described in @(tsee deftreeops).")
    (get-tree-list-list-fn-match-thm acl2::symbolp
                                     "The theorem saying that
-                                     @('get-tree-list-list-fn'))
+                                     @('get-tree-list-list-fn')
                                      matches the concatenation.")
    (conc-matching-thm acl2::symbolp)
    (check-conc-fn acl2::symbolp)
