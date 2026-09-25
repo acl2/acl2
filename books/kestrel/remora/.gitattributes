@@ -1,1 +1,1 @@
-grammar.abnf text eol=crlf
+*.abnf text eol=crlf

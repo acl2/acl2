@@ -10168,7 +10168,11 @@
 ; (implementation) error after a failed call of
 ; interpret-term-as-congruence-rule in add-congruence-rule.
 
-                (collect-keys-eq '(:meta :clause-processor :congruence)
+; Finally, we also check :type-set-inverter rules.  Community book
+; system/tests/tsi-pass2.lisp proves nil but has certified without that check.
+
+                (collect-keys-eq '(:meta :clause-processor :congruence
+                                         :type-set-inverter)
                                  classes))
                (t classes))))
     (cond

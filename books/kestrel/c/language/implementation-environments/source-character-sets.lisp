@@ -278,6 +278,8 @@
 
   ///
 
+  (in-theory (disable (:e source-charset-basic+lf)))
+
   (defrule source-charset-wfp-of-source-charset-basic+lf
     (source-charset-wfp (source-charset-basic+lf std) std)
     :enable (source-charset-wfp
@@ -327,6 +329,8 @@
   ((local (in-theory (enable acl2::any-nat-mapp-when-character-nat-mapp))))
 
   ///
+
+  (in-theory (disable (:e source-charset-ascii)))
 
   (defruled source-chars-of-source-charset-ascii
     (equal (source-chars (source-charset-ascii end-of-lines))
@@ -382,6 +386,8 @@
                        :end-of-lines end-of-lines)
 
   ///
+
+  (in-theory (disable (:e source-charset-unicode)))
 
   (defruled source-chars-of-source-charset-unicode
     (equal (source-chars (source-charset-unicode end-of-lines))

@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -134,6 +134,9 @@
   "@('fn-guard-unnorm') is the name of a locally generated theorem
    for the unnormalized definition of
    the function @('fn-guard') described above."
+
+  "@('fn-guard-thm') is the name of a locally generated theorem
+   that is a rewrite-rule form of the guard theorem of @('fn')."
 
   "@('typed-formals') is an alist
    from the formal parameters of

@@ -93,17 +93,31 @@
        whose value is a grammar, i.e. a value of type @(tsee rulelist).
        It could be a grammar introduced by @(tsee defgrammar).")
      (xdoc::p
-      "The grammar must be "
+      "The grammar must be non-empty, "
       (xdoc::seetopic "well-formedness" "well-formed")
-      " and "
+      ", and "
       (xdoc::seetopic "closure" "closed")
       ".")
+     (xdoc::p
+      "Furthermore, the alternation that defines each rule name
+       (i.e. the alternation consisting of all the concatenations
+       in all the rules for the rule name,
+       in the order in which they appear in the grammar)
+       must not contain duplicate concatenations.
+       Duplicate concatenations are redundant anyway,
+       and they would make it impossible to define
+       the @('<prefix>-<rulename>-conc?') functions described below.")
      (xdoc::p
       "If there is a previous successful call of @('deftreeops')
        with the same @('*grammar*') input,
        this call must be identical to that call,
        in which case it is redundant.
-       If the calls differ, it is an error."))
+       If the calls differ, it is an error.
+       Note that the calls must be syntactically identical:
+       for instance, if the calls differ only in the @(':print') input,
+       or if one of them explicitly passes a default value for an input
+       while the other one omits that input,
+       the calls are not identical, and the second one is an error."))
 
     (xdoc::desc
      "@(':prefix') &mdash; no default"
@@ -150,7 +164,7 @@
         the internal operation of @('deftreeops').
         (Currently there is no difference between
         the @(':info') and the @(':result') outputs,
-        but we plan to add @(':info') outputs.).")
+        but we plan to add @(':info') outputs.)")
       (xdoc::li
        "@(':all'), to print,
         besides any error output,
@@ -190,6 +204,21 @@
       That is, the generated section is
       a sub-topic of the XDOC topic for the grammar
       (this assumes that that parent topic exists).")
+
+    (xdoc::p
+     "Each generated theorem is a rewrite rule,
+      except for the ones described below as having a different rule class.
+      The generated theorems whose names end in @('-match'),
+      the @('<prefix>-<rulename>-conc?-possibilities') theorems,
+      the @('<prefix>-%<b><min>-<max>-nat-bounds') theorems,
+      and the @(tsee fty::deffixequiv) theorems
+      are enabled;
+      all the other generated theorems are disabled.
+      Furthermore, the generated functions are introduced via @(tsee define)
+      with @(':returns') specifications,
+      and thus each generated function also comes with
+      an enabled rewrite rule about the type of its result,
+      whose name follows the @(tsee define) conventions.")
 
     (xdoc::desc
      (list
@@ -246,7 +275,9 @@
       (xdoc::seetopic "acl2::macro-aliases-table" "Macro aliases")
       " are also generated that link the macro names to the function names:
        this way, the predicates can be opened (in proofs)
-       via their macro names."))
+       via their macro names.
+       The intermediate predicates are accompanied by
+       @(tsee fty::deffixequiv) theorems."))
 
     (xdoc::desc
      "@('<prefix>-<rulename>-nonleaf')"
@@ -292,9 +323,7 @@
        (ii) some term over the branches
        that discriminates among the concatenations that define the rule name;
        there is an equivalence for each concatenation,
-       and the theorem consists of the conjunction of the equivalences.
-       This theorem is a conjunction of equivalences,
-       one for each concatenation that defines the rule name.")
+       and the theorem consists of the conjunction of the equivalences.")
      (xdoc::p
       "Currently this is generated if and only if
        one of the following conditions holds:")
@@ -335,7 +364,9 @@
         one of the numbers 1, ..., @('n'),
         where @('n') is the number of concatenations
         that form the alternation that defines the rule name.
-        This is a disjunctive theorem.")
+        This is a disjunctive theorem,
+        generated as an enabled forward chaining rule
+        triggered by calls of @('<prefix>-<rulename>-conc?').")
       (xdoc::li
        "@('<prefix>-<rulename>-conc?-<i>-iff-match-conc'),
         for each concatenation @('<i>') (numbered starting from 1)
@@ -346,8 +377,15 @@
        "@(tsee fty::deffixequiv) theorems for the function."))
      (xdoc::p
       "Currently this is generated if and only if
-       @('<prefix>-<rulename>-conc-equivs') is generated:
-       see the conditions for this above."))
+       the alternation consists of two or more concatenations
+       each of which is a singleton,
+       each consisting of a repetition with range 1
+       whose element is a rule name.
+       This is the first of the two conditions, listed above,
+       under which @('<prefix>-<rulename>-conc-equivs') is generated.
+       Under the second of those two conditions,
+       @('<prefix>-<rulename>-conc-equivs') is generated
+       but @('<prefix>-<rulename>-conc?') is not."))
 
     (xdoc::desc
      "@('<prefix>-<rulename>-conc<i>')"
@@ -374,7 +412,7 @@
      (xdoc::p
       "Currently this is generated if and only if
        the alternation that defines the rule name consists of one concatenation
-       or otherwise @('<prefix>-<rulename>-conc-equivs') is generated:
+       or otherwise @('<prefix>-<rulename>-conc?') is generated:
        see the conditions for this above."))
 
     (xdoc::desc
@@ -404,7 +442,9 @@
        in the alternation that defines the rule name,
        and for each repetition @('<j>') (numbered starting from 1)
        in the concatenation:
-       a function that, given a tree matching the rule name,
+       a function that, given a tree matching the rule name
+       whose subtrees match the concatenation @('<i>')
+       (expressed via @('<prefix>-<rulename>-conc?') above),
        returns the list of trees corresponding to the repetition.
        The generated function is accompanied by the following theorems:")
      (xdoc::ul
@@ -422,10 +462,11 @@
        the @('<j>') is absent from the names of the function and theorems.")
      (xdoc::p
       "Currently this is generated if and only if
-       (i) the concatenation consists of one repetition and
-       (ii) the alternation that defines the rule name
+       (i) the concatenation consists of one repetition,
+       (ii) the repetition has a range of 1, and
+       (iii) the alternation that defines the rule name
        consists of one concatenation
-       or otherwise @('<prefix>-<rulename>-conc-equivs') is generated:
+       or otherwise @('<prefix>-<rulename>-conc?') is generated:
        see the conditions for this above."))
 
     (xdoc::desc
@@ -461,11 +502,15 @@
        in the alternation that defines the rule name,
        and for each repetition @('<j>') (numbered starting from 1)
        in the concatenation:
-       a function that, given a tree matching the rule name,
-       and a natural number index below
-       the length of the list of trees that matches the repetition,
-       returns the tree at the given index
-       in the list of trees that matches the repetition.
+       a function that, given a tree matching the rule name
+       whose subtrees match the concatenation @('<i>')
+       (expressed via @('<prefix>-<rulename>-conc?') above),
+       returns the tree in the list of trees that matches the repetition.
+       Since this function is only generated
+       when the repetition has a range of 1 (see below),
+       the list of trees that matches the repetition
+       always consists of exactly one tree,
+       which is the one returned by this function.
        The generated function is accompanied by the following theorems:")
      (xdoc::ul
       (xdoc::li
@@ -474,10 +519,6 @@
         matches the element of the repetition.")
       (xdoc::li
        "@(tsee fty::deffixequiv) theorems for the function."))
-     (xdoc::p
-      "This function does not take an index as input
-       if the repetition consists of the singleton range 1,
-       because the index input would be always 0.")
      (xdoc::p
       "If the alternation that defines the rule name
        consists of just one concatenation,
@@ -490,7 +531,7 @@
        (ii) the repetition has a range of 1, and
        (iii) the alternation that defines the rule name
        consists of one concatenation
-       or otherwise @('<prefix>-<rulename>-conc-equivs') is generated:
+       or otherwise @('<prefix>-<rulename>-conc?') is generated:
        see the conditions for this above."))
 
     (xdoc::desc
@@ -513,7 +554,7 @@
        "@('<prefix>-%<b><min>-<max>-nat-bounds'),
         which asserts that the natural number returned by the function
         has @('<min>') as lower bound and @('<max>') as upper bound.
-        This theorem is generated as a linear rule.")
+        This theorem is generated as an enabled linear rule.")
       (xdoc::li
        "@(tsee fty::deffixequiv) theorems for the function.")))
 

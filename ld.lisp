@@ -4713,6 +4713,8 @@
                       (symbolp (ffn-symb target))))
             (cw *meta-level-function-problem-1c* 'mfc-relieve-hyp target)
             (throw-raw-ev-fncall ev-fncall-val))
+           ((free-varsp hyp alist)
+            (mv nil nil))
            (t
             (let* ((linearp (eq (car rune) :linear))
                    (lemmas (getpropc (ffn-symb target)
