@@ -42,7 +42,7 @@ int main(void) {
   printf("%d\n", sizeof(long double));   // ldouble-bytes
   printf("%d\n", sizeof(void *));        // pointer-bytes
   // See [C17:5.2.4.2.1/2]
-  printf("%d\n", CHAR_MIN != SCHAR_MIN); // plain-char-signedp
+  printf("%d\n", CHAR_MIN < 0);          // plain-char-signedp
 
   return 0;
 }
