@@ -63,7 +63,8 @@
           exprs/atoms/binds
           string-dim-map
           string-shape-map
-          string-type-map)
+          string-type-map
+          string-expr-map)
   :result ispace-var-setp
   :default nil
   :combine set::union
@@ -146,7 +147,8 @@
           var+type?
           var+type?-list
           exprs/atoms/binds
-          string-type-map)
+          string-type-map
+          string-expr-map)
   :result type-var-setp
   :default nil
   :combine set::union

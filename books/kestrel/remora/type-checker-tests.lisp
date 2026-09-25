@@ -214,6 +214,20 @@
  "(let ((t-fun (f (&t)) (i-fn ($d) (fn ((x (A &t $d))) x))))
   (t-app f Int))")
 
+; Alpha renaming of an ispace binder in a type application:
+; the type argument mentions the shape variable @s bound outside,
+; and the body of the universal type binds its own @s in a product type,
+; which must be renamed apart when the argument is substituted.
+; The instantiated function is then applied to a vector of functions
+; whose type mentions the outer @s, which type-checks only without capture.
+(test-check-top-expr
+ "(i-fn (@s)
+  (fn ((f (A (-> (A Int @s) (A Int (dims))) (dims 2))))
+    ((i-app (t-app (t-fn (&t) (i-fn (@s) (fn ((x (A &t @s))) x)))
+                   (-> (A Int @s) (A Int (dims))))
+            (dims 2))
+     f)))")
+
 ; A type function binding with no parameters
 ; is treated as a plain value binding,
 ; as in [impl], whose parser turns it directly into a value binding.
@@ -388,3 +402,21 @@
 ; which the syntactic matching does not handle, for now.
 (test-check-top-expr-fail
  "(length (array [3] 1 2 3))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Shapes with multiplications, like the one of the result of flatten,
+; are handled by the suffix check and by the join of shapes
+; (see check-shape-suffix and join-shapes),
+; with the multiplications treated as uninterpreted
+; (see ispace-equivalence-checker).
+
+; The result of flatten, of shape [(* 2 3)],
+; is passed to length instantiated at the same shape.
+(test-check-top-expr
+ "(@length (Int) ((* 2 3) [])
+   (@flatten (Int) (2 3 []) (array [2 3] 1 2 3 4 5 6)))")
+
+; The result of flatten is the frame of an application of +.
+(test-check-top-expr
+ "(+ (@flatten (Int) (2 3 []) (array [2 3] 1 2 3 4 5 6)) 1)")

@@ -28,6 +28,7 @@
 (include-book "dag-array-printing2") ; for print-dag-node-nicely
 (include-book "worklists")
 (include-book "merge-sort-less-than")
+(include-book "kestrel/terms-light/get-hyps-and-conc" :dir :system)
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
@@ -345,28 +346,6 @@
                              (unify-tree-with-any-dag-node-no-wrap-binds-all))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Returns (mv hyps conc).  Handles IMPLIES.
-;; (See also get-hyps-and-conc.  That one can handle some nested calls implies.  Should we use it?)
-(defund term-hyps-and-conc (term)
-  (declare (xargs :guard (pseudo-termp term)))
-  (if (and (consp term)
-           (eq 'implies (ffn-symb term))
-           (eql 2 (len (fargs term)))) ;for guards
-      (mv (get-conjuncts (farg1 term))
-          (farg2 term))
-    (mv nil ;no hyps
-        term)))
-
-(defthm pseudo-term-listp-of-mv-nth-0-of-term-hyps-and-conc
-  (implies (pseudo-termp term)
-           (pseudo-term-listp (mv-nth 0 (term-hyps-and-conc term))))
-  :hints (("Goal" :in-theory (enable term-hyps-and-conc))))
-
-(defthm pseudo-termp-of-mv-nth-1-of-term-hyps-and-conc
-  (implies (pseudo-termp term)
-           (pseudo-termp (mv-nth 1 (term-hyps-and-conc term))))
-  :hints (("Goal" :in-theory (enable term-hyps-and-conc))))
 
 (defconst *default-stp-max-conflicts* 60000) ; this is the number of conflicts, not seconds
 
@@ -950,6 +929,8 @@
 
 (thm (implies (and (natp high) (natp low)) (equal (slice high low (bvchop (+ 1 high) x)) (slice high low x))))
 
+(thm (equal (bitnot (bvchop 1 x)) (bitnot x)))
+
 (thm (equal (bitand x (bvchop 1 y)) (bitand x y)))
 (thm (equal (bitor x (bvchop 1 y)) (bitor x y)))
 (thm (equal (bitxor x (bvchop 1 y)) (bitxor x y)))
@@ -1303,7 +1284,6 @@
 ;; todo: check more?
 ;; TODO: Consider printing a warning if a BV op with a size argument of 0 arises.
 ;; TODO: Compare this to pure-fn-call-exprp (currently, this takes the dag-array for checking bv-array operations -- why?)
-;; todo: add bvequal, once we can translate it
 (defund can-always-translate-expr-to-stp (fn args dag-array-name dag-array dag-len known-nodenum-type-alist print)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (symbolp fn)
@@ -2659,7 +2639,7 @@
                               (print-levelp print)
                               (stringp base-filename))
                   :stobjs state))
-  (b* (((mv hyps conc) (term-hyps-and-conc term))) ;split term into hyps and conclusion
+  (b* (((mv hyps conc) (get-hyps-and-conc term))) ;split term into hyps and conclusion
     (prove-term-implication-with-stp conc hyps counterexamplep print-cex-as-signedp max-conflicts print base-filename state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

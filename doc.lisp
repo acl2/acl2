@@ -107024,11 +107024,12 @@ Bug Fixes From AI via Eric Smith
   [30m[47mapply-instantiated-elim-rule[0m[0m illustrate a corresponding restriction
   when the rule is applied.
 
-  Restrictions on [refinement] and [compound-recognizer] rules were
-  erroneously not being made in the second pass of an [30m[47m[encapsulate][0m[0m
-  event, resulting in a soundness bug that we have fixed; see
-  [community-books] [30m[47msystem/tests/refine.lisp[0m[0m and
-  [30m[47msystem/tests/compound-recognizer-pass-2.lisp[0m[0m.
+  Restrictions on [30m[47m:[0m[0m[30m[47m[refinement][0m[0m, [30m[47m:[0m[0m[30m[47m[compound-recognizer][0m[0m, and
+  [30m[47m:[0m[0m[30m[47m[type-set-inverter][0m[0m rules were erroneously not being made in the
+  second pass of an [30m[47m[encapsulate][0m[0m event, resulting in soundness bugs
+  that we have fixed; see [community-books] [30m[47msystem/tests/refine.lisp[0m[0m,
+  [30m[47msystem/tests/compound-recognizer-pass-2.lisp[0m[0m, and
+  [30m[47msystem/tests/tsi-pass2.lisp[0m[0m.
 
   The [functional-instantiation] code was modified to correct a
   soundness bug caused by our failure to completely avoid variable
@@ -107057,6 +107058,9 @@ Bug Fixes From AI via Eric Smith
 
     * the [well-founded-relation] in checking redundancy of a [30m[47mdefun[0m[0m; see
       [30m[47msystem/tests/wfr-redundancy.lisp[0m[0m;
+
+    * the value of the [xargs] keyword, [30m[47m:[0m[0m[30m[47m[loop$-recursion][0m[0m, in checking
+      redundancy of a [30m[47mdefun[0m[0m;
 
     * the measure and the verify-guards status in checking redundancy of a
       [30m[47mdefun-nx[0m[0m event or other [non-executable] definition; see
@@ -107173,6 +107177,39 @@ Bug Fixes From AI via Eric Smith
   Fixed a soundness bug in the evaluation of lambda forms, specifically
   with respect to their [30m[47m[type][0m[0m [declaration]s.  See
   [30m[47msystem/tests/exploit-lambda-guard-typedecl.lisp[0m[0m.
+
+  Fixed a soundness bug in non-linear arithmetic, specifically in
+  function [30m[47minverse-polys[0m[0m.  See
+  [30m[47msystem/tests/linear-inverse-polys.lisp[0m[0m.  Thanks to Eric Smith for
+  supplying the fix.
+
+  Fixed a soundness bug where the [30m[47mkeys[0m[0m function for a [stobj-table]
+  field returned internal stand-in symbols instead of the real stobj
+  names.  For an example of the issue, see [community-book]
+  [30m[47msystem/tests/stobj-table-keys.lisp[0m[0m.  Thanks to Grant Jurgensen for
+  supplying the bug fix (in PR #2049).
+
+  Fixed a soundness bug that allowed a [congruence] rule whose
+  hypothesis has the form [30m[47m(equiv x x)[0m[0m, with the same variable as both
+  arguments.  Such a rule is vacuous, yet it was accepted as a
+  [patterned-congruence] rule with the same effect as a genuine
+  congruence rule.  For an example, see [community-book]
+  [30m[47msystem/tests/congruence-same-var.lisp[0m[0m.  Thanks to Grant Jurgensen
+  for supplying the bug fix.
+
+  Fixed a soundness bug in the application of [30m[47m[mfc-relieve-hyp][0m[0m, which
+  could cause it to succeed inappropriately when violating the
+  documented restriction that the given hypothesis must not have free
+  variables (see [extended-metafunctions]).  For an example, see
+  [community-book] [30m[47msystem/tests/meta-extract-relieve-hyp.lisp[0m[0m.
+
+  Fixed a [tau-system] bug that could produce a raw Lisp error.  Thanks
+  to Stephen Westfold for passing along Claude's fix along with the
+  following example, which exhibited the bug.
+
+    (in-theory (disable natp (:e natp)))
+    (defstub p (x) t)
+    (thm (implies (and (not (equal x 'abc)) (natp x)) (p x)))
 
 
 Other Bug Fixes
@@ -114188,11 +114225,11 @@ Implementation
   relations, which (as in the classic case) we call the ``inner'' and
   ``outer'' equivalences, respectively.  The terms [30m[47mlhs[0m[0m and [30m[47mrhs[0m[0m are
   function calls, and we call these the [30m[47mlhs[0m[0m and [30m[47mrhs[0m[0m of the rule,
-  respectively.  The variable [30m[47mx[0m[0m occurs in [30m[47mlhs[0m[0m and the variable [30m[47my[0m[0m
-  occurs in [30m[47mrhs[0m[0m.  These must be the only occurrences of [30m[47mx[0m[0m and [30m[47my[0m[0m in
-  either [30m[47mlhs[0m[0m or [30m[47mrhs[0m[0m, and [30m[47mrhs[0m[0m must be the result of substituting [30m[47my[0m[0m for
-  [30m[47mx[0m[0m in [30m[47mlhs[0m[0m.  None of the following may occur as a function symbol of
-  [30m[47mlhs[0m[0m (or, equivalently, [30m[47mrhs[0m[0m): [30m[47mif[0m[0m, [30m[47mimplies[0m[0m, [30m[47mequal[0m[0m, or a [30m[47m[lambda][0m[0m.
+  respectively.  The variables [30m[47mx[0m[0m and [30m[47my[0m[0m are distinct, [30m[47mx[0m[0m occurs in [30m[47mlhs[0m[0m,
+  and [30m[47my[0m[0m occurs in [30m[47mrhs[0m[0m.  These must be the only occurrences of [30m[47mx[0m[0m and [30m[47my[0m[0m
+  in either [30m[47mlhs[0m[0m or [30m[47mrhs[0m[0m, and [30m[47mrhs[0m[0m must be the result of substituting [30m[47my[0m[0m
+  for [30m[47mx[0m[0m in [30m[47mlhs[0m[0m.  None of the following may occur as a function symbol
+  of [30m[47mlhs[0m[0m (or, equivalently, [30m[47mrhs[0m[0m): [30m[47mif[0m[0m, [30m[47mimplies[0m[0m, [30m[47mequal[0m[0m, or a [30m[47m[lambda][0m[0m.
 
   Patterned congruence rules are used, much like classic congruence
   rules, by the ACL2 rewriter to determine which equivalence
@@ -128904,10 +128941,11 @@ Subtopics
   macroexpansion), and with the same values [declare]d for the
   [30m[47m:[0m[0m[30m[47m[guard][0m[0m, [30m[47m:[0m[0m[30m[47m[measure][0m[0m, [30m[47m:[0m[0m[30m[47m[well-founded-relation][0m[0m, types,
   [30m[47m:[0m[0m[30m[47m[ruler-extenders][0m[0m, [30m[47m:non-executable[0m[0m, [30m[47m:type-prescription[0m[0m, [30m[47m:[0m[0m[30m[47m[stobj][0m[0m[30m[47ms[0m[0m,
-  and [30m[47m:[0m[0m[30m[47m[split-types][0m[0m, provided that the [defun-mode]s are appropriate
-  (see the ``Note About Appropriate Modes'' below).  Moreover, the
-  order of the combined [30m[47m:[0m[0m[30m[47m[guard][0m[0m and type declarations must be the
-  same in both cases.  Exceptions and clarifications:
+  [30m[47m:[0m[0m[30m[47m[loop$-recursion][0m[0m, and [30m[47m:[0m[0m[30m[47m[split-types][0m[0m, provided that the
+  [defun-mode]s are appropriate (see the ``Note About Appropriate
+  Modes'' below).  Moreover, the order of the combined [30m[47m:[0m[0m[30m[47m[guard][0m[0m and
+  type declarations must be the same in both cases.  Exceptions and
+  clarifications:
 
    1. If the new and existing function events have no explicit
       [ruler-extenders] (which are therefore syntactically equal),
@@ -158328,16 +158366,16 @@ Subtopics
   recognize [30m[47m[type-set][0m[0m [30m[47mn[0m[0m.  For a given [30m[47mn[0m[0m, the exact form of [30m[47mold-expr[0m[0m
   is generated by
 
-    (convert-type-set-to-term 'x n (ens state) (w state) nil)].
+    (convert-type-set-to-term 'x n (ens state) (w state) nil).
 
   If the [30m[47m:[0m[0m[30m[47m[type-set][0m[0m field of the rule-class is omitted, we attempt to
   compute it from the right-hand side, [30m[47mold-expr[0m[0m, of the corollary.
   That computation is done by [30m[47mtype-set-implied-by-term[0m[0m (see
   [type-set]).  However, it is possible that the type-set we compute
-  from [30m[47mlhs[0m[0m does not have the required property that when inverted
-  with [30m[47mconvert-type-set-to-term[0m[0m the result is [30m[47mlhs[0m[0m.  If you omit
-  [30m[47m:[0m[0m[30m[47m[type-set][0m[0m and an error is caused because [30m[47mlhs[0m[0m has the incorrect
-  form, you should manually specify both [30m[47m:[0m[0m[30m[47m[type-set][0m[0m and the [30m[47mlhs[0m[0m
+  from [30m[47mold-expr[0m[0m does not have the required property that when
+  inverted with [30m[47mconvert-type-set-to-term[0m[0m the result is [30m[47mold-expr[0m[0m.  If
+  you omit [30m[47m:[0m[0m[30m[47m[type-set][0m[0m and such an error is caused, you should
+  manually specify the [30m[47m:[0m[0m[30m[47m[type-set][0m[0m so that [30m[47mold-expr[0m[0m is the term
   generated by [30m[47mconvert-type-set-to-term[0m[0m.
 
   The rule generated will henceforth make [30m[47mnew-expr[0m[0m be the term used by
@@ -158355,7 +158393,15 @@ Subtopics
   current hypotheses.  For example, if the original conjecture
   contained the hypothesis [30m[47m(integerp x)[0m[0m then the context used while
   working on that conjecture will include the assignment to [30m[47mx[0m[0m of the
-  type-set [30m[47m*ts-integer*[0m[0m.")
+  type-set [30m[47m*ts-integer*[0m[0m.
+
+  Even when a [30m[47m:type-set-inverter[0m[0m rule is legal when certifying a book,
+  the checks on the rule may fail in unusual cases when including
+  that book because skipping the book's [30m[47m[local][0m[0m [events] affects
+  those checks.  Similarly, in unusual cases a [30m[47m:type-set-inverter[0m[0m
+  rule may fail to be admissible in the second pass of an
+  [30m[47m[encapsulate][0m[0m event even though it was admitted during the first
+  pass.")
  (TYPE-SPEC
   (DECLARE THE)
   "Type specifiers can be used in Common Lisp type declarations and
