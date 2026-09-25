@@ -53,7 +53,8 @@
 
     (xdoc::p
      "This @('deftreeops') macro automates the generation
-      of the aforementioned specialized tree matching predicates and operations,
+      of the aforementioned specialized
+      tree matching predicates and tree operations,
       along with theorems about them.
       Currently we only generate operations (and accompanying theorems)
       for certain forms of the grammar rules,
@@ -115,8 +116,6 @@
        If the calls differ, it is an error.
        Note that the calls must be syntactically identical:
        for instance, if the calls differ only in the @(':print') input,
-       or if one of them explicitly passes a default value for an input
-       while the other one omits that input,
        the calls are not identical, and the second one is an error."))
 
     (xdoc::desc
