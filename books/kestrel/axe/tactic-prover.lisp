@@ -48,6 +48,7 @@
 (include-book "arithmetic-rules-axe")
 ;(include-book "kestrel/bv-arrays/bv-array-read-rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BV-ARRAY-READ
 ;(include-book "kestrel/bv/rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BVCHOP, etc?
+(include-book "kestrel/terms-light/make-conjunction-from-list" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
@@ -106,7 +107,7 @@
            ((when erp) (mv erp *nil* nil state))
            ;; TODO: Consider extracting hyps from bit-valued terms:
            ((mv assumptions term)
-            (term-hyps-and-conc term))
+            (get-hyps-and-conc term))
            ;; Create the DAG for the conclusion:
            ((mv erp dag) (dagify-term term))
            ((when erp) (mv erp nil nil state)))
