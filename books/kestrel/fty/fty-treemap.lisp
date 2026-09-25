@@ -372,6 +372,9 @@
        (fix-when-pred (acl2::packn-pos (list x.fix '-when- x.pred) x.name))
        (emptyp-fix (acl2::packn-pos (list 'treemap::emptyp- x.fix) x.name))
        (emptyp-of-fix (acl2::packn-pos (list 'treemap::emptyp-of- x.fix) x.name))
+       (submap-of-fix
+        (acl2::packn-pos (list 'treemap::submap-of- x.fix) x.name))
+       (yv (intern-in-package-of-symbol "Y" x.name))
        (acl2-count-of-fix (acl2::packn-pos (list 'acl2-count-of- x.fix '-linear)
                                            x.name)))
     (if x.fix-already-definedp
@@ -399,6 +402,16 @@
                   (or (not (,x.pred ,x.xvar))
                       (treemap::emptyp ,x.xvar)))
            :enable treemap::emptyp-of-empty)
+         (defrule ,submap-of-fix
+           (implies (treemap::submap ,x.xvar ,yv)
+                    (treemap::submap (,x.fix ,x.xvar) ,yv))
+           :use ((:instance
+                  (:functional-instance treemap::submap-of-generic-fix
+                                        (treeset::genericp ,x.pred)
+                                        (treemap::generic-fix ,x.fix))
+                  (treemap::map ,x.xvar)
+                  (treemap::y ,yv)))
+           :enable ,x.fix)
          ;; Lets count measures close by linear arithmetic alone.
          (defrule ,acl2-count-of-fix
            (<= (acl2-count (,x.fix ,x.xvar))
