@@ -502,11 +502,12 @@
                   ))
   (b* ((dag (first problem))
        (assumptions (second problem))
-       (term (dag-or-constant-to-term dag))
-       (- (and print (cw "(Calling ACL2 on term ~x0.~%" term)))
+       (conclusion-term (dag-or-constant-to-term dag))
+       (acl2-goal `(implies (and ,@assumptions) ,conclusion-term))
+       (- (and print (cw "(Calling ACL2 on term ~x0.~%" acl2-goal)))
        ((mv & provedp state)
         (prove$ ;TODO: Add support for hints
-         `(implies (and ,@assumptions) ,term)
+         acl2-goal
          :with-output nil ;confusingly, this turns on output
          )))
     ;; this tactic has to prove the whole term (it can't return a residual DAG)
