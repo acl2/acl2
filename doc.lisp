@@ -107203,6 +107203,14 @@ Bug Fixes From AI via Eric Smith
   variables (see [extended-metafunctions]).  For an example, see
   [community-book] [30m[47msystem/tests/meta-extract-relieve-hyp.lisp[0m[0m.
 
+  Fixed a [tau-system] bug that could produce a raw Lisp error.  Thanks
+  to Stephen Westfold for passing along Claude's fix along with the
+  following example, which exhibited the bug.
+
+    (in-theory (disable natp (:e natp)))
+    (defstub p (x) t)
+    (thm (implies (and (not (equal x 'abc)) (natp x)) (p x)))
+
 
 Other Bug Fixes
 

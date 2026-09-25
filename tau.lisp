@@ -2250,6 +2250,22 @@
 ; error message warning that certain functions, including these, can't be
 ; totally disabled.
 
+; We also treat NATP and POSP specially, ignoring their enabled/disabled
+; status.  If we do not, and, say, NATP and its executable counterpart are
+; disabled, then (thm (implies (not (equal x 'abc)) (not (natp x)))) causes a
+; Lisp error when ev-fncall-w-tau-recog returns :UNEVALABLE.  The analogous
+; error happens if POSP and its counterpart are disabled for the POSP version
+; of the thm above.  The :UNEVALABLE for the natp case causes us to form the
+; tau ((NIL (ABC)) NIL ((18 . NATP))) -- which recognizes objects that are nats
+; and not 'ABC.  But then we try to tighten the bounds on the natural interval
+; NIL, calling TIGHTEN-BOUND which then tries to see whether ABC is below 0.
+; We can avoid this walk-about into the weeds by making ev-fncall-w-tau-recog
+; actually evaluate NATP to determine that ABC isn't one!  Thanks to Stephen
+; Westfold and Claude for uncovering this error.  (Interestingly, the analogous
+; error doesn't happen for MINUSP, which also gives rise to non-trivial
+; intervals, perhaps because MINUSP is on *expandable-boot-strap-non-rec-fns*
+; and and POSP is not?)
+
 ; Warning: If this function is changed to call itself recursively, reconsider
 ; the setf expression in the comment after this defun.
 
@@ -2257,6 +2273,8 @@
    ((eq fn 'integerp) (integerp (car evg-lst)))
    ((eq fn 'rationalp) (rationalp (car evg-lst)))
    ((eq fn 'acl2-numberp) (acl2-numberp (car evg-lst)))
+   ((eq fn 'natp) (natp (car evg-lst)))
+   ((eq fn 'posp) (posp (car evg-lst)))
    ((enabled-xfnp fn ens wrld)
     (let* ((ubk (getpropc fn 'unevalable-but-known nil wrld))
            (temp (if ubk

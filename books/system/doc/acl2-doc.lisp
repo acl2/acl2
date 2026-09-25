@@ -110204,6 +110204,16 @@ it."
  extended-metafunctions)).  For an example, see @(see community-book)
  @('system/tests/meta-extract-relieve-hyp.lisp').</p>
 
+ <p>Fixed a @(see tau-system) bug that could produce a raw Lisp error.  Thanks
+ to Stephen Westfold for passing along Claude's fix along with the following
+ example, which exhibited the bug.</p>
+
+ @({
+ (in-theory (disable natp (:e natp)))
+ (defstub p (x) t)
+ (thm (implies (and (not (equal x 'abc)) (natp x)) (p x)))
+ })
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2
