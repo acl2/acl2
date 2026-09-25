@@ -22910,6 +22910,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; untouchable!)
 
     aset1-trusted ; version of aset1 without invariant-risk
+
+; Here are proof-builder functions to protect.  We are playing it safe here; as
+; of this writing (9/2026), we haven't tried to exploit the lack of
+; untouchability of these functions up till now.
+
+    initialize-pc-acl2
+    pc-single-step-primitive
+    pc-single-step
+    assign-event-name-and-rule-classes
+    save-fn
     ))
 
 (defconst *initial-untouchable-vars*
@@ -23058,7 +23068,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     raw-include-book-dir!-alist raw-include-book-dir-alist
     deferred-ttag-notes
     deferred-ttag-notes-saved
-    pc-assign
     illegal-to-certify-message
     acl2-sources-dir
     including-uncertified-p
@@ -23072,6 +23081,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     fast-cert-status
     inside-progn-fn1
     warnings-as-errors
+    pc-output pc-ss-alist
     ))
 
 ; There is a variety of state global variables, 'ld-skip-proofsp among them,

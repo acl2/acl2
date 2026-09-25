@@ -109901,6 +109901,11 @@ it."
 ; need for a theorem F-IS-G, rather than |F-is-G|.  The error message also
 ; notes that the supporting theorem must be admitted non-locally.
 
+; Made several proof-builder variables and functions untouchable, which can
+; avoid soundness bugs.  For examples see community book
+; system/tests/proof-builder-untouchables.lisp.  Thanks to Eric Smith for
+; passing along this issue from Anthropic's Claude.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
