@@ -63,3 +63,16 @@
 (deftreeops *grammar-nodup* :prefix nodup-cst)
 
 (assert-event (function-symbolp 'nodup-cst-a-conc? (w state)))
+
+; The -match theorems are recorded in the table, under their names.
+
+(assert-event
+ (b* ((info (deftreeops-table-lookup '*grammar-nodup* (w state)))
+      (event-alist (deftreeops-table-value->event-alist info)))
+   (and (assoc-eq 'nodup-cst-a-conc1-match event-alist)
+        (assoc-eq 'nodup-cst-a-conc1-rep-match event-alist)
+        (assoc-eq 'nodup-cst-a-conc1-rep-elem-match event-alist)
+        (assoc-eq 'nodup-cst-b-conc-match event-alist)
+        (assoc-eq 'nodup-cst-b-conc-rep-match event-alist)
+        (assoc-eq 'nodup-cst-b-conc-rep-elem-match event-alist)
+        t)))
