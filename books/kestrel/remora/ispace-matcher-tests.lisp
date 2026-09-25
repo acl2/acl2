@@ -81,6 +81,160 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Tests of DIM-VARS-BOUND-P.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(assert-equal
+ (dim-vars-bound-p (dim-mul (list (dim-const 2) (dim-var "i")))
+                   (omap::update "i" (dim-var "k") nil))
+ t)
+
+(assert-equal
+ (dim-vars-bound-p (dim-mul (list (dim-var "j") (dim-var "i")))
+                   (omap::update "i" (dim-var "k") nil))
+ nil)
+
+(assert-equal
+ (dim-vars-bound-p (dim-const 3) nil)
+ t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Tests of DIM-ADD-MATCH.
+; Each test compares the two results (success flag and substitution)
+; with the expected ones.
+; The second argument consists of the addends of the pattern addition.
+; The pattern variables are i and j;
+; the dimensions being matched use the variables k and l.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A single unbound pattern variable is bound to
+; the remainder of the dimension after accounting for the other addends,
+; which may be a constant, a variable, an addition, or 0.
+
+(assert-equal
+ (mv-list 2 (dim-add-match (dim-const 5)
+                           (list (dim-const 1) (dim-var "i"))
+                           nil))
+ (list t (omap::update "i" (dim-const 4) nil)))
+
+(assert-equal
+ (mv-list 2 (dim-add-match (dim-add (list (dim-const 1) (dim-var "k")))
+                           (list (dim-const 1) (dim-var "i"))
+                           nil))
+ (list t (omap::update "i" (dim-var "k") nil)))
+
+(assert-equal
+ (mv-list 2 (dim-add-match (dim-add (list (dim-const 2) (dim-var "k")))
+                           (list (dim-const 1) (dim-var "i"))
+                           nil))
+ (list t (omap::update "i" (dim-add (list (dim-const 1) (dim-var "k"))) nil)))
+
+(assert-equal
+ (mv-list 2 (dim-add-match (dim-const 1)
+                           (list (dim-const 1) (dim-var "i"))
+                           nil))
+ (list t (omap::update "i" (dim-const 0) nil)))
+
+; A dimension that is not an addition is viewed as one.
+
+(assert-equal
+ (mv-list 2 (dim-add-match (dim-var "k")
+                           (list (dim-var "i"))
+                           nil))
+ (list t (omap::update "i" (dim-var "k") nil)))
+
+; A bound pattern variable contributes its binding,
+; including a variable bound to itself.
+
+(assert-equal
+ (mv-list 2 (dim-add-match (dim-add (list (dim-const 3) (dim-var "k")))
+                           (list (dim-var "i") (dim-var "j"))
+                           (omap::update "i" (dim-const 3) nil)))
+ (list t (omap::update "i" (dim-const 3)
+                       (omap::update "j" (dim-var "k") nil))))
+
+(assert-equal
+ (mv-list 2 (dim-add-match (dim-add (list (dim-const 1) (dim-var "k")))
+                           (list (dim-var "i") (dim-var "k"))
+                           (omap::update "k" (dim-var "k") nil)))
+ (list t (omap::update "i" (dim-const 1)
+                       (omap::update "k" (dim-var "k") nil))))
+
+; Without unbound pattern variables,
+; the addends must account for the whole dimension.
+
+(assert-equal
+ (mv-list 2 (dim-add-match (dim-add (list (dim-const 3) (dim-var "k")))
+                           (list (dim-var "i") (dim-var "j"))
+                           (omap::update "i" (dim-const 3)
+                                         (omap::update "j" (dim-var "k") nil))))
+ (list t (omap::update "i" (dim-const 3)
+                       (omap::update "j" (dim-var "k") nil))))
+
+(assert-equal
+ (mv-list 2 (dim-add-match (dim-add (list (dim-const 3) (dim-var "k")))
+                           (list (dim-var "i") (dim-var "j"))
+                           (omap::update "i" (dim-const 3)
+                                         (omap::update "j" (dim-var "l") nil))))
+ (list nil nil))
+
+(assert-equal
+ (mv-list 2 (dim-add-match (dim-add (list (dim-const 3) (dim-var "k")))
+                           (list (dim-var "i"))
+                           (omap::update "i" (dim-const 3) nil)))
+ (list nil nil))
+
+; The constants of the pattern must not exceed the one of the dimension.
+
+(assert-equal
+ (mv-list 2 (dim-add-match (dim-const 3)
+                           (list (dim-const 4) (dim-var "i"))
+                           nil))
+ (list nil nil))
+
+; Two unbound pattern variables, or one occurring twice,
+; make the solution non-unique: the match fails.
+
+(assert-equal
+ (mv-list 2 (dim-add-match (dim-add (list (dim-const 3) (dim-var "k")))
+                           (list (dim-var "i") (dim-var "j"))
+                           nil))
+ (list nil nil))
+
+(assert-equal
+ (mv-list 2 (dim-add-match (dim-add (list (dim-var "k") (dim-var "k")))
+                           (list (dim-var "i") (dim-var "i"))
+                           nil))
+ (list nil nil))
+
+; A multiplication addend with all its variables bound
+; is instantiated and accounted for;
+; with an unbound variable, the match fails.
+
+(assert-equal
+ (mv-list 2 (dim-add-match (dim-add (list (dim-const 1)
+                                          (dim-mul (list (dim-const 2)
+                                                         (dim-var "k")))))
+                           (list (dim-var "i")
+                                 (dim-mul (list (dim-const 2) (dim-var "j"))))
+                           (omap::update "j" (dim-var "k") nil)))
+ (list t (omap::update "i" (dim-const 1)
+                       (omap::update "j" (dim-var "k") nil))))
+
+(assert-equal
+ (mv-list 2 (dim-add-match (dim-add (list (dim-const 1)
+                                          (dim-mul (list (dim-const 2)
+                                                         (dim-var "k")))))
+                           (list (dim-const 1)
+                                 (dim-mul (list (dim-const 2) (dim-var "j"))))
+                           nil))
+ (list nil nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Tests of DIM-MATCH and DIM-LIST-MATCH.
 ; Each test compares the two results (success flag and substitution)
 ; with the expected ones.
