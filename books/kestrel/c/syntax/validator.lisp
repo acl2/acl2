@@ -7272,7 +7272,9 @@
      (xdoc::p
       "A selection statement and its sub-statements are blocks [C17:6.8.4/3],
        so we push and pop scopes accordingly.
-       We check that the test of @('if') has scalar type [C17:6.8.4.1/1]
+       We check that the test of @('if') has scalar type [C17:6.8.4.1/1],
+       after array-to-pointer and function-to-pointer conversions
+       [C17:6.3.2.1/3] [C17:6.3.2.1/4],
        and that the target of @('switch') has integer type [C17:6.8.4.2/1].
        No type is returned as the @('last-expr-type?') result,
        because a selection statement is not an expression statement
@@ -7280,7 +7282,8 @@
      (xdoc::p
       "An iteration statement and its sub-statements are blocks [C17:6.8.5/5],
        so we push and pop scopes accordingly.
-       We check that the test expression has scalar type.
+       We check that the test expression has scalar type [C17:6.8.5/2],
+       after the same conversions as for @('if').
        No type is returned as the @('last-expr-type?') result,
        because an iteraion statement is not an expression statement
        (see criterion above for that result of this validation function).
@@ -7327,7 +7330,9 @@
        (b* ((vstate (vstate-push-scope vstate))
             ((erp new-test test-type test-types vstate)
              (valid-expr stmt.test vstate))
-            ((unless (3possibly (type-scalar-3p test-type)))
+            ((unless (3possibly
+                      (type-scalar-3p
+                       (type-fpconvert (type-apconvert test-type)))))
              (retmsg$ "The test of the statement ~x0 has type ~x1."
                       (stmt-fix stmt) test-type))
             (vstate (vstate-push-scope vstate))
@@ -7343,7 +7348,9 @@
        (b* ((vstate (vstate-push-scope vstate))
             ((erp new-test test-type test-types vstate)
              (valid-expr stmt.test vstate))
-            ((unless (3possibly (type-scalar-3p test-type)))
+            ((unless (3possibly
+                      (type-scalar-3p
+                       (type-fpconvert (type-apconvert test-type)))))
              (retmsg$ "The test of the statement ~x0 has type ~x1."
                       (stmt-fix stmt) test-type))
             (vstate (vstate-push-scope vstate))
@@ -7379,7 +7386,9 @@
        (b* ((vstate (vstate-push-scope vstate))
             ((erp new-test test-type test-types vstate)
              (valid-expr stmt.test vstate))
-            ((unless (3possibly (type-scalar-3p test-type)))
+            ((unless (3possibly
+                      (type-scalar-3p
+                       (type-fpconvert (type-apconvert test-type)))))
              (retmsg$ "The test of the statement ~x0 has type ~x1."
                       (stmt-fix stmt) test-type))
             (vstate (vstate-push-scope vstate))
@@ -7400,7 +7409,9 @@
             (vstate (vstate-pop-scope vstate))
             ((erp new-test test-type test-types vstate)
              (valid-expr stmt.test vstate))
-            ((unless (3possibly (type-scalar-3p test-type)))
+            ((unless (3possibly
+                      (type-scalar-3p
+                       (type-fpconvert (type-apconvert test-type)))))
              (retmsg$ "The test of the statement ~x0 has type ~x1."
                       (stmt-fix stmt) test-type))
             (vstate (vstate-pop-scope vstate)))
@@ -7415,7 +7426,10 @@
             ((erp new-test test-type? test-types vstate)
              (valid-expr-option stmt.test vstate))
             ((when (and test-type?
-                        (not (3possibly (type-scalar-3p test-type?)))))
+                        (not (3possibly
+                              (type-scalar-3p
+                               (type-fpconvert
+                                (type-apconvert test-type?)))))))
              (retmsg$ "The test of the statement ~x0 has type ~x1."
                       (stmt-fix stmt) test-type?))
             ((erp new-next & next-types vstate)
@@ -7440,7 +7454,10 @@
             ((erp new-test test-type? test-types vstate)
              (valid-expr-option stmt.test vstate))
             ((when (and test-type?
-                        (not (3possibly (type-scalar-3p test-type?)))))
+                        (not (3possibly
+                              (type-scalar-3p
+                               (type-fpconvert
+                                (type-apconvert test-type?)))))))
              (retmsg$ "The test of the statement ~x0 has type ~x1."
                       (stmt-fix stmt) test-type?))
             ((erp new-next & next-types vstate)

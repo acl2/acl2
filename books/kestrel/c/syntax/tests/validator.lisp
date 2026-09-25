@@ -2154,3 +2154,38 @@ void * g(void) {
   x ? (void)0 : 0;
 }
 ")
+
+;; The controlling expression of a selection or iteration statement
+;; undergoes array-to-pointer and function-to-pointer conversion
+;; [C17:6.3.2.1/3] [C17:6.3.2.1/4], so it may be an array or a function
+;; designator [C17:6.8.4.1/1] [C17:6.8.5/2].
+(test-valid
+ "void f(void) {
+  char a[8];
+  if (a) {}
+  if (a) {} else {}
+  while (a) break;
+  do break; while (a);
+  for (; a; ) break;
+  for (int i = 0; a; ) break;
+}
+")
+
+(test-valid
+ "void g(void);
+void f(void) {
+  if (g) {}
+  if (g) {} else {}
+  while (g) break;
+  do break; while (g);
+  for (; g; ) break;
+  for (int i = 0; g; ) break;
+}
+")
+
+(test-valid-fail
+ "struct s { int m; };
+void f(struct s x) {
+  if (x) {}
+}
+")
