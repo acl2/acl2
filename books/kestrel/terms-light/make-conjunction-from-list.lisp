@@ -13,7 +13,7 @@
 
 ;; See also the built-in function conjoin.  It handles T and NIL specially but
 ;; does not preserve EQUAL, only IFF (e.g., (conjoin (list ''3 ''t)) gives '3).
-(defun make-conjunction-from-list (lst)
+(defund make-conjunction-from-list (lst)
   (declare (xargs :guard (true-listp lst)))
   (if (endp lst)
       *t*
@@ -23,4 +23,7 @@
            ,(make-conjunction-from-list (rest lst))
          'nil))))
 
-;; TODO: Add theorems and disable
+(defthm pseudo-termp-of-make-conjunction-from-list
+  (implies (pseudo-term-listp lst)
+           (pseudo-termp (make-conjunction-from-list lst)))
+  :hints (("Goal" :in-theory (enable make-conjunction-from-list))))
