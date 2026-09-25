@@ -93,7 +93,7 @@
            (equal (ash x amt)
                   (bvcat (+ 8 amt) x amt 0)))
   :hints (("Goal" :use (:instance acl2::ash-becomes-bvcat (x x) (amt amt) (xsize 8))
-           :in-theory (disable acl2::ash-becomes-bvcat))))
+           :in-theory (e/d (unsigned-byte-p-forced) (acl2::ash-becomes-bvcat)))))
 
 (defthmd +-of-bvcat-combine
   (implies (unsigned-byte-p low x)
