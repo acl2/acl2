@@ -1,6 +1,6 @@
 ; Proof of correctness of conjuncts-and-disjuncts functions
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,7 @@
 
 (include-book "conjuncts-and-disjuncts")
 (include-book "kestrel/evaluators/if-and-not-eval" :dir :system)
-(local (include-book "kestrel/terms-light/negate-term-proof" :dir :system))
+(local (include-book "kestrel/terms-light/negate-term-proofs" :dir :system))
 
 ;; just changes the evaluator
 (defthm if-and-not-eval-of-negate-term
