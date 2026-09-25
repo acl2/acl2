@@ -137,9 +137,11 @@
       described in @(tsee deftreeops).
       This is @('nil') if the theorem is not generated.")
     (xdoc::li
-     "The name of the @('<prefix>-<rulename>-conc<i>-rep<j>-len') function
-      described in @(tsee deftreeops).
-      This is @('nil') if the function is not generated.")
+     "The name of a @('<prefix>-<rulename>-conc<i>-rep<j>-len') function
+      that we plan to generate,
+      but that is currently never generated,
+      and thus not yet described in @(tsee deftreeops).
+      This is currently always @('nil').")
     (xdoc::li
      "The name of the @('<prefix>-<rulename>-conc<i>-rep<j>-elem') function
       described in @(tsee deftreeops).
@@ -177,8 +179,14 @@
      "The discriminant term used in
       the @('<prefix>-<rulename>-conc-equivs') theorem
       described in @(tsee deftreeops).
+      This is @('t') if the rule name is defined by
+      an alternation of just one concatenation,
+      since there is nothing to discriminate in that case.
       This is @('nil') if the rule name is defined by
-      an alternation of just one concatenation.")
+      an alternation of two or more concatenations
+      that does not have one of the supported forms,
+      i.e. if the @('<prefix>-<rulename>-conc-equivs') theorem
+      is not generated.")
     (xdoc::li
      "The name of the @('<prefix>-<rulename>-conc?-<i>-iff-match-conc') theorem
       described in @(tsee deftreeops).
@@ -430,6 +438,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define deftreeops-rulenames-with-duplicate-concs ((rules rulelistp)
+                                                   (all-rules rulelistp))
+  :returns (rulename-strings acl2::string-listp)
+  :short "Find the rule names, among the ones of the given rules,
+          whose defining alternations contain duplicate concatenations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('rules') input is a suffix of the @('all-rules') input,
+     which is the whole grammar;
+     the latter is used to look up the defining alternation of each rule name,
+     which may span multiple rules in the grammar
+     (the first one non-incremental, the others incremental).
+     We return the rule names as strings, for use in error messages,
+     without duplicates.")
+   (xdoc::p
+    "Duplicate concatenations in a defining alternation
+     would make it impossible to define
+     the @('<prefix>-<rulename>-conc?') function
+     described in @(tsee deftreeops),
+     because identical concatenations are matched by
+     exactly the same lists of lists of trees."))
+  (b* (((when (endp rules)) nil)
+       (rulename (rule->name (car rules)))
+       (rulename-string (rulename->get rulename))
+       (more (deftreeops-rulenames-with-duplicate-concs (cdr rules) all-rules))
+       ((when (member-equal rulename-string more)) more)
+       (alt (lookup-rulename rulename all-rules))
+       ((when (no-duplicatesp-equal alt)) more))
+    (cons rulename-string more))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define deftreeops-process-grammar (grammar
                                     (call pseudo-event-formp)
                                     (wrld plist-worldp))
@@ -463,13 +505,20 @@
                       but its value ~x0 is not a non-empty ABNF grammar."
                      rules)))
        ((unless (rulelist-wfp rules))
-        (reterr (msg "The *GRAMMAR* input denotes and ABNF grammar, ~
-                      but the grammar is not well-formed
+        (reterr (msg "The *GRAMMAR* input denotes an ABNF grammar, ~
+                      but the grammar is not well-formed ~
                       (see :DOC ABNF::WELL-FORMEDNESS).")))
        ((unless (rulelist-closedp rules))
         (reterr (msg "The *GRAMMAR* input denotes an ABNF grammar, ~
-                      but the grammar is not closed
-                      (see :DOC ABNF::CLOSURE)."))))
+                      but the grammar is not closed ~
+                      (see :DOC ABNF::CLOSURE).")))
+       (rulename-strings
+        (deftreeops-rulenames-with-duplicate-concs rules rules))
+       ((when rulename-strings)
+        (reterr (msg "The *GRAMMAR* input denotes an ABNF grammar, ~
+                      but the alternations that define the rule names ~&0 ~
+                      contain duplicate concatenations."
+                     rulename-strings))))
     (retok nil grammar rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -479,7 +528,13 @@
   :short "Process the @(':prefix') input."
   (b* (((reterr) nil)
        ((unless (acl2::symbolp prefix))
-        (reterr (msg "The :PREFIX input ~x0 must be a symbol." prefix))))
+        (reterr (msg "The :PREFIX input ~x0 must be a symbol." prefix)))
+       ((when (or (equal (symbol-package-name prefix) "COMMON-LISP")
+                  (keywordp prefix)))
+        (reterr (msg "The :PREFIX input ~x0 must be a symbol ~
+                      in a package different from ~
+                      the Common Lisp package and the keyword package."
+                     prefix))))
     (retok prefix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -889,12 +944,12 @@
     (xdoc::li
      "If the alternation consists of exactly two concatenations,
       one of which is a singleton of a repetition with range 1
-      whose element is numeric or character value notation,
+      whose element is a character value notation,
       and the other is a singleton of a repetition with range 1
       whose element is a rule name:
       then we return two terms,
       one that checks whether the one subtree is a terminal leaf
-      (for the numeric or character value notation case),
+      (for the character value notation case),
       and the other that checks whether the one subtree is a non-leaf
       (for the other case).")))
   (b* (((when (endp alt)) (mv nil 0)) ; never happens
@@ -998,7 +1053,7 @@
 
 (define deftreeops-gen-rep-info
   ((rep repetitionp)
-   (i posp "Indentifies the concatenation that this repetition is part of,
+   (i posp "Identifies the concatenation that this repetition is part of,
             starting from 1.")
    (check-conc-fn acl2::symbolp
                   "The @('check-conc-fn') component of
@@ -1081,7 +1136,7 @@
 
 (define deftreeops-gen-conc-info
   ((conc concatenationp)
-   (i posp "Indentifies the concatenation, starting from 1.")
+   (i posp "Identifies the concatenation, starting from 1.")
    (discriminant-term "The discriminant term for the concatenation.")
    (check-conc-fn acl2::symbolp
                   "The @('check-conc-fn') component of
@@ -1183,7 +1238,7 @@
 
 (define deftreeops-gen-rulename-info
   ((rulename rulenamep)
-   (alt alternationp "The alternation that define @('rulename').")
+   (alt alternationp "The alternation that defines @('rulename').")
    (prefix acl2::symbolp))
   :returns (info deftreeops-rulename-infop)
   :short "Generate the information for a rule name."
@@ -1389,7 +1444,7 @@
                            described in @(tsee deftreeops).")
    (get-tree-list-list-fn-match-thm acl2::symbolp
                                     "The theorem saying that
-                                     @('get-tree-list-list-fn'))
+                                     @('get-tree-list-list-fn')
                                      matches the concatenation.")
    (conc-matching-thm acl2::symbolp)
    (check-conc-fn acl2::symbolp)
@@ -1587,7 +1642,7 @@
                            described in @(tsee deftreeops).")
    (get-tree-list-list-fn-match-thm acl2::symbolp
                                     "The theorem saying that
-                                     @('get-tree-list-list-fn'))
+                                     @('get-tree-list-list-fn')
                                      matches the concatenation.")
    (conc-matching-thm acl2::symbolp)
    (check-conc-fn acl2::symbolp)
@@ -1843,7 +1898,7 @@
   :returns (mv (matching-thm-events pseudo-event-form-listp)
                (check-conc-fn-equiv-thm-events pseudo-event-form-listp)
                (get-tree-list-list-fn-events pseudo-event-form-listp)
-               (rep-matching-thmevents pseudo-event-form-listp)
+               (rep-matching-thm-events pseudo-event-form-listp)
                (get-tree-list-fn-events pseudo-event-form-listp)
                (get-tree-fn-events pseudo-event-form-listp)
                (event-alist symbol-pseudoeventform-alistp))
@@ -1870,7 +1925,7 @@
      :returns (mv (matching-thm-events pseudo-event-form-listp)
                   (check-conc-fn-equiv-thm-events pseudo-event-form-listp)
                   (get-tree-list-list-fn-events pseudo-event-form-listp)
-                  (rep-matching-thmevents pseudo-event-form-listp)
+                  (rep-matching-thm-events pseudo-event-form-listp)
                   (get-tree-list-fn-events pseudo-event-form-listp)
                   (get-tree-fn-events pseudo-event-form-listp)
                   (event-alist symbol-pseudoeventform-alistp))
@@ -2106,7 +2161,7 @@
         (and check-conc-fn-event?
              (append check-conc-fn-event?
                      (and (evmac-input-print->= print :result)
-                          `((cw-event "Theorem ~x0.~%"
+                          `((cw-event "Function ~x0.~%"
                                       ',info.check-conc-fn)))))))
     (mv nonleaf-thm-events
         rulename-thm-events
