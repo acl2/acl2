@@ -161,7 +161,10 @@
      and the abstraction has the universal type
      consisting of the parameter and the body type.
      The parameter must not occur in the kind environment already
-     (an implicit requirement in [thesis] [arxiv])."))
+     (an implicit requirement in [thesis] [arxiv]).")
+   (xdoc::p
+    "The rule for an ispace lambda abstraction
+     is similar to the one for a type lambda abstraction."))
 
   :preds ((expr-ok ivars tvars evars expr type)
           (atom-ok ivars tvars evars atom type)
@@ -560,7 +563,18 @@
 
    ;; TODO: tlambdan
 
-   ;; TODO: ilambda
+   (ilambda ((ispace-var-setp ivars)
+             (type-var-setp tvars)
+             (string-type-mapp evars)
+             (ispace-varp param)
+             (exprp body)
+             (typep type)
+             (not (set::in param ivars))
+             (equal ivars1 (set::insert param ivars))
+             (expr-ok ivars1 tvars evars body type))
+            (atom-ok ivars tvars evars
+                     (atom-ilambda param body)
+                     (type-pi param type)))
 
    ;; TODO: ilambdan
 
@@ -630,6 +644,7 @@
   (verify-guards atom-ok-float-validp)
   (verify-guards atom-ok-elambda-validp)
   (verify-guards atom-ok-tlambda-validp)
+  (verify-guards atom-ok-ilambda-validp)
   (verify-guards exprs-ok-nil-validp)
   (verify-guards exprs-ok-cons-validp)
   (verify-guards atoms-ok-nil-validp)
