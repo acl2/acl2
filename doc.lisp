@@ -107058,6 +107058,9 @@ Bug Fixes From AI via Eric Smith
     * the [well-founded-relation] in checking redundancy of a [30m[47mdefun[0m[0m; see
       [30m[47msystem/tests/wfr-redundancy.lisp[0m[0m;
 
+    * the value of the [xargs] keyword, [30m[47m:[0m[0m[30m[47m[loop$-recursion][0m[0m, in checking
+      redundancy of a [30m[47mdefun[0m[0m;
+
     * the measure and the verify-guards status in checking redundancy of a
       [30m[47mdefun-nx[0m[0m event or other [non-executable] definition; see
       [30m[47msystem/tests/nx2.lisp[0m[0m and
@@ -107173,6 +107176,31 @@ Bug Fixes From AI via Eric Smith
   Fixed a soundness bug in the evaluation of lambda forms, specifically
   with respect to their [30m[47m[type][0m[0m [declaration]s.  See
   [30m[47msystem/tests/exploit-lambda-guard-typedecl.lisp[0m[0m.
+
+  Fixed a soundness bug in non-linear arithmetic, specifically in
+  function [30m[47minverse-polys[0m[0m.  See
+  [30m[47msystem/tests/linear-inverse-polys.lisp[0m[0m.  Thanks to Eric Smith for
+  supplying the fix.
+
+  Fixed a soundness bug where the [30m[47mkeys[0m[0m function for a [stobj-table]
+  field returned internal stand-in symbols instead of the real stobj
+  names.  For an example of the issue, see [community-book]
+  [30m[47msystem/tests/stobj-table-keys.lisp[0m[0m.  Thanks to Grant Jurgensen for
+  supplying the bug fix (in PR #2049).
+
+  Fixed a soundness bug that allowed a [congruence] rule whose
+  hypothesis has the form [30m[47m(equiv x x)[0m[0m, with the same variable as both
+  arguments.  Such a rule is vacuous, yet it was accepted as a
+  [patterned-congruence] rule with the same effect as a genuine
+  congruence rule.  For an example, see [community-book]
+  [30m[47msystem/tests/congruence-same-var.lisp[0m[0m.  Thanks to Grant Jurgensen
+  for supplying the bug fix.
+
+  Fixed a soundness bug in the application of [30m[47m[mfc-relieve-hyp][0m[0m, which
+  could cause it to succeed inappropriately when violating the
+  documented restriction that the given hypothesis must not have free
+  variables (see [extended-metafunctions]).  For an example, see
+  [community-book] [30m[47msystem/tests/meta-extract-relieve-hyp.lisp[0m[0m.
 
 
 Other Bug Fixes
@@ -114188,11 +114216,11 @@ Implementation
   relations, which (as in the classic case) we call the ``inner'' and
   ``outer'' equivalences, respectively.  The terms [30m[47mlhs[0m[0m and [30m[47mrhs[0m[0m are
   function calls, and we call these the [30m[47mlhs[0m[0m and [30m[47mrhs[0m[0m of the rule,
-  respectively.  The variable [30m[47mx[0m[0m occurs in [30m[47mlhs[0m[0m and the variable [30m[47my[0m[0m
-  occurs in [30m[47mrhs[0m[0m.  These must be the only occurrences of [30m[47mx[0m[0m and [30m[47my[0m[0m in
-  either [30m[47mlhs[0m[0m or [30m[47mrhs[0m[0m, and [30m[47mrhs[0m[0m must be the result of substituting [30m[47my[0m[0m for
-  [30m[47mx[0m[0m in [30m[47mlhs[0m[0m.  None of the following may occur as a function symbol of
-  [30m[47mlhs[0m[0m (or, equivalently, [30m[47mrhs[0m[0m): [30m[47mif[0m[0m, [30m[47mimplies[0m[0m, [30m[47mequal[0m[0m, or a [30m[47m[lambda][0m[0m.
+  respectively.  The variables [30m[47mx[0m[0m and [30m[47my[0m[0m are distinct, [30m[47mx[0m[0m occurs in [30m[47mlhs[0m[0m,
+  and [30m[47my[0m[0m occurs in [30m[47mrhs[0m[0m.  These must be the only occurrences of [30m[47mx[0m[0m and [30m[47my[0m[0m
+  in either [30m[47mlhs[0m[0m or [30m[47mrhs[0m[0m, and [30m[47mrhs[0m[0m must be the result of substituting [30m[47my[0m[0m
+  for [30m[47mx[0m[0m in [30m[47mlhs[0m[0m.  None of the following may occur as a function symbol
+  of [30m[47mlhs[0m[0m (or, equivalently, [30m[47mrhs[0m[0m): [30m[47mif[0m[0m, [30m[47mimplies[0m[0m, [30m[47mequal[0m[0m, or a [30m[47m[lambda][0m[0m.
 
   Patterned congruence rules are used, much like classic congruence
   rules, by the ACL2 rewriter to determine which equivalence
@@ -128904,10 +128932,11 @@ Subtopics
   macroexpansion), and with the same values [declare]d for the
   [30m[47m:[0m[0m[30m[47m[guard][0m[0m, [30m[47m:[0m[0m[30m[47m[measure][0m[0m, [30m[47m:[0m[0m[30m[47m[well-founded-relation][0m[0m, types,
   [30m[47m:[0m[0m[30m[47m[ruler-extenders][0m[0m, [30m[47m:non-executable[0m[0m, [30m[47m:type-prescription[0m[0m, [30m[47m:[0m[0m[30m[47m[stobj][0m[0m[30m[47ms[0m[0m,
-  and [30m[47m:[0m[0m[30m[47m[split-types][0m[0m, provided that the [defun-mode]s are appropriate
-  (see the ``Note About Appropriate Modes'' below).  Moreover, the
-  order of the combined [30m[47m:[0m[0m[30m[47m[guard][0m[0m and type declarations must be the
-  same in both cases.  Exceptions and clarifications:
+  [30m[47m:[0m[0m[30m[47m[loop$-recursion][0m[0m, and [30m[47m:[0m[0m[30m[47m[split-types][0m[0m, provided that the
+  [defun-mode]s are appropriate (see the ``Note About Appropriate
+  Modes'' below).  Moreover, the order of the combined [30m[47m:[0m[0m[30m[47m[guard][0m[0m and
+  type declarations must be the same in both cases.  Exceptions and
+  clarifications:
 
    1. If the new and existing function events have no explicit
       [ruler-extenders] (which are therefore syntactically equal),
