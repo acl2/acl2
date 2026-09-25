@@ -15,6 +15,7 @@
 (include-book "kestrel/utilities/non-trivial-bindings" :dir :system)
 (local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 
 ;; Ensures that all calls of TARGET-FN are on actuals that are just its formals
 ;; (lambda-bound as needed).  Consider calling reconstruct-lets-in-term after
@@ -37,10 +38,7 @@
          (if (and (eq fn target-fn)
                   (= (len (fargs term))
                      (len target-fn-formals)))
-             (let* ((bindings (non-trivial-bindings target-fn-formals new-args)) ; don't need to bind any var whose corresponding arg is itself
-                    (lambda-formals (strip-cars bindings))
-                    (new-args (strip-cdrs bindings)))
-               `((lambda ,lambda-formals (,fn ,@target-fn-formals)) ,@new-args))
+             `((lambda ,target-fn-formals (,fn ,@target-fn-formals)) ,@new-args)
            ;;not a lambda application, so just rebuild the function call:
            `(,fn ,@new-args))))))
 
@@ -76,3 +74,35 @@
     :flag let-bind-formals-in-calls-in-terms)
   :hints (("Goal" :in-theory (enable let-bind-formals-in-calls-in-term
                                      let-bind-formals-in-calls-in-terms))))
+
+(include-book "lambdas-closed-in-termp") ; todo: move proofs to separate book
+
+(defthm-flag-let-bind-formals-in-calls-in-term
+  (defthm free-vars-in-term-of-let-bind-formals-in-calls-in-term
+    (implies (symbol-listp target-fn-formals)
+             (equal (free-vars-in-term (let-bind-formals-in-calls-in-term term target-fn target-fn-formals))
+                    (free-vars-in-term term)))
+    :flag let-bind-formals-in-calls-in-term)
+  (defthm free-vars-in-terms-of-let-bind-formals-in-calls-in-terms
+    (implies (symbol-listp target-fn-formals)
+             (equal (free-vars-in-terms (let-bind-formals-in-calls-in-terms terms target-fn target-fn-formals))
+                    (free-vars-in-terms terms)))
+    :flag let-bind-formals-in-calls-in-terms)
+  :hints (("Goal" :in-theory (enable let-bind-formals-in-calls-in-term
+                                     let-bind-formals-in-calls-in-terms
+                                     free-vars-in-terms-when-symbol-listp))))
+
+(defthm-flag-let-bind-formals-in-calls-in-term
+  (defthm lambdas-closed-in-termp-of-let-bind-formals-in-calls-in-term
+    (implies (and (lambdas-closed-in-termp term)
+                  (symbol-listp target-fn-formals))
+             (lambdas-closed-in-termp (let-bind-formals-in-calls-in-term term target-fn target-fn-formals)))
+    :flag let-bind-formals-in-calls-in-term)
+  (defthm lambdas-closed-in-termsp-of-let-bind-formals-in-calls-in-terms
+    (implies (and (lambdas-closed-in-termsp terms)
+                  (symbol-listp target-fn-formals))
+             (lambdas-closed-in-termsp (let-bind-formals-in-calls-in-terms terms target-fn target-fn-formals)))
+    :flag let-bind-formals-in-calls-in-terms)
+  :hints (("Goal" :in-theory (enable let-bind-formals-in-calls-in-term
+                                     let-bind-formals-in-calls-in-terms
+                                     free-vars-in-terms-when-symbol-listp))))
