@@ -147,7 +147,14 @@
      which prevents the bound ispace variable from escaping,
      is applied to the annotation,
      because that is the type assigned to the expression,
-     and validity is not preserved by type equivalence."))
+     and validity is not preserved by type equivalence.")
+   (xdoc::p
+    "The rule for expression lambda abstractions requires the presence of
+     both the type of the parameter and the type of the body,
+     which form the input and output types of the function type.
+     The input type must be valid and array-kinded.
+     The body must be valid, and have the output type,
+     in the environment augmented with the parameter."))
 
   :preds ((expr-ok ivars tvars evars expr type)
           (atom-ok ivars tvars evars atom type)
@@ -416,6 +423,8 @@
 
    ;; TODO: capp
 
+   ;; unboxing expressions:
+
    (unbox ((ispace-var-setp ivars)
            (type-var-setp tvars)
            (string-type-mapp evars)
@@ -510,7 +519,32 @@
 
    ;; abstraction atoms:
 
-   ;; TODO
+   (elambda ((ispace-var-setp ivars)
+             (type-var-setp tvars)
+             (string-type-mapp evars)
+             (stringp evar)
+             (exprp body)
+             (typep type-in)
+             (typep type-out)
+             (type-ok ivars tvars type-in)
+             (type-array-kindp type-in)
+             (equal evars1 (omap::update evar type-in evars))
+             (expr-ok ivars tvars evars1 body type-out))
+            (atom-ok ivars tvars evars
+                     (atom-lambda (var+type? evar type-in)
+                                  body
+                                  type-out)
+                     (type-fun type-in type-out)))
+
+   ;; TODO: elambdan
+
+   ;; TODO: tlambda
+
+   ;; TODO: tlambdan
+
+   ;; TODO: ilambda
+
+   ;; TODO: ilambdan
 
    ;; boxing atoms:
 
@@ -576,22 +610,13 @@
   (verify-guards atom-ok-bool-validp)
   (verify-guards atom-ok-int-validp)
   (verify-guards atom-ok-float-validp)
+  (verify-guards atom-ok-elambda-validp)
   (verify-guards exprs-ok-nil-validp)
   (verify-guards exprs-ok-cons-validp)
   (verify-guards atoms-ok-nil-validp)
   (verify-guards atoms-ok-cons-validp)
 
-  ;; proof validity functions
-  ;; (currently the ones for atoms and for lists of atoms
-  ;; are separate from the ones for expressions and for lists of expressions,
-  ;; which call them, so they must be verified first;
-  ;; the premises of several expression rules apply the predicates
-  ;; to constructed types, whose guards follow from
-  ;; the preceding rule validity conjuncts
-  ;; only if the rule validity functions are enabled):
-
-  (verify-guards atom-ok-proof-validp)
-  (verify-guards atoms-ok-proof-validp)
+  ;; proof validity functions:
 
   (verify-guards expr-ok-proof-validp
     :hints
