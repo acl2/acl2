@@ -279,7 +279,7 @@
                         (not sdeclor.expr?)))
            (retmsg$ "Unsupported proof generation for ~x0." sdeclon))
           (type (type-vinfo->type sdeclor.info))
-          ((unless (and (type-integerp type)
+          ((unless (and (3definitely (type-integer-3p type))
                         (not (type-case type :char))))
            (retmsg$ "Unsupported proof generation for ~x0." sdeclon))
           (mem (declor->ident sdeclor.declor?))

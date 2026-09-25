@@ -54,6 +54,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; The fixer of a typed set, with genericp standing for the type of the whole
+;; set. @('deftreeset') instantiates its laws for each fixer it generates.
+
+(define generic-fix (set)
+  (if (genericp set)
+      set
+    (empty)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule subset-of-generic-fix
+  (implies (subset set y)
+           (subset (generic-fix set) y))
+  :enable generic-fix)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define set-all-genericp ((set setp))
   (declare (xargs :type-prescription :none))
   :returns (yes/no booleanp)

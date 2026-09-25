@@ -198,14 +198,14 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule subset-of-arg1-and-union0
-  (subset x (union x y))
-  :enable (pick-a-point
-           subset))
+  (implies (subset z x)
+           (subset z (union x y)))
+  :enable pick-a-point-polar)
 
 (defrule subset-of-arg1-and-union1
-  (subset x (union y x))
-  :enable (pick-a-point
-           subset))
+  (implies (subset z x)
+           (subset z (union y x)))
+  :enable pick-a-point-polar)
 
 (defrule subset-of-union0
   (equal (subset (union x y) x)

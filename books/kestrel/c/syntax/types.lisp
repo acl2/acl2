@@ -22,13 +22,13 @@
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
 
+(include-book "kestrel/abstract-domains/many-valued-logics/3vl-defs" :dir :system)
+
 (acl2::controlled-configuration)
 
 (local (include-book "std/basic/inductions" :dir :system))
-(local (include-book "std/omaps/delete" :dir :system))
 
-(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
-(local (include-book "kestrel/alists-light/strip-cars" :dir :system))
+(local (include-book "kestrel/abstract-domains/many-valued-logics/3vl" :dir :system))
 
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
@@ -38,68 +38,10 @@
 
 ;; Library extensions.
 
-(defrulel sfix-when-not-setp-cheap
-  (implies (not (setp x))
-           (equal (sfix x)
-                  nil))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :enable sfix)
-
-(defrulel cardinality-when-emptyp-cheap
-  (implies (emptyp x)
-           (equal (cardinality x)
-                  0))
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
-
-(defruledl equal-cardinality-becomes-equal-sfix-when-subset
-  (implies (subset x y)
-           (equal (equal (cardinality x) (cardinality y))
-                  (equal (sfix x) (sfix y))))
-  :enable (sfix
-           set::equal-cardinality-subset-is-equality))
-
-(defrulel equal-cardinality-when-subset
-  (implies (subset x y)
-           (equal (equal (cardinality x) (cardinality y))
-                  (subset y x)))
-  :enable (equal-cardinality-becomes-equal-sfix-when-subset
-           set::double-containment))
-
-(defrulel subset-of-delete-when-subset
-  (implies (subset set0 set1)
-           (subset (delete x set0)
-                   set1))
-  :enable set::subset-transitive)
-
-(defrulel in-when-subset-of-difference-and-in-not-in
-  (implies (and (subset (difference x y) set)
-                (in a x)
-                (not (in a set)))
-           (in a y))
-  :enable set::expensive-rules)
-
-(defruledl proper-subset-cardinality-case-split
-  (implies (case-split (and (subset x y)
-                            (not (subset y x))))
-           (< (cardinality x)
-              (cardinality y))))
-
-;;;;;;;;;;;;;;;;;;;;
-
 (defrulel equal-of-nfix-and-0
   (equal (equal (nfix x) 0)
          (not (posp x)))
   :enable nfix)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrulel hons-assoc-equal-when-assoc-equal
-  (implies (alistp alist)
-           (equal (hons-assoc-equal x alist)
-                  (assoc-equal x alist)))
-  :induct t
-  :enable (hons-assoc-equal
-           alistp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -190,7 +132,7 @@
        but only an approximate version of them,
        which still lets us perform some validation.
        We plan to refine the types, and the rest of the validator,
-       to cover exactly all the validity checks prescribed by [C17]
+       to cover exactly all the validity checks prescribed by C17
        (as well as applicable GCC extensions).")
      (xdoc::p
       "We capture the following types:")
@@ -668,7 +610,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defalist type-completions
+(fty::deftreemap type-completions
   :short "A map from @(see UID)s to struct/union members."
   :long
   (xdoc::topstring
@@ -681,31 +623,7 @@
      to its @(tsee type-struni-member-list)."))
   :key-type uid
   :val-type type-struni-member-list
-  :true-listp t
-  :keyp-of-nil nil
-  :valp-of-nil t
-  :pred type-completions-p
-  :prepwork ((set-induction-depth-limit 1)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule alistp-when-type-completions-p-forward-chaining
-  (implies (type-completions-p x)
-           (alistp x))
-  :rule-classes :forward-chaining
-  :by alistp-when-type-completions-p-rewrite)
-
-(defrule alistp-of-type-completions-fix
-  (alistp (type-completions-fix x))
-  :induct t
-  :enable (type-completions-fix
-           alistp))
-
-(defrule type-struni-member-listp-of-cdr-of-assoc-equal
-  (implies (type-completions-p completions)
-           (type-struni-member-listp (cdr (assoc-equal key completions))))
-  :induct t
-  :enable assoc-equal)
+  :pred type-completions-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -726,9 +644,9 @@
     tag/members
     :tagged (b* ((uid (uid-fix uid))
                  (completions (type-completions-fix completions))
-                 (members? (hons-get uid completions)))
-              (if members?
-                  (mv nil (cdr members?))
+                 ((mv foundp members) (treemap::lookup? uid completions)))
+              (if foundp
+                  (mv nil members)
                 (mv t nil)))
     :untagged (mv nil tag/members.members))
 
@@ -764,26 +682,114 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-standard-signed-integerp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is a standard signed integer type [C17:6.2.5/4]."
-  (and (member-eq (type-kind type) '(:schar :sshort :sint :slong :sllong))
-       t)
+(defines type/type-list-has-some-unknownp
+  (define type-has-some-unknownp ((type typep))
+    :returns (yes/no booleanp)
+    :short "Check if a type is or is derived from one of the unknown types."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This does not check for unknown types in completions."))
+    (type-case
+     type
+     :array (type-has-some-unknownp type.of)
+     :struct (type-struni-tag/members-case
+              type.tag/members
+              :tagged t
+              :untagged (type-struni-member-list-has-some-unknownp
+                         type.tag/members.members))
+     :union (type-struni-tag/members-case
+              type.tag/members
+              :tagged t
+              :untagged (type-struni-member-list-has-some-unknownp
+                         type.tag/members.members))
+     :function (or (type-has-some-unknownp type.ret)
+                   (type-params-case
+                    type.params
+                    :prototype (type-list-has-some-unknownp type.params.params)
+                    :old-style (type-list-has-some-unknownp type.params.params)
+                    :unspecified nil))
+     :otherwise (type-some-unknownp type))
+    :measure (type-count type))
 
-  ///
+  (define type-struni-member-list-has-some-unknownp ((members
+                                                      type-struni-member-listp))
+    (and (not (endp members))
+         (or (type-has-some-unknownp (type-struni-member->type (first members)))
+             (type-struni-member-list-has-some-unknownp (rest members))))
+    :measure (type-struni-member-list-count members))
 
-  (defrule type-standard-signed-integerp-when-type-kind-syntaxp
-    (implies (and (equal (type-kind type) kind)
-                  (syntaxp (quotep kind)))
-             (equal (type-standard-signed-integerp type)
-                    (and (member-equal kind
-                                       '(:schar :sshort :sint :slong :sllong))
-                         t)))))
+  (define type-list-has-some-unknownp ((types type-listp))
+    (and (not (endp types))
+         (or (type-has-some-unknownp (first types))
+             (type-list-has-some-unknownp (rest types))))
+    :measure (type-list-count types)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-signed-integerp ((type typep))
-  :returns (yes/no booleanp)
+(define type-derived-3p ((type typep))
+  :returns (3vl 3p)
+  :short "Check if the type is a derived type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The standard defines a <emph>derived type</emph>
+     as an array, structure, union, function, pointer, or atomic type
+     [C17:6.2.5/20].
+     Since we do not currently have a representation of atomic types,
+     atomicity is not considered.
+     The result is a "
+    (xdoc::seetopic "acl2::3vl" "three-valued generalized boolean")
+    " in order to reflect uncertainty around certain of the unknown types."))
+  (type-case
+   type
+   :array t
+   :struct t
+   :union t
+   :function t
+   :pointer t
+   :unknown :unknown
+   :unknown-builtin :unknown
+   :unknown-scalar :unknown
+   :otherwise nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-standard-signed-integer-3p ((type typep))
+  :returns (3vl 3p)
+  :short "Check if a type is a standard signed integer type [C17:6.2.5/4]."
+  (cond ((member-eq (type-kind type)
+                    '(:schar :sshort :sint :slong :sllong))
+         t)
+        ((member-eq (type-kind type)
+                    '(:unknown
+                      :unknown-builtin
+                      :unknown-scalar
+                      :unknown-arithmetic))
+         :unknown)
+        (t nil))
+
+  ///
+
+  (defrule type-standard-signed-integer-3p-when-type-kind-syntaxp
+    (implies (and (equal (type-kind type) kind)
+                  (syntaxp (quotep kind)))
+             (equal (type-standard-signed-integer-3p type)
+                    (cond ((member-equal
+                             kind
+                             '(:schar :sshort :sint :slong :sllong))
+                           t)
+                          ((member-equal kind '(:unknown
+                                                :unknown-builtin
+                                                :unknown-scalar
+                                                :unknown-arithmetic))
+                           :unknown)
+                          (t nil))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-signed-integer-3p ((type typep))
+  :returns (3vl 3p)
   :short "Check if a type is a signed integer type [C17:6.2.5/4]."
   :long
   (xdoc::topstring
@@ -791,39 +797,54 @@
     "For now we do not model any extended signed integer types,
      so the signed integer types coincide with
      the standard signed integer types."))
-  (type-standard-signed-integerp type)
+  (type-standard-signed-integer-3p type)
 
   ///
 
-  (defrule type-signed-integerp-when-type-kind-syntaxp
+  (defrule type-signed-integer-3p-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-signed-integerp type)
-                    (type-standard-signed-integerp type)))))
+             (equal (type-signed-integer-3p type)
+                    (type-standard-signed-integer-3p type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-standard-unsigned-integerp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is a standard unsigned integer type [C17:6.2.5/6]."
-  (and (member-eq (type-kind type) '(:bool :uchar :ushort :uint :ulong :ullong))
-       t)
+(define type-standard-unsigned-integer-3p ((type typep))
+  :returns (3vl 3p)
+  :short "Check if a type is a standard unsigned integer type
+          [C17:6.2.5/6]."
+  (cond ((member-eq (type-kind type)
+                    '(:bool :uchar :ushort :uint :ulong :ullong))
+         t)
+        ((member-eq (type-kind type)
+                    '(:unknown
+                      :unknown-builtin
+                      :unknown-scalar
+                      :unknown-arithmetic))
+         :unknown)
+        (t nil))
 
   ///
 
-  (defrule type-standard-unsigned-integerp-when-type-kind-syntaxp
+  (defrule type-standard-unsigned-integer-3p-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-standard-unsigned-integerp type)
-                    (and (member-equal
-                           kind
-                           '(:bool :uchar :ushort :uint :ulong :ullong))
-                         t)))))
+             (equal (type-standard-unsigned-integer-3p type)
+                    (cond ((member-equal
+                             kind
+                             '(:bool :uchar :ushort :uint :ulong :ullong))
+                           t)
+                          ((member-equal kind '(:unknown
+                                                :unknown-builtin
+                                                :unknown-scalar
+                                                :unknown-arithmetic))
+                           :unknown)
+                          (t nil))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-unsigned-integerp ((type typep))
-  :returns (yes/no booleanp)
+(define type-unsigned-integer-3p ((type typep))
+  :returns (3vl 3p)
   :short "Check if a type is an unsigned integer type [C17:6.2.5/6]."
   :long
   (xdoc::topstring
@@ -831,223 +852,539 @@
     "For now we do not model any extended unsigned integer types,
      so the unsigned integer types coincide with
      the standard unsigned integer types."))
-  (type-standard-unsigned-integerp type)
+  (type-standard-unsigned-integer-3p type)
 
   ///
 
-  (defrule type-unsigned-integerp-when-type-kind-syntaxp
+  (defrule type-unsigned-integer-3p-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-unsigned-integerp type)
-                    (type-standard-unsigned-integerp type)))))
+             (equal (type-unsigned-integer-3p type)
+                    (type-standard-unsigned-integer-3p type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-standard-integerp ((type typep))
-  :returns (yes/no booleanp)
+(define type-standard-integer-3p ((type typep))
+  :returns (3vl 3p)
   :short "Check if a type is a standard integer type [C17:6.2.5/7]."
-  (or (type-standard-signed-integerp type)
-      (type-standard-unsigned-integerp type))
+  (3or (type-standard-signed-integer-3p type)
+       (type-standard-unsigned-integer-3p type))
 
   ///
 
-  (defrule type-standard-integerp-when-type-kind-syntaxp
+  (defrule type-standard-integer-3p-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-standard-integerp type)
-                    (or (type-standard-signed-integerp type)
-                        (type-standard-unsigned-integerp type))))))
+             (equal (type-standard-integer-3p type)
+                    (3or (type-standard-signed-integer-3p type)
+                         (type-standard-unsigned-integer-3p type))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-real-floatingp ((type typep))
-  :returns (yes/no booleanp)
+(define type-real-floating-3p ((type typep))
+  :returns (3vl 3p)
   :short "Check if a type is a real floating type [C17:6.2.5/10]."
-  (and (member-eq (type-kind type) '(:float :double :ldouble))
-       t)
+  (cond ((member-eq (type-kind type)  '(:float :double :ldouble))
+         t)
+        ((member-eq (type-kind type)
+                    '(:unknown
+                      :unknown-builtin
+                      :unknown-scalar
+                      :unknown-arithmetic))
+         :unknown)
+        (t nil))
 
   ///
 
-  (defrule type-real-floatingp-when-type-kind-syntaxp
+  (defrule type-real-floating-3p-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-real-floatingp type)
-                    (and (member-equal kind '(:float :double :ldouble))
-                         t)))))
+             (equal (type-real-floating-3p type)
+                    (cond ((member-equal kind '(:float :double :ldouble))
+                           t)
+                          ((member-equal kind '(:unknown
+                                                :unknown-builtin
+                                                :unknown-scalar
+                                                :unknown-arithmetic))
+                           :unknown)
+                          (t nil))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-complexp ((type typep))
-  :returns (yes/no booleanp)
+(define type-complex-3p ((type typep))
+  :returns (3vl 3p)
   :short "Check if a type is a complex type [C17:6.2.5/11]."
-  (and (member-eq (type-kind type) '(:floatc :doublec :ldoublec))
-       t)
+  (cond ((member-eq (type-kind type)  '(:floatc :doublec :ldoublec))
+         t)
+        ((member-eq (type-kind type)
+                    '(:unknown
+                      :unknown-builtin
+                      :unknown-scalar
+                      :unknown-arithmetic))
+         :unknown)
+        (t nil))
 
   ///
 
-  (defrule type-complexp-when-type-kind-syntaxp
+  (defrule type-complex-3p-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-complexp type)
-                    (and (member-equal kind '(:floatc :doublec :ldoublec))
-                         t)))))
+             (equal (type-complex-3p type)
+                    (cond ((member-equal kind '(:floatc :doublec :ldoublec))
+                           t)
+                          ((member-equal kind '(:unknown
+                                                :unknown-builtin
+                                                :unknown-scalar
+                                                :unknown-arithmetic))
+                           :unknown)
+                          (t nil))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-floatingp ((type typep))
-  :returns (yes/no booleanp)
+(define type-floating-3p ((type typep))
+  :returns (3vl 3p)
   :short "Check if a type is a floating type [C17:6.2.5/11]."
-  (or (type-real-floatingp type)
-      (type-complexp type))
+  (3or (type-real-floating-3p type)
+       (type-complex-3p type))
 
   ///
 
-  (defrule type-floatingp-when-type-kind-syntaxp
+  (defrule type-floating-3p-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-floatingp type)
-                    (or (type-real-floatingp type)
-                        (type-complexp type))))))
+             (equal (type-floating-3p type)
+                    (3or (type-real-floating-3p type)
+                         (type-complex-3p type))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-basicp ((type typep))
-  :returns (yes/no booleanp)
+(define type-basic-3p ((type typep))
+  :returns (3vl 3p)
   :short "Check if a type is a basic type [C17:6.2.5/14]."
-  (or (type-case type :char)
-      (type-signed-integerp type)
-      (type-unsigned-integerp type)
-      (type-floatingp type))
+  (3or (type-case type :char)
+       (type-signed-integer-3p type)
+       (type-unsigned-integer-3p type)
+       (type-floating-3p type))
 
   ///
 
-  (defrule type-basicp-when-type-kind-syntaxp
+  (defrule type-basic-3p-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-basicp type)
-                    (or (equal kind :char)
-                        (type-signed-integerp type)
-                        (type-unsigned-integerp type)
-                        (type-floatingp type))))))
+             (equal (type-basic-3p type)
+                    (3or (equal kind :char)
+                         (type-signed-integer-3p type)
+                         (type-unsigned-integer-3p type)
+                         (type-floating-3p type))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-characterp ((type typep))
-  :returns (yes/no booleanp)
+(define type-character-3p ((type typep))
+  :returns (3vl 3p)
   :short "Check if a type is a character type [C17:6.2.5/15]."
-  (and (member-eq (type-kind type) '(:char :schar :uchar))
-       t)
+  (cond ((member-eq (type-kind type)  '(:char :schar :uchar))
+         t)
+        ((member-eq (type-kind type)
+                    '(:unknown
+                      :unknown-builtin
+                      :unknown-scalar
+                      :unknown-arithmetic))
+         :unknown)
+        (t nil))
 
   ///
 
-  (defrule type-characterp-when-type-kind-syntaxp
+  (defrule type-character-3p-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-characterp type)
-                    (and (member-equal kind '(:char :schar :uchar))
-                         t)))))
+             (equal (type-character-3p type)
+                    (cond ((member-equal kind '(:char :schar :uchar))
+                           t)
+                          ((member-equal kind '(:unknown
+                                                :unknown-builtin
+                                                :unknown-scalar
+                                                :unknown-arithmetic))
+                           :unknown)
+                          (t nil))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-integerp ((type typep))
-  :returns (yes/no booleanp)
+(define type-integer-3p ((type typep))
+  :returns (3vl 3p)
   :short "Check if a type is an integer type [C17:6.2.5/17]."
-  (or (type-case type :char)
-      (type-signed-integerp type)
-      (type-unsigned-integerp type)
-      (type-case type :enum))
+  (3or (type-case type :char)
+       (type-signed-integer-3p type)
+       (type-unsigned-integer-3p type)
+       (type-case type :enum))
 
   ///
 
-  (defrule type-integerp-when-type-kind-syntaxp
+  (defrule type-integer-3p-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-integerp type)
-                    (or (equal kind :char)
-                        (type-signed-integerp type)
-                        (type-unsigned-integerp type)
-                        (type-case type :enum))))))
+             (equal (type-integer-3p type)
+                    (3or (equal kind :char)
+                         (type-signed-integer-3p type)
+                         (type-unsigned-integer-3p type)
+                         (equal kind :enum))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-realp ((type typep))
-  :returns (yes/no booleanp)
+(define type-real-3p ((type typep))
+  :returns (3vl 3p)
   :short "Check if a type is a real type [C17:6.2.5/17]."
-  (or (type-integerp type)
-      (type-real-floatingp type))
+  (3or (type-integer-3p type)
+       (type-real-floating-3p type))
 
   ///
 
-  (defrule type-realp-when-type-kind-syntaxp
+  (defrule type-real-3p-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-realp type)
-                    (or (type-integerp type)
-                        (type-real-floatingp type))))))
+             (equal (type-real-3p type)
+                    (3or (type-integer-3p type)
+                         (type-real-floating-3p type))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-arithmeticp ((type typep))
-  :returns (yes/no booleanp)
+(define type-arithmetic-3p ((type typep))
+  :returns (3vl 3p)
   :short "Check if a type is an arithmetic type [C17:6.2.5/18]."
-  (or (type-integerp type)
-      (type-floatingp type)
-      (type-case type :unknown-arithmetic))
+  (3or (type-integer-3p type)
+       (type-floating-3p type)
+       (type-case type :unknown-arithmetic))
 
   ///
 
-  (defrule type-arithmeticp-when-type-kind-syntaxp
+  (defrule type-arithmetic-3p-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-arithmeticp type)
-                    (or (type-integerp type)
-                        (type-floatingp type)
-                        (type-case type :unknown-arithmetic)))))
+             (equal (type-arithmetic-3p type)
+                    (3or (type-integer-3p type)
+                         (type-floating-3p type)
+                         (equal kind :unknown-arithmetic)))))
 
-  (defrule type-arithmeticp-when-type-integerp
-    (implies (type-integerp type)
-             (type-arithmeticp type))))
+  (defrule type-arithmetic-3p-when-type-integer-3p
+    (implies (3definitely (type-integer-3p type))
+             (3definitely (type-arithmetic-3p type)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-scalarp ((type typep))
-  :returns (yes/no booleanp)
+(define type-scalar-3p ((type typep))
+  :returns (3vl 3p)
   :short "Check if a type is a scalar type [C17:6.2.5/21]."
-  (or (type-arithmeticp type)
-      (type-case type :pointer)
-      (type-case type :unknown-scalar))
+  (3or (type-arithmetic-3p type)
+       (type-case type :pointer)
+       (type-case type :unknown-scalar))
 
   ///
 
-  (defrule type-scalarp-when-type-kind-syntaxp
+  (defrule type-scalar-3p-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-scalarp type)
-                    (or (type-arithmeticp type)
-                        (type-case type :pointer)
-                        (type-case type :unknown-scalar))))))
+             (equal (type-scalar-3p type)
+                    (3or (type-arithmetic-3p type)
+                         (equal kind :pointer)
+                         (equal kind :unknown-scalar))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-aggregatep ((type typep))
-  :returns (yes/no booleanp)
+(define type-aggregate-3p ((type typep))
+  :returns (3vl 3p)
   :short "Check if a type is an aggregate type [C17:6.2.5/21]."
-  (or (type-case type :array)
-      (type-case type :struct))
+  (cond ((or (type-case type :array)
+             (type-case type :struct))
+         t)
+        ((or (type-case type :unknown)
+             (type-case type :unknown-builtin))
+         :unknown)
+        (t nil))
 
   ///
 
-  (defrule type-aggregatep-when-type-kind-syntaxp
+  (defrule type-aggregate-3p-when-type-kind-syntaxp
     (implies (and (equal (type-kind type) kind)
                   (syntaxp (quotep kind)))
-             (equal (type-aggregatep type)
-                    (or (type-case type :array)
-                        (type-case type :struct))))))
+             (equal (type-aggregate-3p type)
+                    (cond ((member-equal kind '(:array :struct))
+                           t)
+                          ((member-equal kind '(:unknown :unknown-builtin))
+                           :unknown)
+                          (t nil))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-array-kind-equal-3p ((x type-array-kindp)
+                                  (y type-array-kindp))
+  :returns (3vl 3p)
+  :short "Check whether two array kinds are equal."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is equality of array kinds,
+     accommodating the imprecision of the representation.
+     Two constant lengths are equal if both are known and equal;
+     if either is unknown, we cannot tell.
+     Two nonconstant lengths may or may not be equal,
+     since we do not track their size expressions.
+     A kind that is complete but otherwise unknown
+     may be equal to any complete kind.
+     Two incomplete kinds are equal, and any other combination differs."))
+  (type-array-kind-case
+    x
+    :const-len
+    (type-array-kind-case
+      y
+      :const-len (if (and x.len y.len)
+                     (equal x.len y.len)
+                   :unknown)
+      :unknown-complete :unknown
+      :otherwise nil)
+    :nonconst-len
+    (type-array-kind-case
+      y
+      :nonconst-len :unknown
+      :unknown-complete :unknown
+      :otherwise nil)
+    :unknown-complete
+    (type-array-kind-case
+      y
+      :incomplete nil
+      :otherwise :unknown)
+    :incomplete
+    (type-array-kind-case y :incomplete)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines type/type-list-equal-3p
+  (define type-equal-3p ((x typep)
+                         (y typep))
+    :returns (3vl 3p)
+    :short "Check whether two types are equal."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is equality of types,
+       accommodating the imprecision of the representation")
+     (xdoc::p
+      "If either type is one of the unknown types,
+       the types may be equal if the other type
+       may be of the kind that the unknown type stands for.
+       Otherwise, two types of different kinds are different.
+       Two types of the same kind are equal if their components are.
+       Structure and union types are equal if they have the same UID.
+       Two enumerated types may or may not be equal,
+       since we do not currently distinguish different enumerations.
+       The remaining types are equal
+       if they are represented identically."))
+    (cond ((or (type-case x :unknown)
+               (type-case x :unknown-builtin)
+               (type-case y :unknown)
+               (type-case y :unknown-builtin))
+           :unknown)
+          ((type-case x :unknown-scalar)
+           (3and (type-scalar-3p y) :unknown))
+          ((type-case y :unknown-scalar)
+           (3and (type-scalar-3p x) :unknown))
+          ((type-case x :unknown-arithmetic)
+           (3and (type-arithmetic-3p y) :unknown))
+          ((type-case y :unknown-arithmetic)
+           (3and (type-arithmetic-3p x) :unknown))
+          (t (type-case
+               x
+               :array
+               (type-case
+                 y
+                 :array (3and$ (type-array-kind-equal-3p x.kind y.kind)
+                               (type-equal-3p x.of y.of))
+                 :otherwise nil)
+               :pointer
+               (type-case
+                 y
+                 :pointer (type-equal-3p x.to y.to)
+                 :otherwise nil)
+               :function
+               (type-case
+                 y
+                 :function (3and$ (type-equal-3p x.ret y.ret)
+                                  (type-params-equal-3p
+                                   x.params y.params))
+                 :otherwise nil)
+               :struct
+               (type-case
+                 y
+                 :struct (uid-equal x.uid y.uid)
+                 :otherwise nil)
+               :union
+               (type-case
+                 y
+                 :union (uid-equal x.uid y.uid)
+                 :otherwise nil)
+               :enum
+               (type-case
+                 y
+                 :enum :unknown
+                 :otherwise nil)
+               :otherwise
+               (type-equiv x y))))
+    :measure (+ (type-count x)
+                (type-count y)))
+
+  (define type-params-equal-3p ((x type-params-p)
+                                (y type-params-p))
+    :returns (3vl 3p)
+    :short "Check whether the parameter portions of two function types
+            are equal."
+    (type-params-case
+      x
+      :prototype
+      (type-params-case
+        y
+        :prototype (if (equal x.ellipsis y.ellipsis)
+                       (type-list-equal-3p x.params y.params)
+                     nil)
+        :otherwise nil)
+      :old-style
+      (type-params-case
+        y
+        :old-style (type-list-equal-3p x.params y.params)
+        :otherwise nil)
+      :unspecified (type-params-case y :unspecified))
+    :measure (+ (type-params-count x)
+                (type-params-count y)))
+
+  (define type-list-equal-3p ((x type-listp)
+                              (y type-listp))
+    :returns (3vl 3p)
+    :short "Check whether two lists of types are equal."
+    (b* (((when (endp x))
+          (endp y))
+         ((when (endp y))
+          nil))
+      (3and$ (type-equal-3p (first x) (first y))
+             (type-list-equal-3p (rest x) (rest y))))
+    :measure (+ (type-list-count x)
+                (type-list-count y)))
+
+  :flag-local nil
+  :verify-guards :after-returns
+  ///
+
+  (fty::deffixequiv-mutual type/type-list-equal-3p
+    :hints (("Goal" :in-theory (disable type-fix-when-enum)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define type-struni-member-list-equal-3p ((x type-struni-member-listp)
+                                          (y type-struni-member-listp))
+  :returns (3vl 3p)
+  :short "Check whether two lists of structure or union members are equal."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The names must be the same, in the same order,
+     and the types must be equal in the sense of @(tsee type-equal-3p)."))
+  (b* (((when (endp x))
+        (endp y))
+       ((when (endp y))
+        nil)
+       ((type-struni-member member-x) (first x))
+       ((type-struni-member member-y) (first y))
+       ((unless (equal member-x.name? member-y.name?))
+        nil))
+    (3and$ (type-equal-3p member-x.type member-y.type)
+           (type-struni-member-list-equal-3p (rest x) (rest y))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule type-array-kind-equal-3p-under-iff-when-same
+  (iff (type-array-kind-equal-3p x x)
+       t)
+  :enable type-array-kind-equal-3p)
+
+(defrule 3possibly-type-array-kind-equal-3p-when-same
+  (3possibly (type-array-kind-equal-3p x x))
+  :enable type-array-kind-equal-3p)
+
+(defrule type-array-kind-equal-3p-symmetric
+  (equal (type-array-kind-equal-3p y x)
+         (type-array-kind-equal-3p x y))
+  :enable type-array-kind-equal-3p)
+
+(encapsulate ()
+  (local
+    (defthm-type/type-list-equal-3p-flag
+      (defthm type-equal-3p-when-same-lemma
+        (implies (equal x y)
+                 (iff (type-equal-3p x y)
+                      t))
+        :flag type-equal-3p)
+      (defthm type-params-equal-3p-when-same-lemma
+        (implies (equal x y)
+                 (iff (type-params-equal-3p x y)
+                      t))
+        :flag type-params-equal-3p)
+      (defthm type-list-equal-3p-when-same-lemma
+        (implies (equal x y)
+                 (iff (type-list-equal-3p x y)
+                      t))
+        :flag type-list-equal-3p)
+      :hints (("Goal"
+               :in-theory (enable 3and
+                                  type-equal-3p
+                                  type-params-equal-3p
+                                  type-list-equal-3p
+                                  (:i type/type-list-equal-3p-flag))))))
+
+  (defrule type-equal-3p-under-iff-when-same
+    (iff (type-equal-3p x x)
+         t))
+
+  (defrule type-params-equal-3p-under-iff-when-same
+    (iff (type-params-equal-3p x x)
+         t))
+
+  (defrule type-list-equal-3p-under-iff-when-same
+    (iff (type-list-equal-3p x x)
+         t)))
+
+(defrule 3possibly-type-equal-3p-when-same
+  (3possibly (type-equal-3p x x))
+  :enable (3possibly 3equiv))
+
+(defrule 3possibly-type-params-equal-3p-when-same
+  (3possibly (type-params-equal-3p x x))
+  :enable (3possibly 3equiv))
+
+(defrule 3possibly-type-list-equal-3p-when-same
+  (3possibly (type-list-equal-3p x x))
+  :enable (3possibly 3equiv))
+
+(defthm-type/type-list-equal-3p-flag
+  (defthm type-equal-3p-symmetric
+    (equal (type-equal-3p y x)
+           (type-equal-3p x y))
+    :flag type-equal-3p)
+  (defthm type-params-equal-3p-symmetric
+    (equal (type-params-equal-3p y x)
+           (type-params-equal-3p x y))
+    :flag type-params-equal-3p)
+  (defthm type-list-equal-3p-symmetric
+    (equal (type-list-equal-3p y x)
+           (type-list-equal-3p x y))
+    :flag type-list-equal-3p)
+  :hints (("Goal"
+           :in-theory (enable type-equal-3p
+                              type-params-equal-3p
+                              type-list-equal-3p
+                              uid-equal
+                              (:i type/type-list-equal-3p-flag)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-integer-promotedp ((type typep))
-  :guard (type-arithmeticp type)
+  :guard (3definitely (type-arithmetic-3p type))
   :returns (yes/no booleanp)
   :short "Check if an arithmetic type is a promoted one."
   :long
@@ -1072,7 +1409,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-default-arg-promotedp ((type typep))
-  :guard (type-arithmeticp type)
+  :guard (3definitely (type-arithmetic-3p type))
   :returns (yes/no booleanp)
   :short "Check if type is a default argument promoted type."
   :long
@@ -1127,7 +1464,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-integer-promote ((type typep) (ienv ienvp))
-  :guard (type-arithmeticp type)
+  :guard (3definitely (type-arithmetic-3p type))
   :returns (new-type typep)
   :short "Perform integer promotions on an arithmetic type [C17:6.3.1.1/2]."
   :long
@@ -1183,8 +1520,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-uaconvert-signed ((type1 typep) (type2 typep))
-  :guard (and (type-signed-integerp type1)
-              (type-signed-integerp type2)
+  :guard (and (3definitely (type-signed-integer-3p type1))
+              (3definitely (type-signed-integer-3p type2))
               (type-integer-promotedp type1)
               (type-integer-promotedp type2))
   :returns (new-type typep)
@@ -1203,14 +1540,14 @@
         (type-case type2 :slong))
     (type-slong))
    (t (type-sint)))
-  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
-                                           type-integerp))))
+  :guard-hints (("Goal" :in-theory (enable type-arithmetic-3p
+                                           type-integer-3p))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (define type-uaconvert-unsigned ((type1 typep) (type2 typep))
-  :guard (and (type-unsigned-integerp type1)
-              (type-unsigned-integerp type2)
+  :guard (and (3definitely (type-unsigned-integer-3p type1))
+              (3definitely (type-unsigned-integer-3p type2))
               (type-integer-promotedp type1)
               (type-integer-promotedp type2))
   :returns (new-type typep)
@@ -1229,16 +1566,16 @@
         (type-case type2 :ulong))
     (type-ulong))
    (t (type-uint)))
-  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
-                                           type-integerp))))
+  :guard-hints (("Goal" :in-theory (enable type-arithmetic-3p
+                                           type-integer-3p))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (define type-uaconvert-signed-unsigned ((type1 typep)
                                         (type2 typep)
                                         (ienv ienvp))
-  :guard (and (type-signed-integerp type1)
-              (type-unsigned-integerp type2)
+  :guard (and (3definitely (type-signed-integer-3p type1))
+              (3definitely (type-unsigned-integer-3p type2))
               (type-integer-promotedp type1)
               (type-integer-promotedp type2))
   :returns (new-type typep)
@@ -1291,19 +1628,20 @@
              (type-ulong)))
           (t (type-uint))))
    (t (prog2$ (impossible) (irr-type))))
-  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
-                                           type-integerp
-                                           type-integer-promotedp
-                                           type-unsigned-integerp
-                                           type-signed-integerp
-                                           type-standard-unsigned-integerp
-                                           type-standard-signed-integerp))))
+  :guard-hints
+  (("Goal" :in-theory (enable type-arithmetic-3p
+                              type-integer-3p
+                              type-integer-promotedp
+                              type-unsigned-integer-3p
+                              type-signed-integer-3p
+                              type-standard-unsigned-integer-3p
+                              type-standard-signed-integer-3p))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (define type-uaconvert ((type1 typep) (type2 typep) (ienv ienvp))
-  :guard (and (type-arithmeticp type1)
-              (type-arithmeticp type2))
+  :guard (and (3definitely (type-arithmetic-3p type1))
+              (3definitely (type-arithmetic-3p type2)))
   :returns (new-type typep)
   :short "Perform the usual arithmetic conversions on two arithmetic types
           [C17:6.3.1.8]."
@@ -1368,33 +1706,33 @@
          ((or (type-case type1 :unknown-arithmetic)
               (type-case type2 :unknown-arithmetic))
           (type-unknown-arithmetic))
-         ((and (type-signed-integerp type1)
-               (type-signed-integerp type2))
+         ((and (3definitely (type-signed-integer-3p type1))
+               (3definitely (type-signed-integer-3p type2)))
           (type-uaconvert-signed type1 type2))
-         ((and (type-unsigned-integerp type1)
-               (type-unsigned-integerp type2))
+         ((and (3definitely (type-unsigned-integer-3p type1))
+               (3definitely (type-unsigned-integer-3p type2)))
           (type-uaconvert-unsigned type1 type2))
-         ((and (type-signed-integerp type1)
-               (type-unsigned-integerp type2))
+         ((and (3definitely (type-signed-integer-3p type1))
+               (3definitely (type-unsigned-integer-3p type2)))
           (type-uaconvert-signed-unsigned type1 type2 ienv))
-         ((and (type-unsigned-integerp type1)
-               (type-signed-integerp type2))
+         ((and (3definitely (type-unsigned-integer-3p type1))
+               (3definitely (type-signed-integer-3p type2)))
           (type-uaconvert-signed-unsigned type2 type1 ienv))
          (t (prog2$ (impossible) (irr-type)))))))
   :guard-hints (("Goal"
                  :do-not '(preprocess)
                  :in-theory (e/d (type-some-unknownp
-                                  type-arithmeticp
-                                  type-integerp
-                                  type-unsigned-integerp
-                                  type-signed-integerp
-                                  type-standard-unsigned-integerp
-                                  type-standard-signed-integerp
+                                  type-arithmetic-3p
+                                  type-integer-3p
+                                  type-unsigned-integer-3p
+                                  type-signed-integer-3p
+                                  type-standard-unsigned-integer-3p
+                                  type-standard-signed-integer-3p
                                   type-integer-promote
                                   type-integer-promotedp
-                                  type-floatingp
-                                  type-real-floatingp
-                                  type-complexp)
+                                  type-floating-3p
+                                  type-real-floating-3p
+                                  type-complex-3p)
                                  ((:e tau-system))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1405,7 +1743,7 @@
   (type-case
    type
    :float (type-double)
-   :otherwise (if (type-arithmeticp type)
+   :otherwise (if (3definitely (type-arithmetic-3p type))
                   (type-integer-promote type ienv)
                 (type-fix type)))
 
@@ -1449,1141 +1787,6 @@
            (type-list-count types))
     :induct t
     :enable type-list-count))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-array-kind-compatible-p ((x type-array-kindp)
-                                      (y type-array-kindp))
-  :returns (yes/no booleanp)
-  :short "Check whether two array kinds are potentially compatible."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Read literally, [C17] and [C23] require that two array types be compatible
-     iff their element types are compatible and,
-     when both size specifiers are present
-     and are integer constant expressions,
-     their values are equal [C17:6.7.6.2/6] [C23:6.7.7.3/6].
-     Under this strict reading,
-     two arrays with initializer-inferred sizes
-     would be compatible iff their element types are compatible.")
-   (xdoc::p
-    "However, the implementations we examined
-     do not follow that literal reading.
-     For compatibility, they treat an initializer-inferred size
-     as if it had been supplied
-     by an integer constant expression size specifier.
-     We follow that practice here.
-     The same treatment is proposed in "
-    (xdoc::ahref
-     "https://www.open-std.org/jtc1/sc22/WG14/www/docs/n3495.htm"
-     "WG14 N3495")
-    ", which has not been adopted.")
-   (xdoc::p
-    "Accordingly, when both array kinds
-     are @(':const-len')
-     and both lengths are determined,
-     we require the lengths to be equal.
-     In all other cases we return true.
-     This overapproximates compatibility when
-     a constant length is unknown
-     or an array kind is @(':unknown-complete')."))
-  (type-array-kind-case
-    x
-    :const-len
-    (type-array-kind-case
-      y
-      :const-len (or (not x.len)
-                     (not y.len)
-                     (equal x.len y.len))
-      :otherwise t)
-    :otherwise t))
-
-(defrule type-array-kind-compatible-p-reflexive
-  (type-array-kind-compatible-p x x)
-  :enable type-array-kind-compatible-p)
-
-(defrule type-array-kind-compatible-p-symmetric
-  (equal (type-array-kind-compatible-p y x)
-         (type-array-kind-compatible-p x y))
-  :enable type-array-kind-compatible-p)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-array-kind-composite ((x type-array-kindp)
-                                   (y type-array-kindp))
-  :returns (composite type-array-kindp)
-  :short "Construct the array kind of a composite array type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The input kinds are expected to come from compatible array types.
-     The rules for composite array types distinguish
-     arrays of known constant size,
-     VLAs with specified or unspecified length,
-     and incomplete arrays [C17:6.2.7/3] [C23:6.2.7/3].
-     Our array kinds retain less information.
-     In particular, @(':nonconst-len') does not distinguish
-     specified from unspecified size,
-     and we do not track whether a size expression is evaluated.")
-   (xdoc::p
-    "At the level of our abstraction,
-     a @(':const-len') kind takes precedence over every other kind.
-     When both kinds are @(':const-len'),
-     we retain a known length if either has one.
-     Otherwise, a complete kind takes precedence over @(':incomplete').")
-   (xdoc::p
-    "The composite of @(':nonconst-len')
-     and @(':unknown-complete') is @(':unknown-complete').
-     The latter could represent a @(':const-len') kind,
-     which would take precedence under the standard's rules."))
-  (type-array-kind-case
-    x
-    :const-len
-    (type-array-kind-case
-      y
-      :const-len
-      (make-type-array-kind-const-len :len (or x.len y.len))
-      :otherwise (type-array-kind-fix x))
-    :nonconst-len
-    (type-array-kind-case
-      y
-      :const-len (type-array-kind-fix y)
-      :nonconst-len (type-array-kind-nonconst-len)
-      :unknown-complete (type-array-kind-unknown-complete)
-      :incomplete (type-array-kind-nonconst-len))
-    :unknown-complete
-    (type-array-kind-case
-      y
-      :const-len (type-array-kind-fix y)
-      :otherwise (type-array-kind-unknown-complete))
-    :incomplete (type-array-kind-fix y)))
-
-(defrule type-array-kind-composite-reflexive
-  (equal (type-array-kind-composite x x)
-         (type-array-kind-fix x))
-  :enable type-array-kind-composite
-  :disable ((:e type-array-kind-const-len)))
-
-(defrule type-array-kind-composite-symmetric
-  (implies (type-array-kind-compatible-p x y)
-           (equal (type-array-kind-composite y x)
-                  (type-array-kind-composite x y)))
-  :enable (type-array-kind-compatible-p
-           type-array-kind-composite)
-  :disable ((:e type-array-kind-const-len)))
-
-(defrule type-array-kind-compatible-p-of-type-array-kind-composite-left
-  (implies (type-array-kind-compatible-p x y)
-           (type-array-kind-compatible-p (type-array-kind-composite x y) x))
-  :enable (type-array-kind-compatible-p type-array-kind-composite))
-
-(defrule type-array-kind-compatible-p-of-type-array-kind-composite-right
-  (implies (type-array-kind-compatible-p x y)
-           (type-array-kind-compatible-p (type-array-kind-composite x y) y))
-  :enable (type-array-kind-compatible-p type-array-kind-composite))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defines type/type-list-compatible-p-aux
-  (define type-compatible-p-aux ((x typep)
-                                 (y typep)
-                                 (completions type-completions-p)
-                                 (incomplete uid-setp)
-                                 (ienv ienvp))
-    :returns (yes/no booleanp)
-    :short "Auxiliary function for check that two @(see type)s are compatible
-            [C17:6.2.7]."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "See @(tsee type-compatible-p) for a description
-       of what type compatibility means and how we check it."))
-    (or (type-case x :unknown)
-        (type-case x :unknown-builtin)
-        (type-case y :unknown)
-        (type-case y :unknown-builtin)
-        (and (type-case x :unknown-scalar)
-             (type-scalarp y))
-        (and (type-case y :unknown-scalar)
-             (type-scalarp x))
-        (and (type-case x :unknown-arithmetic)
-             (type-arithmeticp y))
-        (and (type-case y :unknown-arithmetic)
-             (type-arithmeticp x))
-        (type-case
-          x
-          :struct
-          (type-case
-            y
-            :struct
-            (if (and x.tunit? y.tunit? (equal x.tunit? y.tunit?))
-                (if (equal (ienv->std ienv) (c::standard-c23))
-                    (type-struni-tag/members-case
-                      x.tag/members
-                      :tagged
-                      (type-struni-tag/members-case
-                        y.tag/members
-                        :tagged
-                        (b* (((unless (equal x.tag/members.tag
-                                             y.tag/members.tag))
-                              nil)
-                             (completions (type-completions-fix completions))
-                             (incomplete (uid-set-fix incomplete))
-                             ((when (or (in x.uid incomplete)
-                                        (in y.uid incomplete)))
-                              t)
-                             (x-members? (hons-get x.uid completions))
-                             (y-members? (hons-get y.uid completions))
-                             ((unless (and (consp x-members?)
-                                           (consp y-members?)))
-                              t)
-                             (incomplete
-                               (insert x.uid (insert y.uid incomplete))))
-                          (type-struni-member-list-compatible-p-aux
-                            (cdr x-members?)
-                            (cdr y-members?)
-                            completions
-                            incomplete
-                            ienv))
-                        :untagged nil)
-                      :untagged (type-struni-tag/members-case
-                                  y.tag/members
-                                  :tagged nil
-                                  :untagged (uid-equal x.uid y.uid)))
-                  (uid-equal x.uid y.uid))
-              (type-struni-tag/members-case
-                x.tag/members
-                :tagged
-                (type-struni-tag/members-case
-                  y.tag/members
-                  :tagged
-                  (b* (((unless (equal x.tag/members.tag y.tag/members.tag))
-                        nil)
-                       (completions (type-completions-fix completions))
-                       (incomplete (uid-set-fix incomplete))
-                       ((when (or (in x.uid incomplete)
-                                  (in y.uid incomplete)))
-                        t)
-                       (x-members? (hons-get x.uid completions))
-                       (y-members? (hons-get y.uid completions))
-                       ((unless (and (consp x-members?)
-                                     (consp y-members?)))
-                        t)
-                       (incomplete (insert x.uid (insert y.uid incomplete))))
-                    (type-struni-member-list-compatible-p-aux
-                      (cdr x-members?)
-                      (cdr y-members?)
-                      completions
-                      incomplete
-                      ienv))
-                  :untagged nil)
-                :untagged
-                (type-struni-tag/members-case
-                  y.tag/members
-                  :tagged nil
-                  :untagged (type-struni-member-list-compatible-p-aux
-                              x.tag/members.members
-                              y.tag/members.members
-                              completions
-                              incomplete
-                              ienv))))
-            :otherwise nil)
-          :union
-          (type-case
-            y
-            :union
-            (if (and x.tunit? y.tunit? (equal x.tunit? y.tunit?))
-                (if (equal (ienv->std ienv) (c::standard-c23))
-                    (type-struni-tag/members-case
-                      x.tag/members
-                      :tagged (type-struni-tag/members-case
-                                y.tag/members
-                                :tagged (equal x.tag/members.tag
-                                               y.tag/members.tag)
-                                :untagged nil)
-                      :untagged (type-struni-tag/members-case
-                                  y.tag/members
-                                  :tagged nil
-                                  :untagged (uid-equal x.uid y.uid)))
-                  (uid-equal x.uid y.uid))
-              (type-struni-tag/members-case
-                x.tag/members
-                :tagged (type-struni-tag/members-case
-                          y.tag/members
-                          :tagged (equal x.tag/members.tag y.tag/members.tag)
-                          :untagged nil)
-                :untagged (type-struni-tag/members-case
-                            y.tag/members
-                            :tagged nil
-                            :untagged t)))
-            :otherwise nil)
-          :array (type-case
-                   y
-                   :array (and (type-compatible-p-aux x.of
-                                                      y.of
-                                                      completions
-                                                      incomplete
-                                                      ienv)
-                               (type-array-kind-compatible-p x.kind y.kind))
-                   :otherwise nil)
-          :pointer (type-case
-                     y
-                     :pointer (type-compatible-p-aux
-                                x.to y.to completions incomplete ienv)
-                     :otherwise nil)
-          :function
-          (type-case
-            y
-            :function
-            (and (type-compatible-p-aux
-                   x.ret y.ret completions incomplete ienv)
-                 (type-params-compatible-p-aux
-                   x.params y.params completions incomplete ienv))
-            :otherwise nil)
-          :otherwise (or (equal (type-fix x) (type-fix y))
-                         (and (type-integerp x) (type-case y :enum))
-                         (and (type-case x :enum) (type-integerp y)))))
-    :measure (two-nats-measure
-              (cardinality
-                (difference
-                  (mergesort (strip-cars (type-completions-fix completions)))
-                  (uid-set-fix incomplete)))
-              (max (type-count x) (type-count y))))
-
-  (define type-struni-member-list-compatible-p-aux
-    ((x type-struni-member-listp)
-     (y type-struni-member-listp)
-     (completions type-completions-p)
-     (incomplete uid-setp)
-     (ienv ienvp))
-    :returns (yes/no booleanp)
-    :short "Check that a list of struct/union members are compatible
-            [C17:6.2.7]."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "This implements the ``correspondence'' check
-       described in @(tsee type-compatible-p-aux)."))
-    (b* (((when (endp x))
-          (endp y))
-         ((when (endp y))
-          nil)
-         ((type-struni-member member-x) (first x))
-         ((type-struni-member member-y) (first y)))
-      (and (equal member-x.name? member-y.name?)
-           (type-compatible-p-aux
-             member-x.type member-y.type completions incomplete ienv)
-           (type-struni-member-list-compatible-p-aux
-             (rest x) (rest y) completions incomplete ienv)))
-    :measure (two-nats-measure
-              (cardinality
-                (difference
-                  (mergesort (strip-cars (type-completions-fix completions)))
-                  (uid-set-fix incomplete)))
-              (max (type-struni-member-list-count x)
-                   (type-struni-member-list-count y))))
-
-  (define type-params-compatible-p-aux ((x type-params-p)
-                                        (y type-params-p)
-                                        (completions type-completions-p)
-                                        (incomplete uid-setp)
-                                        (ienv ienvp))
-    :returns (yes/no booleanp)
-    :short "Check that the parameter portions of two function @(see type)s are
-            compatible [C17:6.2.7]."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "This is the second part of the compatibility check on function types.
-       In addition to the earlier check
-       that the return types must be compatible,
-       the following conditions must also hold."
-      (xdoc::ol
-       (xdoc::li
-        "When both function types correspond to function prototypes,
-         both must have the same number of parameters
-         and each parameter must have compatible type.
-         Furthermore, both must agree on the ellipsis terminator.")
-       (xdoc::li
-        "When one type corresponds to a function prototype
-         and the other is part of an ``old-style'' function definition,
-         each type in the parameter type list of the prototype
-         must be compatible with the corresponding of the old-style function
-         after the latter has gone through default argument promotion.
-         Furthermore, the prototype must not feature an ellipsis terminator.")
-       (xdoc::li
-        "When one type corresponds to a function prototype
-         and the other has an empty identifier list
-         and is not derived from a function definition,
-         the type of each parameter in the function prototype
-         must be compatible with itself after default argument promotion.
-         Furthermore, the prototype must not feature
-         an ellipsis terminator."))
-      "Note that no checks are required
-       when neither function type includes a function prototype;
-       it is sufficient that the two function types
-       have the compatible return types.")
-     (xdoc::p
-      "In the above mention of parameter types,
-       we mean the type after adjustment [C17:6.7.6.3/7-8].
-       This requires no special consideration here,
-       since we always represent function types post-adjustment
-       (see @(see type))."))
-    (type-params-case
-      x
-      :prototype
-      (type-params-case
-        y
-        :prototype (and (type-list-compatible-p-aux
-                          x.params y.params completions incomplete ienv)
-                        (equal x.ellipsis y.ellipsis))
-        :old-style (and (not x.ellipsis)
-                        (type-list-compatible-p-aux
-                          x.params
-                          (type-list-default-arg-promote y.params ienv)
-                          completions
-                          incomplete
-                          ienv))
-        :unspecified (and (not x.ellipsis)
-                          (type-list-compatible-p-aux
-                            x.params
-                            (type-list-default-arg-promote x.params ienv)
-                            completions
-                            incomplete
-                            ienv)))
-      :old-style
-      (type-params-case
-        y
-        :prototype (and (not y.ellipsis)
-                        (type-list-compatible-p-aux
-                          (type-list-default-arg-promote x.params ienv)
-                          y.params
-                          completions
-                          incomplete
-                          ienv))
-        :otherwise t)
-      :unspecified
-      (type-params-case
-        y
-        :prototype (and (not y.ellipsis)
-                        (type-list-compatible-p-aux
-                          y.params
-                          (type-list-default-arg-promote y.params ienv)
-                          completions
-                          incomplete
-                          ienv))
-        :otherwise t))
-    :measure (two-nats-measure
-              (cardinality
-                (difference
-                  (mergesort (strip-cars (type-completions-fix completions)))
-                  (uid-set-fix incomplete)))
-              (max (type-params-count x)
-                   (type-params-count y))))
-
-  (define type-list-compatible-p-aux ((x type-listp)
-                                      (y type-listp)
-                                      (completions type-completions-p)
-                                      (incomplete uid-setp)
-                                      (ienv ienvp))
-    :returns (yes/no booleanp)
-    :short "Check that two @(see type-list)s are compatible [C17:6.2.7]."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Each corresponding pair of elements from the two lists
-       must be compatible.
-       The lists must have the same length."))
-    (if (endp x)
-        (endp y)
-      (and (not (endp y))
-           (type-compatible-p-aux
-             (first x) (first y) completions incomplete ienv)
-           (type-list-compatible-p-aux
-             (rest x) (rest y) completions incomplete ienv)))
-    :measure (two-nats-measure
-              (cardinality
-                (difference
-                  (mergesort (strip-cars (type-completions-fix completions)))
-                  (uid-set-fix incomplete)))
-              (max (type-list-count x)
-                   (type-list-count y))))
-
-  :hints (("Goal" :in-theory (e/d (max
-                                   acl2::member-equal-of-strip-cars-iff
-                                   proper-subset-cardinality-case-split)
-                                  (set::expand-cardinality-of-difference
-                                   set::delete-cardinality
-                                   set::proper-subset-cardinality))))
-  ///
-
-  (fty::deffixequiv-mutual type/type-list-compatible-p-aux)
-
-  (encapsulate ()
-    (local
-      (defthm-type/type-list-compatible-p-aux-flag
-        (defthm type-compatible-p-aux-reflexive-lemma
-          (implies (equal x y)
-                   (type-compatible-p-aux x y completions incomplete ienv))
-          :flag type-compatible-p-aux)
-        (defthm type-struni-member-list-compatible-p-aux-reflexive-lemma
-          (implies (equal x y)
-                   (type-struni-member-list-compatible-p-aux
-                     x y completions incomplete ienv))
-          :flag type-struni-member-list-compatible-p-aux)
-        (defthm type-params-compatible-p-aux-reflexive-lemma
-          (implies (equal x y)
-                   (type-params-compatible-p-aux
-                     x y completions incomplete ienv))
-          :flag type-params-compatible-p-aux)
-        (defthm type-list-compatible-p-aux-reflexive-lemma
-          (implies (equal x y)
-                   (type-list-compatible-p-aux
-                     x y completions incomplete ienv))
-          :flag type-list-compatible-p-aux)))
-
-    (defrule type-compatible-p-aux-reflexive
-      (type-compatible-p-aux x x completions incomplete ienv))
-
-    (defrule type-struni-member-list-compatible-p-aux-reflexive
-      (type-struni-member-list-compatible-p-aux
-        x x completions incomplete ienv))
-
-    (defrule type-params-compatible-p-aux-reflexive
-      (type-params-compatible-p-aux x x completions incomplete ienv))
-
-    (defrule type-list-compatible-p-aux-reflexive
-      (type-list-compatible-p-aux x x completions incomplete ienv)))
-
-  (defthm-type/type-list-compatible-p-aux-flag
-    (defthm type-compatible-p-aux-symmetric
-      (equal (type-compatible-p-aux y x completions incomplete ienv)
-             (type-compatible-p-aux x y completions incomplete ienv))
-      :flag type-compatible-p-aux
-      :hints ('(:expand (type-compatible-p-aux y x completions incomplete ienv))))
-    (defthm type-struni-member-list-compatible-p-aux-symmetric
-      (equal (type-struni-member-list-compatible-p-aux
-               y x completions incomplete ienv)
-             (type-struni-member-list-compatible-p-aux
-               x y completions incomplete ienv))
-      :flag type-struni-member-list-compatible-p-aux)
-    (defthm type-params-compatible-p-aux-symmetric
-      (equal (type-params-compatible-p-aux y x completions incomplete ienv)
-             (type-params-compatible-p-aux x y completions incomplete ienv))
-      :flag type-params-compatible-p-aux)
-    (defthm type-list-compatible-p-aux-symmetric
-      (equal (type-list-compatible-p-aux y x completions incomplete ienv)
-             (type-list-compatible-p-aux x y completions incomplete ienv))
-      :flag type-list-compatible-p-aux)))
-
-(defruled len-when-type-list-compatible-p-aux
-  (implies (type-list-compatible-p-aux x y completions incomplete ienv)
-           (equal (len y)
-                  (len x)))
-  :induct (acl2::cdr-cdr-induct x y)
-  :enable (type-list-compatible-p-aux
-           len))
-
-(defruled consp-when-type-list-compatible-p-aux
-  (implies (type-list-compatible-p-aux x y completions incomplete ienv)
-           (equal (consp y)
-                  (consp x)))
-  :expand (type-list-compatible-p-aux x y completions incomplete ienv))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define type-compatible-p ((x typep)
-                           (y typep)
-                           (completions type-completions-p)
-                           (ienv ienvp))
-  :returns (yes/no booleanp)
-  :short "Check that two @(see type)s are compatible [C17:6.2.7]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Type compatibility is a check that two types are
-     in some sense ``consistent''.
-     Compatibility affects whether a redeclaration is permissible,
-     whether one type may be used when another is expected,
-     and whether two declarations referring to
-     the same object or function are well-defined.")
-   (xdoc::p
-    "Because we currently only model an approximation of C types,
-     our notion of compatibility is also approximate.
-     Specifically, this relation overapproximates true type compatibility.
-     Compatible types should always be recognized as such,
-     but incompatible types may also be recognized.")
-   (xdoc::p
-    "Furthermore, we deliberately weaken our notion of compatibility
-     when comparing certain types across translation units.
-     Specifically, the compatibility rules for @('struct') types
-     require knowing whether a type is completed <i>anywhere</i>
-     in a translation unit [C17:6.2.7/1].
-     To avoid having to delay our compatibility checks,
-     we weaken our definition to instead only require that two types
-     <i>might</i> be compatible under a future extension
-     of the current completions environment.
-     This is consistent with our aforementioned goal
-     of overapproximating true type compatibility.")
-   (xdoc::p
-    "Our approximate notion of type compatibility
-     is established by the following cases:")
-   (xdoc::ul
-    (xdoc::li
-     "If any type is unknown, the types are compatible.
-      The same applies to unknown built-in types.")
-    (xdoc::li
-     "If neither type is unknown or built-in,
-      and one of the types is unknown scalar,
-      then the types are compatible iff
-      the other type is scalar.")
-    (xdoc::li
-     "If neither type is unknown,
-      and one of the types is unknown arithmetic,
-      then the types are compatible iff
-      the other type is arithmetic.")
-    (xdoc::li
-     "Structure type compatibility depends on
-      whether they are declared in the same translation unit.
-      If they are, the only requirement is
-      that the UIDs and tags are the same.
-      The UID establishes that the structs correspond to
-      the same declaration in the same scope [C17:6.7.2.3/4-5].
-      Note that it is expected that two struct types
-      produced by the validator should always have the same tag
-      when they share a UID.
-      If the struct types are declared in different translation units,
-      the restrictions are weaker.
-      We check that the tags are the same and,
-      if both types are complete
-      with respect to the type completion environment,
-      then there is a one-to-one correspondence between struct members.
-      For a member of one struct to correspond with a member of the other,
-      the names must agree and their types must be compatible.
-      We do not yet check member alignment specifiers agree.
-      Furthermore, the members of one struct type
-      must appear in the same order as
-      the corresponding members of the other struct [C17:6.2.7/1].
-      Note that, for the purpose compatibility, anonymous structs/unions
-      are considered regular members of their containing type.
-      (This is not so explicit in C17, but is clarified in [C23:6.2.7/1].)")
-    (xdoc::li
-     "Union type compatibility mirrors struct compatibility,
-      with the exception that
-      corresponding members do not need to appear in the same order
-      when comparing unions across translation units [C17:6.2.7/1].
-      For now, we do not check union members
-      when comparing across translation unit,
-      and instead conservatively accept any two unions with the same tag.")
-    (xdoc::li
-     "Due to their approximate representations,
-      all enumeration types are considered compatible [C17:6.7.2.2/4].")
-    (xdoc::li
-     "Pointer types are compatible if they are derived from compatible types;
-      we do not currently consider whether the types are qualified
-      [C17:6.7.6.1/2].")
-    (xdoc::li
-     "Array types are considered compatible
-      if their element types are compatible.
-      When both outermost array kinds are @(':const-len')
-      and both lengths are known, the lengths must be equal.
-      An @(':incomplete') or @(':nonconst-len') outer kind does not impose
-      an additional static equality requirement
-      [C17:6.7.6.2/6] [C23:6.7.7.3/6].
-      We conservatively regard arrays as compatible
-      when a @(':const-len') length is unknown
-      or an array kind is @(':unknown-complete').
-      We do not check the separate undefined-behavior condition
-      concerning unequal evaluated size specifiers.")
-    (xdoc::li
-     "Enumeration types are considered compatible
-      with <i>all</i> integer types.
-      This is an approximation because the standard says each enumeration type
-      must be compatible with <i>some</i> integer type.
-      However, the particular type is implementation-defined,
-      may vary for different enumeration types [C17:6.7.2.2/4].")
-    (xdoc::li
-     "Function types are considered compatible if
-      their return types are compatible [C17:6.7.6.3/15]
-      and their @(tsee type-params) are compatible
-      (see @(tsee type-params-compatible-p-aux)).")
-    (xdoc::li
-     "For any other case, the types are compatible only if they are equal."))
-   (xdoc::p
-    "Eventually, we shall refine the notion of compatibility,
-     alongside our representation of types,
-     in order to reflect true type compatibility.")
-   (xdoc::p
-    "Finally, we note the perhaps surprising fact that
-     type compatibility is intransitive and therefore
-     not an equivalence relation.
-     For instance, consider the following functions.")
-   (xdoc::codeblock
-    "int foo();"
-    ""
-    "int bar(int x);"
-    ""
-    "int baz(double x);")
-   (xdoc::p
-    "In this example, the types of @('bar') and @('baz')
-     are both compatible with the type of @('foo').
-     However, the types of @('bar') and @('baz')
-     are not compatible with each other.")
-   (xdoc::section
-    "C23 Standard"
-    (xdoc::p
-     "The C23 standard makes various changes to type compatibility,
-      of which we only implement some subset.
-      When the implementation environment specifies the C23 standard,
-      we make the following changes to the C17 type compatibility
-      outlined above.")
-   (xdoc::ul
-    (xdoc::li
-     "Two tagged struct types are compared as if
-      they were declared in separate translation units [C23:6.2.7/1].")
-    (xdoc::li
-     "Two tagged union types are compared as if
-      they were declared in separate translation units [C23:6.2.7/1]."))))
-  (type-compatible-p-aux x y completions nil ienv))
-
-(defrule type-compatible-p-reflexive
-  (type-compatible-p x x completions ienv)
-  :enable type-compatible-p)
-
-(defrule type-compatible-p-symmetric
-  (equal (type-compatible-p y x completions ienv)
-         (type-compatible-p x y completions ienv))
-  :enable type-compatible-p)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defines type/type-list-composite-aux
-  (define type-composite-aux ((x typep)
-                              (y typep)
-                              (composites uid-uid-mapp)
-                              (completions type-completions-p)
-                              (next-uid uidp)
-                              (ienv ienvp)
-                              (count natp))
-    :returns (mv (composite typep)
-                 (new-completions type-completions-p)
-                 (new-next-uid uidp))
-    :short "Auxiliary function for constructing a composite @(see type)
-            [C17:6.2.7/3]."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "See @(tsee type-composite) for a description type composites.")
-     (xdoc::p
-      "The termination argument for this clique is nontrivial.
-       A sufficient measure would be the size of the @('completions') map,
-       with the @(see UID)s from the @('composites') map removed,
-       and restricted to @(see UID)s below @('next-uid').
-       For the moment, we simply add a @('count') argument."))
-    (if (= (the unsigned-byte (lnfix count)) 0)
-        (mv (type-fix x)
-            (type-completions-fix completions)
-            (uid-fix next-uid))
-      (type-case
-        x
-        :struct
-        (type-case
-          y
-          :struct
-          (if (uid-equal x.uid y.uid)
-              (mv (type-fix x)
-                  (type-completions-fix completions)
-                  (uid-fix next-uid))
-            (type-struni-tag/members-case
-              x.tag/members
-              :tagged
-              (type-struni-tag/members-case
-                y.tag/members
-                :tagged
-                (b* ((composites (uid-uid-mfix composites))
-                     (completions (type-completions-fix completions))
-                     ((mv x-foundp x-composite)
-                      (treemap::lookup? x.uid composites))
-                     ((mv y-foundp y-composite)
-                      (treemap::lookup? y.uid composites))
-                     ((when (and x-foundp
-                                 y-foundp
-                                 (equal x-composite y-composite)))
-                      (mv (make-type-struct
-                            :uid x-composite
-                            :tunit? nil
-                            :tag/members x.tag/members)
-                          completions
-                          (uid-fix next-uid)))
-                     (x-members? (hons-get x.uid completions))
-                     (y-members? (hons-get y.uid completions))
-                     ((unless (consp x-members?))
-                      (mv (type-fix y)
-                          completions
-                          (uid-fix next-uid)))
-                     ((unless (consp y-members?))
-                      (mv (type-fix x)
-                          completions
-                          (uid-fix next-uid)))
-                     (composite-uid (uid-fix next-uid))
-                     (next-uid (uid-increment next-uid))
-                     (composites
-                       (treemap::update x.uid
-                                        composite-uid
-                                        (treemap::update y.uid
-                                                         composite-uid
-                                                         composites)))
-                     ((mv members-composite completions next-uid)
-                      (type-struni-member-list-composite-aux
-                        (cdr x-members?)
-                        (cdr y-members?)
-                        composites
-                        completions
-                        next-uid
-                        ienv
-                        (- (the unsigned-byte count) 1)))
-                     (completions (hons-acons composite-uid
-                                              members-composite
-                                              completions)))
-                  (mv (make-type-struct
-                        :uid composite-uid
-                        :tunit? nil
-                        :tag/members x.tag/members)
-                      completions
-                      next-uid))
-                :untagged
-                (mv (type-fix x)
-                    (type-completions-fix completions)
-                    (uid-fix next-uid)))
-              :untagged
-              (type-struni-tag/members-case
-                y.tag/members
-                :tagged
-                (mv (type-fix x)
-                    (type-completions-fix completions)
-                    (uid-fix next-uid))
-                :untagged
-                (b* ((composite-uid next-uid)
-                     (next-uid (uid-increment next-uid))
-                     ((mv members-composite completions next-uid)
-                      (type-struni-member-list-composite-aux
-                        x.tag/members.members
-                        y.tag/members.members
-                        composites
-                        completions
-                        next-uid
-                        ienv
-                        (- (the unsigned-byte count) 1))))
-                  (mv (make-type-struct
-                        :uid composite-uid
-                        :tunit? nil
-                        :tag/members (type-struni-tag/members-untagged
-                                       members-composite))
-                      completions
-                      next-uid)))))
-          :unknown (mv (type-fix x)
-                       (type-completions-fix completions)
-                       (uid-fix next-uid))
-          :unknown-builtin (mv (type-fix x)
-                               (type-completions-fix completions)
-                               (uid-fix next-uid))
-          :otherwise (mv (irr-type)
-                         (type-completions-fix completions)
-                         (uid-fix next-uid)))
-        :union (mv (type-fix x)
-                   (type-completions-fix completions)
-                   (uid-fix next-uid))
-        :array
-        (type-case
-          y
-          :array (b* (((mv of-type completions next-uid)
-                       (type-composite-aux x.of
-                                           y.of
-                                           composites
-                                           completions
-                                           next-uid
-                                           ienv
-                                           (- (the unsigned-byte count) 1)))
-                      (kind (type-array-kind-composite x.kind y.kind)))
-                   (mv (make-type-array :of of-type :kind kind)
-                       completions
-                       next-uid))
-          :unknown (mv (type-fix x)
-                       (type-completions-fix completions)
-                       (uid-fix next-uid))
-          :unknown-builtin (mv (type-fix x)
-                               (type-completions-fix completions)
-                               (uid-fix next-uid))
-          :otherwise (mv (irr-type)
-                         (type-completions-fix completions)
-                         (uid-fix next-uid)))
-        :pointer
-        (type-case
-          y
-          :pointer (b* (((mv to-type completions next-uid)
-                         (type-composite-aux x.to
-                                             y.to
-                                             composites
-                                             completions
-                                             next-uid
-                                             ienv
-                                             (- (the unsigned-byte count) 1))))
-                     (mv (make-type-pointer :to to-type)
-                         completions
-                         next-uid))
-          :unknown (mv (type-fix x)
-                       (type-completions-fix completions)
-                       (uid-fix next-uid))
-          :unknown-builtin (mv (type-fix x)
-                               (type-completions-fix completions)
-                               (uid-fix next-uid))
-          :unknown-scalar (mv (type-fix x)
-                              (type-completions-fix completions)
-                              (uid-fix next-uid))
-          :otherwise (mv (irr-type)
-                         (type-completions-fix completions)
-                         (uid-fix next-uid)))
-        :function
-        (type-case
-          y
-          :function
-          (b* (((mv ret-type completions next-uid)
-                (type-composite-aux x.ret
-                                    y.ret
-                                    composites
-                                    completions
-                                    next-uid
-                                    ienv
-                                    (- (the unsigned-byte count) 1)))
-               ((mv params completions next-uid)
-                (type-params-composite-aux x.params
-                                           y.params
-                                           composites
-                                           completions
-                                           next-uid
-                                           ienv
-                                           (- (the unsigned-byte count) 1))))
-            (mv (make-type-function :ret ret-type :params params)
-                completions
-                next-uid))
-          :unknown (mv (type-fix x)
-                       (type-completions-fix completions)
-                       (uid-fix next-uid))
-          :unknown-builtin (mv (type-fix x)
-                               (type-completions-fix completions)
-                               (uid-fix next-uid))
-          :otherwise (mv (irr-type)
-                         (type-completions-fix completions)
-                         (uid-fix next-uid)))
-        :unknown (mv (type-fix y)
-                     (type-completions-fix completions)
-                     (uid-fix next-uid))
-        :unknown-builtin (mv (if (type-case y :unknown)
-                                   (type-fix x)
-                                 (type-fix y))
-                               (type-completions-fix completions)
-                               (uid-fix next-uid))
-        :unknown-scalar (mv (if (type-case y '(:unknown :unknown-builtin))
-                                (type-fix x)
-                              (type-fix y))
-                            (type-completions-fix completions)
-                            (uid-fix next-uid))
-        :unknown-arithmetic (mv (if (type-case y '(:unknown
-                                                   :unknown-builtin
-                                                   :unknown-scalar))
-                                (type-fix x)
-                              (type-fix y))
-                                (type-completions-fix completions)
-                                (uid-fix next-uid))
-        :otherwise (mv (type-fix x)
-                       (type-completions-fix completions)
-                       (uid-fix next-uid))))
-    :measure (nfix count))
-
-    (define type-struni-member-list-composite-aux
-      ((x type-struni-member-listp)
-       (y type-struni-member-listp)
-       (composites uid-uid-mapp)
-       (completions type-completions-p)
-       (next-uid uidp)
-       (ienv ienvp)
-       (count natp))
-    :returns (mv (composite type-struni-member-listp)
-                 (new-completions type-completions-p)
-                 (new-next-uid uidp))
-    :short "Construct a composite @(tsee type-struni-member-list)."
-    (b* (((when (or (endp x) (endp y) (= (the unsigned-byte (lnfix count)) 0)))
-          (mv nil (type-completions-fix completions) (uid-fix next-uid)))
-         ((mv first-type completions next-uid)
-          (type-composite-aux (type-struni-member->type (first x))
-                              (type-struni-member->type (first y))
-                              composites
-                              completions
-                              next-uid
-                              ienv
-                              (- (the unsigned-byte count) 1)))
-         (first-member (change-type-struni-member
-                         (first x)
-                         :type first-type))
-         ((mv rest-members completions next-uid)
-          (type-struni-member-list-composite-aux
-            (rest x)
-            (rest y)
-            composites
-            completions
-            next-uid
-            ienv
-            (- (the unsigned-byte count) 1))))
-      (mv (cons first-member rest-members)
-          completions
-          next-uid))
-    :measure (nfix count))
-
-  (define type-params-composite-aux ((x type-params-p)
-                                     (y type-params-p)
-                                     (composites uid-uid-mapp)
-                                     (completions type-completions-p)
-                                     (next-uid uidp)
-                                     (ienv ienvp)
-                                     (count natp))
-    :returns (mv (composite type-params-p)
-                 (new-completions type-completions-p)
-                 (new-next-uid uidp))
-    :short "Construct a composite of the @(tsee type-params) portion of a
-            function @(see type)."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "If both function types are prototypes,
-       the result is a prototype whose parameter lists consists of
-       the composite type of each parameter [C17:6.2.7/3].")
-     (xdoc::p
-      "If one function type is a prototype and the other is not,
-       the composite is a prototype with the prototype function type's
-       parameter types [C17:6.2.7/3].")
-     (xdoc::p
-      "If neither function type is a prototype,
-       the composite is unconstrained except by the general restriction
-       that it is compatible with both function types.
-       In this case,
-       we arbitrarily choose the function type with more information
-       (i.e. an old-style function type)."))
-    (if (= (the unsigned-byte (lnfix count)) 0)
-        (mv (type-params-fix x)
-            (type-completions-fix completions)
-            (uid-fix next-uid))
-      (type-params-case
-        x
-        :prototype
-        (type-params-case
-          y
-          :prototype
-          (b* (((mv param-types completions next-uid)
-                (type-list-composite-aux x.params
-                                         y.params
-                                         composites
-                                         completions
-                                         next-uid
-                                         ienv
-                                         (- (the unsigned-byte count) 1))))
-            (mv (make-type-params-prototype
-                  :params param-types
-                  :ellipsis x.ellipsis)
-                completions
-                next-uid))
-          :otherwise (mv (type-params-fix x)
-                         (type-completions-fix completions)
-                         (uid-fix next-uid)))
-        :old-style (mv (type-params-case
-                         y
-                         :prototype (type-params-fix y)
-                         ;; TODO: we could consider creating a better composite when
-                         ;; both are :old-style which could resolve some unknowns.
-                         :otherwise (type-params-fix x))
-                       (type-completions-fix completions)
-                       (uid-fix next-uid))
-        :unspecified (mv (type-params-fix y)
-                         (type-completions-fix completions)
-                         (uid-fix next-uid))))
-    :measure (nfix count))
-
-  (define type-list-composite-aux ((x type-listp)
-                                   (y type-listp)
-                                   (composites uid-uid-mapp)
-                                   (completions type-completions-p)
-                                   (next-uid uidp)
-                                   (ienv ienvp)
-                                   (count natp))
-    :returns (mv (composite type-listp)
-                 (new-completions type-completions-p)
-                 (new-next-uid uidp))
-    :short "Construct a composite @(tsee type-list)."
-    (b* (((when (or (endp x) (endp y) (= (the unsigned-byte (lnfix count)) 0)))
-          (mv nil (type-completions-fix completions) (uid-fix next-uid)))
-         ((mv first-type completions next-uid)
-          (type-composite-aux (first x)
-                              (first y)
-                              composites
-                              completions
-                              next-uid
-                              ienv
-                              (- (the unsigned-byte count) 1)))
-         ((mv rest-types completions next-uid)
-          (type-list-composite-aux (rest x)
-                                   (rest y)
-                                   composites
-                                   completions
-                                   next-uid
-                                   ienv
-                                   (- (the unsigned-byte count) 1))))
-      (mv (cons first-type rest-types)
-          completions
-          next-uid))
-    :measure (nfix count))
-
-  :verify-guards :after-returns
-  ///
-
-  (fty::deffixequiv-mutual type/type-list-composite-aux))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define type-composite ((x typep)
-                        (y typep)
-                        (completions type-completions-p)
-                        (next-uid uidp)
-                        (ienv ienvp))
-  :returns (mv (composite typep)
-               (new-completions type-completions-p)
-               (new-next-uid uidp))
-  :short "Construct a composite @(see type) [C17:6.2.7/3]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "In our approximate type system,
-     a composite type is a type that is compatible with both input types,
-     which must be compatible with each other
-     (we plan to add a guard for that).
-     For function types, further constraints apply.
-     See @(tsee type-params-composite-aux).")
-   (xdoc::p
-    "When taking the composite of one of the unknown type variants
-     with any other type,
-     we take the more specific type as the composite.
-     This choice is consistent with the general pattern
-     of constraints outlined by the standard
-     (e.g., when taking the composite of two arrays,
-     one of known constant size and the other of unknown size,
-     the composite has the known size
-     [C17:6.2.7/3] [C23:6.2.7/3])."))
-  (type-composite-aux x
-                      y
-                      (treemap::empty)
-                      completions
-                      next-uid
-                      ienv
-                      (the (unsigned-byte 60) (1- (expt 2 60)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2723,7 +1926,7 @@
     (make-type-pointer :to (make-pointers-to (rest pointers) type)))
   :verify-guards :after-returns)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-array-change-kind-at-depth ((type typep)
                                          (depth natp)

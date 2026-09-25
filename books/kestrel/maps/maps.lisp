@@ -24,20 +24,9 @@
 
 (include-book "maps0")
 (include-book "../sets/sets")
+(include-book "rkeys-def")
 
-(defun key-set (r)
-  (declare (xargs :guard (rcdp r)))
-  (if (consp r)
-      (set::insert (caar r)
-                   (key-set (cdr r)))
-    (set::emptyset)))
 
-(defthm setp-key-set
-  (set::setp (key-set r)))
-
-(defun rkeys (r)
-  (declare (type t r))
-  (key-set (acl2->rcd r)))
 
 (defthm true-list-p-of-rkeys
   (true-listp (rkeys r))
@@ -289,10 +278,7 @@
                   nil)))
 
 
-;return the keys of the map as a list
-(defun key-list (map)
-  (declare (type t map))
-  (set::2list (rkeys map)))
+
 
 ;fixme flesh out - or use a different version of maps
 (defund mapp (map)

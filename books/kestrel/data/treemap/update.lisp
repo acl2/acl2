@@ -249,7 +249,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule submap-of-update
+(defrule submap-of-update-when-submap
   (implies (submap x y)
            (equal (submap (update key val x) y)
                   (and (treeset::in key (keys y))
