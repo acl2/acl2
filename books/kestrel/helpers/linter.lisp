@@ -91,6 +91,7 @@
 (include-book "kestrel/terms-light/get-hyps-and-conc" :dir :system)
 (include-book "kestrel/world-light/fn-primitivep" :dir :system)
 (include-book "kestrel/world-light/defs-in-world" :dir :system)
+(include-book "kestrel/terms-light/make-conjunction-from-list" :dir :system)
 (local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
