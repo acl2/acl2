@@ -330,7 +330,10 @@
        (pred-of-fix (acl2::packn-pos (list x.pred '-of- x.fix) x.name))
        (fix-when-pred (acl2::packn-pos (list x.fix '-when- x.pred) x.name))
        (emptyp-fix (acl2::packn-pos (list 'treeset::emptyp- x.fix) x.name))
-       (emptyp-of-fix (acl2::packn-pos (list 'treeset::emptyp-of- x.fix) x.name)))
+       (emptyp-of-fix (acl2::packn-pos (list 'treeset::emptyp-of- x.fix) x.name))
+       (subset-of-fix
+        (acl2::packn-pos (list 'treeset::subset-of- x.fix) x.name))
+       (yv (intern-in-package-of-symbol "Y" x.name)))
     (if x.fix-already-definedp
         '(progn)
       `(define ,x.fix ((,x.xvar ,x.pred))
@@ -355,7 +358,17 @@
            (equal (treeset::emptyp (,x.fix ,x.xvar))
                   (or (not (,x.pred ,x.xvar))
                       (treeset::emptyp ,x.xvar)))
-           :enable treeset::emptyp-of-empty)))))
+           :enable treeset::emptyp-of-empty)
+         (defrule ,subset-of-fix
+           (implies (treeset::subset ,x.xvar ,yv)
+                    (treeset::subset (,x.fix ,x.xvar) ,yv))
+           :use ((:instance
+                  (:functional-instance treeset::subset-of-generic-fix
+                                        (treeset::genericp ,x.pred)
+                                        (treeset::generic-fix ,x.fix))
+                  (treeset::set ,x.xvar)
+                  (treeset::y ,yv)))
+           :enable ,x.fix)))))
 
 (define flextreeset-fix-when-pred-thm (x flagp)
   :mode :program
