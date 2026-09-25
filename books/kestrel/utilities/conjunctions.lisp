@@ -21,18 +21,6 @@
 (include-book "kestrel/terms-light/get-conjuncts" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
-;; See also the built-in function conjoin.  It handles T and NIL specially but
-;; does not preserve EQUAL, only IFF (e.g., (conjoin (list ''3 ''t)) gives '3).
-(defun make-conjunction-from-list (lst)
-  (declare (xargs :guard (true-listp lst)))
-  (if (endp lst)
-      *t*
-    (if (endp (rest lst))
-        (first lst)
-      `(if ,(first lst)
-           ,(make-conjunction-from-list (rest lst))
-         'nil))))
-
 ;; Return a list of terms equivalent (in the sense of IFF -- or perhaps EQUAL?)
 ;; to the conjunction of TERMS, by flattening (translated) conjunctions (which
 ;; will be calls to IF).  TODO: Also handle (if x 'nil y).  TODO: Look at

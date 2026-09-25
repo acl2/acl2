@@ -16,6 +16,7 @@
 (include-book "dagify0")
 (include-book "rewriter")
 (include-book "kestrel/utilities/ints-in-range" :dir :system)
+(include-book "kestrel/terms-light/make-conjunction-from-list" :dir :system)
 ;(include-book "kestrel/alists-light/lookup" :dir :system)
 ;(include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))

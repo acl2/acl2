@@ -36,6 +36,7 @@
 (include-book "jvm/axe-syntaxp-evaluator-jvm")
 (include-book "jvm/axe-bind-free-evaluator-jvm")
 (include-book "kestrel/acl2-arrays/print-array" :dir :system)
+(include-book "kestrel/terms-light/make-conjunction-from-list" :dir :system)
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))

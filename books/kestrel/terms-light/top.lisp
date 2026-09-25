@@ -56,6 +56,7 @@
 (include-book "function-call-subterms")
 (include-book "count-occurrences-in-term")
 (include-book "no-nils-in-termp")
+(include-book "make-conjunction-from-list")
 (include-book "get-conjuncts")
 (include-book "get-conjuncts-proofs")
 (include-book "get-hyps-and-conc")
