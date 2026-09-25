@@ -107,7 +107,7 @@
            ((when erp) (mv erp *nil* nil state))
            ;; TODO: Consider extracting hyps from bit-valued terms:
            ((mv assumptions term)
-            (term-hyps-and-conc term))
+            (get-hyps-and-conc term))
            ;; Create the DAG for the conclusion:
            ((mv erp dag) (dagify-term term))
            ((when erp) (mv erp nil nil state)))
