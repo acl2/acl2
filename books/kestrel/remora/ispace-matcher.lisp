@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-derived-fixtypes")
+(include-book "ispace-equivalence-checker")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -29,6 +30,52 @@
      or perhaps we will add a separate unifier."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define remove1-equiv-dim ((dim dimp) (dims dim-listp))
+  :returns (mv (foundp booleanp) (new-dims dim-listp))
+  :short "Remove from a list of dimensions
+          the first one equivalent to a given dimension, if any."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like ACL2's @('remove1-equal'),
+     but modulo dimension equivalence (see @(tsee dim-equivp)).
+     We also return a flag saying whether an equivalent dimension was found;
+     if not, the list is returned unchanged."))
+  (b* (((when (endp dims)) (mv nil nil))
+       ((when (dim-equivp dim (car dims)))
+        (mv t (dim-list-fix (cdr dims))))
+       ((mv foundp new-dims) (remove1-equiv-dim dim (cdr dims))))
+    (mv foundp (cons (dim-fix (car dims)) new-dims))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define remove1-equiv-dims ((dims1 dim-listp) (dims2 dim-listp))
+  :returns (mv (okp booleanp) (new-dims dim-listp))
+  :short "Remove from a list of dimensions
+          one dimension equivalent to each dimension of another list."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We go through the first list,
+     removing from the second list, via @(tsee remove1-equiv-dim),
+     one dimension equivalent to each dimension of the first list.
+     If some dimension of the first list has no equivalent dimension
+     in what remains of the second list, we fail:
+     we return @('nil') as the flag,
+     and also as the list, which is irrelevant in that case.
+     Otherwise, we return @('t') and what remains of the second list.")
+   (xdoc::p
+    "This amounts to checking that the first list is included
+     in the second list as a multiset (i.e. counting repetitions),
+     modulo dimension equivalence,
+     and to returning the multiset difference if so."))
+  (b* (((when (endp dims1)) (mv t (dim-list-fix dims2)))
+       ((mv foundp dims2) (remove1-equiv-dim (car dims1) dims2))
+       ((unless foundp) (mv nil nil)))
+    (remove1-equiv-dims (cdr dims1) dims2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -16,6 +16,71 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Tests of REMOVE1-EQUIV-DIM and REMOVE1-EQUIV-DIMS.
+; Each test compares the two results (flag and list of dimensions)
+; with the expected ones.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The first dimension equivalent to the given one is removed;
+; the other ones are kept, including later equivalent ones.
+
+(assert-equal
+ (mv-list 2 (remove1-equiv-dim (dim-var "k")
+                               (list (dim-var "l")
+                                     (dim-var "k")
+                                     (dim-var "k"))))
+ (list t (list (dim-var "l") (dim-var "k"))))
+
+; The equivalence is modulo normalization.
+
+(assert-equal
+ (mv-list 2 (remove1-equiv-dim (dim-add (list (dim-var "k") (dim-const 1)))
+                               (list (dim-add (list (dim-const 1)
+                                                    (dim-var "k"))))))
+ (list t nil))
+
+; If no dimension is equivalent, the flag is nil and the list is unchanged.
+
+(assert-equal
+ (mv-list 2 (remove1-equiv-dim (dim-var "k")
+                               (list (dim-var "l") (dim-const 3))))
+ (list nil (list (dim-var "l") (dim-const 3))))
+
+(assert-equal
+ (mv-list 2 (remove1-equiv-dim (dim-var "k") nil))
+ (list nil nil))
+
+; One dimension is removed for each dimension of the first list,
+; counting repetitions.
+
+(assert-equal
+ (mv-list 2 (remove1-equiv-dims (list (dim-var "k") (dim-const 3))
+                                (list (dim-const 3)
+                                      (dim-var "l")
+                                      (dim-var "k"))))
+ (list t (list (dim-var "l"))))
+
+(assert-equal
+ (mv-list 2 (remove1-equiv-dims (list (dim-var "k") (dim-var "k"))
+                                (list (dim-var "k")
+                                      (dim-var "k")
+                                      (dim-var "l"))))
+ (list t (list (dim-var "l"))))
+
+(assert-equal
+ (mv-list 2 (remove1-equiv-dims (list (dim-var "k") (dim-var "k"))
+                                (list (dim-var "k") (dim-var "l"))))
+ (list nil nil))
+
+; An empty first list removes nothing.
+
+(assert-equal
+ (mv-list 2 (remove1-equiv-dims nil (list (dim-var "k"))))
+ (list t (list (dim-var "k"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Tests of DIM-MATCH and DIM-LIST-MATCH.
 ; Each test compares the two results (success flag and substitution)
 ; with the expected ones.
