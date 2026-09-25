@@ -11,7 +11,8 @@
 ; the rewriter returned (dumb-negate-lit rewritten-test), which for a test
 ; (not p) is p.  That is only iff-equivalent to the Boolean (not (not p)), yet
 ; it was returned even where the result had to be equal to the original term.
-; Now that shortcut is taken only where iff-equivalence suffices.
+; Now that shortcut is taken only where iff-equivalence suffices, or where the
+; result is known by type reasoning to be Boolean.
 
 (in-package "ACL2")
 
@@ -37,5 +38,17 @@
 ; In an iff context the shortcut is still sound, and is still taken.
 (defthm implies-not-p-nil-iff-p
   (iff (implies (not p) nil) p)
+  :hints (("Goal" :do-not '(preprocess)))
+  :rule-classes nil)
+
+; The shortcut is also still taken when the result is known to be Boolean, here
+; by the type-prescription rule for F.  (Example from Matt Kaufmann.)
+(defun f (x)
+  (consp x))
+
+(in-theory (disable f))
+
+(defthm implies-not-f-nil-is-f
+  (equal (implies (not (f x)) nil) (f x))
   :hints (("Goal" :do-not '(preprocess)))
   :rule-classes nil)

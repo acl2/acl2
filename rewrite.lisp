@@ -16718,17 +16718,26 @@ its attachment is ignored during proofs"))))
 
 ; (Implies test nil) is (not test), which is Boolean.  But dumb-negate-lit may
 ; return a non-Boolean term, for example p for (not p), which is only
-; iff-equivalent to (not rewritten-test).  So as in the (quotep rewritten-test)
-; case below, we use it only when iff refines geneqv.
+; iff-equivalent to (not rewritten-test).  So we use it only when iff refines
+; geneqv or it is known to be Boolean.
 
-                    (let ((rune (geneqv-refinementp 'iff geneqv wrld)))
+                    (let ((neg (dumb-negate-lit rewritten-test))
+                          (rune (geneqv-refinementp 'iff geneqv wrld)))
                       (cond
                        (rune (mv step-limit
-                                 (dumb-negate-lit rewritten-test)
+                                 neg
                                  (push-lemma rune ttree)))
-                       (t (mv step-limit
-                              (fcons-term* 'not rewritten-test)
-                              ttree)))))
+                       (t (mv-let
+                            (ts ts-ttree)
+                            (type-set neg (ok-to-force rcnst) nil type-alist
+                                      (access rewrite-constant rcnst
+                                              :current-enabled-structure)
+                                      wrld ttree nil nil)
+                            (cond ((ts-subsetp ts *ts-boolean*)
+                                   (mv step-limit neg ts-ttree))
+                                  (t (mv step-limit
+                                         (fcons-term* 'not rewritten-test)
+                                         ttree))))))))
                    ((or (quotep rewritten-concl) ; not *nil*
                         (equal rewritten-test rewritten-concl))
                     (mv step-limit *t* ttree))
