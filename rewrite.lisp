@@ -16732,7 +16732,9 @@ its attachment is ignored during proofs"))))
                             (type-set neg (ok-to-force rcnst) nil type-alist
                                       (access rewrite-constant rcnst
                                               :current-enabled-structure)
-                                      wrld ttree nil nil)
+                                      wrld ttree
+                                      simplify-clause-pot-lst
+                                      (access rewrite-constant rcnst :pt))
                             (cond ((ts-subsetp ts *ts-boolean*)
                                    (mv step-limit neg ts-ttree))
                                   (t (mv step-limit
