@@ -47,7 +47,12 @@
                   (nat-set-p (treeset::empty))
                   (not (nat-set-p (treeset::insert 'a (treeset::empty))))
                   (not (nat-set-p 7))
-                  (equal (nat-set-fix s) s)))))
+                  (equal (nat-set-fix s) s))))
+  ;; The fixer is bounded by any bound of its argument.
+  (defthm subset-of-nat-set-fix-test
+    (implies (treeset::subset x y)
+             (treeset::subset (nat-set-fix x) y))
+    :hints (("Goal" :in-theory '(subset-of-nat-set-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

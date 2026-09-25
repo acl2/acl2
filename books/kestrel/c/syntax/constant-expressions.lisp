@@ -64,9 +64,7 @@
        ((unless (expr-annop expr))
         :unknown)
        (type (expr-type expr)))
-    (cond ((type-integerp type) t)
-          ((type-some-unknownp type) :unknown)
-          (t nil))))
+    (type-integer-3p type)))
 
 (define expr-arithmetic-type-3p ((expr exprp))
   :guard (expr-unambp expr)
@@ -74,10 +72,7 @@
   :short "Three-valued check of whether an expression has arithmetic type."
   (if (expr-annop expr)
       (b* ((type (expr-type expr)))
-        (cond ((type-arithmeticp type) t)
-              ((type-case type '(:unknown :unknown-builtin :unknown-scalar))
-               :unknown)
-              (t nil)))
+        (type-arithmetic-3p type))
     :unknown))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -87,9 +82,7 @@
   :short "Three-valued check of whether a type name denotes an integer type."
   (if (tyname-annop tyname)
       (b* ((type (type-vinfo->type (tyname->info tyname))))
-        (cond ((type-integerp type) t)
-              ((type-some-unknownp type) :unknown)
-              (t nil)))
+        (type-integer-3p type))
     :unknown))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

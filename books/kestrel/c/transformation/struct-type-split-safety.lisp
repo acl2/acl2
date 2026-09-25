@@ -342,10 +342,10 @@
                              no information for ~x0 in ~x1."
                             tystr-tag/mems.tag vtable))
                     (uid (c$::valid-tag-info->uid info))
-                    (members?
-                     (hons-get uid (c$::type-completions-fix completions)))
-                    ((unless members?) nil)
-                    (members (cdr members?))
+                    ((mv foundp members)
+                     (treemap::lookup? uid
+                                       (c$::type-completions-fix completions)))
+                    ((unless foundp) nil)
                     (tags (treeset::insert tystr-tag/mems.tag
                                            (ident-set-fix tags))))
                  (type-struni-member-list-may-refer-to-struct-spec-p
@@ -683,10 +683,10 @@
                              no information for ~x0 in ~x1."
                             tystr-tag/mems.tag vtable))
                     (uid (c$::valid-tag-info->uid info))
-                    (members?
-                     (hons-get uid (c$::type-completions-fix completions)))
-                    ((unless members?) t)
-                    (members (cdr members?))
+                    ((mv foundp members)
+                     (treemap::lookup? uid
+                                       (c$::type-completions-fix completions)))
+                    ((unless foundp) t)
                     (tags (treeset::insert tystr-tag/mems.tag
                                            (ident-set-fix tags))))
                  (type-struni-member-list-sts-safep members

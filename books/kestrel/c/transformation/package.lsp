@@ -27,7 +27,9 @@
                                     type
                                     typep))
                c$::*exported-symbols*
-               '(bool
+               '(3definitely
+                 3possibly
+                 bool
                  constant-symbolp
                  constant-value
                  defirrelevant
