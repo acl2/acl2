@@ -110050,6 +110050,9 @@ it."
  <li>the @(see well-founded-relation) in checking redundancy of a @('defun');
  see @('system/tests/wfr-redundancy.lisp');</li>
 
+ <li>the value of the @(see xargs) keyword, @(':')@(tsee loop$-recursion), in
+ checking redundancy of a @('defun');</li>
+
  <li>the measure and the verify-guards status in checking redundancy of a
  @('defun-nx') event or other @(see non-executable) definition; see
  @('system/tests/nx2.lisp') and
@@ -110187,6 +110190,12 @@ it."
  For an example, see @(see community-book)
  @('system/tests/congruence-same-var.lisp').  Thanks to Grant Jurgensen for
  supplying the bug fix.</p>
+
+ <p>Fixed a soundness bug in the application of @(tsee mfc-relieve-hyp), which
+ could cause it to succeed inappropriately when violating the documented
+ restriction that the given hypothesis must not have free variables (see @(see
+ extended-metafunctions)).  For an example, see @(see community-book)
+ @('system/tests/meta-extract-relieve-hyp.lisp').</p>
 
  <h3>Other Bug Fixes</h3>
 
@@ -129432,11 +129441,11 @@ work on <tt>(q x)</tt>.</p>
  macroexpansion), and with the same values @(see declare)d for the @(':')@(tsee
  guard), @(':')@(tsee measure), @(':')@(tsee well-founded-relation), types,
  @(':')@(tsee ruler-extenders), @(':non-executable'), @(':type-prescription'),
- @(':')@(tsee stobj)@('s'), and @(':')@(tsee split-types), provided that the
- @(see defun-mode)s are appropriate (see the ``Note About Appropriate Modes''
- below).  Moreover, the order of the combined @(':')@(tsee guard) and type
- declarations must be the same in both cases.  Exceptions and
- clarifications:</p>
+ @(':')@(tsee stobj)@('s'), @(':')@(tsee loop$-recursion), and @(':')@(tsee
+ split-types), provided that the @(see defun-mode)s are appropriate (see the
+ ``Note About Appropriate Modes'' below).  Moreover, the order of the combined
+ @(':')@(tsee guard) and type declarations must be the same in both cases.
+ Exceptions and clarifications:</p>
 
  <ol>
 
