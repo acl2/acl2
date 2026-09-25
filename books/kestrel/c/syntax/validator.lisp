@@ -2287,6 +2287,9 @@
              ((mv composite vstate)
               (vstate-make-type-composite type2 type3 vstate)))
           (retok composite vstate)))
+       ((when (and (type-case type2 :void)
+                   (type-case type3 :void)))
+        (retok (type-void) (vstate-fix vstate)))
        ((when (and (type-case type2 :pointer)
                    (3possibly
                     (type-compatible-3p type2
