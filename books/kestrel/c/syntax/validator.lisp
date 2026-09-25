@@ -2233,6 +2233,11 @@
      or one pointer type and the other operand a null pointer constant,
      or one pointer to an object type and one pointer to @('void')
      [C17:6.5.15/3].
+     As a GCC and Clang extension,
+     just one of the two operands may have the void type:
+     this does not seem to be documented,
+     but both compilers accept it
+     and give the result the void type.
      Currently, null pointer constants [C17:6.3.2.3/3] are approximated as any
      expression with an integer type.
      The type of the result is
@@ -2255,6 +2260,12 @@
         (retmsg$ "In the conditional expression ~x0, ~
                   the first operand has type ~x1."
                  (expr-fix expr) (type-fix type-test)))
+       ((when (if (ienv->gcc/clang ienv)
+                  (or (type-case type2 :void)
+                      (type-case type3 :void))
+                (and (type-case type2 :void)
+                     (type-case type3 :void))))
+        (retok (type-void) (vstate-fix vstate)))
        ((when (or (type-case type2 :unknown-scalar)
                   (type-case type3 :unknown-scalar)))
         (retok (type-unknown-scalar) (vstate-fix vstate)))
@@ -2287,9 +2298,6 @@
              ((mv composite vstate)
               (vstate-make-type-composite type2 type3 vstate)))
           (retok composite vstate)))
-       ((when (and (type-case type2 :void)
-                   (type-case type3 :void)))
-        (retok (type-void) (vstate-fix vstate)))
        ((when (and (type-case type2 :pointer)
                    (3possibly
                     (type-compatible-3p type2

@@ -2140,3 +2140,17 @@ void * g(void) {
   x ? (void)0 : (void)0;
 }
 ")
+
+;; GCC and Clang also allow just one of the operands to have void type.
+(test-valid
+ "void f(int x) {
+  x ? (void)0 : 0;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "void f(int x) {
+  x ? (void)0 : 0;
+}
+")
