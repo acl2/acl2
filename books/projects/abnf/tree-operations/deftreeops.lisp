@@ -297,6 +297,7 @@
   :keyp-of-nil nil
   :valp-of-nil nil
   :pred deftreeops-rulename-info-alistp
+
   ///
 
   (defrule deftreeops-rulename-infop-when-deftreeops-rulename-info-alistp
@@ -362,6 +363,7 @@
   :keyp-of-nil nil
   :valp-of-nil nil
   :pred deftreeops-charval-info-alistp
+
   ///
 
   (defrule deftreeops-charval-infop-when-deftreeops-charval-info-alistp
@@ -1003,6 +1005,7 @@
           (terms (deftreeops-gen-discriminant-terms-aux1 alt))
           ((unless terms) nil))
        (cons term terms))
+
      ///
 
      (defret len-of-deftreeops-gen-discriminant-terms-aux1
@@ -1051,6 +1054,7 @@
                       (nth 0 (nth 0 (tree-nonleaf->branches cst)))
                       :nonleaf)))
              (t nil)))
+
      ///
 
      (defret len-of-deftreeops-gen-discriminant-terms-aux2
