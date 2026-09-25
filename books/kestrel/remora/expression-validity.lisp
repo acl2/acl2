@@ -154,7 +154,14 @@
      which form the input and output types of the function type.
      The input type must be valid and array-kinded.
      The body must be valid, and have the output type,
-     in the environment augmented with the parameter."))
+     in the environment augmented with the parameter.")
+   (xdoc::p
+    "For a type lambda abstraction,
+     the body must be valid in the environment augmented with the parameter,
+     and the abstraction has the universal type
+     consisting of the parameter and the body type.
+     The parameter must not occur in the kind environment already
+     (an implicit requirement in [thesis] [arxiv])."))
 
   :preds ((expr-ok ivars tvars evars expr type)
           (atom-ok ivars tvars evars atom type)
@@ -538,7 +545,18 @@
 
    ;; TODO: elambdan
 
-   ;; TODO: tlambda
+   (tlambda ((ispace-var-setp ivars)
+             (type-var-setp tvars)
+             (string-type-mapp evars)
+             (type-varp param)
+             (exprp body)
+             (typep type)
+             (not (set::in param tvars))
+             (equal tvars1 (set::insert param tvars))
+             (expr-ok ivars tvars1 evars body type))
+            (atom-ok ivars tvars evars
+                     (atom-tlambda param body)
+                     (type-forall param type)))
 
    ;; TODO: tlambdan
 
@@ -611,6 +629,7 @@
   (verify-guards atom-ok-int-validp)
   (verify-guards atom-ok-float-validp)
   (verify-guards atom-ok-elambda-validp)
+  (verify-guards atom-ok-tlambda-validp)
   (verify-guards exprs-ok-nil-validp)
   (verify-guards exprs-ok-cons-validp)
   (verify-guards atoms-ok-nil-validp)
