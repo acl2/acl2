@@ -322,7 +322,7 @@
 (define dim-addends ((dim dimp))
   :returns (mv (const natp :rule-classes (:rewrite :type-prescription))
                (addends dim-listp))
-  :short "Split a dimension into a constant added and non-constant addends."
+  :short "Split a dimension into a constant addend and non-constant addends."
   :long
   (xdoc::topstring
    (xdoc::p
