@@ -42,12 +42,12 @@
          (bvchop size a))
   :hints (("Goal" :in-theory (enable bvif))))
 
-(defthm bvif-when-true
+(defthm bvif-of-t
   (equal (bvif size t a b)
          (bvchop size a))
   :hints (("Goal" :in-theory (enable bvif))))
 
-(defthm bvif-when-false
+(defthm bvif-of-nil
   (equal (bvif size nil a b)
          (bvchop size b))
   :hints (("Goal" :in-theory (enable bvif))))
