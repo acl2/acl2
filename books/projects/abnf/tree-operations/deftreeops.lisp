@@ -29,8 +29,6 @@
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/true-list-listp-theorems" :dir :system)
 (include-book "std/alists/assoc" :dir :system)
-(include-book "std/typed-alists/string-symbol-alistp" :dir :system)
-(include-book "std/typed-alists/string-symbollist-alistp" :dir :system)
 (include-book "std/typed-lists/nat-listp" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
