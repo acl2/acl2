@@ -780,6 +780,7 @@
 
     type-pointer->to
 
+    type-list
     type-listp
     type-list-count
 
