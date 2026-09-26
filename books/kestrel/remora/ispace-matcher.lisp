@@ -11,6 +11,8 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-derived-fixtypes")
+(include-book "ispace-equivalence-checker")
+(include-book "variable-substitution-operations")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -26,9 +28,339 @@
    (xdoc::p
     "This is matching in the sense of one-sided unification;
      we will extend this to a full unifier,
-     or perhaps we will add a separate unifier."))
+     or perhaps we will add a separate unifier.")
+   (xdoc::h3
+    "Dimension Matching")
+   (xdoc::p
+    "We use the following approach to match dimensions.")
+   (xdoc::p
+    "The difficulty is with additions.
+     Matching @('5') to the pattern @('(+ 1 i)') should succeed,
+     by binding @('i') to @('4'),
+     because @('(+ 1 4)') is equivalent to @('5'),
+     even though the two have different structures.
+     So addition patterns must be matched modulo additive equivalence:
+     this is the task of @(tsee dim-add-match), described here;
+     the other kinds of patterns are matched structurally,
+     as described in @(tsee dims-match);
+     indeed, for now we only have equivalence checking for additions,
+     not for multiplications and subtractions of dimensions,
+     which are treated as black boxes essentially.")
+   (xdoc::p
+    "The key observation is that
+     a normalized dimension (see @(tsee normalize-dim))
+     has a canonical form:
+     a constant plus a multiset of other addends,
+     each of which is a variable, a multiplication, or a subtraction.
+     Two normalized dimensions are equivalent exactly when
+     their constants are equal and their multisets are equal.
+     Thus, instead of solving an equation over terms,
+     we solve one over a number and a multiset.
+     Consider matching @('(+ 2 k)') to the pattern @('(+ 1 i)').
+     The dimension is the number @('2')
+     with the multiset consisting of @('k').
+     The pattern contributes the number @('1') and the unknown @('i').
+     Whatever @('i') stands for must supply
+     the missing number @('1') and the missing @('k'),
+     so @('i') must be @('(+ 1 k)').")
+   (xdoc::p
+    "This is the whole approach:
+     we subtract from the dimension what the pattern already accounts for,
+     and the unknown gets what is left.
+     What is left is the remainder,
+     which is the central notion of the approach.
+     We split the dimension into a constant and a list of other addends
+     (see @(tsee dim-addends)),
+     which form the initial remainder.
+     Each addend of the pattern that we can account for
+     subtracts something from the remainder.
+     At the end, the remainder is
+     what the unbound pattern variables must produce.")
+   (xdoc::p
+    "So we go through the addends of the pattern,
+     and there are only two cases.
+     If the addend is a pattern variable without a binding yet,
+     we cannot account for it (i.e. we cannot remove it from the remainder),
+     so we just add it to a list of unbound pattern variables.
+     Any other addend is known:
+     a constant is known outright,
+     a bound pattern variable is known through its binding,
+     and a multiplication, subtraction, or nested addition is known
+     if all the variables in it are bound
+     (see @(tsee dim-vars-bound-p));
+     if some variable in it is unbound, the match fails,
+     because a multiset equation cannot tell us
+     what a variable inside a multiplication or subtraction should be.
+     In all the known cases we do the same thing:
+     we instantiate the addend with the substitution,
+     which turns a bound variable into its binding
+     and leaves a constant alone,
+     and we account for the resulting known dimension in the remainder
+     (see @(tsee dim-add-match-known)).")
+   (xdoc::p
+    "Accounting for a known dimension in the remainder
+     means normalizing it,
+     splitting it into its own constant and addends,
+     and subtracting them:
+     the constant must fit under the constant of the remainder,
+     and each addend must be found in the multiset of the remainder,
+     modulo equivalence, and is removed once.
+     For instance,
+     with the remainder consisting of
+     the constant @('5') and the addends @('k') and @('l'),
+     accounting for @('(+ 2 l)') leaves
+     the constant @('3') and the addend @('k'),
+     while accounting for @('6') fails on the constant
+     and accounting for @('m') fails on the addends.
+     A failure here means that no substitution can work,
+     because the known part of the pattern already exceeds the dimension.")
+   (xdoc::p
+    "After going through the addends of the pattern,
+     we have the remainder and the list of unbound pattern variables.
+     If there are no unbound variables, the pattern was fully known,
+     so the remainder must be exactly the constant @('0') with no addends,
+     otherwise the two sides differ.
+     If there is exactly one unbound variable, occurring once,
+     it is forced to be the remainder,
+     so we bind it to the remainder turned back into a dimension
+     and normalized:
+     e.g. @('4') rather than @('(+ 4)'),
+     and @('k') rather than @('(+ 0 k)').
+     Otherwise, the match fails, rather than guessing:
+     two unbound variables could split the remainder in many ways,
+     and one unbound variable occurring twice would need division.
+     In the future, we may extend this to
+     collect equations from multiple matches
+     (e.g. of the different components of a type)
+     and solve them together,
+     since the equations from one match
+     may disambiguate the solutions of another match.")
+   (xdoc::p
+    "The substitution is threaded through matches (see @(tsee dims-match)):
+     the bindings come from earlier matches of other components,
+     and they constrain the current match.
+     This is what makes matching @('(+ 3 k)') to @('(+ i j)') succeed
+     when @('i') is already bound to @('3'):
+     @('i') is a known addend,
+     the remainder becomes just @('k'),
+     and @('j') is forced to be @('k').
+     It is also how rigid variables work:
+     the entry points bind them to themselves
+     (see @(tsee type-match-vars)),
+     so a rigid variable @('k') in the pattern is instantiated to @('k'),
+     and must be found in the dimension.")
+   (xdoc::p
+    "Every conclusion drawn by this approach
+     is an equality of numbers and multisets,
+     so the approach is sound on any dimension and pattern.
+     Completeness,
+     modulo additive equivalence and under the uniqueness restriction above,
+     requires the dimension and the pattern to be normalized:
+     if the dimension were the unflattened @('(+ 1 (+ 2 k))'),
+     the split would treat @('(+ 2 k)') as one opaque addend,
+     and matching to @('(+ 3 i)') would fail,
+     although binding @('i') to @('k') works.
+     Thus, the callers are expected to normalize both sides
+     before matching."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define remove1-equiv-dim ((dim dimp) (dims dim-listp))
+  :returns (mv (foundp booleanp) (new-dims dim-listp))
+  :short "Remove from a list of dimensions
+          the first one equivalent to a given dimension, if any."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like ACL2's @('remove1-equal'),
+     but modulo dimension equivalence (see @(tsee dim-equivp)).
+     We also return a flag saying whether an equivalent dimension was found;
+     if not, the list is returned unchanged."))
+  (b* (((when (endp dims)) (mv nil nil))
+       ((when (dim-equivp dim (car dims)))
+        (mv t (dim-list-fix (cdr dims))))
+       ((mv foundp new-dims) (remove1-equiv-dim dim (cdr dims))))
+    (mv foundp (cons (dim-fix (car dims)) new-dims))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define remove1-equiv-dims ((dims1 dim-listp) (dims2 dim-listp))
+  :returns (mv (okp booleanp) (new-dims dim-listp))
+  :short "Remove from a list of dimensions
+          one dimension equivalent to each dimension of another list."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We go through the first list,
+     removing from the second list, via @(tsee remove1-equiv-dim),
+     one dimension equivalent to each dimension of the first list.
+     If some dimension of the first list has no equivalent dimension
+     in what remains of the second list, we fail:
+     we return @('nil') as the flag,
+     and also as the list, which is irrelevant in that case.
+     Otherwise, we return @('t') and what remains of the second list.")
+   (xdoc::p
+    "This amounts to checking that the first list is included
+     in the second list as a multiset (i.e. counting repetitions),
+     modulo dimension equivalence,
+     and to returning the multiset difference if so."))
+  (b* (((when (endp dims1)) (mv t (dim-list-fix dims2)))
+       ((mv foundp dims2) (remove1-equiv-dim (car dims1) dims2))
+       ((unless foundp) (mv nil nil)))
+    (remove1-equiv-dims (cdr dims1) dims2)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dim-vars-bound-p ((dim dimp) (subst string-dim-mapp))
+  :returns (yes/no booleanp)
+  :short "Check if all the variables of a dimension
+          are bound in a dimension substitution."
+  (dim-vars-bound-p-loop (dim-free-ispace-vars dim) subst)
+
+  :prepwork
+
+  ((define dim-vars-bound-p-loop ((vars ispace-var-setp)
+                                  (subst string-dim-mapp))
+     :returns (yes/no booleanp)
+     :parents nil
+     (b* (((when (set::emptyp (ispace-var-set-fix vars))) t)
+          (var (set::head vars)))
+       (and (ispace-var-case
+             var
+             :dim (consp (omap::assoc var.name (string-dim-map-fix subst)))
+             :shape nil) ; never happens (a dimension has no shape variables)
+            (dim-vars-bound-p-loop (set::tail vars) subst)))
+     :prepwork ((local (in-theory (enable emptyp-of-ispace-var-set-fix)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dim-add-match-known ((known dimp) (const natp) (rest dim-listp))
+  :returns (mv (okp booleanp)
+               (new-const natp
+                          :rule-classes (:rewrite :type-prescription)
+                          :hints (("Goal" :in-theory (enable natp))))
+               (new-rest dim-listp))
+  :short "Account for a known dimension in the remainder of a dimension
+          being matched to an addition pattern."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used by @(tsee dim-add-match);
+     see the approach described in @(see ispace-matcher).
+     The remainder is passed as @('const') and @('rest'),
+     in the form produced by @(tsee dim-addends);
+     the dimension being matched is not passed to this function.
+     A known dimension is a dimension without unbound pattern variables:
+     a constant,
+     the binding of a bound pattern variable,
+     or an addend instantiated with the substitution.")
+   (xdoc::p
+    "We normalize the known dimension before splitting it
+     (see @(tsee dim-addends)),
+     so that its constant and addends are in canonical form
+     even if the pattern or the substitution are not normalized.
+     Then the constant must not exceed the constant of the remainder,
+     from which it is subtracted,
+     and the addends must be removable from the addends of the remainder
+     (see @(tsee remove1-equiv-dims)), and they are removed.
+     If either condition fails, the match fails,
+     and the returned remainder is irrelevant."))
+  (b* (((mv known-const known-addends) (dim-addends (normalize-dim known)))
+       ((when (> known-const (lnfix const))) (mv nil 0 nil))
+       ((mv okp rest) (remove1-equiv-dims known-addends rest))
+       ((unless okp) (mv nil 0 nil)))
+    (mv t (- (lnfix const) known-const) rest)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dim-add-match ((dim dimp) (addends dim-listp) (subst string-dim-mapp))
+  :returns (mv (okp booleanp) (new-subst string-dim-mapp))
+  :short "Match a dimension to an addition pattern,
+          modulo additive equivalence."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The pattern is an addition, whose addends are passed to this function,
+     since the caller has them at hand:
+     we match the dimension @('dim') to the pattern @('(dim-add addends)'),
+     modulo additive equivalence,
+     with the approach described in @(see ispace-matcher).")
+   (xdoc::p
+    "We split the dimension into the initial remainder
+     (see @(tsee dim-addends)),
+     and we go through the addends of the pattern
+     via @('dim-add-match-loop'),
+     which threads the remainder and the list of unbound pattern variables,
+     and which fails as soon as an addend cannot be accounted for
+     (see @(tsee dim-add-match-known)).
+     If the loop succeeds,
+     we resolve the remainder with the unbound pattern variables:
+     if there are none,
+     the remainder must be the constant @('0') with no addends;
+     if there is one,
+     we bind it to the dimension formed from the remainder,
+     which we normalize (see @(tsee normalize-dim));
+     if there are more, including one occurring twice, we fail.")
+   (xdoc::p
+    "The unbound pattern variables are collected as ispace variables,
+     but they are always dimension variables,
+     because they come from dimensions;
+     the case of a shape variable never happens.")
+   (xdoc::p
+    "As explained in @(see ispace-matcher),
+     this is sound on all dimensions and patterns,
+     but it is complete,
+     modulo additive equivalence and under the uniqueness restriction,
+     only on normalized dimensions and patterns."))
+  (b* (((mv const rest) (dim-addends dim))
+       ((mv okp const rest unbound)
+        (dim-add-match-loop addends subst const rest nil))
+       ((unless okp) (mv nil nil))
+       (subst (string-dim-map-fix subst))
+       ((unless (consp unbound))
+        (if (and (= const 0) (not (consp rest)))
+            (mv t subst)
+          (mv nil nil)))
+       ((when (consp (cdr unbound))) (mv nil nil))
+       (var (car unbound))
+       (remainder (normalize-dim (dim-add (cons (dim-const const) rest)))))
+    (ispace-var-case
+     var
+     :dim (mv t (omap::update var.name remainder subst))
+     :shape (mv nil nil))) ; never happens (only dimension variables collected)
+  :prepwork
+  ((define dim-add-match-loop ((addends dim-listp)
+                               (subst string-dim-mapp)
+                               (const natp)
+                               (rest dim-listp)
+                               (unbound ispace-var-listp))
+     :returns (mv (okp booleanp)
+                  (new-const natp :rule-classes (:rewrite :type-prescription))
+                  (new-rest dim-listp)
+                  (new-unbound ispace-var-listp))
+     :parents nil
+     (b* (((when (endp addends))
+           (mv t
+               (lnfix const)
+               (dim-list-fix rest)
+               (ispace-var-list-fix unbound)))
+          (addend (car addends))
+          ((when (and (dim-case addend :var)
+                      (not (omap::assoc (dim-var->name addend)
+                                        (string-dim-map-fix subst)))))
+           (dim-add-match-loop (cdr addends)
+                               subst
+                               const
+                               rest
+                               (cons (ispace-var-dim (dim-var->name addend))
+                                     (ispace-var-list-fix unbound))))
+          ((unless (dim-vars-bound-p addend subst)) (mv nil 0 nil nil))
+          ((mv okp const rest)
+           (dim-add-match-known (dim-subst-dim-vars addend subst) const rest))
+          ((unless okp) (mv nil 0 nil nil)))
+       (dim-add-match-loop (cdr addends) subst const rest unbound)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -37,15 +369,18 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we perform a purely syntactical match,
-     which is incomplete with respect to dimension equivalence.
-     For instance, the pattern @('(+ 1 n)')
-     is not matched by the dimension @('5'),
-     even though replacing @('n') with @('4') in the pattern
-     yields a dimension equivalent to @('5').
-     We will need to extend this to matching modulo equivalence,
-     i.e. to finding a substitution that makes the pattern
-     equivalent (not just equal) to the dimension.")
+    "The matching is modulo dimension equivalence:
+     we look for a substitution that makes the pattern
+     equivalent (not necessarily equal) to the dimension.
+     It is structural for all kinds of patterns except additions,
+     which are matched modulo additive equivalence via @(tsee dim-add-match),
+     according to the approach described in @(see ispace-matcher).
+     As explained there,
+     the matching is intended for normalized dimensions and patterns
+     (see @(tsee normalize-dim)),
+     for which it is complete modulo additive equivalence,
+     under the uniqueness restriction described there;
+     it is sound on all dimensions and patterns.")
    (xdoc::p
     "The variables in the patterns are the pattern variables.
      The matching builds a substitution for the pattern variables,
@@ -59,16 +394,19 @@
    (xdoc::p
     "The substitution is meant to be applied simultaneously,
      as @(tsee dim-subst-dim-vars) does:
-     applying it to the pattern yields the dimension.
+     applying it to the pattern yields a dimension
+     equivalent to the dimension being matched.
      The variables of the dimension are not pattern variables,
      but they may have the same names as pattern variables,
      in which case the dimensions in the substitution mention those names;
      thus, the substitution must not be applied repeatedly
      or composed with itself.
-     For instance, matching @('(+ 3 i)') to the pattern @('(+ i j)')
-     yields a substitution that maps @('i') to @('3') and @('j') to @('i'):
-     applying it to the pattern yields @('(+ 3 i)'),
-     but applying it once more would yield @('(+ 3 3)')."))
+     For instance, matching @('(+ 3 i)') to the pattern @('(+ 1 j)'),
+     with @('i') already bound to @('5') by a previous match,
+     binds @('j') to @('(+ 2 i)'):
+     applying the substitution to the pattern yields @('(+ 1 (+ 2 i))'),
+     which is equivalent to @('(+ 3 i)'),
+     but applying it once more would yield @('(+ 1 (+ 2 5))')."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -80,31 +418,33 @@
     (xdoc::topstring
      (xdoc::p
       "A pattern variable that is bound in the substitution
-       matches only the dimension bound to it.
+       matches only a dimension equivalent to the one bound to it.
        A pattern variable that is not bound in the substitution
        matches any dimension, which is bound to the variable.")
      (xdoc::p
-      "A pattern constant matches only the same constant.")
+      "A pattern constant matches only an equivalent dimension,
+       i.e. one that normalizes to the same constant.")
      (xdoc::p
-      "A pattern addition matches only an addition
-       whose dimensions match the dimensions of the pattern,
-       in the same order.
-       Multiplications and subtractions are treated like additions."))
+      "A pattern addition is matched modulo additive equivalence,
+       via @(tsee dim-add-match).")
+     (xdoc::p
+      "A pattern multiplication matches only a multiplication
+       whose operands match the operands of the pattern,
+       in the same order;
+       similarly for subtractions."))
     (dim-case
      pat
      :var (b* ((subst (string-dim-map-fix subst))
                (var+dim (omap::assoc pat.name subst)))
             (cond ((not var+dim)
                    (mv t (omap::update pat.name (dim-fix dim) subst)))
-                  ((equal (cdr var+dim) (dim-fix dim))
+                  ((dim-equivp (cdr var+dim) dim)
                    (mv t subst))
                   (t (mv nil nil))))
-     :const (if (equal (dim-fix dim) (dim-const pat.val))
+     :const (if (dim-equivp dim (dim-const pat.val))
                 (mv t (string-dim-map-fix subst))
               (mv nil nil))
-     :add (if (dim-case dim :add)
-              (dim-list-match (dim-add->dims dim) pat.dims subst)
-            (mv nil nil))
+     :add (dim-add-match dim pat.dims subst)
      :mul (if (dim-case dim :mul)
               (dim-list-match (dim-mul->dims dim) pat.dims subst)
             (mv nil nil))
