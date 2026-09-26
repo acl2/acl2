@@ -15,14 +15,18 @@
 ;; with other libraries.
 
 (include-book "abstract-domains/top")
+(include-book "acl2-arrays/top")
 (include-book "acl2pl/top")
 (include-book "algorithm-theories/top")
+(include-book "alists-light/top")
 (include-book "arm/top")
 (include-book "apt/top")
 (include-book "axe/top")
 (include-book "arithmetic-light/top")
+(include-book "booleans/top")
 (include-book "built-ins/top")
 (include-book "bv/top")
+(include-book "bv-arrays/top")
 (in-theory (disable <-of-*-of-constant-and-constant <-of-constant-and-*-of-constant)) ; avoid theory-invariant errors in books that include this book
 (include-book "auto-termination/top") ; omits some books (see file for why)
 (include-book "bibtex/xdoc-generation")
@@ -32,6 +36,7 @@
  dm::primep
  (include-book "crypto/top")
  (include-book "air/top"))
+(include-book "clause-processors/top")
 (include-book "csv/parse-csv-file")
 (include-book "data/top")
 (include-book "error-checking/top")
@@ -55,9 +60,11 @@
 (include-book "lists-light/top")
 (include-book "number-theory/top")
 (include-book "prime-fields/top")
+(include-book "random/top")
 (include-book "remora/top")
 (include-book "risc-v/top")
 (include-book "rust/top")
+(include-book "sequences/top")
 (include-book "simpl-imp/top")
 (include-book "soft/top")
 (include-book "solidity/top")
@@ -65,6 +72,7 @@
 ;; (include-book "typed-lists-light/top") ; TODO: Name clash on perm
 (include-book "syntheto/top")
 (include-book "unicode-light/top")
+(include-book "untranslated-terms/top")
 (include-book "utilities/top")
 (include-book "world-light/top")
 (include-book "x86/top")
