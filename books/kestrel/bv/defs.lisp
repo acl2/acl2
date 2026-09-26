@@ -1,7 +1,7 @@
 ; Cherry-pick the definitions of the BV functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -94,8 +94,7 @@
 
 ;x and y should be single bits
 ;guards?
-;todo: make a book on this
-(defun bitxnor (x y)
+(defund bitxnor (x y)
   (declare (type integer x y))
   (if (= (getbit 0 x) (getbit 0 y))
       1
