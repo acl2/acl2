@@ -261,7 +261,8 @@
                        nil))
  (list t (omap::update "i" (dim-add (list (dim-const 3) (dim-var "k"))) nil)))
 
-; A bound pattern variable matches only the dimension bound to it.
+; A bound pattern variable matches only
+; a dimension equivalent to the one bound to it.
 
 (assert-equal
  (mv-list 2 (dim-match (dim-var "k")
@@ -275,15 +276,30 @@
                        (omap::update "i" (dim-var "k") nil)))
  (list nil nil))
 
+(assert-equal
+ (mv-list 2 (dim-match (dim-add (list (dim-var "k") (dim-const 1)))
+                       (dim-var "i")
+                       (omap::update "i"
+                                     (dim-add (list (dim-const 1) (dim-var "k")))
+                                     nil)))
+ (list t (omap::update "i" (dim-add (list (dim-const 1) (dim-var "k"))) nil)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Pattern constants.
 
-; A pattern constant matches only the same constant;
+; A pattern constant matches only an equivalent dimension,
+; i.e. one that normalizes to the same constant;
 ; the substitution is unchanged.
 
 (assert-equal
  (mv-list 2 (dim-match (dim-const 3) (dim-const 3) nil))
+ (list t nil))
+
+(assert-equal
+ (mv-list 2 (dim-match (dim-add (list (dim-const 1) (dim-const 2)))
+                       (dim-const 3)
+                       nil))
  (list t nil))
 
 (assert-equal
@@ -307,30 +323,31 @@
 
 ; Pattern additions.
 
-; The dimensions of the addition are matched element-wise, in order.
+; A pattern addition is matched modulo additive equivalence
+; (see the tests of DIM-ADD-MATCH for more details):
+; the dimension need not be an addition,
+; and the addends need not correspond in number or order.
+
+(assert-equal
+ (mv-list 2 (dim-match (dim-const 5)
+                       (dim-add (list (dim-const 1) (dim-var "i")))
+                       nil))
+ (list t (omap::update "i" (dim-const 4) nil)))
+
+(assert-equal
+ (mv-list 2 (dim-match (dim-add (list (dim-const 2) (dim-var "k")))
+                       (dim-add (list (dim-const 1) (dim-var "i")))
+                       nil))
+ (list t (omap::update "i" (dim-add (list (dim-const 1) (dim-var "k"))) nil)))
 
 (assert-equal
  (mv-list 2 (dim-match (dim-add (list (dim-const 3) (dim-var "k")))
-                       (dim-add (list (dim-var "i") (dim-var "j")))
-                       nil))
- (list t (omap::update "i" (dim-const 3)
-                       (omap::update "j" (dim-var "k") nil))))
-
-; A repeated pattern variable must match equal dimensions.
-
-(assert-equal
- (mv-list 2 (dim-match (dim-add (list (dim-var "k") (dim-var "k")))
-                       (dim-add (list (dim-var "i") (dim-var "i")))
+                       (dim-add (list (dim-var "i") (dim-const 3)))
                        nil))
  (list t (omap::update "i" (dim-var "k") nil)))
 
-(assert-equal
- (mv-list 2 (dim-match (dim-add (list (dim-var "k") (dim-var "l")))
-                       (dim-add (list (dim-var "i") (dim-var "i")))
-                       nil))
- (list nil nil))
-
-; The initial substitution constrains the match.
+; The initial substitution constrains the match,
+; and may make its solution unique.
 
 (assert-equal
  (mv-list 2 (dim-match (dim-add (list (dim-const 3) (dim-var "k")))
@@ -345,36 +362,33 @@
                        (omap::update "i" (dim-const 4) nil)))
  (list nil nil))
 
-; The addition and the pattern addition must have the same number of dimensions.
-
-(assert-equal
- (mv-list 2 (dim-match (dim-add (list (dim-const 3)
-                                      (dim-var "k")
-                                      (dim-var "l")))
-                       (dim-add (list (dim-var "i") (dim-var "j")))
-                       nil))
- (list nil nil))
+; Two unbound pattern variables, or one occurring twice,
+; make the solution non-unique, and the match fails.
 
 (assert-equal
  (mv-list 2 (dim-match (dim-add (list (dim-const 3) (dim-var "k")))
-                       (dim-add (list (dim-var "i")
-                                      (dim-var "j")
-                                      (dim-var "j")))
+                       (dim-add (list (dim-var "i") (dim-var "j")))
                        nil))
  (list nil nil))
 
-; A pattern addition matches only an addition.
+(assert-equal
+ (mv-list 2 (dim-match (dim-add (list (dim-var "k") (dim-var "k")))
+                       (dim-add (list (dim-var "i") (dim-var "i")))
+                       nil))
+ (list nil nil))
+
+; The known part of the pattern must not exceed the dimension.
+
+(assert-equal
+ (mv-list 2 (dim-match (dim-add (list (dim-const 3) (dim-var "k")))
+                       (dim-add (list (dim-const 4) (dim-var "i")))
+                       nil))
+ (list nil nil))
 
 (assert-equal
  (mv-list 2 (dim-match (dim-var "k")
-                       (dim-add (list (dim-var "i") (dim-var "j")))
-                       nil))
- (list nil nil))
-
-(assert-equal
- (mv-list 2 (dim-match (dim-const 3)
-                       (dim-add (list (dim-var "i") (dim-var "j")))
-                       nil))
+                       (dim-add (list (dim-var "l") (dim-var "i")))
+                       (omap::update "l" (dim-var "l") nil)))
  (list nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -604,13 +618,12 @@
 (assert-equal
  (mv-list 3 (ispace-match (ispace-dim (dim-add (list (dim-const 3)
                                                      (dim-var "k"))))
-                          (ispace-dim (dim-add (list (dim-var "i")
-                                                     (dim-var "j"))))
+                          (ispace-dim (dim-add (list (dim-const 1)
+                                                     (dim-var "i"))))
                           nil
                           nil))
  (list t
-       (omap::update "i" (dim-const 3)
-                     (omap::update "j" (dim-var "k") nil))
+       (omap::update "i" (dim-add (list (dim-const 2) (dim-var "k"))) nil)
        nil))
 
 ; A pattern shape ispace matches a shape ispace as by SHAPE-MATCH.

@@ -369,15 +369,18 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we perform a purely syntactical match,
-     which is incomplete with respect to dimension equivalence.
-     For instance, the pattern @('(+ 1 n)')
-     is not matched by the dimension @('5'),
-     even though replacing @('n') with @('4') in the pattern
-     yields a dimension equivalent to @('5').
-     We will need to extend this to matching modulo equivalence,
-     i.e. to finding a substitution that makes the pattern
-     equivalent (not just equal) to the dimension.")
+    "The matching is modulo dimension equivalence:
+     we look for a substitution that makes the pattern
+     equivalent (not necessarily equal) to the dimension.
+     It is structural for all kinds of patterns except additions,
+     which are matched modulo additive equivalence via @(tsee dim-add-match),
+     according to the approach described in @(see ispace-matcher).
+     As explained there,
+     the matching is intended for normalized dimensions and patterns
+     (see @(tsee normalize-dim)),
+     for which it is complete modulo additive equivalence,
+     under the uniqueness restriction described there;
+     it is sound on all dimensions and patterns.")
    (xdoc::p
     "The variables in the patterns are the pattern variables.
      The matching builds a substitution for the pattern variables,
@@ -391,16 +394,19 @@
    (xdoc::p
     "The substitution is meant to be applied simultaneously,
      as @(tsee dim-subst-dim-vars) does:
-     applying it to the pattern yields the dimension.
+     applying it to the pattern yields a dimension
+     equivalent to the dimension being matched.
      The variables of the dimension are not pattern variables,
      but they may have the same names as pattern variables,
      in which case the dimensions in the substitution mention those names;
      thus, the substitution must not be applied repeatedly
      or composed with itself.
-     For instance, matching @('(+ 3 i)') to the pattern @('(+ i j)')
-     yields a substitution that maps @('i') to @('3') and @('j') to @('i'):
-     applying it to the pattern yields @('(+ 3 i)'),
-     but applying it once more would yield @('(+ 3 3)')."))
+     For instance, matching @('(+ 3 i)') to the pattern @('(+ 1 j)'),
+     with @('i') already bound to @('5') by a previous match,
+     binds @('j') to @('(+ 2 i)'):
+     applying the substitution to the pattern yields @('(+ 1 (+ 2 i))'),
+     which is equivalent to @('(+ 3 i)'),
+     but applying it once more would yield @('(+ 1 (+ 2 5))')."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -412,31 +418,33 @@
     (xdoc::topstring
      (xdoc::p
       "A pattern variable that is bound in the substitution
-       matches only the dimension bound to it.
+       matches only a dimension equivalent to the one bound to it.
        A pattern variable that is not bound in the substitution
        matches any dimension, which is bound to the variable.")
      (xdoc::p
-      "A pattern constant matches only the same constant.")
+      "A pattern constant matches only an equivalent dimension,
+       i.e. one that normalizes to the same constant.")
      (xdoc::p
-      "A pattern addition matches only an addition
-       whose dimensions match the dimensions of the pattern,
-       in the same order.
-       Multiplications and subtractions are treated like additions."))
+      "A pattern addition is matched modulo additive equivalence,
+       via @(tsee dim-add-match).")
+     (xdoc::p
+      "A pattern multiplication matches only a multiplication
+       whose operands match the operands of the pattern,
+       in the same order;
+       similarly for subtractions."))
     (dim-case
      pat
      :var (b* ((subst (string-dim-map-fix subst))
                (var+dim (omap::assoc pat.name subst)))
             (cond ((not var+dim)
                    (mv t (omap::update pat.name (dim-fix dim) subst)))
-                  ((equal (cdr var+dim) (dim-fix dim))
+                  ((dim-equivp (cdr var+dim) dim)
                    (mv t subst))
                   (t (mv nil nil))))
-     :const (if (equal (dim-fix dim) (dim-const pat.val))
+     :const (if (dim-equivp dim (dim-const pat.val))
                 (mv t (string-dim-map-fix subst))
               (mv nil nil))
-     :add (if (dim-case dim :add)
-              (dim-list-match (dim-add->dims dim) pat.dims subst)
-            (mv nil nil))
+     :add (dim-add-match dim pat.dims subst)
      :mul (if (dim-case dim :mul)
               (dim-list-match (dim-mul->dims dim) pat.dims subst)
             (mv nil nil))
