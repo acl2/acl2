@@ -135,8 +135,8 @@
    for the unnormalized definition of
    the function @('fn-guard') described above."
 
-  "@('fn-guard-thm') is the name of a locally generated theorem
-   that is a rewrite-rule form of the guard theorem of @('fn')."
+  ;; "@('fn-guard-thm') is the name of a locally generated theorem
+  ;;  that is a rewrite-rule form of the guard theorem of @('fn')."
 
   "@('typed-formals') is an alist
    from the formal parameters of
