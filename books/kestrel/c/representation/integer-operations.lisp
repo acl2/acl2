@@ -610,8 +610,11 @@
        (<type>-from-integer (pack <type> '-from-integer))
        (<type>-from-integer-mod (pack <type>-from-integer '-mod))
        (<type>-integerp (pack <type> '-integerp))
+       (<type>-integerp-alt-def (pack <type>-integerp '-alt-def))
        (<type>-from-<type1> (pack <type> '-from- <type1>))
        (<type>-from-<type2> (pack <type> '-from- <type2>))
+       (<type>-min (pack <type> '-min))
+       (<type>-max (pack <type> '-max))
        (add-<type1>-<type2> (pack 'add- <type1> '- <type2>))
        (add-<type1>-<type2>-okp (pack add-<type1>-<type2> '-okp))
        (add-<type>-<type> (pack 'add- <type> '- <type>))
@@ -873,16 +876,30 @@
                           " and a value of "
                           type2-string
                           " is well-defined.")
+        :long
+        (xdoc::topstring
+         (xdoc::p
+          "For signed remainder,
+           the remainder is well-defined iff the quotient is
+           [C17:6.5.5/6]."))
         :body
         ,(if samep
              (if signedp
                  `(and (not (equal (,integer-from-<type2> y) 0))
-                       (,<type>-integerp (rem (,integer-from-<type1> x)
-                                              (,integer-from-<type2> y))))
+                       (,<type>-integerp (truncate (,integer-from-<type1> x)
+                                                   (,integer-from-<type2> y))))
                `(not (equal (,integer-from-<type2> y) 0)))
            `(,rem-<type>-<type>-okp
              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
-             ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y)))))
+             ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
+        ,@(and samep
+               signedp
+               `(:guard-hints
+                 (("Goal" :in-theory (enable ,<type>-integerp-alt-def
+                                             (:e ,<type>-max)
+                                             (:e ,<type>-min))))
+                 :prepwork
+                 ((local (include-book "arithmetic-3/top" :dir :system))))))
 
        ;;;;;;;;;;;;;;;;;;;;
 
@@ -907,9 +924,19 @@
            `(,rem-<type>-<type>
              ,(if (eq <type> <type1>) 'x `(,<type>-from-<type1> x))
              ,(if (eq <type> <type2>) 'y `(,<type>-from-<type2> y))))
-        :guard-hints (("Goal" :in-theory (enable ,rem-<type1>-<type2>-okp
-                                                 ,@(and (not signedp)
-                                                        (list 'rem))))))
+        :guard-hints
+        (("Goal" :in-theory (enable ,rem-<type1>-<type2>-okp
+                                    ,@(and (not signedp)
+                                           (list 'rem))
+                                    ,@(and samep
+                                           signedp
+                                           (list <type>-integerp-alt-def
+                                                 `(:e ,<type>-max)
+                                                 `(:e ,<type>-min))))))
+        ,@(and samep
+               signedp
+               '(:prepwork
+                 ((local (include-book "arithmetic-3/top" :dir :system))))))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
