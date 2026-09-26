@@ -1513,8 +1513,6 @@
                                                          old-fenv
                                                          (1- limit))))
                                       (limit (1- limit)))
-                           (:instance ,arg2-thm-name
-                                      (limit (1- limit)))
                            (:instance expr-binary-pure-strict-congruence
                                       (op ',cop)
                                       (old-arg1 ',old-arg1)
