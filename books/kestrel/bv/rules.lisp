@@ -3059,8 +3059,8 @@
 ;gen!
 (defthm bvplus-of-floor-4-32-alt
   (implies (integerp i)
-           (equal (BVPLUS 4 x (FLOOR i 32))
-                  (BVPLUS 4 x (slice 8 5 i))))
+           (equal (BVPLUS 4 (FLOOR i 32) x)
+                  (BVPLUS 4 (slice 8 5 i) x)))
   :hints (("Goal" :in-theory (enable BVCHOP-OF-FLOOR-OF-EXPT-OF-2-CONSTANT-VERSION))))
 
 (defthm unsigned-byte-p-of-floor-of-expt-constant-version
