@@ -4213,8 +4213,8 @@
 
 (defun all-fnnames1-exec (flg x acc)
 
-; Keep this in sync with all-fnnames1.  Also see the comment about
-; all-fnnames1-exec in put-invariant-risk before modifying this function.
+; Keep this in sync with all-fnnames1, all-fnnames!, and
+; all-fnnames1-invariant-risk.
 
   (cond (flg ; x is a list of terms
          (cond ((null x) acc)
@@ -6059,6 +6059,70 @@
 
     (aset1-trusted . nil)))
 
+(defun all-fnnames1-invariant-risk (flg x i wrld acc)
+
+; Keep this in sync with all-fnnames1, all-fnnames1-exec, and all-fnnames!.
+; Also see the comment about all-fnnames1-exec in put-invariant-risk before
+; modifying this function.
+
+; This function collects into acc all function symbols whose calls, during
+; evaluation of x, might lead to invariant-risk sorts of violations.  (Notice
+; that we say "might": We are conservative, perhaps collecting more function
+; symbols than necessary.)  We thus include relevant calls arising from
+; compiled lambdas of loop$ expressions.  But unlike all-fnnames!, we do not
+; collect inside all well-formed lambda objects, since those that are
+; implemented with compiled code are presumably well-guarded.
+
+; When flg is non-nil, then x is a list of terms, and i is a corresponding list
+; of ilks or nil to represent a corresponding list of nils.  Otherwise i is an
+; ilk for x.
+
+  (cond (flg
+         (cond ((null x) acc)
+               (t (all-fnnames1-invariant-risk
+                   nil (car x) (car i) wrld
+                   (all-fnnames1-invariant-risk t (cdr x) (cdr i) wrld acc)))))
+        ((variablep x) acc)
+        ((fquotep x)
+         (if (and (eq i :fn)
+                  (well-formed-lambda-objectp (unquote x) wrld))
+             (all-fnnames1-invariant-risk
+              nil (lambda-object-guard (unquote x))
+              nil wrld
+              (all-fnnames1-invariant-risk nil (lambda-object-body (unquote x))
+                                           nil wrld acc))
+           acc))
+        ((flambda-applicationp x)
+         (all-fnnames1-invariant-risk
+          nil (lambda-body (ffn-symb x)) nil wrld
+          (all-fnnames1-invariant-risk t (fargs x) nil wrld acc)))
+        ((eq (ffn-symb x) 'return-last)
+
+; A loop$ expression won't generate a return- mbe or ec-call wrapper in a :fn position
+; of a call of do$, sum$, or any other loop$ scion.  So we use i = nil below.
+
+         (cond ((equal (fargn x 1) '(quote mbe1-raw))
+                (all-fnnames1-invariant-risk nil (fargn x 2)
+                                             nil ; see comment above
+                                             wrld acc))
+               ((and (equal (fargn x 1) '(quote ec-call1-raw))
+                     (nvariablep (fargn x 3))
+                     (not (fquotep (fargn x 3)))
+                     (not (flambdap (ffn-symb (fargn x 3)))))
+                (all-fnnames1-invariant-risk t (fargs (fargn x 3))
+                                             nil ; see comment above
+                                             wrld acc))
+               (t (all-fnnames1-invariant-risk t (fargs x) nil wrld
+                                               (add-to-set-eq (ffn-symb x) acc)))))
+        (t
+         (all-fnnames1-invariant-risk
+          t
+          (fargs x)
+          (and (special-loop$-scion-callp x wrld)
+               (access apply$-badge (executable-badge (ffn-symb x) wrld) :ilks))
+          wrld
+          (add-to-set-eq (ffn-symb x) acc)))))
+
 (defun put-invariant-risk (names bodies non-executablep symbol-class guards
                                  wrld)
 
@@ -6072,7 +6136,7 @@
 ; present function, put-invariant-risk, propagates these 'invariant-risk
 ; properties up through callers.
 
-; When we call all-fnnames1-exec below, we are ignoring :logic code from mbe
+; When we call all-fnnames1-invariant-risk below, we are ignoring :logic code from mbe
 ; calls.  To see that this is sound, first note that we are determining when
 ; there is a risk of bypassing guard checks that would avoid invariant
 ; violations.  If we are executing :logic code from an mbe call, then we must
@@ -6080,7 +6144,7 @@
 ; always execute the :exec code of an mbe call (see oneify), as does raw Lisp
 ; code.  But invariants are checked (in particular, by checking guards for live
 ; stobj manipulation) when making *1* calls of :logic mode functions.  There is
-; actually one other case that all-fnnames1-exec ignores function symbols in
+; actually one other case that all-fnnames1-invariant-risk ignores function symbols in
 ; the call tree: it does not collect function symbol F from (ec-call (F ...)).
 ; But in this case, *1*F or *1*F$INLINE is called, and if there is a non-nil
 ; 'invariant-risk property for F or F$INLINE (respectively), then we trust that
@@ -6121,9 +6185,10 @@
                                               (car new-fns)
                                               wrld)
                             wrld))
-                    (t (put-invariant-risk1 new-fns
-                                            (all-fnnames1-exec t bodies nil)
-                                            wrld))))))))))
+                    (t (put-invariant-risk1
+                        new-fns
+                        (all-fnnames1-invariant-risk t bodies nil wrld nil)
+                        wrld))))))))))
 
 (defun defuns-fn-short-cut (loop$-recursion-checkedp
                             loop$-recursion
