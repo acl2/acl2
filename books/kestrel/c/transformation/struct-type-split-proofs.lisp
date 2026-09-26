@@ -188,12 +188,14 @@
     "This fixtype captures the possible stages of that scan.
      Starting with @(':init'),
      we switch to @(':types') when we have found the struct types
-     (where we store all the memebers and the left members,
+     (where we store all the members, their types, and the left members,
      while the right members are available from the user inputs),
      then to @(':objects') when we have found the struct objects.
      See the scanning code for details."))
   (:init ())
-  (:types ((mems ident-list) (lmems ident-list)))
+  (:types ((mems ident-list)
+           (types c$::type-list)
+           (lmems ident-list)))
   (:objects ())
   :pred stsp-stagep)
 
@@ -1059,6 +1061,7 @@
   :returns (mv (erp maybe-msgp)
                (events pseudo-event-form-listp)
                (mems ident-listp)
+               (types type-listp)
                (lmems ident-listp))
   :short "Check, and generate events for,
           the declarations of the old and new left and right struct types."
@@ -1077,8 +1080,10 @@
     "If everything checks out, we generate
      the three predicates that characterize the struct values,
      the accessors of the member values in the old and new structs,
-     and the equivalence predicates over struct values."))
-  (b* (((reterr) nil nil nil)
+     and the equivalence predicates over struct values.
+     We also return the old member names and types,
+     and the left member names."))
+  (b* (((reterr) nil nil nil nil)
        ((erp old-tag old-mems old-types)
         (stsp-check-struct-type-declon old-declon))
        ((erp newl-tag newl-mems newl-types)
@@ -1123,6 +1128,7 @@
                    newr-accs
                    (list equiv-pred))
            old-mems
+           old-types
            newl-mems))
   :guard-hints
   (("Goal"
@@ -1266,13 +1272,14 @@
                     (trans-item-declon (ext-declon-declon old-declon))
                     (trans-item-fix new-item)
                     (trans-item-fix new-item2)))
-          ((erp events mems lmems) (stsp-struct-type-declon old-declon
-                                                            new-declon
-                                                            new-declon2
-                                                            tag
-                                                            tag2
-                                                            rmems)))
-       (retok (stsp-stage-types mems lmems)
+          ((erp events mems types lmems)
+           (stsp-struct-type-declon old-declon
+                                   new-declon
+                                   new-declon2
+                                   tag
+                                   tag2
+                                   rmems)))
+       (retok (stsp-stage-types mems types lmems)
               (trans-item-list-fix (cdr new-items))
               events))
      :types
