@@ -22,6 +22,7 @@
 (include-book "character-sets")
 
 (local (include-book "arithmetic-3/top" :dir :system))
+(local (include-book "kestrel/utilities/defopeners" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
 
@@ -48,15 +49,7 @@
      and therefore it seems simpler to have one notion.")
    (xdoc::p
     "We start by capturing some aspects of the C implementation environment.
-     More will be added in the future.")
-   (xdoc::p
-    "Initially, our formalization of implementation environments
-     is not used in other parts of the C formalization;
-     furthermore, it captures notions already captured elsewhere,
-     such as the "
-    (xdoc::seetopic "integer-formats" "integer formats")
-    ". But we plan to update the rest of the formalization to use this,
-     also removing those then-redundant parts."))
+     More will be added in the future."))
   :order-subtopics (uchar-formats
                     signed-formats
                     schar-formats
@@ -88,10 +81,11 @@
     "This captures requirements involving
      multiple components of @(tsee ienv),
      used in the @(':require') of that fixtype definition."))
-  (and (integer-format-short-wfp short uchar schar)
-       (integer-format-int-wfp int uchar short)
-       (integer-format-long-wfp long uchar int)
-       (integer-format-llong-wfp llong uchar long)
+  (and (schar-format-wfp schar (dialect->std dialect))
+       (integer-format-short-wfp short uchar schar (dialect->std dialect))
+       (integer-format-int-wfp int uchar short (dialect->std dialect))
+       (integer-format-long-wfp long uchar int (dialect->std dialect))
+       (integer-format-llong-wfp llong uchar long (dialect->std dialect))
        (bool-format-wfp bool uchar)
        (charset-wfp charset (dialect->std dialect) uchar schar char))
 
@@ -147,7 +141,32 @@
                       (charset-basic+lf (dialect->std dialect)))))
   :require (ienv-requirep-call)
   :pred ienvp
-  :prepwork ((local (in-theory (enable ienv-requirep)))))
+  :prepwork
+  ((local
+    (acl2::defopeners integer-format-short-wfp ; for speed
+      :hyps ((syntaxp (and (quotep short-format)
+                           (quotep uchar-format)
+                           (quotep schar-format))))))
+   (local
+    (acl2::defopeners integer-format-int-wfp ; for speed
+      :hyps ((syntaxp (and (quotep int-format)
+                           (quotep uchar-format)
+                           (quotep short-format))))))
+   (local
+    (acl2::defopeners integer-format-long-wfp ; for speed
+      :hyps ((syntaxp (and (quotep long-format)
+                           (quotep uchar-format)
+                           (quotep int-format))))))
+   (local
+    (acl2::defopeners integer-format-llong-wfp ; for speed
+      :hyps ((syntaxp (and (quotep llong-format)
+                           (quotep uchar-format)
+                           (quotep long-format))))))
+   (local (in-theory (enable ienv-requirep
+                             schar-format-wfp
+                             signed-format-wfp
+                             integer-format-wfp
+                             sinteger-format-wfp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -236,7 +255,29 @@
 
   (defret ienv->schar-min-upper-bound
     (<= min -127)
-    :rule-classes ((:linear :trigger-terms ((ienv->schar-min ienv))))))
+    :rule-classes ((:linear :trigger-terms ((ienv->schar-min ienv)))))
+
+  (defretd ienv->schar-min-as-schar-max-when-c23
+    (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
+             (equal min (- (1+ (ienv->schar-max ienv)))))
+    :hints
+    (("Goal"
+      :in-theory (e/d (ienv-requirep
+                       ienv->schar-max
+                       schar-format->min-as-max-when-c23)
+                      (ienv-requirements))
+      :use (:instance ienv-requirements (x ienv)))))
+
+  (defretd ienv->schar-min-upper-bound-when-c23
+    (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
+             (<= min -128))
+    :rule-classes ((:linear :trigger-terms ((ienv->schar-min ienv))))
+    :hints
+    (("Goal"
+      :in-theory (e/d (ienv-requirep
+                       schar-format->min-upper-bound-when-c23)
+                      (ienv-requirements))
+      :use (:instance ienv-requirements (x ienv))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -316,8 +357,7 @@
                                   ienv->char-size
                                   ienv->short-bit-size)
                                  (ienv-requirements))
-                 :use (:instance ienv-requirements (x ienv))
-                )))
+                 :use (:instance ienv-requirements (x ienv)))))
   :short "Number of bytes of unsigned and signed @('short') objects."
   (/ (ienv->short-bit-size ienv)
      (ienv->char-size ienv))
@@ -363,8 +403,7 @@
                                   ienv->char-size
                                   ienv->int-bit-size)
                                  (ienv-requirements))
-                 :use (:instance ienv-requirements (x ienv))
-                )))
+                 :use (:instance ienv-requirements (x ienv)))))
   :short "Number of bytes of unsigned and signed @('int') objects."
   (/ (ienv->int-bit-size ienv)
      (ienv->char-size ienv))
@@ -410,8 +449,7 @@
                                   ienv->char-size
                                   ienv->long-bit-size)
                                  (ienv-requirements))
-                 :use (:instance ienv-requirements (x ienv))
-                )))
+                 :use (:instance ienv-requirements (x ienv)))))
   :short "Number of bytes of unsigned and signed @('long') objects."
   (/ (ienv->long-bit-size ienv)
      (ienv->char-size ienv))
@@ -457,8 +495,7 @@
                                   ienv->char-size
                                   ienv->llong-bit-size)
                                  (ienv-requirements))
-                 :use (:instance ienv-requirements (x ienv))
-                )))
+                 :use (:instance ienv-requirements (x ienv)))))
   :short "Number of bytes of unsigned and signed @('long long') objects."
   (/ (ienv->llong-bit-size ienv)
      (ienv->char-size ienv))
@@ -501,10 +538,53 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection ienv->ushort-max-ext
+  :extension ienv->ushort-max
+  (defruled ienv->ushort-max-as-sshort-max-when-c23
+    (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
+             (equal (ienv->ushort-max ienv)
+                    (1+ (* 2 (ienv->sshort-max ienv)))))
+    :enable (ienv-requirep
+             integer-format-short-wfp
+             ienv->ushort-max
+             ienv->sshort-max
+             integer-format->unsigned-max-as-signed-max-when-c23)
+    :disable ienv-requirements
+    :use (:instance ienv-requirements (x ienv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ienv->sshort-min ((ienv ienvp))
   :returns (min integerp)
   :short "The ACL2 integer value of @('SHRT_MIN') [C17:5.2.4.2.1]."
-  (integer-format->signed-min (ienv->short ienv)))
+  (integer-format->signed-min (ienv->short ienv))
+
+  ///
+
+  (defretd ienv->sshort-min-as-sshort-max-when-c23
+    (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
+             (equal min (- (1+ (ienv->sshort-max ienv)))))
+    :hints
+    (("Goal"
+      :in-theory (e/d (ienv-requirep
+                       integer-format-short-wfp
+                       ienv->sshort-max
+                       integer-format->signed-min-as-signed-max-when-c23)
+                      (ienv-requirements))
+      :use (:instance ienv-requirements (x ienv)))))
+
+  (defretd ienv->sshort-min-upper-bound-when-c23
+    (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
+             (<= min -32768))
+    :rule-classes ((:linear :trigger-terms ((ienv->sshort-min ienv))))
+    :hints
+    (("Goal"
+      :in-theory (e/d (ienv-requirep) (ienv-requirements))
+      :use ((:instance ienv-requirements (x ienv))
+            (:instance integer-format-short-wf-signed-min-upper-bound-when-c23
+                       (short-format (ienv->short ienv))
+                       (uchar-format (ienv->uchar ienv))
+                       (schar-format (ienv->schar ienv))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -522,10 +602,53 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection ienv->uint-max-ext
+  :extension ienv->uint-max
+  (defruled ienv->uint-max-as-sint-max-when-c23
+    (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
+             (equal (ienv->uint-max ienv)
+                    (1+ (* 2 (ienv->sint-max ienv)))))
+    :enable (ienv-requirep
+             integer-format-int-wfp
+             ienv->uint-max
+             ienv->sint-max
+             integer-format->unsigned-max-as-signed-max-when-c23)
+    :disable ienv-requirements
+    :use (:instance ienv-requirements (x ienv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ienv->sint-min ((ienv ienvp))
   :returns (min integerp)
   :short "The ACL2 integer value of @('INT_MIN') [C17:5.2.4.2.1]."
-  (integer-format->signed-min (ienv->int ienv)))
+  (integer-format->signed-min (ienv->int ienv))
+
+  ///
+
+  (defretd ienv->sint-min-as-sint-max-when-c23
+    (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
+             (equal min (- (1+ (ienv->sint-max ienv)))))
+    :hints
+    (("Goal"
+      :in-theory (e/d (ienv-requirep
+                       integer-format-int-wfp
+                       ienv->sint-max
+                       integer-format->signed-min-as-signed-max-when-c23)
+                      (ienv-requirements))
+      :use (:instance ienv-requirements (x ienv)))))
+
+  (defretd ienv->sint-min-upper-bound-when-c23
+    (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
+             (<= min -32768))
+    :rule-classes ((:linear :trigger-terms ((ienv->sint-min ienv))))
+    :hints
+    (("Goal"
+      :in-theory (e/d (ienv-requirep) (ienv-requirements))
+      :use ((:instance ienv-requirements (x ienv))
+            (:instance integer-format-int-wf-signed-min-upper-bound-when-c23
+                       (int-format (ienv->int ienv))
+                       (uchar-format (ienv->uchar ienv))
+                       (short-format (ienv->short ienv))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -543,10 +666,53 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection ienv->ulong-max-ext
+  :extension ienv->ulong-max
+  (defruled ienv->ulong-max-as-slong-max-when-c23
+    (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
+             (equal (ienv->ulong-max ienv)
+                    (1+ (* 2 (ienv->slong-max ienv)))))
+    :enable (ienv-requirep
+             integer-format-long-wfp
+             ienv->ulong-max
+             ienv->slong-max
+             integer-format->unsigned-max-as-signed-max-when-c23)
+    :disable ienv-requirements
+    :use (:instance ienv-requirements (x ienv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ienv->slong-min ((ienv ienvp))
   :returns (min integerp)
   :short "The ACL2 integer value of @('LONG_MIN') [C17:5.2.4.2.1]."
-  (integer-format->signed-min (ienv->long ienv)))
+  (integer-format->signed-min (ienv->long ienv))
+
+  ///
+
+  (defretd ienv->slong-min-as-slong-max-when-c23
+    (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
+             (equal min (- (1+ (ienv->slong-max ienv)))))
+    :hints
+    (("Goal"
+      :in-theory (e/d (ienv-requirep
+                       integer-format-long-wfp
+                       ienv->slong-max
+                       integer-format->signed-min-as-signed-max-when-c23)
+                      (ienv-requirements))
+      :use (:instance ienv-requirements (x ienv)))))
+
+  (defretd ienv->slong-min-upper-bound-when-c23
+    (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
+             (<= min -2147483648))
+    :rule-classes ((:linear :trigger-terms ((ienv->slong-min ienv))))
+    :hints
+    (("Goal"
+      :in-theory (e/d (ienv-requirep) (ienv-requirements))
+      :use ((:instance ienv-requirements (x ienv))
+            (:instance integer-format-long-wf-signed-min-upper-bound-when-c23
+                       (long-format (ienv->long ienv))
+                       (uchar-format (ienv->uchar ienv))
+                       (int-format (ienv->int ienv))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -564,10 +730,53 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection ienv->ullong-max-ext
+  :extension ienv->ullong-max
+  (defruled ienv->ullong-max-as-sllong-max-when-c23
+    (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
+             (equal (ienv->ullong-max ienv)
+                    (1+ (* 2 (ienv->sllong-max ienv)))))
+    :enable (ienv-requirep
+             integer-format-llong-wfp
+             ienv->ullong-max
+             ienv->sllong-max
+             integer-format->unsigned-max-as-signed-max-when-c23)
+    :disable ienv-requirements
+    :use (:instance ienv-requirements (x ienv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ienv->sllong-min ((ienv ienvp))
   :returns (min integerp)
   :short "The ACL2 integer value of @('LLONG_MIN') [C17:5.2.4.2.1]."
-  (integer-format->signed-min (ienv->llong ienv)))
+  (integer-format->signed-min (ienv->llong ienv))
+
+  ///
+
+  (defretd ienv->sllong-min-as-sllong-max-when-c23
+    (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
+             (equal min (- (1+ (ienv->sllong-max ienv)))))
+    :hints
+    (("Goal"
+      :in-theory (e/d (ienv-requirep
+                       integer-format-llong-wfp
+                       ienv->sllong-max
+                       integer-format->signed-min-as-signed-max-when-c23)
+                      (ienv-requirements))
+      :use (:instance ienv-requirements (x ienv)))))
+
+  (defretd ienv->sllong-min-upper-bound-when-c23
+    (implies (equal (dialect->std (ienv->dialect ienv)) (standard-c23))
+             (<= min -9223372036854775808))
+    :rule-classes ((:linear :trigger-terms ((ienv->sllong-min ienv))))
+    :hints
+    (("Goal"
+      :in-theory (e/d (ienv-requirep) (ienv-requirements))
+      :use ((:instance ienv-requirements (x ienv))
+            (:instance integer-format-llong-wf-signed-min-upper-bound-when-c23
+                       (llong-format (ienv->llong ienv))
+                       (uchar-format (ienv->uchar ienv))
+                       (long-format (ienv->long ienv))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
