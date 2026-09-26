@@ -265,7 +265,9 @@
                     ,@(and (not (member-eq op-kind '(:add :sub :mul :div :rem)))
                            '(integer-type-min
                              integer-type-max
-                             bit-width-value-choices))))
+                             bit-width-value-choices))
+                    ,@(and (eq op-kind :rem)
+                           '(ifix))))
          (event `(defruled ,name
                    ,formula
                    :enable ,enables
