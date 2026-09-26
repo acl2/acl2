@@ -20,6 +20,7 @@
 (include-book "lifter-utilities") ;for standard-hyps-basic0
 (include-book "kestrel/utilities/unify" :dir :system)
 (include-book "kestrel/jvm/global-class-alist" :dir :system)
+(include-book "kestrel/terms-light/make-conjunction-from-list" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 

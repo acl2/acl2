@@ -19,6 +19,7 @@
 (include-book "kestrel/utilities/directed-untranslate-dollar" :dir :system)
 (include-book "kestrel/utilities/defthm-forms" :dir :system)
 (include-book "kestrel/utilities/translate" :dir :system)
+(include-book "kestrel/terms-light/make-conjunction-from-list" :dir :system)
 (local (include-book "kestrel/terms-light/all-fnnames1" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
