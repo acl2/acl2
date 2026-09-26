@@ -39,7 +39,7 @@
    (xdoc::p
     "[C17:6.2.5/2] says that @('_Bool') is large enough to store 0 and 1.
      [C17:6.2.5/6] classifies @('_Bool') as an unsigned integer type;
-     as such, [C17:6.2.6.2/1] implies that @('_Bool') object
+     as such, [C17:6.2.6.2/1] implies that @('_Bool') objects
      must consist of value bits and padding bits.
      Since only the values 0 and 1 are needed,
      it seems reasonable to infer that @('_Bool') objects
@@ -47,13 +47,17 @@
      but since they must consist of an integral number of bytes [C17:6.2.6.1/2],
      the rest must be all padding bits.
      Although it does not seem reasonable to use more than one byte,
-     nothing seems to prevent @('_Bool') object to take two or more bytes.")
+     nothing seems to prevent @('_Bool') objects from taking two or more bytes.")
+   (xdoc::p
+    "C23 explicitly requires @('bool') to have one value bit [C23:6.2.6.2].
+     This is already built into our format.")
    (xdoc::p
     "Thus, to capture the possible formats of @('_Bool') objects,
      we need the number of bytes (normally 1),
      and the index of the value bit,
-     where the significance of the index is the same as
-     in the lists of bit roles in @(tsee uinteger-format).
+     using the indexing convention described in @(tsee uinteger-format).
+     In particular, index 0 denotes the least significant bit
+     of the byte at the lowest address.
      We also include information (for now unconstrained)
      about possible trap representations [C17:6.2.6.1/5]."))
   ((byte-size pos)

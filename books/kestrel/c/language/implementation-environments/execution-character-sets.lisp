@@ -544,6 +544,8 @@
 
   ///
 
+  (in-theory (disable (:e exec-charset-basic)))
+
   (defrule exec-charset-wfp-of-exec-charset-basic
     (exec-charset-wfp (exec-charset-basic std) std
                       uchar-format schar-format char-format)
@@ -589,6 +591,8 @@
   ((local (in-theory (enable acl2::any-nat-mapp-when-character-nat-mapp))))
 
   ///
+
+  (in-theory (disable (:e exec-charset-ascii)))
 
   (defruled exec-chars-of-exec-charset-ascii
     (equal (exec-chars (exec-charset-ascii std))
@@ -644,6 +648,8 @@
   ((local (in-theory (enable acl2::character-any-mapp-when-character-nat-mapp))))
 
   ///
+
+  (in-theory (disable (:e exec-charset-unicode)))
 
   (defruled exec-chars-of-exec-charset-unicode
     (equal (exec-chars (exec-charset-unicode std))

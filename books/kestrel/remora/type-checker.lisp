@@ -367,10 +367,7 @@
      the second list is a suffix of the first list,
      obtaining the prefix if so,
      which we return as a concatenation."))
-  (b* (((unless (and (shape-addp shape)
-                     (shape-addp suffix)))
-        (reserr nil)) ; not supported
-       (shape-elements (shape-append->shapes (normalize-shape shape)))
+  (b* ((shape-elements (shape-append->shapes (normalize-shape shape)))
        (suffix-elements (shape-append->shapes (normalize-shape suffix)))
        ((mv suffixp prefix-elements)
         (check-list-suffix shape-elements suffix-elements))
@@ -436,7 +433,6 @@
      turned back into a concatenation."))
   (b* (((when (endp shapes)) (shape-append nil))
        ((when (endp (cdr shapes))) (shape-fix (car shapes)))
-       ((unless (shape-list-addp shapes)) (reserr nil)) ; not supported
        (element-lists
         (shape-append-list->shapes (normalize-shape-list shapes)))
        ((mv joinp join) (list-prefix-join element-lists)))
@@ -907,6 +903,9 @@
      the substitution avoids variable capture
      by automatically alpha-renaming bound variables as needed
      (see @(tsee type-subst-type-vars-alpha)).
+     Besides the type binders,
+     this also alpha-renames the ispace binders in the rest,
+     which could otherwise capture free ispace variables of the type argument.
      The substituted rest must be an array type,
      possibly via the automatic lifting of atom types
      performed by @(tsee type-match-array):

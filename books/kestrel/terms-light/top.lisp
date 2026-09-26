@@ -88,6 +88,7 @@
 (include-book "combine-ifs-in-then-and-else-branches")
 (include-book "add-param-to-calls-in-term")
 (include-book "let-bind-formals-in-calls")
+(include-book "let-bind-formals-in-calls-proofs")
 (include-book "rename-vars-in-term")
 (include-book "restore-mv-in-branches")
 (include-book "restore-mv-lets-in-term")

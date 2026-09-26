@@ -73,12 +73,42 @@
    (xdoc::p
     "We formalize the format of @('signed char') as consisting of
      a specification of signed format
-     and a boolean flag saying whether the aforementioned pattern is a trap."))
+     and a boolean flag saying whether the aforementioned pattern is a trap.")
+   (xdoc::p
+    "These choices support the alternatives allowed by C17.
+     For C23, @(tsee schar-format-wfp) requires two's complement
+     and a false trap flag."))
   ((signed signed-format)
    (trap bool))
   :pred schar-formatp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define schar-format-wfp ((format schar-formatp)
+                          (std standardp))
+  :returns (yes/no booleanp)
+  :short "Check if a @('signed char') format is well-formed for a C standard."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The signed format must be well-formed for the standard,
+     as checked by @(tsee signed-format-wfp).")
+   (xdoc::p
+    "C17 allows either choice of the trap flag [C17:6.2.6.2/2],
+     while C23 requires it to be false [C23:6.2.6.2]."))
+  (and (signed-format-wfp (schar-format->signed format) std)
+       (standard-case std
+                      :c17 t
+                      :c23 (not (schar-format->trap format))))
+
+  ///
+
+  (defrule schar-format-wfp-of-standard-c17
+    (schar-format-wfp format (standard-c17))
+    :use (:instance signed-format-wfp-of-standard-c17
+                    (format (schar-format->signed format)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define schar-format->max ((schar-format schar-formatp)
                            (uchar-format uchar-formatp))
@@ -137,6 +167,12 @@
      but the pattern with sign bit 1 and all value bits 0
      is a trap representation).")
    (xdoc::p
+    "When @(tsee schar-format-wfp) holds for C23,
+     the minimum is always @($- 2^{\\mathtt{CHAR\\_BIT}-1}$),
+     i.e. @('-SCHAR_MAX - 1').
+     Since @('CHAR_BIT') is at least 8, this minimum is at most -128.
+     These consequences are proved below.")
+   (xdoc::p
     "Like @(tsee schar-format->max),
      this function also depends on the @('unsigned char') format.
      Unlike @(tsee schar-format->max),
@@ -162,7 +198,24 @@
       :trigger-terms ((schar-format->min schar-format uchar-format))))
     :hints (("Goal"
              :in-theory
-             (enable expt-of-one-less-than-uchar-format->size-lower-bound)))))
+             (enable expt-of-one-less-than-uchar-format->size-lower-bound))))
+
+  (defretd schar-format->min-as-max-when-c23
+    (implies (schar-format-wfp schar-format (standard-c23))
+             (equal min
+                    (- (1+ (schar-format->max schar-format uchar-format)))))
+    :hints (("Goal"
+             :in-theory (enable schar-format-wfp
+                                signed-format-wfp
+                                schar-format->max))))
+
+  (defretd schar-format->min-upper-bound-when-c23
+    (implies (schar-format-wfp schar-format (standard-c23))
+             (<= min -128))
+    :rule-classes
+    ((:linear
+      :trigger-terms ((schar-format->min schar-format uchar-format))))
+    :hints (("Goal" :in-theory (enable schar-format->min-as-max-when-c23)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -178,6 +231,11 @@
                      :trap nil)
 
   ///
+
+  (defrule schar-format-wfp-of-schar-format-8tcnt
+    (schar-format-wfp (schar-format-8tcnt) std)
+    :enable schar-format-wfp
+    :use signed-format-wfp-of-signed-format-twos-complement)
 
   (defruled schar-format->max-of-schar-format-8tcnt
     (equal (schar-format->max (schar-format-8tcnt) (uchar-format-8))

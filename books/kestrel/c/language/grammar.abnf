@@ -605,7 +605,7 @@ relational-expression = shift-expression
                       / relational-expression "<" shift-expression
                       / relational-expression ">" shift-expression
                       / relational-expression "<=" shift-expression
-                      / relational-expression "<=" shift-expression
+                      / relational-expression ">=" shift-expression
 
 equality-expression = relational-expression
                     / equality-expression "==" relational-expression

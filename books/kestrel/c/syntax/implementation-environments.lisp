@@ -18,6 +18,9 @@
 
 (acl2::controlled-configuration)
 
+(local (in-theory (disable (:e c::uchar-format-8)
+                           (:e c::schar-format-8tcnt))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ implementation-environments
@@ -261,8 +264,8 @@
   ((defruled ldm-ienv-wfp-lemma
      (c::ienv-requirep
       (ienv->dialect ienv)
-      '((c::size . 8))
-      '((c::signed :twos-complement) (c::trap))
+      (c::uchar-format-8)
+      (c::schar-format-8tcnt)
       (c::char-format (ienv->plain-char-signedp ienv))
       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->short-bytes ienv)))
       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->int-bytes ienv)))
@@ -272,12 +275,14 @@
       (charset (c::dialect->std (ienv->dialect ienv))))
      :use (:instance ienv-requirements (x ienv))
      :enable (c::ienv-requirep
+              c::schar-format-wfp-of-schar-format-8tcnt
               c::integer-format-short-wfp-of-integer-format-inc-sign-tcnpnt
               c::integer-format-int-wfp-of-integer-format-inc-sign-tcnpnt
               c::integer-format-long-wfp-of-integer-format-inc-sign-tcnpnt
               c::integer-format-llong-wfp-of-integer-format-inc-sign-tcnpnt
               c::bool-format-wfp
-              fix)
+              fix
+              (:e c::uchar-format-8))
      :disable ienv-requirements)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -316,7 +321,8 @@
     (equal (ienv->uchar-max ienv)
            (c::ienv->uchar-max (ldm-ienv ienv)))
     :enable (ldm-ienv
-             c::ienv->uchar-max)))
+             c::ienv->uchar-max
+             (:e c::uchar-format-8))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -339,7 +345,9 @@
     (equal (ienv->schar-max ienv)
            (c::ienv->schar-max (ldm-ienv ienv)))
     :enable (ldm-ienv
-             c::ienv->schar-max)))
+             c::ienv->schar-max
+             (:e c::uchar-format-8)
+             (:e c::schar-format-8tcnt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -361,7 +369,9 @@
     (equal (ienv->schar-min ienv)
            (c::ienv->schar-min (ldm-ienv ienv)))
     :enable (ldm-ienv
-             c::ienv->schar-min)))
+             c::ienv->schar-min
+             (:e c::uchar-format-8)
+             (:e c::schar-format-8tcnt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -381,7 +391,9 @@
            (c::ienv->char-max (ldm-ienv ienv)))
     :enable (ldm-ienv
              c::ienv->char-max
-             ldm-ienv-wfp-lemma)))
+             ldm-ienv-wfp-lemma
+             (:e c::uchar-format-8)
+             (:e c::schar-format-8tcnt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -400,7 +412,9 @@
            (c::ienv->char-min (ldm-ienv ienv)))
     :enable (ldm-ienv
              c::ienv->char-min
-             ldm-ienv-wfp-lemma)))
+             ldm-ienv-wfp-lemma
+             (:e c::uchar-format-8)
+             (:e c::schar-format-8tcnt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
