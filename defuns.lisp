@@ -6925,6 +6925,11 @@
       (msg "the proposed and existing definitions for ~x0 differ on their ~
             type declarations."
            (car def1)))
+     ((not (equal (fetch-dcl-field :loop$-recursion all-but-body1)
+                  (fetch-dcl-field :loop$-recursion all-but-body2)))
+      (msg "the proposed and existing definitions for ~x0 differ on their ~
+            :loop$-recursion declarations."
+           (car def1)))
      ((let* ((guards1 (fetch-dcl-field :guard all-but-body1))
              (guards1-trivial-p (or (null guards1) (equal guards1 '(t))))
              (guards2 (fetch-dcl-field :guard all-but-body2))

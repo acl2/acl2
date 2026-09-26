@@ -15,6 +15,7 @@
 (include-book "kestrel/utilities/non-trivial-bindings" :dir :system)
 (local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 
 ;; Ensures that all calls of TARGET-FN are on actuals that are just its formals
 ;; (lambda-bound as needed).  Consider calling reconstruct-lets-in-term after
@@ -37,10 +38,7 @@
          (if (and (eq fn target-fn)
                   (= (len (fargs term))
                      (len target-fn-formals)))
-             (let* ((bindings (non-trivial-bindings target-fn-formals new-args)) ; don't need to bind any var whose corresponding arg is itself
-                    (lambda-formals (strip-cars bindings))
-                    (new-args (strip-cdrs bindings)))
-               `((lambda ,lambda-formals (,fn ,@target-fn-formals)) ,@new-args))
+             `((lambda ,target-fn-formals (,fn ,@target-fn-formals)) ,@new-args)
            ;;not a lambda application, so just rebuild the function call:
            `(,fn ,@new-args))))))
 

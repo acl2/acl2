@@ -202,12 +202,14 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule subset-of-intersect0
-  (subset (intersect x y) x)
-  :enable pick-a-point)
+  (implies (subset x z)
+           (subset (intersect x y) z))
+  :enable pick-a-point-polar)
 
 (defrule subset-of-intersect1
-  (subset (intersect x y) y)
-  :enable pick-a-point)
+  (implies (subset y z)
+           (subset (intersect x y) z))
+  :enable pick-a-point-polar)
 
 (defrule subset-of-arg1-and-intersect0
   (equal (subset x (intersect x y))

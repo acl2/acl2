@@ -731,12 +731,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; For these functions, we suppress warning about ground terms
 ;; todo: add to this?
 (defconst *no-warn-ground-functions-jvm*
   '(th
     jvm::update-nth-local
     jvm::no-locked-object
     jvm::empty-operand-stack
+    jvm::push-operand ; for (jvm::push-operand '0 'nil) -- might not be needed if we always keep empty-operand-stack
     ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
