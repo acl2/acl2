@@ -604,6 +604,15 @@
   (:none ())
   :pred type-list-optionp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist type-option-list
+  :short "Fixtype of lists of optional types."
+  :elt-type type-option
+  :true-listp t
+  :elementp-of-nil t
+  :pred type-option-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod var+type?
