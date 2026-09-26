@@ -3376,7 +3376,7 @@
          ;; end EncodingSpecificOperations
          ((when (CurrentModeIsHyp)) (update-error *undefined* arm))
          (data (ZeroExtend (memA (reg* n arm) size arm) 32))
-         (arm (write_MemA (reg* n arm) size (slice (* 8 (- size 1)) 0 (reg* t2val arm)) arm))
+         (arm (write_MemA (reg* n arm) size (slice (- (* 8 size) 1) 0 (reg* t2val arm)) arm))
          (arm (if (== size #b1)
                   (set-reg tval data arm)
                 (set-reg tval (ROR 32 data (* 8 (uint 2 (slice 1 0 (reg* n arm))))) arm)))
