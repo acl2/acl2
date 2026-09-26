@@ -5025,11 +5025,12 @@
            (equal (bvchop size x)
                   (bvchop (+ -1 size) x))))
 
+;; not used
 (defthmd bvchop-when-top-bit-0-widen
   (implies (and (equal 0 (getbit (+ -1 size) x))
                 (posp size))
-           (equal (bvchop size x)
-                  (bvchop (+ -1 size) x))))
+           (equal (bvchop (+ -1 size) x)
+                  (bvchop size x))))
 
 ;subtracting a value that is one larger than x gives a smaller result than subtracting x
 (defthm <-of-bvminus-of-bvplus-of-1-and-bvminus
