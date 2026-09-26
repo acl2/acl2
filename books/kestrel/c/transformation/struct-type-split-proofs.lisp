@@ -194,7 +194,7 @@
      See the scanning code for details."))
   (:init ())
   (:types ((mems ident-list)
-           (types c$::type-list)
+           (types type-list)
            (lmems ident-list)))
   (:objects ())
   :pred stsp-stagep)
