@@ -1057,12 +1057,9 @@
                  :in-theory '((:e c::expr-ident)
                               (:e c::type-fix)
                               expr-compustate-vars)
-                 :use ((:instance expr-ident-compustate-vars
-                                  (var ',cvar)
-                                  (type ',ctype))
-                       (:instance expr-ident-congruence
-                                  (var ',cvar)
-                                  (type ',ctype))))))
+                 :use (:instance expr-ident-congruence
+                                 (var ',cvar)
+                                 (type ',ctype)))))
        ((mv thm-event thm-name thm-index)
         (gen-expr-thm expr
                       expr
