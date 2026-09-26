@@ -1845,7 +1845,7 @@
   (implies (and (<= size1 size2)
                 (natp size2))
            (equal (bvand size1 y (logext size2 x))
-                  (bvand size1 x y)))
+                  (bvand size1 y x)))
   :hints (("Goal" :in-theory (enable bvand))))
 
 (defthm bvor-of-logext-arg2
