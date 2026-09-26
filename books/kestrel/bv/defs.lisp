@@ -26,10 +26,14 @@
 (include-book "bvshr-def")
 (include-book "bvshl-def")
 (include-book "bvlt-def")
+(include-book "sbvlt-def")
 (include-book "bvplus-def")
 (include-book "bvmult-def")
 (include-book "sbvdiv-def")
 (include-book "bvif-def")
+(include-book "bvcount-def")
+(include-book "bit-to-bool-def")
+(include-book "bool-to-bit-def")
 (include-book "defs-arith")
 (include-book "leftrotate") ; todo: split out defs
 (include-book "rightrotate") ; todo: split out defs
