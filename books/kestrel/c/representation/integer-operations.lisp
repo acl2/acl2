@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -153,6 +153,7 @@
                           guard
                           res-type
                           short
+                          long
                           body
                           guard-hints
                           no-fix
@@ -201,6 +202,7 @@
      the savings are significant."))
   `(defsection ,name
      :short ,short
+     ,@(and long (list :long long))
      ,@prepwork
      (defun ,name ,(if arg-type '(x) '(x y))
        (declare
