@@ -1001,18 +1001,14 @@
                 (old-val (c::expr-value->value old-eval))
                 (new-val (c::expr-value->value new-eval)))
              (implies (and (compustate-equivp old-compst new-compst)
-                           (integerp limit)
-                           (>= limit 2))
-                      (and (not (c::errorp old-eval))
-                           (not (c::errorp new-eval))
+                           (not (c::errorp old-eval)))
+                      (and (not (c::errorp new-eval))
                            old-eval
                            new-eval
                            (equal old-val new-val)
-                           (equal old-compst1
-                                  (c::compustate-fix old-compst))
-                           (equal new-compst1
-                                  (c::compustate-fix new-compst)))))
-           :use struct-value-equivp-when-compustate-equivp
+                           (compustate-equivp old-compst1 new-compst1))))
+           :use (struct-value-equivp-when-compustate-equivp
+                 lemma)
            :expand ((c::exec-expr ',(c::expr-member (c::expr-ident old-cname)
                                                     cmem)
                                   old-compst old-fenv limit)
@@ -1029,7 +1025,19 @@
                     value-kind-when-struct-value-oldp
                     ,value-kind-when-struct-value-newp
                     ,value-struct-read-mem-when-struct-value-oldp
-                    ,value-struct-read-mem-when-struct-value-newp)))
+                    ,value-struct-read-mem-when-struct-value-newp)
+           :prep-lemmas
+           ((defruled lemma
+              (b* ((old-expr
+                    (c::expr-member (c::expr-ident ',old-cname) ',cmem))
+                   ((mv old-eval &)
+                    (c::exec-expr old-expr old-compst old-fenv limit)))
+                (implies (not (c::errorp old-eval))
+                         (>= limit 2)))
+              :expand (c::exec-expr ',(c::expr-member (c::expr-ident old-cname)
+                                                      cmem)
+                                    old-compst old-fenv limit)
+              :enable c::exec-expr))))
        ((erp events)
         (stsp-exec-mem-eq (cdr mems) lmems old-name newl-name newr-name)))
     (retok (cons event events))))

@@ -27,7 +27,7 @@
 (include-book "std/system/uguard-plus" :dir :system)
 (include-book "std/typed-alists/keyword-symbol-alistp" :dir :system)
 (include-book "std/typed-alists/symbol-symbol-alistp" :dir :system)
-(include-book "std/util/def-guard-theorem-rewrite" :dir :system)
+;; (include-book "std/util/def-guard-theorem-rewrite" :dir :system)
 
 (local (include-book "std/system/all-fnnames" :dir :system))
 (local (include-book "std/system/all-vars" :dir :system))
@@ -584,21 +584,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-fn-guard-thm ((fn symbolp)
-                              (names-to-avoid symbol-listp)
-                              (wrld plist-worldp))
-  :returns (mv (event pseudo-event-formp)
-               (name symbolp)
-               (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
-  :short "Generate a local theorem that is
-          a rewrite-rule form of the guard theorem of @('fn')."
-  (b* ((name (pack fn '-guard-rewrite))
-       ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
-                                  name nil names-to-avoid wrld))
-       (event `(acl2::def-guard-theorem-rewrite ,name ,fn :simplify nil)))
-    (mv event
-        name
-        names-to-avoid)))
+;; (define atc-gen-fn-guard-thm ((fn symbolp)
+;;                               (names-to-avoid symbol-listp)
+;;                               (wrld plist-worldp))
+;;   :returns (mv (event pseudo-event-formp)
+;;                (name symbolp)
+;;                (names-to-avoid symbol-listp :hyp (symbol-listp names-to-avoid)))
+;;   :short "Generate a local theorem that is
+;;           a rewrite-rule form of the guard theorem of @('fn')."
+;;   (b* ((name (pack fn '-guard-rewrite))
+;;        ((mv name names-to-avoid) (fresh-logical-name-with-$s-suffix
+;;                                   name nil names-to-avoid wrld))
+;;        (event `(acl2::def-guard-theorem-rewrite ,name ,fn :simplify nil)))
+;;     (mv event
+;;         name
+;;         names-to-avoid)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3271,10 +3271,10 @@
         (atc-gen-fn-guard fn names-to-avoid state))
        ((mv fn-guard-unnorm-def-event fn-guard-unnorm names-to-avoid)
         (install-not-normalized-event fn-guard t names-to-avoid wrld))
-       ((mv fn-guard-thm-event
-            & ; fn-guard-thm
-            names-to-avoid)
-        (atc-gen-fn-guard-thm fn names-to-avoid wrld))
+       ;; ((mv fn-guard-thm-event
+       ;;      fn-guard-thm
+       ;;      names-to-avoid)
+       ;;  (atc-gen-fn-guard-thm fn names-to-avoid wrld))
        ((mv fn-def*-events
             fn-def*
             names-to-avoid)
@@ -3357,6 +3357,7 @@
                        :fn fn
                        :fn-guard fn-guard
                        :fn-guard-unnorm fn-guard-unnorm
+                       ;; :fn-guard-thm fn-guard-thm
                        :compst-var compst-var
                        :fenv-var fenv-var
                        :limit-var limit-var
@@ -3486,7 +3487,7 @@
          (list fn-fun-env-event)
          (list fn-guard-event
                fn-guard-unnorm-def-event)
-         (list fn-guard-thm-event)
+         ;; (list fn-guard-thm-event)
          fn-def*-events
          formals-events
          (list init-scope-expand-event)
@@ -5086,10 +5087,10 @@
         (atc-gen-fn-guard fn names-to-avoid state))
        ((mv fn-guard-unnorm-def-event fn-guard-unnorm names-to-avoid)
         (install-not-normalized-event fn-guard t names-to-avoid wrld))
-       ((mv fn-guard-thm-event
-            & ; fn-guard-thm
-            names-to-avoid)
-        (atc-gen-fn-guard-thm fn names-to-avoid wrld))
+       ;; ((mv fn-guard-thm-event
+       ;;      fn-guard-thm
+       ;;      names-to-avoid)
+       ;;  (atc-gen-fn-guard-thm fn names-to-avoid wrld))
        ((mv measure-of-fn-event
             measure-of-fn
             measure-formals
@@ -5109,6 +5110,7 @@
                                            :fn fn
                                            :fn-guard fn-guard
                                            :fn-guard-unnorm fn-guard-unnorm
+                                           ;; :fn-guard-thm fn-guard-thm
                                            :compst-var nil
                                            :fenv-var nil
                                            :limit-var nil
@@ -5255,7 +5257,7 @@
        (events (append progress-start?
                        (list fn-guard-event
                              fn-guard-unnorm-def-event
-                             fn-guard-thm-event
+                             ;; fn-guard-thm-event
                              opener-base-thm-event
                              opener-step-thm-event
                              measure-of-fn-event
