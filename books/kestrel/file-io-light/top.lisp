@@ -1,6 +1,6 @@
 ; Top book of the file-io library
 ;
-; Copyright (C) 2017-2023 Kestrel Institute
+; Copyright (C) 2017-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,6 +20,8 @@
 (include-book "channels")
 
 (include-book "iprint-oracle-updates")
+
+(include-book "increment-file-clock")
 
 ;; Built-in channel functions:
 (include-book "open-channels-p")
