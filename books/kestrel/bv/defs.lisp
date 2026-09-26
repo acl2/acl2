@@ -29,6 +29,7 @@
 (include-book "bvplus-def")
 (include-book "bvmult-def")
 (include-book "sbvdiv-def")
+(include-book "bvif-def")
 (include-book "defs-arith")
 (include-book "leftrotate") ; todo: split out defs
 (include-book "rightrotate") ; todo: split out defs
@@ -99,15 +100,6 @@
   (if (= (getbit 0 x) (getbit 0 y))
       1
     0))
-
-;note that the test is a boolean, not a bit vector
-(defund bvif (size test thenpart elsepart)
-  (declare (xargs :guard (and (natp size)
-                              (integerp thenpart)
-                              (integerp elsepart))))
-  (if test
-      (bvchop size thenpart)
-    (bvchop size elsepart)))
 
 ;floor of log (base 2) of x
 (defund lg (x)
