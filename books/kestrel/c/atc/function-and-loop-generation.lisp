@@ -3272,7 +3272,7 @@
        ((mv fn-guard-unnorm-def-event fn-guard-unnorm names-to-avoid)
         (install-not-normalized-event fn-guard t names-to-avoid wrld))
        ((mv fn-guard-thm-event
-            & ; fn-guard-thm
+            fn-guard-thm
             names-to-avoid)
         (atc-gen-fn-guard-thm fn names-to-avoid wrld))
        ((mv fn-def*-events
@@ -3357,6 +3357,7 @@
                        :fn fn
                        :fn-guard fn-guard
                        :fn-guard-unnorm fn-guard-unnorm
+                       :fn-guard-thm fn-guard-thm
                        :compst-var compst-var
                        :fenv-var fenv-var
                        :limit-var limit-var
@@ -5087,7 +5088,7 @@
        ((mv fn-guard-unnorm-def-event fn-guard-unnorm names-to-avoid)
         (install-not-normalized-event fn-guard t names-to-avoid wrld))
        ((mv fn-guard-thm-event
-            & ; fn-guard-thm
+            fn-guard-thm
             names-to-avoid)
         (atc-gen-fn-guard-thm fn names-to-avoid wrld))
        ((mv measure-of-fn-event
@@ -5109,6 +5110,7 @@
                                            :fn fn
                                            :fn-guard fn-guard
                                            :fn-guard-unnorm fn-guard-unnorm
+                                           :fn-guard-thm fn-guard-thm
                                            :compst-var nil
                                            :fenv-var nil
                                            :limit-var nil

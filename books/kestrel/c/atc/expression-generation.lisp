@@ -63,6 +63,8 @@
              "Described in @(see atc-implementation).")
    (fn-guard-unnorm symbol
                     "Described in @(see atc-implementation).")
+   (fn-guard-thm symbol
+                 "Described in @(see atc-implementation).")
    (compst-var symbol
                "Described in @(see atc-implementation).")
    (thm-index pos
@@ -2539,6 +2541,8 @@
              "Described in @(see atc-implementation).")
    (fn-guard-unnorm symbol
                     "Described in @(see atc-implementation).")
+   (fn-guard-thm symbol
+                 "Described in @(see atc-implementation).")
    (compst-var symbol
                "Described in @(see atc-implementation).")
    (thm-index pos
@@ -2623,6 +2627,7 @@
                             :fn gin.fn
                             :fn-guard gin.fn-guard
                             :fn-guard-unnorm gin.fn-guard-unnorm
+                            :fn-guard-thm gin.fn-guard-thm
                             :compst-var gin.compst-var
                             :thm-index gin.thm-index
                             :names-to-avoid gin.names-to-avoid
