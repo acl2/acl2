@@ -1006,10 +1006,7 @@
                            old-eval
                            new-eval
                            (equal old-val new-val)
-                           (equal old-compst1
-                                  (c::compustate-fix old-compst))
-                           (equal new-compst1
-                                  (c::compustate-fix new-compst)))))
+                           (compustate-equivp old-compst1 new-compst1))))
            :use (struct-value-equivp-when-compustate-equivp
                  lemma)
            :expand ((c::exec-expr ',(c::expr-member (c::expr-ident old-cname)
