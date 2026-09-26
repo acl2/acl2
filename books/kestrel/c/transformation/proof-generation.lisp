@@ -1057,12 +1057,9 @@
                  :in-theory '((:e c::expr-ident)
                               (:e c::type-fix)
                               expr-compustate-vars)
-                 :use ((:instance expr-ident-compustate-vars
-                                  (var ',cvar)
-                                  (type ',ctype))
-                       (:instance expr-ident-congruence
-                                  (var ',cvar)
-                                  (type ',ctype))))))
+                 :use (:instance expr-ident-congruence
+                                 (var ',cvar)
+                                 (type ',ctype)))))
        ((mv thm-event thm-name thm-index)
         (gen-expr-thm expr
                       expr
@@ -1512,8 +1509,6 @@
                                                          compst
                                                          old-fenv
                                                          (1- limit))))
-                                      (limit (1- limit)))
-                           (:instance ,arg2-thm-name
                                       (limit (1- limit)))
                            (:instance expr-binary-pure-strict-congruence
                                       (op ',cop)
