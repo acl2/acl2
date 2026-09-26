@@ -567,6 +567,31 @@
            (len var+types))
     :hints (("Goal" :induct t :in-theory (enable len)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define var+type?-list-set-types ((types type-option-listp)
+                                  (var+types var+type?-listp))
+  :returns (new-var+types var+type?-listp)
+  :short "Replace, in a list of variables with optional types,
+          the optional types with given ones, keeping the variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two lists are expected to have the same length.
+     We should make this a guard."))
+  (b* (((when (endp var+types)) nil)
+       ((when (endp types)) (var+type?-list-fix var+types))
+       (vt (car var+types)))
+    (cons (make-var+type? :var (var+type?->var vt) :type? (car types))
+          (var+type?-list-set-types (cdr types) (cdr var+types))))
+
+  ///
+
+  (defret len-of-var+type?-list-set-types
+    (equal (len new-var+types)
+           (len var+types))
+    :hints (("Goal" :induct t :in-theory (enable len)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ispace-var-dims-from-names ((names string-setp))
