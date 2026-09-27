@@ -39,14 +39,35 @@
    (xdoc::p
     "Our inference rules prove judgements (i.e. define predicates) of that form,
      which say that an expression or atom
-     satisfies all the static validity conditions and has a certain type.
-     We have separate predicates for expressions and atoms.")
+     satisfies all the static validity conditions and has a certain type,
+     in the sort, kind, and type environments;
+     but we call the latter
+     `ispace context' (see also @(see ispace-validity)),
+     `type context' (see also @(see type-validity)),
+     and `expression context',
+     to emphasize that they provide information about
+     ispace, type, and expression variables,
+     and to distinguish them from environments.
+     In some literature, `type context' may refer to
+     an association of types to variables,
+     but we call these `expression contexts' instead,
+     while we call `type context' a set of type variables.
+     This is part of the reason why
+     we use `context' instead of `environment' here:
+     to avoid confusion with `type environment' in [thesis] [arxiv] [esop],
+     which is an expression context for us,
+     and different from a type context.")
    (xdoc::p
-    "Sort and kind environments are modeled
+    "We have separate predicates for expressions and atoms.
+     So we really formalize expression and atom validity,
+     but given that atoms are somewhat auxiliary to expressions,
+     the abbreviation `expression validity' seems justified.")
+   (xdoc::p
+    "Ispace and type contexts are modeled
      as sets of ispace and type variables,
      as in @(see ispace-validity) and @(see type-validity).")
    (xdoc::p
-    "Type environments are modeled as maps from names to types,
+    "Expression contexts are modeled as maps from names to types,
      similarly to @($\\Gamma$) in [thesis] [arxiv] [esop].
      Variables are always for expressions, never for atoms;
      so the types in the map should all have the array kind.
@@ -123,9 +144,9 @@
      namely to the shape of the body type of the product type.")
    (xdoc::p
     "The rule for unboxing includes the requirement that
-     the bound ispace variable is not already in the sort environment,
+     the bound ispace variable is not already in the ispace context,
      otherwise the bound variable is confused with the one already in scope,
-     in the types of the type environment and in the type of the expression,
+     in the types of the expression context and in the type of the expression,
      which breaks type safety;
      this is implicit in [thesis] [arxiv],
      via the usual convention that
@@ -143,7 +164,7 @@
      and to be equivalent to the type that the rule in [thesis] [arxiv]
      assigns to the unboxing expression.
      The requirement in [thesis] [arxiv] that
-     the resulting type is valid in the enclosing environments,
+     the resulting type is valid in the enclosing contexts,
      which prevents the bound ispace variable from escaping,
      is applied to the annotation,
      because that is the type assigned to the expression,
@@ -154,13 +175,13 @@
      which form the input and output types of the function type.
      The input type must be valid and array-kinded.
      The body must be valid, and have the output type,
-     in the environment augmented with the parameter.")
+     in the contexts augmented with the parameter.")
    (xdoc::p
     "For a type lambda abstraction,
-     the body must be valid in the environment augmented with the parameter,
+     the body must be valid in the contexts augmented with the parameter,
      and the abstraction has the universal type
      consisting of the parameter and the body type.
-     The parameter must not occur in the kind environment already
+     The parameter must not occur in the type contexts already
      (an implicit requirement in [thesis] [arxiv]).")
    (xdoc::p
     "The rule for an ispace lambda abstraction

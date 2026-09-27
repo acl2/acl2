@@ -41,14 +41,17 @@
      but not @($k$):
      they say that the type satisfies all the static validity conditions
      in the sort and kind environments;
-     but we call the latter `ispace context' (see also @(see ispace-validity))
+     but we call the latter
+     `ispace context' (see also @(see ispace-validity))
      and `type context',
-     to emphasize that they provide information about ispace and type variables
+     to emphasize that they provide information about ispace and type variables,
      and to distinguish them from environments.
-     (In some literature, `type context' may refer to
+     In some literature, `type context' may refer to
      an association of types to variables,
-     but we call these `expression contexts'; see @(see expression-validity).)
-     We model ispace contexts as in @(see ispace-validity),
+     but we call these `expression contexts':
+     see @(see expression-validity).")
+   (xdoc::p
+    "We model ispace contexts as in @(see ispace-validity),
      and we similarly model type contexts as sets of type variables,
      which carry their own kinds
      similarly to ispace variables carrying their own sorts."))

@@ -40,9 +40,10 @@
      they say that the ispace satisfies all the static validity conditions
      in the sort environment;
      but we call the latter `ispace context',
-     to emphasize that it provides information about ispace variables
-     and to distinguish it from environments.
-     Since ispace variables carry their own sorts,
+     to emphasize that it provides information about ispace variables,
+     and to distinguish it from environments.")
+   (xdoc::p
+    "Since ispace variables carry their own sorts,
      our ispace context is just a set of ispace variables in scope.")
    (xdoc::p
     "We define validity predicates for dimension, shape, and ispace ASTs."))
