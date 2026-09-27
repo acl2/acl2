@@ -35,8 +35,8 @@
     "We use the following approach to match dimensions.")
    (xdoc::p
     "The difficulty is with additions.
-     Matching @('5') to the pattern @('(+ 1 i)') should succeed,
-     by binding @('i') to @('4'),
+     Matching @('5') to the pattern @('(+ 1 $i)') should succeed,
+     by binding @('$i') to @('4'),
      because @('(+ 1 4)') is equivalent to @('5'),
      even though the two have different structures.
      So addition patterns must be matched modulo additive equivalence:
@@ -56,13 +56,13 @@
      their constants are equal and their multisets are equal.
      Thus, instead of solving an equation over terms,
      we solve one over a number and a multiset.
-     Consider matching @('(+ 2 k)') to the pattern @('(+ 1 i)').
+     Consider matching @('(+ 2 $k)') to the pattern @('(+ 1 $i)').
      The dimension is the number @('2')
-     with the multiset consisting of @('k').
-     The pattern contributes the number @('1') and the unknown @('i').
-     Whatever @('i') stands for must supply
-     the missing number @('1') and the missing @('k'),
-     so @('i') must be @('(+ 1 k)').")
+     with the multiset consisting of @('$k').
+     The pattern contributes the number @('1') and the unknown @('$i').
+     Whatever @('$i') stands for must supply
+     the missing number @('1') and the missing @('$k'),
+     so @('$i') must be @('(+ 1 $k)').")
    (xdoc::p
     "This is the whole approach:
      we subtract from the dimension what the pattern already accounts for,
@@ -107,11 +107,11 @@
      modulo equivalence, and is removed once.
      For instance,
      with the remainder consisting of
-     the constant @('5') and the addends @('k') and @('l'),
-     accounting for @('(+ 2 l)') leaves
-     the constant @('3') and the addend @('k'),
+     the constant @('5') and the addends @('$k') and @('$l'),
+     accounting for @('(+ 2 $l)') leaves
+     the constant @('3') and the addend @('$k'),
      while accounting for @('6') fails on the constant
-     and accounting for @('m') fails on the addends.
+     and accounting for @('$m') fails on the addends.
      A failure here means that no substitution can work,
      because the known part of the pattern already exceeds the dimension.")
    (xdoc::p
@@ -125,7 +125,7 @@
      so we bind it to the remainder turned back into a dimension
      and normalized:
      e.g. @('4') rather than @('(+ 4)'),
-     and @('k') rather than @('(+ 0 k)').
+     and @('$k') rather than @('(+ 0 $k)').
      Otherwise, the match fails, rather than guessing:
      two unbound variables could split the remainder in many ways,
      and one unbound variable occurring twice would need division.
@@ -139,15 +139,15 @@
     "The substitution is threaded through matches (see @(tsee dims-match)):
      the bindings come from earlier matches of other components,
      and they constrain the current match.
-     This is what makes matching @('(+ 3 k)') to @('(+ i j)') succeed
-     when @('i') is already bound to @('3'):
-     @('i') is a known addend,
-     the remainder becomes just @('k'),
-     and @('j') is forced to be @('k').
+     This is what makes matching @('(+ 3 $k)') to @('(+ $i $j)') succeed
+     when @('$i') is already bound to @('3'):
+     @('$i') is a known addend,
+     the remainder becomes just @('$k'),
+     and @('$j') is forced to be @('$k').
      It is also how rigid variables work:
      the entry points bind them to themselves
      (see @(tsee type-match-vars)),
-     so a rigid variable @('k') in the pattern is instantiated to @('k'),
+     so a rigid variable @('$k') in the pattern is instantiated to @('$k'),
      and must be found in the dimension.")
    (xdoc::p
     "Every conclusion drawn by this approach
@@ -156,10 +156,10 @@
      Completeness,
      modulo additive equivalence and under the uniqueness restriction above,
      requires the dimension and the pattern to be normalized:
-     if the dimension were the unflattened @('(+ 1 (+ 2 k))'),
-     the split would treat @('(+ 2 k)') as one opaque addend,
-     and matching to @('(+ 3 i)') would fail,
-     although binding @('i') to @('k') works.
+     if the dimension were the unflattened @('(+ 1 (+ 2 $k))'),
+     the split would treat @('(+ 2 $k)') as one opaque addend,
+     and matching to @('(+ 3 $i)') would fail,
+     although binding @('$i') to @('$k') works.
      Thus, the callers are expected to normalize both sides
      before matching.")
    (xdoc::h3
@@ -171,15 +171,15 @@
     "The difficulty is that
      concatenations, splices, and shapes with multiple dimensions
      are different ways to write equivalent shapes.
-     Matching @('(dims 2 1)') to the pattern @('(++ s (dims 1))')
+     Matching @('(dims 2 1)') to the pattern @('(++ @s (dims 1))')
      should succeed,
-     by binding @('s') to the shape with the single dimension @('2'),
+     by binding @('@s') to the shape with the single dimension @('2'),
      because @('(++ (dims 2) (dims 1))') is equivalent to @('(dims 2 1)').
-     Matching @('(dims 3)') to the pattern @('[i s]'),
-     i.e. the splice of the dimension variable @('i')
-     and the shape variable @('s'),
+     Matching @('(dims 3)') to the pattern @('[$i @s]'),
+     i.e. the splice of the dimension variable @('$i')
+     and the shape variable @('@s'),
      should succeed,
-     by binding @('i') to @('3') and @('s') to the empty shape.
+     by binding @('$i') to @('3') and @('@s') to the empty shape.
      So shape patterns must be matched modulo shape equivalence:
      this is the task of @(tsee shape-match) and @(tsee ispace-match),
      described here.")
@@ -197,11 +197,11 @@
      we match two sequences of elements,
      in which a shape variable of the pattern may stand for a segment,
      i.e. zero or more consecutive elements, of the shape being matched.
-     Consider matching @('(dims 2 1)') to the pattern @('(++ s (dims 1))').
+     Consider matching @('(dims 2 1)') to the pattern @('(++ @s (dims 1))').
      The shape normalizes to the elements @('(dims 2)') and @('(dims 1)'),
-     and the pattern to the elements @('s') and @('(dims 1)').
+     and the pattern to the elements @('@s') and @('(dims 1)').
      The last elements are matched together,
-     and @('s') must stand for the rest, i.e. the element @('(dims 2)').")
+     and @('@s') must stand for the rest, i.e. the element @('(dims 2)').")
    (xdoc::p
     "This is the whole approach:
      we go through the elements of the pattern,
@@ -215,8 +215,8 @@
      which must also have a single dimension:
      the two dimensions are matched via @(tsee dim-match).
      Since that is modulo additive equivalence,
-     matching @('(dims 3)') to @('[(+ 1 i) s]')
-     binds @('i') to @('2'), and @('s') to the empty shape.
+     matching @('(dims 3)') to @('[(+ 1 $i) @s]')
+     binds @('$i') to @('2'), and @('@s') to the empty shape.
      A shape variable of the shape being matched
      never matches such an element of the pattern,
      because it may stand for any number of dimensions.")
@@ -243,16 +243,16 @@
      and to the empty concatenation @('(++)') in the second example above,
      which is the only solution.
      The position of the unbound variable does not matter:
-     matching @('(++ t (dims 3))') to the pattern @('(++ s (dims i))')
-     binds @('s') to @('(++ t)') and @('i') to @('3').")
+     matching @('(++ @t (dims 3))') to the pattern @('(++ @s (dims $i))')
+     binds @('@s') to @('(++ @t)') and @('$i') to @('3').")
    (xdoc::p
     "Ispaces are matched in the same way,
      because a normalized ispace (see @(tsee normalize-ispace))
      is always a shape ispace with a concatenation.
      For instance, a dimension ispace @('3')
-     is matched to a dimension ispace pattern @('i')
+     is matched to a dimension ispace pattern @('$i')
      as the shape with the single dimension @('3')
-     to the shape with the single dimension @('i').")
+     to the shape with the single dimension @('$i').")
    (xdoc::p
     "As with dimension matching,
      the substitutions (one for dimension variables and one for shape variables)
@@ -509,11 +509,11 @@
      in which case the dimensions in the substitution mention those names;
      thus, the substitution must not be applied repeatedly
      or composed with itself.
-     For instance, matching @('(+ 3 i)') to the pattern @('(+ 1 j)'),
-     with @('i') already bound to @('5') by a previous match,
-     binds @('j') to @('(+ 2 i)'):
-     applying the substitution to the pattern yields @('(+ 1 (+ 2 i))'),
-     which is equivalent to @('(+ 3 i)'),
+     For instance, matching @('(+ 3 $i)') to the pattern @('(+ 1 $j)'),
+     with @('$i') already bound to @('5') by a previous match,
+     binds @('$j') to @('(+ 2 $i)'):
+     applying the substitution to the pattern yields @('(+ 1 (+ 2 $i))'),
+     which is equivalent to @('(+ 3 $i)'),
      but applying it once more would yield @('(+ 1 (+ 2 5))')."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -603,9 +603,9 @@
    (xdoc::p
     "For now we perform a purely syntactical match, as in @(tsee dims-match),
      which is incomplete with respect to shape and ispace equivalence.
-     For instance, the pattern @('(++ s (dims 1))')
+     For instance, the pattern @('(++ @s (dims 1))')
      is not matched by the shape @('(dims 2 1)'),
-     even though replacing @('s') with @('(dims 2)') in the pattern
+     even though replacing @('@s') with @('(dims 2)') in the pattern
      yields a shape equivalent to @('(dims 2 1)').
      We will need to extend this to matching modulo equivalence.")
    (xdoc::p
