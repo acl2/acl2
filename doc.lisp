@@ -107143,6 +107143,10 @@ Bug Fixes From AI via Eric Smith
   recompression was required but was not performed.  See
   [community-book] [30m[47msystem/tests/compress1-length-bug.lisp[0m[0m.
 
+  Fixed a soundness bug caused by failing to account for
+  [invariant-risk] for function calls inside calls of [30m[47m[loop$][0m[0m.  See
+  [community-book] [30m[47msystem/tests/loop-invariant-risk.lisp[0m[0m.
+
   Fixed a soundness bug in [30m[47m[compress2][0m[0m due to an inadequate ordering
   check in raw Lisp; see [community-book]
   [30m[47msystem/tests/compress2-order-bug.lisp[0m[0m.
@@ -107210,6 +107214,21 @@ Bug Fixes From AI via Eric Smith
     (in-theory (disable natp (:e natp)))
     (defstub p (x) t)
     (thm (implies (and (not (equal x 'abc)) (natp x)) (p x)))
+
+  Fixed a soundness bug in the rewriter's handling of [30m[47m[implies][0m[0m.  When
+  the conclusion of [30m[47m(implies test concl)[0m[0m rewrote to [30m[47mnil[0m[0m, the whole
+  implication was unconditionally rewritten to an [30m[47miff[0m[0m-equivalent of
+  the negation of the test.  Therefore, the Boolean implication could
+  be rewritten to a non-Boolean.  For an example, see
+  [community-book] [30m[47msystem/tests/implies-not-nil.lisp[0m[0m.  Thanks to
+  Grant Jurgensen for supplying the bug fix.
+
+  Fixed a [proof-builder] soundness bug that failed to require [force]d
+  hypotheses to be proved when an application of the [30m[47m:s[0m[0m command found
+  a contradiction in the assumptions governing the current subterm.
+  (These are the union of the set of top-level assumptions and the
+  set of governing IF-tests.)  For an example, see [community-book]
+  [30m[47msystem/tests/proof-builder-assumptions-contradiction.lisp[0m[0m.
 
 
 Other Bug Fixes

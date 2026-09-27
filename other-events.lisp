@@ -27997,10 +27997,10 @@
 
 (defun hyps-type-alist (assumptions ens wrld state)
 
-; Note that the force-flg arg to type-alist-clause is nil here, so we shouldn't
-; wind up with any assumptions in the returned tag-tree. Also note that we
-; return (mv contradictionp type-alist fc-pair-lst), where actually fc-pair-lst
-; is a ttree if contradictionp holds; normally we ignore fc-pair-lst otherwise.
+; We return (mv contradictionp type-alist ttree-or-fc-pairs), where
+; ttree-or-fc-pairs is a ttree if contradictionp is true and otherwise ttree is
+; generally ignored (it's the fc-pairs returned in that case by
+; forward-chain-top).
 
   (forward-chain-top 'show-rewrites
                      (dumb-negate-lit-lst (expand-assumptions assumptions))

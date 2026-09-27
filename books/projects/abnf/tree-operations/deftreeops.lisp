@@ -29,8 +29,6 @@
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/true-list-listp-theorems" :dir :system)
 (include-book "std/alists/assoc" :dir :system)
-(include-book "std/typed-alists/string-symbol-alistp" :dir :system)
-(include-book "std/typed-alists/string-symbollist-alistp" :dir :system)
 (include-book "std/typed-lists/nat-listp" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
@@ -299,6 +297,7 @@
   :keyp-of-nil nil
   :valp-of-nil nil
   :pred deftreeops-rulename-info-alistp
+
   ///
 
   (defrule deftreeops-rulename-infop-when-deftreeops-rulename-info-alistp
@@ -364,6 +363,7 @@
   :keyp-of-nil nil
   :valp-of-nil nil
   :pred deftreeops-charval-info-alistp
+
   ///
 
   (defrule deftreeops-charval-infop-when-deftreeops-charval-info-alistp
@@ -1005,6 +1005,7 @@
           (terms (deftreeops-gen-discriminant-terms-aux1 alt))
           ((unless terms) nil))
        (cons term terms))
+
      ///
 
      (defret len-of-deftreeops-gen-discriminant-terms-aux1
@@ -1053,6 +1054,7 @@
                       (nth 0 (nth 0 (tree-nonleaf->branches cst)))
                       :nonleaf)))
              (t nil)))
+
      ///
 
      (defret len-of-deftreeops-gen-discriminant-terms-aux2
