@@ -110243,6 +110243,14 @@ it."
  &ldquo;Example involving exclusion of parent stobj from
  producer-vars&rdquo;.</p>
 
+ <p>Fixed a soundness bug which was fixed by tweaking the raw Lisp code for
+ @(tsee set-bad-lisp-consp-memoize).</p>
+
+ <p>Fixed a soundness bug in @(tsee defabsstobj) due to a failure of ACL2 to
+ consider congruent stobjs when deciding whether to require @(':PROTECT T') to
+ be specified for an exported function.  For an example, see @(see
+ community-book) @('system/tests/protect-congruent-stobj.lisp').</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2

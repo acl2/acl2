@@ -107235,6 +107235,14 @@ Bug Fixes From AI via Eric Smith
   the header, ``Example involving exclusion of parent stobj from
   producer-vars''.
 
+  Fixed a soundness bug which was fixed by tweaking the raw Lisp code
+  for [30m[47m[set-bad-lisp-consp-memoize][0m[0m.
+
+  Fixed a soundness bug in [30m[47m[defabsstobj][0m[0m due to a failure of ACL2 to
+  consider congruent stobjs when deciding whether to require [30m[47m:PROTECT
+  T[0m[0m to be specified for an exported function.  For an example, see
+  [community-book] [30m[47msystem/tests/protect-congruent-stobj.lisp[0m[0m.
+
 
 Other Bug Fixes
 
