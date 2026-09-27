@@ -41,7 +41,7 @@
      which say that an expression or atom
      satisfies all the static validity conditions and has a certain type,
      in the sort, kind, and type environments;
-     but we call the latter
+     but we call those environments
      `ispace context' (see also @(see ispace-validity)),
      `type context' (see also @(see type-validity)),
      and `expression context',
@@ -181,7 +181,7 @@
      the body must be valid in the contexts augmented with the parameter,
      and the abstraction has the universal type
      consisting of the parameter and the body type.
-     The parameter must not occur in the type contexts already
+     The parameter must not occur in the type context already
      (an implicit requirement in [thesis] [arxiv]).")
    (xdoc::p
     "The rule for an ispace lambda abstraction
