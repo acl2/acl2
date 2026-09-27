@@ -161,7 +161,115 @@
      and matching to @('(+ 3 i)') would fail,
      although binding @('i') to @('k') works.
      Thus, the callers are expected to normalize both sides
-     before matching."))
+     before matching.")
+   (xdoc::h3
+    "Shape Matching")
+   (xdoc::p
+    "We use the following approach to match shapes,
+     and also ispaces, which normalize to shapes.")
+   (xdoc::p
+    "The difficulty is that
+     concatenations, splices, and shapes with multiple dimensions
+     are different ways to write equivalent shapes.
+     Matching @('(dims 2 1)') to the pattern @('(++ s (dims 1))')
+     should succeed,
+     by binding @('s') to the shape with the single dimension @('2'),
+     because @('(++ (dims 2) (dims 1))') is equivalent to @('(dims 2 1)').
+     Matching @('(dims 3)') to the pattern @('[i s]'),
+     i.e. the splice of the dimension variable @('i')
+     and the shape variable @('s'),
+     should succeed,
+     by binding @('i') to @('3') and @('s') to the empty shape.
+     So shape patterns must be matched modulo shape equivalence:
+     this is the task of @(tsee shape-match) and @(tsee ispace-match),
+     described here.")
+   (xdoc::p
+    "The key observation is that
+     a normalized shape (see @(tsee normalize-shape))
+     has a canonical form:
+     a concatenation of elements,
+     each of which is a shape variable
+     or a shape with a single (normalized) dimension.
+     Two normalized shapes are equivalent exactly when
+     their lists of elements are equal, element by element.
+     Thus, instead of matching trees of
+     concatenations, splices, and shapes with multiple dimensions,
+     we match two sequences of elements,
+     in which a shape variable of the pattern may stand for a segment,
+     i.e. zero or more consecutive elements, of the shape being matched.
+     Consider matching @('(dims 2 1)') to the pattern @('(++ s (dims 1))').
+     The shape normalizes to the elements @('(dims 2)') and @('(dims 1)'),
+     and the pattern to the elements @('s') and @('(dims 1)').
+     The last elements are matched together,
+     and @('s') must stand for the rest, i.e. the element @('(dims 2)').")
+   (xdoc::p
+    "This is the whole approach:
+     we go through the elements of the pattern,
+     consuming elements of the shape,
+     and a shape variable of the pattern consumes
+     as many elements as the other elements of the pattern leave to it.
+     There are three cases, described next.")
+   (xdoc::p
+    "An element of the pattern with a single dimension
+     consumes exactly one element of the shape,
+     which must also have a single dimension:
+     the two dimensions are matched via @(tsee dim-match).
+     Since that is modulo additive equivalence,
+     matching @('(dims 3)') to @('[(+ 1 i) s]')
+     binds @('i') to @('2'), and @('s') to the empty shape.
+     A shape variable of the shape being matched
+     never matches such an element of the pattern,
+     because it may stand for any number of dimensions.")
+   (xdoc::p
+    "A shape variable of the pattern that is already bound
+     consumes as many elements of the shape
+     as the elements of its (normalized) binding,
+     which must be equivalent to those elements
+     (see @(tsee shape-equivp)).")
+   (xdoc::p
+    "A shape variable of the pattern that is not bound yet
+     consumes a segment whose length is forced by counting:
+     the number of remaining elements of the shape,
+     minus the number of elements needed by
+     the remaining elements of the pattern,
+     namely one for each element with a single dimension
+     and the length of the binding for each bound shape variable.
+     If the remaining elements of the pattern include
+     another unbound shape variable, or the same variable again,
+     the length is undetermined and the match fails, rather than guessing,
+     as in the corresponding case of dimension matching.
+     Otherwise, the variable is bound to the concatenation of the segment,
+     e.g. to @('(++ (dims 2))') in the first example above,
+     and to the empty concatenation @('(++)') in the second example above,
+     which is the only solution.
+     The position of the unbound variable does not matter:
+     matching @('(++ t (dims 3))') to the pattern @('(++ s (dims i))')
+     binds @('s') to @('(++ t)') and @('i') to @('3').")
+   (xdoc::p
+    "Ispaces are matched in the same way,
+     because a normalized ispace (see @(tsee normalize-ispace))
+     is always a shape ispace with a concatenation.
+     For instance, a dimension ispace @('3')
+     is matched to a dimension ispace pattern @('i')
+     as the shape with the single dimension @('3')
+     to the shape with the single dimension @('i').")
+   (xdoc::p
+    "As with dimension matching,
+     the substitutions (one for dimension variables and one for shape variables)
+     are threaded through matches,
+     so that the bindings from earlier matches constrain the current match,
+     including the bindings of rigid variables to themselves
+     made by the entry points (see @(tsee type-match-vars)).
+     The approach is sound on any shape and pattern,
+     because it only ever consumes elements that are equivalent,
+     or binds a variable to exactly the elements that it must stand for.
+     It is complete, modulo shape equivalence
+     and under the uniqueness restriction above,
+     when the shape and the pattern are normalized:
+     @(tsee shape-match) and @(tsee ispace-match) ensure that,
+     by normalizing both sides before matching their elements,
+     which also normalizes the dimensions in them,
+     as dimension matching expects."))
   :order-subtopics t
   :default-parent t)
 
