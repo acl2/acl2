@@ -4278,7 +4278,7 @@
 
 ; Flg is nil for all-fnnames, t for all-fnnames-lst.  Note that this includes
 ; function names occurring in the :exec part of an mbe.  Keep this in sync with
-; all-fnnames1-exec.
+; all-fnnames1-exec, all-fnnames!, and all-fnnames1-invariant-risk.
 
   (declare (xargs :guard (and (true-listp acc)
                               (cond (flg (pseudo-term-listp x))

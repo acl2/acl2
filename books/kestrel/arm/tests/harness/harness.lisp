@@ -14,15 +14,20 @@
 ;; This book runs the ARM32 model on test vectors (see vectors.lisp).  For each
 ;; vector, it puts the state into the vector's initial configuration, executes
 ;; one instruction, and compares the result with the vector's expectations.
-;; The entry point is run-vectors, at the end.  See smoke.lisp for examples.
+;; The entry point is run-vectors.  The last section turns what run-vectors
+;; returns into records for report.lisp, which summarizes them; its entry point
+;; is summarize-vectors.  See smoke.lisp for examples.
 
 (include-book "../../top") ; the ARM32 model
 (include-book "vectors")
 (include-book "unknown-values")
+(include-book "report")
+(include-book "std/strings/hex" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
+(local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -215,8 +220,8 @@
 ;; Checking the state after the step.
 
 ;; A mismatch is a list (FIELD :expected EXPECTED :actual ACTUAL), where FIELD
-;; is :error, :pc, :apsr, (:reg I), or (:mem ADDR).  The checks below return
-;; lists of mismatches, which are therefore alists from fields.
+;; is :error, :trap, :pc, :apsr, (:reg I), or (:mem ADDR).  The checks below
+;; return lists of mismatches, which are therefore alists from fields.
 
 ;; Returns a list of the mismatch on FIELD, or nil if EXPECTED and ACTUAL agree.
 (defun compare-field (field expected actual)
@@ -255,8 +260,8 @@
                            (reg i arm))
             (check-regs (+ 1 i) expect-regs initial-regs arm))))
 
-(defthm alistp-of-check-regs
-  (alistp (check-regs i expect-regs initial-regs arm)))
+(defthm mismatch-listp-of-check-regs
+  (mismatch-listp (check-regs i expect-regs initial-regs arm)))
 
 ;; Compares memory against the expected (address size value) triples.
 (defun check-mem (triples arm)
@@ -269,17 +274,25 @@
                              (read (second triple) (first triple) arm))
               (check-mem (cdr triples) arm)))))
 
-(defthm alistp-of-check-mem
-  (alistp (check-mem triples arm)))
+(defthm mismatch-listp-of-check-mem
+  (mismatch-listp (check-mem triples arm)))
 
 ;; Compares the state after the step against the :expect part of VEC.
-;; Returns a list of mismatches; nil means the test passed.
+;; Returns a list of mismatches; nil means the test passed.  When a trap is
+;; expected, the mismatch on :trap has the model's error as its actual value
+;; (see report-records for which errors agree with a trap); a model error of
+;; :undefined agrees with a trap of :undefined here.
 (defund check-vector (vec arm)
   (declare (xargs :guard (test-vectorp vec) :stobjs arm))
   (b* ((expect (vec-get :expect vec nil))
        (expected-error (vec-get :error expect nil))
-       ((when (or expected-error (error arm)))
+       ((when expected-error)
         (compare-field :error expected-error (error arm)))
+       (trap (vec-get :trap expect nil))
+       ((when trap)
+        (compare-field :trap trap (error arm)))
+       ((when (error arm))
+        (compare-field :error nil (error arm)))
        (mask (vec-get :apsr-mask expect #xF0000000)))
     (append (compare-field :pc (vec-get :pc expect nil) (pc arm))
             (check-regs 0 (vec-get :regs expect nil) (vec-get :regs vec nil) arm)
@@ -288,8 +301,8 @@
                            (bvand 32 mask (apsr arm)))
             (check-mem (vec-get :mem expect nil) arm))))
 
-(defthm alistp-of-check-vector
-  (alistp (check-vector vec arm))
+(defthm mismatch-listp-of-check-vector
+  (mismatch-listp (check-vector vec arm))
   :hints (("Goal" :in-theory (enable check-vector))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -305,7 +318,7 @@
 
 ;; Runs the single instruction described by VEC under FILLING.  Returns (mv
 ;; mismatches arm).
-(defun run-vector (vec filling arm)
+(defund run-vector (vec filling arm)
   (declare (xargs :guard (and (test-vectorp vec) (unsigned-byte-p 32 filling))
                   :stobjs arm))
   (b* ((arm (load-vector vec filling arm))
@@ -313,6 +326,10 @@
        (mismatches (check-vector vec arm))
        (arm (unload-vector vec arm)))
     (mv mismatches arm)))
+
+(defthm mismatch-listp-of-mv-nth-0-of-run-vector
+  (mismatch-listp (mv-nth 0 (run-vector vec filling arm)))
+  :hints (("Goal" :in-theory (enable run-vector))))
 
 (local
   (defthm alistp-of-set-difference-equal
@@ -327,6 +344,26 @@
   (mv (intersection-equal mismatches-a mismatches-b)
       (union-equal (strip-cars (set-difference-equal mismatches-a mismatches-b))
                    (strip-cars (set-difference-equal mismatches-b mismatches-a)))))
+
+;; An alist from the ids of vectors to lists of mismatches, like the first
+;; value of run-vectors.
+(defun mismatch-alistp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (null x)
+    (and (consp (car x))
+         (mismatch-listp (cdar x))
+         (mismatch-alistp (cdr x)))))
+
+;; An alist from the ids of vectors to lists of fields, like the second value
+;; of run-vectors.
+(defun field-alistp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (null x)
+    (and (consp (car x))
+         (true-listp (cdar x))
+         (field-alistp (cdr x)))))
 
 ;; Runs each vector in VECS under two fillings whose UNKNOWN values differ in
 ;; every bit (see unknown-values.lisp), and classifies the mismatches.  Returns
@@ -347,6 +384,12 @@
           (if unknown (cons (cons id unknown) unknowns) unknowns)
           arm))))
 
+(defthm mismatch-alistp-of-mv-nth-0-of-run-vectors-aux
+  (mismatch-alistp (mv-nth 0 (run-vectors-aux vecs arm))))
+
+(defthm field-alistp-of-mv-nth-1-of-run-vectors-aux
+  (field-alistp (mv-nth 1 (run-vectors-aux vecs arm))))
+
 ;; Runs VECS on a fresh state.  Returns (mv real unknown-dependent) as for
 ;; run-vectors-aux; all vectors passed if both are nil.
 (defun run-vectors (vecs)
@@ -355,3 +398,143 @@
     (mv-let (real unknown-dependent arm)
       (run-vectors-aux vecs arm)
       (mv real unknown-dependent))))
+
+(defthm mismatch-alistp-of-mv-nth-0-of-run-vectors
+  (mismatch-alistp (mv-nth 0 (run-vectors vecs))))
+
+(defthm field-alistp-of-mv-nth-1-of-run-vectors
+  (field-alistp (mv-nth 1 (run-vectors vecs))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Reporting.
+
+;; report.lisp summarizes the results of a run without knowing anything about
+;; ARM32.  The functions below give it one record per vector, with what only
+;; this model knows: the instruction's name from the decoder, what to tally
+;; an instruction the decoder rejects by, and which of the model's error values
+;; decide a vector's outcome class.
+
+;; The names of all the instructions the model has.
+(defconst *arm32-instruction-names* (strip-cars *patterns*))
+
+;; The byte X as two hexadecimal digits.
+(defun hex2 (x)
+  (declare (xargs :guard (unsigned-byte-p 8 x)))
+  (if (< x 16)
+      (concatenate 'string "0" (str::nat-to-hex-string x))
+    (str::nat-to-hex-string x)))
+
+;; What to tally the instruction WORD by if the decoder rejects it: the
+;; condition if it is #xF (the unconditional instructions, which the manual
+;; decodes separately), and bits 27:20 and 7:4, which index the manual's
+;; decoding tables.
+(defun gap-key (word)
+  (declare (xargs :guard (unsigned-byte-p 32 word)))
+  (concatenate 'string
+               (if (equal (slice 31 28 word) #xF) "cond=F," "")
+               "27:20=" (hex2 (slice 27 20 word))
+               ",7:4=" (str::nat-to-hex-string (slice 7 4 word))))
+
+;; The outcome class (see report.lisp) that the model's error value ERROR
+;; decides, or nil if it decides none, in which case the vector is a mismatch
+;; (which a waiver can excuse).  TRAPP is whether the vector expected a trap.
+(defun error-class (error trapp)
+  (declare (xargs :guard t))
+  (cond ((eq error :decoding-error) :coverage-gap)
+        ((or (eq error :unsupported)
+             (eq error :unsupported-mnemonic-error)
+             (and (consp error)
+                  (member-eq (car error)
+                             '(:unsupported :unsupported-unconditional-instruction))))
+         :unsupported)
+        ;; The architecture permits an UNPREDICTABLE instruction to trap.
+        ((eq error :unpredictable) (if trapp :pass :unpredictable))
+        ((eq error :not-in-arm-state) :skipped)
+        (t nil)))
+
+(defthm member-equal-of-error-class
+  (implies (error-class error trapp)
+           (member-equal (error-class error trapp) *error-classes*)))
+
+(local
+  (defthm unsigned-byte-listp-of-code-when-test-vectorp
+    (implies (test-vectorp vec)
+             (acl2::unsigned-byte-listp 32 (vec-get :code vec nil)))
+    :rule-classes :forward-chaining))
+
+;; The record for VEC, whose real mismatches are MISMATCHES and whose
+;; UNKNOWN-dependent fields are FIELDS.  A mismatch on :error, or on :trap
+;; with a non-nil actual value, means the model reported an error; unless the
+;; vector expected that error itself, the error decides the class if it can.
+(defund vector-record (vec mismatches fields)
+  (declare (xargs :guard (and (test-vectorp vec)
+                              (mismatch-listp mismatches)
+                              (true-listp fields))))
+  (b* ((code (vec-get :code vec nil))
+       (word (if (consp code) (car code) 0))
+       ((mv erp mnemonic &) (arm32-decode word))
+       (name (if erp nil mnemonic))
+       (expect (vec-get :expect vec nil))
+       (error-mismatch (and (not (vec-get :error expect nil))
+                            (or (assoc-eq :error mismatches)
+                                (assoc-eq :trap mismatches))))
+       (error (and error-mismatch
+                   (report-get :actual (cdr error-mismatch) nil))))
+    (list :id (vec-get :id vec "")
+          :name name
+          :word word
+          :gap-key (if name nil (gap-key word))
+          :error-class (and error
+                            (error-class error (and (vec-get :trap expect nil) t)))
+          :mismatches mismatches
+          :unknown fields)))
+
+(defthm report-recordp-of-vector-record
+  (implies (and (test-vectorp vec)
+                (mismatch-listp mismatches)
+                (true-listp fields))
+           (report-recordp (vector-record vec mismatches fields)))
+  :hints (("Goal" :in-theory (e/d (vector-record)
+                                  (gap-key error-class test-vectorp)))))
+
+;; The records for VECS, given the alists REAL and UNKNOWN that run-vectors
+;; returned for them.  The alists list vectors in the order of VECS, so they
+;; are consumed in step with it, which relies on the ids being unique.
+(defun report-records (vecs real unknown)
+  (declare (xargs :guard (and (test-vector-listp vecs)
+                              (mismatch-alistp real)
+                              (field-alistp unknown))))
+  (if (endp vecs)
+      nil
+    (b* ((vec (car vecs))
+         (id (vec-get :id vec ""))
+         (realp (and (consp real) (equal (caar real) id)))
+         (unknownp (and (consp unknown) (equal (caar unknown) id))))
+      (cons (vector-record vec
+                           (if realp (cdar real) nil)
+                           (if unknownp (cdar unknown) nil))
+            (report-records (cdr vecs)
+                            (if realp (cdr real) real)
+                            (if unknownp (cdr unknown) unknown))))))
+
+(defthm report-record-listp-of-report-records
+  (implies (and (test-vector-listp vecs)
+                (mismatch-alistp real)
+                (field-alistp unknown))
+           (report-record-listp (report-records vecs real unknown))))
+
+;; Runs VECS and summarizes the results under the name NAME (see report.lisp),
+;; with WAIVERS applied.  NOT-RUN is the alist for the summary's :not-run.
+(defun summarize-vectors (name vecs waivers not-run)
+  (declare (xargs :guard (and (stringp name)
+                              (test-vector-listp vecs)
+                              (waiver-listp waivers)
+                              (count-alistp not-run))))
+  (mv-let (real unknown)
+    (run-vectors vecs)
+    (summarize-results name
+                       (report-records vecs real unknown)
+                       *arm32-instruction-names*
+                       waivers
+                       not-run)))

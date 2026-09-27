@@ -13,7 +13,7 @@
 ;; A test vector describes the state before one instruction and the expected
 ;; state after it.  It is a keyword-value list with these keys:
 ;;
-;;   :id      a string naming the test
+;;   :id      a string naming the test, unique in its list
 ;;   :arch    the architecture version, 4 to 7 (default 7)
 ;;   :pc      the address of the instruction to execute
 ;;   :code    a list of 32-bit instruction words, stored from :pc upward
@@ -22,6 +22,9 @@
 ;;   :mem     a list of (address size value) triples to store, little-endian
 ;;   :expect  a keyword-value list describing the state after one step:
 ;;     :error     the expected error value; when non-nil nothing else is checked
+;;     :trap      a keyword naming the exception with which the processor
+;;                refused the instruction, such as :undefined or :svc; when
+;;                non-nil nothing else is checked
 ;;     :pc        the expected program counter
 ;;     :regs      an alist of expected register values; a register not listed
 ;;                here must be unchanged from its initial value
@@ -30,13 +33,17 @@
 ;;                the N, Z, C, and V flags)
 ;;     :mem       a list of (address size value) triples expected in memory
 ;;
+;; :error asserts the model's own error value, and is for vectors written by
+;; hand.  :trap is for vectors derived from another implementation, and records
+;; that it refused the instruction.
+;;
 ;; Vectors contain only keywords, numbers, and strings, so the package in which
 ;; they are read does not matter.  See smoke.lisp for examples.
 ;;
 ;; The recognizers below also check what the harness needs no guard for:
-;; each key is one of those above and appears at most once, and :expect gives
-;; a :pc unless it gives an :error.  A misspelled key would otherwise make its
-;; check silently vanish.
+;; each key is one of those above and appears at most once, :expect gives at
+;; most one of :error and :trap, and it gives a :pc unless it gives one of
+;; them.  A misspelled key would otherwise make its check silently vanish.
 
 (include-book "../../memory") ; for addressp
 (include-book "kestrel/bv-lists/unsigned-byte-listp-def" :dir :system)
@@ -76,7 +83,7 @@
 
 (defconst *test-vector-keys* '(:id :arch :pc :code :regs :apsr :mem :expect))
 
-(defconst *expect-keys* '(:error :pc :regs :apsr :apsr-mask :mem))
+(defconst *expect-keys* '(:error :trap :pc :regs :apsr :apsr-mask :mem))
 
 ;; Recognizes the :expect part of a test vector.
 (defun expectp (x)
@@ -84,7 +91,11 @@
   (and (keyword-value-listp x)
        (subsetp-eq (evens x) *expect-keys*)
        (no-duplicatesp-equal (evens x))
+       (let ((trap (vec-get :trap x nil)))
+         (or (null trap) (keywordp trap)))
+       (not (and (vec-get :error x nil) (vec-get :trap x nil)))
        (or (vec-get :error x nil)
+           (vec-get :trap x nil)
            (addressp (vec-get :pc x nil)))
        (reg-alistp (vec-get :regs x nil))
        (unsigned-byte-p 32 (vec-get :apsr x 0))

@@ -1034,8 +1034,12 @@
      We put this condition in the guard.")
    (xdoc::p
     "The type of the result is the same as the operands [C17:6.3.1.8/1].
-     We use @(tsee result-integer-value) to return the resulting value,
-     or an error, as documented in that function.")
+     [C17:6.5.5/6] says that @('a % b') is undefined
+     if the quotient is not representable in the type,
+     i.e. if @('a / b') is undefined;
+     so we do not rely on @(tsee result-integer-value),
+     which checks whether the remainder is representable,
+     and instead check the representability of the quotient.")
    (xdoc::p
     "It is an error if the divisor is 0 [C17:6.5.5/5].")
    (xdoc::p
@@ -1045,6 +1049,13 @@
   (b* ((mathint1 (value-integer->get val1))
        (mathint2 (value-integer->get val2))
        ((when (equal mathint2 0)) (error :division-by-zero))
+       (quotient (truncate mathint1 mathint2))
+       (type (type-of-value val1))
+       ((when (and (type-signed-integerp type)
+                   (not (integer-type-rangep quotient type))))
+        (error (list :undefined-rem
+                     (value-fix val1)
+                     (value-fix val2))))
        (result (rem mathint1 mathint2))
        (resval (result-integer-value result (type-of-value val1)))
        ((when (errorp resval)) (error (list :undefined-rem

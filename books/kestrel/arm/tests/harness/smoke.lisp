@@ -96,14 +96,12 @@
      :regs ((0 . 3) (1 . 5))
      :expect (:error :unpredictable))))
 
-;; All smoke vectors must pass, and no field may depend on an UNKNOWN.  On
-;; failure, the mismatches are printed.
+;; Every smoke vector must pass.  The summary is printed either way.
 (assert-event
-  (mv-let (real unknown-dependent)
-    (run-vectors *smoke-vectors*)
-    (or (and (null real) (null unknown-dependent))
-        (cw "Smoke test failures: real ~x0, unknown-dependent ~x1~%"
-            real unknown-dependent))))
+  (let ((summary (summarize-vectors "smoke" *smoke-vectors* nil nil)))
+    (prog2$ (print-summary summary 10 nil)
+            (equal (cdr (assoc-eq :pass (report-get :counts summary nil)))
+                   (len *smoke-vectors*)))))
 
 ;; Two vectors whose results include UNKNOWN values.  The harness runs every
 ;; vector under two sources of UNKNOWN values and reports the fields that
@@ -129,11 +127,69 @@
      :expect (:pc #x1004 :regs ((3 . 42)) :apsr 0))))
 
 (assert-event
-  (mv-let (real unknown-dependent)
-    (run-vectors *unknown-vectors*)
-    (or (and (null real)
-             (equal unknown-dependent
-                    '(("stmia r1!, {r0, r1}" (:mem #x2004))
-                      ("muls r3, r5, r4 on ARMv4" :apsr))))
-        (cw "UNKNOWN test failures: real ~x0, unknown-dependent ~x1~%"
-            real unknown-dependent))))
+  (let ((summary (summarize-vectors "smoke UNKNOWN" *unknown-vectors* nil nil)))
+    (prog2$ (print-summary summary 10 nil)
+            (and (check-summary summary)
+                 (equal (report-get :unknown summary nil)
+                        '(("stmia r1!, {r0, r1}" (:mem #x2004))
+                          ("muls r3, r5, r4 on ARMv4" :apsr)))))))
+
+;; Vectors for the outcome classes that the model's errors decide (see
+;; error-class in harness.lisp), and a mismatch that a waiver excuses.  Each
+;; expects what another implementation might have done.
+
+(defconst *class-vectors*
+  '(;; UNPREDICTABLE on ARMv4, which may trap: pass.
+    (:id "mul r0, r0, r1 on ARMv4, trap expected"
+     :arch 4
+     :pc #x1000 :code (#xE0000190)
+     :expect (:trap :undefined))
+
+    ;; UNPREDICTABLE on ARMv4, and the other implementation computed a
+    ;; result: unpredictable, since nothing can be compared.
+    (:id "mul r0, r0, r1 on ARMv4, result expected"
+     :arch 4
+     :pc #x1000 :code (#xE0000190)
+     :regs ((0 . 3) (1 . 5))
+     :expect (:pc #x1004 :regs ((0 . 15))))
+
+    ;; A permanently undefined instruction, which the decoder rejects:
+    ;; coverage gap.
+    (:id "udf #0, trap expected"
+     :pc #x1000 :code (#xE7F000F0)
+     :expect (:trap :undefined))
+
+    ;; A supervisor call, which the model does not model: unsupported.
+    (:id "svc #0, trap expected"
+     :pc #x1000 :code (#xEF000000)
+     :expect (:trap :svc))
+
+    ;; An instruction the model executes although a trap is expected:
+    ;; mismatch, which the first waiver below excuses.
+    (:id "adds r0, r1, r2, trap expected"
+     :pc #x1000 :code (#xE0910002)
+     :expect (:trap :undefined))))
+
+(defconst *class-waivers*
+  '((:mask #x0FE00000 :value #x00800000 :field :trap
+     :reason :oracle-limitation :cite "smoke.lisp"
+     :note "Excuses the ADD above, to test waivers.")
+    (:name :sub-immediate :field :apsr :bits #x20000000
+     :reason :oracle-limitation :cite "smoke.lisp"
+     :note "Matches nothing, to test the report of unused waivers.")))
+
+(assert-event
+  (let ((summary (summarize-vectors "smoke classes" *class-vectors*
+                                    *class-waivers* nil)))
+    (prog2$ (print-summary summary 10 nil)
+            (and (equal (report-get :counts summary nil)
+                        '((:pass . 1)
+                          (:mismatch . 0)
+                          (:waived . 1)
+                          (:unknown-dependent . 0)
+                          (:coverage-gap . 1)
+                          (:unsupported . 1)
+                          (:unpredictable . 1)
+                          (:skipped . 0)))
+                 (equal (report-get :unused-waivers summary nil)
+                        (cdr *class-waivers*))))))
