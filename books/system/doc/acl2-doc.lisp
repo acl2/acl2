@@ -78443,12 +78443,10 @@ it."
  })
 
  <p>Moreover, ACL2 places restrictions on the resulting expression: @('ST')
- must not occur free in @('PRODUCER') when at least one variable in
- @('STOBJ-LET-BOUND-VARIABLES') occurs in @('PRODUCER'); and every variable in
- @('STOBJ-LET-BOUND-VARIABLES') must not occur free in @('CONSUMER').  If one
- of these conditions is violated, you will see an error message saying that
- &ldquo;It is forbidden to use&rdquo; the variable where it should not
- occur free.</p>
+ must not occur free in @('PRODUCER') when at least one variable belons to both
+ @('STOBJ-LET-BOUND-VARIABLES') and @('PRODUCER-VARS'); @('ST') must not belong
+ to @('PRODUCER-VARS'); and no variable in @('STOBJ-LET-BOUND-VARIABLES') may
+ occur free in @('CONSUMER').</p>
 
  <p>@('Stobj-let') forms can be evaluated using ordinary objects in theorem
  contexts, much as any form.  They can also, of course, appear in function
@@ -110237,6 +110235,13 @@ it."
  subterm.  (These are the union of the set of top-level assumptions and the set
  of governing IF-tests.)  For an example, see @(see community-book)
  @('system/tests/proof-builder-assumptions-contradiction.lisp').</p>
+
+ <p>Fixed a soundness bug by adding the following restriction on @(tsee
+ stobj-let) forms: the parent @(see stobj) must not belong to the list of
+ producer variables.  For a relevant example, see @(see community-book)
+ @('system/tests/nested-stobj-errors-input.lsp') under the header,
+ &ldquo;Example involving exclusion of parent stobj from
+ producer-vars&rdquo;.</p>
 
  <h3>Other Bug Fixes</h3>
 
