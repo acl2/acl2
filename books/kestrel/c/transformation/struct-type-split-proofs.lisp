@@ -191,11 +191,15 @@
      (where we store all the members, their types, and the left members,
      while the right members are available from the user inputs),
      then to @(':objects') when we have found the struct objects.
-     See the scanning code for details."))
+     See the scanning code for details.
+     The member names and types must have the same length."))
   (:init ())
-  (:types ((mems ident-list)
-           (types type-list)
-           (lmems ident-list)))
+  (:types ((mems ident-list
+                 :reqfix (if (equal (len types) (len mems)) mems nil))
+           (types type-list
+                  :reqfix (if (equal (len types) (len mems)) types nil))
+           (lmems ident-list))
+   :require (equal (len types) (len mems)))
   (:objects ())
   :pred stsp-stagep)
 
@@ -1133,7 +1137,13 @@
   :guard-hints
   (("Goal"
     :in-theory (enable c$::true-listp-when-ident-listp
-                       acl2::true-listp-when-pseudo-event-form-listp-rewrite))))
+                       acl2::true-listp-when-pseudo-event-form-listp-rewrite)))
+
+  ///
+
+  (defret len-of-stsp-struct-type-declon
+    (implies (not erp)
+             (equal (len types) (len mems)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
