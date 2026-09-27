@@ -16,6 +16,7 @@
 
 (include-book "kestrel/c/language/dynamic-semantics" :dir :system)
 (include-book "kestrel/c/syntax/abstract-syntax-formal-mapping-direct" :dir :system)
+(include-book "kestrel/c/syntax/types-formal-subset-and-mapping" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 
 (include-book "std/basic/symbol-lfix" :dir :system)
@@ -449,6 +450,7 @@
   (b* (((reterr) nil)
        ((when (endp mems)) (retok nil))
        ((erp cmem) (ldm-ident (car mems)) :iferr "")
+       ((erp ctype) (ldm-type (car types)) :iferr "")
        (struct-value-onlr-mem
         (packn-pos (list 'struct-value- onlr '- (c::ident->name cmem))
                    'struct-value-))
@@ -456,6 +458,9 @@
                                       'struct-value-))
        (value-kind-of-struct-value-onlr-mem
         (packn-pos (list 'value-kind-of- struct-value-onlr-mem)
+                   'struct-value-))
+       (type-of-value-of-struct-value-onlr-mem
+        (packn-pos (list 'type-of-value-of- struct-value-onlr-mem)
                    'struct-value-))
        (value-struct-read-mem-when-struct-value-onlrp
         (packn-pos (list 'value-struct-read-
@@ -477,6 +482,10 @@
            (defret ,value-kind-of-struct-value-onlr-mem
              (equal (c::value-kind mval) ,(type-kind (car types)))
              :hyp (,struct-value-onlrp sval))
+           (defret ,type-of-value-of-struct-value-onlr-mem
+             (equal (c::type-of-value mval) ',ctype)
+             :hyp (,struct-value-onlrp sval)
+             :hints (("Goal" :in-theory (enable c::type-of-value))))
            (defruled ,value-struct-read-mem-when-struct-value-onlrp
              (implies (,struct-value-onlrp sval)
                       (equal (c::value-struct-read ',cmem sval)
