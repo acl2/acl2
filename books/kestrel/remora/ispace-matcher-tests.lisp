@@ -426,6 +426,76 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Tests of SHAPE-PATTERN-ELEMENTS-LENGTH.
+; Each test compares the two results (flag and number of elements)
+; with the expected ones.
+; The pattern variables are i for dimensions and s and u for shapes;
+; the shapes being matched use the variables k and l for dimensions
+; and t for shapes.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; An element with a single dimension needs one element.
+
+(assert-equal
+ (mv-list 2 (shape-pattern-elements-length nil nil))
+ (list t 0))
+
+(assert-equal
+ (mv-list 2 (shape-pattern-elements-length (list (shape-dims (list (dim-var "i"))))
+                                           nil))
+ (list t 1))
+
+(assert-equal
+ (mv-list 2 (shape-pattern-elements-length (list (shape-dims (list (dim-var "i")))
+                                                 (shape-dims (list (dim-const 3))))
+                                           nil))
+ (list t 2))
+
+; A bound shape variable needs as many elements as its normalized binding.
+
+(assert-equal
+ (mv-list 2 (shape-pattern-elements-length
+             (list (shape-var "s"))
+             (omap::update "s"
+                           (shape-dims (list (dim-const 2) (dim-const 3)))
+                           nil)))
+ (list t 2))
+
+(assert-equal
+ (mv-list 2 (shape-pattern-elements-length
+             (list (shape-var "s") (shape-dims (list (dim-var "i"))))
+             (omap::update "s" (shape-append nil) nil)))
+ (list t 1))
+
+(assert-equal
+ (mv-list 2 (shape-pattern-elements-length
+             (list (shape-var "s"))
+             (omap::update "s" (shape-var "t") nil)))
+ (list t 1))
+
+; An unbound shape variable makes the number undetermined.
+
+(assert-equal
+ (mv-list 2 (shape-pattern-elements-length (list (shape-var "s")) nil))
+ (list nil 0))
+
+(assert-equal
+ (mv-list 2 (shape-pattern-elements-length
+             (list (shape-dims (list (dim-var "i")))
+                   (shape-var "s")
+                   (shape-dims (list (dim-const 3))))
+             nil))
+ (list nil 0))
+
+(assert-equal
+ (mv-list 2 (shape-pattern-elements-length
+             (list (shape-var "s") (shape-var "u"))
+             (omap::update "s" (shape-var "t") nil)))
+ (list nil 0))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Tests of SHAPE-MATCH, SHAPE-LIST-MATCH, ISPACE-MATCH, and ISPACE-LIST-MATCH.
 ; Each test compares the three results
 ; (success flag, dimension substitution, and shape substitution)

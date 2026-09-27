@@ -596,6 +596,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define shape-pattern-elements-length ((pats shape-listp)
+                                       (shape-subst string-shape-mapp))
+  :returns (mv (okp booleanp)
+               (len natp :rule-classes (:rewrite :type-prescription)))
+  :short "Calculate the number of elements of a shape
+          that a list of elements of a pattern needs, if determined."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to match shapes; see @(see ispace-matcher).
+     The elements are the ones of a normalized pattern concatenation.
+     An element that is not a shape variable needs one element of the shape.
+     A shape variable bound in the substitution needs
+     as many elements as its normalized binding has.
+     An unbound shape variable needs an undetermined number of elements,
+     in which case we fail, returning @('nil') as the flag,
+     and 0 as the number, which is irrelevant in that case.")
+   (xdoc::p
+    "This is defined on all lists of shapes,
+     treating every non-variable shape as needing one element,
+     but it is intended for use on the elements of normalized concatenations
+     (see @(tsee normalize-shape)),
+     which do not include concatenations or splices."))
+  (b* (((when (endp pats)) (mv t 0))
+       (pat (car pats))
+       ((mv okp len1)
+        (shape-case
+         pat
+         :var (b* ((var+shape
+                    (omap::assoc pat.name (string-shape-map-fix shape-subst)))
+                   ((unless var+shape) (mv nil 0)))
+                (mv t (len (shape-append->shapes
+                            (normalize-shape (cdr var+shape))))))
+         :dims (mv t 1)
+         :append (mv t 1) ; never happens for normalized concatenations
+         :splice (mv t 1))) ; never happens for normalized concatenations
+       ((unless okp) (mv nil 0))
+       ((mv okp len2) (shape-pattern-elements-length (cdr pats) shape-subst))
+       ((unless okp) (mv nil 0)))
+    (mv t (+ len1 len2)))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines shapes/ispaces-match
   :short "Match shapes and ispaces to patterns (other shapes and ispaces)."
   :long
