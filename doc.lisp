@@ -107223,6 +107223,13 @@ Bug Fixes From AI via Eric Smith
   [community-book] [30m[47msystem/tests/implies-not-nil.lisp[0m[0m.  Thanks to
   Grant Jurgensen for supplying the bug fix.
 
+  Fixed a [proof-builder] soundness bug that failed to require [force]d
+  hypotheses to be proved when an application of the [30m[47m:s[0m[0m command found
+  a contradiction in the assumptions governing the current subterm.
+  (These are the union of the set of top-level assumptions and the
+  set of governing IF-tests.)  For an example, see [community-book]
+  [30m[47msystem/tests/proof-builder-assumptions-contradiction.lisp[0m[0m.
+
 
 Other Bug Fixes
 

@@ -109906,6 +109906,11 @@ it."
 ; system/tests/proof-builder-untouchables.lisp.  Thanks to Eric Smith for
 ; passing along this issue from Anthropic's Claude.
 
+; Tweaked the definition of built-in function ev-fncall-rec-logical by adding
+; ec-call wrappers.  See that definition, in ACL2 source file
+; @('translate.lisp'), for a Lisp comment providing further explanation.
+; Thanks to Eric Smith for passing along this issue from Anthropic's Claude.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -110225,6 +110230,13 @@ it."
  to a non-Boolean.  For an example, see @(see community-book)
  @('system/tests/implies-not-nil.lisp').  Thanks to Grant Jurgensen for
  supplying the bug fix.</p>
+
+ <p>Fixed a @(see proof-builder) soundness bug that failed to require @(see
+ force)d hypotheses to be proved when an application of the @(':s') command
+ found a contradiction in the assumptions governing the current
+ subterm.  (These are the union of the set of top-level assumptions and the set
+ of governing IF-tests.)  For an example, see @(see community-book)
+ @('system/tests/proof-builder-assumptions-contradiction.lisp').</p>
 
  <h3>Other Bug Fixes</h3>
 
