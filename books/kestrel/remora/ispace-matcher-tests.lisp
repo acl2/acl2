@@ -496,6 +496,202 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Tests of SHAPE-ELEMENTS-MATCH.
+; Each test compares the three results
+; (success flag, dimension substitution, and shape substitution)
+; with the expected ones.
+; The two lists consist of the elements of normalized concatenations.
+; The pattern variables are i and j for dimensions and s and u for shapes;
+; the shapes being matched use the variables k and l for dimensions
+; and t for shapes.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; (dims 2 1) matched to (++ @s (dims 1)): @s is (++ (dims 2)).
+
+(assert-equal
+ (mv-list 3 (shape-elements-match (list (shape-dims (list (dim-const 2)))
+                                        (shape-dims (list (dim-const 1))))
+                                  (list (shape-var "s")
+                                        (shape-dims (list (dim-const 1))))
+                                  nil
+                                  nil))
+ (list t
+       nil
+       (omap::update "s"
+                     (shape-append (list (shape-dims (list (dim-const 2)))))
+                     nil)))
+
+; (dims 3) matched to [$i @s]: $i is 3 and @s is (++).
+
+(assert-equal
+ (mv-list 3 (shape-elements-match (list (shape-dims (list (dim-const 3))))
+                                  (list (shape-dims (list (dim-var "i")))
+                                        (shape-var "s"))
+                                  nil
+                                  nil))
+ (list t
+       (omap::update "i" (dim-const 3) nil)
+       (omap::update "s" (shape-append nil) nil)))
+
+; (dims 3) matched to [(+ 1 $i) @s]: $i is 2 and @s is (++).
+
+(assert-equal
+ (mv-list 3 (shape-elements-match (list (shape-dims (list (dim-const 3))))
+                                  (list (shape-dims
+                                         (list (dim-add (list (dim-const 1)
+                                                              (dim-var "i")))))
+                                        (shape-var "s"))
+                                  nil
+                                  nil))
+ (list t
+       (omap::update "i" (dim-const 2) nil)
+       (omap::update "s" (shape-append nil) nil)))
+
+; An unbound shape variable may be anywhere in the pattern,
+; and it may absorb shape variables and any number of elements.
+
+(assert-equal
+ (mv-list 3 (shape-elements-match (list (shape-var "t")
+                                        (shape-dims (list (dim-const 3))))
+                                  (list (shape-var "s")
+                                        (shape-dims (list (dim-var "i"))))
+                                  nil
+                                  nil))
+ (list t
+       (omap::update "i" (dim-const 3) nil)
+       (omap::update "s" (shape-append (list (shape-var "t"))) nil)))
+
+(assert-equal
+ (mv-list 3 (shape-elements-match (list (shape-dims (list (dim-const 2)))
+                                        (shape-dims (list (dim-const 3)))
+                                        (shape-dims (list (dim-const 4))))
+                                  (list (shape-dims (list (dim-var "i")))
+                                        (shape-var "s")
+                                        (shape-dims (list (dim-var "j"))))
+                                  nil
+                                  nil))
+ (list t
+       (omap::update "i" (dim-const 2)
+                     (omap::update "j" (dim-const 4) nil))
+       (omap::update "s"
+                     (shape-append (list (shape-dims (list (dim-const 3)))))
+                     nil)))
+
+(assert-equal
+ (mv-list 3 (shape-elements-match (list (shape-dims (list (dim-const 2)))
+                                        (shape-var "t"))
+                                  (list (shape-var "s"))
+                                  nil
+                                  nil))
+ (list t
+       nil
+       (omap::update "s"
+                     (shape-append (list (shape-dims (list (dim-const 2)))
+                                         (shape-var "t")))
+                     nil)))
+
+; A bound shape variable consumes the elements of its binding,
+; which must be equivalent to them; the binding need not be normalized.
+
+(assert-equal
+ (mv-list 3 (shape-elements-match (list (shape-dims (list (dim-const 2)))
+                                        (shape-dims (list (dim-const 1))))
+                                  (list (shape-var "s")
+                                        (shape-dims (list (dim-const 1))))
+                                  nil
+                                  (omap::update "s"
+                                                (shape-dims (list (dim-const 2)))
+                                                nil)))
+ (list t
+       nil
+       (omap::update "s" (shape-dims (list (dim-const 2))) nil)))
+
+(assert-equal
+ (mv-list 3 (shape-elements-match (list (shape-dims (list (dim-const 2)))
+                                        (shape-dims (list (dim-const 1))))
+                                  (list (shape-var "s")
+                                        (shape-dims (list (dim-const 1))))
+                                  nil
+                                  (omap::update "s"
+                                                (shape-dims (list (dim-const 5)))
+                                                nil)))
+ (list nil nil nil))
+
+; A rigid shape variable, bound to itself, consumes itself.
+
+(assert-equal
+ (mv-list 3 (shape-elements-match (list (shape-var "t")
+                                        (shape-dims (list (dim-const 3))))
+                                  (list (shape-var "t")
+                                        (shape-dims (list (dim-var "i"))))
+                                  nil
+                                  (omap::update "t" (shape-var "t") nil)))
+ (list t
+       (omap::update "i" (dim-const 3) nil)
+       (omap::update "t" (shape-var "t") nil)))
+
+; Two unbound shape variables, or one occurring twice,
+; make the solution non-unique: the match fails.
+
+(assert-equal
+ (mv-list 3 (shape-elements-match (list (shape-dims (list (dim-const 2)))
+                                        (shape-dims (list (dim-const 3))))
+                                  (list (shape-var "s") (shape-var "u"))
+                                  nil
+                                  nil))
+ (list nil nil nil))
+
+(assert-equal
+ (mv-list 3 (shape-elements-match (list (shape-var "t") (shape-var "t"))
+                                  (list (shape-var "s") (shape-var "s"))
+                                  nil
+                                  nil))
+ (list nil nil nil))
+
+; An element with a dimension does not match a shape variable element,
+; the dimensions must match, and all the elements must be consumed.
+
+(assert-equal
+ (mv-list 3 (shape-elements-match (list (shape-var "t"))
+                                  (list (shape-dims (list (dim-var "i"))))
+                                  nil
+                                  nil))
+ (list nil nil nil))
+
+(assert-equal
+ (mv-list 3 (shape-elements-match (list (shape-dims (list (dim-const 2))))
+                                  (list (shape-dims (list (dim-const 3))))
+                                  nil
+                                  nil))
+ (list nil nil nil))
+
+(assert-equal
+ (mv-list 3 (shape-elements-match (list (shape-dims (list (dim-const 2)))
+                                        (shape-dims (list (dim-const 3))))
+                                  (list (shape-dims (list (dim-var "i"))))
+                                  nil
+                                  nil))
+ (list nil nil nil))
+
+(assert-equal
+ (mv-list 3 (shape-elements-match (list (shape-dims (list (dim-const 2))))
+                                  (list (shape-var "s")
+                                        (shape-dims (list (dim-var "i"))))
+                                  nil
+                                  (omap::update "s"
+                                                (shape-dims (list (dim-const 2)))
+                                                nil)))
+ (list nil nil nil))
+
+; Empty lists match.
+
+(assert-equal
+ (mv-list 3 (shape-elements-match nil nil nil nil))
+ (list t nil nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Tests of SHAPE-MATCH, SHAPE-LIST-MATCH, ISPACE-MATCH, and ISPACE-LIST-MATCH.
 ; Each test compares the three results
 ; (success flag, dimension substitution, and shape substitution)

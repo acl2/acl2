@@ -182,7 +182,9 @@
      by binding @('$i') to @('3') and @('@s') to the empty shape.
      So shape patterns must be matched modulo shape equivalence:
      this is the task of @(tsee shape-match) and @(tsee ispace-match),
-     described here.")
+     which normalize both sides
+     and match their elements via @(tsee shape-elements-match),
+     as described here.")
    (xdoc::p
     "The key observation is that
      a normalized shape (see @(tsee normalize-shape))
@@ -233,7 +235,8 @@
      minus the number of elements needed by
      the remaining elements of the pattern,
      namely one for each element with a single dimension
-     and the length of the binding for each bound shape variable.
+     and the length of the binding for each bound shape variable
+     (see @(tsee shape-pattern-elements-length)).
      If the remaining elements of the pattern include
      another unbound shape variable, or the same variable again,
      the length is undetermined and the match fails, rather than guessing,
@@ -637,6 +640,103 @@
        ((unless okp) (mv nil 0)))
     (mv t (+ len1 len2)))
   :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define shape-elements-match ((elements shape-listp)
+                              (pats shape-listp)
+                              (dim-subst string-dim-mapp)
+                              (shape-subst string-shape-mapp))
+  :returns (mv (okp booleanp)
+               (new-dim-subst string-dim-mapp)
+               (new-shape-subst string-shape-mapp))
+  :short "Match the elements of a shape to the elements of a pattern shape."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This realizes the approach described in @(see ispace-matcher).
+     The elements are the ones of the normalized concatenations
+     of the shape being matched and of the pattern
+     (see @(tsee normalize-shape)).
+     The two substitutions are threaded as in @(tsee shape-match).")
+   (xdoc::p
+    "We go through the elements of the pattern.
+     A pattern element with dimensions consumes the first element of the shape,
+     which must also have dimensions,
+     matched via @(tsee dim-list-match);
+     for normalized concatenations, both elements have a single dimension.
+     A bound shape variable in the pattern consumes
+     as many elements of the shape as its normalized binding has
+     (see @(tsee shape-pattern-elements-length)),
+     and their concatenation must be equivalent to the binding.
+     An unbound shape variable in the pattern consumes
+     as many elements of the shape as
+     the remaining elements of the pattern leave to it
+     (see @(tsee shape-pattern-elements-length)),
+     and it is bound to their concatenation;
+     if the remaining elements of the pattern include an unbound variable,
+     the match fails.
+     A concatenation or splice never occurs
+     among the elements of a normalized concatenation,
+     so we fail in that case.
+     At the end, all the elements of the shape must have been consumed.")
+   (xdoc::p
+    "As explained in @(see ispace-matcher),
+     this is sound on all lists of shapes,
+     but it is complete,
+     modulo shape equivalence and under the uniqueness restriction,
+     only on the elements of normalized concatenations."))
+  (b* ((elements (shape-list-fix elements))
+       (dim-subst (string-dim-map-fix dim-subst))
+       (shape-subst (string-shape-map-fix shape-subst))
+       ((when (endp pats))
+        (if (endp elements)
+            (mv t dim-subst shape-subst)
+          (mv nil nil nil)))
+       (pat (car pats)))
+    (shape-case
+     pat
+     :var
+     (b* ((var+shape (omap::assoc pat.name shape-subst)))
+       (if var+shape
+           (b* ((binding (cdr var+shape))
+                (n (len (shape-append->shapes (normalize-shape binding))))
+                ((when (> n (len elements))) (mv nil nil nil))
+                ((unless (shape-equivp binding
+                                       (shape-append (take n elements))))
+                 (mv nil nil nil)))
+             (shape-elements-match (nthcdr n elements)
+                                   (cdr pats)
+                                   dim-subst
+                                   shape-subst))
+         (b* (((mv okp needed)
+               (shape-pattern-elements-length (cdr pats) shape-subst))
+              ((unless okp) (mv nil nil nil))
+              ((when (> needed (len elements))) (mv nil nil nil))
+              (k (- (len elements) needed))
+              (shape-subst (omap::update pat.name
+                                         (shape-append (take k elements))
+                                         shape-subst)))
+           (shape-elements-match (nthcdr k elements)
+                                 (cdr pats)
+                                 dim-subst
+                                 shape-subst))))
+     :dims
+     (b* (((when (endp elements)) (mv nil nil nil))
+          (element (car elements))
+          ((unless (shape-case element :dims)) (mv nil nil nil))
+          ((mv okp dim-subst)
+           (dim-list-match (shape-dims->dims element) pat.dims dim-subst))
+          ((unless okp) (mv nil nil nil)))
+       (shape-elements-match (cdr elements)
+                             (cdr pats)
+                             dim-subst
+                             shape-subst))
+     :append (mv nil nil nil) ; never happens for normalized concatenations
+     :splice (mv nil nil nil))) ; never happens for normalized concatenations
+  :measure (acl2-count pats)
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable nfix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
