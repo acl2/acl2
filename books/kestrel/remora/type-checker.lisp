@@ -1247,10 +1247,11 @@
      Finally, we use @(tsee check-app) on the instantiated function type,
      and we return the application of the wrapped function to the argument.")
    (xdoc::p
-    "Since the matching is purely syntactical (see @(see type-matcher)),
-     and since the argument type must match the whole input type
-     (i.e. without any frame prefix),
-     this inference is limited for now."))
+    "This inference is limited for now:
+     the matching of types is not yet fully modulo type equivalence
+     (see @(see type-matcher)),
+     and the argument type must match the whole input type
+     (i.e. without any frame prefix)."))
   (b* (((mv vars rest) (type-peel-binders fun-type))
        ((unless (consp vars))
         (b* (((ok type) (check-app fun-type arg-type)))

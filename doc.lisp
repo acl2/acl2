@@ -82189,12 +82189,10 @@ SECTION: Precise documentation for [30m[47mstobj-let[0m[0m
                 CONSUMER)))
 
   Moreover, ACL2 places restrictions on the resulting expression: [30m[47mST[0m[0m
-  must not occur free in [30m[47mPRODUCER[0m[0m when at least one variable in
-  [30m[47mSTOBJ-LET-BOUND-VARIABLES[0m[0m occurs in [30m[47mPRODUCER[0m[0m; and every variable in
-  [30m[47mSTOBJ-LET-BOUND-VARIABLES[0m[0m must not occur free in [30m[47mCONSUMER[0m[0m.  If one
-  of these conditions is violated, you will see an error message
-  saying that ``It is forbidden to use'' the variable where it should
-  not occur free.
+  must not occur free in [30m[47mPRODUCER[0m[0m when at least one variable belons
+  to both [30m[47mSTOBJ-LET-BOUND-VARIABLES[0m[0m and [30m[47mPRODUCER-VARS[0m[0m; [30m[47mST[0m[0m must not
+  belong to [30m[47mPRODUCER-VARS[0m[0m; and no variable in
+  [30m[47mSTOBJ-LET-BOUND-VARIABLES[0m[0m may occur free in [30m[47mCONSUMER[0m[0m.
 
   [30m[47mStobj-let[0m[0m forms can be evaluated using ordinary objects in theorem
   contexts, much as any form.  They can also, of course, appear in
@@ -107143,6 +107141,10 @@ Bug Fixes From AI via Eric Smith
   recompression was required but was not performed.  See
   [community-book] [30m[47msystem/tests/compress1-length-bug.lisp[0m[0m.
 
+  Fixed a soundness bug caused by failing to account for
+  [invariant-risk] for function calls inside calls of [30m[47m[loop$][0m[0m.  See
+  [community-book] [30m[47msystem/tests/loop-invariant-risk.lisp[0m[0m.
+
   Fixed a soundness bug in [30m[47m[compress2][0m[0m due to an inadequate ordering
   check in raw Lisp; see [community-book]
   [30m[47msystem/tests/compress2-order-bug.lisp[0m[0m.
@@ -107210,6 +107212,36 @@ Bug Fixes From AI via Eric Smith
     (in-theory (disable natp (:e natp)))
     (defstub p (x) t)
     (thm (implies (and (not (equal x 'abc)) (natp x)) (p x)))
+
+  Fixed a soundness bug in the rewriter's handling of [30m[47m[implies][0m[0m.  When
+  the conclusion of [30m[47m(implies test concl)[0m[0m rewrote to [30m[47mnil[0m[0m, the whole
+  implication was unconditionally rewritten to an [30m[47miff[0m[0m-equivalent of
+  the negation of the test.  Therefore, the Boolean implication could
+  be rewritten to a non-Boolean.  For an example, see
+  [community-book] [30m[47msystem/tests/implies-not-nil.lisp[0m[0m.  Thanks to
+  Grant Jurgensen for supplying the bug fix.
+
+  Fixed a [proof-builder] soundness bug that failed to require [force]d
+  hypotheses to be proved when an application of the [30m[47m:s[0m[0m command found
+  a contradiction in the assumptions governing the current subterm.
+  (These are the union of the set of top-level assumptions and the
+  set of governing IF-tests.)  For an example, see [community-book]
+  [30m[47msystem/tests/proof-builder-assumptions-contradiction.lisp[0m[0m.
+
+  Fixed a soundness bug by adding the following restriction on
+  [30m[47m[stobj-let][0m[0m forms: the parent [stobj] must not belong to the list
+  of producer variables.  For a relevant example, see
+  [community-book] [30m[47msystem/tests/nested-stobj-errors-input.lsp[0m[0m under
+  the header, ``Example involving exclusion of parent stobj from
+  producer-vars''.
+
+  Fixed a soundness bug which was fixed by tweaking the raw Lisp code
+  for [30m[47m[set-bad-lisp-consp-memoize][0m[0m.
+
+  Fixed a soundness bug in [30m[47m[defabsstobj][0m[0m due to a failure of ACL2 to
+  consider congruent stobjs when deciding whether to require [30m[47m:PROTECT
+  T[0m[0m to be specified for an exported function.  For an example, see
+  [community-book] [30m[47msystem/tests/protect-congruent-stobj.lisp[0m[0m.
 
 
 Other Bug Fixes

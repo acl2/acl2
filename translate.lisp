@@ -4278,7 +4278,7 @@
 
 ; Flg is nil for all-fnnames, t for all-fnnames-lst.  Note that this includes
 ; function names occurring in the :exec part of an mbe.  Keep this in sync with
-; all-fnnames1-exec.
+; all-fnnames1-exec, all-fnnames!, and all-fnnames1-invariant-risk.
 
   (declare (xargs :guard (and (true-listp acc)
                               (cond (flg (pseudo-term-listp x))
@@ -7672,6 +7672,12 @@
 ; Warranted-fns is a list of function symbols that are to be treated as though
 ; they have true warrants.  See ev-fncall+-w.
 
+; Many calls below are wrapped with ec-call.  To see why, consider that before
+; adding those wrappers below, then for ACL2 built on SBCL we have seen
+; (essentially as noted by Anthropic's Claude) that (ev-fncall-rec-logical 'car
+; (list 1/3) nil (w state) nil 1000000 nil t nil nil t nil) = (mv nil 1 nil),
+; even though logically (car 1/3) is nil, not 1.
+
   (declare (xargs :guard (and (plist-worldp w)
                               (symbol-listp warranted-fns))))
   (cond
@@ -7706,8 +7712,8 @@
                             ((not guard-checking-off)
                              :live-stobj)
                             (t nil))
-                      (and stobj-primitive-p
-                           :live-stobj-gc-on))))
+                    (and stobj-primitive-p
+                         :live-stobj-gc-on))))
 
 ; Keep this in sync with *primitive-formals-and-guards*.
 
@@ -7715,83 +7721,96 @@
         (ACL2-NUMBERP
          (mv nil (acl2-numberp x) latches))
         (BAD-ATOM<=
-         (cond ((or guard-checking-off
-                    (and (bad-atom x)
-                         (bad-atom y)))
+         (cond ((and (bad-atom x)
+                     (bad-atom y))
                 (mv nil (bad-atom<= x y) latches))
+               (guard-checking-off
+                (mv nil (ec-call (bad-atom<= x y)) latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
                                       extra))))
         (BINARY-*
-         (cond ((or guard-checking-off
-                    (and (acl2-numberp x)
-                         (acl2-numberp y)))
+         (cond ((acl2-numberp y)
                 (mv nil
                     (* x y)
+                    latches))
+               (guard-checking-off
+                (mv nil
+                    (ec-call (binary-* x y))
                     latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
                                       extra))))
         (BINARY-+
-         (cond ((or guard-checking-off
-                    (and (acl2-numberp x)
-                         (acl2-numberp y)))
+         (cond ((and (acl2-numberp x)
+                     (acl2-numberp y))
                 (mv nil (+ x y) latches))
+               (guard-checking-off
+                (mv nil (ec-call (binary-+ x y)) latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
                                       extra))))
         (UNARY--
-         (cond ((or guard-checking-off
-                    (acl2-numberp x))
+         (cond ((acl2-numberp x)
                 (mv nil (- x) latches))
+               (guard-checking-off
+                (mv nil (ec-call (unary-- x)) latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
                                       extra))))
         (UNARY-/
-         (cond ((or guard-checking-off
-                    (and (acl2-numberp x)
-                         (not (= x 0))))
+         (cond ((and (acl2-numberp x)
+                     (not (= x 0)))
                 (mv nil (/ x) latches))
+               (guard-checking-off
+                (mv nil (ec-call (unary-/ x)) latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
                                       extra))))
         (<
-         (cond ((or guard-checking-off
-                    (and (real/rationalp x)
-                         (real/rationalp y)))
+         (cond ((and (real/rationalp x)
+                     (real/rationalp y))
                 (mv nil (< x y) latches))
+               (guard-checking-off
+                (mv nil (ec-call (< x y)) latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
                                       extra))))
         (CAR
-         (cond ((or guard-checking-off
-                    (or (consp x)
-                        (eq x nil)))
+         (cond ((eq x nil)
                 (mv nil (car x) latches))
+               ((consp x)
+                (mv nil (ec-call (car x)) latches))
+               (guard-checking-off
+                (mv nil (ec-call (car x)) latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
                                       extra))))
         (CDR
-         (cond ((or guard-checking-off
-                    (or (consp x)
-                        (eq x nil)))
+         (cond ((or (consp x)
+                    (eq x nil))
                 (mv nil (cdr x) latches))
+               (guard-checking-off
+                (mv nil (ec-call (cdr x)) latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
                                       extra))))
         (CHAR-CODE
-         (cond ((or guard-checking-off
-                    (characterp x))
+         (cond ((characterp x)
                 (mv nil (char-code x) latches))
+               (guard-checking-off
+                (mv nil (ec-call (char-code x)) latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
                                       extra))))
         (CHARACTERP
          (mv nil (characterp x) latches))
         (CODE-CHAR
-         (cond ((or guard-checking-off
-                    (and (integerp x)
-                         (<= 0 x)
-                         (< x 256)))
+         (cond ((and (integerp x)
+                     (<= 0 x)
+                     (< x 256))
                 (mv nil (code-char x) latches))
+               (guard-checking-off
+                (mv nil (ec-call (code-char x)) latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
-                                      extra))))
+                                      extra))))        
         (COMPLEX
-         (cond ((or guard-checking-off
-                    (and (real/rationalp x)
-                         (real/rationalp y)))
+         (cond ((and (real/rationalp x)
+                     (real/rationalp y))
                 (mv nil (complex x y) latches))
+               (guard-checking-off
+                (mv nil (ec-call (complex x y)) latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
                                       extra))))
         (COMPLEX-RATIONALP
@@ -7800,12 +7819,13 @@
         (COMPLEXP
          (mv nil (complexp x) latches))
         (COERCE
-         (cond ((or guard-checking-off
-                    (or (and (stringp x)
-                             (eq y 'list))
-                        (and (character-listp x)
-                             (eq y 'string))))
+         (cond ((or (and (stringp x)
+                         (eq y 'list))
+                    (and (character-listp x)
+                         (eq y 'string)))
                 (mv nil (coerce x y) latches))
+               (guard-checking-off
+                (mv nil (ec-call (coerce x y)) latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
                                       extra))))
         (CONS
@@ -7813,18 +7833,20 @@
         (CONSP
          (mv nil (consp x) latches))
         (DENOMINATOR
-         (cond ((or guard-checking-off
-                    (rationalp x))
+         (cond ((rationalp x)
                 (mv nil (denominator x) latches))
+               (guard-checking-off
+                (mv nil (ec-call (denominator x)) latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
                                       extra))))
         (EQUAL
          (mv nil (equal x y) latches))
         #+non-standard-analysis
         (FLOOR1
-         (cond ((or guard-checking-off
-                    (realp x))
+         (cond ((realp x)
                 (mv nil (floor x 1) latches))
+               (guard-checking-off
+                (mv nil (ec-call (floor x 1)) latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
                                       extra))))
         (IF
@@ -7833,36 +7855,41 @@
                  "This function should not be called with fn = 'IF!")
              latches))
         (IMAGPART
-         (cond ((or guard-checking-off
-                    (acl2-numberp x))
+         (cond ((acl2-numberp x)
                 (mv nil (imagpart x) latches))
+               (guard-checking-off
+                (mv nil (ec-call (imagpart x)) latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
                                       extra))))
         (INTEGERP
          (mv nil (integerp x) latches))
         (INTERN-IN-PACKAGE-OF-SYMBOL
-         (cond ((or guard-checking-off
-                    (and (stringp x)
-                         (symbolp y)))
+         (cond ((and (stringp x)
+                     (symbolp y))
                 (mv nil (intern-in-package-of-symbol x y) latches))
+               (guard-checking-off
+                (mv nil (ec-call (intern-in-package-of-symbol x y)) latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
                                       extra))))
         (NUMERATOR
-         (cond ((or guard-checking-off
-                    (rationalp x))
+         (cond ((rationalp x)
                 (mv nil (numerator x) latches))
+               (guard-checking-off
+                (mv nil (ec-call (numerator x)) latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
                                       extra))))
         (PKG-IMPORTS
-         (cond ((or guard-checking-off
-                    (stringp x))
+         (cond ((stringp x)
                 (mv nil (pkg-imports x) latches))
+               (guard-checking-off
+                (mv nil (ec-call (pkg-imports x)) latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
                                       extra))))
         (PKG-WITNESS
-         (cond ((or guard-checking-off
-                    (and (stringp x) (not (equal x ""))))
+         (cond ((and (stringp x) (not (equal x "")))
                 (mv nil (pkg-witness x) latches))
+               (guard-checking-off
+                (mv nil (ec-call (pkg-witness x)) latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
                                       extra))))
         (RATIONALP
@@ -7871,23 +7898,26 @@
         (REALP
          (mv nil (realp x) latches))
         (REALPART
-         (cond ((or guard-checking-off
-                    (acl2-numberp x))
+         (cond ((acl2-numberp x)
                 (mv nil (realpart x) latches))
+               (guard-checking-off
+                (mv nil (ec-call (realpart x)) latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
                                       extra))))
         (STRINGP
          (mv nil (stringp x) latches))
         (SYMBOL-NAME
-         (cond ((or guard-checking-off
-                    (symbolp x))
+         (cond ((symbolp x)
                 (mv nil (symbol-name x) latches))
+               (guard-checking-off
+                (mv nil (ec-call (symbol-name x)) latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
                                       extra))))
         (SYMBOL-PACKAGE-NAME
-         (cond ((or guard-checking-off
-                    (symbolp x))
+         (cond ((symbolp x)
                 (mv nil (symbol-package-name x) latches))
+               (guard-checking-off
+                (mv nil (ec-call (symbol-package-name x)) latches))
                (t (ev-fncall-guard-er fn arg-values w user-stobj-alist latches
                                       extra))))
         (SYMBOLP
@@ -7908,8 +7938,8 @@
         (otherwise
          (cond
           ((and (eq fn 'apply$-userfn)
-                (consp warranted-fns)        ; hence :nil! is not the value
-                (member-eq x warranted-fns)  ; hence x is a symbol
+                (consp warranted-fns)       ; hence :nil! is not the value
+                (member-eq x warranted-fns) ; hence x is a symbol
                 (or guard-checking-off
                     (true-listp arg-values)))
            (ev-fncall-rec-logical x y
@@ -7947,7 +7977,7 @@
                (er val latches)
                (ev-rec (if guard-checking-off
                            ''t
-                           (guard fn nil w))
+                         (guard fn nil w))
                        alist w user-stobj-alist
                        (decrement-big-n big-n) (eq extra t) guard-checking-off
                        latches
@@ -7977,8 +8007,8 @@
                  (mv t (illegal-msg) latches))
                 ((eq fn 'throw-nonexec-error)
                  (ev-fncall-null-body-er nil
-                                         (car arg-values)   ; fn
-                                         (cadr arg-values)  ; args
+                                         (car arg-values)  ; fn
+                                         (cadr arg-values) ; args
                                          latches))
                 ((member-eq fn '(pkg-witness pkg-imports))
                  (mv t (unknown-pkg-error-msg fn (car arg-values)) latches))
@@ -8012,9 +8042,9 @@
                     safe-mode gc-off latches hard-error-returns-nilp aok
                     warranted-fns))
                   (t ; e.g., when admitting a fn called in its measure theorem
-                   (ev-fncall-null-body-er attachment         ; hence aok
-                                           (car arg-values)   ; fn
-                                           (cadr arg-values)  ; args
+                   (ev-fncall-null-body-er attachment        ; hence aok
+                                           (car arg-values)  ; fn
+                                           (cadr arg-values) ; args
                                            latches))))
                 (t
                  (mv-let
@@ -16774,6 +16804,42 @@
           (cond
            (bad-binding (mv (illegal-stobj-let-msg bound-vars-or-msg x)
                             nil nil nil nil nil nil nil nil nil))
+           ((member-eq stobj producer-vars)
+
+; See the example, "Example involving exclusion of parent stobj from
+; producer-vars", in community books file
+; system/tests/nested-stobj-errors-input.lsp, for why we include this
+; restriction.  In short, if STOBJ can be modified by the producer, then
+; STOBJ's children -- specifically, those bound in the stobj-let's bindings --
+; can be modified implicitly during evaluation of the producer (by modifying
+; STOBJ), thus ruining applicative semantics.
+
+; In short, the problem we want to avoid is having implicit stobj updates.  The
+; paragraph just above explains avoidance of implicitly updating the child
+; stobjs by way of a parent stobj update.  A separate problem is implicit
+; parent update by way of child stobj updates, but that is already taken care
+; of in translate11, where we check that the parent stobj does not occur free
+; in the producer if a child stobj can be updated, i.e., if (intersectp-eq
+; bound-vars producer-vars) is non-nil.
+
+; Anthropic's Claude brought this issue to our attention, but suggested a
+; stronger restriction: "require the parent's absence from the producer
+; whenever ANY bound variable occurs free in the producer".  But that is
+; unnecessary: in fact we want to allow bound variables and the parent both to
+; occur in the producer provided the producer does not modify any child stobj
+; or the parent stobj.  By the usual stobj restrictions, these are guaranteed
+; provided no child stobj nor the parent stobj are in the producer-vars.  The
+; child stobj provision is enforced by the intersectp-eq check in translate11
+; discussed above, and the parent stobj provision is what we are enforcing
+; here.
+
+            (mv (illegal-stobj-let-msg (msg "The parent stobj must not be ~
+                                             among the producer-vars of a ~
+                                             stobj-let form, but ~x0 is a ~
+                                             member of ~x1."
+                                            stobj producer-vars)
+                                       x)
+                nil nil nil nil nil nil nil nil nil))
            (t (mv nil bound-vars-or-msg actuals creators stobj producer-vars
                   producer updaters bindings consumer)))))))
     (& (mv (illegal-stobj-let-msg
