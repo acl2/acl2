@@ -19,6 +19,7 @@
 (include-book "primitives-evaluation-on-types")
 (include-book "primitives-evaluation-on-ispaces")
 (include-book "primitives-evaluation-first-order")
+(include-book "expression-evaluation")
 (include-book "evaluation")
 (include-book "evaluation-rules")
 (include-book "values-to-abstract-syntax")
@@ -77,6 +78,7 @@
                     primitives-evaluation-on-types
                     primitives-evaluation-on-ispaces
                     primitives-evaluation-first-order
+                    expression-evaluation
                     evaluation
                     evaluation-rules
                     values-to-abstract-syntax))
