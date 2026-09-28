@@ -563,7 +563,7 @@
  `(defruled uchar-max-vs-slong-max
     :parents (uchar-max slong-max)
     :short "Relation between
-            @('unsigned char') and @('signed int') maxima."
+            @('unsigned char') and @('signed long') maxima."
     ,(if (<= (uchar-max) (slong-max))
          '(<= (uchar-max) (slong-max))
        '(> (uchar-max) (slong-max)))
@@ -578,7 +578,7 @@
  `(defruled ushort-max-vs-slong-max
     :parents (ushort-max slong-max)
     :short "Relation between
-            @('unsigned char') and @('signed int') maxima."
+            @('unsigned short') and @('signed long') maxima."
     ,(if (<= (ushort-max) (slong-max))
          '(<= (ushort-max) (slong-max))
        '(> (ushort-max) (slong-max)))
@@ -605,7 +605,7 @@
  `(defruled uchar-max-vs-sllong-max
     :parents (uchar-max sllong-max)
     :short "Relation between
-            @('unsigned int') and @('signed long long') maxima."
+            @('unsigned char') and @('signed long long') maxima."
     ,(if (<= (uchar-max) (sllong-max))
          '(<= (uchar-max) (sllong-max))
        '(> (uchar-max) (sllong-max)))
@@ -621,7 +621,7 @@
  `(defruled ushort-max-vs-sllong-max
     :parents (ushort-max sllong-max)
     :short "Relation between
-            @('unsigned int') and @('signed long long') maxima."
+            @('unsigned short') and @('signed long long') maxima."
     ,(if (<= (ushort-max) (sllong-max))
          '(<= (ushort-max) (sllong-max))
        '(> (ushort-max) (sllong-max)))
