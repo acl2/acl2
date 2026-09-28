@@ -2135,11 +2135,11 @@
     list-to-byte-array ; wrapper for list-to-bv-array
     ))
 
-(defun byte-array-to-bit-array-rules ()
-  (declare (xargs :guard t))
-  '(byte-array-to-bit-array
-    byte-array-to-bit-array-aux-base
-    byte-array-to-bit-array-aux-opener))
+;; (defun byte-array-to-bit-array-rules ()
+;;   (declare (xargs :guard t))
+;;   '(byte-array-to-bit-array
+;;     byte-array-to-bit-array-aux-base
+;;     byte-array-to-bit-array-aux-opener))
 
 ;rename
 (defun yet-more-rules-non-jvm ()
@@ -3061,7 +3061,7 @@
 ;;   (declare (xargs :guard t))
 ;;   (reassemble-bv-rules))
 
-;; Only used in the equivalence checker
+;; Only used in the equivalence checker (rarely or never)
 (defun strengthening-rules ()
   (declare (xargs :guard t))
   (append '(bvlt-trim-constant-arg1 ; replace with a general trim rule?
@@ -3082,7 +3082,7 @@
             not-equal-of-bvchop-and-constant-when-not-bvlt-constant-2
             bvlt-when-bvlt-must-be-fake-free-axe ;thu mar 17 15:36:51 2011
             bvlt-when-bvlt-must-be-gen-axe ;fri may  6 21:22:34 2011
-            bvlt-of-max-arg3-axe
+            ;; bvlt-of-max-arg3-axe
             bvlt-of-constant-arg3
             bvlt-of-constant-arg2
             slice-when-bvlt-gen      ;wed mar 16 00:52:46 2011
