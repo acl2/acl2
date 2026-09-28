@@ -40,8 +40,8 @@
 
 ;; A user stobj and params, in the opposite of the usual order.
 (define bump (counter (params structuredp))
-  :stobjs counter
   :returns (mv erp (res valuep) counter)
+  :stobjs counter
   (b* (((unless (structured-case params :array))
         (mv (make-invalid-params-error "Expected an array.") (value-null) counter))
        (elems (structured-array->elements params))
@@ -58,27 +58,27 @@
 
 ;; A user stobj that is read but not returned, and no params.
 (define get-count (counter)
-  :stobjs counter
   :returns (mv erp (res valuep))
+  :stobjs counter
   (mv nil (value-number (total counter))))
 
 ;; Two stobjs, and no params.
 (define reset (counter state)
-  :stobjs (counter state)
   :returns (mv erp (res valuep) counter state)
+  :stobjs (counter state)
   (b* ((counter (update-total 0 counter)))
     (mv nil (value-null) counter state)))
 
 ;; No stobjs.
 (define pure ((params structuredp))
-  (declare (ignorable params))
   :returns (mv erp (res valuep))
+  (declare (ignorable params))
   (mv nil (value-true)))
 
 ;; Two ordinary inputs, which is unsupported.
 (define two-inputs ((params structuredp) x)
-  (declare (ignorable params x))
   :returns (mv erp (res valuep))
+  (declare (ignorable params x))
   (mv nil (value-true)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
