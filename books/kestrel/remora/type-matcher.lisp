@@ -63,7 +63,7 @@
      Any existing bindings of those variables are overridden.")
    (xdoc::p
     "This is used to match types under binders of ispace variables;
-     see @(tsee types-match)."))
+     see @(tsee type-match)."))
   (b* (((when (set::emptyp (ispace-var-set-fix vars)))
         (mv (string-dim-map-fix dim-subst)
             (string-shape-map-fix shape-subst)))
@@ -103,7 +103,7 @@
    (xdoc::p
     "This undoes @(tsee dim/shape-subst-self-bind),
      after matching types under binders of ispace variables;
-     see @(tsee types-match)."))
+     see @(tsee type-match)."))
   (b* (((when (set::emptyp (ispace-var-set-fix vars)))
         (mv (string-dim-map-fix dim-subst)
             (string-shape-map-fix shape-subst)))
@@ -152,7 +152,7 @@
      Any existing bindings of those variables are overridden.")
    (xdoc::p
     "This is used to match types under binders of type variables;
-     see @(tsee types-match)."))
+     see @(tsee type-match)."))
   (b* (((when (set::emptyp (type-var-set-fix vars)))
         (mv (string-type-map-fix atom-subst)
             (string-type-map-fix array-subst)))
@@ -511,7 +511,7 @@
      the two variables must have the same kind,
      and the rest of the type must match the rest of the pattern,
      after renaming both variables to a common fresh variable,
-     as explained in @(tsee types-match).
+     as explained above.
      Thus, a unary universal type may match an n-ary pattern, and vice versa,
      and n-ary universal types with different numbers of bound variables
      may match.")
@@ -521,7 +521,7 @@
      with the same bound variable(s)
      and whose body matches the body of the pattern,
      with the bound variable(s) bound to themselves
-     as explained in @(tsee types-match)."))
+     as explained above."))
   (type-case
    pat
    :var (b* (((mv okp atom-subst array-subst)
