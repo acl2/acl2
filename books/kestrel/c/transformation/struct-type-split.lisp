@@ -544,7 +544,7 @@
     :measure (c$::type-params-count params))
 
   (define type-param-list-struct-occurs-unsupported-p
-    ((types c$::type-listp)
+    ((types type-listp)
      (struct-uid c$::uidp))
     :returns (occurs acl2::3p)
     :parents (type/type-list-struct-occurs-unsupported-p)
@@ -572,7 +572,7 @@
               nil
             (type-struct-occurs-unsupported-p type struct-uid t)))
         (type-param-list-struct-occurs-unsupported-p (rest types) struct-uid)))
-    :measure (c$::type-list-count types))
+    :measure (type-list-count types))
 
   (define type-member-list-struct-occurs-unsupported-p
     ((members c$::type-struni-member-listp)

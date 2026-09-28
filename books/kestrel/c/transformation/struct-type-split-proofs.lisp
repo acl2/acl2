@@ -16,6 +16,7 @@
 
 (include-book "kestrel/c/language/dynamic-semantics" :dir :system)
 (include-book "kestrel/c/syntax/abstract-syntax-formal-mapping-direct" :dir :system)
+(include-book "kestrel/c/syntax/types-formal-subset-and-mapping" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 
 (include-book "std/basic/symbol-lfix" :dir :system)
@@ -188,12 +189,18 @@
     "This fixtype captures the possible stages of that scan.
      Starting with @(':init'),
      we switch to @(':types') when we have found the struct types
-     (where we store all the memebers and the left members,
+     (where we store all the members, their types, and the left members,
      while the right members are available from the user inputs),
      then to @(':objects') when we have found the struct objects.
-     See the scanning code for details."))
+     See the scanning code for details.
+     The member names and types must have the same length."))
   (:init ())
-  (:types ((mems ident-list) (lmems ident-list)))
+  (:types ((mems ident-list
+                 :reqfix (if (equal (len types) (len mems)) mems nil))
+           (types type-list
+                  :reqfix (if (equal (len types) (len mems)) types nil))
+           (lmems ident-list))
+   :require (equal (len types) (len mems)))
   (:objects ())
   :pred stsp-stagep)
 
@@ -443,6 +450,7 @@
   (b* (((reterr) nil)
        ((when (endp mems)) (retok nil))
        ((erp cmem) (ldm-ident (car mems)) :iferr "")
+       ((erp ctype) (ldm-type (car types)) :iferr "")
        (struct-value-onlr-mem
         (packn-pos (list 'struct-value- onlr '- (c::ident->name cmem))
                    'struct-value-))
@@ -450,6 +458,9 @@
                                       'struct-value-))
        (value-kind-of-struct-value-onlr-mem
         (packn-pos (list 'value-kind-of- struct-value-onlr-mem)
+                   'struct-value-))
+       (type-of-value-of-struct-value-onlr-mem
+        (packn-pos (list 'type-of-value-of- struct-value-onlr-mem)
                    'struct-value-))
        (value-struct-read-mem-when-struct-value-onlrp
         (packn-pos (list 'value-struct-read-
@@ -471,6 +482,10 @@
            (defret ,value-kind-of-struct-value-onlr-mem
              (equal (c::value-kind mval) ,(type-kind (car types)))
              :hyp (,struct-value-onlrp sval))
+           (defret ,type-of-value-of-struct-value-onlr-mem
+             (equal (c::type-of-value mval) ',ctype)
+             :hyp (,struct-value-onlrp sval)
+             :hints (("Goal" :in-theory (enable c::type-of-value))))
            (defruled ,value-struct-read-mem-when-struct-value-onlrp
              (implies (,struct-value-onlrp sval)
                       (equal (c::value-struct-read ',cmem sval)
@@ -1001,18 +1016,14 @@
                 (old-val (c::expr-value->value old-eval))
                 (new-val (c::expr-value->value new-eval)))
              (implies (and (compustate-equivp old-compst new-compst)
-                           (integerp limit)
-                           (>= limit 2))
-                      (and (not (c::errorp old-eval))
-                           (not (c::errorp new-eval))
+                           (not (c::errorp old-eval)))
+                      (and (not (c::errorp new-eval))
                            old-eval
                            new-eval
                            (equal old-val new-val)
-                           (equal old-compst1
-                                  (c::compustate-fix old-compst))
-                           (equal new-compst1
-                                  (c::compustate-fix new-compst)))))
-           :use struct-value-equivp-when-compustate-equivp
+                           (compustate-equivp old-compst1 new-compst1))))
+           :use (struct-value-equivp-when-compustate-equivp
+                 lemma)
            :expand ((c::exec-expr ',(c::expr-member (c::expr-ident old-cname)
                                                     cmem)
                                   old-compst old-fenv limit)
@@ -1029,7 +1040,19 @@
                     value-kind-when-struct-value-oldp
                     ,value-kind-when-struct-value-newp
                     ,value-struct-read-mem-when-struct-value-oldp
-                    ,value-struct-read-mem-when-struct-value-newp)))
+                    ,value-struct-read-mem-when-struct-value-newp)
+           :prep-lemmas
+           ((defruled lemma
+              (b* ((old-expr
+                    (c::expr-member (c::expr-ident ',old-cname) ',cmem))
+                   ((mv old-eval &)
+                    (c::exec-expr old-expr old-compst old-fenv limit)))
+                (implies (not (c::errorp old-eval))
+                         (>= limit 2)))
+              :expand (c::exec-expr ',(c::expr-member (c::expr-ident old-cname)
+                                                      cmem)
+                                    old-compst old-fenv limit)
+              :enable c::exec-expr))))
        ((erp events)
         (stsp-exec-mem-eq (cdr mems) lmems old-name newl-name newr-name)))
     (retok (cons event events))))
@@ -1051,6 +1074,7 @@
   :returns (mv (erp maybe-msgp)
                (events pseudo-event-form-listp)
                (mems ident-listp)
+               (types type-listp)
                (lmems ident-listp))
   :short "Check, and generate events for,
           the declarations of the old and new left and right struct types."
@@ -1069,8 +1093,10 @@
     "If everything checks out, we generate
      the three predicates that characterize the struct values,
      the accessors of the member values in the old and new structs,
-     and the equivalence predicates over struct values."))
-  (b* (((reterr) nil nil nil)
+     and the equivalence predicates over struct values.
+     We also return the old member names and types,
+     and the left member names."))
+  (b* (((reterr) nil nil nil nil)
        ((erp old-tag old-mems old-types)
         (stsp-check-struct-type-declon old-declon))
        ((erp newl-tag newl-mems newl-types)
@@ -1115,11 +1141,18 @@
                    newr-accs
                    (list equiv-pred))
            old-mems
+           old-types
            newl-mems))
   :guard-hints
   (("Goal"
     :in-theory (enable c$::true-listp-when-ident-listp
-                       acl2::true-listp-when-pseudo-event-form-listp-rewrite))))
+                       acl2::true-listp-when-pseudo-event-form-listp-rewrite)))
+
+  ///
+
+  (defret len-of-stsp-struct-type-declon
+    (implies (not erp)
+             (equal (len types) (len mems)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1258,13 +1291,14 @@
                     (trans-item-declon (ext-declon-declon old-declon))
                     (trans-item-fix new-item)
                     (trans-item-fix new-item2)))
-          ((erp events mems lmems) (stsp-struct-type-declon old-declon
-                                                            new-declon
-                                                            new-declon2
-                                                            tag
-                                                            tag2
-                                                            rmems)))
-       (retok (stsp-stage-types mems lmems)
+          ((erp events mems types lmems)
+           (stsp-struct-type-declon old-declon
+                                   new-declon
+                                   new-declon2
+                                   tag
+                                   tag2
+                                   rmems)))
+       (retok (stsp-stage-types mems types lmems)
               (trans-item-list-fix (cdr new-items))
               events))
      :types

@@ -78443,12 +78443,10 @@ it."
  })
 
  <p>Moreover, ACL2 places restrictions on the resulting expression: @('ST')
- must not occur free in @('PRODUCER') when at least one variable in
- @('STOBJ-LET-BOUND-VARIABLES') occurs in @('PRODUCER'); and every variable in
- @('STOBJ-LET-BOUND-VARIABLES') must not occur free in @('CONSUMER').  If one
- of these conditions is violated, you will see an error message saying that
- &ldquo;It is forbidden to use&rdquo; the variable where it should not
- occur free.</p>
+ must not occur free in @('PRODUCER') when at least one variable belons to both
+ @('STOBJ-LET-BOUND-VARIABLES') and @('PRODUCER-VARS'); @('ST') must not belong
+ to @('PRODUCER-VARS'); and no variable in @('STOBJ-LET-BOUND-VARIABLES') may
+ occur free in @('CONSUMER').</p>
 
  <p>@('Stobj-let') forms can be evaluated using ordinary objects in theorem
  contexts, much as any form.  They can also, of course, appear in function
@@ -109906,6 +109904,11 @@ it."
 ; system/tests/proof-builder-untouchables.lisp.  Thanks to Eric Smith for
 ; passing along this issue from Anthropic's Claude.
 
+; Tweaked the definition of built-in function ev-fncall-rec-logical by adding
+; ec-call wrappers.  See that definition, in ACL2 source file
+; @('translate.lisp'), for a Lisp comment providing further explanation.
+; Thanks to Eric Smith for passing along this issue from Anthropic's Claude.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -110146,6 +110149,10 @@ it."
  recompression was required but was not performed.  See @(see community-book)
  @('system/tests/compress1-length-bug.lisp').</p>
 
+ <p>Fixed a soundness bug caused by failing to account for @(see
+ invariant-risk) for function calls inside calls of @(tsee loop$).  See @(see
+ community-book) @('system/tests/loop-invariant-risk.lisp').</p>
+
  <p>Fixed a soundness bug in @(tsee compress2) due to an inadequate ordering
  check in raw Lisp; see @(see community-book)
  @('system/tests/compress2-order-bug.lisp').</p>
@@ -110221,6 +110228,28 @@ it."
  to a non-Boolean.  For an example, see @(see community-book)
  @('system/tests/implies-not-nil.lisp').  Thanks to Grant Jurgensen for
  supplying the bug fix.</p>
+
+ <p>Fixed a @(see proof-builder) soundness bug that failed to require @(see
+ force)d hypotheses to be proved when an application of the @(':s') command
+ found a contradiction in the assumptions governing the current
+ subterm.  (These are the union of the set of top-level assumptions and the set
+ of governing IF-tests.)  For an example, see @(see community-book)
+ @('system/tests/proof-builder-assumptions-contradiction.lisp').</p>
+
+ <p>Fixed a soundness bug by adding the following restriction on @(tsee
+ stobj-let) forms: the parent @(see stobj) must not belong to the list of
+ producer variables.  For a relevant example, see @(see community-book)
+ @('system/tests/nested-stobj-errors-input.lsp') under the header,
+ &ldquo;Example involving exclusion of parent stobj from
+ producer-vars&rdquo;.</p>
+
+ <p>Fixed a soundness bug which was fixed by tweaking the raw Lisp code for
+ @(tsee set-bad-lisp-consp-memoize).</p>
+
+ <p>Fixed a soundness bug in @(tsee defabsstobj) due to a failure of ACL2 to
+ consider congruent stobjs when deciding whether to require @(':PROTECT T') to
+ be specified for an exported function.  For an example, see @(see
+ community-book) @('system/tests/protect-congruent-stobj.lisp').</p>
 
  <h3>Other Bug Fixes</h3>
 
