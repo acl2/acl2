@@ -31,6 +31,9 @@
      in terms of evaluation of ASTs with respect to dynamic environments."))
   :order-subtopics (ispace-evaluation
                     type-evaluation
+                    primitives-evaluation-on-types
+                    primitives-evaluation-on-ispaces
+                    primitives-evaluation-first-order
                     expression-evaluation)
   :default-parent t)
 

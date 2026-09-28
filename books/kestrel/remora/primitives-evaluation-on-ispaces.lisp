@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ primitives-evaluation-on-ispaces
-  :parents (dynamic-semantics)
+  :parents (evaluation)
   :short "Evaluation of Remora primitives on ispaces."
   :long
   (xdoc::topstring
