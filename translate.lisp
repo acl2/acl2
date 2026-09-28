@@ -16804,6 +16804,42 @@
           (cond
            (bad-binding (mv (illegal-stobj-let-msg bound-vars-or-msg x)
                             nil nil nil nil nil nil nil nil nil))
+           ((member-eq stobj producer-vars)
+
+; See the example, "Example involving exclusion of parent stobj from
+; producer-vars", in community books file
+; system/tests/nested-stobj-errors-input.lsp, for why we include this
+; restriction.  In short, if STOBJ can be modified by the producer, then
+; STOBJ's children -- specifically, those bound in the stobj-let's bindings --
+; can be modified implicitly during evaluation of the producer (by modifying
+; STOBJ), thus ruining applicative semantics.
+
+; In short, the problem we want to avoid is having implicit stobj updates.  The
+; paragraph just above explains avoidance of implicitly updating the child
+; stobjs by way of a parent stobj update.  A separate problem is implicit
+; parent update by way of child stobj updates, but that is already taken care
+; of in translate11, where we check that the parent stobj does not occur free
+; in the producer if a child stobj can be updated, i.e., if (intersectp-eq
+; bound-vars producer-vars) is non-nil.
+
+; Anthropic's Claude brought this issue to our attention, but suggested a
+; stronger restriction: "require the parent's absence from the producer
+; whenever ANY bound variable occurs free in the producer".  But that is
+; unnecessary: in fact we want to allow bound variables and the parent both to
+; occur in the producer provided the producer does not modify any child stobj
+; or the parent stobj.  By the usual stobj restrictions, these are guaranteed
+; provided no child stobj nor the parent stobj are in the producer-vars.  The
+; child stobj provision is enforced by the intersectp-eq check in translate11
+; discussed above, and the parent stobj provision is what we are enforcing
+; here.
+
+            (mv (illegal-stobj-let-msg (msg "The parent stobj must not be ~
+                                             among the producer-vars of a ~
+                                             stobj-let form, but ~x0 is a ~
+                                             member of ~x1."
+                                            stobj producer-vars)
+                                       x)
+                nil nil nil nil nil nil nil nil nil))
            (t (mv nil bound-vars-or-msg actuals creators stobj producer-vars
                   producer updaters bindings consumer)))))))
     (& (mv (illegal-stobj-let-msg
