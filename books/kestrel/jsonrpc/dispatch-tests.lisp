@@ -12,6 +12,9 @@
 
 (include-book "process-rpc")
 
+(local (include-book "std/basic/controlled-configuration" :dir :system))
+(local (acl2::controlled-configuration))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Tests of dispatching to method functions of various signatures.
