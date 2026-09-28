@@ -1243,8 +1243,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule well-formed-value-p-of-eval-binop
-  (implies (well-formed-value-p val ienv)
-           (well-formed-value-p (eval-binop op val1 val2 ienv) ienv))
+  (well-formed-value-p (eval-binop op val1 val2 ienv) ienv)
   :enable (eval-binop
            well-formed-value-p))
 
