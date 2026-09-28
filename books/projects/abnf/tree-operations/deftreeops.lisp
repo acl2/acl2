@@ -154,11 +154,11 @@
       described in @(tsee deftreeops).
       This is @('nil') if the theorem is not generated,
       which happens exactly when the function above is not generated.")))
-  ((get-tree-list-fn acl2::symbolp)
+  ((get-tree-list-fn acl2::symbol)
    (get-tree-list-fn-match-thm acl2::symbol)
    (matching-thm acl2::symbol)
    (get-len-fn acl2::symbol)
-   (get-tree-fn acl2::symbolp)
+   (get-tree-fn acl2::symbol)
    (get-tree-fn-match-thm acl2::symbol))
   :pred deftreeops-rep-infop)
 
@@ -349,7 +349,7 @@
      "The name of the @('<prefix>-<...>|\"<chars>\"|-leafterm') theorem
       described in @(tsee deftreeops),
       where @('<...>') is @('%i') or @('%s') or nothing.")))
-  ((leafterm-thm acl2::symbolp))
+  ((leafterm-thm acl2::symbol))
   :pred deftreeops-charval-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
