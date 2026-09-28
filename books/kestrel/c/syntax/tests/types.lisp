@@ -1291,3 +1291,46 @@
           nil (treemap::empty) (uid 1))))
     (list composites next-uid))
   (list (treemap::empty) (uid 1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Usual arithmetic conversions
+
+;; The common real type is the larger of the corresponding real types
+;; [C17:6.2.5/12] [C17:6.3.1.8/1].
+(acl2::assert-equal
+  (list (type-common-real (type-floatc) (type-double) (irr-ienv))
+        (type-common-real (type-doublec) (type-sint) (irr-ienv))
+        (type-common-real (type-floatc) (type-uchar) (irr-ienv))
+        (type-common-real (type-sint) (type-uint) (irr-ienv)))
+  (list (type-double)
+        (type-double)
+        (type-float)
+        (type-uint)))
+
+;; The result is complex if either operand is complex,
+;; with the common real type as its corresponding real type [C17:6.3.1.8/1].
+(acl2::assert-equal
+  (list (type-uaconvert (type-floatc) (type-double) (irr-ienv))
+        (type-uaconvert (type-double) (type-floatc) (irr-ienv))
+        (type-uaconvert (type-floatc) (type-ldouble) (irr-ienv))
+        (type-uaconvert (type-doublec) (type-ldouble) (irr-ienv))
+        (type-uaconvert (type-doublec) (type-float) (irr-ienv))
+        (type-uaconvert (type-floatc) (type-sint) (irr-ienv))
+        (type-uaconvert (type-floatc) (type-doublec) (irr-ienv)))
+  (list (type-doublec)
+        (type-doublec)
+        (type-ldoublec)
+        (type-ldoublec)
+        (type-doublec)
+        (type-floatc)
+        (type-doublec)))
+
+;; Otherwise, the result is real.
+(acl2::assert-equal
+  (list (type-uaconvert (type-float) (type-double) (irr-ienv))
+        (type-uaconvert (type-ldouble) (type-double) (irr-ienv))
+        (type-uaconvert (type-float) (type-sint) (irr-ienv)))
+  (list (type-double)
+        (type-ldouble)
+        (type-float)))
