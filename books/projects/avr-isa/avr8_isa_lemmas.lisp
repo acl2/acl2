@@ -22,7 +22,7 @@
 ;;
 ;; Original author: Julien Schmaltz <julien.schmaltz@gmail.com>
 
-(in-package "ACL2")
+(in-package "AVR-ISA")
 
 (include-book "avr8_isa")
 
