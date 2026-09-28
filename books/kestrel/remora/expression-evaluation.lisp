@@ -20,8 +20,6 @@
 (include-book "integer-lists")
 (include-book "character-literal-codes")
 
-(include-book "kestrel/fty/integer-result" :dir :system)
-(include-book "kestrel/fty/integer-list-result" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 
 (local (include-book "lists"))
