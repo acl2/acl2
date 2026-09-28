@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -508,7 +508,7 @@
            (value-integerp val2))
       (b* (((mv val1 val2) (uaconvert-values val1 val2)))
         (bitxor-integer-values val1 val2))
-    (error (list :bitand-mistype
+    (error (list :bitxor-mistype
                  :required :integer :integer
                  :supplied (value-fix val1) (value-fix val2))))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
@@ -541,7 +541,7 @@
            (value-integerp val2))
       (b* (((mv val1 val2) (uaconvert-values val1 val2)))
         (bitior-integer-values val1 val2))
-    (error (list :bitand-mistype
+    (error (list :bitior-mistype
                  :required :integer :integer
                  :supplied (value-fix val1) (value-fix val2))))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
