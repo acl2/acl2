@@ -403,14 +403,11 @@
      modulo ispace equivalence;
      array and bracket types are identified,
      and atom types are regarded as scalar array types,
-     when matched to pattern array and bracket types
-     (see @(tsee type-match));
+     when matched to pattern array and bracket types;
      function types are matched in the curried view,
-     so that unary and n-ary function types are identified
-     (see @(tsee type-match));
+     so that unary and n-ary function types are identified;
      universal types are matched in the curried view
-     and modulo the renaming of their bound variables
-     (see @(tsee type-match));
+     and modulo the renaming of their bound variables;
      and atom types are lifted to scalar array types
      at array-kind pattern variables (see @(tsee type-var-match)).
      The following aspects are still syntactical,
