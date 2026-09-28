@@ -283,8 +283,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we perform a purely syntactical match,
-     as in the @(see ispace-matcher),
+    "For now we perform a purely syntactical match of types,
      which is incomplete with respect to type equivalence
      (see @(tsee type-equivp)):
      for instance, there is no normalization of scalar types,
@@ -292,8 +291,10 @@
      (which are thus distinct from the unary ones),
      and no renaming of bound variables.
      We will need to extend this to matching modulo equivalence.
-     The only exception to the purely syntactical treatment is
-     the lifting of atom types to scalar array types
+     The exceptions to the purely syntactical treatment are
+     the ispaces in the types,
+     which are matched modulo equivalence by the @(see ispace-matcher),
+     and the lifting of atom types to scalar array types
      at array-kind pattern variables,
      explained in @(tsee type-var-match).")
    (xdoc::p

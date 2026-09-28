@@ -309,9 +309,10 @@
 ; a function with a universal or product type
 ; is applied directly to an argument,
 ; and the type and ispace arguments are inferred from the argument type.
-; Since the argument type must match the parameter type syntactically,
-; the arguments are explicit arrays, whose types have plain dimensions,
-; rather than bracket expressions, whose types have concatenated shapes.
+; The types are matched syntactically (see type-matcher),
+; but the ispaces in them are matched modulo equivalence (see ispace-matcher),
+; so the arguments may be explicit arrays, whose types have plain dimensions,
+; or bracket expressions, whose types have concatenated shapes.
 
 ; Universal type over product type,
 ; as in the explicit instantiation just above.
@@ -393,13 +394,14 @@
   (f (array [2 3] 1 2 3 4 5 6)))")
 
 ; A bracket expression has a concatenated shape,
-; which does not match the plain dimensions of the parameter type, for now.
-(test-check-top-expr-fail
+; which matches the plain dimensions of the parameter type
+; modulo shape equivalence.
+(test-check-top-expr
  "(let ((fun (@f (&t) ($d) (x (A &t (dims $d))) : (A &t (dims $d))) x))
   (f [1 2 3]))")
 
-; The types of the primitive operations use bracket types and splices,
-; which the syntactic matching does not handle, for now.
+; The types of the primitive operations use bracket types,
+; which the syntactic type matching does not handle, for now.
 (test-check-top-expr-fail
  "(length (array [3] 1 2 3))")
 
