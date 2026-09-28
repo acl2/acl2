@@ -280,6 +280,27 @@
        (omap::update "a" *int* nil)
        nil))
 
+; The ispaces are matched modulo equivalence (see the ispace matcher):
+; the pattern shape (++ @s (dims 3)) matches the shape (dims 2 3),
+; with @s bound to (++ (dims 2)).
+
+(assert-equal
+ (mv-list 5 (type-match (array-of *int* (dim-const 2) (dim-const 3))
+                        (make-type-array
+                         :elem *atom-a*
+                         :ispace (ispace-shape
+                                  (shape-append
+                                   (list (shape-var "s")
+                                         (shape-dims (list (dim-const 3)))))))
+                        nil nil nil nil))
+ (list t
+       nil
+       (omap::update "s"
+                     (shape-append (list (shape-dims (list (dim-const 2)))))
+                     nil)
+       (omap::update "a" *int* nil)
+       nil))
+
 ; The dimensions must match.
 
 (assert-equal
@@ -288,15 +309,67 @@
                         nil nil nil nil))
  (list nil nil nil nil nil))
 
-; A pattern array type matches only an array type:
-; the matching is syntactical, so it does not match an atom type,
-; even though the latter stands for a scalar array type.
+; Array and bracket types are identified:
+; a pattern array type matches a bracket type, and vice versa,
+; with the ispaces of a bracket type combined into a single shape ispace
+; (see type-match-array).
 
 (assert-equal
- (mv-list 5 (type-match *int* (array-of *atom-a*) nil nil nil nil))
- (list nil nil nil nil nil))
+ (mv-list 5 (type-match *int-vec3*
+                        (make-type-bracket
+                         :elem *atom-a*
+                         :ispaces (list (ispace-shape
+                                         (shape-dims (list (dim-const 3))))))
+                        nil nil nil nil))
+ (list t nil nil (omap::update "a" *int* nil) nil))
 
-; Bracket types are matched analogously, with lists of ispaces.
+(assert-equal
+ (mv-list 5 (type-match (make-type-bracket
+                         :elem *int*
+                         :ispaces (list (ispace-dim (dim-const 2))
+                                        (ispace-shape
+                                         (shape-dims (list (dim-const 3))))))
+                        (array-of *atom-a* (dim-var "i") (dim-var "j"))
+                        nil nil nil nil))
+ (list t
+       (omap::update "i" (dim-const 2) (omap::update "j" (dim-const 3) nil))
+       nil
+       (omap::update "a" *int* nil)
+       nil))
+
+; A bracket pattern with a dimension variable and a shape variable,
+; like in the types of the primitive operations,
+; matches an array type with one or more dimensions.
+
+(assert-equal
+ (mv-list 5 (type-match (array-of *int* (dim-const 2) (dim-const 3))
+                        (make-type-bracket
+                         :elem *atom-a*
+                         :ispaces (list (ispace-dim (dim-var "i"))
+                                        (ispace-shape (shape-var "s"))))
+                        nil nil nil nil))
+ (list t
+       (omap::update "i" (dim-const 2) nil)
+       (omap::update "s"
+                     (shape-append (list (shape-dims (list (dim-const 3)))))
+                     nil)
+       (omap::update "a" *int* nil)
+       nil))
+
+(assert-equal
+ (mv-list 5 (type-match *int-vec3*
+                        (make-type-bracket
+                         :elem *atom-a*
+                         :ispaces (list (ispace-dim (dim-var "i"))
+                                        (ispace-shape (shape-var "s"))))
+                        nil nil nil nil))
+ (list t
+       (omap::update "i" (dim-const 3) nil)
+       (omap::update "s" (shape-append nil) nil)
+       (omap::update "a" *int* nil)
+       nil))
+
+; Bracket types are matched analogously.
 
 (assert-equal
  (mv-list 5 (type-match (make-type-bracket
@@ -316,14 +389,25 @@
        (omap::update "a" *int* nil)
        nil))
 
-; Array and bracket types are distinct.
+; An atom type is regarded as a scalar array type
+; when matched to a pattern array type.
 
 (assert-equal
- (mv-list 5 (type-match *int-vec3*
-                        (make-type-bracket
-                         :elem *atom-a*
-                         :ispaces (list (ispace-shape
-                                         (shape-dims (list (dim-const 3))))))
+ (mv-list 5 (type-match *int* (array-of *atom-a*) nil nil nil nil))
+ (list t nil nil (omap::update "a" *int* nil) nil))
+
+(assert-equal
+ (mv-list 5 (type-match *int*
+                        (array-of *atom-a* (dim-var "i"))
+                        nil nil nil nil))
+ (list nil nil nil nil nil))
+
+; An array type variable does not match a pattern array type,
+; because its element type and ispace are not available.
+
+(assert-equal
+ (mv-list 5 (type-match *array-v*
+                        (array-of *atom-a* (dim-var "i"))
                         nil nil nil nil))
  (list nil nil nil nil nil))
 
