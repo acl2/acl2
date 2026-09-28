@@ -1061,11 +1061,14 @@
      with respect to the prefix (if any).
      If validation is successful, we return the type of the string literal.
      If the literal is a character string literal
-     (i.e. it has no encoding prefix)
-     or a UTF-8 string literal
-     (i.e. it has the @('u8') prefix),
+     (i.e. it has no encoding prefix),
      it has an array type with element type @('char').
-     If an encoding prefix is present,
+     If the literal is a UTF-8 string literal
+     (i.e. it has the @('u8') prefix),
+     the element type is @('char') in C17 [C17:6.4.5/6]
+     and @('char8_t'), i.e. @('unsigned char'), in C23
+     [C23:6.4.5/6] [C23:7.30/3].
+     If another encoding prefix is present,
      the array may have element type
      @('wchar_t') or @('char16_t') or @('char32_t').
      Since we do not yet model the values of these type definitions,
@@ -1077,12 +1080,15 @@
                    :of (irr-type)
                    :kind (make-type-array-kind-const-len :len nil)))
        ((stringlit strlit) strlit)
-       ((erp &) (valid-s-char-list strlit.schars strlit.prefix? ienv)))
+       ((erp &) (valid-s-char-list strlit.schars strlit.prefix? ienv))
+       (std (ienv->std ienv)))
     (retok (make-type-array
-            :of (if (or (not strlit.prefix?)
-                        (eprefix-case strlit.prefix? :locase-u8))
-                    (type-char)
-                  (type-unknown-arithmetic))
+            :of (cond ((not strlit.prefix?) (type-char))
+                      ((eprefix-case strlit.prefix? :locase-u8)
+                       (c::standard-case std
+                                         :c17 (type-char)
+                                         :c23 (type-uchar)))
+                      (t (type-unknown-arithmetic)))
             :kind (make-type-array-kind-const-len :len nil))))
 
   ///
@@ -1145,12 +1151,16 @@
                        (member-equal (eprefix-upcase-u) prefixes)
                        (member-equal (eprefix-upcase-l) prefixes))))
         (retmsg$ "Incompatible prefixes ~x0 in the list of string literals."
-                 prefixes)))
+                 prefixes))
+       (std (ienv->std ienv)))
     (retok (make-type-array
-            :of (if (or conflictp
-                        (and prefix? (not (eprefix-case prefix? :locase-u8))))
-                    (type-unknown-arithmetic)
-                  (type-char))
+            :of (cond (conflictp (type-unknown-arithmetic))
+                      ((not prefix?) (type-char))
+                      ((eprefix-case prefix? :locase-u8)
+                       (c::standard-case std
+                                         :c17 (type-char)
+                                         :c23 (type-uchar)))
+                      (t (type-unknown-arithmetic)))
             :kind (make-type-array-kind-const-len :len nil))))
   :prepwork
   ((define valid-stringlit-list-loop ((strlits stringlit-listp) (ienv ienvp))

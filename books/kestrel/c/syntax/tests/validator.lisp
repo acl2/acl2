@@ -2315,3 +2315,21 @@ void f(void) {
 }
 "
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; The elements of a UTF-8 string literal have type char in C17
+;; [C17:6.4.5/6], but char8_t, i.e. unsigned char, in C23
+;; [C23:6.4.5/6] [C23:7.30/3].
+(test-valid
+ "char * p = u8\"x\";
+")
+
+(test-valid
+ "unsigned char * p = u8\"x\";
+unsigned char * q = u8\"x\" u8\"y\";
+"
+ :dialect (c::make-dialect :std (c::standard-c23)))
+
+(test-valid-fail
+ "char * p = u8\"x\";
+"
+ :dialect (c::make-dialect :std (c::standard-c23)))
