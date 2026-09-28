@@ -11,7 +11,9 @@
 (in-package "REMORA")
 
 (include-book "ispace-values-and-environments")
+(include-book "ispace-evaluation")
 (include-book "type-values-and-environments")
+(include-book "type-evaluation")
 (include-book "expression-values-and-environments")
 (include-book "values-to-abstract-syntax")
 (include-book "type-value-equivalence")
@@ -67,11 +69,12 @@
      which we plan to do at some point.
      They may also facilitate expressing and proving type soundness."))
   :order-subtopics (ispace-values-and-environments
+                    ispace-evaluation
                     type-values-and-environments
+                    type-evaluation
                     expression-values-and-environments
                     values-to-abstract-syntax
                     type-value-equivalence
-                    ispace-evaluation
                     primitives-evaluation-on-types
                     primitives-evaluation-on-ispaces
                     primitives-evaluation-first-order
