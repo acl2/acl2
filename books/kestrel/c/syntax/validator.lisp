@@ -5473,8 +5473,8 @@
       "A function declarator with a non-empty name list can only occur
        as the parameters of a function being defined [C17:6.7.6.3/3]
        Thus, we raise an error when the list is nonempty
-       and @('fundef-params-p') is @('nil')
-       (i.e. we are not validating the parameters of a defined function).
+       and the names are not the parameters of the function being defined,
+       which we determine as for a parameter type list (see above).
        Otherwise, we ensure that the names have no duplicates,
        and we push a new scope for the parameters and the function body,
        but we do not add the parameters to the new scope,
@@ -5681,10 +5681,10 @@
                       (type-fix type)))
             (outermost-fundef-params-p
              (and fundef-params-p
-                  (not (dirdeclor-has-params-p dirdeclor))))
+                  (not (dirdeclor-has-params-p dirdeclor.declor))))
             ((erp type vstate)
              (b* (((reterr) (irr-type) (irr-vstate)))
-               (if fundef-params-p
+               (if outermost-fundef-params-p
                    (if (no-duplicatesp-equal dirdeclor.names)
                        (retok (make-type-function
                                :ret type
@@ -5709,7 +5709,7 @@
                             (dirdeclor-fix dirdeclor))))))
             ((erp new-dirdeclor type ident types vstate)
              (valid-dirdeclor
-              dirdeclor.declor outermost-fundef-params-p type vstate)))
+              dirdeclor.declor fundef-params-p type vstate)))
          (retok (make-dirdeclor-function-names :declor new-dirdeclor
                                                :names dirdeclor.names)
                 type

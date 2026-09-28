@@ -2209,3 +2209,34 @@ struct t x = {.a[1] = 1, 2};
 int y[3] = {[1] = 2, 3};
 ")
 
+;; In a function definition, only the innermost function declarator
+;; gives the parameters of the function being defined.
+;; An outer function declarator, whether with a parameter type list
+;; or with an identifier list, is part of the return type.
+(test-valid
+ "int k(a, b) int a, b; {
+  return a + b;
+}
+")
+
+(test-valid
+ "int (*h(a))(int) int a; {
+  (void)a;
+  return 0;
+}
+")
+
+(test-valid
+ "int (*g(a))() int a; {
+  (void)a;
+  return 0;
+}
+")
+
+(test-valid
+ "void (*f(int x))() {
+  (void)x;
+  return 0;
+}
+")
+
