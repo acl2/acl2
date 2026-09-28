@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -418,7 +418,7 @@
          '(= (sshort-min) (sint-min))
        '(> (sshort-min) (sint-min)))
     :rule-classes :linear
-    ,@(if (= (char-bits) (short-bits))
+    ,@(if (= (short-bits) (int-bits))
           '(:enable (sshort-min sint-min)
             :use short-bits-vs-int-bits)
         '(:enable (sshort-min sint-min short-bits-vs-int-bits)
@@ -488,7 +488,7 @@
          '(= (sshort-max) (sint-max))
        '(< (sshort-max) (sint-max)))
     :rule-classes :linear
-    ,@(if (= (char-bits) (short-bits))
+    ,@(if (= (short-bits) (int-bits))
           '(:enable (sshort-max sint-max)
             :use short-bits-vs-int-bits)
         '(:enable (sshort-max sint-max short-bits-vs-int-bits)
