@@ -1752,7 +1752,7 @@
                      (reterr msg)))
                  (retok (type-integer-promote type-arg ienv))))
       (:lognot (b* (((when (type-case type-arg '(:unknown :unknown-builtin)))
-                     (retok (type-unknown-arithmetic)))
+                     (retok (type-sint)))
                     (type (type-fpconvert (type-apconvert type-arg)))
                     ((unless (3definitely (type-scalar-3p type)))
                      (reterr msg)))
