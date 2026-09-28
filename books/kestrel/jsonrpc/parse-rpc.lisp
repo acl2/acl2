@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Quan Luu (quan.luu@kestrel.edu)
+; Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -91,13 +92,15 @@
        (params-presentp (object-has-member-p "params" val))
        (params-val-list (and params-presentp
                              (object-member-values "params" val)))
-       ((unless (equal (len params-val-list) 1))
+       ((unless (or (not params-presentp)
+                    (equal (len params-val-list) 1)))
         (mv (id-null)
             (request+error-error
              (make-invalid-request-error
               "Duplicate \"params\" field"))))
        (params-val (car params-val-list))
-       ((when (and (not (value-case params-val :array))
+       ((when (and params-presentp
+                   (not (value-case params-val :array))
                    (not (value-case params-val :object))))
         (mv (id-null)
             (request+error-error

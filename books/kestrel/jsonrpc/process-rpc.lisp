@@ -5,12 +5,12 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Quan Luu (quan.luu@kestrel.edu)
+; Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "JSONRPC")
 
-(include-book "kestrel/utilities/trans-eval-error-triple" :dir :system)
 (include-book "kestrel/file-io-light/read-file-into-character-list" :dir :system)
 (include-book "kestrel/file-io-light/write-strings-to-file" :dir :system)
 
@@ -44,14 +44,44 @@
            (or (equal name (symbol-name (car allowed-methods)))
                (method-name-allowedp name (cdr allowed-methods))))))
 
+(define method-signature-okp ((stobjs-in symbol-listp)
+                              (stobjs-out symbol-listp))
+  :short "Check whether a method function's signature is supported."
+  :long "<p>Every input must be a @(see acl2::stobj), except for at most one
+  ordinary input, which receives the params.  The outputs must be two ordinary
+  values, @('erp') and @('result'), followed only by stobjs.</p>"
+  :returns (yes/no booleanp)
+  (and (not (member-eq :df stobjs-in))
+       (<= (- (len stobjs-in) (len (remove-eq nil stobjs-in))) 1)
+       (consp stobjs-out)
+       (consp (cdr stobjs-out))
+       (null (car stobjs-out))
+       (null (cadr stobjs-out))
+       (not (member-eq nil (cddr stobjs-out)))
+       (not (member-eq :df (cddr stobjs-out)))))
+
+(define method-call-args ((stobjs-in symbol-listp) params)
+  :short "The arguments of a call of a method function."
+  :long "<p>Each stobj input, including @('state'), is passed the stobj of
+  that name, i.e. the live, global stobj.  The ordinary input, if any, is
+  passed the quoted @('params').</p>"
+  :returns (args true-listp)
+  (if (endp stobjs-in)
+      nil
+    (cons (or (car stobjs-in) `',params)
+          (method-call-args (cdr stobjs-in) params))))
+
 (define dispatch-request ((req requestp) allowed-methods ctx state)
   :short "Dispatch a parsed request to the appropriate @('JSONRPC') method function."
   :long "<p>Checks the method name against @('allowed-methods') first, then
-  interns it into the @('JSONRPC') package to obtain the function symbol,
-  constructs the call form with the params spliced in, and evaluates it via
-  @('trans-eval-error-triple'). Returns @('(mv erp result state)') where
-  @('erp') is @('nil') on success or an @(see error) on failure, and
-  @('result') is the @(see valuep) returned by the method function.</p>
+  interns it into the @('JSONRPC') package to obtain the function symbol.
+  After checking the function's signature (see @(see method-signature-okp)),
+  it constructs the call form from that signature (see @(see
+  method-call-args)) and evaluates it via @('trans-eval-no-warning') (see
+  @(see acl2::trans-eval)).
+  Returns @('(mv erp result state)') where @('erp') is @('nil') on success or
+  an @(see error) on failure, and @('result') is the @(see valuep) returned by
+  the method function.</p>
 
   <p>@('allowed-methods') must be either the keyword @(':any') (no restriction)
   or a list of symbols naming the permitted methods.  The check compares by
@@ -67,18 +97,48 @@
             state))
        (method-sym
         (intern-in-package-of-symbol method-name (pkg-witness "JSONRPC")))
-       ((unless (function-symbolp method-sym (w state)))
+       (wrld (w state))
+       ((unless (function-symbolp method-sym wrld))
         (mv (make-method-not-found-error
              (concatenate 'string "Method not found: " (request->method req)))
             (value-null)
             state))
-       (params (request->params req))
-       (form (if (not (request->params-presentp req))
-                 `(,method-sym state)
-               `(,method-sym ',params state)))
-       ((mv erp result state)
-        (trans-eval-error-triple form ctx state)))
-    (mv erp result state)))
+       (stobjs-in (acl2::stobjs-in method-sym wrld))
+       ((unless (method-signature-okp stobjs-in
+                                      (acl2::stobjs-out method-sym wrld)))
+        (mv (make-internal-error
+             (concatenate 'string
+                          "Method has an unsupported signature: "
+                          (request->method req)))
+            (value-null)
+            state))
+       (params-inputp (member-eq nil stobjs-in))
+       ((unless (iff params-inputp (request->params-presentp req)))
+        (mv (make-invalid-params-error
+             (concatenate 'string
+                          (if params-inputp
+                              "Method requires params: "
+                            "Method takes no params: ")
+                          (request->method req)))
+            (value-null)
+            state))
+       (form (cons method-sym
+                   (method-call-args stobjs-in (request->params req))))
+       ;; Methods may update user stobjs by design, so we suppress the
+       ;; warning trans-eval would otherwise print for each such update.
+       ((mv erp stobjs-out/replaced-val state)
+        (acl2::trans-eval-no-warning form ctx state t))
+       ((when erp)
+        (mv (make-internal-error
+             (concatenate 'string
+                          "Error evaluating method: "
+                          (request->method req)))
+            (value-null)
+            state))
+       ;; By the signature check, the first two values are not stobjs,
+       ;; so they are not replaced.
+       (vals (cdr stobjs-out/replaced-val)))
+    (mv (car vals) (cadr vals) state)))
 
 
 (define process-one ((id idp) (val request+errorp) allowed-methods ctx state)

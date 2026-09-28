@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Quan Luu (quan.luu@kestrel.edu)
+; Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -76,7 +77,7 @@
   @('allowed-methods') list passed to the entry point (or @('allowed-methods')
   is @(':any')).</p>
 
-  <p>Every method function must have the following signature:</p>
+  <p>A typical method function has the following signature:</p>
 
   @({
     (defun my-method (params state)
@@ -90,14 +91,18 @@
   <ul>
     <li>The function must be in the @('JSONRPC') package.</li>
 
-    <li>The @('params') field in request is passed directly to the first
-    argument of the method function. The method function is responsible for
-    processing the params. If @('params') is absent, only @('state') is
-    passed.</li>
+    <li>The function may have at most one ordinary (non-@(see acl2::stobj))
+    input. The @('params') field in the request is passed directly to it. The
+    method function is responsible for processing the params. The ordinary
+    input must be present exactly when the request has @('params'); otherwise,
+    the request fails with an invalid-params error.</li>
 
-    <li>@('state') is always passed as the last argument.</li>
+    <li>All other inputs must be stobjs, in any order. Each is passed the
+    global stobj of that name, so a method function may take @('state'), user
+    stobjs, both, or neither. Since user stobjs persist across requests, they
+    can hold state shared by successive requests.</li>
 
-    <li>The function must return a error-triple @('(mv erp result state)')
+    <li>The function must return @('(mv erp result stobj1 ... stobjn)')
     where:
     <ul>
       <li>@('erp') is @('nil') on success, or an @(see error) value on
@@ -105,7 +110,8 @@
       <li>@('result') is a @('valuep') &mdash; the JSON value to be returned in the
       response's @('\"result\"') field. It is only used when @('erp') is
       @('nil').</li>
-      <li>@('state') is the ACL2 state.</li>
+      <li>@('stobj1'), ..., @('stobjn') are the stobjs the function updates,
+      if any (e.g. @('state')).</li>
     </ul></li>
   </ul>
 
