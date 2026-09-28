@@ -692,7 +692,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Tests of SHAPE-MATCH, ISPACE-MATCH, and ISPACE-LIST-MATCH.
+; Tests of SHAPE-MATCH and ISPACE-MATCH.
 ; Each test compares the three results
 ; (success flag, dimension substitution, and shape substitution)
 ; with the expected ones.
@@ -1011,66 +1011,3 @@
                           nil
                           nil))
  (list nil nil nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Lists of ispaces.
-
-; Empty lists match, and the lists must have the same length.
-
-(assert-equal
- (mv-list 3 (ispace-list-match nil nil nil nil))
- (list t nil nil))
-
-(assert-equal
- (mv-list 3 (ispace-list-match (list (ispace-dim (dim-const 3))) nil nil nil))
- (list nil nil nil))
-
-(assert-equal
- (mv-list 3 (ispace-list-match nil (list (ispace-dim (dim-var "i"))) nil nil))
- (list nil nil nil))
-
-; The substitutions are threaded through the elements:
-; the bindings from earlier elements constrain later ones.
-
-(assert-equal
- (mv-list 3 (ispace-list-match (list (ispace-dim (dim-var "k"))
-                                     (ispace-shape (shape-var "t"))
-                                     (ispace-dim (dim-var "k")))
-                               (list (ispace-dim (dim-var "i"))
-                                     (ispace-shape (shape-var "s"))
-                                     (ispace-dim (dim-var "i")))
-                               nil
-                               nil))
- (list t
-       (omap::update "i" (dim-var "k") nil)
-       (omap::update "s" (shape-append (list (shape-var "t"))) nil)))
-
-(assert-equal
- (mv-list 3 (ispace-list-match (list (ispace-dim (dim-var "k"))
-                                     (ispace-dim (dim-var "l")))
-                               (list (ispace-dim (dim-var "i"))
-                                     (ispace-dim (dim-var "i")))
-                               nil
-                               nil))
- (list nil nil nil))
-
-; A shape variable bound by an earlier element
-; matches an equivalent shape in a later element.
-
-(assert-equal
- (mv-list 3 (ispace-list-match
-             (list (ispace-shape (shape-dims (list (dim-const 2) (dim-const 3))))
-                   (ispace-shape (shape-append
-                                  (list (shape-dims (list (dim-const 2)))
-                                        (shape-dims (list (dim-const 3)))))))
-             (list (ispace-shape (shape-var "s"))
-                   (ispace-shape (shape-var "s")))
-             nil
-             nil))
- (list t
-       nil
-       (omap::update "s"
-                     (shape-append (list (shape-dims (list (dim-const 2)))
-                                         (shape-dims (list (dim-const 3)))))
-                     nil)))

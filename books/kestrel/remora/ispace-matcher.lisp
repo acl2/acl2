@@ -804,32 +804,3 @@
    (shape-append->shapes (ispace-shape->shape (normalize-ispace pat)))
    dim-subst
    shape-subst))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define ispace-list-match ((ispaces ispace-listp)
-                           (pats ispace-listp)
-                           (dim-subst string-dim-mapp)
-                           (shape-subst string-shape-mapp))
-  :returns (mv (okp booleanp)
-               (new-dim-subst string-dim-mapp)
-               (new-shape-subst string-shape-mapp))
-  :short "Match a list of ispaces to a list of patterns (other ispaces)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The two lists must have the same length,
-     and each ispace must match the corresponding pattern,
-     via @(tsee ispace-match),
-     with the substitutions threaded through the successive matches."))
-  (b* (((when (endp pats))
-        (if (endp ispaces)
-            (mv t
-                (string-dim-map-fix dim-subst)
-                (string-shape-map-fix shape-subst))
-          (mv nil nil nil)))
-       ((when (endp ispaces)) (mv nil nil nil))
-       ((mv okp dim-subst shape-subst)
-        (ispace-match (car ispaces) (car pats) dim-subst shape-subst))
-       ((unless okp) (mv nil nil nil)))
-    (ispace-list-match (cdr ispaces) (cdr pats) dim-subst shape-subst)))
