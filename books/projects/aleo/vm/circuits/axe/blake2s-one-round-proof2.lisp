@@ -526,7 +526,7 @@
                 pfield::add-of-add-of-bvcat-of-0-when-unsigned-byte-p-with-extra-special-alt
                 acl2::bvcat-associative-helper ;; not the usual rule, since we want to expose the low zeros
                 ;; acl2::bvcat-combine-constants-old ;; not the usual rule
-                pfield::add-of-neg-of-when-bitp ;; turn the NEG into a BITNOT, with an extra added constant
+                pfield::add-of-neg-when-bitp ;; turn the NEG into a BITNOT, with an extra added constant
                 ;; Lift nots above bvcats:
                 acl2::bvcat-of-bvnot-and-bvnot
                 acl2::bvcat-of-bitnot-and-bvnot

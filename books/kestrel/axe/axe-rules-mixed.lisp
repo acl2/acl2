@@ -108,7 +108,7 @@
 
 
 ;; ;gen the 32
-;; (defthm floor-of-when-usb-bind-free-dag-32
+;; (defthm floor-when-usb-bind-free-dag-32
 ;;   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
 ;;                 (unsigned-byte-p-forced xsize x))
 ;;            (equal (floor x 32)

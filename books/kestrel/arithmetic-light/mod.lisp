@@ -870,7 +870,7 @@
   :hints (("Goal" :in-theory (enable mod))))
 
 ;; Enable?
-(defthmd floor-of-when-mod-known
+(defthmd floor-when-mod-known
   (implies (and (equal k (mod i j)) ; k is a free var
                 (syntaxp (quotep k))
                 (natp k)

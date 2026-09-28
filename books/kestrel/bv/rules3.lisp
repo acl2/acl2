@@ -142,7 +142,7 @@
            (equal (+ y (* 2 y (floor x 2)))
                   (* x y)))
   :hints (("Goal" :use split-when-low-bit-1
-           :in-theory (enable getbit bvchop floor-of-when-mod-known))))
+           :in-theory (enable getbit bvchop floor-when-mod-known))))
 
 (defthm split-when-low-bit-0-hack
   (implies (and (INTEGERP X)
@@ -151,7 +151,7 @@
            (equal (* 2 Y (FLOOR X 2))
                   (* x y)))
   :hints (("Goal" :use split-when-low-bit-0
-           :in-theory (enable floor-of-when-mod-known))))
+           :in-theory (enable floor-when-mod-known))))
 
 (defthmd blast-bvmult-into-bvplus
   (implies (and (natp n)
