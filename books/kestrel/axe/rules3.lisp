@@ -5250,7 +5250,7 @@
                 (< xsize size2)
                 (equal k (+ -1 (expt 2 size2)))
                 (posp size2)
-                (unsigned-byte-p-forced xsize x))
+                (force (unsigned-byte-p-forced xsize x)))
            (equal (bvplus size2 k x)
                   (if (equal 0 x)
                       k

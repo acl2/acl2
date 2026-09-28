@@ -281,7 +281,7 @@
        differ from the names of the fields
        that hold the proofs of the premises,
        which are @('premise[1]-proof'), @('premise[2]-proof'), and so on,
-       and differ from @('proof$'),
+       and differ from @('_proof'),
        which is the variable of the fixtypes of proofs
        of that representation."))
 

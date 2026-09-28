@@ -35,8 +35,8 @@
     "We use the following approach to match dimensions.")
    (xdoc::p
     "The difficulty is with additions.
-     Matching @('5') to the pattern @('(+ 1 i)') should succeed,
-     by binding @('i') to @('4'),
+     Matching @('5') to the pattern @('(+ 1 $i)') should succeed,
+     by binding @('$i') to @('4'),
      because @('(+ 1 4)') is equivalent to @('5'),
      even though the two have different structures.
      So addition patterns must be matched modulo additive equivalence:
@@ -56,13 +56,13 @@
      their constants are equal and their multisets are equal.
      Thus, instead of solving an equation over terms,
      we solve one over a number and a multiset.
-     Consider matching @('(+ 2 k)') to the pattern @('(+ 1 i)').
+     Consider matching @('(+ 2 $k)') to the pattern @('(+ 1 $i)').
      The dimension is the number @('2')
-     with the multiset consisting of @('k').
-     The pattern contributes the number @('1') and the unknown @('i').
-     Whatever @('i') stands for must supply
-     the missing number @('1') and the missing @('k'),
-     so @('i') must be @('(+ 1 k)').")
+     with the multiset consisting of @('$k').
+     The pattern contributes the number @('1') and the unknown @('$i').
+     Whatever @('$i') stands for must supply
+     the missing number @('1') and the missing @('$k'),
+     so @('$i') must be @('(+ 1 $k)').")
    (xdoc::p
     "This is the whole approach:
      we subtract from the dimension what the pattern already accounts for,
@@ -107,11 +107,11 @@
      modulo equivalence, and is removed once.
      For instance,
      with the remainder consisting of
-     the constant @('5') and the addends @('k') and @('l'),
-     accounting for @('(+ 2 l)') leaves
-     the constant @('3') and the addend @('k'),
+     the constant @('5') and the addends @('$k') and @('$l'),
+     accounting for @('(+ 2 $l)') leaves
+     the constant @('3') and the addend @('$k'),
      while accounting for @('6') fails on the constant
-     and accounting for @('m') fails on the addends.
+     and accounting for @('$m') fails on the addends.
      A failure here means that no substitution can work,
      because the known part of the pattern already exceeds the dimension.")
    (xdoc::p
@@ -125,7 +125,7 @@
      so we bind it to the remainder turned back into a dimension
      and normalized:
      e.g. @('4') rather than @('(+ 4)'),
-     and @('k') rather than @('(+ 0 k)').
+     and @('$k') rather than @('(+ 0 $k)').
      Otherwise, the match fails, rather than guessing:
      two unbound variables could split the remainder in many ways,
      and one unbound variable occurring twice would need division.
@@ -139,15 +139,15 @@
     "The substitution is threaded through matches (see @(tsee dims-match)):
      the bindings come from earlier matches of other components,
      and they constrain the current match.
-     This is what makes matching @('(+ 3 k)') to @('(+ i j)') succeed
-     when @('i') is already bound to @('3'):
-     @('i') is a known addend,
-     the remainder becomes just @('k'),
-     and @('j') is forced to be @('k').
+     This is what makes matching @('(+ 3 $k)') to @('(+ $i $j)') succeed
+     when @('$i') is already bound to @('3'):
+     @('$i') is a known addend,
+     the remainder becomes just @('$k'),
+     and @('$j') is forced to be @('$k').
      It is also how rigid variables work:
      the entry points bind them to themselves
      (see @(tsee type-match-vars)),
-     so a rigid variable @('k') in the pattern is instantiated to @('k'),
+     so a rigid variable @('$k') in the pattern is instantiated to @('$k'),
      and must be found in the dimension.")
    (xdoc::p
     "Every conclusion drawn by this approach
@@ -156,12 +156,123 @@
      Completeness,
      modulo additive equivalence and under the uniqueness restriction above,
      requires the dimension and the pattern to be normalized:
-     if the dimension were the unflattened @('(+ 1 (+ 2 k))'),
-     the split would treat @('(+ 2 k)') as one opaque addend,
-     and matching to @('(+ 3 i)') would fail,
-     although binding @('i') to @('k') works.
+     if the dimension were the unflattened @('(+ 1 (+ 2 $k))'),
+     the split would treat @('(+ 2 $k)') as one opaque addend,
+     and matching to @('(+ 3 $i)') would fail,
+     although binding @('$i') to @('$k') works.
      Thus, the callers are expected to normalize both sides
-     before matching."))
+     before matching.")
+   (xdoc::h3
+    "Shape Matching")
+   (xdoc::p
+    "We use the following approach to match shapes,
+     and also ispaces, which normalize to shapes.")
+   (xdoc::p
+    "The difficulty is that
+     concatenations, splices, and shapes with multiple dimensions
+     are different ways to write equivalent shapes.
+     Matching @('(dims 2 1)') to the pattern @('(++ @s (dims 1))')
+     should succeed,
+     by binding @('@s') to the shape with the single dimension @('2'),
+     because @('(++ (dims 2) (dims 1))') is equivalent to @('(dims 2 1)').
+     Matching @('(dims 3)') to the pattern @('[$i @s]'),
+     i.e. the splice of the dimension variable @('$i')
+     and the shape variable @('@s'),
+     should succeed,
+     by binding @('$i') to @('3') and @('@s') to the empty shape.
+     So shape patterns must be matched modulo shape equivalence:
+     this is the task of @(tsee shape-match) and @(tsee ispace-match),
+     which normalize both sides
+     and match their elements via @(tsee shape-elements-match),
+     as described here.")
+   (xdoc::p
+    "The key observation is that
+     a normalized shape (see @(tsee normalize-shape))
+     has a canonical form:
+     a concatenation of elements,
+     each of which is a shape variable
+     or a shape with a single (normalized) dimension.
+     Two normalized shapes are equivalent exactly when
+     their lists of elements are equal, element by element.
+     Thus, instead of matching trees of
+     concatenations, splices, and shapes with multiple dimensions,
+     we match two sequences of elements,
+     in which a shape variable of the pattern may stand for a segment,
+     i.e. zero or more consecutive elements, of the shape being matched.
+     Consider matching @('(dims 2 1)') to the pattern @('(++ @s (dims 1))').
+     The shape normalizes to the elements @('(dims 2)') and @('(dims 1)'),
+     and the pattern to the elements @('@s') and @('(dims 1)').
+     The last elements are matched together,
+     and @('@s') must stand for the rest, i.e. the element @('(dims 2)').")
+   (xdoc::p
+    "This is the whole approach:
+     we go through the elements of the pattern,
+     consuming elements of the shape,
+     and a shape variable of the pattern consumes
+     as many elements as the other elements of the pattern leave to it.
+     There are three cases, described next.")
+   (xdoc::p
+    "An element of the pattern with a single dimension
+     consumes exactly one element of the shape,
+     which must also have a single dimension:
+     the two dimensions are matched via @(tsee dim-match).
+     Since that is modulo additive equivalence,
+     matching @('(dims 3)') to @('[(+ 1 $i) @s]')
+     binds @('$i') to @('2'), and @('@s') to the empty shape.
+     A shape variable of the shape being matched
+     never matches such an element of the pattern,
+     because it may stand for any number of dimensions.")
+   (xdoc::p
+    "A shape variable of the pattern that is already bound
+     consumes as many elements of the shape
+     as the elements of its (normalized) binding,
+     which must be equivalent to those elements
+     (see @(tsee shape-equivp)).")
+   (xdoc::p
+    "A shape variable of the pattern that is not bound yet
+     consumes a segment whose length is forced by counting:
+     the number of remaining elements of the shape,
+     minus the number of elements needed by
+     the remaining elements of the pattern,
+     namely one for each element with a single dimension
+     and the length of the binding for each bound shape variable
+     (see @(tsee shape-pattern-elements-length)).
+     If the remaining elements of the pattern include
+     another unbound shape variable, or the same variable again,
+     the length is undetermined and the match fails, rather than guessing,
+     as in the corresponding case of dimension matching.
+     Otherwise, the variable is bound to the concatenation of the segment,
+     e.g. to @('(++ (dims 2))') in the first example above,
+     and to the empty concatenation @('(++)') in the second example above,
+     which is the only solution.
+     The position of the unbound variable does not matter:
+     matching @('(++ @t (dims 3))') to the pattern @('(++ @s (dims $i))')
+     binds @('@s') to @('(++ @t)') and @('$i') to @('3').")
+   (xdoc::p
+    "Ispaces are matched in the same way,
+     because a normalized ispace (see @(tsee normalize-ispace))
+     is always a shape ispace with a concatenation.
+     For instance, a dimension ispace @('3')
+     is matched to a dimension ispace pattern @('$i')
+     as the shape with the single dimension @('3')
+     to the shape with the single dimension @('$i').")
+   (xdoc::p
+    "As with dimension matching,
+     the substitutions (one for dimension variables and one for shape variables)
+     are threaded through matches,
+     so that the bindings from earlier matches constrain the current match,
+     including the bindings of rigid variables to themselves
+     made by the entry points (see @(tsee type-match-vars)).
+     The approach is sound on any shape and pattern,
+     because it only ever consumes elements that are equivalent,
+     or binds a variable to exactly the elements that it must stand for.
+     It is complete, modulo shape equivalence
+     and under the uniqueness restriction above,
+     when the shape and the pattern are normalized:
+     @(tsee shape-match) and @(tsee ispace-match) ensure that,
+     by normalizing both sides before matching their elements,
+     which also normalizes the dimensions in them,
+     as dimension matching expects."))
   :order-subtopics t
   :default-parent t)
 
@@ -401,11 +512,11 @@
      in which case the dimensions in the substitution mention those names;
      thus, the substitution must not be applied repeatedly
      or composed with itself.
-     For instance, matching @('(+ 3 i)') to the pattern @('(+ 1 j)'),
-     with @('i') already bound to @('5') by a previous match,
-     binds @('j') to @('(+ 2 i)'):
-     applying the substitution to the pattern yields @('(+ 1 (+ 2 i))'),
-     which is equivalent to @('(+ 3 i)'),
+     For instance, matching @('(+ 3 $i)') to the pattern @('(+ 1 $j)'),
+     with @('$i') already bound to @('5') by a previous match,
+     binds @('$j') to @('(+ 2 $i)'):
+     applying the substitution to the pattern yields @('(+ 1 (+ 2 $i))'),
+     which is equivalent to @('(+ 3 $i)'),
      but applying it once more would yield @('(+ 1 (+ 2 5))')."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -488,191 +599,208 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines shapes/ispaces-match
-  :short "Match shapes and ispaces to patterns (other shapes and ispaces)."
+(define shape-pattern-elements-length ((pats shape-listp)
+                                       (shape-subst string-shape-mapp))
+  :returns (mv (okp booleanp)
+               (len natp :rule-classes (:rewrite :type-prescription)))
+  :short "Calculate the number of elements of a shape
+          that a list of elements of a pattern needs, if determined."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we perform a purely syntactical match, as in @(tsee dims-match),
-     which is incomplete with respect to shape and ispace equivalence.
-     For instance, the pattern @('(++ s (dims 1))')
-     is not matched by the shape @('(dims 2 1)'),
-     even though replacing @('s') with @('(dims 2)') in the pattern
-     yields a shape equivalent to @('(dims 2 1)').
-     We will need to extend this to matching modulo equivalence.")
+    "This is used to match shapes; see @(see ispace-matcher).
+     The elements are the ones of a normalized pattern concatenation.
+     An element that is not a shape variable needs one element of the shape.
+     A shape variable bound in the substitution needs
+     as many elements as its normalized binding has.
+     An unbound shape variable needs an undetermined number of elements,
+     in which case we fail, returning @('nil') as the flag,
+     and 0 as the number, which is irrelevant in that case.")
    (xdoc::p
-    "Since shapes and ispaces contain
-     both dimension variables and shape variables,
+    "This is defined on all lists of shapes,
+     treating every non-variable shape as needing one element,
+     but it is intended for use on the elements of normalized concatenations
+     (see @(tsee normalize-shape)),
+     which do not include concatenations or splices."))
+  (b* (((when (endp pats)) (mv t 0))
+       (pat (car pats))
+       ((mv okp len1)
+        (shape-case
+         pat
+         :var (b* ((var+shape
+                    (omap::assoc pat.name (string-shape-map-fix shape-subst)))
+                   ((unless var+shape) (mv nil 0)))
+                (mv t (len (shape-append->shapes
+                            (normalize-shape (cdr var+shape))))))
+         :dims (mv t 1)
+         :append (mv t 1) ; never happens for normalized concatenations
+         :splice (mv t 1))) ; never happens for normalized concatenations
+       ((unless okp) (mv nil 0))
+       ((mv okp len2) (shape-pattern-elements-length (cdr pats) shape-subst))
+       ((unless okp) (mv nil 0)))
+    (mv t (+ len1 len2)))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define shape-elements-match ((elements shape-listp)
+                              (pats shape-listp)
+                              (dim-subst string-dim-mapp)
+                              (shape-subst string-shape-mapp))
+  :returns (mv (okp booleanp)
+               (new-dim-subst string-dim-mapp)
+               (new-shape-subst string-shape-mapp))
+  :short "Match the elements of a shape to the elements of a pattern shape."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This realizes the approach described in @(see ispace-matcher).
+     The elements are the ones of the normalized concatenations
+     of the shape being matched and of the pattern
+     (see @(tsee normalize-shape)).
+     The two substitutions are threaded as in @(tsee shape-match).")
+   (xdoc::p
+    "We go through the elements of the pattern.
+     A pattern element with dimensions consumes the first element of the shape,
+     which must also have dimensions,
+     matched via @(tsee dim-list-match);
+     for normalized concatenations, both elements have a single dimension.
+     A bound shape variable in the pattern consumes
+     as many elements of the shape as its normalized binding has
+     (see @(tsee shape-pattern-elements-length)),
+     and their concatenation must be equivalent to the binding.
+     An unbound shape variable in the pattern consumes
+     as many elements of the shape as
+     the remaining elements of the pattern leave to it
+     (see @(tsee shape-pattern-elements-length)),
+     and it is bound to their concatenation;
+     if the remaining elements of the pattern include an unbound variable,
+     the match fails.
+     A concatenation or splice never occurs
+     among the elements of a normalized concatenation,
+     so we fail in that case.
+     At the end, all the elements of the shape must have been consumed.")
+   (xdoc::p
+    "As explained in @(see ispace-matcher),
+     this is sound on all lists of shapes,
+     but it is complete,
+     modulo shape equivalence and under the uniqueness restriction,
+     only on the elements of normalized concatenations."))
+  (b* (((when (endp pats))
+        (if (endp elements)
+            (mv t
+                (string-dim-map-fix dim-subst)
+                (string-shape-map-fix shape-subst))
+          (mv nil nil nil)))
+       (pat (car pats)))
+    (shape-case
+     pat
+     :var
+     (b* ((var+shape
+           (omap::assoc pat.name (string-shape-map-fix shape-subst))))
+       (if var+shape
+           (b* ((binding (cdr var+shape))
+                (n (len (shape-append->shapes (normalize-shape binding))))
+                ((when (> n (len elements))) (mv nil nil nil))
+                ((unless (shape-equivp binding
+                                       (shape-append (take n elements))))
+                 (mv nil nil nil)))
+             (shape-elements-match (nthcdr n elements)
+                                   (cdr pats)
+                                   dim-subst
+                                   shape-subst))
+         (b* (((mv okp needed)
+               (shape-pattern-elements-length (cdr pats) shape-subst))
+              ((unless okp) (mv nil nil nil))
+              ((when (> needed (len elements))) (mv nil nil nil))
+              (k (- (len elements) needed))
+              (shape-subst (omap::update pat.name
+                                         (shape-append (take k elements))
+                                         (string-shape-map-fix shape-subst))))
+           (shape-elements-match (nthcdr k elements)
+                                 (cdr pats)
+                                 dim-subst
+                                 shape-subst))))
+     :dims
+     (b* (((when (endp elements)) (mv nil nil nil))
+          (element (car elements))
+          ((unless (shape-case element :dims)) (mv nil nil nil))
+          ((mv okp dim-subst)
+           (dim-list-match (shape-dims->dims element) pat.dims dim-subst))
+          ((unless okp) (mv nil nil nil)))
+       (shape-elements-match (cdr elements)
+                             (cdr pats)
+                             dim-subst
+                             shape-subst))
+     :append (mv nil nil nil) ; never happens for normalized concatenations
+     :splice (mv nil nil nil))) ; never happens for normalized concatenations
+  :measure (acl2-count pats)
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable nfix)))
+  :prepwork ((local (in-theory (enable nthcdr-of-shape-list-fix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define shape-match ((shape shapep)
+                     (pat shapep)
+                     (dim-subst string-dim-mapp)
+                     (shape-subst string-shape-mapp))
+  :returns (mv (okp booleanp)
+               (new-dim-subst string-dim-mapp)
+               (new-shape-subst string-shape-mapp))
+  :short "Match a shape to a pattern (another shape)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is matching modulo shape equivalence,
+     according to the approach described in @(see ispace-matcher):
+     we normalize both the shape and the pattern
+     (see @(tsee normalize-shape)),
+     obtaining two concatenations,
+     and we match the elements of the two concatenations
+     via @(tsee shape-elements-match).
+     Note that the shape variables of the pattern
+     are bound to normalized concatenations,
+     e.g. @('(++ (dims 2))') rather than @('(dims 2)').")
+   (xdoc::p
+    "Since shapes contain both dimension variables and shape variables,
      the matching builds two substitutions,
      one for dimension variables and one for shape variables.
-     Both are threaded through these functions,
+     Both are threaded through the matching of the elements,
      analogously to the single substitution in @(tsee dims-match),
      and both are meant to be applied simultaneously,
      as @(tsee shape-subst-ispace-vars)
      and @(tsee ispace-subst-ispace-vars) do.
      If the matching fails, @('nil') is returned as both substitutions."))
+  (shape-elements-match (shape-append->shapes (normalize-shape shape))
+                        (shape-append->shapes (normalize-shape pat))
+                        dim-subst
+                        shape-subst))
 
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define shape-match ((shape shapep)
-                       (pat shapep)
-                       (dim-subst string-dim-mapp)
-                       (shape-subst string-shape-mapp))
-    :returns (mv (okp booleanp)
-                 (new-dim-subst string-dim-mapp)
-                 (new-shape-subst string-shape-mapp))
-    :parents (ispace-matcher shapes/ispaces-match)
-    :short "Match a shape to a pattern (another shape)."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "A pattern variable that is bound in the shape substitution
-       matches only the shape bound to it.
-       A pattern variable that is not bound in the shape substitution
-       matches any shape, which is bound to the variable.")
-     (xdoc::p
-      "A pattern @(':dims') shape matches only a @(':dims') shape
-       whose dimensions match the dimensions of the pattern,
-       via @(tsee dim-list-match).")
-     (xdoc::p
-      "A pattern concatenation matches only a concatenation
-       whose shapes match the shapes of the pattern,
-       in the same order.
-       A pattern splice matches only a splice
-       whose ispaces match the ispaces of the pattern,
-       in the same order."))
-    (shape-case
-     pat
-     :var (b* ((shape-subst (string-shape-map-fix shape-subst))
-               (var+shape (omap::assoc pat.name shape-subst)))
-            (cond ((not var+shape)
-                   (mv t
-                       (string-dim-map-fix dim-subst)
-                       (omap::update pat.name (shape-fix shape) shape-subst)))
-                  ((equal (cdr var+shape) (shape-fix shape))
-                   (mv t (string-dim-map-fix dim-subst) shape-subst))
-                  (t (mv nil nil nil))))
-     :dims (if (shape-case shape :dims)
-               (b* (((mv okp dim-subst)
-                     (dim-list-match (shape-dims->dims shape)
-                                     pat.dims
-                                     dim-subst))
-                    ((unless okp) (mv nil nil nil)))
-                 (mv t dim-subst (string-shape-map-fix shape-subst)))
-             (mv nil nil nil))
-     :append (if (shape-case shape :append)
-                 (shape-list-match (shape-append->shapes shape)
-                                   pat.shapes
-                                   dim-subst
-                                   shape-subst)
-               (mv nil nil nil))
-     :splice (if (shape-case shape :splice)
-                 (ispace-list-match (shape-splice->ispaces shape)
-                                    pat.ispaces
-                                    dim-subst
-                                    shape-subst)
-               (mv nil nil nil)))
-    :measure (shape-count pat))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define shape-list-match ((shapes shape-listp)
-                            (pats shape-listp)
-                            (dim-subst string-dim-mapp)
-                            (shape-subst string-shape-mapp))
-    :returns (mv (okp booleanp)
-                 (new-dim-subst string-dim-mapp)
-                 (new-shape-subst string-shape-mapp))
-    :parents (ispace-matcher shapes/ispaces-match)
-    :short "Match a list of shapes to a list of patterns (other shapes)."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "The two lists must have the same length,
-       and each shape must match the corresponding pattern,
-       with the substitutions threaded through the successive matches."))
-    (b* (((when (endp pats))
-          (if (endp shapes)
-              (mv t
-                  (string-dim-map-fix dim-subst)
-                  (string-shape-map-fix shape-subst))
-            (mv nil nil nil)))
-         ((when (endp shapes)) (mv nil nil nil))
-         ((mv okp dim-subst shape-subst)
-          (shape-match (car shapes) (car pats) dim-subst shape-subst))
-         ((unless okp) (mv nil nil nil)))
-      (shape-list-match (cdr shapes) (cdr pats) dim-subst shape-subst))
-    :measure (shape-list-count pats))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define ispace-match ((ispace ispacep)
-                        (pat ispacep)
-                        (dim-subst string-dim-mapp)
-                        (shape-subst string-shape-mapp))
-    :returns (mv (okp booleanp)
-                 (new-dim-subst string-dim-mapp)
-                 (new-shape-subst string-shape-mapp))
-    :parents (ispace-matcher shapes/ispaces-match)
-    :short "Match an ispace to a pattern (another ispace)."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "A pattern dimension ispace matches only a dimension ispace
-       whose dimension matches the dimension of the pattern,
-       via @(tsee dim-match).
-       A pattern shape ispace matches only a shape ispace
-       whose shape matches the shape of the pattern."))
-    (ispace-case
-     pat
-     :dim (if (ispace-case ispace :dim)
-              (b* (((mv okp dim-subst)
-                    (dim-match (ispace-dim->dim ispace) pat.dim dim-subst))
-                   ((unless okp) (mv nil nil nil)))
-                (mv t dim-subst (string-shape-map-fix shape-subst)))
-            (mv nil nil nil))
-     :shape (if (ispace-case ispace :shape)
-                (shape-match (ispace-shape->shape ispace)
-                             pat.shape
-                             dim-subst
-                             shape-subst)
-              (mv nil nil nil)))
-    :measure (ispace-count pat))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define ispace-list-match ((ispaces ispace-listp)
-                             (pats ispace-listp)
-                             (dim-subst string-dim-mapp)
-                             (shape-subst string-shape-mapp))
-    :returns (mv (okp booleanp)
-                 (new-dim-subst string-dim-mapp)
-                 (new-shape-subst string-shape-mapp))
-    :parents (ispace-matcher shapes/ispaces-match)
-    :short "Match a list of ispaces to a list of patterns (other ispaces)."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "The two lists must have the same length,
-       and each ispace must match the corresponding pattern,
-       with the substitutions threaded through the successive matches."))
-    (b* (((when (endp pats))
-          (if (endp ispaces)
-              (mv t
-                  (string-dim-map-fix dim-subst)
-                  (string-shape-map-fix shape-subst))
-            (mv nil nil nil)))
-         ((when (endp ispaces)) (mv nil nil nil))
-         ((mv okp dim-subst shape-subst)
-          (ispace-match (car ispaces) (car pats) dim-subst shape-subst))
-         ((unless okp) (mv nil nil nil)))
-      (ispace-list-match (cdr ispaces) (cdr pats) dim-subst shape-subst))
-    :measure (ispace-list-count pats))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  :verify-guards :after-returns
-
-  ///
-
-  (fty::deffixequiv-mutual shapes/ispaces-match))
+(define ispace-match ((ispace ispacep)
+                      (pat ispacep)
+                      (dim-subst string-dim-mapp)
+                      (shape-subst string-shape-mapp))
+  :returns (mv (okp booleanp)
+               (new-dim-subst string-dim-mapp)
+               (new-shape-subst string-shape-mapp))
+  :short "Match an ispace to a pattern (another ispace)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee shape-match), but for ispaces:
+     we normalize both the ispace and the pattern
+     (see @(tsee normalize-ispace)),
+     obtaining two shape ispaces with concatenations,
+     and we match the elements of the two concatenations
+     via @(tsee shape-elements-match).
+     Thus, a dimension ispace is matched as
+     the shape with that single dimension;
+     see @(see ispace-matcher)."))
+  (shape-elements-match
+   (shape-append->shapes (ispace-shape->shape (normalize-ispace ispace)))
+   (shape-append->shapes (ispace-shape->shape (normalize-ispace pat)))
+   dim-subst
+   shape-subst))

@@ -40,9 +40,19 @@
      i.e. just include @($\\Theta$), @($\\Delta$), and @($\\tau$),
      but not @($k$):
      they say that the type satisfies all the static validity conditions
-     in the context of the sort and kind environments.
-     We model sort environments as in @(see ispace-validity),
-     and we similarly model kind environments as sets of type variables,
+     in the sort and kind environments;
+     but we call those environments
+     `ispace context' (see also @(see ispace-validity))
+     and `type context',
+     to emphasize that they provide information about ispace and type variables,
+     and to distinguish them from environments.
+     In some literature, `type context' may refer to
+     an association of types to variables,
+     but we call these `expression contexts':
+     see @(see expression-validity).")
+   (xdoc::p
+    "We model ispace contexts as in @(see ispace-validity),
+     and we similarly model type contexts as sets of type variables,
      which carry their own kinds
      similarly to ispace variables carrying their own sorts."))
   :order-subtopics t
@@ -242,7 +252,7 @@
 
   ;; proof validity functions
   ;; (the premises of the rules for universal, product, and sum types
-  ;; apply the predicates to extended environments,
+  ;; apply the predicates to extended contexts,
   ;; whose guards follow from the preceding rule validity conjuncts
   ;; only if the rule validity functions are enabled):
 
@@ -293,9 +303,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection type-validity-holds-only-on-environments
+(defsection type-validity-holds-only-on-contexts
   :short "The validity of types and lists of types
-          holds only on sort and kind environments,
+          holds only on ispace and type contexts,
           i.e. sets of ispace variables and sets of type variables."
 
   (defthm-type-ok-proof-validp-clique-flag

@@ -116,7 +116,7 @@
 ;; We only need to get the size of one argument for logand
 (defthmd logand-becomes-bvand
   (implies (and (bind-free (bind-var-to-bv-term-size 'size x))
-                (unsigned-byte-p-forced size x)
+                (force (unsigned-byte-p-forced size x))
                 (integerp y))
            (equal (logand x y)
                   (bvand size x y)))
@@ -124,7 +124,7 @@
 
 (defthmd logand-becomes-bvand-alt
   (implies (and (bind-free (bind-var-to-bv-term-size 'size y))
-                (unsigned-byte-p-forced size y)
+                (force (unsigned-byte-p-forced size y))
                 (integerp x))
            (equal (logand x y)
                   (bvand size x y)))
@@ -168,8 +168,8 @@
 
 (defthmd logior-becomes-bvor
   (implies (and (bind-free (bind-var-to-bv-term-size 'size x))
-                (unsigned-byte-p-forced size y)
-                (unsigned-byte-p-forced size x) ; should never fail
+                (unsigned-byte-p-forced size y) ; remove -forced?
+                (force (unsigned-byte-p-forced size x)) ; should never fail
                 )
            (equal (logior x y)
                   (bvor size x y)))
@@ -177,8 +177,8 @@
 
 (defthmd logior-becomes-bvor-alt
   (implies (and (bind-free (bind-var-to-bv-term-size 'size y))
-                (unsigned-byte-p-forced size x)
-                (unsigned-byte-p-forced size y) ; should never fail
+                (unsigned-byte-p-forced size x) ; remove -forced?
+                (force (unsigned-byte-p-forced size y)) ; should never fail
                 )
            (equal (logior x y)
                   (bvor size x y)))
@@ -207,8 +207,8 @@
 
 (defthmd logxor-becomes-bvxor
   (implies (and (bind-free (bind-var-to-bv-term-size 'size x))
-                (unsigned-byte-p-forced size y)
-                (unsigned-byte-p-forced size x) ; should never fail
+                (unsigned-byte-p-forced size y) ; remove -forced?
+                (force (unsigned-byte-p-forced size x)) ; should never fail
                 )
            (equal (logxor x y)
                   (bvxor size x y)))
@@ -216,8 +216,8 @@
 
 (defthmd logxor-becomes-bvxor-alt
   (implies (and (bind-free (bind-var-to-bv-term-size 'size y))
-                (unsigned-byte-p-forced size x)
-                (unsigned-byte-p-forced size y) ; should never fail
+                (unsigned-byte-p-forced size x) ; remove -forced?
+                (force (unsigned-byte-p-forced size y)) ; should never fail
                 )
            (equal (logxor x y)
                   (bvxor size x y)))
@@ -256,7 +256,7 @@
 ;; figure it out.
 (defthmd logapp-becomes-bvcat-when-bv
   (implies (and (bind-free (bind-var-to-bv-term-size 'jsize j) (jsize))
-                (unsigned-byte-p-forced jsize j))
+                (force (unsigned-byte-p-forced jsize j)))
            (equal (logapp size i j)
                   (bvcat jsize j size i)))
   :hints (("Goal" :in-theory (enable bvcat))))

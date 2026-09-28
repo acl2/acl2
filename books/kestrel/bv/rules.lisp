@@ -2465,7 +2465,7 @@
 (defthmd logtail-becomes-slice-bind-free
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 ;; (<= n newsize)
-                (unsigned-byte-p-forced newsize x)
+                (force (unsigned-byte-p-forced newsize x))
                 (natp n))
            (equal (logtail n x)
                   (slice (+ -1 newsize) n x)))
@@ -3579,7 +3579,7 @@
 (defthm bvxor-tighten
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (< newsize oldsize)
-                (unsigned-byte-p-forced newsize x)
+                (force (unsigned-byte-p-forced newsize x))
                 (unsigned-byte-p newsize y)
                 (natp newsize)
                 (natp oldsize))
@@ -3590,7 +3590,7 @@
 (defthmd bvor-tighten
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (< newsize oldsize)
-                (unsigned-byte-p-forced newsize x)
+                (force (unsigned-byte-p-forced newsize x))
                 (unsigned-byte-p newsize y)
                 (natp newsize)
                 (natp oldsize))
@@ -5338,7 +5338,7 @@
                 (< xsize old-size)
                 (natp old-size)
                 (integerp new-size)
-                (unsigned-byte-p-forced xsize x)
+                (force (unsigned-byte-p-forced xsize x))
                 (<= old-size new-size))
            (equal (bvsx new-size old-size x)
                   x))
@@ -5647,7 +5647,7 @@
                 (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
                 (syntaxp (quotep xsize))
                 (not (unsigned-byte-p xsize k)) ; gets computed
-                (unsigned-byte-p-forced xsize x))
+                (force (unsigned-byte-p-forced xsize x)))
            (not (equal k x)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
@@ -5656,7 +5656,7 @@
                 (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
                 (syntaxp (quotep xsize))
                 (not (unsigned-byte-p xsize k)) ; gets computed
-                (unsigned-byte-p-forced xsize x))
+                (force (unsigned-byte-p-forced xsize x)))
            (not (equal x k)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
@@ -5864,7 +5864,7 @@
                 (<= (expt 2 xsize) (bvchop size k))
                 (<= xsize size)
                 (natp size)
-                (unsigned-byte-p-forced xsize x))
+                (force (unsigned-byte-p-forced xsize x)))
            (bvlt size x k))
   :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p-forced))))
 
@@ -5874,7 +5874,7 @@
                 (<= (+ -1 (expt 2 xsize)) (bvchop size k))
                 (<= xsize size)
                 (natp size)
-                (unsigned-byte-p-forced xsize x))
+                (force (unsigned-byte-p-forced xsize x)))
            (not (bvlt size k x)))
   :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p-forced))))
 
