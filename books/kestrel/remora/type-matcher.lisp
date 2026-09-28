@@ -171,6 +171,7 @@
                               array-subst))))
   :prepwork ((local (in-theory (enable emptyp-of-type-var-set-fix))))
   :verify-guards :after-returns)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-var-match ((type typep)
