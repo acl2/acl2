@@ -1443,7 +1443,7 @@
      before the shadowing takes place;
      it may not clash with this one,
      which @(tsee defind-check-proof-names) enforces."))
-  (packn-pos (list (defind-proof-var-name name) '$) (symbol-lfix name)))
+  (packn-pos (list "_" (defind-proof-var-name name)) (symbol-lfix name)))
 
 ;;;;;;;;;;
 

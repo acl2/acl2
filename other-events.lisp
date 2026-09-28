@@ -22787,7 +22787,7 @@
 ; wrld)).
 
    (cond
-    ((eq st (getpropc fn 'stobj-function nil wrld))
+    ((congruent-stobjsp st (getpropc fn 'stobj-function nil wrld) wrld)
      :once)
     ((getpropc fn 'recursivep nil wrld)
 
@@ -22872,7 +22872,9 @@
 ; function body won't allow stobj modification in args of a function call.
 
          (assert$ (null (stobj-updates-listp st (fargs term) wrld))
-                  (and (member-eq st (stobjs-out (ffn-symb term) wrld))
+                  (and (some-congruent-p st
+                                         (stobjs-out (ffn-symb term) wrld)
+                                         wrld)
 
 ; We recur into the body of fn.  If this process runs too slowly, we may decide
 ; on a sort of memoization obtained by storing a suitable property for fn.
@@ -22898,7 +22900,7 @@
 ; they update atomically or because the :PROTECT keyword was supplied at the
 ; time the abstract stobj st$c was admitted.
 
-  (and (member-eq st$c (stobjs-out name wrld))
+  (and (some-congruent-p st$c (stobjs-out name wrld) wrld)
        (eq t (fn-stobj-updates-p st$c name wrld))))
 
 (defun key-position-from-end-eq (key alist)
@@ -27997,10 +27999,10 @@
 
 (defun hyps-type-alist (assumptions ens wrld state)
 
-; Note that the force-flg arg to type-alist-clause is nil here, so we shouldn't
-; wind up with any assumptions in the returned tag-tree. Also note that we
-; return (mv contradictionp type-alist fc-pair-lst), where actually fc-pair-lst
-; is a ttree if contradictionp holds; normally we ignore fc-pair-lst otherwise.
+; We return (mv contradictionp type-alist ttree-or-fc-pairs), where
+; ttree-or-fc-pairs is a ttree if contradictionp is true and otherwise ttree is
+; generally ignored (it's the fc-pairs returned in that case by
+; forward-chain-top).
 
   (forward-chain-top 'show-rewrites
                      (dumb-negate-lit-lst (expand-assumptions assumptions))

@@ -38,9 +38,13 @@
      i.e. just include @($\\Theta$) and @($\\iota$),
      but not @($\\gamma$):
      they say that the ispace satisfies all the static validity conditions
-     in the context of the sort environment.
-     Since ispace variables carry their own sorts,
-     our sort environment is just a set of ispace variables in scope.")
+     in the sort environment;
+     but we call that environment `ispace context',
+     to emphasize that it provides information about ispace variables,
+     and to distinguish it from environments.")
+   (xdoc::p
+    "Since ispace variables carry their own sorts,
+     our ispace context is just a set of ispace variables in scope.")
    (xdoc::p
     "We define validity predicates for dimension, shape, and ispace ASTs."))
   :order-subtopics t
@@ -330,9 +334,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection dim-validity-holds-only-on-environments
+(defsection dim-validity-holds-only-on-contexts
   :short "The validity of dimensions and lists of dimensions
-          holds only on sort environments,
+          holds only on ispace contexts,
           i.e. sets of ispace variables."
 
   (defthm-dim-ok-proof-validp-clique-flag
@@ -359,9 +363,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection shape/ispace-validity-holds-only-on-environments
+(defsection shape/ispace-validity-holds-only-on-contexts
   :short "The validity of shapes, ispaces, and lists thereof
-          holds only on sort environments,
+          holds only on ispace contexts,
           i.e. sets of ispace variables."
 
   (defthm-shape-ok-proof-validp-clique-flag
@@ -415,7 +419,7 @@
    (xdoc::p
     "These omit hypotheses
      that follow from @(see dim-validity-holds-only-on-dimensions)
-     and @(see dim-validity-holds-only-on-environments),
+     and @(see dim-validity-holds-only-on-contexts),
      or that are absorbed by the fixing operated by fixtype constructors.")
    (xdoc::p
     "The @('!') at the end of the name conveys the idea of `stronger'.")

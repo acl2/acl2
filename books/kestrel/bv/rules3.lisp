@@ -47,8 +47,8 @@
                 (natp newsize)
                 (< 1 newsize)
                 (natp newsize2)
-                (force (unsigned-byte-p newsize2 x))
-                (force (unsigned-byte-p newsize y)))
+                (force (unsigned-byte-p-forced newsize y))
+                (force (unsigned-byte-p-forced newsize2 x)))
            (equal (+ x y)
                   (bvcat (- newsize newsize2) (slice (+ -1 newsize) newsize2 y) newsize2 x)))
   :hints (("Goal"
@@ -71,7 +71,7 @@
            (equal (+ y x)
                   (bvcat (- newsize newsize2) (slice (+ -1 newsize) newsize2 y) newsize2 x)))
   :hints (("Goal" :use plus-bvcat-with-0
-           :in-theory (disable plus-bvcat-with-0))))
+           :in-theory (e/d (unsigned-byte-p-forced) (plus-bvcat-with-0)))))
 
 ;; These loop (note that <-UNARY-/-POSITIVE-LEFT <-UNARY-/-POSITIVE-RIGHT should probably have syntaxp hyps added).
 (theory-invariant (incompatible (:rewrite <-of-constant-and-*-of-constant) (:rewrite <-unary-/-positive-left)))
@@ -370,7 +370,7 @@
   (implies (and (syntaxp (quotep k))
                 (bind-free (bind-var-to-bv-term-size 'xsize x))
                 (<= (expt 2 xsize) k)
-                (unsigned-byte-p xsize x))
+                (force (unsigned-byte-p-forced xsize x)))
            (< x k))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
@@ -378,7 +378,7 @@
   (implies (and (syntaxp (quotep k))
                 (bind-free (bind-var-to-bv-term-size 'xsize x))
                 (<= (+ -1 (expt 2 xsize)) k)
-                (unsigned-byte-p xsize x))
+                (force (unsigned-byte-p-forced xsize x)))
            (not (< k x)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
@@ -2311,7 +2311,7 @@
                 (natp xsize) ; makes sure it's not nil: -- todo, wouldn't the bind-free fail then?
                 (<= xsize low)
                 (natp low)
-                (force (unsigned-byte-p xsize x))) ;use unsigned-byte-p-forced?
+                (force (unsigned-byte-p-forced xsize x)))
            (equal (slice high low x)
                   0))
   :hints (("Goal" :in-theory (enable slice))))
@@ -2321,7 +2321,7 @@
 (defthmd bvor-of-large-and-small
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
                 (< xsize n)
-                (force (unsigned-byte-p xsize x))
+                (force (unsigned-byte-p-forced xsize x)) ; move down?
                 (natp n)
                 (< 1 n)
                 (natp xsize)
@@ -2343,7 +2343,7 @@
                 (natp size)
                 (natp lowsize)
                 (natp xsize)
-                (force (unsigned-byte-p xsize x))
+                (force (unsigned-byte-p-forced xsize x))
                 )
            (equal (bvor size (bvcat 1 y lowsize z) x)
                   (bvcat 1 y lowsize (bvor lowsize x z))))

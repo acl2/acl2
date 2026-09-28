@@ -13,13 +13,10 @@
 (include-book "ispace-values-and-environments")
 (include-book "type-values-and-environments")
 (include-book "expression-values-and-environments")
-(include-book "values-to-abstract-syntax")
 (include-book "type-value-equivalence")
-(include-book "primitives-evaluation-on-types")
-(include-book "primitives-evaluation-on-ispaces")
-(include-book "primitives-evaluation-first-order")
 (include-book "evaluation")
 (include-book "evaluation-rules")
+(include-book "values-to-abstract-syntax")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -69,10 +66,7 @@
   :order-subtopics (ispace-values-and-environments
                     type-values-and-environments
                     expression-values-and-environments
-                    values-to-abstract-syntax
                     type-value-equivalence
-                    primitives-evaluation-on-types
-                    primitives-evaluation-on-ispaces
-                    primitives-evaluation-first-order
                     evaluation
-                    evaluation-rules))
+                    evaluation-rules
+                    values-to-abstract-syntax))

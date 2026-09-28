@@ -154,11 +154,11 @@
       described in @(tsee deftreeops).
       This is @('nil') if the theorem is not generated,
       which happens exactly when the function above is not generated.")))
-  ((get-tree-list-fn acl2::symbolp)
+  ((get-tree-list-fn acl2::symbol)
    (get-tree-list-fn-match-thm acl2::symbol)
    (matching-thm acl2::symbol)
    (get-len-fn acl2::symbol)
-   (get-tree-fn acl2::symbolp)
+   (get-tree-fn acl2::symbol)
    (get-tree-fn-match-thm acl2::symbol))
   :pred deftreeops-rep-infop)
 
@@ -349,7 +349,7 @@
      "The name of the @('<prefix>-<...>|\"<chars>\"|-leafterm') theorem
       described in @(tsee deftreeops),
       where @('<...>') is @('%i') or @('%s') or nothing.")))
-  ((leafterm-thm acl2::symbolp))
+  ((leafterm-thm acl2::symbol))
   :pred deftreeops-charval-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -561,8 +561,7 @@
   :returns (mv erp (print evmac-input-print-p))
   :short "Process the @(':print') input."
   (b* (((reterr) :error)
-       ((unless (and print
-                     (evmac-input-print-p print)))
+       ((unless (evmac-input-print-p print))
         (reterr (msg "The :PRINT input ~x0 must be ~
                       :ERROR, :RESULT, :INFO, or :ALL."
                      print))))
@@ -634,6 +633,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define deftreeops-match-pred$ ((prefix acl2::symbolp))
+  :returns (pred acl2::symbolp)
+  :short "Name of the @('<prefix>-matchp$') predicate."
+  (add-suffix-to-fn (deftreeops-match-pred prefix) "$"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define deftreeops-elem-match-pred ((prefix acl2::symbolp))
   :returns (pred acl2::symbolp)
   :short "Name of the @('<prefix>-list-elem-matchp') predicate."
@@ -669,7 +675,7 @@
                (event-alist symbol-pseudoeventform-alistp))
   :short "Generate the first of the specialized matching predicates."
   (b* ((cst-matchp (deftreeops-match-pred prefix))
-       (cst-matchp$ (add-suffix-to-fn cst-matchp "$"))
+       (cst-matchp$ (deftreeops-match-pred$ prefix))
        (cst-matchp$-event
         `(define ,cst-matchp$ ((tree treep) (elem elementp))
            :returns (yes/no booleanp)
@@ -1796,8 +1802,9 @@
              :in-theory
              '(,(packn-pos (list check-conc-fn '-tree-equiv-congruence-on-cst)
                            check-conc-fn)
-               ,(packn-pos (list matchp '$-tree-equiv-congruence-on-tree)
-                           matchp)
+               ,(packn-pos (list (deftreeops-match-pred$ prefix)
+                                 '-tree-equiv-congruence-on-tree)
+                           prefix)
                tree-nonleaf->branches$inline-tree-equiv-congruence-on-x
                return-type-of-tree-fix.new-x
                tree-fix-under-tree-equiv)
@@ -2533,7 +2540,7 @@
   (b* (((num-range range) range)
        ((deftreeops-numrange-info info) info)
        (matchp (deftreeops-match-pred prefix))
-       (matchp$ (packn-pos (list matchp "$") matchp))
+       (matchp$ (deftreeops-match-pred$ prefix))
        (range-desc (pretty-print-num-val-range range.min range.max range.base))
        (get-nat-fn-event
         `(define ,info.get-nat-fn ((cst treep))
@@ -2657,7 +2664,7 @@
   :short "Generate the theorem for a character value notation."
   (b* (((deftreeops-charval-info info) info)
        (matchp (deftreeops-match-pred prefix))
-       (matchp$ (packn-pos (list matchp "$") matchp))
+       (matchp$ (deftreeops-match-pred$ prefix))
        (charval-desc (pretty-print-char-val charval))
        (leafterm-thm-event
         `(defruled ,info.leafterm-thm

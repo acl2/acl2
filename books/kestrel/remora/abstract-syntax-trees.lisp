@@ -229,7 +229,20 @@
     :elt-type shape
     :true-listp t
     :elementp-of-nil nil
-    :pred shape-listp)
+    :pred shape-listp
+
+    ///
+
+    (defruled cdr-of-shape-list-fix
+      (equal (cdr (shape-list-fix shapes))
+             (shape-list-fix (cdr shapes)))
+      :enable shape-list-fix)
+
+    (defruled nthcdr-of-shape-list-fix
+      (equal (nthcdr n (shape-list-fix shapes))
+             (shape-list-fix (nthcdr n shapes)))
+      :induct t
+      :enable (nthcdr cdr-of-shape-list-fix)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

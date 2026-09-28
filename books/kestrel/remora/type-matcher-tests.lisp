@@ -280,6 +280,27 @@
        (omap::update "a" *int* nil)
        nil))
 
+; The ispaces are matched modulo equivalence (see the ispace matcher):
+; the pattern shape (++ @s (dims 3)) matches the shape (dims 2 3),
+; with @s bound to (++ (dims 2)).
+
+(assert-equal
+ (mv-list 5 (type-match (array-of *int* (dim-const 2) (dim-const 3))
+                        (make-type-array
+                         :elem *atom-a*
+                         :ispace (ispace-shape
+                                  (shape-append
+                                   (list (shape-var "s")
+                                         (shape-dims (list (dim-const 3)))))))
+                        nil nil nil nil))
+ (list t
+       nil
+       (omap::update "s"
+                     (shape-append (list (shape-dims (list (dim-const 2)))))
+                     nil)
+       (omap::update "a" *int* nil)
+       nil))
+
 ; The dimensions must match.
 
 (assert-equal
@@ -288,15 +309,67 @@
                         nil nil nil nil))
  (list nil nil nil nil nil))
 
-; A pattern array type matches only an array type:
-; the matching is syntactical, so it does not match an atom type,
-; even though the latter stands for a scalar array type.
+; Array and bracket types are identified:
+; a pattern array type matches a bracket type, and vice versa,
+; with the ispaces of a bracket type combined into a single shape ispace
+; (see type-match-array).
 
 (assert-equal
- (mv-list 5 (type-match *int* (array-of *atom-a*) nil nil nil nil))
- (list nil nil nil nil nil))
+ (mv-list 5 (type-match *int-vec3*
+                        (make-type-bracket
+                         :elem *atom-a*
+                         :ispaces (list (ispace-shape
+                                         (shape-dims (list (dim-const 3))))))
+                        nil nil nil nil))
+ (list t nil nil (omap::update "a" *int* nil) nil))
 
-; Bracket types are matched analogously, with lists of ispaces.
+(assert-equal
+ (mv-list 5 (type-match (make-type-bracket
+                         :elem *int*
+                         :ispaces (list (ispace-dim (dim-const 2))
+                                        (ispace-shape
+                                         (shape-dims (list (dim-const 3))))))
+                        (array-of *atom-a* (dim-var "i") (dim-var "j"))
+                        nil nil nil nil))
+ (list t
+       (omap::update "i" (dim-const 2) (omap::update "j" (dim-const 3) nil))
+       nil
+       (omap::update "a" *int* nil)
+       nil))
+
+; A bracket pattern with a dimension variable and a shape variable,
+; like in the types of the primitive operations,
+; matches an array type with one or more dimensions.
+
+(assert-equal
+ (mv-list 5 (type-match (array-of *int* (dim-const 2) (dim-const 3))
+                        (make-type-bracket
+                         :elem *atom-a*
+                         :ispaces (list (ispace-dim (dim-var "i"))
+                                        (ispace-shape (shape-var "s"))))
+                        nil nil nil nil))
+ (list t
+       (omap::update "i" (dim-const 2) nil)
+       (omap::update "s"
+                     (shape-append (list (shape-dims (list (dim-const 3)))))
+                     nil)
+       (omap::update "a" *int* nil)
+       nil))
+
+(assert-equal
+ (mv-list 5 (type-match *int-vec3*
+                        (make-type-bracket
+                         :elem *atom-a*
+                         :ispaces (list (ispace-dim (dim-var "i"))
+                                        (ispace-shape (shape-var "s"))))
+                        nil nil nil nil))
+ (list t
+       (omap::update "i" (dim-const 3) nil)
+       (omap::update "s" (shape-append nil) nil)
+       (omap::update "a" *int* nil)
+       nil))
+
+; Bracket types are matched analogously.
 
 (assert-equal
  (mv-list 5 (type-match (make-type-bracket
@@ -316,14 +389,25 @@
        (omap::update "a" *int* nil)
        nil))
 
-; Array and bracket types are distinct.
+; An atom type is regarded as a scalar array type
+; when matched to a pattern array type.
 
 (assert-equal
- (mv-list 5 (type-match *int-vec3*
-                        (make-type-bracket
-                         :elem *atom-a*
-                         :ispaces (list (ispace-shape
-                                         (shape-dims (list (dim-const 3))))))
+ (mv-list 5 (type-match *int* (array-of *atom-a*) nil nil nil nil))
+ (list t nil nil (omap::update "a" *int* nil) nil))
+
+(assert-equal
+ (mv-list 5 (type-match *int*
+                        (array-of *atom-a* (dim-var "i"))
+                        nil nil nil nil))
+ (list nil nil nil nil nil))
+
+; An array type variable does not match a pattern array type,
+; because its element type and ispace are not available.
+
+(assert-equal
+ (mv-list 5 (type-match *array-v*
+                        (array-of *atom-a* (dim-var "i"))
                         nil nil nil nil))
  (list nil nil nil nil nil))
 
@@ -359,15 +443,67 @@
                         nil nil nil nil))
  (list nil nil nil nil nil))
 
-; Unary and n-ary function types are distinct.
+; Function types are matched in the curried view (see type-equivp):
+; a unary pattern matches an n-ary function type,
+; whose first input type is matched to the input type of the pattern,
+; and whose rest (the output type, or the function type over
+; the remaining inputs, lifted to a scalar array type when bound
+; to an array-kind variable) is matched to the output type of the pattern.
 
 (assert-equal
  (mv-list 5 (type-match (make-type-funn :in (list *int*) :out *bool*)
                         (make-type-fun :in *array-x* :out *array-y*)
                         nil nil nil nil))
+ (list t
+       nil
+       nil
+       nil
+       (omap::update "x" *scalar-int*
+                     (omap::update "y" *scalar-bool* nil))))
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-funn :in (list *int* *bool*)
+                                        :out *int-vec3*)
+                        (make-type-fun :in *array-x* :out *array-y*)
+                        nil nil nil nil))
+ (list t
+       nil
+       nil
+       nil
+       (omap::update "x" *scalar-int*
+                     (omap::update "y"
+                                   (array-of (make-type-funn :in (list *bool*)
+                                                             :out *int-vec3*))
+                                   nil))))
+
+; An n-ary pattern matches a unary function type,
+; whose output type is matched to the rest of the pattern.
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-fun :in *int*
+                                       :out (make-type-fun :in *bool*
+                                                           :out *int*))
+                        (make-type-funn :in (list *array-x* *array-y*)
+                                        :out *atom-a*)
+                        nil nil nil nil))
+ (list t
+       nil
+       nil
+       (omap::update "a" *int* nil)
+       (omap::update "x" *scalar-int*
+                     (omap::update "y" *scalar-bool* nil))))
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-fun :in *int* :out *bool*)
+                        (make-type-funn :in (list *array-x* *array-y*)
+                                        :out *atom-a*)
+                        nil nil nil nil))
  (list nil nil nil nil nil))
 
-; The input types of n-ary function types are matched element-wise.
+; The input types of n-ary function types are matched in order,
+; and n-ary function types with different numbers of inputs may match,
+; with the function type over the remaining inputs of the type
+; matched to the output type of the pattern.
 
 (assert-equal
  (mv-list 5 (type-match (make-type-funn :in (list *int* *int-vec3*)
@@ -383,9 +519,36 @@
                      (omap::update "y" *int-vec3* nil))))
 
 (assert-equal
+ (mv-list 5 (type-match (make-type-funn :in (list *int* *bool*) :out *int*)
+                        (make-type-funn :in (list *array-x*) :out *atom-a*)
+                        nil nil nil nil))
+ (list t
+       nil
+       nil
+       (omap::update "a" (make-type-funn :in (list *bool*) :out *int*) nil)
+       (omap::update "x" *scalar-int* nil)))
+
+(assert-equal
  (mv-list 5 (type-match (make-type-funn :in (list *int*) :out *bool*)
                         (make-type-funn :in (list *array-x* *array-y*)
                                         :out *atom-a*)
+                        nil nil nil nil))
+ (list nil nil nil nil nil))
+
+; An n-ary pattern without inputs stands for its output type.
+
+(assert-equal
+ (mv-list 5 (type-match *int*
+                        (make-type-funn :in nil :out *atom-a*)
+                        nil nil nil nil))
+ (list t nil nil (omap::update "a" *int* nil) nil))
+
+; An n-ary function type without inputs
+; is not normalized to its output type, for now.
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-funn :in nil :out *int-fun*)
+                        (make-type-fun :in *array-x* :out *array-y*)
                         nil nil nil nil))
  (list nil nil nil nil nil))
 
@@ -394,7 +557,7 @@
 ; Universal types.
 
 ; The bound variable of the pattern is not a pattern variable:
-; it matches only the same variable, bound by the same binder,
+; it matches only the variable bound by the corresponding binder of the type,
 ; and it does not appear in the resulting substitutions.
 
 (assert-equal
@@ -413,11 +576,22 @@
                         nil nil nil nil))
  (list nil nil nil nil nil))
 
-; The binders must be the same.
+; The bound variables are matched modulo renaming:
+; the binders need not bind the same variable.
 
 (assert-equal
  (mv-list 5 (type-match (make-type-forall :param (type-var-atom "b")
                                           :body *atom-b*)
+                        (make-type-forall :param (type-var-atom "a")
+                                          :body *atom-a*)
+                        nil nil nil nil))
+ (list t nil nil nil nil))
+
+; But the bound variables must have the same kind.
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-forall :param (type-var-array "x")
+                                          :body *array-x*)
                         (make-type-forall :param (type-var-atom "a")
                                           :body *atom-a*)
                         nil nil nil nil))
@@ -437,7 +611,7 @@
 
 ; A binder shadows a pattern variable with the same name:
 ; the binding of the pattern variable, made before the binder,
-; is not consulted inside the binder, and is restored after the binder.
+; is not consulted inside the binder, and is unchanged after the binder.
 
 (assert-equal
  (mv-list 5 (type-match (make-type-fun
@@ -463,9 +637,10 @@
                         nil nil nil nil))
  (list nil nil nil nil nil))
 
-; Capture is not checked:
+; A pattern variable cannot be bound to a type
+; that mentions the variable bound by the type (variable capture):
 ; matching (Forall (&a) (-> &a &a)) to the pattern (Forall (&a) (-> &a &b))
-; binds &b to &a, which is bound in the type.
+; would bind &b to the bound variable, so the match fails.
 
 (assert-equal
  (mv-list 5 (type-match (make-type-forall
@@ -475,9 +650,12 @@
                          :param (type-var-atom "a")
                          :body (make-type-fun :in *atom-a* :out *atom-b*))
                         nil nil nil nil))
- (list t nil nil (omap::update "b" *atom-a* nil) nil))
+ (list nil nil nil nil nil))
 
-; The parameters of n-ary universal types must be the same, in the same order.
+; Universal types are matched in the curried view (see type-equivp):
+; unary and n-ary universal types are identified,
+; the parameters are matched in order, modulo renaming,
+; and they must have the same kinds.
 
 (assert-equal
  (mv-list 5 (type-match (make-type-foralln
@@ -491,11 +669,48 @@
 
 (assert-equal
  (mv-list 5 (type-match (make-type-foralln
+                         :params (list (type-var-atom "a") (type-var-array "x"))
+                         :body (make-type-fun :in *atom-a* :out *array-x*))
+                        (make-type-forall
+                         :param (type-var-atom "b")
+                         :body (make-type-forall
+                                :param (type-var-array "y")
+                                :body (make-type-fun :in *atom-b*
+                                                     :out *array-y*)))
+                        nil nil nil nil))
+ (list t nil nil nil nil))
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-foralln
+                         :params (list (type-var-atom "a") (type-var-atom "b"))
+                         :body (make-type-fun :in *atom-a* :out *atom-b*))
+                        (make-type-foralln
+                         :params (list (type-var-atom "b") (type-var-atom "a"))
+                         :body (make-type-fun :in *atom-b* :out *atom-a*))
+                        nil nil nil nil))
+ (list t nil nil nil nil))
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-foralln
                          :params (list (type-var-array "x") (type-var-atom "a"))
                          :body (make-type-fun :in *atom-a* :out *array-x*))
                         (make-type-foralln
                          :params (list (type-var-atom "a") (type-var-array "x"))
                          :body (make-type-fun :in *atom-a* :out *array-x*))
+                        nil nil nil nil))
+ (list nil nil nil nil nil))
+
+; An n-ary universal type with more parameters than the pattern
+; has the universal type over its remaining parameters
+; matched to the rest of the pattern,
+; where a pattern variable cannot capture the peeled bound variable.
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-foralln
+                         :params (list (type-var-atom "a") (type-var-atom "b"))
+                         :body (make-type-fun :in *atom-a* :out *atom-b*))
+                        (make-type-forall :param (type-var-atom "c")
+                                          :body *array-x*)
                         nil nil nil nil))
  (list nil nil nil nil nil))
 

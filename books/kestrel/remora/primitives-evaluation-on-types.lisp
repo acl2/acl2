@@ -19,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ primitives-evaluation-on-types
-  :parents (dynamic-semantics)
+  :parents (evaluation)
   :short "Evaluation of Remora primitives on types."
   :long
   (xdoc::topstring
