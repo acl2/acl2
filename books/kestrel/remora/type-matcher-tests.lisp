@@ -557,7 +557,7 @@
 ; Universal types.
 
 ; The bound variable of the pattern is not a pattern variable:
-; it matches only the same variable, bound by the same binder,
+; it matches only the variable bound by the corresponding binder of the type,
 ; and it does not appear in the resulting substitutions.
 
 (assert-equal
@@ -576,11 +576,22 @@
                         nil nil nil nil))
  (list nil nil nil nil nil))
 
-; The binders must be the same.
+; The bound variables are matched modulo renaming:
+; the binders need not bind the same variable.
 
 (assert-equal
  (mv-list 5 (type-match (make-type-forall :param (type-var-atom "b")
                                           :body *atom-b*)
+                        (make-type-forall :param (type-var-atom "a")
+                                          :body *atom-a*)
+                        nil nil nil nil))
+ (list t nil nil nil nil))
+
+; But the bound variables must have the same kind.
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-forall :param (type-var-array "x")
+                                          :body *array-x*)
                         (make-type-forall :param (type-var-atom "a")
                                           :body *atom-a*)
                         nil nil nil nil))
@@ -600,7 +611,7 @@
 
 ; A binder shadows a pattern variable with the same name:
 ; the binding of the pattern variable, made before the binder,
-; is not consulted inside the binder, and is restored after the binder.
+; is not consulted inside the binder, and is unchanged after the binder.
 
 (assert-equal
  (mv-list 5 (type-match (make-type-fun
@@ -626,9 +637,10 @@
                         nil nil nil nil))
  (list nil nil nil nil nil))
 
-; Capture is not checked:
+; A pattern variable cannot be bound to a type
+; that mentions the variable bound by the type (variable capture):
 ; matching (Forall (&a) (-> &a &a)) to the pattern (Forall (&a) (-> &a &b))
-; binds &b to &a, which is bound in the type.
+; would bind &b to the bound variable, so the match fails.
 
 (assert-equal
  (mv-list 5 (type-match (make-type-forall
@@ -638,9 +650,12 @@
                          :param (type-var-atom "a")
                          :body (make-type-fun :in *atom-a* :out *atom-b*))
                         nil nil nil nil))
- (list t nil nil (omap::update "b" *atom-a* nil) nil))
+ (list nil nil nil nil nil))
 
-; The parameters of n-ary universal types must be the same, in the same order.
+; Universal types are matched in the curried view (see type-equivp):
+; unary and n-ary universal types are identified,
+; the parameters are matched in order, modulo renaming,
+; and they must have the same kinds.
 
 (assert-equal
  (mv-list 5 (type-match (make-type-foralln
@@ -654,11 +669,48 @@
 
 (assert-equal
  (mv-list 5 (type-match (make-type-foralln
+                         :params (list (type-var-atom "a") (type-var-array "x"))
+                         :body (make-type-fun :in *atom-a* :out *array-x*))
+                        (make-type-forall
+                         :param (type-var-atom "b")
+                         :body (make-type-forall
+                                :param (type-var-array "y")
+                                :body (make-type-fun :in *atom-b*
+                                                     :out *array-y*)))
+                        nil nil nil nil))
+ (list t nil nil nil nil))
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-foralln
+                         :params (list (type-var-atom "a") (type-var-atom "b"))
+                         :body (make-type-fun :in *atom-a* :out *atom-b*))
+                        (make-type-foralln
+                         :params (list (type-var-atom "b") (type-var-atom "a"))
+                         :body (make-type-fun :in *atom-b* :out *atom-a*))
+                        nil nil nil nil))
+ (list t nil nil nil nil))
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-foralln
                          :params (list (type-var-array "x") (type-var-atom "a"))
                          :body (make-type-fun :in *atom-a* :out *array-x*))
                         (make-type-foralln
                          :params (list (type-var-atom "a") (type-var-array "x"))
                          :body (make-type-fun :in *atom-a* :out *array-x*))
+                        nil nil nil nil))
+ (list nil nil nil nil nil))
+
+; An n-ary universal type with more parameters than the pattern
+; has the universal type over its remaining parameters
+; matched to the rest of the pattern,
+; where a pattern variable cannot capture the peeled bound variable.
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-foralln
+                         :params (list (type-var-atom "a") (type-var-atom "b"))
+                         :body (make-type-fun :in *atom-a* :out *atom-b*))
+                        (make-type-forall :param (type-var-atom "c")
+                                          :body *array-x*)
                         nil nil nil nil))
  (list nil nil nil nil nil))
 

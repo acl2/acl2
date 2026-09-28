@@ -11,17 +11,20 @@
 (in-package "REMORA")
 
 (include-book "ispace-matcher")
+(include-book "type-equivalence-checker")
 (include-book "abstract-syntax-matching-operations")
 (include-book "abstract-syntax-structurals")
 (include-book "variable-substitution-operations")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/basic/nfix" :dir :system))
 
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (enable type+ispace-p-when-result-not-error)))
+(local (in-theory (enable type+ispace-p-when-result-not-error
+                          typevar+type-p-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -168,59 +171,6 @@
                               array-subst))))
   :prepwork ((local (in-theory (enable emptyp-of-type-var-set-fix))))
   :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define atom/array-subst-restore-bound ((vars type-var-setp)
-                                        (old-atom-subst string-type-mapp)
-                                        (old-array-subst string-type-mapp)
-                                        (atom-subst string-type-mapp)
-                                        (array-subst string-type-mapp))
-  :returns (mv (new-atom-subst string-type-mapp)
-               (new-array-subst string-type-mapp))
-  :short "Restore the bindings of a set of type variables
-          in an atom-kind and an array-kind type substitution."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For each atom-kind type variable in @('vars'),
-     its binding in the old atom-kind type substitution, if any,
-     replaces its binding in the atom-kind type substitution,
-     which is instead removed
-     if the variable has no binding in the old atom-kind type substitution;
-     similarly for each array-kind type variable in @('vars')
-     and the array-kind type substitutions.")
-   (xdoc::p
-    "This undoes @(tsee atom/array-subst-self-bind),
-     after matching types under binders of type variables;
-     see @(tsee types-match)."))
-  (b* (((when (set::emptyp (type-var-set-fix vars)))
-        (mv (string-type-map-fix atom-subst)
-            (string-type-map-fix array-subst)))
-       ((mv atom-subst array-subst)
-        (atom/array-subst-restore-bound (set::tail vars)
-                                        old-atom-subst
-                                        old-array-subst
-                                        atom-subst
-                                        array-subst))
-       (var (set::head vars)))
-    (type-var-case
-     var
-     :atom (b* ((old-atom-subst (string-type-map-fix old-atom-subst))
-                (var+type (omap::assoc var.name old-atom-subst)))
-             (mv (if var+type
-                     (omap::update var.name (cdr var+type) atom-subst)
-                   (omap::delete var.name atom-subst))
-                 array-subst))
-     :array (b* ((old-array-subst (string-type-map-fix old-array-subst))
-                 (var+type (omap::assoc var.name old-array-subst)))
-              (mv atom-subst
-                  (if var+type
-                      (omap::update var.name (cdr var+type) array-subst)
-                    (omap::delete var.name array-subst))))))
-  :prepwork ((local (in-theory (enable emptyp-of-type-var-set-fix))))
-  :verify-guards :after-returns)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-var-match ((type typep)
@@ -283,6 +233,153 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-match-forall-rename ((pat-param type-varp)
+                                  (pat-body typep)
+                                  (type-param type-varp)
+                                  (type-body typep)
+                                  (used type-var-setp)
+                                  (atom-subst string-type-mapp)
+                                  (array-subst string-type-mapp))
+  :returns (mv (okp booleanp)
+               (fresh type-varp)
+               (new-pat-body typep)
+               (new-type-body typep)
+               (new-atom-subst string-type-mapp)
+               (new-array-subst string-type-mapp))
+  :short "Rename the bound variables
+          of a pattern universal type
+          and of a universal type
+          to a common fresh variable,
+          in preparation for matching their bodies."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used by @(tsee type-match)
+     to match universal types modulo the renaming of bound variables,
+     analogously to @(tsee type-equivp).
+     The inputs are the (first) bound variables and the (curried) bodies
+     of the pattern and of the type,
+     the set of type variables to avoid when generating the fresh variable,
+     and the current type substitutions.")
+   (xdoc::p
+    "The two bound variables must have the same kind; otherwise, we fail.
+     We generate a fresh variable of that kind,
+     avoiding the variables in @('used'),
+     which the caller sets to all the variables of the type and of the pattern,
+     and also the free variables of the substitutions:
+     these include the fresh variables generated for enclosing binders,
+     which are bound to themselves (see below),
+     and which must be distinct from the new fresh variable.
+     We rename the bound variable of the pattern to the fresh variable
+     in the body of the pattern,
+     and the bound variable of the type to the fresh variable
+     in the body of the type
+     (see @(tsee type-rename-type-vars)).
+     We bind the fresh variable to itself in the substitutions
+     (see @(tsee atom/array-subst-self-bind)),
+     so that, when the bodies are matched,
+     the fresh variable in the pattern matches only itself in the type,
+     as a rigid variable.
+     After the bodies are matched,
+     @(tsee type-match-forall-restore) undoes this binding.")
+   (xdoc::p
+    "The renamed body of the pattern has the same counts as the original one,
+     as needed for the termination of @(tsee type-match)."))
+  (b* (((unless (equal (type-var-kind pat-param)
+                       (type-var-kind type-param)))
+        (mv nil
+            (type-var-fix pat-param)
+            (type-fix pat-body)
+            (type-fix type-body)
+            nil
+            nil))
+       (used (set::union
+              (type-var-set-fix used)
+              (set::union (string-type-map-free-type-vars atom-subst)
+                          (string-type-map-free-type-vars array-subst))))
+       ((mv fresh new-pat-body new-type-body)
+        (type-var-case
+         pat-param
+         :atom (b* ((fresh (fresh-atom-type-var "_fresh_type_" used))
+                    (pat-renam (omap::update pat-param.name
+                                             (type-var->name fresh)
+                                             nil))
+                    (type-renam (omap::update (type-var->name type-param)
+                                              (type-var->name fresh)
+                                              nil)))
+                 (mv fresh
+                     (type-rename-type-vars pat-body pat-renam nil)
+                     (type-rename-type-vars type-body type-renam nil)))
+         :array (b* ((fresh (fresh-array-type-var "_fresh_type_" used))
+                     (pat-renam (omap::update pat-param.name
+                                              (type-var->name fresh)
+                                              nil))
+                     (type-renam (omap::update (type-var->name type-param)
+                                               (type-var->name fresh)
+                                               nil)))
+                  (mv fresh
+                      (type-rename-type-vars pat-body nil pat-renam)
+                      (type-rename-type-vars type-body nil type-renam)))))
+       ((mv atom-subst array-subst)
+        (atom/array-subst-self-bind (set::insert fresh nil)
+                                    atom-subst
+                                    array-subst)))
+    (mv t fresh new-pat-body new-type-body atom-subst array-subst))
+
+  ///
+
+  (defret type-count-of-type-match-forall-rename
+    (equal (type-count new-pat-body)
+           (type-count pat-body)))
+
+  (defret type-binders-count-of-type-match-forall-rename
+    (equal (type-binders-count new-pat-body)
+           (type-binders-count pat-body))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-match-forall-restore ((fresh type-varp)
+                                   (atom-subst string-type-mapp)
+                                   (array-subst string-type-mapp))
+  :returns (mv (okp booleanp)
+               (new-atom-subst string-type-mapp)
+               (new-array-subst string-type-mapp))
+  :short "Remove the binding of the fresh variable
+          after matching the bodies of a pattern universal type
+          and of a universal type,
+          checking that no pattern variable has captured it."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used by @(tsee type-match)
+     after matching the bodies prepared by @(tsee type-match-forall-rename).
+     We remove the binding of the fresh variable to itself
+     (see @(tsee atom/array-subst-remove-bound));
+     there is no previous binding to restore,
+     because the variable is fresh.
+     Then we check that the fresh variable does not occur
+     in the bindings of the substitutions
+     (see @(tsee atom/array-subst-no-type-capture-p)):
+     the fresh variable stands for
+     the variables bound by the pattern and by the type,
+     which have no meaning outside their binders,
+     so a pattern variable bound to a type that mentions the fresh variable
+     would be a variable capture,
+     and the match fails.
+     For instance, matching @('(Forall (&t) (-> &t &t))')
+     to the pattern @('(Forall (&t) (-> &t &s))') fails,
+     because @('&s') would have to be the bound variable."))
+  (b* ((vars (set::insert (type-var-fix fresh) nil))
+       ((mv atom-subst array-subst)
+        (atom/array-subst-remove-bound vars atom-subst array-subst))
+       ((unless (atom/array-subst-no-type-capture-p vars
+                                                    atom-subst
+                                                    array-subst))
+        (mv nil nil nil)))
+    (mv t atom-subst array-subst)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines types-match
   :short "Match types to patterns (other types)."
   :long
@@ -301,6 +398,9 @@
      function types are matched in the curried view,
      so that unary and n-ary function types are identified
      (see @(tsee type-match));
+     universal types are matched in the curried view
+     and modulo the renaming of their bound variables
+     (see @(tsee type-match));
      and atom types are lifted to scalar array types
      at array-kind pattern variables (see @(tsee type-var-match)).
      The following aspects are still syntactical,
@@ -309,9 +409,9 @@
      and n-ary function types without inputs
      are not normalized to their output types,
      when matched to pattern atom types (see @(tsee normalize-type));
-     n-ary universal, product, and sum types are not curried
+     n-ary product and sum types are not curried
      (and are thus distinct from the unary ones);
-     and bound variables are not renamed.")
+     and the bound variables of product and sum types are not renamed.")
    (xdoc::p
     "Since types contain dimension, shape, and type variables,
      the matching builds four substitutions:
@@ -328,33 +428,36 @@
     "The pattern variables are the free variables of the patterns.
      The variables bound in the patterns,
      by universal, product, and sum types,
-     are not pattern variables:
-     since the matching is syntactical,
-     a bound variable matches only the same variable,
-     bound by the same binder.
-     We achieve this by binding each bound variable to itself,
-     in the appropriate substitution,
+     are not pattern variables.
+     For universal types, we proceed as in @(tsee type-equivp):
+     we rename the bound variables of the pattern and of the type
+     to a common fresh variable in their bodies,
+     and we bind the fresh variable to itself while matching the bodies
+     (see @(tsee type-match-forall-rename)),
+     so that the fresh variable in the pattern matches only itself in the type;
+     after matching the bodies, we remove that binding,
+     and we check that no pattern variable has been bound to a type
+     that mentions the fresh variable,
+     which would be a variable capture
+     (see @(tsee type-match-forall-restore)).
+     For product and sum types, for now,
+     a bound variable matches only the same variable, bound by the same binder:
+     we bind each bound variable to itself, in the appropriate substitution,
      while matching the body of the binder
-     (see @(tsee atom/array-subst-self-bind)
-     and @(tsee dim/shape-subst-self-bind)),
+     (see @(tsee dim/shape-subst-self-bind)),
      so that the occurrences of the variable in the body of the pattern
      match only the same variable in the body of the type;
      after matching the body,
      we restore the binding that the variable had before the binder, if any
-     (see @(tsee atom/array-subst-restore-bound)
-     and @(tsee dim/shape-subst-restore-bound)).")
+     (see @(tsee dim/shape-subst-restore-bound)).")
    (xdoc::p
-    "We do not check for variable capture:
-     a pattern variable may be bound to a type or ispace
-     that contains a variable bound, in the type being matched,
+    "For product and sum types, we do not check for variable capture yet:
+     a pattern variable may be bound to a type
+     that contains an ispace variable bound, in the type being matched,
      at the occurrence of the pattern variable.
-     For instance, matching @('(Forall (&t) (-> &t &t))')
-     to the pattern @('(Forall (&t) (-> &t &s))')
-     binds @('&s') to @('&t').
-     The resulting substitutions should be checked for capture
-     via the no-capture predicates,
-     as with the substitution operations;
-     we will revisit this when extending the matching."))
+     For instance, matching @('(Pi ($d) (A Int $d))')
+     to the pattern @('(Pi ($d) *x)') binds @('*x') to @('(A Int $d)').
+     We will handle this as for universal types."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -408,7 +511,20 @@
        is not normalized to its output type yet,
        and thus does not match a pattern function type.")
      (xdoc::p
-      "A pattern universal, product, or sum type matches only
+      "A pattern universal type, unary or n-ary,
+       matches a universal type, unary or n-ary,
+       in the curried view of universal types
+       (see @(tsee type-match-forall) and @(tsee type-equivp)):
+       one bound variable is peeled off from the type and from the pattern,
+       the two variables must have the same kind,
+       and the rest of the type must match the rest of the pattern,
+       after renaming both variables to a common fresh variable,
+       as explained in @(tsee types-match).
+       Thus, a unary universal type may match an n-ary pattern, and vice versa,
+       and n-ary universal types with different numbers of bound variables
+       may match.")
+     (xdoc::p
+      "A pattern product or sum type matches only
        a type of the same form (unary or n-ary)
        with the same bound variable(s)
        and whose body matches the body of the pattern,
@@ -544,50 +660,59 @@
                            atom-subst
                            array-subst)))
             (t (mv nil nil nil nil nil)))
-     :forall (if (and (type-case type :forall)
-                      (equal (type-forall->param type) pat.param))
-                 (b* ((vars (set::insert pat.param nil))
-                      ((mv atom-subst1 array-subst1)
-                       (atom/array-subst-self-bind vars atom-subst array-subst))
-                      ((mv okp dim-subst shape-subst atom-subst1 array-subst1)
-                       (type-match (type-forall->body type)
-                                   pat.body
-                                   dim-subst
-                                   shape-subst
-                                   atom-subst1
-                                   array-subst1))
-                      ((unless okp) (mv nil nil nil nil nil))
-                      ((mv atom-subst array-subst)
-                       (atom/array-subst-restore-bound vars
-                                                       atom-subst
-                                                       array-subst
-                                                       atom-subst1
-                                                       array-subst1)))
-                   (mv t dim-subst shape-subst atom-subst array-subst))
-               (mv nil nil nil nil nil))
-     :foralln (if (and (type-case type :foralln)
-                       (equal (type-foralln->params type) pat.params))
-                  (b* ((vars (set::mergesort pat.params))
-                       ((mv atom-subst1 array-subst1)
-                        (atom/array-subst-self-bind vars
-                                                    atom-subst
-                                                    array-subst))
-                       ((mv okp dim-subst shape-subst atom-subst1 array-subst1)
-                        (type-match (type-foralln->body type)
-                                    pat.body
-                                    dim-subst
-                                    shape-subst
-                                    atom-subst1
-                                    array-subst1))
-                       ((unless okp) (mv nil nil nil nil nil))
-                       ((mv atom-subst array-subst)
-                        (atom/array-subst-restore-bound vars
-                                                        atom-subst
-                                                        array-subst
-                                                        atom-subst1
-                                                        array-subst1)))
-                    (mv t dim-subst shape-subst atom-subst array-subst))
-                (mv nil nil nil nil nil))
+     :forall (b* ((var+type (type-match-forall type))
+                  ((when (reserrp var+type)) (mv nil nil nil nil nil))
+                  ((typevar+type var+type) var+type)
+                  ((mv okp fresh pat-body type-body atom-subst1 array-subst1)
+                   (type-match-forall-rename pat.param
+                                             pat.body
+                                             var+type.var
+                                             var+type.type
+                                             (set::union
+                                              (type-all-type-vars type)
+                                              (type-all-type-vars pat))
+                                             atom-subst
+                                             array-subst))
+                  ((unless okp) (mv nil nil nil nil nil))
+                  ((mv okp dim-subst shape-subst atom-subst1 array-subst1)
+                   (type-match type-body
+                               pat-body
+                               dim-subst
+                               shape-subst
+                               atom-subst1
+                               array-subst1))
+                  ((unless okp) (mv nil nil nil nil nil))
+                  ((mv okp atom-subst array-subst)
+                   (type-match-forall-restore fresh atom-subst1 array-subst1))
+                  ((unless okp) (mv nil nil nil nil nil)))
+               (mv t dim-subst shape-subst atom-subst array-subst))
+     :foralln (b* ((var+type (type-match-forall type))
+                   ((when (reserrp var+type)) (mv nil nil nil nil nil))
+                   ((typevar+type var+type) var+type)
+                   ((mv okp fresh pat-body type-body atom-subst1 array-subst1)
+                    (type-match-forall-rename (car pat.params)
+                                              (forall-curried-body pat.params
+                                                                   pat.body)
+                                              var+type.var
+                                              var+type.type
+                                              (set::union
+                                               (type-all-type-vars type)
+                                               (type-all-type-vars pat))
+                                              atom-subst
+                                              array-subst))
+                   ((unless okp) (mv nil nil nil nil nil))
+                   ((mv okp dim-subst shape-subst atom-subst1 array-subst1)
+                    (type-match type-body
+                                pat-body
+                                dim-subst
+                                shape-subst
+                                atom-subst1
+                                array-subst1))
+                   ((unless okp) (mv nil nil nil nil nil))
+                   ((mv okp atom-subst array-subst)
+                    (type-match-forall-restore fresh atom-subst1 array-subst1))
+                   ((unless okp) (mv nil nil nil nil nil)))
+                (mv t dim-subst shape-subst atom-subst array-subst))
      :pi (if (and (type-case type :pi)
                   (equal (type-pi->param type) pat.param))
              (b* ((vars (set::insert pat.param nil))
@@ -672,7 +797,7 @@
                                                       shape-subst1)))
                    (mv t dim-subst shape-subst atom-subst array-subst))
                (mv nil nil nil nil nil)))
-    :measure (type-count pat))
+    :measure (two-nats-measure (type-count pat) (type-binders-count pat)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -718,7 +843,7 @@
                        shape-subst
                        atom-subst
                        array-subst))
-    :measure (type-list-count pats))
+    :measure (two-nats-measure (type-list-count pats) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
