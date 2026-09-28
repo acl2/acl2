@@ -2304,3 +2304,14 @@ void f(void) {
   union s { int m; } x;
 }
 ")
+
+;; GCC labels as values and computed goto.
+(test-valid
+ "int f(int n) {
+  void * p = n ? &&a : &&b;
+  goto *p;
+ a: return 1;
+ b: return 0;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))

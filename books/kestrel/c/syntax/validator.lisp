@@ -7508,10 +7508,10 @@
        :goto
        (retok (stmt-goto stmt.label) nil nil (vstate-fix vstate))
        :gotoe
-       (b* (((erp new-label type types vstate)
+       (b* (((erp new-label & types vstate)
              (valid-expr stmt.label vstate)))
          (retok (stmt-gotoe new-label)
-                (set::insert type types)
+                types
                 nil
                 vstate))
        :continue
