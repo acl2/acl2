@@ -237,3 +237,29 @@ void f(void) {
 (test-ice "sizeof(typeof(int (*)[x]))"
           nil
           :dialect *constant-expressions-test-gcc-c17-dialect*)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Arithmetic on unsigned long long values is modulo the size of unsigned long
+;; long, and yields unsigned long long values. The irrelevant implementation
+;; environment has a long narrower than a long long.
+
+(assert-event
+  (equal (eval-binop (binop-mul) (value-ullong 65536) (value-ullong 65536)
+                     (irr-ienv))
+         (value-ullong 4294967296)))
+
+(assert-event
+  (equal (eval-binop (binop-div) (value-ullong 8589934592) (value-ullong 2)
+                     (irr-ienv))
+         (value-ullong 4294967296)))
+
+(assert-event
+  (equal (eval-binop (binop-add) (value-ullong 4294967295) (value-ullong 1)
+                     (irr-ienv))
+         (value-ullong 4294967296)))
+
+(assert-event
+  (equal (eval-binop (binop-sub) (value-ullong 0) (value-ullong 1)
+                     (irr-ienv))
+         (value-ullong 18446744073709551615)))
