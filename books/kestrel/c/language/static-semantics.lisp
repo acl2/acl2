@@ -2033,8 +2033,8 @@
     "We return the updated variable table.
      If there is no initializer,
      in our C subset this must be in a file scope;
-     since we require no @('extern') storage class specifier for now,
-     in this case this must be a tentative definition [C17:6.9.2/2].
+     if there is no @('extern') storage class specifier,
+     this must be a tentative definition [C17:6.9.2/2].
      If instead there is an intializer,
      then it is a definition,
      regardless of whether it has file scope or block scope."))
@@ -2051,7 +2051,12 @@
         (if initp
             (reserrf (list :declon-initializer-required
                            (obj-declon-fix declon)))
-          (var-table-add-var var type (var-defstatus-tentative) vartab)))
+          (var-table-add-var var
+                             type
+                             (scspecseq-case scspec
+                                             :none (var-defstatus-tentative)
+                                             :extern (var-defstatus-undefined))
+                             vartab)))
        (init init?)
        ((okf init-type) (check-initer init funtab vartab tagenv constp))
        ((okf &) (init-type-matchp init-type type)))
