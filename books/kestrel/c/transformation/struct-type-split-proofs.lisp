@@ -995,19 +995,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define stsp-exec-mem-eq ((mems ident-listp)
+                          (types type-listp)
                           (lmems ident-listp)
                           (old-name identp)
                           (newl-name identp)
                           (newr-name identp))
+  :guard (equal (len types) (len mems))
   :returns (mv (erp maybe-msgp)
                (events pseudo-event-form-listp))
-  :short "Generate the theorems ssaying that
+  :short "Generate the theorems saying that
           the execution of each member in the old code
-          returns the same as the corresponding member in the new code."
+          returns the same as the corresponding member in the new code,
+          with the declared member type."
   (b* (((reterr) nil)
        ((when (endp mems)) (retok nil))
        (mem (car mems))
        ((erp cmem) (ldm-ident mem) :iferr "")
+       ((erp ctype) (ldm-type (car types)) :iferr "")
        (thm-name (packn-pos (list 'exec-member- (c::ident->name cmem))
                             'struct-value-))
        ((mv new newp new-name)
@@ -1049,7 +1053,8 @@
                            old-eval
                            new-eval
                            (equal old-val new-val)
-                           (compustate-equivp old-compst1 new-compst1))))
+                           (compustate-equivp old-compst1 new-compst1)
+                           (equal (c::type-of-value old-val) ',ctype))))
            :use (struct-value-equivp-when-compustate-equivp
                  lemma)
            :expand ((c::exec-expr ',(c::expr-member (c::expr-ident old-cname)
@@ -1082,8 +1087,13 @@
                                     old-compst old-fenv limit)
               :enable c::exec-expr))))
        ((erp events)
-        (stsp-exec-mem-eq (cdr mems) lmems old-name newl-name newr-name)))
-    (retok (cons event events))))
+        (stsp-exec-mem-eq (cdr mems) (cdr types) lmems
+                          old-name newl-name newr-name)))
+    (retok (cons event events)))
+  :hooks ((:fix :hints (("Goal"
+                         :induct t
+                         :in-theory (enable c$::cdr-of-type-list-fix
+                                            ident-list-fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1190,13 +1200,15 @@
                                    (tag identp)
                                    (tag2 identp)
                                    (mems ident-listp)
+                                   (types type-listp)
                                    (lmems ident-listp))
   :guard (and (declon-unambp old-declon)
               (declon-unambp new-declon)
               (declon-unambp new-declon2)
               (declon-annop old-declon)
               (declon-annop new-declon)
-              (declon-annop new-declon2))
+              (declon-annop new-declon2)
+              (equal (len types) (len mems)))
   :returns (mv (erp maybe-msgp)
                (events pseudo-event-form-listp))
   :short "Check, and generate events for,
@@ -1237,7 +1249,7 @@
        ((erp exec-newl-struct) (stsp-exec-struct-thm 'newl newl-name))
        ((erp exec-newr-struct) (stsp-exec-struct-thm 'newr newr-name))
        ((erp exec-members)
-        (stsp-exec-mem-eq mems lmems old-name newl-name newr-name)))
+        (stsp-exec-mem-eq mems types lmems old-name newl-name newr-name)))
     (retok (append (list static-equiv-pred
                          compustate-equiv-pred)
                    exec-congs
@@ -1359,6 +1371,7 @@
                                                    tag
                                                    tag2
                                                    stage.mems
+                                                   stage.types
                                                    stage.lmems)))
        (retok (stsp-stage-objects)
               (trans-item-list-fix (cdr new-items))
