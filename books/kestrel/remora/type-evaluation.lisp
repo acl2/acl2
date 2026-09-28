@@ -20,6 +20,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(local (in-theory (enable ispace-valuep-when-result-not-error
+                          ispace-value-listp-when-result-not-error
+                          type-valuep-when-result-not-error
+                          type-value-listp-when-result-not-error
+                          var+typevalue-p-when-result-not-error
+                          var+typevalue-listp-when-result-not-error
+                          typep-when-result-not-error)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ type-evaluation
   :parents (dynamic-semantics)
   :short "Evaluation of types."
@@ -27,20 +37,13 @@
   (xdoc::topstring
    (xdoc::p
     "This is part of our interpretive operational semantics of Remora.
-     Types evaluate to type values."))
+     Types evaluate to type values.
+     The ispaces in array and bracket types are evaluated,
+     via @(see ispace-evaluation),
+     in the ispace dynamic environment
+     that is part of the type dynamic environment."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(local (in-theory (enable ispace-valuep-when-result-not-error
-                          ispace-value-listp-when-result-not-error
-                          type-valuep-when-result-not-error
-                          type-value-listp-when-result-not-error
-                          var+typevalue-p-when-result-not-error
-                          var+typevalue-listp-when-result-not-error
-                          typep-when-result-not-error
-                          type-listp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -51,7 +54,7 @@
 
   (define eval-type ((type typep) (denv type-denvp))
     :returns (tval type-value-resultp)
-    :parents (evaluation eval-types)
+    :parents (type-evaluation eval-types)
     :short "Evaluate a type to a type value."
     :long
     (xdoc::topstring
@@ -61,12 +64,14 @@
       "A base type evaluates to itself.")
      (xdoc::p
       "For an array type,
-       we evaluate the element type and the shape,
-       and put the results together into an array type value.")
+       we evaluate the element type and the ispace,
+       we turn the ispace value into a list of dimensions,
+       and we put the results together into an array type value.")
      (xdoc::p
       "A bracket type is treated similarly to an array type,
-       but instead of a shape we have a list of shapes,
-       and we concatenate all the naturals.")
+       but instead of an ispace we have a list of ispaces,
+       whose values are turned into lists of dimensions,
+       which are concatenated.")
      (xdoc::p
       "For a function type, we evaluate input and output types,
        and put the resulting type values together into a function type value.")
@@ -140,7 +145,7 @@
 
   (define eval-type-list ((types type-listp) (denv type-denvp))
     :returns (tvals type-value-list-resultp)
-    :parents (evaluation eval-types)
+    :parents (type-evaluation eval-types)
     :short "Evaluate a list of types to a list of type values."
     :long
     (xdoc::topstring
