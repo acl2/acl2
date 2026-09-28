@@ -2254,3 +2254,27 @@ int y[3] = {[1] = 2, 3};
   return p > 0;
 }
 ")
+
+;; The left operand of += and -= must be a modifiable lvalue [C17:6.5.16/2],
+;; so it does not undergo array-to-pointer or function-to-pointer conversion.
+;; Array parameters are adjusted to pointers [C17:6.7.6.3/7].
+(test-valid-fail
+ "void f(void) {
+  int a[3];
+  a += 1;
+}
+")
+
+(test-valid-fail
+ "void g(void);
+void f(void) {
+  g -= 1;
+}
+")
+
+(test-valid
+ "void f(int * p, int a[3]) {
+  p += 1;
+  a -= 1;
+}
+")

@@ -1943,7 +1943,10 @@
      [C17:6.5.16.2/1].
      The result has the type of the first operand [C17:6.5.16/3].
      Since pointers may be involved,
-     we perform array-to-pointer and function-to-pointer conversions.")
+     we perform array-to-pointer and function-to-pointer conversions
+     on the second operand.
+     We do not perform them on the first operand,
+     which must be a modifiable lvalue [C17:6.5.16/2].")
    (xdoc::p
     "The @('<<='), @('>>='), @('&='), @('^='), and @('|=') operators
      require integer operands [C17:6.5.13.2/2].
@@ -2110,11 +2113,10 @@
        (b* (((when (or (type-some-unknownp type-arg1)
                        (type-some-unknownp type-arg2)))
              (retok (type-unknown-scalar)))
-            (type1 (type-fpconvert (type-apconvert type-arg1)))
             (type2 (type-fpconvert (type-apconvert type-arg2)))
-            ((unless (or (and (3definitely (type-arithmetic-3p type1))
+            ((unless (or (and (3definitely (type-arithmetic-3p type-arg1))
                               (3definitely (type-arithmetic-3p type2)))
-                         (and (type-case type1 :pointer)
+                         (and (type-case type-arg1 :pointer)
                               (3definitely (type-integer-3p type2)))))
              (reterr msg)))
          (retok (type-fix type-arg1))))
