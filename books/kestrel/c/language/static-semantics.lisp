@@ -2445,7 +2445,8 @@
      this may be relaxed in the future.")
    (xdoc::p
     "We also extend the function table with the new function.
-     It is an error if a function with the same name is already in the table.
+     It is an error if a function with the same name but a different definition
+     is already in the table.
      In general, this must be done before checking the body:
      the function is in scope, in its own body.")
    (xdoc::p
@@ -2548,7 +2549,7 @@
      obtaining a list of member types if successful.
      We ensure that there is at least one member [C17:6.2.5/20],
      or at least two members if the last member is a flexible array member
-     [C17:6.2.5/18].
+     [C17:6.7.2.1/18].
      We use @(tsee tag-env-add) to ensure that there is not already
      another structure or union or enumeration type with the same tag,
      since these share one name space [C17:6.2.3].")
@@ -2558,7 +2559,7 @@
      [C17:6.2.1/7] says that the scope of the tag starts where it appears,
      so it includes the members;
      and [C17:6.7.2.1/9] says that a member type must be complete,
-     which pointer types are [C17:6:2.5/20].
+     which pointer types are [C17:6.2.5/20].
      However, we implicitly disallow even this form of recursion for now,
      because we check the member types against the current tag environment,
      which does not include the structure type yet."))
