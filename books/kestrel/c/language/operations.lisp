@@ -216,7 +216,8 @@
 
 (define add-values ((val1 valuep) (val2 valuep))
   :returns (resval value-resultp)
-  :short "Apply binary @('+') to values [C17:6.5.5/2] [C17:6.5.5/5]."
+  :short "Apply binary @('+') to values
+          [C17:6.5.6/2] [C17:6.5.6/4] [C17:6.5.6/5]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -240,7 +241,8 @@
 
 (define sub-values ((val1 valuep) (val2 valuep))
   :returns (resval value-resultp)
-  :short "Apply binary @('-') to values [C17:6.5.5/3] [C17:6.5.5/6]."
+  :short "Apply binary @('-') to values
+          [C17:6.5.6/3] [C17:6.5.6/4] [C17:6.5.6/6]."
   :long
   (xdoc::topstring
    (xdoc::p
