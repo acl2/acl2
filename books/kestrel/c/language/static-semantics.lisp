@@ -1419,7 +1419,7 @@
                             (binop-fix op)
                             (expr-fix arg1-expr)
                             (expr-fix arg2-expr)
-                            :required :integer :integer
+                            :required :scalar :scalar
                             :supplied
                             (type-fix arg1-type)
                             (type-fix arg2-type)))))
