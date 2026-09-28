@@ -2671,6 +2671,12 @@
      These are all ordinary identifiers [C17:6.2.3/1],
      and therefore must be distinct in the same (file) scope.")
    (xdoc::p
+    "We also check that all the variables are defined;
+     we perform this check on the variable table
+     that results from checking the external declarations.
+     This might be too strict with multiple translation units,
+     but for now we only really support one translation unit.")
+   (xdoc::p
     "We also check that all the functions are defined;
      we perform this check on the function table
      that results from checking the external declarations.
@@ -2694,7 +2700,7 @@
                                 (omap::keys (car vartab))))
        ((unless (set::emptyp overlap))
         (reserrf (list :trans-unit-fun-obj-overlap overlap)))
-       ((unless (var-table-add-block vartab))
+       ((unless (var-table-all-definedp vartab))
         (reserrf (list :trans-unit-has-undef-var vartab)))
        ((unless (fun-table-all-definedp funtab))
         (reserrf (list :trans-unit-has-undef-fun funtab))))
