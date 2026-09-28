@@ -2189,3 +2189,23 @@ void f(struct s x) {
   if (x) {}
 }
 ")
+
+;; A subscript designator requires an array
+;; with a nonnegative index [C17:6.7.9/6].
+(test-valid-fail
+ "struct s { int m; };
+struct s v = {[0] = 1};
+")
+
+(test-valid-fail
+ "int a[3] = {[-1] = 1};
+")
+
+;; Positional initializers after a subscript designator
+;; continue with the next subobject [C17:6.7.9/17].
+(test-valid
+ "struct t { int a[2]; int b; };
+struct t x = {.a[1] = 1, 2};
+int y[3] = {[1] = 2, 3};
+")
+

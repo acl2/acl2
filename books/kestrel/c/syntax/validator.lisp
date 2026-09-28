@@ -5082,15 +5082,9 @@
                        has type ~x1."
                       (designor-fix designor)
                       range?-type?))
-            ((when (or (type-case target-type :unknown)
-                       (type-case target-type :unknown-builtin)
-                       (type-case target-type :unknown-scalar)
-                       (type-case target-type :unknown-arithmetic)
-                       (not range?-type?)
-                       (type-case range?-type? :unknown)
-                       (type-case range?-type? :unknown-builtin)
-                       (type-case range?-type? :unknown-scalar)
-                       (type-case range?-type? :unknown-arithmetic)))
+            ((when (or (type-some-unknownp target-type)
+                       (and range?-type?
+                            (type-some-unknownp range?-type?))))
              (retok (make-designor-sub :index new-index :range? new-range?)
                     (initer-subobjects-stack-unknown)
                     (set::union index-types range?-types)
