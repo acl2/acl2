@@ -47,15 +47,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These evaluate the index-space fragment of the abstract syntax with
-     respect to an @(tsee ispace-denv): a dimension evaluates to an integer,
-     a shape to a list of naturals, and an ispace to an @(tsee ispace-value).")
-   (xdoc::p
-    "They are in their own book, separate from the rest of @(see evaluation),
-     because they are also used by @(see monomorphize), which instantiates
-     polymorphic definitions at ground ispace arguments and must therefore
-     evaluate those arguments.  Monomorphization is a static transformation,
-     so it should not depend on the evaluation of expressions."))
+    "This is part of our interpretive operational semantics of Remora.
+     Dimensions evaluate to integers,
+     shapes evaluate to lists of naturals,
+     and ispace evaluate to ispace values
+     (which wrap naturals and lists of naturals).
+     Although dimension may evaluate to negative integers,
+     it is a run-time error if a top-level dimension does:
+     this is why shapes evaluate to lists of naturals,
+     and why dimension ispace values evaluate to naturals."))
   :order-subtopics t
   :default-parent t)
 
