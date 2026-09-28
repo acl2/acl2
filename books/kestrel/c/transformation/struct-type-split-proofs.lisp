@@ -68,7 +68,35 @@
      into the @(tsee struct-type-split) transformation.")
    (xdoc::p
     "This is work in progress;
-     only some of the events are currently generated."))
+     only some of the events are currently generated.")
+   (xdoc::p
+    "For proofs to be generated, the old code must consist of
+     a single translation unit, which must consist of
+     (1) a declaration of the struct type being split
+     (without @('typedef')),
+     which becomes two declarations in the new code;
+     (2) a declaration of a (global) variable of that type
+     (without initializer),
+     which becomes two declarations in the new code;
+     and (3) zero or more function definitions
+     that may read (not write) the members of the struct object(s),
+     but not otherwise reference the struct type(s) or object(s).
+     The struct type(s) must have all integer members
+     except @('_Bool'), plain @('char'), and enumerated types
+     (which are currently not supported in our formal semantics).
+     We also allow line comments in the code, which are just skipped.")
+   (xdoc::p
+    "Theorems are generated from (1) and (2) above;
+     we are working on generating theorems from (3) above,
+     and also on enforcing the requirements for (3) described above.
+     From (1) and (2) we also generate definitions,
+     particularly the notion of equivalence between computation states;
+     this is currently specific to the code,
+     but we plan to generalize it into a reusable predicate
+     that is parameterized over the struct type specifics.
+     The checks that we perform on the code w.r.t. (1) and (2)
+     ensure that the computation state equivalence predicate
+     correctly characterizes the computation states for the code."))
   :order-subtopics t
   :default-parent t)
 
