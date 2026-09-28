@@ -37,10 +37,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (enable acl2::integerp-when-result-not-error
-                          acl2::integer-listp-when-result-not-error
-                          acl2::nat-listp-when-result-not-error
-                          acl2::nat-list-listp-when-result-not-error
+(local (in-theory (enable acl2::nat-list-listp-when-result-not-error
                           ispace-valuep-when-result-not-error
                           ispace-value-listp-when-result-not-error
                           type-valuep-when-result-not-error
@@ -49,8 +46,6 @@
                           expr-value-listp-when-result-not-error
                           expr-value-list-listp-when-result-not-error
                           var+typevalue-p-when-result-not-error
-                          var+typevalue-listp-when-result-not-error
-                          typep-when-result-not-error
                           type-listp-when-result-not-error
                           expr-denvp-when-result-not-error)))
 
