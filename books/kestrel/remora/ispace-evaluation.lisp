@@ -42,20 +42,22 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ ispace-evaluation
-  :parents (dynamic-semantics)
+  :parents (evaluation)
   :short "Evaluation of dimensions, shapes, and ispaces."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These evaluate the index-space fragment of the abstract syntax with
-     respect to an @(tsee ispace-denv): a dimension evaluates to an integer,
-     a shape to a list of naturals, and an ispace to an @(tsee ispace-value).")
-   (xdoc::p
-    "They are in their own book, separate from the rest of @(see evaluation),
-     because they are also used by @(see monomorphize), which instantiates
-     polymorphic definitions at ground ispace arguments and must therefore
-     evaluate those arguments.  Monomorphization is a static transformation,
-     so it should not depend on the evaluation of expressions."))
+    "This is part of our interpretive operational semantics of Remora.
+     Dimensions evaluate to integers,
+     shapes evaluate to lists of naturals,
+     and ispaces evaluate to ispace values,
+     each wrapping a natural or a list of naturals.
+     Although dimensions may evaluate to negative integers,
+     it is a run-time error if a top-level dimension does,
+     i.e. a dimension that directly forms a shape or an ispace,
+     as opposed to an operand of an arithmetic dimension.
+     This is why shapes evaluate to lists of naturals,
+     and why dimension ispaces evaluate to ispace values that wrap naturals."))
   :order-subtopics t
   :default-parent t)
 
@@ -73,9 +75,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "The integer result may be negative,
-       which we allow in intermediate calculations over dimensions,
-       but not as top-level dimensions, which must be non-negative.")
+      "The integer result may be negative; see @(see ispace-evaluation).")
      (xdoc::p
       "A variable is looked up in the environment:
        it must be present and have an associated ispace dimension value.

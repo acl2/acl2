@@ -3430,7 +3430,8 @@
 ; performed by the builders is exact.
 
 ; The following two lemmas are as in the
-; CHECK-DIMS-OF-EXPR-VALUES-WITH-NONEMPTY-DIMS proof (see evaluation.lisp).
+; CHECK-DIMS-OF-EXPR-VALUES-WITH-NONEMPTY-DIMS proof
+; (see expression-values-and-environments.lisp).
 
 (defruledl lemma1
   (implies (and (nat-listp dims)
