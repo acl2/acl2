@@ -298,13 +298,18 @@
      and atom types are regarded as scalar array types,
      when matched to pattern array and bracket types
      (see @(tsee type-match));
+     function types are matched in the curried view,
+     so that unary and n-ary function types are identified
+     (see @(tsee type-match));
      and atom types are lifted to scalar array types
      at array-kind pattern variables (see @(tsee type-var-match)).
      The following aspects are still syntactical,
      making the matching incomplete with respect to type equivalence:
-     scalar array types are not normalized to their element types
-     when matched to pattern atom types;
-     n-ary function, universal, product, and sum types are not curried
+     scalar array types are not normalized to their element types,
+     and n-ary function types without inputs
+     are not normalized to their output types,
+     when matched to pattern atom types (see @(tsee normalize-type));
+     n-ary universal, product, and sum types are not curried
      (and are thus distinct from the unary ones);
      and bound variables are not renamed.")
    (xdoc::p
@@ -385,9 +390,23 @@
        The ispaces are matched via the @(see ispace-matcher),
        modulo ispace equivalence.")
      (xdoc::p
-      "A pattern function type matches only
-       a function type of the same form (unary or n-ary)
-       whose input type(s) and output type match the ones of the pattern.")
+      "A pattern function type, unary or n-ary,
+       matches a function type, unary or n-ary,
+       in the curried view of function types
+       (see @(tsee fun-curried-out) and @(tsee type-equivp)):
+       the first input type of the type must match
+       the first input type of the pattern,
+       and the rest of the type must match the rest of the pattern,
+       where the rest of a function type is
+       its output type if it has one input,
+       or otherwise the function type over the remaining inputs.
+       Thus, a unary function type may match an n-ary pattern, and vice versa,
+       and n-ary function types with different numbers of inputs may match.
+       An n-ary pattern without inputs stands for its output type,
+       which is matched to the type;
+       but an n-ary type without inputs
+       is not normalized to its output type yet,
+       and thus does not match a pattern function type.")
      (xdoc::p
       "A pattern universal, product, or sum type matches only
        a type of the same form (unary or n-ary)
@@ -450,38 +469,81 @@
                                   shape-subst))
                    ((unless okp) (mv nil nil nil nil nil)))
                 (mv t dim-subst shape-subst atom-subst array-subst))
-     :fun (if (type-case type :fun)
-              (b* (((mv okp dim-subst shape-subst atom-subst array-subst)
-                    (type-match (type-fun->in type)
-                                pat.in
-                                dim-subst
-                                shape-subst
-                                atom-subst
-                                array-subst))
-                   ((unless okp) (mv nil nil nil nil nil)))
-                (type-match (type-fun->out type)
-                            pat.out
-                            dim-subst
-                            shape-subst
-                            atom-subst
-                            array-subst))
-            (mv nil nil nil nil nil))
-     :funn (if (type-case type :funn)
-               (b* (((mv okp dim-subst shape-subst atom-subst array-subst)
-                     (type-list-match (type-funn->in type)
-                                      pat.in
-                                      dim-subst
-                                      shape-subst
-                                      atom-subst
-                                      array-subst))
-                    ((unless okp) (mv nil nil nil nil nil)))
-                 (type-match (type-funn->out type)
-                             pat.out
-                             dim-subst
-                             shape-subst
-                             atom-subst
-                             array-subst))
-             (mv nil nil nil nil nil))
+     :fun (cond
+           ((type-case type :fun)
+            (b* (((mv okp dim-subst shape-subst atom-subst array-subst)
+                  (type-match (type-fun->in type)
+                              pat.in
+                              dim-subst
+                              shape-subst
+                              atom-subst
+                              array-subst))
+                 ((unless okp) (mv nil nil nil nil nil)))
+              (type-match (type-fun->out type)
+                          pat.out
+                          dim-subst
+                          shape-subst
+                          atom-subst
+                          array-subst)))
+           ((and (type-case type :funn)
+                 (consp (type-funn->in type)))
+            (b* (((mv okp dim-subst shape-subst atom-subst array-subst)
+                  (type-match (car (type-funn->in type))
+                              pat.in
+                              dim-subst
+                              shape-subst
+                              atom-subst
+                              array-subst))
+                 ((unless okp) (mv nil nil nil nil nil)))
+              (type-match (fun-curried-out (type-funn->in type)
+                                           (type-funn->out type))
+                          pat.out
+                          dim-subst
+                          shape-subst
+                          atom-subst
+                          array-subst)))
+           (t (mv nil nil nil nil nil)))
+     :funn (cond
+            ((endp pat.in)
+             (type-match type
+                         pat.out
+                         dim-subst
+                         shape-subst
+                         atom-subst
+                         array-subst))
+            ((type-case type :fun)
+             (b* (((mv okp dim-subst shape-subst atom-subst array-subst)
+                   (type-match (type-fun->in type)
+                               (car pat.in)
+                               dim-subst
+                               shape-subst
+                               atom-subst
+                               array-subst))
+                  ((unless okp) (mv nil nil nil nil nil)))
+               (type-match (type-fun->out type)
+                           (fun-curried-out pat.in pat.out)
+                           dim-subst
+                           shape-subst
+                           atom-subst
+                           array-subst)))
+            ((and (type-case type :funn)
+                  (consp (type-funn->in type)))
+             (b* (((mv okp dim-subst shape-subst atom-subst array-subst)
+                   (type-match (car (type-funn->in type))
+                               (car pat.in)
+                               dim-subst
+                               shape-subst
+                               atom-subst
+                               array-subst))
+                  ((unless okp) (mv nil nil nil nil nil)))
+               (type-match (fun-curried-out (type-funn->in type)
+                                            (type-funn->out type))
+                           (fun-curried-out pat.in pat.out)
+                           dim-subst
+                           shape-subst
+                           atom-subst
+                           array-subst)))
+            (t (mv nil nil nil nil nil)))
      :forall (if (and (type-case type :forall)
                       (equal (type-forall->param type) pat.param))
                  (b* ((vars (set::insert pat.param nil))

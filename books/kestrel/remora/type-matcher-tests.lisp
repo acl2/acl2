@@ -443,15 +443,67 @@
                         nil nil nil nil))
  (list nil nil nil nil nil))
 
-; Unary and n-ary function types are distinct.
+; Function types are matched in the curried view (see type-equivp):
+; a unary pattern matches an n-ary function type,
+; whose first input type is matched to the input type of the pattern,
+; and whose rest (the output type, or the function type over
+; the remaining inputs, lifted to a scalar array type when bound
+; to an array-kind variable) is matched to the output type of the pattern.
 
 (assert-equal
  (mv-list 5 (type-match (make-type-funn :in (list *int*) :out *bool*)
                         (make-type-fun :in *array-x* :out *array-y*)
                         nil nil nil nil))
+ (list t
+       nil
+       nil
+       nil
+       (omap::update "x" *scalar-int*
+                     (omap::update "y" *scalar-bool* nil))))
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-funn :in (list *int* *bool*)
+                                        :out *int-vec3*)
+                        (make-type-fun :in *array-x* :out *array-y*)
+                        nil nil nil nil))
+ (list t
+       nil
+       nil
+       nil
+       (omap::update "x" *scalar-int*
+                     (omap::update "y"
+                                   (array-of (make-type-funn :in (list *bool*)
+                                                             :out *int-vec3*))
+                                   nil))))
+
+; An n-ary pattern matches a unary function type,
+; whose output type is matched to the rest of the pattern.
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-fun :in *int*
+                                       :out (make-type-fun :in *bool*
+                                                           :out *int*))
+                        (make-type-funn :in (list *array-x* *array-y*)
+                                        :out *atom-a*)
+                        nil nil nil nil))
+ (list t
+       nil
+       nil
+       (omap::update "a" *int* nil)
+       (omap::update "x" *scalar-int*
+                     (omap::update "y" *scalar-bool* nil))))
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-fun :in *int* :out *bool*)
+                        (make-type-funn :in (list *array-x* *array-y*)
+                                        :out *atom-a*)
+                        nil nil nil nil))
  (list nil nil nil nil nil))
 
-; The input types of n-ary function types are matched element-wise.
+; The input types of n-ary function types are matched in order,
+; and n-ary function types with different numbers of inputs may match,
+; with the function type over the remaining inputs of the type
+; matched to the output type of the pattern.
 
 (assert-equal
  (mv-list 5 (type-match (make-type-funn :in (list *int* *int-vec3*)
@@ -467,9 +519,36 @@
                      (omap::update "y" *int-vec3* nil))))
 
 (assert-equal
+ (mv-list 5 (type-match (make-type-funn :in (list *int* *bool*) :out *int*)
+                        (make-type-funn :in (list *array-x*) :out *atom-a*)
+                        nil nil nil nil))
+ (list t
+       nil
+       nil
+       (omap::update "a" (make-type-funn :in (list *bool*) :out *int*) nil)
+       (omap::update "x" *scalar-int* nil)))
+
+(assert-equal
  (mv-list 5 (type-match (make-type-funn :in (list *int*) :out *bool*)
                         (make-type-funn :in (list *array-x* *array-y*)
                                         :out *atom-a*)
+                        nil nil nil nil))
+ (list nil nil nil nil nil))
+
+; An n-ary pattern without inputs stands for its output type.
+
+(assert-equal
+ (mv-list 5 (type-match *int*
+                        (make-type-funn :in nil :out *atom-a*)
+                        nil nil nil nil))
+ (list t nil nil (omap::update "a" *int* nil) nil))
+
+; An n-ary function type without inputs
+; is not normalized to its output type, for now.
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-funn :in nil :out *int-fun*)
+                        (make-type-fun :in *array-x* :out *array-y*)
                         nil nil nil nil))
  (list nil nil nil nil nil))
 
