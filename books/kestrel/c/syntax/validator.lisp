@@ -3826,19 +3826,28 @@
                               nil
                               types
                               vstate)))
-                    ((mv current-uid? current+completep)
+                    ((mv current-uid? current-kind? current+completep)
                      (b* (((unless tyspec.spec.name?)
-                           (mv nil nil))
+                           (mv nil nil nil))
                           ((mv info? currentp)
                            (vstate-lookup-tag tyspec.spec.name? vstate))
                           ((unless (and info? currentp))
-                           (mv nil nil))
+                           (mv nil nil nil))
                           (uid (valid-tag-info->uid info?))
                           ((mv completep &)
                               (treemap::lookup?
                                (valid-tag-info->uid info?)
                                (vstate->completions vstate))))
-                       (mv uid completep)))
+                       (mv uid (valid-tag-info->kind info?) completep)))
+                    ((when (and current-kind?
+                                (not (equal current-kind? (tag-kind-struct)))))
+                     (retmsg$ "The tag ~x0 is expected ~
+                               to be of kind 'struct', ~
+                               but it is of kind 'union'. ~
+                               This occurred ~
+                               in the type specifier ~x1."
+                              tyspec.spec.name?
+                              (type-spec-fix tyspec)))
                     ((when current+completep)
                      (retmsg$ "A type is already defined in this scope ~
                                with tag ~x0. ~
@@ -3937,19 +3946,28 @@
                              nil
                              types
                              vstate)))
-                   ((mv current-uid? current+completep)
+                   ((mv current-uid? current-kind? current+completep)
                     (b* (((unless tyspec.spec.name?)
-                          (mv nil nil))
+                          (mv nil nil nil))
                          ((mv info? currentp)
                           (vstate-lookup-tag tyspec.spec.name? vstate))
                          ((unless (and info? currentp))
-                          (mv nil nil))
+                          (mv nil nil nil))
                          (uid (valid-tag-info->uid info?))
                          ((mv completep &)
                              (treemap::lookup?
                               (valid-tag-info->uid info?)
                               (vstate->completions vstate))))
-                      (mv uid completep)))
+                      (mv uid (valid-tag-info->kind info?) completep)))
+                   ((when (and current-kind?
+                               (not (equal current-kind? (tag-kind-union)))))
+                    (retmsg$ "The tag ~x0 is expected ~
+                              to be of kind 'union', ~
+                              but it is of kind 'struct'. ~
+                              This occurred ~
+                              in the type specifier ~x1."
+                             tyspec.spec.name?
+                             (type-spec-fix tyspec)))
                    ((when current+completep)
                     (retmsg$ "A type is already defined in this scope ~
                               with tag ~x0. ~
@@ -4046,19 +4064,29 @@
                                    same-vstate)
                           (reterr msg-bad-preceding))
        :struct-empty (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
-                          ((mv current-uid? current+completep)
+                          ((mv current-uid? current-kind? current+completep)
                            (b* (((unless tyspec.name?)
-                                 (mv nil nil))
+                                 (mv nil nil nil))
                                 ((mv info? currentp)
                                  (vstate-lookup-tag tyspec.name? vstate))
                                 ((unless (and info? currentp))
-                                 (mv nil nil))
+                                 (mv nil nil nil))
                                 (uid (valid-tag-info->uid info?))
                                 ((mv completep &)
                                  (treemap::lookup?
                                   (valid-tag-info->uid info?)
                                   (vstate->completions vstate))))
-                             (mv uid completep)))
+                             (mv uid (valid-tag-info->kind info?) completep)))
+                          ((when (and current-kind?
+                                      (not (equal current-kind?
+                                                  (tag-kind-struct)))))
+                           (retmsg$ "The tag ~x0 is expected ~
+                                     to be of kind 'struct', ~
+                                     but it is of kind 'union'. ~
+                                     This occurred ~
+                                     in the type specifier ~x1."
+                                    tyspec.name?
+                                    (type-spec-fix tyspec)))
                           ((when current+completep)
                            (retmsg$ "A type is already defined in this scope ~
                                      with tag ~x0.

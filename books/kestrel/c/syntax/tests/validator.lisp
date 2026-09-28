@@ -2278,3 +2278,29 @@ void f(void) {
   a -= 1;
 }
 ")
+
+;; Declarations of the same tagged type in the same scope
+;; must use the same kind of tag [C17:6.7.2.3/2].
+(test-valid-fail
+ "union s;
+struct s { int m; };
+")
+
+(test-valid-fail
+ "struct s;
+union s { int m; };
+")
+
+(test-valid-fail
+ "union s;
+struct s {};
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; A tag in an inner scope declares a distinct type [C17:6.7.2.3/5].
+(test-valid
+ "struct s;
+void f(void) {
+  union s { int m; } x;
+}
+")
