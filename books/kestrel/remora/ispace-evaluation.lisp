@@ -50,12 +50,14 @@
     "This is part of our interpretive operational semantics of Remora.
      Dimensions evaluate to integers,
      shapes evaluate to lists of naturals,
-     and ispace evaluate to ispace values
-     (which wrap naturals and lists of naturals).
-     Although dimension may evaluate to negative integers,
-     it is a run-time error if a top-level dimension does:
-     this is why shapes evaluate to lists of naturals,
-     and why dimension ispace values evaluate to naturals."))
+     and ispaces evaluate to ispace values,
+     each wrapping a natural or a list of naturals.
+     Although dimensions may evaluate to negative integers,
+     it is a run-time error if a top-level dimension does,
+     i.e. a dimension that directly forms a shape or an ispace,
+     as opposed to an operand of an arithmetic dimension.
+     This is why shapes evaluate to lists of naturals,
+     and why dimension ispaces evaluate to ispace values that wrap naturals."))
   :order-subtopics t
   :default-parent t)
 
@@ -73,9 +75,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "The integer result may be negative,
-       which we allow in intermediate calculations over dimensions,
-       but not as top-level dimensions, which must be non-negative.")
+      "The integer result may be negative; see @(see ispace-evaluation).")
      (xdoc::p
       "A variable is looked up in the environment:
        it must be present and have an associated ispace dimension value.

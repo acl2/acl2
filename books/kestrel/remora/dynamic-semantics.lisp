@@ -71,6 +71,7 @@
                     expression-values-and-environments
                     values-to-abstract-syntax
                     type-value-equivalence
+                    ispace-evaluation
                     primitives-evaluation-on-types
                     primitives-evaluation-on-ispaces
                     primitives-evaluation-first-order
