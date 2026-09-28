@@ -83,7 +83,7 @@
               (keyword-value-list (remove-keyword :instructions keyword-value-list)))
          `(,defthm-variant ,name ,body ,@keyword-value-list))))
     ;; fixme:
-    ((defthm defthmd) ; (defun name args ...declares/doc-string... body)
+    ((defun defund) ; (defun name args ...declares/doc-string... body)
      (remove-hints-from-defun event))
     (otherwise event)
     ))
