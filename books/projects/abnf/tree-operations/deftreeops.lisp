@@ -561,8 +561,7 @@
   :returns (mv erp (print evmac-input-print-p))
   :short "Process the @(':print') input."
   (b* (((reterr) :error)
-       ((unless (and print
-                     (evmac-input-print-p print)))
+       ((unless (evmac-input-print-p print))
         (reterr (msg "The :PRINT input ~x0 must be ~
                       :ERROR, :RESULT, :INFO, or :ALL."
                      print))))
