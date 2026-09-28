@@ -62,8 +62,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define an interpretive operational semantics of Remora
-     in terms of evaluation of ASTs with respect to dynamic environments."))
+    "This is part of our interpretive operational semantics of Remora.
+     Expressions and atoms evaluate to expression values,
+     and bindings evaluate to extended dynamic environments.
+     The ispaces and types in expressions and atoms are evaluated,
+     via @(see ispace-evaluation) and @(see type-evaluation),
+     in the ispace and type dynamic environments
+     that are part of the expression dynamic environment."))
   :order-subtopics t
   :default-parent t)
 
