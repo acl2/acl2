@@ -2240,3 +2240,17 @@ int y[3] = {[1] = 2, 3};
 }
 ")
 
+;; GCC and Clang allow comparing a pointer with a null pointer constant
+;; using a relational operator, in either order.
+(test-valid
+ "int f(int * p) {
+  return (p > 0) + (p <= 0) + (0 < p) + (0 >= p);
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "int f(int * p) {
+  return p > 0;
+}
+")

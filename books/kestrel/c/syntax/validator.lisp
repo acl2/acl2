@@ -1894,10 +1894,7 @@
      so it is probably a GCC extension.
      We therefore accept this when the "
     (xdoc::seetopic "implementation-environments" "implementation-environment")
-    " dialect indicates GCC/Clang extensions.
-     Since we do not have code yet to recognize null pointer constants,
-     we accept any integer expression;
-     that is, we allow one pointer operand and one integer operand.")
+    " dialect indicates GCC/Clang extensions.")
    (xdoc::p
     "The @('==') and @('!=') operators require
      arithmetic types or pointer types [C17:6.5.9/2];
@@ -2020,17 +2017,22 @@
             ((unless (or (and (3definitely (type-real-3p type1))
                               (3definitely (type-real-3p type2)))
                          (if (type-case type1 :pointer)
-                             (and (type-case type2 :pointer)
-                                  (let ((type-to1 (type-pointer->to type1))
-                                        (type-to2 (type-pointer->to type2)))
-                                    (and (not (type-case type-to1 :function))
-                                         (not (type-case type-to2 :function))
-                                         (3possibly
-                                          (type-compatible-3p
-                                           type-to1
-                                           type-to2
-                                           completions
-                                           ienv)))))
+                             (or (and (type-case type2 :pointer)
+                                      (let ((type-to1 (type-pointer->to type1))
+                                            (type-to2 (type-pointer->to type2)))
+                                        (and (not (type-case type-to1
+                                                             :function))
+                                             (not (type-case type-to2
+                                                             :function))
+                                             (3possibly
+                                              (type-compatible-3p
+                                               type-to1
+                                               type-to2
+                                               completions
+                                               ienv)))))
+                                 (and (ienv->gcc/clang ienv)
+                                      (expr-null-pointer-constp
+                                       (expr-binary->arg2 expr) type2 ienv)))
                            (and (ienv->gcc/clang ienv)
                                 (expr-null-pointer-constp
                                  (expr-binary->arg1 expr) type1 ienv)
