@@ -426,7 +426,7 @@
      one for shape variables,
      one for atom-kind type variables, and
      one for array-kind type variables.
-     All four are threaded through these functions,
+     All four are threaded through the matching,
      analogously to the substitutions in the @(see ispace-matcher),
      and all four are meant to be applied simultaneously,
      as @(tsee type-subst-ispace-vars) and @(tsee type-subst-type-vars) do.
