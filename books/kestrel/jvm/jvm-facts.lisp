@@ -224,13 +224,13 @@
 ;TERM may include calls to myif
 ;returns a list of the PCS for all the suitable branches
 ;branches corresponding to states that have returned don't generate any PCs.
-(defun get-pcs-from-state-term (term)
-  (if (endp term)
-      nil
-    (if (equal 'myif (car term))
-        (append (get-pcs-from-state-term (caddr term))
-                (get-pcs-from-state-term (cadddr term)))
-      (get-pc-from-state-term term))))
+;; (defun get-pcs-from-state-term (term)
+;;   (if (endp term)
+;;       nil
+;;     (if (equal 'myif (car term))
+;;         (append (get-pcs-from-state-term (caddr term))
+;;                 (get-pcs-from-state-term (cadddr term)))
+;;       (get-pc-from-state-term term))))
 
 ;; ;nth-0 is gross.
 ;; (defthm myif-make-states-recombine
@@ -293,16 +293,16 @@
 ;;            :in-theory (union-theories '(myif) (theory 'minimal-theory)))))
 
 ;term1 and term2 are quoted constants for JVM?
-(defun smaller-pc-term (term1 term2)
-  (declare (xargs :guard (and (quotep term1)
-                              (consp (cdr term1))
-                              (natp (cadr term1))
-                              (quotep term2)
-                              (consp (cdr term2))
-                              (natp (cadr term2)))))
-  (if (<= (cadr term1) (cadr term2))
-      term1
-    term2))
+;; (defun smaller-pc-term (term1 term2)
+;;   (declare (xargs :guard (and (quotep term1)
+;;                               (consp (cdr term1))
+;;                               (natp (cadr term1))
+;;                               (quotep term2)
+;;                               (consp (cdr term2))
+;;                               (natp (cadr term2)))))
+;;   (if (<= (cadr term1) (cadr term2))
+;;       term1
+;;     term2))
 
 ;; (defund smallest-pc-term (lst)
 ;;   (if (endp lst)
@@ -375,7 +375,7 @@
     (if (and (quotep (car (GET-PC-FROM-STATE-TERM term)))
              (integerp (unquote (car (GET-PC-FROM-STATE-TERM term)))))
         (car (GET-PC-FROM-STATE-TERM term))
-      (car (GET-PC-FROM-STATE-TERM term)) ;term
+      (car (GET-PC-FROM-STATE-TERM term)) ;term ; todo: same as then-branch
       )))
 
 (defun this-threadtable-is-at-a-subroutine-call (term)
@@ -534,17 +534,17 @@
 ;;                   (jvm::method-designator frame)))
 
 ;drop?
-(defun jvm::pop-call-stack (th s)
-  (jvm::pop-frame (jvm::call-stack th s)))
+;; (defun jvm::pop-call-stack (th s)
+;;   (jvm::pop-frame (jvm::call-stack th s)))
 
 ;drop?
-(defun jvm::pop-call-stack-twice (th s)
-  (jvm::pop-frame (jvm::pop-frame (jvm::call-stack th s))))
+;; (defun jvm::pop-call-stack-twice (th s)
+;;   (jvm::pop-frame (jvm::pop-frame (jvm::call-stack th s))))
 
 ;drop?
 ;do we already have stuff like this?
-(defun jvm::second-call-frame (th s)
-  (jvm::top-frame (jvm::pop-frame (jvm::call-stack th s))))
+;; (defun jvm::second-call-frame (th s)
+;;   (jvm::top-frame (jvm::pop-frame (jvm::call-stack th s))))
 
 ;; (defun jvm::local0 (frame)
 ;;   (nth 0 (jvm::locals frame)))
