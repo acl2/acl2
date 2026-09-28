@@ -176,51 +176,43 @@ void f(void) {
 
 ;; Expression operands of sizeof.
 
-;; The unevaluated identifier is still not an allowed ICE operand.
-(test-ice "sizeof(x)" nil)
+;; The operand of sizeof is not checked recursively:
+;; the result is an integer constant because x does not have VLA type.
+(test-ice "sizeof(x)" t)
 
 (test-ice "sizeof((double) 1)" t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Target type names of casts.
-
-;; The cast target's array bound contains the disallowed identifier x.
-(test-ice "sizeof((int (*)[x]) 1)" nil)
-
-(test-ice "sizeof((int (*)[(int) (double) 1]) 1)" t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Type-name operands of sizeof.
 
-;; The operand type's array bound contains the disallowed identifier x.
-(test-ice "sizeof(int (*)[x])" nil)
+;; A pointer to a VLA is not itself a VLA.
+(test-ice "sizeof(int (*)[x])" t)
 
-;; The possibly evaluated casts have unknown representability.
-(test-ice "sizeof(int (*)[(int) (double) 1])" :unknown)
+(test-ice "sizeof(int (*)[(int) (double) 1])" t)
+
+;; A VLA operand does not yield an integer constant.
+(test-ice "sizeof(int[x])" nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Standard type-name operands of alignof.
 
-;; The operand type's array bound contains the disallowed identifier x.
-(test-ice "_Alignof(int (*)[x])" nil)
+;; The operand of alignof is not checked recursively.
+(test-ice "_Alignof(int (*)[x])" t)
 
-;; Unlike the sizeof case above, the alignof operand is definitely unevaluated.
 (test-ice "_Alignof(int (*)[(int) (double) 1])" t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; GCC expression operands of alignof.
+;; GCC variants of alignof.
 
-;; The expression operand contains the disallowed identifier x.
+;; These extensions have unknown ICE status.
 (test-ice "__alignof__(x)"
-          nil
+          :unknown
           :dialect *constant-expressions-test-gcc-c17-dialect*)
 
-;; The expression-operand extension has unknown ICE status.
-(test-ice "__alignof__(1)"
+(test-ice "__alignof__(int)"
           :unknown
           :dialect *constant-expressions-test-gcc-c17-dialect*)
 
@@ -228,13 +220,8 @@ void f(void) {
 
 ;; Operands of typeof.
 
-;; The typeof operand contains the disallowed identifier x.
-(test-ice "sizeof(typeof(x))"
-          nil
-          :dialect *constant-expressions-test-gcc-c17-dialect*)
-
-;; The nested type's array bound contains the disallowed identifier x.
-(test-ice "sizeof(typeof(int (*)[x]))"
+;; The typeof operand in the cast target contains the disallowed identifier x.
+(test-ice "(typeof(x)) 1"
           nil
           :dialect *constant-expressions-test-gcc-c17-dialect*)
 
