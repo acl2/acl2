@@ -1022,14 +1022,14 @@
                             in a string literal."))
                  ((= schar.code 10)
                   (retmsg$ "Line feed cannot be used directly ~
-                            in a character constant."))
+                            in a string literal."))
                  ((= schar.code 13)
                   (retmsg$ "Carriage return cannot be used directly ~
-                            in a character constant."))
+                            in a string literal."))
                  ((> schar.code max)
                   (retmsg$ "The character with code ~x0 ~
                             exceeds the maximum ~x1 allowed for ~
-                            a character constant with prefix ~x2."
+                            a string literal with prefix ~x2."
                            schar.code max (eprefix-option-fix prefix?)))
                  (t (retok schar.code)))
      :escape (valid-escape schar.escape max)))
@@ -1315,8 +1315,7 @@
       as a common extension [C17:J.5.7].")
     (xdoc::li
      "The left operand is a pointer type
-      and the right operand is a null pointer constant
-      (approximated as anything of an integer type).")
+      and the right operand is a null pointer constant.")
     (xdoc::li
      "The left operand has the boolean type and the right operand has the
       pointer type."))
@@ -1862,7 +1861,7 @@
      [C17:6.5.6/4].
      In the second case, the result has type @('ptrdiff_t') [C17:6.5.6/9],
      which has an implementation-specific definition,
-     and so we return the unknown scalar type in this case.
+     and so we return the unknown arithmetic type in this case.
      In the third case,
      the result has the type of the pointer operand [C17:6.5.6/8].
      Because of the second and third cases, which involve pointers,
@@ -1949,8 +1948,8 @@
      which must be a modifiable lvalue [C17:6.5.16/2].")
    (xdoc::p
     "The @('<<='), @('>>='), @('&='), @('^='), and @('|=') operators
-     require integer operands [C17:6.5.13.2/2].
-     The result has the type of the first operand [C17:6.5.13/3].
+     require integer operands [C17:6.5.16.2/2].
+     The result has the type of the first operand [C17:6.5.16/3].
      No array-to-pointer or function-to-pointer conversions are needed."))
   (b* (((reterr) (irr-type))
        (msg (msg$ "In the binary expression ~x0, ~
@@ -5207,11 +5206,11 @@
                       target-type.uid
                       (vstate->completions vstate))
                      :iferr (msg$ "Designator cannot be applied to ~
-                                    incomplete struct type ~x0."
+                                    incomplete union type ~x0."
                                   (type-fix target-type)))
                     ((erp subobjects-list)
                      (subobjects-from-members-lookup designor.name nil members)
-                     :iferr (msg$ "Struct type ~x0 does not have member ~x1."
+                     :iferr (msg$ "Union type ~x0 does not have member ~x1."
                                   (type-fix target-type)
                                   (ident->unwrap designor.name)))
                     (new-subobjects-stack
