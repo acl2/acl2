@@ -11,12 +11,17 @@
 (in-package "REMORA")
 
 (include-book "ispace-matcher")
+(include-book "abstract-syntax-matching-operations")
 (include-book "abstract-syntax-structurals")
 (include-book "variable-substitution-operations")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 (acl2::controlled-configuration)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local (in-theory (enable type+ispace-p-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -283,20 +288,25 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we perform a purely syntactical match of types,
-     which is incomplete with respect to type equivalence
-     (see @(tsee type-equivp)):
-     for instance, there is no normalization of scalar types,
-     no currying of n-ary function, universal, product, and sum types
-     (which are thus distinct from the unary ones),
-     and no renaming of bound variables.
-     We will need to extend this to matching modulo equivalence.
-     The exceptions to the purely syntactical treatment are
-     the ispaces in the types,
-     which are matched modulo equivalence by the @(see ispace-matcher),
-     and the lifting of atom types to scalar array types
-     at array-kind pattern variables,
-     explained in @(tsee type-var-match).")
+    "We are extending this matching from a purely syntactical one
+     to one modulo type equivalence (see @(tsee type-equivp)),
+     mirroring the structure of @(tsee type-equivp).
+     Currently, the following aspects are modulo equivalence:
+     the ispaces in the types are matched by the @(see ispace-matcher),
+     modulo ispace equivalence;
+     array and bracket types are identified,
+     and atom types are regarded as scalar array types,
+     when matched to pattern array and bracket types
+     (see @(tsee type-match));
+     and atom types are lifted to scalar array types
+     at array-kind pattern variables (see @(tsee type-var-match)).
+     The following aspects are still syntactical,
+     making the matching incomplete with respect to type equivalence:
+     scalar array types are not normalized to their element types
+     when matched to pattern atom types;
+     n-ary function, universal, product, and sum types are not curried
+     (and are thus distinct from the unary ones);
+     and bound variables are not renamed.")
    (xdoc::p
     "Since types contain dimension, shape, and type variables,
      the matching builds four substitutions:
@@ -363,10 +373,17 @@
      (xdoc::p
       "A pattern base type matches only the same base type.")
      (xdoc::p
-      "A pattern array type matches only an array type
-       whose element type and ispace match the ones of the pattern;
-       similarly for bracket types, with lists of ispaces.
-       The ispaces are matched via the @(see ispace-matcher).")
+      "A pattern array or bracket type matches
+       an array or bracket type, in either summand,
+       or an atom type, regarded as a scalar array type:
+       we use @(tsee type-match-array) to obtain
+       the element type and the ispace of the type
+       (this fails on an array type variable, which thus does not match),
+       and we match them to the element type and the ispace of the pattern,
+       where the ispaces of a bracket pattern are combined
+       into a single shape ispace, as @(tsee type-match-array) does.
+       The ispaces are matched via the @(see ispace-matcher),
+       modulo ispace equivalence.")
      (xdoc::p
       "A pattern function type matches only
        a function type of the same form (unary or n-ary)
@@ -395,40 +412,44 @@
                    (string-type-map-fix atom-subst)
                    (string-type-map-fix array-subst))
              (mv nil nil nil nil nil))
-     :array (if (type-case type :array)
-                (b* (((mv okp dim-subst shape-subst atom-subst array-subst)
-                      (type-match (type-array->elem type)
-                                  pat.elem
+     :array (b* ((array (type-match-array type))
+                 ((when (reserrp array)) (mv nil nil nil nil nil))
+                 ((type+ispace array) array)
+                 ((mv okp dim-subst shape-subst atom-subst array-subst)
+                  (type-match array.type
+                              pat.elem
+                              dim-subst
+                              shape-subst
+                              atom-subst
+                              array-subst))
+                 ((unless okp) (mv nil nil nil nil nil))
+                 ((mv okp dim-subst shape-subst)
+                  (ispace-match array.ispace
+                                pat.ispace
+                                dim-subst
+                                shape-subst))
+                 ((unless okp) (mv nil nil nil nil nil)))
+              (mv t dim-subst shape-subst atom-subst array-subst))
+     :bracket (b* ((array (type-match-array type))
+                   ((when (reserrp array)) (mv nil nil nil nil nil))
+                   ((type+ispace array) array)
+                   ((mv okp dim-subst shape-subst atom-subst array-subst)
+                    (type-match array.type
+                                pat.elem
+                                dim-subst
+                                shape-subst
+                                atom-subst
+                                array-subst))
+                   ((unless okp) (mv nil nil nil nil nil))
+                   ((mv okp dim-subst shape-subst)
+                    (ispace-match array.ispace
+                                  (ispace-shape
+                                   (shape-append
+                                    (shape-list-from-ispace-list pat.ispaces)))
                                   dim-subst
-                                  shape-subst
-                                  atom-subst
-                                  array-subst))
-                     ((unless okp) (mv nil nil nil nil nil))
-                     ((mv okp dim-subst shape-subst)
-                      (ispace-match (type-array->ispace type)
-                                    pat.ispace
-                                    dim-subst
-                                    shape-subst))
-                     ((unless okp) (mv nil nil nil nil nil)))
-                  (mv t dim-subst shape-subst atom-subst array-subst))
-              (mv nil nil nil nil nil))
-     :bracket (if (type-case type :bracket)
-                  (b* (((mv okp dim-subst shape-subst atom-subst array-subst)
-                        (type-match (type-bracket->elem type)
-                                    pat.elem
-                                    dim-subst
-                                    shape-subst
-                                    atom-subst
-                                    array-subst))
-                       ((unless okp) (mv nil nil nil nil nil))
-                       ((mv okp dim-subst shape-subst)
-                        (ispace-list-match (type-bracket->ispaces type)
-                                           pat.ispaces
-                                           dim-subst
-                                           shape-subst))
-                       ((unless okp) (mv nil nil nil nil nil)))
-                    (mv t dim-subst shape-subst atom-subst array-subst))
-                (mv nil nil nil nil nil))
+                                  shape-subst))
+                   ((unless okp) (mv nil nil nil nil nil)))
+                (mv t dim-subst shape-subst atom-subst array-subst))
      :fun (if (type-case type :fun)
               (b* (((mv okp dim-subst shape-subst atom-subst array-subst)
                     (type-match (type-fun->in type)

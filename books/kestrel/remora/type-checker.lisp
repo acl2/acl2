@@ -1248,9 +1248,8 @@
      and we return the application of the wrapped function to the argument.")
    (xdoc::p
     "This inference is limited for now:
-     the types are matched syntactically (see @(see type-matcher)),
-     except for the ispaces in them,
-     which are matched modulo equivalence (see @(see ispace-matcher));
+     the matching of types is not yet fully modulo type equivalence
+     (see @(see type-matcher)),
      and the argument type must match the whole input type
      (i.e. without any frame prefix)."))
   (b* (((mv vars rest) (type-peel-binders fun-type))

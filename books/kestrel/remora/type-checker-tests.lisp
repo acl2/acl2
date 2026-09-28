@@ -309,7 +309,8 @@
 ; a function with a universal or product type
 ; is applied directly to an argument,
 ; and the type and ispace arguments are inferred from the argument type.
-; The types are matched syntactically (see type-matcher),
+; The matching of types is not yet fully modulo type equivalence
+; (see type-matcher),
 ; but the ispaces in them are matched modulo equivalence (see ispace-matcher),
 ; so the arguments may be explicit arrays, whose types have plain dimensions,
 ; or bracket expressions, whose types have concatenated shapes.
@@ -401,9 +402,15 @@
   (f [1 2 3]))")
 
 ; The types of the primitive operations use bracket types,
-; which the syntactic type matching does not handle, for now.
-(test-check-top-expr-fail
+; which are matched to the array types of the arguments (see type-match):
+; the length of a vector, given as an explicit array or as a bracket expression,
+; and the length (i.e. the first dimension) of a matrix.
+(test-check-top-expr
  "(length (array [3] 1 2 3))")
+(test-check-top-expr
+ "(length [1 2 3])")
+(test-check-top-expr
+ "(length (array [2 3] 1 2 3 4 5 6))")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
