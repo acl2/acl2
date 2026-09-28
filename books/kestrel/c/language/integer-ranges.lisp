@@ -399,7 +399,7 @@
             @('signed char') and @('signed short') minima."
     ,(if (= (char-bits) (short-bits))
          '(= (schar-min) (sshort-min))
-       '(>= (schar-min) (sshort-min)))
+       '(> (schar-min) (sshort-min)))
     :rule-classes :linear
     ,@(if (= (char-bits) (short-bits))
           '(:enable (schar-min sshort-min)
