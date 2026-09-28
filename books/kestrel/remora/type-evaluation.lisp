@@ -31,7 +31,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ type-evaluation
-  :parents (dynamic-semantics)
+  :parents (evaluation)
   :short "Evaluation of types."
   :long
   (xdoc::topstring

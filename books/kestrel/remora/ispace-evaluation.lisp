@@ -42,7 +42,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ ispace-evaluation
-  :parents (dynamic-semantics)
+  :parents (evaluation)
   :short "Evaluation of dimensions, shapes, and ispaces."
   :long
   (xdoc::topstring

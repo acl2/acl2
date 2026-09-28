@@ -50,7 +50,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ expression-evaluation
-  :parents (dynamic-semantics)
+  :parents (evaluation)
   :short "Evaluation of expressions (and atoms)."
   :long
   (xdoc::topstring

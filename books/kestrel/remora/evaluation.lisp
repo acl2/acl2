@@ -10,6 +10,11 @@
 
 (in-package "REMORA")
 
+(include-book "ispace-evaluation")
+(include-book "type-evaluation")
+(include-book "primitives-evaluation-on-types")
+(include-book "primitives-evaluation-on-ispaces")
+(include-book "primitives-evaluation-first-order")
 (include-book "expression-evaluation")
 
 (acl2::controlled-configuration)
@@ -24,7 +29,9 @@
    (xdoc::p
     "We define an interpretive operational semantics of Remora
      in terms of evaluation of ASTs with respect to dynamic environments."))
-  :order-subtopics t
+  :order-subtopics (ispace-evaluation
+                    type-evaluation
+                    expression-evaluation)
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
