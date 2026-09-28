@@ -2133,3 +2133,148 @@ void * g(void) {
          (and (equal (omap::size (trans-ensemble->units ast)) 2)
               (treemap::lookup (ident "a") externals)
               (treemap::lookup (ident "b") externals))))
+
+;; Both operands of a conditional expression may have void type [C17:6.5.15/3].
+(test-valid
+ "void f(int x) {
+  x ? (void)0 : (void)0;
+}
+")
+
+;; GCC and Clang also allow just one of the operands to have void type.
+(test-valid
+ "void f(int x) {
+  x ? (void)0 : 0;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "void f(int x) {
+  x ? (void)0 : 0;
+}
+")
+
+;; The controlling expression of a selection or iteration statement
+;; undergoes array-to-pointer and function-to-pointer conversion
+;; [C17:6.3.2.1/3] [C17:6.3.2.1/4], so it may be an array or a function
+;; designator [C17:6.8.4.1/1] [C17:6.8.5/2].
+(test-valid
+ "void f(void) {
+  char a[8];
+  if (a) {}
+  if (a) {} else {}
+  while (a) break;
+  do break; while (a);
+  for (; a; ) break;
+  for (int i = 0; a; ) break;
+}
+")
+
+(test-valid
+ "void g(void);
+void f(void) {
+  if (g) {}
+  if (g) {} else {}
+  while (g) break;
+  do break; while (g);
+  for (; g; ) break;
+  for (int i = 0; g; ) break;
+}
+")
+
+(test-valid-fail
+ "struct s { int m; };
+void f(struct s x) {
+  if (x) {}
+}
+")
+
+;; A subscript designator requires an array
+;; with a nonnegative index [C17:6.7.9/6].
+(test-valid-fail
+ "struct s { int m; };
+struct s v = {[0] = 1};
+")
+
+(test-valid-fail
+ "int a[3] = {[-1] = 1};
+")
+
+;; Positional initializers after a subscript designator
+;; continue with the next subobject [C17:6.7.9/17].
+(test-valid
+ "struct t { int a[2]; int b; };
+struct t x = {.a[1] = 1, 2};
+int y[3] = {[1] = 2, 3};
+")
+
+;; In a function definition, only the innermost function declarator
+;; gives the parameters of the function being defined.
+;; An outer function declarator, whether with a parameter type list
+;; or with an identifier list, is part of the return type.
+(test-valid
+ "int k(a, b) int a, b; {
+  return a + b;
+}
+")
+
+(test-valid
+ "int (*h(a))(int) int a; {
+  (void)a;
+  return 0;
+}
+")
+
+(test-valid
+ "int (*g(a))() int a; {
+  (void)a;
+  return 0;
+}
+")
+
+(test-valid
+ "void (*f(int x))() {
+  (void)x;
+  return 0;
+}
+")
+
+;; GCC and Clang allow comparing a pointer with a null pointer constant
+;; using a relational operator, in either order.
+(test-valid
+ "int f(int * p) {
+  return (p > 0) + (p <= 0) + (0 < p) + (0 >= p);
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "int f(int * p) {
+  return p > 0;
+}
+")
+
+;; The left operand of += and -= must be a modifiable lvalue [C17:6.5.16/2],
+;; so it does not undergo array-to-pointer or function-to-pointer conversion.
+;; Array parameters are adjusted to pointers [C17:6.7.6.3/7].
+(test-valid-fail
+ "void f(void) {
+  int a[3];
+  a += 1;
+}
+")
+
+(test-valid-fail
+ "void g(void);
+void f(void) {
+  g -= 1;
+}
+")
+
+(test-valid
+ "void f(int * p, int a[3]) {
+  p += 1;
+  a -= 1;
+}
+")
