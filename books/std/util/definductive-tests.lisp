@@ -1148,8 +1148,8 @@
 (must-fail
  (definductive xvar-clash
    :preds ((r a))
-   :irules ((ax ((natp proof$))
-                (r proof$)))))
+   :irules ((ax ((natp _proof))
+                (r _proof)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
