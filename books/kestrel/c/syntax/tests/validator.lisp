@@ -2333,3 +2333,63 @@ unsigned char * q = u8\"x\" u8\"y\";
  "char * p = u8\"x\";
 "
  :dialect (c::make-dialect :std (c::standard-c23)))
+
+;; A cast type must be void or scalar [C17:6.5.4/2],
+;; even if the type of the operand is unknown,
+;; as for the generic selection below.
+(test-valid-fail
+ "struct S { int m; };
+struct S v;
+void f(void) {
+  struct S t = (struct S) _Generic(1, default: v);
+}
+")
+
+(test-valid-fail
+ "union U { int i; double d; };
+int x;
+void f(void) {
+  union U u = (union U) x;
+}
+")
+
+(test-valid
+ "int x;
+void f(void) {
+  (void) __atomic_load_n(&x, 0);
+  long y = (long) __atomic_load_n(&x, 0);
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; GCC and Clang allow casting a structure or union to its own type,
+;; and casting to a union type from the type of one of its members.
+(test-valid
+ "struct S { int m; };
+union U { int i; double d; };
+struct S v;
+int x;
+void f(void) {
+  struct S t = (struct S) v;
+  struct S w = (struct S) _Generic(1, default: v);
+  union U u = (union U) x;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "struct S { int m; };
+int x;
+void f(void) {
+  struct S t = (struct S) x;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "int x;
+void f(void) {
+  (int[2]) x;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))

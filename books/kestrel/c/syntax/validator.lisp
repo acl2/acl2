@@ -2180,7 +2180,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-cast ((expr exprp) (type-cast typep) (type-arg typep))
+(define valid-cast ((expr exprp)
+                    (type-cast typep)
+                    (type-arg typep)
+                    (completions type-completions-p)
+                    (ienv ienvp))
   :guard (expr-case expr :cast)
   :returns (mv (erp maybe-msgp) (type1 typep))
   :short "Validate a cast expression,
@@ -2194,7 +2198,16 @@
      the expression must also have scalar type [C17:6.5.4/2].
      Since scalar types involve pointers,
      we perform array-to-pointer and function-to-pointer conversions.
-     The result is the type denoted by the type name."))
+     The result is the type denoted by the type name.")
+   (xdoc::p
+    "GCC and Clang also allow casting a structure or union type
+     to the same type,
+     and casting to a union type from the type of one of its members.
+     When these extensions are enabled,
+     we accept a cast to a structure type
+     if the argument expression may have a compatible type,
+     and we accept any cast to a union type,
+     without checking the types of its members."))
   (b* (((reterr) (irr-type))
        ((when (type-case type-cast :unknown))
         (retok (type-unknown)))
@@ -2204,16 +2217,28 @@
         (retok (type-unknown-scalar)))
        ((when (type-case type-cast :unknown-arithmetic))
         (retok (type-unknown-arithmetic)))
+       ((when (and (ienv->gcc/clang ienv)
+                   (type-case type-cast :union)))
+        (retok (type-fix type-cast)))
+       ((when (and (ienv->gcc/clang ienv)
+                   (type-case type-cast :struct)))
+        (if (3possibly
+             (type-compatible-3p type-cast type-arg completions ienv))
+            (retok (type-fix type-cast))
+          (retmsg$ "In the cast expression ~x0, ~
+                    the argument expression has type ~x1, ~
+                    which is not compatible with the cast type ~x2."
+                   (expr-fix expr) (type-fix type-arg) (type-fix type-cast))))
+       ((unless (or (type-case type-cast :void)
+                    (3definitely (type-scalar-3p type-cast))))
+        (retmsg$ "In the cast expression ~x0, the cast type is ~x1."
+                 (expr-fix expr) (type-fix type-cast)))
        ((when (or (type-case type-arg :unknown)
                   (type-case type-arg :unknown-builtin)
                   (type-case type-arg :unknown-scalar)
                   (type-case type-arg :unknown-arithmetic)))
         (retok (type-fix type-cast)))
        (type1-arg (type-fpconvert (type-apconvert type-arg)))
-       ((unless (or (type-case type-cast :void)
-                    (3definitely (type-scalar-3p type-cast))))
-        (retmsg$ "In the cast expression ~x0, the cast type is ~x1."
-                 (expr-fix expr) (type-fix type-cast)))
        ((unless (or (type-case type-cast :void)
                     (3definitely (type-scalar-3p type1-arg))))
         (retmsg$ "In the cast expression ~x0, ~
@@ -3276,7 +3301,11 @@
                    (valid-tyname expr.type vstate))
                   ((erp new-arg type-arg types-arg vstate)
                    (valid-expr expr.arg vstate))
-                  ((erp type) (valid-cast expr type-cast type-arg)))
+                  ((erp type) (valid-cast expr
+                                          type-cast
+                                          type-arg
+                                          (vstate->completions vstate)
+                                          (vstate->ienv vstate))))
                (retok (make-expr-cast :type new-type :arg new-arg)
                       type
                       (set::union types-cast types-arg)
