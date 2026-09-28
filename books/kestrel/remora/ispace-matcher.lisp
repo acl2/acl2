@@ -686,18 +686,18 @@
      but it is complete,
      modulo shape equivalence and under the uniqueness restriction,
      only on the elements of normalized concatenations."))
-  (b* ((elements (shape-list-fix elements))
-       (dim-subst (string-dim-map-fix dim-subst))
-       (shape-subst (string-shape-map-fix shape-subst))
-       ((when (endp pats))
+  (b* (((when (endp pats))
         (if (endp elements)
-            (mv t dim-subst shape-subst)
+            (mv t
+                (string-dim-map-fix dim-subst)
+                (string-shape-map-fix shape-subst))
           (mv nil nil nil)))
        (pat (car pats)))
     (shape-case
      pat
      :var
-     (b* ((var+shape (omap::assoc pat.name shape-subst)))
+     (b* ((var+shape
+           (omap::assoc pat.name (string-shape-map-fix shape-subst))))
        (if var+shape
            (b* ((binding (cdr var+shape))
                 (n (len (shape-append->shapes (normalize-shape binding))))
@@ -716,7 +716,7 @@
               (k (- (len elements) needed))
               (shape-subst (omap::update pat.name
                                          (shape-append (take k elements))
-                                         shape-subst)))
+                                         (string-shape-map-fix shape-subst))))
            (shape-elements-match (nthcdr k elements)
                                  (cdr pats)
                                  dim-subst
@@ -736,7 +736,8 @@
      :splice (mv nil nil nil))) ; never happens for normalized concatenations
   :measure (acl2-count pats)
   :verify-guards :after-returns
-  :guard-hints (("Goal" :in-theory (enable nfix))))
+  :guard-hints (("Goal" :in-theory (enable nfix)))
+  :prepwork ((local (in-theory (enable nthcdr-of-shape-list-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
