@@ -84,3 +84,14 @@
 (defthm g-above-minus-one
   (< -1 (g a))
   :rule-classes nil)
+
+; The following was added by Matt K.  It is a minor variant of the example
+; given in GitHub issue #2055.
+
+(defun f (x) (ifix x))
+(must-fail
+ (defthm r1 (integerp (f x))
+   :rule-classes ((:linear :trigger-terms ((f x))))))
+; The following formerly caused a raw Lisp error after r1 was admitted:
+(must-fail
+ (thm (< -1 (f a)) :hints (("Goal" :in-theory (disable f)))))
