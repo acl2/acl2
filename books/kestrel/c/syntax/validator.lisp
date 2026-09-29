@@ -1022,14 +1022,14 @@
                             in a string literal."))
                  ((= schar.code 10)
                   (retmsg$ "Line feed cannot be used directly ~
-                            in a character constant."))
+                            in a string literal."))
                  ((= schar.code 13)
                   (retmsg$ "Carriage return cannot be used directly ~
-                            in a character constant."))
+                            in a string literal."))
                  ((> schar.code max)
                   (retmsg$ "The character with code ~x0 ~
                             exceeds the maximum ~x1 allowed for ~
-                            a character constant with prefix ~x2."
+                            a string literal with prefix ~x2."
                            schar.code max (eprefix-option-fix prefix?)))
                  (t (retok schar.code)))
      :escape (valid-escape schar.escape max)))
@@ -1061,11 +1061,14 @@
      with respect to the prefix (if any).
      If validation is successful, we return the type of the string literal.
      If the literal is a character string literal
-     (i.e. it has no encoding prefix)
-     or a UTF-8 string literal
-     (i.e. it has the @('u8') prefix),
+     (i.e. it has no encoding prefix),
      it has an array type with element type @('char').
-     If an encoding prefix is present,
+     If the literal is a UTF-8 string literal
+     (i.e. it has the @('u8') prefix),
+     the element type is @('char') in C17 [C17:6.4.5/6]
+     and @('char8_t'), i.e. @('unsigned char'), in C23
+     [C23:6.4.5/6] [C23:7.30/3].
+     If another encoding prefix is present,
      the array may have element type
      @('wchar_t') or @('char16_t') or @('char32_t').
      Since we do not yet model the values of these type definitions,
@@ -1077,12 +1080,15 @@
                    :of (irr-type)
                    :kind (make-type-array-kind-const-len :len nil)))
        ((stringlit strlit) strlit)
-       ((erp &) (valid-s-char-list strlit.schars strlit.prefix? ienv)))
+       ((erp &) (valid-s-char-list strlit.schars strlit.prefix? ienv))
+       (std (ienv->std ienv)))
     (retok (make-type-array
-            :of (if (or (not strlit.prefix?)
-                        (eprefix-case strlit.prefix? :locase-u8))
-                    (type-char)
-                  (type-unknown-arithmetic))
+            :of (cond ((not strlit.prefix?) (type-char))
+                      ((eprefix-case strlit.prefix? :locase-u8)
+                       (c::standard-case std
+                                         :c17 (type-char)
+                                         :c23 (type-uchar)))
+                      (t (type-unknown-arithmetic)))
             :kind (make-type-array-kind-const-len :len nil))))
 
   ///
@@ -1145,12 +1151,16 @@
                        (member-equal (eprefix-upcase-u) prefixes)
                        (member-equal (eprefix-upcase-l) prefixes))))
         (retmsg$ "Incompatible prefixes ~x0 in the list of string literals."
-                 prefixes)))
+                 prefixes))
+       (std (ienv->std ienv)))
     (retok (make-type-array
-            :of (if (or conflictp
-                        (and prefix? (not (eprefix-case prefix? :locase-u8))))
-                    (type-unknown-arithmetic)
-                  (type-char))
+            :of (cond (conflictp (type-unknown-arithmetic))
+                      ((not prefix?) (type-char))
+                      ((eprefix-case prefix? :locase-u8)
+                       (c::standard-case std
+                                         :c17 (type-char)
+                                         :c23 (type-uchar)))
+                      (t (type-unknown-arithmetic)))
             :kind (make-type-array-kind-const-len :len nil))))
   :prepwork
   ((define valid-stringlit-list-loop ((strlits stringlit-listp) (ienv ienvp))
@@ -1315,8 +1325,7 @@
       as a common extension [C17:J.5.7].")
     (xdoc::li
      "The left operand is a pointer type
-      and the right operand is a null pointer constant
-      (approximated as anything of an integer type).")
+      and the right operand is a null pointer constant.")
     (xdoc::li
      "The left operand has the boolean type and the right operand has the
       pointer type."))
@@ -1752,7 +1761,7 @@
                      (reterr msg)))
                  (retok (type-integer-promote type-arg ienv))))
       (:lognot (b* (((when (type-case type-arg '(:unknown :unknown-builtin)))
-                     (retok (type-unknown-arithmetic)))
+                     (retok (type-sint)))
                     (type (type-fpconvert (type-apconvert type-arg)))
                     ((unless (3definitely (type-scalar-3p type)))
                      (reterr msg)))
@@ -1862,7 +1871,7 @@
      [C17:6.5.6/4].
      In the second case, the result has type @('ptrdiff_t') [C17:6.5.6/9],
      which has an implementation-specific definition,
-     and so we return the unknown scalar type in this case.
+     and so we return the unknown arithmetic type in this case.
      In the third case,
      the result has the type of the pointer operand [C17:6.5.6/8].
      Because of the second and third cases, which involve pointers,
@@ -1949,8 +1958,8 @@
      which must be a modifiable lvalue [C17:6.5.16/2].")
    (xdoc::p
     "The @('<<='), @('>>='), @('&='), @('^='), and @('|=') operators
-     require integer operands [C17:6.5.13.2/2].
-     The result has the type of the first operand [C17:6.5.13/3].
+     require integer operands [C17:6.5.16.2/2].
+     The result has the type of the first operand [C17:6.5.16/3].
      No array-to-pointer or function-to-pointer conversions are needed."))
   (b* (((reterr) (irr-type))
        (msg (msg$ "In the binary expression ~x0, ~
@@ -2171,7 +2180,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-cast ((expr exprp) (type-cast typep) (type-arg typep))
+(define valid-cast ((expr exprp)
+                    (type-cast typep)
+                    (type-arg typep)
+                    (completions type-completions-p)
+                    (ienv ienvp))
   :guard (expr-case expr :cast)
   :returns (mv (erp maybe-msgp) (type1 typep))
   :short "Validate a cast expression,
@@ -2185,7 +2198,16 @@
      the expression must also have scalar type [C17:6.5.4/2].
      Since scalar types involve pointers,
      we perform array-to-pointer and function-to-pointer conversions.
-     The result is the type denoted by the type name."))
+     The result is the type denoted by the type name.")
+   (xdoc::p
+    "GCC and Clang also allow casting a structure or union type
+     to the same type,
+     and casting to a union type from the type of one of its members.
+     When these extensions are enabled,
+     we accept a cast to a structure type
+     if the argument expression may have a compatible type,
+     and we accept any cast to a union type,
+     without checking the types of its members."))
   (b* (((reterr) (irr-type))
        ((when (type-case type-cast :unknown))
         (retok (type-unknown)))
@@ -2195,16 +2217,28 @@
         (retok (type-unknown-scalar)))
        ((when (type-case type-cast :unknown-arithmetic))
         (retok (type-unknown-arithmetic)))
+       ((when (and (ienv->gcc/clang ienv)
+                   (type-case type-cast :union)))
+        (retok (type-fix type-cast)))
+       ((when (and (ienv->gcc/clang ienv)
+                   (type-case type-cast :struct)))
+        (if (3possibly
+             (type-compatible-3p type-cast type-arg completions ienv))
+            (retok (type-fix type-cast))
+          (retmsg$ "In the cast expression ~x0, ~
+                    the argument expression has type ~x1, ~
+                    which is not compatible with the cast type ~x2."
+                   (expr-fix expr) (type-fix type-arg) (type-fix type-cast))))
+       ((unless (or (type-case type-cast :void)
+                    (3definitely (type-scalar-3p type-cast))))
+        (retmsg$ "In the cast expression ~x0, the cast type is ~x1."
+                 (expr-fix expr) (type-fix type-cast)))
        ((when (or (type-case type-arg :unknown)
                   (type-case type-arg :unknown-builtin)
                   (type-case type-arg :unknown-scalar)
                   (type-case type-arg :unknown-arithmetic)))
         (retok (type-fix type-cast)))
        (type1-arg (type-fpconvert (type-apconvert type-arg)))
-       ((unless (or (type-case type-cast :void)
-                    (3definitely (type-scalar-3p type-cast))))
-        (retmsg$ "In the cast expression ~x0, the cast type is ~x1."
-                 (expr-fix expr) (type-fix type-cast)))
        ((unless (or (type-case type-cast :void)
                     (3definitely (type-scalar-3p type1-arg))))
         (retmsg$ "In the cast expression ~x0, ~
@@ -3267,7 +3301,11 @@
                    (valid-tyname expr.type vstate))
                   ((erp new-arg type-arg types-arg vstate)
                    (valid-expr expr.arg vstate))
-                  ((erp type) (valid-cast expr type-cast type-arg)))
+                  ((erp type) (valid-cast expr
+                                          type-cast
+                                          type-arg
+                                          (vstate->completions vstate)
+                                          (vstate->ienv vstate))))
                (retok (make-expr-cast :type new-type :arg new-arg)
                       type
                       (set::union types-cast types-arg)
@@ -3826,19 +3864,28 @@
                               nil
                               types
                               vstate)))
-                    ((mv current-uid? current+completep)
+                    ((mv current-uid? current-kind? current+completep)
                      (b* (((unless tyspec.spec.name?)
-                           (mv nil nil))
+                           (mv nil nil nil))
                           ((mv info? currentp)
                            (vstate-lookup-tag tyspec.spec.name? vstate))
                           ((unless (and info? currentp))
-                           (mv nil nil))
+                           (mv nil nil nil))
                           (uid (valid-tag-info->uid info?))
                           ((mv completep &)
                               (treemap::lookup?
                                (valid-tag-info->uid info?)
                                (vstate->completions vstate))))
-                       (mv uid completep)))
+                       (mv uid (valid-tag-info->kind info?) completep)))
+                    ((when (and current-kind?
+                                (not (equal current-kind? (tag-kind-struct)))))
+                     (retmsg$ "The tag ~x0 is expected ~
+                               to be of kind 'struct', ~
+                               but it is of kind 'union'. ~
+                               This occurred ~
+                               in the type specifier ~x1."
+                              tyspec.spec.name?
+                              (type-spec-fix tyspec)))
                     ((when current+completep)
                      (retmsg$ "A type is already defined in this scope ~
                                with tag ~x0. ~
@@ -3937,19 +3984,28 @@
                              nil
                              types
                              vstate)))
-                   ((mv current-uid? current+completep)
+                   ((mv current-uid? current-kind? current+completep)
                     (b* (((unless tyspec.spec.name?)
-                          (mv nil nil))
+                          (mv nil nil nil))
                          ((mv info? currentp)
                           (vstate-lookup-tag tyspec.spec.name? vstate))
                          ((unless (and info? currentp))
-                          (mv nil nil))
+                          (mv nil nil nil))
                          (uid (valid-tag-info->uid info?))
                          ((mv completep &)
                              (treemap::lookup?
                               (valid-tag-info->uid info?)
                               (vstate->completions vstate))))
-                      (mv uid completep)))
+                      (mv uid (valid-tag-info->kind info?) completep)))
+                   ((when (and current-kind?
+                               (not (equal current-kind? (tag-kind-union)))))
+                    (retmsg$ "The tag ~x0 is expected ~
+                              to be of kind 'union', ~
+                              but it is of kind 'struct'. ~
+                              This occurred ~
+                              in the type specifier ~x1."
+                             tyspec.spec.name?
+                             (type-spec-fix tyspec)))
                    ((when current+completep)
                     (retmsg$ "A type is already defined in this scope ~
                               with tag ~x0. ~
@@ -4046,19 +4102,29 @@
                                    same-vstate)
                           (reterr msg-bad-preceding))
        :struct-empty (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
-                          ((mv current-uid? current+completep)
+                          ((mv current-uid? current-kind? current+completep)
                            (b* (((unless tyspec.name?)
-                                 (mv nil nil))
+                                 (mv nil nil nil))
                                 ((mv info? currentp)
                                  (vstate-lookup-tag tyspec.name? vstate))
                                 ((unless (and info? currentp))
-                                 (mv nil nil))
+                                 (mv nil nil nil))
                                 (uid (valid-tag-info->uid info?))
                                 ((mv completep &)
                                  (treemap::lookup?
                                   (valid-tag-info->uid info?)
                                   (vstate->completions vstate))))
-                             (mv uid completep)))
+                             (mv uid (valid-tag-info->kind info?) completep)))
+                          ((when (and current-kind?
+                                      (not (equal current-kind?
+                                                  (tag-kind-struct)))))
+                           (retmsg$ "The tag ~x0 is expected ~
+                                     to be of kind 'struct', ~
+                                     but it is of kind 'union'. ~
+                                     This occurred ~
+                                     in the type specifier ~x1."
+                                    tyspec.name?
+                                    (type-spec-fix tyspec)))
                           ((when current+completep)
                            (retmsg$ "A type is already defined in this scope ~
                                      with tag ~x0.
@@ -5179,11 +5245,11 @@
                       target-type.uid
                       (vstate->completions vstate))
                      :iferr (msg$ "Designator cannot be applied to ~
-                                    incomplete struct type ~x0."
+                                    incomplete union type ~x0."
                                   (type-fix target-type)))
                     ((erp subobjects-list)
                      (subobjects-from-members-lookup designor.name nil members)
-                     :iferr (msg$ "Struct type ~x0 does not have member ~x1."
+                     :iferr (msg$ "Union type ~x0 does not have member ~x1."
                                   (type-fix target-type)
                                   (ident->unwrap designor.name)))
                     (new-subobjects-stack
@@ -7109,12 +7175,41 @@
        (i.e. there is at least a declarator),
        or the declaration specifiers declare a tag,
        as required in [C17:6.7/2].
-       We ignore the GCC extension for now."))
+       We ignore the GCC extension for now.")
+     (xdoc::p
+      "A standalone tag declaration
+       (see @(tsee check-declon-standalone-tag))
+       declares the tag in the current scope.
+       So if the current scope does not already have a tag with that name,
+       before validating the declaration specifiers
+       we add one, with a new UID,
+       so that the validation of the type specifier finds this tag.
+       If the current scope already has a tag with that name,
+       the declaration refers to the same type [C17:6.7.2.3/4];
+       the validation of the type specifier finds that tag,
+       and checks its kind."))
     (b* (((reterr) (irr-declon) nil (irr-vstate)))
       (declon-case
        declon
        :declon
-       (b* (((erp new-specs type storspecs types vstate)
+       (b* (((mv tag? unionp)
+             (check-declon-standalone-tag
+              declon (ienv->dialect (vstate->ienv vstate))))
+            (vstate
+             (b* (((unless tag?) vstate)
+                  ((mv info? currentp) (vstate-lookup-tag tag? vstate))
+                  ((when (and info? currentp)) vstate)
+                  (uid (vstate->next-uid vstate))
+                  (vstate (change-vstate vstate
+                                         :next-uid (uid-increment uid))))
+               (vstate-add-tag tag?
+                               (make-valid-tag-info
+                                :kind (if unionp
+                                          (tag-kind-union)
+                                        (tag-kind-struct))
+                                :uid uid)
+                               vstate)))
+            ((erp new-specs type storspecs types vstate)
              (valid-decl-spec-list declon.specs nil nil nil vstate))
             ((when (and (endp declon.declors)
                         (not (type-case type :struct))
@@ -7480,10 +7575,10 @@
        :goto
        (retok (stmt-goto stmt.label) nil nil (vstate-fix vstate))
        :gotoe
-       (b* (((erp new-label type types vstate)
+       (b* (((erp new-label & types vstate)
              (valid-expr stmt.label vstate)))
          (retok (stmt-gotoe new-label)
-                (set::insert type types)
+                types
                 nil
                 vstate))
        :continue
@@ -7947,6 +8042,8 @@
                        (valid-dirdeclor dirdeclor t type vstate))))
            ((acl2::occur-lst '(acl2::flag-is 'valid-dirabsdeclor) clause)
             '(:expand ((valid-dirabsdeclor dirabsdeclor type vstate))))
+           ((acl2::occur-lst '(acl2::flag-is 'valid-declon) clause)
+            '(:expand ((valid-declon declon vstate))))
            (t nil)))))
 
 (verify-guards valid-expr)

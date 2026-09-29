@@ -490,6 +490,10 @@
         (t
          (assoc-factor-gather-exponents x (cdr info-list) newp))))
 
+;; Speeds up the proofs below.
+(local
+ (in-theory (disable matching-factor-gather-exponents-patterns-p)))
+
 (defun factor-gather-exponents-intersect-info-lists
     (info-list1 info-list2 newp)
   (declare (xargs :guard (and (info-list-p info-list1)
@@ -568,6 +572,10 @@
  (verify-guards factor-gather-exponents-info-list)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Speeds up the proofs below.
+(local
+ (in-theory (disable stable-under-rewriting-products)))
 
 (defun first-match-in-factor-gather-exponents-info-lists
     (info-list1 info-list2 newp mfc state)
