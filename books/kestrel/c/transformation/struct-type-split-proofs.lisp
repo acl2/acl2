@@ -1490,6 +1490,127 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define stsp-expr-ident ((old-ident identp)
+                         (new-ident identp)
+                         (info var-vinfop)
+                         (old-name identp)
+                         (newl-name identp)
+                         (newr-name identp)
+                         (gin ginp))
+  :returns (gout goutp)
+  :short "STS proof generation for an identifier expression (i.e. variable)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee xeq-expr-ident),
+     but for STS proof generation;
+     unlike that function,
+     it does not perform the transformation,
+     but it only generates proofs,
+     so it is given (the components of)
+     both the old and new expression as inputs,
+     which it sanity-checks.")
+   (xdoc::p
+    "If the old expression is the name of the old struct object,
+     we ensure that the new expression is
+     the name of one of the new struct objects,
+     which should always be the case.
+     We generate no theorem in this case,
+     because the ``leaf'' theorems involve
+     member expressions involving those struct objects,
+     and those theorems are generated
+     when processing the declarations of the struct objects.")
+   (xdoc::p
+    "Otherwise, the old and new expressions must be identical,
+     and we generate a theorem similar to @(tsee xeq-expr-ident)."))
+  (b* (((gin gin) gin)
+       (gout-no-thm (gout-no-thm gin))
+       ((when (equal (ident-fix old-ident)
+                     (ident-fix old-name)))
+        (b* (((unless (member-equal (ident-fix new-ident)
+                                    (list (ident-fix newl-name)
+                                          (ident-fix newr-name))))
+              (raise "Internal error: ~x0 transformed into ~x1."
+                     (ident-fix old-ident) (ident-fix new-ident))
+              (irr-gout)))
+          gout-no-thm))
+       ((unless (equal (ident-fix old-ident)
+                       (ident-fix new-ident)))
+        (raise "Internal error: ~x0 transformed into ~x1."
+               (ident-fix old-ident) (ident-fix new-ident))
+        (irr-gout))
+       (ident (ident-fix old-ident))
+       ((var-vinfo info) (var-vinfo-fix info))
+       ((unless (and (ident-formalp ident)
+                     (type-formalp info.type)
+                     (not (type-case info.type :void))
+                     (not (type-case info.type :char))))
+        gout-no-thm)
+       ((mv & cvar) (ldm-ident ident)) ; ERP is NIL because FORMALP
+       ((mv & ctype) (ldm-type info.type)) ; ERP is NIL because FORMALP
+       ((unless (omap::assoc cvar gin.vartys)) gout-no-thm)
+       (hints `(("Goal"
+                 :in-theory '((:e c::expr-ident)
+                              (:e c::type-fix)
+                              (:e c::expr-ident)
+                              expr-compustate-vars)
+                 :use (:instance expr-ident-congruence-under-compustate-equivp
+                                 (var ',cvar)
+                                 (type ',ctype)))))
+       ((mv thm-event thm-name thm-index)
+        (stsp-gen-expr-thm (expr-ident ident info)
+                           (expr-ident ident info)
+                           gin.vartys
+                           gin.const-new
+                           gin.thm-index
+                           hints)))
+    (make-gout :events (cons thm-event gin.events)
+               :thm-index thm-index
+               :thm-name thm-name
+               :vartys gin.vartys))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-expr ((old-expr exprp)
+                   (new-expr exprp)
+                   (old-name identp)
+                   (newl-name identp)
+                   (newr-name identp)
+                   (gin ginp))
+  :guard (and (expr-unambp old-expr)
+              (expr-unambp new-expr)
+              (expr-annop old-expr)
+              (expr-annop new-expr))
+  :returns (gout goutp)
+  :short "STS proof generation for an expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This does not perform the transformation; it only generates proofs.
+     So it takes as input both old and new expression.
+     This is very limited for now:
+     we only generate theorems for identifier expressions."))
+  (expr-case
+   old-expr
+   :ident
+   (expr-case
+    new-expr
+    :ident (stsp-expr-ident old-expr.ident
+                            new-expr.ident
+                            old-expr.info
+                            old-name
+                            newl-name
+                            newr-name
+                            gin)
+    :otherwise (prog2$ (raise "Internal error: ~x0 transformed into ~x1."
+                              (expr-fix old-expr) (expr-fix new-expr))
+                       (irr-gout)))
+   :otherwise (gout-no-thm gin))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define stsp-fundef ((old-fundef fundefp)
                      (new-fundef fundefp)
                      (tag identp)
