@@ -31,4 +31,4 @@ echo "the current working directory of this server process."
 # Bind to localhost only (the nil interface argument).
 # Add further transformation methods to the allowed-methods list as they are
 # supported.
-(echo "(jsonrpc::run-jsonrpc-server ${PORT} nil '(jsonrpc::input-files jsonrpc::output-files jsonrpc::list-ensembles jsonrpc::drop-ensemble jsonrpc::struct-type-split) state)" | ${THISSCRIPTDIR}/acl2-with-c-transformation-jsonrpc)
+(echo "(jsonrpc::run-jsonrpc-server ${PORT} nil '(jsonrpc::input-files jsonrpc::output-files jsonrpc::list-ensembles jsonrpc::drop-ensemble jsonrpc::add-section-attr jsonrpc::simpadd0 jsonrpc::split-fn jsonrpc::split-gso jsonrpc::struct-type-split jsonrpc::wrap-fn) state)" | ${THISSCRIPTDIR}/acl2-with-c-transformation-jsonrpc)

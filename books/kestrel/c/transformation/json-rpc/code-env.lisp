@@ -11,6 +11,7 @@
 (in-package "C2C")
 
 (include-book "kestrel/c/syntax/validation-annotations" :dir :system)
+(include-book "kestrel/c/syntax/validator" :dir :system)
 (include-book "std/util/deffixer" :dir :system)
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -104,6 +105,16 @@
   :equiv ann-code-ensemble-equiv
   :define t)
 
+(defxdoc+ ann-code-ensemble
+  :short "Fixtype of annotated code ensembles."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the code ensembles
+     that satisfy @(tsee code-ensemble-annop),
+     i.e. that are annotated with validation information.
+     The transformations require such code ensembles.")))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defoption ann-code-ensemble-option
@@ -115,6 +126,39 @@
     "This is the type of the values in the environment.
      It includes @('nil') because that is the value of an unbound name."))
   :pred ann-code-ensemble-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define revalidate-code-ensemble ((code code-ensemblep))
+  :returns (mv (er? maybe-msgp)
+               (code$ ann-code-ensemblep
+                      :hints (("Goal"
+                               :in-theory
+                               (enable* revalidate-code-ensemble
+                                        c$::abstract-syntax-annop-rules)))))
+  :short "Validate a transformed code ensemble,
+          obtaining an annotated code ensemble."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Most transformations do not re-validate their output,
+     which is thus not annotated, or not fully,
+     e.g. because it contains new constructs.
+     Before such an output is stored in the environment,
+     it is validated again, with the same implementation environment.
+     This also refreshes any annotations that the transformation
+     may have made out of date."))
+  (b* (((reterr) (irr-ann-code-ensemble))
+       ((code-ensemble code) code)
+       ((unless (c$::trans-ensemble-unambp code.trans-units))
+        (retmsg$ "Internal error: the transformed code is ambiguous."))
+       ((erp trans-units)
+        (c$::valid-trans-ensemble code.trans-units code.ienv nil))
+       ;; TODO: remove once it is proved that validation produces
+       ;; an annotated term.
+       ((unless (c$::trans-ensemble-annop trans-units))
+        (retmsg$ "Internal error: the transformed code is invalid.")))
+    (retok (change-code-ensemble code :trans-units trans-units))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

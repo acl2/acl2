@@ -35,7 +35,7 @@
    (xdoc::section
     "Request Parameters"
     (xdoc::desc
-     "@('\"name\"') &mdash; required"
+     "@('\"ensemble\"') &mdash; required"
      (xdoc::p
       "A string naming the code ensemble to drop.")))
    (xdoc::p
@@ -53,11 +53,11 @@
   :stobjs code-env
   :short "JSON-RPC method that removes a code ensemble from the environment."
   (b* (((reterr) (json::value-null) code-env)
-       ((erp members) (params->members params '("name")))
+       ((erp members) (params->members params '("ensemble")))
        (obj (json::value-object members))
-       ((erp & name) (param->string "name" obj t))
+       ((erp & name) (param->string "ensemble" obj t))
        ((unless (ensembles-boundp name code-env))
         (reterr (jsonrpc::make-invalid-params-error
-                 (concatenate 'string "Unbound name: " name))))
+                 (concatenate 'string "Unbound ensemble name: " name))))
        (code-env (ensembles-rem name code-env)))
     (retok (json::value-null) code-env)))

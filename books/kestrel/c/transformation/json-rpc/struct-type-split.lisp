@@ -27,38 +27,17 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This @('struct-type-split') method applies
-     the @(see struct-type-split) transformation
-     to a code ensemble in the @(see code-env),
-     and binds the resulting code ensemble to a name.
-     The files are read and written by separate methods;
-     see @(see input-files-method) and @(see output-files-method).")
+    "This @('struct-type-split') method splits a struct type into two,
+     moving some of its members into a new struct type,
+     and updates the code that uses the struct type accordingly.
+     See @(see struct-type-split) for the exact conditions and limitations.")
    (xdoc::p
-    "The request @('params') must be a JSON Object
-     with the following members.
-     Except for @('\"source\"'), @('\"target\"'), and @('\"overwrite\"'),
-     the names match the keyword arguments of @(tsee struct-type-split),
-     as strings without leading colons.
-     It is an error for a member name to appear more than once.")
+    "The @('\"input-ensemble\"'), @('\"output-ensemble\"'),
+     and @('\"overwrite\"') parameters
+     are as described in @(see c-transformation-json-rpc).
+     The other parameters are as follows.")
    (xdoc::section
     "Request Parameters"
-    (xdoc::desc
-     "@('\"source\"') &mdash; required"
-     (xdoc::p
-      "A string naming the code ensemble to transform."))
-    (xdoc::desc
-     "@('\"target\"') &mdash; required"
-     (xdoc::p
-      "A string naming the transformed code ensemble.
-       It may be the same as @('\"source\"'),
-       in which case the transformed code ensemble replaces the original
-       (this requires @('\"overwrite\"')).
-       If the transformation fails, the environment is unchanged."))
-    (xdoc::desc
-     "@('\"overwrite\"') &mdash; optional, default @('false')"
-     (xdoc::p
-      "A boolean that must be @('true')
-       if @('\"target\"') is already bound."))
     (xdoc::desc
      "@('\"struct-tag\"')"
      (xdoc::p
@@ -101,8 +80,8 @@
    (xdoc::codeblock
     "{\"jsonrpc\": \"2.0\","
     " \"method\": \"struct-type-split\","
-    " \"params\": {\"source\": \"orig\","
-    "             \"target\": \"split\","
+    " \"params\": {\"input-ensemble\": \"orig\","
+    "             \"output-ensemble\": \"split\","
     "             \"struct-tag\": \"point\","
     "             \"right-members\": [\"z\"],"
     "             \"new-tag\": \"point_right\","
@@ -114,8 +93,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *struct-type-split-parameter-names*
-  '("source"
-    "target"
+  '("input-ensemble"
+    "output-ensemble"
     "overwrite"
     "struct-tag"
     "typedef-name"
@@ -138,27 +117,21 @@
        ((erp members)
         (params->members params *struct-type-split-parameter-names*))
        (obj (json::value-object members))
-       ((erp code) (param->source obj code-env))
-       ((erp target) (param->target obj code-env))
-       ((erp struct-tag-present struct-tag)
-        (param->string "struct-tag" obj nil))
-       ((erp typedef-name-present typedef-name)
-        (param->string "typedef-name" obj nil))
-       ((when (iff struct-tag-present typedef-name-present))
+       ((erp code) (param->input-ensemble obj code-env))
+       ((erp output-name) (param->output-ensemble obj code-env))
+       ((erp tag?) (param->ident-option "struct-tag" obj))
+       ((erp typedef-name?) (param->ident-option "typedef-name" obj))
+       ((when (iff tag? typedef-name?))
         (reterr (jsonrpc::make-invalid-params-error
                  "Exactly one of struct-tag and typedef-name must be provided.")))
        ((erp right-members) (param->string-list "right-members" obj t))
        ((unless (consp right-members))
         (reterr (jsonrpc::make-invalid-params-error
                  "At least one right member must be specified.")))
-       ((erp filepath-present filepath) (param->string "filepath" obj nil))
-       ((erp new-tag-present new-tag) (param->string "new-tag" obj nil))
+       ((erp filepath?) (param->filepath-option "filepath" obj))
+       ((erp new-tag?) (param->ident-option "new-tag" obj))
        ((erp safety-checks) (param->boolean "safety-checks" obj t))
-       (tag? (and struct-tag-present (c$::ident struct-tag)))
-       (typedef-name? (and typedef-name-present (c$::ident typedef-name)))
-       (filepath? (and filepath-present (c$::filepath filepath)))
        (right-member-idents (c$::string-list-map-ident right-members))
-       (new-tag? (and new-tag-present (c$::ident new-tag)))
        ((mv er? code$ warnings)
         (sts-split-code-ensemble
          right-member-idents tag? typedef-name? filepath? new-tag? safety-checks
@@ -168,7 +141,7 @@
                  (concatenate 'string
                               "struct-type-split error: "
                               (warning-to-string er?)))))
-       (code-env (ensembles-put target code$ code-env)))
+       (code-env (ensembles-put output-name code$ code-env)))
     (retok (json::value-object
             (list (json::make-member
                    :name "warnings"

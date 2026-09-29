@@ -64,7 +64,7 @@
        ;; Read the file.
        (read-params
         (make-params
-         (list (cons "target" (value-string "orig"))
+         (list (cons "output-ensemble" (value-string "orig"))
                (cons "base-dir" (value-string "input-files"))
                (cons "files" (strings-value (list "test1.c")))
                (cons "preprocess" (value-false)))))
@@ -80,7 +80,7 @@
        ;; A duplicate parameter name is rejected.
        ((mv erp & c2c::code-env state)
         (input-files (make-params
-                      (list (cons "target" (value-string "dup"))
+                      (list (cons "output-ensemble" (value-string "dup"))
                             (cons "files" (strings-value (list "test1.c")))
                             (cons "files" (strings-value (list "test1.c")))))
                      c2c::code-env
@@ -90,8 +90,8 @@
        ;; An unbound source is rejected.
        ((mv erp & c2c::code-env)
         (struct-type-split (make-params
-                            (list (cons "source" (value-string "nope"))
-                                  (cons "target" (value-string "split"))
+                            (list (cons "input-ensemble" (value-string "nope"))
+                                  (cons "output-ensemble" (value-string "split"))
                                   (cons "struct-tag" (value-string "point"))
                                   (cons "right-members"
                                         (strings-value (list "z")))))
@@ -101,8 +101,8 @@
        ;; A failing transformation leaves the environment unchanged.
        ((mv erp & c2c::code-env)
         (struct-type-split (make-params
-                            (list (cons "source" (value-string "orig"))
-                                  (cons "target" (value-string "bad"))
+                            (list (cons "input-ensemble" (value-string "orig"))
+                                  (cons "output-ensemble" (value-string "bad"))
                                   (cons "struct-tag" (value-string "nosuchtag"))
                                   (cons "right-members"
                                         (strings-value (list "z")))))
@@ -112,8 +112,8 @@
        ;; Split the struct.
        ((mv erp res c2c::code-env)
         (struct-type-split (make-params
-                            (list (cons "source" (value-string "orig"))
-                                  (cons "target" (value-string "split"))
+                            (list (cons "input-ensemble" (value-string "orig"))
+                                  (cons "output-ensemble" (value-string "split"))
                                   (cons "struct-tag" (value-string "point"))
                                   (cons "right-members"
                                         (strings-value (list "z")))
@@ -129,8 +129,8 @@
        ;; Transforming in place requires overwrite.
        ((mv erp & c2c::code-env)
         (struct-type-split (make-params
-                            (list (cons "source" (value-string "split"))
-                                  (cons "target" (value-string "split"))
+                            (list (cons "input-ensemble" (value-string "split"))
+                                  (cons "output-ensemble" (value-string "split"))
                                   (cons "struct-tag" (value-string "point"))
                                   (cons "right-members"
                                         (strings-value (list "y")))))
@@ -140,7 +140,7 @@
        ;; Write the result.
        ((mv erp res state)
         (output-files (make-params
-                       (list (cons "source" (value-string "split"))
+                       (list (cons "input-ensemble" (value-string "split"))
                              (cons "base-dir" (value-string "out"))))
                       c2c::code-env
                       state))
@@ -153,12 +153,12 @@
         (mv (msg "list-ensembles: ~x0 ~x1" erp res) c2c::code-env state))
        ;; Drop a name, which may then not be dropped again.
        ((mv erp & c2c::code-env)
-        (drop-ensemble (make-params (list (cons "name" (value-string "orig"))))
+        (drop-ensemble (make-params (list (cons "ensemble" (value-string "orig"))))
                        c2c::code-env))
        ((when erp)
         (mv (msg "drop-ensemble: ~x0" erp) c2c::code-env state))
        ((mv erp & c2c::code-env)
-        (drop-ensemble (make-params (list (cons "name" (value-string "orig"))))
+        (drop-ensemble (make-params (list (cons "ensemble" (value-string "orig"))))
                        c2c::code-env))
        ((unless (error-code-p -32602 erp))
         (mv (msg "drop of an unbound name: ~x0" erp) c2c::code-env state))
@@ -238,3 +238,304 @@ int main(void) {
        (mv (msg "Unexpected preprocess-args: ~x0" preprocess-args)
            nil state)))
    (mv nil '(value-triple :preprocess-args-map-parsed) state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The other transformations, on the inputs of the command-line tests
+;; (see kestrel/c/transformation/command-line/tests).
+
+(defun expect-result (what erp res expected)
+  (declare (xargs :mode :program))
+  (and (or erp (not (equal res expected)))
+       (msg "~s0: ~x1 ~x2" what erp res)))
+
+(defun read-test-files (name files c2c::code-env state)
+  (declare (xargs :mode :program :stobjs (c2c::code-env state)))
+  (b* (((mv erp res c2c::code-env state)
+        (input-files (make-params
+                      (list (cons "output-ensemble" (value-string name))
+                            (cons "base-dir" (value-string "input-files"))
+                            (cons "files" (strings-value files))
+                            (cons "preprocess" (value-false))))
+                     c2c::code-env
+                     state)))
+    (mv (expect-result name erp res (value-null)) c2c::code-env state)))
+
+(defun write-test-files (name c2c::code-env state)
+  (declare (xargs :mode :program :stobjs (c2c::code-env state)))
+  (b* (((mv erp res state)
+        (output-files (make-params
+                       (list (cons "input-ensemble" (value-string name))
+                             (cons "base-dir" (value-string "out"))))
+                      c2c::code-env
+                      state)))
+    (mv (expect-result name erp res (value-null)) c2c::code-env state)))
+
+(defun transformations-session (c2c::code-env state)
+  (declare (xargs :mode :program :stobjs (c2c::code-env state)))
+  (b* (;; split-gso
+       ((mv erp c2c::code-env state)
+        (read-test-files "gso" (list "file1.c" "file2.c") c2c::code-env state))
+       ((when erp) (mv erp c2c::code-env state))
+       ((mv erp res c2c::code-env)
+        (split-gso (make-params
+                    (list (cons "input-ensemble" (value-string "gso"))
+                          (cons "output-ensemble" (value-string "gso-split"))
+                          (cons "object-name" (value-string "foo_data"))
+                          (cons "split-members"
+                                (strings-value (list "a2" "a2_size")))))
+                   c2c::code-env))
+       (erp (expect-result "split-gso" erp res (value-null)))
+       ((when erp) (mv erp c2c::code-env state))
+       ;; simpadd0
+       ((mv erp c2c::code-env state)
+        (read-test-files "simp" (list "file3.c") c2c::code-env state))
+       ((when erp) (mv erp c2c::code-env state))
+       ((mv erp res c2c::code-env)
+        (simpadd0 (make-params
+                   (list (cons "input-ensemble" (value-string "simp"))
+                         (cons "output-ensemble" (value-string "simp-done"))))
+                  c2c::code-env))
+       (erp (expect-result "simpadd0" erp res (value-null)))
+       ((when erp) (mv erp c2c::code-env state))
+       ;; split-fn, whose split point must be a natural number
+       ((mv erp c2c::code-env state)
+        (read-test-files "fn" (list "file4.c") c2c::code-env state))
+       ((when erp) (mv erp c2c::code-env state))
+       ((mv erp & c2c::code-env)
+        (split-fn (make-params
+                   (list (cons "input-ensemble" (value-string "fn"))
+                         (cons "output-ensemble" (value-string "fn-split"))
+                         (cons "target" (value-string "foo"))
+                         (cons "new-fn" (value-string "foo_new"))
+                         (cons "split-point" (value-number -1))))
+                  c2c::code-env))
+       ((unless (error-code-p -32602 erp))
+        (mv (msg "split-fn with a negative split point: ~x0" erp)
+            c2c::code-env
+            state))
+       ((mv erp res c2c::code-env)
+        (split-fn (make-params
+                   (list (cons "input-ensemble" (value-string "fn"))
+                         (cons "output-ensemble" (value-string "fn-split"))
+                         (cons "target" (value-string "foo"))
+                         (cons "new-fn" (value-string "foo_new"))
+                         (cons "split-point" (value-number 1))))
+                  c2c::code-env))
+       (erp (expect-result "split-fn" erp res (value-null)))
+       ((when erp) (mv erp c2c::code-env state))
+       ;; wrap-fn, with targets given as an object
+       ((mv erp c2c::code-env state)
+        (read-test-files "wrap" (list "file8.c") c2c::code-env state))
+       ((when erp) (mv erp c2c::code-env state))
+       ((mv erp & c2c::code-env)
+        (wrap-fn (make-params
+                  (list (cons "input-ensemble" (value-string "wrap"))
+                        (cons "output-ensemble" (value-string "wrapped"))
+                        (cons "targets"
+                              (value-object
+                               (list (make-member :name "foo"
+                                                  :value (value-number 3)))))))
+                 c2c::code-env))
+       ((unless (error-code-p -32602 erp))
+        (mv (msg "wrap-fn with a bad wrapper name: ~x0" erp)
+            c2c::code-env
+            state))
+       ((mv erp res c2c::code-env)
+        (wrap-fn (make-params
+                  (list (cons "input-ensemble" (value-string "wrap"))
+                        (cons "output-ensemble" (value-string "wrapped"))
+                        (cons "targets"
+                              (value-object
+                               (list (make-member
+                                      :name "foo"
+                                      :value (value-string "foo_wrapper")))))))
+                 c2c::code-env))
+       (erp (expect-result "wrap-fn" erp res (value-null)))
+       ((when erp) (mv erp c2c::code-env state))
+       ;; add-section-attr, with and without a file path
+       ((mv erp c2c::code-env state)
+        (read-test-files "sect" (list "file9.c" "file10.c") c2c::code-env state))
+       ((when erp) (mv erp c2c::code-env state))
+       ((mv erp & c2c::code-env)
+        (add-section-attr
+         (make-params
+          (list (cons "input-ensemble" (value-string "sect"))
+                (cons "output-ensemble" (value-string "sectioned"))
+                (cons "attrs"
+                      (value-array
+                       (list (value-object
+                              (list (make-member
+                                     :name "target"
+                                     :value (value-object
+                                             (list (make-member
+                                                    :name "name"
+                                                    :value (value-string
+                                                            "foo")))))
+                                    (make-member
+                                     :name "section"
+                                     :value (value-string "foosection")))))))))
+         c2c::code-env))
+       ((unless (error-code-p -32602 erp))
+        (mv (msg "add-section-attr with a bad target member: ~x0" erp)
+            c2c::code-env
+            state))
+       ((mv erp res c2c::code-env)
+        (add-section-attr
+         (make-params
+          (list (cons "input-ensemble" (value-string "sect"))
+                (cons "output-ensemble" (value-string "sectioned"))
+                (cons "attrs"
+                      (value-array
+                       (list (value-object
+                              (list (make-member
+                                     :name "target"
+                                     :value (value-object
+                                             (list (make-member
+                                                    :name "filepath"
+                                                    :value (value-string
+                                                            "file9.c"))
+                                                   (make-member
+                                                    :name "ident"
+                                                    :value (value-string
+                                                            "foo")))))
+                                    (make-member
+                                     :name "section"
+                                     :value (value-string "foosection"))))
+                             (value-object
+                              (list (make-member
+                                     :name "target"
+                                     :value (value-object
+                                             (list (make-member
+                                                    :name "filepath"
+                                                    :value (value-null))
+                                                   (make-member
+                                                    :name "ident"
+                                                    :value (value-string
+                                                            "bar")))))
+                                    (make-member
+                                     :name "section"
+                                     :value (value-string
+                                             "barsection")))))))))
+         c2c::code-env))
+       (erp (expect-result "add-section-attr" erp res (value-null)))
+       ((when erp) (mv erp c2c::code-env state))
+       ;; Write all the results.
+       ((mv erp c2c::code-env state)
+        (write-test-files "gso-split" c2c::code-env state))
+       ((when erp) (mv erp c2c::code-env state))
+       ((mv erp c2c::code-env state)
+        (write-test-files "simp-done" c2c::code-env state))
+       ((when erp) (mv erp c2c::code-env state))
+       ((mv erp c2c::code-env state)
+        (write-test-files "fn-split" c2c::code-env state))
+       ((when erp) (mv erp c2c::code-env state))
+       ((mv erp c2c::code-env state)
+        (write-test-files "wrapped" c2c::code-env state))
+       ((when erp) (mv erp c2c::code-env state)))
+    (write-test-files "sectioned" c2c::code-env state)))
+
+(defun run-transformations-session (state)
+  (declare (xargs :mode :program :stobjs state))
+  (with-local-stobj c2c::code-env
+    (mv-let (erp c2c::code-env state)
+      (transformations-session c2c::code-env state)
+      (mv erp state))))
+
+(make-event
+ (b* (((mv erp state) (run-transformations-session state))
+      ((when erp) (mv erp nil state)))
+   (mv nil '(value-triple :transformations-session-passed) state)))
+
+;; The transformed C files.
+
+;; split-gso
+
+(c2c::assert-file-contents
+  :file "out/file1.c"
+  :content "struct foo {
+  char a1[20];
+  int a1_size;
+  char a2[30];
+  int a2_size;
+};
+
+struct foo_0 {
+  char a1[20];
+  int a1_size;
+};
+
+struct foo_1 {
+  char a2[30];
+  int a2_size;
+};
+
+static struct foo_0 foo_data_0 = {.a1_size = 0};
+
+static struct foo_1 foo_data_1 = {.a2_size = 0};
+
+int bar() {
+  return foo_data_0.a1_size;
+}
+")
+
+;; simpadd0
+
+(c2c::assert-file-contents
+  :file "out/file3.c"
+  :content "// This file is generated by 'simpadd0'.
+
+int foo(int x) {
+  return x;
+}
+")
+
+;; split-fn
+
+(c2c::assert-file-contents
+  :file "out/file4.c"
+  :content "int foo_new(int *x) {
+  int y = 2;
+  return (*x) + y;
+}
+
+int foo() {
+  int x = 0;
+  return foo_new(&x);
+}
+")
+
+;; wrap-fn
+
+(c2c::assert-file-contents
+  :file "out/file8.c"
+  :content "extern double foo(int x, int y);
+
+static double foo_wrapper(int x, int y) {
+  return foo(x, y);
+}
+
+int main(void) {
+  foo_wrapper(0, 1);
+}
+")
+
+;; add-section-attr (with a file path)
+
+(c2c::assert-file-contents
+  :file "out/file9.c"
+  :content "__attribute__ ((section(\"foosection\"))) int foo(int y, int z) {
+  int x = 5;
+  return x + y - z;
+}
+")
+
+;; add-section-attr (without a file path)
+
+(c2c::assert-file-contents
+  :file "out/file10.c"
+  :content "__attribute__ ((section(\"barsection\"))) int bar(int y, int z) {
+  int x = 5;
+  return x + y - z;
+}
+")

@@ -36,7 +36,7 @@
    (xdoc::section
     "Request Parameters"
     (xdoc::desc
-     "@('\"source\"') &mdash; required"
+     "@('\"input-ensemble\"') &mdash; required"
      (xdoc::p
       "A string naming the code ensemble to write."))
     (xdoc::desc
@@ -51,7 +51,7 @@
    (xdoc::codeblock
     "{\"jsonrpc\": \"2.0\","
     " \"method\": \"output-files\","
-    " \"params\": {\"source\": \"split\","
+    " \"params\": {\"input-ensemble\": \"split\","
     "             \"base-dir\": \"out\"},"
     " \"id\": 3}"))
   :order-subtopics t
@@ -60,7 +60,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *output-files-parameter-names*
-  '("source"
+  '("input-ensemble"
     "base-dir"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -75,7 +75,7 @@
   (b* (((reterr) (json::value-null) state)
        ((erp members) (params->members params *output-files-parameter-names*))
        (obj (json::value-object members))
-       ((erp code) (param->source obj code-env))
+       ((erp code) (param->input-ensemble obj code-env))
        ((erp base-dir) (param->base-dir obj))
        ((mv erp state)
         (c$::output-files-prog-fn code (list :base-dir base-dir) state))

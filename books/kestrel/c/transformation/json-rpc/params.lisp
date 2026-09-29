@@ -105,6 +105,30 @@
         (members-first-unknown (cdr members) known-names)
       name)))
 
+(define check-member-names ((members json::member-listp)
+                            (known-names string-listp)
+                            (what stringp))
+  :returns (erp maybe-errorp)
+  :short "Check that the member names of a JSON Object
+          are distinct and known."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We reject duplicate names rather than
+     silently using the first occurrence (cf. @(tsee get-member)).
+     The string @('what') describes the members in error messages,
+     e.g. @('\"parameter\"')."))
+  (b* ((what (acl2::str-fix what))
+       (dup (members-first-duplicate members))
+       ((when dup)
+        (jsonrpc::make-invalid-params-error
+         (concatenate 'string "Duplicate " what ": " dup)))
+       (unknown (members-first-unknown members known-names))
+       ((when unknown)
+        (jsonrpc::make-invalid-params-error
+         (concatenate 'string "Unknown " what ": " unknown))))
+    nil))
+
 (define params->members ((params jsonrpc::structuredp)
                          (known-names string-listp))
   :returns (mv (erp maybe-errorp) (members json::member-listp))
@@ -116,16 +140,8 @@
         (reterr (jsonrpc::make-invalid-params-error
                  "params must be a JSON object.")))
        (members (jsonrpc::structured-object->members params))
-       ;; Reject duplicate parameter names rather than
-       ;; silently using the first occurrence (cf. get-member).
-       (dup (members-first-duplicate members))
-       ((when dup)
-        (reterr (jsonrpc::make-invalid-params-error
-                 (concatenate 'string "Duplicate parameter: " dup))))
-       (unknown (members-first-unknown members known-names))
-       ((when unknown)
-        (reterr (jsonrpc::make-invalid-params-error
-                 (concatenate 'string "Unknown parameter: " unknown)))))
+       (erp (check-member-names members known-names "parameter"))
+       ((when erp) (reterr erp)))
     (retok members)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -230,6 +246,48 @@
                           "Parameter " name " must be a boolean.")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define param->natural ((name stringp) (obj json::valuep))
+  :guard (json::value-case obj :object)
+  :returns (mv (erp maybe-errorp) (nat natp))
+  :short "Read a required parameter that is a natural number."
+  (b* ((name (acl2::str-fix name))
+       ((reterr) 0)
+       ((mv presentp v) (get-member name obj))
+       ((unless presentp)
+        (reterr (jsonrpc::make-invalid-params-error
+                 (concatenate 'string "Missing required parameter: " name))))
+       ((unless (and (json::value-case v :number)
+                     (natp (json::value-number->get v))))
+        (reterr (jsonrpc::make-invalid-params-error
+                 (concatenate 'string
+                              "Parameter " name
+                              " must be a natural number.")))))
+    (retok (json::value-number->get v))))
+
+(define param->ident-option ((name stringp) (obj json::valuep))
+  :guard (json::value-case obj :object)
+  :returns (mv (erp maybe-errorp) (ident? ident-optionp))
+  :short "Read an optional string-valued parameter as an identifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The result is @('nil') when the parameter is absent."))
+  (b* (((reterr) nil)
+       ((erp presentp str) (param->string name obj nil)))
+    (retok (and presentp (c$::ident str)))))
+
+(define param->filepath-option ((name stringp) (obj json::valuep))
+  :guard (json::value-case obj :object)
+  :returns (mv (erp maybe-errorp) (filepath? c$::filepath-optionp))
+  :short "Read an optional string-valued parameter as a file path."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The result is @('nil') when the parameter is absent."))
+  (b* (((reterr) nil)
+       ((erp presentp str) (param->string name obj nil)))
+    (retok (and presentp (c$::filepath str)))))
 
 (define param->base-dir ((obj json::valuep))
   :guard (json::value-case obj :object)
@@ -352,42 +410,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define param->source ((obj json::valuep) code-env)
+(define param->input-ensemble ((obj json::valuep) code-env)
   :guard (json::value-case obj :object)
   :returns (mv (erp maybe-errorp)
                (code ann-code-ensemblep :hyp (code-envp code-env)))
   :stobjs code-env
-  :short "Read the @('\"source\"') parameter
+  :short "Read the @('\"input-ensemble\"') parameter
           and look up the code ensemble it names."
   (b* (((reterr) (irr-ann-code-ensemble))
-       ((erp & source) (param->string "source" obj t))
-       (code? (ensembles-get source code-env))
+       ((erp & name) (param->string "input-ensemble" obj t))
+       (code? (ensembles-get name code-env))
        ((unless code?)
         (reterr (jsonrpc::make-invalid-params-error
-                 (concatenate 'string "Unbound name: " source)))))
+                 (concatenate 'string "Unbound ensemble name: " name)))))
     (retok code?)))
 
-(define param->target ((obj json::valuep) code-env)
+(define param->output-ensemble ((obj json::valuep) code-env)
   :guard (json::value-case obj :object)
-  :returns (mv (erp maybe-errorp) (target stringp))
+  :returns (mv (erp maybe-errorp) (name stringp))
   :stobjs code-env
-  :short "Read the @('\"target\"') and @('\"overwrite\"') parameters."
+  :short "Read the @('\"output-ensemble\"') and @('\"overwrite\"') parameters."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The target names the code ensemble that the method produces.
+    "The output ensemble is the name of the code ensemble
+     that the method produces.
      If the name is already bound, it is an error
      unless @('\"overwrite\"') is @('true') (the default is @('false')).
      Methods check this before doing any work,
      so that the error is reported promptly."))
   (b* (((reterr) "")
-       ((erp & target) (param->string "target" obj t))
+       ((erp & name) (param->string "output-ensemble" obj t))
        ((erp overwrite) (param->boolean "overwrite" obj nil))
        ((when (and (not overwrite)
-                   (ensembles-boundp target code-env)))
+                   (ensembles-boundp name code-env)))
         (reterr (jsonrpc::make-invalid-params-error
                  (concatenate 'string
-                              "Name already bound: "
-                              target
+                              "Ensemble name already bound: "
+                              name
                               " (set overwrite to true to replace it)")))))
-    (retok target)))
+    (retok name)))
