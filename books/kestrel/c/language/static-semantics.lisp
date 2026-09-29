@@ -1492,14 +1492,15 @@
      if needed, for both branches of the conditional expression.)
      To avoid this complication,
      for now we make our static semantics more restrictive:
-     we require the two branches to have the same promoted type.
-     This means that that promoted type is also
-     the type resulting from the usual arithmetic conversions,
-     as can be easily seen in @(tsee uaconvert-types).
+     we require the two branches to have the same type,
+     and that type to have at least the rank of @('int').
+     Under these conditions, the usual arithmetic conversions have no effect,
+     and the common type of the two branches
+     is also the type of the conditional expression.
      We may relax the treatment eventually,
      but note that we would have to restructure the static semantics
      to return possibly modified abstract syntax.
-     This is not surprising, as it is a used approach for compiler-like tools,
+     This is not surprising, as it is a common approach for compiler-like tools,
      namely annotating abstract syntax trees with additional information.
      We apply both lvalue conversion and array-to-pointer conversion.
      A conditional expression is never an lvalue.")
@@ -1528,10 +1529,8 @@
         (reserrf (list :cond-mistype-else test-expr then-expr else-expr
                        :required :arithmetic
                        :supplied else-type)))
-       (then-type (promote-type then-type))
-       (else-type (promote-type else-type))
        ((unless (equal then-type else-type))
-        (reserrf (list :diff-promoted-types then-type else-type)))
+        (reserrf (list :diff-types then-type else-type)))
        (type then-type))
     (make-expr-type :type type :lvalue nil))
   :no-function nil)
