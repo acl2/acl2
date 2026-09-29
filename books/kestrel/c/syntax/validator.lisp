@@ -7175,12 +7175,41 @@
        (i.e. there is at least a declarator),
        or the declaration specifiers declare a tag,
        as required in [C17:6.7/2].
-       We ignore the GCC extension for now."))
+       We ignore the GCC extension for now.")
+     (xdoc::p
+      "A standalone tag declaration
+       (see @(tsee check-declon-standalone-tag))
+       declares the tag in the current scope.
+       So if the current scope does not already have a tag with that name,
+       before validating the declaration specifiers
+       we add one, with a new UID,
+       so that the validation of the type specifier finds this tag.
+       If the current scope already has a tag with that name,
+       the declaration refers to the same type [C17:6.7.2.3/4];
+       the validation of the type specifier finds that tag,
+       and checks its kind."))
     (b* (((reterr) (irr-declon) nil (irr-vstate)))
       (declon-case
        declon
        :declon
-       (b* (((erp new-specs type storspecs types vstate)
+       (b* (((mv tag? unionp)
+             (check-declon-standalone-tag
+              declon (ienv->dialect (vstate->ienv vstate))))
+            (vstate
+             (b* (((unless tag?) vstate)
+                  ((mv info? currentp) (vstate-lookup-tag tag? vstate))
+                  ((when (and info? currentp)) vstate)
+                  (uid (vstate->next-uid vstate))
+                  (vstate (change-vstate vstate
+                                         :next-uid (uid-increment uid))))
+               (vstate-add-tag tag?
+                               (make-valid-tag-info
+                                :kind (if unionp
+                                          (tag-kind-union)
+                                        (tag-kind-struct))
+                                :uid uid)
+                               vstate)))
+            ((erp new-specs type storspecs types vstate)
              (valid-decl-spec-list declon.specs nil nil nil vstate))
             ((when (and (endp declon.declors)
                         (not (type-case type :struct))
@@ -8013,6 +8042,8 @@
                        (valid-dirdeclor dirdeclor t type vstate))))
            ((acl2::occur-lst '(acl2::flag-is 'valid-dirabsdeclor) clause)
             '(:expand ((valid-dirabsdeclor dirabsdeclor type vstate))))
+           ((acl2::occur-lst '(acl2::flag-is 'valid-declon) clause)
+            '(:expand ((valid-declon declon vstate))))
            (t nil)))))
 
 (verify-guards valid-expr)

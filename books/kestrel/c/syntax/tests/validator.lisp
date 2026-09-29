@@ -2393,3 +2393,123 @@ void f(void) {
 }
 "
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; A declaration of the form "struct-or-union identifier ;"
+;; declares the identifier as the tag of a new type in the current scope,
+;; even if a tag with the same name is visible from an outer scope
+;; [C17:6.7.2.3/7].
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  struct s;
+  struct s * p = 0;
+  struct s { double d; };
+  (void)p->d;
+}
+")
+
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  union s;
+  union s * p = 0;
+  union s { double d; };
+  (void)p->d;
+}
+")
+
+;; In the same scope, it refers to the tag already declared there.
+(test-valid
+ "struct s;
+struct s;
+struct s { int m; };
+struct s x;
+")
+
+(test-valid-fail
+ "void f(void) {
+  struct s;
+  union s;
+}
+")
+
+;; Without such a declaration, a visible tag from an outer scope is used
+;; [C17:6.7.2.3/9].
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  struct s * p = 0;
+  (void)p->a;
+}
+")
+
+;; With GCC extensions, a declaration with a type qualifier
+;; is not a standalone tag declaration,
+;; but one with attributes is.
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  const struct s;
+  struct s * p = 0;
+  struct s { double d; };
+  (void)p->a;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  struct __attribute__((packed)) s;
+  struct s * p = 0;
+  struct s { double d; };
+  (void)p->d;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  struct s __attribute__((packed));
+  struct s * p = 0;
+  struct s { double d; };
+  (void)p->d;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; With Clang extensions, a declaration is a standalone tag declaration
+;; if the structure or union type specifier is the last specifier.
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  const struct s;
+  struct s * p = 0;
+  struct s { double d; };
+  (void)p->d;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  struct s const;
+  struct s * p = 0;
+  struct s { double d; };
+  (void)p->a;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  struct s __attribute__((packed));
+  struct s * p = 0;
+  struct s { double d; };
+  (void)p->a;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
