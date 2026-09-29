@@ -422,7 +422,16 @@
              ,@b*-bindings
              ((unless (not (c::value-struct->flexiblep sval))) nil))
           t)
-        :guard-hints (("Goal" :in-theory (enable len)))
+        :guard-simplify :limited
+        :guard-hints
+        (("Goal"
+          :do-not '(preprocess) ; for speed
+          :in-theory '(c::member-value-listp-of-value-struct->members
+                       c::member-valuep-of-nth-when-member-value-listp
+                       c::valuep-of-member-value->value
+                       (:t c::value-struct->members)
+                       (:e nfix)
+                       (:e <))))
         :hooks (:fix)
         ///
         (defruled ,value-kind-when-struct-value-onlrp
