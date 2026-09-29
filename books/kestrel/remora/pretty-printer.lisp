@@ -10,11 +10,10 @@
 
 (in-package "REMORA")
 
-;; We reuse the token-level helpers of the pdoc-based printer (code-point
-;; conversion of identifiers, numeric literals, string literals with their
-;; disambiguating empty escapes, etc.).  Only the layout engine and the
-;; AST walkers are new here.
+;; For the token-level helpers (identifiers, literals).
 (include-book "printer")
+
+(include-book "std/util/defprojection" :dir :system)
 
 (local (include-book "std/lists/top" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
@@ -27,77 +26,46 @@
           in the style of the ACL2 prettyprinter (@('ppr1')/@('ppr2'))."
   :long
   (xdoc::topstring
-   (xdoc::p "
- @({
- (pretty-print-file f :width 80 :flat-margin 60)
- (pretty-print-expr e :width 80 :flat-margin 60)
- })
- ")
+   (xdoc::codeblock
+    "(pretty-print-file f :width 80 :flat-margin 60)"
+    "(pretty-print-expr e :width 80 :flat-margin 60)")
    (xdoc::p
-    "This is an alternative to the Wadler/Lindig-style @(see printer).
-     That printer makes a one-line-lookahead decision at each group:
-     either the whole group fits flat on the rest of the line, or
-     @('every') soft line in it breaks.  The result tends to be either
-     very wide or very tall.  ACL2's own prettyprinter (see the functions
-     @('ppr1') and @('ppr2') in the ACL2 sources, file @('basis-a.lisp'))
-     instead works bottom-up: it first lays out every subterm in the
-     available width, records the width of the result, and then chooses,
-     for the enclosing form, among several layouts based on the widths of
-     the pieces.  We port that algorithm to a purely functional setting
-     over a small language-neutral tree of print forms.")
+    "This is a port of ACL2's prettyprinter (@('ppr1') and @('ppr2') in
+     @('basis-a.lisp')).  It works bottom-up: each subform is laid out
+     in the available width, and the enclosing form chooses its layout
+     from the widths of the results.  The output is more compact than
+     that of the @(see printer), which either fits a group on one line
+     or breaks all of it.")
    (xdoc::p
-    "The pipeline is:")
+    "There are three steps:")
    (xdoc::ol
     (xdoc::li
-     "@(tsee expr-to-pform), @(tsee file-to-pforms), etc. map the AST
-      to @(tsee pform)s, which are just atoms (token text), prefixed
-      forms (a piece of text glued to a form, like @('@f') or
-      @(': Int')), and bracketed lists of forms, each list optionally
-      marked as a `special' form whose first @('n') arguments belong to
-      the header line (as @('let') bindings or a @('fn') parameter list
-      do).")
+     "@(tsee expr-to-pform), @(tsee decl-to-pform), etc. map the AST to
+      @(tsee pform)s, a small tree of tokens and bracketed lists.")
     (xdoc::li
-     "@(tsee pform-to-ptuple) is the port of @('ppr1'): it chooses a
-      layout for a form within a given width and returns a @(tsee
-      ptuple) that records the choice together with the resulting
-      width.  Lists of forms are assembled bottom-up by @(tsee
-      pform-list-to-ptuples) and @(tsee cons-ptuple), the ports of
-      @('ppr1-lst') and @('cons-ppr1'), which pack short atomic forms
-      into rows.")
+     "@(tsee pform-to-ptuple) chooses a layout for each form,
+      as a @(tsee ptuple).")
     (xdoc::li
-     "@(tsee ptuple-print) is the port of @('ppr2'): it renders a
-      tuple to code points, given the column at which it starts."))
+     "@(tsee ptuple-print) renders the tuples to code points."))
    (xdoc::p
-    "The available layouts for a list @('(head arg1 ... argn)') are:")
+    "A list @('(head arg ...)') is laid out in one of these ways:")
    (xdoc::ul
     (xdoc::li
-     "@(':flat') &mdash; all on one line, if that fits both in the
-      remaining width and within the @('flat-margin') (the analogue of
-      ACL2's @('ppr-flat-right-margin'), default 60).  The flat margin
-      keeps long flat forms from running all the way to the right
-      margin, which makes structure easier to see.")
+     "Flat: on one line, if no wider than @('flat-margin').")
     (xdoc::li
-     "@(':wide') &mdash; @('(head arg1') on the first line, with the
-      remaining arguments in a column aligned under @('arg1').")
+     "Wide: the arguments in a column after the head.")
     (xdoc::li
-     "@(':indent') &mdash; @('(head') on the first line, all arguments
-      in a column indented by @('k'), where @('k') is chosen (up to 5)
-      so that the widest argument ends as close as possible to the
-      right margin.  Also used, with @('k = 1'), when the head is not
-      atomic (e.g. an application of a lambda).")
+     "Indented: the arguments in a column under the head,
+      indented by up to 5.")
     (xdoc::li
-     "@(':special') &mdash; for @('let'), @('fn'), @('fun'),
-      @('Forall'), @('unbox'), etc.: the header arguments go on the
-      first line (or, if they do not fit, on their own lines), and the
-      body arguments follow in a column indented by 2.  Unlike ACL2,
-      the scoping forms (@('let'), @('fn'), function bindings,
-      @('entry'), ...) are never printed flat: their body always starts
-      on a new line, as one would write them by hand."))
+     "Header: for @('let'), @('fn'), @('fun'), @('Forall'), etc.
+      The first argument stays on the line of the head,
+      and the body is indented by 2.
+      The body of a scoping form, such as @('let') or @('fn'),
+      always starts on a new line."))
    (xdoc::p
-    "Widths include the right parentheses that will follow a form on its
-     last line (the @('rpc') argument), as in @('ppr1'), so that closing
-     brackets never push a line past the margin.  Column width is
-     measured in code points, as in the @(see printer)."))
+    "Widths are in code points, and include the closing brackets
+     that follow a form on its last line."))
   :order-subtopics t
   :default-parent t)
 
@@ -117,28 +85,19 @@
     (xdoc::topstring
      (xdoc::ul
       (xdoc::li
-       "@(':atom') &mdash; token text (as code points), printed as is.")
+       "@(':atom'): token text, as code points.")
       (xdoc::li
-       "@(':prefix') &mdash; text glued in front of a form, with no
-        space and no possible line break between them; e.g. the @('@')
-        of an @('@f') call whose function is a compound expression, or
-        the @(': ') of a type ascription.  If the body breaks across
-        lines, its continuation lines are laid out relative to the
-        column after the prefix.")
+       "@(':prefix'): text glued to the front of a form, like the
+        @('@') of an @('@f') call or the @(': ') of a type ascription.")
       (xdoc::li
-       "@(':list') &mdash; a list of forms between @('open') and
-        @('close') brackets (code points, e.g. parentheses or square
-        brackets).  @('special') is 0 for ordinary forms; a positive
-        @('n') means the first @('n') elements after the head are header
-        arguments (like the binding list of @('let')), treated as in
-        ACL2's @('ppr-special-syms') table.  @('break-body') means the
-        form is never printed flat when it has body arguments (arguments
-        after the header ones), so its body always starts on a new
-        line; this is set for the scoping forms @('let'), @('fn'),
-        function bindings, @('entry'), etc.")))
+       "@(':list'): forms between an open and a close bracket.
+        With @('headerp'), the first argument is a header,
+        like the bindings of @('let').
+        With @('breakp'), the arguments after the header
+        always start on a new line.")))
     (:atom ((cps nat-list)))
     (:prefix ((cps nat-list) (body pform)))
-    (:list ((open natp) (close natp) (special natp) (break-body booleanp)
+    (:list ((open natp) (close natp) (headerp booleanp) (breakp booleanp)
             (elems pform-list)))
     :pred pformp)
 
@@ -193,34 +152,50 @@
           identifier."
   (pform-atom (cons (lnfix sigil) (utf8-string=>codepoints s))))
 
-(define pform-paren ((elems pform-listp))
+(define pform-paren ((elems pform-listp)
+                     &key
+                     ((headerp booleanp) 'nil)
+                     ((breakp booleanp) 'nil))
   :returns (x pformp)
-  :short "Ordinary parenthesized form."
-  (make-pform-list :open #x28 :close #x29 :special 0 :break-body nil :elems elems))
-
-(define pform-special ((n natp) (elems pform-listp))
-  :returns (x pformp)
-  :short "Parenthesized form whose first @('n') arguments are header
-          arguments (see @(tsee pform))."
-  (make-pform-list :open #x28 :close #x29 :special n :break-body nil :elems elems))
-
-(define pform-body-form ((elems pform-listp))
-  :returns (x pformp)
-  :short "Parenthesized form with one header argument whose body (the
-          remaining arguments) always starts on a new line: the layout
-          for @('let'), @('fn'), function bindings, @('entry'), and the
-          like."
-  (make-pform-list :open #x28 :close #x29 :special 1 :break-body t :elems elems))
+  :short "Parenthesized form."
+  (make-pform-list :open #x28 :close #x29
+                   :headerp headerp :breakp breakp :elems elems))
 
 (define pform-bracket ((elems pform-listp))
   :returns (x pformp)
   :short "Square-bracketed form."
-  (make-pform-list :open #x5B :close #x5D :special 0 :break-body nil :elems elems))
+  (make-pform-list :open #x5B :close #x5D
+                   :headerp nil :breakp nil :elems elems))
 
 (define pform-prefix-ascii ((s stringp) (body pformp))
   :returns (x pformp)
   :short "Glue an ASCII prefix onto a form."
   (make-pform-prefix :cps (ascii-string=>codepoints s) :body body))
+
+(defmacro+ pform-op (keyword &rest args)
+  :parents (pretty-printer)
+  :short "Parenthesized form starting with a keyword,
+          given as an ASCII string literal."
+  `(pform-paren (list (pform-ascii ,keyword) ,@args)))
+
+(defmacro+ pform-op* (keyword &rest args)
+  :parents (pretty-printer)
+  :short "Like @(tsee pform-op), but the last argument is a list of
+          forms."
+  `(pform-paren (list* (pform-ascii ,keyword) ,@args)))
+
+(defmacro+ pform-header-op (keyword header &rest body)
+  :parents (pretty-printer)
+  :short "Parenthesized form with a header argument."
+  `(pform-paren (list (pform-ascii ,keyword) ,header ,@body)
+                :headerp t))
+
+(defmacro+ pform-scope-op (keyword header body)
+  :parents (pretty-printer)
+  :short "Parenthesized form with a header argument,
+          whose body always starts on a new line."
+  `(pform-paren (list (pform-ascii ,keyword) ,header ,body)
+                :headerp t :breakp t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -229,9 +204,7 @@
 
 (define pform-atomic-p ((x pformp))
   :returns (yes booleanp)
-  :short "Is @('x') an atom, possibly under prefixes?  Only such forms
-          are packed together into rows by @(tsee cons-ptuple),
-          mirroring the atom test in ACL2's @('cons-ppr1')."
+  :short "Is @('x') an atom, possibly under prefixes?"
   :measure (pform-count x)
   (pform-case x
     :atom t
@@ -239,8 +212,7 @@
     :list nil))
 
 (defines pform-must-break-p
-  :short "Does @('x') contain a @('break-body') list with body arguments?
-          Such a form, and anything containing it, is never printed flat."
+  :short "Does @('x') contain a form that cannot be printed flat?"
   :verify-guards :after-returns
 
   (define pform-must-break-p ((x pformp))
@@ -249,8 +221,7 @@
     (pform-case x
       :atom nil
       :prefix (pform-must-break-p x.body)
-      :list (or (and x.break-body
-                     (> (len x.elems) (+ 1 x.special)))
+      :list (or (and x.breakp (consp (cddr x.elems)))
                 (pform-list-must-break-p x.elems))))
 
   (define pform-list-must-break-p ((xs pform-listp))
@@ -281,8 +252,7 @@
                 1
                 (pform-list-flat-size (cdr xs)))))))
 
-;; Rendering functions below accumulate code points in reverse order,
-;; consing onto acc; the final result is reversed once at the top.
+;; Printing functions cons code points onto acc, in reverse order.
 
 (defines pform-flat-print
   :short "Print a form flat (single line), consing code points in
@@ -307,24 +277,6 @@
           (t (pform-list-flat-print (cdr xs)
                                     (cons #x20 (pform-flat-print (car xs) acc)))))))
 
-(define pform-list-split ((n natp) (xs pform-listp))
-  :returns (mv (init pform-listp) (rest pform-listp))
-  :short "Split a list into its first @('n') elements and the rest."
-  (cond ((or (zp n) (endp xs)) (mv nil (pform-list-fix xs)))
-        (t (b* (((mv init rest) (pform-list-split (1- n) (cdr xs))))
-             (mv (cons (pform-fix (car xs)) init) rest))))
-  ///
-  (defret pform-list-count-of-pform-list-split
-    (and (<= (pform-list-count init) (pform-list-count xs))
-         (<= (pform-list-count rest) (pform-list-count xs)))
-    :hints (("Goal" :induct (pform-list-split n xs)
-             :in-theory (enable pform-list-split pform-list-count)))
-    :rule-classes :linear)
-  (defret len-of-pform-list-split-init
-    (equal (len init) (min (nfix n) (len xs))))
-  (defret consp-of-pform-list-split-init
-    (equal (consp init) (and (not (zp n)) (consp xs)))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; Ppr tuples: layout decisions annotated with widths.
@@ -341,38 +293,28 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "In every case @('width') is the number of columns from the
-       start of the tuple to the end of its widest line, counting the
-       right brackets that close enclosing forms on the last line
-       (see the @('rpc') argument of @(tsee pform-to-ptuple)).")
+      "The @('width') is that of the widest line, including the closing
+       brackets that follow the form on its last line.")
      (xdoc::ul
       (xdoc::li
-       "@(':flat') &mdash; a row of forms printed flat, separated by
-        single spaces.  A row usually holds one form; @(tsee
-        cons-ptuple) packs several short atomic forms into a row.")
+       "@(':flat'): a row of forms on one line.")
       (xdoc::li
-       "@(':prefix') &mdash; the prefix text followed by the body tuple.")
+       "@(':prefix'): prefix text followed by a tuple.")
       (xdoc::li
-       "@(':wide') &mdash; @('(head arg1') then the other args in a
-        column aligned under @('arg1').")
-      (xdoc::li
-       "@(':indent') &mdash; @('(head') then all args in a column
-        indented by @('indent') from the open bracket.")
-      (xdoc::li
-       "@(':special') &mdash; @('(head'), then the header args (on the
-        first line after the head if @('init-break') is @('nil'),
-        otherwise in a column at @('init-indent')), then the body args
-        in a column at @('body-indent').")))
+       "@(':block'): a head followed by up to two columns of rows,
+        each at its indent from the open bracket.
+        The first column starts on the line of the head
+        unless @('break1') holds;
+        the second always starts on a new line.
+        The wide and indented layouts use one column;
+        the header layout puts the header in the first
+        and the body in the second.")))
     (:flat ((width natp) (forms pform-list)))
     (:prefix ((width natp) (cps nat-list) (body ptuple)))
-    (:wide ((width natp) (open natp) (close natp)
-            (head ptuple) (args ptuple-list)))
-    (:indent ((width natp) (indent natp) (open natp) (close natp)
-              (head ptuple) (args ptuple-list)))
-    (:special ((width natp) (open natp) (close natp)
-               (head ptuple)
-               (init-break booleanp) (init-indent natp) (init-args ptuple-list)
-               (body-indent natp) (body-args ptuple-list)))
+    (:block ((width natp) (open natp) (close natp)
+             (head ptuple)
+             (break1 booleanp) (indent1 natp) (rows1 ptuple-list)
+             (indent2 natp) (rows2 ptuple-list)))
     :pred ptuplep)
 
   (fty::deflist ptuple-list
@@ -389,9 +331,7 @@
   (ptuple-case x
     :flat x.width
     :prefix x.width
-    :wide x.width
-    :indent x.width
-    :special x.width))
+    :block x.width))
 
 (define ptuple-list-max-width ((xs ptuple-listp))
   :returns (w natp :rule-classes :type-prescription)
@@ -409,20 +349,15 @@
                      (width natp)
                      (flat-margin natp))
   :returns (column2 ptuple-listp)
-  :short "Add the tuple @('x') for one form to a column of tuples for
-          the forms that follow it.  Port of ACL2's @('cons-ppr1')."
+  :short "Add a tuple to the front of a column.
+          Port of ACL2's @('cons-ppr1')."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The default is to lengthen the column by putting @('x') on top.
-     But if @('x') is a single atomic form and the top row of the column
-     is flat, and the merged row fits within both @('width') and
-     @('flat-margin'), we instead lengthen that top row: this is how
-     sequences of short arguments (e.g. the elements of an array
-     literal) are packed several per line.  Keyword pairing from
-     @('cons-ppr1') is not needed for Remora: the only keyword-like
-     token, the @(':') of a type ascription, is glued to its type as a
-     @(':prefix') form."))
+    "An atomic form is merged into the top row of the column if that row
+     is flat and the result fits in @('width') and @('flat-margin').
+     This packs short arguments, like the elements of an array literal,
+     several per line."))
   (b* ((x (ptuple-fix x))
        (column (ptuple-list-fix column))
        ((unless (and (ptuple-case x :flat) (consp column)))
@@ -449,12 +384,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "@('width') is the number of columns available, starting at the
-     column where the form will be printed.  @('rpc') (`right paren
-     count') is the number of closing brackets of enclosing forms that
-     will follow this form on its last line; the form must leave room
-     for them.  @('flat-margin') is the maximum width of a form printed
-     flat (unless it is an atom, which we never break)."))
+    "@('width') is the number of columns available.
+     @('rpc') is the number of closing brackets
+     that will follow the form on its last line.
+     @('flat-margin') is the maximum width of a form printed flat."))
   :verify-guards :after-returns
 
   (define pform-to-ptuple ((x pformp)
@@ -487,99 +420,83 @@
                                 :body body)))
         :list
         (b* (((when (or fits (endp x.elems))) flat)
-             ((when (endp (cdr x.elems)))
-              ;; A singleton: nothing to lay out unless the element is
-              ;; compound, in which case it is laid out (with room for
-              ;; our close bracket) right after our open bracket.
-              (if (pform-atomic-p (car x.elems))
-                  flat
-                (b* ((x1 (pform-to-ptuple (car x.elems) width-1 (+ rpc 1)
-                                          flat-margin)))
-                  (make-ptuple-indent :width (+ 1 (ptuple-width x1))
-                                      :indent 1
-                                      :open x.open :close x.close
-                                      :head x1 :args nil))))
              (head (car x.elems))
              (args (cdr x.elems))
-             ;; The head is followed by args, so it has 0 right parens.
-             (x1 (pform-to-ptuple head width-1 0 flat-margin))
-             (hd-sz (and (pform-atomic-p head) (ptuple-width x1)))
-             ((unless hd-sz)
-              ;; Non-atomic head (e.g. a lambda being applied): the head
-              ;; and all args go in one column indented by 1.
-              (b* ((xc (pform-list-to-ptuples args width-1 (+ rpc 1) flat-margin))
-                   (maximum (max (ptuple-width x1) (ptuple-list-max-width xc))))
-                (make-ptuple-indent :width (+ 1 maximum)
-                                    :indent 1
-                                    :open x.open :close x.close
-                                    :head x1 :args xc)))
-             (special (if (<= x.special (len args)) x.special 0))
-             ((mv init-args rest-args) (pform-list-split special args))
-             ;; Each body arg gets the full width minus 1 (for the
-             ;; minimal indentation).
-             (xc (pform-list-to-ptuples rest-args width-1 (+ rpc 1) flat-margin))
-             (maximum (ptuple-list-max-width xc))
-             ((when (> special 0))
-              ;; Port of the SPECIAL-TERM case.  If the first header
-              ;; arg is atomic and short, glue it to the head on the
-              ;; first line (like the name in `(defun name ...)').
-              (b* ((name (car init-args))
-                   (name-sz (pform-flat-size name))
-                   (opt-name (and (pform-atomic-p name)
-                                  (<= (+ hd-sz 1 name-sz) width-1)))
-                   (opt-name-sz (if opt-name (+ 1 name-sz) 0))
-                   (x1 (if opt-name
-                           (make-ptuple-flat :width (+ hd-sz opt-name-sz)
-                                             :forms (list head name))
-                         x1))
-                   (init-forms (if opt-name (cdr init-args) init-args))
-                   (init-pp (pform-list-to-ptuples init-forms
-                                                   width-1
-                                                   (if (endp xc) (+ rpc 1) 0)
-                                                   flat-margin))
-                   (max-init (ptuple-list-max-width init-pp))
-                   ;; Header args go on the first line unless too wide.
-                   (init-break (and (consp init-pp)
-                                    (>= (+ hd-sz opt-name-sz max-init) width-1)))
-                   (init-indent (cond ((not init-break) 0)
-                                      ((>= (+ hd-sz max-init) width-1)
-                                       (max 1 (- width-1 max-init)))
-                                      (t (+ hd-sz 2))))
-                   (rest-indent (if (or (>= maximum width-1)
-                                        (and init-break (eql init-indent 1)))
-                                    1
-                                  2))
-                   (maximum (max (max (ptuple-width x1)
-                                      (+ maximum rest-indent -1))
-                                 (if init-break
-                                     (+ init-indent -1 max-init)
-                                   (+ hd-sz opt-name-sz 1 max-init)))))
-                (make-ptuple-special :width (+ 1 maximum)
-                                     :open x.open :close x.close
-                                     :head x1
-                                     :init-break init-break
-                                     :init-indent init-indent
-                                     :init-args init-pp
-                                     :body-indent rest-indent
-                                     :body-args xc)))
-             ;; WIDE if there is room for the open bracket, the head, a
+             (atomicp (pform-atomic-p head))
+             ;; There is nothing to lay out in `(atom)'.
+             ((when (and atomicp (endp args))) flat)
+             ;; The head is followed by our close bracket only if it is
+             ;; the last element.
+             (head-tup (pform-to-ptuple head
+                                        width-1
+                                        (if (consp args) 0 (+ rpc 1))
+                                        flat-margin))
+             (head-sz (ptuple-width head-tup))
+             ((when (and x.headerp atomicp))
+              ;; Port of the SPECIAL-TERM case.  A short atomic header
+              ;; is glued to the head, like the name in `(defun name'.
+              (b* ((header (car args))
+                   (body (pform-list-to-ptuples (cdr args)
+                                                width-1
+                                                (+ rpc 1)
+                                                flat-margin))
+                   (body-max (ptuple-list-max-width body))
+                   (header-sz (pform-flat-size header))
+                   (gluep (and (pform-atomic-p header)
+                               (<= (+ head-sz 1 header-sz) width-1)))
+                   (head-tup (if gluep
+                                 (make-ptuple-flat
+                                  :width (+ head-sz 1 header-sz)
+                                  :forms (list head header))
+                               head-tup))
+                   (head-sz (ptuple-width head-tup))
+                   (rows1 (and (not gluep)
+                               (list (pform-to-ptuple header
+                                                      width-1
+                                                      (if (endp body)
+                                                          (+ rpc 1)
+                                                        0)
+                                                      flat-margin))))
+                   (max1 (ptuple-list-max-width rows1))
+                   (break1 (and (not gluep)
+                                (>= (+ head-sz max1) width-1)))
+                   (indent1 (if break1
+                                (max 1 (- width-1 max1))
+                              (+ head-sz 2)))
+                   (indent2 (if (or (>= body-max width-1)
+                                    (and break1 (eql indent1 1)))
+                                1
+                              2)))
+                (make-ptuple-block
+                 :width (+ 1 (max (max head-sz (+ body-max indent2 -1))
+                                  (+ indent1 -1 max1)))
+                 :open x.open :close x.close
+                 :head head-tup
+                 :break1 break1 :indent1 indent1 :rows1 rows1
+                 :indent2 indent2 :rows2 body)))
+             ;; Each arg gets the full width minus 1 (for the minimal
+             ;; indentation).
+             (rows (pform-list-to-ptuples args width-1 (+ rpc 1) flat-margin))
+             ;; A non-atomic head (e.g. a lambda being applied) is
+             ;; treated as one more row of the column, indented by 1.
+             (rows-max (if atomicp
+                           (ptuple-list-max-width rows)
+                         (max head-sz (ptuple-list-max-width rows))))
+             ;; Wide if there is room for the open bracket, the head, a
              ;; space, and the widest argument.
-             ((when (<= (+ hd-sz 2 maximum) width))
-              (make-ptuple-wide :width (+ hd-sz 2 maximum)
-                                :open x.open :close x.close
-                                :head x1 :args xc))
+             (widep (and atomicp
+                         (<= (+ head-sz 2 rows-max) width)))
              ;; Otherwise indent the args so that the widest one ends at
              ;; the right margin, but by at most 5.
-             ((when (< maximum width))
-              (b* ((ind (min 5 (- width maximum))))
-                (make-ptuple-indent :width (+ maximum ind)
-                                    :indent ind
-                                    :open x.open :close x.close
-                                    :head x1 :args xc))))
-          (make-ptuple-indent :width (+ 1 maximum)
-                              :indent 1
-                              :open x.open :close x.close
-                              :head x1 :args xc)))))
+             (indent (cond (widep (+ head-sz 2))
+                           ((and atomicp (< rows-max width))
+                            (min 5 (- width rows-max)))
+                           (t 1))))
+          (make-ptuple-block :width (+ rows-max indent)
+                             :open x.open :close x.close
+                             :head head-tup
+                             :break1 (not widep) :indent1 indent :rows1 rows
+                             :indent2 0 :rows2 nil)))))
 
   (define pform-list-to-ptuples ((xs pform-listp)
                                  (width natp)
@@ -601,12 +518,15 @@
 ;; Rendering tuples to code points.  Port of ppr2 / ppr2-column.
 ;;
 
-(define spaces-acc ((n natp) (acc nat-listp))
+(define newline-acc ((col natp) (acc nat-listp))
   :returns (acc2 nat-listp)
-  :short "Cons @('n') space code points onto @('acc')."
-  (if (zp n)
-      (nat-list-fix acc)
-    (spaces-acc (1- n) (cons #x20 acc))))
+  :short "Cons a newline and then @('col') spaces onto @('acc')."
+  :verify-guards nil
+  (if (zp col)
+      (cons #x0A (nat-list-fix acc))
+    (cons #x20 (newline-acc (1- col) acc)))
+  ///
+  (verify-guards newline-acc))
 
 (defines ptuple-print
   :short "Render a tuple to code points (in reverse, consed onto
@@ -622,60 +542,34 @@
       :prefix (ptuple-print x.body
                             (+ (lnfix col) (len x.cps))
                             (revappend x.cps (nat-list-fix acc)))
-      :wide (b* ((acc (cons x.open (nat-list-fix acc)))
-                 (acc (ptuple-print x.head (+ (lnfix col) 1) acc))
-                 (hd (ptuple-width x.head))
-                 (acc (ptuple-list-print-column x.args
-                                                (+ (lnfix col) 1 hd)
-                                                (+ (lnfix col) 2 hd)
-                                                acc)))
-              (cons x.close acc))
-      :indent (b* ((acc (cons x.open (nat-list-fix acc)))
-                   (acc (ptuple-print x.head (+ (lnfix col) 1) acc))
-                   (acc (if (consp x.args)
-                            (ptuple-list-print-column x.args
-                                                      0
-                                                      (+ (lnfix col) x.indent)
-                                                      (cons #x0A acc))
-                          acc)))
-                (cons x.close acc))
-      :special (b* ((acc (cons x.open (nat-list-fix acc)))
-                    (acc (ptuple-print x.head (+ (lnfix col) 1) acc))
-                    (hd (ptuple-width x.head))
-                    (acc (cond ((endp x.init-args) acc)
-                               (x.init-break
-                                (ptuple-list-print-column x.init-args
-                                                          0
-                                                          (+ (lnfix col) x.init-indent)
-                                                          (cons #x0A acc)))
-                               (t (ptuple-list-print-column x.init-args
-                                                            (+ (lnfix col) 1 hd)
-                                                            (+ (lnfix col) 2 hd)
-                                                            acc))))
-                    (acc (if (consp x.body-args)
-                             (ptuple-list-print-column x.body-args
-                                                       0
-                                                       (+ (lnfix col) x.body-indent)
-                                                       (cons #x0A acc))
-                           acc)))
-                 (cons x.close acc))))
+      :block (b* ((col1 (+ (lnfix col) x.indent1))
+                  (col2 (+ (lnfix col) x.indent2))
+                  (acc (cons x.open (nat-list-fix acc)))
+                  (acc (ptuple-print x.head (+ (lnfix col) 1) acc))
+                  (acc (if (consp x.rows1)
+                           (ptuple-list-print-column
+                            x.rows1
+                            col1
+                            (if x.break1
+                                (newline-acc col1 acc)
+                              (cons #x20 acc)))
+                         acc))
+                  (acc (if (consp x.rows2)
+                           (ptuple-list-print-column x.rows2
+                                                     col2
+                                                     (newline-acc col2 acc))
+                         acc)))
+               (cons x.close acc))))
 
-  (define ptuple-list-print-column ((xs ptuple-listp)
-                                    (loc natp)
-                                    (col natp)
-                                    (acc nat-listp))
+  (define ptuple-list-print-column ((xs ptuple-listp) (col natp) (acc nat-listp))
     :returns (acc2 nat-listp)
     :short "Print tuples in a column at @('col'), one per line, with the
-            print head currently at @('loc').  If @('loc') is already at
-            or past @('col'), print a single space instead."
+            print head already at @('col')."
     :measure (ptuple-list-count xs)
     (b* (((when (endp xs)) (nat-list-fix acc))
-         (loc (lnfix loc))
-         (col (lnfix col))
-         (acc (spaces-acc (if (> col loc) (- col loc) 1) acc))
-         (acc (ptuple-print (car xs) (if (> col loc) col (+ loc 1)) acc))
+         (acc (ptuple-print (car xs) col acc))
          ((when (endp (cdr xs))) acc))
-      (ptuple-list-print-column (cdr xs) 0 col (cons #x0A acc)))))
+      (ptuple-list-print-column (cdr xs) col (newline-acc col acc)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -698,21 +592,19 @@
        (acc (if blank-line (list* #x0A #x0A acc) (cons #x0A acc))))
     (pform-list-print-separated (cdr xs) width flat-margin blank-line acc)))
 
-(define codepoints-acc-to-string ((acc nat-listp))
+(define codepoints-to-utf8-string ((cps nat-listp))
   :returns (s stringp)
-  :short "Reverse an accumulated code-point list and UTF-8 encode it
-          into an ACL2 string.  Returns the empty string on invalid
-          code points (unreachable for well-formed ASTs)."
-  (b* ((cps (rev (nat-list-fix acc)))
-       ((unless (ustring? cps)) "")
+  :short "UTF-8 encode a code-point list into an ACL2 string.  Returns
+          the empty string on invalid code points (unreachable for
+          well-formed ASTs)."
+  (b* (((unless (ustring? cps)) "")
        (bytes (ustring=>utf8 cps))
        ((unless (unsigned-byte-listp 8 bytes)) ""))
     (nats=>string bytes)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; AST -> pform.  Mirrors the walkers of the pdoc printer (see there for
-;; the correspondence with the grammar rules), producing print forms.
+;; AST -> pform.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -730,6 +622,10 @@
     :int (pform-atom (int-lit-to-codepoints bl.lit))
     :float (pform-atom (float-lit-to-codepoints bl.lit))))
 
+(define nat-to-pform ((n natp))
+  :returns (x pformp)
+  (pform-atom (nat-to-dec-codepoints n)))
+
 (define ispace-var-to-pform ((iv ispace-varp))
   :returns (x pformp)
   :short "@('$name') for dimension variables, @('@name') for shape
@@ -746,19 +642,17 @@
     :atom (pform-sigil-utf8 #x26 tv.name)
     :array (pform-sigil-utf8 #x2A tv.name)))
 
-(define ispace-var-list-to-pforms ((ivs ispace-var-listp))
+(std::defprojection nat-list-to-pforms ((x nat-listp))
   :returns (xs pform-listp)
-  (if (endp ivs)
-      nil
-    (cons (ispace-var-to-pform (car ivs))
-          (ispace-var-list-to-pforms (cdr ivs)))))
+  (nat-to-pform x))
 
-(define type-var-list-to-pforms ((tvs type-var-listp))
+(std::defprojection ispace-var-list-to-pforms ((x ispace-var-listp))
   :returns (xs pform-listp)
-  (if (endp tvs)
-      nil
-    (cons (type-var-to-pform (car tvs))
-          (type-var-list-to-pforms (cdr tvs)))))
+  (ispace-var-to-pform x))
+
+(std::defprojection type-var-list-to-pforms ((x type-var-listp))
+  :returns (xs pform-listp)
+  (type-var-to-pform x))
 
 (define ispace-var-list-option-to-pform ((io ispace-var-list-optionp))
   :returns (x pformp)
@@ -774,13 +668,6 @@
     :none (pform-ascii "_")
     :some (pform-paren (type-var-list-to-pforms io.val))))
 
-(define nat-list-to-pforms ((ns nat-listp))
-  :returns (xs pform-listp)
-  (if (endp ns)
-      nil
-    (cons (pform-atom (nat-to-dec-codepoints (lnfix (car ns))))
-          (nat-list-to-pforms (cdr ns)))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines dim-to-pform
@@ -792,10 +679,10 @@
     :measure (dim-count d)
     (dim-case d
       :var (pform-sigil-utf8 #x24 d.name)
-      :const (pform-atom (nat-to-dec-codepoints d.val))
-      :add (pform-paren (cons (pform-ascii "+") (dim-list-to-pforms d.dims)))
-      :mul (pform-paren (cons (pform-ascii "*") (dim-list-to-pforms d.dims)))
-      :sub (pform-paren (cons (pform-ascii "-") (dim-list-to-pforms d.dims)))))
+      :const (nat-to-pform d.val)
+      :add (pform-op* "+" (dim-list-to-pforms d.dims))
+      :mul (pform-op* "*" (dim-list-to-pforms d.dims))
+      :sub (pform-op* "-" (dim-list-to-pforms d.dims))))
 
   (define dim-list-to-pforms ((ds dim-listp))
     :returns (xs pform-listp)
@@ -814,8 +701,8 @@
     :measure (shape-count s)
     (shape-case s
       :var (pform-sigil-utf8 #x40 s.name)
-      :dims (pform-paren (cons (pform-ascii "dims") (dim-list-to-pforms s.dims)))
-      :append (pform-paren (cons (pform-ascii "++") (shape-list-to-pforms s.shapes)))
+      :dims (pform-op* "dims" (dim-list-to-pforms s.dims))
+      :append (pform-op* "++" (shape-list-to-pforms s.shapes))
       :splice (pform-bracket (ispace-list-to-pforms s.ispaces))))
 
   (define shape-list-to-pforms ((ss shape-listp))
@@ -851,11 +738,6 @@
 
 (defines type-to-pform
   :short "Print forms for @(tsee type) and @(tsee type-list)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The binder forms @('Forall'), @('Pi'), and @('Sigma') are special
-     forms with one header argument (the binder list)."))
   :verify-guards :after-returns
 
   (define type-to-pform ((ty typep))
@@ -864,35 +746,35 @@
     (type-case ty
       :var (type-var-to-pform ty.var)
       :base (base-type-to-pform ty.type)
-      :array (pform-paren (list (pform-ascii "A")
-                                (type-to-pform ty.elem)
-                                (ispace-to-pform ty.ispace)))
+      :array (pform-op "A"
+                       (type-to-pform ty.elem)
+                       (ispace-to-pform ty.ispace))
       :bracket (pform-bracket (cons (type-to-pform ty.elem)
                                     (ispace-list-to-pforms ty.ispaces)))
-      :fun (pform-paren (list (pform-ascii "->")
-                              (type-to-pform ty.in)
-                              (type-to-pform ty.out)))
-      :funn (pform-paren (list (pform-ascii "->")
-                               (pform-paren (type-list-to-pforms ty.in))
-                               (type-to-pform ty.out)))
-      :forall (pform-special 1 (list (pform-ascii "Forall")
-                                     (pform-paren (list (type-var-to-pform ty.param)))
-                                     (type-to-pform ty.body)))
-      :foralln (pform-special 1 (list (pform-ascii "Forall")
-                                      (pform-paren (type-var-list-to-pforms ty.params))
-                                      (type-to-pform ty.body)))
-      :pi (pform-special 1 (list (pform-ascii "Pi")
-                                 (pform-paren (list (ispace-var-to-pform ty.param)))
-                                 (type-to-pform ty.body)))
-      :pin (pform-special 1 (list (pform-ascii "Pi")
-                                  (pform-paren (ispace-var-list-to-pforms ty.params))
-                                  (type-to-pform ty.body)))
-      :sigma (pform-special 1 (list (pform-ascii "Sigma")
-                                    (pform-paren (list (ispace-var-to-pform ty.param)))
-                                    (type-to-pform ty.body)))
-      :sigman (pform-special 1 (list (pform-ascii "Sigma")
-                                     (pform-paren (ispace-var-list-to-pforms ty.params))
-                                     (type-to-pform ty.body)))))
+      :fun (pform-op "->"
+                     (type-to-pform ty.in)
+                     (type-to-pform ty.out))
+      :funn (pform-op "->"
+                      (pform-paren (type-list-to-pforms ty.in))
+                      (type-to-pform ty.out))
+      :forall (pform-header-op "Forall"
+                               (pform-paren (list (type-var-to-pform ty.param)))
+                               (type-to-pform ty.body))
+      :foralln (pform-header-op "Forall"
+                                (pform-paren (type-var-list-to-pforms ty.params))
+                                (type-to-pform ty.body))
+      :pi (pform-header-op "Pi"
+                           (pform-paren (list (ispace-var-to-pform ty.param)))
+                           (type-to-pform ty.body))
+      :pin (pform-header-op "Pi"
+                            (pform-paren (ispace-var-list-to-pforms ty.params))
+                            (type-to-pform ty.body))
+      :sigma (pform-header-op "Sigma"
+                              (pform-paren (list (ispace-var-to-pform ty.param)))
+                              (type-to-pform ty.body))
+      :sigman (pform-header-op "Sigma"
+                               (pform-paren (ispace-var-list-to-pforms ty.params))
+                               (type-to-pform ty.body))))
 
   (define type-list-to-pforms ((tys type-listp))
     :returns (xs pform-listp)
@@ -958,19 +840,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Binding and abstraction forms are special forms with one header
-     argument, so that their body goes on its own lines indented by 2.
-     For the scoping forms (@('let'), @('fn'), @('t-fn'), @('i-fn'),
-     @('unbox'), and the @('fun'), @('t-fun'), @('i-fun') bindings) the
-     body always starts on a new line (@(tsee pform-body-form)); for
-     @('val'), @('type'), and @('ispace') bindings and for @('box') the
-     form is printed flat when it fits (@(tsee pform-special)).
-     Applications, @('array'), @('frame'), @('t-app'), @('i-app'), and
-     @('@f') calls are ordinary forms, laid out wide or indented.")
+    "The scoping forms (@('let'), @('fn'), @('t-fn'), @('i-fn'),
+     @('unbox'), and function bindings) use @(tsee pform-scope-op).
+     The other binding forms and @('box') use @(tsee pform-header-op).
+     The rest are ordinary forms.")
    (xdoc::p
-    "See the @(see printer) for the correspondence between AST cases and
-     grammar rules, and for which AST information has no concrete
-     syntax (and so is not printed or causes an error)."))
+    "AST information with no concrete syntax is not printed,
+     or causes an error; see the @(see printer)."))
   :verify-guards :after-returns
 
   (define expr-to-pform ((e exprp))
@@ -980,19 +856,19 @@
       :var (pform-utf8 e.name)
       :atom (atom-to-pform e.atom)
       :array (b* (((ok atoms) (atom-list-to-pforms e.atoms)))
-               (pform-paren (list* (pform-ascii "array")
-                                   (pform-bracket (nat-list-to-pforms e.dims))
-                                   atoms)))
-      :array-empty (pform-paren (list (pform-ascii "array")
-                                      (pform-bracket (nat-list-to-pforms e.dims))
-                                      (type-to-pform e.type)))
+               (pform-op* "array"
+                          (pform-bracket (nat-list-to-pforms e.dims))
+                          atoms))
+      :array-empty (pform-op "array"
+                             (pform-bracket (nat-list-to-pforms e.dims))
+                             (type-to-pform e.type))
       :frame (b* (((ok exprs) (expr-list-to-pforms e.exprs)))
-               (pform-paren (list* (pform-ascii "frame")
-                                   (pform-bracket (nat-list-to-pforms e.dims))
-                                   exprs)))
-      :frame-empty (pform-paren (list (pform-ascii "frame")
-                                      (pform-bracket (nat-list-to-pforms e.dims))
-                                      (type-to-pform e.type)))
+               (pform-op* "frame"
+                          (pform-bracket (nat-list-to-pforms e.dims))
+                          exprs))
+      :frame-empty (pform-op "frame"
+                             (pform-bracket (nat-list-to-pforms e.dims))
+                             (type-to-pform e.type))
       :string (pform-atom (string-lit-to-codepoints e.chars))
       :app (b* (((ok fun) (expr-to-pform e.fun))
                 ((ok arg) (expr-to-pform e.arg)))
@@ -1001,15 +877,13 @@
                  ((ok args) (expr-list-to-pforms e.args)))
               (pform-paren (cons fun args)))
       :tapp (b* (((ok fun) (expr-to-pform e.fun)))
-              (pform-paren (list (pform-ascii "t-app") fun (type-to-pform e.arg))))
+              (pform-op "t-app" fun (type-to-pform e.arg)))
       :tappn (b* (((ok fun) (expr-to-pform e.fun)))
-               (pform-paren (list* (pform-ascii "t-app") fun
-                                   (type-list-to-pforms e.args))))
+               (pform-op* "t-app" fun (type-list-to-pforms e.args)))
       :iapp (b* (((ok fun) (expr-to-pform e.fun)))
-              (pform-paren (list (pform-ascii "i-app") fun (ispace-to-pform e.arg))))
+              (pform-op "i-app" fun (ispace-to-pform e.arg)))
       :iappn (b* (((ok fun) (expr-to-pform e.fun)))
-               (pform-paren (list* (pform-ascii "i-app") fun
-                                   (ispace-list-to-pforms e.args))))
+               (pform-op* "i-app" fun (ispace-list-to-pforms e.args)))
       :capp
       ;; "@" exp type-args ispace-args exp*: the "@" is glued to the
       ;; function expression.
@@ -1019,30 +893,26 @@
                             (type-list-option-to-pform e.targs)
                             (ispace-list-option-to-pform e.iargs)
                             args)))
-      :unbox
-      ;; The optional result type has no concrete syntax.
-      (b* (((ok target) (expr-to-pform e.target))
-           ((ok body) (expr-to-pform e.body)))
-        (pform-body-form (list (pform-ascii "unbox")
+      ;; The optional result type of unbox has no concrete syntax.
+      :unbox (b* (((ok target) (expr-to-pform e.target))
+                  ((ok body) (expr-to-pform e.body)))
+               (pform-scope-op "unbox"
                                (pform-paren (list (ispace-var-to-pform e.ispace)
                                                   (pform-utf8 e.var)
                                                   target))
-                               body)))
-      :unboxn
-      (b* (((ok target) (expr-to-pform e.target))
-           ((ok body) (expr-to-pform e.body)))
-        (pform-body-form (list (pform-ascii "unbox")
-                               (pform-paren (append (ispace-var-list-to-pforms e.ispaces)
-                                                    (list (pform-utf8 e.var)
-                                                          target)))
-                               body)))
+                               body))
+      :unboxn (b* (((ok target) (expr-to-pform e.target))
+                   ((ok body) (expr-to-pform e.body)))
+                (pform-scope-op "unbox"
+                                (pform-paren
+                                 (append (ispace-var-list-to-pforms e.ispaces)
+                                         (list (pform-utf8 e.var) target)))
+                                body))
       :bracket (b* (((ok exprs) (expr-list-to-pforms e.exprs)))
                  (pform-bracket exprs))
       :let (b* (((ok binds) (bind-list-to-pforms e.binds))
                 ((ok body) (expr-to-pform e.body)))
-             (pform-body-form (list (pform-ascii "let")
-                                    (pform-paren binds)
-                                    body)))))
+             (pform-scope-op "let" (pform-paren binds) body))))
 
   (define expr-list-to-pforms ((es expr-listp))
     :returns (xs pform-list-resultp)
@@ -1060,45 +930,41 @@
       ;; The optional body type of lambdas has no concrete syntax.
       :lambda (b* (((ok pat) (pat-to-pform a.param))
                    ((ok body) (expr-to-pform a.body)))
-                (pform-body-form (list (pform-ascii "fn")
-                                       (pform-paren (list pat))
-                                       body)))
+                (pform-scope-op "fn" (pform-paren (list pat)) body))
       :lambdan (b* (((ok pats) (pat-list-to-pforms a.params))
                     ((ok body) (expr-to-pform a.body)))
-                 (pform-body-form (list (pform-ascii "fn")
-                                        (pform-paren pats)
-                                        body)))
+                 (pform-scope-op "fn" (pform-paren pats) body))
       :tlambda (b* (((ok body) (expr-to-pform a.body)))
-                 (pform-body-form (list (pform-ascii "t-fn")
-                                        (pform-paren (list (type-var-to-pform a.param)))
-                                        body)))
+                 (pform-scope-op "t-fn"
+                                 (pform-paren (list (type-var-to-pform a.param)))
+                                 body))
       :tlambdan (b* (((ok body) (expr-to-pform a.body)))
-                  (pform-body-form (list (pform-ascii "t-fn")
-                                         (pform-paren (type-var-list-to-pforms a.params))
-                                         body)))
+                  (pform-scope-op "t-fn"
+                                  (pform-paren (type-var-list-to-pforms a.params))
+                                  body))
       :ilambda (b* (((ok body) (expr-to-pform a.body)))
-                 (pform-body-form (list (pform-ascii "i-fn")
-                                        (pform-paren (list (ispace-var-to-pform a.param)))
-                                        body)))
+                 (pform-scope-op "i-fn"
+                                 (pform-paren (list (ispace-var-to-pform a.param)))
+                                 body))
       :ilambdan (b* (((ok body) (expr-to-pform a.body)))
-                  (pform-body-form (list (pform-ascii "i-fn")
-                                         (pform-paren (ispace-var-list-to-pforms a.params))
-                                         body)))
+                  (pform-scope-op "i-fn"
+                                  (pform-paren (ispace-var-list-to-pforms a.params))
+                                  body))
       ;; The box-expr grammar rule requires the type.
       :box (type-option-case a.type?
              :none (reserr (list :box-without-type (atom-fix a)))
              :some (b* (((ok array) (expr-to-pform a.array)))
-                     (pform-special 1 (list (pform-ascii "box")
-                                            (pform-paren (list (ispace-to-pform a.ispace)))
-                                            array
-                                            (type-to-pform a.type?.val)))))
+                     (pform-header-op "box"
+                                      (pform-paren (list (ispace-to-pform a.ispace)))
+                                      array
+                                      (type-to-pform a.type?.val))))
       :boxn (type-option-case a.type?
               :none (reserr (list :box-without-type (atom-fix a)))
               :some (b* (((ok array) (expr-to-pform a.array)))
-                      (pform-special 1 (list (pform-ascii "box")
-                                             (pform-paren (ispace-list-to-pforms a.ispaces))
-                                             array
-                                             (type-to-pform a.type?.val)))))))
+                      (pform-header-op "box"
+                                       (pform-paren (ispace-list-to-pforms a.ispaces))
+                                       array
+                                       (type-to-pform a.type?.val))))))
 
   (define atom-list-to-pforms ((as atom-listp))
     :returns (xs pform-list-resultp)
@@ -1112,12 +978,12 @@
     :returns (x pform-resultp)
     :measure (bind-count b)
     (bind-case b
-      :ispace (pform-special 1 (list (pform-ascii "ispace")
-                                     (ispace-var-to-pform b.var)
-                                     (ispace-to-pform b.ispace)))
-      :type (pform-special 1 (list (pform-ascii "type")
-                                   (type-var-to-pform b.var)
-                                   (type-to-pform b.type)))
+      :ispace (pform-header-op "ispace"
+                               (ispace-var-to-pform b.var)
+                               (ispace-to-pform b.ispace))
+      :type (pform-header-op "type"
+                             (type-var-to-pform b.var)
+                             (type-to-pform b.type))
       :val
       ;; "val" identifier exp, or "val" "(" identifier : type ")" exp.
       (b* ((sig (type-option-case b.type?
@@ -1125,25 +991,25 @@
                                            (colon-type-to-pform b.type?.val)))
                   :none (pform-utf8 b.var)))
            ((ok expr) (expr-to-pform b.expr)))
-        (pform-special 1 (list (pform-ascii "val") sig expr)))
+        (pform-header-op "val" sig expr))
       :fun
       (b* (((ok sig) (fun-sig-to-pform b.var b.params b.type?))
            ((ok expr) (expr-to-pform b.expr)))
-        (pform-body-form (list (pform-ascii "fun") sig expr)))
+        (pform-scope-op "fun" sig expr))
       :tfun
       ;; "t-fun" "(" identifier "(" type-var* ")" [: type] ")" exp
       (b* (((ok expr) (expr-to-pform b.expr))
            (sig (pform-paren (list* (pform-utf8 b.var)
                                     (pform-paren (type-var-list-to-pforms b.params))
                                     (type-option-to-pforms b.type?)))))
-        (pform-body-form (list (pform-ascii "t-fun") sig expr)))
+        (pform-scope-op "t-fun" sig expr))
       :ifun
       ;; "i-fun" "(" identifier "(" ispace-var* ")" [: type] ")" exp
       (b* (((ok expr) (expr-to-pform b.expr))
            (sig (pform-paren (list* (pform-utf8 b.var)
                                     (pform-paren (ispace-var-list-to-pforms b.params))
                                     (type-option-to-pforms b.type?)))))
-        (pform-body-form (list (pform-ascii "i-fun") sig expr)))
+        (pform-scope-op "i-fun" sig expr))
       :cfun
       ;; "fun" "(" "@" identifier type-vars ispace-vars pat* : type ")" exp
       (b* (((ok pats) (pat-list-to-pforms b.params))
@@ -1153,7 +1019,7 @@
                                     (ispace-var-list-option-to-pform b.iparams?)
                                     (append pats
                                             (list (colon-type-to-pform b.type)))))))
-        (pform-body-form (list (pform-ascii "fun") sig expr)))))
+        (pform-scope-op "fun" sig expr))))
 
   (define bind-list-to-pforms ((bs bind-listp))
     :returns (xs pform-list-resultp)
@@ -1167,29 +1033,23 @@
 
 (define import-to-pform ((imp importp))
   :returns (x pformp)
-  (pform-paren (list (pform-ascii "import")
-                     (pform-atom (string-lit-to-codepoints (import->path imp))))))
+  (pform-op "import"
+            (pform-atom (string-lit-to-codepoints (import->path imp)))))
 
-(define import-list-to-pforms ((imps import-listp))
+(std::defprojection import-list-to-pforms ((x import-listp))
   :returns (xs pform-listp)
-  (if (endp imps)
-      nil
-    (cons (import-to-pform (car imps))
-          (import-list-to-pforms (cdr imps)))))
+  (import-to-pform x))
 
 (define decl-to-pform ((d declp))
   :returns (x pform-resultp)
   (decl-case d
-    ;; "def" bind: an ordinary form, so a short binding stays on the
-    ;; `def' line and a long one is laid out wide, e.g.
-    ;;   (def (fun (f (x Int) : Int)
-    ;;          (+ x 1)))
+    ;; "def" bind
     :def (b* (((ok bind) (bind-to-pform d.bind)))
-           (pform-paren (list (pform-ascii "def") bind)))
+           (pform-op "def" bind))
     ;; "entry" "(" fun-sig ")" exp
     :entry (b* (((ok sig) (fun-sig-to-pform d.var d.params d.type?))
                 ((ok expr) (expr-to-pform d.expr)))
-             (pform-body-form (list (pform-ascii "entry") sig expr)))))
+             (pform-scope-op "entry" sig expr))))
 
 (define decl-list-to-pforms ((ds decl-listp))
   :returns (xs pform-list-resultp)
@@ -1223,37 +1083,27 @@
   :short "Render an @(tsee expr) to a UTF-8 encoded ACL2 string, wrapping
           at @('width') columns and printing flat only forms at most
           @('flat-margin') columns wide."
-  (b* ((x (expr-to-pform e))
-       ((when (reserrp x)) ""))
-    (codepoints-acc-to-string (pform-print x width flat-margin nil))))
-
-(define file-to-pforms ((f filep))
-  :returns (mv (imports pform-listp) (decls pform-list-resultp))
-  :short "Print forms for the imports and the declarations of a file."
-  (b* (((file f) f))
-    (mv (import-list-to-pforms f.imports)
-        (decl-list-to-pforms f.decls))))
-
-(define pretty-print-file-acc ((f filep) (width natp) (flat-margin natp))
-  :returns (acc nat-listp)
-  :short "Render a file to reversed code points: the imports one per line,
-          then a blank line, then the declarations separated by blank
-          lines.  Returns @('nil') if the AST has no concrete syntax."
-  (b* (((mv imports decls) (file-to-pforms f))
-       ((when (reserrp decls)) nil)
-       (acc (pform-list-print-separated imports width flat-margin nil nil))
-       (acc (if (and (consp imports) (consp decls))
-                (list* #x0A #x0A acc)
-              acc)))
-    (pform-list-print-separated decls width flat-margin t acc)))
+  (codepoints-to-utf8-string
+   (pretty-print-expr-to-codepoints e :width width :flat-margin flat-margin)))
 
 (define pretty-print-file-to-codepoints ((f filep)
                                          &key
                                          ((width natp) '80)
                                          ((flat-margin natp) '60))
   :returns (cps nat-listp)
-  :short "Render a @(tsee file) to a list of Unicode code points."
-  (rev (pretty-print-file-acc f width flat-margin)))
+  :short "Render a @(tsee file) to a list of Unicode code points:
+          the imports one per line, then a blank line, then the
+          declarations separated by blank lines.  Returns the empty list
+          if the AST has no concrete syntax."
+  (b* (((file f) f)
+       (imports (import-list-to-pforms f.imports))
+       (decls (decl-list-to-pforms f.decls))
+       ((when (reserrp decls)) nil)
+       (acc (pform-list-print-separated imports width flat-margin nil nil))
+       (acc (if (and (consp imports) (consp decls))
+                (list* #x0A #x0A acc)
+              acc)))
+    (rev (pform-list-print-separated decls width flat-margin t acc))))
 
 (define pretty-print-file ((f filep)
                            &key
@@ -1263,4 +1113,5 @@
   :short "Render a @(tsee file) to a UTF-8 encoded ACL2 string, wrapping
           at @('width') columns and printing flat only forms at most
           @('flat-margin') columns wide."
-  (codepoints-acc-to-string (pretty-print-file-acc f width flat-margin)))
+  (codepoints-to-utf8-string
+   (pretty-print-file-to-codepoints f :width width :flat-margin flat-margin)))
