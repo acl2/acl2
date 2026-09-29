@@ -493,7 +493,7 @@
   (declare (xargs :guard (and (classes-to-assume-initialized-optionp classes-to-assume-initialized)
                               (class-table-alistp class-alist))))
   (if (eq :basic classes-to-assume-initialized)
-      '("java.lang.Object" "java.lang.System") ; might need to expand this later
+      '("java.lang.Object" "java.lang.System"  "java.lang.Math" "java.lang.Float") ; might need to expand this later
     (if (eq :all classes-to-assume-initialized)
         (strip-cars class-alist)
       ;; must be an explicit list of class names:
