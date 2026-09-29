@@ -6561,9 +6561,9 @@
                 (normalize-xors (normalize-xors-option-fix normalize-xors))
                 (print (print-level-fix print))
                 ;; Create an empty dag-array:
-                (slack-amount 1000000) ;todo: make this adjustable, or just reduce this?
+                (initial-dag-size 1000000) ;todo: make this adjustable, or just reduce this?
                 ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                 (empty-dag-array slack-amount))
+                 (empty-dag-array initial-dag-size))
 
                 ;; Create the refined-assumption-alist and add relevant nodes to the DAG:
                 ((mv erp refined-assumption-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
