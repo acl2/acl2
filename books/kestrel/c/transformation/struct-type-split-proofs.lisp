@@ -1480,8 +1480,7 @@
                                (equal (c::type-of-value old-val) ',ctype)))
                          (compustate-equivp old-compst1 new-compst1)
                          ,@vars-post))))
-       ((mv thm-name thm-index)
-        (gen-thm-name (symbol-lfix const-new) (lposfix thm-index)))
+       ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event `(defrule ,thm-name
                      ,formula
                      :rule-classes nil
