@@ -40,7 +40,102 @@
      like the @(see ispace-matcher), on which this matcher builds:
      the ispaces in types are matched via the ispace matcher.
      As for ispaces, we will extend this to a full unifier,
-     or perhaps we will add a separate unifier."))
+     or perhaps we will add a separate unifier.")
+   (xdoc::h3
+    "Type Matching")
+   (xdoc::p
+    "We use the following approach to match types.")
+   (xdoc::p
+    "The difficulty is that equivalent types may have different structures
+     (see @(tsee type-equivp)):
+     besides containing ispaces,
+     which must be matched modulo ispace equivalence,
+     a type may be an array or bracket type,
+     an atom type may stand for a scalar array type,
+     n-ary function, universal, product, and sum types
+     stand for nestings of unary ones,
+     and bound variables may be renamed.
+     So type patterns must be matched modulo type equivalence:
+     this is the task of @(tsee type-match), described here.")
+   (xdoc::p
+    "The key idea is to mirror the structure of @(tsee type-equivp),
+     which checks type equivalence,
+     with the pattern in the role of the first type
+     and the type being matched in the role of the second one,
+     and with recursive matches in place of recursive equivalence checks.
+     Thus, the type is normalized via @(tsee normalize-type) before matching,
+     so that a scalar array type is matched as its element type,
+     and an n-ary function type without inputs is matched as its output type;
+     array and bracket types are identified,
+     and atom types are regarded as scalar array types,
+     when matched to pattern array and bracket types,
+     with their ispaces matched by the @(see ispace-matcher);
+     function types are matched in the curried view, one input at a time,
+     so that unary and n-ary function types are identified;
+     and universal, product, and sum types are matched in the curried view,
+     one bound variable at a time,
+     and modulo the renaming of their bound variables, as explained next.
+     A pattern variable that is not bound yet is bound to the type,
+     while one that is already bound must be equivalent to the type;
+     an array-kind pattern variable also matches an atom type,
+     which is lifted to a scalar array type
+     (see @(tsee type-var-match)).")
+   (xdoc::p
+    "The variables bound in the pattern are not pattern variables,
+     so we cannot just match the body of a binder in the pattern
+     to the body of a binder in the type:
+     the bound variables may be different,
+     and a pattern variable in the body could be bound to
+     a type or ispace that mentions the variable bound by the type,
+     which has no meaning outside its binder.
+     As in @(tsee type-equivp),
+     we rename the two bound variables,
+     which must have the same kind or sort,
+     to a common fresh variable in the two bodies.
+     Unlike @(tsee type-equivp),
+     we then bind the fresh variable to itself
+     in the substitution for its kind or sort,
+     so that, while matching the bodies,
+     the fresh variable in the pattern matches only itself in the type,
+     i.e. it is a rigid variable (see below);
+     after matching the bodies, we remove that binding,
+     and we check that no pattern variable has been bound
+     to a type or ispace that mentions the fresh variable,
+     which would be a variable capture:
+     for instance, matching @('(Forall (&t) (-> &t &t))')
+     to the pattern @('(Forall (&t) (-> &t &s))') fails,
+     because @('&s') would have to be the bound variable
+     (see @(tsee type-match-type-var-rename),
+     @(tsee type-match-type-var-restore),
+     @(tsee type-match-ispace-var-rename), and
+     @(tsee type-match-ispace-var-restore)).")
+   (xdoc::p
+    "Since types contain dimension, shape, and type variables,
+     the matching builds four substitutions:
+     one for dimension variables,
+     one for shape variables,
+     one for atom-kind type variables, and
+     one for array-kind type variables.
+     All four are threaded through the matching,
+     analogously to the substitutions in the @(see ispace-matcher),
+     so that the bindings from earlier matches constrain the current match,
+     and all four are meant to be applied simultaneously,
+     as @(tsee type-subst-ispace-vars) and @(tsee type-subst-type-vars) do.
+     The entry points @(tsee type-match-vars) and @(tsee type-list-match-vars)
+     restrict the pattern variables to given ones,
+     by binding the other free variables of the pattern to themselves
+     before matching,
+     which makes them rigid, i.e. matching only themselves,
+     and by removing those bindings after matching.")
+   (xdoc::p
+    "The approach is intended to be sound,
+     i.e. a successful match yields substitutions
+     that instantiate the pattern to a type
+     equivalent to the type being matched,
+     and complete modulo type equivalence
+     to the extent that @(tsee type-equivp) captures it
+     and under the uniqueness restrictions of the @(see ispace-matcher);
+     neither has been proved."))
   :order-subtopics t
   :default-parent t)
 
@@ -521,56 +616,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This matching is modulo type equivalence,
-     mirroring the structure of @(tsee type-equivp):
-     the type is normalized via @(tsee normalize-type) before matching it,
-     so that a scalar array type is matched as its element type,
-     and an n-ary function type without inputs is matched as its output type;
-     the ispaces in the types are matched by the @(see ispace-matcher),
-     modulo ispace equivalence;
-     array and bracket types are identified,
-     and atom types are regarded as scalar array types,
-     when matched to pattern array and bracket types;
-     function types are matched in the curried view,
-     so that unary and n-ary function types are identified;
-     universal, product, and sum types are matched in the curried view
-     and modulo the renaming of their bound variables;
-     atom types are lifted to scalar array types
-     at array-kind pattern variables (see @(tsee type-var-match));
-     and a type matched to a pattern variable that is already bound
-     must be equivalent to the binding (see @(tsee type-var-match)).
-     Thus, the matching is modulo type equivalence
-     to the extent that @(tsee type-equivp) captures it.")
-   (xdoc::p
-    "Since types contain dimension, shape, and type variables,
-     the matching builds four substitutions:
-     one for dimension variables,
-     one for shape variables,
-     one for atom-kind type variables, and
-     one for array-kind type variables.
-     All four are threaded through the matching,
-     analogously to the substitutions in the @(see ispace-matcher),
-     and all four are meant to be applied simultaneously,
-     as @(tsee type-subst-ispace-vars) and @(tsee type-subst-type-vars) do.
+    "This realizes the approach described in @(see type-matcher).
+     We normalize the type via @(tsee normalize-type),
+     and then we dispatch on the pattern, as follows.
      If the matching fails, @('nil') is returned as all four substitutions.")
-   (xdoc::p
-    "The pattern variables are the free variables of the patterns.
-     The variables bound in the patterns,
-     by universal, product, and sum types,
-     are not pattern variables.
-     We proceed as in @(tsee type-equivp):
-     we rename the bound variables of the pattern and of the type
-     to a common fresh variable in their bodies,
-     and we bind the fresh variable to itself while matching the bodies
-     (see @(tsee type-match-type-var-rename)
-     and @(tsee type-match-ispace-var-rename)),
-     so that the fresh variable in the pattern matches only itself in the type;
-     after matching the bodies, we remove that binding,
-     and we check that no pattern variable has been bound
-     to a type or ispace that mentions the fresh variable,
-     which would be a variable capture
-     (see @(tsee type-match-type-var-restore)
-     and @(tsee type-match-ispace-var-restore)).")
    (xdoc::p
     "A pattern variable is matched via @(tsee type-var-match).")
    (xdoc::p
@@ -611,7 +660,7 @@
      the two variables must have the same kind,
      and the rest of the type must match the rest of the pattern,
      after renaming both variables to a common fresh variable,
-     as explained above.
+     as explained in @(see type-matcher).
      Thus, a unary universal type may match an n-ary pattern, and vice versa,
      and n-ary universal types with different numbers of bound variables
      may match.")
@@ -627,7 +676,7 @@
      the two variables must have the same sort,
      and the rest of the type must match the rest of the pattern,
      after renaming both variables to a common fresh variable,
-     as explained above.
+     as explained in @(see type-matcher).
      Thus, a unary product or sum type may match an n-ary pattern,
      and vice versa,
      and n-ary product or sum types
