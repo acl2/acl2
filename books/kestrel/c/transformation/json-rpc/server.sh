@@ -25,10 +25,10 @@ export ACL2_CUSTOMIZATION=NONE
 ${THISSCRIPTDIR}/save-exec-for-server.sh
 
 echo "Starting JSON-RPC server for the C transformations on localhost port ${PORT}."
-echo "Filepaths in requests (old-dir, new-dir, files) are resolved relative to"
+echo "Filepaths in requests (base-dir, files) are resolved relative to"
 echo "the current working directory of this server process."
 
 # Bind to localhost only (the nil interface argument).
 # Add further transformation methods to the allowed-methods list as they are
 # supported.
-(echo "(jsonrpc::run-jsonrpc-server ${PORT} nil '(jsonrpc::struct-type-split) state)" | ${THISSCRIPTDIR}/acl2-with-c-transformation-jsonrpc)
+(echo "(jsonrpc::run-jsonrpc-server ${PORT} nil '(jsonrpc::input-files jsonrpc::output-files jsonrpc::list-ensembles jsonrpc::drop-ensemble jsonrpc::struct-type-split) state)" | ${THISSCRIPTDIR}/acl2-with-c-transformation-jsonrpc)
