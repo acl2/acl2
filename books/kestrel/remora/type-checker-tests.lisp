@@ -532,3 +532,91 @@
 ; but it should be treated like the plain application (length [1 2 3]).
 (test-check-top-expr-fail
  "(@length _ _ [1 2 3])")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; head : (Forall (&t) (Pi ($d @s) (-> [&t (+ 1 $d) @s] [&t @s])))
+
+; The dimension is inferred modulo additive equivalence (see ispace-matcher):
+; from the length 3 of a vector, it is inferred as 2;
+; from the first dimension 2 of a matrix, it is inferred as 1,
+; and the shape variable is inferred as the shape [3] of the rows.
+(test-check-top-expr
+ "(head [1 2 3])")
+(test-check-top-expr
+ "(head (array [2 3] 1 2 3 4 5 6))")
+
+; From the length 1 of a singleton vector, the dimension is inferred as 0.
+(test-check-top-expr
+ "(head [7])")
+
+; A scalar has no head:
+; the type of the argument must have at least one dimension.
+(test-check-top-expr-fail
+ "(head 5)")
+(test-check-top-expr-fail
+ "(head (head [1 2]))")
+
+; The result of head is used with inference again:
+; the head of a matrix is a vector, whose head or length is inferred;
+; the head of a vector of functions is a function, which is applied.
+(test-check-top-expr
+ "(head (head [[1 2] [3 4]]))")
+(test-check-top-expr
+ "(length (head [[1 2 3] [4 5 6]]))")
+(test-check-top-expr
+ "((head [(fn ((x Int)) x)]) 7)")
+
+; Partial explicit instantiation, with the shape inferred:
+; the length in the input type is (+ 1 2),
+; which is normalized to 3 before matching.
+(test-check-top-expr
+ "((i-app (t-app head Int) 2) [1 2 3])")
+
+; The explicit dimension does not match the argument.
+(test-check-top-expr-fail
+ "((i-app (t-app head Int) 3) [1 2 3])")
+
+; OBJECTIVE: as for length, the explicit dimension matches the rows,
+; so head should be applied to each row, over the frame [2],
+; yielding the first column;
+; but the inference does not handle frames yet.
+; The fully explicit instantiation is accepted, with the frame.
+(test-check-top-expr-fail
+ "((i-app (t-app head Int) 2) [[1 2 3] [4 5 6]])")
+(test-check-top-expr
+ "(@head (Int) (2 []) [[1 2 3] [4 5 6]])")
+
+; Inference under an ispace binder, modulo additive equivalence:
+; the dimension is inferred as the bound variable $n
+; from the lengths (+ 1 $n) and (+ $n 1),
+; as (+ 1 $n) from the length (+ 2 $n),
+; as (+ $m $n) from the length (+ 1 $m $n),
+; and as the uninterpreted (* 2 $n) from the length (+ 1 (* 2 $n)).
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int (+ 1 $n)])) (head x)))")
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int (+ $n 1)])) (head x)))")
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int (+ 2 $n)])) (head x)))")
+(test-check-top-expr
+ "(i-fn ($m $n) (fn ((x [Int (+ 1 $m $n)])) (head x)))")
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int (+ 1 (* 2 $n))])) (head x)))")
+
+; A vector of unknown length $n may be empty,
+; so head is not applicable to it:
+; there is no dimension $d with (+ 1 $d) equivalent to $n.
+(test-check-top-expr-fail
+ "(i-fn ($n) (fn ((x [Int $n])) (head x)))")
+
+; The shape variable is inferred as the bound shape variable.
+(test-check-top-expr
+ "(i-fn (@s) (fn ((x [Int 3 @s])) (head x)))")
+
+; An unboxed vector of unknown length may be empty (compare with length),
+; unless its sum type says that the length is a successor.
+(test-check-top-expr-fail
+ "(unbox ($d v (box (3) [1 2 3] (Sigma ($e) (A Int $e)))) (head v))")
+(test-check-top-expr
+ "(unbox ($d v (box (2) [1 2 3] (Sigma ($e) (A Int (+ 1 $e))))) (head v))")
