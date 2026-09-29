@@ -168,7 +168,7 @@
 
 (define punctuators-for ((dialect dialectp))
   :returns (list string-listp)
-  :short "List of keywords according to the C dialect."
+  :short "List of punctuators according to the C dialect."
   :long
   (xdoc::topstring
    (xdoc::p
