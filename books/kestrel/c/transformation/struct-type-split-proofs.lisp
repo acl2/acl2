@@ -440,7 +440,8 @@
         ///
         (defruled ,value-kind-when-struct-value-onlrp
           (implies (,struct-value-onlrp sval)
-                   (equal (c::value-kind sval) :struct))))))
+                   (equal (c::value-kind sval) :struct))
+          :in-theory '(,struct-value-onlrp)))))
 
   :prepwork
   ((define stsp-struct-value-pred-loop ((mems ident-listp)
