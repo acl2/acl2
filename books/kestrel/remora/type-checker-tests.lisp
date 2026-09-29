@@ -309,9 +309,7 @@
 ; a function with a universal or product type
 ; is applied directly to an argument,
 ; and the type and ispace arguments are inferred from the argument type.
-; The matching of types is not yet fully modulo type equivalence
-; (see type-matcher),
-; but the ispaces in them are matched modulo equivalence (see ispace-matcher),
+; The types are matched modulo equivalence (see type-matcher),
 ; so the arguments may be explicit arrays, whose types have plain dimensions,
 ; or bracket expressions, whose types have concatenated shapes.
 

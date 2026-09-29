@@ -77,7 +77,9 @@
  (list t (omap::update "a" *atom-u* nil) nil))
 
 ; An atom-kind pattern variable does not match an array-kind type,
-; not even a scalar one.
+; not even a scalar one
+; (TYPE-MATCH normalizes a scalar array type to its element type
+; before calling this function; see the tests of TYPE-MATCH below).
 
 (assert-equal
  (mv-list 3 (type-var-match *int-vec3* (type-var-atom "a") nil nil))
@@ -91,7 +93,8 @@
  (mv-list 3 (type-var-match *array-v* (type-var-atom "a") nil nil))
  (list nil nil nil))
 
-; A bound atom-kind pattern variable matches only the type bound to it.
+; A bound atom-kind pattern variable matches only
+; a type equivalent to the type bound to it.
 
 (assert-equal
  (mv-list 3 (type-var-match *int*
@@ -106,6 +109,13 @@
                             (omap::update "a" *int* nil)
                             nil))
  (list nil nil nil))
+
+(assert-equal
+ (mv-list 3 (type-var-match (make-type-funn :in (list *int*) :out *int*)
+                            (type-var-atom "a")
+                            (omap::update "a" *int-fun* nil)
+                            nil))
+ (list t (omap::update "a" *int-fun* nil) nil))
 
 ; An unbound array-kind pattern variable matches an array-kind type,
 ; and is bound to it.
@@ -133,7 +143,8 @@
  (mv-list 3 (type-var-match *atom-u* (type-var-array "x") nil nil))
  (list t nil (omap::update "x" (array-of *atom-u*) nil)))
 
-; A bound array-kind pattern variable matches only the type bound to it,
+; A bound array-kind pattern variable matches only
+; a type equivalent to the type bound to it,
 ; where an atom-kind type is lifted before the comparison.
 
 (assert-equal
@@ -201,6 +212,13 @@
  (mv-list 5 (type-match *int-vec3* *atom-a* nil nil nil nil))
  (list nil nil nil nil nil))
 
+; The type is normalized first (see NORMALIZE-TYPE):
+; a scalar array type is matched as its element type.
+
+(assert-equal
+ (mv-list 5 (type-match *scalar-int* *atom-a* nil nil nil nil))
+ (list t nil nil (omap::update "a" *int* nil) nil))
+
 ; The initial substitutions constrain the match.
 
 (assert-equal
@@ -225,6 +243,20 @@
 (assert-equal
  (mv-list 5 (type-match *bool* *int* nil nil nil nil))
  (list nil nil nil nil nil))
+
+; The type is normalized first (see NORMALIZE-TYPE):
+; a scalar array type is matched as its element type,
+; and an n-ary function type without inputs as its output type.
+
+(assert-equal
+ (mv-list 5 (type-match *scalar-int* *int* nil nil nil nil))
+ (list t nil nil nil nil))
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-funn :in nil :out *int*)
+                        *int*
+                        nil nil nil nil))
+ (list t nil nil nil nil))
 
 ; Variables in the type being matched are not pattern variables:
 ; a variable type does not match a base type pattern.
@@ -428,7 +460,7 @@
        (omap::update "x" *int-vec3*
                      (omap::update "y" *scalar-bool* nil))))
 
-; A repeated pattern variable must match equal types,
+; A repeated pattern variable must match equivalent types,
 ; modulo the lifting of atom types to scalar array types.
 
 (assert-equal
@@ -442,6 +474,14 @@
                         (make-type-fun :in *array-x* :out *array-x*)
                         nil nil nil nil))
  (list nil nil nil nil nil))
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-fun
+                         :in *int-fun*
+                         :out (make-type-funn :in (list *int*) :out *int*))
+                        (make-type-fun :in *atom-a* :out *atom-a*)
+                        nil nil nil nil))
+ (list t nil nil (omap::update "a" *int-fun* nil) nil))
 
 ; Function types are matched in the curried view (see type-equivp):
 ; a unary pattern matches an n-ary function type,
@@ -544,13 +584,18 @@
  (list t nil nil (omap::update "a" *int* nil) nil))
 
 ; An n-ary function type without inputs
-; is not normalized to its output type, for now.
+; is normalized to its output type (see NORMALIZE-TYPE).
 
 (assert-equal
  (mv-list 5 (type-match (make-type-funn :in nil :out *int-fun*)
                         (make-type-fun :in *array-x* :out *array-y*)
                         nil nil nil nil))
- (list nil nil nil nil nil))
+ (list t
+       nil
+       nil
+       nil
+       (omap::update "x" *scalar-int*
+                     (omap::update "y" *scalar-int* nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

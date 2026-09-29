@@ -135,7 +135,11 @@
   (xdoc::topstring
    (xdoc::p
     "This is used by @(tsee type-match), which matches types to patterns,
-     when the pattern is a variable.")
+     when the pattern is a variable.
+     The type has been normalized by @(tsee type-match)
+     (see @(tsee normalize-type)),
+     so it is an atom type rather than a scalar array type,
+     when equivalent to one.")
    (xdoc::p
     "The kinds are respected.
      An atom-kind pattern variable matches only an atom-kind type.
@@ -152,7 +156,8 @@
    (xdoc::p
     "The substitution for the kind of the variable is consulted:
      a pattern variable that is bound in the substitution
-     matches only the type bound to it;
+     matches only a type equivalent to the one bound to it
+     (see @(tsee type-equivp));
      a pattern variable that is not bound in the substitution
      matches any type (of the appropriate kind, as explained above),
      which is bound to the variable.
@@ -168,7 +173,7 @@
                     (mv t
                         (omap::update var.name (type-fix type) atom-subst)
                         array-subst))
-                   ((equal (cdr var+type) (type-fix type))
+                   ((type-equivp (cdr var+type) type)
                     (mv t atom-subst array-subst))
                    (t (mv nil nil nil))))
      :array (b* ((type (type-ensure-array type))
@@ -177,7 +182,7 @@
                      (mv t
                          atom-subst
                          (omap::update var.name type array-subst)))
-                    ((equal (cdr var+type) type)
+                    ((type-equivp (cdr var+type) type)
                      (mv t atom-subst array-subst))
                     (t (mv nil nil nil)))))))
 
@@ -516,10 +521,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We are extending this matching from a purely syntactical one
-     to one modulo type equivalence (see @(tsee type-equivp)),
-     mirroring the structure of @(tsee type-equivp).
-     Currently, the following aspects are modulo equivalence:
+    "This matching is modulo type equivalence,
+     mirroring the structure of @(tsee type-equivp):
+     the type is normalized via @(tsee normalize-type) before matching it,
+     so that a scalar array type is matched as its element type,
+     and an n-ary function type without inputs is matched as its output type;
      the ispaces in the types are matched by the @(see ispace-matcher),
      modulo ispace equivalence;
      array and bracket types are identified,
@@ -529,14 +535,12 @@
      so that unary and n-ary function types are identified;
      universal, product, and sum types are matched in the curried view
      and modulo the renaming of their bound variables;
-     and atom types are lifted to scalar array types
-     at array-kind pattern variables (see @(tsee type-var-match)).
-     The following aspects are still syntactical,
-     making the matching incomplete with respect to type equivalence:
-     scalar array types are not normalized to their element types,
-     and n-ary function types without inputs
-     are not normalized to their output types,
-     when matched to pattern atom types (see @(tsee normalize-type)).")
+     atom types are lifted to scalar array types
+     at array-kind pattern variables (see @(tsee type-var-match));
+     and a type matched to a pattern variable that is already bound
+     must be equivalent to the binding (see @(tsee type-var-match)).
+     Thus, the matching is modulo type equivalence
+     to the extent that @(tsee type-equivp) captures it.")
    (xdoc::p
     "Since types contain dimension, shape, and type variables,
      the matching builds four substitutions:
@@ -597,10 +601,7 @@
      Thus, a unary function type may match an n-ary pattern, and vice versa,
      and n-ary function types with different numbers of inputs may match.
      An n-ary pattern without inputs stands for its output type,
-     which is matched to the type;
-     but an n-ary type without inputs
-     is not normalized to its output type yet,
-     and thus does not match a pattern function type.")
+     which is matched to the type.")
    (xdoc::p
     "A pattern universal type, unary or n-ary,
      matches a universal type, unary or n-ary,
@@ -631,42 +632,25 @@
      and vice versa,
      and n-ary product or sum types
      with different numbers of bound variables may match."))
-  (type-case
-   pat
-   :var (b* (((mv okp atom-subst array-subst)
-              (type-var-match type pat.var atom-subst array-subst))
-             ((unless okp) (mv nil nil nil nil nil)))
-          (mv t
-              (string-dim-map-fix dim-subst)
-              (string-shape-map-fix shape-subst)
-              atom-subst
-              array-subst))
-   :base (if (equal (type-fix type) (type-base pat.type))
-             (mv t
-                 (string-dim-map-fix dim-subst)
-                 (string-shape-map-fix shape-subst)
-                 (string-type-map-fix atom-subst)
-                 (string-type-map-fix array-subst))
-           (mv nil nil nil nil nil))
-   :array (b* ((array (type-match-array type))
-               ((when (reserrp array)) (mv nil nil nil nil nil))
-               ((type+ispace array) array)
-               ((mv okp dim-subst shape-subst atom-subst array-subst)
-                (type-match array.type
-                            pat.elem
-                            dim-subst
-                            shape-subst
-                            atom-subst
-                            array-subst))
-               ((unless okp) (mv nil nil nil nil nil))
-               ((mv okp dim-subst shape-subst)
-                (ispace-match array.ispace
-                              pat.ispace
-                              dim-subst
-                              shape-subst))
+  (b* ((type (normalize-type type)))
+    (type-case
+     pat
+     :var (b* (((mv okp atom-subst array-subst)
+                (type-var-match type pat.var atom-subst array-subst))
                ((unless okp) (mv nil nil nil nil nil)))
-            (mv t dim-subst shape-subst atom-subst array-subst))
-   :bracket (b* ((array (type-match-array type))
+            (mv t
+                (string-dim-map-fix dim-subst)
+                (string-shape-map-fix shape-subst)
+                atom-subst
+                array-subst))
+     :base (if (equal type (type-base pat.type))
+               (mv t
+                   (string-dim-map-fix dim-subst)
+                   (string-shape-map-fix shape-subst)
+                   (string-type-map-fix atom-subst)
+                   (string-type-map-fix array-subst))
+             (mv nil nil nil nil nil))
+     :array (b* ((array (type-match-array type))
                  ((when (reserrp array)) (mv nil nil nil nil nil))
                  ((type+ispace array) array)
                  ((mv okp dim-subst shape-subst atom-subst array-subst)
@@ -679,216 +663,204 @@
                  ((unless okp) (mv nil nil nil nil nil))
                  ((mv okp dim-subst shape-subst)
                   (ispace-match array.ispace
-                                (ispace-shape
-                                 (shape-append
-                                  (shape-list-from-ispace-list pat.ispaces)))
+                                pat.ispace
                                 dim-subst
                                 shape-subst))
                  ((unless okp) (mv nil nil nil nil nil)))
               (mv t dim-subst shape-subst atom-subst array-subst))
-   :fun (cond
-         ((type-case type :fun)
-          (b* (((mv okp dim-subst shape-subst atom-subst array-subst)
-                (type-match (type-fun->in type)
-                            pat.in
-                            dim-subst
-                            shape-subst
-                            atom-subst
-                            array-subst))
-               ((unless okp) (mv nil nil nil nil nil)))
-            (type-match (type-fun->out type)
-                        pat.out
-                        dim-subst
-                        shape-subst
-                        atom-subst
-                        array-subst)))
-         ((and (type-case type :funn)
-               (consp (type-funn->in type)))
-          (b* (((mv okp dim-subst shape-subst atom-subst array-subst)
-                (type-match (car (type-funn->in type))
-                            pat.in
-                            dim-subst
-                            shape-subst
-                            atom-subst
-                            array-subst))
-               ((unless okp) (mv nil nil nil nil nil)))
-            (type-match (fun-curried-out (type-funn->in type)
-                                         (type-funn->out type))
-                        pat.out
-                        dim-subst
-                        shape-subst
-                        atom-subst
-                        array-subst)))
-         (t (mv nil nil nil nil nil)))
-   :funn (cond
-          ((endp pat.in)
-           (type-match type
-                       pat.out
-                       dim-subst
-                       shape-subst
-                       atom-subst
-                       array-subst))
-          ((type-case type :fun)
-           (b* (((mv okp dim-subst shape-subst atom-subst array-subst)
-                 (type-match (type-fun->in type)
-                             (car pat.in)
-                             dim-subst
-                             shape-subst
-                             atom-subst
-                             array-subst))
-                ((unless okp) (mv nil nil nil nil nil)))
-             (type-match (type-fun->out type)
-                         (fun-curried-out pat.in pat.out)
+     :bracket (b* ((array (type-match-array type))
+                   ((when (reserrp array)) (mv nil nil nil nil nil))
+                   ((type+ispace array) array)
+                   ((mv okp dim-subst shape-subst atom-subst array-subst)
+                    (type-match array.type
+                                pat.elem
+                                dim-subst
+                                shape-subst
+                                atom-subst
+                                array-subst))
+                   ((unless okp) (mv nil nil nil nil nil))
+                   ((mv okp dim-subst shape-subst)
+                    (ispace-match array.ispace
+                                  (ispace-shape
+                                   (shape-append
+                                    (shape-list-from-ispace-list pat.ispaces)))
+                                  dim-subst
+                                  shape-subst))
+                   ((unless okp) (mv nil nil nil nil nil)))
+                (mv t dim-subst shape-subst atom-subst array-subst))
+     :fun (cond
+           ((type-case type :fun)
+            (b* (((mv okp dim-subst shape-subst atom-subst array-subst)
+                  (type-match (type-fun->in type)
+                              pat.in
+                              dim-subst
+                              shape-subst
+                              atom-subst
+                              array-subst))
+                 ((unless okp) (mv nil nil nil nil nil)))
+              (type-match (type-fun->out type)
+                          pat.out
+                          dim-subst
+                          shape-subst
+                          atom-subst
+                          array-subst)))
+           ((and (type-case type :funn)
+                 (consp (type-funn->in type)))
+            (b* (((mv okp dim-subst shape-subst atom-subst array-subst)
+                  (type-match (car (type-funn->in type))
+                              pat.in
+                              dim-subst
+                              shape-subst
+                              atom-subst
+                              array-subst))
+                 ((unless okp) (mv nil nil nil nil nil)))
+              (type-match (fun-curried-out (type-funn->in type)
+                                           (type-funn->out type))
+                          pat.out
+                          dim-subst
+                          shape-subst
+                          atom-subst
+                          array-subst)))
+           (t (mv nil nil nil nil nil)))
+     :funn (cond
+            ((endp pat.in)
+             (type-match type
+                         pat.out
                          dim-subst
                          shape-subst
                          atom-subst
-                         array-subst)))
-          ((and (type-case type :funn)
-                (consp (type-funn->in type)))
-           (b* (((mv okp dim-subst shape-subst atom-subst array-subst)
-                 (type-match (car (type-funn->in type))
-                             (car pat.in)
-                             dim-subst
-                             shape-subst
-                             atom-subst
-                             array-subst))
-                ((unless okp) (mv nil nil nil nil nil)))
-             (type-match (fun-curried-out (type-funn->in type)
-                                          (type-funn->out type))
-                         (fun-curried-out pat.in pat.out)
-                         dim-subst
-                         shape-subst
-                         atom-subst
-                         array-subst)))
-          (t (mv nil nil nil nil nil)))
-   :forall (b* ((var+type (type-match-forall type))
-                ((when (reserrp var+type)) (mv nil nil nil nil nil))
-                ((typevar+type var+type) var+type)
-                ((mv okp fresh pat-body type-body atom-subst1 array-subst1)
-                 (type-match-type-var-rename pat.param
+                         array-subst))
+            ((type-case type :fun)
+             (b* (((mv okp dim-subst shape-subst atom-subst array-subst)
+                   (type-match (type-fun->in type)
+                               (car pat.in)
+                               dim-subst
+                               shape-subst
+                               atom-subst
+                               array-subst))
+                  ((unless okp) (mv nil nil nil nil nil)))
+               (type-match (type-fun->out type)
+                           (fun-curried-out pat.in pat.out)
+                           dim-subst
+                           shape-subst
+                           atom-subst
+                           array-subst)))
+            ((and (type-case type :funn)
+                  (consp (type-funn->in type)))
+             (b* (((mv okp dim-subst shape-subst atom-subst array-subst)
+                   (type-match (car (type-funn->in type))
+                               (car pat.in)
+                               dim-subst
+                               shape-subst
+                               atom-subst
+                               array-subst))
+                  ((unless okp) (mv nil nil nil nil nil)))
+               (type-match (fun-curried-out (type-funn->in type)
+                                            (type-funn->out type))
+                           (fun-curried-out pat.in pat.out)
+                           dim-subst
+                           shape-subst
+                           atom-subst
+                           array-subst)))
+            (t (mv nil nil nil nil nil)))
+     :forall (b* ((var+type (type-match-forall type))
+                  ((when (reserrp var+type)) (mv nil nil nil nil nil))
+                  ((typevar+type var+type) var+type)
+                  ((mv okp fresh pat-body type-body atom-subst1 array-subst1)
+                   (type-match-type-var-rename pat.param
+                                               pat.body
+                                               var+type.var
+                                               var+type.type
+                                               (set::union
+                                                (type-all-type-vars type)
+                                                (type-all-type-vars pat))
+                                               atom-subst
+                                               array-subst))
+                  ((unless okp) (mv nil nil nil nil nil))
+                  ((mv okp dim-subst shape-subst atom-subst1 array-subst1)
+                   (type-match type-body
+                               pat-body
+                               dim-subst
+                               shape-subst
+                               atom-subst1
+                               array-subst1))
+                  ((unless okp) (mv nil nil nil nil nil))
+                  ((mv okp atom-subst array-subst)
+                   (type-match-type-var-restore fresh
+                                                atom-subst1
+                                                array-subst1))
+                  ((unless okp) (mv nil nil nil nil nil)))
+               (mv t dim-subst shape-subst atom-subst array-subst))
+     :foralln (b* ((var+type (type-match-forall type))
+                   ((when (reserrp var+type)) (mv nil nil nil nil nil))
+                   ((typevar+type var+type) var+type)
+                   ((mv okp fresh pat-body type-body atom-subst1 array-subst1)
+                    (type-match-type-var-rename (car pat.params)
+                                                (forall-curried-body pat.params
+                                                                     pat.body)
+                                                var+type.var
+                                                var+type.type
+                                                (set::union
+                                                 (type-all-type-vars type)
+                                                 (type-all-type-vars pat))
+                                                atom-subst
+                                                array-subst))
+                   ((unless okp) (mv nil nil nil nil nil))
+                   ((mv okp dim-subst shape-subst atom-subst1 array-subst1)
+                    (type-match type-body
+                                pat-body
+                                dim-subst
+                                shape-subst
+                                atom-subst1
+                                array-subst1))
+                   ((unless okp) (mv nil nil nil nil nil))
+                   ((mv okp atom-subst array-subst)
+                    (type-match-type-var-restore fresh
+                                                 atom-subst1
+                                                 array-subst1))
+                   ((unless okp) (mv nil nil nil nil nil)))
+                (mv t dim-subst shape-subst atom-subst array-subst))
+     :pi (b* ((var+type (type-match-product type))
+              ((when (reserrp var+type)) (mv nil nil nil nil nil))
+              ((ispacevar+type var+type) var+type)
+              ((mv okp fresh pat-body type-body dim-subst1 shape-subst1)
+               (type-match-ispace-var-rename pat.param
                                              pat.body
                                              var+type.var
                                              var+type.type
                                              (set::union
-                                              (type-all-type-vars type)
-                                              (type-all-type-vars pat))
+                                              (type-all-ispace-vars type)
+                                              (type-all-ispace-vars pat))
+                                             dim-subst
+                                             shape-subst
                                              atom-subst
                                              array-subst))
-                ((unless okp) (mv nil nil nil nil nil))
-                ((mv okp dim-subst shape-subst atom-subst1 array-subst1)
-                 (type-match type-body
-                             pat-body
-                             dim-subst
-                             shape-subst
-                             atom-subst1
-                             array-subst1))
-                ((unless okp) (mv nil nil nil nil nil))
-                ((mv okp atom-subst array-subst)
-                 (type-match-type-var-restore fresh atom-subst1 array-subst1))
-                ((unless okp) (mv nil nil nil nil nil)))
-             (mv t dim-subst shape-subst atom-subst array-subst))
-   :foralln (b* ((var+type (type-match-forall type))
-                 ((when (reserrp var+type)) (mv nil nil nil nil nil))
-                 ((typevar+type var+type) var+type)
-                 ((mv okp fresh pat-body type-body atom-subst1 array-subst1)
-                  (type-match-type-var-rename (car pat.params)
-                                              (forall-curried-body pat.params
-                                                                   pat.body)
-                                              var+type.var
-                                              var+type.type
-                                              (set::union
-                                               (type-all-type-vars type)
-                                               (type-all-type-vars pat))
+              ((unless okp) (mv nil nil nil nil nil))
+              ((mv okp dim-subst1 shape-subst1 atom-subst array-subst)
+               (type-match type-body
+                           pat-body
+                           dim-subst1
+                           shape-subst1
+                           atom-subst
+                           array-subst))
+              ((unless okp) (mv nil nil nil nil nil))
+              ((mv okp dim-subst shape-subst)
+               (type-match-ispace-var-restore fresh
+                                              dim-subst1
+                                              shape-subst1
                                               atom-subst
                                               array-subst))
-                 ((unless okp) (mv nil nil nil nil nil))
-                 ((mv okp dim-subst shape-subst atom-subst1 array-subst1)
-                  (type-match type-body
-                              pat-body
-                              dim-subst
-                              shape-subst
-                              atom-subst1
-                              array-subst1))
-                 ((unless okp) (mv nil nil nil nil nil))
-                 ((mv okp atom-subst array-subst)
-                  (type-match-type-var-restore fresh atom-subst1 array-subst1))
-                 ((unless okp) (mv nil nil nil nil nil)))
-              (mv t dim-subst shape-subst atom-subst array-subst))
-   :pi (b* ((var+type (type-match-product type))
-            ((when (reserrp var+type)) (mv nil nil nil nil nil))
-            ((ispacevar+type var+type) var+type)
-            ((mv okp fresh pat-body type-body dim-subst1 shape-subst1)
-             (type-match-ispace-var-rename pat.param
-                                           pat.body
-                                           var+type.var
-                                           var+type.type
-                                           (set::union
-                                            (type-all-ispace-vars type)
-                                            (type-all-ispace-vars pat))
-                                           dim-subst
-                                           shape-subst
-                                           atom-subst
-                                           array-subst))
-            ((unless okp) (mv nil nil nil nil nil))
-            ((mv okp dim-subst1 shape-subst1 atom-subst array-subst)
-             (type-match type-body
-                         pat-body
-                         dim-subst1
-                         shape-subst1
-                         atom-subst
-                         array-subst))
-            ((unless okp) (mv nil nil nil nil nil))
-            ((mv okp dim-subst shape-subst)
-             (type-match-ispace-var-restore fresh
-                                            dim-subst1
-                                            shape-subst1
-                                            atom-subst
-                                            array-subst))
-            ((unless okp) (mv nil nil nil nil nil)))
-         (mv t dim-subst shape-subst atom-subst array-subst))
-   :pin (b* ((var+type (type-match-product type))
-             ((when (reserrp var+type)) (mv nil nil nil nil nil))
-             ((ispacevar+type var+type) var+type)
-             ((mv okp fresh pat-body type-body dim-subst1 shape-subst1)
-              (type-match-ispace-var-rename (car pat.params)
-                                            (pi-curried-body pat.params
-                                                             pat.body)
-                                            var+type.var
-                                            var+type.type
-                                            (set::union
-                                             (type-all-ispace-vars type)
-                                             (type-all-ispace-vars pat))
-                                            dim-subst
-                                            shape-subst
-                                            atom-subst
-                                            array-subst))
-             ((unless okp) (mv nil nil nil nil nil))
-             ((mv okp dim-subst1 shape-subst1 atom-subst array-subst)
-              (type-match type-body
-                          pat-body
-                          dim-subst1
-                          shape-subst1
-                          atom-subst
-                          array-subst))
-             ((unless okp) (mv nil nil nil nil nil))
-             ((mv okp dim-subst shape-subst)
-              (type-match-ispace-var-restore fresh
-                                             dim-subst1
-                                             shape-subst1
-                                             atom-subst
-                                             array-subst))
-             ((unless okp) (mv nil nil nil nil nil)))
-          (mv t dim-subst shape-subst atom-subst array-subst))
-   :sigma (b* ((vars+type (type-match-sum type))
-               ((when (reserrp vars+type)) (mv nil nil nil nil nil))
-               ((ispacevarlist+type vars+type) vars+type)
+              ((unless okp) (mv nil nil nil nil nil)))
+           (mv t dim-subst shape-subst atom-subst array-subst))
+     :pin (b* ((var+type (type-match-product type))
+               ((when (reserrp var+type)) (mv nil nil nil nil nil))
+               ((ispacevar+type var+type) var+type)
                ((mv okp fresh pat-body type-body dim-subst1 shape-subst1)
-                (type-match-ispace-var-rename pat.param
-                                              pat.body
-                                              (car vars+type.vars)
-                                              (sigma-curried-body
-                                               vars+type.vars
-                                               vars+type.type)
+                (type-match-ispace-var-rename (car pat.params)
+                                              (pi-curried-body pat.params
+                                                               pat.body)
+                                              var+type.var
+                                              var+type.type
                                               (set::union
                                                (type-all-ispace-vars type)
                                                (type-all-ispace-vars pat))
@@ -913,41 +885,76 @@
                                                array-subst))
                ((unless okp) (mv nil nil nil nil nil)))
             (mv t dim-subst shape-subst atom-subst array-subst))
-   :sigman (b* ((vars+type (type-match-sum type))
-                ((when (reserrp vars+type)) (mv nil nil nil nil nil))
-                ((ispacevarlist+type vars+type) vars+type)
-                ((mv okp fresh pat-body type-body dim-subst1 shape-subst1)
-                 (type-match-ispace-var-rename (car pat.params)
-                                               (sigma-curried-body pat.params
-                                                                   pat.body)
-                                               (car vars+type.vars)
-                                               (sigma-curried-body
-                                                vars+type.vars
-                                                vars+type.type)
-                                               (set::union
-                                                (type-all-ispace-vars type)
-                                                (type-all-ispace-vars pat))
-                                               dim-subst
-                                               shape-subst
-                                               atom-subst
-                                               array-subst))
-                ((unless okp) (mv nil nil nil nil nil))
-                ((mv okp dim-subst1 shape-subst1 atom-subst array-subst)
-                 (type-match type-body
-                             pat-body
-                             dim-subst1
-                             shape-subst1
-                             atom-subst
-                             array-subst))
-                ((unless okp) (mv nil nil nil nil nil))
-                ((mv okp dim-subst shape-subst)
-                 (type-match-ispace-var-restore fresh
-                                                dim-subst1
-                                                shape-subst1
+     :sigma (b* ((vars+type (type-match-sum type))
+                 ((when (reserrp vars+type)) (mv nil nil nil nil nil))
+                 ((ispacevarlist+type vars+type) vars+type)
+                 ((mv okp fresh pat-body type-body dim-subst1 shape-subst1)
+                  (type-match-ispace-var-rename pat.param
+                                                pat.body
+                                                (car vars+type.vars)
+                                                (sigma-curried-body
+                                                 vars+type.vars
+                                                 vars+type.type)
+                                                (set::union
+                                                 (type-all-ispace-vars type)
+                                                 (type-all-ispace-vars pat))
+                                                dim-subst
+                                                shape-subst
                                                 atom-subst
                                                 array-subst))
-                ((unless okp) (mv nil nil nil nil nil)))
-             (mv t dim-subst shape-subst atom-subst array-subst)))
+                 ((unless okp) (mv nil nil nil nil nil))
+                 ((mv okp dim-subst1 shape-subst1 atom-subst array-subst)
+                  (type-match type-body
+                              pat-body
+                              dim-subst1
+                              shape-subst1
+                              atom-subst
+                              array-subst))
+                 ((unless okp) (mv nil nil nil nil nil))
+                 ((mv okp dim-subst shape-subst)
+                  (type-match-ispace-var-restore fresh
+                                                 dim-subst1
+                                                 shape-subst1
+                                                 atom-subst
+                                                 array-subst))
+                 ((unless okp) (mv nil nil nil nil nil)))
+              (mv t dim-subst shape-subst atom-subst array-subst))
+     :sigman (b* ((vars+type (type-match-sum type))
+                  ((when (reserrp vars+type)) (mv nil nil nil nil nil))
+                  ((ispacevarlist+type vars+type) vars+type)
+                  ((mv okp fresh pat-body type-body dim-subst1 shape-subst1)
+                   (type-match-ispace-var-rename (car pat.params)
+                                                 (sigma-curried-body
+                                                  pat.params
+                                                  pat.body)
+                                                 (car vars+type.vars)
+                                                 (sigma-curried-body
+                                                  vars+type.vars
+                                                  vars+type.type)
+                                                 (set::union
+                                                  (type-all-ispace-vars type)
+                                                  (type-all-ispace-vars pat))
+                                                 dim-subst
+                                                 shape-subst
+                                                 atom-subst
+                                                 array-subst))
+                  ((unless okp) (mv nil nil nil nil nil))
+                  ((mv okp dim-subst1 shape-subst1 atom-subst array-subst)
+                   (type-match type-body
+                               pat-body
+                               dim-subst1
+                               shape-subst1
+                               atom-subst
+                               array-subst))
+                  ((unless okp) (mv nil nil nil nil nil))
+                  ((mv okp dim-subst shape-subst)
+                   (type-match-ispace-var-restore fresh
+                                                  dim-subst1
+                                                  shape-subst1
+                                                  atom-subst
+                                                  array-subst))
+                  ((unless okp) (mv nil nil nil nil nil)))
+               (mv t dim-subst shape-subst atom-subst array-subst))))
   :measure (two-nats-measure (type-count pat) (type-binders-count pat))
   :verify-guards :after-returns)
 
