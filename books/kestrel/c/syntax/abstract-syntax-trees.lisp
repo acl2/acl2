@@ -3298,8 +3298,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :enable-rules (nfix
-                 ;; for speed:
+  :enable-rules (;; for speed:
                  acl2::o-p-of-two-nats-measure
                  acl2::o<-of-two-nats-measure
                  acl2::zp-compound-recognizer)
