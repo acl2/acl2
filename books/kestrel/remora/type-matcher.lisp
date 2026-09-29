@@ -183,13 +183,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-match-forall-rename ((pat-param type-varp)
-                                  (pat-body typep)
-                                  (type-param type-varp)
-                                  (type-body typep)
-                                  (used type-var-setp)
-                                  (atom-subst string-type-mapp)
-                                  (array-subst string-type-mapp))
+(define type-match-type-var-rename ((pat-param type-varp)
+                                    (pat-body typep)
+                                    (type-param type-varp)
+                                    (type-body typep)
+                                    (used type-var-setp)
+                                    (atom-subst string-type-mapp)
+                                    (array-subst string-type-mapp))
   :returns (mv (okp booleanp)
                (fresh type-varp)
                (new-pat-body typep)
@@ -231,7 +231,7 @@
      the fresh variable in the pattern matches only itself in the type,
      as a rigid variable.
      After the bodies are matched,
-     @(tsee type-match-forall-restore) undoes this binding.")
+     @(tsee type-match-type-var-restore) undoes this binding.")
    (xdoc::p
     "The renamed body of the pattern has the same counts as the original one,
      as needed for the termination of @(tsee type-match)."))
@@ -278,19 +278,19 @@
 
   ///
 
-  (defret type-count-of-type-match-forall-rename
+  (defret type-count-of-type-match-type-var-rename
     (equal (type-count new-pat-body)
            (type-count pat-body)))
 
-  (defret type-binders-count-of-type-match-forall-rename
+  (defret type-binders-count-of-type-match-type-var-rename
     (equal (type-binders-count new-pat-body)
            (type-binders-count pat-body))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-match-forall-restore ((fresh type-varp)
-                                   (atom-subst string-type-mapp)
-                                   (array-subst string-type-mapp))
+(define type-match-type-var-restore ((fresh type-varp)
+                                     (atom-subst string-type-mapp)
+                                     (array-subst string-type-mapp))
   :returns (mv (okp booleanp)
                (new-atom-subst string-type-mapp)
                (new-array-subst string-type-mapp))
@@ -302,7 +302,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is used by @(tsee type-match)
-     after matching the bodies prepared by @(tsee type-match-forall-rename).
+     after matching the bodies prepared by @(tsee type-match-type-var-rename).
      We remove the binding of the fresh variable to itself
      (see @(tsee atom/array-subst-remove-bound));
      there is no previous binding to restore,
@@ -353,7 +353,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the analogue of @(tsee type-match-forall-rename)
+    "This is the analogue of @(tsee type-match-type-var-rename)
      for binders of ispace variables:
      it is used by @(tsee type-match)
      to match product and sum types modulo the renaming of bound variables,
@@ -460,7 +460,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the analogue of @(tsee type-match-forall-restore)
+    "This is the analogue of @(tsee type-match-type-var-restore)
      for binders of ispace variables:
      it is used by @(tsee type-match)
      after matching the bodies prepared by
@@ -558,14 +558,14 @@
      we rename the bound variables of the pattern and of the type
      to a common fresh variable in their bodies,
      and we bind the fresh variable to itself while matching the bodies
-     (see @(tsee type-match-forall-rename)
+     (see @(tsee type-match-type-var-rename)
      and @(tsee type-match-ispace-var-rename)),
      so that the fresh variable in the pattern matches only itself in the type;
      after matching the bodies, we remove that binding,
      and we check that no pattern variable has been bound
      to a type or ispace that mentions the fresh variable,
      which would be a variable capture
-     (see @(tsee type-match-forall-restore)
+     (see @(tsee type-match-type-var-restore)
      and @(tsee type-match-ispace-var-restore)).")
    (xdoc::p
     "A pattern variable is matched via @(tsee type-var-match).")
@@ -765,15 +765,15 @@
                 ((when (reserrp var+type)) (mv nil nil nil nil nil))
                 ((typevar+type var+type) var+type)
                 ((mv okp fresh pat-body type-body atom-subst1 array-subst1)
-                 (type-match-forall-rename pat.param
-                                           pat.body
-                                           var+type.var
-                                           var+type.type
-                                           (set::union
-                                            (type-all-type-vars type)
-                                            (type-all-type-vars pat))
-                                           atom-subst
-                                           array-subst))
+                 (type-match-type-var-rename pat.param
+                                             pat.body
+                                             var+type.var
+                                             var+type.type
+                                             (set::union
+                                              (type-all-type-vars type)
+                                              (type-all-type-vars pat))
+                                             atom-subst
+                                             array-subst))
                 ((unless okp) (mv nil nil nil nil nil))
                 ((mv okp dim-subst shape-subst atom-subst1 array-subst1)
                  (type-match type-body
@@ -784,23 +784,23 @@
                              array-subst1))
                 ((unless okp) (mv nil nil nil nil nil))
                 ((mv okp atom-subst array-subst)
-                 (type-match-forall-restore fresh atom-subst1 array-subst1))
+                 (type-match-type-var-restore fresh atom-subst1 array-subst1))
                 ((unless okp) (mv nil nil nil nil nil)))
              (mv t dim-subst shape-subst atom-subst array-subst))
    :foralln (b* ((var+type (type-match-forall type))
                  ((when (reserrp var+type)) (mv nil nil nil nil nil))
                  ((typevar+type var+type) var+type)
                  ((mv okp fresh pat-body type-body atom-subst1 array-subst1)
-                  (type-match-forall-rename (car pat.params)
-                                            (forall-curried-body pat.params
-                                                                 pat.body)
-                                            var+type.var
-                                            var+type.type
-                                            (set::union
-                                             (type-all-type-vars type)
-                                             (type-all-type-vars pat))
-                                            atom-subst
-                                            array-subst))
+                  (type-match-type-var-rename (car pat.params)
+                                              (forall-curried-body pat.params
+                                                                   pat.body)
+                                              var+type.var
+                                              var+type.type
+                                              (set::union
+                                               (type-all-type-vars type)
+                                               (type-all-type-vars pat))
+                                              atom-subst
+                                              array-subst))
                  ((unless okp) (mv nil nil nil nil nil))
                  ((mv okp dim-subst shape-subst atom-subst1 array-subst1)
                   (type-match type-body
@@ -811,7 +811,7 @@
                               array-subst1))
                  ((unless okp) (mv nil nil nil nil nil))
                  ((mv okp atom-subst array-subst)
-                  (type-match-forall-restore fresh atom-subst1 array-subst1))
+                  (type-match-type-var-restore fresh atom-subst1 array-subst1))
                  ((unless okp) (mv nil nil nil nil nil)))
               (mv t dim-subst shape-subst atom-subst array-subst))
    :pi (b* ((var+type (type-match-product type))
