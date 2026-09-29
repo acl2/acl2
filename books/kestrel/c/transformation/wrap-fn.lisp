@@ -778,7 +778,16 @@
     (code-ensemble-wrap-fn-multiple code (omap::tail targets)))
   :measure (acl2-count (ident-ident-option-map-fix targets))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules
-                                            c$::abstract-syntax-unambp-rules))))
+                                            c$::abstract-syntax-unambp-rules)))
+  ///
+
+  (defret code-ensemble-annop-of-code-ensemble-wrap-fn-multiple.code$
+    (implies (and (not er?)
+                  (code-ensemble-annop code))
+             (code-ensemble-annop code$))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* c$::abstract-syntax-annop-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
