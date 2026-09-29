@@ -3931,6 +3931,38 @@
        (equal method-name "intBitsToFloat")
        (equal descriptor "(I)F")))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Our model of the instance method java.lang.Class.desiredAssertionStatus
+;; For now, we assume that assertions are always desired (e.g., for the Formal Unit Tester).
+;; The current instruction in S is the invoke
+(defund execute-java.lang.Class.desiredAssertionStatus (th s)
+  (let* ((s (move-past-invoke-instruction th s))) ;; Move past the invokevirtual instruction
+    (modify th s
+            :stack (push-operand 1 ; boolean "true"
+                                 ;; pop "this":
+                                 (pop-operand (stack (thread-top-frame th s)))))))
+
+(defund is-java.lang.Class.desiredAssertionStatus (obj-class-name method-name descriptor)
+  (declare (xargs :guard t))
+  (and (equal obj-class-name "java.lang.Class")
+       (equal method-name "desiredAssertionStatus")
+       (equal descriptor "()Z")))
+
+(defthm jvm-statep-of-execute-java.lang.Class.desiredAssertionStatus
+  (implies (and (jvm-statep s)
+                (bound-in-alistp th (thread-table s))
+                (thread-designatorp th)
+                (not (empty-call-stackp (binding th (thread-table s))))
+                (member-equal (instruction-opcode (current-inst th s)) '(:invokevirtual :invokestatic :invokespecial :invokeinterface)))
+           (jvm-statep (execute-java.lang.Class.desiredAssertionStatus th s)))
+  :hints (("Goal" :in-theory (e/d (execute-java.lang.Class.desiredAssertionStatus
+                                   class-namep ;fixme breaks the abstraction
+                                   move-past-invoke-instruction)
+                                  (acons)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;the method is static
 ;; the signature is "(Ljava/lang/String;)Ljava/lang/Class;"
 ;; TODO: If the class object needs to be built, this doesn't finish the execution; it just pushes the frame.
@@ -4732,6 +4764,8 @@
                 ;; failed to enter monitor, so the thread blocks: ;fixme print a message?
                 (failed-to-enter-monitor-wrapper s closest-method) ;(error-state (list 'tried-to-call-invokevirtual-on-a-sync-method-with-non-lockable-object-i-think-thats-an-error s) s)
                 )))
+     ((is-java.lang.Class.desiredAssertionStatus actual-class-name method-name descriptor)
+      (execute-java.lang.Class.desiredAssertionStatus th s))
      ;; The usual case:
      (t (modify th s1
                 :call-stack
