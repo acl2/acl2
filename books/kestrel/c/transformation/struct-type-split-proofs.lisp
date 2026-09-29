@@ -414,7 +414,11 @@
        ((erp b*-bindings) (stsp-struct-value-pred-loop mems types 0)))
     (retok
      `(define ,struct-value-onlrp ((sval c::valuep))
-        :returns (yes/no booleanp)
+        :returns (yes/no booleanp
+                        :hints (("Goal"
+                                 :in-theory
+                                 '(booleanp-compound-recognizer
+                                   (:t ,struct-value-onlrp)))))
         (b* (((unless (c::value-case sval :struct)) nil)
              ((unless (equal (c::value-struct->tag sval) ',ctag)) nil)
              (memvals (c::value-struct->members sval))
