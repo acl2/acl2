@@ -99,7 +99,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *punctuators-c23*
-  :short "List of C23 punctuators [C23:6.4.2]."
+  :short "List of C23 punctuators [C23:6.4.7]."
   :long
   (xdoc::topstring
    (xdoc::p
