@@ -151,8 +151,8 @@
     (xdoc::codeblock
      "books/kestrel/c/transformation/json-rpc/server.sh [PORT]")
     (xdoc::p
-     "File paths in requests are relative to the server's current working
-      directory.  Each message must be compact (single-line) JSON terminated by
+     "File paths in requests are resolved with respect to the directory the
+      server is started from, which it prints when it starts.  Each message must be compact (single-line) JSON terminated by
       a newline.  The script calls @(see jsonrpc::run-jsonrpc-server) with the
       supported methods as the allowed methods; that function may also be
       called directly from within ACL2.")))

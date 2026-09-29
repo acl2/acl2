@@ -25,8 +25,8 @@ Usage:
      ./server.sh [PORT]
 
    PORT defaults to 7070.  The server binds to localhost only.  File paths in
-   requests are resolved relative to the current working directory of the
-   server process.
+   requests are resolved with respect to the directory the server is started
+   from, which it prints when it starts.
 
 4. Send JSON-RPC 2.0 requests.  Each message must be compact (single-line)
    JSON terminated by a newline.  For example, with the server started in the
