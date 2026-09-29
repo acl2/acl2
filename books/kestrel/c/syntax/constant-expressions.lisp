@@ -189,15 +189,15 @@
        conditional, and generic-selection evaluation.
        ICE operand and cast restrictions are still checked
        in unevaluated subexpressions,
-       consistently with the closed response to WG14 C11/C17 Issue 0489.")
+       consistently with the closed response to WG14 C11/C17 Issue 0489,
+       except within the operand of @('sizeof') or @('alignof') (see below).")
      (xdoc::p
       "The @('cast-restrictionsp') argument is normally @('t').
        It is @('nil') while recursively checking
-       the operand of @('sizeof') or @('alignof'),
-       because casts within those operands
-       are excepted from the ICE cast restriction [C17:6.6/6] [C23:6.6/8].
-       C23 likewise excepts casts within a @('typeof') operand.
-       ICE operand restrictions remain in force in each case.")
+       the operand of @('typeof'),
+       because C23 excepts casts within that operand
+       from the ICE cast restriction [C23:6.6/8].
+       ICE operand restrictions remain in force.")
      (xdoc::p
       "C17 permits implementations to accept additional forms
        of constant expressions [C17:6.6/10],
@@ -277,30 +277,22 @@
         as an extension form.")
       (xdoc::li
        "A @('sizeof') expression is an allowed ICE operand
-        exactly when its result is an integer constant,
-        which excludes an operand of variable length array type
-        [C17:6.5.3.4/2] [C17:6.6/6] [C23:6.5.4.4/2] [C23:6.6/8].
+        when its result is an integer constant [C17:6.6/6] [C23:6.6/8],
+        which is the case exactly when its operand
+        does not have variable length array type
+        [C17:6.5.3.4/2] [C23:6.5.4.4/2].
+        We do not check the operand recursively:
+        we only establish that the result
+        corresponds to an integer constant.
         The type-directed result check produces @('t')
         for a known non-array operand and recursively classifies array kinds.
         A @(':nonconst-len') array produces @('nil'),
         a @(':const-len') array inherits the classification of its element,
         and the other array kinds produce @(':unknown').
-        Other insufficient type information also produces @(':unknown').
-        An expression operand is checked recursively,
-        as required for unevaluated ICE operands
-        by the closed response to WG14 C11/C17 Issue 0489.
-        When the result is known to be constant, the operand is unevaluated;
-        otherwise its evaluation status is unknown
-        unless the containing @('sizeof') is itself unevaluated.")
+        Other insufficient type information also produces @(':unknown').")
       (xdoc::li
        "Within a type-name operand or cast target, the checker follows
         nested type names and array bounds.
-        The evaluation status of an array bound is conservatively unknown
-        when reached through @('sizeof'),
-        unless that @('sizeof') is itself unevaluated:
-        when changing the bound would not affect the @('sizeof') result,
-        the standard leaves its evaluation unspecified
-        [C17:6.7.6.2/5] [C23:6.7.7.3/5].
         An expression-bearing type-name construct not yet traversed,
         such as a type definition, parameter declaration, attribute,
         or alignment specifier, produces @(':unknown').
@@ -315,15 +307,11 @@
       (xdoc::li
        "A valid standard alignment expression has an integer-constant result,
         and its operand is not evaluated
-        [C17:6.5.3.4/3] [C17:6.6/6] [C23:6.5.4.4/3] [C23:6.6/8].
-        The checker nonetheless follows expressions within the operand
-        type name under an unevaluated context,
-        consistently with the closed response to WG14 C11/C17 Issue 0489.
-        Cast restrictions are disabled
-        during @('sizeof') and @('alignof') operand recursion,
-        but ICE operand restrictions remain in force.
-        The GCC/Clang expression-operand variant is checked in the same way,
-        but its status as an extended ICE remains @(':unknown').")
+        [C17:6.5.3.4/3] [C23:6.5.4.4/3],
+        so it is an allowed ICE operand [C17:6.6/6] [C23:6.6/8].
+        As for @('sizeof'), we do not check the operand recursively.
+        The GCC/Clang variants, including the expression-operand variant,
+        have unknown status as extended ICEs.")
       (xdoc::li
        "Outside the operand of @('sizeof') or @('alignof'),
         C17 permits a cast in an ICE only when it converts
@@ -425,18 +413,9 @@
        (unop-case
          expr.op
          :sizeof
-         (b* ((result-constp
-               (expr-sizeof-result-const-3p expr.arg))
-              (arg-evaluatedp
-               (3and evaluatedp (3not result-constp))))
-           (3and
-            result-constp
-            (expr-ice-core-3p
-             expr.arg arg-evaluatedp nil dialect)))
+         (expr-sizeof-result-const-3p expr.arg)
          :alignof
-         (3and
-          (expr-ice-core-3p expr.arg nil nil dialect)
-          :unknown)
+         :unknown
          :otherwise
          (b* ((arg (expr-ice-core-3p
                     expr.arg evaluatedp cast-restrictionsp dialect))
@@ -460,24 +439,15 @@
        :label-addr
        :unknown
        :sizeof
-       (b* ((result-constp
-             (tyname-sizeof-result-const-3p expr.type))
-            (type-evaluatedp
-             (3and evaluatedp :unknown)))
-         (3and
-          result-constp
-          (tyname-ice-core-3p
-           expr.type type-evaluatedp nil dialect)))
+       (tyname-sizeof-result-const-3p expr.type)
        :sizeof-ambig
        (prog2$ (impossible) :unknown)
        :alignof
-       (3and
-        (tyname-ice-core-3p expr.type nil nil dialect)
-        (keyword-uscores-case
-         expr.uscores
-         :none t
-         :start :unknown
-         :both :unknown))
+       (keyword-uscores-case
+        expr.uscores
+        :none t
+        :start :unknown
+        :both :unknown)
        :alignof-ambig
        (prog2$ (impossible) :unknown)
        :cast
