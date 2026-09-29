@@ -13,6 +13,7 @@
 (include-book "struct-type-split")
 
 (include-book "variables-in-computation-states")
+(include-book "proof-generation")
 
 (include-book "kestrel/c/language/dynamic-semantics" :dir :system)
 (include-book "kestrel/c/syntax/abstract-syntax-formal-mapping-direct" :dir :system)
@@ -1407,6 +1408,86 @@
   (defret trans-item-list-annop-of-stsp-declon
     (trans-item-list-annop rest-new-items)
     :hyp (trans-item-list-annop new-items)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-gen-expr-thm ((old exprp)
+                           (new exprp)
+                           (vartys c::ident-type-mapp)
+                           (const-new symbolp)
+                           (thm-index posp)
+                           (hints true-listp))
+  :guard (and (expr-unambp old)
+              (expr-unambp new)
+              (expr-annop old)
+              (expr-annop new))
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (updated-thm-index posp))
+  :short "Generate a theorem for the STS transformation of an expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee gen-expr-thm),
+     but it relaxes the equality of the initial computation states
+     (which is a single @('compst') variable in that function)
+     to equivalent computation states.
+     We plan to generalize @(tsee gen-expr-thm)
+     so that it can be used for STS proof generation as well."))
+  (b* ((old (expr-fix old))
+       (new (expr-fix new))
+       ((unless (expr-formalp old))
+        (raise "Internal error: ~x0 is not in the formalized subset." old)
+        (mv '(_) nil 1))
+       ((unless (expr-formalp new))
+        (raise "Internal error: ~x0 is not in the formalized subset." new)
+        (mv '(_) nil 1))
+       (type (expr-type old))
+       ((unless (equal (expr-type new)
+                       type))
+        (raise "Internal error: ~
+                the type ~x0 of the new expression ~x1 differs from ~
+                the type ~x2 of the old expression ~x3."
+               (expr-type new) new type old)
+        (mv '(_) nil 1))
+       ((unless (type-formalp type))
+        (raise "Internal error: expression ~x0 has type ~x1." old type)
+        (mv '(_) nil 1))
+       ((mv & old-expr) (ldm-expr old)) ; ERP is NIL because FORMALP
+       ((mv & new-expr) (ldm-expr new)) ; ERP is NIL because FORMALP
+       ((mv & ctype) (ldm-type type)) ; ERP is NIL because FORMALP
+       (vars-pre (gen-var-assertions vartys 'old-compst))
+       (vars-post (gen-var-assertions vartys 'old-compst1))
+       (formula
+        `(b* ((old-expr ',old-expr)
+              (new-expr ',new-expr)
+              ((mv old-eval old-compst1)
+               (c::exec-expr old-expr old-compst old-fenv limit))
+              ((mv new-eval new-compst1)
+               (c::exec-expr new-expr new-compst new-fenv limit))
+              (old-val (c::expr-value->value old-eval))
+              (new-val (c::expr-value->value new-eval)))
+           (implies (and (compustate-equivp old-compst new-compst)
+                         ,@vars-pre
+                         (not (c::errorp old-eval)))
+                    (and (not (c::errorp new-eval))
+                         ,@(if (c::type-case ctype :void)
+                               '((not old-eval)
+                                 (not new-eval))
+                             `(old-eval
+                               new-eval
+                               (equal old-val new-val)
+                               (equal (c::type-of-value old-val) ',ctype)))
+                         (compustate-equivp old-compst1 new-compst1)
+                         ,@vars-post))))
+       ((mv thm-name thm-index)
+        (gen-thm-name (symbol-lfix const-new) (lposfix thm-index)))
+       (thm-event `(defrule ,thm-name
+                     ,formula
+                     :rule-classes nil
+                     :hints ,(true-list-fix hints))))
+    (mv thm-event thm-name thm-index))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
