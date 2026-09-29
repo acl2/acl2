@@ -18,6 +18,7 @@
 (include-book "syntax-abstraction")
 (include-book "parser-interface")
 (include-book "printer")
+(include-book "pretty-printer")
 (include-book "parse-directory-files") ; for testing
 (include-book "value-printing")
 
@@ -66,7 +67,11 @@
    (xdoc::p
     "We define a "
     (xdoc::seetopic "printer" "pretty printer")
-    " that takes an AST and outputs Remora source code.")
+    " that takes an AST and outputs Remora source code,
+     and a second "
+    (xdoc::seetopic "pretty-printer" "pretty printer")
+    " in the style of ACL2's own prettyprinter, which produces
+     more compact and conventional layouts.")
    (xdoc::p
     "For testing parsing and printing, we have defined functions
      for parsing all the files in a given directory, and for
@@ -81,5 +86,7 @@
                     post-parsing
                     syntax-abstraction
                     printer
+                    pretty-printer
+                    parse-error-printing
                     parse-directory-utilities
                     value-printing))
