@@ -84,6 +84,8 @@
      The struct type(s) must have all integer members
      except @('_Bool'), plain @('char'), and enumerated types
      (which are currently not supported in our formal semantics).
+     The function definitions must have bodies consisting of
+     single return statements with expressions.
      We also allow line comments in the code, which are just skipped.")
    (xdoc::p
     "Theorems are generated from (1) and (2) above;
@@ -1420,9 +1422,46 @@
   :returns (mv (erp maybe-msgp)
                (events pseudo-event-form-listp))
   :short "Generate events for a function definition."
-  (declare (ignore new-fundef tag tag2 rmems))
-  (retok
-   `((acl2::cw-event "TODO: theorems for ~x0~%" ',(fundef-fix old-fundef)))))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is still work in progress."))
+  (declare (ignore tag tag2 rmems))
+  (b* (((reterr) nil)
+       (old-body (fundef->body old-fundef))
+       (new-body (fundef->body new-fundef))
+       (old-items (comp-stmt->items old-body))
+       (new-items (comp-stmt->items new-body))
+       ((unless (and (consp old-items)
+                     (endp (cdr old-items))
+                     (consp new-items)
+                     (endp (cdr new-items))))
+        (retmsg$ "Unsupported proof generation for ~
+                  function bodies with multiple block items."))
+       (old-item (car old-items))
+       (new-item (car new-items))
+       ((unless (and (block-item-case old-item :stmt)
+                     (block-item-case new-item :stmt)))
+        (retmsg$ "Unsupported proof generation for ~
+                  function bodies whose block item is not a statement."))
+       (old-stmt (block-item-stmt->stmt old-item))
+       (new-stmt (block-item-stmt->stmt new-item))
+       ((unless (and (stmt-case old-stmt :return)
+                     (stmt-case new-stmt :return)))
+        (retmsg$ "Unsupported proof generation for ~
+                  function bodies whose statement is not a retun."))
+       (old-expr? (stmt-return->expr? old-stmt))
+       (new-expr? (stmt-return->expr? new-stmt))
+       ((unless (and old-expr?
+                     new-expr?))
+        (retmsg$ "Unsupported proof generation for ~
+                  function bodies whose return statement has no expression."))
+       (old-expr old-expr?)
+       (new-expr new-expr?))
+    (retok
+     `((acl2::cw-event "TODO: theorems for ~x0 and ~x1~%"
+                       ',old-expr
+                       ',new-expr)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
