@@ -107,25 +107,6 @@
                                "@('struct-type-split')"))
      (xdoc::li (xdoc::seetopic "wrap-fn-method" "@('wrap-fn')"))))
    (xdoc::section
-    "Batches"
-    (xdoc::p
-     "The server processes the requests in a batch (a JSON Array of requests)
-      in order.  So a batch of an @('input-files'), a transformation, and an
-      @('output-files') request performs all three steps in one round trip,
-      e.g.:")
-    (xdoc::codeblock
-     "[{\"jsonrpc\": \"2.0\", \"method\": \"input-files\","
-     "  \"params\": {\"output-ensemble\": \"orig\","
-     "             \"base-dir\": \"input-files\", \"files\": [\"test1.c\"]},"
-     "  \"id\": 1},"
-     " {\"jsonrpc\": \"2.0\", \"method\": \"struct-type-split\","
-     "  \"params\": {\"input-ensemble\": \"orig\", \"output-ensemble\": \"split\","
-     "             \"struct-tag\": \"point\", \"right-members\": [\"z\"]},"
-     "  \"id\": 2},"
-     " {\"jsonrpc\": \"2.0\", \"method\": \"output-files\","
-     "  \"params\": {\"input-ensemble\": \"split\", \"base-dir\": \"out\"},"
-     "  \"id\": 3}]"))
-   (xdoc::section
     "Errors"
     (xdoc::p
      "Failures are reported as JSON-RPC errors, whose codes are:")

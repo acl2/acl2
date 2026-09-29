@@ -30,10 +30,10 @@ Usage:
 
 4. Send JSON-RPC 2.0 requests.  Each message must be compact (single-line)
    JSON terminated by a newline.  For example, with the server started in the
-   `tests` directory, this sends the batch in tests/example-request.json, which
-   reads a file, splits a struct type, and writes the result to `out`:
+   `tests` directory, this sends requests that read a file, split a struct
+   type, and write the result to `out`, one request at a time:
 
-     cat tests/example-request.json | tr -d '\n' | (cat; echo) | nc localhost 7070
+     cd tests && ./example.sh 7070
 
 Testing:
 
