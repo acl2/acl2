@@ -1530,8 +1530,10 @@
                        :required :arithmetic
                        :supplied else-type)))
        ((unless (equal then-type else-type))
-        (reserrf (list :diff-types then-type else-type)))
-       (type then-type))
+        (reserrf (list :cond-diff-types then-type else-type)))
+       (type then-type)
+       ((unless (type-promoted-arithmeticp type))
+        (reserrf (list :cond-type-lower-than-int-rank type))))
     (make-expr-type :type type :lvalue nil))
   :no-function nil)
 
