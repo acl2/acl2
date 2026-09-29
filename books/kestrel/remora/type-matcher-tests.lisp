@@ -927,8 +927,9 @@
 
 ; Sum types.
 
-; The bound ispace variable of the pattern is not a pattern variable;
-; for now, it matches only the same variable, bound by the same binder.
+; The bound ispace variable of the pattern is not a pattern variable:
+; it matches only the variable bound by the corresponding binder of the type,
+; and it does not appear in the resulting substitutions.
 
 (assert-equal
  (mv-list 5 (type-match (make-type-sigma
@@ -953,6 +954,131 @@
                          :body (make-type-array
                                 :elem *int*
                                 :ispace (ispace-shape (shape-var "s"))))
+                        nil nil nil nil))
+ (list nil nil nil nil nil))
+
+; The bound variables are matched modulo renaming,
+; for both dimension and shape variables.
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-sigma
+                         :param (ispace-var-shape "w")
+                         :body (make-type-array
+                                :elem *int*
+                                :ispace (ispace-shape (shape-var "w"))))
+                        (make-type-sigma
+                         :param (ispace-var-shape "s")
+                         :body (make-type-array
+                                :elem *int*
+                                :ispace (ispace-shape (shape-var "s"))))
+                        nil nil nil nil))
+ (list t nil nil nil nil))
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-sigma :param (ispace-var-dim "m")
+                                         :body (array-of *int* (dim-var "m")))
+                        (make-type-sigma :param (ispace-var-dim "n")
+                                         :body (array-of *int* (dim-var "n")))
+                        nil nil nil nil))
+ (list t nil nil nil nil))
+
+; But the bound variables must have the same sort.
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-sigma :param (ispace-var-dim "n")
+                                         :body (array-of *int* (dim-var "n")))
+                        (make-type-sigma
+                         :param (ispace-var-shape "s")
+                         :body (make-type-array
+                                :elem *int*
+                                :ispace (ispace-shape (shape-var "s"))))
+                        nil nil nil nil))
+ (list nil nil nil nil nil))
+
+; A pattern variable cannot be bound to a type or ispace
+; that mentions the variable bound by the type (variable capture):
+; matching (Sigma (@w) (A Int @w)) to the pattern (Sigma (@s) *x)
+; would bind *x to a type mentioning the bound variable,
+; and matching (Sigma ($n) (A Int (dims $n)))
+; to the pattern (Sigma ($m) (A Int (dims $i)))
+; would bind $i to the bound variable, so both matches fail.
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-sigma
+                         :param (ispace-var-shape "w")
+                         :body (make-type-array
+                                :elem *int*
+                                :ispace (ispace-shape (shape-var "w"))))
+                        (make-type-sigma :param (ispace-var-shape "s")
+                                         :body *array-x*)
+                        nil nil nil nil))
+ (list nil nil nil nil nil))
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-sigma :param (ispace-var-dim "n")
+                                         :body (array-of *int* (dim-var "n")))
+                        (make-type-sigma :param (ispace-var-dim "m")
+                                         :body (array-of *int* (dim-var "i")))
+                        nil nil nil nil))
+ (list nil nil nil nil nil))
+
+; Sum types are matched in the curried view (see type-equivp):
+; unary and n-ary sum types are identified,
+; the parameters are matched in order, modulo renaming,
+; and they must have the same sorts.
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-sigman
+                         :params (list (ispace-var-dim "n")
+                                       (ispace-var-shape "w"))
+                         :body (make-type-array :elem *int* :ispace *n++w*))
+                        (make-type-sigma
+                         :param (ispace-var-dim "i")
+                         :body (make-type-sigma
+                                :param (ispace-var-shape "s")
+                                :body (make-type-array
+                                       :elem *atom-a*
+                                       :ispace (ispace-shape
+                                                (shape-append
+                                                 (list (shape-dims
+                                                        (list (dim-var "i")))
+                                                       (shape-var "s")))))))
+                        nil nil nil nil))
+ (list t nil nil (omap::update "a" *int* nil) nil))
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-sigman
+                         :params (list (ispace-var-dim "m") (ispace-var-dim "n"))
+                         :body (array-of *int* (dim-var "m") (dim-var "n")))
+                        (make-type-sigman
+                         :params (list (ispace-var-dim "n") (ispace-var-dim "m"))
+                         :body (array-of *int* (dim-var "n") (dim-var "m")))
+                        nil nil nil nil))
+ (list t nil nil nil nil))
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-sigman
+                         :params (list (ispace-var-shape "w")
+                                       (ispace-var-dim "n"))
+                         :body (make-type-array :elem *int* :ispace *n++w*))
+                        (make-type-sigman
+                         :params (list (ispace-var-dim "n")
+                                       (ispace-var-shape "w"))
+                         :body (make-type-array :elem *atom-a* :ispace *n++w*))
+                        nil nil nil nil))
+ (list nil nil nil nil nil))
+
+; An n-ary sum type with more parameters than the pattern
+; has the sum type over its remaining parameters
+; matched to the rest of the pattern,
+; where a pattern variable cannot capture the peeled bound variable.
+
+(assert-equal
+ (mv-list 5 (type-match (make-type-sigman
+                         :params (list (ispace-var-dim "m") (ispace-var-dim "n"))
+                         :body (array-of *int* (dim-var "m") (dim-var "n")))
+                        (make-type-sigma :param (ispace-var-dim "i")
+                                         :body *array-x*)
                         nil nil nil nil))
  (list nil nil nil nil nil))
 

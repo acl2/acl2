@@ -25,7 +25,8 @@
 
 (local (in-theory (enable type+ispace-p-when-result-not-error
                           typevar+type-p-when-result-not-error
-                          ispacevar+type-p-when-result-not-error)))
+                          ispacevar+type-p-when-result-not-error
+                          ispacevarlist+type-p-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -79,59 +80,6 @@
                 (omap::update var.name (shape-var var.name) shape-subst))))
   :prepwork ((local (in-theory (enable emptyp-of-ispace-var-set-fix))))
   :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define dim/shape-subst-restore-bound ((vars ispace-var-setp)
-                                       (old-dim-subst string-dim-mapp)
-                                       (old-shape-subst string-shape-mapp)
-                                       (dim-subst string-dim-mapp)
-                                       (shape-subst string-shape-mapp))
-  :returns (mv (new-dim-subst string-dim-mapp)
-               (new-shape-subst string-shape-mapp))
-  :short "Restore the bindings of a set of ispace variables
-          in a dimension substitution and a shape substitution."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For each dimension variable in @('vars'),
-     its binding in the old dimension substitution, if any,
-     replaces its binding in the dimension substitution,
-     which is instead removed
-     if the variable has no binding in the old dimension substitution;
-     similarly for each shape variable in @('vars')
-     and the shape substitutions.")
-   (xdoc::p
-    "This undoes @(tsee dim/shape-subst-self-bind),
-     after matching types under binders of ispace variables;
-     see @(tsee type-match)."))
-  (b* (((when (set::emptyp (ispace-var-set-fix vars)))
-        (mv (string-dim-map-fix dim-subst)
-            (string-shape-map-fix shape-subst)))
-       ((mv dim-subst shape-subst)
-        (dim/shape-subst-restore-bound (set::tail vars)
-                                       old-dim-subst
-                                       old-shape-subst
-                                       dim-subst
-                                       shape-subst))
-       (var (set::head vars)))
-    (ispace-var-case
-     var
-     :dim (b* ((old-dim-subst (string-dim-map-fix old-dim-subst))
-               (var+dim (omap::assoc var.name old-dim-subst)))
-            (mv (if var+dim
-                    (omap::update var.name (cdr var+dim) dim-subst)
-                  (omap::delete var.name dim-subst))
-                shape-subst))
-     :shape (b* ((old-shape-subst (string-shape-map-fix old-shape-subst))
-                 (var+shape (omap::assoc var.name old-shape-subst)))
-              (mv dim-subst
-                  (if var+shape
-                      (omap::update var.name (cdr var+shape) shape-subst)
-                    (omap::delete var.name shape-subst))))))
-  :prepwork ((local (in-theory (enable emptyp-of-ispace-var-set-fix))))
-  :verify-guards :after-returns)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atom/array-subst-self-bind ((vars type-var-setp)
@@ -398,8 +346,8 @@
                (new-dim-subst string-dim-mapp)
                (new-shape-subst string-shape-mapp))
   :short "Rename the bound variables
-          of a pattern product type
-          and of a product type
+          of a pattern product or sum type
+          and of a product or sum type
           to a common fresh variable,
           in preparation for matching their bodies."
   :long
@@ -408,9 +356,8 @@
     "This is the analogue of @(tsee type-match-forall-rename)
      for binders of ispace variables:
      it is used by @(tsee type-match)
-     to match product types modulo the renaming of bound variables,
-     analogously to @(tsee type-equivp),
-     and it will also serve for sum types.
+     to match product and sum types modulo the renaming of bound variables,
+     analogously to @(tsee type-equivp).
      The inputs are the (first) bound variables and the (curried) bodies
      of the pattern and of the type,
      the set of ispace variables to avoid when generating the fresh variable,
@@ -507,8 +454,8 @@
                (new-dim-subst string-dim-mapp)
                (new-shape-subst string-shape-mapp))
   :short "Remove the binding of the fresh variable
-          after matching the bodies of a pattern product type
-          and of a product type,
+          after matching the bodies of a pattern product or sum type
+          and of a product or sum type,
           checking that no pattern variable has captured it."
   :long
   (xdoc::topstring
@@ -580,7 +527,7 @@
      when matched to pattern array and bracket types;
      function types are matched in the curried view,
      so that unary and n-ary function types are identified;
-     universal and product types are matched in the curried view
+     universal, product, and sum types are matched in the curried view
      and modulo the renaming of their bound variables;
      and atom types are lifted to scalar array types
      at array-kind pattern variables (see @(tsee type-var-match)).
@@ -589,10 +536,7 @@
      scalar array types are not normalized to their element types,
      and n-ary function types without inputs
      are not normalized to their output types,
-     when matched to pattern atom types (see @(tsee normalize-type));
-     n-ary sum types are not curried
-     (and are thus distinct from the unary ones);
-     and the bound variables of sum types are not renamed.")
+     when matched to pattern atom types (see @(tsee normalize-type)).")
    (xdoc::p
     "Since types contain dimension, shape, and type variables,
      the matching builds four substitutions:
@@ -610,7 +554,7 @@
      The variables bound in the patterns,
      by universal, product, and sum types,
      are not pattern variables.
-     For universal and product types, we proceed as in @(tsee type-equivp):
+     We proceed as in @(tsee type-equivp):
      we rename the bound variables of the pattern and of the type
      to a common fresh variable in their bodies,
      and we bind the fresh variable to itself while matching the bodies
@@ -622,25 +566,7 @@
      to a type or ispace that mentions the fresh variable,
      which would be a variable capture
      (see @(tsee type-match-forall-restore)
-     and @(tsee type-match-ispace-var-restore)).
-     For sum types, for now,
-     a bound variable matches only the same variable, bound by the same binder:
-     we bind each bound variable to itself, in the appropriate substitution,
-     while matching the body of the binder
-     (see @(tsee dim/shape-subst-self-bind)),
-     so that the occurrences of the variable in the body of the pattern
-     match only the same variable in the body of the type;
-     after matching the body,
-     we restore the binding that the variable had before the binder, if any
-     (see @(tsee dim/shape-subst-restore-bound)).")
-   (xdoc::p
-    "For sum types, we do not check for variable capture yet:
-     a pattern variable may be bound to a type
-     that contains an ispace variable bound, in the type being matched,
-     at the occurrence of the pattern variable.
-     For instance, matching @('(Sigma ($d) (A Int $d))')
-     to the pattern @('(Sigma ($d) *x)') binds @('*x') to @('(A Int $d)').
-     We will handle this as for universal and product types.")
+     and @(tsee type-match-ispace-var-restore)).")
    (xdoc::p
     "A pattern variable is matched via @(tsee type-var-match).")
    (xdoc::p
@@ -689,25 +615,22 @@
      and n-ary universal types with different numbers of bound variables
      may match.")
    (xdoc::p
-    "A pattern product type, unary or n-ary,
-     matches a product type, unary or n-ary,
-     in the curried view of product types
-     (see @(tsee type-match-product) and @(tsee type-equivp)):
-     one bound variable is peeled off from the type and from the pattern,
+    "A pattern product or sum type, unary or n-ary,
+     matches a product or sum type (respectively), unary or n-ary,
+     in the curried view of product and sum types
+     (see @(tsee type-equivp)):
+     one bound variable is peeled off from the type
+     (via @(tsee type-match-product),
+     or via @(tsee type-match-sum) and @(tsee sigma-curried-body))
+     and from the pattern,
      the two variables must have the same sort,
      and the rest of the type must match the rest of the pattern,
      after renaming both variables to a common fresh variable,
      as explained above.
-     Thus, a unary product type may match an n-ary pattern, and vice versa,
-     and n-ary product types with different numbers of bound variables
-     may match.")
-   (xdoc::p
-    "A pattern sum type matches only
-     a sum type of the same form (unary or n-ary)
-     with the same bound variable(s)
-     and whose body matches the body of the pattern,
-     with the bound variable(s) bound to themselves
-     as explained above."))
+     Thus, a unary product or sum type may match an n-ary pattern,
+     and vice versa,
+     and n-ary product or sum types
+     with different numbers of bound variables may match."))
   (type-case
    pat
    :var (b* (((mv okp atom-subst array-subst)
@@ -956,48 +879,75 @@
                                              array-subst))
              ((unless okp) (mv nil nil nil nil nil)))
           (mv t dim-subst shape-subst atom-subst array-subst))
-   :sigma (if (and (type-case type :sigma)
-                   (equal (type-sigma->param type) pat.param))
-              (b* ((vars (set::insert pat.param nil))
-                   ((mv dim-subst1 shape-subst1)
-                    (dim/shape-subst-self-bind vars dim-subst shape-subst))
-                   ((mv okp dim-subst1 shape-subst1 atom-subst array-subst)
-                    (type-match (type-sigma->body type)
-                                pat.body
-                                dim-subst1
-                                shape-subst1
-                                atom-subst
-                                array-subst))
-                   ((unless okp) (mv nil nil nil nil nil))
-                   ((mv dim-subst shape-subst)
-                    (dim/shape-subst-restore-bound vars
-                                                   dim-subst
-                                                   shape-subst
-                                                   dim-subst1
-                                                   shape-subst1)))
-                (mv t dim-subst shape-subst atom-subst array-subst))
-            (mv nil nil nil nil nil))
-   :sigman (if (and (type-case type :sigman)
-                    (equal (type-sigman->params type) pat.params))
-               (b* ((vars (set::mergesort pat.params))
-                    ((mv dim-subst1 shape-subst1)
-                     (dim/shape-subst-self-bind vars dim-subst shape-subst))
-                    ((mv okp dim-subst1 shape-subst1 atom-subst array-subst)
-                     (type-match (type-sigman->body type)
-                                 pat.body
-                                 dim-subst1
-                                 shape-subst1
-                                 atom-subst
-                                 array-subst))
-                    ((unless okp) (mv nil nil nil nil nil))
-                    ((mv dim-subst shape-subst)
-                     (dim/shape-subst-restore-bound vars
-                                                    dim-subst
-                                                    shape-subst
-                                                    dim-subst1
-                                                    shape-subst1)))
-                 (mv t dim-subst shape-subst atom-subst array-subst))
-             (mv nil nil nil nil nil)))
+   :sigma (b* ((vars+type (type-match-sum type))
+               ((when (reserrp vars+type)) (mv nil nil nil nil nil))
+               ((ispacevarlist+type vars+type) vars+type)
+               ((mv okp fresh pat-body type-body dim-subst1 shape-subst1)
+                (type-match-ispace-var-rename pat.param
+                                              pat.body
+                                              (car vars+type.vars)
+                                              (sigma-curried-body
+                                               vars+type.vars
+                                               vars+type.type)
+                                              (set::union
+                                               (type-all-ispace-vars type)
+                                               (type-all-ispace-vars pat))
+                                              dim-subst
+                                              shape-subst
+                                              atom-subst
+                                              array-subst))
+               ((unless okp) (mv nil nil nil nil nil))
+               ((mv okp dim-subst1 shape-subst1 atom-subst array-subst)
+                (type-match type-body
+                            pat-body
+                            dim-subst1
+                            shape-subst1
+                            atom-subst
+                            array-subst))
+               ((unless okp) (mv nil nil nil nil nil))
+               ((mv okp dim-subst shape-subst)
+                (type-match-ispace-var-restore fresh
+                                               dim-subst1
+                                               shape-subst1
+                                               atom-subst
+                                               array-subst))
+               ((unless okp) (mv nil nil nil nil nil)))
+            (mv t dim-subst shape-subst atom-subst array-subst))
+   :sigman (b* ((vars+type (type-match-sum type))
+                ((when (reserrp vars+type)) (mv nil nil nil nil nil))
+                ((ispacevarlist+type vars+type) vars+type)
+                ((mv okp fresh pat-body type-body dim-subst1 shape-subst1)
+                 (type-match-ispace-var-rename (car pat.params)
+                                               (sigma-curried-body pat.params
+                                                                   pat.body)
+                                               (car vars+type.vars)
+                                               (sigma-curried-body
+                                                vars+type.vars
+                                                vars+type.type)
+                                               (set::union
+                                                (type-all-ispace-vars type)
+                                                (type-all-ispace-vars pat))
+                                               dim-subst
+                                               shape-subst
+                                               atom-subst
+                                               array-subst))
+                ((unless okp) (mv nil nil nil nil nil))
+                ((mv okp dim-subst1 shape-subst1 atom-subst array-subst)
+                 (type-match type-body
+                             pat-body
+                             dim-subst1
+                             shape-subst1
+                             atom-subst
+                             array-subst))
+                ((unless okp) (mv nil nil nil nil nil))
+                ((mv okp dim-subst shape-subst)
+                 (type-match-ispace-var-restore fresh
+                                                dim-subst1
+                                                shape-subst1
+                                                atom-subst
+                                                array-subst))
+                ((unless okp) (mv nil nil nil nil nil)))
+             (mv t dim-subst shape-subst atom-subst array-subst)))
   :measure (two-nats-measure (type-count pat) (type-binders-count pat))
   :verify-guards :after-returns)
 
