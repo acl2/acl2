@@ -82,9 +82,9 @@ no constraints on the type of F.
 Computing the guard conjecture for F....
 
 The non-trivial part of the guard conjecture for F, given the :executable-
-counterparts of APPLY$-GUARD, CONS and WEAK-DOLIA-P, primitive type
-reasoning and the :type-prescription rules ASSOC-EQ-SAFE and 
-DO-BODY-GUARD-WRAPPER, is
+counterparts of APPLY$-GUARD and CONS, primitive type reasoning and
+the :type-prescription rules ASSOC-EQ-SAFE and DO-BODY-GUARD-WRAPPER,
+is
 
 Goal
 (AND
@@ -248,7 +248,6 @@ Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
         (:EXECUTABLE-COUNTERPART INTEGERP)
         (:EXECUTABLE-COUNTERPART PAIRLIS$)
         (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
-        (:EXECUTABLE-COUNTERPART WEAK-DOLIA-P)
         (:FAKE-RUNE-FOR-LINEAR NIL)
         (:FAKE-RUNE-FOR-TYPE-SET NIL)
         (:REWRITE ASSOC-EQ-SAFE-CONS-CONS)

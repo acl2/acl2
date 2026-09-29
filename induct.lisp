@@ -2648,7 +2648,14 @@
         loop$-recursion
         names
         (all-loop$-scion-quote-lambdas body alist)
-        alist
+
+; In earlier versions of this code the nil, below, was alist.  But alist is
+; applied by all-loop$-scion-quote-lambdas to the body in question, and the
+; only use of alist in termination-machine-rec-for-list and its subrs is to
+; apply it the arg above, so we do not want to instantiate the body a second
+; time.  This bug was found by Eric Smith and Claude.
+
+        nil
         tests
         ruler-extenders
         avoid-vars)))))

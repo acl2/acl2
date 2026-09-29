@@ -1894,10 +1894,7 @@
      so it is probably a GCC extension.
      We therefore accept this when the "
     (xdoc::seetopic "implementation-environments" "implementation-environment")
-    " dialect indicates GCC/Clang extensions.
-     Since we do not have code yet to recognize null pointer constants,
-     we accept any integer expression;
-     that is, we allow one pointer operand and one integer operand.")
+    " dialect indicates GCC/Clang extensions.")
    (xdoc::p
     "The @('==') and @('!=') operators require
      arithmetic types or pointer types [C17:6.5.9/2];
@@ -1946,7 +1943,10 @@
      [C17:6.5.16.2/1].
      The result has the type of the first operand [C17:6.5.16/3].
      Since pointers may be involved,
-     we perform array-to-pointer and function-to-pointer conversions.")
+     we perform array-to-pointer and function-to-pointer conversions
+     on the second operand.
+     We do not perform them on the first operand,
+     which must be a modifiable lvalue [C17:6.5.16/2].")
    (xdoc::p
     "The @('<<='), @('>>='), @('&='), @('^='), and @('|=') operators
      require integer operands [C17:6.5.13.2/2].
@@ -2020,17 +2020,22 @@
             ((unless (or (and (3definitely (type-real-3p type1))
                               (3definitely (type-real-3p type2)))
                          (if (type-case type1 :pointer)
-                             (and (type-case type2 :pointer)
-                                  (let ((type-to1 (type-pointer->to type1))
-                                        (type-to2 (type-pointer->to type2)))
-                                    (and (not (type-case type-to1 :function))
-                                         (not (type-case type-to2 :function))
-                                         (3possibly
-                                          (type-compatible-3p
-                                           type-to1
-                                           type-to2
-                                           completions
-                                           ienv)))))
+                             (or (and (type-case type2 :pointer)
+                                      (let ((type-to1 (type-pointer->to type1))
+                                            (type-to2 (type-pointer->to type2)))
+                                        (and (not (type-case type-to1
+                                                             :function))
+                                             (not (type-case type-to2
+                                                             :function))
+                                             (3possibly
+                                              (type-compatible-3p
+                                               type-to1
+                                               type-to2
+                                               completions
+                                               ienv)))))
+                                 (and (ienv->gcc/clang ienv)
+                                      (expr-null-pointer-constp
+                                       (expr-binary->arg2 expr) type2 ienv)))
                            (and (ienv->gcc/clang ienv)
                                 (expr-null-pointer-constp
                                  (expr-binary->arg1 expr) type1 ienv)
@@ -2108,11 +2113,10 @@
        (b* (((when (or (type-some-unknownp type-arg1)
                        (type-some-unknownp type-arg2)))
              (retok (type-unknown-scalar)))
-            (type1 (type-fpconvert (type-apconvert type-arg1)))
             (type2 (type-fpconvert (type-apconvert type-arg2)))
-            ((unless (or (and (3definitely (type-arithmetic-3p type1))
+            ((unless (or (and (3definitely (type-arithmetic-3p type-arg1))
                               (3definitely (type-arithmetic-3p type2)))
-                         (and (type-case type1 :pointer)
+                         (and (type-case type-arg1 :pointer)
                               (3definitely (type-integer-3p type2)))))
              (reterr msg)))
          (retok (type-fix type-arg1))))
@@ -5082,15 +5086,9 @@
                        has type ~x1."
                       (designor-fix designor)
                       range?-type?))
-            ((when (or (type-case target-type :unknown)
-                       (type-case target-type :unknown-builtin)
-                       (type-case target-type :unknown-scalar)
-                       (type-case target-type :unknown-arithmetic)
-                       (not range?-type?)
-                       (type-case range?-type? :unknown)
-                       (type-case range?-type? :unknown-builtin)
-                       (type-case range?-type? :unknown-scalar)
-                       (type-case range?-type? :unknown-arithmetic)))
+            ((when (or (type-some-unknownp target-type)
+                       (and range?-type?
+                            (type-some-unknownp range?-type?))))
              (retok (make-designor-sub :index new-index :range? new-range?)
                     (initer-subobjects-stack-unknown)
                     (set::union index-types range?-types)
@@ -5479,8 +5477,8 @@
       "A function declarator with a non-empty name list can only occur
        as the parameters of a function being defined [C17:6.7.6.3/3]
        Thus, we raise an error when the list is nonempty
-       and @('fundef-params-p') is @('nil')
-       (i.e. we are not validating the parameters of a defined function).
+       and the names are not the parameters of the function being defined,
+       which we determine as for a parameter type list (see above).
        Otherwise, we ensure that the names have no duplicates,
        and we push a new scope for the parameters and the function body,
        but we do not add the parameters to the new scope,
@@ -5687,10 +5685,10 @@
                       (type-fix type)))
             (outermost-fundef-params-p
              (and fundef-params-p
-                  (not (dirdeclor-has-params-p dirdeclor))))
+                  (not (dirdeclor-has-params-p dirdeclor.declor))))
             ((erp type vstate)
              (b* (((reterr) (irr-type) (irr-vstate)))
-               (if fundef-params-p
+               (if outermost-fundef-params-p
                    (if (no-duplicatesp-equal dirdeclor.names)
                        (retok (make-type-function
                                :ret type
@@ -5715,7 +5713,7 @@
                             (dirdeclor-fix dirdeclor))))))
             ((erp new-dirdeclor type ident types vstate)
              (valid-dirdeclor
-              dirdeclor.declor outermost-fundef-params-p type vstate)))
+              dirdeclor.declor fundef-params-p type vstate)))
          (retok (make-dirdeclor-function-names :declor new-dirdeclor
                                                :names dirdeclor.names)
                 type
