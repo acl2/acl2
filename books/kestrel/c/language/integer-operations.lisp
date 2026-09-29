@@ -1045,7 +1045,7 @@
    (xdoc::p
     "We use @(tsee rem) because it matches the use of @(tsee truncate),
      in terms of the relationship between quotient and remainder [C17:6.5.5/6],
-     in the definition of @('/') in @(tsee rem-integer-values)."))
+     in the definition of @('/') in @(tsee div-integer-values)."))
   (b* ((mathint1 (value-integer->get val1))
        (mathint2 (value-integer->get val2))
        ((when (equal mathint2 0)) (error :division-by-zero))

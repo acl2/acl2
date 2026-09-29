@@ -584,7 +584,7 @@
                        (type-struct (value-struct->tag struct))))
         (error (list :mistype-struct-read
                      :pointer reftype
-                     :array (type-struct (value-struct->tag struct)))))
+                     :struct (type-struct (value-struct->tag struct)))))
        (val (value-struct-read mem struct))
        ((when (errorp val)) val)
        (objdes-mem (make-objdesign-member :super objdes :name mem)))
