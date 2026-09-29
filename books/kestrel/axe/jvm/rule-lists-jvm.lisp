@@ -678,11 +678,13 @@
     jvm::execute-java.lang.system.arraycopy
     jvm::execute-java.lang.object.getclass
     jvm::execute-java.lang.class.getprimitiveclass
+    jvm::execute-java.lang.Class.desiredAssertionStatus
 
     jvm::is-java.lang.system.arraycopy
     jvm::is-java.lang.object.getclass
     jvm::is-java.lang.float.floattorawintbits
-    jvm::is-java.lang.float.intbitstofloat))
+    jvm::is-java.lang.float.intbitstofloat
+    jvm::is-java.lang.Class.desiredAssertionStatus))
 
 ;; jvm-specific rules used to simplify expressions (but not to actually do symbolic execution)
 ;; todo: factor out some map rules, etc

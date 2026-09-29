@@ -961,7 +961,11 @@
     apply$-warrant-loop$-default-values-definition
     apply$-loop$-default-values1
     apply$-warrant-loop$-default-values1-necc
-    apply$-warrant-loop$-default-values1-definition))
+    apply$-warrant-loop$-default-values1-definition
+    fn-equal-implies-equal-do$-hard-er-1
+    apply$-do$-hard-er
+    apply$-warrant-do$-hard-er-necc
+    apply$-warrant-do$-hard-er-definition))
 
 ; Put all the above names together, and check that
 ; (1) they are all built-in axiom and theorem names and

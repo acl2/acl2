@@ -28360,11 +28360,10 @@ ld) and @(tsee include-book)"
  declaration @(':dfs (v1 ... vk)').  If @('k') is @('1') then one may write
  @(':dfs v1') to abbreviate @(':dfs (v1)').  These declared dfs are the
  <i>known df variables</i> at the top level of the user-supplied body, guard,
- and measure of @('f').  The rules below indicate, for a set @('V') of
- known df variables, when an expression is a df with respect to @('V'); and
- these rules also speak to legality of certain expressions.</p>
+ and measure of @('f').  We present precise rules below for determining when an
+ expression is a df with respect to a set of known df variables.</p>
 
- <p>Before presenting those rules, we extend the notion of a df
+ <p>But before presenting those rules, we extend the notion of a df
  expression (again, df for short) to that of a <i>df{i}
  expression</i> (<i>df{i}</i> for short).  Such an expression is one that
  returns multiple values when the ith value is to be considered a df.  For
@@ -28375,10 +28374,15 @@ ld) and @(tsee include-book)"
  multiple values maybe a df{i} expression for various i but it is never a df
  expression.</p>
 
- <p>Here are the rules promised above.  They are not complete; for example,
- they do not cover @(tsee stobj-let) expressions.  But those and other cases
- should present no surprises in practice.  Let @('u') be a user-supplied
- term (that is, an <i>untranslated</i> term; see @(see term)).</p>
+ <p>We now turn to presenting the rules promised above.  They are not complete;
+ for example, they do not cover @(tsee stobj-let) expressions.  But those and
+ other cases should present no surprises in practice.  These rules indicate,
+ for a set @('V') of known df variables, when an expression is a df with
+ respect to @('V'); and these rules also speak to legality of certain
+ expressions.</p>
+
+ <p>Let @('u') be a user-supplied term (that is, an <i>untranslated</i> term;
+ see @(see term)).</p>
 
  <ul>
 
