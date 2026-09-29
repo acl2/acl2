@@ -2263,14 +2263,28 @@
 ; maximal terms.  If provided, we know that each element of trigger-terms is a
 ; term that is a legal (if possibly silly) trigger for each rule.
 
+; We linearize the conclusion whether or not trigger-terms were supplied.
+; Before this check was made in both cases, a conclusion that produces no
+; polynomial, such as (integerp (f x)), was accepted when :trigger-terms was
+; supplied, and the first attempt to use the resulting rule in linear
+; arithmetic (see add-linear-lemma) walked an empty linearization; see GitHub
+; issue #2055.  The computations that are skipped below when trigger-terms is
+; non-nil are those that only serve to choose the trigger terms.
+
   (let* ((xconcl (expand-inequality-fncall concl))
-         (lst (and (null trigger-terms) ; optimization
-                   (external-linearize xconcl ens wrld state))))
-    (cond ((and (null trigger-terms)
-                (null lst))
+         (lst (external-linearize xconcl ens wrld state)))
+    (cond ((null lst)
            (er soft ctx
                "~@0"
-               (no-linear-msg name concl "" ens wrld state)))
+               (no-linear-msg name concl
+                              (if trigger-terms
+                                  "  Note that this check is made even though ~
+                                   :TRIGGER-TERMS was supplied: the ~
+                                   conclusion of a :LINEAR rule must produce ~
+                                   at least one polynomial, whatever its ~
+                                   trigger terms."
+                                "")
+                              ens wrld state)))
           ((not (null (cdr lst)))
            (er soft ctx
                "No :LINEAR rule can be generated from ~x0 because the ~

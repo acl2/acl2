@@ -263,7 +263,8 @@
 ; This function preserves possible duplications of non-x elements in lst.
 ; We may use this fact when we check the legality of signatures.
 
-  (declare (xargs :guard (true-listp lst)))
+  (declare (xargs :guard (true-listp lst)
+                  :mode :program))
   (cond ((endp lst) nil)
         ((equal (car lst) x)
          (collect-non-x x (cdr lst)))

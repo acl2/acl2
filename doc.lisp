@@ -31733,11 +31733,10 @@ Section 4: Syntactic Restrictions
   declaration [30m[47m:dfs (v1 ... vk)[0m[0m.  If [30m[47mk[0m[0m is [30m[47m1[0m[0m then one may write [30m[47m:dfs v1[0m[0m
   to abbreviate [30m[47m:dfs (v1)[0m[0m.  These declared dfs are the [3mknown df
   variables[0m at the top level of the user-supplied body, guard, and
-  measure of [30m[47mf[0m[0m.  The rules below indicate, for a set [30m[47mV[0m[0m of known df
-  variables, when an expression is a df with respect to [30m[47mV[0m[0m; and these
-  rules also speak to legality of certain expressions.
+  measure of [30m[47mf[0m[0m.  We present precise rules below for determining when
+  an expression is a df with respect to a set of known df variables.
 
-  Before presenting those rules, we extend the notion of a df
+  But before presenting those rules, we extend the notion of a df
   expression (again, df for short) to that of a [3mdf{i} expression[0m
   ([3mdf{i}[0m for short).  Such an expression is one that returns multiple
   values when the ith value is to be considered a df.  For example,
@@ -31748,10 +31747,15 @@ Section 4: Syntactic Restrictions
   similarly, an expression that returns multiple values maybe a df{i}
   expression for various i but it is never a df expression.
 
-  Here are the rules promised above.  They are not complete; for
-  example, they do not cover [30m[47m[stobj-let][0m[0m expressions.  But those and
-  other cases should present no surprises in practice.  Let [30m[47mu[0m[0m be a
-  user-supplied term (that is, an [3muntranslated[0m term; see [term]).
+  We now turn to presenting the rules promised above.  They are not
+  complete; for example, they do not cover [30m[47m[stobj-let][0m[0m expressions.
+  But those and other cases should present no surprises in practice.
+  These rules indicate, for a set [30m[47mV[0m[0m of known df variables, when an
+  expression is a df with respect to [30m[47mV[0m[0m; and these rules also speak to
+  legality of certain expressions.
+
+  Let [30m[47mu[0m[0m be a user-supplied term (that is, an [3muntranslated[0m term; see
+  [term]).
 
     * If [30m[47mu[0m[0m is a variable, then [30m[47mu[0m[0m is a df with respect to [30m[47mV[0m[0m if and only if
       it is in [30m[47mV[0m[0m.
@@ -33262,8 +33266,7 @@ Subtopics
     (defun do$ (measure-fn alist do-fn finally-fn values dolia)
      (declare (xargs :guard (and (apply$-guard measure-fn '(nil))
                                  (apply$-guard do-fn '(nil))
-                                 (apply$-guard finally-fn '(nil))
-                                 (weak-dolia-p dolia))))
+                                 (apply$-guard finally-fn '(nil)))))
      (let* ((stobj-values-p (not (all-nils (true-list-fix values))))
             (old-measure-value (and stobj-values-p
                                     (apply$ measure-fn (list alist))))
@@ -33272,52 +33275,21 @@ Subtopics
             (val (cadr triple))
             (new-alist (caddr triple)))
       (cond
-       ((eq exit-token :return) val)
-       ((eq exit-token :loop-finish)
-        (let*
-         ((triple (true-list-fix (apply$ finally-fn (list new-alist))))
-          (exit-token (car triple))
-          (val (cadr triple)))
-         (if (eq exit-token :return) val nil)))
-       ((l< (lex-fix (apply$ measure-fn (list new-alist)))
-            (lex-fix (if stobj-values-p old-measure-value
-                       (apply$ measure-fn (list alist)))))
-        (do$ measure-fn new-alist
-             do-fn finally-fn values dolia))
-       (t
-        (prog2$
-         (let
-           ((all-stobj-names
-                 (true-list-fix (access dolia dolia :all-stobj-names)))
-            (untrans-measure (access dolia dolia :untrans-measure))
-            (untrans-do-loop$ (access dolia dolia :untrans-do-loop$)))
-          (er
-           hard? 'do$
-           \"The measure, ~x0, used in the do loop$ ~
-                    statement~%~Y12~%failed to decrease!  Recall that do$ tracks ~
-                    the values of do loop$ variables in an alist.  The measure is ~
-                    computed using the values in the alist from before and after ~
-                    execution of the body.  We cannot print the values of double ~
-                    floats and live stobjs, if any are found in the alist, ~
-                    because they are raw Lisp objects, not ACL2 objects.  We ~
-                    print any double float as its corresponding rational and ~
-                    simply print the name of any live stobj (as a ~
-                    string).~%~%Before execution of the do body the alist ~
-                    was~%~Y32.~|After the execution of the do body the alist ~
-                    was~%~Y42.~|Before the execution of the body the measure ~
-                    was~%~x5.~|After the execution of the body the measure ~
-                    was~%~x6.~|~%Logically, in this situation the do$ returns the ~
-                    value of a term whose output signature is ~x7, where the ~
-                    value of any component of type :df is #d0.0 and the value of ~
-                    any stobj component is the last latched value of that stobj.\"
-           untrans-measure untrans-do-loop$ nil
-           (eviscerate-do$-alist alist all-stobj-names)
-           (eviscerate-do$-alist new-alist all-stobj-names)
-           (if stobj-values-p old-measure-value
-             (apply$ measure-fn (list alist)))
-           (apply$ measure-fn (list new-alist))
-           values))
-         (loop$-default-values values new-alist))))))
+        ((eq exit-token :return) val)
+        ((eq exit-token :loop-finish)
+         (let*
+          ((triple (true-list-fix (apply$ finally-fn (list new-alist))))
+           (exit-token (car triple))
+           (val (cadr triple)))
+          (if (eq exit-token :return) val nil)))
+        ((l< (lex-fix (apply$ measure-fn (list new-alist)))
+             (lex-fix (if stobj-values-p old-measure-value
+                        (apply$ measure-fn (list alist)))))
+         (do$ measure-fn new-alist
+              do-fn finally-fn values dolia))
+        (t (do$-hard-er measure-fn
+                        alist values dolia stobj-values-p
+                        old-measure-value new-alist)))))
 
   The last argument is only relevant in the error message printed if
   the [30m[47mdo$[0m[0m fails to terminate and that message is not part of the
@@ -34260,8 +34232,7 @@ SEMANTICS
     (defun do$ (measure-fn alist do-fn finally-fn values dolia)
      (declare (xargs :guard (and (apply$-guard measure-fn '(nil))
                                  (apply$-guard do-fn '(nil))
-                                 (apply$-guard finally-fn '(nil))
-                                 (weak-dolia-p dolia))))
+                                 (apply$-guard finally-fn '(nil)))))
      (let* ((stobj-values-p (not (all-nils (true-list-fix values))))
             (old-measure-value (and stobj-values-p
                                     (apply$ measure-fn (list alist))))
@@ -34270,52 +34241,21 @@ SEMANTICS
             (val (cadr triple))
             (new-alist (caddr triple)))
       (cond
-       ((eq exit-token :return) val)
-       ((eq exit-token :loop-finish)
-        (let*
-         ((triple (true-list-fix (apply$ finally-fn (list new-alist))))
-          (exit-token (car triple))
-          (val (cadr triple)))
-         (if (eq exit-token :return) val nil)))
-       ((l< (lex-fix (apply$ measure-fn (list new-alist)))
-            (lex-fix (if stobj-values-p old-measure-value
-                       (apply$ measure-fn (list alist)))))
-        (do$ measure-fn new-alist
-             do-fn finally-fn values dolia))
-       (t
-        (prog2$
-         (let
-           ((all-stobj-names
-                 (true-list-fix (access dolia dolia :all-stobj-names)))
-            (untrans-measure (access dolia dolia :untrans-measure))
-            (untrans-do-loop$ (access dolia dolia :untrans-do-loop$)))
-          (er
-           hard? 'do$
-           \"The measure, ~x0, used in the do loop$ ~
-                    statement~%~Y12~%failed to decrease!  Recall that do$ tracks ~
-                    the values of do loop$ variables in an alist.  The measure is ~
-                    computed using the values in the alist from before and after ~
-                    execution of the body.  We cannot print the values of double ~
-                    floats and live stobjs, if any are found in the alist, ~
-                    because they are raw Lisp objects, not ACL2 objects.  We ~
-                    print any double float as its corresponding rational and ~
-                    simply print the name of any live stobj (as a ~
-                    string).~%~%Before execution of the do body the alist ~
-                    was~%~Y32.~|After the execution of the do body the alist ~
-                    was~%~Y42.~|Before the execution of the body the measure ~
-                    was~%~x5.~|After the execution of the body the measure ~
-                    was~%~x6.~|~%Logically, in this situation the do$ returns the ~
-                    value of a term whose output signature is ~x7, where the ~
-                    value of any component of type :df is #d0.0 and the value of ~
-                    any stobj component is the last latched value of that stobj.\"
-           untrans-measure untrans-do-loop$ nil
-           (eviscerate-do$-alist alist all-stobj-names)
-           (eviscerate-do$-alist new-alist all-stobj-names)
-           (if stobj-values-p old-measure-value
-             (apply$ measure-fn (list alist)))
-           (apply$ measure-fn (list new-alist))
-           values))
-         (loop$-default-values values new-alist))))))
+        ((eq exit-token :return) val)
+        ((eq exit-token :loop-finish)
+         (let*
+          ((triple (true-list-fix (apply$ finally-fn (list new-alist))))
+           (exit-token (car triple))
+           (val (cadr triple)))
+          (if (eq exit-token :return) val nil)))
+        ((l< (lex-fix (apply$ measure-fn (list new-alist)))
+             (lex-fix (if stobj-values-p old-measure-value
+                        (apply$ measure-fn (list alist)))))
+         (do$ measure-fn new-alist
+              do-fn finally-fn values dolia))
+        (t (do$-hard-er measure-fn
+                        alist values dolia stobj-values-p
+                        old-measure-value new-alist)))))
 
   We conclude by returning to an earlier example that illustrates
   runtime guard-checking.  But this time we do some tracing, as
@@ -107242,6 +107182,33 @@ Bug Fixes From AI via Eric Smith
   consider congruent stobjs when deciding whether to require [30m[47m:PROTECT
   T[0m[0m to be specified for an exported function.  For an example, see
   [community-book] [30m[47msystem/tests/protect-congruent-stobj.lisp[0m[0m.
+
+  Fixed several bugs with [30m[47mdo$[0m[0m that manifested themselves differently
+  but were all caused by the same flaw.  The sixth argument of [30m[47mdo$[0m[0m is
+  irrelevant to its value and was supposed to be used only to print a
+  certain runtime hard error.  But several other utilities in our
+  source code treated the sixth argument as meaningful and this
+  opened up the possibility that a user could supply bogus
+  information in that argument.  At least one such exploit allowed
+  Claude to construct a proof of [30m[47mnil[0m[0m.  The (mis-)uses of the sixth
+  argument have been eliminated.
+
+  Fixed a bug in the compilation of [30m[47mdo$[0m[0m loops that allowed the
+  compilation of an [30m[47mmv-setq[0m[0m to reassign a [30m[47mlet[0m[0m-bound variable due to
+  our failure to generate a sufficiently ``fresh'' variable to
+  temporarily hold the vector of results computed by the body of the
+  [30m[47mmv-setq[0m[0m expression.  See the comment in [30m[47mcmp-do-body[0m[0m for an example.
+  The guard-verified logical definition returns a different result
+  than the compiled raw lisp code due to this variable capture..
+  Claude then exploited this bug to prove [30m[47mnil[0m[0m using a metafunction.
+  See [community-books] [30m[47msystem/tests/do-mv-capture.lisp[0m[0m.
+
+  Fixed a bug in the generation of termination conditions for functions
+  defined with [loop$-recursion].  The bug, which was caused by the
+  inadvertent application of a substitution to a formula to which
+  that substitution had already been applied, caused the termination
+  conditions for some loop$-recursive functions to be incomplete or
+  bogus.
 
 
 Other Bug Fixes

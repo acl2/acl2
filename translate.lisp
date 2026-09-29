@@ -1456,30 +1456,14 @@
 
 (defun do$-stobjs-out (arg-exprs)
 
-; Arg-exprs is the list of arguments of a translated do$ call.
+; Arg-exprs is the list of arguments of a translated do$ call.  We return the
+; stobjs-out of the do$.  We do not use the dolia argument, which may be nil or
+; something completely irrelevant to the other arguments!  We use the values
+; argument, which is the 5th argument.
 
 ; Also see related function loop$-stobjs-out.
 
-  (let* ((quoted-dolia (car (last arg-exprs)))
-         (loop$-expr (and (quotep quoted-dolia)
-                          (access dolia
-                                  (unquote quoted-dolia)
-                                  :untrans-do-loop$))))
-    (mv-let (erp parse)
-      (if (and (true-listp loop$-expr)
-               (eq (car loop$-expr) 'loop$))
-          (parse-loop$ loop$-expr)
-        (mv t nil))
-      (cond
-       ((or erp
-            (not (eq (car parse) 'DO)))
-        (er hard! 'do$-stobjs-out
-            "Implementation error: Unexpected failure to parse loop$ ~
-             expression from last argument of a call of do$, ~x0."
-            (cons 'do$ arg-exprs)))
-       (t (let ((values (nth 3 parse)))
-            (cond ((null values) '(nil))
-                  (t values))))))))
+  (unquote (nth 4 arg-exprs)))
 
 (defun actual-stobjs-out (fn arg-exprs wrld)
 
@@ -10697,7 +10681,7 @@
      term+
      (list val))))
 
-(defun cmp-do-body-mv-setq (x vars twvts term)
+(defun cmp-do-body-mv-setq (x genvar-avoid-vars twvts term)
 
 ; X is of the form (ersatz-mv-setq body v1 ... vn).
 
@@ -10716,6 +10700,12 @@
 ; mv-var and then with setq of the vars.  But perhaps a single lambda for the
 ; vars, as above, is prettier.
 
+; Note that mv-var must be a fresh variable.  Eric Smith and Claude provided an
+; example in which our old code generated a variable used elsewhere in the
+; body.  See cmp-do-body for the example.  We previously supplied a list of all
+; the free variables in body as the avoid list; now we provide a list of all
+; the bound and free variables.
+
   (let* ((mv-var
 
 ; We generate a fresh variable.  It might seem that the caller needs to add
@@ -10726,7 +10716,7 @@
 ; even v0).  But it's easy enough to pass vars here, and if we ever need mv-var
 ; to be included in vars, we can pass back that information.
 
-          (genvar 'cmp-do-body "MV" 0 vars))
+          (genvar 'cmp-do-body "MV" 0 genvar-avoid-vars))
          (mvars (ersatz-mv-setq-vars x))
          (mbody (ersatz-mv-setq-body x))
          (guardian (cmp-do-body-mv-guardian mv-var mvars twvts))
@@ -10765,7 +10755,7 @@
                                                     (cdr actuals)
                                                     vars)))))
 
-(defun cmp-do-body-1 (x twvts aterm vars wrld)
+(defun cmp-do-body-1 (x twvts aterm vars genvar-avoid-vars wrld)
 
 ; This function carries out the algorithm described in the Algorithm
 ; Description given in a comment in cmp-do-body, on the given x, twvts, and
@@ -10781,6 +10771,11 @@
 ; represent a pass through the do-body, x, by apply$ing the corresponding do-fn
 ; to the alist at the start of that pass, represented by aterm, to get a new
 ; alist.  Again see also cmp-do-body.
+
+; Genvars-avoid-vars is the list of all bound variables and all free variables.
+; This allows the compilation of MV-SETQ to avoid capturing bound variables
+; elsewhere in the definition.  This problem was pointed out by Eric Smith and
+; Claude in the example included in cmp-do-body.
 
   (cond
    ((or (variablep x)
@@ -10806,7 +10801,9 @@
                          (untranslate-do-body x wrld)))
                 (t (er-let*-cmp ((val
                                   (cmp-do-body-1 (lambda-body (ffn-symb x))
-                                                 twvts aterm vars wrld)))
+                                                 twvts aterm
+                                                 vars genvar-avoid-vars
+                                                 wrld)))
                      (value-cmp (make-lambda-application
                                  (lambda-formals (ffn-symb x))
                                  val
@@ -10822,9 +10819,13 @@
                                    (cmp-do-body-exit nil *nil* aterm))))
           (t
            (er-let*-cmp ((arg2
-                          (cmp-do-body-1 (fargn x 2) twvts aterm vars wrld))
+                          (cmp-do-body-1 (fargn x 2) twvts aterm
+                                         vars genvar-avoid-vars
+                                         wrld))
                          (arg3
-                          (cmp-do-body-1 (fargn x 3) twvts aterm vars wrld)))
+                          (cmp-do-body-1 (fargn x 3) twvts aterm
+                                         vars genvar-avoid-vars
+                                         wrld)))
              (value-cmp (fcons-term* 'IF (fargn x 1) arg2 arg3))))))
         (return-last
          (prog2$
@@ -10842,7 +10843,9 @@
 ; dcl-guardians) above the alist that we are building.
 
             (er-let*-cmp ((arg3
-                           (cmp-do-body-1 (fargn x 3) twvts aterm vars wrld)))
+                           (cmp-do-body-1 (fargn x 3) twvts aterm
+                                          vars genvar-avoid-vars
+                                          wrld)))
               (value-cmp (prog2$-call
                           (fargn x 2)
                           arg3))))
@@ -10865,7 +10868,9 @@
         (ersatz-mv-setq
          (value-cmp (cmp-do-body-exit nil
                                       *nil*
-                                      (cmp-do-body-mv-setq x vars twvts
+                                      (cmp-do-body-mv-setq x
+                                                           genvar-avoid-vars
+                                                           twvts
                                                            aterm))))
         (ersatz-prog2
          (let ((x1 (fargn x 1))
@@ -10873,7 +10878,9 @@
            (cond
             ((or (variablep x1)
                  (fquotep x1))
-             (cmp-do-body-1 x2 twvts aterm vars wrld))
+             (cmp-do-body-1 x2 twvts aterm
+                            vars genvar-avoid-vars
+                            wrld))
             ((flambda-applicationp x1)
              (let ((body (lambda-body (ffn-symb x1))))
                (cond
@@ -10892,9 +10899,13 @@
                                  (lambda-formals (ffn-symb x1))
                                  (fargs x1)
                                  (fcons-term* 'ersatz-prog2 body x2))
-                                twvts aterm vars wrld))
+                                twvts aterm
+                                vars genvar-avoid-vars
+                                wrld))
                 (t
-                 (er-let*-cmp ((arg2 (cmp-do-body-1 x2 twvts aterm vars wrld)))
+                 (er-let*-cmp ((arg2 (cmp-do-body-1 x2 twvts aterm
+                                                    vars genvar-avoid-vars
+                                                    wrld)))
                    (value-cmp (prog2$-call x1 arg2)))))))
             (t
              (case (ffn-symb x1)
@@ -10903,18 +10914,24 @@
                  ((and (not (ersatz-symbols t (fargn x1 2)))
                        (not (ersatz-symbols t (fargn x1 3))))
                   (er-let*-cmp ((arg2
-                                 (cmp-do-body-1 x2 twvts aterm vars wrld)))
+                                 (cmp-do-body-1 x2 twvts aterm
+                                                vars genvar-avoid-vars
+                                                wrld)))
                     (value-cmp (prog2$-call x1 arg2))))
                  (t (er-let*-cmp ((arg2 (cmp-do-body-1
                                          (fcons-term* 'ersatz-prog2
                                                       (fargn x1 2)
                                                       x2)
-                                         twvts aterm vars wrld))
+                                         twvts aterm
+                                         vars genvar-avoid-vars
+                                         wrld))
                                   (arg3 (cmp-do-body-1
                                          (fcons-term* 'ersatz-prog2
                                                       (fargn x1 3)
                                                       x2)
-                                         twvts aterm vars wrld)))
+                                         twvts aterm
+                                         vars genvar-avoid-vars
+                                         wrld)))
                       (value-cmp (fcons-term* 'IF (fargn x1 1) arg2 arg3))))))
                (return-last
                 (prog2$
@@ -10922,7 +10939,9 @@
                  (cond
                   ((not (ersatz-symbols t (fargn x1 3)))
                    (er-let*-cmp ((arg2
-                                  (cmp-do-body-1 x2 twvts aterm vars wrld)))
+                                  (cmp-do-body-1 x2 twvts aterm
+                                                 vars genvar-avoid-vars
+                                                 wrld)))
                      (value-cmp (prog2$-call x1 arg2))))
                   ((equal (fargn x1 1) ''progn)
 
@@ -10935,7 +10954,9 @@
                                         (fcons-term* 'ersatz-prog2
                                                      (fargn x1 3)
                                                      x2)
-                                        twvts aterm vars wrld)))
+                                        twvts aterm
+                                        vars genvar-avoid-vars
+                                        wrld)))
                      (value-cmp (prog2$-call
                                  (fargn x1 2)
                                  arg2))))
@@ -10953,28 +10974,37 @@
                                             (fcons-term* 'ersatz-prog2
                                                          (fargn x1 2)
                                                          x2))
-                               twvts aterm vars wrld))
+                               twvts aterm
+                               vars genvar-avoid-vars
+                               wrld))
                (ersatz-loop-finish
                 (value-cmp (cmp-do-body-exit :loop-finish *nil* aterm)))
                (ersatz-return
                 (value-cmp (cmp-do-body-exit :return (fargn x1 1) aterm)))
                (ersatz-setq
                 (er-let*-cmp ((arg2
-                               (cmp-do-body-1 x2 twvts aterm vars wrld)))
+                               (cmp-do-body-1 x2 twvts aterm
+                                              vars genvar-avoid-vars
+                                              wrld)))
                   (value-cmp (cmp-do-body-setq x1 twvts arg2))))
                (ersatz-mv-setq
                 (er-let*-cmp ((arg2
-                               (cmp-do-body-1 x2 twvts aterm vars wrld)))
-                  (value-cmp (cmp-do-body-mv-setq x1 vars twvts arg2))))
+                               (cmp-do-body-1 x2 twvts aterm
+                                              vars genvar-avoid-vars
+                                              wrld)))
+                  (value-cmp (cmp-do-body-mv-setq x1 genvar-avoid-vars
+                                                  twvts arg2))))
                (otherwise
-                (er-let*-cmp ((arg2 (cmp-do-body-1 x2 twvts aterm vars wrld)))
+                (er-let*-cmp ((arg2 (cmp-do-body-1 x2 twvts aterm
+                                                   vars genvar-avoid-vars
+                                                   wrld)))
                   (value-cmp (prog2$-call x1 arg2)))))))))
         (otherwise
          (value-cmp (prog2$-call
                      x
                      (cmp-do-body-exit nil *nil* aterm))))))))
 
-(defun cmp-do-body (x twvts vars wrld)
+(defun cmp-do-body (x twvts vars genvar-avoid-vars wrld)
 
 ; X is a well-formed do-body with respect to the settable variables of the
 ; containing loop$ (the cars of the twvts tuples).  Twvts is a list of tuples
@@ -10989,6 +11019,35 @@
 ; Since the type-specs in twvts are known to the Common Lisp compiler, they
 ; must be enforced on every SETQ and MV-SETQ, by adding the corresponding
 ; check-dcl-guardians form of the instantiated type-predicates.
+
+; Genvars-avoid-vars is the list of all bound variables and all free variables.
+; This allows the compilation of MV-SETQ to avoid capturing bound variables
+; elsewhere in the definition.  This problem was pointed out by Eric Smith and
+; Claude.  Here is the example:
+
+; (defun bad (x)
+;   (declare (xargs :guard (true-listp x)))
+;   (loop$ with temp = x with result = nil with len = 0
+;          do
+;          :guard (and (true-listp temp) (natp len))
+;          (let ((mv0 17))                     ; MV0 = genvar's first choice
+;            (if (null temp)
+;                (loop-finish)
+;              (progn (mv-setq (temp result len)
+;                              (mv (cdr temp) result (1+ len)))
+;                     (setq result (cons mv0 result)))))  ; MV0 used after MV-SETQ
+;          finally (return (list len result))))
+
+; Observe that the user's let binds mv0 and then in the body of the let, the
+; final setq refers to the value of that variable.  But between the binding of
+; mv0 and its use we see an mv-setq.  cmp-do-body-mv-setq has to generate a
+; variable to temporarily hold the vector of results.  If that function uses
+; vars -- the list of settable and free variables -- to avoid (as we used to),
+; then the genvar for the mv-setq will pick MV0 as the ``fresh'' variable.  We
+; have to avoid bound variables too.  So we pass genvars-avoid-vars around
+; through this function but the only time it is otherwise used is when we call
+; genvar inside of cmp-do-body-mv-setq.  We thank Eric and Claude for this
+; observation.
 
 ; Algorithm Description
 
@@ -11078,7 +11137,8 @@
   (mv-let (erp val)
     (cmp-do-body-1 x twvts
                    (cmp-do-body-alist vars)
-                   vars wrld)
+                   vars genvar-avoid-vars
+                   wrld)
     (cond (erp (cons :fail val))
           (t val))))
 
@@ -21661,6 +21721,38 @@
 
 (mutual-recursion
 
+(defun all-vars-bound-and-free1 (term ans)
+
+; We collect all bound variables and also all free variables in term.
+
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (symbol-listp ans))
+                  :mode :program))
+  (cond ((variablep term)
+         (add-to-set-eq term ans))
+        ((fquotep term) ans)
+        ((flambda-applicationp term)
+         (all-vars-bound-and-free1-lst
+          (fargs term)
+          (all-vars-bound-and-free1
+           (lambda-body (ffn-symb term))
+; Below we use all-vars-bound-and-free1-lst to add-to-set-eq each formal.
+           (all-vars-bound-and-free1-lst (lambda-formals (ffn-symb term))
+                                         ans))))
+        (t (all-vars-bound-and-free1-lst (fargs term) ans))))
+
+(defun all-vars-bound-and-free1-lst (lst ans)
+  (declare (xargs :guard (and (pseudo-term-listp lst)
+                              (symbol-listp ans))
+                  :mode :program))
+  (cond ((endp lst) ans)
+        (t (all-vars-bound-and-free1-lst
+            (cdr lst)
+            (all-vars-bound-and-free1 (car lst) ans)))))
+)
+
+(mutual-recursion
+
 (defun translate11-local-def (form name bound-vars args edcls body
                                    new-stobjs-out stobjs-out bindings
                                    known-stobjs flet-alist ctx wrld state-vars)
@@ -24654,6 +24746,26 @@
                                               translated-fin-body)
                                         nil)
                                        settable-vars)))
+
+; Vars contains all the settable and free vars of the DO$.  But Eric Smith and
+; Claude pointed out a variable capture problem by the compilation of MV-SETQ.
+; So now we also collect all the bound vars and all the free vars, to as to
+; totally avoid all variables in the DO$.  In an earlier attempt to fix the
+; capture problem we just extended vars to include the bound variables.
+; However, tests with correctly accepted DO$ loops in the various loop theorems
+; in /projects/apply/loop*.lisp books, showed that this expansion of vars was
+; overkill and resulted in acceptable DO$s being rejected.  So now we compute
+; both lists and use genvar-avoid-vars only for cmp-do-body-mv-setq case.
+
+                        (genvar-avoid-vars
+                         (append settable-vars
+                                 (set-difference-eq
+                                  (all-vars-bound-and-free1-lst
+                                   (list translated-mform
+                                         translated-do-body
+                                         translated-fin-body)
+                                   nil)
+                                  settable-vars)))
                         (all-stobj-names
                          (collect-all-stobj-names vars
                                                   known-stobjs
@@ -24700,7 +24812,9 @@
                                       msg))
                           (t
                            (let* ((do-body-term (cmp-do-body translated-do-body
-                                                             twvts vars wrld))
+                                                             twvts
+                                                             vars genvar-avoid-vars
+                                                             wrld))
                                   (measure-term
                                    (if mform
                                        translated-mform
@@ -24715,7 +24829,9 @@
                                          :untrans-do-loop$ x))
                                   (fin-body-term (cmp-do-body
                                                   translated-fin-body
-                                                  twvts vars wrld)))
+                                                  twvts
+                                                  vars genvar-avoid-vars
+                                                  wrld)))
                              (cond
                               ((eq (car do-body-term) :fail)
                                (trans-er+? cform x ctx

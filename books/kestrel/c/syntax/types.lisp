@@ -1639,36 +1639,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define type-uaconvert ((type1 typep) (type2 typep) (ienv ienvp))
+(define type-common-real ((type1 typep) (type2 typep) (ienv ienvp))
   :guard (and (3definitely (type-arithmetic-3p type1))
               (3definitely (type-arithmetic-3p type2)))
   :returns (new-type typep)
-  :short "Perform the usual arithmetic conversions on two arithmetic types
-          [C17:6.3.1.8]."
+  :short "Common real type of two arithmetic types [C17:6.3.1.8/1]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This returns the common type to which the operands are converted,
-     which is normally also the type of
-     the result of the arithmetic operation.")
+    "The usual arithmetic conversions determine a common real type
+     for the operands and the result [C17:6.3.1.8/1].
+     This function calculates that type;
+     see @(tsee type-uaconvert) for the type domain of the result.")
    (xdoc::p
     "If either type is unknown, the result is the unknown arithmetic type;
-     we know that it must be at least arithmetic.
-     This case will eventually go away,
-     once we have a full type system in our validator.")
+     we know that it must be at least arithmetic.")
    (xdoc::p
-    "If at least one type is @('long double _Complex'),
-     the result is @('long double _Complex');
-     note that [C17:6.3.1.8] talks about a corresponding real type,
-     but adds that the result is complex if at least one operand is.
-     Otherwise, if at least one type is @('double _Complex'),
-     the result is @('double _Complex'),
-     according to analogous reasoning.
-     Otherwise, the same is the case for @('float _Complex').")
-   (xdoc::p
-    "Otherwise, none of the types is complex,
-     and we have three analogous cases for
-     @('long double'), @('double'), and @('float').")
+    "Otherwise, we consider the corresponding real types of the operands,
+     where the corresponding real type of a complex type
+     is obtained by removing @('_Complex') [C17:6.2.5/12].
+     If either one is @('long double'), the result is @('long double');
+     otherwise, if either one is @('double'), the result is @('double');
+     otherwise, if either one is @('float'), the result is @('float').")
    (xdoc::p
     "Otherwise, none of the types is floating,
      and we apply the integer promotions to both types.
@@ -1680,23 +1672,14 @@
    ((or (type-some-unknownp type1)
         (type-some-unknownp type2))
     (type-unknown-arithmetic))
-   ((or (type-case type1 :ldoublec)
-        (type-case type2 :ldoublec))
-    (type-ldoublec))
-   ((or (type-case type1 :doublec)
-        (type-case type2 :doublec))
-    (type-doublec))
-   ((or (type-case type1 :floatc)
-        (type-case type2 :floatc))
-    (type-floatc))
-   ((or (type-case type1 :ldouble)
-        (type-case type2 :ldouble))
+   ((or (type-case type1 '(:ldouble :ldoublec))
+        (type-case type2 '(:ldouble :ldoublec)))
     (type-ldouble))
-   ((or (type-case type1 :double)
-        (type-case type2 :double))
+   ((or (type-case type1 '(:double :doublec))
+        (type-case type2 '(:double :doublec)))
     (type-double))
-   ((or (type-case type1 :float)
-        (type-case type2 :float))
+   ((or (type-case type1 '(:float :floatc))
+        (type-case type2 '(:float :floatc)))
     (type-float))
    (t (b* ((type1 (type-integer-promote type1 ienv))
            (type2 (type-integer-promote type2 ienv)))
@@ -1721,19 +1704,52 @@
          (t (prog2$ (impossible) (irr-type)))))))
   :guard-hints (("Goal"
                  :do-not '(preprocess)
-                 :in-theory (e/d (type-some-unknownp
-                                  type-arithmetic-3p
-                                  type-integer-3p
-                                  type-unsigned-integer-3p
-                                  type-signed-integer-3p
-                                  type-standard-unsigned-integer-3p
-                                  type-standard-signed-integer-3p
-                                  type-integer-promote
-                                  type-integer-promotedp
-                                  type-floating-3p
-                                  type-real-floating-3p
-                                  type-complex-3p)
-                                 ((:e tau-system))))))
+                 :in-theory (enable type-some-unknownp
+                                    type-arithmetic-3p
+                                    type-integer-3p
+                                    type-unsigned-integer-3p
+                                    type-signed-integer-3p
+                                    type-standard-unsigned-integer-3p
+                                    type-standard-signed-integer-3p
+                                    type-integer-promote
+                                    type-integer-promotedp
+                                    type-floating-3p
+                                    type-real-floating-3p
+                                    type-complex-3p))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define type-uaconvert ((type1 typep) (type2 typep) (ienv ienvp))
+  :guard (and (3definitely (type-arithmetic-3p type1))
+              (3definitely (type-arithmetic-3p type2)))
+  :returns (new-type typep)
+  :short "Perform the usual arithmetic conversions on two arithmetic types
+          [C17:6.3.1.8]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This returns the common type to which the operands are converted,
+     which is normally also the type of
+     the result of the arithmetic operation.")
+   (xdoc::p
+    "The corresponding real type of the result is
+     the common real type calculated by @(tsee type-common-real).
+     The result is complex if at least one operand is complex,
+     and real otherwise [C17:6.3.1.8/1].
+     If an operand is complex, the common real type is floating,
+     since the corresponding real type of the complex operand is floating;
+     thus, the @(':otherwise') case below is never reached
+     when a complex result is needed."))
+  (b* ((type (type-common-real type1 type2 ienv))
+       ((unless (or (3definitely (type-complex-3p type1))
+                    (3definitely (type-complex-3p type2))))
+        type))
+    (type-case
+     type
+     :float (type-floatc)
+     :double (type-doublec)
+     :ldouble (type-ldoublec)
+     :otherwise type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
