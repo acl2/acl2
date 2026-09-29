@@ -3299,7 +3299,6 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :enable-rules (nfix
-                 fix
                  ;; for speed:
                  acl2::o-p-of-two-nats-measure
                  acl2::o<-of-two-nats-measure
@@ -3796,7 +3795,6 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :enable-rules (nfix
-                 fix
                  ;; for speed:
                  acl2::o-p-of-two-nats-measure
                  acl2::o<-of-two-nats-measure
