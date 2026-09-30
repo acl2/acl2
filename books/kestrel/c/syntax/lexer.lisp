@@ -1648,7 +1648,7 @@
      These include preprocessing numbers,
      defined by <i>pp-number</i> in [C17:6.4.8] [C17:A.1.9],
      which start with a digit, optionally preceded by a dot,
-     and are followed by identifier characters (including digits and letter),
+     and are followed by identifier characters (including digits and letters),
      as well as plus and minus signs immediately preceded by exponent letters,
      as well as periods
      [C17:6.4.8/2].
@@ -1931,11 +1931,10 @@
                ((erp isuffix? suffix-last/next-pos parstate)
                 (lex-?-integer-suffix parstate))
                ;; 0 x/X hexdigs [suffix]
-               ((erp parstate) (check-full-ppnumber (and
-                                                     (member (car (last hexdigs))
-                                                             '(#\e #\E))
-                                                     t)
-                                                    parstate)))
+               (ends-in-e (and (not isuffix?)
+                               (member (car (last hexdigs)) '(#\e #\E))
+                               t))
+               ((erp parstate) (check-full-ppnumber ends-in-e parstate)))
             (retok (const-int
                     (make-iconst
                      :core (make-dec/oct/hex-const-hex

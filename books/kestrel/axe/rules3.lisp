@@ -4520,8 +4520,7 @@
 ;;                 (integerp len))
 ;;            (equal (list::clear-nth n (bv-array-write size len n val data))
 ;;                   (list::clear-nth n (bvchop-list size (take len data)))))
-;;   :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2 ceiling-of-lg)
-;;                                   ()))))
+;;   :hints (("Goal" :in-theory (enable bv-array-write update-nth2 ceiling-of-lg))))
 
 ;; (defthm <-becomes-bvlt-table
 ;;   (implies (and (bind-free (bind-var-to-size-from-table 'free x mfc state))
@@ -8752,8 +8751,7 @@
                 (natp n))
            (equal (take m (bv-array-write 32 80 n val lst))
                   (bvchop-list 32 (take m lst))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bv-array-write update-nth2))))
 
 (defthm +-of-minus1-and-bvplus-of-1
   (equal (+ -1 (BVPLUS 32 1 x))
@@ -8772,7 +8770,7 @@
 ;; (defthm bv-array-write-with-index-and-len-same
 ;;   (equal (bv-array-write elem-width len len val lst)
 ;;          (bvchop-list elem-width (take len lst)))
-;;   :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) ()))))
+;;   :hints (("Goal" :in-theory (enable bv-array-write update-nth2))))
 
 (defthmd bvchop-tighten
   (implies (and (< YSIZE SIZE)
@@ -8826,9 +8824,8 @@
            (equal (bv-array-write element-size1 len1 index1 val1 (bv-array-write element-size2 len2 index2 val2 lst))
                   (bv-array-write element-size1 len1 index1 val1 (bv-array-write element-size2 len1 index2 val2 lst))))
   :hints
-  (("Goal" :in-theory (e/d (bv-array-write-opener
-                            update-nth2 len-update-nth)
-                           ()))))
+  (("Goal" :in-theory (enable bv-array-write-opener
+                              update-nth2 len-update-nth))))
 
 ;gen the 4
 (defthm floor-becomes-slice-when-unsigned-byte-p
@@ -11389,7 +11386,7 @@
 ;; (defthm bv-array-clear-of-update-nth2-same
 ;;   (equal (bv-array-clear size len index (update-nth2 len index val lst))
 ;;          (bv-array-clear size len index lst))
-;;   :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2) ()))))
+;;   :hints (("Goal" :in-theory (enable bv-array-clear bv-array-write update-nth2))))
 
 (defthm bv-array-read-of-update-nth2-same
   (implies (and (natp len)
@@ -11397,8 +11394,7 @@
                 (natp index))
            (equal (bv-array-read size len index (update-nth2 len index val lst))
                   (bvchop size val)))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-read-opener update-nth2)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bv-array-clear bv-array-read-opener update-nth2))))
 
 ;gen the 0!
 (defthm sbvlt-of-bvplus-of-constant
@@ -12095,7 +12091,7 @@
   (implies (natp index)
            (equal (bv-array-write width 1 index val data)
                   (list (bvchop width val))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-write update-nth2))))
 
 ;gen
 (defthm unsigned-byte-p-of-2-when-bvlt
@@ -12158,7 +12154,7 @@
                 (natp numelems))
            (equal (bv-array-write width numelems index val data)
                   (bv-array-write width numelems index val (firstn numelems data))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-write update-nth2))))
 
 (defthm unsigned-byte-p-of-+-of-minus-better-helper
   (implies (and (unsigned-byte-p size x)
@@ -12814,11 +12810,10 @@
                               (bvchop 8 val2))
                        (equal (bvchop-list 8 (take index data1))
                               (bvchop-list 8 (take index data2))))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write-opener
-                                   update-nth2
-                                   equal-of-update-nth-new
-                                   bvplus)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bv-array-write-opener
+                                     update-nth2
+                                     equal-of-update-nth-new
+                                     bvplus))))
 
 (defthm <-of-bvchop-when-<-of-bvchop-smaller
   (implies (and (< k (bvchop freesize x))
