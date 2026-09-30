@@ -61,7 +61,7 @@
 
   (in-theory (disable (:e unicode-chars)))
 
-  (defret in-of-unicode-chars
+  (defretd in-of-unicode-chars
     (equal (set::in code chars)
            (and (integerp code)
                 (or (and (<= 0 code) (<= code #xd7ff))
