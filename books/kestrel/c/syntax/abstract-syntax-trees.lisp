@@ -3298,7 +3298,10 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :prepwork ((local (in-theory (enable nfix fix))))
+  :enable-rules (;; for speed:
+                 acl2::o-p-of-two-nats-measure
+                 acl2::o<-of-two-nats-measure
+                 acl2::zp-compound-recognizer)
 
   ///
 
@@ -3790,7 +3793,11 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :prepwork ((local (in-theory (enable nfix fix)))))
+  :enable-rules (nfix
+                 ;; for speed:
+                 acl2::o-p-of-two-nats-measure
+                 acl2::o<-of-two-nats-measure
+                 acl2::zp-compound-recognizer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

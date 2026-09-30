@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Quan Luu (quan.luu@kestrel.edu)
+; Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -20,12 +21,16 @@
 (defxdoc+ parse-rpc
   :parents (jsonrpc)
   :short "Parsing JSON-RPC 2.0 messages."
-  :long "<p>These functions parse a JSON string into an @(see
-  id-request+error-alist). The top-level entry point is @(see parse-json-rpc),
-  which accepts both single requests and batch requests (arrays of requests).
-  Each element is validated against the JSON-RPC 2.0 specification and yields
-  either a parsed @(see request) or an @(see error) with the appropriate
-  error code.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These functions parse a JSON string into an @(see id-request+error-alist).
+     The top-level entry point is @(see parse-json-rpc),
+     which accepts both single requests
+     and batch requests (arrays of requests).
+     Each element is validated against the JSON-RPC 2.0 specification
+     and yields either a parsed @(see request)
+     or an @(see error) with the appropriate error code."))
   :order-subtopics t
   :default-parent t)
 
@@ -38,9 +43,9 @@
 ; of the correct type
 ;  - id: the id
 (define parse-rpc-id ((obj valuep))
-  :short "Extract the @('id') field from a JSON-RPC request object."
   :guard (equal (value-kind obj) :object)
   :returns (mv (has-id booleanp) (is-valid booleanp) (id idp))
+  :short "Extract the @('id') field from a JSON-RPC request object."
   (b* ((id-val-list (object-member-values "id" obj))
        ((unless (equal (len id-val-list) 1))
         (mv nil t (id-null)))
@@ -56,8 +61,8 @@
 
 ; takes in a JSON value and tries to parse it into a request+error
 (define parse-rpc-request ((val valuep))
-  :short "Parse a single JSON value as a JSON-RPC 2.0 request."
   :returns (mv (id idp) (req+err request+errorp))
+  :short "Parse a single JSON value as a JSON-RPC 2.0 request."
   (b* (((unless (equal (value-kind val) :object))
         (mv (id-null)
             (request+error-error
@@ -91,13 +96,15 @@
        (params-presentp (object-has-member-p "params" val))
        (params-val-list (and params-presentp
                              (object-member-values "params" val)))
-       ((unless (equal (len params-val-list) 1))
+       ((unless (or (not params-presentp)
+                    (equal (len params-val-list) 1)))
         (mv (id-null)
             (request+error-error
              (make-invalid-request-error
               "Duplicate \"params\" field"))))
        (params-val (car params-val-list))
-       ((when (and (not (value-case params-val :array))
+       ((when (and params-presentp
+                   (not (value-case params-val :array))
                    (not (value-case params-val :object))))
         (mv (id-null)
             (request+error-error
@@ -125,8 +132,8 @@
 
 ; takes in a JSON array and tries to parse it into an id-request+error-alist
 (define parse-rpc-requests ((vals value-listp))
-  :short "Parse a list of JSON values as a JSON-RPC 2.0 batch request."
   :returns (alist id-request+error-alistp)
+  :short "Parse a list of JSON values as a JSON-RPC 2.0 batch request."
   (b* (((when (endp vals)) nil)
        ((mv id req+err) (parse-rpc-request (car vals))))
     (cons (cons id req+err)
@@ -134,16 +141,24 @@
 
 ; takes in a string and tries to parse it into an id-request+error-alist
 (define parse-json-rpc ((msg stringp))
-  :short "Parse a JSON string as a JSON-RPC 2.0 message."
-  :long "<p>Accepts both single requests (JSON Object) and batch requests
-  (JSON Array). Returns @('(mv batchp alist)') where @('batchp') is @('t')
-  when the top-level JSON was an Array (even if it contains only one request),
-  and @('alist') is an @(see id-request+error-alist) with one entry per
-  request. If the top-level JSON is not an Object or Array, or if the Array
-  is empty, a single error entry with code @('-32600') is returned. If the
-  string is not valid JSON, a single error entry with code @('-32700') is
-  returned.</p>"
   :returns (mv (batchp booleanp) (alist id-request+error-alistp))
+  :short "Parse a JSON string as a JSON-RPC 2.0 message."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Accepts both single requests (JSON Object)
+     and batch requests (JSON Array).
+     Returns @('(mv batchp alist)'),
+     where @('batchp') is @('t') when the top-level JSON was an Array
+     (even if it contains only one request),
+     and @('alist') is an @(see id-request+error-alist)
+     with one entry per request.")
+   (xdoc::p
+    "If the top-level JSON is not an Object or Array,
+     or if the Array is empty,
+     a single error entry with code @('-32600') is returned.
+     If the string is not valid JSON,
+     a single error entry with code @('-32700') is returned."))
   (b* (((mv erp parsed) (parse-string-as-json msg))
        ((when erp)
         (mv nil (list (cons (id-null)
