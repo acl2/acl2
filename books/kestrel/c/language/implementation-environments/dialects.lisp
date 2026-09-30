@@ -27,10 +27,9 @@
   (xdoc::topstring
    (xdoc::p
     "We introduce a data structure to indicate the specific dialect of C.
-     This includes the standards (e.g. C17 [C17] and C23 [C23]),
+     This includes the standards (e.g. C17 and C23),
      but also GCC, Clang, CHERI, and possibly other extensions.
-     We start with only some choices,
-     but we will add more choices in the future as needed."))
+     We start with some choices, but we may add more as needed."))
   :order-subtopics t
   :default-parent t)
 
@@ -118,7 +117,7 @@
   (xdoc::topstring
    (xdoc::p
     "There is a very large overlap between the GCC and Clang extensions.
-     Therefore, it is most often sufficient to check
+     Therefore, it is often sufficient to check
      if the dialect includes either."))
   (or (dialect->gcc dialect)
       (dialect->clang dialect)))
