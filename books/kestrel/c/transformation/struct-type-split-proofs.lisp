@@ -720,7 +720,13 @@
        (event
         `(define static-equivp ((old-static c::scopep)
                                 (new-static c::scopep))
-           :returns (yes/no booleanp)
+           :returns (yes/no booleanp
+                            :hints
+                            (("Goal"
+                              :induct t
+                              :in-theory '(booleanp-compound-recognizer
+                                           static-equivp
+                                           (:t omap::emptyp)))))
            (b* (((when (omap::emptyp (c::scope-fix old-static)))
                  (omap::emptyp (c::scope-fix new-static)))
                 ((mv var old-val) (omap::head old-static)))
