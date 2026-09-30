@@ -553,7 +553,12 @@
                                                 c::value-struct-read
                                                 c::value-struct-read-aux
                                                 nth))))
-           :hooks (:fix)
+           :hooks
+           ((:fix
+             :hints
+             (("Goal"
+               :in-theory '(,struct-value-onlr-mem
+                            c::value-struct-read-of-value-fix-struct)))))
            ///
            (defret ,value-kind-of-struct-value-onlr-mem
              (equal (c::value-kind mval) ,(type-kind (car types)))
