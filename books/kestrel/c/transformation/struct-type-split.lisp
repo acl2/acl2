@@ -5480,6 +5480,10 @@
            warnings))
   ///
 
+  (defret code-ensemble-annop-of-sts-split-code-ensemble.code$
+    (implies (not er?)
+             (code-ensemble-annop code$)))
+
   (more-returns
    (warnings true-listp
              :rule-classes :type-prescription
