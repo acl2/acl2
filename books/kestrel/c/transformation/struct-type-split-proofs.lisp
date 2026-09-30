@@ -588,7 +588,16 @@
            (defruled ,value-struct-read-mem-when-struct-value-onlrp
              (implies (,struct-value-onlrp sval)
                       (equal (c::value-struct-read ',cmem sval)
-                             (,struct-value-onlr-mem sval))))))
+                             (,struct-value-onlr-mem sval)))
+             :do-not '(preprocess) ; for speed
+             :in-theory '(,struct-value-onlr-mem
+                          ,struct-value-onlrp
+                          c::value-struct-read
+                          c::valuep-of-value-struct-read-aux-when-nth
+                          (:e natp)
+                          (:e <))
+             :use ((:instance c::value-fix-when-valuep
+                              (c::x (c::value-struct-read ',cmem sval)))))))
        ((erp events) (stsp-struct-value-accs onlr (cdr mems) (cdr types))))
     (retok (cons event events)))
   :hooks ((:fix :hints (("Goal"
