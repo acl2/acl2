@@ -222,7 +222,8 @@
      we switch to @(':types') when we have found the struct types
      (where we store all the members, their types, and the left members,
      while the right members are available from the user inputs),
-     then to @(':objects') when we have found the struct objects.
+     then to @(':objects') when we have found the struct objects
+     (where we store the names of the old and new objects).
      See the scanning code for details.
      The member names and types must have the same length."))
   (:init ())
@@ -232,7 +233,9 @@
                   :reqfix (if (equal (len types) (len mems)) types nil))
            (lmems ident-list))
    :require (equal (len types) (len mems)))
-  (:objects ())
+  (:objects ((old-name ident)
+             (newl-name ident)
+             (newr-name ident)))
   :pred stsp-stagep)
 
 ;;;;;;;;;;
@@ -1390,15 +1393,19 @@
                     (trans-item-declon (ext-declon-declon old-declon))
                     (trans-item-fix new-item)
                     (trans-item-fix new-item2)))
-          ((erp & & & events) (stsp-struct-object-declon old-declon
-                                                         new-declon
-                                                         new-declon2
-                                                         tag
-                                                         tag2
-                                                         stage.mems
-                                                         stage.types
-                                                         stage.lmems)))
-       (retok (stsp-stage-objects)
+          ((erp old-name
+                newl-name
+                newr-name
+                events)
+           (stsp-struct-object-declon old-declon
+                                      new-declon
+                                      new-declon2
+                                      tag
+                                      tag2
+                                      stage.mems
+                                      stage.types
+                                      stage.lmems)))
+       (retok (stsp-stage-objects old-name newl-name newr-name)
               (trans-item-list-fix (cdr new-items))
               events))
      :objects (retmsg$ "Unsupported proof generation for ~
