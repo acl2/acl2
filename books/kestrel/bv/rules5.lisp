@@ -94,6 +94,13 @@
                   (sbvlt size x y)))
   :hints (("Goal" :in-theory (enable sbvlt-add-to-both-sides-normal-case))))
 
+(local
+  (defthm expt-helper
+    (implies (integerp size)
+             (equal (* 2 (expt 2 (+ -2 size)))
+                    (expt 2 (+ -1 size))))
+    :hints (("Goal" :in-theory (enable expt-of-+)))))
+
 ;if both additions overflow, adding k does not affect the relative positions of x and y
 (defthmd sbvlt-add-to-both-sides-both-overflow
   (implies (and (signed-addition-overflowsp size k x)

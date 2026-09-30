@@ -1303,12 +1303,10 @@
 (defthmd bvchop-when-top-bit-1
   (implies (and (equal 1 (getbit (+ -1 size) x))
                 (integerp size)
-                (< 0 size)
-                )
+                (< 0 size))
            (equal (bvchop size x)
                   (+ (expt 2 (+ -1 size))
                      (bvchop (+ -1 size) x))))
-  :rule-classes ((:rewrite :backchain-limit-lst (1 nil nil)))
   :hints (("Goal"
            :in-theory (enable bvcat logapp posp bvchop getbit)
            :use ((:instance split-with-bvcat (x x) (hs 1) (ls (+ -1 size)))))))
@@ -1317,8 +1315,7 @@
 (defthmd bvchop-when-top-bit-1-cheap
   (implies (and (equal 1 (getbit (+ -1 size) x))
                 (integerp size)
-                (< 0 size)
-                )
+                (< 0 size))
            (equal (bvchop size x)
                   (+ (expt 2 (+ -1 size))
                      (bvchop (+ -1 size) x))))

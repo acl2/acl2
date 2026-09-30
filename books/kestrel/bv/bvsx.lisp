@@ -320,6 +320,8 @@
                       (bvsx size size2 x)
                     ;; no sign extension needed in this case:
                     (bvchop size x)))))
+
+(theory-invariant (incompatible (:rewrite bvchop-of-logext-becomes-bvsx) (:rewrite bvsx-rewrite)))
 (theory-invariant (incompatible (:rewrite bvchop-of-logext-becomes-bvsx-gen) (:rewrite bvsx-rewrite)))
 
 ;add -becomes-bvsx to name

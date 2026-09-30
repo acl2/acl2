@@ -42,12 +42,12 @@
          (bvchop size a))
   :hints (("Goal" :in-theory (enable bvif))))
 
-(defthm bvif-when-true
+(defthm bvif-of-t
   (equal (bvif size t a b)
          (bvchop size a))
   :hints (("Goal" :in-theory (enable bvif))))
 
-(defthm bvif-when-false
+(defthm bvif-of-nil
   (equal (bvif size nil a b)
          (bvchop size b))
   :hints (("Goal" :in-theory (enable bvif))))
@@ -75,11 +75,31 @@
                            nil)))))
   :hints (("Goal" :in-theory (enable bvif))))
 
+;; todo: standardize param names (throughout this file)
+(defthm bvif-when-true
+  (implies test
+           (equal (bvif size test a b)
+                  (bvchop size a)))
+  :hints (("Goal" :in-theory (enable bvif))))
+
 (defthm bvif-when-true-cheap
   (implies test
            (equal (bvif size test a b)
                   (bvchop size a)))
-  :rule-classes ((:rewrite :backchain-limit-lst (nil)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable bvif))))
+
+(defthm bvif-when-false
+  (implies (not test)
+           (equal (bvif size test a b)
+                  (bvchop size b)))
+  :hints (("Goal" :in-theory (enable bvif))))
+
+(defthm bvif-when-false-cheap
+  (implies (not test)
+           (equal (bvif size test a b)
+                  (bvchop size b)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable bvif))))
 
 
