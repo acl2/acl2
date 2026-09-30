@@ -30,4 +30,5 @@
 ;
 ; Original author: Jared Davis <jared@kookamara.com>
 
+(ld "../acl2-customization.lsp")
 (in-package "MILAWA")

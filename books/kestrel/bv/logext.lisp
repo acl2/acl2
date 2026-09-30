@@ -538,7 +538,7 @@
                   (logext size (+ x y))))
   :hints (("Goal" :in-theory (enable equal-of-logext-and-logext))))
 
-(defthm logext-of-+-of-logext-arg1
+(defthm logext-of-+-of-logext-arg2
   (implies (and (<= smallsize bigsize)
                 (integerp smallsize)
                 (integerp bigsize)
@@ -549,7 +549,7 @@
                   (logext smallsize (+ x y))))
   :hints (("Goal" :in-theory (enable equal-of-logext-and-logext))))
 
-(defthm logext-of-+-of-logext-arg2
+(defthm logext-of-+-of-logext-arg1
   (implies (and (<= smallsize bigsize)
                 (integerp smallsize)
                 (integerp bigsize)
