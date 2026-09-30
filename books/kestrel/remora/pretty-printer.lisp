@@ -10,9 +10,9 @@
 
 (in-package "REMORA")
 
-;; For the token-level helpers (identifiers, literals).
-(include-book "printer")
+(include-book "printer-tokens")
 
+(include-book "kestrel/fty/defresult" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
 
 (local (include-book "std/lists/top" :dir :system))

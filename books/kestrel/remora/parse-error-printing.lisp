@@ -10,7 +10,16 @@
 
 (in-package "REMORA")
 
-(include-book "printer")
+(include-book "kestrel/utilities/strings/strings-codes" :dir :system)
+(include-book "unicode/utf8-encode" :dir :system)
+(include-book "std/basic/controlled-configuration" :dir :system)
+(include-book "std/basic/defs" :dir :system)
+(include-book "centaur/fty/baselists" :dir :system)
+(include-book "std/typed-lists/nat-listp" :dir :system)
+(include-book "std/util/define" :dir :system)
+(include-book "xdoc/defxdoc-plus" :dir :system)
+
+(include-book "portcullis")
 
 (acl2::controlled-configuration :no-function nil)
 

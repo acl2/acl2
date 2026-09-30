@@ -85,6 +85,7 @@
                     concrete-syntax-trees
                     post-parsing
                     syntax-abstraction
+                    printer-tokens
                     printer
                     pretty-printer
                     parse-error-printing
