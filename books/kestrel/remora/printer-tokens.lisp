@@ -24,6 +24,27 @@
 (local (include-book "std/lists/top" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Helpers for building @(tsee pdoc-text) leaves at the code-point level.
+;;
+;; The pdoc :text leaf carries a nat-list of code points (not a string).
+;; The printer assembles text from three sources:
+;;
+;;   (a) ASCII string literals embedded in printer source (e.g. "Bool",
+;;       "(", "Forall").  Use the @(tsee pdoc-ascii) macro, which
+;;       expands at read time to a quoted constant nat-list and signals
+;;       a hard error on any non-ASCII character.
+;;
+;;   (b) Identifier names from the AST, stored as ACL2 strings of
+;;       UTF-8 bytes (see @(see abstract-syntax-trees)).  Use
+;;       @(tsee utf8-string=>codepoints), which decodes the bytes to
+;;       code points.
+;;
+;;   (c) Numbers formatted as decimal text.  Use
+;;       @(tsee nat-to-dec-codepoints) instead of @(tsee
+;;       str::nat-to-dec-string).
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ printer-tokens
   :parents (parsing-and-printing)
