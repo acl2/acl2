@@ -732,6 +732,7 @@
          (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system)) ;need strip-cdrs-of-append for the generated proofs
 
          (local (in-theory (disable mv-nth
+                                    (:type-prescription natp-of-car-when-nat-listp-type)
                                     wf-dagp wf-dagp-expander
                                     default-car
                                     default-cdr
@@ -3234,22 +3235,23 @@
                      ;; (:definition mv-nth)
                      (:definition not)
                      (:definition pseudo-termp)
-                     (:definition ,relieve-free-var-hyp-and-all-others-name)
-                     (:definition ,relieve-rule-hyps-name)
-                     (:definition ,simplify-boolif-tree-and-add-to-dag-name)
-                     (:definition ,simplify-bvif-tree-and-add-to-dag-name)
-                     (:definition ,simplify-bvif-tree-and-add-to-dag1-name)
-                     (:definition ,simplify-bvif-tree-and-add-to-dag2-name)
-                     (:definition ,simplify-bvif-tree-and-add-to-dag3-name)
-                     (:definition ,simplify-fun-call-and-add-to-dag-name)
-                     (:definition ,simplify-if/myif-tree-and-add-to-dag-name)
-                     (:definition ,simplify-if/myif/boolif-tree-and-add-to-dag2-name)
-                     (:definition ,simplify-if/myif/boolif-tree-and-add-to-dag3-name)
-                     (:definition ,simplify-not-tree-and-add-to-dag-name)
-                     (:definition ,simplify-tree-and-add-to-dag-name)
-                     (:definition ,simplify-trees-and-add-to-dag-name)
+                     ;; Including these may slow things down, and the :expand hints should suffice:
+                     ;; (:definition ,relieve-free-var-hyp-and-all-others-name)
+                     ;; (:definition ,relieve-rule-hyps-name)
+                     ;; (:definition ,simplify-boolif-tree-and-add-to-dag-name)
+                     ;; (:definition ,simplify-bvif-tree-and-add-to-dag-name)
+                     ;; (:definition ,simplify-bvif-tree-and-add-to-dag1-name)
+                     ;; (:definition ,simplify-bvif-tree-and-add-to-dag2-name)
+                     ;; (:definition ,simplify-bvif-tree-and-add-to-dag3-name)
+                     ;; (:definition ,simplify-fun-call-and-add-to-dag-name)
+                     ;; (:definition ,simplify-if/myif-tree-and-add-to-dag-name)
+                     ;; (:definition ,simplify-if/myif/boolif-tree-and-add-to-dag2-name)
+                     ;; (:definition ,simplify-if/myif/boolif-tree-and-add-to-dag3-name)
+                     ;; (:definition ,simplify-not-tree-and-add-to-dag-name)
+                     ;; (:definition ,simplify-tree-and-add-to-dag-name)
+                     ;; (:definition ,simplify-trees-and-add-to-dag-name)
+                     ;; (:definition ,try-to-apply-rules-name)
                      (:definition synp)
-                     (:definition ,try-to-apply-rules-name)
                      ;; (:definition wf-rewrite-stobj2p)
                      (:rewrite wf-rewrite-stobj2p-conjuncts)
                      (:linear wf-rewrite-stobj2p-conjuncts2)
@@ -5033,7 +5035,12 @@
                                      quotep
                                      myquotep
                                      nth-of-cdr
-                                     cadr-becomes-nth-of-1)))
+                                     cadr-becomes-nth-of-1
+                                     ;; for speed:
+                                     darg-treep
+                                     darg-tree-listp
+                                     axe-treep-when-darg-treep
+                                     axe-tree-listp-when-darg-tree-listp)))
                    ;;(and stable-under-simplificationp '(:cases (memoizep)))
                    ))
 
