@@ -32,7 +32,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "[C17] and [C23] do not require Unicode, and our "
+    "[C17] [C23] do not require Unicode, and our "
     (xdoc::seetopic "character-sets" "model of character sets")
     " is more general than Unicode.
      Our model admits Unicode as a possibility,

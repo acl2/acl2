@@ -26,7 +26,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "[C17] and [C23] do not require ASCII, and our "
+    "[C17] [C23] do not require ASCII, and our "
     (xdoc::seetopic "character-sets" "model of character sets")
     " is more general than ASCII.
      Our model admits ASCII as a possibility,

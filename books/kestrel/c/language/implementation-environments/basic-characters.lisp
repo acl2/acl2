@@ -28,7 +28,7 @@
    (xdoc::p
     "See @(see character-sets) first.")
    (xdoc::p
-    "Although [C17] and [C23] do not prescribe ASCII, or any superset of it,
+    "Although [C17] [C23] do not prescribe ASCII, or any superset of it,
      the basic characters [C17:5.2.1] [C23:5.3.1]
      bear a natural correspondence with certain ASCII characters.
      Here we define the sets of those ASCII characters,
