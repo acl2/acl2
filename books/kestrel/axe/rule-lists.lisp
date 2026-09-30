@@ -1828,8 +1828,8 @@
   (declare (xargs :guard t))
   '(bvif-same-branches
     bvif-equal-1-usb1
-    bvif-when-true
-    bvif-when-false
+    bvif-of-t
+    bvif-of-nil
     bvif-of-bool-fix
     equal-of-bvif-same-1
     equal-of-bvif-same-2))

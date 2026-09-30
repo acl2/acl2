@@ -68,9 +68,8 @@
                                    ;ADD-BVCHOP-TO-BVXOR-2
                                    )))))
 
-(theory-invariant (incompatible (:rewrite bvmult-pad-arg1) (:rewrite BVCAT-OF-0)))
-(theory-invariant (incompatible (:rewrite bvmult-pad-arg2) (:rewrite BVCAT-OF-0)))
-
+(theory-invariant (incompatible (:rewrite bvmult-pad-arg1) (:rewrite bvcat-of-0-arg2)))
+(theory-invariant (incompatible (:rewrite bvmult-pad-arg2) (:rewrite bvcat-of-0-arg2)))
 
 ;after this fires, the associativity rule should fire too
 ;bozo make a high version
