@@ -68,7 +68,35 @@
      into the @(tsee struct-type-split) transformation.")
    (xdoc::p
     "This is work in progress;
-     only some of the events are currently generated."))
+     only some of the events are currently generated.")
+   (xdoc::p
+    "For proofs to be generated, the old code must consist of
+     a single translation unit, which must consist of
+     (1) a declaration of the struct type being split
+     (without @('typedef')),
+     which becomes two declarations in the new code;
+     (2) a declaration of a (global) variable of that type
+     (without initializer),
+     which becomes two declarations in the new code;
+     and (3) zero or more function definitions
+     that may read (not write) the members of the struct object(s),
+     but not otherwise reference the struct type(s) or object(s).
+     The struct type(s) must have all integer members
+     except @('_Bool'), plain @('char'), and enumerated types
+     (which are currently not supported in our formal semantics).
+     We also allow line comments in the code, which are just skipped.")
+   (xdoc::p
+    "Theorems are generated from (1) and (2) above;
+     we are working on generating theorems from (3) above,
+     and also on enforcing the requirements for (3) described above.
+     From (1) and (2) we also generate definitions,
+     particularly the notion of equivalence between computation states;
+     this is currently specific to the code,
+     but we plan to generalize it into a reusable predicate
+     that is parameterized over the struct type specifics.
+     The checks that we perform on the code w.r.t. (1) and (2)
+     ensure that the computation state equivalence predicate
+     correctly characterizes the computation states for the code."))
   :order-subtopics t
   :default-parent t)
 
@@ -394,7 +422,16 @@
              ,@b*-bindings
              ((unless (not (c::value-struct->flexiblep sval))) nil))
           t)
-        :guard-hints (("Goal" :in-theory (enable len)))
+        :guard-simplify :limited
+        :guard-hints
+        (("Goal"
+          :do-not '(preprocess) ; for speed
+          :in-theory '(c::member-value-listp-of-value-struct->members
+                       c::member-valuep-of-nth-when-member-value-listp
+                       c::valuep-of-member-value->value
+                       (:t c::value-struct->members)
+                       (:e nfix)
+                       (:e <))))
         :hooks (:fix)
         ///
         (defruled ,value-kind-when-struct-value-onlrp
@@ -967,19 +1004,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define stsp-exec-mem-eq ((mems ident-listp)
+                          (types type-listp)
                           (lmems ident-listp)
                           (old-name identp)
                           (newl-name identp)
                           (newr-name identp))
+  :guard (equal (len types) (len mems))
   :returns (mv (erp maybe-msgp)
                (events pseudo-event-form-listp))
-  :short "Generate the theorems ssaying that
+  :short "Generate the theorems saying that
           the execution of each member in the old code
-          returns the same as the corresponding member in the new code."
+          returns the same as the corresponding member in the new code,
+          with the declared member type."
   (b* (((reterr) nil)
        ((when (endp mems)) (retok nil))
        (mem (car mems))
        ((erp cmem) (ldm-ident mem) :iferr "")
+       ((erp ctype) (ldm-type (car types)) :iferr "")
        (thm-name (packn-pos (list 'exec-member- (c::ident->name cmem))
                             'struct-value-))
        ((mv new newp new-name)
@@ -1021,7 +1062,8 @@
                            old-eval
                            new-eval
                            (equal old-val new-val)
-                           (compustate-equivp old-compst1 new-compst1))))
+                           (compustate-equivp old-compst1 new-compst1)
+                           (equal (c::type-of-value old-val) ',ctype))))
            :use (struct-value-equivp-when-compustate-equivp
                  lemma)
            :expand ((c::exec-expr ',(c::expr-member (c::expr-ident old-cname)
@@ -1054,8 +1096,13 @@
                                     old-compst old-fenv limit)
               :enable c::exec-expr))))
        ((erp events)
-        (stsp-exec-mem-eq (cdr mems) lmems old-name newl-name newr-name)))
-    (retok (cons event events))))
+        (stsp-exec-mem-eq (cdr mems) (cdr types) lmems
+                          old-name newl-name newr-name)))
+    (retok (cons event events)))
+  :hooks ((:fix :hints (("Goal"
+                         :induct t
+                         :in-theory (enable c$::cdr-of-type-list-fix
+                                            ident-list-fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1162,13 +1209,15 @@
                                    (tag identp)
                                    (tag2 identp)
                                    (mems ident-listp)
+                                   (types type-listp)
                                    (lmems ident-listp))
   :guard (and (declon-unambp old-declon)
               (declon-unambp new-declon)
               (declon-unambp new-declon2)
               (declon-annop old-declon)
               (declon-annop new-declon)
-              (declon-annop new-declon2))
+              (declon-annop new-declon2)
+              (equal (len types) (len mems)))
   :returns (mv (erp maybe-msgp)
                (events pseudo-event-form-listp))
   :short "Check, and generate events for,
@@ -1209,7 +1258,7 @@
        ((erp exec-newl-struct) (stsp-exec-struct-thm 'newl newl-name))
        ((erp exec-newr-struct) (stsp-exec-struct-thm 'newr newr-name))
        ((erp exec-members)
-        (stsp-exec-mem-eq mems lmems old-name newl-name newr-name)))
+        (stsp-exec-mem-eq mems types lmems old-name newl-name newr-name)))
     (retok (append (list static-equiv-pred
                          compustate-equiv-pred)
                    exec-congs
@@ -1331,6 +1380,7 @@
                                                    tag
                                                    tag2
                                                    stage.mems
+                                                   stage.types
                                                    stage.lmems)))
        (retok (stsp-stage-objects)
               (trans-item-list-fix (cdr new-items))

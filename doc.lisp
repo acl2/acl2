@@ -107183,6 +107183,33 @@ Bug Fixes From AI via Eric Smith
   T[0m[0m to be specified for an exported function.  For an example, see
   [community-book] [30m[47msystem/tests/protect-congruent-stobj.lisp[0m[0m.
 
+  Fixed several bugs with [30m[47mdo$[0m[0m that manifested themselves differently
+  but were all caused by the same flaw.  The sixth argument of [30m[47mdo$[0m[0m is
+  irrelevant to its value and was supposed to be used only to print a
+  certain runtime hard error.  But several other utilities in our
+  source code treated the sixth argument as meaningful and this
+  opened up the possibility that a user could supply bogus
+  information in that argument.  At least one such exploit allowed
+  Claude to construct a proof of [30m[47mnil[0m[0m.  The (mis-)uses of the sixth
+  argument have been eliminated.
+
+  Fixed a bug in the compilation of [30m[47mdo$[0m[0m loops that allowed the
+  compilation of an [30m[47mmv-setq[0m[0m to reassign a [30m[47mlet[0m[0m-bound variable due to
+  our failure to generate a sufficiently ``fresh'' variable to
+  temporarily hold the vector of results computed by the body of the
+  [30m[47mmv-setq[0m[0m expression.  See the comment in [30m[47mcmp-do-body[0m[0m for an example.
+  The guard-verified logical definition returns a different result
+  than the compiled raw lisp code due to this variable capture..
+  Claude then exploited this bug to prove [30m[47mnil[0m[0m using a metafunction.
+  See [community-books] [30m[47msystem/tests/do-mv-capture.lisp[0m[0m.
+
+  Fixed a bug in the generation of termination conditions for functions
+  defined with [loop$-recursion].  The bug, which was caused by the
+  inadvertent application of a substitution to a formula to which
+  that substitution had already been applied, caused the termination
+  conditions for some loop$-recursive functions to be incomplete or
+  bogus.
+
 
 Other Bug Fixes
 

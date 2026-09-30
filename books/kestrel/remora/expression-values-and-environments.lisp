@@ -47,7 +47,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ expression-values-and-environments
-  :parents (dynamic-semantics)
+  :parents (values-and-environments)
   :short "Expression values and expression dynamic environments."
   :long
   (xdoc::topstring
