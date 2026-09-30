@@ -1227,6 +1227,9 @@
               (declon-annop new-declon2)
               (equal (len types) (len mems)))
   :returns (mv (erp maybe-msgp)
+               (old-name identp)
+               (newl-name identp)
+               (newr-name identp)
                (events pseudo-event-form-listp))
   :short "Check, and generate events for,
           the declarations of the old and new left and right struct objects."
@@ -1241,8 +1244,10 @@
    (xdoc::p
     "If everything checks out, we generate
      the equivalence predicate on old and new static stores
-     and the equivalence predicate on the old and new computation states."))
-  (b* (((reterr) nil)
+     and the equivalence predicate on the old and new computation states.")
+   (xdoc::p
+    "We also return the names of the struct objects."))
+  (b* (((reterr) (irr-ident) (irr-ident) (irr-ident) nil)
        ((erp old-tag old-name) (stsp-check-struct-object-declon old-declon))
        ((erp newl-tag newl-name) (stsp-check-struct-object-declon new-declon))
        ((erp newr-tag newr-name) (stsp-check-struct-object-declon new-declon2))
@@ -1267,7 +1272,10 @@
        ((erp exec-newr-struct) (stsp-exec-struct-thm 'newr newr-name))
        ((erp exec-members)
         (stsp-exec-mem-eq mems types lmems old-name newl-name newr-name)))
-    (retok (append (list static-equiv-pred
+    (retok old-name
+           newl-name
+           newr-name
+           (append (list static-equiv-pred
                          compustate-equiv-pred)
                    exec-congs
                    (list exec-old-struct
@@ -1382,14 +1390,14 @@
                     (trans-item-declon (ext-declon-declon old-declon))
                     (trans-item-fix new-item)
                     (trans-item-fix new-item2)))
-          ((erp events) (stsp-struct-object-declon old-declon
-                                                   new-declon
-                                                   new-declon2
-                                                   tag
-                                                   tag2
-                                                   stage.mems
-                                                   stage.types
-                                                   stage.lmems)))
+          ((erp & & & events) (stsp-struct-object-declon old-declon
+                                                         new-declon
+                                                         new-declon2
+                                                         tag
+                                                         tag2
+                                                         stage.mems
+                                                         stage.types
+                                                         stage.lmems)))
        (retok (stsp-stage-objects)
               (trans-item-list-fix (cdr new-items))
               events))
