@@ -278,15 +278,15 @@
 
   (defthm-type-ok-proof-validp-clique-flag
     (defthmd typep-when-type-ok-proof-validp
-      (implies (type-ok-proof-validp proof concl.ivars concl.tvars concl.type)
-               (typep concl.type))
+      (implies (type-ok-proof-validp proof _ivars _tvars _type)
+               (typep _type))
       :flag type-ok-proof-validp)
     (defthmd type-listp-when-types-ok-proof-validp
       (implies (types-ok-proof-validp proof
-                                      concl.ivars
-                                      concl.tvars
-                                      concl.types)
-               (type-listp concl.types))
+                                      _ivars
+                                      _tvars
+                                      _types)
+               (type-listp _types))
       :flag types-ok-proof-validp)
     :hints
     (("Goal" :in-theory (enable* type-validity-definition-validp-defs))))
@@ -310,17 +310,17 @@
 
   (defthm-type-ok-proof-validp-clique-flag
     (defthmd ispace-var-setp-and-type-var-setp-when-type-ok-proof-validp
-      (implies (type-ok-proof-validp proof concl.ivars concl.tvars concl.type)
-               (and (ispace-var-setp concl.ivars)
-                    (type-var-setp concl.tvars)))
+      (implies (type-ok-proof-validp proof _ivars _tvars _type)
+               (and (ispace-var-setp _ivars)
+                    (type-var-setp _tvars)))
       :flag type-ok-proof-validp)
     (defthmd ispace-var-setp-and-type-var-setp-when-types-ok-proof-validp
       (implies (types-ok-proof-validp proof
-                                      concl.ivars
-                                      concl.tvars
-                                      concl.types)
-               (and (ispace-var-setp concl.ivars)
-                    (type-var-setp concl.tvars)))
+                                      _ivars
+                                      _tvars
+                                      _types)
+               (and (ispace-var-setp _ivars)
+                    (type-var-setp _tvars)))
       :flag types-ok-proof-validp)
     :hints
     (("Goal" :in-theory (enable* type-validity-definition-validp-defs))))
