@@ -96,7 +96,7 @@
                            (member-value->value (nth index members))
                          (value-struct-read-aux
                           name (nthcdr (1+ index) members)))))
-       :induct (nthcdr index members)
+       :induct t
        :enable (nth
                 nthcdr
                 len)))))
