@@ -555,7 +555,26 @@
            ///
            (defret ,value-kind-of-struct-value-onlr-mem
              (equal (c::value-kind mval) ,(type-kind (car types)))
-             :hyp (,struct-value-onlrp sval))
+             :hyp (,struct-value-onlrp sval)
+             :hints
+             (("Goal"
+               :in-theory '(,struct-value-onlr-mem
+                            ,struct-value-onlrp
+                            c::value-struct-read
+                            c::value-kind$inline-of-value-fix-x
+                            c::value-struct-read-aux-of-nthcdr
+                            acl2::nthcdr-when-zp
+                            (:e zp)
+                            (:e natp)
+                            (:e <)
+                            (:e binary-+)
+                            (:e equal)
+                            (:e c::ident-fix))
+               :use ((:instance c::value-struct-read-aux-of-nthcdr
+                                (c::name ',cmem)
+                                (c::index 0)
+                                (c::members
+                                 (c::value-struct->members sval)))))))
            (defret ,type-of-value-of-struct-value-onlr-mem
              (equal (c::type-of-value mval) ',ctype)
              :hyp (,struct-value-onlrp sval)
