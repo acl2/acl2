@@ -509,6 +509,8 @@
        ((when (endp mems)) (retok nil))
        ((erp cmem) (ldm-ident (car mems)) :iferr "")
        ((erp ctype) (ldm-type (car types)) :iferr "")
+       (type-constructor
+        (packn-pos (list 'c::type- (c::type-kind ctype)) 'c::type-))
        (struct-value-onlr-mem
         (packn-pos (list 'struct-value- onlr '- (c::ident->name cmem))
                    'struct-value-))
@@ -578,7 +580,11 @@
            (defret ,type-of-value-of-struct-value-onlr-mem
              (equal (c::type-of-value mval) ',ctype)
              :hyp (,struct-value-onlrp sval)
-             :hints (("Goal" :in-theory (enable c::type-of-value))))
+             :hints
+             (("Goal"
+               :in-theory '(c::type-of-value
+                            ,value-kind-of-struct-value-onlr-mem
+                            (:e ,type-constructor)))))
            (defruled ,value-struct-read-mem-when-struct-value-onlrp
              (implies (,struct-value-onlrp sval)
                       (equal (c::value-struct-read ',cmem sval)
