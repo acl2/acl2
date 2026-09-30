@@ -1723,10 +1723,12 @@
      (b* ((new-item (car new-items))
           (new-fundef (c$::check-trans-item-fundef new-item))
           ((unless new-fundef)
-           (raise "Internal error: ~x0 transformed into ~x1."
-                  (trans-item-declon old-edeclon)
-                  (trans-item-fix new-item))
-           (retmsg$ ""))
+           (retmsg$ "The translation items ~x0 and ~x1 do not match. ~
+                     This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                     was not called on ~
+                     the old and new code of STRUCT-TYPE-SPLIT."
+                    (trans-item-declon old-edeclon)
+                    (trans-item-fix new-item)))
           ((unless (stsp-stage-case stage :objects))
            (retmsg$ "Unsupported proof generation for ~
                      function definition before struct type or object."))
@@ -1745,10 +1747,12 @@
      (b* ((new-item (car new-items))
           ((unless (trans-item-equiv new-item
                                      (trans-item-declon (ext-declon-empty))))
-           (raise "Internal error: ~x0 transformed into ~x1."
-                  (trans-item-declon old-edeclon)
-                  (trans-item-fix new-item))
-           (retmsg$ "")))
+           (retmsg$ "The translation items ~x0 and ~x1 do not match. ~
+                     This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                     was not called on ~
+                     the old and new code of STRUCT-TYPE-SPLIT."
+                    (trans-item-declon old-edeclon)
+                    (trans-item-fix new-item))))
        (retok (stsp-stage-fix stage)
               (trans-item-list-fix (cdr new-items))
               nil))
@@ -1805,10 +1809,12 @@
      :line-comment
      (b* ((new-item (car new-items))
           ((unless (trans-item-equiv new-item old-item))
-           (raise "Internal error: ~x0 transformed into ~x1."
-                  (trans-item-fix old-item)
-                  (trans-item-fix new-item))
-           (retmsg$ "")))
+           (retmsg$ "The translation items ~x0 and ~x1 do not match. ~
+                     This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                     was not called on ~
+                     the old and new code of STRUCT-TYPE-SPLIT."
+                    (trans-item-fix old-item)
+                    (trans-item-fix new-item))))
        (retok (stsp-stage-fix stage)
               (trans-item-list-fix (cdr new-items))
               nil))))
@@ -1857,9 +1863,11 @@
   (b* (((reterr) nil)
        ((when (endp old-items))
         (b* (((unless (endp new-items))
-              (raise "Internal error: extra new translation items ~x0."
-                     (trans-item-list-fix new-items))
-              (retmsg$ "")))
+              (retmsg$ "The new code has extra translation items ~x0. ~
+                        This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                        was not called on ~
+                        the old and new code of STRUCT-TYPE-SPLIT."
+                       (trans-item-list-fix new-items))))
           (stsp-stage-case
            stage
            :init (retmsg$ "Unsupported proof generation for ~
@@ -1868,9 +1876,11 @@
                             struct object.")
            :objects (retok nil))))
        ((when (endp new-items))
-        (raise "Internal error: extra old translation items ~x0."
-               (trans-item-list-fix old-items))
-        (retmsg$ ""))
+        (retmsg$ "The old code has extra translation items ~x0. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 (trans-item-list-fix old-items)))
        ((erp stage rest-new-items events) (stsp-trans-item (car old-items)
                                                            new-items
                                                            tag
