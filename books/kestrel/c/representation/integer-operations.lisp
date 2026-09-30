@@ -103,7 +103,7 @@
    (xdoc::p
     "Arithmetic on unsigned integers is modular [C17:6.2.5/9].")
    (xdoc::p
-    "The right operand of a signed shift operator
+    "The right operand of a shift operator
      must be non-negative and below the bit size of the left operand
      [C17:6.5.7/3].
      The left operand, when signed, must be non-negative.

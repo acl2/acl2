@@ -2278,3 +2278,238 @@ void f(void) {
   a -= 1;
 }
 ")
+
+;; Declarations of the same tagged type in the same scope
+;; must use the same kind of tag [C17:6.7.2.3/2].
+(test-valid-fail
+ "union s;
+struct s { int m; };
+")
+
+(test-valid-fail
+ "struct s;
+union s { int m; };
+")
+
+(test-valid-fail
+ "union s;
+struct s {};
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; A tag in an inner scope declares a distinct type [C17:6.7.2.3/5].
+(test-valid
+ "struct s;
+void f(void) {
+  union s { int m; } x;
+}
+")
+
+;; GCC labels as values and computed goto.
+(test-valid
+ "int f(int n) {
+  void * p = n ? &&a : &&b;
+  goto *p;
+ a: return 1;
+ b: return 0;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; The elements of a UTF-8 string literal have type char in C17
+;; [C17:6.4.5/6], but char8_t, i.e. unsigned char, in C23
+;; [C23:6.4.5/6] [C23:7.30/3].
+(test-valid
+ "char * p = u8\"x\";
+")
+
+(test-valid
+ "unsigned char * p = u8\"x\";
+unsigned char * q = u8\"x\" u8\"y\";
+"
+ :dialect (c::make-dialect :std (c::standard-c23)))
+
+(test-valid-fail
+ "char * p = u8\"x\";
+"
+ :dialect (c::make-dialect :std (c::standard-c23)))
+
+;; A cast type must be void or scalar [C17:6.5.4/2],
+;; even if the type of the operand is unknown,
+;; as for the generic selection below.
+(test-valid-fail
+ "struct S { int m; };
+struct S v;
+void f(void) {
+  struct S t = (struct S) _Generic(1, default: v);
+}
+")
+
+(test-valid-fail
+ "union U { int i; double d; };
+int x;
+void f(void) {
+  union U u = (union U) x;
+}
+")
+
+(test-valid
+ "int x;
+void f(void) {
+  (void) __atomic_load_n(&x, 0);
+  long y = (long) __atomic_load_n(&x, 0);
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; GCC and Clang allow casting a structure or union to its own type,
+;; and casting to a union type from the type of one of its members.
+(test-valid
+ "struct S { int m; };
+union U { int i; double d; };
+struct S v;
+int x;
+void f(void) {
+  struct S t = (struct S) v;
+  struct S w = (struct S) _Generic(1, default: v);
+  union U u = (union U) x;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "struct S { int m; };
+int x;
+void f(void) {
+  struct S t = (struct S) x;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "int x;
+void f(void) {
+  (int[2]) x;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; A declaration of the form "struct-or-union identifier ;"
+;; declares the identifier as the tag of a new type in the current scope,
+;; even if a tag with the same name is visible from an outer scope
+;; [C17:6.7.2.3/7].
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  struct s;
+  struct s * p = 0;
+  struct s { double d; };
+  (void)p->d;
+}
+")
+
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  union s;
+  union s * p = 0;
+  union s { double d; };
+  (void)p->d;
+}
+")
+
+;; In the same scope, it refers to the tag already declared there.
+(test-valid
+ "struct s;
+struct s;
+struct s { int m; };
+struct s x;
+")
+
+(test-valid-fail
+ "void f(void) {
+  struct s;
+  union s;
+}
+")
+
+;; Without such a declaration, a visible tag from an outer scope is used
+;; [C17:6.7.2.3/9].
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  struct s * p = 0;
+  (void)p->a;
+}
+")
+
+;; With GCC extensions, a declaration with a type qualifier
+;; is not a standalone tag declaration,
+;; but one with attributes is.
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  const struct s;
+  struct s * p = 0;
+  struct s { double d; };
+  (void)p->a;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  struct __attribute__((packed)) s;
+  struct s * p = 0;
+  struct s { double d; };
+  (void)p->d;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  struct s __attribute__((packed));
+  struct s * p = 0;
+  struct s { double d; };
+  (void)p->d;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; With Clang extensions, a declaration is a standalone tag declaration
+;; if the structure or union type specifier is the last specifier.
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  const struct s;
+  struct s * p = 0;
+  struct s { double d; };
+  (void)p->d;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  struct s const;
+  struct s * p = 0;
+  struct s { double d; };
+  (void)p->a;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  struct s __attribute__((packed));
+  struct s * p = 0;
+  struct s { double d; };
+  (void)p->a;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))

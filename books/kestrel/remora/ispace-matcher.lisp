@@ -29,6 +29,12 @@
     "This is matching in the sense of one-sided unification;
      we will extend this to a full unifier,
      or perhaps we will add a separate unifier.")
+   (xdoc::p
+    "The matching is modulo ispace equivalence,
+     to the extent that the @(see ispace-equivalence-checker) captures it;
+     the following sections describe the approach,
+     for dimensions and for shapes (and ispaces).
+     The @(see type-matcher) builds on this matcher.")
    (xdoc::h3
     "Dimension Matching")
    (xdoc::p
@@ -45,7 +51,12 @@
      as described in @(tsee dims-match);
      indeed, for now we only have equivalence checking for additions,
      not for multiplications and subtractions of dimensions,
-     which are treated as black boxes essentially.")
+     which are treated as black boxes:
+     with them, the equations discussed below would no longer be linear,
+     so we restrict the patterns instead,
+     requiring the variables
+     in a multiplication or subtraction addend of an addition pattern
+     to be already bound (see below).")
    (xdoc::p
     "The key observation is that
      a normalized dimension (see @(tsee normalize-dim))
@@ -63,6 +74,44 @@
      Whatever @('$i') stands for must supply
      the missing number @('1') and the missing @('$k'),
      so @('$i') must be @('(+ 1 $k)').")
+   (xdoc::p
+    "Put differently,
+     for dimensions that only use addition,
+     whose equivalence is decidable (see @(see ispace-equivalence-checker)),
+     matching modulo equivalence amounts to
+     solving linear equations over the natural numbers.
+     The unknowns are the unbound pattern variables,
+     each standing for a constant plus a multiset of addends;
+     the equations say that
+     the constant of the pattern plus the constants of the unknowns
+     must equal the constant of the dimension,
+     and that each addend of the dimension
+     must be contributed by the pattern or by the unknowns
+     exactly as many times as it occurs in the dimension.
+     If the pattern has a single unknown occurring once,
+     as in the example above,
+     there is at most one solution,
+     obtained by subtracting the constant of the pattern
+     from the constant of the dimension
+     (there is no solution if the former is larger)
+     and by adding the addends of the dimension
+     that the pattern does not account for.
+     If the pattern has multiple unknowns,
+     e.g. @('(+ $i $j)') matched to @('(+ 3 $k $l)'),
+     there may be multiple solutions,
+     corresponding to the ways of distributing
+     the constant and the addends of the dimension among the unknowns;
+     if the pattern has a single unknown occurring multiple times,
+     e.g. @('(+ $i $i)') matched to @('4'),
+     the solution, if any, requires division.
+     For now, we only handle the case of a single unknown occurring once,
+     failing in the other cases (see below).
+     In the future, we may extend this to
+     collect equations from multiple matches
+     (e.g. of the different components of a type)
+     and solve them together,
+     since the equations from one match
+     may disambiguate the solutions of another match.")
    (xdoc::p
     "This is the whole approach:
      we subtract from the dimension what the pattern already accounts for,
@@ -126,15 +175,9 @@
      and normalized:
      e.g. @('4') rather than @('(+ 4)'),
      and @('$k') rather than @('(+ 0 $k)').
-     Otherwise, the match fails, rather than guessing:
-     two unbound variables could split the remainder in many ways,
-     and one unbound variable occurring twice would need division.
-     In the future, we may extend this to
-     collect equations from multiple matches
-     (e.g. of the different components of a type)
-     and solve them together,
-     since the equations from one match
-     may disambiguate the solutions of another match.")
+     Otherwise, the match fails, rather than guessing,
+     because the solution is not unique or requires division,
+     as discussed above.")
    (xdoc::p
     "The substitution is threaded through matches (see @(tsee dims-match)):
      the bindings come from earlier matches of other components,

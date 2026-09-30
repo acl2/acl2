@@ -1419,7 +1419,7 @@
                             (binop-fix op)
                             (expr-fix arg1-expr)
                             (expr-fix arg2-expr)
-                            :required :integer :integer
+                            :required :scalar :scalar
                             :supplied
                             (type-fix arg1-type)
                             (type-fix arg2-type)))))
@@ -1492,14 +1492,15 @@
      if needed, for both branches of the conditional expression.)
      To avoid this complication,
      for now we make our static semantics more restrictive:
-     we require the two branches to have the same promoted type.
-     This means that that promoted type is also
-     the type resulting from the usual arithmetic conversions,
-     as can be easily seen in @(tsee uaconvert-types).
+     we require the two branches to have the same type,
+     and that type to have at least the rank of @('int').
+     Under these conditions, the usual arithmetic conversions have no effect,
+     and the common type of the two branches
+     is also the type of the conditional expression.
      We may relax the treatment eventually,
      but note that we would have to restructure the static semantics
      to return possibly modified abstract syntax.
-     This is not surprising, as it is a used approach for compiler-like tools,
+     This is not surprising, as it is a common approach for compiler-like tools,
      namely annotating abstract syntax trees with additional information.
      We apply both lvalue conversion and array-to-pointer conversion.
      A conditional expression is never an lvalue.")
@@ -1528,11 +1529,11 @@
         (reserrf (list :cond-mistype-else test-expr then-expr else-expr
                        :required :arithmetic
                        :supplied else-type)))
-       (then-type (promote-type then-type))
-       (else-type (promote-type else-type))
        ((unless (equal then-type else-type))
-        (reserrf (list :diff-promoted-types then-type else-type)))
-       (type then-type))
+        (reserrf (list :cond-diff-types then-type else-type)))
+       (type then-type)
+       ((unless (type-promoted-arithmeticp type))
+        (reserrf (list :cond-type-lower-than-int-rank type))))
     (make-expr-type :type type :lvalue nil))
   :no-function nil)
 
@@ -2033,8 +2034,8 @@
     "We return the updated variable table.
      If there is no initializer,
      in our C subset this must be in a file scope;
-     since we require no @('extern') storage class specifier for now,
-     in this case this must be a tentative definition [C17:6.9.2/2].
+     if there is no @('extern') storage class specifier,
+     this must be a tentative definition [C17:6.9.2/2].
      If instead there is an intializer,
      then it is a definition,
      regardless of whether it has file scope or block scope."))
@@ -2051,7 +2052,12 @@
         (if initp
             (reserrf (list :declon-initializer-required
                            (obj-declon-fix declon)))
-          (var-table-add-var var type (var-defstatus-tentative) vartab)))
+          (var-table-add-var var
+                             type
+                             (scspecseq-case scspec
+                                             :none (var-defstatus-tentative)
+                                             :extern (var-defstatus-undefined))
+                             vartab)))
        (init init?)
        ((okf init-type) (check-initer init funtab vartab tagenv constp))
        ((okf &) (init-type-matchp init-type type)))
@@ -2440,7 +2446,8 @@
      this may be relaxed in the future.")
    (xdoc::p
     "We also extend the function table with the new function.
-     It is an error if a function with the same name is already in the table.
+     It is an error if a function with the same name but a different definition
+     is already in the table.
      In general, this must be done before checking the body:
      the function is in scope, in its own body.")
    (xdoc::p
@@ -2543,7 +2550,7 @@
      obtaining a list of member types if successful.
      We ensure that there is at least one member [C17:6.2.5/20],
      or at least two members if the last member is a flexible array member
-     [C17:6.2.5/18].
+     [C17:6.7.2.1/18].
      We use @(tsee tag-env-add) to ensure that there is not already
      another structure or union or enumeration type with the same tag,
      since these share one name space [C17:6.2.3].")
@@ -2553,7 +2560,7 @@
      [C17:6.2.1/7] says that the scope of the tag starts where it appears,
      so it includes the members;
      and [C17:6.7.2.1/9] says that a member type must be complete,
-     which pointer types are [C17:6:2.5/20].
+     which pointer types are [C17:6.2.5/20].
      However, we implicitly disallow even this form of recursion for now,
      because we check the member types against the current tag environment,
      which does not include the structure type yet."))

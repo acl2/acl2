@@ -382,6 +382,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; TODO: Consider assuming some of these all the time, not just when assertions are involved:
 (defund assert-assumptions (class-name)
   (declare (xargs :guard (jvm::class-namep class-name)))
   `(;; assertion checking is on:
@@ -398,12 +399,16 @@
     ;;        '"java.lang.Class")
 
     (jvm::get-class-object ',class-name initial-heapref-table)
+
+    (set::in (jvm::get-class-object ',class-name initial-heapref-table) (rkeys initial-heap))
     ;; (not (null-refp (lookup-equal ',class-name initial-heapref-table)))
     ;; it would be nice to know this by construction:
     (equal (get-field (jvm::get-class-object ',class-name initial-heapref-table)
                       '(:special-data . :class)
                       initial-heap)
-           '"java.lang.Class")))
+           '"java.lang.Class")
+    ;; more like this?
+    (jvm::heapref-tablep initial-heapref-table)))
 
 (defthm pseudo-term-listp-of-assert-assumptions
   (pseudo-term-listp (assert-assumptions class-name))
@@ -829,7 +834,7 @@
 (defmacro test-file (path-to-java-file &key
                                        ;;(assumptions 'nil)
                                        (methods ':auto) ;;which methods to test (default is ones whose names start with "test" or "fail_test")
-                                       (classes-to-assume-initialized ':all) ; todo: consider :basic but that caused problems
+                                       (classes-to-assume-initialized ':basic)
                                        (expected-failures ':auto)
                                        (error-on-unexpectedp 't) ; for interactive use, cause hard error on unexpected result
                                        (count-hits 'nil)
@@ -865,7 +870,7 @@
 (defmacro test-file-and-exit (path-to-java-file &key
                                                 ;;(assumptions 'nil)
                                                 (methods ':auto) ;;which methods to test (default is ones whose names start with "test" or "fail_test")
-                                                (classes-to-assume-initialized ':all) ; todo: consider :basic but that caused problems
+                                                (classes-to-assume-initialized ':basic)
                                                 (count-hits 'nil)
                                                 (extra-rules 'nil)
                                                 (remove-rules 'nil)
