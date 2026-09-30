@@ -277,7 +277,7 @@
       "The variables of a rule must differ from
        the variables that the events for the representation of proofs
        use for the arguments of the conclusion,
-       which are @('concl.x[i,1]'), ..., @('concl.x[i,m[i]]'),
+       which are @('_x[i,1]'), ..., @('_x[i,m[i]]'),
        differ from the names of the fields
        that hold the proofs of the premises,
        which are @('premise[1]-proof'), @('premise[2]-proof'), and so on,
