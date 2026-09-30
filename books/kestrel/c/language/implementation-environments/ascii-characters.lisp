@@ -56,7 +56,7 @@
 
   (in-theory (disable (:e ascii-chars)))
 
-  (defret in-of-ascii-chars
+  (defretd in-of-ascii-chars
     (equal (set::in char chars)
            (and (characterp char)
                 (< (char-code char) 128)))
