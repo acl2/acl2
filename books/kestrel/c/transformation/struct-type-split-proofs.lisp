@@ -442,7 +442,17 @@
                        (:t c::value-struct->members)
                        (:e nfix)
                        (:e <))))
-        :hooks (:fix)
+        :hooks
+        ((:fix
+          :hints
+          (("Goal"
+            :do-not '(preprocess) ; for speed
+            :in-theory
+            '(,struct-value-onlrp
+              c::value-kind$inline-of-value-fix-x
+              c::value-struct->tag$inline-of-value-fix-x
+              c::value-struct->members$inline-of-value-fix-x
+              c::value-struct->flexiblep$inline-of-value-fix-x)))))
         ///
         (defruled ,value-kind-when-struct-value-onlrp
           (implies (,struct-value-onlrp sval)
