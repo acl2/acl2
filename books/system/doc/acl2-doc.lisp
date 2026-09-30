@@ -110255,6 +110255,31 @@ it."
  be specified for an exported function.  For an example, see @(see
  community-book) @('system/tests/protect-congruent-stobj.lisp').</p>
 
+ <p>Fixed several bugs with @('do$') that manifested themselves differently
+ but were all caused by the same flaw.  The sixth argument of @('do$') is
+ irrelevant to its value and was supposed to be used only to print a certain
+ runtime hard error.  But several other utilities in our source code treated
+ the sixth argument as meaningful and this opened up the possibility that a
+ user could supply bogus information in that argument.  At least one such
+ exploit allowed Claude to construct a proof of @('nil').  The (mis-)uses of
+ the sixth argument have been eliminated.</p>
+
+ <p>Fixed a bug in the compilation of @('do$') loops that allowed the
+ compilation of an @('mv-setq') to reassign a @('let')-bound variable due to
+ our failure to generate a sufficiently ``fresh'' variable to temporarily hold
+ the vector of results computed by the body of the @('mv-setq') expression.
+ See the comment in @('cmp-do-body') for an example.  The guard-verified
+ logical definition returns a different result than the compiled raw lisp code
+ due to this variable capture..  Claude then exploited this bug to prove
+ @('nil') using a metafunction.  See @(see community-books)
+ @('system/tests/do-mv-capture.lisp').</p>
+
+ <p>Fixed a bug in the generation of termination conditions for functions
+ defined with @(see loop$-recursion).  The bug, which was caused by the
+ inadvertent application of a substitution to a formula to which that
+ substitution had already been applied, caused the termination conditions for
+ some loop$-recursive functions to be incomplete or bogus.</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2

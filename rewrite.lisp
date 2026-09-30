@@ -20539,6 +20539,17 @@ its attachment is ignored during proofs"))))
                            (accumulate-rw-cache t
                                                 ttree2
                                                 ttree1))))
+                        ((eq new-pot-lst :null-lst)
+
+; The rewritten conclusion linearized to nil and there is no different
+; unrewritten conclusion to try.  The value :null-lst is a marker returned by
+; add-linear-lemma-finish (meaning "another try is coming"); it must not escape
+; as the pot-lst.  So we report an unchanged pot-lst, exactly as
+; add-linear-lemma-finish does when an unrewritten conclusion linearizes to
+; nil.  Before this case was added, :null-lst was returned as the new pot-lst,
+; and the next function to traverse it faulted (see GitHub issue #2055).
+
+                         (mv nil simplify-clause-pot-lst nil nil))
                         (t (mv nil new-pot-lst failure-reason brr-result))))
                      (cond (contradictionp
                             (prog2$ (brkpt2 t nil unify-subst gstack
