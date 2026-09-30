@@ -908,13 +908,8 @@
                   (bvchop size (+ x y))))
   :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
 
-(defthm bvchop-of-sum-minus-expt
-  (implies (and (natp size)
-                (integerp x))
-           (equal (bvchop size (+ x (- (expt 2 size))))
-                  (bvchop size x)))
-  :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
 
+;move up next to bvchop-of-+-of-minus-of-expt
 (defthm bvchop-of-sum-minus-expt-alt
   (implies (and (natp size)
                 (integerp x)
