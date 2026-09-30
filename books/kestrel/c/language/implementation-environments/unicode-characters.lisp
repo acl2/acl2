@@ -36,15 +36,12 @@
     (xdoc::seetopic "character-sets" "model of character sets")
     " is more general than Unicode.
      Our model admits Unicode as a possibility,
-     and indeed we define a Unicode character set
-     in @(tsee charset-unicode),
-     but just as a utility to facilitate the definition
-     of implementation environments that use Unicode.")
+     and @(tsee charset-unicode) is a utility to facilitate
+     the definition of implementation environments that use Unicode.")
    (xdoc::p
-    "We identify Unicode characters with Unicode scalar values:
-     the codes from 0 to @('#x10ffff'), excluding the surrogate range
-     from @('#xd800') to @('#xdfff').
-     The source and execution character sets share this representation."))
+    "We represent Unicode characters by their Unicode scalar values:
+     the codes from 0 to @('#x10ffff'),
+     excluding the surrogate range from @('#xd800') to @('#xdfff')."))
   :order-subtopics t
   :default-parent t)
 
