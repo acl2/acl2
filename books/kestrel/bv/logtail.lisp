@@ -346,7 +346,7 @@
                   (logtail 1 x)))
   :hints (("Goal" :in-theory (enable logtail ifix))))
 
-(theory-invariant (incompatible (:rewrite floor-of-2) (:definition logtail)))
+(theory-invariant (incompatible (:rewrite floor-of-2-becomes-logtail-of-1) (:definition logtail)))
 
 ;Disabled since logtail is more complex than floor
 (defthmd floor-of-expt-becomes-logtail

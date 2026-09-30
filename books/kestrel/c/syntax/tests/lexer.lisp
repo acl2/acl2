@@ -1167,3 +1167,100 @@
 (test-lex-fail
  lex-binary-exponent-part
  "p*10")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-lexeme
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "123b"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "123z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "077z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "0x1g"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "1.0z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ ".1z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "1e1z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "0x1p0z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "123ullz"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "1.0fz"
+ :more-inputs (nil))
+
+(test-lex ; the suffix makes + a separate token
+ lex-lexeme
+ "0xeu+1"
+ :more-inputs (nil)
+ :cond (and (equal ast
+                   (lexeme-token
+                    (token-const
+                     (const-int
+                      (make-iconst
+                       :core (make-dec/oct/hex-const-hex
+                              :prefix (hprefix-locase-0x)
+                              :digits (list #\e))
+                       :suffix? (isuffix-u (usuffix-locase-u))
+                       :info nil)))))
+            (equal pos/span (span (position "" 1 0) (position "" 1 3)))
+            (equal (parstate$->chars-unread (to-parstate$ parstate))
+                   (list (char+position (char-code #\+) (position "" 1 4))))
+            (equal (parstate->bytes parstate) (acl2::string=>nats "1"))))
+
+(test-lex ; the suffix makes - a separate token
+ lex-lexeme
+ "0xELL-1"
+ :more-inputs (nil)
+ :cond (and (equal ast
+                   (lexeme-token
+                    (token-const
+                     (const-int
+                      (make-iconst
+                       :core (make-dec/oct/hex-const-hex
+                              :prefix (hprefix-locase-0x)
+                              :digits (list #\E))
+                       :suffix? (isuffix-l (lsuffix-upcase-ll))
+                       :info nil)))))
+            (equal pos/span (span (position "" 1 0) (position "" 1 4)))
+            (equal (parstate$->chars-unread (to-parstate$ parstate))
+                   (list (char+position (char-code #\-) (position "" 1 5))))
+            (equal (parstate->bytes parstate) (acl2::string=>nats "1"))))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "0xe+1"
+ :more-inputs (nil))

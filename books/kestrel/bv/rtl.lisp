@@ -1,6 +1,6 @@
 ; Connections between this BV library and the RTL library
 ;
-; Copyright (C) 2023-2025 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -42,7 +42,7 @@
                   (getbit n x)))
   :hints (("Goal" :in-theory (enable rtl::bitn))))
 
-(defthm bvcep-becomes-unsigned-byte-p
+(defthm bvecp-becomes-unsigned-byte-p
   (implies (natp n)
            (equal (rtl::bvecp x n)
                   (unsigned-byte-p n x)))
