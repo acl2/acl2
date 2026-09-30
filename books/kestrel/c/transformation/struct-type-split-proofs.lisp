@@ -1628,9 +1628,9 @@
 
 (define stsp-fundef ((old-fundef fundefp)
                      (new-fundef fundefp)
-                     (tag identp)
-                     (tag2 identp)
-                     (rmems ident-listp))
+                     (old-name identp)
+                     (newl-name identp)
+                     (newr-name identp))
   :guard (and (fundef-unambp old-fundef)
               (fundef-unambp new-fundef)
               (fundef-annop old-fundef)
@@ -1642,7 +1642,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is still work in progress."))
-  (declare (ignore tag tag2 rmems))
+  (declare (ignore old-name newl-name newr-name))
   (b* (((reterr) nil)
        (old-body (fundef->body old-fundef))
        (new-body (fundef->body new-fundef))
@@ -1731,7 +1731,11 @@
            (retmsg$ "Unsupported proof generation for ~
                      function definition before struct type or object."))
           ((erp events)
-           (stsp-fundef old-edeclon.fundef new-fundef tag tag2 rmems)))
+           (stsp-fundef old-edeclon.fundef
+                        new-fundef
+                        (stsp-stage-objects->old-name stage)
+                        (stsp-stage-objects->newl-name stage)
+                        (stsp-stage-objects->newr-name stage))))
        (retok (stsp-stage-fix stage)
               (trans-item-list-fix (cdr new-items))
               events))
