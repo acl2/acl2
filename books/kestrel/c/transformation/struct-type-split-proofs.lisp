@@ -751,6 +751,14 @@
                     (new-static
                      (omap::delete var (c::scope-fix new-static))))
                  (static-equivp old-static new-static))))
+           :measure (acl2-count old-static)
+           :hints
+           (("Goal"
+             :in-theory '(c::emptyp-of-scope-fix-to-not-scope-or-emptyp
+                          omap::tail-count
+                          acl2::o<-when-o-finp-cheap
+                          acl2::o-finp-compound-recognizer
+                          (:t acl2-count))))
            :hooks (:fix)
            ///
            (defruled struct-value-equivp-when-static-equivp
