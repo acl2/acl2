@@ -73,7 +73,17 @@
           :enable (value-struct-read-aux
                    member-type-lookup
                    member-types-of-member-values
-                   member-type-of-member-value)))))))
+                   member-type-of-member-value))))
+
+     (defruled valuep-of-value-struct-read-aux-when-nth
+       (implies (and (equal (c::member-value->name (nth index members))
+                            name)
+                     (natp index)
+                     (< index (len members)))
+                (c::valuep (c::value-struct-read-aux name members)))
+       :induct t
+       :enable (nth
+                len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
