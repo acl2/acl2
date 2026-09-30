@@ -42,6 +42,7 @@
                  impossible
                  index-of
                  lnfix
+                 lposfix
                  packn-pos
                  maybe-msgp
                  maybe-pseudo-event-formp
