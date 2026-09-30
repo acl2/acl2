@@ -627,7 +627,8 @@
      and that the accessor of each old member returns the same value as
      the corresponding accessor of each new member."))
   (b* (((reterr) '(_))
-       ((erp conjuncts) (stsp-struct-value-equiv-loop mems lmems rmems))
+       ((erp conjuncts fix-thms)
+        (stsp-struct-value-equiv-loop mems lmems rmems))
        (event
         `(define struct-value-equivp ((old-val c::valuep)
                                       (newl-val c::valuep)
@@ -646,7 +647,16 @@
                 ,@conjuncts)
            :guard-simplify :limited
            :guard-hints (("Goal" :in-theory nil))
-           :hooks (:fix))))
+           :hooks
+           ((:fix
+             :hints
+             (("Goal"
+               :do-not '(preprocess) ; for speed
+               :in-theory '(struct-value-equivp
+                            struct-value-oldp-of-value-fix-sval
+                            struct-value-newlp-of-value-fix-sval
+                            struct-value-newrp-of-value-fix-sval
+                            ,@fix-thms))))))))
     (retok event))
 
   :prepwork
@@ -654,36 +664,38 @@
                                          (lmems ident-listp)
                                          (rmems ident-listp))
      :returns (mv (erp maybe-msgp)
-                  (conjuncts true-listp))
+                  (conjuncts true-listp)
+                  (fix-thms symbol-listp))
      :parents nil
-     (b* (((reterr) nil)
-          ((when (endp mems)) (retok nil))
+     (b* (((reterr) nil nil)
+          ((when (endp mems)) (retok nil nil))
           (mem (car mems))
           ((erp cmem) (ldm-ident mem) :iferr "")
           (old-acc (packn-pos (list 'struct-value-old- (c::ident->name cmem))
                               'struct-value-))
-          ((erp (cons new-acc new-val))
+          ((erp new-acc new-val)
            (cond ((member-equal (ident-fix mem) (ident-list-fix lmems))
                   (retok
-                   (cons
-                    (packn-pos (list 'struct-value-newl- (c::ident->name cmem))
-                               'struct-value-)
-                    'newl-val)))
+                   (packn-pos (list 'struct-value-newl- (c::ident->name cmem))
+                              'struct-value-)
+                   'newl-val))
                  ((member-equal (ident-fix mem) (ident-list-fix rmems))
                   (retok
-                   (cons
-                    (packn-pos (list 'struct-value-newr- (c::ident->name cmem))
-                               'struct-value-)
-                    'newr-val)))
+                   (packn-pos (list 'struct-value-newr- (c::ident->name cmem))
+                              'struct-value-)
+                   'newr-val))
                  (t (retmsg$ "Member ~x0 is neither in ~x1 nor in ~x2."
                              (ident-fix mem)
                              (ident-list-fix lmems)
                              (ident-list-fix rmems)))))
           (conjunct `(equal (,old-acc old-val)
                             (,new-acc ,new-val)))
-          ((erp conjuncts)
+          (old-fix-thm (packn-pos (list old-acc '-of-value-fix-sval) old-acc))
+          (new-fix-thm (packn-pos (list new-acc '-of-value-fix-sval) new-acc))
+          ((erp conjuncts fix-thms)
            (stsp-struct-value-equiv-loop (cdr mems) lmems rmems)))
-       (retok (cons conjunct conjuncts))))))
+       (retok (cons conjunct conjuncts)
+              (list* old-fix-thm new-fix-thm fix-thms))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
