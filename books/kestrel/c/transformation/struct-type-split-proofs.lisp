@@ -1512,7 +1512,7 @@
                          (newl-name identp)
                          (newr-name identp)
                          (gin ginp))
-  :returns (gout goutp)
+  :returns (mv (erp maybe-msgp) (gout goutp))
   :short "STS proof generation for an identifier expression (i.e. variable)."
   :long
   (xdoc::topstring
@@ -1538,32 +1538,37 @@
    (xdoc::p
     "Otherwise, the old and new expressions must be identical,
      and we generate a theorem similar to @(tsee xeq-expr-ident)."))
-  (b* (((gin gin) gin)
+  (b* (((reterr) (irr-gout))
+       ((gin gin) gin)
        (gout-no-thm (gout-no-thm gin))
        ((when (equal (ident-fix old-ident)
                      (ident-fix old-name)))
         (b* (((unless (member-equal (ident-fix new-ident)
                                     (list (ident-fix newl-name)
                                           (ident-fix newr-name))))
-              (raise "Internal error: ~x0 transformed into ~x1."
-                     (ident-fix old-ident) (ident-fix new-ident))
-              (irr-gout)))
-          gout-no-thm))
+              (retmsg$ "The identifiers ~x0 and ~x1 do not match. ~
+                        This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                        was not called on ~
+                        the old and new code of STRUCT-TYPE-SPLIT."
+                       (ident-fix old-ident) (ident-fix new-ident))))
+          (retok gout-no-thm)))
        ((unless (equal (ident-fix old-ident)
                        (ident-fix new-ident)))
-        (raise "Internal error: ~x0 transformed into ~x1."
-               (ident-fix old-ident) (ident-fix new-ident))
-        (irr-gout))
+        (retmsg$ "The identifiers ~x0 and ~x1 do not match. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 (ident-fix old-ident) (ident-fix new-ident)))
        (ident (ident-fix old-ident))
        ((var-vinfo info) (var-vinfo-fix info))
        ((unless (and (ident-formalp ident)
                      (type-formalp info.type)
                      (not (type-case info.type :void))
                      (not (type-case info.type :char))))
-        gout-no-thm)
+        (retok gout-no-thm))
        ((mv & cvar) (ldm-ident ident)) ; ERP is NIL because FORMALP
        ((mv & ctype) (ldm-type info.type)) ; ERP is NIL because FORMALP
-       ((unless (omap::assoc cvar gin.vartys)) gout-no-thm)
+       ((unless (omap::assoc cvar gin.vartys)) (retok gout-no-thm))
        (hints `(("Goal"
                  :in-theory '((:e c::expr-ident)
                               (:e c::type-fix)
@@ -1579,11 +1584,11 @@
                            gin.const-new
                            gin.thm-index
                            hints)))
-    (make-gout :events (cons thm-event gin.events)
-               :thm-index thm-index
-               :thm-name thm-name
-               :vartys gin.vartys))
-  :no-function nil)
+    (retok
+     (make-gout :events (cons thm-event gin.events)
+                :thm-index thm-index
+                :thm-name thm-name
+                :vartys gin.vartys))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1612,13 +1617,13 @@
      :ident
      (expr-case
       new-expr
-      :ident (retok (stsp-expr-ident old-expr.ident
-                                     new-expr.ident
-                                     old-expr.info
-                                     old-name
-                                     newl-name
-                                     newr-name
-                                     gin))
+      :ident (stsp-expr-ident old-expr.ident
+                              new-expr.ident
+                              old-expr.info
+                              old-name
+                              newl-name
+                              newr-name
+                              gin)
       :otherwise (retmsg$ "The expressions ~x0 and ~x1 do not match. ~
                            This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
                            was not called on ~
