@@ -1167,3 +1167,57 @@
 (test-lex-fail
  lex-binary-exponent-part
  "p*10")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-lexeme
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "123b"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "123z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "077z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "0x1g"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "1.0z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ ".1z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "1e1z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "0x1p0z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "123ullz"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "1.0fz"
+ :more-inputs (nil))
