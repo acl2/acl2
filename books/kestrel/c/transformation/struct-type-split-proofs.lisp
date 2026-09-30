@@ -529,7 +529,11 @@
        (event
         `(define ,struct-value-onlr-mem ((sval c::valuep))
            :guard (,struct-value-onlrp sval)
-           :returns (mval c::valuep)
+           :returns (mval c::valuep
+                          :hints
+                          (("Goal"
+                            :in-theory '(,struct-value-onlr-mem
+                                         c::return-type-of-value-fix.new-x))))
            (c::value-fix (c::value-struct-read ',cmem sval))
            :guard-simplify :limited
            :guard-hints
