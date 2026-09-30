@@ -616,7 +616,6 @@
 (defthmd getbit-when-<=
   (implies (and (<= x (+ -1 (expt 2 n)))
                 ;; (natp n)
-                (natp free)
                 (natp x) ;could allow some negatives?
                 )
            (equal (getbit n x)

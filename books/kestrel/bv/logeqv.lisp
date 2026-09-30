@@ -1,7 +1,7 @@
 ; BV Library: logeqv
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -39,11 +39,8 @@
   :hints (("Goal" :in-theory (enable logeqv))))
 
 (defthm logeqv-negative
-  (implies (and (integerp n)
-                (<= 0 n)
-                (integerp i)
-                (integerp j)
-                )
+  (implies (and (integerp i)
+                (integerp j))
            (equal (< (logeqv i j) 0)
                   (or (and (< i 0)
                            (< j 0))

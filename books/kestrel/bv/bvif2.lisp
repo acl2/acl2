@@ -143,7 +143,8 @@
   :hints (("Goal" :in-theory (enable bvif boolif))))
 
 ;doesn't replicate any big terms
-(defthm equal-of-bvif-safe-alt
+; only needed for axe?
+(defthmd equal-of-bvif-safe-alt
   (implies (syntaxp (and (quotep x)
                          ;;could drop this one?:
                          (or (quotep a)
@@ -168,13 +169,14 @@
                           (equal x (bvchop size b)))))
   :hints (("Goal" :in-theory (enable bvif boolif))))
 
-(defthm equal-of-bvif-safe2-alt
+; only needed for axe?
+(defthmd equal-of-bvif-safe2-alt
   (implies (syntaxp (and (quotep x)
                          ;; ;;could drop this one?:
                          ;; (or (quotep a)
                          ;;     (quotep b))
                          (quotep size)))
-           (equal (equal x (bvif size test a b))
+           (equal (equal (bvif size test a b) x)
                   (boolif test
                           (equal x (bvchop size a))
                           (equal x (bvchop size b)))))
