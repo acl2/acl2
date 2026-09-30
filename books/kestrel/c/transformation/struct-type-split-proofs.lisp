@@ -632,7 +632,14 @@
         `(define struct-value-equivp ((old-val c::valuep)
                                       (newl-val c::valuep)
                                       (newr-val c::valuep))
-           :returns (yes/no booleanp)
+           :returns (yes/no booleanp
+                            :hints
+                            (("Goal"
+                              :in-theory
+                              '(booleanp-compound-recognizer
+                                (:t struct-value-equivp)
+                                struct-value-equivp
+                                (:t struct-value-newrp)))))
            (and (struct-value-oldp old-val)
                 (struct-value-newlp newl-val)
                 (struct-value-newrp newr-val)
