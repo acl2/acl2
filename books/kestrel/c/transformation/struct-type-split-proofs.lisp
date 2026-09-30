@@ -637,6 +637,8 @@
                 (struct-value-newlp newl-val)
                 (struct-value-newrp newr-val)
                 ,@conjuncts)
+           :guard-simplify :limited
+           :guard-hints (("Goal" :in-theory nil))
            :hooks (:fix))))
     (retok event))
 
