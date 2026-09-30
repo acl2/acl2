@@ -537,7 +537,7 @@
              :do-not '(preprocess) ; for speed
              :in-theory '(,struct-value-onlrp
                           c::value-struct-read
-                          valuep-of-value-struct-read-aux-when-nth
+                          c::valuep-of-value-struct-read-aux-when-nth
                           eq
                           not
                           (:e c::identp)
@@ -562,23 +562,6 @@
                              (,struct-value-onlr-mem sval))))))
        ((erp events) (stsp-struct-value-accs onlr (cdr mems) (cdr types))))
     (retok (cons event events)))
-  :prepwork
-  ((defruled valuep-of-value-struct-read-aux-when-nth
-     (implies (and (equal (c::member-value->name (nth index members))
-                          name)
-                   (natp index)
-                   (< index (len members)))
-              (c::valuep (c::value-struct-read-aux name members)))
-     :induct (nth index members)
-     :in-theory '(c::value-struct-read-aux
-                  c::valuep-of-member-value->value
-                  c::ident-fix-when-identp
-                  c::identp-of-member-value->name
-                  nth
-                  len
-                  natp
-                  zp
-                  (:t len))))
   :hooks ((:fix :hints (("Goal"
                          :induct t
                          :in-theory (enable c$::cdr-of-type-list-fix
