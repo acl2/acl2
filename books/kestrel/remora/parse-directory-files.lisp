@@ -12,7 +12,6 @@
 
 (include-book "parser-interface")
 (include-book "printer")
-(include-book "parse-error-printing")
 (include-book "oslib/ls" :dir :system)
 (include-book "oslib/catpath" :dir :system)
 (include-book "std/strings/suffixp" :dir :system)
