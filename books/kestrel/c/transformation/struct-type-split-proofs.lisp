@@ -759,6 +759,16 @@
                           acl2::o<-when-o-finp-cheap
                           acl2::o-finp-compound-recognizer
                           (:t acl2-count))))
+           :guard-simplify :limited
+           :guard-hints
+           (("Goal"
+             :in-theory '(c::mapp-when-scopep
+                          c::scope-fix-when-scopep
+                          c::scopep-of-delete
+                          c::scopep-of-tail
+                          c::valuep-of-cdr-of-assoc-scopep
+                          c::valuep-of-head-val-when-scopep
+                          (:t omap::assoc))))
            :hooks (:fix)
            ///
            (defruled struct-value-equivp-when-static-equivp
