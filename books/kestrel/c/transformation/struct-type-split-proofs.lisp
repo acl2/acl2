@@ -1597,7 +1597,7 @@
               (expr-unambp new-expr)
               (expr-annop old-expr)
               (expr-annop new-expr))
-  :returns (gout goutp)
+  :returns (mv (erp maybe-msgp) (gout goutp))
   :short "STS proof generation for an expression."
   :long
   (xdoc::topstring
@@ -1606,23 +1606,25 @@
      So it takes as input both old and new expression.
      This is very limited for now:
      we only generate theorems for identifier expressions."))
-  (expr-case
-   old-expr
-   :ident
-   (expr-case
-    new-expr
-    :ident (stsp-expr-ident old-expr.ident
-                            new-expr.ident
-                            old-expr.info
-                            old-name
-                            newl-name
-                            newr-name
-                            gin)
-    :otherwise (prog2$ (raise "Internal error: ~x0 transformed into ~x1."
-                              (expr-fix old-expr) (expr-fix new-expr))
-                       (irr-gout)))
-   :otherwise (gout-no-thm gin))
-  :no-function nil)
+  (b* (((reterr) (irr-gout)))
+    (expr-case
+     old-expr
+     :ident
+     (expr-case
+      new-expr
+      :ident (retok (stsp-expr-ident old-expr.ident
+                                     new-expr.ident
+                                     old-expr.info
+                                     old-name
+                                     newl-name
+                                     newr-name
+                                     gin))
+      :otherwise (retmsg$ "The expressions ~x0 and ~x1 do not match. ~
+                           This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                           was not called on ~
+                           the old and new code of STRUCT-TYPE-SPLIT."
+                          (expr-fix old-expr) (expr-fix new-expr)))
+     :otherwise (retok (gout-no-thm gin)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
