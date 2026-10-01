@@ -692,3 +692,72 @@
 ; and the head of the latter has shape @s.
 (test-check-top-expr
  "(i-fn (@s) (fn ((x [Int 3 @s])) (head (tail (tail x)))))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; append : (Forall (&t)
+;           (Pi ($m $n @s)
+;            (-> ([&t $m @s] [&t $n @s]) [&t (+ $m $n) @s])))
+
+; OBJECTIVE: append takes two arguments,
+; but the inference is limited to unary applications:
+; the n-ary application performs no inference,
+; and the unary application to the first argument fails,
+; because the dimension $n of the second input
+; does not occur in the first input,
+; so it cannot be inferred from the first argument;
+; the inference should consider all the arguments of an n-ary application,
+; or defer the instantiation of $n to the application to the second argument.
+(test-check-top-expr-fail
+ "(append [1 2] [3 4 5])")
+(test-check-top-expr-fail
+ "((append [1 2]) [3 4 5])")
+
+; The fully explicit instantiation is accepted;
+; the length (+ 2 3) of the result is used by further inference
+; modulo additive equivalence:
+; the length is inferred as 5,
+; and the head is inferred with the explicit dimension 4,
+; since (+ 1 4) and (+ 2 3) are both normalized to 5.
+(test-check-top-expr
+ "(@append (Int) (2 3 []) [1 2] [3 4 5])")
+(test-check-top-expr
+ "(length (@append (Int) (2 3 []) [1 2] [3 4 5]))")
+(test-check-top-expr
+ "((i-app (t-app head Int) 4) (@append (Int) (2 3 []) [1 2] [3 4 5]))")
+
+; Partial explicit instantiation, with the dimensions explicit
+; and the shape inferred from the first argument,
+; which fixes the shape of the elements of the second argument:
+; the elements of the vectors are scalars,
+; and the elements of the matrices are vectors of length 2;
+; the explicit dimension of the second argument is checked.
+(test-check-top-expr
+ "(((i-app (t-app append Int) 2 3) [1 2]) [3 4 5])")
+(test-check-top-expr
+ "(((i-app (t-app append Int) 1 2) [[1 2]]) [[3 4] [5 6]])")
+(test-check-top-expr-fail
+ "(((i-app (t-app append Int) 2 3) [1 2]) [3 4])")
+
+; Under ispace binders, with the bound dimension variables explicit,
+; the shape is inferred from the first argument:
+; the first input type [Int $m @s] contains the bound variable $m,
+; which is rigid, i.e. not a pattern variable.
+(test-check-top-expr
+ "(i-fn ($m $n) (fn ((x [Int $m]) (y [Int $n]))
+    (((i-app (t-app append Int) $m $n) x) y)))")
+
+; The result of a fully explicit instantiation under ispace binders
+; has length (+ $m $n), which is used by further inference:
+; its length is inferred as (+ $m $n);
+; it has no head, since (+ $m $n) may be 0;
+; it has a head when the first vector has length (+ 1 $m).
+(test-check-top-expr
+ "(i-fn ($m $n) (fn ((x [Int $m]) (y [Int $n]))
+    (length (@append (Int) ($m $n []) x y))))")
+(test-check-top-expr-fail
+ "(i-fn ($m $n) (fn ((x [Int $m]) (y [Int $n]))
+    (head (@append (Int) ($m $n []) x y))))")
+(test-check-top-expr
+ "(i-fn ($m $n) (fn ((x [Int (+ 1 $m)]) (y [Int $n]))
+    (head (@append (Int) ((+ 1 $m) $n []) x y))))")
