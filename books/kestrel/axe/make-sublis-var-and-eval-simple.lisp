@@ -201,7 +201,7 @@
            :flag ,sublis-var-and-eval-lst-name)
          :hints (("Goal" :in-theory (e/d (,sublis-var-and-eval-name ,sublis-var-and-eval-lst-name
                                                                     pseudo-termp-when-not-consp-cheap
-                                                                    pseudo-termp
+                                                                    ;; pseudo-termp
                                                                     darg-treep
                                                                     darg-tree-listp
                                                                     darg-treep-when-dargp

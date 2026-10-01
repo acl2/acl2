@@ -1881,9 +1881,7 @@
 ;;                   (if (bvle xsize 4 x)
 ;;                       (bvchop-list 8 (take 4 data))
 ;;                     (bv-array-write '8 '4 (bvchop 2 x) val data))))
-;;   :hints (("Goal" :in-theory (e/d (unsigned-byte-p-forced bv-array-write update-nth2 bvlt)
-;;                                   ()))))
-
+;;   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced bv-array-write update-nth2 bvlt))))
 
 ;rename
 (defthmd bvdiv-tighten-dag

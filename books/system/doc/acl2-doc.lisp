@@ -109913,6 +109913,9 @@ it."
 ; @('translate.lisp'), for a Lisp comment providing further explanation.
 ; Thanks to Eric Smith for passing along this issue from Anthropic's Claude.
 
+; Improved error messages from attempts to add :type-set-inverter rules, in
+; particular when the user has swapped the orientation of the equality.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -110271,7 +110274,7 @@ it."
  See the comment in @('cmp-do-body') for an example.  The guard-verified
  logical definition returns a different result than the compiled raw lisp code
  due to this variable capture..  Claude then exploited this bug to prove
- @('nil') using a metafunction.  See @(see community-books)
+ @('nil') using a metafunction.  See @(see community-book)
  @('system/tests/do-mv-capture.lisp').</p>
 
  <p>Fixed a bug in the generation of termination conditions for functions
@@ -110279,6 +110282,54 @@ it."
  inadvertent application of a substitution to a formula to which that
  substitution had already been applied, caused the termination conditions for
  some loop$-recursive functions to be incomplete or bogus.</p>
+
+ <p>Fixed a soundness bug caused by removal of @(tsee guard-holders) before
+ compiling @(see lambda) objects for the compiled lambda cache (see :DOC
+ print-cl-cache).  An additional effect of this change (besides removing
+ unsoundness) is to stop avoiding calls of @(tsee cw) and other side effects
+ when using @(tsee apply$).  Consider for example an evaluation of the
+ following term, where the body of the @(tsee lambda) object is the translation
+ of @('(prog2$ (cw \"Hello~%\") nil)'): before the fix, @('\"Hello\"') was not
+ printed, but after the fix, it is printed.</p>
+
+ @({
+ (apply$ '(lambda ()
+             (RETURN-LAST
+              'PROGN
+              (FMT-TO-COMMENT-WINDOW '\"Hello~%\"
+                                     (PAIRLIS2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                                               'NIL)
+                                     '0
+                                     'NIL
+                                     'NIL)
+              'NIL))
+          nil)
+ })
+
+ <p>See also @(see community-books)
+ @('system/tests/ec-call-in-quoted-lambda.lisp.lisp') and
+ @('system/tests/ec-call-lambda-bypasses-1star.lisp').</p>
+
+ <p>Fixed an error that could be inappropriately caused by running @(tsee
+ apply$) on a @(tsee lambda$) expression from within a @(':')@(tsee
+ program)-mode function.  Below is an example that formerly caused an error, as
+ indicated.</p>
+
+ @({
+ (defconst *ar*
+   (compress1 'a '((:header :dimensions (4) :maximum-length 6
+                            :default 0 :name a)
+                   (0 . 0) (1 . 0) (2 . 0) (3 . 0))))
+
+ (defun foo (ar n v)
+   (declare (xargs :mode :program))
+   (apply$
+    (lambda$ (x) (aset1 'a (car x) (cadr x) (caddr x)))
+    (list (list ar n v))))
+
+ ; Formerly an error:
+ (foo *ar* 0 1)
+ })
 
  <h3>Other Bug Fixes</h3>
 
