@@ -15,6 +15,7 @@
 (include-book "abstract-syntax-operations")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/basic/fix" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
 (acl2::controlled-configuration
@@ -11093,7 +11094,7 @@
     ;; For speed, disable the functions but expand their conclusion calls.
     ;; Note that ACL2::RECURSIVEP returns the names of the whole clique.
     :hints (("Goal" :in-theory (set-difference-theories
-                                (enable fix nfix)
+                                (current-theory :here)
                                 (acl2::recursivep 'parse-expression t world)))
             (flag-expand-hint clause world)))
 
