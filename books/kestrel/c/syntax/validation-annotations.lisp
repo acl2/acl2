@@ -255,14 +255,10 @@
     "This is the type of the annotations that
      the validator adds to translation ensembles.
      The information consists of
-     the validation information related to identifiers with external linkage,
-     the map of structure and union type UIDs to their members,
-     and the next unused "
-    (xdoc::seetopic "uid" "unique identifier")
-    "."))
+     the validation information related to identifiers with external linkage
+     and the map of structure and union type UIDs to their members."))
   ((externals valid-externals)
-   (completions type-completions)
-   (next-uid uidp))
+   (completions type-completions))
   :pred trans-ensemble-vinfop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

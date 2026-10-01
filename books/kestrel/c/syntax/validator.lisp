@@ -111,23 +111,23 @@
      a validation table,
      an information map for identifiers with external linkage,
      a type completion map,
-     the next unused"
+     the number of the next unused local"
     (xdoc::seetopic "uid" "unique identifier")
     ", and an implementation environment.
      It is analogous to @(tsee dstate).")
    (xdoc::p
     "The implementation environment is constant &mdash;
      i.e. it is never updated once set.
-     The validation table is reset for each translation unit,
-     and only contains information for the current translation unit.
-     The remaining fields,
-     @('externals'), @('completions'), and @('next-uid'),
+     The validation table and the next unused local unique identifier number
+     are reset for each translation unit,
+     and only pertain to the current translation unit.
+     The remaining fields, @('externals') and @('completions'),
      accumulate over the entire validation process,
      and their contents apply to all translation units in the ensemble."))
   ((table valid-table)
    (externals valid-externals)
    (completions type-completions)
-   (next-uid uidp)
+   (next-uid-num nat)
    (ienv ienv))
   :pred vstatep)
 
@@ -139,7 +139,7 @@
   :body (vstate (irr-valid-table)
                 (treemap::empty)
                 nil
-                (irr-uid)
+                0
                 (irr-ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -148,18 +148,18 @@
                      (filepath filepathp)
                      &optional
                      ((externals valid-externalsp) '(treemap::empty))
-                     ((completions type-completions-p) 'nil)
-                     ((next-uid uidp) '(uid 0)))
+                     ((completions type-completions-p) 'nil))
   :returns (vstate vstatep)
   :short "Initial validator state."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This contains one empty scope (the initial file scope)."))
+    "This contains one empty scope (the initial file scope),
+     and no local unique identifiers have been used yet."))
   (make-vstate :table (init-valid-table filepath (ienv->dialect ienv))
                :externals externals
                :completions completions
-               :next-uid next-uid
+               :next-uid-num 0
                :ienv ienv)
   :inline t)
 
@@ -272,6 +272,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define vstate-get-fresh-local-uid ((vstate vstatep))
+  :returns (mv (uid uidp)
+               (new-vstate vstatep))
+  :short "Get a fresh local @(tsee UID) and update the vstate accordingly."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @(tsee UID) is for the current translation unit,
+     and its number is the @('next-uid-num') field of the @(see vstate),
+     which is incremented to record that the @(tsee UID) is now taken."))
+  (b* (((vstate vstate) vstate))
+    (mv (uid-local (vstate->filepath vstate) vstate.next-uid-num)
+        (change-vstate vstate :next-uid-num (1+ vstate.next-uid-num))))
+
+  ///
+
+  (defret vstate-get-fresh-local-uid.uid-under-iff
+    uid))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (define vstate-get-fresh-uid ((ident identp)
                               (linkage linkagep)
                               (vstate vstatep))
@@ -281,24 +302,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @('next-uid') field of the @(see vstate) is incremented to record
-     that the returned @(tsee UID) is now taken."))
-  (b* (((vstate vstate) vstate))
-    (linkage-case
-     linkage
-     :external (b* ((info? (vstate-lookup-ext ident vstate)))
-                 (valid-ext-info-option-case
-                  info?
-                  :some (mv (valid-ext-info->uid info?.val)
-                            (vstate-fix vstate))
-                  :none (mv vstate.next-uid
-                            (change-vstate
-                             vstate
-                             :next-uid (uid-increment vstate.next-uid)))))
-     :otherwise (mv vstate.next-uid
-                    (change-vstate
-                     vstate
-                     :next-uid (uid-increment vstate.next-uid)))))
+    "If the linkage is external,
+     the @(tsee UID) is determined by the identifier,
+     and the @(see vstate) is unchanged.
+     Otherwise, we get a fresh local one
+     via @(tsee vstate-get-fresh-local-uid)."))
+  (linkage-case
+   linkage
+   :external (mv (uid-external ident) (vstate-fix vstate))
+   :otherwise (vstate-get-fresh-local-uid vstate))
 
   ///
 
@@ -523,19 +535,23 @@
   (xdoc::topstring
    (xdoc::p
     "This wraps @(tsee type-composite),
-     extracting the @('completions') @('next-uid') from the validation state,
-     and updating the values accordingly."))
+     passing the @('completions') and @('next-uid-num')
+     from the validation state,
+     so that new structure types get local @(see UID)s
+     for the current translation unit,
+     and updating those values accordingly."))
   (b* (((vstate vstate) vstate)
-       ((mv composite completions & next-uid)
+       ((mv composite completions & next-uid-num)
         (type-composite x y
                         vstate.completions
                         (treemap::empty)
-                        vstate.next-uid)))
+                        (vstate->filepath vstate)
+                        vstate.next-uid-num)))
     (mv composite
         (change-vstate
          vstate
          :completions completions
-         :next-uid next-uid))))
+         :next-uid-num next-uid-num))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3843,10 +3859,7 @@
                                     nil
                                     types
                                     vstate)))
-                          (uid (vstate->next-uid vstate))
-                          (vstate (change-vstate
-                                   vstate
-                                   :next-uid (uid-increment uid)))
+                          ((mv uid vstate) (vstate-get-fresh-local-uid vstate))
                           (vstate (vstate-add-tag tyspec.spec.name?
                                                   (make-valid-tag-info
                                                    :kind (tag-kind-struct)
@@ -3895,10 +3908,7 @@
                     ((mv uid vstate)
                      (b* (((when current-uid?)
                            (mv current-uid? vstate))
-                          (uid (vstate->next-uid vstate))
-                          (vstate (change-vstate
-                                   vstate
-                                   :next-uid (uid-increment uid))))
+                          ((mv uid vstate) (vstate-get-fresh-local-uid vstate)))
                        (mv uid
                            (if tyspec.spec.name?
                                (vstate-add-tag tyspec.spec.name?
@@ -3963,10 +3973,7 @@
                                       This occurred in the type specifier ~x1."
                                      tyspec.spec.name?
                                      (type-spec-fix tyspec))))
-                         (uid (vstate->next-uid vstate))
-                         (vstate (change-vstate
-                                  vstate
-                                  :next-uid (uid-increment uid)))
+                         ((mv uid vstate) (vstate-get-fresh-local-uid vstate))
                          (vstate (vstate-add-tag tyspec.spec.name?
                                                  (make-valid-tag-info
                                                   :kind (tag-kind-union)
@@ -4015,10 +4022,7 @@
                    ((mv uid vstate)
                     (b* (((when current-uid?)
                           (mv current-uid? vstate))
-                         (uid (vstate->next-uid vstate))
-                         (vstate (change-vstate
-                                  vstate
-                                  :next-uid (uid-increment uid))))
+                         ((mv uid vstate) (vstate-get-fresh-local-uid vstate)))
                       (mv uid
                           (if tyspec.spec.name?
                               (vstate-add-tag tyspec.spec.name?
@@ -4134,10 +4138,8 @@
                           ((mv uid vstate)
                            (b* (((when current-uid?)
                                  (mv current-uid? vstate))
-                                (uid (vstate->next-uid vstate))
-                                (vstate (change-vstate
-                                         vstate
-                                         :next-uid (uid-increment uid))))
+                                ((mv uid vstate)
+                                 (vstate-get-fresh-local-uid vstate)))
                              (mv uid
                                  (if tyspec.name?
                                      (vstate-add-tag tyspec.name?
@@ -7199,9 +7201,7 @@
              (b* (((unless tag?) vstate)
                   ((mv info? currentp) (vstate-lookup-tag tag? vstate))
                   ((when (and info? currentp)) vstate)
-                  (uid (vstate->next-uid vstate))
-                  (vstate (change-vstate vstate
-                                         :next-uid (uid-increment uid))))
+                  ((mv uid vstate) (vstate-get-fresh-local-uid vstate)))
                (vstate-add-tag tag?
                                (make-valid-tag-info
                                 :kind (if unionp
@@ -8501,7 +8501,11 @@
      we validate all the external declarations in the translation unit.
      Since these are translation units after preprocesing,
      all the referenced names must be declared in the translation unit,
-     so it is appropriate to start with the initial validation table.")
+     so it is appropriate to start with the initial validation table.
+     We obtain it from @(tsee init-vstate),
+     which also resets the number of the next unused local unique identifier,
+     while keeping the information that accumulates
+     across translation units.")
    (xdoc::p
     "If validation is successful,
      we add the final validation table to
@@ -8510,7 +8514,10 @@
   (b* (((reterr) (irr-trans-unit) (irr-vstate))
        ((vstate vstate) vstate)
        (dialect (ienv->dialect vstate.ienv))
-       (vstate (change-vstate vstate :table (init-valid-table filepath dialect)))
+       (vstate (init-vstate vstate.ienv
+                            filepath
+                            vstate.externals
+                            vstate.completions))
        (vstate (vstate-add-built-in-funs (built-in-functions-for dialect) vstate))
        (vstate (vstate-add-built-in-vars (built-in-vars-for dialect) vstate))
        ((erp new-items vstate)
@@ -8624,7 +8631,7 @@
     "We validate each translation unit,
      annotating each one with its final validation table.
      Information that accumulates across translation units
-     (external linkage identifiers, type completions, and the UID counter)
+     (external linkage identifiers and type completions)
      is threaded through the validation of each unit
      and collected into the @(tsee trans-ensemble-vinfo) annotation
      on the resulting ensemble."))
@@ -8644,8 +8651,7 @@
             nil))
        (info (make-trans-ensemble-vinfo
               :externals (vstate->externals vstate)
-              :completions (vstate->completions vstate)
-              :next-uid (vstate->next-uid vstate))))
+              :completions (vstate->completions vstate))))
     (retok (make-trans-ensemble
             :units new-tumap
             :resolved-includes nil

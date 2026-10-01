@@ -296,7 +296,7 @@
     :unknown-builtin nil
     :unknown-scalar :unknown
     :unknown-arithmetic nil
-    :struct (c$::uid-equal struct-uid type.uid)
+    :struct (c$::uid-equiv struct-uid type.uid)
     :array (sts-splittablep type.of struct-uid)
     :pointer (sts-splittablep type.to struct-uid)
     :otherwise nil)
@@ -502,7 +502,7 @@
       :unknown-builtin nil
       :unknown-scalar :unknown
       :unknown-arithmetic nil
-      :struct (if (c$::uid-equal struct-uid type.uid)
+      :struct (if (c$::uid-equiv struct-uid type.uid)
                   t
                 (c$::type-struni-tag/members-case
                   type.tag/members
@@ -739,7 +739,7 @@
        (msg? (sts-check-completion-members
                (treemap::entry-val iter)
                struct-uid
-               (c$::uid-equal (treemap::entry-key iter) struct-uid)))
+               (c$::uid-equiv (treemap::entry-key iter) struct-uid)))
        ((when msg?) msg?))
     (sts-check-completions-loop (treemap::next iter) struct-uid)))
 
@@ -770,7 +770,7 @@
             (msg? (sts-check-completion-members
                     members
                     struct-uid
-                    (c$::uid-equal entry-uid struct-uid)))
+                    (c$::uid-equiv entry-uid struct-uid)))
             ((when msg?) msg?))
          (sts-check-completions (treemap::delete entry-uid completions)
                                 struct-uid))
@@ -786,7 +786,7 @@
                         (b* ((msg? (sts-check-completion-members
                                      (treemap::entry-val iter)
                                      struct-uid
-                                     (c$::uid-equal (treemap::entry-key iter)
+                                     (c$::uid-equiv (treemap::entry-key iter)
                                                     struct-uid))))
                           (or msg?
                               (sts-check-completions (treemap::after iter)
@@ -979,7 +979,7 @@
                          split-point-type))
                  ((unless (and
                             (c$::type-case split-point-type :struct)
-                            (c$::uid-equal
+                            (c$::uid-equiv
                               (c$::type-struct->uid split-point-type)
                               target-uid)))
                   (retmsg$ "INTERNAL ERROR. ~
@@ -2298,7 +2298,7 @@
         :struct
         (b* (((c$::type-spec-struct-vinfo info) type-spec.info)
              (uid (c$::type-struct->uid info.type))
-             (splitp (c$::uid-equal uid (sts-split-state->target-struct-uid st)))
+             (splitp (c$::uid-equiv uid (sts-split-state->target-struct-uid st)))
              ;; The validation information for this type specifier is only
              ;; available here, so this is where we decide whether defining
              ;; the right struct type needs its tag declared beforehand.
@@ -2374,7 +2374,7 @@
         :struct-empty
         (b* (((c$::type-spec-struct-vinfo info) type-spec.info)
              (uid (c$::type-struct->uid info.type))
-             (splitp (c$::uid-equal uid (sts-split-state->target-struct-uid st)))
+             (splitp (c$::uid-equiv uid (sts-split-state->target-struct-uid st)))
              ((erp attribs st)
               (attrib-spec-list-sts-split type-spec.attribs st)))
           (retok (c$::make-type-spec-struct-empty :attribs attribs

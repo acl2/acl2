@@ -1213,12 +1213,12 @@
                :struct
                (type-case
                  y
-                 :struct (uid-equal x.uid y.uid)
+                 :struct (uid-equiv x.uid y.uid)
                  :otherwise nil)
                :union
                (type-case
                  y
-                 :union (uid-equal x.uid y.uid)
+                 :union (uid-equiv x.uid y.uid)
                  :otherwise nil)
                :enum
                (type-case
@@ -1378,7 +1378,6 @@
            :in-theory (enable type-equal-3p
                               type-params-equal-3p
                               type-list-equal-3p
-                              uid-equal
                               (:i type/type-list-equal-3p-flag)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
