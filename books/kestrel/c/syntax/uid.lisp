@@ -69,6 +69,42 @@
   :type uidp
   :body (uid-local 0 nil))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define uid-same-tunit-p ((x uidp) (y uidp))
+  :returns (yes/no booleanp)
+  :parents (uid)
+  :short "Check if two unique identifiers are local to
+          the same translation unit."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This holds when both are local,
+     and they have the same translation unit.
+     A local unique identifier without translation unit,
+     e.g. for a composite type constructed across translation units,
+     belongs to no translation unit,
+     and so it is not in the same translation unit as any other."))
+  (uid-case
+   x
+   :external nil
+   :local (uid-case
+           y
+           :external nil
+           :local (and x.tunit?
+                       (equal x.tunit? y.tunit?))))
+
+  ///
+
+  (defrule uid-same-tunit-p-symmetric
+    (equal (uid-same-tunit-p y x)
+           (uid-same-tunit-p x y)))
+
+  (defrule uid-same-tunit-p-transitive
+    (implies (and (uid-same-tunit-p x y)
+                  (uid-same-tunit-p y z))
+             (uid-same-tunit-p x z))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defoption uid-option

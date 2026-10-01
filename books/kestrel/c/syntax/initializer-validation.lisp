@@ -169,7 +169,6 @@
      "       (make-initer-subobjects-array-index"
      "        :of (make-type-struct"
      "             :uid (uid-local 0 (filepath \"foo.c\"))"
-     "             :tunit? (filepath \"foo.c\")"
      "             :tag/members (type-struni-tag/members-tagged (ident \"foo_s\")))"
      "        :index 5)))"))
   (:unknown ())

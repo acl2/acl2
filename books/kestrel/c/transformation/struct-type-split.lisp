@@ -5063,7 +5063,6 @@
 (define sts-find-struct-type-in-valid-table
   ((tag? ident-optionp)
    (typedef-name? ident-optionp)
-   (filepath filepathp)
    (table c$::valid-tablep))
   :guard (or tag? typedef-name?)
   :returns (mv (er? maybe-msgp)
@@ -5087,7 +5086,6 @@
           (retok
             (c$::make-type-struct
               :uid (c$::valid-tag-info->uid info?)
-              :tunit? (c$::filepath-fix filepath)
               :tag/members
               (c$::make-type-struni-tag/members-tagged :tag tag?)))))
        (info?
@@ -5125,13 +5123,11 @@
                      tag?)
           (retmsg$ "A typedef name ~x0 denoting a struct type does not exist."
                    (c$::ident-fix typedef-name?))))
-       (filepath (c$::filepath-fix (omap::head-key tunits)))
        (tunit (omap::head-val tunits))
        ((erp type?)
         (sts-find-struct-type-in-valid-table
           tag?
           typedef-name?
-          filepath
           (c$::trans-unit-vinfo->table-end (c$::trans-unit->info tunit))))
        ((when type?)
         (retok type?)))
@@ -5185,7 +5181,6 @@
           (retok
             (c$::make-type-struct
               :uid info.uid
-              :tunit? (c$::filepath-fix filepath?)
               :tag/members
               (c$::make-type-struni-tag/members-tagged :tag tag?)))))
        (info?
@@ -5276,7 +5271,6 @@
        ((erp current-type?)
         (sts-find-struct-type-in-valid-table tag?
                                              typedef-name?
-                                             filepath
                                              tunit-vtable))
        (uid (if current-type?
                 (c$::type-struct->uid current-type?)
