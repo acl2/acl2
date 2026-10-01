@@ -823,3 +823,63 @@
 (test-check-top-expr
  "(unbox ($d v (box (3) [1 2 3] (Sigma ($e) (A Int $e))))
    (box ($d) (reverse v) (Sigma ($e) (A Int $e))))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; index : (Forall (&t) (Pi ($m) (-> ([&t $m] Int) &t)))
+
+; OBJECTIVE: as for append, the n-ary application performs no inference.
+(test-check-top-expr-fail
+ "(index [10 20 30] 1)")
+
+; Unlike append, the unary application to the first argument succeeds,
+; because all the variables occur in the first input type:
+; the element type and the length are inferred from the vector,
+; and the resulting function is applied to the index.
+(test-check-top-expr
+ "((index [10 20 30]) 1)")
+
+; The element type is inferred as the result type:
+; a boolean, or a function, which is applied.
+(test-check-top-expr
+ "((index [#t #f]) 1)")
+(test-check-top-expr
+ "(((index [(fn ((x Int)) x)]) 0) 7)")
+
+; A scalar cannot be indexed.
+(test-check-top-expr-fail
+ "((index 5) 0)")
+
+; The second argument is checked after the inference:
+; it must be an integer, as a scalar,
+; or as a vector of indices, over which the application is lifted,
+; yielding a vector of elements.
+(test-check-top-expr-fail
+ "((index [10 20 30]) #t)")
+(test-check-top-expr
+ "((index [10 20 30]) [0 2])")
+
+; OBJECTIVE: a matrix is a frame of rows,
+; so index should be applied to each row, over the frame [2],
+; yielding the column at the index;
+; but the inference does not handle frames yet.
+; The fully explicit instantiation is accepted, with the frame.
+(test-check-top-expr-fail
+ "((index [[1 2] [3 4]]) 0)")
+(test-check-top-expr
+ "(@index (Int) (2) [[1 2] [3 4]] 0)")
+
+; Partial explicit instantiation, with the length inferred.
+(test-check-top-expr
+ "(((t-app index Int) [10 20 30]) 1)")
+
+; Inference under an ispace binder:
+; the length is inferred as the bound variable
+; (an index out of range is only a dynamic error).
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int $n]) (i Int)) ((index x) i)))")
+
+; The length is inferred as the witness of an unboxing,
+; which does not escape, since the result is a scalar.
+(test-check-top-expr
+ "(unbox ($d v (box (3) [1 2 3] (Sigma ($e) (A Int $e)))) ((index v) 0))")
