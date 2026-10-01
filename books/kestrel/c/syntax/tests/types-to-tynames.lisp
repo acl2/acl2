@@ -118,7 +118,7 @@
 
 ;; A tagged structure renders as just the tag.
 (acl2::assert-equal (render-type (make-type-struct
-                             :uid (uid-local nil 0)
+                             :uid (uid-local 0 nil)
                              :tunit? nil
                              :tag/members (type-struni-tag/members-tagged
                                             (ident "foo"))))
@@ -126,7 +126,7 @@
 
 ;; A tagged union renders as just the tag.
 (acl2::assert-equal (render-type (make-type-union
-                             :uid (uid-local nil 0)
+                             :uid (uid-local 0 nil)
                              :tunit? nil
                              :tag/members (type-struni-tag/members-tagged
                                             (ident "bar"))))
@@ -135,7 +135,7 @@
 ;; A pointer to a tagged structure.
 (acl2::assert-equal (render-type (make-type-pointer
                              :to (make-type-struct
-                                   :uid (uid-local nil 0)
+                                   :uid (uid-local 0 nil)
                                    :tunit? nil
                                    :tag/members (type-struni-tag/members-tagged
                                                   (ident "foo")))))
@@ -144,7 +144,7 @@
 ;; An untagged structure reconstructs its members.
 (acl2::assert-equal
   (render-type (make-type-struct
-                 :uid (uid-local nil 0)
+                 :uid (uid-local 0 nil)
                  :tunit? nil
                  :tag/members
                  (type-struni-tag/members-untagged

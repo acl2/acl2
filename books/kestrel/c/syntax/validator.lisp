@@ -283,7 +283,7 @@
      and its number is the @('next-uid-num') field of the @(see vstate),
      which is incremented to record that the @(tsee UID) is now taken."))
   (b* (((vstate vstate) vstate))
-    (mv (uid-local (vstate->filepath vstate) vstate.next-uid-num)
+    (mv (uid-local vstate.next-uid-num (vstate->filepath vstate))
         (change-vstate vstate :next-uid-num (1+ vstate.next-uid-num))))
 
   ///

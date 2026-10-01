@@ -3796,7 +3796,7 @@
                    ;; Otherwise, a new structure type,
                    ;; recorded before its members are composed,
                    ;; so that the pair reached again through them gets it.
-                   (composite-uid (uid-local tunit? next-uid-num))
+                   (composite-uid (uid-local next-uid-num tunit?))
                    (next-uid-num (1+ next-uid-num))
                    (composites (treemap::update pair composite-uid composites))
                    ((mv members completions composites next-uid-num)
@@ -3830,7 +3830,7 @@
                       (treeset::empty)))
                    ((when y-inputp)
                     (mv y completions composites next-uid-num))
-                   (composite-uid (uid-local tunit? next-uid-num))
+                   (composite-uid (uid-local next-uid-num tunit?))
                    (next-uid-num (1+ next-uid-num))
                    ((mv members completions composites next-uid-num)
                     (type-struni-member-list-composite-aux
