@@ -994,9 +994,19 @@
                   (bvchop size (+ x (- y)))))
   :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
 
+;no hyps about size
 (defthm bvchop-of-+-of-unary---of-bvchop-arg2
   (implies (and (integerp x)
                 (integerp y))
            (equal (bvchop size (+ x (- (bvchop size y))))
                   (bvchop size (+ x (- y)))))
   :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
+
+;no hyps on size
+(defthm bvchop-of-+-of-unary---of-bvchop-arg3
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp w))
+           (equal (bvchop size (+ w x (- (bvchop size y))))
+                  (bvchop size (+ w x (- y)))))
+  :hints (("Goal" :use (:instance bvchop-of-+-of-unary---of-bvchop-arg2 (x (+ w x))))))

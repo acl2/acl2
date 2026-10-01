@@ -4078,13 +4078,8 @@
                   (bvchop size (+ x (- y)))))
   :hints (("Goal" :in-theory (disable equal-bvchop-bvchop-move-minus2))))
 
-;no hyps about size
-(defthm bvchop-of-sum-of-minus-of-bvchop-same
-  (implies (and (integerp x)
-                (integerp Y))
-           (equal (bvchop size (+ x (- (bvchop size y))))
-                  (bvchop size (+ x (- y)))))
-  :hints (("Goal" :in-theory (disable equal-bvchop-bvchop-move-minus2))))
+
+
 
 (defthm bvchop-of-sum-of-minus-of-bvchop-gen-arg3
   (implies (and (<= size size2)
@@ -4095,15 +4090,6 @@
                 (integerp w))
            (equal (bvchop size (+ w x (- (bvchop size2 y))))
                   (bvchop size (+ w x (- y))))))
-
-;no hyps on size
-(defthm bvchop-of-sum-of-minus-of-bvchop-same-alt
-  (implies (and (integerp x)
-                (integerp Y)
-                (integerp w))
-           (equal (bvchop size (+ w x (- (bvchop size y))))
-                  (bvchop size (+ w x (- y)))))
-  :hints (("Goal" :use (:instance bvchop-of-sum-of-minus-of-bvchop-same (x (+ w x))))))
 
 (defthm bvchop-of-sum-of-bvchop-gen-arg3
   (implies (and (<= size size2)
