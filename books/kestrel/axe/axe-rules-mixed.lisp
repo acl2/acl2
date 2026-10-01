@@ -186,9 +186,8 @@
                     nil)))
   :hints (("Goal"
            :cases ((unsigned-byte-p xsize y))
-           :in-theory (e/d (bvplus bvlt bvuminus bvchop-of-sum-cases bvminus UNSIGNED-BYTE-P-FORCED
-                                   UNSIGNED-BYTE-P-when-UNSIGNED-BYTE-P-free-better)
-                           ()))))
+           :in-theory (enable bvplus bvlt bvuminus bvchop-of-sum-cases bvminus unsigned-byte-p-forced
+                              unsigned-byte-p-when-unsigned-byte-p-free-better))))
 
 ;rename
 (defthmd equal-of-floor-of-expt-and-bv-constant-version-dag
