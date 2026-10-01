@@ -144,7 +144,12 @@
 
   (defret code-ensemble-annop-of-stsp-process-const-old/new
     (implies (not erp)
-             (code-ensemble-annop code))))
+             (code-ensemble-annop code)))
+
+  (std::defretd symbolp-const-when-stsp-process-const-old/new
+    (implies (not erp)
+             (symbolp const))
+    :rule-classes :forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -201,7 +206,23 @@
 
   (defret code-ensemble-annop-of-stsp-process-inputs.new-code
     (implies (not erp)
-             (code-ensemble-annop new-code))))
+             (code-ensemble-annop new-code)))
+
+  (std::defretd symbolp-const-old-when-stsp-process-inputs
+    (implies (not erp)
+             (symbolp const-old))
+    :rule-classes :forward-chaining
+    :hints
+    (("Goal"
+      :in-theory (enable symbolp-const-when-stsp-process-const-old/new))))
+
+  (std::defretd symbolp-const-new-when-stsp-process-inputs
+    (implies (not erp)
+             (symbolp const-new))
+    :rule-classes :forward-chaining
+    :hints
+    (("Goal"
+      :in-theory (enable symbolp-const-when-stsp-process-const-old/new)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1767,7 +1788,8 @@
                      (new-fundef fundefp)
                      (old-name identp)
                      (newl-name identp)
-                     (newr-name identp))
+                     (newr-name identp)
+                     (gin ginp))
   :guard (and (fundef-unambp old-fundef)
               (fundef-unambp new-fundef)
               (fundef-annop old-fundef)
@@ -1779,7 +1801,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is still work in progress."))
-  (declare (ignore old-name newl-name newr-name))
+  (declare (ignore old-name newl-name newr-name gin))
   (b* (((reterr) nil)
        (old-body (fundef->body old-fundef))
        (new-body (fundef->body new-fundef))
@@ -1823,7 +1845,8 @@
                          (tag identp)
                          (tag2 identp)
                          (rmems ident-listp)
-                         (stage stsp-stagep))
+                         (stage stsp-stagep)
+                         (gin ginp))
   :guard (and (ext-declon-unambp old-edeclon)
               (ext-declon-annop old-edeclon)
               (trans-item-list-unambp new-items)
@@ -1874,7 +1897,8 @@
                         new-fundef
                         (stsp-stage-objects->old-name stage)
                         (stsp-stage-objects->newl-name stage)
-                        (stsp-stage-objects->newr-name stage))))
+                        (stsp-stage-objects->newr-name stage)
+                        gin)))
        (retok (stsp-stage-fix stage)
               (trans-item-list-fix (cdr new-items))
               events))
@@ -1913,7 +1937,8 @@
                          (tag identp)
                          (tag2 identp)
                          (rmems ident-listp)
-                         (stage stsp-stagep))
+                         (stage stsp-stagep)
+                         (gin ginp))
   :guard (and (trans-item-unambp old-item)
               (trans-item-annop old-item)
               (trans-item-list-unambp new-items)
@@ -1938,7 +1963,13 @@
   (b* (((reterr) (irr-stsp-stage) nil nil))
     (trans-item-case
      old-item
-     :declon (stsp-ext-declon old-item.declon new-items tag tag2 rmems stage)
+     :declon (stsp-ext-declon old-item.declon
+                              new-items
+                              tag
+                              tag2
+                              rmems
+                              stage
+                              gin)
      :include (retmsg$ "Unsupported proof generation for #include.")
      :define (retmsg$ "Unsupported proof generation for #define.")
      :undef (retmsg$ "Unsupported proof generation for #undef.")
@@ -1974,7 +2005,8 @@
                               (tag identp)
                               (tag2 identp)
                               (rmems ident-listp)
-                              (stage stsp-stagep))
+                              (stage stsp-stagep)
+                              (gin ginp))
   :guard (and (trans-item-list-unambp old-items)
               (trans-item-list-unambp new-items)
               (trans-item-list-annop old-items)
@@ -2023,14 +2055,16 @@
                                                            tag
                                                            tag2
                                                            rmems
-                                                           stage))
+                                                           stage
+                                                           gin))
        ((erp more-events)
         (stsp-trans-item-list (cdr old-items)
                               rest-new-items
                               tag
                               tag2
                               rmems
-                              stage)))
+                              stage
+                              gin)))
     (retok (append events more-events)))
   :no-function nil
   :guard-hints
@@ -2043,7 +2077,8 @@
                          (new-tunit trans-unitp)
                          (tag identp)
                          (tag2 identp)
-                         (rmems ident-listp))
+                         (rmems ident-listp)
+                         (gin ginp))
   :guard (and (trans-unit-unambp old-tunit)
               (trans-unit-unambp new-tunit)
               (trans-unit-annop old-tunit)
@@ -2061,12 +2096,14 @@
                         tag
                         tag2
                         rmems
-                        (stsp-stage-init)))
+                        (stsp-stage-init)
+                        gin))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define stsp-gen-everything ((old-code code-ensemblep)
                              (new-code code-ensemblep)
+                             (const-new symbolp)
                              (tag identp)
                              (tag2 identp)
                              (rmems ident-listp))
@@ -2095,6 +2132,11 @@
                   was not called on ~
                   the old and new code of STRUCT-TYPE-SPLIT."
                  ienv (code-ensemble->ienv new-code)))
+       (gin (make-gin :ienv ienv
+                      :const-new const-new
+                      :vartys nil
+                      :events nil
+                      :thm-index 1))
        (old-tens (code-ensemble->trans-units old-code))
        (new-tens (code-ensemble->trans-units new-code))
        (old-tunits (trans-ensemble->units old-tens))
@@ -2105,7 +2147,7 @@
                   for multiple translation units."))
        (old-tunit (omap::head-val old-tunits))
        (new-tunit (omap::head-val new-tunits))
-       ((erp events) (stsp-trans-unit old-tunit new-tunit tag tag2 rmems)))
+       ((erp events) (stsp-trans-unit old-tunit new-tunit tag tag2 rmems gin)))
     (retok `(encapsulate
               ()
               (local (include-book "std/lists/top" :dir :system))
@@ -2138,7 +2180,9 @@
                              new-tag
                              right-members
                              (w state))))
-    (stsp-gen-everything old-code new-code tag tag2 rmems)))
+    (stsp-gen-everything old-code new-code const-new tag tag2 rmems))
+  :guard-hints
+  (("Goal" :in-theory (enable symbolp-const-new-when-stsp-process-inputs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
