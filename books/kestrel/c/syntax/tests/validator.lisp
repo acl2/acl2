@@ -991,7 +991,7 @@ int main(void) {
                (valid-ord-info-case
                  ord-info?
                  :objfun (uid-equiv ord-info?.uid
-                                    (uid-local (filepath "test0") 0))
+                                    (uid-local 0 (filepath "test0")))
                  :otherwise nil))))
 
 (test-valid
@@ -1016,7 +1016,7 @@ void foo(void) {
                (valid-ord-info-case
                  ord-info?
                  :objfun (uid-equiv ord-info?.uid
-                                    (uid-local (filepath "test0") 0))
+                                    (uid-local 0 (filepath "test0")))
                  :otherwise nil))))
 
 (test-valid
@@ -1041,7 +1041,7 @@ static void foo(void) {
                (valid-ord-info-case
                  ord-info?
                  :objfun (uid-equiv ord-info?.uid
-                                    (uid-local (filepath "test0") 0))
+                                    (uid-local 0 (filepath "test0")))
                  :otherwise nil))))
 
 (test-valid

@@ -49,14 +49,17 @@
      since all declarations of that name with external linkage,
      in any translation unit, refer to the same entity [C17:6.2.2/2].
      All other entities are identified by
-     an optional translation unit and a number.
+     a number and an optional translation unit.
      The translation unit is the one in which the entity was declared;
      it is absent for entities which belong to no translation unit,
      such as composite types constructed across translation units.
-     The number distinguishes entities with the same translation unit."))
+     The number distinguishes entities with the same translation unit.
+     The number comes first so that comparisons of unique identifiers,
+     e.g. in ordered maps keyed by them,
+     are usually decided without comparing file paths."))
   (:external ((name ident)))
-  (:local ((tunit? filepath-option)
-           (num nat)))
+  (:local ((num nat)
+           (tunit? filepath-option)))
   :pred uidp
   :layout :fulltree)
 
@@ -64,7 +67,7 @@
   :parents (uid)
   :short "An irrelevant unique identifier."
   :type uidp
-  :body (uid-local nil 0))
+  :body (uid-local 0 nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
