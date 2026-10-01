@@ -10069,6 +10069,16 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  ;; For speed, disable the functions but expand their conclusion calls.
+  ;; Note that ACL2::RECURSIVEP returns the names of the whole clique.
+  :returns-hints (("Goal"
+                   :in-theory (set-difference-theories
+                               (enable fix nfix)
+                               (acl2::recursivep 'parse-expression t world)))
+                  (flag-expand-hint clause world))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   :verify-guards nil ; done below
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
