@@ -10,14 +10,14 @@
 
 (in-package "REMORA")
 
-(include-book "abstract-syntax-trees")
+(include-book "printer-tokens")
 (include-book "abstract-syntax-well-formedness")
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "unicode/utf8-encode" :dir :system)
-(include-book "unicode/utf8-decode" :dir :system)
 (include-book "std/basic/defs" :dir :system)
+(include-book "std/strings/ascii-chars" :dir :system)
 (include-book "std/typed-lists/nat-listp" :dir :system)
 
 (local (include-book "std/basic/ifix" :dir :system))
@@ -75,13 +75,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; pdoc combinators (Wadler/Lindig style).
+;; Documents: pdoc combinators (Wadler/Lindig style).
 ;;
-;; A pdoc is a tree of layout instructions.  The layout function
-;; recursively interprets the tree, choosing for each Group whether to
-;; render it flat (all on one line) or broken (Lines become newlines
-;; with indent).  The Group decision uses one-line lookahead via the
-;; auxiliary fits function.
+;; A pdoc is a tree of layout instructions, which the layout function
+;; below turns into code points.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -133,50 +130,26 @@
     :elementp-of-nil nil
     :pred pdoc-listp))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; Helpers for building @(tsee pdoc-text) leaves at the code-point level.
-;;
-;; The pdoc :text leaf carries a nat-list of code points (not a string).
-;; The printer assembles text from three sources:
-;;
-;;   (a) ASCII string literals embedded in printer source (e.g. "Bool",
-;;       "(", "Forall").  Use the @(tsee pdoc-ascii) macro, which
-;;       expands at read time to a quoted constant nat-list and signals
-;;       a hard error on any non-ASCII character.
-;;
-;;   (b) Identifier names from the AST, stored as ACL2 strings of
-;;       UTF-8 bytes (see @(see abstract-syntax-trees)).  Use
-;;       @(tsee utf8-string=>codepoints), which decodes the bytes to
-;;       code points.
-;;
-;;   (c) Numbers formatted as decimal text.  Use
-;;       @(tsee nat-to-dec-codepoints) instead of @(tsee
-;;       str::nat-to-dec-string).
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define char-list-all-ascii-p ((chars character-listp))
-  :returns (b booleanp)
-  :short "True iff every character has @(tsee char-code) less than 128."
-  (cond ((endp chars) t)
-        ((< (char-code (car chars)) 128)
-         (char-list-all-ascii-p (cdr chars)))
-        (t nil)))
-
-(define ascii-string=>codepoints ((s stringp))
-  :returns (cps nat-listp)
-  :short "Map an ASCII string to the nat-list of its char-codes.
-          Caller must ensure @('s') contains only ASCII (codes
-          @('< 128'))."
+(fty::defresult pdoc-result
+  :short "Fixtype of pdocs and errors."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For ASCII strings, the ACL2 @(tsee char-code) of each character
-     equals the Unicode code point.  This function is invoked at
-     macro-expansion time by @(tsee pdoc-ascii) and at runtime nowhere
-     in the printer (call sites use the macro)."))
-  (chars=>nats (explode s)))
+    "The AST walkers that can fail return this type.  They fail when an
+     optional part of the AST is absent but the concrete syntax
+     requires it, e.g. the type of a parameter (see @(tsee
+     pat-to-pdoc))."))
+  :ok pdoc
+  :pred pdoc-resultp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; The pdoc :text leaf carries a nat-list of code points (not a string);
+;; see @(see printer-tokens) for how text of the three kinds (ASCII
+;; literals, identifiers, literals) is converted to code points.  ASCII
+;; literals in the printer source use the @(tsee pdoc-ascii) macro.
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro+ pdoc-ascii (s)
   :parents (printer)
@@ -204,7 +177,7 @@
   (cond ((not (stringp s))
          (er hard 'pdoc-ascii
              "Expected a string literal, got ~x0." s))
-        ((not (char-list-all-ascii-p (explode s)))
+        ((not (str::ascii-charlist-p (explode s)))
          (er hard 'pdoc-ascii
              "String ~x0 contains a non-ASCII character (code >= 128). ~
               For non-ASCII text, pass code points explicitly via ~
@@ -212,28 +185,15 @@
         (t (let ((cps (ascii-string=>codepoints s)))
              `(pdoc-text (quote ,cps))))))
 
-(define utf8-string=>codepoints ((s stringp))
-  :returns (cps nat-listp)
-  :short "Decode an ACL2 string of UTF-8 bytes to its code-point list.
-          Returns the empty list on invalid UTF-8 (defensive)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Identifier names in the AST are stored as ACL2 strings whose
-     bytes are the UTF-8 encoding of the original code-point sequence
-     (see @(see abstract-syntax-trees)).  This function reverses that
-     encoding."))
-  (b* ((bytes (string=>nats (str-fix s)))
-       ((unless (unsigned-byte-listp 8 bytes)) nil)
-       (cps (utf8=>ustring bytes))
-       ((unless (nat-listp cps)) nil))
-    cps))
-
-(define nat-to-dec-codepoints ((n natp))
-  :returns (cps nat-listp)
-  :short "Decimal digits of @('n') as a code-point list."
-  (ascii-string=>codepoints (str::nat-to-dec-string (nfix n))))
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Layout.
+;;
+;; The layout function recursively interprets a pdoc, choosing for
+;; each Group whether to render it flat (all on one line) or broken
+;; (Lines become newlines with indent).  The Group decision uses
+;; one-line lookahead via the auxiliary fits function.
+;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum mode
@@ -248,8 +208,6 @@
   (:flat ())
   (:break ())
   :pred modep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod cmd
   :short "A pending-document command: a pdoc plus its indent and mode."
@@ -276,7 +234,6 @@
 ;;
 ;; Termination measure for fits and layout.
 ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce size
   :short "A positive size for @(tsee pdoc) values, used as a measure
@@ -291,7 +248,7 @@
                     (pdoc-size (pdoc-concat->right pdoc))))
    (pdoc :nest (+ 1 (pdoc-size (pdoc-nest->body pdoc))))
    (pdoc :group (+ 1 (pdoc-size (pdoc-group->body pdoc)))))
-  :name abstract-syntax-size)
+  :name pdoc-size-measure)
 
 (define cmds-size ((cs cmd-listp))
   :returns (n natp :rule-classes (:rewrite :type-prescription))
@@ -311,7 +268,6 @@
 ;; w columns of the current line?  Stops as soon as it sees a forced
 ;; break or runs out of width.
 ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fits ((w integerp) (cs cmd-listp))
   :returns (yes booleanp)
@@ -391,15 +347,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; layout: render a command list to a string, given a target width
-;; and a current column.  Newlines are emitted as #\Newline followed
+;; layout: render a command list to a code-point list, given a target
+;; width and a current column.  Newlines are emitted as #x0A followed
 ;; by the current indent in spaces.
 ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define spaces-codepoints ((n natp))
   :returns (cps nat-listp)
-  :hooks nil
   :short "A list of @('n') space code points (each @('#x20'))."
   (if (zp n)
       nil
@@ -407,7 +361,6 @@
 
 (define newline-and-indent-codepoints ((n natp))
   :returns (cps nat-listp)
-  :hooks nil
   :short "Newline (@('#x0A')) followed by @('n') spaces, as code points."
   (cons #x0A (spaces-codepoints n)))
 
@@ -455,8 +408,6 @@
   :measure (cmds-size cs)
   :hints (("Goal" :in-theory (enable pdoc-size))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define layout-pdoc ((width natp) (d pdocp))
   :returns (cps nat-listp)
   :short "Render a single @(tsee pdoc) to a code-point list at column 0."
@@ -465,7 +416,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Convenience constructors.
+;; Document building blocks.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -473,21 +424,6 @@
   :returns (d pdocp)
   :short "The empty document."
   (pdoc-text nil))
-
-(define pdoc-seq ((ds pdoc-listp))
-  :returns (d pdocp)
-  :short "Concatenate a list of documents into a single document
-          (right-fold via @(tsee pdoc-concat))."
-  :measure (len ds)
-  (cond ((endp ds) (pdoc-empty))
-        ((endp (cdr ds)) (pdoc-fix (car ds)))
-        (t (pdoc-concat (car ds) (pdoc-seq (cdr ds))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; Convenience wrappers for common pdoc shapes.
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pdoc-paren ((d pdocp))
   :returns (out pdocp)
@@ -501,11 +437,6 @@
   (pdoc-concat (pdoc-ascii "[")
                (pdoc-concat d (pdoc-ascii "]"))))
 
-(define pdoc-space ()
-  :returns (out pdocp)
-  :short "A single literal space."
-  (pdoc-ascii " "))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; Standard Lisp-form layouts.  These wrap the head of a form (a
@@ -514,7 +445,6 @@
 ;; under the head.  Lines emitted inside the body are also at the
 ;; nested indent.
 ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pdoc-prefix-form ((keyword stringp) (body pdocp))
   :returns (out pdocp)
@@ -566,7 +496,7 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Base types: Bool, Int, Float.
+;; Base types (Bool, Int, Float) and base literals.
 ;;
 
 (define base-type-to-pdoc ((bt base-typep))
@@ -576,63 +506,6 @@
     :bool (pdoc-ascii "Bool")
     :int (pdoc-ascii "Int")
     :float (pdoc-ascii "Float")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; Numeric literals.
-;;
-
-(define sign-to-codepoints ((s signp))
-  :returns (cps nat-listp)
-  (sign-case s :plus (list #x2B) :minus (list #x2D)))
-
-(define sign-option-to-codepoints ((s? sign-optionp))
-  :returns (cps nat-listp)
-  (sign-option-case s?
-                    :some (sign-to-codepoints s?.val)
-                    :none nil))
-
-(define expo-to-codepoints ((e expop))
-  :returns (cps nat-listp)
-  :hooks nil
-  :guard-hints (("Goal" :in-theory (enable str::character-listp-when-dec-digit-char-listp)))
-  (b* ((upcase (expo->upcase e))
-       (sign? (expo->sign? e))
-       (digits (expo->digits e)))
-    (append (if upcase (list #x45) (list #x65))
-            (append (sign-option-to-codepoints sign?)
-                    (chars=>nats digits)))))
-
-(define expo-option-to-codepoints ((e? expo-optionp))
-  :returns (cps nat-listp)
-  :hooks nil
-  (expo-option-case e?
-                    :some (expo-to-codepoints e?.val)
-                    :none nil))
-
-(define int-lit-to-codepoints ((il int-litp))
-  :returns (cps nat-listp)
-  :hooks nil
-  :guard-hints (("Goal" :in-theory (enable str::character-listp-when-dec-digit-char-listp)))
-  (b* ((sign? (int-lit->sign? il))
-       (digits (int-lit->digits il)))
-    (append (sign-option-to-codepoints sign?)
-            (chars=>nats digits))))
-
-(define float-lit-to-codepoints ((fl float-litp))
-  :returns (cps nat-listp)
-  :hooks nil
-  :guard-hints (("Goal" :in-theory (enable str::character-listp-when-dec-digit-char-listp)))
-  (b* ((sign? (float-lit->sign? fl))
-       (whole (float-lit->whole-digits fl))
-       (frac (float-lit->frac-digits fl))
-       (expo? (float-lit->expo? fl))
-       (dot/frac (cond ((consp frac) (cons #x2E (chars=>nats frac)))
-                       (t nil))))
-    (append (sign-option-to-codepoints sign?)
-            (append (chars=>nats whole)
-                    (append dot/frac
-                            (expo-option-to-codepoints expo?))))))
 
 (define base-lit-to-pdoc ((bl base-litp))
   :returns (d pdocp)
@@ -667,36 +540,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; List helpers: pdoc-intersperse-space and pdoc-list-from-list.
+;; Dimensions (mutually recursive: dim, dim-list), and the lists of
+;; naturals that give the dimensions of array and frame expressions.
 ;;
 
-(define pdoc-intersperse-space ((ds pdoc-listp))
-  :returns (out pdocp)
-  :short "Concatenate documents with spaces between."
-  (cond ((endp ds) (pdoc-empty))
-        ((endp (cdr ds)) (pdoc-fix (car ds)))
-        (t (pdoc-concat (car ds)
-                        (pdoc-concat (pdoc-ascii " ")
-                                     (pdoc-intersperse-space (cdr ds)))))))
-
-(define pdoc-intersperse-line ((ds pdoc-listp))
-  :returns (out pdocp)
-  :short "Concatenate documents with @(tsee pdoc-line) between
-          (becomes space when group fits, newline+indent when it
-          breaks)."
-  (cond ((endp ds) (pdoc-empty))
-        ((endp (cdr ds)) (pdoc-fix (car ds)))
-        (t (pdoc-concat (car ds)
-                        (pdoc-concat (pdoc-line)
-                                     (pdoc-intersperse-line (cdr ds)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; Dimensions and shapes (mutually recursive via dim-list / shape-list).
-;;
-
-(defines dim-shape-to-pdoc
-  :short "Render @(tsee dim) and @(tsee shape) values as pdocs."
+(defines dim-to-pdoc-defs
+  :short "Render @(tsee dim) and @(tsee dim-list) values as pdocs."
   :verify-guards :after-returns
 
   (define dim-to-pdoc ((d dimp))
@@ -724,41 +573,14 @@
                                        (dim-list-to-pdoc (cdr ds))))))
     :measure (dim-list-count ds)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; Flat-form string printers for dim and dim-list.  These produce the
-;; canonical compact form (single-space separators, no line breaks) that
-;; the parser accepts.  They are intended as round-trip-provable
-;; alternatives to dim-to-pdoc / dim-list-to-pdoc when pretty-printing
-;; layout flexibility is not needed.
-;;
-
-(defines dim-shape-to-string
-  :short "Render @(tsee dim) and @(tsee dim-list) values as flat strings."
-  :verify-guards :after-returns
-
-  (define dim-to-string ((d dimp))
-    :returns (s stringp)
-    (dim-case d
-      :var (str::cat "$" d.name)
-      :const (str::nat-to-dec-string d.val)
-      :add (str::cat "(+" (str::cat (dim-list-to-string d.dims) ")"))
-      :mul (str::cat "(*" (str::cat (dim-list-to-string d.dims) ")"))
-      :sub (str::cat "(-" (str::cat (dim-list-to-string d.dims) ")")))
-    :measure (dim-count d))
-
-  (define dim-list-to-string ((ds dim-listp))
-    :returns (s stringp)
-    :short "Render a @(tsee dim-list) as a flat string with each dim
-            preceded by a single space (so the empty list yields the
-            empty string, and a non-empty list looks like
-            @(' d1 d2 ...')).  Used by @(tsee dim-to-string) inside the
-            parens of @('+'), @('*'), and @('-') forms."
-    (cond ((endp ds) "")
-          (t (str::cat " "
-                       (str::cat (dim-to-string (car ds))
-                                 (dim-list-to-string (cdr ds))))))
-    :measure (dim-list-count ds)))
+(define nat-list-to-pdoc ((ns nat-listp))
+  :returns (out pdocp)
+  :short "Render a list of nats as space-separated decimal strings."
+  (cond ((endp ns) (pdoc-empty))
+        ((endp (cdr ns)) (pdoc-text (nat-to-dec-codepoints (nfix (car ns)))))
+        (t (pdoc-concat (pdoc-text (nat-to-dec-codepoints (nfix (car ns))))
+                        (pdoc-concat (pdoc-line)
+                                     (nat-list-to-pdoc (cdr ns)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -809,6 +631,11 @@
                           (pdoc-concat (pdoc-line)
                                        (ispace-list-to-pdoc (cdr is))))))
     :measure (ispace-list-count is)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Lists of variables, and optional lists (printed as _ when absent).
+;;
 
 (define ispace-list-option-to-pdoc ((io ispace-list-optionp))
   :returns (out pdocp)
@@ -939,12 +766,10 @@
     :none (pdoc-ascii "_")
     :some (pdoc-paren (type-list-to-pdoc to.val))))
 
-(fty::defresult pdoc-result
-  :short "Fixtype of pdocs and errors."
-  :ok pdoc
-  :pred pdoc-resultp)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Patterns (typed parameters).
+;;
 
 (define pat-to-pdoc ((vt var+type?-p))
   :returns (out pdoc-resultp)
@@ -990,209 +815,6 @@
                 ((ok rest) (pat-list-to-pdoc (cdr vts))))
              (pdoc-concat first
                           (pdoc-concat (pdoc-line) rest))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; Helpers for nat-list (array/frame shape literals).
-;;
-
-(define nat-list-to-pdoc ((ns nat-listp))
-  :returns (out pdocp)
-  :short "Render a list of nats as space-separated decimal strings."
-  (cond ((endp ns) (pdoc-empty))
-        ((endp (cdr ns)) (pdoc-text (nat-to-dec-codepoints (nfix (car ns)))))
-        (t (pdoc-concat (pdoc-text (nat-to-dec-codepoints (nfix (car ns))))
-                        (pdoc-concat (pdoc-line)
-                                     (nat-list-to-pdoc (cdr ns)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; String literals: render @(tsee char-lit) values back to their
-;; source-text form (printable code point vs.@ backslash escape).
-;; Mirrors the @('char-lit') / @('escape-char') ABNF rules in
-;; @('grammar.abnf').
-;;
-
-(define ascii-mnemonic-of-code ((code natp))
-  :returns (cps nat-listp)
-  :short "Map an ASCII control code (@('#x00')&ndash;@('#x20')) to its
-          Remora source-form mnemonic (@('NUL')&ndash;@('SP'))
-          as a code-point list."
-  :guard (<= code #x20)
-  (b* ((c (lnfix code)))
-    (ascii-string=>codepoints
-     (case c
-       (0 "NUL") (1 "SOH") (2 "STX") (3 "ETX") (4 "EOT") (5 "ENQ")
-       (6 "ACK") (7 "BEL") (8 "BS")  (9 "HT")  (10 "LF") (11 "VT")
-       (12 "FF") (13 "CR") (14 "SO") (15 "SI") (16 "DLE") (17 "DC1")
-       (18 "DC2") (19 "DC3") (20 "DC4") (21 "NAK") (22 "SYN") (23 "ETB")
-       (24 "CAN") (25 "EM") (26 "SUB") (27 "ESC") (28 "FS") (29 "GS")
-       (30 "RS") (31 "US") (32 "SP")
-       (otherwise "")))))
-
-(define char-escape-to-codepoints ((ce char-escapep))
-  :returns (cps nat-listp)
-  :short "Render a @(tsee char-escape) as the code-point list following
-          the backslash (e.g. @(':n') &rarr; @('(#x6E)'))."
-  (char-escape-case ce
-    :a (list #x61)
-    :b (list #x62)
-    :f (list #x66)
-    :n (list #x6E)
-    :r (list #x72)
-    :t (list #x74)
-    :v (list #x76)
-    :bslash (list #x5C)
-    :dquote (list #x22)
-    :squote (list #x27)))
-
-(define ascii-escape-to-codepoints ((ae ascii-escapep))
-  :returns (cps nat-listp)
-  :short "Render an @(tsee ascii-escape) as the code-point list of its
-          source-form mnemonic (e.g. @('NUL'), @('LF'), @('DEL'))."
-  (ascii-escape-case ae
-    :nul-to-sp (ascii-mnemonic-of-code ae.code)
-    :del (ascii-string=>codepoints "DEL")))
-
-(define caret-escape-to-codepoints ((ce caret-escapep))
-  :returns (cps nat-listp)
-  :short "Render a @(tsee caret-escape) as @('^') followed by the code
-          point @('code+#x40')."
-  :hooks nil
-  :guard-hints (("Goal" :in-theory (enable caret-escape->code)))
-  (b* ((code (caret-escape->code ce)))
-    (list #x5E (+ code #x40))))
-
-(define dec-digit-char-list-to-codepoints ((digits str::dec-digit-char-listp))
-  :returns (cps nat-listp)
-  :hooks nil
-  :guard-hints (("Goal" :in-theory (enable str::character-listp-when-dec-digit-char-listp)))
-  (chars=>nats digits))
-
-(define oct-digit-char-list-to-codepoints ((digits str::oct-digit-char-listp))
-  :returns (cps nat-listp)
-  :hooks nil
-  :guard-hints (("Goal" :in-theory (enable str::character-listp-when-oct-digit-char-listp)))
-  (chars=>nats digits))
-
-(define hex-digit-char-list-to-codepoints ((digits str::hex-digit-char-listp))
-  :returns (cps nat-listp)
-  :hooks nil
-  :guard-hints (("Goal" :in-theory (enable str::character-listp-when-hex-digit-char-listp)))
-  (chars=>nats digits))
-
-(define num-escape-to-codepoints ((ne num-escapep))
-  :returns (cps nat-listp)
-  :short "Render a @(tsee num-escape) to its source form (as code points):
-          bare digits for decimal, prefixed by @('o') for octal, by
-          @('x') for hexadecimal."
-  (num-escape-case ne
-    :dec (dec-digit-char-list-to-codepoints ne.digits)
-    :oct (cons #x6F (oct-digit-char-list-to-codepoints ne.digits))
-    :hex (cons #x78 (hex-digit-char-list-to-codepoints ne.digits))))
-
-(define escape-to-codepoints ((e escapep))
-  :returns (cps nat-listp)
-  :short "Render the suffix of a @('\\\\')-escape; the leading @('\\\\')
-          is added by @(tsee char-lit-to-codepoints)."
-  (escape-case e
-    :char (char-escape-to-codepoints e.escape)
-    :ascii (ascii-escape-to-codepoints e.escape)
-    :caret (caret-escape-to-codepoints e.escape)
-    :num (num-escape-to-codepoints e.escape)))
-
-(define char-lit-to-codepoints ((cl char-litp))
-  :returns (cps nat-listp)
-  :short "Render a single @(tsee char-lit) to its source-text form as
-          a code-point list.  For @(':char') this is just the singleton
-          @('(cl.code)'); for @(':escape') it is @('#x5C') (backslash)
-          followed by the rendered escape suffix."
-  (char-lit-case cl
-    :char (list (lnfix cl.code))
-    :escape (cons #x5C (escape-to-codepoints cl.escape))))
-
-(define char-lit-list-to-codepoints ((chars char-lit-listp))
-  :returns (cps nat-listp)
-  :short "Render the contents of a Remora string literal: concatenation
-          of @(tsee char-lit-to-codepoints) over @('chars').  Does NOT
-          insert empty escapes; use @(tsee string-lit-to-codepoints) for
-          a round-trip-safe rendering of a string literal."
-  (cond ((endp chars) nil)
-        (t (append (char-lit-to-codepoints (car chars))
-                   (char-lit-list-to-codepoints (cdr chars))))))
-
-;; ---- Disambiguation: insert "\&" empty-escapes where adjacent
-;; char-lits would otherwise be merged on re-parse. ----
-;;
-;; The Remora grammar has two sources of round-trip ambiguity:
-;;   1. num-escape is greedy (1*DIGIT, 1*OCTDIGIT, 1*HEXDIG), so
-;;      :dec "5" followed by char '7' merges to "\57".
-;;   2. ascii-escape :so is a prefix of :soh, so :so followed by 'H'
-;;      or 'h' merges to "\SOH".
-;; In both cases, the next char-lit is a :char.  Following an :escape
-;; char-lit by another :escape always begins with '\', which never
-;; extends a num-escape's digit run nor completes "SOH" after "SO".
-
-(define char-lit-first-codepoint ((cl char-litp))
-  :returns (cp natp)
-  :short "First codepoint of @('cl')'s printed form."
-  :hooks nil
-  (char-lit-case cl
-    :char (lnfix cl.code)
-    :escape #x5C))
-
-(define needs-empty-escape-between ((prev char-litp) (next char-litp))
-  :returns (yes/no booleanp)
-  :short "Whether to emit @('\\&') between @('prev') and @('next') so
-          that re-parsing recovers the same two char-lits.  Returns
-          @('t') when @('prev')'s greedy or prefix-ambiguous parse
-          would otherwise consume part of @('next')."
-  :hooks nil
-  (b* ((next-cp (char-lit-first-codepoint next)))
-    (char-lit-case prev
-      :char nil  ; non-escape consumes exactly one codepoint
-      :escape
-      (escape-case prev.escape
-        :char nil    ; \X mnemonic: 1 fixed codepoint
-        :caret nil   ; \^X: caret consumes exactly 2 codepoints
-        :ascii (ascii-escape-case prev.escape.escape
-                 :nul-to-sp
-                 ;; Only :so (code 14) has a prefix conflict (with :soh)
-                 (and (eql prev.escape.escape.code 14)
-                      (or (eql next-cp #x48)    ; 'H'
-                          (eql next-cp #x68)))  ; 'h'
-                 :del nil)
-        :num (num-escape-case prev.escape.escape
-               :dec (and (<= #x30 next-cp) (<= next-cp #x39))   ; 0-9
-               :oct (and (<= #x30 next-cp) (<= next-cp #x37))   ; 0-7
-               :hex (or (and (<= #x30 next-cp) (<= next-cp #x39))    ; 0-9
-                        (and (<= #x41 next-cp) (<= next-cp #x46))    ; A-F
-                        (and (<= #x61 next-cp) (<= next-cp #x66)))))))) ; a-f
-
-(define char-lit-list-to-codepoints-disambig ((chars char-lit-listp))
-  :returns (cps nat-listp)
-  :short "Render @('chars') as the contents of a string literal,
-          inserting @('\\&') (code points @('#x5C #x26')) between
-          adjacent char-lits where the parser would otherwise re-merge
-          them."
-  (cond ((endp chars) nil)
-        ((endp (cdr chars))
-         (char-lit-to-codepoints (car chars)))
-        (t (append
-            (char-lit-to-codepoints (car chars))
-            (append (if (needs-empty-escape-between (car chars)
-                                                     (cadr chars))
-                        (list #x5C #x26)
-                      nil)
-                    (char-lit-list-to-codepoints-disambig (cdr chars)))))))
-
-(define string-lit-to-codepoints ((chars char-lit-listp))
-  :returns (cps nat-listp)
-  :short "Render a string literal: surround the disambig'd contents
-          with double-quote code points (@('#x22'))."
-  (cons #x22
-        (append (char-lit-list-to-codepoints-disambig chars)
-                (list #x22))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1573,47 +1195,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Standalone expressions: top-level printing entry points.
-;;
-
-(define print-expr-to-codepoints ((e exprp) &key ((width natp) '80))
-  :returns (cps nat-listp)
-  :short "Render an @(tsee expr) AST to a list of Unicode code points,
-          wrapping at @('width') columns.  This is the codepoint-level
-          entry point; @(tsee print-expr) is the string wrapper."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If rendering fails (e.g. a parameter has no type, which has no
-     concrete syntax and which we do not infer yet), we return the
-     empty list of code points, so that @(tsee print-expr) is total
-     and yields the empty string in that case."))
-  (b* ((pd (expr-to-pdoc e))
-       ((when (reserrp pd)) nil))
-    (layout-pdoc width pd)))
-
-(define print-expr ((e exprp) &key ((width natp) '80))
-  :returns (s stringp)
-  :short "Render an @(tsee expr) AST (a standalone expression) to a
-          UTF-8 encoded ACL2 string, wrapping at @('width') columns.
-          Thin wrapper around @(tsee print-expr-to-codepoints) that
-          UTF-8-encodes the code-point list into bytes and packs the
-          bytes into an ACL2 string."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The defensive @(tsee ustring?) check guarantees the guard
-     of @(tsee ustring=>utf8); for well-formed ASTs all emitted
-     code points are valid Unicode scalars, so the @('unless') branch
-     is unreachable."))
-  (b* ((cps (print-expr-to-codepoints e :width width))
-       ((unless (ustring? cps)) "")
-       (bytes (ustring=>utf8 cps))
-       ((unless (unsigned-byte-listp 8 bytes)) ""))
-    (nats=>string bytes)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 ;; Imports, declarations, and source files.
 ;;
 
@@ -1690,6 +1271,48 @@
           ((not (consp f.decls)) (import-list-to-pdoc f.imports))
           (t (pdoc-concat (import-list-to-pdoc f.imports)
                           (pdoc-concat (pdoc-line) decls-doc))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Entry points: standalone expressions and source files.
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-expr-to-codepoints ((e exprp) &key ((width natp) '80))
+  :returns (cps nat-listp)
+  :short "Render an @(tsee expr) AST to a list of Unicode code points,
+          wrapping at @('width') columns.  This is the codepoint-level
+          entry point; @(tsee print-expr) is the string wrapper."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If rendering fails (e.g. a parameter has no type, which has no
+     concrete syntax and which we do not infer yet), we return the
+     empty list of code points, so that @(tsee print-expr) is total
+     and yields the empty string in that case."))
+  (b* ((pd (expr-to-pdoc e))
+       ((when (reserrp pd)) nil))
+    (layout-pdoc width pd)))
+
+(define print-expr ((e exprp) &key ((width natp) '80))
+  :returns (s stringp)
+  :short "Render an @(tsee expr) AST (a standalone expression) to a
+          UTF-8 encoded ACL2 string, wrapping at @('width') columns.
+          Thin wrapper around @(tsee print-expr-to-codepoints) that
+          UTF-8-encodes the code-point list into bytes and packs the
+          bytes into an ACL2 string."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The defensive @(tsee ustring?) check guarantees the guard
+     of @(tsee ustring=>utf8); for well-formed ASTs all emitted
+     code points are valid Unicode scalars, so the @('unless') branch
+     is unreachable."))
+  (b* ((cps (print-expr-to-codepoints e :width width))
+       ((unless (ustring? cps)) "")
+       (bytes (ustring=>utf8 cps))
+       ((unless (unsigned-byte-listp 8 bytes)) ""))
+    (nats=>string bytes)))
 
 (define print-file-to-codepoints ((f filep) &key ((width natp) '80))
   :returns (cps nat-listp)
