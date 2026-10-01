@@ -5319,7 +5319,7 @@
                            (MOD-EXPT-SPLIT
                             logtail-becomes-slice-bind-free)))))
 
-(defthm bvsx-too-high-syntactic
+(defthm bvsx-when-unsigned-byte-p-syntactic
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
                 (< xsize old-size)
                 (natp old-size)
@@ -5328,9 +5328,9 @@
                 (<= old-size new-size))
            (equal (bvsx new-size old-size x)
                   x))
-  :hints (("Goal" :use bvsx-too-high
+  :hints (("Goal" :use bvsx-when-unsigned-byte-p
            :in-theory (e/d (unsigned-byte-p-forced)
-                           (bvsx-too-high)))))
+                           (bvsx-when-unsigned-byte-p)))))
 
 (defthm bvchop-subst-when-equal-of-bvchops-gen
   (implies (and (equal (bvchop size2 x) (bvchop size2 free))
