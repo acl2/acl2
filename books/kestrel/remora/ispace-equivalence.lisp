@@ -589,14 +589,14 @@
 
   (defthm-dim-eq-proof-validp-clique-flag
     (defthmd dimp-when-dim-eq-proof-validp
-      (implies (dim-eq-proof-validp proof concl.dim1 concl.dim2)
-               (and (dimp concl.dim1)
-                    (dimp concl.dim2)))
+      (implies (dim-eq-proof-validp proof _dim1 _dim2)
+               (and (dimp _dim1)
+                    (dimp _dim2)))
       :flag dim-eq-proof-validp)
     (defthmd dim-listp-when-dims-eq-proof-validp
-      (implies (dims-eq-proof-validp proof concl.dims1 concl.dims2)
-               (and (dim-listp concl.dims1)
-                    (dim-listp concl.dims2)))
+      (implies (dims-eq-proof-validp proof _dims1 _dims2)
+               (and (dim-listp _dims1)
+                    (dim-listp _dims2)))
       :flag dims-eq-proof-validp)
     :hints
     (("Goal" :in-theory (enable* dim-equivalence-definition-validp-defs))))
@@ -621,24 +621,24 @@
 
   (defthm-shape-eq-proof-validp-clique-flag
     (defthmd shapep-when-shape-eq-proof-validp
-      (implies (shape-eq-proof-validp proof concl.shape1 concl.shape2)
-               (and (shapep concl.shape1)
-                    (shapep concl.shape2)))
+      (implies (shape-eq-proof-validp proof _shape1 _shape2)
+               (and (shapep _shape1)
+                    (shapep _shape2)))
       :flag shape-eq-proof-validp)
     (defthmd shape-listp-when-shapes-eq-proof-validp
-      (implies (shapes-eq-proof-validp proof concl.shapes1 concl.shapes2)
-               (and (shape-listp concl.shapes1)
-                    (shape-listp concl.shapes2)))
+      (implies (shapes-eq-proof-validp proof _shapes1 _shapes2)
+               (and (shape-listp _shapes1)
+                    (shape-listp _shapes2)))
       :flag shapes-eq-proof-validp)
     (defthmd ispacep-when-ispace-eq-proof-validp
-      (implies (ispace-eq-proof-validp proof concl.ispace1 concl.ispace2)
-               (and (ispacep concl.ispace1)
-                    (ispacep concl.ispace2)))
+      (implies (ispace-eq-proof-validp proof _ispace1 _ispace2)
+               (and (ispacep _ispace1)
+                    (ispacep _ispace2)))
       :flag ispace-eq-proof-validp)
     (defthmd ispace-listp-when-ispaces-eq-proof-validp
-      (implies (ispaces-eq-proof-validp proof concl.ispaces1 concl.ispaces2)
-               (and (ispace-listp concl.ispaces1)
-                    (ispace-listp concl.ispaces2)))
+      (implies (ispaces-eq-proof-validp proof _ispaces1 _ispaces2)
+               (and (ispace-listp _ispaces1)
+                    (ispace-listp _ispaces2)))
       :flag ispaces-eq-proof-validp)
     :hints (("Goal"
              :in-theory
@@ -676,9 +676,9 @@
 
   (defthm-dim-eq-proof-validp-clique-flag
     (defthmd same-len-when-dims-eq-proof-validp
-      (implies (dims-eq-proof-validp proof concl.dims1 concl.dims2)
-               (equal (len concl.dims1)
-                      (len concl.dims2)))
+      (implies (dims-eq-proof-validp proof _dims1 _dims2)
+               (equal (len _dims1)
+                      (len _dims2)))
       :flag dims-eq-proof-validp)
     :skip-others t
     :hints
@@ -691,12 +691,12 @@
     :enable (dims-eq same-len-when-dims-eq-proof-validp))
 
   (defruled consp-when-dims-eq-proof-validp
-    (implies (dims-eq-proof-validp proof concl.dims1 concl.dims2)
-             (equal (consp concl.dims2)
-                    (consp concl.dims1)))
+    (implies (dims-eq-proof-validp proof _dims1 _dims2)
+             (equal (consp _dims2)
+                    (consp _dims1)))
     :use same-len-when-dims-eq-proof-validp
-    :expand ((len concl.dims1)
-             (len concl.dims2))))
+    :expand ((len _dims1)
+             (len _dims2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -706,14 +706,14 @@
 
   (defthm-shape-eq-proof-validp-clique-flag
     (defthmd same-len-when-shapes-eq-proof-validp
-      (implies (shapes-eq-proof-validp proof concl.shapes1 concl.shapes2)
-               (equal (len concl.shapes1)
-                      (len concl.shapes2)))
+      (implies (shapes-eq-proof-validp proof _shapes1 _shapes2)
+               (equal (len _shapes1)
+                      (len _shapes2)))
       :flag shapes-eq-proof-validp)
     (defthmd same-len-when-ispaces-eq-proof-validp
-      (implies (ispaces-eq-proof-validp proof concl.ispaces1 concl.ispaces2)
-               (equal (len concl.ispaces1)
-                      (len concl.ispaces2)))
+      (implies (ispaces-eq-proof-validp proof _ispaces1 _ispaces2)
+               (equal (len _ispaces1)
+                      (len _ispaces2)))
       :flag ispaces-eq-proof-validp)
     :skip-others t
     :hints (("Goal"
@@ -733,20 +733,20 @@
     :enable (ispaces-eq same-len-when-ispaces-eq-proof-validp))
 
   (defruled consp-when-shapes-eq-proof-validp
-    (implies (shapes-eq-proof-validp proof concl.shapes1 concl.shapes2)
-             (equal (consp concl.shapes2)
-                    (consp concl.shapes1)))
+    (implies (shapes-eq-proof-validp proof _shapes1 _shapes2)
+             (equal (consp _shapes2)
+                    (consp _shapes1)))
     :use same-len-when-shapes-eq-proof-validp
-    :expand ((len concl.shapes1)
-             (len concl.shapes2)))
+    :expand ((len _shapes1)
+             (len _shapes2)))
 
   (defruled consp-when-ispaces-eq-proof-validp
-    (implies (ispaces-eq-proof-validp proof concl.ispaces1 concl.ispaces2)
-             (equal (consp concl.ispaces2)
-                    (consp concl.ispaces1)))
+    (implies (ispaces-eq-proof-validp proof _ispaces1 _ispaces2)
+             (equal (consp _ispaces2)
+                    (consp _ispaces1)))
     :use same-len-when-ispaces-eq-proof-validp
-    :expand ((len concl.ispaces1)
-             (len concl.ispaces2))))
+    :expand ((len _ispaces1)
+             (len _ispaces2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

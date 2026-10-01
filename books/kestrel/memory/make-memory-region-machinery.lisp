@@ -183,7 +183,7 @@
                          (integerp high))
                     (equal (,in-regionp-name (bvsx high n ad) len start-ad)
                            (,in-regionp-name ad len start-ad)))
-           :hints (("Goal" :in-theory (enable acl2::bvsx-rewrite))))
+           :hints (("Goal" :in-theory (e/d (bvsx-rewrite) (bvchop-of-logext-becomes-bvsx)))))
 
          (defthm ,(acl2::pack-in-package pkg in-regionp-name '-of-bvchop-arg3)
            (implies (and (<= ,num-address-bits n)
@@ -213,7 +213,7 @@
                          (integerp high))
                     (equal (,in-regionp-name ad len (bvsx high n start-ad))
                            (,in-regionp-name ad len start-ad)))
-           :hints (("Goal" :in-theory (enable acl2::bvsx-rewrite))))
+           :hints (("Goal" :in-theory (e/d (bvsx-rewrite) (bvchop-of-logext-becomes-bvsx)))))
 
          (defthmd ,(acl2::pack-in-package pkg in-regionp-name '-of-+-arg1)
            (implies (and (integerp x)

@@ -11588,9 +11588,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (verify-guards parse-expression
-    :hints (("Goal" :in-theory (e/d (acl2::member-of-cons
-                                     token-additive-operator-p)
-                                    ((:e tau-system))))))) ; for speed
+    :hints (("Goal" :in-theory (enable acl2::member-of-cons
+                                       token-additive-operator-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

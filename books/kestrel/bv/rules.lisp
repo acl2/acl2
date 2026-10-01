@@ -1845,7 +1845,7 @@
   (implies (and (<= size1 size2)
                 (natp size2))
            (equal (bvand size1 y (logext size2 x))
-                  (bvand size1 x y)))
+                  (bvand size1 y x)))
   :hints (("Goal" :in-theory (enable bvand))))
 
 (defthm bvor-of-logext-arg2
@@ -3059,8 +3059,8 @@
 ;gen!
 (defthm bvplus-of-floor-4-32-alt
   (implies (integerp i)
-           (equal (BVPLUS 4 x (FLOOR i 32))
-                  (BVPLUS 4 x (slice 8 5 i))))
+           (equal (BVPLUS 4 (FLOOR i 32) x)
+                  (BVPLUS 4 (slice 8 5 i) x)))
   :hints (("Goal" :in-theory (enable BVCHOP-OF-FLOOR-OF-EXPT-OF-2-CONSTANT-VERSION))))
 
 (defthm unsigned-byte-p-of-floor-of-expt-constant-version
@@ -5025,11 +5025,12 @@
            (equal (bvchop size x)
                   (bvchop (+ -1 size) x))))
 
+;; not used
 (defthmd bvchop-when-top-bit-0-widen
   (implies (and (equal 0 (getbit (+ -1 size) x))
                 (posp size))
-           (equal (bvchop size x)
-                  (bvchop (+ -1 size) x))))
+           (equal (bvchop (+ -1 size) x)
+                  (bvchop size x))))
 
 ;subtracting a value that is one larger than x gives a smaller result than subtracting x
 (defthm <-of-bvminus-of-bvplus-of-1-and-bvminus

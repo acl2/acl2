@@ -97,8 +97,8 @@
                              dim1 dim2 dim3
                              (dim-eq-proof dim2 dim3)
                              (dim-eq-proof dim1 dim2)))
-                     (concl.dim1 dim1)
-                     (concl.dim2 dim3))))
+                     (_dim1 dim1)
+                     (_dim2 dim3))))
 
   (defmacro make-dim-eq-proof-trans-swapped (&key dim1
                                                   dim2
@@ -165,8 +165,8 @@
                                                     dim4
                                                     (dim-eq-proof dim1 dim2)
                                                     (dim-eq-proof dim3 dim4)))
-                     (concl.dim1 (dim+ dim1 dim3))
-                     (concl.dim2 (dim+ dim2 dim4)))))
+                     (_dim1 (dim+ dim1 dim3))
+                     (_dim2 (dim+ dim2 dim4)))))
 
   (defmacro make-dim-eq-proof-cong-add2 (&key dim1
                                               dim2
@@ -234,8 +234,8 @@
                                                     dim4
                                                     (dim-eq-proof dim1 dim2)
                                                     (dim-eq-proof dim3 dim4)))
-                     (concl.dim1 (dim* dim1 dim3))
-                     (concl.dim2 (dim* dim2 dim4)))))
+                     (_dim1 (dim* dim1 dim3))
+                     (_dim2 (dim* dim2 dim4)))))
 
   (defmacro make-dim-eq-proof-cong-mul2 (&key dim1
                                               dim2
@@ -287,8 +287,8 @@
                      (proof (dim-eq-proof-cong-sub1 dim1
                                                     dim2
                                                     (dim-eq-proof dim1 dim2)))
-                     (concl.dim1 (dim- dim1))
-                     (concl.dim2 (dim- dim2)))))
+                     (_dim1 (dim- dim1))
+                     (_dim2 (dim- dim2)))))
 
   (defmacro make-dim-eq-proof-cong-sub1 (&key dim1 dim2 premise1-proof)
     `(dim-eq-proof-cong-sub1 ,dim1 ,dim2 ,premise1-proof)))
@@ -329,8 +329,8 @@
              (dim-eq (dim+ dim 0) dim))
     :use (:instance dim-eq-when-proof-validp
                     (proof (dim-eq-proof-add-id-right dim))
-                    (concl.dim1 (dim+ dim 0))
-                    (concl.dim2 dim))
+                    (_dim1 (dim+ dim 0))
+                    (_dim2 dim))
     :disable ((:e dim-const)))
 
   (defmacro make-dim-eq-proof-add-id-right (&key dim)
@@ -372,8 +372,8 @@
              (dim-eq (dim* dim 1) dim))
     :use (:instance dim-eq-when-proof-validp
                     (proof (dim-eq-proof-mul-id-right dim))
-                    (concl.dim1 (dim* dim 1))
-                    (concl.dim2 dim))
+                    (_dim1 (dim* dim 1))
+                    (_dim2 dim))
     :disable ((:e dim-const)))
 
   (defmacro make-dim-eq-proof-mul-id-right (&key dim)
@@ -415,8 +415,8 @@
              (dim-eq (dim+ (dim- dim) dim) (dim-const 0)))
     :use (:instance dim-eq-when-proof-validp
                     (proof (dim-eq-proof-add-inv-left dim))
-                    (concl.dim1 (dim+ (dim- dim) dim))
-                    (concl.dim2 (dim-const 0)))
+                    (_dim1 (dim+ (dim- dim) dim))
+                    (_dim2 (dim-const 0)))
     :disable ((:e dim-const)))
 
   (defmacro make-dim-eq-proof-add-inv-left (&key dim)
@@ -453,8 +453,8 @@
     (dim-eq (dim- 0) (dim-const 0))
     :use (:instance dim-eq-when-proof-validp
                     (proof (dim-eq-proof-neg-zero))
-                    (concl.dim1 (dim- 0))
-                    (concl.dim2 (dim-const 0))))
+                    (_dim1 (dim- 0))
+                    (_dim2 (dim-const 0))))
 
   (defmacro make-dim-eq-proof-neg-zero ()
     '(dim-eq-proof-neg-zero)))
@@ -535,8 +535,8 @@
              (dim-eq (dim- (dim- dim)) dim))
     :use (:instance dim-eq-when-proof-validp
                     (proof (dim-eq-proof-neg-neg dim))
-                    (concl.dim1 (dim- (dim- dim)))
-                    (concl.dim2 dim)))
+                    (_dim1 (dim- (dim- dim)))
+                    (_dim2 dim)))
 
   (defmacro make-dim-eq-proof-neg-neg (&key dim)
     `(dim-eq-proof-neg-neg ,dim)))
@@ -661,8 +661,8 @@
                              dim2
                              dim3
                              (dim-eq-proof (dim+ dim1 dim3) (dim+ dim2 dim3))))
-                     (concl.dim1 dim1)
-                     (concl.dim2 dim2))))
+                     (_dim1 dim1)
+                     (_dim2 dim2))))
 
   (defmacro make-dim-eq-proof-add-cancel-right (&key dim1
                                                      dim2
@@ -733,8 +733,8 @@
                              dim2
                              dim3
                              (dim-eq-proof (dim+ dim3 dim1) (dim+ dim3 dim2))))
-                     (concl.dim1 dim1)
-                     (concl.dim2 dim2))))
+                     (_dim1 dim1)
+                     (_dim2 dim2))))
 
   (defmacro make-dim-eq-proof-add-cancel-left (&key dim1
                                                     dim2
@@ -803,8 +803,8 @@
              (dim-eq (dim* dim 0) (dim-const 0)))
     :use (:instance dim-eq-when-proof-validp
                     (proof (dim-eq-proof-mul-zero-right dim))
-                    (concl.dim1 (dim* dim 0))
-                    (concl.dim2 (dim-const 0)))
+                    (_dim1 (dim* dim 0))
+                    (_dim2 (dim-const 0)))
     :disable ((:e dim-const)))
 
   (defmacro make-dim-eq-proof-mul-zero-right (&key dim)
@@ -842,8 +842,8 @@
              (dim-eq (dim* 0 dim) (dim-const 0)))
     :use (:instance dim-eq-when-proof-validp
                     (proof (dim-eq-proof-mul-zero-left dim))
-                    (concl.dim1 (dim* 0 dim))
-                    (concl.dim2 (dim-const 0)))
+                    (_dim1 (dim* 0 dim))
+                    (_dim2 (dim-const 0)))
     :disable ((:e dim-const)))
 
   (defmacro make-dim-eq-proof-mul-zero-left (&key dim)
@@ -905,8 +905,8 @@
                              dim1
                              dim2
                              (dim-eq-proof (dim+ dim1 dim2) (dim-const 0))))
-                     (concl.dim1 (dim- dim1))
-                     (concl.dim2 dim2)))
+                     (_dim1 (dim- dim1))
+                     (_dim2 dim2)))
     :disable ((:e dim-const)))
 
   (defmacro make-dim-eq-proof-add-inv-uniq (&key dim1 dim2 premise1-proof)
@@ -1024,8 +1024,8 @@
                      (dim+ (dim+ dim1 dim3) (dim+ dim2 dim4))))
     :use (:instance dim-eq-when-proof-validp
                     (proof (dim-eq-proof-add-interchange dim1 dim2 dim3 dim4))
-                    (concl.dim1 (dim+ (dim+ dim1 dim2) (dim+ dim3 dim4)))
-                    (concl.dim2 (dim+ (dim+ dim1 dim3) (dim+ dim2 dim4)))))
+                    (_dim1 (dim+ (dim+ dim1 dim2) (dim+ dim3 dim4)))
+                    (_dim2 (dim+ (dim+ dim1 dim3) (dim+ dim2 dim4)))))
 
   (defmacro make-dim-eq-proof-add-interchange (&key dim1 dim2 dim3 dim4)
     `(dim-eq-proof-add-interchange ,dim1 ,dim2 ,dim3 ,dim4)))
@@ -1091,8 +1091,8 @@
                      (dim+ (dim- dim1) (dim- dim2))))
     :use (:instance dim-eq-when-proof-validp
                     (proof (dim-eq-proof-neg-add dim1 dim2))
-                    (concl.dim1 (dim- (dim+ dim1 dim2)))
-                    (concl.dim2 (dim+ (dim- dim1) (dim- dim2)))))
+                    (_dim1 (dim- (dim+ dim1 dim2)))
+                    (_dim2 (dim+ (dim- dim1) (dim- dim2)))))
 
   (defmacro make-dim-eq-proof-neg-add (&key dim1 dim2)
     `(dim-eq-proof-neg-add ,dim1 ,dim2)))
@@ -1159,8 +1159,8 @@
                      (dim+ (dim* dim1 dim) (dim* dim2 dim))))
     :use (:instance dim-eq-when-proof-validp
                     (proof (dim-eq-proof-distrib-right dim dim1 dim2))
-                    (concl.dim1 (dim* (dim+ dim1 dim2) dim))
-                    (concl.dim2 (dim+ (dim* dim1 dim) (dim* dim2 dim)))))
+                    (_dim1 (dim* (dim+ dim1 dim2) dim))
+                    (_dim2 (dim+ (dim* dim1 dim) (dim* dim2 dim)))))
 
   (defmacro make-dim-eq-proof-distrib-right (&key dim dim1 dim2)
     `(dim-eq-proof-distrib-right ,dim ,dim1 ,dim2)))
@@ -1234,8 +1234,8 @@
                      (dim- (dim* dim1 dim2))))
     :use (:instance dim-eq-when-proof-validp
                     (proof (dim-eq-proof-neg-mul-left dim1 dim2))
-                    (concl.dim1 (dim* (dim- dim1) dim2))
-                    (concl.dim2 (dim- (dim* dim1 dim2)))))
+                    (_dim1 (dim* (dim- dim1) dim2))
+                    (_dim2 (dim- (dim* dim1 dim2)))))
 
   (defmacro make-dim-eq-proof-neg-mul-left (&key dim1 dim2)
     `(dim-eq-proof-neg-mul-left ,dim1 ,dim2)))
@@ -1291,8 +1291,8 @@
                      (dim- (dim* dim1 dim2))))
     :use (:instance dim-eq-when-proof-validp
                     (proof (dim-eq-proof-neg-mul-right dim1 dim2))
-                    (concl.dim1 (dim* dim1 (dim- dim2)))
-                    (concl.dim2 (dim- (dim* dim1 dim2)))))
+                    (_dim1 (dim* dim1 (dim- dim2)))
+                    (_dim2 (dim- (dim* dim1 dim2)))))
 
   (defmacro make-dim-eq-proof-neg-mul-right (&key dim1 dim2)
     `(dim-eq-proof-neg-mul-right ,dim1 ,dim2)))
@@ -1344,8 +1344,8 @@
                              shape1 shape2 shape3
                              (shape-eq-proof shape2 shape3)
                              (shape-eq-proof shape1 shape2)))
-                     (concl.shape1 shape1)
-                     (concl.shape2 shape3))))
+                     (_shape1 shape1)
+                     (_shape2 shape3))))
 
   (defmacro make-shape-eq-proof-trans-swapped (&key shape1
                                                     shape2
@@ -1433,8 +1433,8 @@
                      (proof (shape-eq-proof-append-extend-right
                              shape1 shape2 shape3 shape4
                              (shape-eq-proof (shp++ shape1 shape2) shape3)))
-                     (concl.shape1 (shp++ shape1 (shp++ shape2 shape4)))
-                     (concl.shape2 (shp++ shape3 shape4)))))
+                     (_shape1 (shp++ shape1 (shp++ shape2 shape4)))
+                     (_shape2 (shp++ shape3 shape4)))))
 
   (defmacro make-shape-eq-proof-append-extend-right (&key shape1
                                                           shape2
