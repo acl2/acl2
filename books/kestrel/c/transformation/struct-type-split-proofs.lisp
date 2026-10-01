@@ -790,7 +790,16 @@
                              (struct-value-equivp (cdr old-var+val)
                                                   (cdr newl-var+val)
                                                   (cdr newr-var+val)))))
-             :induct (static-equivp old-static new-static))
+             :induct (static-equivp old-static new-static)
+             :in-theory '(static-equivp
+                          c::scope-fix-when-scopep
+                          c::scopep-of-tail
+                          c::scopep-of-delete
+                          omap::assoc-of-delete
+                          cdr-cons
+                          (:e equal)
+                          (:t omap::assoc))
+             :expand (omap::assoc ',old-cname old-static))
            (defruled assoc-when-static-equivp
              (implies (and (c::scopep old-static)
                            (c::scopep new-static)
