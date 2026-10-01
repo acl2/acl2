@@ -1795,13 +1795,13 @@
               (fundef-annop old-fundef)
               (fundef-annop new-fundef))
   :returns (mv (erp maybe-msgp)
-               (events pseudo-event-form-listp))
+               (gout goutp))
   :short "Generate events for a function definition."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is still work in progress."))
-  (b* (((reterr) nil)
+  (b* (((reterr) (irr-gout))
        (old-body (fundef->body old-fundef))
        (new-body (fundef->body new-fundef))
        (old-items (comp-stmt->items old-body))
@@ -1831,11 +1831,8 @@
         (retmsg$ "Unsupported proof generation for ~
                   function bodies whose return statement has no expression."))
        (old-expr old-expr?)
-       (new-expr new-expr?)
-       ((erp gout) (stsp-expr old-expr new-expr
-                              old-name newl-name newr-name
-                              gin)))
-    (retok (gout->events gout))))
+       (new-expr new-expr?))
+    (stsp-expr old-expr new-expr old-name newl-name newr-name gin)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1891,7 +1888,7 @@
           ((unless (stsp-stage-case stage :objects))
            (retmsg$ "Unsupported proof generation for ~
                      function definition before struct type or object."))
-          ((erp events)
+          ((erp gout)
            (stsp-fundef old-edeclon.fundef
                         new-fundef
                         (stsp-stage-objects->old-name stage)
@@ -1900,7 +1897,7 @@
                         gin)))
        (retok (stsp-stage-fix stage)
               (trans-item-list-fix (cdr new-items))
-              events))
+              (gout->events gout)))
      :declon
      (stsp-declon old-edeclon.declon new-items tag tag2 rmems stage)
      :empty
