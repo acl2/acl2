@@ -897,6 +897,12 @@
                  ',newl-cname (c::type-struct ',newl-ctag) new-compst)
                 (c::compustate-has-static-var-with-type-p
                  ',newr-cname (c::type-struct ',newr-ctag) new-compst))
+           :guard-simplify :limited
+           :guard-hints
+           (("Goal"
+             :in-theory '(c::scopep-of-compustate->static
+                          c::return-type-of-type-struct
+                          (:e c::identp))))
            :hooks (:fix)
            ///
            (defruled struct-value-equivp-when-compustate-equivp
