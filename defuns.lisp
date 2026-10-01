@@ -4216,6 +4216,10 @@
 ; Keep this in sync with all-fnnames1, all-fnnames!, and
 ; all-fnnames1-invariant-risk.
 
+; This function collects into acc all function symbols that could be called in
+; raw Lisp, bypassing their *1* functions, in guard-verified code.  In
+; particular, we do not collect foo in (ec-call (foo ...)).
+
   (cond (flg ; x is a list of terms
          (cond ((null x) acc)
                (t (all-fnnames1-exec nil (car x)
@@ -4232,7 +4236,9 @@
                      (nvariablep (fargn x 3))
                      (not (fquotep (fargn x 3)))
                      (not (flambdap (ffn-symb (fargn x 3)))))
-                (all-fnnames1-exec t (fargs (fargn x 3)) acc))
+                (all-fnnames1-exec t
+                                   (fargs (fargn x 3))
+                                   acc))
                (t (all-fnnames1-exec t
                                      (fargs x)
                                      (add-to-set-eq (ffn-symb x) acc)))))
@@ -4241,6 +4247,11 @@
                             (add-to-set-eq (ffn-symb x) acc)))))
 
 (defmacro all-fnnames-exec (term)
+
+; This function returns a list of all function symbols that could be called in
+; raw Lisp, bypassing their *1* functions, in guard-verified code.  In
+; particular, we do not collect foo in (ec-call (foo ...)).
+
   `(all-fnnames1-exec nil ,term nil))
 
 (defun collect-guards-and-bodies (lst)
@@ -6062,8 +6073,8 @@
 (defun all-fnnames1-invariant-risk (flg x i wrld acc)
 
 ; Keep this in sync with all-fnnames1, all-fnnames1-exec, and all-fnnames!.
-; Also see the comment about all-fnnames1-exec in put-invariant-risk before
-; modifying this function.
+; Also see the comment about all-fnnames1-invariant-risk in put-invariant-risk
+; before modifying this function.
 
 ; This function collects into acc all function symbols whose calls, during
 ; evaluation of x, might lead to invariant-risk sorts of violations.  (Notice
@@ -9255,7 +9266,7 @@
 
 (mutual-recursion
 
-(defun logic-code-to-runnable-code (already-in-mv-listp term wrld)
+(defun logic-code-to-runnable-code (already-in-mv-listp term rrl wrld)
 
 ; Note: This function used to be called ``twoify''.
 
@@ -9273,6 +9284,8 @@
 ; y z) versus (+ x (+ y z)), so we do not flatten +-nests -- both result in two
 ; calls of the machine's +.
 
+; Argument rrl is non-nil when we are to Remove Return-Last calls.
+
   (declare (xargs :guard (and (pseudo-termp term)
                               (plist-worldp wrld))))
   (cond ((variablep term) term)
@@ -9288,14 +9301,22 @@
          (cons (list 'lambda (lambda-formals (ffn-symb term))
                      (logic-code-to-runnable-code nil
                                                   (lambda-body (ffn-symb term))
+                                                  rrl
                                                   wrld))
-               (logic-code-to-runnable-code-lst (fargs term) wrld)))
+               (logic-code-to-runnable-code-lst (fargs term) rrl wrld)))
         ((eq (ffn-symb term) 'if)
-         `(if ,(logic-code-to-runnable-code nil (fargn term 1) wrld)
-              ,(logic-code-to-runnable-code nil (fargn term 2) wrld)
-            ,(logic-code-to-runnable-code nil (fargn term 3) wrld)))
+         `(if ,(logic-code-to-runnable-code nil (fargn term 1) rrl wrld)
+              ,(logic-code-to-runnable-code nil (fargn term 2) rrl wrld)
+            ,(logic-code-to-runnable-code nil (fargn term 3) rrl wrld)))
         ((eq (ffn-symb term) 'return-last)
-         (logic-code-to-runnable-code nil (fargn term 3) wrld))
+         (let ((arg3
+                (logic-code-to-runnable-code nil (fargn term 3) rrl wrld)))
+           (if rrl
+               arg3
+             (fcons-term* 'return-last
+                          (logic-code-to-runnable-code nil (fargn term 1) rrl wrld)
+                          (logic-code-to-runnable-code nil (fargn term 2) rrl wrld)
+                          arg3))))
         ((eq (ffn-symb term) 'do$)
 
 ; We use ec-call here in case stobjs are involved, following the use of ec-call
@@ -9304,7 +9325,7 @@
          (let* ((do$-stobjs-out (do$-stobjs-out (fargs term)))
                 (call `(ec-call (do$ ,@(logic-code-to-runnable-code-lst
                                         (fargs term)
-                                        wrld)))))
+                                        rrl wrld)))))
            (convert-to-dfs
             (if (cdr (do$-stobjs-out (fargs term)))
                 `(values-list ,call)
@@ -9318,7 +9339,7 @@
 ; have to transform its subterms.
 
          `(mv-list ,(fargn term 1)
-                   ,(logic-code-to-runnable-code t (fargn term 2) wrld)))
+                   ,(logic-code-to-runnable-code t (fargn term 2) rrl wrld)))
         (t (let* ((fn (ffn-symb term))
                   (stobjs-out (stobjs-out fn wrld))
                   (pair (assoc-eq fn *primitive-untranslate-alist*))
@@ -9352,7 +9373,7 @@
 ; the former rules out stobj creators.
                         (not (and (all-nils stobjs-out)
                                   (all-nils (stobjs-in fn wrld))))))
-                  (args (logic-code-to-runnable-code-lst (fargs term) wrld))
+                  (args (logic-code-to-runnable-code-lst (fargs term) rrl wrld))
                   (call (if pair ; hence not ec-call-p
                             (cons (cdr pair) args)
                           (let ((call0 (cons-with-hint fn args term)))
@@ -9365,12 +9386,12 @@
                `(mv-list ',(length stobjs-out) ,call))
               (t call))))))
 
-(defun logic-code-to-runnable-code-lst (terms wrld)
+(defun logic-code-to-runnable-code-lst (terms rrl wrld)
   (declare (xargs :guard (and (pseudo-term-listp terms)
                               (plist-worldp wrld))))
   (cond ((endp terms) nil)
-        (t (cons-with-hint (logic-code-to-runnable-code nil (car terms) wrld)
-                           (logic-code-to-runnable-code-lst (cdr terms) wrld)
+        (t (cons-with-hint (logic-code-to-runnable-code nil (car terms) rrl wrld)
+                           (logic-code-to-runnable-code-lst (cdr terms) rrl wrld)
                            terms)))))
 
 (defun authenticate-tagged-lambda$ (x state)
@@ -9521,20 +9542,16 @@
                    (DECLARE (IGNORABLE ,@formals))
                    ,(logic-code-to-runnable-code
                      nil
-                     (remove-guard-holders
-                      (or (cadr (assoc-keyword :guard
-                                               (cdr (assoc-eq 'xargs
-                                                              (cdr dcl)))))
-                          *t*)
-                      wrld)
+                     (or (cadr (assoc-keyword :guard
+                                              (cdr (assoc-eq 'xargs
+                                                             (cdr dcl)))))
+                         *t*)
+                     nil
                      wrld))
           `(LAMBDA ,formals
                    ,@(let ((d (remove-double-float-types (cdr dcl))))
                        (and d `((declare ,@d))))
-                   ,(logic-code-to-runnable-code
-                     nil
-                     (remove-guard-holders body wrld)
-                     wrld)))))))
+                   ,(logic-code-to-runnable-code nil body nil wrld)))))))
 
 (defun convert-tagged-loop$s-to-pairs (lst flg wrld)
 
@@ -9548,6 +9565,7 @@
                              :term (logic-code-to-runnable-code
                                     nil
                                     (fargn (car lst) 3)
+                                    t
                                     wrld)
                              :flg flg))
                  (convert-tagged-loop$s-to-pairs (cdr lst) flg wrld)))))
@@ -9589,6 +9607,7 @@
                  (equal (logic-code-to-runnable-code
                          nil
                          (fargn tkey 3)
+                         t
                          wrld)
                         val-term))
 
@@ -9623,6 +9642,7 @@
                   (logic-code-to-runnable-code
                    nil
                    (fargn tkey 3)
+                   t
                    wrld)
                   val-term))))))))
 

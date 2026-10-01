@@ -110271,7 +110271,7 @@ it."
  See the comment in @('cmp-do-body') for an example.  The guard-verified
  logical definition returns a different result than the compiled raw lisp code
  due to this variable capture..  Claude then exploited this bug to prove
- @('nil') using a metafunction.  See @(see community-books)
+ @('nil') using a metafunction.  See @(see community-book)
  @('system/tests/do-mv-capture.lisp').</p>
 
  <p>Fixed a bug in the generation of termination conditions for functions
@@ -110279,6 +110279,33 @@ it."
  inadvertent application of a substitution to a formula to which that
  substitution had already been applied, caused the termination conditions for
  some loop$-recursive functions to be incomplete or bogus.</p>
+
+ <p>Fixed a soundness bug caused by removal of @(tsee guard-holders) before
+ compiling @(see lambda) objects for the compiled lambda cache (see :DOC
+ print-cl-cache).  An additional effect of this change (besides removing
+ unsoundness) is to stop avoiding calls of @(tsee cw) and other side effects
+ when using @(tsee apply$).  Consider for example an evaluation of the
+ following term, where the body of the @(tsee lambda) object is the translation
+ of @('(prog2$ (cw \"Hello~%\") nil)'): before the fix, @('\"Hello\"') was not
+ printed, but after the fix, it is printed.</p>
+
+ @({
+ (apply$ '(lambda ()
+             (RETURN-LAST
+              'PROGN
+              (FMT-TO-COMMENT-WINDOW '\"Hello~%\"
+                                     (PAIRLIS2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                                               'NIL)
+                                     '0
+                                     'NIL
+                                     'NIL)
+              'NIL))
+          nil)
+ })
+
+ <p>See also @(see community-books)
+ @('system/tests/ec-call-in-quoted-lambda.lisp.lisp') and
+ @('system/tests/ec-call-lambda-bypasses-1star.lisp').</p>
 
  <h3>Other Bug Fixes</h3>
 

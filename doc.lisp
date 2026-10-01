@@ -107201,7 +107201,7 @@ Bug Fixes From AI via Eric Smith
   The guard-verified logical definition returns a different result
   than the compiled raw lisp code due to this variable capture..
   Claude then exploited this bug to prove [30m[47mnil[0m[0m using a metafunction.
-  See [community-books] [30m[47msystem/tests/do-mv-capture.lisp[0m[0m.
+  See [community-book] [30m[47msystem/tests/do-mv-capture.lisp[0m[0m.
 
   Fixed a bug in the generation of termination conditions for functions
   defined with [loop$-recursion].  The bug, which was caused by the
@@ -107209,6 +107209,31 @@ Bug Fixes From AI via Eric Smith
   that substitution had already been applied, caused the termination
   conditions for some loop$-recursive functions to be incomplete or
   bogus.
+
+  Fixed a soundness bug caused by removal of [30m[47m[guard-holders][0m[0m before
+  compiling [lambda] objects for the compiled lambda cache (see :DOC
+  print-cl-cache).  An additional effect of this change (besides
+  removing unsoundness) is to stop avoiding calls of [30m[47m[cw][0m[0m and other
+  side effects when using [30m[47m[apply$][0m[0m.  Consider for example an
+  evaluation of the following term, where the body of the [30m[47m[lambda][0m[0m
+  object is the translation of [30m[47m(prog2$ (cw \"Hello~%\") nil)[0m[0m: before
+  the fix, [30m[47m\"Hello\"[0m[0m was not printed, but after the fix, it is printed.
+
+    (apply$ '(lambda ()
+                (RETURN-LAST
+                 'PROGN
+                 (FMT-TO-COMMENT-WINDOW '\"Hello~%\"
+                                        (PAIRLIS2 '(#0 #1 #2 #3 #4 #5 #6 #7 #8 #9)
+                                                  'NIL)
+                                        '0
+                                        'NIL
+                                        'NIL)
+                 'NIL))
+             nil)
+
+  See also [community-books]
+  [30m[47msystem/tests/ec-call-in-quoted-lambda.lisp.lisp[0m[0m and
+  [30m[47msystem/tests/ec-call-lambda-bypasses-1star.lisp[0m[0m.
 
 
 Other Bug Fixes
