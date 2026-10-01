@@ -761,3 +761,65 @@
 (test-check-top-expr
  "(i-fn ($m $n) (fn ((x [Int (+ 1 $m)]) (y [Int $n]))
     (head (@append (Int) ((+ 1 $m) $n []) x y))))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; reverse : (Forall (&t) (Pi ($d @s) (-> [&t $d @s] [&t $d @s])))
+
+; The input type is the same as for length, so the inference is the same;
+; the output type is the same as the input type.
+(test-check-top-expr
+ "(reverse [1 2 3])")
+(test-check-top-expr
+ "(reverse (array [2 3] 1 2 3 4 5 6))")
+
+; A scalar cannot be reversed:
+; the type of the argument must have at least one dimension.
+(test-check-top-expr-fail
+ "(reverse 5)")
+
+; Chains with head and tail:
+; the reverse of a vector of length 3 has a head,
+; the tail of a vector of length 3 can be reversed,
+; and the reverse of the (empty) tail of a singleton vector has no head.
+(test-check-top-expr
+ "(head (reverse [1 2 3]))")
+(test-check-top-expr
+ "(reverse (tail [1 2 3]))")
+(test-check-top-expr-fail
+ "(head (reverse (tail [7])))")
+
+; Partial explicit instantiation, with the shape inferred.
+(test-check-top-expr
+ "((i-app (t-app reverse Int) 3) [1 2 3])")
+
+; OBJECTIVE: as for length, the explicit dimension matches the rows,
+; so reverse should be applied to each row, over the frame [2];
+; but the inference does not handle frames yet.
+; The fully explicit instantiation is accepted, with the frame.
+(test-check-top-expr-fail
+ "((i-app (t-app reverse Int) 3) [[1 2 3] [4 5 6]])")
+(test-check-top-expr
+ "(@reverse (Int) (3 []) [[1 2 3] [4 5 6]])")
+
+; Inference under an ispace binder,
+; with the result used by further inference:
+; the reverse of a vector of length $n has length $n,
+; so it may be empty and has no head;
+; the reverse of a vector of length (+ 1 $n) has a head.
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int $n])) (reverse x)))")
+(test-check-top-expr-fail
+ "(i-fn ($n) (fn ((x [Int $n])) (head (reverse x))))")
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int (+ 1 $n)])) (head (reverse x))))")
+
+; The dimension is inferred as the witness of an unboxing,
+; but the result has the same type as the unboxed vector,
+; so the witness escapes (compare with length);
+; re-boxing the result avoids the escape.
+(test-check-top-expr-fail
+ "(unbox ($d v (box (3) [1 2 3] (Sigma ($e) (A Int $e)))) (reverse v))")
+(test-check-top-expr
+ "(unbox ($d v (box (3) [1 2 3] (Sigma ($e) (A Int $e))))
+   (box ($d) (reverse v) (Sigma ($e) (A Int $e))))")
