@@ -349,7 +349,7 @@
    (xdoc::p
     "We build either an @(tsee int-lit) (for @('decimal')) or a
      @(tsee float-lit) (for @('float-lit')) that preserves the
-     source-level sign (absent vs.@ explicit @('+') vs.@ @('-'))
+     source-level sign (absent, explicit @('+'), or explicit @('-'))
      and the decimal digits (including any leading zeros).  The
      numeric value is recovered later by the static/dynamic
      semantics."))
