@@ -1801,7 +1801,6 @@
   (xdoc::topstring
    (xdoc::p
     "This is still work in progress."))
-  (declare (ignore old-name newl-name newr-name gin))
   (b* (((reterr) nil)
        (old-body (fundef->body old-fundef))
        (new-body (fundef->body new-fundef))
@@ -1832,11 +1831,11 @@
         (retmsg$ "Unsupported proof generation for ~
                   function bodies whose return statement has no expression."))
        (old-expr old-expr?)
-       (new-expr new-expr?))
-    (retok
-     `((acl2::cw-event "TODO: theorems for ~x0 and ~x1~%"
-                       ',old-expr
-                       ',new-expr)))))
+       (new-expr new-expr?)
+       ((erp gout) (stsp-expr old-expr new-expr
+                              old-name newl-name newr-name
+                              gin)))
+    (retok (gout->events gout))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
