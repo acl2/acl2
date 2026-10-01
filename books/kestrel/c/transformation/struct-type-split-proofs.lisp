@@ -2088,6 +2088,13 @@
    (xdoc::p
     "For now we only support single translation units."))
   (b* (((reterr) '(_))
+       (ienv (code-ensemble->ienv old-code))
+       ((unless (equal ienv (code-ensemble->ienv new-code)))
+        (retmsg$ "The implementation environments ~x0 and ~x1 do not match. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 ienv (code-ensemble->ienv new-code)))
        (old-tens (code-ensemble->trans-units old-code))
        (new-tens (code-ensemble->trans-units new-code))
        (old-tunits (trans-ensemble->units old-tens))
