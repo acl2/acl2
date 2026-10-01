@@ -883,3 +883,59 @@
 ; which does not escape, since the result is a scalar.
 (test-check-top-expr
  "(unbox ($d v (box (3) [1 2 3] (Sigma ($e) (A Int $e)))) ((index v) 0))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; index2d : (Forall (&t) (Pi ($m $n) (-> ([&t $m $n] [Int 2]) &t)))
+
+; OBJECTIVE: as for index, the n-ary application performs no inference.
+(test-check-top-expr-fail
+ "(index2d [[1 2 3] [4 5 6]] [1 2])")
+
+; As for index, the unary application to the first argument succeeds,
+; because all the variables occur in the first input type:
+; the element type and the two dimensions are inferred from the matrix,
+; and the resulting function is applied to the pair of indices.
+(test-check-top-expr
+ "((index2d [[1 2 3] [4 5 6]]) [1 2])")
+
+; A vector has only one dimension.
+(test-check-top-expr-fail
+ "((index2d [1 2 3]) [0 0])")
+
+; The second argument is checked after the inference:
+; it must be a pair of integers,
+; or a vector of pairs, over which the application is lifted,
+; yielding a vector of elements.
+(test-check-top-expr-fail
+ "((index2d [[1 2] [3 4]]) [0])")
+(test-check-top-expr
+ "((index2d [[1 2] [3 4]]) [[0 0] [1 1]])")
+
+; OBJECTIVE: a three-dimensional array is a frame of matrices,
+; so index2d should be applied to each matrix, over the frame [2],
+; yielding a vector of elements;
+; but the inference does not handle frames yet.
+; The fully explicit instantiation is accepted, with the frame.
+(test-check-top-expr-fail
+ "((index2d [[[1 2]] [[3 4]]]) [0 0])")
+(test-check-top-expr
+ "(@index2d (Int) (1 2) [[[1 2]] [[3 4]]] [0 0])")
+
+; Partial explicit instantiation, with the dimensions inferred.
+(test-check-top-expr
+ "(((t-app index2d Int) [[1 2 3] [4 5 6]]) [1 2])")
+
+; Inference under ispace binders:
+; the dimensions are inferred as the bound variables;
+; an array of shape [$m @s] may not be a matrix, so it cannot be indexed.
+(test-check-top-expr
+ "(i-fn ($m $n) (fn ((x [Int $m $n]) (i [Int 2])) ((index2d x) i)))")
+(test-check-top-expr-fail
+ "(i-fn ($m @s) (fn ((x [Int $m @s])) ((index2d x) [0 0])))")
+
+; The first dimension is inferred as the witness of an unboxing,
+; which does not escape, since the result is a scalar.
+(test-check-top-expr
+ "(unbox ($d v (box (2) [[1 2] [3 4]] (Sigma ($e) (A Int (dims $e 2)))))
+   ((index2d v) [0 1]))")
