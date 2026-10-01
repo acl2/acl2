@@ -208,11 +208,9 @@
 (acl2::assert-equal
   (type-compatible-3p
     (make-type-struct :uid (uid-local 42 (filepath "foo.c"))
-                      :tunit? (filepath "foo.c")
                       :tag/members (type-struni-tag/members-tagged
                                      (ident "my_struct")))
     (make-type-struct :uid (uid-local 43 (filepath "bar.c"))
-                      :tunit? (filepath "bar.c")
                       :tag/members (type-struni-tag/members-tagged
                                      (ident "my_struct")))
     (treemap::update
@@ -234,11 +232,9 @@
 (acl2::assert-equal
   (type-compatible-3p
     (make-type-struct :uid (uid-local 42 (filepath "foo.c"))
-                      :tunit? (filepath "foo.c")
                       :tag/members (type-struni-tag/members-tagged
                                      (ident "my_struct")))
     (make-type-struct :uid (uid-local 43 (filepath "foo.c"))
-                      :tunit? (filepath "foo.c")
                       :tag/members (type-struni-tag/members-tagged
                                      (ident "my_struct")))
     (treemap::update
@@ -260,11 +256,9 @@
 (acl2::assert-equal
   (type-compatible-3p
     (make-type-struct :uid (uid-local 42 (filepath "foo.c"))
-                      :tunit? (filepath "foo.c")
                       :tag/members (type-struni-tag/members-tagged
                                      (ident "my_struct")))
     (make-type-struct :uid (uid-local 42 (filepath "foo.c"))
-                      :tunit? (filepath "foo.c")
                       :tag/members (type-struni-tag/members-tagged
                                      (ident "my_struct")))
     (treemap::update
@@ -288,13 +282,11 @@
 (acl2::assert-equal
   (type-compatible-3p
     (make-type-struct :uid (uid-local 1 (filepath "foo.c"))
-                      :tunit? (filepath "foo.c")
                       :tag/members (type-struni-tag/members-untagged
                                      (list (make-type-struni-member
                                              :name? (ident "x")
                                              :type (type-sint)))))
     (make-type-struct :uid (uid-local 2 (filepath "bar.c"))
-                      :tunit? (filepath "bar.c")
                       :tag/members (type-struni-tag/members-untagged
                                      (list (make-type-struni-member
                                              :name? (ident "x")
@@ -307,13 +299,11 @@
 (acl2::assert-equal
   (type-compatible-3p
     (make-type-struct :uid (uid-local 1 (filepath "foo.c"))
-                      :tunit? (filepath "foo.c")
                       :tag/members (type-struni-tag/members-untagged
                                      (list (make-type-struni-member
                                              :name? (ident "x")
                                              :type (type-sint)))))
     (make-type-struct :uid (uid-local 2 (filepath "foo.c"))
-                      :tunit? (filepath "foo.c")
                       :tag/members (type-struni-tag/members-untagged
                                      (list (make-type-struni-member
                                              :name? (ident "x")
@@ -327,11 +317,9 @@
 (acl2::assert-equal
   (type-compatible-3p
     (make-type-struct :uid (uid-local 1 (filepath "foo.c"))
-                      :tunit? (filepath "foo.c")
                       :tag/members (type-struni-tag/members-tagged
                                      (ident "my_struct")))
     (make-type-struct :uid (uid-local 2 (filepath "bar.c"))
-                      :tunit? (filepath "bar.c")
                       :tag/members (type-struni-tag/members-tagged
                                      (ident "my_struct")))
     (treemap::update (uid-local 1 (filepath "foo.c"))
@@ -345,11 +333,9 @@
 (acl2::assert-equal
   (type-compatible-3p
     (make-type-struct :uid (uid-local 1 (filepath "foo.c"))
-                      :tunit? (filepath "foo.c")
                       :tag/members (type-struni-tag/members-tagged
                                      (ident "my_struct")))
     (make-type-struct :uid (uid-local 2 (filepath "bar.c"))
-                      :tunit? (filepath "bar.c")
                       :tag/members (type-struni-tag/members-tagged
                                      (ident "my_struct")))
     (treemap::update (uid-local 1 (filepath "foo.c"))
@@ -370,13 +356,10 @@
 (acl2::assert-equal
   (b* ((tag/members (type-struni-tag/members-tagged (ident "my_struct")))
        (foo (make-type-struct :uid (uid-local 1 (filepath "foo.c"))
-                              :tunit? (filepath "foo.c")
                               :tag/members tag/members))
        (bar (make-type-struct :uid (uid-local 2 (filepath "bar.c"))
-                              :tunit? (filepath "bar.c")
                               :tag/members tag/members))
        (baz (make-type-struct :uid (uid-local 3 (filepath "baz.c"))
-                              :tunit? (filepath "baz.c")
                               :tag/members tag/members))
        (completions
         (treemap::update
@@ -404,13 +387,10 @@
 (acl2::assert-equal
   (b* ((tag/members (type-struni-tag/members-tagged (ident "my_struct")))
        (foo (make-type-struct :uid (uid-local 1 (filepath "foo.c"))
-                              :tunit? (filepath "foo.c")
                               :tag/members tag/members))
        (bar-file (make-type-struct :uid (uid-local 2 (filepath "bar.c"))
-                                   :tunit? (filepath "bar.c")
                                    :tag/members tag/members))
        (bar-block (make-type-struct :uid (uid-local 3 (filepath "bar.c"))
-                                    :tunit? (filepath "bar.c")
                                     :tag/members tag/members))
        (completions
         (treemap::update
@@ -436,11 +416,9 @@
 (acl2::assert-equal
   (type-compatible-3p
     (make-type-union :uid (uid-local 1 (filepath "foo.c"))
-                     :tunit? (filepath "foo.c")
                      :tag/members (type-struni-tag/members-tagged
                                     (ident "my_union")))
     (make-type-union :uid (uid-local 2 (filepath "bar.c"))
-                     :tunit? (filepath "bar.c")
                      :tag/members (type-struni-tag/members-tagged
                                     (ident "my_union")))
     (treemap::update (uid-local 1 (filepath "foo.c"))
@@ -586,13 +564,10 @@
 (acl2::assert-equal
   (b* ((tag/members (type-struni-tag/members-tagged (ident "s")))
        (foo (make-type-struct :uid (uid-local 1 (filepath "foo.c"))
-                              :tunit? (filepath "foo.c")
                               :tag/members tag/members))
        (bar (make-type-struct :uid (uid-local 2 (filepath "bar.c"))
-                              :tunit? (filepath "bar.c")
                               :tag/members tag/members))
        (composite (make-type-struct :uid (uid-local 3 nil)
-                                    :tunit? nil
                                     :tag/members tag/members))
        (member-inc (make-type-struni-member
                      :name? (ident "p")
@@ -632,13 +607,10 @@
 (acl2::assert-equal
   (b* ((tag/members (type-struni-tag/members-tagged (ident "s")))
        (foo (make-type-struct :uid (uid-local 1 (filepath "foo.c"))
-                              :tunit? (filepath "foo.c")
                               :tag/members tag/members))
        (bar (make-type-struct :uid (uid-local 2 (filepath "bar.c"))
-                              :tunit? (filepath "bar.c")
                               :tag/members tag/members))
        (composite (make-type-struct :uid (uid-local 3 nil)
-                                    :tunit? nil
                                     :tag/members tag/members))
        (members (list (make-type-struni-member :name? (ident "x")
                                                :type (type-sint)))))
@@ -663,13 +635,10 @@
 (acl2::assert-equal
   (b* ((tag/members (type-struni-tag/members-tagged (ident "s")))
        (foo (make-type-struct :uid (uid-local 1 (filepath "foo.c"))
-                              :tunit? (filepath "foo.c")
                               :tag/members tag/members))
        (bar (make-type-struct :uid (uid-local 2 (filepath "bar.c"))
-                              :tunit? (filepath "bar.c")
                               :tag/members tag/members))
        (composite (make-type-struct :uid (uid-local 3 nil)
-                                    :tunit? nil
                                     :tag/members tag/members))
        (completions
         (treemap::update
@@ -695,10 +664,8 @@
 (acl2::assert-equal
   (b* ((tag/members (type-struni-tag/members-tagged (ident "s")))
        (foo (make-type-struct :uid (uid-local 1 (filepath "foo.c"))
-                              :tunit? (filepath "foo.c")
                               :tag/members tag/members))
        (bar (make-type-struct :uid (uid-local 2 (filepath "bar.c"))
-                              :tunit? (filepath "bar.c")
                               :tag/members tag/members))
        (members (list (make-type-struni-member :name? (ident "x")
                                                :type (type-sint))))
@@ -719,13 +686,10 @@
 (acl2::assert-equal
   (b* ((tag/members (type-struni-tag/members-tagged (ident "u")))
        (foo (make-type-union :uid (uid-local 1 (filepath "foo.c"))
-                             :tunit? (filepath "foo.c")
                              :tag/members tag/members))
        (bar (make-type-union :uid (uid-local 2 (filepath "bar.c"))
-                             :tunit? (filepath "bar.c")
                              :tag/members tag/members))
        (composite (make-type-union :uid (uid-local 3 nil)
-                                   :tunit? nil
                                    :tag/members tag/members))
        (members (list (make-type-struni-member :name? (ident "x")
                                                :type (type-sint)))))
@@ -1007,10 +971,8 @@
 (acl2::assert-equal
   (b* ((tag/members (type-struni-tag/members-tagged (ident "s")))
        (foo (make-type-struct :uid (uid-local 1 (filepath "foo.c"))
-                              :tunit? (filepath "foo.c")
                               :tag/members tag/members))
        (bar (make-type-struct :uid (uid-local 2 (filepath "bar.c"))
-                              :tunit? (filepath "bar.c")
                               :tag/members tag/members))
        (array-inc (make-type-pointer
                     :to (make-type-array
@@ -1045,7 +1007,6 @@
                          :of (type-sint)
                          :kind (make-type-array-kind-const-len :len 10)))))
     (list (make-type-struct :uid (uid-local 3 nil)
-                            :tunit? nil
                             :tag/members (type-struni-tag/members-tagged
                                            (ident "s")))
           (list (make-type-struni-member :name? (ident "p") :type array-10)
@@ -1059,10 +1020,8 @@
 (acl2::assert-equal
   (b* ((tag/members (type-struni-tag/members-tagged (ident "s")))
        (foo (make-type-struct :uid (uid-local 1 (filepath "foo.c"))
-                              :tunit? (filepath "foo.c")
                               :tag/members tag/members))
        (bar (make-type-struct :uid (uid-local 2 (filepath "bar.c"))
-                              :tunit? (filepath "bar.c")
                               :tag/members tag/members))
        (member-inc (make-type-struni-member
                      :name? (ident "p")
@@ -1089,7 +1048,6 @@
         (type-composite bar foo completions (treemap::empty) nil 3)))
     (list composite1 next-uid-num1 composite2 next-uid-num2))
   (let ((bar (make-type-struct :uid (uid-local 2 (filepath "bar.c"))
-                               :tunit? (filepath "bar.c")
                                :tag/members (type-struni-tag/members-tagged
                                               (ident "s")))))
     (list bar 3 bar 3)))
@@ -1098,10 +1056,8 @@
 (acl2::assert-equal
   (b* ((tag/members (type-struni-tag/members-tagged (ident "s")))
        (foo (make-type-struct :uid (uid-local 1 (filepath "foo.c"))
-                              :tunit? (filepath "foo.c")
                               :tag/members tag/members))
        (bar (make-type-struct :uid (uid-local 2 (filepath "bar.c"))
-                              :tunit? (filepath "bar.c")
                               :tag/members tag/members))
        (member (make-type-struni-member :name? (ident "x") :type (type-sint)))
        (completions
@@ -1112,7 +1068,6 @@
         (type-composite bar foo completions (treemap::empty) nil 3)))
     (list composite1 composite2))
   (let ((foo (make-type-struct :uid (uid-local 1 (filepath "foo.c"))
-                               :tunit? (filepath "foo.c")
                                :tag/members (type-struni-tag/members-tagged
                                               (ident "s")))))
     (list foo foo)))
@@ -1124,10 +1079,8 @@
 (acl2::assert-equal
   (b* ((tag/members (type-struni-tag/members-tagged (ident "s")))
        (foo (make-type-struct :uid (uid-local 1 (filepath "foo.c"))
-                              :tunit? (filepath "foo.c")
                               :tag/members tag/members))
        (bar (make-type-struct :uid (uid-local 2 (filepath "bar.c"))
-                              :tunit? (filepath "bar.c")
                               :tag/members tag/members))
        (array-inc (make-type-pointer
                     :to (make-type-array
@@ -1161,7 +1114,6 @@
           next-uid-num
           (type-composite-3p foo bar composite completions (irr-ienv))))
   (b* ((composite (make-type-struct :uid (uid-local 3 nil)
-                                    :tunit? nil
                                     :tag/members
                                     (type-struni-tag/members-tagged
                                       (ident "s"))))
@@ -1194,7 +1146,6 @@
                          :kind (make-type-array-kind-const-len :len 10))))
        (foo (make-type-struct
               :uid (uid-local 1 (filepath "foo.c"))
-              :tunit? (filepath "foo.c")
               :tag/members
               (type-struni-tag/members-untagged
                 (list (make-type-struni-member :name? (ident "p")
@@ -1203,7 +1154,6 @@
                                                :type array-10)))))
        (bar (make-type-struct
               :uid (uid-local 2 (filepath "bar.c"))
-              :tunit? (filepath "bar.c")
               :tag/members
               (type-struni-tag/members-untagged
                 (list (make-type-struni-member :name? (ident "p")
@@ -1222,7 +1172,6 @@
                          :kind (make-type-array-kind-const-len :len 10)))))
     (list (make-type-struct
             :uid (uid-local 3 nil)
-            :tunit? nil
             :tag/members
             (type-struni-tag/members-untagged
               (list (make-type-struni-member :name? (ident "p")
@@ -1238,10 +1187,8 @@
 (acl2::assert-equal
   (b* ((tag/members (type-struni-tag/members-tagged (ident "u")))
        (foo (make-type-union :uid (uid-local 1 (filepath "foo.c"))
-                             :tunit? (filepath "foo.c")
                              :tag/members tag/members))
        (bar (make-type-union :uid (uid-local 2 (filepath "bar.c"))
-                             :tunit? (filepath "bar.c")
                              :tag/members tag/members))
        (member-inc (make-type-struni-member
                      :name? (ident "p")
@@ -1278,10 +1225,8 @@
           composite2))
   (b* ((tag/members (type-struni-tag/members-tagged (ident "u")))
        (foo (make-type-union :uid (uid-local 1 (filepath "foo.c"))
-                             :tunit? (filepath "foo.c")
                              :tag/members tag/members))
        (bar (make-type-union :uid (uid-local 2 (filepath "bar.c"))
-                             :tunit? (filepath "bar.c")
                              :tag/members tag/members)))
     (list foo :unknown bar)))
 

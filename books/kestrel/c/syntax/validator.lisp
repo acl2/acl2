@@ -3848,7 +3848,6 @@
                                           (type-spec-fix tyspec)))
                                 (type (make-type-struct
                                        :uid (valid-tag-info->uid info?)
-                                       :tunit? (vstate->filepath vstate)
                                        :tag/members
                                        (type-struni-tag/members-tagged
                                         tyspec.spec.name?)))
@@ -3867,7 +3866,6 @@
                                                   vstate))
                           (type (make-type-struct
                                  :uid uid
-                                 :tunit? (vstate->filepath vstate)
                                  :tag/members (type-struni-tag/members-tagged
                                                tyspec.spec.name?)))
                           (info (type-spec-struct-vinfo type)))
@@ -3921,7 +3919,6 @@
                      (valid-struni-spec tyspec.spec vstate))
                     (type (make-type-struct
                            :uid uid
-                           :tunit? (vstate->filepath vstate)
                            :tag/members (if tyspec.spec.name?
                                             (type-struni-tag/members-tagged
                                              tyspec.spec.name?)
@@ -3956,7 +3953,6 @@
                                      (tag-kind-union))
                               (b* ((type (make-type-union
                                           :uid (valid-tag-info->uid info?)
-                                          :tunit? (vstate->filepath vstate)
                                           :tag/members
                                           (type-struni-tag/members-tagged
                                            tyspec.spec.name?)))
@@ -3981,7 +3977,6 @@
                                                  vstate))
                          (type (make-type-union
                                 :uid uid
-                                :tunit? (vstate->filepath vstate)
                                 :tag/members (type-struni-tag/members-tagged
                                               tyspec.spec.name?)))
                          (info (type-spec-union-vinfo type)))
@@ -4035,7 +4030,6 @@
                     (valid-struni-spec tyspec.spec vstate))
                    (type (make-type-union
                           :uid uid
-                          :tunit? (vstate->filepath vstate)
                           :tag/members (if tyspec.spec.name?
                                            (type-struni-tag/members-tagged
                                             tyspec.spec.name?)
@@ -4150,7 +4144,6 @@
                                    vstate))))
                           (type (make-type-struct
                                  :uid uid
-                                 :tunit? (vstate->filepath vstate)
                                  :tag/members
                                  (if tyspec.name?
                                      (type-struni-tag/members-tagged

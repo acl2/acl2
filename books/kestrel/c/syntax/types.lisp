@@ -155,13 +155,13 @@
        "The @('_Bool') type [C17:6.2.5/2].")
       (xdoc::li
        "Structure types [C17:6.2.5/20].
-        Structure types contain a @(see UID), translation unit name,
+        Structure types contain a @(see UID)
         and information about the tag and members
         (see @(tsee type-struni-tag/members)).
         The UID allows disambiguation of otherwise identical structs
         which occur in different scopes.
-        The translation unit name identifies the translation unit in which
-        the struct type was declared.
+        The UID also identifies the translation unit in which
+        the struct type was declared, if any.
         This is necessary to weaken the compatibility rules
         when comparing structs across translation units.")
       (xdoc::li
@@ -236,10 +236,8 @@
     (:ldoublec ())
     (:bool ())
     (:struct ((uid uid)
-              (tunit? filepath-option)
               (tag/members type-struni-tag/members)))
     (:union ((uid uid)
-             (tunit? filepath-option)
              (tag/members type-struni-tag/members)))
     (:enum ())
     (:array ((of type)
@@ -575,9 +573,10 @@
     (xdoc::li
      "Two struct/union types with the same UID should be identical.")
     (xdoc::li
-     "If a struct/union is defined in translation unit @('\"foo.c\"'),
+     "If the UID of a struct/union is local to
+      translation unit @('\"foo.c\"'),
       the types of the members of the struct/union type
-      should not include references to any other translation unit
+      should not include UIDs local to any other translation unit
       besides @('\"foo.c\"').
       (It is impossible for a struct/union type
       defined in one translation unit

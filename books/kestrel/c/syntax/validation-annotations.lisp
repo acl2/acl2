@@ -154,7 +154,6 @@
            :struct type
            :otherwise (make-type-struct
                         :uid (irr-uid)
-                        :tunit? nil
                         :tag/members (make-type-struni-tag/members-tagged
                                        :tag (irr-ident))))))
   :require (type-case type :struct)
@@ -178,7 +177,6 @@
           :union type
           :otherwise (make-type-union
                       :uid (irr-uid)
-                      :tunit? nil
                       :tag/members (make-type-struni-tag/members-tagged
                                     :tag (irr-ident))))))
   :require (type-case type :union)

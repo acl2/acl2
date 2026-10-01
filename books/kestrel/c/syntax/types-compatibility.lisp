@@ -263,9 +263,7 @@
           y
           :struct
           (b* (((when (uid-equiv x.uid y.uid)) t)
-               (same-tunit? (and x.tunit?
-                                 y.tunit?
-                                 (equal x.tunit? y.tunit?)))
+               (same-tunit? (uid-same-tunit-p x.uid y.uid))
                (c23p? (c::standard-case (ienv->std ienv) :c23)))
             (type-struni-tag/members-case
               x.tag/members
@@ -319,9 +317,7 @@
           y
           :union
           (b* (((when (uid-equiv x.uid y.uid)) t)
-               (same-tunit? (and x.tunit?
-                                 y.tunit?
-                                 (equal x.tunit? y.tunit?)))
+               (same-tunit? (uid-same-tunit-p x.uid y.uid))
                (c23p? (c::standard-case (ienv->std ienv) :c23)))
             (type-struni-tag/members-case
               x.tag/members
@@ -1542,9 +1538,7 @@
           y
           :struct
           (b* (((when (uid-equiv x.uid y.uid)) (mv t visited))
-               (same-tunit? (and x.tunit?
-                                 y.tunit?
-                                 (equal x.tunit? y.tunit?)))
+               (same-tunit? (uid-same-tunit-p x.uid y.uid))
                (c23p? (c::standard-case (ienv->std ienv) :c23)))
             (type-struni-tag/members-case
               x.tag/members
@@ -1592,9 +1586,7 @@
           y
           :union
           (b* (((when (uid-equiv x.uid y.uid)) (mv t visited))
-               (same-tunit? (and x.tunit?
-                                 y.tunit?
-                                 (equal x.tunit? y.tunit?)))
+               (same-tunit? (uid-same-tunit-p x.uid y.uid))
                (c23p? (c::standard-case (ienv->std ienv) :c23)))
             (type-struni-tag/members-case
               x.tag/members
@@ -3773,7 +3765,6 @@
                     (treemap::lookup? pair composites))
                    ((when foundp)
                     (mv (make-type-struct :uid composite-uid
-                                          :tunit? nil
                                           :tag/members x.tag/members)
                         completions
                         composites
@@ -3806,7 +3797,6 @@
                    (completions
                     (treemap::update composite-uid members completions)))
                 (mv (make-type-struct :uid composite-uid
-                                      :tunit? nil
                                       :tag/members x.tag/members)
                     completions
                     composites
@@ -3838,7 +3828,6 @@
                       composites tunit? next-uid-num)))
                 (mv (make-type-struct
                       :uid composite-uid
-                      :tunit? nil
                       :tag/members (type-struni-tag/members-untagged members))
                     completions
                     composites
