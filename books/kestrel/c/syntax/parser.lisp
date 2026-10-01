@@ -10074,7 +10074,7 @@
   ;; Note that ACL2::RECURSIVEP returns the names of the whole clique.
   :returns-hints (("Goal"
                    :in-theory (set-difference-theories
-                               (enable fix nfix)
+                               (current-theory :here)
                                (acl2::recursivep 'parse-expression t world)))
                   (flag-expand-hint clause world))
 
