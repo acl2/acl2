@@ -620,3 +620,75 @@
  "(unbox ($d v (box (3) [1 2 3] (Sigma ($e) (A Int $e)))) (head v))")
 (test-check-top-expr
  "(unbox ($d v (box (2) [1 2 3] (Sigma ($e) (A Int (+ 1 $e))))) (head v))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; tail : (Forall (&t) (Pi ($d @s) (-> [&t (+ 1 $d) @s] [&t $d @s])))
+
+; The input type is the same as for head, so the inference is the same;
+; but the output type keeps the inferred dimension,
+; which the following tests use.
+
+; The tail of a vector of length 3 has length 2,
+; the tail of a matrix with 2 rows has 1 row,
+; and the tail of a singleton vector is empty.
+(test-check-top-expr
+ "(tail [1 2 3])")
+(test-check-top-expr
+ "(tail (array [2 3] 1 2 3 4 5 6))")
+(test-check-top-expr
+ "(tail [7])")
+
+; A scalar has no tail.
+(test-check-top-expr-fail
+ "(tail 5)")
+
+; The inferred length of the result is used by further inference:
+; the tail of a vector of length 3 has a head,
+; and can be tailed twice more, but not three times more,
+; because the length of the third tail is 0;
+; the tail of a singleton vector has a length (namely 0) but no head.
+(test-check-top-expr
+ "(head (tail [1 2 3]))")
+(test-check-top-expr
+ "(tail (tail (tail [1 2 3])))")
+(test-check-top-expr-fail
+ "(tail (tail (tail (tail [1 2 3]))))")
+(test-check-top-expr
+ "(length (tail [7]))")
+(test-check-top-expr-fail
+ "(head (tail [7]))")
+
+; Partial explicit instantiation, with the shape inferred.
+(test-check-top-expr
+ "((i-app (t-app tail Int) 2) [1 2 3])")
+
+; OBJECTIVE: as for head, the explicit dimension matches the rows,
+; so tail should be applied to each row, over the frame [2],
+; yielding the matrix without its first column;
+; but the inference does not handle frames yet.
+; The fully explicit instantiation is accepted, with the frame.
+(test-check-top-expr-fail
+ "((i-app (t-app tail Int) 2) [[1 2 3] [4 5 6]])")
+(test-check-top-expr
+ "(@tail (Int) (2 []) [[1 2 3] [4 5 6]])")
+
+; Inference under an ispace binder,
+; with the result used by further inference:
+; the tail of a vector of length (+ 1 $n) has length $n,
+; so it may be empty and has no head;
+; the tail of a vector of length (+ 2 $n) has length (+ 1 $n),
+; so it has a head.
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int (+ 1 $n)])) (tail x)))")
+(test-check-top-expr-fail
+ "(i-fn ($n) (fn ((x [Int (+ 1 $n)])) (head (tail x))))")
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int (+ 2 $n)])) (head (tail x))))")
+
+; The shape variable is inferred as the bound shape variable
+; through a chain of applications:
+; the tails of an array of shape [3 @s] have shapes [2 @s] and [1 @s],
+; and the head of the latter has shape @s.
+(test-check-top-expr
+ "(i-fn (@s) (fn ((x [Int 3 @s])) (head (tail (tail x)))))")
