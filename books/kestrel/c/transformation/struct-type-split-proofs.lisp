@@ -796,7 +796,15 @@
                           c::valuep-of-cdr-of-assoc-scopep
                           c::valuep-of-head-val-when-scopep
                           (:t omap::assoc))))
-           :hooks (:fix)
+           :hooks
+           ((:fix
+             :hints
+             (("Goal"
+               :induct t
+               :in-theory '(static-equivp
+                            c::scope-fix-when-scopep
+                            c::scopep-of-scope-fix
+                            c::emptyp-of-scope-fix-to-not-scope-or-emptyp)))))
            ///
            (defruled struct-value-equivp-when-static-equivp
              (b* ((old-var+val (omap::assoc ',old-cname old-static))
