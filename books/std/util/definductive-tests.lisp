@@ -1122,8 +1122,8 @@
 (must-fail
  (definductive concl-var-clash
    :preds ((p a))
-   :irules ((ax ((natp concl.a))
-                (p concl.a)))))
+   :irules ((ax ((natp _a))
+                (p _a)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

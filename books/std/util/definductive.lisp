@@ -1447,13 +1447,6 @@
 
 ;;;;;;;;;;
 
-(define defind-concl-var-name ((name symbolp))
-  :returns (var-name symbolp)
-  :short "Prefix of the names of the conclusion argument variables."
-  (packn-pos (list 'concl) (symbol-lfix name)))
-
-;;;;;;;;;;
-
 (define defind-proof-prem-var-name ((num posp) (name symbolp))
   :returns (var-name symbolp)
   :short "Name of the variable bound to a premise of a proof."
@@ -1502,10 +1495,7 @@
   :returns (var-name symbolp)
   :short "Name of the conclusion argument variable
           corresponding to a formal of a predicate."
-  (packn-pos (list (defind-concl-var-name name)
-                   #\.
-                   (symbol-lfix formal))
-             (symbol-lfix name)))
+  (packn-pos (list "_" (symbol-lfix formal)) (symbol-lfix name)))
 
 ;;;;;;;;;;
 

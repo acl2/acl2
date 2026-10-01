@@ -265,12 +265,12 @@
 
   (defthm-dim-ok-proof-validp-clique-flag
     (defthmd dimp-when-dim-ok-proof-validp
-      (implies (dim-ok-proof-validp proof concl.ivars concl.dim)
-               (dimp concl.dim))
+      (implies (dim-ok-proof-validp proof _ivars _dim)
+               (dimp _dim))
       :flag dim-ok-proof-validp)
     (defthmd dim-listp-when-dims-ok-proof-validp
-      (implies (dims-ok-proof-validp proof concl.ivars concl.dims)
-               (dim-listp concl.dims))
+      (implies (dims-ok-proof-validp proof _ivars _dims)
+               (dim-listp _dims))
       :flag dims-ok-proof-validp)
     :hints
     (("Goal" :in-theory (enable* dim-validity-definition-validp-defs))))
@@ -293,20 +293,20 @@
 
   (defthm-shape-ok-proof-validp-clique-flag
     (defthmd shapep-when-shape-ok-proof-validp
-      (implies (shape-ok-proof-validp proof concl.ivars concl.shape)
-               (shapep concl.shape))
+      (implies (shape-ok-proof-validp proof _ivars _shape)
+               (shapep _shape))
       :flag shape-ok-proof-validp)
     (defthmd shape-listp-when-shapes-ok-proof-validp
-      (implies (shapes-ok-proof-validp proof concl.ivars concl.shapes)
-               (shape-listp concl.shapes))
+      (implies (shapes-ok-proof-validp proof _ivars _shapes)
+               (shape-listp _shapes))
       :flag shapes-ok-proof-validp)
     (defthmd ispacep-when-ispace-ok-proof-validp
-      (implies (ispace-ok-proof-validp proof concl.ivars concl.ispace)
-               (ispacep concl.ispace))
+      (implies (ispace-ok-proof-validp proof _ivars _ispace)
+               (ispacep _ispace))
       :flag ispace-ok-proof-validp)
     (defthmd ispace-listp-when-ispaces-ok-proof-validp
-      (implies (ispaces-ok-proof-validp proof concl.ivars concl.ispaces)
-               (ispace-listp concl.ispaces))
+      (implies (ispaces-ok-proof-validp proof _ivars _ispaces)
+               (ispace-listp _ispaces))
       :flag ispaces-ok-proof-validp)
     :hints (("Goal"
              :in-theory
@@ -341,12 +341,12 @@
 
   (defthm-dim-ok-proof-validp-clique-flag
     (defthmd ispace-var-setp-when-dim-ok-proof-validp
-      (implies (dim-ok-proof-validp proof concl.ivars concl.dim)
-               (ispace-var-setp concl.ivars))
+      (implies (dim-ok-proof-validp proof _ivars _dim)
+               (ispace-var-setp _ivars))
       :flag dim-ok-proof-validp)
     (defthmd ispace-var-setp-when-dims-ok-proof-validp
-      (implies (dims-ok-proof-validp proof concl.ivars concl.dims)
-               (ispace-var-setp concl.ivars))
+      (implies (dims-ok-proof-validp proof _ivars _dims)
+               (ispace-var-setp _ivars))
       :flag dims-ok-proof-validp)
     :hints
     (("Goal" :in-theory (enable* dim-validity-definition-validp-defs))))
@@ -370,20 +370,20 @@
 
   (defthm-shape-ok-proof-validp-clique-flag
     (defthmd ispace-var-setp-when-shape-ok-proof-validp
-      (implies (shape-ok-proof-validp proof concl.ivars concl.shape)
-               (ispace-var-setp concl.ivars))
+      (implies (shape-ok-proof-validp proof _ivars _shape)
+               (ispace-var-setp _ivars))
       :flag shape-ok-proof-validp)
     (defthmd ispace-var-setp-when-shapes-ok-proof-validp
-      (implies (shapes-ok-proof-validp proof concl.ivars concl.shapes)
-               (ispace-var-setp concl.ivars))
+      (implies (shapes-ok-proof-validp proof _ivars _shapes)
+               (ispace-var-setp _ivars))
       :flag shapes-ok-proof-validp)
     (defthmd ispace-var-setp-when-ispace-ok-proof-validp
-      (implies (ispace-ok-proof-validp proof concl.ivars concl.ispace)
-               (ispace-var-setp concl.ivars))
+      (implies (ispace-ok-proof-validp proof _ivars _ispace)
+               (ispace-var-setp _ivars))
       :flag ispace-ok-proof-validp)
     (defthmd ispace-var-setp-when-ispaces-ok-proof-validp
-      (implies (ispaces-ok-proof-validp proof concl.ivars concl.ispaces)
-               (ispace-var-setp concl.ivars))
+      (implies (ispaces-ok-proof-validp proof _ivars _ispaces)
+               (ispace-var-setp _ivars))
       :flag ispaces-ok-proof-validp)
     :hints (("Goal"
              :in-theory

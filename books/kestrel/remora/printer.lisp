@@ -16,8 +16,8 @@
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "unicode/utf8-encode" :dir :system)
-(include-book "unicode/utf8-decode" :dir :system)
 (include-book "std/basic/defs" :dir :system)
+(include-book "std/strings/ascii-chars" :dir :system)
 (include-book "std/typed-lists/nat-listp" :dir :system)
 
 (local (include-book "std/basic/ifix" :dir :system))
@@ -75,13 +75,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; pdoc combinators (Wadler/Lindig style).
+;; Documents: pdoc combinators (Wadler/Lindig style).
 ;;
-;; A pdoc is a tree of layout instructions.  The layout function
-;; recursively interprets the tree, choosing for each Group whether to
-;; render it flat (all on one line) or broken (Lines become newlines
-;; with indent).  The Group decision uses one-line lookahead via the
-;; auxiliary fits function.
+;; A pdoc is a tree of layout instructions, which the layout function
+;; below turns into code points.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -133,6 +130,18 @@
     :elementp-of-nil nil
     :pred pdoc-listp))
 
+(fty::defresult pdoc-result
+  :short "Fixtype of pdocs and errors."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The AST walkers that can fail return this type.  They fail when an
+     optional part of the AST is absent but the concrete syntax
+     requires it, e.g. the type of a parameter (see @(tsee
+     pat-to-pdoc))."))
+  :ok pdoc
+  :pred pdoc-resultp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; The pdoc :text leaf carries a nat-list of code points (not a string);
@@ -168,7 +177,7 @@
   (cond ((not (stringp s))
          (er hard 'pdoc-ascii
              "Expected a string literal, got ~x0." s))
-        ((not (char-list-all-ascii-p (explode s)))
+        ((not (str::ascii-charlist-p (explode s)))
          (er hard 'pdoc-ascii
              "String ~x0 contains a non-ASCII character (code >= 128). ~
               For non-ASCII text, pass code points explicitly via ~
@@ -176,6 +185,15 @@
         (t (let ((cps (ascii-string=>codepoints s)))
              `(pdoc-text (quote ,cps))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Layout.
+;;
+;; The layout function recursively interprets a pdoc, choosing for
+;; each Group whether to render it flat (all on one line) or broken
+;; (Lines become newlines with indent).  The Group decision uses
+;; one-line lookahead via the auxiliary fits function.
+;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum mode
@@ -190,8 +208,6 @@
   (:flat ())
   (:break ())
   :pred modep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod cmd
   :short "A pending-document command: a pdoc plus its indent and mode."
@@ -218,7 +234,6 @@
 ;;
 ;; Termination measure for fits and layout.
 ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deffold-reduce size
   :short "A positive size for @(tsee pdoc) values, used as a measure
@@ -233,7 +248,7 @@
                     (pdoc-size (pdoc-concat->right pdoc))))
    (pdoc :nest (+ 1 (pdoc-size (pdoc-nest->body pdoc))))
    (pdoc :group (+ 1 (pdoc-size (pdoc-group->body pdoc)))))
-  :name abstract-syntax-size)
+  :name pdoc-size-measure)
 
 (define cmds-size ((cs cmd-listp))
   :returns (n natp :rule-classes (:rewrite :type-prescription))
@@ -253,7 +268,6 @@
 ;; w columns of the current line?  Stops as soon as it sees a forced
 ;; break or runs out of width.
 ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fits ((w integerp) (cs cmd-listp))
   :returns (yes booleanp)
@@ -333,15 +347,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; layout: render a command list to a string, given a target width
-;; and a current column.  Newlines are emitted as #\Newline followed
+;; layout: render a command list to a code-point list, given a target
+;; width and a current column.  Newlines are emitted as #x0A followed
 ;; by the current indent in spaces.
 ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define spaces-codepoints ((n natp))
   :returns (cps nat-listp)
-  :hooks nil
   :short "A list of @('n') space code points (each @('#x20'))."
   (if (zp n)
       nil
@@ -349,7 +361,6 @@
 
 (define newline-and-indent-codepoints ((n natp))
   :returns (cps nat-listp)
-  :hooks nil
   :short "Newline (@('#x0A')) followed by @('n') spaces, as code points."
   (cons #x0A (spaces-codepoints n)))
 
@@ -397,8 +408,6 @@
   :measure (cmds-size cs)
   :hints (("Goal" :in-theory (enable pdoc-size))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define layout-pdoc ((width natp) (d pdocp))
   :returns (cps nat-listp)
   :short "Render a single @(tsee pdoc) to a code-point list at column 0."
@@ -407,7 +416,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Convenience constructors.
+;; Document building blocks.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -415,21 +424,6 @@
   :returns (d pdocp)
   :short "The empty document."
   (pdoc-text nil))
-
-(define pdoc-seq ((ds pdoc-listp))
-  :returns (d pdocp)
-  :short "Concatenate a list of documents into a single document
-          (right-fold via @(tsee pdoc-concat))."
-  :measure (len ds)
-  (cond ((endp ds) (pdoc-empty))
-        ((endp (cdr ds)) (pdoc-fix (car ds)))
-        (t (pdoc-concat (car ds) (pdoc-seq (cdr ds))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; Convenience wrappers for common pdoc shapes.
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pdoc-paren ((d pdocp))
   :returns (out pdocp)
@@ -443,11 +437,6 @@
   (pdoc-concat (pdoc-ascii "[")
                (pdoc-concat d (pdoc-ascii "]"))))
 
-(define pdoc-space ()
-  :returns (out pdocp)
-  :short "A single literal space."
-  (pdoc-ascii " "))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; Standard Lisp-form layouts.  These wrap the head of a form (a
@@ -456,7 +445,6 @@
 ;; under the head.  Lines emitted inside the body are also at the
 ;; nested indent.
 ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define pdoc-prefix-form ((keyword stringp) (body pdocp))
   :returns (out pdocp)
@@ -508,7 +496,7 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Base types: Bool, Int, Float.
+;; Base types (Bool, Int, Float) and base literals.
 ;;
 
 (define base-type-to-pdoc ((bt base-typep))
@@ -552,36 +540,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; List helpers: pdoc-intersperse-space and pdoc-list-from-list.
+;; Dimensions (mutually recursive: dim, dim-list), and the lists of
+;; naturals that give the dimensions of array and frame expressions.
 ;;
 
-(define pdoc-intersperse-space ((ds pdoc-listp))
-  :returns (out pdocp)
-  :short "Concatenate documents with spaces between."
-  (cond ((endp ds) (pdoc-empty))
-        ((endp (cdr ds)) (pdoc-fix (car ds)))
-        (t (pdoc-concat (car ds)
-                        (pdoc-concat (pdoc-ascii " ")
-                                     (pdoc-intersperse-space (cdr ds)))))))
-
-(define pdoc-intersperse-line ((ds pdoc-listp))
-  :returns (out pdocp)
-  :short "Concatenate documents with @(tsee pdoc-line) between
-          (becomes space when group fits, newline+indent when it
-          breaks)."
-  (cond ((endp ds) (pdoc-empty))
-        ((endp (cdr ds)) (pdoc-fix (car ds)))
-        (t (pdoc-concat (car ds)
-                        (pdoc-concat (pdoc-line)
-                                     (pdoc-intersperse-line (cdr ds)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; Dimensions and shapes (mutually recursive via dim-list / shape-list).
-;;
-
-(defines dim-shape-to-pdoc
-  :short "Render @(tsee dim) and @(tsee shape) values as pdocs."
+(defines dim-to-pdoc-defs
+  :short "Render @(tsee dim) and @(tsee dim-list) values as pdocs."
   :verify-guards :after-returns
 
   (define dim-to-pdoc ((d dimp))
@@ -609,41 +573,14 @@
                                        (dim-list-to-pdoc (cdr ds))))))
     :measure (dim-list-count ds)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; Flat-form string printers for dim and dim-list.  These produce the
-;; canonical compact form (single-space separators, no line breaks) that
-;; the parser accepts.  They are intended as round-trip-provable
-;; alternatives to dim-to-pdoc / dim-list-to-pdoc when pretty-printing
-;; layout flexibility is not needed.
-;;
-
-(defines dim-shape-to-string
-  :short "Render @(tsee dim) and @(tsee dim-list) values as flat strings."
-  :verify-guards :after-returns
-
-  (define dim-to-string ((d dimp))
-    :returns (s stringp)
-    (dim-case d
-      :var (str::cat "$" d.name)
-      :const (str::nat-to-dec-string d.val)
-      :add (str::cat "(+" (str::cat (dim-list-to-string d.dims) ")"))
-      :mul (str::cat "(*" (str::cat (dim-list-to-string d.dims) ")"))
-      :sub (str::cat "(-" (str::cat (dim-list-to-string d.dims) ")")))
-    :measure (dim-count d))
-
-  (define dim-list-to-string ((ds dim-listp))
-    :returns (s stringp)
-    :short "Render a @(tsee dim-list) as a flat string with each dim
-            preceded by a single space (so the empty list yields the
-            empty string, and a non-empty list looks like
-            @(' d1 d2 ...')).  Used by @(tsee dim-to-string) inside the
-            parens of @('+'), @('*'), and @('-') forms."
-    (cond ((endp ds) "")
-          (t (str::cat " "
-                       (str::cat (dim-to-string (car ds))
-                                 (dim-list-to-string (cdr ds))))))
-    :measure (dim-list-count ds)))
+(define nat-list-to-pdoc ((ns nat-listp))
+  :returns (out pdocp)
+  :short "Render a list of nats as space-separated decimal strings."
+  (cond ((endp ns) (pdoc-empty))
+        ((endp (cdr ns)) (pdoc-text (nat-to-dec-codepoints (nfix (car ns)))))
+        (t (pdoc-concat (pdoc-text (nat-to-dec-codepoints (nfix (car ns))))
+                        (pdoc-concat (pdoc-line)
+                                     (nat-list-to-pdoc (cdr ns)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -694,6 +631,11 @@
                           (pdoc-concat (pdoc-line)
                                        (ispace-list-to-pdoc (cdr is))))))
     :measure (ispace-list-count is)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Lists of variables, and optional lists (printed as _ when absent).
+;;
 
 (define ispace-list-option-to-pdoc ((io ispace-list-optionp))
   :returns (out pdocp)
@@ -824,12 +766,10 @@
     :none (pdoc-ascii "_")
     :some (pdoc-paren (type-list-to-pdoc to.val))))
 
-(fty::defresult pdoc-result
-  :short "Fixtype of pdocs and errors."
-  :ok pdoc
-  :pred pdoc-resultp)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Patterns (typed parameters).
+;;
 
 (define pat-to-pdoc ((vt var+type?-p))
   :returns (out pdoc-resultp)
@@ -875,20 +815,6 @@
                 ((ok rest) (pat-list-to-pdoc (cdr vts))))
              (pdoc-concat first
                           (pdoc-concat (pdoc-line) rest))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; Helpers for nat-list (array/frame shape literals).
-;;
-
-(define nat-list-to-pdoc ((ns nat-listp))
-  :returns (out pdocp)
-  :short "Render a list of nats as space-separated decimal strings."
-  (cond ((endp ns) (pdoc-empty))
-        ((endp (cdr ns)) (pdoc-text (nat-to-dec-codepoints (nfix (car ns)))))
-        (t (pdoc-concat (pdoc-text (nat-to-dec-codepoints (nfix (car ns))))
-                        (pdoc-concat (pdoc-line)
-                                     (nat-list-to-pdoc (cdr ns)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1269,47 +1195,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Standalone expressions: top-level printing entry points.
-;;
-
-(define print-expr-to-codepoints ((e exprp) &key ((width natp) '80))
-  :returns (cps nat-listp)
-  :short "Render an @(tsee expr) AST to a list of Unicode code points,
-          wrapping at @('width') columns.  This is the codepoint-level
-          entry point; @(tsee print-expr) is the string wrapper."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If rendering fails (e.g. a parameter has no type, which has no
-     concrete syntax and which we do not infer yet), we return the
-     empty list of code points, so that @(tsee print-expr) is total
-     and yields the empty string in that case."))
-  (b* ((pd (expr-to-pdoc e))
-       ((when (reserrp pd)) nil))
-    (layout-pdoc width pd)))
-
-(define print-expr ((e exprp) &key ((width natp) '80))
-  :returns (s stringp)
-  :short "Render an @(tsee expr) AST (a standalone expression) to a
-          UTF-8 encoded ACL2 string, wrapping at @('width') columns.
-          Thin wrapper around @(tsee print-expr-to-codepoints) that
-          UTF-8-encodes the code-point list into bytes and packs the
-          bytes into an ACL2 string."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The defensive @(tsee ustring?) check guarantees the guard
-     of @(tsee ustring=>utf8); for well-formed ASTs all emitted
-     code points are valid Unicode scalars, so the @('unless') branch
-     is unreachable."))
-  (b* ((cps (print-expr-to-codepoints e :width width))
-       ((unless (ustring? cps)) "")
-       (bytes (ustring=>utf8 cps))
-       ((unless (unsigned-byte-listp 8 bytes)) ""))
-    (nats=>string bytes)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
 ;; Imports, declarations, and source files.
 ;;
 
@@ -1386,6 +1271,48 @@
           ((not (consp f.decls)) (import-list-to-pdoc f.imports))
           (t (pdoc-concat (import-list-to-pdoc f.imports)
                           (pdoc-concat (pdoc-line) decls-doc))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Entry points: standalone expressions and source files.
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define print-expr-to-codepoints ((e exprp) &key ((width natp) '80))
+  :returns (cps nat-listp)
+  :short "Render an @(tsee expr) AST to a list of Unicode code points,
+          wrapping at @('width') columns.  This is the codepoint-level
+          entry point; @(tsee print-expr) is the string wrapper."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If rendering fails (e.g. a parameter has no type, which has no
+     concrete syntax and which we do not infer yet), we return the
+     empty list of code points, so that @(tsee print-expr) is total
+     and yields the empty string in that case."))
+  (b* ((pd (expr-to-pdoc e))
+       ((when (reserrp pd)) nil))
+    (layout-pdoc width pd)))
+
+(define print-expr ((e exprp) &key ((width natp) '80))
+  :returns (s stringp)
+  :short "Render an @(tsee expr) AST (a standalone expression) to a
+          UTF-8 encoded ACL2 string, wrapping at @('width') columns.
+          Thin wrapper around @(tsee print-expr-to-codepoints) that
+          UTF-8-encodes the code-point list into bytes and packs the
+          bytes into an ACL2 string."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The defensive @(tsee ustring?) check guarantees the guard
+     of @(tsee ustring=>utf8); for well-formed ASTs all emitted
+     code points are valid Unicode scalars, so the @('unless') branch
+     is unreachable."))
+  (b* ((cps (print-expr-to-codepoints e :width width))
+       ((unless (ustring? cps)) "")
+       (bytes (ustring=>utf8 cps))
+       ((unless (unsigned-byte-listp 8 bytes)) ""))
+    (nats=>string bytes)))
 
 (define print-file-to-codepoints ((f filep) &key ((width natp) '80))
   :returns (cps nat-listp)
