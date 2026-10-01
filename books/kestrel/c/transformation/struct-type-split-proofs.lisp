@@ -810,7 +810,18 @@
                       (equal (omap::assoc var old-static)
                              (omap::assoc var new-static)))
              :induct t
-             :enable omap::assoc))))
+             :in-theory '(static-equivp
+                          c::scope-fix-when-scopep
+                          c::scopep-of-tail
+                          c::scopep-of-delete
+                          omap::assoc-of-delete
+                          omap::assoc-when-emptyp
+                          omap::car-of-assoc-when-assoc
+                          car-cons
+                          cdr-cons
+                          (:e equal)
+                          (:t omap::assoc))
+             :expand (omap::assoc var old-static)))))
     (retok event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
