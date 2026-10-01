@@ -976,7 +976,7 @@ int main(void) {
 }
 "
   ;; Looking up "foo" in the first translation unit validation table should
-  ;; show a UID value of "0".
+  ;; show the first local UID of that translation unit.
   :cond (b* ((tunit-test0
                (cdr (omap::assoc (filepath "test0")
                                  (trans-ensemble->units ast))))
@@ -990,7 +990,8 @@ int main(void) {
                currentp
                (valid-ord-info-case
                  ord-info?
-                 :objfun (uid-equal ord-info?.uid (uid 0))
+                 :objfun (uid-equiv ord-info?.uid
+                                    (uid-local (filepath "test0") 0))
                  :otherwise nil))))
 
 (test-valid
@@ -1000,7 +1001,7 @@ void foo(void) {
 }
 "
   ;; Looking up "foo" in the first translation unit validation table should
-  ;; show a UID value of "0".
+  ;; show the first local UID of that translation unit.
   :cond (b* ((tunit-test0
                (cdr (omap::assoc (filepath "test0")
                                  (trans-ensemble->units ast))))
@@ -1014,7 +1015,8 @@ void foo(void) {
                currentp
                (valid-ord-info-case
                  ord-info?
-                 :objfun (uid-equal ord-info?.uid (uid 0))
+                 :objfun (uid-equiv ord-info?.uid
+                                    (uid-local (filepath "test0") 0))
                  :otherwise nil))))
 
 (test-valid
@@ -1024,7 +1026,7 @@ static void foo(void) {
 }
 "
   ;; Looking up "foo" in the first translation unit validation table should
-  ;; show a UID value of "0".
+  ;; show the first local UID of that translation unit.
   :cond (b* ((tunit-test0
                (cdr (omap::assoc (filepath "test0")
                                  (trans-ensemble->units ast))))
@@ -1038,7 +1040,8 @@ static void foo(void) {
                currentp
                (valid-ord-info-case
                  ord-info?
-                 :objfun (uid-equal ord-info?.uid (uid 0))
+                 :objfun (uid-equiv ord-info?.uid
+                                    (uid-local (filepath "test0") 0))
                  :otherwise nil))))
 
 (test-valid

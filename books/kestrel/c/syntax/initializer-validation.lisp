@@ -168,7 +168,7 @@
      "               :type (type-sint))))"
      "       (make-initer-subobjects-array-index"
      "        :of (make-type-struct"
-     "             :uid (uid 0)"
+     "             :uid (uid-local (filepath \"foo.c\") 0)"
      "             :tunit? (filepath \"foo.c\")"
      "             :tag/members (type-struni-tag/members-tagged (ident \"foo_s\")))"
      "        :index 5)))"))

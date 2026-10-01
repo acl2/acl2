@@ -10,6 +10,8 @@
 
 (in-package "C$")
 
+(include-book "abstract-syntax-trees")
+
 (include-book "centaur/fty/basetypes" :dir :system)
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "kestrel/fty/deftreemap" :dir :system)
@@ -25,13 +27,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod uid
+(fty::deftagsum uid
   :parents (validation)
   :short "Fixtype of unique identifiers."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are numerical identifiers which are intended
+    "These are identifiers which are intended
      to be unique to a given variable, function, type name, etc.
      E.g., there may be many variables throughout a program
      with the name @('x'), but all such distinct variables
@@ -40,17 +42,29 @@
     "Unique identifiers are assigned during validation
      to aid subsequent analysis.
      By annotating identifiers with their unique alias,
-     disambiguation of variables becomes trivial."))
-  ((uid nat))
+     disambiguation of variables becomes trivial.")
+   (xdoc::p
+    "An object or function with external linkage
+     is identified by its name,
+     since all declarations of that name with external linkage,
+     in any translation unit, refer to the same entity [C17:6.2.2/2].
+     All other entities are identified by
+     an optional translation unit and a number.
+     The translation unit is the one in which the entity was declared;
+     it is absent for entities which belong to no translation unit,
+     such as composite types constructed across translation units.
+     The number distinguishes entities with the same translation unit."))
+  (:external ((name ident)))
+  (:local ((tunit? filepath-option)
+           (num nat)))
   :pred uidp
-  :inline :all
   :layout :fulltree)
 
 (defirrelevant irr-uid
   :parents (uid)
   :short "An irrelevant unique identifier."
   :type uidp
-  :body (uid 0))
+  :body (uid-local nil 0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -275,27 +289,6 @@
   :val-type uid
   :pred uid-pair-uid-mapp
   :fix uid-pair-uid-mfix)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define uid-equal ((x uidp) (y uidp))
-  (mbe :logic (uid-equiv x y)
-       :exec (= (the unsigned-byte (uid->uid x))
-                (the unsigned-byte (uid->uid y))))
-  :enabled t
-  :inline t
-  :guard-hints (("Goal" :in-theory (enable uidp uid->uid))))
-
-(define uid-increment ((uid uidp))
-  :returns (new-uid uidp)
-  :parents (uid)
-  :short "Create a fresh unique identifier."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This simply increments the numerical value of the unique identifier."))
-  (b* (((uid uid) uid))
-    (uid (1+ uid.uid))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
