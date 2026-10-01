@@ -14,68 +14,64 @@
 
 (include-book "kestrel/utilities/strings/chars-codes" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
-(include-book "unicode/utf8-encode" :dir :system)
 (include-book "unicode/utf8-decode" :dir :system)
 (include-book "std/basic/defs" :dir :system)
 (include-book "std/typed-lists/nat-listp" :dir :system)
 
-(local (include-book "std/basic/ifix" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; Helpers for building @(tsee pdoc-text) leaves at the code-point level.
-;;
-;; The pdoc :text leaf carries a nat-list of code points (not a string).
-;; The printer assembles text from three sources:
-;;
-;;   (a) ASCII string literals embedded in printer source (e.g. "Bool",
-;;       "(", "Forall").  Use the @(tsee pdoc-ascii) macro, which
-;;       expands at read time to a quoted constant nat-list and signals
-;;       a hard error on any non-ASCII character.
-;;
-;;   (b) Identifier names from the AST, stored as ACL2 strings of
-;;       UTF-8 bytes (see @(see abstract-syntax-trees)).  Use
-;;       @(tsee utf8-string=>codepoints), which decodes the bytes to
-;;       code points.
-;;
-;;   (c) Numbers formatted as decimal text.  Use
-;;       @(tsee nat-to-dec-codepoints) instead of @(tsee
-;;       str::nat-to-dec-string).
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ printer-tokens
   :parents (parsing-and-printing)
-  :short "Rendering of the tokens of Remora as code points."
+  :short "Conversion of Remora source text to lists of code points,
+          shared by the @(see printer) and the @(see pretty-printer)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The text that the @(see printer) and the @(see pretty-printer) emit
-     is assembled from code points (one nat per code point) of three
-     kinds: ASCII literals from the printer sources (see @(tsee
-     ascii-string=>codepoints)), identifiers from the AST, stored as
-     UTF-8 byte strings (see @(tsee utf8-string=>codepoints)), and
-     literals (see @(tsee nat-to-dec-codepoints), @(tsee
-     int-lit-to-codepoints), @(tsee float-lit-to-codepoints), and
-     @(tsee string-lit-to-codepoints)).  The functions here are shared
-     by both printers."))
+    "Both printers build their output from leaves that are lists of
+     Unicode code points (one natural number per code point), not ACL2
+     strings: the @(tsee pdoc-text) leaves of the @(see printer) and
+     the @(tsee pform-atom) leaves of the @(see pretty-printer).  This
+     lets the layout algorithms measure text in characters rather than
+     in UTF-8 bytes.")
+   (xdoc::p
+    "The text comes from three sources, and the functions here are
+     grouped accordingly:")
+   (xdoc::ul
+    (xdoc::li
+     "ASCII text written in the printer sources: keywords, type names,
+      and punctuation such as @('\"Forall\"'), @('\"Bool\"'), and
+      @('\"(\"').  The printers mostly write these with the @(tsee
+      pdoc-ascii) and @(tsee pform-ascii) macros, which check at
+      macroexpansion time that the string is ASCII and turn it into a
+      constant code-point list with @(tsee ascii-string=>codepoints).")
+    (xdoc::li
+     "Identifiers from the AST.  These are ACL2 strings whose
+      characters are the UTF-8 bytes of the name (see @(see
+      abstract-syntax-trees)); @(tsee utf8-string=>codepoints) decodes
+      them.")
+    (xdoc::li
+     "Numbers and literals from the AST: @(tsee nat-to-dec-codepoints)
+      for natural numbers such as array dimensions, @(tsee
+      int-lit-to-codepoints) and @(tsee float-lit-to-codepoints) for
+      numeric literals, and @(tsee string-lit-to-codepoints) for
+      string literals."))
+   (xdoc::p
+    "The AST keeps the concrete spelling of literals (signs, leading
+     zeros, @('e') versus @('E'), which escape was used for a
+     character), and the literal functions reproduce it, so that
+     parsing the printed text gives back the same AST.  For string
+     literals this sometimes requires an empty escape between two
+     characters; see @(tsee needs-empty-escape-between)."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Code-point conversion.
+;; ASCII text.
 ;;
-
-(define char-list-all-ascii-p ((chars character-listp))
-  :returns (b booleanp)
-  :short "True iff every character has @(tsee char-code) less than 128."
-  (cond ((endp chars) t)
-        ((< (char-code (car chars)) 128)
-         (char-list-all-ascii-p (cdr chars)))
-        (t nil)))
 
 (define ascii-string=>codepoints ((s stringp))
   :returns (cps nat-listp)
@@ -85,13 +81,25 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For ASCII strings, the ACL2 @(tsee char-code) of each character
-     equals the Unicode code point.  This function is invoked at
-     macro-expansion time by the @(tsee pdoc-ascii) and @(tsee
-     pform-ascii) macros, and at runtime only for the few ASCII literals
-     that are not written with those macros."))
+    "For an ASCII character, the ACL2 @(tsee char-code) is the Unicode
+     code point.  For other characters it generally is not, because
+     non-ASCII text in ACL2 strings is stored as UTF-8 bytes (as in
+     identifiers); use @(tsee utf8-string=>codepoints) for such
+     strings.")
+   (xdoc::p
+    "The @(tsee pdoc-ascii) and @(tsee pform-ascii) macros call this
+     function at macroexpansion time, after checking their argument
+     with @(tsee str::ascii-charlist-p).  It is also called at run time
+     on strings that are ASCII by construction, e.g. by @(tsee
+     nat-to-dec-codepoints) and @(tsee ascii-mnemonic-of-code), and by
+     printer helpers that take an ASCII keyword string as an
+     argument."))
   (chars=>nats (explode s)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Identifiers.
+;;
 
 (define utf8-string=>codepoints ((s stringp))
   :returns (cps nat-listp)
@@ -110,30 +118,41 @@
        ((unless (nat-listp cps)) nil))
     cps))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Numbers and numeric literals.
+;;
+
 (define nat-to-dec-codepoints ((n natp))
   :returns (cps nat-listp)
   :short "Decimal digits of @('n') as a code-point list."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for natural numbers that the AST stores as values, such
+     as array dimensions and the shapes of array and frame
+     expressions, which have no recorded spelling and are printed
+     without sign or leading zeros.  Numeric literals are printed
+     instead by @(tsee int-lit-to-codepoints) and @(tsee
+     float-lit-to-codepoints), which reproduce their spelling."))
   (ascii-string=>codepoints (str::nat-to-dec-string (nfix n))))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; Numeric literals.
-;;
 
 (define sign-to-codepoints ((s signp))
   :returns (cps nat-listp)
+  :short "Render a @(tsee sign) as @('+') or @('-')."
   (sign-case s :plus (list #x2B) :minus (list #x2D)))
 
 (define sign-option-to-codepoints ((s? sign-optionp))
   :returns (cps nat-listp)
+  :short "Render an optional @(tsee sign); nothing if absent."
   (sign-option-case s?
                     :some (sign-to-codepoints s?.val)
                     :none nil))
 
 (define expo-to-codepoints ((e expop))
   :returns (cps nat-listp)
-  :hooks nil
+  :short "Render an @(tsee expo): @('e') or @('E') as recorded, then
+          the optional sign, then the digits."
   :guard-hints (("Goal" :in-theory (enable str::character-listp-when-dec-digit-char-listp)))
   (b* ((upcase (expo->upcase e))
        (sign? (expo->sign? e))
@@ -144,14 +163,15 @@
 
 (define expo-option-to-codepoints ((e? expo-optionp))
   :returns (cps nat-listp)
-  :hooks nil
+  :short "Render an optional @(tsee expo); nothing if absent."
   (expo-option-case e?
                     :some (expo-to-codepoints e?.val)
                     :none nil))
 
 (define int-lit-to-codepoints ((il int-litp))
   :returns (cps nat-listp)
-  :hooks nil
+  :short "Render an @(tsee int-lit): the optional sign, then the
+          digits."
   :guard-hints (("Goal" :in-theory (enable str::character-listp-when-dec-digit-char-listp)))
   (b* ((sign? (int-lit->sign? il))
        (digits (int-lit->digits il)))
@@ -160,7 +180,9 @@
 
 (define float-lit-to-codepoints ((fl float-litp))
   :returns (cps nat-listp)
-  :hooks nil
+  :short "Render a @(tsee float-lit): the optional sign, the digits of
+          the whole part, a dot and the fractional digits if there are
+          any, then the optional exponent."
   :guard-hints (("Goal" :in-theory (enable str::character-listp-when-dec-digit-char-listp)))
   (b* ((sign? (float-lit->sign? fl))
        (whole (float-lit->whole-digits fl))
@@ -173,11 +195,10 @@
                     (append dot/frac
                             (expo-option-to-codepoints expo?))))))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; String literals: render @(tsee char-lit) values back to their
-;; source-text form (printable code point vs.@ backslash escape).
+;; String literals: render @(tsee char-lit) values back to source text,
+;; each either as the code point itself or as a backslash escape.
 ;; Mirrors the @('char-lit') / @('escape-char') ABNF rules in
 ;; @('grammar.abnf').
 ;;
@@ -227,26 +248,25 @@
   :returns (cps nat-listp)
   :short "Render a @(tsee caret-escape) as @('^') followed by the code
           point @('code+#x40')."
-  :hooks nil
   :guard-hints (("Goal" :in-theory (enable caret-escape->code)))
   (b* ((code (caret-escape->code ce)))
     (list #x5E (+ code #x40))))
 
 (define dec-digit-char-list-to-codepoints ((digits str::dec-digit-char-listp))
   :returns (cps nat-listp)
-  :hooks nil
+  :short "Code points of a list of decimal digit characters."
   :guard-hints (("Goal" :in-theory (enable str::character-listp-when-dec-digit-char-listp)))
   (chars=>nats digits))
 
 (define oct-digit-char-list-to-codepoints ((digits str::oct-digit-char-listp))
   :returns (cps nat-listp)
-  :hooks nil
+  :short "Code points of a list of octal digit characters."
   :guard-hints (("Goal" :in-theory (enable str::character-listp-when-oct-digit-char-listp)))
   (chars=>nats digits))
 
 (define hex-digit-char-list-to-codepoints ((digits str::hex-digit-char-listp))
   :returns (cps nat-listp)
-  :hooks nil
+  :short "Code points of a list of hexadecimal digit characters."
   :guard-hints (("Goal" :in-theory (enable str::character-listp-when-hex-digit-char-listp)))
   (chars=>nats digits))
 
@@ -262,7 +282,7 @@
 
 (define escape-to-codepoints ((e escapep))
   :returns (cps nat-listp)
-  :short "Render the suffix of a @('\\\\')-escape; the leading @('\\\\')
+  :short "Render the suffix of a @('\\')-escape; the leading @('\\')
           is added by @(tsee char-lit-to-codepoints)."
   (escape-case e
     :char (char-escape-to-codepoints e.escape)
@@ -290,22 +310,13 @@
         (t (append (char-lit-to-codepoints (car chars))
                    (char-lit-list-to-codepoints (cdr chars))))))
 
-;; ---- Disambiguation: insert "\&" empty-escapes where adjacent
-;; char-lits would otherwise be merged on re-parse. ----
-;;
-;; The Remora grammar has two sources of round-trip ambiguity:
-;;   1. num-escape is greedy (1*DIGIT, 1*OCTDIGIT, 1*HEXDIG), so
-;;      :dec "5" followed by char '7' merges to "\57".
-;;   2. ascii-escape :so is a prefix of :soh, so :so followed by 'H'
-;;      or 'h' merges to "\SOH".
-;; In both cases, the next char-lit is a :char.  Following an :escape
-;; char-lit by another :escape always begins with '\', which never
-;; extends a num-escape's digit run nor completes "SOH" after "SO".
+;; Round-trip-safe rendering: separate adjacent char-lits with the empty
+;; escape "\&" where re-parsing would otherwise merge them (see
+;; needs-empty-escape-between).
 
 (define char-lit-first-codepoint ((cl char-litp))
   :returns (cp natp)
   :short "First codepoint of @('cl')'s printed form."
-  :hooks nil
   (char-lit-case cl
     :char (lnfix cl.code)
     :escape #x5C))
@@ -316,7 +327,31 @@
           that re-parsing recovers the same two char-lits.  Returns
           @('t') when @('prev')'s greedy or prefix-ambiguous parse
           would otherwise consume part of @('next')."
-  :hooks nil
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Two kinds of escape can absorb characters that follow them when
+     the printed text is parsed again:")
+   (xdoc::ul
+    (xdoc::li
+     "A numeric escape takes all the digits that follow it (the
+      grammar rule @('num-escape') allows one or more digits).  For
+      example, the decimal escape @('\\5') followed by the character
+      @('7') would be parsed back as @('\\57').")
+    (xdoc::li
+     "The ASCII escape @('\\SO') is a prefix of @('\\SOH'), so
+      @('\\SO') followed by @('H') would be parsed back as @('\\SOH').
+      The parser matches these names without regard to case (see
+      @(tsee parse-ascii-escape)), so a following @('h') needs the
+      same treatment."))
+   (xdoc::p
+    "In both cases the second char-lit is a @(':char').  When it is an
+     @(':escape') instead, its printed form starts with a backslash,
+     which neither extends a run of digits nor completes @('SOH').  The
+     other escapes have a fixed length.  In the cases above, the
+     printer separates the two char-lits with the empty escape
+     @('\\&'), which the parser discards (see @('empty-escape') in
+     @('grammar.abnf'))."))
   (b* ((next-cp (char-lit-first-codepoint next)))
     (char-lit-case prev
       :char nil  ; non-escape consumes exactly one codepoint
@@ -362,4 +397,3 @@
   (cons #x22
         (append (char-lit-list-to-codepoints-disambig chars)
                 (list #x22))))
-

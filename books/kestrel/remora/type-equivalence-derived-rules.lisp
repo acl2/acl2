@@ -83,8 +83,8 @@
                              type1 type2 type3
                              (type-eq-proof type2 type3)
                              (type-eq-proof type1 type2)))
-                     (concl.type1 type1)
-                     (concl.type2 type3))))
+                     (_type1 type1)
+                     (_type2 type3))))
 
   (defmacro make-type-eq-proof-trans-swapped (&key type1
                                                    type2
@@ -139,8 +139,8 @@
           (:instance type-eq-when-proof-validp
                      (proof (type-eq-proof-cong-scalar
                              type1 type2 (type-eq-proof type1 type2)))
-                     (concl.type1 (type-scalar type1))
-                     (concl.type2 (type-scalar type2)))))
+                     (_type1 (type-scalar type1))
+                     (_type2 (type-scalar type2)))))
 
   (defmacro make-type-eq-proof-cong-scalar (&key type1 type2 premise1-proof)
     `(type-eq-proof-cong-scalar ,type1 ,type2 ,premise1-proof)))
@@ -234,8 +234,8 @@
           (:instance type-eq-when-proof-validp
                      (proof (type-eq-proof-cong-bracket
                              type1 type2 ispaces (type-eq-proof type1 type2)))
-                     (concl.type1 (type-bracket type1 ispaces))
-                     (concl.type2 (type-bracket type2 ispaces)))))
+                     (_type1 (type-bracket type1 ispaces))
+                     (_type2 (type-bracket type2 ispaces)))))
 
   (defmacro make-type-eq-proof-cong-bracket (&key type1
                                                   type2
@@ -305,8 +305,8 @@
                              type-out1
                              type-out2
                              (type-eq-proof type-out1 type-out2)))
-                     (concl.type1 (type-funn nil type-out1))
-                     (concl.type2 (type-funn nil type-out2)))))
+                     (_type1 (type-funn nil type-out1))
+                     (_type2 (type-funn nil type-out2)))))
 
   (defmacro make-type-eq-proof-cong-funn-nil (&key type-out1
                                                    type-out2
@@ -399,8 +399,8 @@
                              type-out2
                              (type-eq-proof type-in1 type-in2)
                              (type-eq-proof type-out1 type-out2)))
-                     (concl.type1 (type-funn (list type-in1) type-out1))
-                     (concl.type2 (type-funn (list type-in2) type-out2)))))
+                     (_type1 (type-funn (list type-in1) type-out1))
+                     (_type2 (type-funn (list type-in2) type-out2)))))
 
   (defmacro make-type-eq-proof-cong-funn1 (&key type-in1
                                                 type-in2
@@ -560,9 +560,9 @@
                              (type-eq-proof type-in1 type-in2)
                              (type-eq-proof (type-funn types-in1 type-out1)
                                             (type-funn types-in2 type-out2))))
-                     (concl.type1 (type-funn (cons type-in1 types-in1)
+                     (_type1 (type-funn (cons type-in1 types-in1)
                                              type-out1))
-                     (concl.type2 (type-funn (cons type-in2 types-in2)
+                     (_type2 (type-funn (cons type-in2 types-in2)
                                              type-out2)))))
 
   (defmacro make-type-eq-proof-cong-funn2m (&key type-in1
@@ -654,8 +654,8 @@
                              type-out1
                              type-out2
                              (type-eq-proof type-out1 type-out2)))
-                     (concl.type1 (type-funn types-in type-out1))
-                     (concl.type2 (type-funn types-in type-out2)))))
+                     (_type1 (type-funn types-in type-out1))
+                     (_type2 (type-funn types-in type-out2)))))
 
   (defmacro make-type-eq-proof-cong-funn-out (&key types-in
                                                    type-out1
@@ -820,21 +820,21 @@
                                          premise1-proof
                                          premise2-proof)
         :expand ((types-eq-proof-validp premise1-proof types-in1 types-in2)
-                 (:free (type concl.type1 concl.type2)
+                 (:free (type _type1 _type2)
                         (type-eq-proof-validp (type-eq-proof-refl type)
-                                              concl.type1
-                                              concl.type2))
-                 (:free (type1 type2 proof concl.type1 concl.type2)
+                                              _type1
+                                              _type2))
+                 (:free (type1 type2 proof _type1 _type2)
                         (type-eq-proof-validp
                          (type-eq-proof-symm type1 type2 proof)
-                         concl.type1
-                         concl.type2))
+                         _type1
+                         _type2))
                  (:free (type1 type2 type3 proof1 proof2
-                         concl.type1 concl.type2)
+                         _type1 _type2)
                         (type-eq-proof-validp
                          (type-eq-proof-trans type1 type2 type3 proof1 proof2)
-                         concl.type1
-                         concl.type2)))
+                         _type1
+                         _type2)))
         :in-theory (acl2::e/d* (type-equivalence-definition-validp-defs
                                 typep-when-type-eq-proof-validp
                                 consp-when-types-eq-proof-validp)
@@ -869,8 +869,8 @@
                              type-out2
                              (types-eq-proof types-in1 types-in2)
                              (type-eq-proof type-out1 type-out2)))
-                     (concl.type1 (type-funn types-in1 type-out1))
-                     (concl.type2 (type-funn types-in2 type-out2)))))
+                     (_type1 (type-funn types-in1 type-out1))
+                     (_type2 (type-funn types-in2 type-out2)))))
 
   (defmacro make-type-eq-proof-cong-funn (&key types-in1
                                                types-in2

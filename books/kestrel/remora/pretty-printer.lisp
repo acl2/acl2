@@ -14,6 +14,7 @@
 
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "std/util/defprojection" :dir :system)
+(include-book "std/strings/ascii-chars" :dir :system)
 
 (local (include-book "std/lists/top" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
@@ -136,7 +137,7 @@
           code-point list is computed at admission time."
   (cond ((not (stringp s))
          (er hard 'pform-ascii "Expected a string literal, got ~x0." s))
-        ((not (char-list-all-ascii-p (explode s)))
+        ((not (str::ascii-charlist-p (explode s)))
          (er hard 'pform-ascii
              "String ~x0 contains a non-ASCII character (code >= 128)." s))
         (t `(pform-atom (quote ,(ascii-string=>codepoints s))))))
