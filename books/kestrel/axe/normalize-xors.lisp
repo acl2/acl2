@@ -122,7 +122,7 @@
 ;move
 (local
  ;; try last?
- (defthm natp-of-+-of-when-integerp
+ (defthm natp-of-+-of---when-integerp
    (implies (integerp (+ (- x) y))
             (equal (natp (+ (- x) y))
                    (<= x y)))
