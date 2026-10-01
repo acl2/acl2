@@ -942,8 +942,12 @@
                     struct-value-equivp-when-static-equivp
                     (old-static (c::compustate->static old-compst))
                     (new-static (c::compustate->static new-compst))))
-             :enable
-             c::assoc-static-when-compustate-has-static-var-with-type-p)
+             :in-theory
+             '(compustate-equivp
+               c::scopep-of-compustate->static
+               c::assoc-static-when-compustate-has-static-var-with-type-p
+               (:e c::ident-fix)
+               (:e c::identp)))
            (defruled objdesign-of-var-when-compustate-equivp
              (implies (and (compustate-equivp old-compst new-compst)
                            (not (equal (c::ident-fix var) ',old-cname))
