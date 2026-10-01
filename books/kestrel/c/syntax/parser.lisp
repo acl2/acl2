@@ -10558,7 +10558,11 @@
           (parsize parstate))
       :rule-classes :linear
       :fn parse-block-item-list)
-    :hints (("Goal" :in-theory (enable fix nfix))
+    ;; For speed, disable the functions but expand their conclusion calls.
+    ;; Note that ACL2::RECURSIVEP returns the names of the whole clique.
+    :hints (("Goal" :in-theory (set-difference-theories
+                                (enable fix nfix)
+                                (acl2::recursivep 'parse-expression t world)))
             (flag-expand-hint clause world)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
