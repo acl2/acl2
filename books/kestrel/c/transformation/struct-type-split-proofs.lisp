@@ -1847,7 +1847,7 @@
        ((mv & ctype) (ldm-type info.type)) ; ERP is NIL because FORMALP
        ((unless (omap::assoc cvar gin.vartys)) (retok gout-no-thm))
        (hints `(("Goal"
-                 :in-theory '((:e c::expr-ident)
+                 :in-theory '((:e c::ident-fix)
                               (:e c::type-fix)
                               (:e c::expr-ident)
                               expr-compustate-vars)
