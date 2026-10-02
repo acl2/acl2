@@ -1097,3 +1097,59 @@
 (test-check-top-expr
  "(unbox ($d v (box (2) [[1 2] [3 4]] (Sigma ($e) (A Int (dims $e 2)))))
    (box ($d) (flatten v) (Sigma ($e) (A Int (* $e 2)))))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; transpose2d : (Forall (&t) (Pi ($m $n) (-> [&t $m $n] [&t $n $m])))
+
+; The two dimensions are inferred from the matrix,
+; and swapped in the result;
+; a vector has only one dimension.
+(test-check-top-expr
+ "(transpose2d [[1 2 3] [4 5 6]])")
+(test-check-top-expr-fail
+ "(transpose2d [1 2 3])")
+
+; The swapped dimensions are used by further inference:
+; the transposed matrix has 3 rows, not 2,
+; its head is a vector (the first column of the original matrix),
+; and transposing it again yields a matrix with 2 rows.
+(test-check-top-expr
+ "((i-app (t-app length Int) 3) (transpose2d [[1 2 3] [4 5 6]]))")
+(test-check-top-expr-fail
+ "((i-app (t-app length Int) 2) (transpose2d [[1 2 3] [4 5 6]]))")
+(test-check-top-expr
+ "(head (transpose2d [[1 2 3] [4 5 6]]))")
+(test-check-top-expr
+ "((i-app (t-app length Int) 2)
+   (transpose2d (transpose2d [[1 2 3] [4 5 6]])))")
+
+; OBJECTIVE: a three-dimensional array is a frame of matrices,
+; so transpose2d should be applied to each matrix, over the frame [2];
+; but the inference does not handle frames yet.
+; The fully explicit instantiation is accepted, with the frame.
+(test-check-top-expr-fail
+ "(transpose2d [[[1 2]] [[3 4]]])")
+(test-check-top-expr
+ "(@transpose2d (Int) (1 2) [[[1 2]] [[3 4]]])")
+
+; Inference under ispace binders:
+; the dimensions are inferred as the bound variables, and swapped;
+; the transposed matrix has $n rows, so it may have no head,
+; unless the original matrix has (+ 1 $n) columns.
+(test-check-top-expr
+ "(i-fn ($m $n) (fn ((x [Int $m $n])) (transpose2d x)))")
+(test-check-top-expr-fail
+ "(i-fn ($m $n) (fn ((x [Int $m $n])) (head (transpose2d x))))")
+(test-check-top-expr
+ "(i-fn ($m $n) (fn ((x [Int $m (+ 1 $n)])) (head (transpose2d x))))")
+
+; The first dimension is inferred as the witness of an unboxing,
+; which is the second dimension of the result, so the witness escapes;
+; re-boxing the result avoids the escape.
+(test-check-top-expr-fail
+ "(unbox ($d v (box (2) [[1 2] [3 4]] (Sigma ($e) (A Int (dims $e 2)))))
+   (transpose2d v))")
+(test-check-top-expr
+ "(unbox ($d v (box (2) [[1 2] [3 4]] (Sigma ($e) (A Int (dims $e 2)))))
+   (box ($d) (transpose2d v) (Sigma ($e) (A Int (dims 2 $e)))))")
