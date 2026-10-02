@@ -749,7 +749,7 @@
          (low (farg2 inst))
          (high (farg3 inst))
          (jump-offsets (farg4 inst)) ;there are high-low+1 of these
-         (index (top-operand (stack (thread-top-frame th s))))
+         (index (decode-signed (top-operand (stack (thread-top-frame th s)))))
          (offset (if (or (< index low)
                          (> index high))
                      default
