@@ -1265,3 +1265,26 @@
  lex-lexeme
  "0xe+1"
  :more-inputs (nil))
+
+(test-lex-fail ; report the first non-octal digit
+ lex-lexeme
+ "08;"
+ :more-inputs (nil)
+ :cond (and (consp erp)
+            (equal (cdr (assoc-equal #\0 (cdr erp)))
+                   (position-to-msg (position "" 1 1)))
+            (equal (cdr (assoc-equal #\1 (cdr erp))) "octal digit")
+            (equal (cdr (assoc-equal #\2 (cdr erp)))
+                   (char-to-msg (char-code #\8)))))
+
+(test-lex-fail ; report the first non-octal digit
+ lex-lexeme
+ "089;"
+ :pos (position "" 8 4)
+ :more-inputs (nil)
+ :cond (and (consp erp)
+            (equal (cdr (assoc-equal #\0 (cdr erp)))
+                   (position-to-msg (position "" 8 5)))
+            (equal (cdr (assoc-equal #\1 (cdr erp))) "octal digit")
+            (equal (cdr (assoc-equal #\2 (cdr erp)))
+                   (char-to-msg (char-code #\8)))))
