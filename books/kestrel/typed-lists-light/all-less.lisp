@@ -72,7 +72,6 @@
 (defthm all-<-transitive-free-2
   (implies (and (<= free bound)
                 (all-< l free)
-                (rationalp x)
                 (rationalp free))
            (all-< l bound))
   :hints (("Goal" :in-theory (enable all-<))))
