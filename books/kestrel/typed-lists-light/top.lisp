@@ -38,6 +38,7 @@
 (include-book "all-rationalp")
 (include-book "all-all-integerp")
 (include-book "all-consp")
+(include-book "all-digit-charsp")
 
 (include-book "integer-lists")
 

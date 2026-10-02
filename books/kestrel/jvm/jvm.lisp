@@ -15,7 +15,18 @@
 (in-package "JVM")
 
 (include-book "states")
-(local (include-book "kestrel/sequences/defforall" :dir :system))
+(include-book "locals")
+(include-book "strings") ; reduce?
+(include-book "kestrel/alists-light/lookup" :dir :system)
+(include-book "kestrel/bv/bvsx-def" :dir :system)
+(include-book "kestrel/bv/sbvlt-def" :dir :system)
+(include-book "kestrel/bv/defs" :dir :system) ; reduce?
+(include-book "kestrel/bv-arrays/bv-array-read" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-write" :dir :system)
+(include-book "kestrel/lists-light/update-subrange2" :dir :system)
+(include-book "kestrel/lists-light/subrange" :dir :system)
+(include-book "kestrel/booleans/bool-fix-def" :dir :system)
+(include-book "float-to-bits")
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
