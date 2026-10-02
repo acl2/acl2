@@ -168,14 +168,8 @@
                 (force (unsigned-byte-p-forced xsize x))
                 (natp amt))
            (equal (ash x amt)
-                  (bvcat (+ xsize amt) x amt 0)))
+                  (bvcat xsize x amt 0)))
   :hints (("Goal" :in-theory (enable bvcat ash))))
-
-
-
-
-
-
 
 (defthm ash-of-if
   (equal (ash (if test i1 i2) c)
