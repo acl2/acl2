@@ -3393,7 +3393,7 @@
                        parstate))))))
          ((utf8-= char2 (char-code #\=)) ; > =
           (retok (lexeme-token (token-punctuator ">="))
-                 (make-span :start first-pos :end first-pos)
+                 (make-span :start first-pos :end pos2)
                  parstate))
          (t ; > other
           (b* ((parstate (unread-char parstate))) ; >
