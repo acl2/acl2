@@ -909,7 +909,16 @@
              :in-theory '(c::scopep-of-compustate->static
                           c::return-type-of-type-struct
                           (:e c::identp))))
-           :hooks (:fix)
+           :hooks
+           ((:fix
+             :hints
+             (("Goal"
+               :in-theory
+               '(compustate-equivp
+                 c::compustate->static$inline-of-compustate-fix-x
+                 c::compustate->frames$inline-of-compustate-fix-x
+                 c::compustate->heap$inline-of-compustate-fix-x
+                 c::compustate-has-static-var-with-type-p-of-compustate-fix-compst)))))
            ///
            (defruled struct-value-equivp-when-compustate-equivp
              (b* ((old-val
