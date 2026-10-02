@@ -66,7 +66,10 @@
 (local (in-theory (disable natp
                            ;; for speed:
                            default-+-1
-                           default-+-2)))
+                           default-+-2
+                           acl2::consp-from-len-cheap
+                           default-car
+                           default-cdr)))
 
 (local
  (defthm rationalp-when-natp
@@ -701,6 +704,12 @@
 (defconst *CONSTANT_Module* 19)
 (defconst *CONSTANT_Package* 20)
 
+(defund good-constant-class-infop (entry)
+  (declare (xargs :guard (and (symbol-alistp entry)
+                              (eq :constant_class (lookup-eq 'tag entry)))))
+  (and (equal '(name_index tag) (strip-cars entry))
+       (unsigned-byte-p 16 (lookup-eq 'name_index entry))))
+
 ;; todo: save consing by making this more compact (but note that the constant
 ;; pool doesn't currently appear in the result of parsing a class file).
 (defund constant-pool-entryp (entry)
@@ -709,7 +718,7 @@
        (let ((tag (lookup-eq 'tag entry)))
          (case tag
            ;; some natp checks could be strengthened to unsigned-byte-p 16 checks:
-           (:constant_class (natp (lookup-eq 'name_index entry)))
+           (:constant_class (good-constant-class-infop entry))
            (:constant_fieldref (and (natp (lookup-eq 'class_index entry))
                                     (natp (lookup-eq 'name_and_type_index entry))))
            (:constant_methodref (and (natp (lookup-eq 'class_index entry))
@@ -888,7 +897,7 @@
    (implies (and (equal :constant_class (cp-entry-tag entry))
                  (constant-pool-entryp entry))
             (natp (lookup-equal 'name_index entry)))
-   :hints (("Goal" :in-theory (enable constant-pool-entryp cp-entry-tag)))))
+   :hints (("Goal" :in-theory (enable constant-pool-entryp cp-entry-tag good-constant-class-infop)))))
 
 (local
  (defthm stringp-of-lookup-equal-when-constant_utf8
@@ -1179,7 +1188,8 @@
                  (all-unsigned-byte-p 8 bytes))
             (constant-pool-entryp (mv-nth 1 (parse-constant-pool-entry bytes))))
    :hints (("Goal" :in-theory (enable parse-constant-pool-entry
-                                      constant-pool-entryp)))))
+                                      constant-pool-entryp
+                                      good-constant-class-infop)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2197,6 +2207,33 @@
        ((when erp) (mv erp nil nil)))
     (parse-localvariabletable local_variable_table_length bytes constant-pool nil)))
 
+;move
+(defund string-contains-anyp (str index chars)
+  (declare (xargs :guard (and (stringp str)
+                              (integerp index)
+                              (<= -1 index)
+                              (< index (length str))
+                              (character-listp chars))
+                  :measure (nfix (+ 1 index))))
+  (if (not (natp index))
+      nil
+    (or (member-equal (char str index) chars)
+        (string-contains-anyp str (+ -1 index) chars))))
+
+;; Recognizes a class name NOT in internal form
+(defund is-good-class-namep (name)
+  (declare (xargs :guard (jvm::class-namep name)))
+  (not (string-contains-anyp name (+ -1 (length name)) '(#\/ ; todo: add more
+                                                         ))))
+
+;; Recognizes a class name NOT in internal form
+(defund good-class-namep (name)
+  (declare (xargs :guard t))
+  (and (jvm::class-namep name)
+       (is-good-class-namep name)))
+
+(local (in-theory (disable substitute)))
+
 ;; Return (mv erp entry bytes)
 (defund parse-exception-table-entry (bytes constant-pool)
   (declare (xargs :guard (and (true-listp bytes)
@@ -2215,11 +2252,21 @@
             (mv (erp-nil) :any) ; means to handle all exceptions
           (b* (((mv erp catch-type-entry) (lookup-in-constant-pool catch_type constant-pool))
                ((when erp) (mv erp nil))
-               ((mv erp name-entry) (lookup-in-constant-pool (nfix (lookup-eq-safe 'name_index catch-type-entry))
+               (catch-type-entry-tag (lookup-eq 'tag catch-type-entry))
+               ((when (not (eq :constant_class catch-type-entry-tag)))
+                (mv :bad-catch-type-entry nil))
+               ((mv erp name-entry) (lookup-in-constant-pool (nfix (lookup-eq-safe 'name_index catch-type-entry)) ; drop the nfix?
                                                              constant-pool))
                ((when erp) (mv erp nil))
+               (name-entry-tag (lookup-eq 'tag name-entry))
+               ((when (not (eq :constant_utf8 name-entry-tag)))
+                (mv :bad-name-entry nil))
                (exception-class (lookup-eq-safe 'bytes name-entry))
-               ((when (not (jvm::class-namep exception-class)))
+               ((when (not (stringp exception-class))) ;drop
+                (mv :bad-bytes nil))
+               ((mv erp exception-class) (parse-class-name exception-class))
+               ((when erp) (mv erp nil))
+               ((when (not (good-class-namep exception-class))) ; todo: prove away this check
                 (mv `(:bad-exception-class-in-exception-table ,exception-class)
                     nil)))
             (mv (erp-nil)
