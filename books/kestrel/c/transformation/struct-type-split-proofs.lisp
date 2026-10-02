@@ -955,13 +955,15 @@
                            (not (equal (c::ident-fix var) ',newr-cname)))
                       (equal (c::objdesign-of-var var old-compst)
                              (c::objdesign-of-var var new-compst)))
-             :enable (c::objdesign-of-var
-                      c::top-frame
-                      c::compustate-frames-number)
              :use (:instance assoc-when-static-equivp
                              (var (c::ident-fix var))
                              (old-static (c::compustate->static old-compst))
-                             (new-static (c::compustate->static new-compst))))
+                             (new-static (c::compustate->static new-compst)))
+             :in-theory '(compustate-equivp
+                          c::objdesign-of-var
+                          c::top-frame
+                          c::compustate-frames-number
+                          c::scopep-of-compustate->static))
            (defruled read-object-when-compustate-equivp
              (implies (and (compustate-equivp old-compst new-compst)
                            (not (equal (c::ident-fix var) ',old-cname))
