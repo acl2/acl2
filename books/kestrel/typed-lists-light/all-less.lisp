@@ -58,16 +58,6 @@
            (all-< lst bound))
   :hints (("Goal" :in-theory (enable all-<))))
 
-
-;rename monotone?
-(defthm all-<-transitive-free
-  (implies (and (all-< l free)
-                (<= free bound)
-                (rationalp bound)
-                (rationalp free))
-           (all-< l bound))
-  :hints (("Goal" :in-theory (enable all-<))))
-
 ;rename monotone?
 (defthm all-<-transitive-free-2
   (implies (and (<= free bound)

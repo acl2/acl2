@@ -77,7 +77,6 @@
                         darg-listp-when-not-consp
                            ;; for speed:
                         all-<=-when-not-consp
-                        ALL-<-TRANSITIVE-FREE
                         NOT-<-OF-NTH-OF-DARGS-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-2
                         <=-of-nth-when-all-<= ;disable globally?
                         strip-cdrs
