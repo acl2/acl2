@@ -1246,3 +1246,52 @@
 (test-check-top-expr-fail
  "(i-fn ($n) (fn ((x [Int $n]))
     (((i-app (t-app reduce Int) $n) +) x)))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; fold : (Forall (&t &t2)
+;         (Pi ($d @s @s2)
+;          (-> ((-> ([&t2 @s2] [&t @s]) [&t2 @s2]) [&t2 @s2] [&t (+ 1 $d) @s])
+;              [&t2 @s2])))
+
+; OBJECTIVE: as for reduce, the inference fails for
+; both the n-ary application and the unary application to the function,
+; because the dimension $d occurs only in the third input type.
+(test-check-top-expr-fail
+ "(fold + 0 [1 2 3])")
+(test-check-top-expr-fail
+ "(((fold +) 0) [1 2 3])")
+
+; The fully explicit instantiation is accepted,
+; with the same or different types for the accumulator and the elements.
+(test-check-top-expr
+ "(@fold (Int Int) (2 [] []) + 0 [1 2 3])")
+(test-check-top-expr
+ "(@fold (Int Bool) (2 [] [])
+   (fn ((acc Bool) (x Int)) (and acc (< 0 x))) #t [1 2 3])")
+
+; With the types and the dimension explicit,
+; both shapes are inferred from the function argument:
+; the empty shapes from a function on scalars,
+; and the shape [2] of the accumulator from a function on a vector
+; (with the empty shape of the elements),
+; in which case the initial value must be a vector of that length.
+(test-check-top-expr
+ "((((i-app (t-app fold Int Int) 2) +) 0) [1 2 3])")
+(test-check-top-expr
+ "((((i-app (t-app fold Int Int) 1) (fn ((acc [Int 2]) (x Int)) (+ acc x)))
+    [0 0])
+   [1 2])")
+(test-check-top-expr-fail
+ "((((i-app (t-app fold Int Int) 1) (fn ((acc [Int 2]) (x Int)) (+ acc x)))
+    0)
+   [1 2])")
+
+; Under an ispace binder, with the dimension explicit:
+; a vector of length (+ 1 $n) is folded, but not one of length $n.
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int (+ 1 $n)]))
+    ((((i-app (t-app fold Int Int) $n) +) 0) x)))")
+(test-check-top-expr-fail
+ "(i-fn ($n) (fn ((x [Int $n]))
+    ((((i-app (t-app fold Int Int) $n) +) 0) x)))")
