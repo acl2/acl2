@@ -2196,10 +2196,7 @@
                           rmems
                           stage
                           gin))
-  :no-function nil
-  :guard-hints
-  (("Goal"
-    :in-theory (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
