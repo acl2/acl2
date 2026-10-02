@@ -397,6 +397,36 @@
   :enable (before-firstp
            has-valuep))
 
+(defruled after-lastp-when-not-before-firstp
+  (implies (not (before-firstp iter))
+           (equal (after-lastp iter)
+                  (not (has-valuep iter))))
+  :use (has-valuep-when-neither-end
+        not-after-lastp-when-has-valuep)
+  :disable has-valuep-when-neither-end)
+
+(defrule after-lastp-when-not-before-firstp-cheap
+  (implies (not (before-firstp iter))
+           (equal (after-lastp iter)
+                  (not (has-valuep iter))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by after-lastp-when-not-before-firstp)
+
+(defruled before-firstp-when-not-after-lastp
+  (implies (not (after-lastp iter))
+           (equal (before-firstp iter)
+                  (not (has-valuep iter))))
+  :use (has-valuep-when-neither-end
+        not-before-firstp-when-has-valuep)
+  :disable has-valuep-when-neither-end)
+
+(defrule before-firstp-when-not-after-lastp-cheap
+  (implies (not (after-lastp iter))
+           (equal (before-firstp iter)
+                  (not (has-valuep iter))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by before-firstp-when-not-after-lastp)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
