@@ -1285,6 +1285,16 @@
                              'newlp
                            'newrp))
                    'struct-value-))
+       (old-acc (packn-pos (list 'struct-value-old- (c::ident->name cmem))
+                          'struct-value-))
+       (new-acc (packn-pos (list 'struct-value- new '- (c::ident->name cmem))
+                          'struct-value-))
+       (valuep-of-old-acc (packn-pos (list 'valuep-of- old-acc) 'struct-value-))
+       (valuep-of-new-acc (packn-pos (list 'valuep-of- new-acc) 'struct-value-))
+       (type-of-value-of-old-acc
+        (packn-pos (list 'type-of-value-of- old-acc) 'struct-value-))
+       (type-of-value-of-new-acc
+        (packn-pos (list 'type-of-value-of- new-acc) 'struct-value-))
        (event
         `(defruled ,thm-name
            (b* ((old-expr (c::expr-member (c::expr-ident ',old-cname) ',cmem))
@@ -1311,17 +1321,44 @@
                     (c::exec-expr ',(c::expr-member (c::expr-ident new-cname)
                                                     cmem)
                                   new-compst new-fenv limit))
-           :enable (exec-old-struct
-                    ,exec-new-struct
-                    c::not-errorp-when-expr-valuep
-                    c::not-errorp-when-valuep
-                    c::exec-member
-                    c::apconvert-expr-value
-                    struct-value-equivp
-                    value-kind-when-struct-value-oldp
-                    ,value-kind-when-struct-value-newp
-                    ,value-struct-read-mem-when-struct-value-oldp
-                    ,value-struct-read-mem-when-struct-value-newp)
+           :in-theory '(exec-old-struct
+                        ,exec-new-struct
+                        c::not-errorp-when-expr-valuep
+                        c::not-errorp-when-valuep
+                        c::exec-member
+                        c::apconvert-expr-value-when-not-array
+                        struct-value-equivp
+                        value-kind-when-struct-value-oldp
+                        ,value-kind-when-struct-value-newp
+                        ,value-struct-read-mem-when-struct-value-oldp
+                        ,value-struct-read-mem-when-struct-value-newp
+                        ,valuep-of-old-acc
+                        ,valuep-of-new-acc
+                        ,type-of-value-of-old-acc
+                        ,type-of-value-of-new-acc
+                        c::expr-value->value-of-expr-value
+                        c::expr-value-fix-when-expr-valuep
+                        c::expr-valuep-of-expr-value
+                        c::value-kind$inline-of-value-fix-x
+                        c::value-struct-read-of-value-fix-struct
+                        c::value-fix-when-valuep
+                        c::type-of-value-of-value-fix-val
+                        compustate-equivp-of-compustate-fix-old-compst
+                        compustate-equivp-of-compustate-fix-new-compst
+                        c::errorp-of-error
+                        car-cons
+                        cdr-cons
+                        mv-nth
+                        zp
+                        (:t c::expr-value)
+                        (:e c::expr-ident)
+                        (:e c::expr-member)
+                        (:e c::expr-kind)
+                        (:e c::expr-member->target)
+                        (:e c::expr-member->name)
+                        (:e equal)
+                        (:e binary-+)
+                        (:e <))
            :prep-lemmas
            ((defruled lemma
               (b* ((old-expr
