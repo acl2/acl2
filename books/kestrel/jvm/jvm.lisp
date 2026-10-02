@@ -2648,7 +2648,7 @@
                        (pop-operand (stack (thread-top-frame th s))))))
 
 ;; Test for the "special case" for IDIV:
-(assert-event (equal (acl2::sbvdiv 32 *min-signed-int32* -1) *min-signed-int32*))
+(assert-event (let ((val (encode-signed *min-signed-int32*))) (equal (acl2::sbvdiv 32 val -1) val)))
 
 ;; (:IDIV)
 ;; ;FIXME is this correct? seems okay...
@@ -5358,7 +5358,7 @@
                             (stack (thread-top-frame th s)))))
 
 ;; Test for the "special case" for LDIV:
-(assert-event (equal (acl2::sbvdiv 64 *min-signed-int64* -1) *min-signed-int64*))
+(assert-event (let ((val (encode-signed-long *min-signed-int64*))) (equal (acl2::sbvdiv 64 val -1) val)))
 
 ;; (:LDIV)
 ;fixme is the division exactly right?
@@ -5689,7 +5689,7 @@
 
 (defun execute-D2I (th s)
   (let* ((value (top-long (stack (thread-top-frame th s))))
-         (result (d2i value)))
+         (result (encode-signed (d2i value))))
     (modify th s
             :pc (+ 1 ;(inst-length inst)
                    (pc (thread-top-frame th s)))
@@ -5698,7 +5698,7 @@
 
 (defun execute-D2L (th s)
   (let* ((value (top-long (stack (thread-top-frame th s))))
-         (result (d2l value)))
+         (result (encode-signed-long (d2l value))))
     (modify th s
             :pc (+ 1 ;(inst-length inst)
                    (pc (thread-top-frame th s)))
