@@ -4078,13 +4078,8 @@
                   (bvchop size (+ x (- y)))))
   :hints (("Goal" :in-theory (disable equal-bvchop-bvchop-move-minus2))))
 
-;no hyps about size
-(defthm bvchop-of-sum-of-minus-of-bvchop-same
-  (implies (and (integerp x)
-                (integerp Y))
-           (equal (bvchop size (+ x (- (bvchop size y))))
-                  (bvchop size (+ x (- y)))))
-  :hints (("Goal" :in-theory (disable equal-bvchop-bvchop-move-minus2))))
+
+
 
 (defthm bvchop-of-sum-of-minus-of-bvchop-gen-arg3
   (implies (and (<= size size2)
@@ -4095,15 +4090,6 @@
                 (integerp w))
            (equal (bvchop size (+ w x (- (bvchop size2 y))))
                   (bvchop size (+ w x (- y))))))
-
-;no hyps on size
-(defthm bvchop-of-sum-of-minus-of-bvchop-same-alt
-  (implies (and (integerp x)
-                (integerp Y)
-                (integerp w))
-           (equal (bvchop size (+ w x (- (bvchop size y))))
-                  (bvchop size (+ w x (- y)))))
-  :hints (("Goal" :use (:instance bvchop-of-sum-of-minus-of-bvchop-same (x (+ w x))))))
 
 (defthm bvchop-of-sum-of-bvchop-gen-arg3
   (implies (and (<= size size2)
@@ -5333,7 +5319,7 @@
                            (MOD-EXPT-SPLIT
                             logtail-becomes-slice-bind-free)))))
 
-(defthm bvsx-too-high-syntactic
+(defthm bvsx-when-unsigned-byte-p-syntactic
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
                 (< xsize old-size)
                 (natp old-size)
@@ -5342,9 +5328,9 @@
                 (<= old-size new-size))
            (equal (bvsx new-size old-size x)
                   x))
-  :hints (("Goal" :use bvsx-too-high
+  :hints (("Goal" :use bvsx-when-unsigned-byte-p
            :in-theory (e/d (unsigned-byte-p-forced)
-                           (bvsx-too-high)))))
+                           (bvsx-when-unsigned-byte-p)))))
 
 (defthm bvchop-subst-when-equal-of-bvchops-gen
   (implies (and (equal (bvchop size2 x) (bvchop size2 free))
