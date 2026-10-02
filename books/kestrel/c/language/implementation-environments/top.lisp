@@ -518,29 +518,16 @@
 
   ///
 
-  (defrulel lemma
-    (implies (and (posp a)
-                  (posp b)
-                  (<= 8 b))
-             (<= 8 (* a b)))
-    :hints (("Goal" :nonlinearp t)))
-
   (defret ienv->bool-bit-size-type-prescription
     (and (posp size)
          (> size 1))
     :rule-classes :type-prescription
-    :hints (("Goal"
-             :use (:instance lemma
-                             (a (bool-format->byte-size (ienv->bool ienv)))
-                             (b (uchar-format->size (ienv->uchar ienv)))))))
+    :hints (("Goal" :nonlinearp t)))
 
   (defret ienv->bool-bit-size-lower-bound
     (>= size 8)
     :rule-classes :linear
-    :hints (("Goal"
-             :use (:instance lemma
-                             (a (bool-format->byte-size (ienv->bool ienv)))
-                             (b (uchar-format->size (ienv->uchar ienv))))))))
+    :hints (("Goal" :nonlinearp t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
