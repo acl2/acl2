@@ -423,10 +423,10 @@
                    (type-struni-member-list-count y))))
 
   (define type-params-compatible-3p-aux ((x type-params-p)
-                                     (y type-params-p)
-                                     (completions type-completions-p)
-                                     (assumed uid-pair-setp)
-                                     (ienv ienvp))
+                                         (y type-params-p)
+                                         (completions type-completions-p)
+                                         (assumed uid-pair-setp)
+                                         (ienv ienvp))
     :returns (3vl 3p)
     :short "Check whether the parameter portions of two function @(see type)s
             are compatible [C17:6.7.6.3/15] [C23:6.7.7.4/15]."
@@ -530,10 +530,10 @@
                    (type-params-count y))))
 
   (define type-list-compatible-3p-aux ((x type-listp)
-                                   (y type-listp)
-                                   (completions type-completions-p)
-                                   (assumed uid-pair-setp)
-                                   (ienv ienvp))
+                                       (y type-listp)
+                                       (completions type-completions-p)
+                                       (assumed uid-pair-setp)
+                                       (ienv ienvp))
     :returns (3vl 3p)
     :short "Check whether two @(see type-list)s are compatible [C17:6.2.7]."
     :long
@@ -3579,6 +3579,7 @@
                               (original-completions type-completions-p)
                               (completions type-completions-p)
                               (composites uid-pair-uid-mapp)
+                              (inputs uid-pair-setp)
                               (tunit? filepath-optionp)
                               (next-uid-num natp))
     :returns (mv (composite typep)
@@ -3587,6 +3588,7 @@
                   (and (uid-pair-uid-mapp composites$)
                        (implies (uid-pair-uid-mapp composites)
                                 (treemap::submap composites composites$))))
+                 (inputs$ uid-pair-setp)
                  (next-uid-num$ natp))
     :short "Construct a composite of two compatible types
             [C17:6.2.7/3] [C23:6.2.7/3]."
@@ -3611,6 +3613,14 @@
        so that a pair encountered again, along a cycle or otherwise,
        gets the same composite;
        it is threaded through the construction and returned.
+       The @('inputs') set records the pairs of @(see UID)s
+       of the structure types whose first type is known to be
+       the composite of the pair,
+       as established by @(tsee type-composite-input-p);
+       it is threaded through the construction and returned,
+       so that a caller that constructs several composites,
+       such as the validator when merging translation units,
+       can avoid checking the same pairs again.
        New structure types get local @(see UID)s
        for the translation unit @('tunit?'),
        numbered starting from @('next-uid-num').")
@@ -3663,80 +3673,84 @@
          (original-completions (type-completions-fix original-completions))
          (completions (type-completions-fix completions))
          (composites (uid-pair-uid-mfix composites))
+         (inputs (uid-pair-sfix inputs))
          (next-uid-num (lnfix next-uid-num))
          ;; Two types that are definitely the same type
          ;; have that type as composite.
          ((when (3definitely (type-equal-3p x y)))
-          (mv x completions composites next-uid-num))
+          (mv x completions composites inputs next-uid-num))
          ;; The more specific of two unknown types wins.
          ((when (type-case x :unknown))
-          (mv y completions composites next-uid-num))
+          (mv y completions composites inputs next-uid-num))
          ((when (type-case y :unknown))
-          (mv x completions composites next-uid-num))
+          (mv x completions composites inputs next-uid-num))
          ((when (type-case x :unknown-builtin))
-          (mv y completions composites next-uid-num))
+          (mv y completions composites inputs next-uid-num))
          ((when (type-case y :unknown-builtin))
-          (mv x completions composites next-uid-num))
+          (mv x completions composites inputs next-uid-num))
          ((when (type-case x :unknown-scalar))
-          (mv y completions composites next-uid-num))
+          (mv y completions composites inputs next-uid-num))
          ((when (type-case y :unknown-scalar))
-          (mv x completions composites next-uid-num))
+          (mv x completions composites inputs next-uid-num))
          ((when (type-case x :unknown-arithmetic))
-          (mv y completions composites next-uid-num))
+          (mv y completions composites inputs next-uid-num))
          ((when (type-case y :unknown-arithmetic))
-          (mv x completions composites next-uid-num)))
+          (mv x completions composites inputs next-uid-num)))
       (type-case
         x
         :array
         (type-case
           y
           :array
-          (b* (((mv of completions composites next-uid-num)
+          (b* (((mv of completions composites inputs next-uid-num)
                 (type-composite-aux
                   x.of y.of original-completions completions composites
-                  tunit? next-uid-num)))
+                  inputs tunit? next-uid-num)))
             (mv (make-type-array
                   :of of
                   :kind (type-array-kind-composite x.kind y.kind))
                 completions
                 composites
+                inputs
                 next-uid-num))
-          :otherwise (mv x completions composites next-uid-num))
+          :otherwise (mv x completions composites inputs next-uid-num))
         :pointer
         (type-case
           y
           :pointer
-          (b* (((mv to completions composites next-uid-num)
+          (b* (((mv to completions composites inputs next-uid-num)
                 (type-composite-aux
                   x.to y.to original-completions completions composites
-                  tunit? next-uid-num)))
+                  inputs tunit? next-uid-num)))
             (mv (make-type-pointer :to to)
                 completions
                 composites
+                inputs
                 next-uid-num))
-          :otherwise (mv x completions composites next-uid-num))
+          :otherwise (mv x completions composites inputs next-uid-num))
         :function
         (type-case
           y
           :function
-          (b* (((mv ret completions composites1 next-uid-num)
+          (b* (((mv ret completions composites1 inputs next-uid-num)
                 (type-composite-aux
                   x.ret y.ret original-completions completions composites
-                  tunit? next-uid-num))
+                  inputs tunit? next-uid-num))
                (composites (if (mbt (and (uid-pair-uid-mapp composites1)
                                          (treemap::submap composites
                                                           composites1)))
                                composites1
                              composites))
-               ((mv params completions composites next-uid-num)
+               ((mv params completions composites inputs next-uid-num)
                 (type-params-composite-aux
                   x.params y.params original-completions completions composites
-                  tunit? next-uid-num)))
+                  inputs tunit? next-uid-num)))
             (mv (make-type-function :ret ret :params params)
                 completions
                 composites
+                inputs
                 next-uid-num))
-          :otherwise (mv x completions composites next-uid-num))
+          :otherwise (mv x completions composites inputs next-uid-num))
         :struct
         (type-case
           y
@@ -3744,7 +3758,7 @@
           (b* ((kind (type-struni-tag/members-kind x.tag/members))
                ((unless (equal (type-struni-tag/members-kind y.tag/members)
                                kind))
-                (mv x completions composites next-uid-num)))
+                (mv x completions composites inputs next-uid-num)))
             (type-struni-tag/members-case
               x.tag/members
               :tagged
@@ -3755,9 +3769,9 @@
                    ;; A complete input is the composite with an incomplete one,
                    ;; and the first of two incomplete ones.
                    ((unless y-foundp)
-                    (mv x completions composites next-uid-num))
+                    (mv x completions composites inputs next-uid-num))
                    ((unless x-foundp)
-                    (mv y completions composites next-uid-num))
+                    (mv y completions composites inputs next-uid-num))
                    ;; Both inputs are complete:
                    ;; the composite of the pair, if built already.
                    (pair (make-uid-pair :first x.uid :second y.uid))
@@ -3768,38 +3782,45 @@
                                           :tag/members x.tag/members)
                         completions
                         composites
+                        inputs
                         next-uid-num))
                    ;; An input whose members are the composites
-                   ;; is the composite.
-                   ((mv x-inputp &)
+                   ;; is the composite,
+                   ;; which is already known for the pairs in INPUTS.
+                   ((when (treeset::in pair inputs))
+                    (mv x completions composites inputs next-uid-num))
+                   ((mv x-inputp x-inputs)
                     (type-struni-member-list-composite-input-p
                       x-members y-members original-completions
-                      (treeset::insert pair (treeset::empty))))
+                      (treeset::insert pair inputs)))
                    ((when x-inputp)
-                    (mv x completions composites next-uid-num))
-                   ((mv y-inputp &)
+                    (mv x completions composites x-inputs next-uid-num))
+                   (swapped (uid-pair-swap pair))
+                   ((when (treeset::in swapped inputs))
+                    (mv y completions composites inputs next-uid-num))
+                   ((mv y-inputp y-inputs)
                     (type-struni-member-list-composite-input-p
                       y-members x-members original-completions
-                      (treeset::insert (uid-pair-swap pair)
-                                       (treeset::empty))))
+                      (treeset::insert swapped inputs)))
                    ((when y-inputp)
-                    (mv y completions composites next-uid-num))
+                    (mv y completions composites y-inputs next-uid-num))
                    ;; Otherwise, a new structure type,
                    ;; recorded before its members are composed,
                    ;; so that the pair reached again through them gets it.
                    (composite-uid (uid-local next-uid-num tunit?))
                    (next-uid-num (1+ next-uid-num))
                    (composites (treemap::update pair composite-uid composites))
-                   ((mv members completions composites next-uid-num)
+                   ((mv members completions composites inputs next-uid-num)
                     (type-struni-member-list-composite-aux
                       x-members y-members original-completions completions
-                      composites tunit? next-uid-num))
+                      composites inputs tunit? next-uid-num))
                    (completions
                     (treemap::update composite-uid members completions)))
                 (mv (make-type-struct :uid composite-uid
                                       :tag/members x.tag/members)
                     completions
                     composites
+                    inputs
                     next-uid-num))
               :untagged
               ;; The members are part of the types:
@@ -3808,31 +3829,30 @@
               (b* ((x-members x.tag/members.members)
                    (y-members (type-struni-tag/members-untagged->members
                                 y.tag/members))
-                   ((mv x-inputp &)
+                   ((mv x-inputp x-inputs)
                     (type-struni-member-list-composite-input-p
-                      x-members y-members original-completions
-                      (treeset::empty)))
+                      x-members y-members original-completions inputs))
                    ((when x-inputp)
-                    (mv x completions composites next-uid-num))
-                   ((mv y-inputp &)
+                    (mv x completions composites x-inputs next-uid-num))
+                   ((mv y-inputp y-inputs)
                     (type-struni-member-list-composite-input-p
-                      y-members x-members original-completions
-                      (treeset::empty)))
+                      y-members x-members original-completions inputs))
                    ((when y-inputp)
-                    (mv y completions composites next-uid-num))
+                    (mv y completions composites y-inputs next-uid-num))
                    (composite-uid (uid-local next-uid-num tunit?))
                    (next-uid-num (1+ next-uid-num))
-                   ((mv members completions composites next-uid-num)
+                   ((mv members completions composites inputs next-uid-num)
                     (type-struni-member-list-composite-aux
                       x-members y-members original-completions completions
-                      composites tunit? next-uid-num)))
+                      composites inputs tunit? next-uid-num)))
                 (mv (make-type-struct
                       :uid composite-uid
                       :tag/members (type-struni-tag/members-untagged members))
                     completions
                     composites
+                    inputs
                     next-uid-num))))
-          :otherwise (mv x completions composites next-uid-num))
+          :otherwise (mv x completions composites inputs next-uid-num))
         :union
         (type-case
           y
@@ -3847,21 +3867,21 @@
             (b* (((mv x-foundp &)
                   (treemap::lookup? x.uid original-completions))
                  ((when x-foundp)
-                  (mv x completions composites next-uid-num))
+                  (mv x completions composites inputs next-uid-num))
                  ((mv y-foundp &)
                   (treemap::lookup? y.uid original-completions))
                  ((when y-foundp)
-                  (mv y completions composites next-uid-num)))
-              (mv x completions composites next-uid-num))
+                  (mv y completions composites inputs next-uid-num)))
+              (mv x completions composites inputs next-uid-num))
             ;; The members may correspond in any order,
             ;; which is not handled yet.
-            :untagged (mv x completions composites next-uid-num))
-          :otherwise (mv x completions composites next-uid-num))
-        :enum (mv x completions composites next-uid-num)
+            :untagged (mv x completions composites inputs next-uid-num))
+          :otherwise (mv x completions composites inputs next-uid-num))
+        :enum (mv x completions composites inputs next-uid-num)
         :otherwise
         (if (type-case y :enum)
-            (mv y completions composites next-uid-num)
-          (mv x completions composites next-uid-num))))
+            (mv y completions composites inputs next-uid-num)
+          (mv x completions composites inputs next-uid-num))))
     :measure (two-nats-measure
               (treeset::cardinality
                 (treeset::diff
@@ -3877,6 +3897,7 @@
      (original-completions type-completions-p)
      (completions type-completions-p)
      (composites uid-pair-uid-mapp)
+     (inputs uid-pair-setp)
      (tunit? filepath-optionp)
      (next-uid-num natp))
     :returns (mv (members type-struni-member-listp)
@@ -3885,6 +3906,7 @@
                   (and (uid-pair-uid-mapp composites$)
                        (implies (uid-pair-uid-mapp composites)
                                 (treemap::submap composites composites$))))
+                 (inputs$ uid-pair-setp)
                  (next-uid-num$ natp))
     :short "Construct the composites of the corresponding members
             of two lists of structure or union members."
@@ -3897,27 +3919,29 @@
        the names are taken from the first list."))
     (b* ((completions (type-completions-fix completions))
          (composites (uid-pair-uid-mfix composites))
+         (inputs (uid-pair-sfix inputs))
          (next-uid-num (lnfix next-uid-num))
          ((when (or (endp x) (endp y)))
-          (mv nil completions composites next-uid-num))
+          (mv nil completions composites inputs next-uid-num))
          ((type-struni-member member-x) (first x))
          ((type-struni-member member-y) (first y))
-         ((mv type completions composites1 next-uid-num)
+         ((mv type completions composites1 inputs next-uid-num)
           (type-composite-aux
             member-x.type member-y.type original-completions completions
-            composites tunit? next-uid-num))
+            composites inputs tunit? next-uid-num))
          (composites (if (mbt (and (uid-pair-uid-mapp composites1)
                                    (treemap::submap composites composites1)))
                          composites1
                        composites))
-         ((mv members completions composites next-uid-num)
+         ((mv members completions composites inputs next-uid-num)
           (type-struni-member-list-composite-aux
             (rest x) (rest y) original-completions completions composites
-            tunit? next-uid-num)))
+            inputs tunit? next-uid-num)))
       (mv (cons (make-type-struni-member :name? member-x.name? :type type)
                 members)
           completions
           composites
+          inputs
           next-uid-num))
     :measure (two-nats-measure
               (treeset::cardinality
@@ -3934,6 +3958,7 @@
                                      (original-completions type-completions-p)
                                      (completions type-completions-p)
                                      (composites uid-pair-uid-mapp)
+                                     (inputs uid-pair-setp)
                                      (tunit? filepath-optionp)
                                      (next-uid-num natp))
     :returns (mv (params type-params-p)
@@ -3942,6 +3967,7 @@
                   (and (uid-pair-uid-mapp composites$)
                        (implies (uid-pair-uid-mapp composites)
                                 (treemap::submap composites composites$))))
+                 (inputs$ uid-pair-setp)
                  (next-uid-num$ natp))
     :short "Construct the parameter portion of a composite function type
             [C17:6.2.7/3] [C23:6.2.7/3]."
@@ -3959,30 +3985,32 @@
          (y (type-params-fix y))
          (completions (type-completions-fix completions))
          (composites (uid-pair-uid-mfix composites))
+         (inputs (uid-pair-sfix inputs))
          (next-uid-num (lnfix next-uid-num))
          (x-prototypep (type-params-case x :prototype))
          (y-prototypep (type-params-case y :prototype))
          ((when (and x-prototypep y-prototypep))
           (b* (((type-params-prototype x) x)
                ((type-params-prototype y) y)
-               ((mv params completions composites next-uid-num)
+               ((mv params completions composites inputs next-uid-num)
                 (type-list-composite-aux
                   x.params y.params original-completions completions composites
-                  tunit? next-uid-num)))
+                  inputs tunit? next-uid-num)))
             (mv (make-type-params-prototype :params params
                                             :ellipsis x.ellipsis)
                 completions
                 composites
+                inputs
                 next-uid-num)))
          ((when x-prototypep)
-          (mv x completions composites next-uid-num))
+          (mv x completions composites inputs next-uid-num))
          ((when y-prototypep)
-          (mv y completions composites next-uid-num))
+          (mv y completions composites inputs next-uid-num))
          ((when (type-params-case x :old-style))
-          (mv x completions composites next-uid-num))
+          (mv x completions composites inputs next-uid-num))
          ((when (type-params-case y :old-style))
-          (mv y completions composites next-uid-num)))
-      (mv x completions composites next-uid-num))
+          (mv y completions composites inputs next-uid-num)))
+      (mv x completions composites inputs next-uid-num))
     :measure (two-nats-measure
               (treeset::cardinality
                 (treeset::diff
@@ -3997,6 +4025,7 @@
                                    (original-completions type-completions-p)
                                    (completions type-completions-p)
                                    (composites uid-pair-uid-mapp)
+                                   (inputs uid-pair-setp)
                                    (tunit? filepath-optionp)
                                    (next-uid-num natp))
     :returns (mv (types type-listp)
@@ -4005,6 +4034,7 @@
                   (and (uid-pair-uid-mapp composites$)
                        (implies (uid-pair-uid-mapp composites)
                                 (treemap::submap composites composites$))))
+                 (inputs$ uid-pair-setp)
                  (next-uid-num$ natp))
     :short "Construct the composites of the corresponding elements
             of two lists of types."
@@ -4015,22 +4045,23 @@
        as they do when they come from compatible types."))
     (b* ((completions (type-completions-fix completions))
          (composites (uid-pair-uid-mfix composites))
+         (inputs (uid-pair-sfix inputs))
          (next-uid-num (lnfix next-uid-num))
          ((when (or (endp x) (endp y)))
-          (mv nil completions composites next-uid-num))
-         ((mv type completions composites1 next-uid-num)
+          (mv nil completions composites inputs next-uid-num))
+         ((mv type completions composites1 inputs next-uid-num)
           (type-composite-aux
             (first x) (first y) original-completions completions composites
-            tunit? next-uid-num))
+            inputs tunit? next-uid-num))
          (composites (if (mbt (and (uid-pair-uid-mapp composites1)
                                    (treemap::submap composites composites1)))
                          composites1
                        composites))
-         ((mv types completions composites next-uid-num)
+         ((mv types completions composites inputs next-uid-num)
           (type-list-composite-aux
             (rest x) (rest y) original-completions completions composites
-            tunit? next-uid-num)))
-      (mv (cons type types) completions composites next-uid-num))
+            inputs tunit? next-uid-num)))
+      (mv (cons type types) completions composites inputs next-uid-num))
     :measure (two-nats-measure
               (treeset::cardinality
                 (treeset::diff
@@ -4054,11 +4085,13 @@
                         (y typep)
                         (completions type-completions-p)
                         (composites uid-pair-uid-mapp)
+                        (inputs uid-pair-setp)
                         (tunit? filepath-optionp)
                         (next-uid-num natp))
   :returns (mv (composite typep)
                (completions$ type-completions-p)
                (composites$ uid-pair-uid-mapp)
+               (inputs$ uid-pair-setp)
                (next-uid-num$ natp))
   :short "Construct a composite of two compatible types
           [C17:6.2.7/3] [C23:6.2.7/3]."
@@ -4069,4 +4102,4 @@
      The completions map is extended with the completions
      of the constructed struct types."))
   (type-composite-aux
-    x y completions completions composites tunit? next-uid-num))
+    x y completions completions composites inputs tunit? next-uid-num))
