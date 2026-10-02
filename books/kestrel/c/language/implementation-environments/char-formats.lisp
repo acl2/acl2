@@ -115,7 +115,10 @@
   (xdoc::topstring
    (xdoc::p
     "This is the simplest format of @('char').
-     It is not clear whether it is the most common or not."))
+     It is not clear whether it is the most common or not.")
+   (xdoc::p
+    "The 8-bit size actually comes from the @(tsee uchar-format-8)
+     that is intended to accompany this @(tsee char-format) format."))
   (make-char-format :signedp nil)
 
   ///
