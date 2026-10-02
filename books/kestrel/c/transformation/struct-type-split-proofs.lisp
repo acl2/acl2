@@ -1172,20 +1172,37 @@
                                                         '(:shl :shr))
                                           (c::promote-type type1))
                                          (t (c::type-sint)))))))
+            :use (:instance expr-binary-pure-strict-congruence
+                            (compst old-compst)
+                            (new-arg1 old-arg1)
+                            (new-arg2 old-arg2)
+                            (new-fenv old-fenv))
             :expand ((c::exec-expr
                       (c::expr-binary op old-arg1 old-arg2)
                       old-compst old-fenv limit)
                      (c::exec-expr
                       (c::expr-binary op new-arg1 new-arg2)
                       new-compst new-fenv limit))
-            :disable ((:e c::type-sint))
-            :enable (c::binop-purep
-                     c::binop-strictp
-                     c::exec-binary-strict-pure
-                     c::eval-binary-strict-pure
-                     c::not-errorp-when-expr-valuep
-                     c::apconvert-expr-value-when-not-array
-                     c::value-kind-not-array-when-value-integerp)))))
+            :in-theory '(c::return-type-of-expr-binary
+                         c::expr-binary->op-of-expr-binary
+                         c::expr-binary->arg1-of-expr-binary
+                         c::expr-binary->arg2-of-expr-binary
+                         c::exec-expr-of-expr-fix-e
+                         c::expr-purep-of-expr-fix-expr
+                         c::binop-purep-of-binop-fix-op
+                         c::binop-strictp-of-binop-fix-op
+                         c::exec-binary-strict-pure-of-binop-fix-op
+                         c::errorp-of-error
+                         c::exec-binary-strict-pure
+                         c::apconvert-expr-value-when-not-array
+                         c::type-nonchar-integerp-of-type-of-value
+                         c::value-kind-not-array-when-value-integerp
+                         c::not-errorp-when-expr-valuep
+                         c::expr-valuep-of-expr-value-fix
+                         c::expr-value->value$inline-of-expr-value-fix-x
+                         mv-nth
+                         iff
+                         (:e equal))))))
     (retok events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
