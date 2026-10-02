@@ -1004,15 +1004,15 @@
                              (c::compustate-has-var-with-type-p var
                                                                 type
                                                                 old-compst)))
-             :enable (c::compustate-has-var-with-type-p
-                      c::objdesign-of-var
-                      c::read-object
-                      c::top-frame
-                      c::compustate-frames-number)
-             :use (:instance assoc-when-static-equivp
-                             (var (c::ident-fix var))
-                             (old-static (c::compustate->static old-compst))
-                             (new-static (c::compustate->static new-compst)))))))
+             :use (objdesign-of-var-when-compustate-equivp
+                   (:instance read-object-when-compustate-equivp
+                              (type (c::type-of-value
+                                     (c::read-object
+                                      (c::objdesign-of-var var old-compst)
+                                      old-compst)))))
+             :in-theory '(c::compustate-has-var-with-type-p
+                          c::type-fix-when-typep
+                          c::typep-of-type-of-value)))))
     (retok event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
