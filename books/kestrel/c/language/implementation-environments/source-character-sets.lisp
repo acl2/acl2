@@ -354,7 +354,6 @@
                                        (source-charset-ascii end-of-lines)
                                        std)
                     bchar))
-    :disable in-of-ascii-chars
     :enable (basic-source-char
              ascii-basic-source-chars-subset-ascii-chars
              set::subset-in)))

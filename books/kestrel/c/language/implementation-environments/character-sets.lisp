@@ -449,7 +449,6 @@
        (omap::identity (source-chars (source-charset-ascii end-of-lines))))
       (basic-exec-char bchar (exec-charset-ascii std) std
                        uchar-format schar-format char-format)))
-    :disable in-of-ascii-chars
     :enable (source-chars-of-source-charset-ascii
              basic-source-char-of-source-charset-ascii
              basic-exec-char-of-exec-charset-ascii
