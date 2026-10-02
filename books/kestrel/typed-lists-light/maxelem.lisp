@@ -169,8 +169,8 @@
   :hints (("Goal" :in-theory (enable maxelem))))
 
 (defthm maxelem-car-linear
-  (implies (consp x)
-           (<= (car x) (maxelem x)))
+  (implies (consp lst)
+           (<= (car lst) (maxelem lst)))
   :rule-classes (:rewrite ; todo: split out
                  (:linear :trigger-terms ((maxelem lst)))))
 
