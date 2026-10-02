@@ -1429,3 +1429,36 @@
 ; The types and shapes may be bound variables.
 (test-check-top-expr
  "(t-fn (&t) (i-fn (@s) (fn ((x (A &t @s))) (@trace (&t Int) (@s []) x 0))))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; undefined : (Forall (&t) (Pi (@s) [&t @s]))
+
+; The type has no function type:
+; undefined is instantiated, at any type and shape,
+; by type and ispace applications, which yield a value of that type;
+; a partial instantiation has the remaining product type;
+; an application to an expression is rejected.
+(test-check-top-expr
+ "(i-app (t-app undefined Int) (dims 2 3))")
+(test-check-top-expr
+ "(t-app undefined Int)")
+(test-check-top-expr-fail
+ "(undefined 3)")
+
+; The instantiated value is used by further inference,
+; according to its type:
+; the length of a matrix of integers is inferred,
+; but a vector of booleans cannot be summed.
+(test-check-top-expr
+ "(length (i-app (t-app undefined Int) (dims 2 3)))")
+(test-check-top-expr-fail
+ "(sum (i-app (t-app undefined Bool) (dims 2)))")
+
+; Instantiated at a function type, the value is applied.
+(test-check-top-expr
+ "((i-app (t-app undefined (-> Int Int)) []) 7)")
+
+; The type and shape may be bound variables.
+(test-check-top-expr
+ "(t-fn (&t) (i-fn (@s) (i-app (t-app undefined &t) @s)))")
