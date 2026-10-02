@@ -168,7 +168,7 @@
   (xdoc::topstring
    (xdoc::p
     "The map must be injective and include the basic characters;
-     the list of end-of-line representations must be non-empty
+     the set of end-of-line representations must be non-empty
      and consist of well-formed representations."))
   (b* (((source-charset charset)))
     (and (omap::injectivep charset.chars-with-codes)
