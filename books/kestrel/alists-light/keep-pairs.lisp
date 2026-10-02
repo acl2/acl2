@@ -1,7 +1,7 @@
 ; A utility to filter an alist
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,8 +12,8 @@
 (in-package "ACL2")
 
 ;; TODO: Rename to filter-alist?
-;; Keep the pairs in ALIST whose keys are in KEYS.
-(defun keep-pairs (keys alist)
+;; Keeps the pairs in ALIST whose keys are in KEYS.
+(defund keep-pairs (keys alist)
   (declare (xargs :guard (and (true-listp keys)
                               (alistp alist))))
   (if (endp alist)
@@ -25,3 +25,8 @@
           (cons pair (keep-pairs keys (rest alist)))
         ;; drop the pair
         (keep-pairs keys (rest alist))))))
+
+(defthm alistp-of-keep-pairs
+  (implies (alistp alist)
+           (alistp (keep-pairs keys alist)))
+  :hints (("Goal" :in-theory (enable keep-pairs))))

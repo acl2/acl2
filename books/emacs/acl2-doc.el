@@ -2,7 +2,7 @@
 ; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
-; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
@@ -515,7 +515,7 @@ then restart the ACL2-Doc browser to view that manual."
 ; Based on http://ergoemacs.org/emacs/elisp_syntax_coloring.html:
 (defvar acl2-doc-keywords
   '(("\\[\\([^ \t]*[^0-9 \t][^ \t]*\\)\\]"
-     . 1)))
+     1 'acl2-doc-link-face)))
 
 ; Can be modified by user; set to the desired link color, or nil if none.
 (defv *acl2-doc-link-color* "#0000FF") ; blue
@@ -542,9 +542,7 @@ then restart the ACL2-Doc browser to view that manual."
           (lambda ()
             (when *acl2-doc-link-color*
               (set-face-foreground 'acl2-doc-link-face *acl2-doc-link-color*)
-              (setq font-lock-defaults '(acl2-doc-keywords t))
-              (set (make-local-variable 'font-lock-keyword-face)
-                   'acl2-doc-link-face))))
+              (setq font-lock-defaults '(acl2-doc-keywords t)))))
 
 ; Arrange that files ending in .acl2-doc come up in acl2-doc mode.
 ; See also the emacs documentation for auto-mode-alist.
@@ -1062,10 +1060,10 @@ a Manual\" in :doc acl2-doc for more information."
 ;;; When *acl2-doc-limit-topic* is non-nil, it is the "limit topic": we want
 ;;; searches (including index operations) to be restricted to topics with a
 ;;; parent chain leading to the limit topic.  We'll call such topics
-;;; "descendents".
+;;; "descendants".
 
 ;;; When *acl2-doc-topics-ht* is non-nil, this is a hash table mapping each
-;;; descendent of *acl2-doc-limit-topic* to t.
+;;; descendant of *acl2-doc-limit-topic* to t.
 
 ;;; When *acl2-doc-children-ht* is non-nil, this variable is a hash table that
 ;;; maps each topic name to a hash table, which in turn maps children of that
@@ -1228,7 +1226,7 @@ a Manual\" in :doc acl2-doc for more information."
   "Go to the specified topic or else one containing it as a
 substring; performs completion.  If the empty string is supplied,
 then go to the index buffer.  Otherwise, with prefix argument,
-consider only descendents of the topic supplied in response to a
+consider only descendants of the topic supplied in response to a
 prompt.  Note that the index buffer is in ACL2-Doc mode; thus, in
 particular, you can type <RETURN> while standing on a topic in
 order to go directly to that topic."
@@ -1508,7 +1506,7 @@ command is buffer-local like the \",\" command."
 the search succeeds, then go to that topic with the cursor put
 immediately after the found text, with the topic name displayed in the
 minibuffer.  With prefix argument, consider (also for subsequent \"n\"
-and \"p\" commands) only descendents of the topic supplied in response
+and \"p\" commands) only descendants of the topic supplied in response
 to a prompt."
 
   (interactive "P")
@@ -1533,7 +1531,7 @@ manual, for the input string.  If the search succeeds, then go to that
 topic with the cursor put immediately after the found text, with the
 topic name displayed in the minibuffer.  With prefix argument,
 consider (also for subsequent \"n\" and \"p\" commands) only
-descendents of the topic supplied in response to a prompt."
+descendants of the topic supplied in response to a prompt."
 
   (interactive "P")
   (acl2-doc-set-limit-topic str)

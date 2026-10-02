@@ -376,15 +376,54 @@
   (equal (/ (expt x n))
 	 (expt x (- n))))
 
-(defthm |(expt 1/c n)|
-    (implies (and (syntaxp (quotep x))
-                  (syntaxp (rationalp (unquote x)))
-                  (syntaxp (not (integerp (unquote x))))
-                  ;(syntaxp (equal (numerator x) 1))
-		  (syntaxp (< (abs x) 1))
-		  )
-             (equal (expt x n)
-                    (expt (/ x) (- n)))))
+; Moore modification.  Below is a function to be used within an syntax
+; restriction on the rule |(expt 1/c n)| further below and in its counterpart
+; |arith (expt 1/c n)| in arithmetic-theory.lisp.
+
+; An example of a loop attributable to the original version of |(expt 1/c n)|
+; is the theorem
+
+; (thm
+;  (implies (natp n)
+;           (equal (* (expt 3 n) (expt 10 (- n)))
+;                  (expt 3/10 n))))
+
+; The original rule rewrites (expt 3/10 n) to (expt 10/3 n) and then rewrites
+; that back to the former term.  The problem is that Robert's rule has a typo
+; in the syntax hypothesis (syntaxp (< (abs x) 1)), where x was bound to a
+; quoted constant.  But it's clear rom the name of the rule, |(expt 1/c n)|,
+; that Robert meant (syntaxp (< (abs (unquote x)) 1)).  When executed in safe
+; mode, (< (abs x) 1) is always T because x is not a number.  So I corrected
+; that typo and introduced the function below that also selects either the
+; original version of the rule or the new one.
+
+(defun syntax-restriction-for-expt-1/c-n (x mfc state)
+  (declare (xargs :mode :program :stobjs (state)))
+  (and (quotep x)
+       (rationalp (unquote x))
+       (not (integerp (unquote x)))
+       (if (use-original-arith-5-rules mfc state)
+
+; We're to use the original rules.  Robert had two hyps here:
+
+;          (syntaxp (equal (numerator x) 1))
+;          (syntaxp (< (abs x) 1))
+
+; But had commented out the first and evidently replaced it with the second.
+; But the first is always false, given that x is quoted.  And the second is
+; always true, for the same reason.  So functionally the original rule
+; just tested:
+
+           T
+
+; On the other hand, if we're to use the new rules, we test:
+
+           (< (abs (unquote x)) 1))))
+
+(defthm |(expt 1/c n)|  ;;; Moore modification
+  (implies (syntaxp (syntax-restriction-for-expt-1/c-n x mfc state))
+           (equal (expt x n)
+                  (expt (/ x) (- n)))))
 
 (defthm |(expt (- x) n)|
     (implies (and (syntaxp (rewriting-goal-literal x mfc state))

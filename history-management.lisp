@@ -1608,7 +1608,7 @@
                  PRIMITIVE-RECURSIVE-DEFUNP
                  CONSTRAINEDP
                  HEREDITARILY-CONSTRAINED-FNNAMES
-                 #+:non-standard-analysis CLASSICALP
+                 #+non-standard-analysis CLASSICALP
                  DEF-BODIES
                  INDUCTION-MACHINE
                  JUSTIFICATION
@@ -1944,6 +1944,102 @@
                   (f-get-global 'inhibit-output-lst state))
        (= (car (get-timer 'proof-tree-time state)) 0)))
 
+#+(and (not acl2-loop-only) acl2-pass2-def-time-info)
+(defparameter *pass2-def-time-info*
+
+; NOTE: Similar statistics-gathering code may be found for feature
+; :acl2-rewrite-meter.  If we are tempted to add a third such block of
+; statistics-gathering code, it might be good instead to add them all in a
+; uniform manner rather than having a distinct statistics-gathering mechanism
+; for each.
+
+; This mechanism is somewhat analogous to the one conditioned on
+; #+acl2-rewrite-meter, but here it is for recording the total time spent
+; evaluating top-level definitions (of functions, macros, and constants) in raw
+; Lisp during pass 2 of certify-book.  (Technical minor deviation: For defconst
+; we time defconst-val, which is essentiall timing simple-translate-and-eval.)
+; When we certify a book after building ACL2 with acl2-pass2-def-time-info
+; added to *features* (see file acl2.lisp), we write to standard output a line
+; with a four-tuple, of the form
+
+; (f1 f2 f3 b) ; @@DTIME@@
+
+; where b is the full-book-name for the book being certified and f1, f2, and f3
+; are floating-point numbers with four digits after the decimal point, as
+; follows: f1 is a percentage (f2/f3)*100, where f2 is the definitional pass2
+; time recorded as described above and f3 is the total certification time.
+; We can then collect all those stats into a single file as follows.
+
+; First, execute the following Unix command, in the acl2-sources directory:
+
+;   fgrep -h --include='*.out*' -r '@@DTIME@@' books > pass2-def-stats.lsp
+
+; Then start ACL2 in the main ACL2 directory and evaluate the following forms,
+; to create file pass2-def-report.txt, which should be self-explanatory.
+
+;   (value :q) ; drop into raw Lisp
+;   (load "books/system/report-timings.lsp")
+;   (report-timings "pass2-def-stats.lsp" "pass2-def-report.txt")
+
+; By default, the tuples from pass2-def-stats.lsp are written to
+; pass2-def-report.txt in increasing order based on the lexicographic order of
+; the values in positions 0, 1, and 2 of each tuple.  That default can be made
+; explicit with an optional argument specifying that lexicographic order:
+
+;   (report-timings "pass2-def-stats.lsp" "pass2-def-report.txt" '(0 1 2))
+
+; If you want a different order, just permute the list (0 1 2).  For example,
+; argument '(2 1 0) specifies that the order is based first on the value in
+; position 2, then position 1, and then position 0.
+
+; More on the implementation's use of *pass2-def-time-info*:
+
+; This variable's value is either nil or a vector #(v0 v1 v2), where:
+; - v0 is nil initially, but is a natural number when in the include-book pass
+;   of certify-book, representing the total time spent evaluating or compiling
+;   definitions;
+; - v1 is the full-book-name for the book under certification;
+; - v2 records the total time spent in the current certify-book.
+
+; A tags-search for pass2-def-time will show how *pass2-def-time-info* is
+; updated.  In summary: it is nil globally and bound to #(nil nil nil) upon
+; entry to certify-book-fn, and its first component is set to 0 early in
+; certify-book-step-3+ so that times can be accumulated into it during the
+; include-book pass of certify-book.  However, early in include-book-fn1 it is
+; bound to nil unless include-book is being performed on behalf of
+; certify-book, so that subsidiary include-books during that include-book pass
+; do not contribute to the time accumulated into the first element of
+; *pass2-def-time-info*.  Otherwise, that binding of *pass2-def-time-info* in
+; include-book-fn1 is to itself, which is really a no-op since updates to
+; components of that variable are destructive.
+
+  nil)
+
+(defmacro incf-pass2-def-time? (form &optional multiple-values-p)
+
+; Form should return a single value.  If we need this macro to be applied when
+; form returns multiple values, we should replace prog1 below by
+; multiple-value-prog1.
+
+  #+(and (not acl2-loop-only) acl2-pass2-def-time-info)
+  (let ((time (gensym)))
+    `(cond ((and *pass2-def-time-info*
+                 (svref *pass2-def-time-info* 0))
+            (let ((,time (get-internal-time)))
+              (,(if multiple-values-p 'our-multiple-value-prog1 'prog1)
+               ,form
+                (let ((,time (- (get-internal-time) ,time)))
+                  (with-debug (incf (svref *pass2-def-time-info* 0)
+                                    ,time)
+                              "Incrementing by ~s~%"
+                              (float (/ ,time
+                                        internal-time-units-per-second)))))))
+           (t ,form)))
+  #-(and (not acl2-loop-only) acl2-pass2-def-time-info)
+  (declare (ignore multiple-values-p))
+  #-(and (not acl2-loop-only) acl2-pass2-def-time-info)
+  form)
+
 (defun print-time-summary (state)
 
 ; Print the time line, e.g.,
@@ -1984,6 +2080,9 @@
                                       (car (get-timer 'proof-tree-time
                                                       state))))
                 (other-time (car (get-timer 'other-time state))))
+            #+(and (not acl2-loop-only) acl2-pass2-def-time-info)
+            (when *pass2-def-time-info*
+              (setf (svref *pass2-def-time-info* 2) total-time))
             (io? summary nil state
                  (total-time prove-time print-time proof-tree-time other-time)
                  (let ((channel (proofs-co state)))
@@ -2505,11 +2604,6 @@
 (defun lmi-techs (lmi)
   (cond
    ((atom lmi) nil)
-   ((eq (car lmi) '(:theorem
-                    :termination-theorem
-                    :termination-theorem!
-                    :guard-theorem))
-    nil)
    ((eq (car lmi) :instance)
     (add-to-set-equal "in~-stan~-ti~-a~-tion"
                       (lmi-techs (cadr lmi))))
@@ -2971,7 +3065,7 @@
      ((eq event-type 'defun)
       (cond
        ((member-eq (car event) '(defuns mutual-recursion
-                                  #+:non-standard-analysis
+                                  #+non-standard-analysis
                                   defuns-std))
         (let ((def ; first definition, without leading defun
                (if (eq (car event) 'mutual-recursion)
@@ -2982,7 +3076,7 @@
               (car def)
             :no-event-data-name)))
        ((or (eq (car event) 'defun)
-            #+:non-standard-analysis
+            #+non-standard-analysis
             (eq (car event) 'defun-std))
         (cadr event))
        (t (er hard 'event-data-name
@@ -3049,7 +3143,7 @@
                            (f-get-global 'connected-book-directory state)
                            (cdr ctx)
                            state))
-                (filename (concatenate 'string bookname ".lisp")))
+                (filename (concatenate 'string bookname ".rstats")))
            (with-open-file
              (str filename
                   :direction :output
@@ -3094,6 +3188,11 @@
                                (car (get-timer 'print-time state))
                                (car (get-timer 'proof-tree-time state))
                                (car (get-timer 'other-time state)))
+                         state)
+         (put-event-data 'induction-records
+                         (tagged-objects 'induction-record
+                                         (f-get-global 'accumulated-ttree
+                                                       state))
                          state)
          (let ((abort-causes
                 (tagged-objects 'abort-cause
@@ -3200,10 +3299,31 @@
                         #+acl2-par
                         (erase-acl2p-checkpoints-for-summary state)
                         state)))
-              (f-put-global 'proof-tree nil state)))))
+              (f-put-global 'proof-tree nil state)
+              #+(and (not acl2-loop-only) acl2-pass2-def-time-info)
+              (progn
+                (when (and (eq (car ctx) 'certify-book)
+                           *pass2-def-time-info* ; always true?
+; The following can be false when certify-book fails quickly.
+                           (natp (svref *pass2-def-time-info* 0))
+; The following has been nil for run-script books.
+                           (svref *pass2-def-time-info* 2))
+                  (let ((*print-pretty* nil) ; avoid line breaks
+                        (def-time (/ (svref *pass2-def-time-info* 0)
+                                     internal-time-units-per-second))
+                        (total-time (svref *pass2-def-time-info* 2)))
+                    (format (get-output-stream-from-channel (proofs-co state))
+                            "(~,4f ~,4f ~,4f ~s) ; @@DTIME@@~%"
+                            (float (if (= total-time 0.0)
+                                       0.0 ; fair enough, avoiding div by 0
+                                     (* 100 (/ def-time total-time))))
+                            (float def-time)
+                            (float total-time)
+                            (svref *pass2-def-time-info* 1))))
+                state)))))
          (if make-event-save-event-data-p
 
-; One could argue that it it is inefficient to make the calls of put-event-data
+; One could argue that it is inefficient to make the calls of put-event-data
 ; above (either lexically above, or within function calls), since we are about
 ; to smash last-event-data.  But we expect that this
 ; make-event-save-event-data-p case is relatively rare, so we'd rather pay that
@@ -5893,8 +6013,7 @@
                                    (t (caddr cd)))
                              (cond ((null (cddr cd)) 0)
                                    (t (cadddr cd)))
-                             pat
-                             cd))
+                             pat))
                         (t (value ans)))))))
          (t (er soft ctx msg cd))))
        (otherwise
@@ -9072,7 +9191,7 @@
         (t (append (get-guard-hints1 (fourth (car lst)))
                    (get-guard-hints (cdr lst))))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun get-std-hints1 (edcls)
 
 ; A typical edcls might be
@@ -9101,7 +9220,7 @@
                         (cadr temp))))))
         (t (get-std-hints1 (cdr edcls)))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun get-std-hints (lst)
 
 ; Lst is a list of tuples of the form (name args doc edcls body).  We
@@ -10746,12 +10865,12 @@
 
 ; We do not want vestiges of the non-standard version in the standard version.
 
-        #+:non-standard-analysis STANDARDP
-        #+:non-standard-analysis STANDARD-PART
-        #+:non-standard-analysis I-LARGE-INTEGER
-        #+:non-standard-analysis REALFIX
-        #+:non-standard-analysis I-LARGE
-        #+:non-standard-analysis I-SMALL
+        #+non-standard-analysis STANDARDP
+        #+non-standard-analysis STANDARD-PART
+        #+non-standard-analysis I-LARGE-INTEGER
+        #+non-standard-analysis REALFIX
+        #+non-standard-analysis I-LARGE
+        #+non-standard-analysis I-SMALL
 
         ))
 
@@ -11097,7 +11216,7 @@
 ;; This checks to see whether two function symbols are both
 ;; classical or both non-classical
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun@par chk-equiv-classicalp (fn1 fn2 termp ctx wrld state)
   (let ((cp1 (classicalp fn1 wrld))
         (cp2 (if termp ; fn2 is a term, not a function symbol
@@ -11189,7 +11308,7 @@
                     (chk-equal-arities@par fn1 (arity fn1 wrld)
                                            fn2 (arity fn2 wrld)
                                            ctx state)
-                    #+:non-standard-analysis
+                    #+non-standard-analysis
                     (chk-equiv-classicalp@par fn1 fn2 nil ctx wrld state)
                     (value@par (cons fn1 fn2))))
                   (t (er@par soft ctx str (car substn) fn2)))))
@@ -11205,7 +11324,7 @@
                  (chk-equal-arities@par fn1 (arity fn1 wrld)
                                         fn2 (length (cadr fn2))
                                         ctx state)
-                 #+:non-standard-analysis
+                 #+non-standard-analysis
                  (chk-equiv-classicalp@par fn1 body t ctx wrld state)
                  (value@par (cons fn1 (make-lambda (cadr fn2) body))))))
               (t (er@par soft ctx str (car substn) fn2))))
@@ -11225,7 +11344,7 @@
 ; After Version_3.4, Ruben Gamboa added the variable allow-freevars-p, with the
 ; following explanation:
 
-; Allow-freevars-p should be set to t in the #-:non-standard-analysis case, but
+; Allow-freevars-p should be set to t in the #-non-standard-analysis case, but
 ; otherwise set to nil when we are trying to apply the substitution to a
 ; non-classical formula.  In those cases, free variables in the body can
 ; capture non-standard objects, resulting in invalid theorems.  For example,
@@ -12096,16 +12215,116 @@
 ; the indicated lambda for f into the formula (forall (n) (equal (f n) 3)), and
 ; the free variable n of the lambda is captured by the universal quantifier!
 
-; Our solution here is to rename every variable in new-constraints that occurs
-; free in some lambda.  We return (mv bad-vars-alist C'), where bad-vars-alist
-; is a substitution that contain all pairs (v . v') for which v is renamed to
-; v', and C' is the result of applying that substitution to new-constraints.
+; When this problem was originally discovered (Version_7.3) our
+; solution was to rename every variable in new-constraints that occurs
+; free in some lambda.
+
+; Unfortunately, Eric Smith and Claude discovered a remaining unsoundness,
+; illustrated by the following proof of nil by Version_8.7+ obtained 14
+; September, 2026.  The original script produced by Claude was:
+
+; [Claude's example, which was proved in Version_8.7+ on 14 September, 2026.]
+; (defun f (a a-renamed0)
+;   (declare (ignore a a-renamed0))
+;   3)
+
+; (defthm good
+;   (equal (f x y) 3)
+;   :rule-classes nil)
+
+; (defthm nil-proved
+;   nil
+;   :rule-classes nil
+;   :hints (("Goal"
+;            :use ((:instance
+;                   (:functional-instance good
+;                     (f (lambda (p q) (if (equal p q) 3 a))))
+;                   (x 0) (y 1) (a 4))))))
+
+; Q.E.D.
+
+; But we have altered it in a couple of ways for debugging purposes.  First, we
+; added an additional formal to f, so that one formal, a, must be renamed
+; because it will be used freely in the lambda of the fn'l substitution, one
+; formal, b, need not be renamed because it is not used freely, and one formal,
+; a-renamed0, is named in a way designed to confuse our new name generator.  In
+; addition, we modified Claude's script to turn off gag mode, trace this
+; function, and use hidden-equal instead of equal so we could disable
+; hidden-equal and see the subgoals before they simplify to T.
+
+; [Our modification of Claude's script]
+
+; (defun f (a b a-renamed0)
+;   (declare (ignore a b a-renamed0))
+;   3)
+
+; (defthm good
+;   (equal (f x y z) 3)
+;   :rule-classes nil)
+
+; (set-gag-mode nil)
+
+; (trace$ remove-capture-in-constraint-lst)
+
+; (defun hidden-equal (x y) (equal x y))
+; (in-theory (disable hidden-equal))
+
+; (defthm nil-proved
+;   nil
+;   :rule-classes nil
+;   :hints (("Goal"
+;            :use ((:instance
+;                   (:functional-instance good
+;                    (f (lambda (p q r) (if (hidden-equal p r) 3 a))))
+;                   (x 0) (z 1) (a 4))))
+;           ("Subgoal 1'" :in-theory (enable hidden-equal))))
+
+; Again, we have a capture problem because the constraint on F is (equal (f A B
+; A-RENAMED0) 3) and if we were to naively replace f by the lambda we'd get
+
+; (equal ((lambda (p q r) (if (hidden-equal p r) 3 a)) a b a-renamed0) 3)
+;                                                  ^   ^
+;                                                  1   2
+
+; Note the two indicated variable occurrences of a.  Recall that we're really
+; substituting into a universal closure, i.e.,
+
+; (forall (a b a-renamed0) (equal (f a b a-renamed0) 3))
+
+; and, in the naive substitution, the free a inside the lambda is being
+; captured by the quantifier.  We need to think in terms of
+
+; (forall (a' b a-renamed) (equal (f a' b a-renamed0) 3))
+
+; where a' is a renaming of a.  We don't have to rename b since it doesn't
+; occur freely in the lambda.  And the third variable a-renamed0 is a trap
+; exploiting our name generator.  So far, so good.  The Version_8.7+ problem,
+; however, is that when we choose the new name for a we choose a name already
+; in use!  We need to avoid the name a-renamed0 when choosing a new name for a.
+; Summary: the selection of what variables to rename remains as it has been,
+; but the selection of ``new'' names must change.  This is accomplished by
+; specifying an appropriate list of variable names to avoid in the call of
+; fn-subst-renaming-alist.
+
+; Question: What variables are to be avoided?
+
+; Answer: every variable occurring freely in the functional substitution (as
+; 8.7+ already did) together with every variable occurring in the constraint on
+; f (our new fix).
+
+; We return (mv bad-vars-alist C'), where bad-vars-alist is a substitution that
+; contains all pairs (v . v') for which v is renamed to v', and C' is the result
+; of applying that substitution to new-constraints.  In particular, the
+; result generated by this function for the new attempt to prove nil-proved
+; above is:
+; (mv '((A . A-RENAMED1))
+;     '((EQUAL (F A-RENAMED1 B A-RENAMED0) '3)))
 
 ; We can view this function as providing a modified new-constraints that is
 ; just an alpha-variant of the original, to which alist can safely be applied
 ; naively.  When we think of constraint-lst as an alpha-equivalence class of
-; universally quantified sentences, it it clear that this renaming not cause a
-; problem for our maintenance of world global
+; universally quantified sentences, it is clear that this renaming does not
+; cause a problem for our maintenance of world global
 ; 'proved-functional-instances-alist; just view that global as saying which
 ; (properly applied) functional instances of the universally quantified formula
 ; are known to be valid.
@@ -12118,7 +12337,8 @@
      (bad-vars
       (let* ((bad-vars-alist ; rename bad vars to fresh vars
               (fn-subst-renaming-alist bad-vars
-                                       fn-subst-free-vars))
+                                       (union-equal fn-subst-free-vars
+                                                    new-constraints-vars)))
              (new-constraints-renamed
               (sublis-var-lst bad-vars-alist new-constraints)))
         (mv bad-vars-alist new-constraints-renamed)))
@@ -12189,9 +12409,9 @@
                                     bad-vars-alist))
                   (t (state-mac@par)))
             (let ((allow-freevars-p
-                   #-:non-standard-analysis
+                   #-non-standard-analysis
                    t
-                   #+:non-standard-analysis
+                   #+non-standard-analysis
                    (classical-fn-list-p (all-fnnames formula) wrld)))
               (mv-let
                 (erp0 formula0)
@@ -12956,7 +13176,7 @@
                          wrld
                          (all-vars!1 (lambda-object-guard obj)
                                      wrld
-                                     (union-eq (lambda-object-formals (ffn-symb term))
+                                     (union-eq (lambda-object-formals obj)
                                                ans)))))
           (t ans)))
         ((flambdap (ffn-symb term))
@@ -13397,7 +13617,7 @@
 ; We could be more restrictive here in the lambda-application case, by moving
 ; (car env) into clause only if there is some call (tbl-get 'st ...) in (car
 ; env) for which some (possibly other) (tbl-get 'st ...) call, with the same
-; st, occurs in clause.  But we'll go ahead an move every lambda application
+; st, occurs in clause.  But we'll go ahead and move every lambda application
 ; from env to clause.
 
          (mv-let (env1 clause1)
@@ -15055,16 +15275,16 @@
     binary-* binary-+ unary-- unary-/ < car cdr
     char-code characterp code-char complex
     complex-rationalp
-    #+:non-standard-analysis complexp
+    #+non-standard-analysis complexp
     coerce cons consp denominator equal
-    #+:non-standard-analysis floor1
+    #+non-standard-analysis floor1
     if imagpart integerp
     intern-in-package-of-symbol numerator pkg-witness pkg-imports rationalp
-    #+:non-standard-analysis realp
+    #+non-standard-analysis realp
     realpart stringp symbol-name symbol-package-name symbolp
-    #+:non-standard-analysis standardp
-    #+:non-standard-analysis standard-part
-    ;; #+:non-standard-analysis i-large-integer
+    #+non-standard-analysis standardp
+    #+non-standard-analysis standard-part
+    ;; #+non-standard-analysis i-large-integer
     not))
 
 (defconst *s-prop-theory*
@@ -16258,7 +16478,7 @@
 ; (a) We allow a hint of the form term, where term is a term single-threaded in
 ; state that returns a single non-stobj value or an error triple and contains
 ; no free vars other than ID, CLAUSE, WORLD, STABLE-UNDER-SIMPLIFICATIONP,
-; HIST, PSPV, CTX, and STATE, except that if if hint-type is non-nil then there
+; HIST, PSPV, CTX, and STATE, except that if hint-type is non-nil then there
 ; may be additional variables.
 ;
 ; If term is such a term, we return the translated hint:
@@ -17385,12 +17605,11 @@
 ; keyword-alist as an untranslated hint-settings and translate it.  We inspect
 ; chr to see whether it is (a) nil, (b) t, or (c) something else.  The first
 ; two mean the hint is to be (a) deleted or (b) preserved.  The last is
-; understood as a list of terms to be be spliced into the hints in place of
-; this one.  But these terms must be translated and so we do that.  Then we
-; return (:COMPUTED-HINT-REPLACEMENT chr' . hint-settings), where chr' is the
-; possibly translated chr and hint-settings' is the translated keyword-alist.
-; It is left to our caller to interpret chr' and modify the hints
-; appropriately.
+; understood as a list of terms to be spliced into the hints in place of this
+; one.  But these terms must be translated and so we do that.  Then we return
+; (:COMPUTED-HINT-REPLACEMENT chr' . hint-settings), where chr' is the possibly
+; translated chr and hint-settings' is the translated keyword-alist.  It is
+; left to our caller to interpret chr' and modify the hints appropriately.
 
 ; Finally the third inaccuracy of our initial description above is that it
 ; fails to account for override-hints.  We apply the given override-hints if
@@ -17421,8 +17640,8 @@
             nil)))
 
 ; The use of flg below might save a few conses.  We do this only because we
-; can.  The real reason we have have the flg component in the computed hint
-; tuple has to do with optimizing find-applicable-hint-settings.
+; can.  The real reason we have the flg component in the computed hint tuple
+; has to do with optimizing find-applicable-hint-settings.
 
     (er-let*@par
      ((val0 (xtrans-eval@par
@@ -17481,7 +17700,9 @@
               (cons str
                     (cadr (fargn term 1)))
               val0))
-           ((not (consp (cdr val0)))
+           ((not (and (consp (cdr val0))
+                      (or (member-eq (cadr val0) '(t nil))
+                          (true-listp (cadr val0)))))
             (er@par soft
               (msg
                "a computed hint for ~x0:  The computed hint ~% ~q1 produced ~
@@ -17700,6 +17921,39 @@
       (let ((info (f-get-global 'certify-book-info state)))
         (and info
              (access certify-book-info info :full-book-name)))))
+
+(defun set-call-depth-overflow-advice-fn (str state)
+  (declare (xargs :mode :program))
+  (let ((book-name (active-book-name (w state) state)))
+    (cond
+     ((not (stringp str))
+      (er soft 'set-call-depth-overflow-advice
+          "The argument to set-call-depth-overflow-advice must be ~
+           a string and ~x0 is not."
+          str))
+     ((or (stringp book-name)
+          (sysfile-p book-name))
+      (value `(table call-depth-overflow-advice
+                     ',book-name
+                     ',str)))
+     (t (pprogn (warning$ 'set-call-depth-overflow-advice
+                          "set-call-depth-overflow-advice ignored"
+                          "Set-call-depth-overflow-advice has been ~
+                           encountered when there is no active book name ~
+                           being certified or included.  Thus, ~X01 is being ~
+                           ignored."
+                          `(set-call-depth-overflow-advice ,str)
+                          nil)
+                (value '(value-triple nil)))))))
+
+(defmacro set-call-depth-overflow-advice (str)
+  `(with-output
+     :off :all
+     :stack :push
+     (make-event
+      (with-output
+        :stack :pop
+        (set-call-depth-overflow-advice-fn ',str state)))))
 
 (defrec deferred-ttag-note
 
@@ -18215,17 +18469,17 @@
 ;   (defun f (x) x)
 
 ; When we process the final defun with fast-cert mode active, we will see that
-; it is redundant with a local event.  We then go ahead an add its cltl-command
-; to the cltl-command-stack, resulting in a cltl-command-stack with two such
-; cltl-commands.  Of course, for the second defun we could have looked in the
-; cltl-command-stack to see if there is already an entry; but in the worst case
-; that is quadratic behavior as we go through the book, unless we use a
-; fast-alist -- but then we'd need to be careful to maintain that fast-alist as
-; we undo events before the second pass of encapsulate.  Instead, we allow such
-; duplication, which is ultimately removed by the "compress" process mentioned
-; earlier, i.e., the call of compress-cltl-command-stack (which does use a
-; fast-alist) in certify-book-fn.  That compression is careful regarding
-; defun-mode, in particular the reclassifying case.
+; it is redundant with a local event.  We then go ahead and add its
+; cltl-command to the cltl-command-stack, resulting in a cltl-command-stack
+; with two such cltl-commands.  Of course, for the second defun we could have
+; looked in the cltl-command-stack to see if there is already an entry; but in
+; the worst case that is quadratic behavior as we go through the book, unless
+; we use a fast-alist -- but then we'd need to be careful to maintain that
+; fast-alist as we undo events before the second pass of encapsulate.  Instead,
+; we allow such duplication, which is ultimately removed by the "compress"
+; process mentioned earlier, i.e., the call of compress-cltl-command-stack
+; (which does use a fast-alist) in certify-book-fn.  That compression is
+; careful regarding defun-mode, in particular the reclassifying case.
 
 ; When the function put-cltl-command is given a cltl-command for a redundant
 ; event with fast-cert mode active, it extends the cltl-command-stack only if
@@ -18535,8 +18789,7 @@
 ; figure that out.
 
   (msg "The attempt to change the :badge-userfn-structure of the badge-table ~
-        failed because "
-       nil))
+        failed because "))
 
 (defun chk-table-guard (name key val ctx wrld ens state)
 
@@ -18950,7 +19203,7 @@
                        ", none of them STATE, other stobjs, or :DF values")
                      term
                      (if (cdr stobjs-out)
-                         (msg "has output signature"
+                         (msg "has output signature ~x0"
                               (cons 'mv stobjs-out))
 ; See comment above about stobj creators.
                        (msg "returns ~#0~[a :DF value~/STATE~]"
@@ -19073,8 +19326,9 @@
   (let* ((ctx (cons 'table name))
          (wrld (w state))
          (ens (ens state))
-         (strictp (ffn-symb-p (getpropc name 'table-guard *t* wrld)
-                              'strict-table-guard))
+         (strictp (and (symbolp name) ; checked later; this guards getpropc
+                       (ffn-symb-p (getpropc name 'table-guard *t* wrld)
+                                   'strict-table-guard)))
          (alist (if (or (eq name 'acl2-defaults-table)
                         strictp)
                     nil

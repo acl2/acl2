@@ -1,7 +1,7 @@
 ; A utility to check all elements of a list for equality with a given value
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2022-2023 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -105,3 +105,14 @@
            (equal (nth n lst)
                   x))
   :hints (("Goal" :in-theory (enable all-equal$ take nth))))
+
+(defthm all-equal$-of-revappend
+  (equal (all-equal$ x (revappend l1 l2))
+         (and (all-equal$ x l1)
+              (all-equal$ x l2)))
+  :hints (("Goal" :induct (revappend l1 l2))))
+
+(defthm all-equal$-of-reverse
+  (equal (all-equal$ x (reverse l1))
+         (all-equal$ x l1))
+  :hints (("Goal" :induct (revappend l1 l2))))

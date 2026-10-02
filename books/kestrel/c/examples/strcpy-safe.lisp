@@ -12,7 +12,8 @@
 
 (include-book "strcpy-safe-support")
 
-(include-book "kestrel/c/syntax/input-files" :dir :system)
+(include-book "../syntax/input-files")
+(include-book "../syntax/abstract-syntax-formal-mapping-direct")
 
 (local (include-book "std/lists/top" :dir :system))
 
@@ -41,14 +42,14 @@
 
 ; Check that the C code is within the subset with formal semantics.
 (assert-event
- (c$::transunit-ensemble-formalp
-  (c$::code-ensemble->transunits *strcpy-safe*)))
+ (c$::trans-ensemble-formalp
+  (c$::code-ensemble->trans-units *strcpy-safe*)))
 
 ; Map the code to the form over which the formal semantics is defined.
 (defconst *strcpy-safe-formal*
   (b* (((mv & tunits)
-        (c$::ldm-transunit-ensemble
-         (c$::code-ensemble->transunits *strcpy-safe*))))
+        (c$::ldm-trans-ensemble
+         (c$::code-ensemble->trans-units *strcpy-safe*))))
     tunits))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -89,7 +90,7 @@
     (<= (len new-vals) (len vals))
     :rule-classes :linear))
 
-; These are the values in the source arrays copied to the destination array.
+; These are the values in the source array copied to the destination array.
 ; First, we truncate the source array values to buffersize - 1,
 ; and then we take all the values until we reach a 0 or the end.
 (define src-values-to-copy ((src-array-vals c::value-listp))
@@ -110,7 +111,7 @@
 ; i.e. one more than the ones copied from the source array.
 ; Note that this is a precondition on the size of the destination array,
 ; not on the particular values.
-; While this precondition constains the destination array,
+; While this precondition constrains the destination array,
 ; it depends on the source array, whose values are passed as second parameter.
 (define dst-precond ((dst-array-vals c::value-listp)
                      (src-array-vals c::value-listp))
@@ -481,7 +482,7 @@
     (equal src-array-vals (c::value-array->elements src-array))
     (src-precond src-array-vals)
 
-    ;; The src parameter is a pointer value
+    ;; The dst parameter is a pointer value
     ;; whose referenced type is unsigned char.
     (c::valuep dst)
     (c::value-case dst :pointer)

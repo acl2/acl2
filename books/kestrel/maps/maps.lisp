@@ -1,7 +1,7 @@
 ; Additions to the records library
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,20 +24,9 @@
 
 (include-book "maps0")
 (include-book "../sets/sets")
+(include-book "rkeys-def")
 
-(defun key-set (r)
-  (declare (xargs :guard (rcdp r)))
-  (if (consp r)
-      (set::insert (caar r)
-                   (key-set (cdr r)))
-    (set::emptyset)))
 
-(defthm setp-key-set
-  (set::setp (key-set r)))
-
-(defun rkeys (r)
-  (declare (type t r))
-  (key-set (acl2->rcd r)))
 
 (defthm true-list-p-of-rkeys
   (true-listp (rkeys r))
@@ -289,10 +278,7 @@
                   nil)))
 
 
-;return the keys of the map as a list
-(defun key-list (map)
-  (declare (type t map))
-  (set::2list (rkeys map)))
+
 
 ;fixme flesh out - or use a different version of maps
 (defund mapp (map)
@@ -365,7 +351,7 @@
 
 ;will this loop?
 (defthm s-of-s-same-val
-  (implies t ;(syntaxp (smaller-termp a2 a1))
+  (implies t ; (syntaxp (smaller-termp key2 key))
            (equal (s key val (s key2 val r))
                   (s key2 val (s key val r))))
   :hints (("Goal" :cases ((equal key key2)))))

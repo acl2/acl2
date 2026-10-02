@@ -50,7 +50,6 @@
 (defvar *hcomp-fn-alist* nil)
 (defvar *hcomp-const-alist* nil)
 (defvar *hcomp-macro-alist* nil)
-(defconstant *hcomp-fake-value* 'acl2_invisible::hcomp-fake-value)
 (defvar *hcomp-book-ht*
 ; Note that the keys of this hash table are full-book-names.
   nil)
@@ -111,20 +110,6 @@
   t)
 
 #-acl2-loop-only
-(defvar *debug-on* nil)
-
-(defmacro with-debug (form string &rest args)
-
-; String is a format string and args is a corresponding list of format
-; arguments.  We evaluate form, but if *debug-eval-on* is non-nil then we first
-; print.
-
-  `(progn (when *debug-on*
-            (format t "; DEBUG: ")
-            (format t ,string ,@args))
-          ,form))
-
-#-acl2-loop-only
 (defun defconst-val-raw (name)
   (let ((const-ht *hcomp-const-ht*))
     (cond (const-ht (multiple-value-bind (val present-p)
@@ -136,8 +121,8 @@
 (defun defconst-val (name form ctx wrld state)
   #+acl2-loop-only
   (declare (ignore name))
-  #-acl2-loop-only
   (cond
+   #-acl2-loop-only
    ((f-get-global 'boot-strap-flg state)
     (cond
      ((member name '(*first-order-like-terms-and-out-arities*
@@ -172,15 +157,32 @@
 
     (return-from defconst-val
                  (value (symbol-value name))))
-   (t (let ((val (defconst-val-raw name)))
+   (t #-acl2-loop-only
+      (let ((val (defconst-val-raw name)))
         (when (not (eq val *hcomp-fake-value*))
-          (return-from defconst-val
-                       (with-debug (value val)
-                                   "[~s] Found ~s in hash table.~%"
-                                   'defconst-val name))))))
-  (er-let*
-   ((pair (state-global-let*
-           ((safe-mode
+
+; At one time we returned the value here, without translating.  But that
+; allowed the following event to be admitted when not skipping proofs, which
+; caused a book containing this event to fail being included after
+; certification.
+
+;   (encapsulate
+;     ()
+;     (local (defun c-body () 17))
+;     (defconst *c* (c-body)))
+
+; We will want to use the saved value, but we create an expression that will
+; force translation of the form.  So we modify the form accordingly.
+
+          (setq form
+                (with-debug
+                 `(prog2$ ,form
+                          (quote ,val))
+                 "[~s] Found ~s in hash table.~%"
+                 'defconst-val name))))
+      (er-let*
+          ((pair (state-global-let*
+                  ((safe-mode
 
 ; Warning: If you are tempted to bind safe-mode to nil outside the boot-strap,
 ; then revisit the binding of *safe-mode-verified-p* to t in the
@@ -250,17 +252,37 @@
 ;   allow raw Lisp calls, avoiding safe mode during the boot-strap, even for
 ;   other lisps.
 
-             t ; (not (f-get-global 'boot-strap-flg state))
-             ))
-           (simple-translate-and-eval form nil
-                                      nil
-                                      "The second argument of defconst"
-                                      ctx wrld state nil))))
-   (value (cdr pair))))
+                    t ; (not (f-get-global 'boot-strap-flg state))
+                    ))
+                  (simple-translate-and-eval form nil
+                                             nil
+                                             "The second argument of defconst"
+                                             ctx wrld state nil))))
+        (value (cdr pair))))))
 
 (defun large-consp (x)
   (eql (the #.*fixnat-type* (cons-count-bounded x))
        (the #.*fixnat-type* (fn-count-evg-max-val))))
+
+(defun stop-redundant-defconst (name ctx state)
+  #-acl2-loop-only
+  (when (and (not (f-get-global 'in-local-flg state))
+             (eq (hcomp-build-p) 'encapsulate-pass-1))
+    (let ((hcomp-const-ht *hcomp-const-ht*))
+      (assert hcomp-const-ht)
+
+; The next test is an optimization, since redefinition is not allowed here, as
+; the test (null (ld-redefinition-action state)) guards the call of
+; with-hcomp-bindings-encapsulate in encapsulate-fn.
+
+      (when (not (gethash name hcomp-const-ht))
+        (with-debug (setf (gethash name hcomp-const-ht)
+                          (symbol-value name))
+                    "[~s] Set (symbol-value ~s).~%"
+                    'redundant-defconst
+                    name))))
+  (stop-redundant-event ctx state
+                        :name name))
 
 (defun defconst-fn (name form state event-form)
 
@@ -299,11 +321,14 @@
 ; optimization if redefinition is on, in case we have redefined a constant or
 ; macro used in the body of this defconst form.
 
-          (stop-redundant-event ctx state
-                                :name name))
+          (stop-redundant-defconst name ctx state))
          (t
           (er-let*
-           ((val (defconst-val name form ctx wrld1 state)))
+           ((val (with-debug (incf-pass2-def-time?
+                              (defconst-val name form ctx wrld1 state)
+                              t)
+                             "[~s] Eval defconst-val for ~s.~%"
+                             'defconst-fn name)))
            (cond
             ((and (consp const-prop)
                   (equal (cadr const-prop) val))
@@ -312,8 +337,7 @@
 ; Thus, if there is no 'const property, we will getprop the nil and
 ; the consp will fail.
 
-             (stop-redundant-event ctx state
-                                   :name name))
+             (stop-redundant-defconst name ctx state))
             (t
              (enforce-redundancy
               event-form ctx wrld1
@@ -413,22 +437,40 @@
                 (chk-macro-ancestors name tguard tbody ctx wrld state)
                 (cond
                  ((redundant-defmacrop name args tguard tbody wrld)
-                  (cond ((and (not (f-get-global 'in-local-flg state))
-                              (not (f-get-global 'boot-strap-flg state))
-                              (not (f-get-global 'redundant-with-raw-code-okp
-                                                 state))
-                              (member-eq name
-                                         (f-get-global 'macros-with-raw-code
-                                                       state)))
+                  (let ((localp (f-get-global 'in-local-flg state)))
+                    (cond ((and (not localp)
+                                (not (f-get-global 'boot-strap-flg state))
+                                (not (f-get-global 'redundant-with-raw-code-okp
+                                                   state))
+                                (member-eq name
+                                           (f-get-global 'macros-with-raw-code
+                                                         state)))
 
 ; See the comment in chk-acceptable-defuns-redundancy related to this error in
 ; the defuns case.
 
-                         (er soft ctx
-                             "~@0"
-                             (redundant-predefined-error-msg name wrld)))
-                        (t (stop-redundant-event ctx state
-                                                 :name name))))
+                           (er soft ctx
+                               "~@0"
+                               (redundant-predefined-error-msg name wrld)))
+                          (t
+                           #-acl2-loop-only
+                           (when (and (not localp)
+                                      (eq (hcomp-build-p) 'encapsulate-pass-1))
+                             (let ((hcomp-macro-ht *hcomp-macro-ht*))
+                               (assert hcomp-macro-ht)
+
+; The next test is an optimization, since redefinition is not allowed here, as
+; the test (null (ld-redefinition-action state)) guards the call of
+; with-hcomp-bindings-encapsulate in encapsulate-fn.
+
+                               (when (not (gethash name hcomp-macro-ht))
+                                 (with-debug (setf (gethash name hcomp-macro-ht)
+                                                   (macro-function name))
+                                             "[~s] Set (macro-function ~s).~%"
+                                             'redundant-macro
+                                             name))))
+                           (stop-redundant-event ctx state
+                                                 :name name)))))
                  (t
                   (enforce-redundancy
                    event-form ctx wrld
@@ -498,14 +540,14 @@
             (list 'quote def)
             'state
             (list 'quote event-form)
-            #+:non-standard-analysis ; std-p
+            #+non-standard-analysis ; std-p
             nil))
     (defmacro defuns (&whole event-form &rest def-lst)
       (list 'defuns-fn
             (list 'quote def-lst)
             'state
             (list 'quote event-form)
-            #+:non-standard-analysis ; std-p
+            #+non-standard-analysis ; std-p
             nil))
     (defmacro verify-termination-boot-strap (&whole event-form &rest lst)
       (list 'verify-termination-boot-strap-fn
@@ -558,7 +600,7 @@
             (list 'quote hints)
             (list 'quote otf-flg)
             (list 'quote event-form)
-            #+:non-standard-analysis ; std-p
+            #+non-standard-analysis ; std-p
             nil))
     (defmacro defaxiom (&whole event-form
                                name term
@@ -722,7 +764,7 @@
   (cond ((null actuals) nil)
         ((equal (car actuals) '(quote state))
          (cons 'state (primordial-event-macro-and-fn1 (cdr actuals))))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         ((or (equal (car actuals) nil)
              (equal (car actuals) t))
 
@@ -1030,7 +1072,7 @@
                          lp acl2-defaults-table let let*
                          complex complex-rationalp
 
-; The following became necessary after Version_8.2, when we starting storing a
+; The following became necessary after Version_8.2, when we started storing a
 ; new 'recognizer-alist property on symbols (in the primordial-world) in place
 ; of using a world global for the recognizer-alist.
 
@@ -1112,7 +1154,7 @@
 ; whether a property should be set in end-prehistoric-world rather than here.
 ; But be careful; through Version_8.3 we had that issue in mind when we called
 ; a function to initialize invariant-risk for certain function symbols (see
-; *boot-strap-invariant-risk-alist*)a at the end of the boot-strap, in
+; *boot-strap-invariant-risk-alist*) at the end of the boot-strap, in
 ; end-prehistoric-world, instead of here.  But then the 'invariant-risk
 ; property was never set for aset1-lst, even though it calls aset1, which has
 ; invariant-risk.
@@ -1120,8 +1162,8 @@
   (let ((names (strip-cars *primitive-formals-and-guards*))
         (arglists (strip-cadrs *primitive-formals-and-guards*))
         (guards (strip-caddrs *primitive-formals-and-guards*))
-        (ns-names #+:non-standard-analysis *non-standard-primitives*
-                  #-:non-standard-analysis nil))
+        (ns-names #+non-standard-analysis *non-standard-primitives*
+                  #-non-standard-analysis nil))
 
     (add-command-landmark
      :logic
@@ -1146,7 +1188,7 @@
           (putprop-defun-runic-mapping-pairs
            names nil
            (putprop-x-lst1
-            ns-names ; nil in the #-:non-standard-analysis case
+            ns-names ; nil in the #-non-standard-analysis case
             'classicalp nil
             (putprop-x-lst1
              ns-names
@@ -1450,8 +1492,7 @@
 ;   :rule-classes nil)
 
          (er soft ctx
-             "The empty string is not a legal package name for defpkg."
-             name))
+             "The empty string is not a legal package name for defpkg."))
         ((not (equal (string-upcase name) name))
          (er soft ctx
              "~x0 is not a legal package name for defpkg, which disallows ~
@@ -1459,7 +1500,7 @@
              name))
         ((equal name "LISP")
          (er soft ctx
-             "~x0 is disallowed as a a package name for defpkg, because this ~
+             "~x0 is disallowed as a package name for defpkg, because this ~
               package name is used under the hood in some Common Lisp ~
               implementations."
              name))
@@ -1771,6 +1812,7 @@
                     set-difference-theories
                     theory
                     union-theories
+                    union-theories-2
                     universal-theory))
        t))
 
@@ -2255,7 +2297,7 @@
       (augment-theory lst2 wrld)
       nil))))
 
-(defmacro union-theories (lst1 lst2)
+(defmacro union-theories-2 (lst1 lst2)
 
 ; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
 
@@ -2289,6 +2331,13 @@
                lst2
                nil
                'world))))
+
+(defmacro union-theories (&rest rst)
+  (cond ((null rst) nil)
+        ((null (cdr rst))
+; We ensure a runic theory, which (car rst) might not be.
+         `(union-theories-2 nil ,(car rst)))
+        (t (xxxjoin 'union-theories-2 rst))))
 
 (defun set-difference-current-theory-fn (lst2 lst2-known-to-be-runic wrld)
 
@@ -3111,27 +3160,24 @@
   nil)
 
 (defmacro incompatible (rune1 rune2 &optional strictp)
-  (let ((active-fn (if strictp 'active-or-non-runep 'active-runep)))
-    (cond ((and (consp rune1)
-                (consp (cdr rune1))
-                (symbolp (cadr rune1))
-                (consp rune2)
-                (consp (cdr rune2))
-                (symbolp (cadr rune2)))
+  (let ((active-fn (if strictp 'active-or-non-runep 'active-runep))
+        (caller (if strictp 'incompatible! 'incompatible)))
+    (cond ((and (weak-runep rune1)
+                (weak-runep rune2))
 
 ; The above condition is similar to conditions in runep and active-runep.
 
            `(not (and (,active-fn ',rune1)
                       (,active-fn ',rune2))))
-          (t (er hard 'incompatible
+          (t (er hard caller
                  "Each argument to ~x0 should have the shape of a rune, ~
-                  (:KEYWORD BASE-SYMBOL), unlike ~x1."
-                 'incompatible
-                 (or (and (consp rune1)
-                          (consp (cdr rune1))
-                          (symbolp (cadr rune1))
-                          rune2)
-                     rune1))))))
+                  (:KEYWORD BASE-SYMBOL) or (:KEYWORD BASE-SYMBOL . N), as ~
+                  defined by ~x1.  But ~&2 ~#2~[does~/do~] not meet this ~
+                  criterion."
+                 caller
+                 'weak-runep
+                 (append (if (weak-runep rune1) nil (list rune1))
+                         (if (weak-runep rune2) nil (list rune2))))))))
 
 (defmacro incompatible! (rune1 rune2)
   `(incompatible ,rune1 ,rune2 t))
@@ -3148,7 +3194,7 @@
 
 (defconst *signature-keywords*
   '(:GUARD
-    #+:non-standard-analysis :CLASSICALP
+    #+non-standard-analysis :CLASSICALP
     :STOBJS :DFS :FORMALS :GLOBAL-STOBJS :TRANSPARENT))
 
 (defun duplicate-key-in-keyword-value-listp (l)
@@ -3397,7 +3443,7 @@
                     signature."
                    x)
               nil nil nil nil nil nil))
-         ((or #+:non-standard-analysis
+         ((or #+non-standard-analysis
               (not (booleanp (cadr (assoc-keyword :CLASSICALP
                                                   kwd-value-list))))
               (not (booleanp (cadr (assoc-keyword :TRANSPARENT
@@ -3410,9 +3456,9 @@
           (mv (msg "The object ~x0 is not a legal signature.  The value of ~
                     the ~x1 keyword must be Boolean; see :DOC signature."
                    x
-                   #-:non-standard-analysis
+                   #-non-standard-analysis
                    :TRANSPARENT
-                   #+:non-standard-analysis
+                   #+non-standard-analysis
                    (if (not (booleanp (cadr (assoc-keyword :CLASSICALP
                                                            kwd-value-list))))
                        :CLASSICALP
@@ -3469,7 +3515,7 @@
                     see :DOC signature."
                    x)
               nil nil nil nil nil nil))
-         ((or #+:non-standard-analysis
+         ((or #+non-standard-analysis
               (not (booleanp (cadr (assoc-keyword :CLASSICALP
                                                   kwd-value-list))))
               (not (booleanp (cadr (assoc-keyword :TRANSPARENT
@@ -3482,9 +3528,9 @@
           (mv (msg "The object ~x0 is not a legal signature.  The value of ~
                     the ~x1 keyword must be Boolean; see :DOC signature."
                    x
-                   #-:non-standard-analysis
+                   #-non-standard-analysis
                    :TRANSPARENT
-                   #+:non-standard-analysis
+                   #+non-standard-analysis
                    (if (not (booleanp (cadr (assoc-keyword :CLASSICALP
                                                            kwd-value-list))))
                        :CLASSICALP
@@ -4726,11 +4772,11 @@
                       (cons #\4 (car ev-lst))
                       (cons #\5 (term-evisc-tuple nil state))
                       (cons #\r
-                            #+:non-standard-analysis
+                            #+non-standard-analysis
                             (if (f-get-global 'script-mode state)
                                 ""
                               "(r)")
-                            #-:non-standard-analysis ""))
+                            #-non-standard-analysis ""))
                      channel state nil))))
          (mv-let
            (erp form state)
@@ -4926,13 +4972,13 @@
 
 ; For ACL2 (as opposed to ACL2(r)), we do not use kwd-value-list-lst.  It is
 ; convenient though to keep it as a formal, to avoid proliferation of
-; #-:non-standard-analysis readtime conditionals.  We are tempted to declare
+; #-non-standard-analysis readtime conditionals.  We are tempted to declare
 ; kwd-value-list-lst as IGNOREd, in order to avoid the complaint that
 ; kwd-value-list-lst is an irrelevant formal.  However, ACL2 then complains
 ; because of the recursive calls of this function.  Fortunately, declaring
 ; kwd-value-list-lst IGNORABLE also turns off the irrelevance check.
 
-  #-:non-standard-analysis
+  #-non-standard-analysis
   (declare (ignorable kwd-value-list-lst))
   (cond ((null insigs) nil)
         ((member-eq (caar insigs) udf-fns)
@@ -4948,7 +4994,7 @@
                                       (stobjs-out fn wrld))))
              (cond
               ((and (equal-insig declared-insig actual-insig)
-                    #+:non-standard-analysis
+                    #+non-standard-analysis
 
 ; If the function is specified to be classical, then it had better have a
 ; classical witness.  But in fact the converse is critical too!  Consider the
@@ -4989,15 +5035,15 @@
 ; This is just (list 'if test tbr fbr), except that we expect test always to be
 ; false in the standard case.
 
-  #+:non-standard-analysis
+  #+non-standard-analysis
   (declare (ignore ctx))
-  #-:non-standard-analysis
+  #-non-standard-analysis
   (declare (ignore tbr))
   (list 'if
         test
-        #+:non-standard-analysis
+        #+non-standard-analysis
         tbr
-        #-:non-standard-analysis
+        #-non-standard-analysis
         `(er hard ,ctx
              "Unexpected intrusion of non-standard analysis into standard ~
               ACL2!  Please contact the implementors.")
@@ -6139,7 +6185,7 @@
 ; This is the second pass of the encapsulate event.  We assume that the
 ; installed world in state is wrld1 of the encapsulate essay.  We assume that
 ; chk-acceptable-encapsulate1 has approved of wrld1 and
-; chk-acceptable-encapsulate2 has approved of the wrld2 generated in with
+; chk-acceptable-encapsulate2 has approved of the wrld2 generated with
 ; ld-skip-proofsp nil.  Insigs is the internal form signatures list.  We either
 ; cause an error and return a state in which wrld1 is current or else we return
 ; normally and return a state in which wrld3 of the essay is current.  In the
@@ -7707,6 +7753,8 @@
         (t x)))
 
 (defun redundant-encapsulate-tuplep (event-form mode ruler-extenders vge
+                                                measure-function
+                                                well-founded-relation
                                                 event-number wrld wrld0 state
                                                 r-e-p)
 
@@ -7742,12 +7790,17 @@
                                ruler-extenders)
                         (eql (default-verify-guards-eagerness-from-table adt)
                              vge)
+                        (eq (default-well-founded-relation-from-table adt)
+                            well-founded-relation)
+                        (eq (default-measure-function-from-table adt)
+                            measure-function)
                         (redundant-encapsulatep-result
                          (if (eq equal? :expanded)
                              old-event-form
                            t)
                          wrld wrld0 state)))))))
         (t (redundant-encapsulate-tuplep event-form mode ruler-extenders vge
+                                         measure-function well-founded-relation
                                          event-number (cdr wrld) wrld0 state
                                          r-e-p))))
 
@@ -7815,6 +7868,14 @@
                         old-adt)
                       (default-verify-guards-eagerness-from-table
                         new-adt))
+                 (eq (default-measure-function-from-table
+                       old-adt)
+                     (default-measure-function-from-table
+                       new-adt))
+                 (eq (default-well-founded-relation-from-table
+                       old-adt)
+                     (default-well-founded-relation-from-table
+                       new-adt))
                  (redundant-encapsulatep-result (if (eq equal? :expanded)
                                                     old-event-form
                                                   t)
@@ -7838,6 +7899,8 @@
                 (default-defun-mode-from-table new-adt)
                 (default-ruler-extenders-from-table new-adt)
                 (default-verify-guards-eagerness-from-table new-adt)
+                (default-measure-function-from-table new-adt)
+                (default-well-founded-relation-from-table new-adt)
                 (and name
                      (getpropc name 'absolute-event-number nil wrld))
                 wrld
@@ -8511,8 +8574,8 @@
 ; encapsulation quickly if we process one while skipping proofs.  That is,
 ; suppose the user has produced a script of some session, including some
 ; encapsulations, and the whole thing has been processed with ld-skip-proofsp
-; nil, once upon a time.  Now the user wants to assume that script and and
-; continue -- i.e., he is loading a "book".
+; nil, once upon a time.  Now the user wants to assume that script and continue
+; -- i.e., he is loading a "book".
 
 ; Suppose we hit the encapsulation when skipping proofs.  Suppose we are
 ; again in wrld1 (i.e., processing the previous events of this script
@@ -8642,11 +8705,7 @@
                      (kwd-value-list-lst (cadr trip))
                      (wrld1 (cddr trip))
                      (do-hcomp-build-p
-                      (and (null signatures)
-                           (not (in-encapsulatep
-                                 (global-val 'embedded-event-lst (w state))
-                                 t))
-                           (null (ld-redefinition-action state)))))
+                      (null (ld-redefinition-action state))))
                 (declare (ignorable do-hcomp-build-p)) ; for #-acl2-loop-only
                 (with-hcomp-bindings-encapsulate
                  do-hcomp-build-p
@@ -8801,7 +8860,7 @@
                                                    kwd-value-list-lst
                                                    wrld3)
                                                   wrld3 ctx state))
-                                         #+:non-standard-analysis
+                                         #+non-standard-analysis
                                          (wrld3a (value
                                                   (intro-udf-non-classicalp
                                                    insigs kwd-value-list-lst
@@ -8986,7 +9045,7 @@
                                        kwd-value-list-lst
                                        wrld3)
                                       wrld3 ctx state))
-                             #+:non-standard-analysis
+                             #+non-standard-analysis
                              (wrld3a (value (intro-udf-non-classicalp
                                              insigs kwd-value-list-lst wrld3a))))
                           (install-event (cond
@@ -12341,9 +12400,10 @@
                 (equal-modulo-hidden-defpkgs cmds1 (cdr cmds2)))
                (& nil))))))
 
-(defun cert-obj-for-convert (full-book-string dir pre-alist fixed-cmds
-                                            suspect-book-action-alist
-                                            ctx state)
+(defun cert-obj-for-convert (full-book-string dir full-book-name pre-alist
+                                              fixed-cmds
+                                              suspect-book-action-alist
+                                              ctx state)
 
 ; Here we check that the pre-alists and portcullis commands correspond, as
 ; explained in the error messages below.  See also certify-book-finish-convert
@@ -12377,6 +12437,7 @@
                 current ACL2 world:~|~y2"
                `(er-let* ((cert-obj
                            (chk-certificate-file ,full-book-string ,dir
+                                                 ,full-book-name
                                                  'convert-pcert ',ctx state
                                                  ',suspect-book-action-alist
                                                  nil)))
@@ -12487,9 +12548,9 @@
                                              wrld ctx state)))))
         (cond
          ((eq cert-op :convert-pcert)
-          (cert-obj-for-convert full-book-string dir pre-alist-cert-wrld
-                                fixed-cmds suspect-book-action-alist ctx
-                                state))
+          (cert-obj-for-convert full-book-string dir full-book-name
+                                pre-alist-cert-wrld fixed-cmds
+                                suspect-book-action-alist ctx state))
          (t
           (value
            (make cert-obj
@@ -12969,8 +13030,8 @@
 ; This function writes out, and returns, a certificate file.  We first give
 ; that file a temporary name, based originally on the expectation that
 ; afterwards, compilation is performed and then the certificate file is renamed
-; to its suitable .cert name.  This way, we expect that that the compiled file
-; will have a write date that is later than (or at least, not earlier than) the
+; to its suitable .cert name.  This way, we expect that the compiled file will
+; have a write date that is later than (or at least, not earlier than) the
 ; write date of the certificate file; yet, we can be assured that "make"
 ; targets that depend on the certificate file's existence will be able to rely
 ; implicitly on the compiled file's existence as well.  After Version_4.3 we
@@ -13614,7 +13675,7 @@
                               "Although the file ~x0 exists, it is being ~
                                ignored because keyword option :ACL2X T was ~
                                not supplied to certify-book."
-                              acl2x-file full-book-string))
+                              acl2x-file))
                    (t state))
              (value nil)))
     (t (mv-let
@@ -14345,7 +14406,11 @@
       (t
        (let ((wrld2 (global-set 'include-book-path
                                 (cons full-book-name old-include-book-path)
-                                wrld1)))
+                                wrld1))
+             #+(and (not acl2-loop-only) acl2-pass2-def-time-info)
+             (*pass2-def-time-info* (if behalf-of-certify-flg
+                                        *pass2-def-time-info*
+                                      nil)))
          (pprogn
           (set-w 'extension wrld2 state)
           (er-let* ((cert-obj-prelim
@@ -15934,7 +15999,7 @@
                                   (value nil))
                                  (t (er soft ctx
                                         "Obtained non-zero exit status ~x0 ~
-                                         when attempting to touch file ~x0 ."
+                                         when attempting to touch file ~x1 ."
                                         status filename))))))
                 (t (value nil))))))))
 
@@ -17325,7 +17390,8 @@
                     (value (cond (str (intern$ (string-upcase str) "ACL2"))
                                  (t t))))))) ; default
         (t (er soft ctx
-               "Illegal :write-port argument, ~x0.  See :DOC certify-book."))))
+               "Illegal :write-port argument, ~x0.  See :DOC certify-book."
+               write-port))))
 
 (defun certify-book-cert-op (pcert pcert-env write-acl2x ctx state)
 
@@ -17335,7 +17401,7 @@
   (cond ((and write-acl2x pcert)
          (er soft ctx
              "It is illegal to specify the writing  of a .acl2x file when a ~
-              non-nil value for :pcert (here, ~x1) is specified~@0."
+              non-nil value for :pcert (here, ~x0) is specified~@1."
              pcert
              (cond (pcert-env
                     " (even when the :pcert argument is supplied, as in this ~
@@ -17740,6 +17806,8 @@
    (let ((rollback-wrld-known-package-alist
           (and rollback-pair ; else don't care
                (global-val 'known-package-alist rollback-wrld))))
+     #+(and (not acl2-loop-only) acl2-pass2-def-time-info)
+     (setf (svref *pass2-def-time-info* 0) 0)
      (er-progn
       (if port-index
           (eval-some-portcullis-cmds port-index portcullis-cmds0 ctx state)
@@ -18126,210 +18194,215 @@
 ; see the Essay on Hidden Packages Added by Certify-book, above.  Also see the
 ; Essay on Fast-cert for discussion pertaining to fast-cert mode.
 
-  (with-ctx-summarized
-   (cons 'certify-book user-book-name)
-   (er-progn
-    (chk-acceptable-certify-book-prelim user-book-name acl2x ttagsxp ctx state)
-    (state-global-let*
-     ((warnings-as-errors nil))
-     (save-parallelism-settings
-      (er-let* ((pcert-env (cond ((eq pcert :default)
-                                  (getenv! "ACL2_PCERT_ARG" state))
-                                 (t (value nil))))
-                (pcert (cond ((not pcert-env)
-                              (value (if (eq pcert :default)
-                                         nil
-                                       pcert)))
+  (let (#+(and (not acl2-loop-only) acl2-pass2-def-time-info)
+          (*pass2-def-time-info* (vector nil nil nil)))
+    (with-ctx-summarized
+     (cons 'certify-book user-book-name)
+     (er-progn
+      (chk-acceptable-certify-book-prelim user-book-name acl2x ttagsxp ctx state)
+      (state-global-let*
+       ((warnings-as-errors nil))
+       (save-parallelism-settings
+        (er-let* ((pcert-env (cond ((eq pcert :default)
+                                    (getenv! "ACL2_PCERT_ARG" state))
+                                   (t (value nil))))
+                  (pcert (cond ((not pcert-env)
+                                (value (if (eq pcert :default)
+                                           nil
+                                         pcert)))
 
 ; For the remaining cases we know pcert-env is not nil, hence pcert = :default.
 
-                             ((string-equal pcert-env "T")
-                              (value t))
-                             (t (value (intern (string-upcase pcert-env)
-                                               "KEYWORD")))))
-                (ttags-seen0 (value (global-val 'ttags-seen (w state)))))
-        (mv-let
-          (full-book-string full-book-name directory-name familiar-name)
-          (parse-book-name (cbd) user-book-name ".lisp" ctx state)
-          (cond
-           ((eq pcert :complete)
-            (certify-book-finish-complete full-book-string full-book-name
-                                          ctx state))
-           (t
-            (er-let* ((write-port
-                       (certify-book-write-port write-port pcert ctx state))
-                      (write-acl2x
-                       (value (f-get-global 'write-acl2x state)))
-                      (cert-op
-                       (certify-book-cert-op pcert pcert-env write-acl2x ctx
-                                             state))
-                      (skip-proofs-okp
-                       (value (cond ((eq skip-proofs-okp :default)
-                                     (consp write-acl2x))
-                                    (t skip-proofs-okp))))
-                      (uncertified-okp (value (consp write-acl2x)))
-                      (ttagsx (value (if ttagsxp ttagsx ttags)))
-                      (ttags (chk-well-formed-ttags
-                              (if write-acl2x ttagsx ttags)
-                              (cbd) ctx state))
-                      (ttags-allowed/ttags-seen-ignored
-                       (chk-acceptable-ttags1
+                               ((string-equal pcert-env "T")
+                                (value t))
+                               (t (value (intern (string-upcase pcert-env)
+                                                 "KEYWORD")))))
+                  (ttags-seen0 (value (global-val 'ttags-seen (w state)))))
+          (mv-let
+            (full-book-string full-book-name directory-name familiar-name)
+            (parse-book-name (cbd) user-book-name ".lisp" ctx state)
+            (cond
+             ((eq pcert :complete)
+              (certify-book-finish-complete full-book-string full-book-name
+                                            ctx state))
+             (t
+              #+(and (not acl2-loop-only) acl2-pass2-def-time-info)
+              (setf (svref *pass2-def-time-info* 1) full-book-name)
+              (er-let* ((write-port
+                         (certify-book-write-port write-port pcert ctx state))
+                        (write-acl2x
+                         (value (f-get-global 'write-acl2x state)))
+                        (cert-op
+                         (certify-book-cert-op pcert pcert-env write-acl2x ctx
+                                               state))
+                        (skip-proofs-okp
+                         (value (cond ((eq skip-proofs-okp :default)
+                                       (consp write-acl2x))
+                                      (t skip-proofs-okp))))
+                        (uncertified-okp (value (consp write-acl2x)))
+                        (ttagsx (value (if ttagsxp ttagsx ttags)))
+                        (ttags (chk-well-formed-ttags
+                                (if write-acl2x ttagsx ttags)
+                                (cbd) ctx state))
+                        (ttags-allowed/ttags-seen-ignored
+                         (chk-acceptable-ttags1
 
 ; We check whether the ttags in the certification world are legal for the given
 ; ttags, and if so we refine ttags, as described in chk-acceptable-ttag1.
 
-                        ttags-seen0
-                        nil ; correct active-book-name, but irrelevant
-                        ttags
-                        nil    ; irrelevant value for ttags-seen
-                        :quiet ; ttags in cert. world: already reported
-                        ctx state))
-                      (event-data-channel
-                       (if (member-eq cert-op '(t :convert-pcert
-                                                  :create+convert-pcert))
-                           (event-data-channel full-book-string
-                                               write-event-data
-                                               write-event-data-p ctx state)
-                         (value nil)))
-                      (certify-book-info-0
-                       (value (make certify-book-info
-                                    :full-book-name full-book-name
-                                    :cert-op cert-op
-                                    :event-data-channel event-data-channel))))
-              (state-global-let*
-               ((compiler-enabled (f-get-global 'compiler-enabled state))
-                (port-file-enabled (f-get-global 'port-file-enabled state))
-                (certify-book-info certify-book-info-0)
-                (match-free-error nil)
-                (defaxioms-okp-cert defaxioms-okp)
-                (skip-proofs-okp-cert skip-proofs-okp)
-                (guard-checking-on ; see Essay on Guard Checking
-                 t))
-               (er-let* ((compile-flg
-                          (certify-book-compile-flg compile-flg cert-op ctx
-                                                    state))
-                         (saved-acl2-defaults-table
-                          (value (table-alist 'acl2-defaults-table
-                                              (w state))))
+                          ttags-seen0
+                          nil ; correct active-book-name, but irrelevant
+                          ttags
+                          nil    ; irrelevant value for ttags-seen
+                          :quiet ; ttags in cert. world: already reported
+                          ctx state))
+                        (event-data-channel
+                         (if (member-eq cert-op '(t :convert-pcert
+                                                    :create+convert-pcert))
+                             (event-data-channel full-book-string
+                                                 write-event-data
+                                                 write-event-data-p ctx state)
+                           (value nil)))
+                        (certify-book-info-0
+                         (value
+                          (make certify-book-info
+                                :full-book-name full-book-name
+                                :cert-op cert-op
+                                :event-data-channel event-data-channel))))
+                (state-global-let*
+                 ((compiler-enabled (f-get-global 'compiler-enabled state))
+                  (port-file-enabled (f-get-global 'port-file-enabled state))
+                  (certify-book-info certify-book-info-0)
+                  (match-free-error nil)
+                  (defaxioms-okp-cert defaxioms-okp)
+                  (skip-proofs-okp-cert skip-proofs-okp)
+                  (guard-checking-on ; see Essay on Guard Checking
+                   t))
+                 (er-let* ((compile-flg
+                            (certify-book-compile-flg compile-flg cert-op ctx
+                                                      state))
+                           (saved-acl2-defaults-table
+                            (value (table-alist 'acl2-defaults-table
+                                                (w state))))
 
 ; If you add more keywords to this list, make sure you do the same to the list
 ; constructed by include-book-fn.
 
-                         (suspect-book-action-alist
-                          (value
-                           (list (cons :uncertified-okp uncertified-okp)
-                                 (cons :defaxioms-okp defaxioms-okp)
-                                 (cons :skip-proofs-okp skip-proofs-okp))))
-                         (cert-obj
+                           (suspect-book-action-alist
+                            (value
+                             (list (cons :uncertified-okp uncertified-okp)
+                                   (cons :defaxioms-okp defaxioms-okp)
+                                   (cons :skip-proofs-okp skip-proofs-okp))))
+                           (cert-obj
 
 ; The following call can modify (w state) by evaluating portcullis commands
 ; from an existing certificate file.
 
-                          (chk-acceptable-certify-book
-                           user-book-name full-book-string full-book-name
-                           directory-name suspect-book-action-alist cert-op k
-                           ctx state))
-                         (portcullis-cmds0 (value (access cert-obj cert-obj
-                                                          :cmds)))
-                         (old-useless-runes
-                          (value (f-get-global 'useless-runes state)))
-                         (useless-runes
+                            (chk-acceptable-certify-book
+                             user-book-name full-book-string full-book-name
+                             directory-name suspect-book-action-alist cert-op k
+                             ctx state))
+                           (portcullis-cmds0 (value (access cert-obj cert-obj
+                                                            :cmds)))
+                           (old-useless-runes
+                            (value (f-get-global 'useless-runes state)))
+                           (useless-runes
 
 
 ; By now, we should have ensured that all portcullis commands have been run
 ; (consider the case of certify-book with k=t), so that packages are all
 ; available.
 
-                          (initial-useless-runes full-book-string
-                                                 useless-runes-r/w
-                                                 useless-runes-r/w-p
-                                                 nil ctx state))
-                         (ignore (cond (write-port
-                                        (write-port-file full-book-string
-                                                         portcullis-cmds0
-                                                         ctx state))
-                                       (t (value nil)))))
-                 (let* ((wrld1 ; from chk-acceptable-certify-book
-                         (w state))
-                        (pre-alist-wrld1
-                         (global-val 'include-book-alist wrld1))
-                        (wrld1-known-package-alist
-                         (global-val 'known-package-alist wrld1))
-                        (acl2x-file
-                         (convert-book-string-to-acl2x full-book-string))
-                        (fast-cert-mode (fast-cert-mode state))
-                        (fast-cert-p
+                            (initial-useless-runes full-book-string
+                                                   useless-runes-r/w
+                                                   useless-runes-r/w-p
+                                                   nil ctx state))
+                           (ignore (cond (write-port
+                                          (write-port-file full-book-string
+                                                           portcullis-cmds0
+                                                           ctx state))
+                                         (t (value nil)))))
+                   (let* ((wrld1 ; from chk-acceptable-certify-book
+                           (w state))
+                          (pre-alist-wrld1
+                           (global-val 'include-book-alist wrld1))
+                          (wrld1-known-package-alist
+                           (global-val 'known-package-alist wrld1))
+                          (acl2x-file
+                           (convert-book-string-to-acl2x full-book-string))
+                          (fast-cert-mode (fast-cert-mode state))
+                          (fast-cert-p
 
 ; Maybe later we'll support fast-cert for pcert, but not now.
 
-                         (and (not pcert)
-                              (eq fast-cert-mode t))))
-                   (pprogn
-                    (f-put-global 'useless-runes useless-runes state)
-                    (print-certify-book-step-1 fast-cert-p full-book-string
-                                               cert-op fast-cert-mode state)
-                    (er-let* ((ev-lst
-                               (let (#-acl2-loop-only
-                                     (*acl2-error-msg*
-                                      *acl2-error-msg-certify-book-step1*))
-                                 (read-object-file full-book-string ctx
-                                                   state)))
-                              (acl2x-expansion-alist
+                           (and (not pcert)
+                                (eq fast-cert-mode t))))
+                     (pprogn
+                      (f-put-global 'useless-runes useless-runes state)
+                      (print-certify-book-step-1 fast-cert-p full-book-string
+                                                 cert-op fast-cert-mode state)
+                      (er-let* ((ev-lst
+                                 (let (#-acl2-loop-only
+                                       (*acl2-error-msg*
+                                        *acl2-error-msg-certify-book-step1*))
+                                   (read-object-file full-book-string ctx
+                                                     state)))
+                                (acl2x-expansion-alist
 ; See the Essay on .acl2x Files (Double Certification).
-                               (cond (write-acl2x (value nil))
-                                     (t (read-acl2x-file acl2x-file
-                                                         full-book-string
-                                                         (length ev-lst)
-                                                         acl2x ctx state))))
-                              (expansion-alist0
-                               (certify-book-expansion-alist0
-                                cert-op cert-obj acl2x-expansion-alist
-                                full-book-string acl2x-file ctx state))
-                              (pass1-result ; processes events
-                               (certify-book-step-2
-                                ev-lst expansion-alist0 cert-op
-                                full-book-string acl2x-file
-                                (car ttags-allowed/ttags-seen-ignored)
-                                wrld1 directory-name write-acl2x
-                                full-book-name saved-acl2-defaults-table ctx
-                                state)))
-                      (cond
-                       (write-acl2x ; early exit
-                        (value acl2x-file))
-                       (t
-                        (let* ((pass1-known-package-alist
-                                (global-val 'known-package-alist (w state)))
-                               (skipped-proofsp
-                                (nth 0 pass1-result))
-                               (portcullis-skipped-proofsp
-                                (nth 1 pass1-result))
-                               (axiomsp
-                                (nth 2 pass1-result))
-                               (ttags-seen
-                                (nth 3 pass1-result))
-                               (new-include-book-alist-all
-                                (nth 4 pass1-result))
-                               (expansion-alist
-                                (nth 5 pass1-result))
-                               (expansion-alist-to-check
-                                (nth 6 pass1-result))
-                               (translate-cert-data
-                                (nth 7 pass1-result))
-                               (cert-annotations
-                                (list
+                                 (cond (write-acl2x (value nil))
+                                       (t (read-acl2x-file acl2x-file
+                                                           full-book-string
+                                                           (length ev-lst)
+                                                           acl2x ctx state))))
+                                (expansion-alist0
+                                 (certify-book-expansion-alist0
+                                  cert-op cert-obj acl2x-expansion-alist
+                                  full-book-string acl2x-file ctx state))
+                                (pass1-result ; processes events
+                                 (certify-book-step-2
+                                  ev-lst expansion-alist0 cert-op
+                                  full-book-string acl2x-file
+                                  (car ttags-allowed/ttags-seen-ignored)
+                                  wrld1 directory-name write-acl2x
+                                  full-book-name saved-acl2-defaults-table ctx
+                                  state)))
+                        (cond
+                         (write-acl2x ; early exit
+                          (value acl2x-file))
+                         (t
+                          (let* ((pass1-known-package-alist
+                                  (global-val 'known-package-alist (w state)))
+                                 (skipped-proofsp
+                                  (nth 0 pass1-result))
+                                 (portcullis-skipped-proofsp
+                                  (nth 1 pass1-result))
+                                 (axiomsp
+                                  (nth 2 pass1-result))
+                                 (ttags-seen
+                                  (nth 3 pass1-result))
+                                 (new-include-book-alist-all
+                                  (nth 4 pass1-result))
+                                 (expansion-alist
+                                  (nth 5 pass1-result))
+                                 (expansion-alist-to-check
+                                  (nth 6 pass1-result))
+                                 (translate-cert-data
+                                  (nth 7 pass1-result))
+                                 (cert-annotations
+                                  (list
 
 ; We set :skipped-proofsp in the certification annotations to t or nil
 ; according to whether there were any skipped proofs in either the
 ; portcullis or the body of this book (not subbooks).
 
-                                 (cons :skipped-proofsp skipped-proofsp)
+                                   (cons :skipped-proofsp skipped-proofsp)
 
 ; We similarly set :axiomsp to t or nil.  As above, subbooks are not considered
 ; here.
 
-                                 (cons :axiomsp axiomsp)
-                                 (cons :ttags ttags-seen)))
-                               (post-alist1 (if fast-cert-p
+                                   (cons :axiomsp axiomsp)
+                                   (cons :ttags ttags-seen)))
+                                 (post-alist1 (if fast-cert-p
 
 ; With fast-cert mode active, we don't roll back the world, so we might have
 ; local-include book commands in the world.  We punt and simply record nil here
@@ -18338,56 +18411,57 @@
 ; at include-book time) are all certified.  Future work could perhaps sort out
 ; which included books are local and hence to be ignored here.
 
-                                                nil
-                                              new-include-book-alist-all)))
-                          (er-progn
-                           (chk-cert-annotations
-                            cert-annotations portcullis-skipped-proofsp
-                            portcullis-cmds0 full-book-string
-                            suspect-book-action-alist ctx state)
-                           (cond
-                            ((eq cert-op :convert-pcert)
-                             (certify-book-convert-pcert
-                              full-book-string full-book-name user-book-name
-                              familiar-name portcullis-cmds0 cert-obj ev-lst
-                              cert-annotations post-alist1 ctx
-                              state))
-                            (t
-                             (mv-let
-                               (rollback-pair index port-index
-                                              port-non-localp
-                                              rollback-wrld
-                                              cert-data-pass1-saved)
-                               (certify-book-step-3-info fast-cert-p wrld1
-                                                         (w state))
-                               (fast-alist-free-cert-data-on-exit
-                                cert-data-pass1-saved
-                                (pprogn
-                                 (update-useless-runes old-useless-runes state)
-                                 (if event-data-channel
-                                     (close-output-channel event-data-channel
-                                                           state)
-                                   state)
-                                 (print-certify-book-step-3 index
-                                                            port-index
-                                                            port-non-localp
-                                                            state)
-                                 (certify-book-step-3+
-                                  rollback-pair rollback-wrld port-index
-                                  portcullis-cmds0 compile-flg cert-op
-                                  expansion-alist acl2x-expansion-alist
-                                  fast-cert-p wrld1-known-package-alist index
-                                  cert-data-pass1-saved uncertified-okp
-                                  defaxioms-okp skip-proofs-okp ttags-seen
-                                  translate-cert-data expansion-alist-to-check
-                                  full-book-string post-alist1 directory-name
-                                  ev-lst full-book-name user-book-name
-                                  familiar-name cert-annotations
-                                  pass1-known-package-alist acl2x-file
-                                  pre-alist-wrld1 k expansion-alist0
-                                  saved-acl2-defaults-table wrld1
-                                  event-data-channel ctx
-                                  state)))))))))))))))))))))))))
+                                                  nil
+                                                new-include-book-alist-all)))
+                            (er-progn
+                             (chk-cert-annotations
+                              cert-annotations portcullis-skipped-proofsp
+                              portcullis-cmds0 full-book-string
+                              suspect-book-action-alist ctx state)
+                             (cond
+                              ((eq cert-op :convert-pcert)
+                               (certify-book-convert-pcert
+                                full-book-string full-book-name user-book-name
+                                familiar-name portcullis-cmds0 cert-obj ev-lst
+                                cert-annotations post-alist1 ctx
+                                state))
+                              (t
+                               (mv-let
+                                 (rollback-pair index port-index
+                                                port-non-localp
+                                                rollback-wrld
+                                                cert-data-pass1-saved)
+                                 (certify-book-step-3-info fast-cert-p wrld1
+                                                           (w state))
+                                 (fast-alist-free-cert-data-on-exit
+                                  cert-data-pass1-saved
+                                  (pprogn
+                                   (update-useless-runes old-useless-runes state)
+                                   (if event-data-channel
+                                       (close-output-channel event-data-channel
+                                                             state)
+                                     state)
+                                   (print-certify-book-step-3 index
+                                                              port-index
+                                                              port-non-localp
+                                                              state)
+                                   (certify-book-step-3+
+                                    rollback-pair rollback-wrld port-index
+                                    portcullis-cmds0 compile-flg cert-op
+                                    expansion-alist acl2x-expansion-alist
+                                    fast-cert-p wrld1-known-package-alist index
+                                    cert-data-pass1-saved uncertified-okp
+                                    defaxioms-okp skip-proofs-okp ttags-seen
+                                    translate-cert-data
+                                    expansion-alist-to-check
+                                    full-book-string post-alist1 directory-name
+                                    ev-lst full-book-name user-book-name
+                                    familiar-name cert-annotations
+                                    pass1-known-package-alist acl2x-file
+                                    pre-alist-wrld1 k expansion-alist0
+                                    saved-acl2-defaults-table wrld1
+                                    event-data-channel ctx
+                                    state))))))))))))))))))))))))))
 
 #+acl2-loop-only
 (defmacro certify-book (user-book-name
@@ -18613,7 +18687,7 @@
 ;       (and tbody2
 ;            (not tbody1))))
 
-; We now outline an argument for the :non-standard-analysis case, which in fact
+; We now outline an argument for the non-standard-analysis case, which in fact
 ; provides justification for both defchoose axioms.  The idea is to assume that
 ; there is a suitable well-ordering for the ground-zero theory and that the
 ; ground-zero theory contains enough "invisible" functions so that this
@@ -18792,12 +18866,12 @@
                                (stobjs-out
                                 (compute-stobj-flags bound-vars nil nil wrld))
                                (wrld
-                                #+:non-standard-analysis
+                                #+non-standard-analysis
                                 (putprop
                                  fn 'classicalp
                                  (classical-fn-list-p (all-fnnames tbody) wrld)
                                  wrld)
-                                #-:non-standard-analysis
+                                #-non-standard-analysis
                                 wrld)
                                (wrld
                                 (putprop
@@ -18842,7 +18916,7 @@
 (defconst *defun-sk-keywords*
   '(:quant-ok :skolem-name :thm-name :rewrite :strengthen
               :constrain :verbose
-              #+:non-standard-analysis :classicalp))
+              #+non-standard-analysis :classicalp))
 
 (defun non-acceptable-defun-sk-p (name args body quant-ok rewrite exists-p
                                        dcls)
@@ -19078,9 +19152,9 @@
                                       constrained))))
                (rewrite (cdr (assoc-eq :rewrite keyword-alist)))
                (strengthen (cdr (assoc-eq :strengthen keyword-alist)))
-               #+:non-standard-analysis
+               #+non-standard-analysis
                (classicalp-p (and (assoc-eq :classicalp keyword-alist) t))
-               #+:non-standard-analysis
+               #+non-standard-analysis
                (classicalp (let ((pair (assoc-eq :classicalp keyword-alist)))
                              (if pair
                                  (cdr pair)
@@ -19162,7 +19236,7 @@
                                  (cons 'mv
                                        (make-list (length bound-vars)
                                                   :initial-element '*)))
-                              #+:non-standard-analysis
+                              #+non-standard-analysis
                               ,@(and classicalp-p
                                      `(:classicalp ,classicalp)))
                              ,@(and constrained
@@ -19186,7 +19260,7 @@
                                                  nil)
                                                 (declare (ignore ign))
                                                 `(:guard ,guard)))
-                                       #+:non-standard-analysis
+                                       #+non-standard-analysis
                                        ,@(and classicalp-p
                                               `(:classicalp ,classicalp))))))
                             (local (in-theory '(implies)))
@@ -19869,6 +19943,7 @@
                       ((or (eq key2 :hash-table)
                            (eq key2 :stobj-table))
                        (list* (defstobj-fnname field :boundp key2 nil)
+                              (defstobj-fnname field :keys key2 nil)
                               (defstobj-fnname field :accessor? key2 nil)
                               (defstobj-fnname field :remove key2 nil)
                               (defstobj-fnname field :count key2 nil)
@@ -20003,6 +20078,7 @@
                     t))
             (key2 (defstobj-fnname-key2 type))
             (boundp-name (defstobj-fnname field :boundp key2 renaming))
+            (keys-name (defstobj-fnname field :keys key2 renaming))
             (accessor?-name (defstobj-fnname field :accessor? key2
                               renaming))
             (remove-name (defstobj-fnname field :remove key2
@@ -20029,6 +20105,8 @@
               (eq key2 :stobj-table))
           (er-progn (chk-all-but-new-name boundp-name ctx
                                           'function wrld state)
+                    (chk-all-but-new-name keys-name ctx
+                                          'function wrld state)
                     (if (eq key2 :hash-table)
                         (chk-all-but-new-name accessor?-name ctx
                                               'function wrld state)
@@ -20054,6 +20132,7 @@
                                                   names))
                                           ((eq key2 :hash-table)
                                            (list* boundp-name
+                                                  keys-name
                                                   accessor?-name
                                                   remove-name
                                                   count-name
@@ -20062,6 +20141,7 @@
                                                   names))
                                           ((eq key2 :stobj-table)
                                            (list* boundp-name
+                                                  keys-name
                                                   remove-name
                                                   count-name
                                                   clear-name
@@ -20384,11 +20464,12 @@
                             field-template
                             :other))
              (boundp-name (nth 0 other))
-             (accessor?-name (nth 1 other))
-             (remove-name (nth 2 other))
-             (count-name (nth 3 other))
-             (clear-name (nth 4 other))
-             (init-name (nth 5 other)))
+             (keys-name (nth 1 other))
+             (accessor?-name (nth 2 other))
+             (remove-name (nth 3 other))
+             (count-name (nth 4 other))
+             (clear-name (nth 5 other))
+             (init-name (nth 6 other)))
         (cond
          (arrayp
           (append
@@ -20513,6 +20594,14 @@
                                                       nil)
                                 :verify-guards t))
                 (consp (hons-assoc-equal k (nth ,n ,var))))
+               (,keys-name
+                (,var)
+                (declare (xargs :guard ,(common-guard 'equal ; avoid k arg
+                                                      var top-recog
+                                                      nil)
+                                :verify-guards t))
+                (remove-adjacent-duplicates
+                 (merge-sort-lexorder (alist-keys (nth ,n ,var)))))
                ,@(and hashp ; skip this for a stobj-table
                       `((,accessor?-name
                          (k ,var)
@@ -20688,11 +20777,12 @@
                             field-template
                             :other))
              (boundp-fn (nth 0 other))
-             (accessor?-fn (nth 1 other))
-             (remove-fn (nth 2 other))
-             (count-fn (nth 3 other))
-             (clear-fn (nth 4 other))
-             (init-fn (nth 5 other)))
+             (keys-fn (nth 1 other))
+             (accessor?-fn (nth 2 other))
+             (remove-fn (nth 3 other))
+             (count-fn (nth 4 other))
+             (clear-fn (nth 5 other))
+             (init-fn (nth 6 other)))
         (put-stobjs-in-and-outs1
          name
          (cdr field-templates)
@@ -20742,36 +20832,38 @@
                     (putprop
                      boundp-fn 'stobjs-in (list nil name)
                      (putprop
+                      keys-fn 'stobjs-in (list name)
+                      (putprop
 ; Note that 'stobjs-out for acc-fn in the stobj-table case is placed further
 ; below.
-                      acc-fn 'stobjs-in (if (eq (car type) 'hash-table)
-                                            (list nil name)
+                       acc-fn 'stobjs-in (if (eq (car type) 'hash-table)
+                                             (list nil name)
 
 ; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
 
-                                          (list nil name *stobj-table-stobj*))
-                      (putprop-unless
-                       acc-fn 'stobjs-out (list stobj-flg) '(nil)
-                       (putprop
-                        upd-fn 'stobjs-in
-                        (if (eq (car type) 'stobj-table)
-
-; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
-
-                            (list nil *stobj-table-stobj* name)
-                          (list nil stobj-flg name))
+                                           (list nil name *stobj-table-stobj*))
+                       (putprop-unless
+                        acc-fn 'stobjs-out (list stobj-flg) '(nil)
                         (putprop
-                         upd-fn 'stobjs-out (list name)
-                         (if (eq (car type) 'hash-table)
-                             (putprop
-                              accessor?-fn 'stobjs-in (list nil name)
-                              wrld)
+                         upd-fn 'stobjs-in
+                         (if (eq (car type) 'stobj-table)
 
 ; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
 
-                           (putprop acc-fn 'stobjs-out
-                                    (list *stobj-table-stobj*)
-                                    wrld))))))))))))))))
+                             (list nil *stobj-table-stobj* name)
+                           (list nil stobj-flg name))
+                         (putprop
+                          upd-fn 'stobjs-out (list name)
+                          (if (eq (car type) 'hash-table)
+                              (putprop
+                               accessor?-fn 'stobjs-in (list nil name)
+                               wrld)
+
+; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
+
+                            (putprop acc-fn 'stobjs-out
+                                     (list *stobj-table-stobj*)
+                                     wrld)))))))))))))))))
           (t
            (let ((stobj-flg (if (eq type 'double-float)
                                 :df
@@ -20821,6 +20913,7 @@
 ; stobj-table updater      (nil ? name)       (name)
 ; array updater            (nil nil name)     (name)
 ; table boundp             (nil name)         (nil)
+; table keys               (name)             (nil)
 ; hash-table accessor?     (nil name)         (nil nil)
 ; table remove             (nil name)         (name)
 ; table count              (name)             (nil)
@@ -20854,11 +20947,17 @@
           (defconst-name-alist (cdr lst) (1+ n)))))
 
 (defun accessor-array (name field-names)
-  (let ((len (length field-names)))
+  (let ((len (max 1 (length field-names)))) ; :dimensions must be positive
     (compress1 name
                (cons `(:HEADER :DIMENSIONS (,len)
                                :MAXIMUM-LENGTH ,(+ 1 len)
-                               :DEFAULT nil ; should be ignored
+
+; The :DEFAULT of nil is generally irrelevant.  However, in the case that
+; field-names is nil for a stobj st, function accessor-root will return this
+; default when untranslating the first argument of (nth '0 st), so that the
+; untranslation is (nth 0 st) rather than (nth 17 st).
+
+                               :DEFAULT nil
                                :NAME ,name
                                :ORDER :none)
                      (defconst-name-alist field-names 0)))))
@@ -21866,7 +21965,7 @@
 ; Recalling that (ev+ u a_E A c) = (mv erp r_E c') by hypothesis, we can state
 ; our goal as follows.
 
-; (*)     r_E E-corresponds to r_L with respect to A and and s0.
+; (*)     r_E E-corresponds to r_L with respect to A and s0.
 
 ; Let s0$c be the foundational stobj name for s0 and make the following
 ; definitions.
@@ -22688,7 +22787,7 @@
 ; wrld)).
 
    (cond
-    ((eq st (getpropc fn 'stobj-function nil wrld))
+    ((congruent-stobjsp st (getpropc fn 'stobj-function nil wrld) wrld)
      :once)
     ((getpropc fn 'recursivep nil wrld)
 
@@ -22773,7 +22872,9 @@
 ; function body won't allow stobj modification in args of a function call.
 
          (assert$ (null (stobj-updates-listp st (fargs term) wrld))
-                  (and (member-eq st (stobjs-out (ffn-symb term) wrld))
+                  (and (some-congruent-p st
+                                         (stobjs-out (ffn-symb term) wrld)
+                                         wrld)
 
 ; We recur into the body of fn.  If this process runs too slowly, we may decide
 ; on a sort of memoization obtained by storing a suitable property for fn.
@@ -22799,7 +22900,7 @@
 ; they update atomically or because the :PROTECT keyword was supplied at the
 ; time the abstract stobj st$c was admitted.
 
-  (and (member-eq st$c (stobjs-out name wrld))
+  (and (some-congruent-p st$c (stobjs-out name wrld) wrld)
        (eq t (fn-stobj-updates-p st$c name wrld))))
 
 (defun key-position-from-end-eq (key alist)
@@ -24157,7 +24258,7 @@
           (msg (cond (old-formula (msg "~%~Y01[Note discrepancy with existing ~
                                         formula named ~x2:~|  ~Y31~|]~%"
                                        expected-defthm nil name old-formula))
-                     (t (msg "~%~Y01" expected-defthm nil name old-formula)))))
+                     (t (msg "~%~Y01" expected-defthm nil)))))
      (cond ((endp (cdr missing)) msg)
            (t (msg "~@0~@1"
                    msg
@@ -24449,7 +24550,7 @@
        (t
         (cons-with-hint field-old
                         (fix-export-updaters1 (cdr old) old-to-new)
-                        (cdr old))))))))
+                        old)))))))
 
 (defun export-names (exports)
   (cond ((endp exports) nil)
@@ -24612,7 +24713,7 @@
       (er-let* ((recognizer0
 
 ; Since the call of chk-acceptable-defabsstobj requires st$ap, we need to
-; expand the recognizer here (rather than letting it getting expanded by
+; expand the recognizer here (rather than letting it get expanded by
 ; chk-acceptable-defabsstobj).  We really only need the :logic recognizer
 ; (st$ap) here, not the :exec recognizer, but we might as well do the full
 ; expansion of the recognizer function spec.
@@ -26069,12 +26170,11 @@
                  (or (eq (cadr notinline-tail) :fncall)
                      (and memo-entry
                           (er hard ctx
-                              "It is illegal to specify a value for ~
-                                      trace$ option :NOTINLINE other than ~
-                                      :FNCALL for a memoized function.  The ~
-                                      suggested trace spec for ~x0, which ~
-                                      specifies :NOTINLINE ~x0, is thus ~
-                                      illegal."
+                              "It is illegal to specify a value for trace$ ~
+                               option :NOTINLINE other than :FNCALL for a ~
+                               memoized function.  The suggested trace spec ~
+                               for ~x0, which specifies :NOTINLINE ~x1, is ~
+                               thus illegal."
                               fn
                               (cadr notinline-tail)))))
                 (memo-entry
@@ -27899,10 +27999,10 @@
 
 (defun hyps-type-alist (assumptions ens wrld state)
 
-; Note that the force-flg arg to type-alist-clause is nil here, so we shouldn't
-; wind up with any assumptions in the returned tag-tree. Also note that we
-; return (mv contradictionp type-alist fc-pair-lst), where actually fc-pair-lst
-; is a ttree if contradictionp holds; normally we ignore fc-pair-lst otherwise.
+; We return (mv contradictionp type-alist ttree-or-fc-pairs), where
+; ttree-or-fc-pairs is a ttree if contradictionp is true and otherwise ttree is
+; generally ignored (it's the fc-pairs returned in that case by
+; forward-chain-top).
 
   (forward-chain-top 'show-rewrites
                      (dumb-negate-lit-lst (expand-assumptions assumptions))
@@ -28630,7 +28730,7 @@
            key))
       ((member-eq key *hint-keywords*)
        (er soft ctx
-           "It is illegal to use the name of a primitive hint, ~e.g., ~x0, as ~
+           "It is illegal to use the name of a primitive hint, e.g., ~x0, as ~
             a custom keyword hint."
            key))
       ((assoc-eq key
@@ -29022,9 +29122,9 @@
    ((not (or (booleanp substitute)
              (natp substitute)))
     (er soft 'print-gv
-        "The :substitute keyword argument of PRINT-GV must evaluate to T, ~
-         NIL, or a natural number."
-        substitute))
+        "The :substitute keyword argument of PRINT-GV must evaluate to ~x0, ~
+         ~x1, or a natural number, so the argument ~x2 is illegal."
+        t nil substitute))
    (t
     (let* ((fn (nth 0 info))
            (guard (nth 1 info))
@@ -32711,7 +32811,8 @@
         ((member-eq :system-ok args)
          (er hard 'defattach-system
              "The argument :system-ok is illegal for a defattach-system call. ~
-              Consider instead using defattach or removing :system-ok."
+              ~ The call ~x0 is thus illegal.  Consider instead using ~
+              defattach or removing :system-ok."
              form))
         (t
          `(local (defattach ,@args :system-ok t)))))
@@ -33029,13 +33130,13 @@
             (,@(and extra-var (list extra-var)) state)
             ,form0
             (mv-let (erp result state)
-                    (get-output-stream-string$ ,channel-var state)
-                    (mv nil
-                        (and (not erp)
-                             ,(if extra-var
-                                  `(cons ,extra-var result)
-                                'result))
-                        state))))
+              (get-output-stream-string$ ,channel-var state)
+              (mv nil
+                  (and (not erp)
+                       ,(if extra-var
+                            `(cons ,extra-var result)
+                          'result))
+                  state))))
          (body1 ; bind fmt controls and clean up around body0
 
 ; Warning: Keep the two branches below in sync.
@@ -33091,16 +33192,22 @@
                             state)))))
          (body ; open a string output channel and then evaluate body1
           `(mv-let
-            (,channel-var state)
-            (open-output-channel :string :character state)
-            (cond (,channel-var ,body1)
-                  (t ,(cond
-                       (outside-loop-p
-                        "ERROR: Failed to open string output channel to ~
-                         report an error.")
-                       (t '(er soft 'channel-to-string
-                               "Implementation error: Unable to open a ~
-                                channel to a string."))))))))
+             (,channel-var state)
+             (open-output-channel :string :character state)
+             (cond (,channel-var ,body1)
+                   (t ,(cond
+                        (outside-loop-p
+                         '(value (error "ERROR: Failed to open string output ~
+                                         channel to report an error.")))
+                        (t
+
+; We avoid (er soft ...) because the *default-state* might not permit writing
+; an error, and anyhow we want a "real" error here that stops evaluation since
+; this case is highly unexpected.
+
+                         '(value (er hard? 'channel-to-string
+                                     "Implementation error: Unable to open a ~
+                                      channel to a string.")))))))))
     `(with-local-state
       (mv-let
        (erp result state)
@@ -33896,10 +34003,8 @@
 
 #+acl2-loop-only
 (defmacro defund (&rest def)
-  (declare (xargs :guard (and (true-listp def)
-                              (symbolp (car def))
-                              (symbol-listp (cadr def)))))
-
+; The weak guard enables helpful error reports from defun.
+  (declare (xargs :guard (true-listp def)))
   `(with-output
      :stack :push :off :all
      (progn (with-output :stack :pop (defun ,@def))
@@ -34101,10 +34206,10 @@
 ; not have to protect the world here in case of error, though we do set the
 ; world back to the starting world when returning a non-erroneous error triple.
 ; Form should evaluate either to an ordinary value, val, or to (mv nil val
-; state stobj1 ... stobjk), where k may be 0.  If so, we return (value (list*
-; val new-kpa new-ttags-seen)), where new-kpa and new-ttags-seen are the
-; known-package-alist and value of world global 'ttags-seen immediately after
-; form is evaluated; and if not, we return a soft error.
+; state stobj1 ... stobjk), where k may be 0.  If so, we return (value (cons
+; val new-ttags-seen)), where new-ttags-seen is the value of world global
+; 'ttags-seen immediately after form is evaluated; and if not, we return a soft
+; error.
 
 ; See the comment at the call of trans-eval-default-warning, below.
 
@@ -34144,12 +34249,11 @@
 
                  (with-hcomp-bindings-protected-eval
                   (trans-eval-default-warning form ctx state aok))))
-        (let* ((new-kpa (known-package-alist state))
-               (new-ttags-seen (global-val 'ttags-seen (w state)))
+        (let* ((new-ttags-seen (global-val 'ttags-seen (w state)))
                (stobjs-out (car result))
                (vals (cdr result))
                (safep (equal stobjs-out '(nil))))
-          (cond (safep (value (list* vals new-kpa new-ttags-seen)))
+          (cond (safep (value (cons vals new-ttags-seen)))
                 ((or (null (cdr stobjs-out))
                      (not (eq (caddr stobjs-out) 'state))
                      (member-eq nil (cdddr stobjs-out)))
@@ -34182,7 +34286,7 @@
                          form))))
                 (t (pprogn
                     (set-w! original-wrld state)
-                    (value (list* (cadr vals) new-kpa new-ttags-seen)))))))))))
+                    (value (cons (cadr vals) new-ttags-seen)))))))))))
 
 (defun make-event-debug-pre (depth form on-behalf-of state)
 
@@ -34381,9 +34485,7 @@
 
 (defun make-event-fn (form expansion? check-expansion on-behalf-of
                            save-event-data whole-form state)
-  (let ((ctx (make-event-ctx whole-form))
-        #-acl2-loop-only
-        (old-kpa (known-package-alist state)))
+  (let ((ctx (make-event-ctx whole-form)))
     (with-ctx-summarized
      ctx
      (cond
@@ -34452,7 +34554,7 @@
                (new-debug-depth (1+ (f-get-global 'make-event-debug-depth state)))
                (wrld (w state)))
           (er-let*
-              ((expansion0/new-kpa/new-ttags-seen
+              ((expansion0/new-ttags-seen
                 (pprogn
                  (if make-event-debug
                      (make-event-debug-pre new-debug-depth form on-behalf-of
@@ -34475,7 +34577,7 @@
 
                                        (eq check-expansion t))
                                   (not (eq check-expansion t))))
-                    (value (list* expansion? nil nil)))
+                    (value (cons expansion? nil)))
                    (t
                     (do-proofs?
                      (or check-expansion
@@ -34501,10 +34603,9 @@
 ; occurs later at the top level of the book.
 
                      (protected-eval form on-behalf-of ctx state t)))))))
-               (expansion0 (value (car expansion0/new-kpa/new-ttags-seen)))
-               (new-kpa (value (cadr expansion0/new-kpa/new-ttags-seen)))
+               (expansion0 (value (car expansion0/new-ttags-seen)))
                (new-ttags-seen
-                (value (cddr expansion0/new-kpa/new-ttags-seen)))
+                (value (cdr expansion0/new-ttags-seen)))
                (need-event-landmark-p
                 (pprogn
                  (if make-event-debug
@@ -34610,42 +34711,13 @@
                           #-acl2-loop-only
                           (let ((msg
 
-; We now may check the expansion to see if an unknown package appears.  The
-; following example shows why this can be important.  Consider a book "foo"
-; with this event.
+; At one time we only did the following check when the known-package-alist has
+; changed.  A comment appeared here through ACL2 Version 8.7 explaining why the
+; check is needed in that case.  But we now do the check unconditionally, and a
+; very simple example explains why; see community book
+; system/tests/make-event-bad-char.lisp.
 
-; (make-event
-;  (er-progn
-;   (include-book "foo2") ; introduces "MY-PKG"
-;   (assign bad (intern$ "ABC" "MY-PKG"))
-;   (value `(make-event
-;            (list 'defconst '*a*
-;                  (list 'length
-;                        (list 'symbol-name
-;                              (list 'quote ',(@ bad)))))))))
-;
-
-; where "foo2" is as follows, with the indicated portcullis command:
-
-; (in-package "ACL2")
-;
-; ; (defpkg "MY-PKG" nil)
-;
-; (defun foo (x)
-;   x)
-
-; In ACL2 Version_3.4, we certified these books; but then, in a new ACL2
-; session, we got a raw Lisp error about unknown packages when we try to
-; include "foo".
-
-; On the other hand, the bad-lisp-objectp test is potentially expensive for
-; large objects such as are encountered at Centaur Tech. in March 2010.  The
-; value returned by expansion can be expected to be a good lisp object in the
-; world installed at the end of expansion, so if expansion doesn't extend the
-; world with any new packages, then we can avoid this check.
-
-                                 (and (not (eq old-kpa new-kpa))
-                                      (bad-lisp-objectp actual-expansion))))
+                                 (bad-lisp-objectp actual-expansion)))
                             (when msg
                               (er hard ctx
                                   "Make-event expansion for the form ~x0 has ~
@@ -34748,14 +34820,14 @@
       (er-let* ((next
                  (cond
                   (make-event-case
-                   (er-let* ((expansion0/new-kpa/new-ttags-seen
+                   (er-let* ((expansion0/new-ttags-seen
                               (revert-world-on-error
                                (protected-eval (cadr form)
                                                (cadr (assoc-keyword
                                                       :on-behalf-of
                                                       (cddr form)))
                                                ctx state t))))
-                     (value (car expansion0/new-kpa/new-ttags-seen))))
+                     (value (car expansion0/new-ttags-seen))))
                   (macrop (macroexpand1 form ctx state))
                   (transp (translate form
                                      t   ; stobjs-out
@@ -34915,7 +34987,7 @@
     `(set-check-invariant-risk-fn ,x state))
    (t `(cond
         ((not (member-eq ,x '(t nil :ERROR :WARNING)))
-         (er soft 'check-invariant-risk
+         (er soft 'set-check-invariant-risk
              "Illegal value for ~x0: ~x1"
              'check-invariant-risk
              ',x))
@@ -35240,8 +35312,7 @@
        ((and error-triple-p+ (car replaced-val))
         (er soft ctx
             "Evaluation failed: Result was of the form (mv t _ state).  See ~
-             :DOC error-triple."
-            (car replaced-val)))
+             :DOC error-triple."))
        (check (cond ((and (car stobjs-out)
                           (not (eq (car stobjs-out) :df)))
                      (er soft ctx
@@ -36270,7 +36341,7 @@
 ; unless and until there is a demonstrated need.
 
 ; For (memoize 'f :invoke 'g), must f and/or g be in logic mode and even
-; guard-verified?  Well, they must in be logic mode, because otherwise the
+; guard-verified?  Well, they must be in logic mode, because otherwise the
 ; necessary equality theorem won't exist.  We further require g to be
 ; guard-verified; otherwise we can't trust that the guard of f is sufficient to
 ; ensure a well-guarded call of g.  Should we also require f to be
@@ -36392,13 +36463,15 @@
     (msg "~@0The function to be memoized, ~x1, has a different signature from ~
           the function to be :INVOKEd, ~x2."
          str key invoke))
-   ((skip-proofs-due-to-system state)
 
-; By conservativity it is sound to skip the theorem checks (for equality and
-; guard implication) when we are including a book or in the second pass of
-; encapsulate.
+; At one time we returned nil here if (skip-proofs-due-to-system state) is
+; true.  After all, by conservativity it is sound to skip the theorem checks
+; (for equality and guard implication) when we are including a book or in the
+; second pass of encapsulate.  But that does not account for using
+; macro-aliases in the first argument of memoize, or other ways for that
+; argument to depend on the world; see community book
+; system/tests/memoize-invoke-macro-alias.lisp.
 
-    nil)
    (t (let ((eq-thm-p (memoize-invoke-equality-exists key invoke wrld wrld))
             (gd-thm-p (memoize-invoke-guard-thm-exists key invoke wrld)))
         (cond
@@ -36408,7 +36481,7 @@
                          `(defthm ,(intern-in-package-of-symbol
                                     (concatenate 'string
                                                  (symbol-name key)
-                                                 "-is-"
+                                                 "-IS-"
                                                  (symbol-name invoke))
                                     invoke)
                             ,(let ((formals (formals key wrld)))
@@ -36427,9 +36500,9 @@
                                     thm-formula
                                     guard-thm-formula)))))
               (msg "~@0The following event~#1~[~/s~] must be admitted ~
-                    (possibly with differing name or macro) before memoizing ~
-                    function ~x2 with :INVOKE value ~x3.  See :DOC ~
-                    memoize.~|~%~@4"
+                    (possibly with differing name or macro), non-locally, ~
+                    before memoizing function ~x2 with :INVOKE value ~x3.  ~
+                    See :DOC memoize.~|~%~@4"
                    str
                    (if (or eq-thm-p gd-thm-p) 0 1)
                    key invoke msg))))))))
@@ -36473,8 +36546,22 @@
              (msg
               (cond
                ((eq key-formals t)
-                (msg "~@0~x1 is not a function symbol."
-                     str key))
+                (msg "~@0~x1 is not a function symbol.~#2~[~/~@3~]"
+                     str key
+                     (if (and invoke
+                              (function-symbolp
+                               (deref-macro-name key (macro-aliases wrld))
+                               wrld))
+                         1
+                       0)
+                     (msg "  Note that because of the non-nil :INVOKE ~
+                           argument, the first argument of your ~x0 call must ~
+                           be a function symbol.  That first argument, ~x1, ~
+                           is a macro-alias for the function symbol, ~x2, ~
+                           which you should use instead as the first argument."
+                          'memoize
+                          key
+                          (deref-macro-name key (macro-aliases wrld)))))
                ((and (or condition (cdr (assoc-eq :inline val)))
 
 ; The preceding term says that we are not profiling.  Why not replace it simply
@@ -36971,7 +37058,7 @@
 
 (defun old-and-new-event-data-fn (book-string name namep dir ctx state)
 
-; This function returns (old-event-data . new-event-date), where the car and
+; This function returns (old-event-data . new-event-data), where the car and
 ; cdr are event-data values (see :DOC get-event-data) that are intended to
 ; correspond, where new-event-data is the most recent event-data -- associated
 ; with name, if namep is true -- and old-event-data is intended to be the
@@ -37690,12 +37777,12 @@
 
 ; - Case: u is (with-local-stobj st body).  We skip the easy check that the
 ;   recursive call (cl-eval body a' gs') is coherent, where a' and gs' are as
-;   defined for this case of cl-eval, thus accommodating a new root note for
+;   defined for this case of cl-eval, thus accommodating a new root node for
 ;   local stobj st.  Then conclusion (a) follows from the inductive hypothesis,
 ;   which also gives us that the update of gs' from the recursive call
 ;   satisfies the disjointness specified by (C1).  Conclusion (b) also follows
 ;   from the inductive hypothesis; in particular, the update of gs from the
-;   original call satisfies (C1) since it is the same the update of gs' from
+;   original call satisfies (C1) since it is the same as the update of gs' from
 ;   the recursive call with one exception: the child stobj memories of the new
 ;   (local-stobj) node added to gs' disappear when finally updating gs.
 

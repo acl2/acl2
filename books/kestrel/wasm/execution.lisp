@@ -1,6 +1,6 @@
 ; An interpreter / operational semantics for Web Assembly
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -211,11 +211,11 @@
 ;;          (symbolp opcode))))
 
 (defun local.get-argsp (args)
-  (declare (xargs :guard (and (true-listp args))))
+  (declare (xargs :guard (true-listp args)))
   (and (= 1 (len args)) (u32p (first args))))
 
 (defun i32.add-argsp (args)
-  (declare (xargs :guard (and (true-listp args))))
+  (declare (xargs :guard (true-listp args)))
   (null args))
 
 (defund instrp (instr)

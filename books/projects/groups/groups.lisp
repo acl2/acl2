@@ -10,7 +10,7 @@
 (include-book "projects/numbers/euclid" :dir :system)
 
 ;;---------------------------------------------------------------------------------------------------
-;; Fimite Groups
+;; Finite Groups
 ;;---------------------------------------------------------------------------------------------------
 
 ;; An mxn matrix is a proper list of m proper lists of length n:
@@ -124,24 +124,27 @@
 
 ;; Left inverse:
 
-(defun inv-aux (x l g)
+(defun find-inv-aux (x l g)
   (if (consp l)
       (if (equal (op (car l) x g) (e g))
-          (car l)
-	(inv-aux x (cdr l) g))
+          (list (car l))
+	(find-inv-aux x (cdr l) g))
     ()))
 
+(defund find-inv (x g)
+  (find-inv-aux x (elts g) g))
+
 (defund inv (x g)
-  (inv-aux x (elts g) g))
+  (car (find-inv x g)))
 
 ;; The inverse property is checked by a search of (elts g), returning a counterexample or NIL.
 ;; Thus, we are assuming that NIL is never an element of a group:
 
 (defun check-inverses (l g)
   (if (consp l)
-      (if (inv (car l) g)
+      (if (find-inv (car l) g)
           (check-inverses (cdr l) g)
-	(car l))
+	(list (car l)))
     ()))
 
 (defun inv-cex (g) (check-inverses (elts g) g))
@@ -154,7 +157,6 @@
   (and (posp (order g))
        (matrixp g (order g) (order g))
        (dlistp (elts g))
-       (not (in () g))
        (closedp g)
        (assocp g)
        (inversesp g)))
@@ -166,10 +168,6 @@
 (defthm dlistp-elts
   (implies (groupp g)
            (dlistp (elts g))))
-
-(defthm non-nil-elts
-  (implies (groupp g)
-           (not (in () g))))
 
 (defthm in-e-g
   (implies (groupp g)
@@ -263,10 +261,9 @@
 
 (defthm not-inv-cex
   (implies (and (dlistp (elts g))
-                (not (in () g))
                 (not (inversesp g)))
-	   (and (in (inv-cex g) g)
-	        (implies (in y g) (not (equal (op y (inv-cex g) g) (e g)))))))
+	   (and (in (car (inv-cex g)) g)
+	        (implies (in y g) (not (equal (op y (car (inv-cex g)) g) (e g)))))))
 			
 ;; Abelian groups:
 
@@ -632,7 +629,6 @@
   (local (defun ginv (x) x))
   (defthm consp-glist (consp (glist)))
   (defthm dlistp-glist (dlistp (glist)))
-  (defthm g-non-nil (not (member-equal () (glist))))
   (defthm g-identity
     (implies (member-equal x (glist))
              (equal (gop (car (glist)) x)
@@ -838,10 +834,6 @@
   (implies (posp n)
            (dlistp (ninit n))))
 
-(defthm ninit-non-nil
-  (implies (posp n)
-           (not (member-equal () (ninit n)))))
-
 (defthm car-ninit
   (implies (posp n)
            (equal (car (ninit n)) 0)))
@@ -923,10 +915,6 @@
   (implies (posp n)
            (dlistp (rel-primes n))))
 
-(defthm rel-primes-non-nil
-  (implies (posp n)
-           (not (member-equal () (rel-primes n)))))
-
 (defthm car-rel-primes
   (implies (posp n)
            (equal (car (rel-primes n)) 1)))
@@ -1004,17 +992,13 @@
 ;; The other prerequisites of defgroup are automatically proved by defsubgroup.
 
 (defmacro defsubgroup (name args grp cond elts)
-  (let ((non-nil-name (intern$ (concatenate 'string (symbol-name name) "-NON-NIL") "DM"))
-        (identity-name (intern$ (concatenate 'string (symbol-name name) "-IDENTITY") "DM"))
+  (let ((identity-name (intern$ (concatenate 'string (symbol-name name) "-IDENTITY") "DM"))
         (assoc-name (intern$ (concatenate 'string (symbol-name name) "-ASSOC") "DM"))
         (inverse-name (intern$ (concatenate 'string (symbol-name name) "-INVERSE") "DM"))
         (subgroupp-name (intern$ (concatenate 'string "SUBGROUPP-" (symbol-name name)) "DM"))
 	(cond (if (symbolp grp) `(and (groupp ,grp) ,cond) cond))
 	(args (if (symbolp grp) (append args (list grp)) args)))
     `(encapsulate ()
-       (local-defthm ,non-nil-name
-         (implies ,cond (not (member-equal () ,elts)))
-	 :hints (("Goal" :use ((:instance member-sublist (x ()) (l ,elts) (m (elts ,grp)))))))
        (local-defthm ,identity-name
          (implies (and ,cond (member-equal x ,elts))
 	          (equal (op (car ,elts) x ,grp) x)))
@@ -1185,20 +1169,22 @@
 
 ;; Search for an element of g that does not commute with a:
 
-(defun cent-cex-aux (a l g)
+(defun find-cent-cex-aux (a l g)
   (if (consp l)
       (if (equal (op a (car l) g) (op (car l) a g))
-          (cent-cex-aux a (cdr l) g)
-	(car l))
+          (find-cent-cex-aux a (cdr l) g)
+	(list (car l)))
     ()))
 
-(defund cent-cex (a g) (cent-cex-aux a (elts g) g))
+(defund find-cent-cex (a g) (find-cent-cex-aux a (elts g) g))
+
+(defund cent-cex (a g) (car (find-cent-cex a g)))
 
 ; Ordered list of elements of g that commute with all elements:
 
 (defun cent-elts-aux (l g)
   (if (consp l)
-      (if (cent-cex (car l) g)
+      (if (find-cent-cex (car l) g)
           (cent-elts-aux (cdr l) g)
 	(cons (car l) (cent-elts-aux (cdr l) g)))
 	
@@ -1432,10 +1418,6 @@
   (implies (and (groupp g) (in a g))
            (consp (powers a g))))
 
-(defthm powers-non-nil
-  (implies (and (groupp g) (in a g))
-           (not (member-equal () (powers a g)))))
-
 (defthm dlistp-powers
   (implies (and (groupp g) (in a g))
            (dlistp (powers a g))))
@@ -1488,23 +1470,23 @@
                 (in a g))
 	   (abelianp (cyclic a g))))
 
-;; The witness function:
-
-(defun elt-of-ord-aux (l n g)
-  (if (consp l)
-      (if (= (ord (car l) g) n)
-          (car l)
-	(elt-of-ord-aux (cdr l) n g))
-    ()))
-
 ;; Search g for an element of ord n:
 
-(defund elt-of-ord (n g) (elt-of-ord-aux (elts g) n g))
+(defun find-elt-of-ord-aux (l n g)
+  (if (consp l)
+      (if (= (ord (car l) g) n)
+          (list (car l))
+	(find-elt-of-ord-aux (cdr l) n g))
+    ()))
+
+(defund find-elt-of-ord (n g) (find-elt-of-ord-aux (elts g) n g))
+
+(defund elt-of-ord (n g) (car (find-elt-of-ord n g)))
 
 (defthmd elt-of-ord-ord
   (implies (and (groupp g)
                 (natp n)
-                (elt-of-ord n g))
+                (find-elt-of-ord n g))
 	   (and (in (elt-of-ord n g) g)
 	        (equal (ord (elt-of-ord n g) g)
 		       n))))
@@ -1514,16 +1496,19 @@
                 (natp n)
 		(in x g)
 		(= (ord x g) n))
-           (elt-of-ord n g)))
+           (find-elt-of-ord n g)))
 
 ;; An element of ord (order g) is a generator of g:
+
+(defund find-group-gen (g)
+  (find-elt-of-ord (order g) g))
 
 (defund group-gen (g)
   (elt-of-ord (order g) g))
 
 (defthmd order-group-gen
   (implies (and (groupp g)
-                (group-gen g))
+                (find-group-gen g))
 	   (and (in (group-gen g) g)
 	        (equal (ord (group-gen g) g)
 		       (order g)))))
@@ -1532,12 +1517,12 @@
 
 (defund cyclicp (g)
   (and (groupp g)
-       (group-gen g)))
+       (find-group-gen g)))
 
 (defthm cyclicp-groupp
   (implies (cyclicp g)
            (and (groupp g)
-	        (group-gen g))))
+	        (find-group-gen g))))
 
 ;; Once we have defined isomorphism, we shall prove that if (cyclicp g), then (cyclic (group-gen g) g)
 ;; is isomorphic to g.  For now, we have this:

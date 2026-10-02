@@ -141,7 +141,7 @@
 ; while we actually go to work on lit3' above, we will actually have in
 ; our hand the fact that lit3 is its parent.  Keeping track of the parents
 ; of the literals we are working on is made harder by the fact that
-; sometimes literal merge.  For example, in {lit1 lit2 lit3} lit1 may
+; sometimes literals merge.  For example, in {lit1 lit2 lit3} lit1 may
 ; simplify to lit3 and thus we may merge them.  The surviving literal is
 ; given the parent tree that contains both 1 and 3 so we know not to use
 ; conclusions derived from either.  The rewrite-constant, rcnst, in use
@@ -280,7 +280,7 @@
 ; Note: Tag-tree primitive
 
 ; In this function we do not assume that tag is a key of ttree.  See also
-; remove-tag-from-tag-tree, which does make that assumption.
+; remove-tag-from-tag-tree!, which does make that assumption.
 
   (cond ((assoc-eq tag ttree)
          (remove1-assoc-eq tag ttree))
@@ -313,6 +313,10 @@
 
 ; Note: Tag-tree primitive
 
+; This associates val with the list of values associated with tag in ttree,
+; except that this is a no-op if val is already in that list.  See also
+; add-to-tag-tree-new for a variant that does not make that exception.
+
 ; See also add-to-tag-tree!, for the case that tag is known not to be a key of
 ; ttree.
 
@@ -326,6 +330,27 @@
                         (t (acons tag
                                   (cons val (cdr pair))
                                   (remove-tag-from-tag-tree! tag ttree)))))
+            (t (acons tag (list val) ttree)))))))
+
+(defun add-to-tag-tree-new (tag val ttree)
+
+; Note: Tag-tree primitive
+
+; It is legal (and more efficient) to use this instead of add-to-tag-tree if we
+; know (or don't care) that val is already in the list of values associated
+; with tag 
+
+; See also add-to-tag-tree!, for the case that tag is known not to be a key of
+; ttree.
+
+  (cond
+   ((eq ttree nil) ; optimization
+    (list (list tag val)))
+   (t
+    (let ((pair (assoc-eq tag ttree)))
+      (cond (pair (acons tag
+                         (cons val (cdr pair))
+                         (remove-tag-from-tag-tree! tag ttree)))
             (t (acons tag (list val) ttree)))))))
 
 (defun add-to-tag-tree! (tag val ttree)
@@ -1522,7 +1547,7 @@
                                                        (1+f acc)
                                                        (1+f calls))
                                      (+f 2 calls)))))
-           #+:non-standard-analysis
+           #+non-standard-analysis
            ((realp evg)
             (prog2$ (er hard? 'fn-count-evg
                         "Encountered an irrational in fn-count-evg!")
@@ -1533,7 +1558,7 @@
                                                 (1+f acc)
                                                 (1+f calls))
                               (+f 2 calls)))
-           #+:non-standard-analysis
+           #+non-standard-analysis
            ((complexp evg)
             (prog2$ (er hard? 'fn-count-evg
                         "Encountered a complex irrational in ~ fn-count-evg!")
@@ -1824,7 +1849,7 @@
 ; Rational-poly-p is a boolean flag used in non-linear arithmetic.  When it is
 ; true, then the right-hand side of the inequality (the polynomial) is known to
 ; have a rational number value.  (But note that for ACL2(r), i.e. for
-; #+:non-standard-analysis, the value need only be real.  Through the linear
+; #+non-standard-analysis, the value need only be real.  Through the linear
 ; and non-linear arithmetic code, references to "rational" should be considered
 ; as references to "real".)  The flag is needed because of the presence of
 ; complex numbers in ACL2's logic.  Note that sums and products of rational
@@ -1853,9 +1878,9 @@
 ; new field :derived-from-not-equalityp.  This function was much more
 ; conservative in its judgement and threw out any poly which descended from an
 ; inequality in any way, rather than only those which were derived directly
-; from a (negated) equality.  Matt Kaufmann noticed difference and provoked an
-; email exchange with Robert Krug, who did the research and initial coding
-; leading to this version of linear).  Here is Robert's reply.
+; from a (negated) equality.  Matt Kaufmann noticed this difference and
+; provoked an email exchange with Robert Krug, who did the research and initial
+; coding leading to this version of linear).  Here is Robert's reply.
 
 ;   Matt is right, I did inadvertently change ACL2's meaning for
 ;   descends-from-not-equalityp.  Perhaps this change is also responsible
@@ -1949,11 +1974,11 @@
 
 (defun good-pot-varp (x)
   (and (not (quotep x))
-       (not (equal (fn-symb x) 'BINARY-+))
-       (not (and (equal (fn-symb x) 'BINARY-*)
+       (not (eq (fn-symb x) 'BINARY-+))
+       (not (and (eq (fn-symb x) 'BINARY-*)
                  (quotep (fargn x 1))
                  (real/rationalp (unquote (fargn x 1)))))
-       (not (and (equal (fn-symb x) 'UNARY--)
+       (not (and (eq (fn-symb x) 'UNARY--)
                  (quotep (fargn x 1))
                  (real/rationalp (unquote (fargn x 1)))))))
 
@@ -2357,7 +2382,7 @@
              (cond
               ((and (quotep (fargn term 1))
                     (real/rationalp (unquote (fargn term 1)))
-                    (equal (fn-symb (fargn term 2)) 'BINARY-+))
+                    (eq (fn-symb (fargn term 2)) 'BINARY-+))
                (add-linear-term
                 (mcons-term* 'BINARY-+
                              (mcons-term* 'BINARY-*
@@ -2370,7 +2395,7 @@
                 p))
               ((and (quotep (fargn term 1))
                     (real/rationalp (unquote (fargn term 1)))
-                    (equal (fn-symb (fargn term 2)) 'BINARY-*)
+                    (eq (fn-symb (fargn term 2)) 'BINARY-*)
                     (quotep (fargn (fargn term 2) 1))
                     (real/rationalp (unquote (fargn (fargn term 2) 1))))
                (add-linear-term
@@ -3073,7 +3098,7 @@
 ; return must find its way into the hist entry for that
 ; simplify-clause.
 
-; Historical note: The affect of the newly (v2_8) introduced field,
+; Historical note: The effect of the newly (v2_8) introduced field,
 ; :derived-from-not-equalityp, is different from that of the
 ; earlier function descends-from-not-equalityp.  We are now more
 ; liberal about the polys we can generate here.  See the discussion
@@ -3171,7 +3196,7 @@
 ; the cancellation yielded a trivially true poly) or is the newly
 ; formed poly.
 
-; Historical note: The affect of the newly (v2_8) introduced field,
+; Historical note: The effect of the newly (v2_8) introduced field,
 ; :derived-from-not-equalityp, is different from that of the
 ; earlier function descends-from-not-equalityp.  See the discussion
 ; accompanying the definition of a poly.  (Search for ``(defrec poly''.))

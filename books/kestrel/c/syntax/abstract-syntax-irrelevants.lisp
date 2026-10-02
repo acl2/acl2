@@ -203,7 +203,7 @@
 (defirrelevant irr-const-expr
   :short "An irrelevant constant expression."
   :type const-exprp
-  :body (const-expr (irr-expr)))
+  :body (make-const-expr :expr (irr-expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -305,19 +305,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-param-declor
+  :short "An irrelevant parameter declarator."
+  :type param-declorp
+  :body (param-declor-none nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-param-declon
   :short "An irrelevant parameter declaration."
   :type param-declonp
   :body (make-param-declon :specs nil
-                           :declor (param-declor-none)
+                           :declor (irr-param-declor)
                            :attribs nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-param-declor
-  :short "An irrelevant parameter declarator."
-  :type param-declorp
-  :body (param-declor-none))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -345,7 +345,7 @@
 (defirrelevant irr-struct-declor
   :short "An irrelevant structure declarator."
   :type struct-declorp
-  :body (make-struct-declor :declor? nil :expr? nil))
+  :body (make-struct-declor :declor? nil :expr? nil :info nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -530,6 +530,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-hash-if/elif-expr
+  :short "An irrelevant expressions in @('#if') and @('#elif') conditions."
+  :type hash-if/elif-exprp
+  :body (hash-if/elif-expr-defined (irr-ident)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-hash-if/ifdef/ifndef
+  :short "An irrelevant @('#if') or @('#ifdef') or @('#ifndef')."
+  :type hash-if/ifdef/ifndef-p
+  :body (hash-if/ifdef/ifndef-ifdef (irr-ident)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-trans-item
   :short "An irrelevant translation item."
   :type trans-itemp
@@ -537,15 +551,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-transunit
-  :short "An irrelevant translation unit."
-  :type transunitp
-  :body (transunit nil nil))
+(defirrelevant irr-hash-elif
+  :short "An irrelevant @('#elif')."
+  :type hash-elifp
+  :body (hash-elif (irr-hash-if/elif-expr) nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-transunit-ensemble
-  :short "An irrelevant ensemble of translation units."
-  :type transunit-ensemblep
-  :body (make-transunit-ensemble :units nil
-                                 :info nil))
+(defirrelevant irr-trans-unit
+  :short "An irrelevant translation unit."
+  :type trans-unitp
+  :body (trans-unit nil nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-trans-ensemble
+  :short "An irrelevant translation ensemble."
+  :type trans-ensemblep
+  :body (make-trans-ensemble :units nil
+                             :resolved-includes nil
+                             :info nil))

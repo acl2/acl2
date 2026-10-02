@@ -42,6 +42,7 @@
 
 ;; TODO: Can we unify this with the unrolling lifter?
 
+(include-book "lifter-support")
 (include-book "misc/defp" :dir :system)
 (include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "kestrel/x86/support" :dir :system)
@@ -52,7 +53,7 @@
 (include-book "../logops-rules-axe")
 ;(include-book "../basic-rules")
 (include-book "../rewriter-basic") ; for simplify-conjunction-basic
-(include-book "rewriter-x86")
+(include-book "rewriter")
 (include-book "../rules-in-rule-lists")
 (include-book "../dagify0") ; for compose-dags
 ;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
@@ -629,7 +630,7 @@
                                     all-assumptions
                                     rule-alist
                                     nil known-booleans nil nil nil nil nil
-                                    (append '( ;xr-wb-in-app-view
+                                    (append '(;xr-wb-in-app-view
                                               )
                                             rules-to-monitor)
                                     *no-warn-ground-functions*
@@ -1999,7 +2000,7 @@
         (- (cw "Done.)~%"))
 
         ;; Add params for any additional read-only values read in the exit-test-term:
-        (- (cw "(Making params for read-only values in the exit-term term:~%"))
+        (- (cw "(Making params for read-only values in the exit-test term:~%"))
         ((mv & ;next-param-number
               paramnum-update-alist paramnum-extractor-alist paramnum-name-alist)
          (make-read-only-parameters-for-expr exit-test-term next-param-number paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state-var ;; nil
@@ -2155,7 +2156,7 @@
                           extra-rules ; rules to enable
                           remove-rules
                           rules-to-monitor ; rules to monitor
-                          loop-alist ; maps loop headers (PC offsets relative to base-address) to lists of PC offsets ( relative to base-address) in the corresponding loops
+                          loop-alist ; maps loop headers (PC offsets relative to base-address) to lists of PC offsets (relative to base-address) in the corresponding loops
                           measure-alist
                           base-name
                           lifter-rules
@@ -2240,7 +2241,7 @@
        ;; Not an IF, so test whether we have exited the segment:
        ;; TODO: Begin by comparing the stack height?
        (b* (((mv erp exitedp state)
-             (b* ( ;; Extract the PC:
+             (b* (;; Extract the PC:
                   (- (cw "(Checking the PC.)~%"))
                   (- (cw "(State term is ~x0)~%" state-term))
                   ((mv erp state-dag)
@@ -2428,7 +2429,7 @@
  ;; hit the loop header again?).  !! For now, this assumes that the code
  ;; segment being lifted is at the start of the routine, preceding the
  ;; routine's single loop.  We always step the state at least once.
- (defun lift-code-segment ( ;initial-state-dag ;over the var x86_0 and perhaps other vars representing inputs (see the Essay on Variables) -- always just the initial-state-dag in var form?
+ (defun lift-code-segment (;initial-state-dag ;over the var x86_0 and perhaps other vars representing inputs (see the Essay on Variables) -- always just the initial-state-dag in var form?
                            loop-depth ;0 if not in a loop, yet, 1 for the body of the first loop (2 or greater for the body of a nested loop)
                            generated-events
                            next-loop-num
@@ -2567,7 +2568,7 @@
            (ignore produce-theorem ; todo
                    non-executable ; todo
                    ))
-  (b* ( ;; Check whether this call to the lifter has already been made:
+  (b* (;; Check whether this call to the lifter has already been made:
        ((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :redundant) state))
        ;; Check the lifted-name argument:
@@ -2578,7 +2579,7 @@
        ((when (not (stringp target)))
         (er hard? 'lift-subroutine-fn "No :target supplied (must be the name of a subroutine).")
         (mv (erp-t) nil state))
-       ;; Check the executable argument:
+       ;; Check and resolve the executable argument:
        ((when (eq :none executable))
         (er hard? 'lift-subroutine-fn "No :executable supplied (should usually be a string (file name or path).") ; todo: mention the parsed-executable option
         (mv (erp-t) nil state))
@@ -2586,6 +2587,15 @@
                        (acl2::parsed-executablep executable))))
         (er hard? 'lift-subroutine-fn "Bad value for :executable argument: ~x0." executable)
         (mv (erp-t) nil state))
+       ((mv erp parsed-executable state)
+        (if (stringp executable)
+            ;; it's a filename, so parse the file:
+            (acl2::parse-executable executable state)
+          ;; it's already a parsed-executable:
+          (mv nil executable state)))
+       ((when erp)
+        (er hard? 'lift-subroutine-fn "Error parsing executable: ~s0." executable)
+        (mv t nil state))
        ;; Check the inputs argument:
        ((when (not (or (eq :skip inputs) (names-and-typesp inputs))))
         (er hard? 'lift-subroutine-fn "Bad value for :inputs argument: ~x0." inputs)
@@ -2607,10 +2617,11 @@
                        (eq :auto existing-stack-slots))))
         (prog2$ (er hard? 'lift-subroutine-fn "Bad value for existing-stack-slots: ~x0" existing-stack-slots)
                 (mv (erp-t) nil state)))
-       ;; Check the position-independent argument:
-       ((when (not (booleanp position-independent)))
+       ;; Check and resolve the position-independent argument:
+       ((when (not (member-eq position-independent '(t nil :auto))))
         (prog2$ (er hard? 'lift-subroutine-fn "Bad value for position-independent ~x0" position-independent)
                 (mv (erp-t) nil state)))
+       (position-independentp (resolve-position-independent position-independent parsed-executable))
        ;; Check the feature-flags argument:
        ((when (not (feature-flagsp feature-flags)))
         (prog2$ (er hard? 'lift-subroutine-fn "Bad value for feature-flags ~x0" feature-flags)
@@ -2619,7 +2630,7 @@
        ((when (eq :none loop-alist))
         (er hard? 'lift-subroutine-fn "No :loops supplied (should be a loop-alist).")
         (mv (erp-t) nil state))
-       ((when (not (and (loop-alistp loop-alist))))
+       ((when (not (loop-alistp loop-alist)))
         (prog2$ (er hard? 'lift-subroutine-fn "Bad value for loop-alist: ~x0" loop-alist)
                 (mv (erp-t) nil state)))
        ;; Check the monitor argument:
@@ -2634,15 +2645,7 @@
        ;; Done checking args:
        (- (cw "(Lifting subroutine ~x0:~%" target))
        ;; Generate assumptions for lifting:
-       ((mv erp parsed-executable state)
-        (if (stringp executable)
-            ;; it's a filename, so parse the file:
-            (acl2::parse-executable executable state)
-          ;; it's already a parsed-executable:
-          (mv nil executable state)))
-       ((when erp)
-        (er hard? 'def-unrolled-fn "Error parsing executable: ~s0." executable)
-        (mv t nil state))
+
        (executable-type (acl2::parsed-executable-type parsed-executable))
        ;; Throws an error if we have a non-x86 executable:
        (- (acl2::ensure-x86 parsed-executable))
@@ -2657,7 +2660,7 @@
        ((mv erp tool-assumptions &)
         (if (eq :mach-o-64 executable-type)
             (assumptions-macho64-new target
-                                     position-independent
+                                     position-independentp
                                      feature-flags
                                      stack-slots
                                      existing-stack-slots
@@ -2669,7 +2672,7 @@
                                      parsed-executable)
           (if (eq :pe-64 executable-type)
               (assumptions-pe64-new target
-                                    position-independent
+                                    position-independentp
                                     feature-flags
                                     stack-slots
                                     existing-stack-slots
@@ -2681,7 +2684,7 @@
                                     parsed-executable)
             (if (eq :elf-64 executable-type)
                 (assumptions-elf64-new target
-                                       position-independent
+                                       position-independentp
                                        feature-flags
                                        stack-slots
                                        existing-stack-slots
@@ -2818,7 +2821,7 @@
                            (assume-bytes ':all) ; todo: change the default to :non-write
                            (stack-slots '10)
                            (existing-stack-slots ':auto)
-                           (position-independent 't)
+                           (position-independent ':auto)
                            (feature-flags ',*default-feature-flags*)
                            (loops ':none) ; required (for now)
                            (measures ':skip) ;; :skip or a list of doublets indexed by nats (PC offsets), giving measures for the loops

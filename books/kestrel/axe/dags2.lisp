@@ -1,7 +1,7 @@
 ; More material on DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -174,6 +174,7 @@
 
 (local (in-theory (disable alistp)))
 
+;;todo: make local
 (defthm alistp-of-cdr
   (implies (alistp x)
            (alistp (cdr x)))
@@ -230,13 +231,6 @@
 (defthm weak-dagp-aux-of-cdr
   (implies (weak-dagp-aux dag)
            (weak-dagp-aux (cdr dag)))
-  :hints (("Goal" :in-theory (enable weak-dagp-aux))))
-
-(defthm car-of-car-linear-when-weak-dagp-aux
-  (implies (and (weak-dagp-aux dag)
-                dag)
-           (<= 0 (car (car dag))))
-  :rule-classes :linear
   :hints (("Goal" :in-theory (enable weak-dagp-aux))))
 
 (defthm car-of-car-type-when-weak-dagp-aux-type

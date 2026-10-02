@@ -1,7 +1,7 @@
 ; Operand stacks
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,21 +21,21 @@
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 (include-book "kestrel/utilities/myif-def" :dir :system)
 
-;;;
-;;; operand stacks
-;;;
-
-;; Recognize an operand stack
+;; Recognizes an operand stack
 (defund operand-stackp (stack) (declare (xargs :guard t)) (true-listp stack))
 
-;; Create an empty operand stack
-(defund empty-operand-stack () (declare (xargs :guard t)) nil)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Check whether a stack is empty.
+;; Checks whether a stack is empty.
 ;; We could get rid of this, since the empty stack is unique.
 (defund empty-operand-stackp (stack)
   (declare (xargs :guard (operand-stackp stack) :guard-hints (("Goal" :in-theory (enable operand-stackp)))))
   (endp stack))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Creates an empty operand stack
+(defund empty-operand-stack () (declare (xargs :guard t)) nil)
 
 (defthm operand-stackp-of-empty-operand-stack
   (operand-stackp (empty-operand-stack))
@@ -43,6 +43,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; todo: guard on the item
 (defund push-operand (item stack)
   (declare (xargs :guard (operand-stackp stack)))
   (cons item stack))
@@ -53,6 +54,16 @@
               ;; for a typed stack, we'd have a claim here about item
               ))
   :hints (("Goal" :in-theory (enable operand-stackp push-operand))))
+
+(defthm not-equal-of-push-operand-same
+  (not (equal (push-operand item stack) stack))
+  :hints (("Goal" :in-theory (enable push-operand))))
+
+(defthm equal-of-push-operand-and-push-operand
+  (equal (equal (push-operand item1 stack1) (push-operand item2 stack2))
+         (and (equal item1 item2)
+              (equal stack1 stack2)))
+  :hints (("Goal" :in-theory (enable push-operand))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -117,21 +128,10 @@
          stack)
   :hints (("Goal" :in-theory (enable pop-operand push-operand))))
 
-(defthm not-equal-of-push-operand-same
-  (not (equal (push-operand item stack) stack))
-  :hints (("Goal" :in-theory (enable push-operand))))
-
-(defthm equal-of-push-operand-and-push-operand
-  (equal (equal (push-operand item1 stack1) (push-operand item2 stack2))
-         (and (equal item1 item2)
-              (equal stack1 stack2)))
-  :hints (("Goal" :in-theory (enable push-operand))))
-
-;;;
-;;; topn-operands
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;returns a list of the top n items on the stack (topmost element first):
+;; todo: require the stack to have at least n items
 (defund topn-operands (n stack)
   (declare (xargs :guard (and (natp n) (operand-stackp stack))))
   (if (zp n)
@@ -150,19 +150,19 @@
          nil)
   :hints (("Goal" :in-theory (enable topn-operands))))
 
-;;;
-;;; popn-operands
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;fixme when the number of frames to pop is a constant, we could use a macro instead of this (saving the time of using the popn opener and base rules..)
 ;todo: handle longs/doubles better here, if we can.  see pop-items-off-stack.
 (defund popn-operands (n stack)
-  (declare (type (integer 0 *) n)
-           (xargs :guard (and (operand-stackp stack) (<= n (operand-stack-size stack)))
-                  :guard-hints (("Goal" :in-theory (enable operand-stackp pop-operand operand-stack-size)))))
+  (declare (xargs :guard (and (natp n)
+                              (operand-stackp stack)
+                              (<= n (operand-stack-size stack)))
+                  :split-types t)
+           (type (integer 0 *) n))
   (if (zp n)
       stack
-      (popn-operands (- n 1) (pop-operand stack))))
+    (popn-operands (- n 1) (pop-operand stack))))
 
 (defthm popn-operands-base
   (implies (zp n)
@@ -211,6 +211,8 @@
   (declare (xargs :guard (operand-stackp stack) :guard-hints (("Goal" :in-theory (enable operand-stackp)))))
   (top-operand (pop-operand stack)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;guard to require a non-empty-stack?
 (defund pop-long (stack)
   (declare (xargs :guard (operand-stackp stack) :guard-hints (("Goal" :in-theory (enable operand-stackp)))))
@@ -228,8 +230,11 @@
   :hints (("Goal" :in-theory (enable pop-long; operand-stack-size
                                      ))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: add guard on the val
 (defund push-long (val stack)
-  (declare (xargs :guard (operand-stackp stack) :guard-hints (("Goal" :in-theory (enable operand-stackp)))))
+  (declare (xargs :guard (operand-stackp stack)))
   (push-operand 0 (push-operand val stack)))
 
 (defthm operand-stackp-of-push-long
@@ -241,6 +246,8 @@
   (equal (operand-stack-size (push-long item stack))
          (+ 2 (operand-stack-size stack)))
   :hints (("Goal" :in-theory (enable push-long))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm top-long-of-push-long
   (equal (top-long (push-long val stack))

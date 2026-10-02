@@ -25,7 +25,7 @@
           (add-pc-command ,name ',command-type)))
 
 (defun define-pc-meta-or-macro-fn (command-type raw-name formals body)
-  (let ((name (make-official-pc-command raw-name)) )
+  (let ((name (make-official-pc-command raw-name)))
     `(install-new-pc-meta-or-macro ,command-type ,raw-name ,name
                                    ,formals
                                    nil ; ,doc
@@ -3587,94 +3587,98 @@
                           (hyps-type-alist-and-pot-lst assumptions
                                                        (and linear base-rcnst)
                                                        pc-ens w state)
-                          (cond
-                           (flg
+                          (mv-let (flg ttree)
+                            (cond ((null flg)
+                                   (mv nil nil))
+                                  ((or (null current-addr) ; optimization
+                                       (equal assumptions hyps))
+                                   (mv t ttree))
+                                  (t (mv-let (flg2 hyps-type-alist ttree)
+                                       (hyps-type-alist hyps pc-ens w state)
+                                       (declare (ignore hyps-type-alist))
+                                       (mv (if flg2 t :needs-assumptions) ttree))))
                             (cond
-                             ((or (null current-addr) ; optimization
-                                  (equal assumptions hyps)
-                                  (mv-let (flg hyps-type-alist ttree)
-                                    (hyps-type-alist hyps pc-ens w state)
-                                    (declare (ignore hyps-type-alist
-                                                     ttree))
-                                    flg))
-                              (pprogn
-                               (io? proof-builder nil state
-                                    nil
-                                    (fms0 "~|Goal proved:  Contradiction in ~
+                             (flg
+                              (cond
+                               ((eq flg t)
+                                (pprogn
+                                 (io? proof-builder nil state
+                                      nil
+                                      (fms0 "~|Goal proved:  Contradiction in ~
                                            the hypotheses!~|"))
-                               (mv (change-pc-state
-                                    pc-state
-                                    :goals
-                                    (cond ((tagged-objects 'assumption ttree)
+                                 (mv (change-pc-state
+                                      pc-state
+                                      :goals
+                                      (cond ((tagged-objects 'assumption ttree)
 
 ; See the comment in define-pc-primitive about leaving the top goal on the top
 ; of the :goals stack.
 
-                                           (cons (change goal (car goals)
-                                                         :conc *t*)
-                                                 (cdr goals)))
-                                          (t (cdr goals)))
-                                    :local-tag-tree ttree)
-                                   state)))
+                                             (cons (change goal (car goals)
+                                                           :conc *t*)
+                                                   (cdr goals)))
+                                            (t (cdr goals)))
+                                      :local-tag-tree ttree)
+                                     state)))
+                               (t ; (eq flg :needs-assumptions)
+                                (print-no-change2
+                                 "A contradiction was found in the current ~
+                                  context using both the top-level hypotheses ~
+                                  and the IF tests governing the current ~
+                                  term, but not using the top-level ~
+                                  hypotheses alone. ~ You may want to issue ~
+                                  the TOP command and then issue s-prop to ~
+                                  prune some branches of the conclusion."))))
                              (t
-                              (print-no-change2
-                               "A contradiction was found in the current ~
-                                context using both the top-level hypotheses ~
-                                and the IF tests governing the current term, ~
-                                but not using the top-level hypotheses alone. ~
-                                ~ You may want to issue the TOP command and ~
-                                then issue s-prop to prune some branches of ~
-                                the conclusion."))))
-                           (t
-                            (mv-let
-                              (erp local-rcnst state)
-                              (if rewrite
-                                  (load-hint-settings-into-rcnst
-                                   hint-settings
-                                   base-rcnst
-                                   nil w 'acl2-pc::s state)
-                                (value nil))
-                              (pprogn
-                               (if erp
-                                   (io? proof-builder nil state
-                                        nil
-                                        (fms0 "~|Note: Ignoring the above ~
+                              (mv-let
+                                (erp local-rcnst state)
+                                (if rewrite
+                                    (load-hint-settings-into-rcnst
+                                     hint-settings
+                                     base-rcnst
+                                     nil w 'acl2-pc::s state)
+                                  (value nil))
+                                (pprogn
+                                 (if erp
+                                     (io? proof-builder nil state
+                                          nil
+                                          (fms0 "~|Note: Ignoring the above ~
                                                theory invariant error.  ~
                                                Proceeding...~|"))
-                                 state)
-                               (if rewrite
-                                   (maybe-warn-about-theory-from-rcnsts
-                                    base-rcnst local-rcnst :s pc-ens w state)
-                                 state)
-                               (sl-let
-                                (new-term new-ttree state)
-                                (pc-rewrite*
-                                 current-term
-                                 hyps-type-alist
-                                 (geneqv-at-subterm-top conc current-addr
-                                                        pc-ens w)
-                                 (term-id-iff conc current-addr t)
-                                 w local-rcnst nil
-                                 pot-lst normalize rewrite
-                                 pc-ens state repeat local-backchain-limit
-                                 (initial-step-limit w state))
-                                (pprogn
-                                 (f-put-global 'last-step-limit step-limit state)
-                                 (if (equal new-term current-term)
-                                     (print-no-change2
-                                      "No simplification took place.")
-                                   (pprogn
-                                    (mv-let
-                                      (new-goal state)
-                                      (deposit-term-in-goal
-                                       (car goals)
-                                       conc current-addr new-term state)
-                                      (mv (change-pc-state
-                                           pc-state
-                                           :goals
-                                           (cons new-goal (cdr goals))
-                                           :local-tag-tree new-ttree)
-                                          state)))))))))))))))))))))))))))
+                                   state)
+                                 (if rewrite
+                                     (maybe-warn-about-theory-from-rcnsts
+                                      base-rcnst local-rcnst :s pc-ens w state)
+                                   state)
+                                 (sl-let
+                                  (new-term new-ttree state)
+                                  (pc-rewrite*
+                                   current-term
+                                   hyps-type-alist
+                                   (geneqv-at-subterm-top conc current-addr
+                                                          pc-ens w)
+                                   (term-id-iff conc current-addr t)
+                                   w local-rcnst nil
+                                   pot-lst normalize rewrite
+                                   pc-ens state repeat local-backchain-limit
+                                   (initial-step-limit w state))
+                                  (pprogn
+                                   (f-put-global 'last-step-limit step-limit state)
+                                   (if (equal new-term current-term)
+                                       (print-no-change2
+                                        "No simplification took place.")
+                                     (pprogn
+                                      (mv-let
+                                        (new-goal state)
+                                        (deposit-term-in-goal
+                                         (car goals)
+                                         conc current-addr new-term state)
+                                        (mv (change-pc-state
+                                             pc-state
+                                             :goals
+                                             (cons new-goal (cdr goals))
+                                             :local-tag-tree new-ttree)
+                                            state))))))))))))))))))))))))))))
 
 ;; The proof-builder's enabled state will be either the global enabled
 ;; state or else a local one.  The proof-builder command :IN-THEORY

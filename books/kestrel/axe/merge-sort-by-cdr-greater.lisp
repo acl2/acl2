@@ -1,7 +1,7 @@
 ; Merge sort by > applied to cdrs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -65,7 +65,6 @@
   (declare (xargs :guard (and (true-listp l) ;why?
                               (all-consp l)
                               (all-cdrs-rationalp l))
-                  :hints (("Goal" :in-theory (enable )))
                   :verify-guards nil ;done below
                   ))
   (cond ((atom (cdr l)) l)
@@ -73,7 +72,7 @@
                            (merge-sort-by-cdr-> (odds l))
                            nil))))
 
-(defthm all-conps-of-evens
+(defthm all-consp-of-evens
   (implies (all-consp x)
            (all-consp (evens x))))
 

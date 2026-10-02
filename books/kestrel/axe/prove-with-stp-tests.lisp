@@ -1,7 +1,7 @@
 ; Tests of prove-with-stp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -324,8 +324,8 @@
                              (not (sbvlt 32 y x))))
 
 ;; TODO: Make these into tests:
-;; (prove-clause-with-stp (list *nil*) t nil t "/tmp/foo" state)
-;; (prove-clause-with-stp (list *nil* *t*) t nil t "/tmp/foo" state)
+;; (prove-clause-with-stp (list *nil*) t nil nil t "/tmp/foo" state)
+;; (prove-clause-with-stp (list *nil* *t*) t nil nil t "/tmp/foo" state)
 
 ;;TODO: Should this work?  The (+ x y) should be replaced by a boolean var
 ;;;(prove-with-stp '(or (+ x y) (not (+ x y))))
@@ -377,7 +377,7 @@
 
 ;; since x need not be a bit
 (must-not-prove-with-stp equal-1 '(or (equal x 1) (equal x 0)))
-;; makes sure it doesn't improperly assing a bv1 type to x:
+;; makes sure it doesn't improperly assign a bv1 type to x:
 (must-not-prove-with-stp equal-1 '(if (equal x 1) t (equal x (bvand 1 x 0))))
 
 ;; test where a hyp gives a type tighter than the obvious type.  works because we translate the unsigned-byte-p

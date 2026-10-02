@@ -1,7 +1,7 @@
 ; "Read over write" rules for our x86 state readers and writers
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -407,14 +407,14 @@
 
 (defthm well-formed-32-bit-segmentp-of-set-eax (equal (well-formed-32-bit-segmentp seg-reg (set-eax eax x86)) (well-formed-32-bit-segmentp seg-reg x86)) :hints (("Goal" :in-theory (enable set-eax))))
 (defthm well-formed-32-bit-segmentp-of-set-ebx (equal (well-formed-32-bit-segmentp seg-reg (set-ebx ebx x86)) (well-formed-32-bit-segmentp seg-reg x86)) :hints (("Goal" :in-theory (enable set-ebx))))
-(defthm well-formed-32-bit-segmentp-of-set-ecx (equal (well-formed-32-bit-segmentp seg-reg (set-ecx ecx x86))(well-formed-32-bit-segmentp seg-reg x86)) :hints (("Goal" :in-theory (enable set-ecx))))
+(defthm well-formed-32-bit-segmentp-of-set-ecx (equal (well-formed-32-bit-segmentp seg-reg (set-ecx ecx x86)) (well-formed-32-bit-segmentp seg-reg x86)) :hints (("Goal" :in-theory (enable set-ecx))))
 (defthm well-formed-32-bit-segmentp-of-set-edx (equal (well-formed-32-bit-segmentp seg-reg (set-edx edx x86)) (well-formed-32-bit-segmentp seg-reg x86)) :hints (("Goal" :in-theory (enable set-edx))))
 (defthm well-formed-32-bit-segmentp-of-set-esp (equal (well-formed-32-bit-segmentp seg-reg (set-esp esp x86)) (well-formed-32-bit-segmentp seg-reg x86)) :hints (("Goal" :in-theory (enable set-esp))))
 (defthm well-formed-32-bit-segmentp-of-set-ebp (equal (well-formed-32-bit-segmentp seg-reg (set-ebp ebp x86)) (well-formed-32-bit-segmentp seg-reg x86)) :hints (("Goal" :in-theory (enable set-ebp))))
 
 (defthm well-formed-32-bit-segmentp-of-set-rax-high (equal (well-formed-32-bit-segmentp seg-reg (set-rax-high eax x86)) (well-formed-32-bit-segmentp seg-reg x86)) :hints (("Goal" :in-theory (enable set-rax-high))))
 (defthm well-formed-32-bit-segmentp-of-set-rbx-high (equal (well-formed-32-bit-segmentp seg-reg (set-rbx-high ebx x86)) (well-formed-32-bit-segmentp seg-reg x86)) :hints (("Goal" :in-theory (enable set-rbx-high))))
-(defthm well-formed-32-bit-segmentp-of-set-rcx-high (equal (well-formed-32-bit-segmentp seg-reg (set-rcx-high ecx x86))(well-formed-32-bit-segmentp seg-reg x86)) :hints (("Goal" :in-theory (enable set-rcx-high))))
+(defthm well-formed-32-bit-segmentp-of-set-rcx-high (equal (well-formed-32-bit-segmentp seg-reg (set-rcx-high ecx x86)) (well-formed-32-bit-segmentp seg-reg x86)) :hints (("Goal" :in-theory (enable set-rcx-high))))
 (defthm well-formed-32-bit-segmentp-of-set-rdx-high (equal (well-formed-32-bit-segmentp seg-reg (set-rdx-high edx x86)) (well-formed-32-bit-segmentp seg-reg x86)) :hints (("Goal" :in-theory (enable set-rdx-high))))
 (defthm well-formed-32-bit-segmentp-of-set-rsp-high (equal (well-formed-32-bit-segmentp seg-reg (set-rsp-high esp x86)) (well-formed-32-bit-segmentp seg-reg x86)) :hints (("Goal" :in-theory (enable set-rsp-high))))
 (defthm well-formed-32-bit-segmentp-of-set-rbp-high (equal (well-formed-32-bit-segmentp seg-reg (set-rbp-high ebp x86)) (well-formed-32-bit-segmentp seg-reg x86)) :hints (("Goal" :in-theory (enable set-rbp-high))))
@@ -1028,8 +1028,7 @@
                 (x86p x86))
            (equal (write-to-segment n eff-addr1 seg-reg val1 (write-byte-to-segment eff-addr2 seg-reg val2 x86))
                   (write-to-segment n eff-addr1 seg-reg val1 x86)))
-  :hints (
-          ("Goal" :induct (write-to-segment n eff-addr1 seg-reg val1 x86)
+  :hints (("Goal" :induct (write-to-segment n eff-addr1 seg-reg val1 x86)
            :in-theory (e/d (sep-eff-addr-ranges-swap
                             write-to-segment
                             unsigned-byte-p)

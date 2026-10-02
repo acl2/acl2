@@ -1,7 +1,7 @@
 ; A tool to avoid expensive calls of expt
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,6 +21,9 @@
 ;; :forward-chaining, or :linear rules, etc.?  I think that can cause some
 ;; proofs to break when this is turned on.  Otherwise, we could consider
 ;; turning this on by default.
+
+;; Note that additional functions, such as ASH, may also need their executable
+;; counterparts disabled (in SBCL, ASH may call EXPT).
 
 ;TODO: Consider raising this, or making it changeable by the user (perhaps
 ;using a table).

@@ -20,8 +20,9 @@
 ;; ARMv7-A and ARMv7-R edition" (see README.md).
 
 (include-book "portcullis")
-(include-book "kestrel/bv/bvor" :dir :system)
-(include-book "kestrel/bv/bvand-def" :dir :system) ; todo: include just the def
+(include-book "kestrel/bv/bvor-def" :dir :system)
+(include-book "kestrel/bv/bvand-def" :dir :system)
+(include-book "kestrel/bv/getbit-def" :dir :system)
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
@@ -31,6 +32,7 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/bvor" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -230,12 +232,12 @@
     ;; todo: qsub16
     ;; todo: qsub8
     ;; todo: rbit
-    ;; todo: rev
-    ;; todo: rev16
-    ;; todo: revsh
-    ;; todo: ror
-
-    (:rrx (cond 4) 0 0 _ 0 _ 1 1 0 1 s (0) (0) (0) (0) (rd 4) 0 0 0 0 0 _ 1 1 0 (rm 4))
+    (:rev (cond 4) 0 1 1 0 1 _ 0 _ 1 1 _ (1) (1) (1) (1) (rd 4) (1) (1) (1) (1) 0 0 1 1 (rm 4))
+    (:rev16 (cond 4) 0 1 1 0 1 _ 0 _ 1 1 _ (1) (1) (1) (1) (rd 4) (1) (1) (1) (1) 1 0 1 1 (rm 4))
+    (:revsh (cond 4) 0 1 1 0 1 _ 1 _ 1 1 _ (1) (1) (1) (1) (rd 4) (1) (1) (1) (1) 1 0 1 1 (rm 4))
+    (:ror-immediate (cond 4) 0 0 _ 0 _ 1 1 0 1 s (0) (0) (0) (0) (rd 4) (imm5 5) 1 1 0 (rm 4))
+    (:ror-register (cond 4) 0 0 _ 0 _ 1 1 0 1 s (0) (0) (0) (0) (rd 4) (rm 4) 0 1 1 1 (rn 4))
+    (:rrx           (cond 4) 0 0 _ 0 _ 1 1 0 1 s (0) (0) (0) (0) (rd 4) 0 0 0 0 0 _ 1 1 0 (rm 4))
 
     (:rsb-immediate (cond 4) 0 0 _ 1 _ 0 0 1 1 s (rn 4) (rd 4) (imm12 12))
     (:rsb-register (cond 4) 0 0 _ 0 _ 0 0 1 1 s (rn 4) (rd 4) (imm5 5) (type 2) 0 (rm 4))
@@ -316,7 +318,7 @@
     (:strh-immediate  (cond 4) 0 0 0 p u 1 w 0 (rn 4) (rt 4) (imm4h 4) 1 0 1 1 (imm4l 4))
     (:strh-register   (cond 4) 0 0 0 p u 0 w 0 (rn 4) (rt 4) (0) (0) (0) (0) 1 0 1 1 (rm 4))
 
-    (:strht-encoding-a1 (cond 4) 0 0 0 _ 0 u 1 _ 1 _ 0 (rn 4) (rt 4) (imm4H 4) 1 0 1 1 (imm4L 4))
+    (:strht-encoding-a1 (cond 4) 0 0 0 _ 0 u 1 _ 1 _ 0 (rn 4) (rt 4) (imm4h 4) 1 0 1 1 (imm4l 4))
     (:strht-encoding-a2 (cond 4) 0 0 0 _ 0 u 0 _ 1 _ 0 (rn 4) (rt 4) (0) (0) (0) (0) 1 0 1 1 (rm 4))
 
     (:strt-encoding-a1 (cond 4) 0 1 _ 0 _ 0 u 0 _ 1 _ 0 (rn 4) (rt 4) (imm12 12))
@@ -327,7 +329,7 @@
     (:sub-register-shifted-register   (cond 4) 0 0 0 0 0 1 0 s (rn 4) (rd 4) (rs 4) 0 (type 2) 1 (rm 4))
     ;; "sub SP minus immediate" and "sub SP minus register" seem to be just special cases of the above
 
-;;;    (:svc (cond 4) 1 1 1 1 (imm24 24)) ; supervisor call
+    (:svc (cond 4) 1 1 1 1 (imm24 24)) ; supervisor call
 
     (:swp/swpb (cond 4) 0 0 0 1 0 b 0 0 (rn 4) (rt 4) (0) (0) (0) (0) 1 0 0 1 (rt2 4))
 
@@ -383,7 +385,9 @@
     (:uxtb (cond 4) 0 1 1 0 1 1 1 0 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
 
     ;; todo: uxt16
-    ;; todo: uxth
+
+    (:uxth (cond 4) 0 1 1 0 1 1 1 1 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
+
     ;; todo: vaba/vabal
     ;; todo: vabd/vabdl
     ;; todo: vabd floating point
@@ -536,7 +540,7 @@
     (:strb-immediate :strbt-encoding-a1) ; check me
     (:strb-register :strbt-encoding-a2) ; check me
     (:push-encoding-a1 :stmdb/stmfd)
-    ))
+    (:ror-immediate :rrx)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

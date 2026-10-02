@@ -811,7 +811,7 @@
 			(:instance cnti-recurrence (i (1+ i)))))))
 
 (local-defthm case-1-11
-  (implies (and (bvecp z 64)1
+  (implies (and (bvecp z 64)
                 (not (zp i))
 		(< i 6)
 		(inv z i w a v))

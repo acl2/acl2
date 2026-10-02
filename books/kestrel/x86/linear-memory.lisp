@@ -21,7 +21,6 @@
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system)) ; for slice-too-high-is-0-new (todo: move it)
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
-(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 ;(local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))

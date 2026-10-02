@@ -1,4 +1,4 @@
-; Extracting conjuncts from a DAGs
+; Extracting conjuncts from a DAG
 ;
 ; Copyright (C) 2021-2026 Kestrel Institute
 ;

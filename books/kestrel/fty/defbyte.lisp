@@ -128,7 +128,7 @@
     (xdoc::p
      "As a special case, if a function with this name already exists,
       it is not (re-)generated.
-      This is mainly to accomodate the existing recognizers
+      This is mainly to accommodate the existing recognizers
       @(tsee acl2::bytep) and @(tsee acl2::nibblep),
       but it is a more general mechanism."))
 

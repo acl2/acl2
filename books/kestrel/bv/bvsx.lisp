@@ -1,7 +1,7 @@
 ; Theorems about bvsx
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -228,7 +228,7 @@
                             unsigned-byte-p-of-bvchop-one-more
                             getbit-when-slice-is-known-to-be-all-ones
                             slice-low-cases)
-                           ( ;GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT
+                           (;GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT
                             ;;EQUAL-OF-+-WHEN-NEGATIVE-CONSTANT
                             ;;BVCAT-EQUAL-REWRITE-ALT
                             ;;BVCAT-EQUAL-REWRITE
@@ -247,14 +247,6 @@
   (equal (bvsx new-size new-size x)
          (bvchop new-size x))
   :hints (("Goal" :in-theory (enable bvsx))))
-
-(defthm bvsx-too-high
-  (implies (and (unsigned-byte-p (+ -1 old-size) x)
-                (<= old-size new-size)
-                (integerp new-size))
-           (equal (bvsx new-size old-size x)
-                  x))
-  :hints (("Goal" :in-theory (enable natp bvsx getbit-too-high))))
 
 (defthm bvsx-of-bvsx
   (implies (and (<= old-size new-size)
@@ -320,6 +312,8 @@
                       (bvsx size size2 x)
                     ;; no sign extension needed in this case:
                     (bvchop size x)))))
+
+(theory-invariant (incompatible (:rewrite bvchop-of-logext-becomes-bvsx) (:rewrite bvsx-rewrite)))
 (theory-invariant (incompatible (:rewrite bvchop-of-logext-becomes-bvsx-gen) (:rewrite bvsx-rewrite)))
 
 ;add -becomes-bvsx to name

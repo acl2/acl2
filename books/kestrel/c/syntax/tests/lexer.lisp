@@ -17,25 +17,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; for ASSERT!-STOBJ
+(make-event (er-progn (add-global-stobj 'parstate state)
+                      (acl2::value '(value-triple nil)))
+            :check-expansion t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Testing lexing functions.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-lex (fn input &key pos more-inputs version cond)
+(defmacro test-lex (fn input &key pos more-inputs dialect cond)
   ;; INPUT is an ACL2 term with the text to lex,
   ;; where the term evaluates to a string or a list of bytes.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
-  ;; VERSION indicates the C version.
+  ;; DIALECT indicates the C dialect.
   ;; Optional COND may be over variables AST, POS/SPAN, PARSTATE,
   ;; and also POS/SPAN2 for LEX-*-DIGIT and LEX-*-HEXADECIMAL-DIGIT.
   `(assert!-stobj
-    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
+    (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
          (parstate (init-parstate ""
                                   (if (stringp ,input)
                                       (acl2::string=>nats ,input)
                                     ,input)
-                                  version
+                                  dialect
                                   t
                                   parstate))
          ,@(and pos
@@ -52,19 +59,19 @@
        parstate))
     parstate))
 
-(defmacro test-lex-fail (fn input &key pos more-inputs version)
+(defmacro test-lex-fail (fn input &key pos more-inputs dialect)
   ;; INPUT is an ACL2 term with the text to lex,
   ;; where the term evaluates to a string or a list of bytes.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
-  ;; VERSION indicates the C version.
+  ;; DIALECT indicates the C dialect.
   `(assert!-stobj
-    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
+    (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
          (parstate (init-parstate ""
                                   (if (stringp ,input)
                                       (acl2::string=>nats ,input)
                                     ,input)
-                                  version
+                                  dialect
                                   t
                                   parstate))
          ,@(and pos
@@ -394,7 +401,7 @@
 (test-lex
  lex-escape-sequence
  "%"
- :version (c::make-version :std (c::standard-c17) :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (equal ast (escape-simple (simple-escape-percent))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -529,12 +536,12 @@
  lex-character-constant
  "\\aA'"
  :pos (position "" 1 2)
- :more-inputs ((cprefix-locase-u) (position "" 1 1))
+ :more-inputs ((eprefix-locase-u) (position "" 1 1))
  :cond (equal ast
               (lexeme-token
                (token-const
                 (const-char
-                 (cconst (cprefix-locase-u)
+                 (cconst (eprefix-locase-u)
                          (list (c-char-escape (escape-simple (simple-escape-a)))
                                (c-char-char (char-code #\A)))))))))
 
@@ -871,114 +878,114 @@
 (test-lex
  lex-?-floating-suffix
  "f16"
- :version (c::make-version :std (c::standard-c17) :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-locase-f16 nil)))
 
 (test-lex
  lex-?-floating-suffix
  "f32"
- :version (c::make-version :std (c::standard-c17) :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-locase-f32 nil)))
 
 (test-lex
  lex-?-floating-suffix
  "f64"
- :version (c::make-version :std (c::standard-c17) :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-locase-f64 nil)))
 
 (test-lex
  lex-?-floating-suffix
  "f128"
- :version (c::make-version :std (c::standard-c17) :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-locase-f128 nil)))
 
 (test-lex
  lex-?-floating-suffix
  "f16x"
- :version (c::make-version :std (c::standard-c17) :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-locase-f16 t)))
 
 (test-lex
  lex-?-floating-suffix
  "f32x"
- :version (c::make-version :std (c::standard-c17) :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-locase-f32 t)))
 
 (test-lex
  lex-?-floating-suffix
  "f64x"
- :version (c::make-version :std (c::standard-c17) :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-locase-f64 t)))
 
 (test-lex
  lex-?-floating-suffix
  "f128x"
- :version (c::make-version :std (c::standard-c17) :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-locase-f128 t)))
 
 (test-lex
  lex-?-floating-suffix
  "F16"
- :version (c::make-version :std (c::standard-c17) :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-upcase-f16 nil)))
 
 (test-lex
  lex-?-floating-suffix
  "F32"
- :version (c::make-version :std (c::standard-c17) :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-upcase-f32 nil)))
 
 (test-lex
  lex-?-floating-suffix
  "F64"
- :version (c::make-version :std (c::standard-c17) :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-upcase-f64 nil)))
 
 (test-lex
  lex-?-floating-suffix
  "F128"
- :version (c::make-version :std (c::standard-c17) :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-upcase-f128 nil)))
 
 (test-lex
  lex-?-floating-suffix
  "F16x"
- :version (c::make-version :std (c::standard-c17) :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-upcase-f16 t)))
 
 (test-lex
  lex-?-floating-suffix
  "F32x"
- :version (c::make-version :std (c::standard-c17) :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-upcase-f32 t)))
 
 (test-lex
  lex-?-floating-suffix
  "F64x"
- :version (c::make-version :std (c::standard-c17) :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-upcase-f64 t)))
 
 (test-lex
  lex-?-floating-suffix
  "F128x"
- :version (c::make-version :std (c::standard-c17) :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-upcase-f128 t)))
 
 (test-lex
  lex-?-floating-suffix
  "f32y"
- :version (c::make-version :std (c::standard-c17) :gcc t)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (equal ast (fsuffix-locase-f32 nil)))
 
 (test-lex-fail
  lex-?-floating-suffix
  "f33"
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-lex-fail
  lex-?-floating-suffix
  "f168"
- :version (c::make-version :std (c::standard-c17) :gcc t))
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1160,3 +1167,100 @@
 (test-lex-fail
  lex-binary-exponent-part
  "p*10")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-lexeme
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "123b"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "123z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "077z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "0x1g"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "1.0z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ ".1z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "1e1z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "0x1p0z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "123ullz"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "1.0fz"
+ :more-inputs (nil))
+
+(test-lex ; the suffix makes + a separate token
+ lex-lexeme
+ "0xeu+1"
+ :more-inputs (nil)
+ :cond (and (equal ast
+                   (lexeme-token
+                    (token-const
+                     (const-int
+                      (make-iconst
+                       :core (make-dec/oct/hex-const-hex
+                              :prefix (hprefix-locase-0x)
+                              :digits (list #\e))
+                       :suffix? (isuffix-u (usuffix-locase-u))
+                       :info nil)))))
+            (equal pos/span (span (position "" 1 0) (position "" 1 3)))
+            (equal (parstate$->chars-unread (to-parstate$ parstate))
+                   (list (char+position (char-code #\+) (position "" 1 4))))
+            (equal (parstate->bytes parstate) (acl2::string=>nats "1"))))
+
+(test-lex ; the suffix makes - a separate token
+ lex-lexeme
+ "0xELL-1"
+ :more-inputs (nil)
+ :cond (and (equal ast
+                   (lexeme-token
+                    (token-const
+                     (const-int
+                      (make-iconst
+                       :core (make-dec/oct/hex-const-hex
+                              :prefix (hprefix-locase-0x)
+                              :digits (list #\E))
+                       :suffix? (isuffix-l (lsuffix-upcase-ll))
+                       :info nil)))))
+            (equal pos/span (span (position "" 1 0) (position "" 1 4)))
+            (equal (parstate$->chars-unread (to-parstate$ parstate))
+                   (list (char+position (char-code #\-) (position "" 1 5))))
+            (equal (parstate->bytes parstate) (acl2::string=>nats "1"))))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "0xe+1"
+ :more-inputs (nil))

@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function remove1-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -96,6 +96,11 @@
   (implies (not (equal a b))
            (iff (member-equal a (remove1-equal b x))
                 (member-equal a x))))
+
+(defthm not-member-equal-of-remove1-equal-same
+  (implies (no-duplicatesp-equal l)
+           (not (member-equal x (remove1-equal x l))))
+  :hints (("Goal" :in-theory (enable remove1-equal no-duplicatesp-equal))))
 
 (defthm no-duplicatesp-equal-of-remove1-equal
   (implies (no-duplicatesp-equal l)

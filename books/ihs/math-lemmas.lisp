@@ -44,15 +44,15 @@
   :short "Rewrite: @('(equal (+ x y) x)') and @('(equal (* x y) x)');
           also commutative forms."
   (and (equal (equal (+ x y) x)
-	      (and (acl2-numberp x) (equal (fix y) 0)))
+              (and (acl2-numberp x) (equal (fix y) 0)))
        (equal (equal (+ y x) x)
-	      (and (acl2-numberp x) (equal (fix y) 0)))
+              (and (acl2-numberp x) (equal (fix y) 0)))
        (equal (equal (* x y) x)
-	      (and (acl2-numberp x)
-		   (or (equal x 0) (equal y 1))))
+              (and (acl2-numberp x)
+                   (or (equal x 0) (equal y 1))))
        (equal (equal (* x y) y)
-	      (and (acl2-numberp y)
-		   (or (equal y 0) (equal x 1)))))
+              (and (acl2-numberp y)
+                   (or (equal y 0) (equal x 1)))))
   :enable equal-*-x-y-x)
 
 (defrule normalize-equal-0
@@ -125,8 +125,8 @@
        (equal (< (- x) (- y)) (> x y))
 
        (implies (real/rationalp x)
-		(and (equal (< 0 (/ x)) (< 0 x))
-		     (equal (< (/ x) 0) (< x 0))))))
+                (and (equal (< 0 (/ x)) (< 0 x))
+                     (equal (< (/ x) 0) (< x 0))))))
 
 (defsection rationalp-algebra
   :short "A basic theory of algebra for all @(see rationalp)s."
@@ -159,27 +159,27 @@ simple theorems for inequalities.</p>"
   :short "Rewrite: Replace @('x < 1/y') with @('x*y < 1') or @('x*y > 1'),
   based on the sign of y."
   (implies (and (real/rationalp x)
-		(real/rationalp y)
-		(not (equal y 0)))
-	   (and (equal (< x (/ y)) (if (< y 0) (< 1 (* x y)) (< (* x y) 1)))
-		(equal (< (/ y) x) (if (< y 0) (< (* x y) 1) (< 1 (* x y)))))))
+                (real/rationalp y)
+                (not (equal y 0)))
+           (and (equal (< x (/ y)) (if (< y 0) (< 1 (* x y)) (< (* x y) 1)))
+                (equal (< (/ y) x) (if (< y 0) (< (* x y) 1) (< 1 (* x y)))))))
 
 (defrule normalize-<-/-to-*-3
   :parents (math-lemmas prefer-*-to-/)
   :short "Rewrite: Replace @('x < y/z') and @('x > y/z') with @('x*z < y') or
   @('x*z > y'), depending on the sign of z."
   (implies (and (real/rationalp x)
-		(real/rationalp y)
-		(real/rationalp z)
-		(not (equal z 0)))
-	   (and (equal (< x (* y (/ z)))
-		       (if (< z 0) (< y (* x z)) (< (* x z) y)))
-		(equal (< x (* (/ z) y))
-		       (if (< z 0) (< y (* x z)) (< (* x z) y)))
-		(equal (< (* y (/ z)) x)
-		       (if (< z 0) (< (* x z) y) (< y (* x z))))
-		(equal (< (* (/ z) y) x)
-		       (if (< z 0) (< (* x z) y) (< y (* x z))))))
+                (real/rationalp y)
+                (real/rationalp z)
+                (not (equal z 0)))
+           (and (equal (< x (* y (/ z)))
+                       (if (< z 0) (< y (* x z)) (< (* x z) y)))
+                (equal (< x (* (/ z) y))
+                       (if (< z 0) (< y (* x z)) (< (* x z) y)))
+                (equal (< (* y (/ z)) x)
+                       (if (< z 0) (< (* x z) y) (< y (* x z))))
+                (equal (< (* (/ z) y) x)
+                       (if (< z 0) (< (* x z) y) (< y (* x z))))))
   ;;  Disable base lemmas and use cancel-<-* instead.
   :disable (<-unary-/-negative-left <-unary-/-negative-right
                                     <-unary-/-positive-left <-unary-/-positive-left
@@ -190,13 +190,13 @@ simple theorems for inequalities.</p>"
   :parents (math-lemmas prefer-*-to-/)
   :short "Rewrite: Replace @('x = y/z') with @('x*z = y')."
   (implies (and (acl2-numberp z)
-		(not (equal z 0)))
-	   (and (equal (equal x (* y (/ z)))
-		       (and (acl2-numberp x)
-			    (equal (* x z) (fix y))))
-		(equal (equal x (* (/ z) y))
-		       (and (acl2-numberp x)
-			    (equal (* x z) (fix y)))))))
+                (not (equal z 0)))
+           (and (equal (equal x (* y (/ z)))
+                       (and (acl2-numberp x)
+                            (equal (* x z) (fix y))))
+                (equal (equal x (* (/ z) y))
+                       (and (acl2-numberp x)
+                            (equal (* x z) (fix y)))))))
 
 (defsection prefer-*-to-/
   :short "A small theory of lemmas that eliminate / in favor of *."
@@ -287,5 +287,3 @@ This theory will normally be ENABLEd by every book in the IHS library.</p>"
   (deftheory ihs-math
     (union-theories (theory 'integerp-algebra)
                     (theory 'expt-algebra))))
-
-

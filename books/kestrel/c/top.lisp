@@ -51,11 +51,11 @@
     (xdoc::li
      (xdoc::ahref "https://www.iso.org/standard/82075.html"
                   "ISO/IEC 9899:2024")
-     ", i.e. the C23 standard, which we reference as `[C17]'.")
+     ", i.e. the C23 standard, which we reference as `[C23]'.")
     (xdoc::li
      (xdoc::ahref "https://www.iso.org/standard/74528.html"
                   "ISO/IEC 9899:2018")
-     ", i.e. the C17 standard, which we reference as `[C23]'.")
+     ", i.e. the C17 standard, which we reference as `[C17]'.")
     (xdoc::li
      "The "
      (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/"

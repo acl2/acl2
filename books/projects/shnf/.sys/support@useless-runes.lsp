@@ -673,6 +673,7 @@
  (3 3 (:REWRITE DEFAULT-PLUS-1))
  (1 1 (:REWRITE |(equal (* x y) 0)|))
  (1 1 (:REWRITE |(* (expt c m) (expt d n))|))
+ (1 1 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  )
 (DM::NORM-POW-EVALH
  (2990 1826 (:TYPE-PRESCRIPTION DM::SHNFP-POP-I-TYPE))
@@ -1156,6 +1157,7 @@
  (2 2 (:REWRITE |(equal x (if a b c))|))
  (2 2 (:REWRITE |(equal (* x y) 0)|))
  (2 2 (:REWRITE |(* (expt c m) (expt d n))|))
+ (2 2 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  (2 2 (:LINEAR EXPT-X->=-X))
  (2 2 (:LINEAR EXPT-X->-X))
  (2 2 (:LINEAR EXPT-LINEAR-UPPER-<=))

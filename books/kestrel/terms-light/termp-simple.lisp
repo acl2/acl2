@@ -1,6 +1,6 @@
 ; An alternate definition of termp
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -55,57 +55,35 @@
 
 (local (make-flag termp-simple))
 
-(local
- (defthm-flag-termp-simple
-   (defthm termp-becomes-termp-simple
-     (equal (termp x w)
-            (termp-simple x w))
-     :flag termp-simple)
-   (defthm term-listp-becomes-term-listp-simple
-     (equal (term-listp x w)
-            (term-listp-simple x w))
-     :flag term-listp-simple)
-   :hints (("Goal" :expand (termp x w)
-            :in-theory (enable termp)))))
+(defthm-flag-termp-simple
+  (defthmd termp-becomes-termp-simple
+    (equal (termp x w)
+           (termp-simple x w))
+    :flag termp-simple)
+  (defthmd term-listp-becomes-term-listp-simple
+    (equal (term-listp x w)
+           (term-listp-simple x w))
+    :flag term-listp-simple)
+  :hints (("Goal" :expand (termp x w)
+           :in-theory (enable termp))))
 
 (defthm term-listp-simple-forward-to-true-listp
   (implies (term-listp-simple terms w)
            (true-listp terms))
   :rule-classes :forward-chaining)
 
-(local
- (defthm-flag-termp-simple
-   (defthm pseudo-termp-when-termp-simple
-     (implies (termp-simple x w)
-              (pseudo-termp x))
-     :flag termp-simple)
-   (defthm pseudo-term-listp-when-term-listp-simple
-     (implies (term-listp-simple x w)
-              (pseudo-term-listp x))
-     :flag term-listp-simple)
-   :hints (("Goal" :expand (pseudo-termp x)
-            :in-theory (enable pseudo-termp)))))
-
-;; redundant and non-local
-(defthm pseudo-termp-when-termp-simple
-  (implies (termp-simple x w)
-           (pseudo-termp x)))
-
-;; redundant and non-local
-(defthm pseudo-term-listp-when-term-listp-simple
-  (implies (term-listp-simple x w)
-           (pseudo-term-listp x)))
+(defthm-flag-termp-simple
+  (defthm pseudo-termp-when-termp-simple
+    (implies (termp-simple x w)
+             (pseudo-termp x))
+    :flag termp-simple)
+  (defthm pseudo-term-listp-when-term-listp-simple
+    (implies (term-listp-simple x w)
+             (pseudo-term-listp x))
+    :flag term-listp-simple)
+  :hints (("Goal" :expand (pseudo-termp x)
+           :in-theory (enable pseudo-termp))))
 
 (verify-guards termp-simple
   :hints (("Goal" :in-theory (enable term-listp-becomes-term-listp-simple
                                      termp-becomes-termp-simple))))
-
-;; redundant and non-local
-(defthmd termp-becomes-termp-simple
-  (equal (termp x w)
-         (termp-simple x w)))
-
-;; redundant and non-local
-(defthmd term-listp-becomes-term-listp-simple
-  (equal (term-listp x w)
-         (term-listp-simple x w)))

@@ -1,7 +1,7 @@
-; An simple evaluator supporting a basic set of functions
+; A simple evaluator supporting a basic set of functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -78,6 +78,7 @@
     (repeat repeat-unguarded)
     (binary-append binary-append-unguarded)
     (member-equal member-equal-unguarded)
+    (union-equal union-equal-unguarded)
     (unary-- unary---unguarded) ; primitive
     (expt expt-unguarded)
     (unary-/ unary-/-unguarded) ; primitive

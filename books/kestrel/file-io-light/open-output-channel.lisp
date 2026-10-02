@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function open-output-channel
 ;
-; Copyright (C) 2017-2023 Kestrel Institute
+; Copyright (C) 2017-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -34,7 +34,8 @@
    (implies (and (not (writable-file-listp1 file))
                  (writeable-files-p writeable-files))
             (not (member-equal file writeable-files)))
-   :hints (("Goal" :in-theory (enable writeable-files-p))))
+   :hints (("Goal" :induct t
+            :in-theory (enable writeable-files-p))))
 
 (local (in-theory (enable not-member-equal-when-not-writable-file-listp1)))
 
@@ -82,6 +83,35 @@
            (open-output-channel-any-p (mv-nth 0 (open-output-channel fname typ state))
                                       (mv-nth 1 (open-output-channel fname typ state))))
   :hints (("Goal" :in-theory (enable open-output-channel-any-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Opening an output channel does not affect the input channels.
+
+(defthm open-input-channels-of-mv-nth-1-of-open-output-channel
+  (equal (open-input-channels (mv-nth 1 (open-output-channel file-name typ state)))
+         (open-input-channels state))
+  :hints (("Goal" :in-theory (enable open-output-channel))))
+
+(defthm open-input-channel-p1-of-mv-nth-1-of-open-output-channel
+  (equal (open-input-channel-p1 channel typ2 (mv-nth 1 (open-output-channel file-name typ state)))
+         (open-input-channel-p1 channel typ2 state))
+  :hints (("Goal" :in-theory (enable open-input-channel-p1))))
+
+(defthm open-input-channel-p-of-mv-nth-1-of-open-output-channel
+  (equal (open-input-channel-p channel typ2 (mv-nth 1 (open-output-channel file-name typ state)))
+         (open-input-channel-p channel typ2 state))
+  :hints (("Goal" :in-theory (enable open-input-channel-p))))
+
+(defthm open-input-channel-any-p1-of-mv-nth-1-of-open-output-channel
+  (equal (open-input-channel-any-p1 channel (mv-nth 1 (open-output-channel file-name typ state)))
+         (open-input-channel-any-p1 channel state))
+  :hints (("Goal" :in-theory (enable open-input-channel-any-p1))))
+
+(defthm open-input-channel-any-p-of-mv-nth-1-of-open-output-channel
+  (equal (open-input-channel-any-p channel (mv-nth 1 (open-output-channel file-name typ state)))
+         (open-input-channel-any-p channel state))
+  :hints (("Goal" :in-theory (enable open-input-channel-any-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

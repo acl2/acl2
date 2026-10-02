@@ -67,8 +67,7 @@
            (bounded-integer-alistp (compress11 name array i index default) n))
   :hints (("Goal" :in-theory (e/d (compress11 bounded-integer-alistp
                                               assoc-equal-forward-when-bounded-integer-alistp)
-                                  (
-                                   car-of-assoc-equal-cheap)))))
+                                  (car-of-assoc-equal-cheap)))))
 
 
 (local

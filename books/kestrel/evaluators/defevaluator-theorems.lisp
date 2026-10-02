@@ -1,6 +1,6 @@
 ; A tool to prove theorems about evaluators
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,6 +25,9 @@
      (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
      (include-book "kestrel/alists-light/map-lookup-equal" :dir :system)
      (include-book "kestrel/alists-light/alists-equiv-on" :dir :system)
+     (include-book "tools/flag" :dir :system) ; can this be made local?
+
+     (make-flag free-vars-in-term) ; also done elsewhere ; can this be made local?
 
      (encapsulate ()
 
@@ -69,17 +72,17 @@
          :hints (("Goal" :in-theory (e/d (,(add-suffix-to-fn eval-name "-OF-FNCALL-ARGS"))
                                          (,(add-suffix-to-fn eval-name "-OF-FNCALL-ARGS-BACK"))))))
 
-       (defthm ,(add-suffix-to-fn eval-list-name "-WHEN-SYMBOL-LISTP")
-         (implies (and (symbol-listp vars)
-                       (not (member-equal nil vars)) ;evaluating nil just gives nil;
-                       )
-                  (equal (,eval-list-name vars a)
-                         (map-lookup-equal vars a)))
-         :hints (("Goal" :in-theory (enable
-                                     map-lookup-equal
-                                     (:i len)
-                                     lookup-equal)
-                  :induct (len vars))))
+       ;; (defthm ,(add-suffix-to-fn eval-list-name "-WHEN-SYMBOL-LISTP")
+       ;;   (implies (and (symbol-listp vars)
+       ;;                 (not (member-equal nil vars)) ;evaluating nil just gives nil;
+       ;;                 )
+       ;;            (equal (,eval-list-name vars a)
+       ;;                   (map-lookup-equal vars a)))
+       ;;   :hints (("Goal" :in-theory (enable
+       ;;                               map-lookup-equal
+       ;;                               (:i len)
+       ;;                               lookup-equal)
+       ;;            :induct (len vars))))
 
        ;; Pushes the evaluation into the alist.
        ;;term may often be a var

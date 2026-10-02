@@ -33,4 +33,10 @@
   (defruled symbol-listp-when-symbol-setp
     (implies (symbol-setp x)
              (symbol-listp x))
-    :enable symbol-setp))
+    :enable symbol-setp)
+
+  (defrule symbol-setp-of-mergesort
+    (equal (symbol-setp (set::mergesort x))
+           (symbol-listp (true-list-fix x)))
+    :induct t
+    :enable set::mergesort))

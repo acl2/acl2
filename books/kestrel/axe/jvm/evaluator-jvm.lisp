@@ -1,7 +1,7 @@
 ; An evaluator for JVM code lifting
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -26,7 +26,7 @@
   (append '((strip-cars strip-cars-unguarded)
             (strip-cdrs strip-cdrs-unguarded)
             (no-duplicatesp-equal no-duplicatesp-equal-unguarded)
-            work-hard ; no special treatent for work-hard in the rewriter, but we may nee to evaluate it on constants
+            work-hard ; no special treatment for work-hard in the rewriter, but we may nee to evaluate it on constants
             )
           *axe-evaluator-basic-fns-and-aliases*))
 

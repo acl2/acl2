@@ -1,6 +1,6 @@
 ; FTY Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -64,7 +64,6 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "General Form")
-
 
    (xdoc::codeblock
     "(defset type"
@@ -275,8 +274,6 @@
                   :already-definedp already-defined
                   :fix-already-definedp fix-already-defined)))
 
-
-
 (define flexset-fns (x)
   (b* (((flexset x)))
     (list x.pred
@@ -320,8 +317,8 @@
        (pred-of-delete (acl2::packn-pos (list x.pred '-of-delete) x.pred))
        )
     (if x.already-definedp
-        '(progn)
-      `(define ,x.pred (,x.xvar)
+        '((progn))
+      `((define ,x.pred (,x.xvar)
          :parents (,x.name)
          :short ,(concatenate 'string "Recognizer for " type-ref ".")
          ,@(if x.measure `(:measure ,x.measure)
@@ -405,8 +402,7 @@
            (implies (,x.pred ,x.xvar)
                     (,x.pred (set::delete ,a ,x.xvar)))
            :induct t
-           :enable set::delete)))))
-
+           :enable set::delete))))))
 
 (define flexset-fix-def (x flagp)
   (b* (((flexset x))
@@ -492,7 +488,6 @@
              ,@(and eltcount `((,eltcount (set::head ,x.xvar))))
              (,x.count (set::tail ,x.xvar))))))))
 
-
 (defun flexset-count-post-events (x types)
   (b* (((flexset x))
        ((unless x.count) nil)
@@ -503,6 +498,7 @@
        (foo-count-of-tail  (intern-in-package-of-symbol (cat (symbol-name x.count) "-OF-TAIL") x.count))
        (foo-count-when-emptyp  (intern-in-package-of-symbol (cat (symbol-name x.count) "-WHEN-EMPTYP") x.count))
        (foo-count-when-not-emptyp  (intern-in-package-of-symbol (cat (symbol-name x.count) "-WHEN-NOT-EMPTYP") x.count)))
+
     `((defthm ,foo-count-when-emptyp
         (implies (emptyp ,x.xvar)
                  (equal (,x.count ,x.xvar)

@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -68,7 +68,7 @@
       ") "
       (xdoc::seetopic "c$::code-ensembles" "code ensemble")
       ", in particular containing "
-      (xdoc::seetopic "c$::validation-information" "validation information")
+      (xdoc::seetopic "c$::validation-annotations" "validation information")
       ". This constant could result from @(tsee c$::input-files)
        or from some other "
       (xdoc::seetopic "transformation-tools" "transformation")
@@ -97,7 +97,7 @@
       "The named constant containing the result of the transformation.
        This is a code ensemble that is
        the same as the one in @('*old*'), except that,
-       in the translation unit ensemble,
+       in the translation ensemble,
        every occurrence of an expression of the form @('E + 0'),
        when @('E') is an expression that our current @(see c$::validator)
        annotates as having type @('int'),

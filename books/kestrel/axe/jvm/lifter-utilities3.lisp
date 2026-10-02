@@ -1,7 +1,7 @@
 ; Even more utilities supporting the lifter(s)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -20,6 +20,7 @@
 (include-book "lifter-utilities") ;for standard-hyps-basic0
 (include-book "kestrel/utilities/unify" :dir :system)
 (include-book "kestrel/jvm/global-class-alist" :dir :system)
+(include-book "kestrel/terms-light/make-conjunction-from-list" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 
@@ -133,7 +134,7 @@
        ((mv erp result state)
         (simp-dag
          dag
-         :rules (append '( ;bool-fix ;looped?
+         :rules (append '(;bool-fix ;looped?
                           ;;BOOL-FIX-WHEN-BOOLEANP
                           ;;jvm::in-of-rkeys-when-g
                           ;;jvm::in-of-rkeys-when-g-rev
@@ -144,7 +145,7 @@
                         ;;(rule-list-1001)
                         )
          :monitor (append monitored-rules
-                          '( ;JVM::LOOKUP-FIELD-BASE-3
+                          '(;JVM::LOOKUP-FIELD-BASE-3
                             ;;jvm::in-of-rkeys-when-g
                             ;;jvm::in-of-rkeys-when-g-rev
                             ))
@@ -184,8 +185,7 @@
                                        state)
   (declare (xargs :mode :program
                   :stobjs state
-                  :guard (and (symbol-listp extra-rules)
-                              (jvm::all-class-namesp class-names)
+                  :guard (and (jvm::class-name-listp class-names)
                               ;; what about th?
                               (weak-dag-or-quotep s-dag)
                               (pseudo-term-listp hyps)
@@ -713,7 +713,8 @@
                                     ;; generate an assumption about all the
                                     ;; addresses being bound:
                                     `((all-bound-in-heap (get-field ,term-for-assumptions ,quoted-class-field-pair ,base-heap-term)
-                                                         ,base-heap-term))
+                                                         ,base-heap-term)
+                                      (all-addressp (get-field ,term-for-assumptions ,quoted-class-field-pair ,base-heap-term)))
                                   nil)
                                 (initialized-field-assumptions-for-heap-addresses (+ -1 count)
                                                                                   symbolic-new-addresses
@@ -821,7 +822,9 @@
                                all-bound-in-heap-of-nil
                                get-field-of-addresses-of-nil
                                get-field-of-addresses-of-cons
-                               in-of-nth-new-ad-and-2set-of-n-new-ads)
+                               in-of-nth-new-ad-and-2set-of-n-new-ads
+                               all-addressp-of-cons
+                               all-addressp-when-not-consp)
                              (base-rules)
                              ;; (jvm-semantics-rules)
                              (jvm-simplification-rules)
@@ -862,7 +865,7 @@
   (declare (xargs :mode :program
                   :stobjs state
                   :guard (and (true-listp class-names)
-                              (jvm::all-class-namesp class-names))))
+                              (jvm::class-name-listp class-names))))
   (b* ((- (cw "(Generating assumptions established by the static initializers of ~x0:~%" class-names))
        (state-var 's0)
        ((mv erp initialized-state-term state)

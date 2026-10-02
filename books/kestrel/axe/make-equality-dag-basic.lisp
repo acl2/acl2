@@ -1,4 +1,4 @@
-; The tactic-based prover
+; Making equality DAGs (basic version)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2026 Kestrel Institute

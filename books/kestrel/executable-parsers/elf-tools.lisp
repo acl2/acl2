@@ -1,6 +1,6 @@
 ; Tools for processing the alists that represent parsed ELF files.
 ;
-; Copyright (C) 2022-2025 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,7 +17,7 @@
 ;(include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
-(include-book "kestrel/memory/memory-regions" :dir :system)
+(include-book "memory-regions")
 (include-book "kestrel/lists-light/repeat-def" :dir :system)
 (local (include-book "kestrel/bv-lists/byte-listp" :dir :system))
 (local (include-book "kestrel/bv-lists/byte-listp2" :dir :system))
@@ -265,7 +265,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp regions).
-(defund elf64-regions-to-load-aux (program-header-table all-bytes-len all-bytes acc)
+(defund elf-regions-to-load-aux (program-header-table all-bytes-len all-bytes acc)
   (declare (xargs :guard (and (acl2::elf-program-header-tablep program-header-table)
                               (acl2::byte-listp all-bytes)
                               (equal all-bytes-len (len all-bytes))
@@ -278,7 +278,7 @@
          (type (lookup-eq :type program-header-table-entry))
          ;; We skip any segment that is not a LOAD segment:
          ((when (not (eq type :pt_load)))
-          (elf64-regions-to-load-aux (rest program-header-table) all-bytes-len all-bytes acc))
+          (elf-regions-to-load-aux (rest program-header-table) all-bytes-len all-bytes acc))
          ;; It is a LOAD segment:
          (offset (lookup-eq :offset program-header-table-entry))
          (filesz (lookup-eq :filesz program-header-table-entry))
@@ -314,23 +314,23 @@
          ;;  (mv :filesz-memsz-mismatch nil))
          (- (cw "Loadable segment at ~x0 of size ~x1 (flags: ~x2).~%" vaddr memsz flags))
          )
-      (elf64-regions-to-load-aux (rest program-header-table)
+      (elf-regions-to-load-aux (rest program-header-table)
                                  all-bytes-len all-bytes
                                  (cons (list memsz vaddr bytes nice-flags)
                                        acc)))))
 
 (local
-  (defthm memory-regionsp-of-mv-nth-1-of-elf64-regions-to-load-aux
+  (defthm memory-regionsp-of-mv-nth-1-of-elf-regions-to-load-aux
     (implies (and (x::memory-regionsp acc)
                   (acl2::byte-listp all-bytes)
                   (equal all-bytes-len (len all-bytes)))
-             (x::memory-regionsp (mv-nth 1 (elf64-regions-to-load-aux program-header-table all-bytes-len all-bytes acc))))
-    :hints (("Goal" :in-theory (enable elf64-regions-to-load-aux x::memory-regionsp x::memory-regionp)))))
+             (x::memory-regionsp (mv-nth 1 (elf-regions-to-load-aux program-header-table all-bytes-len all-bytes acc))))
+    :hints (("Goal" :in-theory (enable elf-regions-to-load-aux x::memory-regionsp x::memory-regionp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp regions).
-(defund elf64-regions-to-load (parsed-elf)
+(defund elf-regions-to-load (parsed-elf)
   (declare (xargs :guard (acl2::parsed-elfp parsed-elf)))
   (b* ((program-header-table (acl2::parsed-elf-program-header-table parsed-elf))
        (all-bytes (acl2::parsed-elf-bytes parsed-elf))
@@ -339,7 +339,7 @@
        ;; TODO: Consider implementing some sort of dynamic loading using the
        ;; sections (but call instructions (and others?) may need to be fixed up):
        ((when (not (consp program-header-table)))
-        (er hard? 'assumptions-elf64-new "Program header table is empty. Please link the executable") ; todo: print the name
+        (er hard? 'elf-regions-to-load "Program header table is empty. Please link the executable") ; todo: print the name
         (mv :empty-program-header-table nil))
        ;; (if (null program-header-table) ; todo: simplify this:
        ;;     (prog2$ (er hard? 'assumptions-elf64-new "No program-header-table.  Please link the executbable.")
@@ -347,12 +347,12 @@
        ;;             (assumptions-for-elf64-sections-new '(".text" ".data" ".rodata") ; todo: .bss, etc
        ;;                                                 position-independentp stack-slots-needed state-var base-var parsed-elf bvp new-canonicalp nil))
        )
-    (elf64-regions-to-load-aux program-header-table (len all-bytes) all-bytes nil)))
+    (elf-regions-to-load-aux program-header-table (len all-bytes) all-bytes nil)))
 
-(defthm memory-regionsp-of-mv-nth-1-of-elf64-regions-to-load
+(defthm memory-regionsp-of-mv-nth-1-of-elf-regions-to-load
   (implies (acl2::parsed-elfp parsed-elf)
-           (x::memory-regionsp (mv-nth 1 (elf64-regions-to-load parsed-elf))))
-  :hints (("Goal" :in-theory (enable elf64-regions-to-load))))
+           (x::memory-regionsp (mv-nth 1 (elf-regions-to-load parsed-elf))))
+  :hints (("Goal" :in-theory (enable elf-regions-to-load))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

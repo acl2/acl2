@@ -1,0 +1,36 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains a grammar rule for keywords in the Clang dialects.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The Clang documentation does not seem to have
+; a clear list of all their additional keywords in the style of [C17] and [C23].
+; The list is inferred from the documentation,
+; but the lists may be incomplete, and it will be extended as needed.
+
+keyword-clang = %s"__datasizeof"
+              / %s"_ExtInt"
+              / %s"__imag"
+              / %s"__real"
+              / %s"__complex"
+              / %s"__complex__"
+              / %s"__const"
+              / %s"__const__"
+              / %s"__nullptr"
+              / %s"__typeof_unqual"
+              / %s"__typeof_unqual__"
+              / %s"_Nonnull"
+              / %s"_Null_unspecified"
+              / %s"_Nullable"
+              / %s"_Nullable_result"

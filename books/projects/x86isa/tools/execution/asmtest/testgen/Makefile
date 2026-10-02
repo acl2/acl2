@@ -10,15 +10,15 @@ testgen: $(OBJS) deps/xed/obj/wkit/lib/libxed.a
 	$(LD) $(LDFLAGS) $(OBJS) $(LDLIBS) -o testgen
 
 deps/xed:
-	git clone git@github.com:intelxed/xed.git deps/xed
+	git clone https://github.com/intelxed/xed.git deps/xed
 
 deps/mbuild:
-	git clone git@github.com:intelxed/mbuild.git deps/mbuild
+	git clone https://github.com/intelxed/mbuild.git deps/mbuild
 
-deps/xed/obj/wkit/lib/libxed.a: deps/xed deps/mbuild
+deps/xed/obj/wkit/lib/libxed.a deps/xed/obj/wkit/include: deps/xed deps/mbuild
 	@cd deps/xed && ./mfile.py
 
-%.o: %.c
+%.o: %.c deps/xed/obj/wkit/include
 	$(CC) $(CFLAGS) -c $<
 
 clean:

@@ -8,6 +8,8 @@
 
 (in-package "TREEMAP")
 
+(include-book "kestrel/data/utilities/omap-defs" :dir :system)
+
 (include-book "tree-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
@@ -17,4 +19,5 @@
 
 (std::defredundant
   :names (tree-in-order-acc
-          tree-in-order))
+          tree-in-order
+          tree-omap))

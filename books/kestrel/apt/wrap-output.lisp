@@ -1,6 +1,6 @@
 ; A transformation to combine a function's body with a wrapper
 ;
-; Copyright (C) 2014-2023 Kestrel Institute
+; Copyright (C) 2014-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -393,7 +393,7 @@
                               (not (eq 'quote fn))
                               (or (symbolp wrapper)
                                   (untranslated-unary-lambdap wrapper))
-                              (t/nil/auto-p function-disabled))
+                              (member-eq function-disabled '(t nil :auto)))
                   :mode :program))
   (b* ((wrld (w state))
        (fn-event (my-get-event fn wrld))
@@ -574,7 +574,7 @@ then if @('wrapper') is a wrapper function then @('foo') is transformed to the f
             ((lambda (y) (foo$1 y)) (foo x))))) ;; the argument is unchanged
    })</li>
 
-<li>If the term @('(lambda (x) (nth '2 x))') is wrapped around a function that returns @('(list x y z)'), then the new functions simply returns @('z').  (This is useful for
+<li>If the term @('(lambda (x) (nth '2 x))') is wrapped around a function that returns @('(list x y z)'), then the new function simply returns @('z').  (This is useful for
 functions that axe has lifted).</li>
 </ul>
 

@@ -85,7 +85,7 @@
   :rule-classes :congruence
   :enable subintervalp)
 
-(defrule revlexivity-of-subintervalp
+(defrule reflexivity-of-subintervalp
   (subintervalp x x)
   :enable subintervalp)
 

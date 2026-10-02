@@ -82,6 +82,7 @@
 (include-book "pcmp")
 (include-book "pshuf")
 (include-book "emms")
+(include-book "bcd")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 

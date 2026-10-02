@@ -1,6 +1,6 @@
 ; Utilities to extract data from zip files
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -196,22 +196,13 @@
            (byte-listp (readnbytes-from-byte-array-stobj-aux n index byte-array-stobj acc)))
   :hints (("Goal" :in-theory (enable readnbytes-from-byte-array-stobj-aux))))
 
-(defthm byte-listp-of-readnbytes-from-byte-array-stobj-aux
-  (implies (and (byte-listp acc)
-                (<= (+ n index) (bytes-length byte-array-stobj))
-                (natp index)
-                (natp n)
-                (byte-array-stobjp byte-array-stobj))
-           (byte-listp (readnbytes-from-byte-array-stobj-aux n index byte-array-stobj acc)))
-  :hints (("Goal" :in-theory (enable readnbytes-from-byte-array-stobj-aux))))
-
 ;; Returns (mv erp bytes index) where bytes is a list of bytes.
 ;; TODO: Why return the new index?
 (defund readnbytes-from-byte-array-stobj (n index byte-array-stobj)
   (declare (xargs :guard (and (natp index)
                               (natp n))
                   :stobjs byte-array-stobj))
-  (if (<= (bytes-length byte-array-stobj) (+ index n))
+  (if (< (bytes-length byte-array-stobj) (+ index n))
       (mv :not-enough-bytes nil
           (+ n index) ; irrelevant, for uniformity
           )
@@ -220,7 +211,7 @@
 
 (defthm mv-nth-0-of-readnbytes-from-byte-array-stobj
   (equal (mv-nth 0 (readnbytes-from-byte-array-stobj n index byte-array-stobj))
-         (if (<= (bytes-length byte-array-stobj) (+ index n))
+         (if (< (bytes-length byte-array-stobj) (+ index n))
              :not-enough-bytes
            nil))
   :hints (("Goal" :in-theory (enable readnbytes-from-byte-array-stobj))))
@@ -440,11 +431,10 @@
   (declare (xargs :guard (stringp filename)
                   :stobjs (byte-array-stobj state)))
   (b* (;; Read in the whole file (TODO: Can we read in less?):
-       ((mv erp byte-array-stobj state) (read-file-into-byte-array-stobj filename byte-array-stobj state))
+       ((mv erp len byte-array-stobj state) (read-file-into-byte-array-stobj filename byte-array-stobj state))
        ((when erp)
         (er hard? 'read-file-and-locate-end-of-central-directory-record "Failed to read file ~x0." filename)
         (mv :error-reading-file-into-stobj nil byte-array-stobj state))
-       (len (bytes-length byte-array-stobj))
        ((when (< len 22))
         (mv :not-enough-bytes nil byte-array-stobj state))
        ;;((mv erp file-infos bytes) (read-file-infos bytes nil))
@@ -519,7 +509,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp path-to-decompressed-bytes-alist).
-;; Go through the central-directory-headers.  For each, if it'sin the target-paths, read its and decompress corresponding file, including its local-file-header.
+;; Go through the central-directory-headers.  For each, if it's in the target-paths, read and decompress its corresponding file, including its local-file-header.
 ;; TODO: What if the same path appears multiple times in the .zip?  There are security issues related that that (e.g., in Android).
 ;; Is index really more of an offset?
 (defund unzip-files (target-paths
@@ -538,7 +528,7 @@
                   :stobjs byte-array-stobj))
   (if (zp num-headers)
       (mv (erp-nil) (reverse acc)) ; could skip the reverse if desired
-    (b* (                            ;; Read the next central directory header:
+    (b* (;; Read the next central directory header:
          ((mv erp header index) (read-central-directory-header index byte-array-stobj)) ; todo: we could process less than the whole header, but they are variable size
          ((when erp) (mv erp nil))
          ;; Get the file path:
@@ -576,6 +566,7 @@
                     (mv :bad-bytes nil))
                    )
                 (mv (erp-nil) (acons filename decompressed-file-bytes acc)))
+            ;; skip this one:
             (mv (erp-nil) acc)))
          ((when erp) (mv erp nil)))
       (unzip-files target-paths (+ -1 num-headers) index verbosep byte-array-stobj acc))))

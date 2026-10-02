@@ -1,6 +1,6 @@
 ; Rules to support R1CS proofs
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -575,7 +575,7 @@
                                   (z z)
                                   (x x)
                                   (p p))
-           :in-theory (disable PFIELD::ADD-OF-NEG-OF-WHEN-BITP)
+           :in-theory (disable PFIELD::ADD-OF-NEG-WHEN-BITP)
            )))
 
 (defthm xor-idiom-special-2
@@ -593,7 +593,7 @@
                                   (z z)
                                   (x x)
                                   (p p))
-           :in-theory (disable pfield::add-of-neg-of-when-bitp
+           :in-theory (disable pfield::add-of-neg-when-bitp
                                pfield::equal-of-add-move-negations-bind-free
                                pfield::add-subst-constant-arg1
                                PFIELD::MUL-OF-ADD-ARG2
@@ -618,7 +618,7 @@
                                   (z z)
                                   (x x)
                                   (p p))
-           :in-theory (disable PFIELD::ADD-OF-NEG-OF-WHEN-BITP
+           :in-theory (disable PFIELD::ADD-OF-NEG-WHEN-BITP
                                PFIELD::MUL-OF-ADD-ARG2
                                pfield::add-subst-constant-arg1
                                PFIELD::NEG-WHEN-CONSTANT-ARG1))))
@@ -662,7 +662,7 @@
                                    ACL2::BVCAT-EQUAL-REWRITE-ALT)))))
 
 (defthmd add-of-mul-of-65536-special
-  (implies (and (acl2::axe-bind-free (acl2::bind-bv-size-axe y 'ysize dag-array) '(ysize))
+  (implies (and (acl2::axe-bind-free (acl2::bind-bv-size-axe y 'ysize acl2::dag-array) '(ysize))
                 (equal ysize 16)
                 (unsigned-byte-p 16 x)
                 (unsigned-byte-p 16 y)
@@ -701,8 +701,7 @@
 
 
 (defthmd add-of-mul-of-1048576
-  (implies (and (equal ysize 20)
-                (unsigned-byte-p 12 x)
+  (implies (and (unsigned-byte-p 12 x)
                 (unsigned-byte-p 20 y)
                 (integerp p)
                 (< (expt 2 32) p))
@@ -713,7 +712,7 @@
                                    ACL2::BVCAT-EQUAL-REWRITE-ALT)))))
 
 (defthmd add-of-mul-of-1048576-special
-  (implies (and (acl2::axe-bind-free (acl2::bind-bv-size-axe y 'ysize dag-array) '(ysize))
+  (implies (and (acl2::axe-bind-free (acl2::bind-bv-size-axe y 'ysize acl2::dag-array) '(ysize))
                 (equal ysize 20)
                 (unsigned-byte-p 12 x)
                 (unsigned-byte-p 20 y)
@@ -735,7 +734,7 @@
                                    ACL2::BVCAT-EQUAL-REWRITE-ALT)))))
 
 (defthm add-of-mul-of-1048576-and-add-extra-special
-  (implies (and (acl2::axe-bind-free (acl2::bind-bv-size-axe y 'ysize dag-array) '(ysize))
+  (implies (and (acl2::axe-bind-free (acl2::bind-bv-size-axe y 'ysize acl2::dag-array) '(ysize))
                 (equal ysize 20)
                 (unsigned-byte-p 12 x)
                 (unsigned-byte-p 20 y)
@@ -1024,7 +1023,6 @@
                                               (ADD y
                                                    rot p) p) p) p)))))
   :hints (("Goal" ;:in-theory (enable PFIELD::ADD-BECOMES-BVPLUS-34)
-           :in-theory (disable)
            :use (:instance add-helper-bv35
                                   (bv35 (ADD inv0
                                              (ADD inv4
@@ -1240,7 +1238,8 @@
                   (mod (- (getbit 0 x) (bvchop 34 x)) p)))
   :hints (("Goal" :in-theory (e/d (mul-of--2-becomes-neg-of-mul-of-2
                                    neg)
-                                  (ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
+                                  (;;ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                   )))))
 
 
 ;quite specific

@@ -149,13 +149,11 @@
                 (equal len (len lst)))
            (equal (bv-array-clear esize len key (bv-array-write esize len key val lst))
                   (bv-array-clear esize len key lst)))
-  :hints (("Goal" :cases ((< KEY1 KEY2)
-                          (< KEY2 KEY1))
-           :in-theory (enable BV-ARRAY-CLEAR))))
+  :hints (("Goal" :in-theory (enable BV-ARRAY-CLEAR))))
 
 (defthm bv-array-clear-of-bvchop-list
-  (equal (bv-array-clear elemement-width len index (bvchop-list elemement-width array))
-         (bv-array-clear elemement-width len index array))
+  (equal (bv-array-clear element-width len index (bvchop-list element-width array))
+         (bv-array-clear element-width len index array))
   :hints (("Goal" :in-theory (enable bv-array-clear))))
 
 (defthm bv-array-clear-of-bv-array-clear-diff
@@ -211,7 +209,6 @@
   :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2 ceiling-of-lg)
                                   (;UNSIGNED-BYTE-P-OF-+-OF-MINUS-ALT
                                    ;UNSIGNED-BYTE-P-OF-+-OF-MINUS
-                                   ;;update-nth-becomes-update-nth2-extend-gen
                                    )))))
 
 ;;todo clear-nth becomes bv-array-clear?
@@ -225,10 +222,7 @@
   (implies (syntaxp (not (quotep a)))
            (equal (bv-array-clear size len 0 (cons a b))
                   (bv-array-clear size len 0 (cons 0 b))))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2)
-                                  (
-                                   ;;update-nth-becomes-update-nth2-extend-gen
-                                   )))))
+  :hints (("Goal" :in-theory (enable bv-array-clear bv-array-write update-nth2))))
 
 (defthmd bv-array-write-of-0-becomes-bv-array-clear
   (equal (bv-array-write elem-size len index1 0 lst)
@@ -309,12 +303,12 @@
                  0
                (bvchop width (car data)))
            nil))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2) (update-nth-becomes-update-nth2-extend-gen)))))
+  :hints (("Goal" :in-theory (enable bv-array-clear bv-array-write update-nth2))))
 
 (defthm bv-array-clear-length-1-of-list-zero
   (equal (bv-array-clear width 1 index '(0))
          '(0))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2) (update-nth-becomes-update-nth2-extend-gen)))))
+  :hints (("Goal" :in-theory (enable bv-array-clear bv-array-write update-nth2))))
 
 (defthm cdr-of-bv-array-clear
   (implies (and (posp len)
@@ -328,7 +322,7 @@
            :cases ((< len 2))
            :in-theory (e/d (bv-array-clear bv-array-write-opener update-nth2 subrange)
                            (;GETBIT-OF-BV-ARRAY-READ-HELPER ;yuck
-                            update-nth-becomes-update-nth2-extend-gen)))))
+                            )))))
 
 (defthm cdr-of-bv-array-clear-of-0
   (implies (posp len)
@@ -337,8 +331,7 @@
   :hints (("Goal" :in-theory (enable bv-array-clear))))
 
 (defthm cdr-of-bv-array-clear-2
-  (implies (and (<= n len)
-                (< key len)
+  (implies (and (< key len)
                 (integerp len)
                 (natp key))
            (equal (cdr (bv-array-clear element-size len key lst))

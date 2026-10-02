@@ -1,10 +1,10 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -12,7 +12,6 @@
 
 (include-book "abstract-syntax")
 (include-book "semantics")
-(include-book "convenience-constructors")
 (include-book "core-rules")
 (include-book "core-rules-validation")
 (include-book "concrete-syntax-rules")
@@ -26,7 +25,7 @@
 
 (defxdoc+ notation
   :parents (abnf)
-  :short "A fornalization of the ABNF notation."
+  :short "A formalization of the ABNF notation."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -44,9 +43,9 @@
      between (concrete syntax) trees
      and abstract syntactic entities.")
    (xdoc::p
-    "With a formal semantics in hand, we proceed to formalize the "
-    (xdoc::seetopic "concrete-syntax" "concrete syntax")
-    " of ABNF using ABNF itself, as follows.")
+    "With a formal semantics in hand,
+     we proceed to formalize the concrete syntax of ABNF using ABNF itself,
+     as follows.")
    (xdoc::p
     "The files @('concrete-syntax-rules.abnf') and @('core-rules.abnf')
      contain the ABNF grammar of ABNF, along with the core rules.
@@ -64,10 +63,9 @@
    (xdoc::p
     "To make the rules written in abstract syntax
      look more like if they were written in concrete syntax,
-     we introduce some "
+     we use the "
     (xdoc::seetopic "convenience-constructors" "convenience constructors")
-    " for ABNF abstract syntax.
-     We use them to define, in abstract syntax, the "
+    " to define, in abstract syntax, the "
     (xdoc::seetopic "core-rules" "core rules")
     " and the "
     (xdoc::seetopic "concrete-syntax-rules" "concrete syntax rules")
@@ -78,7 +76,7 @@
     (xdoc::seetopic "concrete-syntax-rules-validation"
                     "validation of the concrete syntax rules")
     ", using some of the "
-    (xdoc::seetopic "operations" "grammar operations")
+    (xdoc::seetopic "grammar-operations" "grammar operations")
     ".")
    (xdoc::p
     "We put concrete syntax rules and (the used) core rules together
@@ -99,7 +97,7 @@
     (xdoc::seetopic "concrete-syntax-validation"
                     "validation of the concrete syntax")
     ", via some of the "
-    (xdoc::seetopic "operations" "grammar operations")
+    (xdoc::seetopic "grammar-operations" "grammar operations")
     ".")
    (xdoc::p
     "With a formalization of the ABNF notation in hand,
@@ -110,4 +108,13 @@
      but we use it to "
     (xdoc::seetopic "meta-circular-validation" "validate the meta-circularity")
     " with which [RFC] defines the syntax of ABNF."))
-  :order-subtopics t)
+  :order-subtopics (abstract-syntax
+                    semantics
+                    core-rules
+                    core-rules-validation
+                    concrete-syntax-rules
+                    concrete-syntax-rules-validation
+                    concrete-syntax
+                    concrete-syntax-validation
+                    syntax-abstraction
+                    meta-circular-validation))

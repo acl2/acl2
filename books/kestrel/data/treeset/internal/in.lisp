@@ -83,17 +83,6 @@
   (not (tree-in x nil))
   :enable tree-in-when-tree-empty-p)
 
-(defruled tree-in-when-tree-empty-p
-  (implies (tree-empty-p tree)
-           (not (tree-in x tree)))
-  :enable tree-in)
-
-(defrule tree-in-when-tree-empty-p-cheap
-  (implies (tree-empty-p tree)
-           (not (tree-in x tree)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by tree-in-when-tree-empty-p)
-
 (defrule tree-in-of-tree->head
   (equal (tree-in (tree-element->val (tree->head tree)) tree)
          (not (tree-empty-p tree))))
@@ -187,6 +176,24 @@
            (<< x y))
   :rule-classes :forward-chaining
   :by <<-when-<<-all-l-and-tree-in)
+
+;; The same bridge for the heap order: a bound on every element of a tree is a
+;; bound on any member.
+
+(defruled heap<-when-heap<-all-l-and-tree-in
+  (implies (and (heap<-all-l tree x)
+                (tree-in y tree))
+           (heap< y x))
+  :induct (tree-in y tree)
+  :enable (tree-in
+           heap<-all-l))
+
+(defrule heap<-when-heap<-all-l-and-tree-in-forward-chaining
+  (implies (and (heap<-all-l tree x)
+                (tree-in y tree))
+           (heap< y x))
+  :rule-classes :forward-chaining
+  :by heap<-when-heap<-all-l-and-tree-in)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -483,4 +490,5 @@
     tree-in-when-<<-all-l
     <<-when-<<-all-r-and-tree-in
     <<-when-<<-all-l-and-tree-in
+    heap<-when-heap<-all-l-and-tree-in
     tree->head-when-heapp-and-tree-in-tree->head-syntaxp))

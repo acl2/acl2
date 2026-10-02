@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function unary--.
 ;
-; Copyright (C) 2019-2023 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -27,6 +27,11 @@
          (rationalp (fix x)))
   :hints (("Goal" :cases ((rationalp x)))))
 
+(defthmd rationalp-of---alt
+    (equal (real/rationalp (- x))
+           (not (complex/complex-rationalp x)))
+    :hints (("Goal" :cases ((complex/complex-rationalp x)))))
+
 (defthm --of--
   (equal (- (- x))
          (fix x)))
@@ -39,8 +44,8 @@
                        (equal (fix x) (- k))))))
 
 (defthm equal-of---when-variable
-  (implies (and (syntaxp (and (symbolp x)
-                              (not (symbolp k)))))
+  (implies (syntaxp (and (symbolp x)
+                         (not (symbolp k))))
            (equal (equal k (- x))
                   (and (acl2-numberp k)
                        (equal (fix x) (- k))))))

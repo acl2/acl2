@@ -1,7 +1,7 @@
 ; Representations of Java values as bit-vectors.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -45,6 +45,12 @@
 (defund java-charp (i)
   (declare (xargs :guard t))
   (unsigned-byte-p 16 i))
+
+(defthm java-charp-forward-to-natp
+  (implies (java-charp char)
+           (natp char))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable java-charp))))
 
 ;; An int is a 32-bits
 (defund java-intp (i)

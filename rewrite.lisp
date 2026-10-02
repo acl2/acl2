@@ -61,7 +61,7 @@
 ; this list of functions is returned as the third value of ev-fncall+.  The
 ; function push-warrants then processes this list of functions as follows: for
 ; the warrant of each function in that list, either the warrant is known to be
-; true or it is forced (except that if it the warrant is known to be false, the
+; true or it is forced (except that if the warrant is known to be false, the
 ; evaluation is considered to have failed).
 
 ; Note that *aokp* must be true for the apply$-lambda and loop$ shortcuts.  So
@@ -475,8 +475,8 @@
 
 ; (In my previous example I used memb.  Here I use member, the Common Lisp
 ; function.  When member succeeds, it returns the tail of its second arg that
-; starts with its first.  Thus, (member x a) is not necessary equal to (member
-; x b), even when a and b are set-equal.  But they are propositionally
+; starts with its first.  Thus, (member x a) is not necessarily equal to
+; (member x b), even when a and b are set-equal.  But they are propositionally
 ; equivalent, i.e., mutually nil or non-nil.  Iff is just another equivalence
 ; relation.)
 
@@ -1083,7 +1083,7 @@
 ; every input and output and reran it on the proof of the Nqthm package to
 ; collect all io pairs.  Analyzing the io pairs showed that we could reproduce
 ; the behavior of geneqv-lst on that series of proofs with the following code.
-; Note that this does does not look at the property lists nor at the enabled
+; Note that this does not look at the property lists nor at the enabled
 ; structure.  Nor does it do any consing.
 
 ;    (defun geneqv-lst (fn geneqv ens wrld)
@@ -1916,7 +1916,7 @@ its attachment is ignored during proofs"))))
 ; approach has allowed us to continue to use some existing functions, in
 ; particular geneqv-lst.
 
-; Another basic principle is that we deal with the inherently sequentiality of
+; Another basic principle is that we deal with the inherent sequentiality of
 ; rewrite-args, in the sense that unlike ordinary geneqvs, the use of patterned
 ; equivalences must be done one argument at a time.  Consider the following
 ; example.
@@ -2354,7 +2354,7 @@ its attachment is ignored during proofs"))))
 ; Thus, pequivs fail to be used heuristically in some places that ordinary
 ; congruences are used: for example, as in test-3 in community book
 ; books/demos/patterned-congruences.lisp, remove-trivial-equivalences and
-; fertilize-clause doesn't use patterned congruence rules.  If we decide to add
+; fertilize-clause don't use patterned congruence rules.  If we decide to add
 ; such support, then we should think carefully so that we don't introduce
 ; unsoundness.  See the examples in the above book involving congruence rules
 ; triv-equiv-implies-equal-some-consp-1 and
@@ -2363,7 +2363,7 @@ its attachment is ignored during proofs"))))
 ; remove-trivial-equivalences and fertilize-clause, we can imagine that such
 ; dangers exist.  Finally support for pequivs is provided in the function
 ; geneqv-at-subterm-top, used in the proof-builder, but is not provided in the
-; code the warns about missing opportunities for the use of double-rewrite
+; code that warns about missing opportunities for the use of double-rewrite
 ; (e.g., double-rewrite-opportunities).
 
 ; End of Essay on Patterned Congruences and Equivalences
@@ -3160,7 +3160,7 @@ its attachment is ignored during proofs"))))
 
 ; Converts assumptions to the opposite parity on the most recent
 ; assumption.  I.e., if assumptions was created by assuming term true,
-; the after this switch, the assumptions assume term false.
+; then after this switch, the assumptions assume term false.
 
   (cond ((eq (car assumptions) :not) (cdr assumptions))
         (t (cons :not assumptions))))
@@ -4619,7 +4619,7 @@ its attachment is ignored during proofs"))))
 (defun obj-table (term ts ts-ttree obj geneqv wrld ttree)
 
 ; This function is (mv term' ttree'), where term' is equivalent modulo geneqv
-; (see the essay on Equivalence, Refinements and Congruence- based Rewriting)
+; (see the essay on Equivalence, Refinements and Congruence-based Rewriting)
 ; to term and ttree' includes ttree and may include additional stuff.
 ; Depending on ts, the type-set of term (which is supported by the ts-ttree),
 ; we may coerce term to 0, 1, t, or nil.
@@ -5116,7 +5116,7 @@ its attachment is ignored during proofs"))))
 ;                 ((xremove-invisible-fncalls * *) => *))
 
 ; We witness xtermp with rationalp, xterm-order with <= on the rationals,
-; and xremove-invisible-fncalls by the identify function.
+; and xremove-invisible-fncalls by the identity function.
 
 ;    (local (defun xtermp (x) (rationalp x)))
 ;    (local (defun xterm-order (x y)
@@ -7659,7 +7659,7 @@ its attachment is ignored during proofs"))))
 ; and exit (see exit-brr).
 
 ; (By the way, if you're looking at a brr-status and there is a binding for
-; WONP it means you're in brkpt2.  If you're in brkpt2 and the binding of of
+; WONP it means you're in brkpt2.  If you're in brkpt2 and the binding of
 ; FAILURE-REASON is NEAR-MISS then this brkpt2 closes a near-miss-brkpt1 and
 ; otherwise it closes a brkpt1.)
 
@@ -8381,11 +8381,11 @@ its attachment is ignored during proofs"))))
                (cons #\1 (f-get-global 'current-package state))
                (cons #\2 (defun-mode-prompt-string state))
                (cons #\r
-                     #+:non-standard-analysis
+                     #+non-standard-analysis
                      (if (f-get-global 'script-mode state)
                          ""
                        "(r)")
-                     #-:non-standard-analysis ""))
+                     #-non-standard-analysis ""))
          0 channel state nil)))
 
 ; We now develop code to display type-alists nicely.
@@ -13813,8 +13813,29 @@ its attachment is ignored during proofs"))))
   #-acl2-rewrite-meter ; normal stats (no stats)
   `(eql (the-fixnum ,depth) 0))
 
+(defun tilde-@-call-depth-overflow-advice-phrase1 (alist)
+  (cond ((endp alist) nil)
+        (t (cons (msg "~x0:~%~@1~%~%"
+                      (car (car alist))
+                      (cdr (car alist)))
+                 (tilde-@-call-depth-overflow-advice-phrase1 (cdr alist))))))
+
+(defun tilde-@-call-depth-overflow-advice-phrase (alist)
+  (msg "~#0~[~/~%~%FYI: The book~#1~[~/s~] named below ~#1~[offers~/offer~] ~
+        the following advice about rewrite loops attributable to rules in ~
+        ~#1~[that~/each individual~] book.~%~%~*2~]~%"
+       (if (endp alist) 0 1)
+       alist
+       `("" "~@*" "~@*" "~@*" ,(tilde-@-call-depth-overflow-advice-phrase1 alist))))
+
 (defmacro rdepth-error (form &optional preprocess-p)
   (if preprocess-p
+
+; If we're in the preprocessor no gstack information is available, so it's
+; unlikely the user could attributed the loop to any particular rewrite rule or
+; book.  Therefore, we just tell the user to turn off preprocessing and follow
+; the directions (from the rewriter) when the loop occurs again.
+
       (let ((ctx ''preprocess))
         `(prog2$ (er-hard
                   ,ctx "Call depth"
@@ -13834,17 +13855,20 @@ its attachment is ignored during proofs"))))
       `(prog2$ (er-hard
                 ,ctx "Call depth"
                 "The call depth limit of ~x0 has been exceeded in the ACL2 ~
-                 rewriter.  To see why the limit was exceeded, ~@1execute the ~
-                 form (cw-gstack) or, for less verbose output, instead try ~
-                 (cw-gstack :frames 30).  You may then notice a loop caused ~
-                 by some set of enabled rules, some of which you can then ~
-                 disable; see :DOC disable.  For a possible solution when ~
-                 there is not a loop, see :DOC rewrite-stack-limit."
+                   rewriter.  To see why the limit was exceeded, ~@1execute ~
+                   the form (cw-gstack) or, for less verbose output, instead ~
+                   try (cw-gstack :frames 30).  You may then notice a loop ~
+                   caused by some set of enabled rules, some of which you ~
+                   might then disable; see :DOC disable.  For a possible ~
+                   solution when there is not a loop, see :DOC ~
+                   rewrite-stack-limit.~@2"
                 (rewrite-stack-limit wrld)
                 (if (f-get-global 'gstackp state)
                     ""
                   "first execute~%  :brr t~%and then try the proof again, and ~
-                   then "))
+                   then ")
+                (tilde-@-call-depth-overflow-advice-phrase
+                 (table-alist 'call-depth-overflow-advice wrld)))
                ,form))))
 
 (defun bad-synp-hyp-msg1 (hyp bound-vars all-vars-bound-p wrld)
@@ -16370,7 +16394,7 @@ its attachment is ignored during proofs"))))
 ; c pequiv-info: info on patterned equivalence relations (pequivs) to maintain
 ;   wrld:        the current world
 ;   fnstack:     fns and terms currently being expanded - of heuristic use only
-; h ancestors:   a list of terms assumed true, modified as we backchain.
+; h ancestors:   a list of ancestor records; see (defrec ancestor ...)
 ; h backchain-limit: of heuristic use only
 ; h simplify-clause-pot-lst: a pot-lst of polys
 ; h rcnst:       the rewrite constant arguments
@@ -16691,9 +16715,31 @@ its attachment is ignored during proofs"))))
                                  :pequiv-info nil)
                   (cond
                    ((equal rewritten-concl *nil*)
-                    (mv step-limit
-                        (dumb-negate-lit rewritten-test)
-                        ttree))
+
+; (Implies test nil) is (not test), which is Boolean.  But dumb-negate-lit may
+; return a non-Boolean term, for example p for (not p), which is only
+; iff-equivalent to (not rewritten-test).  So we use it only when iff refines
+; geneqv or it is known to be Boolean.
+
+                    (let ((neg (dumb-negate-lit rewritten-test))
+                          (rune (geneqv-refinementp 'iff geneqv wrld)))
+                      (cond
+                       (rune (mv step-limit
+                                 neg
+                                 (push-lemma rune ttree)))
+                       (t (mv-let
+                            (ts ts-ttree)
+                            (type-set neg (ok-to-force rcnst) nil type-alist
+                                      (access rewrite-constant rcnst
+                                              :current-enabled-structure)
+                                      wrld ttree
+                                      simplify-clause-pot-lst
+                                      (access rewrite-constant rcnst :pt))
+                            (cond ((ts-subsetp ts *ts-boolean*)
+                                   (mv step-limit neg ts-ttree))
+                                  (t (mv step-limit
+                                         (fcons-term* 'not rewritten-test)
+                                         ttree))))))))
                    ((or (quotep rewritten-concl) ; not *nil*
                         (equal rewritten-test rewritten-concl))
                     (mv step-limit *t* ttree))
@@ -19649,7 +19695,7 @@ its attachment is ignored during proofs"))))
 ; whose rune is of the form (:DEFINITION fn); its hyps is nil, at least in the
 ; standard case; but:
 
-                            #+:non-standard-analysis
+                            #+non-standard-analysis
 
 ; In the non-standard case, we may be attempting to open up a call of a
 ; function defined by defun-std.  Hence, there may be one or more hypotheses.
@@ -20493,6 +20539,17 @@ its attachment is ignored during proofs"))))
                            (accumulate-rw-cache t
                                                 ttree2
                                                 ttree1))))
+                        ((eq new-pot-lst :null-lst)
+
+; The rewritten conclusion linearized to nil and there is no different
+; unrewritten conclusion to try.  The value :null-lst is a marker returned by
+; add-linear-lemma-finish (meaning "another try is coming"); it must not escape
+; as the pot-lst.  So we report an unchanged pot-lst, exactly as
+; add-linear-lemma-finish does when an unrewritten conclusion linearizes to
+; nil.  Before this case was added, :null-lst was returned as the new pot-lst,
+; and the next function to traverse it faulted (see GitHub issue #2055).
+
+                         (mv nil simplify-clause-pot-lst nil nil))
                         (t (mv nil new-pot-lst failure-reason brr-result))))
                      (cond (contradictionp
                             (prog2$ (brkpt2 t nil unify-subst gstack

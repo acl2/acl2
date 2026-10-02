@@ -76,6 +76,7 @@
         ((unless (equal (len return-vals)
                         (len stobjs-out)))
          (mv (msg "Failed to evaluate ~x0; trans-eval returned incoherent return values ~x1."
+                  sexpr
                   (list :stobjs-out stobjs-out
                         :return-vals return-vals))
              nil state)))

@@ -408,7 +408,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The cnew halted flag is the same as the old one,
+    "The new halted flag is the same as the old one,
       unless the opcode is HALT, in which case it is set to 1.")
    (xdoc::p
     "The hypothesis that the prime is odd
@@ -819,7 +819,7 @@
 (defruled pfcs-table-pred-to-min-trace-and-path-and-opcodes-and-accumulators
   :short "The table constraints are equivalent to
           the generation of the minimal trace,
-          the program counters being the executino path,
+          the program counters being the execution path,
           and the opcode field values matching
           the corresponding program opcodes."
   :long

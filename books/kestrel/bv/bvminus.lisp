@@ -1,7 +1,7 @@
 ; A function to subtract two bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,9 +21,11 @@
 (local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
+;; move to axe?
 (defthm integerp-of-bvminus
   (integerp (bvminus size x y)))
 
+;; move to axe?
 (defthm natp-of-bvminus
   (natp (bvminus size x y)))
 
@@ -158,7 +160,7 @@
   :hints (("Goal" :in-theory (enable bvminus))))
 
 ;; Should we leave this enabled?  Perhaps we should, so we only have to deal with addition and unary negation, not subtraction.
-(defthm bvminus-becomes-bvplus-of-bvuminus
+(defthmd bvminus-becomes-bvplus-of-bvuminus
   (equal (bvminus size x y)
          (bvplus size x (bvuminus size y)))
   :hints (("Goal" :cases ((natp size))
@@ -168,8 +170,7 @@
   (equal (bvminus 1 0 x)
          (getbit 0 x))
   :hints (("Goal" :cases ((equal 0 x) (equal 1 x))
-           :in-theory (e/d (bvminus getbit bvchop-when-i-is-not-an-integer)
-                           ()))))
+           :in-theory (enable bvminus getbit bvchop-when-i-is-not-an-integer))))
 
 (defthm bvchop-of-bvminus
   (implies (and (<= size1 size2)
@@ -326,3 +327,33 @@
   (equal (bvminus size x (ifix y))
          (bvminus size x y))
   :hints (("Goal" :in-theory (enable bvminus))))
+
+(defthm bvplus-of-bvminus-arg3-combine-constants
+  (implies (syntaxp (and (quotep k1)
+                         (quotep k2)
+                         (quotep size)))
+           (equal (bvplus size k1 (bvminus size k2 x))
+                  (bvminus size
+                           (bvplus size k1 k2) ; gets computed
+                           x)))
+  :hints (("Goal" :in-theory (enable bvminus bvplus))))
+
+(defthm bvminus-of-bvplus-cancel-arg3-arg2
+  (implies (natp size)
+           (equal (bvminus size x (bvplus size x y))
+                  (bvminus size 0 y)))
+  :hints (("Goal" :in-theory (enable bvminus bvplus))))
+
+;; Can help bridge the gap between normal forms (bvminus vs bvplus of bvuminus)
+;; Targets x+y = x-z
+(defthm equal-of-bvplus-and-bvminus-cancel-1+-1
+  (equal (equal (bvplus size x y) (bvminus size x z))
+         (equal (bvchop size y) (bvuminus size z)))
+  :hints (("Goal" :in-theory (enable bvminus bvuminus bvplus))))
+
+;; Can help bridge the gap between normal forms (bvminus vs bvplus of bvuminus)
+;; Targets y+x = x-z
+(defthm equal-of-bvplus-and-bvminus-cancel-2-1
+  (equal (equal (bvplus size y x) (bvminus size x z))
+         (equal (bvchop size y) (bvuminus size z)))
+  :hints (("Goal" :in-theory (enable bvminus bvuminus bvplus))))

@@ -1,6 +1,6 @@
 ; Padding Library Documentation
 ;
-; Copyright (C) 2019 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,7 +14,7 @@
 
 (xdoc::defxdoc padding
   :parents (crypto::cryptography)
-  :short "A library containing come padding operations useful for cryptography"
+  :short "A library containing some padding operations useful for cryptography"
   :long
   (xdoc::topstring
    (xdoc::p
@@ -41,7 +41,7 @@
    (xdoc::ul
      (xdoc::li (xdoc::tt "(pad-to-448 bits)") ": Given list of any number of bits, add a single 1 bit, followed by enough 0 bits to make the resulting list's length be congruent to 448 modulo 512.")
      (xdoc::li (xdoc::tt "(pad-to-896 bits)") ": Given list of any number of bits, add a single 1 bit, followed by enough 0 bits to make the resulting list's length be congruent to 896 modulo 1024."))
-   (xdoc::p "The above functions do not include the encoded length field, as is often done when using these padding operations, leaving that up to the caller if desired.  The reason is that cryptogtaphic algorithms differ on the endianness that should be used when storing the length field.")
+   (xdoc::p "The above functions do not include the encoded length field, as is often done when using these padding operations, leaving that up to the caller if desired.  The reason is that cryptographic algorithms differ on the endianness that should be used when storing the length field.")
    (xdoc::p
     "See the comments in the source files for more information.")))
 

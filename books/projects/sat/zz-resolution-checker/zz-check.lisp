@@ -372,7 +372,7 @@
                                         (null (cdr last-cl))))
                               (prog2$ (cw "Error in zzchk-chk (unexpected ~
                                            case where last clause has length ~
-                                           ~x2,not `).~%"
+                                           ~x0, not 1).~%"
                                           (len last-cl))
                                       nil))
                              ((zzchk-with-debug

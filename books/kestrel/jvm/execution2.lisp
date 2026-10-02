@@ -1,7 +1,7 @@
 ; Execution for loop lifting
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,7 @@
 ;; This book deals with running the JVM until a loop header is reached or a
 ;; code segment is exited.
 
+(include-book "jvm") ; for step
 (include-book "misc/defp" :dir :system)
 (include-book "execution-common")
 (include-book "pc-designators")

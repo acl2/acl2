@@ -62,7 +62,7 @@
       where `e' is the Edition, e.g. `[JAPIS21]' for Java SE 21 Edition."))
    (xdoc::p
     "These square-bracketed references may be used
-     as nouns or parenthentically.")
+     as nouns or parenthetically.")
    (xdoc::p
     "The documentation of this library may use references
      for different Java Editions, e.g. [JLS21] and [JLS20].

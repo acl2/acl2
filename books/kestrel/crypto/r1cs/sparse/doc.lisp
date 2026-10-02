@@ -1,6 +1,6 @@
 ; Documentation for the (sparse) R1CS formalization
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -35,5 +35,5 @@
   (dot-product "Dot product of R1CS coefficients and values.")
   (r1cs-constraint-holdsp "Check whether a valuation satisfies an R1CS constraint")
   (r1cs-constraints-holdp "Check whether a valuation satisfies a list of R1CS constraints")
-  (r1cs-holdsp "Check whether a valuation satisifies an R1CS."))
+  (r1cs-holdsp "Check whether a valuation satisfies an R1CS."))
  (r1cs))

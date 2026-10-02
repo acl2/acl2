@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -89,14 +89,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule funscope-funp-of-funscope-for-fundefs
+(defrule funscope-nofunp-of-funscope-for-fundefs
   (implies (and (fundef-list-nofunp fundefs)
                 (not (reserrp (funscope-for-fundefs fundefs))))
            (funscope-nofunp (funscope-for-fundefs fundefs)))
   :enable (funscope-for-fundefs
            funscope-nofunp
            fundef-list-nofunp
-           funscopep-when-funscope-resultp-and-not-reserrp))
+           funscopep-when-result-not-error))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

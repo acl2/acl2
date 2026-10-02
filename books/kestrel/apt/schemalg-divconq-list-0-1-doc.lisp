@@ -18,7 +18,7 @@
 
   :parents (schemalg)
 
-  :short "APT schematic algorithm tranformation:
+  :short "APT schematic algorithm transformation:
           specifics for the divide-and-conquer list 0-1 schema."
 
   :long

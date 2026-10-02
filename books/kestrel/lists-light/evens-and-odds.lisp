@@ -2,7 +2,7 @@
 
 ; A lightweight book about the built-in functions evens and odds
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -80,7 +80,7 @@
 
 (defthm not-member-equal-of-odds-when-not-member-equal
   (implies (not (member-equal a l))
-           (not (member-equal a (evens l))))
+           (not (member-equal a (odds l))))
   :hints (("Goal" :in-theory (enable odds))))
 
 (defthm no-duplicatesp-equal-of-evens

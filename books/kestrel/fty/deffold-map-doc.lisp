@@ -1,6 +1,6 @@
 ; FTY Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -45,13 +45,15 @@
 
     (xdoc::codeblock
      "(deffold-map suffix"
-     "             :types      ...  ; no default"
-     "             :extra-args ...  ; default nil"
-     "             :override   ...  ; default nil"
-     "             :parents    ...  ; no default"
-     "             :short      ...  ; no default"
-     "             :long       ...  ; no default"
-     "             :print      ...  ; default :result"
+     "             :types       ...  ; no default"
+     "             :extra-args  ...  ; default nil"
+     "             :override    ...  ; default nil"
+     "             :guard-hints ...  ; default nil"
+     "             :name        ...  ; no default"
+     "             :parents     ...  ; no default"
+     "             :short       ...  ; no default"
+     "             :long        ...  ; no default"
+     "             :print       ...  ; default :result"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -74,7 +76,7 @@
       "Fixtypes for which map functions must be generated.")
      (xdoc::p
       "This must be a list of symbols, which is not evaluated by the macro,
-       where each symbols must be one of the following:")
+       where each symbol must be one of the following:")
      (xdoc::ul
       (xdoc::li
        "The name of an existing fixtype,
@@ -84,6 +86,11 @@
        "The name of an existing clique
         of two or more mutually recursive fixtypes:
         this specifies the fixtypes in the clique."))
+     (xdoc::p
+      "In the following we use the term `clique' to refer to
+       not only actual cliques of two or more mutually recursive fixtypes,
+       but also singleton cliques of
+       non-recursive or singly recursive fixtypes.")
      (xdoc::p
       "These symbols must be listed in bottom-up order,
        i.e. according to the order in which they are defined.")
@@ -149,6 +156,33 @@
         and the formals specified in @(':extra-args').")))
 
     (xdoc::desc
+     "@(':guard-hints') &mdash; default @('nil')"
+     (xdoc::p
+      "Specifies the hints to verify the guards of
+       the map functions generated for specified cliques.")
+     (xdoc::p
+      "This must be a parenthesized list @('(ghints1 ... ghints<n>)'),
+       with @('<n> >= 0'),
+       where each @('ghints<i>') is a pair @('(<clique> <hints>)'),
+       where @('<clique>') is the name of one of the cliques
+       specified by the @(':types') input
+       (with at most one @('ghints<i>') per such name),
+       and @('<hints>') is a list of regular ACL2 hints.")
+     (xdoc::p
+      "For each clique with such an entry,
+       the generated @(tsee verify-guards) event for
+       the @(tsee define) or @(tsee defines) for the clique
+       uses exactly the hints @('<hints>'),
+       instead of the hints that @('deffold-map') would otherwise generate."))
+
+    (xdoc::desc
+     "@('name')"
+     (xdoc::p
+      "Symbol that specifies the name of the generated XDOC topic
+       and the prefix of the name of the generated ruleset.
+       See Section `Generated Events' below."))
+
+    (xdoc::desc
      (list
       "@(':parents')"
       "@(':short')"
@@ -171,11 +205,9 @@
    (xdoc::evmac-section-generated
 
     (xdoc::desc
-     "@('abstract-syntax-<suffix>')"
+     "@('<name>')"
      (xdoc::p
-      "An XDOC topic whose name is obtained by adding,
-       at the end of the symbol @('abstract-syntax-'),
-       the symbol specified by the @('suffix') input.
+      "An XDOC topic whose name is specified by the @(':name') input.
        If any of the @(':parents'), @(':short'), or @(':long') inputs
        are provided, they are added to this XDOC topic.
        This XDOC topic is generated with @(tsee acl2::defxdoc+),
@@ -349,7 +381,7 @@
        and added to the generated ruleset described below."))
 
     (xdoc::desc
-     "@('abstract-syntax-<suffix>-rules')"
+     "@('<name>-rules')"
      (xdoc::p
       "A "
       (xdoc::seetopic "acl2::rulesets" "ruleset")

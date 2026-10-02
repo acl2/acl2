@@ -11,7 +11,7 @@
 (in-package "ABNF")
 
 (include-book "uri")
-(include-book "../operations/renaming")
+(include-book "../grammar-operations/renaming")
 
 ; (depends-on "http.abnf")
 

@@ -1,7 +1,7 @@
 ; Call stack frames
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,6 +23,8 @@
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 
+(local (in-theory (disable method-program)))
+
 (defund maybe-addressp (item)
   (declare (xargs :guard t))
   (or (acl2::addressp item)
@@ -36,19 +38,25 @@
 ;; same as the method-info stored in the class table, but I suppose we don't
 ;; know that a priori.
 
+;; Recognizes a well-formed frame on the call-stack.
 ;fixme uncomment things below and flesh out
 (defund framep (frame)
   (declare (xargs :guard t))
   (and (true-listp frame)
        (equal (len frame) 6)
-       (pcp (nth 0 frame)) ;the pc (fixme also must point to an instruction within the program)
+       (pcp (nth 0 frame))        ;the pc
        (true-listp (nth 1 frame)) ; todo: what else to say about the locals?
        (operand-stackp (nth 2 frame)) ; todo: what else to say about the operand stack?
        (maybe-addressp (nth 3 frame)) ;the locked-object
        (method-infop (nth 4 frame))
-       (method-designatorp (nth 5 frame))))
+       (method-designatorp (nth 5 frame))
+       (not (method-abstractp (nth 4 frame))) ; if the method was native or abstract we wouldn't even have a frame with a PC, etc.
+       (not (method-nativep (nth 4 frame)))
+       ;; the PC points to an instruction within the program:
+       (if (member-equal (nth 0 frame) (strip-cars (method-program (nth 4 frame)))) t nil)))
 
 ;Now includes the class name and method name (and descriptor) of the method being invoked (nice to have this info in the trace and for debugging):
+;; WARNING: Keep args in sync with elide-make-frame-args.
 (defund make-frame (pc     ;; program counter
                     locals ;; the values of the local variables (do some take two slots?)
                     stack ;;operand stack
@@ -57,7 +65,7 @@
                     method-info ;;a method-infop (includes static flag, syn flag, program, exception table, etc.)
                     method-designator ; this info isn't used for much (fixme think through the calls of (cur-xxx... ) below. update: now is used by invokespecial!
                     )
-  (declare (type t pc locals stack locked-object method-info method-designator))
+  (declare (type t pc locals stack locked-object method-info method-designator)) ; todo: strengthen
   (list pc locals stack locked-object method-info method-designator))
 
 (defthm framep-of-make-frame
@@ -67,7 +75,10 @@
               (operand-stackp stack)
               (maybe-addressp locked-object)
               (method-infop method-info)
-              (method-designatorp method-designator)))
+              (method-designatorp method-designator)
+              (not (method-abstractp method-info))
+              (not (method-nativep method-info))
+              (if (member-equal pc (strip-cars (method-program method-info))) t nil)))
   :hints (("Goal" :in-theory (enable framep make-frame))))
 
 (defthm equal-of-make-frame-and-make-frame
@@ -146,7 +157,7 @@
 
 (defthm pcp-of-pc
   (implies (framep frame)
-           (PCP (PC frame)))
+           (pcp (pc frame)))
   :hints (("Goal" :in-theory (enable framep pc))))
 
 (defthm operand-stackp-of-stack
@@ -192,3 +203,33 @@
                                        ;;acl2::CDR-OF-CDR-BECOMES-NTHCDR
                                        )
                            (len nth)))))
+
+(defthm class-namep-of-cur-class-name
+  (implies (framep frame)
+           (class-namep (cur-class-name frame)))
+  :hints (("Goal" :in-theory (enable framep cur-class-name method-designatorp method-descriptorp method-designator))))
+
+(defthm method-namep-of-cur-method-name
+  (implies (framep frame)
+           (method-namep (cur-method-name frame)))
+  :hints (("Goal" :in-theory (enable framep cur-method-name method-designatorp method-descriptorp method-designator))))
+
+(defthm method-descriptorp-of-cur-method-name
+  (implies (framep frame)
+           (method-descriptorp (cur-method-descriptor frame)))
+  :hints (("Goal" :in-theory (enable framep cur-method-descriptor method-designatorp method-descriptorp method-designator))))
+
+(defthm not-method-nativep-of-method-info-when-framep
+  (implies (framep frame)
+           (not (method-nativep (method-info frame))))
+  :hints (("Goal" :in-theory (enable framep method-info))))
+
+(defthm not-method-abstractp-of-method-info-when-framep
+  (implies (framep frame)
+           (not (method-abstractp (method-info frame))))
+  :hints (("Goal" :in-theory (enable framep method-info))))
+
+(defthm instructionp-of-lookup-equal-of-pc-and-method-program-of-method-info
+  (implies (framep frame)
+           (instructionp (lookup-equal (pc frame) (method-program (method-info frame)))))
+  :hints (("Goal" :in-theory (enable framep method-infop method-info method-access-flags pc pcp))))

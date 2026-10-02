@@ -1,7 +1,7 @@
 ; Conversions between lists and bv-arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,8 +19,9 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
-(local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
+(local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
+(local (include-book "kestrel/bv/bvchop" :dir :system))
 
 ;; See also bv-array-conversions2.lisp and bv-array-conversions-gen.lisp.
 
@@ -235,8 +236,7 @@
   (implies (and (equal len (len array))
                 (natp element-size)
                 (equal (len lst) len)
-                (true-listp array)
-                (natp i))
+                (true-listp array))
            (equal (list-to-bv-array-aux2 element-size len 0 lst array)
                   (bvchop-list element-size lst)))
   :hints (("Goal" :use (:instance nthcdr-of-list-to-bv-array-aux2-case2-better

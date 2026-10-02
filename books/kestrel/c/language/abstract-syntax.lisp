@@ -37,10 +37,7 @@
      (as part of perhaps a larger character set like Unicode).")
    (xdoc::p
     "We plan to generalize and extend this abstract syntax
-     to avoid specific assumptions and to cover all the C constructs.
-     In particular, we plan to use the formalization of "
-    (xdoc::seetopic "character-sets" "character sets")
-    " to lift the ASCII assumption.")
+     to avoid specific assumptions and to cover all the C constructs.")
    (xdoc::p
     "The purpose of this abstract syntax is to support
      our formal definition of (a subset of) C.
@@ -123,9 +120,9 @@
      In C, @('0') is always an octal integer constant,
      so our abstract syntax here captures a bit more,
      namely a decimal integer constant 0 that does not exist in C.
-     This is not an issue for now,
-     because our pretty-printer turns that into @('0')
-     in the same way as if it were octal.")
+     When mapping to the abstract syntax for tools,
+     @(tsee c$::ildm-iconst) turns a decimal integer constant 0
+     into an octal integer constant 0.")
    (xdoc::p
     "In base 8, the value has a unique syntactic representation
      if we assume exactly one leading 0,
@@ -161,8 +158,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only capture integer and enumeration constants,
-     but we include placeholders for floating and character constants.")
+    "For now we only capture integer and enumeration constants.")
    (xdoc::p
     "The C grammar for enumeration constants [C17:6.4.4.3/1] [C17:6.4.4/1]
      is actually ambiguous in expressions [C17:6.5.1/1]:
@@ -184,9 +180,7 @@
      and just use identifiers in expressions,
      which may denote either enumeration constants or other things."))
   (:int ((get iconst)))
-  (:float ())
   (:enum ((get ident)))
-  (:char ())
   :pred constp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -248,7 +242,7 @@
      elements of a sequence are present or absent:
      for example, @('(make-tyspecseq-sshort :signed t :int nil)')
      represents @('signed short');
-     see the pretty-printer for details.
+     see @(tsee c$::ildm-tyspecseq) for the mapping to the syntax for tools.
      However, we do not capture
      different sequentializations of the same multiset,
      e.g. we capture @('signed short') but not @('short signed').
@@ -1034,7 +1028,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod transunit
+(fty::defprod trans-unit
   :short "Fixtype of translation units [C17:6.9]."
   :long
   (xdoc::topstring
@@ -1046,31 +1040,31 @@
      so that in the future it may be easier to extend this fixtype
      with more information if needed."))
   ((declons ext-declon-list))
-  :tag :transunit
-  :pred transunitp)
+  :tag :trans-unit
+  :pred trans-unitp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption transunit-option
-  transunit
+(fty::defoption trans-unit-option
+  trans-unit
   :short "Fixtype of optional translation units."
-  :pred transunit-optionp)
+  :pred trans-unit-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult transunit-result
+(fty::defresult trans-unit-result
   :short "Fixtype of errors and translation units."
-  :ok transunit
-  :pred transunit-resultp)
+  :ok trans-unit
+  :pred trans-unit-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod transunit-ensemble
-  :short "Fixtype of translation unit ensembles."
+(fty::defprod trans-ensemble
+  :short "Fixtype of translation ensembles."
   :long
   (xdoc::topstring
    (xdoc::p
-    "A translation unit ensemble is a collection of related translation units.
+    "A translation ensemble is a collection of related translation units.
      This is not an explicit notion in [C17],
      but it is a useful one in a language formalization:
      a program, or a portion of a program,
@@ -1080,16 +1074,14 @@
      a library, or a program without a library that it uses,
      would not qualify as a program in this sense.")
    (xdoc::p
-    "For now, a translation unit ensemble consists of
-     one or two translation units (see @(tsee transunit)),
-     one for an optional header and one for a source file,
-     which have the same name except for the extension.
-     (The preceding sentence uses the terminology in [C17:5.1.1/1],
-     which appears to call `headers' the @('.h') files
-     and `source files' the @('.c') files.)
+    "For now, a translation ensemble consists of
+     one or two translation units (see @(tsee trans-unit)),
+     one for an optional @('.h') file
+     and one for a mandatory @('.c') file.
      The idea is that for now we model (portions of) programs
      that consist of a single source file,
-     optionally with its own header that is @('#include')d in the source file.
+     optionally with its own header file
+     that is @('#include')d in the source file.
      We do not explicitly model the @('#include') directive: it is implicit.
      The @('path-wo-ext') component of this fixtype
      is the common path of both files without the extension.
@@ -1098,13 +1090,14 @@
      where the first one is optional.")
    (xdoc::p
     "Technically, the (implicit) presence of the @('#include') directive
-     in the source file when the header is present
-     makes the translation unit for the source file
-     actually a preprocessing translation unit [C17:5.1.1.1/1],
-     but we take the term `translation unit', in this context,
-     to also encompass preprocessing translation units."))
+     in the source file when the header file is present
+     means that the translation unit for the source file
+     is not actually a translation unit;
+     but we take the term `translation unit' slightly more broadly here.
+     Eventually, we will generalize all of this,
+     and conform to the terminology in the C standard."))
   ((path-wo-ext string)
-   (dot-h transunit-option)
-   (dot-c transunit))
-  :tag :transunit-ensemble
-  :pred transunit-ensemblep)
+   (dot-h trans-unit-option)
+   (dot-c trans-unit))
+  :tag :trans-ensemble
+  :pred trans-ensemblep)

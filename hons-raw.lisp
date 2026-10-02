@@ -2177,7 +2177,7 @@
               ;; Ctrl+C Safety is subtle here.  If was-alistp, then the above
               ;; hl-flex-acons was applicative and didn't alter the Hons Space.
               ;; We'll go ahead and install the new flex alist, but this
-              ;; installation occurs as an single update to the Hons Space.
+              ;; installation occurs as a single update to the Hons Space.
               (when was-alistp
                 (setf (gethash b main-table) new-flex-alist))
               ;; Otherwise, the flex-acons was non-applicative, and the Hons

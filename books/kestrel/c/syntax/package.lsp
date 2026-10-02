@@ -32,8 +32,28 @@
                                    standardp
                                    type
                                    typep
-                                   unread-char))
-              '(any
+                                   unread-char
+                                   value))
+              '(3and
+                3and$
+                3definitely
+                3equiv
+                3fix
+                3iff
+                3implies
+                3implies$
+                3info<
+                3info<=
+                3join
+                3not
+                3or
+                3or$
+                3p
+                3possibly
+                3truth<
+                3truth<=
+                3xor
+                any
                 assert!-stobj
                 bool
                 bool-fix
@@ -56,12 +76,14 @@
                 keyword-value-list-to-alist
                 lifix
                 lnfix
+                lposfix
                 make-event-terse
                 maybe-msgp
                 msg$
                 nat
                 nat-list
                 nat-list-fix
+                nat-option
                 nat-optionp
                 nat-option-fix
                 nat-list-measure
@@ -69,6 +91,8 @@
                 packn-pos
                 pos
                 pos-fix
+                pos-option
+                pos-optionp
                 pseudo-event-formp
                 pseudo-event-form-listp
                 reterr

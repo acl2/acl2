@@ -1,7 +1,7 @@
 ; Cherry-pick the definitions of the BV functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -26,8 +26,14 @@
 (include-book "bvshr-def")
 (include-book "bvshl-def")
 (include-book "bvlt-def")
+(include-book "sbvlt-def")
 (include-book "bvplus-def")
 (include-book "bvmult-def")
+(include-book "sbvdiv-def")
+(include-book "bvif-def")
+(include-book "bvcount-def")
+(include-book "bit-to-bool-def")
+(include-book "bool-to-bit-def")
 (include-book "defs-arith")
 (include-book "leftrotate") ; todo: split out defs
 (include-book "rightrotate") ; todo: split out defs
@@ -62,16 +68,6 @@
                   (bvchop n y)
                   )))
 
-;fixme make sure this is right
-;this is like java's idiv
-;takes and returns USBs
-(defund sbvdiv (n x y)
-  (declare (type (integer 1 *) n)
-           (type integer x)
-           (type integer y)
-           (xargs :guard (not (equal 0 (bvchop n y)))))
-  (bvchop n (truncate (logext n x) (logext n y))))
-
 ;fixme could call this sbvfloor
 ;this one rounds toward negative infinity
 (defund sbvdivdown (n x y)
@@ -103,21 +99,11 @@
 
 ;x and y should be single bits
 ;guards?
-;todo: make a book on this
-(defun bitxnor (x y)
+(defund bitxnor (x y)
   (declare (type integer x y))
   (if (= (getbit 0 x) (getbit 0 y))
       1
     0))
-
-;note that the test is a boolean, not a bit vector
-(defund bvif (size test thenpart elsepart)
-  (declare (xargs :guard (and (natp size)
-                              (integerp thenpart)
-                              (integerp elsepart))))
-  (if test
-      (bvchop size thenpart)
-    (bvchop size elsepart)))
 
 ;floor of log (base 2) of x
 (defund lg (x)
@@ -136,8 +122,7 @@
 ;logically this is equal to sbvdiv (see theorem sbvdiv-total-becomes-sbvdiv)
 (defund sbvdiv-total (n x y)
   (declare (type (integer 1 *) n)
-           (type integer x)
-           (type integer y))
+           (type integer x y))
   (if (equal 0 (logext n y))
       (logext n 0)
     (sbvdiv n x y)))

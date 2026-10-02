@@ -1,7 +1,7 @@
 ; Turning an array into an alist
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -21,7 +21,7 @@
                               (natp n)
                               (natp len)
                               (<= n (+ 1 len))
-;                              (alistp acc)
+                              ;; (alistp acc)
                               (<= len (alen1 array-name array)))))
   (if (or (<= len n)
           (not (natp n))
@@ -60,6 +60,8 @@
              (cons (+ -1 len) (aref1 array-name array (+ -1 len)))
            (car acc)))
   :hints (("Goal" :in-theory (enable array-to-alist-aux))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Creates an alist mapping indices (from LEN-1 down to 0) to their values in the ARRAY.
 ;; The indices in the result will be decreasing (critical for Axe since the result will often be an Axe DAG).

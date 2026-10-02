@@ -1,0 +1,24 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains a grammar rule for keywords in the CHERI dialects.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The CHERI documentation does not seem to have
+; a clear list of all their additional keywords in the style of [C17] and [C23].
+; The list is inferred from the documentation,
+; but the lists may be incomplete, and it will be extended as needed.
+
+keyword-cheri = %s"__capability"
+              / %s"__intcap_t"
+              / %s"__uintcap_t"

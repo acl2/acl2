@@ -1,6 +1,6 @@
 ; A parser for CSV (comma-separated value) data
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 ;; See also parse-csv-file.lisp.
 
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
 (local (in-theory (disable mv-nth)))
 
@@ -161,9 +162,9 @@
    :hints (("Goal" :in-theory (enable parse-csv-line)))))
 
 (local
- (defthm character-listp-of-mv-nth-0-of-parse-csv-line
-   (implies (true-listp acc)
-            (true-listp (mv-nth 0 (parse-csv-line chars acc))))
+ (defthm string-listp-of-mv-nth-0-of-parse-csv-line
+   (implies (string-listp acc)
+            (string-listp (mv-nth 0 (parse-csv-line chars acc))))
    :hints (("Goal" :in-theory (enable parse-csv-line)))))
 
 ;; Returns a list of lines

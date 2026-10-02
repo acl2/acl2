@@ -1,6 +1,6 @@
 ; Proof of correctness of drop-unused-lambda-bindings
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,6 +22,7 @@
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
 ;(include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "filter-formals-and-actuals-proofs"))
 (local (include-book "helpers"))
 (local (include-book "empty-eval-helpers"))
@@ -85,6 +86,8 @@
                                       drop-unused-lambda-bindings-lst
                                       drop-unused-lambda-bindings-induct
                                       drop-unused-lambda-bindings-induct-lst)))))
+
+(local (make-flag drop-unused-lambda-bindings))
 
 (defthm-flag-drop-unused-lambda-bindings
   (defthm subsetp-equal-of-free-vars-in-term-of-drop-unused-lambda-bindings

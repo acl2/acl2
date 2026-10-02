@@ -1,7 +1,7 @@
 ; Simpler functions for reading and writing memory
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,9 +23,9 @@
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
-(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/bv/rules3" :dir :system))
+(local (include-book "kestrel/bv/bvminus" :dir :system))
 
 (local (in-theory (disable ;(:linear x86isa::n08p-xr-mem)
                     acl2::unsigned-byte-p-from-bounds
@@ -124,7 +124,7 @@
   :hints (("Goal" :in-theory (enable read-bytes))))
 
 (defthm read-bytes-of-bvchop-48
-  (implies (and (integerp addr))
+  (implies (integerp addr)
            (equal (read-bytes n (bvchop 48 addr) x86)
                   (read-bytes n addr x86))))
 
@@ -202,10 +202,10 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :induct (write-bytes addr1 bytes x86)
            :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases bvuminus bvminus write-bytes write-byte)
-                           (acl2::bvminus-becomes-bvplus-of-bvuminus
-                                                    acl2::bvcat-of-+-high
-                                                    ACL2::BVCHOP-IDENTITY ;for speed
-                                                    )))))
+                           (;acl2::bvminus-becomes-bvplus-of-bvuminus
+                            acl2::bvcat-of-+-high
+                            ACL2::BVCHOP-IDENTITY ;for speed
+                            )))))
 
 (defthm read-byte-of-write-bytes-irrel
   (implies (and (<= (len bytes) (bvminus 48 addr1 addr2))
@@ -217,10 +217,10 @@
            :induct (WRITE-BYTES ADDR2 BYTES X86)
            :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases bvuminus bvminus write-bytes ;ACL2::NTH-WHEN-N-IS-ZP
                                    )
-                           (acl2::bvminus-becomes-bvplus-of-bvuminus
-                                                    acl2::bvcat-of-+-high
-;                                                    ACL2::NTH-OF-CDR
-                                                    )))))
+                           (;acl2::bvminus-becomes-bvplus-of-bvuminus
+                            acl2::bvcat-of-+-high
+                            ;; ACL2::NTH-OF-CDR
+                            )))))
 
 (defthm read-of-write-bytes-irrel
   (implies (and (<= (len vals) (bvminus 48 addr1 addr2))
@@ -235,9 +235,9 @@
            :induct (read n1 addr1 x86)
            :in-theory (e/d (read bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus ;read-byte
                                    )
-                           (acl2::bvminus-becomes-bvplus-of-bvuminus
-                                                    ACL2::BVCAT-OF-+-HIGH
-                                                    )))))
+                           (;acl2::bvminus-becomes-bvplus-of-bvuminus
+                            ACL2::BVCAT-OF-+-HIGH
+                            )))))
 
 (local
  (defthm <-of-if-arg2
@@ -256,10 +256,10 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :induct (WRITE-BYTES ADDR2 BYTES X86)
            :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases bvuminus bvminus write-bytes)
-                           (acl2::bvminus-becomes-bvplus-of-bvuminus
-                                                    acl2::bvcat-of-+-high
-;                                                    ACL2::NTH-OF-CDR
-                                                    )))))
+                           (;acl2::bvminus-becomes-bvplus-of-bvuminus
+                            acl2::bvcat-of-+-high
+                            ;; ACL2::NTH-OF-CDR
+                            )))))
 
 (local
   (defthm move-neg-addend
@@ -377,8 +377,8 @@
   :hints (("Goal"
            :induct (WRITE-BYTES ADDR1 VALS1 X86)
            :in-theory (e/d (write-bytes bvplus acl2::bvchop-of-sum-cases bvuminus bvminus)
-                           (acl2::bvminus-becomes-bvplus-of-bvuminus
-                                                    acl2::bvcat-of-+-high)))))
+                           (;acl2::bvminus-becomes-bvplus-of-bvuminus
+                            acl2::bvcat-of-+-high)))))
 
 (defthm write-bytes-of-append
   (implies (and (integerp ad)

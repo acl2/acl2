@@ -31,7 +31,7 @@
                                (defun-or-mutual-recursion-formp fn-event)
                                (function-renamingp function-renaming)
                                (member-eq rec '(nil :single :mutual))
-                               (t/nil/auto-p function-disabled)
+                               (member-eq function-disabled '(t nil :auto))
                                ;; TODO: Guards for guard-hints, measure, and measure-hints
                                (fn-definedp fn (w state))
                                (booleanp normalize))
@@ -86,14 +86,16 @@
         (declares (if (not rec)
                       declares ; no termination since not recursive
                     ;; single or mutual recursion:
-                    (replace-xarg-in-declares
-                     :hints
-                     (if (eq :auto measure-hints)
-                         `(("Goal" :in-theory ',measure-enables
-                                   ;; ACL2 automatically replaces the old functions with the new ones in this:
-                                   :use (:instance (:termination-theorem ,fn))))
-                       measure-hints)
-                     declares)))
+                    (if (equal :none measure-hints)
+                        (remove-xarg-in-declares :hints declares)
+                      (replace-xarg-in-declares
+                        :hints
+                        (if (eq :auto measure-hints)
+                            `(("Goal" :in-theory ',measure-enables
+                               ;; ACL2 automatically replaces the old functions with the new ones in this:
+                               :use (:instance (:termination-theorem ,fn))))
+                          measure-hints)
+                        declares))))
         ;; Handle the :stobjs xarg:
         (declares (set-stobjs-in-declares-to-match declares fn wrld))
         ;; Handle the :type-prescription xarg:
@@ -133,7 +135,7 @@
         (defun (if (eq rec :mutual)
                    defun ; irrelevant declares for mutual recursions must be handled at a higher level
                  (fixup-irrelevants-in-defun-form defun state))))
-     (mv defun info)))
+     (mv defun info state)))
 
  ;; Go through all the functions in the clique. For each, if it is in
  ;; TARGET-FNS, we both transform it and update rec calls in it (yes, for
@@ -154,36 +156,37 @@
                                (symbol-listp target-fns)
                                (all-fn-definedp fns (w state))
                                (function-renamingp function-renaming)
-                               (t/nil/auto-p function-disabled)
+                               (member-eq function-disabled '(t nil :auto))
                                (symbol-alistp measure-alist)
                                (booleanp normalize))
                    :mode :program))
    (if (endp fns)
-       (mv nil nil)
+       (mv nil nil state)
      (b* ((fn (first fns))
-          ((mv new-defun fn-info)
+          ((mv new-defun fn-info state)
            (if (member-eq fn target-fns)
                ;; transform the function:
                (copy-function-in-defun fn fn-event function-renaming :mutual function-disabled
                                        (lookup-eq fn measure-alist)
-                                       (if firstp measure-hints :auto) ; attach measure hints to only the first function
+                                       (if firstp measure-hints :none) ; attach measure hints to only the first function
                                        normalize
                                        state)
              ;; Just copy the function and update rec calls:
              ;; (For copy-function only, this happens to be the same as the branch above.)
              (copy-function-in-defun fn fn-event function-renaming :mutual function-disabled
                                      (lookup-eq fn measure-alist)
-                                     (if firstp measure-hints :auto) ; attach measure hints to only the first function
+                                     (if firstp measure-hints :none) ; attach measure hints to only the first function
                                      normalize
                                      state)))
-          ((mv new-defuns rest-info)
+          ((mv new-defuns rest-info state)
            (copy-function-in-defuns (rest fns) target-fns fn-event function-renaming function-disabled
                                     measure-alist measure-hints
                                     normalize
                                     nil ;no longer the first function
                                     state)))
        (mv (cons new-defun new-defuns)
-           (acons fn fn-info rest-info)))))
+           (acons fn fn-info rest-info)
+           state))))
 
  ;; Generates the event that copy-function will submit.
  ;; Returns (mv erp result state), where result is usually an event but in the erp case might contain other useful info.
@@ -195,17 +198,15 @@
                              function-disabled
                              verify-guards
                              guard-hints
-                             measure ; may be a call of :map if mut-rec
+                             measure
                              measure-hints
                              normalize
-                             verbose ;for now, this is a boolean (corresponding to whether the :print option was :info or higher), but we could support passing in richer information
+                             verbose
                              ctx
                              state)
    (declare (xargs :stobjs state
-                   ;; :verify-guards nil
-                   :mode :program ;because of my-get-event and get-clique
-                   :guard t       ;; inputs are checked below
-                   ))
+                   :mode :program
+                   :guard t))
    (b* ((- (and verbose (cw "Now in the expansion phase of ~x0 for ~x1.~%" 'copy-function fn)))
         (description (msg "The target function"))
         ;; todo: tweak these messages to make them more consistent:
@@ -219,19 +220,17 @@
                   (mv nil nil state)))
         ((er &) (if (or (eq :auto guard-hints)
                         (true-listp guard-hints))
-                    (mv nil nil state) ; no error
+                    (mv nil nil state)
                   (mv :bad-guard-hints nil state)))
         (wrld (w state))
-        ;; Get the event that introduced fn:
         (fn-event (my-get-event fn wrld))
-        (prologue (transformation-prologue fn wrld)) ;puts in install-not-normalized for fn (and its mutually-recursive partners)
+        (prologue (transformation-prologue fn wrld))
         (verify-guards (if (eq :auto verify-guards) (guard-verified-p fn wrld) verify-guards))
         )
      (if (not recursivep)
-         ;; we are operating on a single, non-recursive function:
          (b* ((new-fn (pick-new-name fn new-name state))
               (function-renaming (acons fn new-fn nil))
-              ((mv new-defun ?info) (copy-function-in-defun fn
+              ((mv new-defun ?info state) (copy-function-in-defun fn
                                                             fn-event
                                                             function-renaming
                                                             nil ; rec=nil means non-recursive
@@ -268,7 +267,7 @@
            ;;we are operating on a single, recursive function:
            (b* ((new-fn (pick-new-name fn new-name state))
                 (function-renaming (acons fn new-fn nil))
-                ((mv new-defun ?info) (copy-function-in-defun fn
+                ((mv new-defun ?info state) (copy-function-in-defun fn
                                                               fn-event
                                                               function-renaming
                                                               :single ;rec
@@ -314,7 +313,7 @@
                (elaborate-mut-rec-option2 measure :measure fns ctx))
               ;; (new-fns (strip-cdrs function-renaming))
               ;; (new-fn (lookup-eq-safe fn function-renaming))
-              ((mv new-defuns ?info-alist) (copy-function-in-defuns fns
+              ((mv new-defuns ?info-alist state) (copy-function-in-defuns fns
                                                                     fns ;we'll say all the functions in the nest are targets (though for copy-function it doesn't matter)
                                                                     fn-event
                                                                     function-renaming

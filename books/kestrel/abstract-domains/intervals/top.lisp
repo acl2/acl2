@@ -19,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; See also other interval arithmetic theories:
-;; - nonstd/nsa/intevals
+;; - nonstd/nsa/intervals
 ;; - workshops/2004/gameiro-manolios/support/interval
 ;; - centaur/vl2014/mlib/interval
 

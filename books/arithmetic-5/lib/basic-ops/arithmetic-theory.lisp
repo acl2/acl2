@@ -61,6 +61,7 @@
 
 (local
  (in-theory (enable zip)))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -320,11 +321,38 @@
   (equal (/ (expt x n))
 	 (expt x (- n))))
 
+; Moore modification: Robert's original rule here was slightly different from
+; its analogue |(expt 1/c n)| in basic-ops/expt.lisp, but contained (syntaxp
+; (equal (numerator x) 1)) which Moore corrects here to (syntaxp (< (abs
+; (unquote x)) 1)), as done for the new version of the analogue rule.  We also
+; duplicate the definition of the syntactic restriction function below.  This
+; is redundant with what is in expt.lisp.
+
+(defun syntax-restriction-for-expt-1/c-n (x mfc state)
+  (declare (xargs :mode :program :stobjs (state)))
+  (and (quotep x)
+       (rationalp (unquote x))
+       (not (integerp (unquote x)))
+       (if (use-original-arith-5-rules mfc state)
+
+; We're to use the original rules.  Robert had two hyps here:
+
+;          (syntaxp (equal (numerator x) 1))
+;          (syntaxp (< (abs x) 1))
+
+; But had commented out the first and evidently replaced it with the second.
+; But the first is always false, given that x is quoted.  And the second is
+; always true, for the same reason.  So functionally the original rule
+; just tested:
+
+           T
+
+; On the other hand, if we're to use the new rules, we test:
+
+           (< (abs (unquote x)) 1))))
+
 (defthm |arith (expt 1/c n)|
-    (implies (and (syntaxp (quotep x))
-                  (syntaxp (rationalp (unquote x)))
-                  (syntaxp (not (integerp (unquote x))))
-                  (syntaxp (equal (numerator x) 1)))
+    (implies (syntaxp (syntax-restriction-for-expt-1/c-n x mfc state))
              (equal (expt x n)
                     (expt (/ x) (- n)))))
 
@@ -553,6 +581,24 @@
                              (not (equal n 0)))
                         0
                       (expt x (+ m n))))))
+
+; Moore Modification: See the comment above the rule
+; |(* (expt c m) (expt d (- m)))| in collect.lisp.
+
+(defthm |arith (* (expt c m) (expt d (- m)))|
+  (implies (and (syntaxp (and (rational-constant-p c)
+                              (rational-constant-p d)))
+                (syntaxp
+                 (not (disabledp-fn '(:e use-new-arith-5-rules)
+                                    (access rewrite-constant
+                                            (access metafunction-context mfc :rcnst)
+                                            :current-enabled-structure)
+                                    (w state))))
+                (integerp m)
+                (integerp n)
+                (equal m (- n)))
+           (equal (arith-collect-* (expt c m) (expt d n))
+                  (expt (/ c d) m))))
 
 (defthm |arith (* (expt (- x) m) (expt x n))|
     (implies (and (integerp m)

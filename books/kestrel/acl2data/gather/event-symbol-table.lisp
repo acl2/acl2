@@ -108,11 +108,11 @@
 
   (cond ((atom lmi)
          (assert$ (symbolp lmi)
-                   (cons lmi acc)))
+                  (cons lmi acc)))
         (t (case (car lmi)
              ((:guard-theorem :termination-theorem :termination-theorem!)
               (cons (cadr lmi) acc))
-             (:theorem nil) ; would need translated value
+             (:theorem acc) ; would need translated value
              ((:instance :functional-instance)
               (lmi-symbol (cadr lmi) wrld acc))
              (t ; rune
@@ -181,7 +181,7 @@
                        acc))
                 (:by (lmi-symbol uval wrld acc))
                 (:expand (expand-lst-symbols tval acc))
-                (:restrict (strip-cars uval))
+                (:restrict (append (strip-cars uval) acc))
                 (:hands-off (hands-off-symbols tval acc))
                 (:induct (all-ffn-symbs tval acc))
                 (:clause-processor (all-ffn-symbs (access clause-processor-hint
@@ -189,10 +189,10 @@
                                                           :term)
                                                   acc))
                 (:cases (all-ffn-symbs-lst tval acc))
-                (t nil)))))
+                (t acc)))))
        (hint-settings-symbols
         (cddr uhint-settings) (cdr thint-settings) wrld
-        (append syms acc)))))))
+        syms))))))
 
 (defun hints-symbols (uhints thints wrld)
 

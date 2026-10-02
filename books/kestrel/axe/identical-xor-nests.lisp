@@ -1,6 +1,6 @@
 ; Quickly recognizing identical xor nests
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -30,21 +30,19 @@
                        (nat-listp
                         natp
                         dag-exprp
-                           ;;list::len-when-at-most-1
+                        ;;list::len-when-at-most-1
                         all-natp-when-not-consp
                         all-<-when-not-consp
                         darg-listp-when-not-consp
-                           ;; for speed:
-                        all-<=-when-not-consp
+                        ;; for speed:
+                        ;all-<=-when-not-consp
                         all-<-transitive-free
                         not-<-of-nth-of-dargs-of-aref1-when-pseudo-dag-arrayp-2
-                        <=-of-nth-when-all-<= ;disable globally?
-                        rational-listp
+                        ;<=-of-nth-when-all-<= ;disable globally?
                         strip-cdrs
-                        ifix ; avoid case splits
+                        ifix                   ; avoid case splits
                         rational-listp maxelem ;prevent inductions
-                        not-<-of-nth-when-all-<
-                        ))))
+                        not-<-of-nth-when-all-<))))
 
 ;; Do not remove.  These justify the ifixing of constants below
 (thm (equal (bitxor (ifix x) y) (bitxor x y)))
@@ -158,8 +156,8 @@
                            (= 2 (len (dargs expr))))
                       ;; "Expand" node1 (it is a bitxor, and we know it is not shared):
                       ;; We remove it but add both its args, thus preserving the xor of the constant and the worklist
-                      (b* ((darg1 (first (dargs expr)))
-                           (darg2 (second (dargs expr)))
+                      (b* ((darg1 (darg1 expr))
+                           (darg2 (darg2 expr))
                            (worklist1 (rest worklist1)) ; remove node1
                            ;; Handle darg1:
                            ((mv worklist1 constant1)
@@ -168,7 +166,7 @@
                            ((mv worklist1 constant1)
                             (combine-bitxor-darg-with-worklist-or-constant darg2 worklist1 constant1)))
                         (identical-bitxor-nestsp worklist1 worklist2 constant1 constant2 dag-array-name dag-array dag-len))
-                    ;; node1 is not a bitxor, and we know it is not present in the other worklist, so fail (todo: maybe deference constant a node here):
+                    ;; node1 is not a bitxor, and we know it is not present in the other worklist, so fail (todo: maybe dereference a constant node here):
                     nil))
               ;; We'll process node2:
               (let ((expr (aref1 dag-array-name dag-array node2)))
@@ -186,5 +184,5 @@
                          ((mv worklist2 constant2)
                           (combine-bitxor-darg-with-worklist-or-constant darg2 worklist2 constant2)))
                       (identical-bitxor-nestsp worklist1 worklist2 constant1 constant2 dag-array-name dag-array dag-len))
-                  ;; node2 is not a bitxor, and we know the node is not present in the other worklist, so fail (todo: maybe deference constant a node here):
+                  ;; node2 is not a bitxor, and we know the node is not present in the other worklist, so fail (todo: maybe dereference a constant node here):
                   nil)))))))))

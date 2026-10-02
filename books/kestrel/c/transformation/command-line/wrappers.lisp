@@ -142,7 +142,7 @@
        ;; Pick out the args that are for input-files and output-files:
        ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list)
         (handle-common-args kv-list ctx))
-       (version (c::make-version :std (c::standard-c17)
+       (dialect (c::make-dialect :std (c::standard-c17)
                                  :gcc (eq extensions :gcc)
                                  :clang (eq extensions :clang))))
     `(progn
@@ -151,7 +151,7 @@
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :ienv (c$::ienv-default :version ',version))
+                        :ienv (c$::ienv-default :dialect ',dialect))
        (c2c::split-gso *old-const*
                        *new-const*
                        ;; Pass through all other args:
@@ -175,7 +175,7 @@
        ;; Pick out the args that are for input-files and output-files:
        ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list)
         (handle-common-args kv-list ctx))
-       (version (c::make-version :std (c::standard-c17)
+       (dialect (c::make-dialect :std (c::standard-c17)
                                  :gcc (eq extensions :gcc)
                                  :clang (eq extensions :clang))))
     `(progn
@@ -184,7 +184,7 @@
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :ienv (c$::ienv-default :version ',version))
+                        :ienv (c$::ienv-default :dialect ',dialect))
        (c2c::simpadd0 :const-old *old-const*
                       :const-new *new-const*
                       ;; Pass through all other args (currently, none):
@@ -208,7 +208,7 @@
        ;; Pick out the args that are for input-files and output-files:
        ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list)
         (handle-common-args kv-list ctx))
-       (version (c::make-version :std (c::standard-c17)
+       (dialect (c::make-dialect :std (c::standard-c17)
                                  :gcc (eq extensions :gcc)
                                  :clang (eq extensions :clang))))
     `(progn
@@ -217,7 +217,7 @@
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :ienv (c$::ienv-default :version ',version))
+                        :ienv (c$::ienv-default :dialect ',dialect))
        (c2c::split-fn *old-const*
                       *new-const*
                       ;; Pass through all other args:
@@ -241,7 +241,7 @@
        ;; Pick out the args that are for input-files and output-files:
        ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list)
         (handle-common-args kv-list ctx))
-       (version (c::make-version :std (c::standard-c17)
+       (dialect (c::make-dialect :std (c::standard-c17)
                                  :gcc (eq extensions :gcc)
                                  :clang (eq extensions :clang))))
     `(progn
@@ -250,7 +250,7 @@
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :ienv (c$::ienv-default :version ',version))
+                        :ienv (c$::ienv-default :dialect ',dialect))
        (c2c::wrap-fn *old-const*
                      *new-const*
                      ;; Pass through all other args (currently, :targets):
@@ -309,13 +309,12 @@
 ;; Returns an event.
 ;; todo: error checking
 (defun add-section-attr-wrapper (kv-list whole-form)
-  (declare (xargs :guard (keyword-value-listp kv-list)
-                  :guard-debug t))
+  (declare (xargs :guard (keyword-value-listp kv-list)))
   (b* ((ctx whole-form)
        ;; Pick out the args that are for input-files and output-files:
        ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list)
         (handle-common-args kv-list ctx))
-       (version (c::make-version :std (c::standard-c17)
+       (dialect (c::make-dialect :std (c::standard-c17)
                                  :gcc (eq extensions :gcc)
                                  :clang (eq extensions :clang))))
     `(progn
@@ -324,7 +323,7 @@
                         :const *old-const* ; todo: avoid name clash
                         :preprocess ,preprocess
                         ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
-                        :ienv (c$::ienv-default :version ',version))
+                        :ienv (c$::ienv-default :dialect ',dialect))
        (c2c::add-section-attr *old-const*
                               *new-const*
                               ;; The only transformation-specific option is :attrs (todo: check for any other args):
@@ -336,3 +335,39 @@
 ;; This wrapper is in the ACL2 package, for ease of use by run-json-command
 (defmacro add-section-attr (&whole whole-form &rest kv-list)
   `(make-event (add-section-attr-wrapper ',kv-list ',whole-form)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A transformation that does nothing to the given files except parse them and print them out again.
+;; Returns an event.
+;; todo: error checking
+;; todo: add preprocessor args, etc. (eventually make per-file)
+;; could all files to be "all" instead of a list
+(defun do-nothing-wrapper (kv-list whole-form)
+  (b* ((ctx whole-form)
+       ;; Pick out the args that are for input-files and output-files:
+       ((mv old-dir new-dir files preprocess preprocess-args-suppliedp preprocess-args extensions remaining-kv-list)
+        (handle-common-args kv-list ctx))
+       ((when (not (null remaining-kv-list)))
+        (er hard? 'do-nothing-wrapper "Unexpected arguments supplied: ~x0." remaining-kv-list))
+       (dialect (c::make-dialect :std (c::standard-c17) ; todo: make this an option (here and elsewhere in this file)
+                                 :gcc (eq extensions :gcc)
+                                 :clang (eq extensions :clang))))
+    `(progn
+       ;; Read in the files:
+       (c$::input-files :files ',files
+                        :base-dir ,old-dir
+                        :const *old-const* ; todo: avoid name clash
+                        :preprocess ,preprocess
+                        ,@(and preprocess-args-suppliedp `(:preprocess-args ',preprocess-args))
+                        :ienv (c$::ienv-default :dialect ',dialect))
+       ;; Since this is "do-nothing", we simply define the new constant to be the old constant:
+       (defconst *new-const* *old-const*)
+       ;; Print out the files:
+       (c$::output-files :const *new-const*
+                         :base-dir ,new-dir))))
+
+;; A wrapper for do-nothing that takes all its arguments as alternating keywords/values.
+;; This wrapper is in the ACL2 package, for ease of use by run-json-command
+(defmacro do-nothing (&whole whole-form &rest kv-list)
+  `(make-event (do-nothing-wrapper ',kv-list ',whole-form)))

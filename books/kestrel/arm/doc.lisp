@@ -57,7 +57,7 @@
 
        An error flag, indicating whether an error has occurred.
 
-       The major version of the ARM architecture being modelled (an integer in the
+       The major version of the ARM architecture being modeled (an integer in the
        range 4-7, representing ARMv4, ARMv5, ARMv6, or ARMv7)."
       )
 

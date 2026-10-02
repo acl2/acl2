@@ -1076,9 +1076,15 @@
                    (acc (revappend-chars "</dl>" acc)))
                 (mv acc state))
               (mv (revappend-chars "<p>This is an atomic/empty structure; it has no fields.</p>" acc)
-                state)))
-       (acc (revappend-chars long acc))
-       (long (rchars-to-string acc)))
+                  state)))
+       ;; We use backquotes to allow XDOC constructors in :LONG.
+       ;; If the DEFBITSTRUCT has a :LONG with XDOC constructors,
+       ;; the value of the LONG variable here is
+       ;; a term that evaluates to a string, as opposed to a string.
+       ;; So, to combine that with the documentation added by the code above,
+       ;; we form and return a term that evaluates to the desired combination.
+       (acc `(revappend-chars ,long ',acc))
+       (long `(rchars-to-string ,acc)))
     (mv long state)))
 
 (define bitstruct-events (x state)

@@ -56,7 +56,8 @@ So, I think I'd proceed as follows.
             (declare (xargs :measure (acl2-count ,(car formals))))
             ,@rest))
         (& (er hard 'add-bogus-measure
-               "Bad def, ~x0")))
+               "Bad def, ~x0"
+               def)))
     def))
 
 

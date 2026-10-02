@@ -776,6 +776,12 @@
       nil ; no fns
     (dag-fns x)))
 
+(defthm symbol-listp-of-dag-or-quotep-fns
+  (implies (or (quotep dag-or-quotep)
+               (weak-dagp dag-or-quotep))
+           (symbol-listp (dag-or-quotep-fns dag-or-quotep)))
+  :hints (("Goal" :in-theory (enable dag-or-quotep-fns))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Checks whether the functions that appear in DAG include any of the
@@ -1268,7 +1274,7 @@
                 (darg-listp (strip-cdrs alist)))
            (myquotep (cdr (assoc-equal form alist))))
   :hints (("Goal" :use (:instance DARGP-OF-CDR-OF-ASSOC-EQUAL-WHEN-DARG-LISTP-OF-STRIP-CDRS (var form))
-           :in-theory (e/d (dargp) ( ;dargp-of-cdr-of-assoc-equal
+           :in-theory (e/d (dargp) (;dargp-of-cdr-of-assoc-equal
                                     DARGP-OF-CDR-OF-ASSOC-EQUAL-WHEN-DARG-LISTP-OF-STRIP-CDRS
                                     dargp-when-equal-of-quote-and-car-cheap)))))
 

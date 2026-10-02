@@ -23,11 +23,11 @@
                                     input
                                     chars ; expected
                                     poss ; expected
-                                    (version 'nil)
+                                    (dialect 'nil)
                                     (fail 'nil))
   `(assert!
-    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
-         (ienv (change-ienv (ienv-default) :version version))
+    (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
+         (ienv (change-ienv (ienv-default) :dialect dialect))
          ((mv erp chars poss) (read-chars+positions "" ,input ienv)))
       (if ,fail
           (and erp (not (cw "~@0" erp)))

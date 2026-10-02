@@ -1,7 +1,7 @@
 ; General-purpose syntactic tests
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -95,7 +95,7 @@
     (if (consp y) ; checks for quotep
         t
 
-      ;;recent change... if we put this back, add a check that the prefered term isn't a superterm of the other term..
+      ;;recent change... if we put this back, add a check that the preferred term isn't a superterm of the other term..
 
 
       (if nil ;(and (BV-TERM-SYNTAXP y dag-array) ;store in variable!
@@ -134,7 +134,7 @@
        (consp quoted-var) ; checks for quotep
        (let ((var (unquote quoted-var)))
          (if (not (symbolp var)) ; drop this check?
-             (er hard? 'is-the-variablep "Bad fn argument: ~x0." quoted-var)
+             (er hard? 'is-the-variablep "Bad var argument: ~x0." quoted-var)
            (equal var (aref1 'dag-array dag-array darg))))))
 
 ;; ;deprecate?  allows an expr to be constant, but that should be very rare
@@ -219,7 +219,7 @@
 ;; we really only want this to fire at the leafmost bitxor in a nest??
 
 ;BBOZO rethink this?
-;; Determines whether we should we bring TERM2 in front of TERM1.
+;; Determines whether we should we bring DARG2 in front of DARG1.
 ;; QUOTED-FN is the function whose arguments we are considering (e.g., BVXOR, BVPLUS, etc.).
 ;; DAG-ARRAY is the entire DAG
 ;; If term2 is a call of FN, it should not be commuted (that would mess up associativity)
@@ -238,9 +238,11 @@
           ;;both are constants:
           ;;we sort constants by numeric value
           ;;or we could just not swap them, at least for operators which have the combine-constants rule..
-          (and (rationalp darg1)
-               (rationalp darg2)
-               (< (unquote darg2) (unquote darg1)))
+          (let ((val1 (unquote darg1))
+                (val2 (unquote darg2)))
+            (and (rationalp val1)
+                 (rationalp val2)
+                 (< val2 val1)))
         ;;DARG2 is a quoted constant but DARG1 isn't, so DARG2 should come first
         t)
     (if (quotep darg1) ;Otherwise, if DARG1 is a quoted constant, we shouldn't commute DARG2 in front of it

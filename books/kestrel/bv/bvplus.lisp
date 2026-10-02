@@ -1,7 +1,7 @@
 ; BV Library: bvplus
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -180,8 +180,7 @@
 (defthm bvchop-of-bvplus
   (implies (and (<= size1 size2)
                 (natp size1)
-                (natp size2)
-                )
+                (natp size2))
            (equal (bvchop size1 (bvplus size2 y z))
                   (bvplus size1 y z)))
   :hints (("Goal" :in-theory (enable bvplus))))
@@ -365,8 +364,7 @@
                 (integerp y))
            (equal (bvplus size x y)
                   (+ x y)))
-  :hints (("Goal" :in-theory (e/d (bvplus) (;
-                                            )))))
+  :hints (("Goal" :in-theory (enable bvplus))))
 
 ;; x plus 1 is greater than x unless the addition overflows or x is just wider than size.
 ;todo: gen the 1.
@@ -413,17 +411,12 @@
   :hints (("Goal" :in-theory (enable bvplus)
            :cases ((natp size)))))
 
-
-
-
 ;todo: instead, introduce bvminus
 ;todo: rename
 (defthm bvplus-minus-cancel
   (implies (and (integerp x)
                 (integerp y)
-                (integerp z)
-                (natp size)
-                )
+                (natp size))
            (equal (bvplus size y (bvplus size (- y) x))
                   (bvchop size x)))
     :hints (("Goal" :in-theory (enable bvplus))))
@@ -549,7 +542,20 @@
                   (bvplus size (+ k1 k2) x)))
   :hints (("Goal" :in-theory (enable bvplus))))
 
-(defthm bvplus-equal-constant
+(defthm equal-of-constant-and-bvplus-of-constant
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)
+                              (quotep size)))
+                (integerp k1)
+                (integerp k2)
+                (natp size))
+           (equal (equal k1 (bvplus size k2 x))
+                  (and (unsigned-byte-p size k1)
+                       (equal (bvchop size (- k1 k2)) (bvchop size x)))))
+  :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases unsigned-byte-p))))
+
+;only needed for axe?
+(defthm equal-of-bvplus-of-constant-and-constant
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)
                               (quotep size)))
@@ -558,5 +564,20 @@
                 (natp size))
            (equal (equal (bvplus size k2 x) k1)
                   (and (unsigned-byte-p size k1)
-                       (equal (bvchop size x) (bvchop size (- k1 k2))))))
-  :hints (("Goal" :in-theory (enable bvplus BVCHOP-OF-SUM-CASES UNSIGNED-BYTE-P))))
+                       (equal (bvchop size (- k1 k2))
+                              (bvchop size x)))))
+  :hints (("Goal" :use equal-of-constant-and-bvplus-of-constant
+           :in-theory (disable equal-of-constant-and-bvplus-of-constant))))
+
+(defthm equal-of-bvchop-and-bvplus-of-same
+  (implies (natp size)
+           (equal (equal (bvchop size x) (bvplus size k x))
+                  (equal 0 (bvchop size k))))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthm equal-of-bvchop-and-bvplus-of-same-alt
+  (implies (natp size)
+           (equal (equal (bvplus size k x) (bvchop size x))
+                  (equal 0 (bvchop size k))))
+  :hints (("Goal" :use (:instance equal-of-bvchop-and-bvplus-of-same)
+           :in-theory (disable equal-of-bvchop-and-bvplus-of-same))))

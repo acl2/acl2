@@ -1,6 +1,6 @@
 ; A scheme for cancelling common addends using rewriting
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -40,8 +40,8 @@
       ;; Not a call of +, so the whole term is the addend:
       (list term)))
 
-;; Finds one common added of TERM1 and TERM2, which should be right-associated + nests.
-;; Returns an alist suitable for bind-free, or nil is there is no common addend.
+;; Finds one common addend of TERM1 and TERM2, which should be right-associated + nests.
+;; Returns an alist suitable for bind-free, or nil if there is no common addend.
 ;; todo: require at least one to be a call of binary-+?
 ;; todo: optimize when only one is call of binary-+?
 (defun find-common-addend (term1 term2)
@@ -82,7 +82,7 @@
   :hints (("Goal" :cases ((< X Y))
                   :in-theory (enable cancel-in-sum))))
 
-;; We want to cancel an X, but Y is a different term, so keep pusing inward.
+;; We want to cancel an X, but Y is a different term, so keep pushing inward.
 (defthm cancel-in-sum-of-+-diff
     (implies (syntaxp (not (equal x y)))
              (equal (cancel-in-sum x (+ y z))

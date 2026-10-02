@@ -75,19 +75,19 @@
      are read into the source character set, which for us is Unicode,
      and how lines ending in backslash are spliced.
      The mapping of bytes to characters is UTF-8 decoding,
-     but if the C version is C17,
+     but if the C standard is C17,
      we also map trigraph sequences to the single characters they represent;
      although our tools aim at preserving concrete syntax information,
      trigraph sequences are a legacy feature that no longer seems useful
-     (in fact, it is no longer present in [C23]).
+     (in fact, it is no longer present in C23).
      Line splicing also loses some of the original layout information,
      but we favor simplicity for now (we may revisit this later).")
    (xdoc::p
-    "Since UTF-8 decoding is context-free,
-     given all the bytes of a file,
+    "Since UTF-8 decoding, trigraph processing, and line splicing
+     are all context-free,
+     then given all the bytes of a file,
      we can map them to a sequence of Unicode characters:
      this is how we initialize the character array in @(tsee ppstate).
-     Trigraph sequences, if applicable, are handled as part of this.
      As we obtain the characters, we also obtain their positions in the file:
      thus, we can also initialize the array of positions in @(tsee ppstate).")
    (xdoc::p
@@ -101,10 +101,10 @@
 
 (define read-next-char ((pos positionp) (bytes byte-listp) (ienv ienvp))
   :returns (mv erp
-               (char? uchar-optionp
+               (char? unichar-optionp
                       :hints (("Goal"
                                :induct t
-                               :in-theory (e/d (uchar-optionp)
+                               :in-theory (e/d (unichar-optionp)
                                                (acl2::commutativity-of-logand
                                                 acl2::commutativity-2-of-+
                                                 commutativity-of-+)))))
@@ -128,20 +128,20 @@
      which is eliminated along with the new line to splice the line.
      The output @('next-pos') is the next position just after @('char?'),
      i.e. the position where the next character may be.
-     If there is not character at @('pos'),
+     If there is no character at @('pos'),
      we are at the end of the file:
      we return @('nil') as the character,
      and both @('char-pos') and @('next-pos') are equal to @('pos').
      If we read a character, we also return the remaining bytes;
-     if there is no character, we retun @('nil') as the @('new-bytes') output.")
+     if there is no character, we return @('nil') as the @('new-bytes') output.")
    (xdoc::p
     "A character can take one, two, three, or four bytes,
-     according to the UTF8-decoding.
-     Additionally, if the C version is C17,
+     according to the UTF-8 decoding.
+     Additionally, if the C standard is C17,
      we turn three bytes that form three ASCII characters
      that form a trigraph sequence [C17:5.2.1.1]
      into the single ASCII character that they represent.
-     This is not done if the C version is C23.")
+     This is not done if the C standard is C23.")
    (xdoc::p
     "For most characters, the position is incremented by one column.
      For trigraph sequences, by three columns,
@@ -159,14 +159,14 @@
      this would be consistent with the position information
      provided by Emacs and VS Code, for example.
      Currently a vertical tab or a form feed just increment the column by one,
-     as if they were regular character;
+     as if they were regular characters;
      we could consider changing that
      (presumably based on additional information passed to this function),
      but the current behavior is consistent
      with Emacs and VS Code, for example
      (more precisely, Emacs increments the column by two,
-     displaying vertical tab a @('^K') and form feed as @('^L'),
-     each of which looks like formed by two regular characters.
+     displaying vertical tab as @('^K') and form feed as @('^L'),
+     each of which looks like formed by two regular characters).
      We treat all the non-ASCII Unicode characters
      as incrementing the column by one,
      which we might need to revise in some cases,
@@ -176,7 +176,7 @@
      we skip both and we attempt to read a character after them.
      Since another backslash and new line may follow,
      this function is recursive, because there is no bound.
-     Although the backslah and new line are not preserved,
+     Although the backslash and new line are not preserved,
      we increment the line number, and reset the column number,
      every time we find one,
      because the positions refer to the original file.
@@ -184,16 +184,18 @@
      trigraph sequences are processed in phase 1,
      while line splicing is processed in phase 2.")
    (xdoc::p
-    "Looking at the rules in the ABNF grammar for basic and extended characters,
-     we see that the codes of the three ASCII non-new-line extended characters
-     (namely dollar, at sign, and backquote)
-     fill gaps in the ASCII codes of the basic characters,
-     so that the codes 9, 11, 12, and 32-126 are all valid ASCII characters.
+    "Our ABNF grammar rules for basic and extended characters vary slightly,
+     based on the fact that C17 lacks three basic characters from C23,
+     namely the $ and @ and ` characters.
+     However, our grammar rules for C17 make them extended characters,
+     so either way they are among the allowed characters, as in C23.
+     In summary, the valid ASCII codes, other than 10 and 13 for new lines,
+     are 9, 11, 12, and 32-126.
      Note that, by the time we reach the case of normal ASCII characters,
      we have skipped the case for carriage return (13) and line feed (10).")
    (xdoc::p
     "We exclude most ASCII control characters,
-     except for the basic ones and for the new-line ones,
+     except for the basic ones (see above) and for the new-line ones,
      since there should be little need to use those in C code.
      Furthermore, some are dangerous, particularly backspace,
      since it may make the code look different from what it is,
@@ -249,7 +251,7 @@
      We return an error if there is no second or third or fourth byte.
      We return an error if the encoded value is below 10000h or above 10FFFFh.
      If all these checks pass,
-     the code covers the character range from @('U+10000') to @('U+1FFFFF').")
+     the code covers the character range from @('U+10000') to @('U+10FFFF').")
    (xdoc::p
     "If the first byte read has any other value,
      either it is an invalid UTF-8 encoding (e.g. @('111...'))
@@ -388,7 +390,7 @@
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 1110... ~
-                                          (i.e. between 224 to 239) ~
+                                          (i.e. between 224 and 239) ~
                                           of a three-byte UTF-8 encoding"
                                          byte)
                           :found "end of file"))
@@ -408,7 +410,7 @@
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 1110... ~
-                                          (i.e. between 224 to 239) ~
+                                          (i.e. between 224 and 239) ~
                                           and the second byte ~x1 ~
                                           of the form 10... ~
                                           (i.e. between 128 and 191) ~
@@ -448,18 +450,18 @@
               (reterr-msg :where pos
                           :expected "a Unicode character with code ~
                                      in the range 9-13 or 32-126 ~
-                                     or 128-8233 or 8239-8293 or ~
+                                     or 128-8233 or 8239-8293 ~
                                      or 8298-55295 or 57344-1114111"
                           :found (char-to-msg char))))
           (retok char pos pos+1 bytes)))
        ;; 4-byte UTF-8:
-       ((when (utf8-= (logand #b11111000 byte) #b11110000)) ; 11110xyy
+       ((when (utf8-= (logand byte #b11111000) #b11110000)) ; 11110xyy
         (b* (((unless (consp bytes))
               (reterr-msg :where pos
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 11110... ~
-                                          (i.e. between 240 to 247) ~
+                                          (i.e. between 240 and 247) ~
                                           of a four-byte UTF-8 encoding"
                                          byte)
                           :found "end of file"))
@@ -474,12 +476,12 @@
                                           of a four-byte UTF-8 encoding"
                                          byte)
                           :found (msg "the byte ~x0" byte2)))
-             ((unless bytes)
+             ((unless (consp bytes))
               (reterr-msg :where pos
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 11110... ~
-                                          (i.e. between 240 to 247) ~
+                                          (i.e. between 240 and 247) ~
                                           and the second byte ~x1 ~
                                           of the form 10... ~
                                           (i.e. between 128 and 191) ~
@@ -505,7 +507,7 @@
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 11110... ~
-                                          (i.e. between 240 to 247) ~
+                                          (i.e. between 240 and 247) ~
                                           and the second byte ~x1 ~
                                           of the form 10... ~
                                           (i.e. between 128 and 191) ~
@@ -546,7 +548,7 @@
                           :found (msg "the value ~x0" char))))
           (retok char pos pos+1 bytes))))
     (reterr-msg :where pos
-                :expected "a byte in the range 9-13 or 32-126 or 192-223"
+                :expected "a byte in the range 9-13 or 32-126 or 192-247"
                 :found (msg "the byte ~x0" byte)))
   :no-function nil
   :measure (len bytes)
@@ -560,17 +562,17 @@
                        (utf8-= byte 11) ; VT
                        (utf8-= byte 12) ; FF
                        (and (utf8-<= 32 byte) (utf8-<= byte 126))))
-              (ucharp byte))
-     :enable (ucharp the-check))
+              (unicharp byte))
+     :enable unicharp)
 
    (defrulel returns-lemma2 ; 2-byte UTF-8
      (implies (and (bytep byte)
                    (bytep byte2)
                    (utf8-= (logand byte #b11100000) #b11000000)
                    (utf8-= (logand byte2 #b11000000) #b10000000))
-              (ucharp (+ (ash (logand byte #b00011111) 6)
+              (unicharp (+ (ash (logand byte #b00011111) 6)
                          (logand byte2 #b00111111))))
-     :enable ucharp
+     :enable unicharp
      :prep-books ((include-book "arithmetic-5/top" :dir :system)))
 
    (defrulel returns-lemma3 ; 3-byte UTF-8
@@ -585,8 +587,8 @@
                             (logand byte3 #b00111111))))
                 (implies (not (and (utf8-<= #xd800 char)
                                    (utf8-<= char #xdfff)))
-                         (ucharp char))))
-     :enable (ucharp the-check)
+                         (unicharp char))))
+     :enable unicharp
      :prep-books ((include-book "arithmetic-5/top" :dir :system)))
 
    (defrulel returns-lemma4 ; 4-byte UTF-8
@@ -594,7 +596,7 @@
                    (bytep byte2)
                    (bytep byte3)
                    (bytep byte4)
-                   (utf8-= (logand #b11111000 byte) #b11110000)
+                   (utf8-= (logand byte #b11111000) #b11110000)
                    (utf8-= (logand byte2 #b11000000) #b10000000)
                    (utf8-= (logand byte3 #b11000000) #b10000000)
                    (utf8-= (logand byte4 #b11000000) #b10000000))
@@ -604,8 +606,8 @@
                             (logand byte4 #b00111111))))
                 (implies (not (or (< char #x10000)
                                   (> char #x10ffff)))
-                         (ucharp char))))
-     :enable ucharp))
+                         (unicharp char))))
+     :enable unicharp))
 
   ///
 
@@ -630,7 +632,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-chars+positions ((file stringp) (bytes byte-listp) (ienv ienvp))
-  :returns (mv erp (chars uchar-listp) (poss position-listp))
+  :returns (mv erp (chars unichar-listp) (poss position-listp))
   :short "Read all the characters from a list of bytes,
           obtaining the list of characters and the corresponding positions."
   :long
@@ -649,7 +651,7 @@
   ((define read-chars+positions-loop ((pos positionp)
                                       (bytes byte-listp)
                                       (ienv ienvp))
-     :returns (mv erp (chars uchar-listp) (poss position-listp))
+     :returns (mv erp (chars unichar-listp) (poss position-listp))
      :parents nil
      (b* (((reterr) nil (list (irr-position)))
           ((erp char? pos pos-next bytes) (read-next-char pos bytes ienv))
@@ -701,7 +703,7 @@
 
 (define read-pchar ((ppstate ppstatep))
   :returns (mv erp
-               (char? uchar-optionp)
+               (char? unichar-optionp)
                (pos positionp)
                (new-ppstate ppstatep))
   :short "Read a character during preprocessing."
@@ -765,9 +767,9 @@
                     (1- (ppstate->size ppstate))))
     :rule-classes (:rewrite :linear))
 
-  (defret ppstate->lexmarks-of-read-pchar
-    (equal (ppstate->lexmarks new-ppstate)
-           (ppstate->lexmarks ppstate))))
+  (defret ppstate->lexemes-of-read-pchar
+    (equal (ppstate->lexemes new-ppstate)
+           (ppstate->lexemes ppstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -800,9 +802,9 @@
     (equal (ppstate->size new-ppstate)
            (1+ (ppstate->size ppstate))))
 
-  (defret ppstate->lexmarks-of-unread-pchar
-    (equal (ppstate->lexmarks new-ppstate)
-           (ppstate->lexmarks ppstate)))
+  (defret ppstate->lexemes-of-unread-pchar
+    (equal (ppstate->lexemes new-ppstate)
+           (ppstate->lexemes ppstate)))
 
   (defrule unread-pchar-of-read-pchar
     (b* (((mv erp char? & new-ppstate) (read-pchar ppstate)))
@@ -834,7 +836,7 @@
        (size (ppstate->size ppstate))
        (ppstate (update-ppstate->size (+ n size) ppstate))
        (index (ppstate->char-index ppstate))
-       ((unless (> index n))
+       ((unless (>= index n))
         (raise "Internal error: ~
                 cannot unread ~x0 characters, ~
                 because only ~x1 have been read so far."

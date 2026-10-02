@@ -1,7 +1,7 @@
 ; A lightweight book of theorems about subrange.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -237,7 +237,7 @@
 
 (defthmd equal-of-subrange-opener
   (implies (and (syntaxp (and (quotep low)
-                              (quote high)))
+                              (quotep high)))
                 (natp low)
                 (natp high)
                 (<= low high))

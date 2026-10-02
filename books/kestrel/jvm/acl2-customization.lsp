@@ -1,6 +1,6 @@
 ; ACL2 customization file for jvm/ directory
 ;
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,8 @@
 (ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 
 (include-book "kestrel/jvm/portcullis" :dir :system)
+(in-package "JVM")
 
 (reset-prehistory)
 
-;; todo: perhaps switch to JVM package but some books in this dir are in the ACL2 package
+;; todo: some books in this dir are in the ACL2 package

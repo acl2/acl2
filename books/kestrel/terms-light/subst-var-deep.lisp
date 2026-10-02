@@ -14,6 +14,7 @@
 (include-book "free-vars-in-term")
 (include-book "make-lambda-application-simple")
 (include-book "std/util/bstar" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 
 ;; See also the built-in function subst-var.  This handles lambdas differently, not simply
 ;; substituting in the arguments.  This also avoids introducing unserialized

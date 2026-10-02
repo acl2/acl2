@@ -1,7 +1,7 @@
 ; Computing the depth of DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -42,15 +42,15 @@
 
 ;; todo: def-typed-acl2-array could generate this
 (local
-  (defthm depth-arrayp-of-make-empty-array-gen
+  (defthm depth-arrayp-of-new-array1-gen
     (implies (and (<= len2 len)
                   (<= len *max-1d-array-length*)
                   (natp len2)
                   (posp len)
                   (symbolp array-name))
-             (depth-arrayp array-name (make-empty-array array-name len) len2))
-    :hints (("Goal" :use depth-arrayp-of-make-empty-array
-             :in-theory (disable depth-arrayp-of-make-empty-array)))))
+             (depth-arrayp array-name (new-array1 array-name len) len2))
+    :hints (("Goal" :use depth-arrayp-of-new-array1
+             :in-theory (disable depth-arrayp-of-new-array1)))))
 
 (local
   (defthm depth-arrayp-of-aset1-list
@@ -286,7 +286,7 @@
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (all-< starting-nodes dag-len))))
   (let* ((max-nodenum (maxelem starting-nodes))
-         (depth-array (make-empty-array 'depth-array (+ 1 max-nodenum)))
+         (depth-array (new-array1 'depth-array (+ 1 max-nodenum)))
          ;; Set the depth of all the STARTING-NODES to 1:
          (depth-array (aset1-list 'depth-array depth-array starting-nodes 1)))
     (make-depth-array-aux max-nodenum dag-array-name dag-array dag-len 'depth-array depth-array 1)))

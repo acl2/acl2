@@ -1,6 +1,6 @@
 ; A lightweight book connecting unsigned-byte-listp to all-unsigned-byte-p.
 ;
-; Copyright (C) 2019-2025 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ; For unsigned-byte-listp, see the copyright for books/std.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -133,10 +133,10 @@
   :hints (("Goal" :in-theory (enable all-unsigned-byte-p
                                      unsigned-byte-listp))))
 
-(defthm all-unsigned-byte-p-when-unsigned-byte-listp-cheap
+(defthm all-unsigned-byte-p-when-unsigned-byte-listp-free
   (implies (and (unsigned-byte-listp size2 x) ;free variable makes this cheap
-                (equal size2 size)               ;gen?
-                )
+                (<= size2 size)
+                (integerp size))
            (all-unsigned-byte-p size x))
   :hints (("Goal" :in-theory (enable all-unsigned-byte-p
                                      unsigned-byte-listp))))

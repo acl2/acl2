@@ -349,7 +349,7 @@
   :long "<p>Call @('simplify-term-programmatic') exactly as you would call
  @(tsee simplify-term), except that arguments are not automatically quoted; so
  avoid using arguments of the form @('(:eval x)').  Unlike @('simplify-term'),
- @('simplify-defun-sk-programmatic') does not introduce a new definition or
+ @('simplify-term-programmatic') does not introduce a new definition or
  theorem.  Rather, it returns the @('encapsulate') form that would be evaluated
  by @('simplify-term') &mdash; that is, the form displayed by a corresponding
  call of @(tsee show-simplify-term).</p>")

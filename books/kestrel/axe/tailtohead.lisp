@@ -1,7 +1,7 @@
 ; Making a function non-tail-recursive
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -143,8 +143,7 @@
          (reps-function-name (concat-symbols original-function-name '-reps))
          (aux-function-name (concat-symbols head-function-name '-aux))
          )
-    `(
-      ;;head recursive
+    `(;;head recursive
       ;;or should this be tail recursive so we can introduce it using defpun?
       ;;i guess if foo terminates, then so does this...
       (skip-proofs ;fixme remove skip-proofs

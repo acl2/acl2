@@ -1,7 +1,7 @@
 ; Theorems about boolean operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,7 +24,7 @@
 
 ;;These rules and boolif-when-quotep-arg1 should prevent boolif from ever having a constant in any argument position:
 
-(defthm boolif-when-quotep-arg2
+(defthmd boolif-when-quotep-arg2
   (implies (syntaxp (quotep x))
            (equal (boolif test x y)
                   (if x
@@ -32,7 +32,7 @@
                     (booland (not test) y))))
   :hints (("Goal" :in-theory (enable boolor boolif))))
 
-(defthm boolif-when-quotep-arg3
+(defthmd boolif-when-quotep-arg3
   (implies (syntaxp (quotep y))
            (equal (boolif test x y)
                   (if y
@@ -40,12 +40,12 @@
                     (booland test x))))
   :hints (("Goal" :in-theory (enable booland boolif))))
 
-(defthm boolif-x-x-y-becomes-boolor
+(defthmd boolif-x-x-y-becomes-boolor
   (equal (boolif x x y)
          (boolor x y))
   :hints (("Goal" :in-theory (enable boolor boolif))))
 
-(defthm boolif-x-y-x-becomes-booland
+(defthmd boolif-x-y-x-becomes-booland
   (equal (boolif x y x)
          (booland x y))
   :hints (("Goal" :in-theory (enable booland boolif))))
@@ -66,17 +66,27 @@
            (equal (equal x t)
                   x)))
 
-;Disabled by default.  We could add an (enabled version) in which both conjuncts are calls to NOT?
+;Disabled by default.
 (defthmd not-of-booland
   (equal (not (booland x y))
          (boolor (not x) (not y)))
   :hints (("Goal" :in-theory (enable booland))))
 
-;Disabled by default.  We could add an (enabled version) in which both conjuncts are calls to NOT?
+(defthm not-of-booland-of-not-and-not
+  (equal (not (booland (not x) (not y)))
+         (boolor x y))
+  :hints (("Goal" :in-theory (enable booland))))
+
+;Disabled by default.
 (defthmd not-of-boolor
   (equal (not (boolor x y))
          (booland (not x) (not y)))
   :hints (("Goal" :in-theory (enable boolor))))
+
+(defthm not-of-boolor-of-not-and-not
+  (equal (not (boolor (not x) (not y)))
+         (booland x y))
+  :hints (("Goal" :in-theory (enable booland))))
 
 ;do we prefer (equal nil x) or (not x) - maybe it depends on whether x is boolean
 ;(equal nil x) allows substitution
@@ -119,12 +129,16 @@
          (boolif test x (not y)))
   :hints (("Goal" :in-theory (enable boolif))))
 
-(defthm boolif-of-not-same-arg3
+;rename to mention boolor
+;maybe remove (use the -alt rule first)
+(defthmd boolif-of-not-same-arg3
   (equal (boolif x y (not x))
          (boolor y (not x)))
   :hints (("Goal" :in-theory (enable boolif))))
 
-(defthm boolif-of-not-same-arg2
+;rename to mention booland
+;maybe remove (use the -alt rule first)
+(defthmd boolif-of-not-same-arg2
   (equal (boolif x (not x) y)
          (booland y (not x)))
   :hints (("Goal" :in-theory (enable boolif))))

@@ -13,12 +13,16 @@
 (include-book "portcullis")
 (include-book "../rule-lists")
 (include-book "kestrel/arm/encodings" :dir :system)
+(include-book "kestrel/arm/library-models" :dir :system) ; for the library-model-rules
 
 (defun symbolic-execution-rules32-common ()
   (declare (xargs :guard t))
   '(update-call-stack-height
     update-call-stack-height-aux-base
     update-call-stack-height-aux-of-if-arg1
+    stack-height-adjustment
+    arm::step-core-opener
+    arm::step-aux-base ; requires the PC to be a constant
     arm::step-opener
     arm::execute-inst-base ; requires the instruction to be known
     arm::step-of-if
@@ -35,6 +39,17 @@
             run-until-return
             run-subroutine)))
 
+(defun symbolic-execution-rules32-with-tracing ()
+  (declare (xargs :guard t))
+  (append (symbolic-execution-rules32-common)
+          '(run-until-return-with-tracing-aux-base-axe
+            run-until-return-with-tracing-aux-opener-axe
+            run-until-return-with-tracing-aux-of-if-arg2
+            run-until-return-with-tracing
+            run-subroutine-with-tracing
+            acl2::append-of-nil-arg1 acl2::append-of-cons-arg1 ; clarifies the trace
+            )))
+
 (defun symbolic-execution-rules-with-stop-pcs32 ()
   (declare (xargs :guard t))
   (append (symbolic-execution-rules32-common)
@@ -43,6 +58,17 @@
             run-until-return-or-reach-pc-aux-of-if-arg2
             run-until-return-or-reach-pc
             acl2::memberp-constant-opener ; for resolving the stop-pcs check (when non-position-independent)
+            )))
+
+(defun symbolic-execution-rules-with-stop-pcs32-with-tracing ()
+  (declare (xargs :guard t))
+  (append (symbolic-execution-rules32-common)
+          '(run-until-return-with-tracing-or-reach-pc-aux-base-axe
+            run-until-return-with-tracing-or-reach-pc-aux-opener-axe
+            run-until-return-with-tracing-or-reach-pc-aux-of-if-arg2
+            run-until-return-with-tracing-or-reach-pc
+            acl2::memberp-constant-opener ; for resolving the stop-pcs check (when non-position-independent)
+            acl2::append-of-nil-arg1 acl2::append-of-cons-arg1 ; clarifies the trace
             )))
 
 (defun debug-rules32 ()
@@ -54,16 +80,18 @@
     arm::read-when-equal-of-read-bytes-and-subregion32p
     arm::read-when-equal-of-read-bytes-and-subregion32p-alt
     arm::read-when-equal-of-read-bytes
-    arm::read-when-equal-of-read-bytes-alt))
+    arm::read-when-equal-of-read-bytes-alt
+    read-when-equal-of-read-bytes-smt
+    read-when-equal-of-read-bytes-smt-alt))
 
-;; ;; sophisticated scheme for removing inner, shadowed writes
-;; (defund shadowed-write-rules32 ()
-;;   (declare (xargs :guard t))
-;;   '(write-becomes-write-of-clear-extend-axe
-;;     clear-extend-of-write-continue-axe
-;;     clear-extend-of-write-finish
-;;     clear-extend-of-write-of-clear-retract
-;;     write-of-clear-retract))
+;; sophisticated scheme for removing inner, shadowed writes
+(defund shadowed-write-rules32 ()
+  (declare (xargs :guard t))
+  '(write-becomes-write-of-clear-extend-axe
+    clear-extend-of-write-continue-axe
+    clear-extend-of-write-finish
+    clear-extend-of-write-of-clear-retract
+    write-of-clear-retract))
 
 (defun execute-function-names (mnemonics)
   (declare (xargs :guard (keyword-listp mnemonics)))
@@ -81,18 +109,22 @@
 (defund instruction-semantic-functions ()
   (declare (xargs :guard t))
   (append (set-difference-eq (semantic-functions-for-mnemonics)
-                             '(arm::execute-cmp-immediate
+                             '(;; These are replaced below by the -alt rules:
+                               arm::execute-cmp-immediate
                                arm::execute-cmp-register
                                arm::execute-cmp-register-shifted-register
                                arm::execute-cmn-immediate
                                arm::execute-cmn-register
-                               arm::execute-cmn-register-shifted-register))
+                               arm::execute-cmn-register-shifted-register
+                               arm::execute-sub-immediate))
+          (arm::library-model-rules)
           '(arm::execute-cmp-immediate-alt
             arm::execute-cmp-register-alt
             arm::execute-cmp-register-shifted-register-alt
             arm::execute-cmn-immediate-alt
             arm::execute-cmn-register-alt
             arm::execute-cmn-register-shifted-register-alt
+            arm::execute-sub-immediate-alt ; todo: need alt defs for other sub rules
 
             ;; These support relieving hyps of the -alt rules:
             arm::cmn-immediate-argsp
@@ -101,27 +133,67 @@
             arm::cmp-immediate-argsp
             arm::cmp-register-argsp
             arm::cmp-register-shifted-register-argsp
-            )
-          '(arm::bl-blx-common ; todo: package for the functions
+            arm::sub-immediate-argsp
+
+            ;; Additional rules needed for the instruction semantics:
+            arm::adr-common
+            arm::adr-encoding-a1-core
+            arm::adr-encoding-a2-core
+            arm::bfc-core
+            arm::bl-blx-common ; todo: add some of these to the A package?
             arm::blx-core
+            arm::ldm-core
+            arm::ldm-loop-base
+            arm::ldm-loop-unroll
+            arm::ldr-literal-core
+            arm::ldrb-literal-core
+            arm::ldrbt-common
+            arm::ldrbt-encoding-a1-core
+            arm::ldrbt-encoding-a2-core
+            arm::ldrd-literal-core
+            arm::ldrh-literal-core
+            arm::ldrht-common
+            arm::ldrht-encoding-a1-core
+            arm::ldrht-encoding-a2-core
+            arm::ldrsb-literal-core
+            arm::ldrsbt-common
+            arm::ldrsbt-encoding-a1-core
+            arm::ldrsbt-encoding-a2-core
+            arm::ldrsh-literal-core
+            arm::ldrsht-common
+            arm::ldrsht-encoding-a1-core
+            arm::ldrsht-encoding-a2-core
+            arm::ldrt-common
+            arm::ldrt-encoding-a1-core
+            arm::ldrt-encoding-a2-core
             arm::mov-common
             arm::mov-register-core
             arm::nop-core
-            arm::pop-encoding-a2-core
             arm::pop-common
+            arm::pop-encoding-a1-core
+            arm::pop-encoding-a2-core
             arm::pop-loop-base
             arm::pop-loop-unroll
+            arm::push-common
             arm::push-encoding-a1-core
             arm::push-encoding-a2-core
-            arm::push-common
             arm::push-loop-base
             arm::push-loop-unroll
-            arm::ldm-loop-base
-            arm::ldm-loop-unroll
-            arm::ldm-core
-            arm::ldr-literal-core
             arm::stm-loop-base
-            arm::stm-loop-unroll)))
+            arm::stm-loop-unroll
+            arm::stmdb-core
+            arm::strbt-common
+            arm::strbt-encoding-a1-core
+            arm::strbt-encoding-a2-core
+            arm::strht-common
+            arm::strht-encoding-a1-core
+            arm::strht-encoding-a2-core
+            arm::strt-common
+            arm::strt-encoding-a1-core
+            arm::strt-encoding-a2-core
+            arm::tst-immediate-core
+
+            arm::execute-unconditional-instruction)))
 
 (defun lifter-rules32 ()
   (declare (xargs :guard t))
@@ -169,6 +241,12 @@
      arm::eq-condition-of-cmn-zero
      arm::ne-condition-of-cmn-zero
 
+     arm::eq-condition-of-sub-zero
+     arm::ne-condition-of-sub-zero
+
+     arm::cs-condition-of-sub-carry
+     arm::cc-condition-of-sub-carry
+
      ;; cmp rules: ; todo: add the rest!
      arm::eq-condition-of-cmp-zero
      arm::ne-condition-of-cmp-zero
@@ -176,6 +254,28 @@
      arm::ls-condition-of-cmp-carry-and-cmp-zero
      arm::le-condition-cmp-idiom
      arm::gt-condition-cmp-idiom
+     arm::ge-condition-cmp-idiom
+     arm::lt-condition-cmp-idiom
+
+     ;; sub rules: ; todo: add more!
+     arm::lt-condition-of-sub-sign-and-sub-overflow
+
+     arm::cs-condition-of-cmp-carry
+     arm::cc-condition-of-cmp-carry
+
+     ;; hope these are ok:
+     arm::cmn-sign-constant-opener
+     arm::cmn-zero-constant-opener
+     arm::cmn-carry-constant-opener
+     arm::cmn-overflow-constant-opener
+     arm::cmp-sign-constant-opener
+     arm::cmp-zero-constant-opener
+     arm::cmp-carry-constant-opener
+     arm::cmp-overflow-constant-opener
+     arm::sub-sign-constant-opener
+     arm::sub-zero-constant-opener
+     arm::sub-carry-constant-opener
+     arm::sub-overflow-constant-opener
 
      arm::eq-condition-constant-opener
      arm::ne-condition-constant-opener
@@ -192,6 +292,26 @@
      arm::gt-condition-constant-opener
      arm::le-condition-constant-opener
 
+     arm::lsl_c-constant-opener
+     arm::lsl-constant-opener
+     arm::lsr_c-constant-opener
+     arm::lsr-constant-opener
+     arm::SignExtend-constant-opener
+     arm::asr_c-constant-opener
+     arm::ror_c-constant-opener
+     arm::ror-constant-opener
+     arm::rrx_c-constant-opener
+     arm::rrx-constant-opener
+     arm::shift_c-constant-opener
+     arm::shift-constant-opener
+     arm::addwithcarry-constant-opener ; more?
+     arm::addwithcarry-overflow-constant-opener ; more?
+
+     arm::sint-constant-opener
+
+     arm::countleadingzerobits-constant-opener
+     arm::highestsetbit-constant-opener
+     arm::highestsetbit-aux-constant-opener
 
      acl2::lookup-eq-becomes-lookup-equal
      arm::==$inline
@@ -200,8 +320,11 @@
      arm::zeroextend
      arm::nullcheckifthumbee
      arm::pcvalue
-     arm::align ; redef?
-     arm::div
+     ;; arm::align ; redef?
+     arm::bvchop-2-of-align-of-4
+     arm::align-of-4-when-aligned
+     ;; arm::div
+     arm::div-becomes-bvdiv
      arm::memu
      arm::mema
      arm::advance-pc
@@ -256,6 +379,7 @@
      arm::error-of-set-apsr.v
      arm::error-of-set-apsr.q
      arm::error-of-write
+     arm::error-of-if
 
      arm::read-of-update-itstate
      arm::read-of-update-isetstate
@@ -291,8 +415,21 @@
      arm::isetstate-of-set-apsr.v
      arm::isetstate-of-set-apsr.q
      arm::isetstate-of-write
-
+     arm::isetstate-of-if
      arm::update-isetstate-when-equal-of-isetstate
+
+     arm::library-map-of-set-reg
+     arm::library-map-of-update-isetstate
+     arm::library-map-of-set-apsr.n
+     arm::library-map-of-set-apsr.z
+     arm::library-map-of-set-apsr.c
+     arm::library-map-of-set-apsr.v
+     arm::library-map-of-set-apsr.q
+     arm::library-map-of-write
+     arm::library-map-of-if
+
+     acl2::lookup-becomes-lookup-equal ; for when the library map is empty
+     acl2::lookup-equal-of-nil ; for when the library map is empty
 
      ;;;
 
@@ -374,6 +511,7 @@
      arm::loadwritepc
      arm::bxwritepc
      arm::branchwritepc
+     arm::aluwritepc
 
      arm::and32 ; exposes bvand
      arm::or32 ; exposes bvor
@@ -389,14 +527,15 @@
      arm::mv-nth-1-of-lsl_c-becomes-getbit
      arm::lsl-becomes-bvshl ; arm::lsl
 
-     ;; right shifts;
+     ;; right shifts:
      arm::mv-nth-0-of-lsr_c-becomes-bvshr ; arm::lsr_c
      arm::mv-nth-1-of-lsr_c-becomes-getbit
      arm::lsr-becomes-bvshr ; arm::lsr
 
      ;; right rotation:
-     arm::mv-nth-0-of-ror_c-becomes-rightrotate ; arm::ror_c
-     arm::mv-nth-1-of-ror_c-becomes-getbit-of-rightrotate
+     arm::ror_c-redef
+     ;; arm::mv-nth-0-of-ror_c-becomes-rightrotate ; arm::ror_c
+     ;; arm::mv-nth-1-of-ror_c-becomes-getbit-of-rightrotate
      arm::ror-becomes-rightrotate ; arm::ror
 
      arm::bitcount
@@ -419,8 +558,11 @@
      arm::write-of-set-reg
      arm::set-reg-of-set-reg-same
      arm::set-reg-of-set-reg-diff-2
+     arm::set-reg-of-if-arg3
+     arm::set-reg-of-pc-and-bvif
 
      arm::decodeimmshift
+     arm::decoderegshift
      arm::unsigned-byte-p-of-mv-nth-0-of-AddWithCarry ; could drop these if the replacement rule always fires
      arm::unsigned-byte-p-of-mv-nth-1-of-AddWithCarry
      arm::unsigned-byte-p-of-mv-nth-2-of-AddWithCarry
@@ -429,6 +571,9 @@
      arm::mv-nth-2-of-AddWithCarry ; todo: 32-bit only!
      arm::iszerobit
      arm::iszero
+
+     arm::unsigned-byte-p-of-mv-nth-0-of-asr_c ; todo: more like this!
+     arm::mv-nth-0-of-asr_c-becomes-rightrotate
 
      arm::unsigned-byte-p-of-cmn-sign
      arm::unsigned-byte-p-of-cmn-zero
@@ -440,18 +585,21 @@
      arm::unsigned-byte-p-of-cmp-carry
      arm::unsigned-byte-p-of-cmp-overflow
 
+     arm::unsigned-byte-p-of-sub-sign
+     arm::unsigned-byte-p-of-sub-zero
+     arm::unsigned-byte-p-of-sub-carry
+     arm::unsigned-byte-p-of-sub-overflow
+
+     acl2::getbit-identity ; overkill?  but we need to drop getbit 0 when applied to sub-sign, etc.
+
      )
-;   (shadowed-write-rules32)
+   (shadowed-write-rules32)
    (acl2::base-rules) ; gets us if-same-branches, for example
    (acl2::core-rules-bv)
-   ;; bv rules:
-   '(acl2::bitnot-of-bitxor-of-1 ; move to core-rules-bv
-     acl2::bitxor-of-1-and-bitnot ; move to core-rules-bv
-     )
    (acl2::unsigned-byte-p-forced-rules)
    (acl2::type-rules) ; rename
    (acl2::bvchop-of-bv-rules)
-   (acl2::convert-to-bv-rules) ; todo: may just need the trim-elim rules
+   (acl2::convert-to-bv-rules-axe) ; todo: may just need the trim-elim rules
    (acl2::boolean-rules-safe)
    (acl2::list-to-bv-array-rules) ;; unrolling seemed bad for large sections?
    '(;acl2::list-to-bv-array-constant-opener
@@ -505,13 +653,15 @@
      arm::read-of-write-when-disjoint-regions32p
      arm::read-of-write-when-disjoint-regions32p-gen
      arm::read-of-write-when-disjoint-regions32p-gen-alt
+     read-of-write-when-disjoint-regions32p-gen-smt
+     read-of-write-when-disjoint-regions32p-gen-smt
 
      arm::disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p
      arm::disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p-alt
 
      ;; UNCOMMENT
      arm::read-when-equal-of-read-bytes-and-subregion32p ; for when the bytes are a constant
-     arm::read-when-equal-of-read-bytes-and-subregion32p-alt ; for when the bytes are not a constant
+     arm::read-when-equal-of-read-bytes-and-subregion32p-alt ; for when the bytes are a constant
      arm::read-when-equal-of-read-bytes ; note rule priority
      arm::read-when-equal-of-read-bytes-alt
      ;; acl2::len-of-cons ;  for when read-when-equal-of-read-bytes-and-subregion32p-alt introduces a cons nest
@@ -519,8 +669,6 @@
      arm::subregion32p-of-1-arg1     ;; trying
      arm::disjoint-regions32p-of-1-and-1 ; trying
 
-     acl2::equal-of-bvplus-constant-and-constant-alt
-     acl2::equal-of-bvplus-constant-and-constant
      acl2::equal-of-bvplus-and-bvplus-reduce-constants
      disjoint-regions32p-byte-special
      acl2::bv-array-read-chunk-little-of-1
@@ -535,8 +683,6 @@
      acl2::unsigned-byte-listp-constant-opener
 
      ;;bv-array-read-shorten-8
-     acl2::not-equal-of-constant-and-bv-term-axe
-     acl2::not-equal-of-constant-and-bv-term-alt-axe
      acl2::equal-of-bvchop-and-bvplus-of-same
      acl2::equal-of-bvchop-and-bvplus-of-same-alt
      acl2::logext-identity-when-usb-smaller-axe
@@ -548,7 +694,6 @@
      not-in-region32p-when-disjoint-regions32p-special
      ;; not-in-region32p-when-disjoint-regions32p-one ; looped -- why?
      ;; not-in-region32p-when-disjoint-regions32p-two
-     acl2::bvlt-of-1
      ;acl2::bvlt-of-bvplus-constant-and-constant-gen ; bad?
      bvlt-of-read-and-constant
 
@@ -738,17 +883,13 @@
      acl2::logtail-of-logext
      ;acl2::logtail-of-bvcat
      acl2::logtail-becomes-slice-bind-free-axe
-     acl2::bvcat-of-logext-arg2
-     acl2::bvcat-of-logext-arg4
+     ;acl2::bvcat-of-logext-arg2
+     ;acl2::bvcat-of-logext-arg4
 
      ;acl2::bvcat-of-if-arg2
      ;acl2::bvcat-of-if-arg4
      acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg2 ; these could be convert-to-bv rules
      acl2::bvcat-of-if-becomes-bvcat-of-bvif-arg4
-
-     acl2::loghead-becomes-bvchop
-
-
 
      acl2::bvchop-of-+-becomes-bvplus
      acl2::bvminus-of-bvplus-and-bvplus-same
@@ -771,7 +912,14 @@
      acl2::mod-becomes-bvchop-when-power-of-2p
 
      myif ; always expand to IF
-     )))
+     bvcat-of-slice-of-0-when-low-bits-0 ; to handle alignment
+
+     arm::getbit-0-of-cmp-carry
+     arm::getbit-0-of-cmp-zero
+     arm::getbit-0-of-cmp-sign
+     arm::getbit-0-of-cmp-overflow
+
+     arm::reg*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -783,3 +931,7 @@
 
 ;; split before trying to open if the state is an IF:
 (acl2::set-axe-rule-priority run-until-return-aux-of-if-arg2 -1)
+
+;; try these rules late:
+(set-axe-rule-priority read-when-equal-of-read-bytes-smt 1)
+(set-axe-rule-priority read-when-equal-of-read-bytes-smt-alt 1)

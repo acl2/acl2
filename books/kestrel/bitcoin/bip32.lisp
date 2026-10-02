@@ -370,7 +370,7 @@
   :returns (mv (error? booleanp)
                (child bip32-ext-pub-key-p))
   :short "Public child key derivation from private parent key,
-          for non-hardedned child keys only."
+          for non-hardened child keys only."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1939,7 +1939,7 @@
    (xdoc::p
     "This is similar to @(tsee bip32-compliant-addresses-for-limit-p).")
    (xdoc::p
-    "The figure in [BIP32] shows account keys as non-hardned keys,
+    "The figure in [BIP32] shows account keys as non-hardened keys,
      because there are no @($\\mathsf{H}$) subscripts in the indices.
      However, the text in [BIP32] shows the @($\\mathsf{H}$) subscripts.
      It seems reasonable for account keys to be hardened,

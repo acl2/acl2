@@ -1,7 +1,7 @@
 ; A book about boolif (boolean-valued if-then-else)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -59,23 +59,6 @@
          (not x))
   :hints (("Goal" :in-theory (enable boolif))))
 
-(defthm boolif-same-branches
-  (equal (boolif test x x)
-         (bool-fix x))
-  :hints (("Goal" :in-theory (enable boolif))))
-
-(defthm boolif-same-arg1-arg2
-  (implies (syntaxp (not (quotep x))) ; avoids loop when x='t, this hyp is supported by Axe
-           (equal (boolif x x y)
-                  (boolif x t y)))
-  :hints (("Goal" :in-theory (enable boolif))))
-
-(defthm boolif-x-y-x
-  (implies (syntaxp (not (quotep x))) ; prevent loops
-           (equal (boolif x y x)
-                  (boolif x y nil)))
-  :hints (("Goal" :in-theory (enable boolif))))
-
 (defthm boolif-of-not
   (equal (boolif (not test) x y)
          (boolif test y x))
@@ -86,6 +69,8 @@
   (equal (not (boolif test x y))
          (boolif test (not x) (not y)))
   :hints (("Goal" :in-theory (enable boolif))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Helps justify the STP translation.
 (defthm boolif-of-bool-fix-arg1
@@ -105,15 +90,44 @@
          (boolif x y z))
   :hints (("Goal" :in-theory (enable boolif))))
 
+;; These help justify some things that Axe does:
+(defcong iff equal (boolif test x y) 1 :hints (("Goal" :in-theory (enable boolif))))
+(defcong iff equal (boolif test x y) 2 :hints (("Goal" :in-theory (enable boolif))))
+(defcong iff equal (boolif test x y) 3 :hints (("Goal" :in-theory (enable boolif))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; could call this boolif-same-arg2-arg3
+(defthm boolif-same-branches
+  (equal (boolif test x x)
+         (bool-fix x))
+  :hints (("Goal" :in-theory (enable boolif))))
+
+(defthm boolif-same-arg1-arg2
+  (implies (syntaxp (not (quotep x))) ; avoids loop when x='t, this hyp is supported by Axe
+           (equal (boolif x x y)
+                  (boolif x t y)))
+  :hints (("Goal" :in-theory (enable boolif))))
+
+(defthm boolif-same-arg1-arg3
+  (implies (syntaxp (not (quotep x))) ; prevent loops when x='nil, this hyp is supported by Axe
+           (equal (boolif x y x)
+                  (boolif x y nil)))
+  :hints (("Goal" :in-theory (enable boolif))))
+
+;remove -alt from name but first address the clash
+(defthm boolif-of-not-same-arg2-alt
+  (equal (boolif x (not x) y)
+         (boolif x nil y))
+  :hints (("Goal" :in-theory (enable boolif))))
+
+;remove -alt from name but first address the clash
 (defthm boolif-of-not-same-arg3-alt
   (equal (boolif x y (not x))
          (boolif x y t))
   :hints (("Goal" :in-theory (enable boolif))))
 
-(defthm boolif-of-not-same-arg2-alt
-  (equal (boolif x (not x) y)
-         (boolif x nil y))
-  :hints (("Goal" :in-theory (enable boolif))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd if-becomes-boolif
   (implies (and (booleanp x)
@@ -121,11 +135,6 @@
            (equal (if test x y)
                   (boolif test x y)))
   :hints (("Goal" :in-theory (enable boolif))))
-
-;; These help justify some things that Axe does:
-(defcong iff equal (boolif test x y) 1 :hints (("Goal" :in-theory (enable boolif))))
-(defcong iff equal (boolif test x y) 2 :hints (("Goal" :in-theory (enable boolif))))
-(defcong iff equal (boolif test x y) 3 :hints (("Goal" :in-theory (enable boolif))))
 
 ;for outside-in rewriting:
 (defthm boolif-when-not-nil
@@ -149,19 +158,19 @@
   (equal (boolif (if test test1 test2) x y)
          (boolif (boolif test test1 test2) x y)))
 
-(theory-invariant (incompatible (:rewrite boolif-of-if-arg1) (:defintion boolif)))
+(theory-invariant (incompatible (:rewrite boolif-of-if-arg1) (:definition boolif)))
 
 (defthmd boolif-of-if-arg2
   (equal (boolif test (if test2 x1 x2) y)
          (boolif test (boolif test2 x1 x2) y)))
 
-(theory-invariant (incompatible (:rewrite boolif-of-if-arg2) (:defintion boolif)))
+(theory-invariant (incompatible (:rewrite boolif-of-if-arg2) (:definition boolif)))
 
 (defthmd boolif-of-if-arg3
   (equal (boolif test x (if test3 y1 y2))
          (boolif test x (boolif test3 y1 y2))))
 
-(theory-invariant (incompatible (:rewrite boolif-of-if-arg3) (:defintion boolif)))
+(theory-invariant (incompatible (:rewrite boolif-of-if-arg3) (:definition boolif)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -182,8 +191,8 @@
 ;todo: rename to have 'same' in the name
 (defthm boolif-of-boolif-of-t-and-nil
   (equal (boolif (boolif x t y) x nil)
-         (acl2::bool-fix x))
-  :hints (("Goal" :in-theory (enable acl2::bool-fix))))
+         (bool-fix x))
+  :hints (("Goal" :in-theory (enable bool-fix))))
 
 ;; This reduces one mention of X and only increases the mentions of nil
 (defthm boolif-combine-1
@@ -195,7 +204,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; These can help when we have a genealized boolean as an arg:
+;; These can help when we have a generalized boolean as an arg:
 
 (defthmd boolif-when-not-booleanp-arg1
   (implies (not (booleanp test))

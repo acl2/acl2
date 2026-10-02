@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function ifix
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,7 +37,7 @@
          (ifix x))
   :hints (("Goal" :in-theory (enable ifix))))
 
-(defthm fix-of-+-when-integerp-arg1
+(defthm ifix-of-+-when-integerp-arg1
   (implies (integerp x1)
            (equal (ifix (+ x1 x2))
                   (if (and (acl2-numberp x2)

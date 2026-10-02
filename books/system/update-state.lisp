@@ -97,7 +97,7 @@
 (defthm update-open-input-channels-preserves-state-p1
   (implies (state-p1 state)
            (equal (state-p1 (update-open-input-channels updates state))
-                  (open-channels-p updates)))
+                  (open-channels-p updates nil)))
   :hints(("Goal" :in-theory (disable update-open-input-channels
                                      statep-functions)
           :use ((:instance state-p1
@@ -145,7 +145,7 @@
 (defthm update-open-output-channels-preserves-state-p1
   (implies (state-p1 state)
            (equal (state-p1 (update-open-output-channels updates state))
-                  (open-channels-p updates)))
+                  (open-channels-p updates t)))
   :hints(("Goal" :in-theory (disable update-open-output-channels
                                      statep-functions)
           :use ((:instance state-p1

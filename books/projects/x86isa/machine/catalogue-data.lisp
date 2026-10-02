@@ -15,6 +15,7 @@
 (local (in-theory (disable inst-list-p-of-maps)))
 
 (def-sdm-instruction-section "5.1 General-Purpose Instructions")
+
 (def-sdm-instruction-section "5.1.1 Data Transfer Instructions"
   :mnemonics
   '(MOV
@@ -23,16 +24,16 @@
     CMOVP/PE
     CMOVNP/PO
     CMOVO CMOVNO CMOVS CMOVNS  XCHG
-    BSWAP XADD CMPXCHG CMPXCHG8B PUSH |PUSH CS| |PUSH DS| |PUSH ES| |PUSH FS| |PUSH GS| |PUSH SS|
-    POP |POP DS| |POP ES| |POP SS| PUSHA/PUSHAD POPA/POPAD CWD/CDQ/CQO
-    CBW/CWDE/CDQE MOVSX MOVZX
+    BSWAP XADD CMPXCHG CMPXCHG8B
+    PUSH |PUSH CS| |PUSH DS| |PUSH ES| |PUSH FS| |PUSH GS| |PUSH SS|
+    POP |POP DS| |POP ES| |POP FS| |POP GS| |POP SS|
+    PUSHA/PUSHAD POPA/POPAD
+    CWD/CDQ/CQO
+    CBW/CWDE/CDQE
+    MOVSX
+    MOVZX
     ;; not listed but seems to belong here?
-    MOVSXD)
-  :doc "<p>Unimplemented instructions are:</p>
-<ul>
-<li>POP variants that write to segment registers: these have side effects,
-perhaps similar to those of MOV to a segment register</li>
-</ul>")
+    MOVSXD))
 
 (def-sdm-instruction-section "5.1.2 Binary Arithmetic Instructions"
   :mnemonics
@@ -40,8 +41,7 @@ perhaps similar to those of MOV to a segment register</li>
 
 (def-sdm-instruction-section "5.1.3 Decimal Arithmetic Instructions"
   :mnemonics
-  '(DAA DAS AAA AAS AAM AAD)
-  :doc "<p>These are all unimplemented.</p>")
+  '(DAA DAS AAA AAS AAM AAD))
 
 (def-sdm-instruction-section "5.1.4 Logical Instructions"
   :mnemonics '(AND OR XOR NOT))
@@ -53,12 +53,7 @@ perhaps similar to those of MOV to a segment register</li>
   :mnemonics '(BT BTS BTR BTC BSF BSR
                   SETB/NAE/C SETNB/AE/NC SETNBE/A SETP/PE SETNP/PO SETL/NGE
                   SETNL/GE SETLE/NG SETNLE/G SETZ/E SETNZ/NE SETBE/NA
-                  SETS SETNS SETO SETNO  TEST CRC32 POPCNT)
-  :doc "<p>Unimplemented instructions are:</p>
-<ul>
-<li>BTC</li>
-<li>CRC32</li>
-</ul>")
+                  SETS SETNS SETO SETNO  TEST CRC32 POPCNT))
 
 (def-sdm-instruction-section "5.1.7 Control Transfer Instructions"
   :mnemonics '(JMP JB/NAE/C JNB/AE/NC JZ/E JNZ/NE JBE/NA JNBE/A JP/PE JNP/PO JL/NGE
@@ -68,7 +63,6 @@ perhaps similar to those of MOV to a segment register</li>
   :doc "<p>Unimplemented instructions are:</p>
 <ul>
 <li>BOUND -- not valid in 64 bit mode</li>
-<li>ENTER</li>
 <li>RET -- only far return with immediate (0xCA)</li>
 <li>INT -- software interrupt</li>
 <li>INTO -- overflow trap</li>
@@ -107,15 +101,13 @@ perhaps similar to those of MOV to a segment register</li>
 (def-sdm-instruction-section "5.1.10 Enter and Leave Instructions"
   :mnemonics '(ENTER LEAVE)
   :doc "<p>This group just includes ENTER and LEAVE, which oddly are also
-  counted amongst the @(see |5.1.7 Control Transfer Instructions|) group. LEAVE
-  is defined but ENTER is not.</p>")
+  counted amongst the @(see |5.1.7 Control Transfer Instructions|) group.</p>")
 
 (def-sdm-instruction-section "5.1.11 Flag Control (EFLAG) Instructions"
   :mnemonics '(STC CLC CMC CLD STD LAHF SAHF PUSHF/D/Q POPF/D/Q STI CLI))
 
 (def-sdm-instruction-section "5.1.12 Segment Register Instructions"
-  :mnemonics '(LDS LES LFS LGS LSS)
-  :doc "<p>None of these are implemented</p>")
+  :mnemonics '(LDS LES LFS LGS LSS))
 
 (def-sdm-instruction-section "5.1.13 Miscellaneous Instructions"
   :mnemonics '(

@@ -154,7 +154,7 @@
                   (not (power-of-2p x))))
   :hints (("Goal" :in-theory (enable ceiling-of-lg power-of-2p))))
 
-(defthm <=-of-expt-of-celing-of-lg-same
+(defthm <=-of-expt-of-ceiling-of-lg-same
   (implies (integerp x)
            (<= x (expt 2 (ceiling-of-lg x))))
   :rule-classes :linear

@@ -26,7 +26,7 @@
 (defxdoc crypto-hdwallet-executable
   :parents (crypto-hdwallet)
   :short "Executable version of the
-          hierachical deterministic wallet for cryptocurrencies."
+          hierarchical deterministic wallet for cryptocurrencies."
   :long
   (xdoc::topstring
    (xdoc::p

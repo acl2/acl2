@@ -1,7 +1,7 @@
 ; A generic pattern for proving things about a tail-recursive function
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -49,8 +49,8 @@
 ;; TODO: Make post take the params too. also the inv?
 
 ;; Postulate the existence of some postcondition and invariant:
-(encapsulate (((generic-tail-inv *)=> *)
-              ((generic-tail-post *)=> *))
+(encapsulate (((generic-tail-inv *) => *)
+              ((generic-tail-post *) => *))
 
   (local (defun generic-tail-inv (params) (declare (ignore params)) t))
   (local (defun generic-tail-post (params) (declare (ignore params)) t))
@@ -62,7 +62,7 @@
                   )
              (generic-tail-inv (generic-tail-update params))))
 
-  ;;the invariant must impliy the postcondition after we do the base case work,
+  ;;the invariant must imply the postcondition after we do the base case work,
   ;;assuming we exit:
   (defthm generic-tail-post-of-generic-tail-base
     (implies (and (generic-tail-inv params)

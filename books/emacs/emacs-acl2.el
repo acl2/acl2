@@ -2,7 +2,7 @@
 ; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 
-; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
+; This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
@@ -914,6 +914,12 @@ beginning of the string that was processed."
 ; following, long used by Matt K.
 (put 'er-let* 'lisp-indent-function 1)
 (put 'ER-LET* 'lisp-indent-function 1)
+(put 'defthm 'lisp-indent-function 1)
+(put 'DEFTHM 'lisp-indent-function 1)
+(put 'defaxiom 'lisp-indent-function 1)
+(put 'defaxiom 'lisp-indent-function 1)
+(put 'defrule 'lisp-indent-function 1)
+(put 'DEFRULE 'lisp-indent-function 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; ACL2 proof-tree support

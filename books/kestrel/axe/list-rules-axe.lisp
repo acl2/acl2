@@ -1,7 +1,7 @@
 ; Axe rules about lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -33,7 +33,7 @@
 (defthmd consp-of-cons
   (consp (cons a x)))
 
-;;Only needeed for Axe.
+;;Only needed for Axe.
 (defthmd equal-of-cons-alt
   (implies (syntaxp (not (and (quotep x)
                               (quotep y))))
@@ -42,31 +42,31 @@
                        (equal x (car z))
                        (equal y (cdr z))))))
 
-;; Only needeed for Axe, since ACL2 knows this by type-prescription.
+;; Only needed for Axe, since ACL2 knows this by type-prescription.
 (defthmd true-listp-of-repeat
   (true-listp (repeat n x)))
 
-;; Only needeed for Axe, since ACL2 knows this by type-prescription.
+;; Only needed for Axe, since ACL2 knows this by type-prescription.
 (defthmd true-listp-of-firstn
   (true-listp (firstn n x)))
 
-;; Only needeed for Axe, since ACL2 knows this by type-prescription.
+;; Only needed for Axe, since ACL2 knows this by type-prescription.
 (defthmd true-listp-of-true-list-fix
   (true-listp (true-list-fix x)))
 
-;; Only needeed for Axe, since ACL2 knows this by type-prescription.
+;; Only needed for Axe, since ACL2 knows this by type-prescription.
 (defthmd equal-of-nil-and-len
   (not (equal nil (len x))))
 
-;; Only needeed for Axe, since ACL2 knows this by type-prescription.
+;; Only needed for Axe, since ACL2 knows this by type-prescription.
 (defthmd consp-of-update-nth
   (consp (update-nth key val l)))
 
-;; Only needeed for Axe, since ACL2 knows this by type-prescription.
+;; Only needed for Axe, since ACL2 knows this by type-prescription.
 (defthmd not-equal-of-nil-and-update-nth
   (not (equal nil (update-nth key val l))))
 
-;; Only needeed for Axe, since ACL2 knows this by type-prescription.
+;; Only needed for Axe, since ACL2 knows this by type-prescription.
 (defthmd not-equal-of-update-nth-and-nil
   (not (equal (update-nth key val l) nil)))
 

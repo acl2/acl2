@@ -25,6 +25,18 @@
   (declare (xargs :guard (arrow-typep x)))
   (caddr x))
 
+(defthm hol-type-eval-arrow
+  (implies (and (hol-typep type hta)
+                (equal (car type) :arrow))
+           (equal (hol-type-eval type hta)
+                  (let ((val1 (hol-type-eval (cadr type) hta))
+                        (val2 (hol-type-eval (caddr type) hta)))
+                    (if (or (equal val1 0)
+                            (equal val2 0))
+                        0
+                      (fun-space val1 val2)))))
+  :hints (("Goal" :in-theory (enable hol-type-eval))))
+
 (defthmz hpp-hap
 
 ; The hypotheses were originally forced, but that cause complications for
@@ -36,8 +48,7 @@
                 (force (equal (hp-type x) (arrow-domain (hp-type f)))))
            (hpp (hap f x) hta))
   :props (zfc prod2$prop domain$prop inverse$prop fun-space$prop)
-  :hints (("Goal"
-           :in-theory (enable hpp hap hp-type hol-valuep hol-type-eval))))
+  :hints (("Goal" :in-theory (enable hap))))
 
 (defthmz hp-type-hap
   (implies (and (force (weak-hol-typep (hp-type f)))
@@ -46,8 +57,7 @@
            (equal (hp-type (hap f x))
                   (arrow-range (hp-type f))))
   :props (zfc prod2$prop domain$prop inverse$prop fun-space$prop)
-  :hints (("Goal"
-           :in-theory (enable hpp hap hp-type hol-valuep hol-type-eval))))
+  :hints (("Goal" :in-theory (enable hap))))
 
 (defthm hol-typep-monotone-for-alist-subsetp
   (implies (and (alist-subsetp hta1 hta2)
@@ -111,6 +121,16 @@
            (equal (hons-assoc-equal :num hta)
                   (cons :num (omega)))))
 
+(defthm hol-type-eval-list
+  (implies (and (hol-typep type hta)
+                (equal (car type) :list))
+           (equal (hol-type-eval type hta)
+                  (if (equal (hol-type-eval (cadr type) hta)
+                             0)
+                      0
+                    (finseqs (hol-type-eval (cadr type) hta)))))
+  :hints (("Goal" :in-theory (enable hol-type-eval))))
+
 (defthmz hpp-restrict
   (implies (and (hpp x hta)
                 (equal (hp-type x)
@@ -119,12 +139,24 @@
            (hpp (cons (restrict (car x) (+ -1 (domain (car x))))
                       (list :list alpha))
                 hta))
-  :hints (("Goal"
-           :restrict ((subset-transitivity ((y (image (car x))))))
-           :expand ((hol-type-eval (cdr x) hta))
-           :in-theory (enable hpp hol-valuep hol-type-eval)))
+  :hints (("Goal" :restrict ((subset-transitivity ((y (image (car x))))))))
   :props (zfc prod2$prop domain$prop inverse$prop restrict$prop diff$prop
               finseqs$prop))
+
+(defthmz hol-type-eval-num
+  (implies (alist-subsetp (hta0) hta)
+           (equal (hol-type-eval :num hta)
+                  (omega)))
+  :hints (("Goal" :in-theory (enable hol-type-eval))))
+
+(defthmz hol-type-eval-hash
+  (implies (and (hol-typep type hta)
+                (equal (car type) :hash))
+           (equal (hol-type-eval type hta)
+                  (prod2 (hol-type-eval (cadr type) hta)
+                         (hol-type-eval (caddr type) hta))))
+  :hints (("Goal" :in-theory (enable hol-type-eval)))
+  :props (zfc prod2$prop))
 
 (defthmz consp-finseq-to-list
 
@@ -147,33 +179,26 @@
            (equal (consp (finseq-to-list (car x))) ; (car x) is (hp-value x)
                   (not (equal x (hp-nil '(:hash :num :num))))))
   :props (zfc prod2$prop domain$prop inverse$prop restrict$prop diff$prop
-              finseqs$prop)
-  :hints (("Goal"
-           :in-theory (enable hpp hol-valuep hol-type-eval))))
+              finseqs$prop))
 
 (defthmz num-type-implies-natp
   (implies (and (alist-subsetp (hta0) hta)
                 (hpp x hta)
                 (equal (cdr x) :num))
            (natp (car x)))
-  :hints (("Goal" :in-theory (enable hpp hol-valuep hol-type-eval)))
   :rule-classes :forward-chaining)
 
 (defthmz hpp-natp ; relies on omega-is-not-natp
   (implies (and (alist-subsetp (hta0) hta)
                 (force (natp x)))
            (hpp (cons x :num)
-                hta))
-  :hints (("Goal" :in-theory (enable hpp hol-valuep hol-type-eval))))
+                hta)))
 
 (defthmz list-type-implies-funp-with-natp-domain
   (implies (and (hpp x hta)
                 (equal (cdr x) (cons :list rest)))
            (and (funp (car x))
                 (natp (domain (car x)))))
-  :hints (("Goal"
-           :in-theory (enable hpp hol-valuep hol-type-eval)
-           :expand ((hol-type-eval (cdr x) hta))))
   :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop)
   :rule-classes :forward-chaining)
 
@@ -188,9 +213,7 @@
                 (force (hpp x hta)))
            (equal (cdr (hp-hash-car (hp-list-car x)))
                   :num))
-  :hints (("Goal"
-           :in-theory
-           (enable hol-type-eval hp-hash-car hp-list-car)))
+  :hints (("Goal" :in-theory (enable hp-hash-car hp-list-car)))
   :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop))
 
 (defthmz type-2-lemma-1
@@ -222,9 +245,7 @@
                 (force (hpp x hta)))
            (hpp (hp-hash-cdr (hp-list-car x))
                 hta))
-  :hints (("Goal"
-           :in-theory
-           (enable hpp hol-valuep hol-type-eval hp-hash-cdr hp-list-car)))
+  :hints (("Goal" :in-theory (enable hp-hash-cdr hp-list-car)))
   :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop diff$prop))
 
 (defthmz type-3
@@ -234,8 +255,7 @@
                 (force (hpp x hta)))
            (equal (cdr (hp-hash-cdr (hp-list-car x)))
                   :num))
-  :hints (("Goal"
-           :in-theory (enable hol-type-eval hp-hash-cdr hp-list-car)))
+  :hints (("Goal" :in-theory (enable hp-hash-cdr hp-list-car)))
   :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop))
 
 (defthmz type-4-lemma
@@ -261,9 +281,7 @@
                 (force (hpp x hta)))
            (hpp (hp-hash-car (hp-list-car x))
                 hta))
-  :hints (("Goal"
-           :in-theory
-           (enable hpp hol-valuep hol-type-eval hp-hash-car hp-list-car)))
+  :hints (("Goal" :in-theory (enable hp-hash-car hp-list-car)))
   :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop diff$prop))
 
 (defthmz type-5
@@ -271,9 +289,7 @@
                 (force (hpp x hta)))
            (hpp (hp-list-cdr x)
                 hta))
-  :hints (("Goal"
-           :expand ((hol-type-eval (cdr x) hta))
-           :in-theory (enable hpp hol-valuep hol-type-eval hp-list-cdr)))
+  :hints (("Goal" :in-theory (enable hp-list-cdr)))
   :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop diff$prop
               restrict$prop))
 
@@ -284,7 +300,7 @@
                   (cdr x)))
   :hints (("Goal"
            :expand ((hol-typep (cdr x) hta))
-           :in-theory (enable hpp hol-type-eval hol-valuep hp-list-cdr)))
+           :in-theory (enable hp-list-cdr)))
   :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop))
 
 (defthmz type-7
@@ -292,9 +308,7 @@
                 (equal (car (cdr y)) :list)
                 (force (hpp y hta)))
            (hpp (hp-list-car y) hta))
-  :hints (("Goal"
-           :expand ((HOL-TYPEP (CDR Y) HTA))
-           :in-theory (enable hpp hol-valuep hol-type-eval hp-list-car)))
+  :hints (("Goal" :in-theory (enable hp-list-car)))
   :props (zfc prod2$prop inverse$prop diff$prop domain$prop finseqs$prop))
 
 (defthmz type-8
@@ -303,8 +317,7 @@
                 (force (hpp y hta)))
            (equal (cdr (hp-list-car y))
                   '(:hash :num :num)))
-  :hints (("Goal"
-           :in-theory (enable hpp hol-valuep hol-type-eval hp-list-car)))
+  :hints (("Goal" :in-theory (enable hp-list-car)))
   :props (zfc prod2$prop inverse$prop diff$prop domain$prop finseqs$prop))
 
 (defthmz hp-type-bool-cases
@@ -313,7 +326,7 @@
                 (equal (hp-type x) :bool))
            (or (equal x (hp-true))
                (equal x (hp-false))))
-  :hints (("Goal" :in-theory (enable hpp hol-valuep hol-type-eval)))
+  :hints (("Goal" :in-theory (enable hol-type-eval)))
   :rule-classes nil)
 
 (defthmz type-9-lemma
@@ -338,9 +351,8 @@
              (hp-comma-p (hp-list-car x))))
   :hints (("Goal"
            :expand ((hol-typep (cdr x) hta)
-                    (HOL-TYPEP (CADDR X) HTA))
-           :in-theory (enable hpp hol-type-eval hol-valuep hp-comma-p
-                              WEAK-HOL-TYPEP HP-LIST-CAR)))
+                    (hol-typep (caddr x) hta))
+           :in-theory (enable hp-list-car)))
   :props (zfc prod2$prop inverse$prop diff$prop domain$prop finseqs$prop))
 
 (defthm type-10
@@ -354,7 +366,6 @@
                 (hpp y hta)
                 (equal (cdr y) '(:list (:hash :num :num))))
            (< 0 (domain (car y))))
-  :hints (("Goal" :in-theory (enable HOL-TYPE-EVAL)))
   :props (zfc prod2$prop inverse$prop diff$prop domain$prop finseqs$prop))
 
 ; Here are more lemmas in support of ../examples/eval-poly-proof.lisp,
@@ -369,7 +380,6 @@
                        (typ (:list (:hash :num :num)))))
            (subset (image (car x))
                    (prod2 (omega) (omega))))
-  :hints (("Goal" :in-theory (enable hpp hp-cons hol-valuep hol-type-eval)))
   :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop diff$prop))
 
 (defthmz car-finseq-to-list-car
@@ -408,34 +418,32 @@
          (cdr (car v)))
   :hints (("Goal" :in-theory (enable hp-hash-cdr))))
 
-(in-theory (disable hpp))
-
 (defthmz natp-car-from-hpp
-  (implies (and (hpp v hta)
-                (alist-subsetp (hta0) hta)
+  (implies (and (alist-subsetp (hta0) hta)
+                (hpp v hta)
                 (equal (hp-type v) (typ :num)))
            (natp (car v)))
   :rule-classes :forward-chaining)
 
 (defthmz natp-cdr-car-hp-list-car
-  (implies (and (hpp x hta)
-                (alist-subsetp (hta0) hta)
+  (implies (and (alist-subsetp (hta0) hta)
+                (hpp x hta)
                 (equal (cdr x) ; (hp-type x)
                        (typ (:list (:hash :num :num))))
                 (not (equal x '(0 :list (:hash :num :num)))))
            (natp (cdr (car (hp-list-car x)))))
-  :hints (("Goal" :in-theory (enable hp-list-car hpp hol-valuep hol-type-eval)))
+  :hints (("Goal" :in-theory (enable hp-list-car)))
   :rule-classes :forward-chaining
   :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop diff$prop))
 
 (defthmz natp-car-car-hp-list-car
-  (implies (and (hpp x hta)
-                (alist-subsetp (hta0) hta)
+  (implies (and (alist-subsetp (hta0) hta)
+                (hpp x hta)
                 (equal (cdr x) ; (hp-type x)
                        (typ (:list (:hash :num :num))))
                 (not (equal x '(0 :list (:hash :num :num)))))
            (natp (car (car (hp-list-car x)))))
-  :hints (("Goal" :in-theory (enable hp-list-car hpp hol-valuep hol-type-eval)))
+  :hints (("Goal" :in-theory (enable hp-list-car)))
   :rule-classes :forward-chaining
   :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop diff$prop))
 
@@ -449,8 +457,7 @@
                 (force (hp-cons-p x))
                 (force (equal (hp-type x) (typ (:list (:hash :num :num))))))
            (consp (car (hp-list-car x))))
-  :hints (("Goal" :in-theory (enable hp-list-car hpp hol-valuep
-                                     hol-type-eval)))
+  :hints (("Goal" :in-theory (enable hp-list-car)))
   :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop diff$prop))
 
 (in-theory (disable (:e hp-hash-car) (:e hp-hash-cdr)
@@ -461,22 +468,6 @@
   (implies (natp n)
            (natp (union2 n (pair n n))))
   :hints (("Goal" :use n+1-as-union2)))
-
-(defthmz image-union2-1-1
-  (implies (in a (image (union2 x y)))
-           (in a (union2 (image x) (image y))))
-  :hints (("Goal"
-           :in-theory (disable in-image-necc)
-           :use ((:instance in-image-necc
-                            (x a)
-                            (f (union2 x y))))))
-  :props (zfc domain$prop prod2$prop inverse$prop))
-
-(defthmz image-union2-1
-  (subset (image (union2 x y))
-          (union2 (image x) (image y)))
-  :hints (("Goal" :in-theory (enable subset)))
-  :props (zfc domain$prop prod2$prop inverse$prop))
 
 (defthmz domain-monotone-1
   (implies (and (subset x y)
@@ -504,12 +495,6 @@
   (implies (subset x y)
            (subset (image x) (image y)))
   :hints (("Goal" :in-theory (e/d (image) (domain-inverse))))
-  :props (zfc domain$prop prod2$prop inverse$prop))
-
-(defthmz image-union2
-  (equal (image (union2 x y))
-         (union2 (image x) (image y)))
-  :hints (("Goal" :in-theory (enable extensionality-rewrite)))
   :props (zfc domain$prop prod2$prop inverse$prop))
 
 (defthmz image-pair-1
@@ -541,8 +526,6 @@
                               (pair (cons (domain y-val) x-val)
                                     (cons (domain y-val) x-val)))
                       (hol-type-eval y-typ hta)))
-         :hints (("Goal"
-                  :expand ((hol-type-eval (list :list x-typ) hta))))
          :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop)))
 
 (defthmz hpp-hp-cons
@@ -551,7 +534,7 @@
                 (equal (hp-type y)
                        (list :list (hp-type x))))
            (hpp (hp-cons x y) hta))
-  :hints (("Goal" :in-theory (enable hpp hp-cons hol-valuep)))
+  :hints (("Goal" :in-theory (enable hp-cons)))
   :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop))
 )
 
@@ -568,7 +551,8 @@
   :hints (("Goal" :in-theory (enable hp-cons))))
 
 (defthmdz hp-list-car-open
-  (implies (and (hpp x hta)
+  (implies (and (bind-free '((hta . hta)))
+                (hpp x hta)
                 (not (equal (hp-value x) 0))
                 (equal (cdr x)
                        '(:list (:hash :num :num))))
@@ -588,7 +572,7 @@
   (implies (alist-subsetp (hta0) hta)
            (equal (hpp (cons x :bool) hta)
                   (booleanp x)))
-  :hints (("Goal" :in-theory (enable hpp hol-valuep hol-type-eval hta0))))
+  :hints (("Goal" :in-theory (enable hol-type-eval hta0))))
 
 ; Start proof of finseq-to-list-insert.
 
@@ -644,10 +628,8 @@
                                           fn))
                   (cons x
                         (finseq-to-list fn))))
-  :hints (("Goal"
-           :do-not-induct t
-           :expand ((finseq-to-list (insert (cons (domain fn) x)
-                                            fn)))))
+  :hints (("Goal" :expand ((finseq-to-list (insert (cons (domain fn) x)
+                                                   fn)))))
     :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop diff$prop
                 restrict$prop))
 
@@ -666,7 +648,6 @@
            (hpp (cons (apply (car x) n)
                       element-type)
                 hta))
-  :hints (("Goal" :in-theory (enable hpp hol-valuep hol-type-eval)))
   :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop))
 
 (defthmz nonempty-list-has-posp-domain
@@ -674,9 +655,6 @@
                 (hp-list-typep (hp-type x))
                 (not (equal (car x) 0)))
            (natp (1- (domain (car x)))))
-  :hints (("Goal"
-           :expand ((hol-typep (cdr x) hta))
-           :in-theory (enable hpp hol-valuep hol-typep hol-type-eval)))
   :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop))
 
 (defthmz hpp-hp-cons-hp-comma
@@ -690,8 +668,6 @@
            (hpp (hp-cons (hp-comma m n)
                          x)
                 hta))
-  :hints (("Goal"
-           :in-theory (enable hpp hol-valuep hol-typep hol-type-eval)))
   :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop))
 
 (defthm cdr-hp-hash-cdr-cons
@@ -713,8 +689,6 @@
            (hpp (hp-hash-cdr (cons (apply (car x) (+ -1 (domain (car x))))
                                    '(:hash :num :num)))
                 hta))
-  :hints (("Goal" :in-theory (enable hpp hol-valuep hol-typep hol-type-eval
-                                     hp-hash-cdr)))
   :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop))
 
 (defthmz natp-cdr-apply-for-finseq
@@ -748,7 +722,8 @@
                            (hp-list-cdr y))
                   y))
   :hints (("Goal"
-           :in-theory (enable hp-list-car-open)
+           :in-theory (e/d (hp-list-car-open)
+                           (hp-cons-hp-list-car-hp-list-cdr))
            :use ((:instance hp-cons-hp-list-car-hp-list-cdr
                             (x y)))))
   :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop diff$prop
@@ -763,3 +738,21 @@
 
 ; End of lemmas developed in support of ../examples/eval-poly-proof.lisp (see
 ; comment above about this).
+
+; Lemmas developed while cleaning up ../examples/ex1-proof.lisp
+
+(defthm hol-typep-hash
+  (implies (equal (car type) :hash)
+           (equal (hol-typep type hta)
+                  (and (true-listp type)
+                       (equal (len type) 3)
+                       (hol-typep (cadr type) hta)
+                       (hol-typep (caddr type) hta))))
+  :hints (("Goal" :in-theory (enable hol-typep))))
+
+(defthm cdr-hp-comma
+  (equal (cdr (hp-comma x y))
+         (list :hash (hp-type x) (hp-type y)))
+  :hints (("Goal" :in-theory (enable hp-comma))))
+
+; End of lemmas developed while cleaning up ../examples/ex1-proof.lisp

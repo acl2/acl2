@@ -369,3 +369,89 @@
   :hints (("Goal"
            :in-theory (enable subset in-natp extensionality-rewrite)))
   :props (zfc diff$prop))
+
+; The following were developed in support of
+; topology/finite-intersection-closure.lisp.
+
+(defthmz relation-p-diff
+  (implies (relation-p f)
+           (relation-p (diff f x)))
+  :hints (("Goal" :expand ((relation-p (diff f x)))))
+  :props (zfc diff$prop))
+
+(defthmz funp-diff
+  (implies (funp f)
+           (funp (diff f x)))
+  :hints (("Goal" :expand ((funp (diff f x)))))
+  :props (zfc diff$prop))
+
+(defthmz diff-preserves-subset
+  (implies (subset x y)
+           (subset (diff x z) y))
+  :hints (("Goal" :expand ((subset (diff x z) y))))
+  :props (zfc diff$prop))
+
+(encapsulate
+  ()
+
+  (local (defthmz domain-diff-1-1-1
+           (implies (and (funp f1)
+                         (subset f2 f1)
+                         (in (cons x y1) f1)
+                         (in (cons x y2) f2))
+                    (equal y1 y2))
+           :hints (("Goal"
+                    :in-theory (disable funp-necc)
+                    :use ((:instance funp-necc
+                                     (f f1)
+                                     (p1 (cons x y1))
+                                     (p2 (cons x y2))))))
+           :rule-classes :forward-chaining))
+
+  (defthmz domain-diff-1-1
+    (implies (and (in x (domain (diff f1 f2)))
+                  (funp f1)
+                  (subset f2 f1))
+             (not (in x (domain f2))))
+    :hints (("Goal"
+             :in-theory (e/d (in-domain-rewrite)
+                             (in-cons-apply apply-default))))
+    :props (zfc diff$prop domain$prop)))
+
+(defthmz domain-diff-1
+  (implies (and (funp f1)
+                (subset f2 f1))
+           (subset (domain (diff f1 f2))
+                   (diff (domain f1) (domain f2))))
+  :hints (("Goal" :expand ((subset (domain (diff f1 f2))
+                                   (diff (domain f1) (domain f2))))))
+  :props (zfc diff$prop domain$prop))
+
+(defthmz domain-diff-2-1
+  (implies (and (funp f1)
+                (subset f2 f1)
+                (in x (diff (domain f1) (domain f2))))
+           (in x (domain (diff f1 f2))))
+  :hints (("Goal"
+           :use ((:instance in-car-domain-alt
+                            (p (cons x (apply f1 x)))
+                            (x x)
+                            (r (diff f1 f2))))))
+  :props (zfc diff$prop domain$prop))
+
+(defthmz domain-diff-2
+  (implies (and (funp f1)
+                (subset f2 f1))
+           (subset (diff (domain f1) (domain f2))
+                   (domain (diff f1 f2))))
+  :hints (("Goal" :expand ((subset (diff (domain f1) (domain f2))
+                                   (domain (diff f1 f2))))))
+  :props (zfc diff$prop domain$prop))
+
+(defthmz domain-diff
+  (implies (and (funp f1)
+                (subset f2 f1))
+           (equal (domain (diff f1 f2))
+                  (diff (domain f1) (domain f2))))
+  :hints (("Goal" :in-theory (enable extensionality)))
+  :props (zfc diff$prop domain$prop))

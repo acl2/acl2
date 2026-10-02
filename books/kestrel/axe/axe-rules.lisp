@@ -449,21 +449,8 @@
            (let* ((new-bound-vars (bound-vars-after-hyp bound-vars hyp)))
              (bound-vars-suitable-for-hypsp new-bound-vars (rest hyps)))))))
 
-(defthm bound-vars-suitable-for-hypsp-when-axe-sytaxp-car
+(defthm bound-vars-suitable-for-hypsp-when-axe-syntaxp-car
   (implies (equal :axe-syntaxp (car (car hyps)))
-           (equal (bound-vars-suitable-for-hypsp bound-vars hyps)
-                  (and (subsetp-equal (free-vars-in-term (cdr (car hyps))) bound-vars)
-                       (bound-vars-suitable-for-hypsp bound-vars (cdr hyps)))))
-  :hints (("Goal" :in-theory (enable bound-vars-suitable-for-hypp
-                                     bound-vars-after-hyp
-                                     bound-vars-suitable-for-hypsp))))
-
-;todo: rename and simplify?  or combine with the above?
-(defthm bound-vars-suitable-for-hypsp-when-normal
-  (implies (and (equal :axe-syntaxp (car (car hyps)))
-                (not (equal :axe-bind-free (car (car hyps))))
-                (not (equal :free-vars (car (car hyps))))
-                (not (equal :axe-binding-hyp (car (car hyps)))))
            (equal (bound-vars-suitable-for-hypsp bound-vars hyps)
                   (and (subsetp-equal (free-vars-in-term (cdr (car hyps))) bound-vars)
                        (bound-vars-suitable-for-hypsp bound-vars (cdr hyps)))))

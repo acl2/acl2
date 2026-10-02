@@ -1,6 +1,6 @@
 ; Rules about mod when the modulus is prime
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -63,3 +63,14 @@
                   (or (equal i 0) ;odd case where we get 1
                       (< 0 (mod a n)))))
   :hints (("Goal" :in-theory (enable expt))))
+
+;; If a prime is a multiple of another prime, they are equal.
+;; Disabled to avoid bringing consideration of primep into unrelated proofs.
+(defthmd equal-of-0-and-mod-when-primep-and-primep
+  (implies (and (dm::primep p1)
+                (dm::primep p2))
+           (equal (equal 0 (mod p1 p2))
+                  (equal p1 p2)))
+  :hints (("Goal"
+           :use ((:instance dm::primep-no-divisor (dm::p p1) (dm::d p2)))
+           :in-theory (enable dm::divides equal-of-0-and-mod))))

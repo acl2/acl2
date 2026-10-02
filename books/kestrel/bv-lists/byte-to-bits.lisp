@@ -1,7 +1,7 @@
 ; BV Lists Library: byte-to-bits
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 
 (include-book "../bv/getbit")
 (include-book "all-unsigned-byte-p")
+(include-book "unsigned-byte-listp-def")
 (local (include-book "../lists-light/nth"))
 
 ;; Convert a byte into a list of 8 bits. The most significant bit comes first,
@@ -35,6 +36,11 @@
   (implies (posp size)
            (all-unsigned-byte-p size (byte-to-bits byte)))
   :hints (("Goal" :in-theory (enable byte-to-bits))))
+
+(defthm unsigned-byte-p-listp-of-byte-to-bits
+  (implies (posp size)
+           (unsigned-byte-listp size (byte-to-bits byte)))
+  :hints (("Goal" :in-theory (enable byte-to-bits unsigned-byte-listp))))
 
 (defthm all-integerp-of-byte-to-bits
   (all-integerp (byte-to-bits byte))

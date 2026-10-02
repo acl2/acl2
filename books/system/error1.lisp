@@ -23,6 +23,8 @@
 (verify-termination state-p+) ; and guards
 (verify-termination error1) ; and guards
 (verify-termination error1-safe) ; and guards
+; The following depends on error1-state-p (in the guard).
+(verify-termination defevaluator-check) ; and guards
 
 ; Examples:
 

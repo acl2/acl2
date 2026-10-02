@@ -95,7 +95,7 @@
                               (arg2 exprp)
                               (arg2-new exprp)
                               (arg2-thm-name symbolp)
-                              (info expr-binary-infop)
+                              (info type-vinfop)
                               (gin ginp))
   :guard (and (expr-unambp arg1)
               (expr-annop arg1)
@@ -214,7 +214,7 @@
     (expr-annop expr)
     :hyp (and (expr-annop arg1-new)
               (expr-annop arg2-new)
-              (expr-binary-infop info)))
+              (type-vinfop info)))
 
   (defret expr-aidentp-of-simpadd0-expr-binary
     (expr-aidentp expr gcc)
@@ -344,14 +344,16 @@
              (simpadd0-expr expr.arg gin))
             (gin (gin-update gin gout-arg)))
          (mv (make-expr-member :arg new-arg
-                               :name expr.name)
+                               :name expr.name
+                               :info expr.info)
              (gout-no-thm gin)))
        :memberp
        (b* (((mv new-arg (gout gout-arg))
              (simpadd0-expr expr.arg gin))
             (gin (gin-update gin gout-arg)))
          (mv (make-expr-memberp :arg new-arg
-                                :name expr.name)
+                                :name expr.name
+                                :info expr.info)
              (gout-no-thm gin)))
        :complit
        (b* (((mv new-type (gout gout-type))
@@ -362,7 +364,8 @@
             (gin (gin-update gin gout-elems)))
          (mv (make-expr-complit :type new-type
                                 :elems new-elems
-                                :final-comma expr.final-comma)
+                                :final-comma expr.final-comma
+                                :info expr.info)
              (gout-no-thm gin)))
        :unary
        (b* (((mv new-arg (gout gout-arg))
@@ -547,10 +550,11 @@
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a constant expression."
     (b* (((gin gin) gin)
+         ((const-expr cexpr) cexpr)
          ((mv new-expr (gout gout-expr))
-          (simpadd0-expr (const-expr->expr cexpr) gin))
+          (simpadd0-expr cexpr.expr gin))
          (gin (gin-update gin gout-expr)))
-      (mv (const-expr new-expr)
+      (mv (make-const-expr :expr new-expr :info cexpr.info)
           (gout-no-thm gin)))
     :measure (const-expr-count cexpr))
 
@@ -689,12 +693,14 @@
        :struct (b* (((mv new-spec (gout gout-spec))
                      (simpadd0-struni-spec tyspec.spec gin))
                     (gin (gin-update gin gout-spec)))
-                 (mv (type-spec-struct new-spec)
+                 (mv (c$::make-type-spec-struct :spec new-spec
+                                                :info tyspec.info)
                      (gout-no-thm gin)))
        :union (b* (((mv new-spec (gout gout-spec))
                     (simpadd0-struni-spec tyspec.spec gin))
                    (gin (gin-update gin gout-spec)))
-                (mv (type-spec-union new-spec)
+                (mv (c$::make-type-spec-union :spec new-spec
+                                              :info tyspec.info)
                     (gout-no-thm gin)))
        :enum (b* (((mv new-spec (gout gout-spec))
                    (simpadd0-enum-spec tyspec.spec gin))
@@ -923,7 +929,8 @@
           (simpadd0-initer desiniter.initer gin))
          (gin (gin-update gin gout-initer)))
       (mv (make-desiniter :designors new-designors
-                          :initer new-initer)
+                          :initer new-initer
+                          :info desiniter.info)
           (gout-no-thm gin)))
     :measure (desiniter-count desiniter))
 
@@ -1319,7 +1326,8 @@
          (gin (gin-update gin gout-declor)))
       (mv (make-param-declon :specs new-specs
                              :declor new-declor
-                             :attribs paramdeclon.attribs)
+                             :attribs paramdeclon.attribs
+                             :info paramdeclon.info)
           (change-gout (gout-no-thm gin)
                        :vartys gout-declor.vartys)))
     :measure (param-declon-count paramdeclon))
@@ -1377,7 +1385,7 @@
        (b* (((mv new-declor & (gout gout-declor))
              (simpadd0-declor paramdeclor.declor nil gin))
             (gin (gin-update gin gout-declor))
-            (type (param-declor-nonabstract-info->type paramdeclor.info))
+            (type (type+uid-vinfo->type paramdeclor.info))
             (ident (declor->ident paramdeclor.declor))
             (post-vartys
              (if (and (ident-formalp ident)
@@ -1396,9 +1404,11 @@
        :abstract (b* (((mv new-absdeclor (gout gout-absdeclor))
                        (simpadd0-absdeclor paramdeclor.declor gin))
                       (gin (gin-update gin gout-absdeclor)))
-                   (mv (param-declor-abstract new-absdeclor)
+                   (mv (make-param-declor-abstract
+                        :declor new-absdeclor
+                        :info paramdeclor.info)
                        (gout-no-thm gin)))
-       :none (mv (param-declor-none) (gout-no-thm gin))
+       :none (mv (param-declor-none paramdeclor.info) (gout-no-thm gin))
        :ambig (prog2$ (impossible) (mv (irr-param-declor) (irr-gout)))))
     :measure (param-declor-count paramdeclor))
 
@@ -1521,7 +1531,8 @@
           (simpadd0-const-expr-option structdeclor.expr? gin))
          (gin (gin-update gin gout-expr?)))
       (mv (make-struct-declor :declor? new-declor?
-                              :expr? new-expr?)
+                              :expr? new-expr?
+                              :info structdeclor.info)
           (gout-no-thm gin)))
     :measure (struct-declor-count structdeclor))
 
@@ -1655,10 +1666,10 @@
                                   (change-gin
                                    gin :vartys gout-declor.vartys)))
          ((gin gin) (gin-update gin gout-initer?))
-         (type (init-declor-info->type initdeclor.info))
+         (type (init-declor-vinfo->type initdeclor.info))
          (ident (declor->ident initdeclor.declor))
          (post-vartys
-          (if (and (not (init-declor-info->typedefp initdeclor.info))
+          (if (and (not (init-declor-vinfo->typedefp initdeclor.info))
                    (ident-formalp ident)
                    (type-formalp type)
                    (not (type-case type :void))
@@ -1704,8 +1715,8 @@
          (gin (gin-update gin gout-initdeclor))
          ((mv new-initdeclors (gout gout-initdeclors))
           (simpadd0-init-declor-list (cdr initdeclors)
-                                    (change-gin
-                                     gin :vartys gout-initdeclor.vartys)))
+                                     (change-gin
+                                      gin :vartys gout-initdeclor.vartys)))
          ((gin gin) (gin-update gin gout-initdeclors)))
       (mv (cons new-initdeclor new-initdeclors)
           (if (and (not (consp new-initdeclors))
@@ -1775,8 +1786,8 @@
          (gin (gin-update gin gout-declon))
          ((mv new-declons (gout gout-declons))
           (simpadd0-declon-list (cdr declons)
-                              (change-gin
-                               gin :vartys gout-declon.vartys)))
+                                (change-gin
+                                 gin :vartys gout-declon.vartys)))
          (gin (gin-update gin gout-declons)))
       (mv (cons new-declon new-declons)
           (change-gout (gout-no-thm gin)
@@ -2948,7 +2959,7 @@
        ((mv new-declor & (gout gout-declor))
         (simpadd0-declor fundef.declor t gin))
        (gin (gin-update gin gout-declor))
-       (type (fundef-info->type fundef.info))
+       (type (type+uid-vinfo->type fundef.info))
        (ident (declor->ident fundef.declor))
        (vartys-with-fun (if (and (ident-formalp ident)
                                  (type-formalp type)
@@ -3127,59 +3138,59 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-transunit ((tunit transunitp) (gin ginp))
-  :guard (and (transunit-unambp tunit)
-              (transunit-annop tunit))
-  :returns (mv (new-tunit transunitp)
+(define simpadd0-trans-unit ((tunit trans-unitp) (gin ginp))
+  :guard (and (trans-unit-unambp tunit)
+              (trans-unit-annop tunit))
+  :returns (mv (new-tunit trans-unitp)
                (gout goutp))
   :short "Transform a translation unit."
   :long
   (xdoc::topstring
    (xdoc::p
     "The @('gin') passed as input has @('vartys') set to @('nil')
-     (see @(tsee simpadd0-filepath-transunit-map)),
+     (see @(tsee simpadd0-filepath-trans-unit-map)),
      but the theorem index and the list of events
      may be the result of transforming previous translation units.")
    (xdoc::p
     "We generate a comment at the beginning of the translation unit
      that says that the file was generated by this transformation."))
   (b* (((gin gin) gin)
-       ((transunit tunit) tunit)
+       ((trans-unit tunit) tunit)
        ((mv new-items (gout gout-decls))
         (simpadd0-trans-item-list tunit.items gin))
        (gin (gin-update gin gout-decls))
        (comment (acl2::string=>nats "This file is generated by 'simpadd0'."))
        (items (cons (trans-item-line-comment comment) new-items)))
-    (mv  (make-transunit :items items
-                         :info tunit.info)
+    (mv  (make-trans-unit :items items
+                          :info tunit.info)
          (gout-no-thm gin)))
   :hooks (:fix)
 
   ///
 
-  (defret transunit-unambp-of-simpadd0-transunit
-    (transunit-unambp new-tunit)
-    :hyp (transunit-unambp tunit))
+  (defret trans-unit-unambp-of-simpadd0-trans-unit
+    (trans-unit-unambp new-tunit)
+    :hyp (trans-unit-unambp tunit))
 
-  (defret transunit-annop-of-simpadd0-transunit
-    (transunit-annop new-tunit)
-    :hyp (and (transunit-unambp tunit)
-              (transunit-annop tunit)))
+  (defret trans-unit-annop-of-simpadd0-trans-unit
+    (trans-unit-annop new-tunit)
+    :hyp (and (trans-unit-unambp tunit)
+              (trans-unit-annop tunit)))
 
-  (defret transunit-aidentp-of-simpadd0-transunit
-    (transunit-aidentp new-tunit gcc)
-    :hyp (and (transunit-unambp tunit)
-              (transunit-aidentp tunit gcc))
+  (defret trans-unit-aidentp-of-simpadd0-trans-unit
+    (trans-unit-aidentp new-tunit gcc)
+    :hyp (and (trans-unit-unambp tunit)
+              (trans-unit-aidentp tunit gcc))
     :hints (("Goal" :in-theory (enable trans-item-aidentp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-filepath-transunit-map ((map filepath-transunit-mapp)
-                                         (gin ginp))
-  :guard (and (filepath-transunit-map-unambp map)
-              (filepath-transunit-map-annop map))
-  :returns (mv (new-map filepath-transunit-mapp
-                        :hyp (filepath-transunit-mapp map))
+(define simpadd0-filepath-trans-unit-map ((map filepath-trans-unit-mapp)
+                                          (gin ginp))
+  :guard (and (filepath-trans-unit-map-unambp map)
+              (filepath-trans-unit-map-annop map))
+  :returns (mv (new-map filepath-trans-unit-mapp
+                        :hyp (filepath-trans-unit-mapp map))
                (gout goutp))
   :short "Transform a map from file paths to translation units."
   :long
@@ -3198,11 +3209,11 @@
         (mv nil (gout-no-thm gin)))
        ((mv path tunit) (omap::head map))
        ((mv new-tunit (gout gout-tunit))
-        (simpadd0-transunit tunit gin))
+        (simpadd0-trans-unit tunit gin))
        (gin (gin-update gin gout-tunit))
        (gin (change-gin gin :vartys nil))
        ((mv new-map (gout gout-map))
-        (simpadd0-filepath-transunit-map (omap::tail map) gin))
+        (simpadd0-filepath-trans-unit-map (omap::tail map) gin))
        (gin (gin-update gin gout-map)))
     (mv (omap::update path new-tunit new-map)
         (gout-no-thm gin)))
@@ -3210,63 +3221,63 @@
 
   ///
 
-  (fty::deffixequiv simpadd0-filepath-transunit-map
+  (fty::deffixequiv simpadd0-filepath-trans-unit-map
     :args ((gin ginp)))
 
-  (defret filepath-transunit-map-unambp-of-simpadd0-filepath-transunit-map
-    (filepath-transunit-map-unambp new-map)
-    :hyp (and (filepath-transunit-mapp map)
-              (filepath-transunit-map-unambp map))
+  (defret filepath-trans-unit-map-unambp-of-simpadd0-filepath-trans-unit-map
+    (filepath-trans-unit-map-unambp new-map)
+    :hyp (and (filepath-trans-unit-mapp map)
+              (filepath-trans-unit-map-unambp map))
     :hints (("Goal" :induct t)))
 
-  (defret filepath-transunit-map-annop-of-simpadd0-filepath-transunit-map
-    (filepath-transunit-map-annop new-map)
-    :hyp (and (filepath-transunit-mapp map)
-              (filepath-transunit-map-unambp map)
-              (filepath-transunit-map-annop map))
+  (defret filepath-trans-unit-map-annop-of-simpadd0-filepath-trans-unit-map
+    (filepath-trans-unit-map-annop new-map)
+    :hyp (and (filepath-trans-unit-mapp map)
+              (filepath-trans-unit-map-unambp map)
+              (filepath-trans-unit-map-annop map))
     :hints (("Goal" :induct t)))
 
-  (defret filepath-transunit-map-aidentp-of-simpadd0-filepath-transunit-map
-    (filepath-transunit-map-aidentp new-map gcc)
-    :hyp (and (filepath-transunit-mapp map)
-              (filepath-transunit-map-unambp map)
-              (filepath-transunit-map-aidentp map gcc))
+  (defret filepath-trans-unit-map-aidentp-of-simpadd0-filepath-trans-unit-map
+    (filepath-trans-unit-map-aidentp new-map gcc)
+    :hyp (and (filepath-trans-unit-mapp map)
+              (filepath-trans-unit-map-unambp map)
+              (filepath-trans-unit-map-aidentp map gcc))
     :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-transunit-ensemble ((tunits transunit-ensemblep)
-                                     (gin ginp))
-  :guard (and (transunit-ensemble-unambp tunits)
-              (transunit-ensemble-annop tunits))
-  :returns (mv (new-tunits transunit-ensemblep)
+(define simpadd0-trans-ensemble ((tunits trans-ensemblep)
+                                 (gin ginp))
+  :guard (and (trans-ensemble-unambp tunits)
+              (trans-ensemble-annop tunits))
+  :returns (mv (new-tunits trans-ensemblep)
                (gout goutp))
-  :short "Transform a translation unit ensemble."
-  (b* (((transunit-ensemble tunits) tunits)
+  :short "Transform a translation ensemble."
+  (b* (((trans-ensemble tunits) tunits)
        ((mv new-map (gout gout-map))
-        (simpadd0-filepath-transunit-map tunits.units gin))
+        (simpadd0-filepath-trans-unit-map tunits.units gin))
        (gin (gin-update gin gout-map)))
-    (mv (c$::change-transunit-ensemble
-          tunits
-          :units new-map)
+    (mv (c$::change-trans-ensemble
+         tunits
+         :units new-map)
         (gout-no-thm gin)))
   :hooks (:fix)
 
   ///
 
-  (defret transunit-ensemble-unambp-of-simpadd0-transunit-ensemble
-    (transunit-ensemble-unambp new-tunits)
-    :hyp (transunit-ensemble-unambp tunits))
+  (defret trans-ensemble-unambp-of-simpadd0-trans-ensemble
+    (trans-ensemble-unambp new-tunits)
+    :hyp (trans-ensemble-unambp tunits))
 
-  (defret transunit-ensemble-annop-of-simpadd0-transunit-ensemble
-    (transunit-ensemble-annop new-tunits)
-    :hyp (and (transunit-ensemble-unambp tunits)
-              (transunit-ensemble-annop tunits)))
+  (defret trans-ensemble-annop-of-simpadd0-trans-ensemble
+    (trans-ensemble-annop new-tunits)
+    :hyp (and (trans-ensemble-unambp tunits)
+              (trans-ensemble-annop tunits)))
 
-  (defret transunit-ensemble-aidentp-of-simpadd0-transunit-ensemble
-    (transunit-ensemble-aidentp new-tunits gcc)
-    :hyp (and (transunit-ensemble-unambp tunits)
-              (transunit-ensemble-aidentp tunits gcc))))
+  (defret trans-ensemble-aidentp-of-simpadd0-trans-ensemble
+    (trans-ensemble-aidentp new-tunits gcc)
+    :hyp (and (trans-ensemble-unambp tunits)
+              (trans-ensemble-aidentp tunits gcc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3279,8 +3290,8 @@
   :short "Transform a code ensemble."
   (b* (((code-ensemble code) code)
        ((mv tunits-new (gout gout))
-        (simpadd0-transunit-ensemble code.transunits gin)))
-    (mv (change-code-ensemble code :transunits tunits-new) gout))
+        (simpadd0-trans-ensemble code.trans-units gin)))
+    (mv (change-code-ensemble code :trans-units tunits-new) gout))
   :hooks (:fix)
 
   ///
@@ -3307,14 +3318,14 @@
   :guard (and (code-ensemble-unambp code-old)
               (code-ensemble-annop code-old))
   :returns (mv erp (event pseudo-event-formp))
-  :short "Event expansion of the transformation."
+  :short "Generate the new code ensemble and accompanying theorems."
   :long
   (xdoc::topstring
    (xdoc::p
     "The @('vartys') component of @(tsee gin)
      is initialized to @('nil') here,
      and it applies to the first translation unit (if any):
-     see @(tsee simpadd0-filepath-transunit-map)."))
+     see @(tsee simpadd0-filepath-trans-unit-map)."))
   (b* (((reterr) '(_))
        (gin (make-gin :ienv (code-ensemble->ienv code-old)
                       :const-new const-new

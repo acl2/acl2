@@ -40,12 +40,12 @@
 (defun fileset-map-to-string-map (fileset-map)
   (b* (((when (omap::emptyp fileset-map)) nil)
        ((mv filepath filedata) (omap::head fileset-map)))
-    (omap::update (filepath->unwrap filepath)
-                  (acl2::nats=>string (filedata->unwrap filedata))
+    (omap::update (filepath->string filepath)
+                  (acl2::nats=>string (filedata->bytes filedata))
                   (fileset-map-to-string-map (omap::tail fileset-map)))))
 
 (defun fileset-to-string-map (fileset)
-  (fileset-map-to-string-map (fileset->unwrap fileset)))
+  (fileset-map-to-string-map (fileset->files fileset)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -58,24 +58,24 @@
                         full-expansion
                         (keep-comments 't)
                         (trace-expansion 't)
-                        version
+                        dialect
                         expected)
   `(assert!-stobj
-    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
+    (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
          (files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
          (options (make-ppoptions :full-expansion ,full-expansion
                                   :keep-comments ,keep-comments
                                   :trace-expansion ,trace-expansion
-                                  :no-errors/warnings nil))
-         (ienv (change-ienv (ienv-default) :version version))
-         ((mv erp fileset state) (preprocess files
-                                             base-dir
-                                             include-dirs
-                                             options
-                                             ienv
-                                             state)))
+                                  :no-warnings nil))
+         (ienv (change-ienv (ienv-default) :dialect dialect))
+         ((mv erp fileset & state) (preprocess files
+                                               base-dir
+                                               include-dirs
+                                               options
+                                               ienv
+                                               state)))
       (mv (if erp
               (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
             (or (equal fileset ,expected)
@@ -96,14 +96,14 @@
                           full-expansion
                           (keep-comments 't)
                           (trace-expansion 't)
-                          version)
+                          dialect)
   `(test-preproc '(,file)
                  :base-dir ,base-dir
                  :include-dirs ,include-dirs
                  :full-expansion ,full-expansion
                  :keep-comments ,keep-comments
                  :trace-expansion ,trace-expansion
-                 :version ,version
+                 :dialect ,dialect
                  :expected (fileset-of ,file ,expected)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -116,23 +116,23 @@
                               full-expansion
                               (keep-comments 't)
                               (trace-expansion 't)
-                              version)
+                              dialect)
   `(assert!-stobj
-    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
+    (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
          (files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
          (options (make-ppoptions :full-expansion ,full-expansion
                                   :keep-comments ,keep-comments
                                   :trace-expansion ,trace-expansion
-                                  :no-errors/warnings nil))
-         (ienv (change-ienv (ienv-default) :version version))
-         ((mv erp fileset state) (preprocess files
-                                             base-dir
-                                             include-dirs
-                                             options
-                                             ienv
-                                             state))
+                                  :no-warnings nil))
+         (ienv (change-ienv (ienv-default) :dialect dialect))
+         ((mv erp fileset & state) (preprocess files
+                                               base-dir
+                                               include-dirs
+                                               options
+                                               ienv
+                                               state))
          (- (if erp
                 (cw "~@0" erp)
               (cw "Result:~%~x0" (fileset-to-string-map fileset)))))
@@ -150,23 +150,32 @@
                           full-expansion
                           (keep-comments 't)
                           (trace-expansion 't)
-                          version)
+                          dialect)
   `(show-preproc '(,file)
                  :base-dir ,base-dir
                  :include-dirs ,include-dirs
                  :full-expansion ,full-expansion
                  :keep-comments ,keep-comments
                  :trace-expansion ,trace-expansion
-                 :version ,version))
+                 :dialect ,dialect))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Check directive-preserving expansion against full expansion.
 
+(defun strip-provenance (lexemes)
+  (b* (((when (endp lexemes)) nil)
+       (lexeme (car lexemes))
+       (lexeme (if (plexeme-case lexeme :ident)
+                   (change-plexeme-ident lexeme :provenance nil)
+                 lexeme))
+       (lexemes (strip-provenance (cdr lexemes))))
+    (cons lexeme lexemes)))
+
 (defun ppart-to-tokens (part)
   (ppart-case
    part
-   :line (plexemes-without-nontokens part.lexemes)
+   :line (strip-provenance (plexemes-without-nontokens part.lexemes))
    :cond (er hard? 'ppart-to-tokens "Found conditional section ~x0." part)))
 
 (defun ppart-list-to-tokens (parts)
@@ -200,15 +209,15 @@
 (defun filemap-relativize-absolute-paths (filemap)
   (b* (((when (omap::emptyp filemap)) nil)
        ((mv path data) (omap::head filemap))
-       (new-path (if (path-absolutep (filepath->unwrap path))
-                     (filepath (subseq (filepath->unwrap path) 1 nil))
+       (new-path (if (path-absolutep (filepath->string path))
+                     (filepath (subseq (filepath->string path) 1 nil))
                    path))
        (new-filemap-tail
         (filemap-relativize-absolute-paths (omap::tail filemap))))
     (omap::update new-path data new-filemap-tail)))
 
 (defun fileset-relativize-absolute-paths (fileset)
-  (fileset (filemap-relativize-absolute-paths (fileset->unwrap fileset))))
+  (fileset (filemap-relativize-absolute-paths (fileset->files fileset))))
 
 (defun relativize-include-dirs (dirs dir)
   (cond ((endp dirs) nil)
@@ -222,10 +231,10 @@
                                 (out-dir-prefix '"tmp") ; relative to base-dir
                                 (keep-comments 't)
                                 (trace-expansion 't)
-                                version)
+                                dialect)
   `(assert!-stobj
     (b* (;; Setup.
-         (version (or ,version (c::make-version :std (c::standard-c17))))
+         (dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
          (files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
@@ -233,17 +242,17 @@
          (out-dir-initial (str::cat base-dir "/" out-dir-prefix "-initial"))
          (out-dir-original (str::cat base-dir "/" out-dir-prefix "-original"))
          (out-dir-transformed (str::cat base-dir "/" out-dir-prefix "-transformed"))
-         (ienv (change-ienv (ienv-default) :version version))
+         (ienv (change-ienv (ienv-default) :dialect dialect))
          (options-preserve (make-ppoptions :full-expansion nil
                                            :keep-comments ,keep-comments
                                            :trace-expansion ,trace-expansion
-                                           :no-errors/warnings nil))
+                                           :no-warnings nil))
          (options-expand (make-ppoptions :full-expansion t
                                          :keep-comments ,keep-comments
                                          :trace-expansion nil
-                                         :no-errors/warnings nil))
+                                         :no-warnings nil))
          ;; Initial preprocessing.
-         ((mv erp fileset-initial state)
+         ((mv erp fileset-initial & state)
           (preprocess files base-dir include-dirs options-preserve ienv state))
          ((when erp)
           (mv (cw "Initial preprocessing fails: ~@0" erp) state))
@@ -254,7 +263,7 @@
          ((when erp)
           (mv (cw "Initial file set writing fails: ~x0" erp) state))
          ;; Full-expansion preprocessing of original files.
-         ((mv erp pfiles-original state)
+         ((mv erp pensemb-original & state)
           (pproc-files files base-dir include-dirs
                        options-expand ienv state 1000000000))
          ((when erp)
@@ -263,7 +272,8 @@
               state))
          (fileset-original
           (fileset
-           (string-pfile-alist-to-filepath-filedata-map pfiles-original)))
+           (filepath-pfile-map-to-filepath-filedata-map
+            (pensemble->pfiles pensemb-original))))
          (fileset-original
           (fileset-relativize-absolute-paths fileset-original))
          ((mv erp state)
@@ -273,7 +283,7 @@
          ;; Full-expansion preprocessing of transformed files.
          (include-dirs-initial
           (relativize-include-dirs include-dirs out-dir-initial))
-         ((mv erp pfiles-transformed state)
+         ((mv erp pensemb-transformed & state)
           (pproc-files files out-dir-initial include-dirs-initial
                        options-expand ienv state 1000000000))
          ((when erp)
@@ -282,7 +292,8 @@
               state))
          (fileset-transformed
           (fileset
-           (string-pfile-alist-to-filepath-filedata-map pfiles-transformed)))
+           (filepath-pfile-map-to-filepath-filedata-map
+            (pensemble->pfiles pensemb-transformed))))
          (fileset-transformed
           (fileset-relativize-absolute-paths fileset-transformed))
          ((mv erp state)
@@ -290,7 +301,8 @@
          ((when erp)
           (mv (cw "Transformed file set writing fails: ~x0" erp) state)))
       ;; Comparison.
-      (mv (compare-expanded-pfiles pfiles-original pfiles-transformed)
+      (mv (compare-expanded-pfiles (pensemble->pfiles pensemb-original)
+                                   (pensemble->pfiles pensemb-transformed))
           state))
     state))
 
@@ -304,9 +316,9 @@
                          (keep-comments 't)
                          (trace-expansion 't)
                          (full-expansion 'nil)
-                         version)
+                         dialect)
   `(assert!-stobj
-    (b* ((version (or ,version (c::make-version :std (c::standard-c17))))
+    (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
          (files ,files)
          (base-dir ,base-dir)
          (include-dirs ,include-dirs)
@@ -314,14 +326,14 @@
          (options (make-ppoptions :full-expansion ,full-expansion
                                   :keep-comments ,keep-comments
                                   :trace-expansion ,trace-expansion
-                                  :no-errors/warnings nil))
-         (ienv (change-ienv (ienv-default) :version version))
-         ((mv erp fileset state) (preprocess files
-                                             base-dir
-                                             include-dirs
-                                             options
-                                             ienv
-                                             state))
+                                  :no-warnings nil))
+         (ienv (change-ienv (ienv-default) :dialect dialect))
+         ((mv erp fileset & state) (preprocess files
+                                               base-dir
+                                               include-dirs
+                                               options
+                                               ienv
+                                               state))
          ((when erp) (mv (cw "Preprocessing fails: ~@0" erp) state))
          (fileset (fileset-relativize-absolute-paths fileset))
          ((mv erp state) (write-fileset fileset out-dir state))

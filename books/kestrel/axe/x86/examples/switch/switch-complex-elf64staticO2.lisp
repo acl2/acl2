@@ -67,8 +67,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-
 ;;; EM: this is similar to slice-of-sum-cases but for bvplus
 (defthmd slice-of-bvplus-cases
   (implies (and (natp low)
@@ -90,9 +88,7 @@
                       (bvchop (+ 1 high (- low))
                               (+ (slice high low x)
                                  (slice high low y)))))))
-  :hints (("Goal" :in-theory (e/d (bvplus acl2::slice-of-sum-cases)
-                                  ()))))
-
+  :hints (("Goal" :in-theory (enable bvplus acl2::slice-of-sum-cases))))
 
 (def-unrolled process-command
     :executable "switch-complex.elf64staticO2"
@@ -116,7 +112,7 @@
              (global-counter-val u32))
     :output :rax
     :extra-assumptions '((canonical-address-p$inline global-counter-addr))
-    :monitor '( ;acl2::bv-array-read-shorten-when-in-first-half
+    :monitor '(;acl2::bv-array-read-shorten-when-in-first-half
 ;acl2::bv-array-read-of-bvplus-of-constant-no-wrap-bv-smt
                )
     :stack-slots 10)

@@ -1,10 +1,10 @@
 ; Java Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -53,7 +53,7 @@
      (following the nomenclature of @('unicode-input-character') in the grammar)
      as a record of two components.
      One component is just the plain (raw) Unicode character
-     that is denoted either by a itself or by an escape.
+     that is denoted either by itself or by an escape.
      The other component indicates whether the character is raw or an escape.
      A boolean flag would suffice to distinguish these two cases,
      but we want to include even more information here:

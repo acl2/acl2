@@ -9,8 +9,6 @@
 (include-book "alist-subsetp")
 (include-book "typ")
 
-(in-theory (disable hol-valuep hpp))
-
 (defun hta-name (name)
   (declare (xargs :guard (symbolp name)))
   (suffix-symbol "$HTA" name))

@@ -1,7 +1,7 @@
 ; Constant-factor unrolling of a function
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -27,6 +27,7 @@
 (include-book "kestrel/utilities/terms" :dir :system) ; for rename-fn
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
+(include-book "kestrel/terms-light/make-conjunction-from-list" :dir :system)
 ;(include-book "letify-term-via-dag") ;; TODO: Try using something from kestrel-acl2/transformations/letify
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))

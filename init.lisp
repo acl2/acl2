@@ -24,7 +24,7 @@
 
 ; This file need not be distributed with ACL2 and is unimportant for
 ; the correct operation of ACL2.  This file is loaded automatically by
-; ACKL when it starts up, but not by ACL2 when running in any other
+; AKCL when it starts up, but not by ACL2 when running in any other
 ; Common Lisp.
 
 ; Bob Boyer sometimes uses the following for debugging in CCL:
@@ -45,7 +45,7 @@
 
 ; File acl2r.lisp is created by GNUmakefile, though the user could create it
 ; directly.  Its name derives from its initial purpose, which was simply to
-; push :non-standard-analysis onto *features*.  We use it now for all sorts of
+; push non-standard-analysis onto *features*.  We use it now for all sorts of
 ; things, though; see GNUmakefile.
 
   (if (probe-file "acl2r.lisp") (load "acl2r.lisp"))

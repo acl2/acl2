@@ -1,7 +1,7 @@
-; Finding likely facts to break down a proof
+; Evaluating DAGs/nodes on test cases
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -483,9 +483,9 @@
   (let* ((max-nodenum (maxelem nodes-to-eval))
          (dag-len (+ 1 max-nodenum)) ; the effective length of the dag, for the purposes of this test case
          ;;would it be faster to reuse this array and just clear it out here?
-         (test-case-array (make-empty-array test-case-array-name dag-len))
+         (test-case-array (new-array1 test-case-array-name dag-len))
          ;;would it be faster to reuse this array and just clear it out here?
-         (done-nodes-array (make-empty-array 'done-nodes-array dag-len)))
+         (done-nodes-array (new-array1 'done-nodes-array dag-len)))
     (mv-let (test-case-array done-nodes-array)
       (evaluate-test-case-aux 1000000000 ; todo
                               nodes-to-eval ;initial worklist

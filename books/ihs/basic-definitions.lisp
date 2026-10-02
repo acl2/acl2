@@ -640,16 +640,16 @@ natural numbers.</p>"
   :split-types t
   :enabled t
   (let* ((i      (mbe :logic (ifix i) :exec i))
-	 (val    (expt2 (the unsigned-byte (1- size))))
-	 (maxval (the unsigned-byte (1- (the unsigned-byte val))))
-	 (minval (- val)))
+         (val    (expt2 (the unsigned-byte (1- size))))
+         (maxval (the unsigned-byte (1- (the unsigned-byte val))))
+         (minval (- val)))
     (declare (type unsigned-byte val maxval)
              (type integer i minval))
     (if (>= i maxval)
-	maxval
+        maxval
       (if (<= i minval)
-	  minval
-	i))))
+          minval
+        i))))
 
 (define logextu
   :short "Logical sign extension, unsigned version.  @('(logextu final-size

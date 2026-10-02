@@ -1,7 +1,7 @@
 ; Supporting utilities for the Axe Prover(s)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -102,8 +102,7 @@
   (implies (and (not (equal :fail (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len)))
                 (not (equal 'quote (ffn-symb hyp)))
                 (axe-treep hyp)
-                (consp hyp)
-                (symbol-alistp alist))
+                (consp hyp))
            (subsetp-equal (axe-tree-vars hyp)
                           (strip-cars (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len))))
   :hints (("Goal" :in-theory (e/d (match-hyp-with-nodenum-to-assume-false) (unify-tree-with-dag-node-binds-all-vars))
@@ -135,8 +134,7 @@
                 (< nodenum-to-assume-false dag-len)
                 (natp nodenum-to-assume-false)
                 (axe-treep hyp)
-                (consp hyp)
-                (symbol-alistp alist))
+                (consp hyp))
            (perm (strip-cars (match-hyp-with-nodenum-to-assume-false hyp nodenum-to-assume-false dag-array dag-len))
                  (axe-tree-vars hyp)))
   :hints (("Goal" :in-theory (e/d (match-hyp-with-nodenum-to-assume-false)

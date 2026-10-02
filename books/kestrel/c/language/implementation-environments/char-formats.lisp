@@ -68,6 +68,10 @@
 
   (defret char-format->max-lower-bound
     (>= max 127)
+    :rule-classes :linear)
+
+  (defret char-format->max-lte-uchar-format->max
+    (<= max (uchar-format->max uchar-format))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -100,7 +104,7 @@
       :trigger-terms
       ((char-format->min char-format uchar-format schar-format))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define char-format-8u ()
   :returns (format char-formatp)

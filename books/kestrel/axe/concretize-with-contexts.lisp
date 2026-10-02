@@ -176,7 +176,7 @@
               (prog2$ (cw ")~%")
                       dag-lst)
             (let* ((dag-len (len dag-lst))
-                   (dag-array (make-into-array 'dag-array dag-lst))
+                   (dag-array (make-dag-into-array 'dag-array dag-lst 0))
                    (context-array (make-full-context-array 'dag-array dag-array dag-len)))
               (mv-let (changep rev-new-dag-lst)
                       (concretize-entries-with-contexts dag-lst context-array nil nil)

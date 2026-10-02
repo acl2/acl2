@@ -35,6 +35,7 @@
 (local (include-book "bvuminus"))
 (local (include-book "repeatbit"))
 (local (include-book "unsigned-byte-p"))
+(local (include-book "bvminus"))
 
 (local (in-theory (disable unsigned-byte-p)))
 

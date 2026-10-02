@@ -10,7 +10,9 @@
 
 (include-book "xdoc/constructors" :dir :system)
 
+(include-book "generic-fold")
 (include-book "jenkins")
+(include-book "to-bytes")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

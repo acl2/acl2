@@ -90,17 +90,17 @@
  (defthm <-mod-expt-2-crock
    (implies
     (and (not (< size1 size))
-	 (not (< size 0))
-	 (integerp size1)
-	 (integerp size)
-	 (integerp i))
+         (not (< size 0))
+         (integerp size1)
+         (integerp size)
+         (integerp i))
     (< (mod i (expt 2 size))
        (expt 2 size1)))
    :hints
    (("Goal"
      :in-theory (disable expt-is-weakly-increasing-for-base>1)
      :use ((:instance expt-is-weakly-increasing-for-base>1
-		      (r 2) (i size) (j size1)))))))
+                      (r 2) (i size) (j size1)))))))
 
 ;  We need this as several special rules because we need to be able to satisfy
 ;  the hypotheses by `type reasoning'.
@@ -109,37 +109,37 @@
  (defthm integerp-expt/expt
    (implies
     (and (>= i j)
-	 (not (equal r 0))
-	 (integerp i)
-	 (integerp j)
-	 (integerp r))
+         (not (equal r 0))
+         (integerp i)
+         (integerp j)
+         (integerp r))
     (integerp (* (/ (expt r j)) (expt r i))))
    :rule-classes
    ((:type-prescription)
     (:type-prescription :corollary
-			(implies (and (< j i)
-				      (not (equal r 0))
-				      (integerp r)
-				      (integerp i)
-				      (integerp j))
-				 (integerp (* (expt r i) (/ (expt r j))))))
+                        (implies (and (< j i)
+                                      (not (equal r 0))
+                                      (integerp r)
+                                      (integerp i)
+                                      (integerp j))
+                                 (integerp (* (expt r i) (/ (expt r j))))))
     (:type-prescription :corollary
-			(implies (and (not (< i j))
-				      (not (equal r 0))
-				      (integerp r)
-				      (integerp i)
-				      (integerp j))
-				 (integerp (* (expt r i) (/ (expt r j))))))
+                        (implies (and (not (< i j))
+                                      (not (equal r 0))
+                                      (integerp r)
+                                      (integerp i)
+                                      (integerp j))
+                                 (integerp (* (expt r i) (/ (expt r j))))))
     (:type-prescription :corollary
-			(implies (and (< j i)
-				      (not (equal r 0))
-				      (integerp r)
-				      (integerp i)
-				      (integerp j))
-				 (integerp (* (/ (expt r j)) (expt r i))))))
+                        (implies (and (< j i)
+                                      (not (equal r 0))
+                                      (integerp r)
+                                      (integerp i)
+                                      (integerp j))
+                                 (integerp (* (/ (expt r j)) (expt r i))))))
    :hints (("Goal" :in-theory (disable expt-type-prescription-integerp)
-	    :use ((:instance expt-type-prescription-integerp
-					  (r r) (i (- i j))))))))
+            :use ((:instance expt-type-prescription-integerp
+                                          (r r) (i (- i j))))))))
 
 ;;;  Fri Feb 10 15:10:05 1995 bb -- Something VERY fishy is going on here.
 ;;;  Why was this suddenly needed?
@@ -148,9 +148,9 @@
  (defthm integerp-expt-minus
    (implies
     (and (integerp size1)
-	 (not (< size1 0))
-	 (integerp size)
-	 (< size1 size))
+         (not (< size1 0))
+         (integerp size)
+         (< size1 size))
     (integerp (expt 2 (+ size (- size1)))))
    :rule-classes :type-prescription))
 
@@ -163,18 +163,18 @@
    :hints
    (("Goal"
      :in-theory (disable <-*-right-cancel
-			 <-unary-/-positive-right
-			 <-*-y-x-y
-			 <-y-*-y-x)
+                         <-unary-/-positive-right
+                         <-*-y-x-y
+                         <-y-*-y-x)
      :use ((:instance <-unary-/-positive-right (y 1) (x (/ x))))))))
 
 (local
  (defthm not-integerp-expt
    (implies
     (and (< 0 i)
-	 (< 1 r)
-	 (integerp r)
-	 (integerp i))
+         (< 1 r)
+         (integerp r)
+         (integerp i))
     (not (integerp (/ (expt r i)))))
    :rule-classes :type-prescription
    :hints
@@ -189,8 +189,8 @@
  (defthm mod-bounds-x
    (implies
     (and (>= x 0)
-	 (> y 0)
-	 (qr-guard x y))
+         (> y 0)
+         (qr-guard x y))
     (<= (mod x y) x))
    :rule-classes
    ((:linear :trigger-terms ((mod x y))))
@@ -202,8 +202,8 @@
  (defthm floor-bounds-x
    (implies
     (and (>= x 0)
-	 (>= y 1)
-	 (qr-guard x y))
+         (>= y 1)
+         (qr-guard x y))
     (<= (floor x y) x))
    :hints
    (("Goal"
@@ -220,52 +220,52 @@
  (defthm loghead-logapp-expansion-lemma
    (implies
     (and (integerp i) (integerp j)
-	 (integerp size1) (not (< size1 0))
-	 (integerp size) (not (< size 0))
-	 (<= size size1))
+         (integerp size1) (not (< size1 0))
+         (integerp size) (not (< size 0))
+         (<= size size1))
     (and
      (equal (mod (+ (* j (expt 2 size))
-		    (mod i (expt 2 size)))
-		 (expt 2 size1))
-	    (+ (mod i (expt 2 size))
-	       (* (expt 2 size) (mod j (expt 2 (- size1 size))))))
+                    (mod i (expt 2 size)))
+                 (expt 2 size1))
+            (+ (mod i (expt 2 size))
+               (* (expt 2 size) (mod j (expt 2 (- size1 size))))))
      (equal (mod (+ (mod i (expt 2 size))
-		    (* (expt 2 size) j))
-		 (expt 2 size1))
-	    (+ (mod i (expt 2 size))
-	       (* (expt 2 size) (mod j (expt 2 (- size1 size))))))))
+                    (* (expt 2 size) j))
+                 (expt 2 size1))
+            (+ (mod i (expt 2 size))
+               (* (expt 2 size) (mod j (expt 2 (- size1 size))))))))
    :hints
    (("Goal"
      :in-theory (disable mod-x+i*k-i*j)
      :use ((:instance mod-x+i*k-i*j
-		      (x (mod i (expt 2 size))) (i (expt 2 size))
-		      (k j) (j (expt 2 (- size1 size)))))))))
+                      (x (mod i (expt 2 size))) (i (expt 2 size))
+                      (k j) (j (expt 2 (- size1 size)))))))))
 
 (local
  (defthm logtail-logapp-expansion-lemma
    (implies
     (and (integerp i) (integerp j)
-	 (integerp size1) (not (< size1 0))
-	 (integerp size) (not (< size 0))
-	 (<= size size1))
+         (integerp size1) (not (< size1 0))
+         (integerp size) (not (< size 0))
+         (<= size size1))
     (and
      (equal (floor (+ (* j (expt 2 size))
-		    (mod i (expt 2 size)))
-		 (expt 2 size1))
-	    (floor j (expt 2 (- size1 size))))))
+                    (mod i (expt 2 size)))
+                 (expt 2 size1))
+            (floor j (expt 2 (- size1 size))))))
    :hints
    (("Goal"
      :in-theory (disable floor-x+i*k-i*j)
      :use ((:instance floor-x+i*k-i*j
-		      (x (mod i (expt 2 size))) (i (expt 2 size))
-		      (k j) (j (expt 2 (- size1 size)))))))))
+                      (x (mod i (expt 2 size))) (i (expt 2 size))
+                      (k j) (j (expt 2 (- size1 size)))))))))
 
 
 (local
  (defthm integerp-*-2-fact
    (implies
     (and (integerp (* i j))
-	 (integerp k))
+         (integerp k))
     (integerp (* i j k)))
    :rule-classes :type-prescription
    :hints
@@ -276,27 +276,27 @@
  (defthm logtail-loghead-expansion-lemma
    (implies
     (and (real/rationalp x)
-	 (integerp i)
-	 (integerp j)
-	 (>= i 0)
-	 (>= j 0))
+         (integerp i)
+         (integerp j)
+         (>= i 0)
+         (>= j 0))
     (equal (floor (mod x (expt 2 i)) (expt 2 j))
-	   (if (< j i)
-	       (mod (floor x (expt 2 j))
-		    (expt 2 (- i j)))
-	     0)))
+           (if (< j i)
+               (mod (floor x (expt 2 j))
+                    (expt 2 (- i j)))
+             0)))
    :hints
    (("Goal"
      :do-not '(eliminate-destructors)
      :in-theory (set-difference-theories
-		 (enable mod)
-		 '(rewrite-floor-mod mod-bounded-by-modulus mod-type
-				     expt-is-weakly-increasing-for-base>1))
+                 (enable mod)
+                 '(rewrite-floor-mod mod-bounded-by-modulus mod-type
+                                     expt-is-weakly-increasing-for-base>1))
      :use ((:instance mod-bounded-by-modulus (x x) (y (expt 2 i)))
-	   (:instance (:linear mod-type . 4) ;(MOD x y) >= 0.
-		      (x x) (y (expt 2 i)))
-	   (:instance expt-is-weakly-increasing-for-base>1
-		      (r 2) (i i) (j j)))))))
+           (:instance (:linear mod-type . 4) ;(MOD x y) >= 0.
+                      (x x) (y (expt 2 i)))
+           (:instance expt-is-weakly-increasing-for-base>1
+                      (r 2) (i i) (j j)))))))
 
 
 ;;;****************************************************************************
@@ -307,7 +307,7 @@
 ;;;****************************************************************************
 
 (local (in-theory (enable ash lognot lognotu logand logior logxor logeqv
-			  logorc1 ifix nfix)))
+                          logorc1 ifix nfix)))
 
 ;;;  ASH
 
@@ -519,7 +519,7 @@
 (local (in-theory (enable unsigned-byte-p
                           integer-range-p ; added by Matt K. for Version_2.7
                           signed-byte-p loghead logtail
-			  logapp logrpl logextu)))
+                          logapp logrpl logextu)))
 
 
 (defsection ihs/unsigned-byte-p-lemmas
@@ -772,25 +772,25 @@
    (skip-proofs
     (defthm crock0
       (implies (and (not (< size size1))
-		    (not (< j 0))
-		    (integerp i)
-		    (integerp size1)
-		    (not (< size1 0))
-		    (integerp j)
-		    (integerp size)
-		    (not (< size 0))
-		    (< (* j (expt 2 size1)) (expt 2 size)))
-	       (< (+ (* j (expt 2 size1))
-		     (mod i (expt 2 size1)))
-		  (expt 2 size)))
+                    (not (< j 0))
+                    (integerp i)
+                    (integerp size1)
+                    (not (< size1 0))
+                    (integerp j)
+                    (integerp size)
+                    (not (< size 0))
+                    (< (* j (expt 2 size1)) (expt 2 size)))
+               (< (+ (* j (expt 2 size1))
+                     (mod i (expt 2 size1)))
+                  (expt 2 size)))
       :hints (("Goal"
-	       :do-not '(eliminate-destructors)
-	       :in-theory (disable <-*-left-cancel <-*-/-left)
-	       :use ((:instance <-*-left-cancel
-				(z (/ (expt 2 size1)))
-				(y (+ (* j (expt 2 size1))
-				      (loghead size1 i)))
-				(x (expt 2 size)))))))))
+               :do-not '(eliminate-destructors)
+               :in-theory (disable <-*-left-cancel <-*-/-left)
+               :use ((:instance <-*-left-cancel
+                                (z (/ (expt 2 size1)))
+                                (y (+ (* j (expt 2 size1))
+                                      (loghead size1 i)))
+                                (x (expt 2 size)))))))))
 |#
 
   (local
@@ -864,11 +864,11 @@
              (equal (unsigned-byte-p size (logapp size1 i j))
                     (unsigned-byte-p (- size size1) j)))
     :hints (("Goal"
-	     :do-not '(eliminate-destructors)
-	     :in-theory
-	     (union-theories (disable <-*-left-cancel <-*-/-left)
-			     '(logapp unsigned-byte-p
-				      rewrite-linear-equalities-to-iff))))))
+             :do-not '(eliminate-destructors)
+             :in-theory
+             (union-theories (disable <-*-left-cancel <-*-/-left)
+                             '(logapp unsigned-byte-p
+                                      rewrite-linear-equalities-to-iff))))))
 
   (defthm associativity-of-logapp
     (implies (and (logapp-guard size1 j k)
@@ -1373,8 +1373,8 @@ definitions of logical operations."
   :parents (lognot logops-recursive-definitions-theory)
   :short "Recursive definition of @(see lognot)."
   (implies (force (integerp i))
-	   (equal (lognot i)
-		  (logcons (b-not (logcar i)) (lognot (logcdr i)))))
+           (equal (lognot i)
+                  (logcons (b-not (logcar i)) (lognot (logcdr i)))))
   :rule-classes ((:definition
                   :clique (lognot)
                   :controller-alist ((lognot t))))
@@ -1393,7 +1393,7 @@ definitions of logical operations."
                   :controller-alist ((binary-logand t t))))
   :hints (("Goal"
            :expand (logand i j)
-	   :in-theory (enable b-and ifix logcdr))))
+           :in-theory (enable b-and ifix logcdr))))
 
 (defrule logior*
   :parents (logior logops-recursive-definitions-theory)
@@ -1470,9 +1470,9 @@ definitions of logical operations."
   :parents (integer-length logops-recursive-definitions-theory)
   :short "Recursive definition of @(see integer-length)."
   (equal (integer-length i)
-	 (cond ((zip i) 0)
-	       ((equal i -1) 0)
-	       (t (1+ (integer-length (logcdr i))))))
+         (cond ((zip i) 0)
+               ((equal i -1) 0)
+               (t (1+ (integer-length (logcdr i))))))
   :rule-classes ((:definition
                   :clique (integer-length)
                   :controller-alist ((integer-length t))))
@@ -1510,7 +1510,7 @@ definitions of logical operations."
   :parents (logmaskp logops-recursive-definitions-theory)
   :short "Recursive definition of @(see logmaskp)."
   (equal (logmaskp i)
-	 (cond ((not (integerp i)) nil)
+         (cond ((not (integerp i)) nil)
                ((equal i 0) t)
                ((equal i -1) nil)
                (t (and (equal (logcar i) 1)
@@ -1525,11 +1525,11 @@ definitions of logical operations."
   :parents (logbitp logops-recursive-definitions-theory)
   :short "Recursive definition of @(see logbitp)."
   (implies (and (integerp pos)
-		(>= pos 0)
-		(integerp i))
-	   (equal (logbitp pos i)
-		  (cond ((equal pos 0) (equal (logcar i) 1))
-			(t (logbitp (1- pos) (logcdr i))))))
+                (>= pos 0)
+                (integerp i))
+           (equal (logbitp pos i)
+                  (cond ((equal pos 0) (equal (logcar i) 1))
+                        (t (logbitp (1- pos) (logcdr i))))))
   :rule-classes ((:definition
                   :clique (logbitp)
                   :controller-alist ((logbitp t t))))
@@ -1577,7 +1577,7 @@ definitions of logical operations."
   (local
    (defthm crock0
      (equal (/ (expt 2 n))
-	    (expt 2 (- n)))
+            (expt 2 (- n)))
      :hints
      (("Goal"
        :in-theory (enable expt-minus)))))
@@ -1586,10 +1586,10 @@ definitions of logical operations."
    (defthm crock1
      (implies
       (and (integerp i)
-	   (integerp count)
-	   (< count 0))
+           (integerp count)
+           (< count 0))
       (equal (floor (* 1/2 i (expt 2 (+ 1 count))) 1)
-	     (floor (* i (expt 2 (+ 1 count))) 2)))
+             (floor (* i (expt 2 (+ 1 count))) 2)))
      :hints
      (("goal"
        :in-theory (enable rewrite-floor-x*y-z-left)))))
@@ -1598,10 +1598,10 @@ definitions of logical operations."
    (defthm crock2
      (implies
       (and (integerp i)
-	   (real/rationalp j)
-	   (not (equal j 0)))
+           (real/rationalp j)
+           (not (equal j 0)))
       (equal (floor (* i (expt 2 (+ 1 count))) j)
-	     (floor i (/ j (expt 2 (+ 1 count))))))
+             (floor i (/ j (expt 2 (+ 1 count))))))
      :hints
      (("goal"
        :in-theory (enable rewrite-floor-x*y-z-right)))))
@@ -1610,7 +1610,7 @@ definitions of logical operations."
     :parents (ash logops-recursive-definitions-theory)
     :short "Recursive definition of @(see ash)."
     (equal (ash i count)
-	   (cond ((zip count) (ifix i))
+           (cond ((zip count) (ifix i))
                  ((< count 0) (ash (logcdr i) (1+ count)))
                  (t (logcons 0 (ash i (1- count))))))
     :rule-classes ((:definition
@@ -1789,13 +1789,13 @@ definitions of logical operations."
    (defthm logmaskp-expt-2-n-minus-1-crock
      (implies
       (and (force (integerp n))
-	   (>= n 0)
-	   (equal mask (+ -1  (expt 2 n))))
+           (>= n 0)
+           (equal mask (+ -1  (expt 2 n))))
       (logmaskp mask))
      :rule-classes nil
      :hints (("Goal" :expand (expt 2 n)
-	      :induct (sub1-logcdr-induction-1 n mask)
-	      :in-theory (disable exponents-add)))))
+              :induct (sub1-logcdr-induction-1 n mask)
+              :in-theory (disable exponents-add)))))
 
   (defthm logmaskp-expt-2-n-minus-1
     (implies (and (force (integerp n))
@@ -1852,7 +1852,7 @@ definitions of logical operations."
              (equal (logbitp pos (lognotu size i))
                     (if (< pos size)
                         (not (logbitp pos i))
-		      nil)))
+                      nil)))
     :hints (("Goal" :in-theory (enable lognotu))))
 
   (defthm logbit-lognotu
@@ -2069,48 +2069,48 @@ definitions of logical operations."
    (local
     (defun local-sub (x y)
       (declare (xargs :guard (and (real/rationalp x)
-				  (real/rationalp y))))
+                                  (real/rationalp y))))
       (- x y)))
 
    (local
     (defthm local-sub-type-crock
       (implies (and (real/rationalp x)
-		    (real/rationalp y))
-	       (real/rationalp (local-sub x y)))))
+                    (real/rationalp y))
+               (real/rationalp (local-sub x y)))))
 
    (local
     (defthm crock0
       (implies
        (and (real/rationalp x)
-	    (real/rationalp y))
+            (real/rationalp y))
        (equal (equal (local-sub x y) (- x y))
-	      t))
+              t))
       :hints
       (("Goal"
-	:in-theory (enable local-sub)))))
+        :in-theory (enable local-sub)))))
 
    (local
     (defthm crock1
       (implies
        (and (>= (+ x y) z)
-	    (syntaxp (eq x 'x))
-	    (syntaxp (eq y 'y))
-	    (real/rationalp x)
-	    (real/rationalp y)
-	    (real/rationalp z))
+            (syntaxp (eq x 'x))
+            (syntaxp (eq y 'y))
+            (real/rationalp x)
+            (real/rationalp y)
+            (real/rationalp z))
        (equal (mod (+ x y) z) (mod (+ z (local-sub (+ x y) z)) z)))))
 
    (local
     (defthm crock2
       (implies
        (and (< x z)
-	    (< y z)
-	    (>= (+ x y) z)
-	    (real/rationalp x)
-	    (real/rationalp y)
-	    (real/rationalp z))
+            (< y z)
+            (>= (+ x y) z)
+            (real/rationalp x)
+            (real/rationalp y)
+            (real/rationalp z))
        (and (>= (local-sub (+ x y) z) 0)
-	    (< (local-sub (+ x y) z) z)))))
+            (< (local-sub (+ x y) z) z)))))
 
    (local (in-theory (disable local-sub)))
 
@@ -2118,37 +2118,37 @@ definitions of logical operations."
     (defthm crock3
       (implies
        (and (< x z)
-	    (< y z)
-	    (real/rationalp x)
-	    (>= x 0)
-	    (real/rationalp y)
-	    (>= y 0)
-	    (real/rationalp z)
-	    (> z 0))
+            (< y z)
+            (real/rationalp x)
+            (>= x 0)
+            (real/rationalp y)
+            (>= y 0)
+            (real/rationalp z)
+            (> z 0))
        (equal (mod (+ x y) z)
-	      (if (< (+ x y) z)
-		  (+ x y)
-		(- (+ x y) z))))
+              (if (< (+ x y) z)
+                  (+ x y)
+                (- (+ x y) z))))
       :hints
       (("Goal" :in-theory (disable associativity-of-+
-				   commutativity-of-+
-				   associativity-of-*
-				   commutativity-of-*)))))
+                                   commutativity-of-+
+                                   associativity-of-*
+                                   commutativity-of-*)))))
 
    (local
     (defthm crock4
       (implies
        (and (syntaxp (eq x 'x))
-	    (syntaxp (eq y 'y))
-	    (force (real/rationalp x))
-	    (force (real/rationalp y))
-	    (force (real/rationalp z))
-	    (force (not (equal z 0))))
+            (syntaxp (eq y 'y))
+            (force (real/rationalp x))
+            (force (real/rationalp y))
+            (force (real/rationalp z))
+            (force (not (equal z 0))))
        (equal (mod (+ x y) z)
-	      (mod (+ (mod x z) (mod y z)) z)))
+              (mod (+ (mod x z) (mod y z)) z)))
       :hints
       (("Goal"
-	:use mod-+))))
+        :use mod-+))))
 
    (defthm mod-+-cases
      (implies (and (real/rationalp x)
@@ -2219,14 +2219,14 @@ definitions of logical operations."
 
   (local (defthm logcar-+
      (implies (and (integerp i)
-	   (integerp j))
+           (integerp j))
       (equal (logcar (+ i j))
-	     (b-xor (logcar i) (logcar j))))
+             (b-xor (logcar i) (logcar j))))
      :hints (("Goal" :in-theory (enable b-xor)))))
 
   (local (defthm distributivity-reverse
      (equal (+ (* i j) (* i k))
-	    (* i (+ j k)))))
+            (* i (+ j k)))))
 
   (local (in-theory (disable distributivity)))
 

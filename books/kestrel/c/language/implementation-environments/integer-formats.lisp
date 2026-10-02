@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -33,11 +33,8 @@
      to formalize the possible formats of the integer types
      other than @('unsigned'), @('signed'), and plain @('char') types,
      namely @('short'), @('int'), and larger types.
-     We also put these together with
-     our formalization of the possible formats of
-     the @('unsigned'), @('signed'), and plain @('char') types,
-     to form data structures for the possible formats of most integer types
-     (we plan to add the remaining ones at some point)."))
+     These formats are combined with the character and boolean formats
+     in @(tsee ienv), which captures their mutual constraints."))
   :order-subtopics t
   :default-parent t)
 
@@ -45,12 +42,17 @@
 
 (define integer-format-short-wfp ((short-format integer-formatp)
                                   (uchar-format uchar-formatp)
-                                  (schar-format schar-formatp))
+                                  (schar-format schar-formatp)
+                                  (std standardp))
   :returns (yes/no booleanp)
   :short "Check if an integer format is well-formed
-          when used for (signed and unsigned) @('short')."
+          when used for (signed and unsigned) @('short')
+          for a C standard."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "The format must be well-formed for the standard,
+     as checked by @(tsee integer-format-wfp).")
    (xdoc::p
     "The number of bits must be a multiple of @('CHAR_BIT') [C17:6.2.6.1/4].")
    (xdoc::p
@@ -58,6 +60,11 @@
      the range from -32767 to +32767 (both inclusive) [C17:5.2.4.2.1/1].
      The possible unsigned values must cover at least
      the range from 0 to 65535 (both inclusive) [C17:5.2.4.2.1/1].")
+   (xdoc::p
+    "For C23, the signed range must also include -32768 [C23:5.3.5.3.2].
+     This follows from the lower bound on the signed maximum
+     and the C23 minimum/maximum relation documented with
+     @(tsee integer-format->signed-min), as proved below.")
    (xdoc::p
     "The possible signed values must at least include
      those of @('signed char'),
@@ -71,7 +78,8 @@
        (signed-char-min (schar-format->min schar-format uchar-format))
        (signed-char-max (schar-format->max schar-format uchar-format))
        (unsigned-char-max (uchar-format->max uchar-format)))
-    (and (integerp (/ bit-size (uchar-format->size uchar-format)))
+    (and (integer-format-wfp short-format std)
+         (integerp (/ bit-size (uchar-format->size uchar-format)))
          (<= signed-short-min -32767)
          (<= +32767 signed-short-max)
          (<= 65535 unsigned-short-max)
@@ -82,25 +90,39 @@
   ///
 
   (defrule integer-format-short-wf-bit-size-lower-bound
-    (implies (integer-format-short-wfp short-format uchar-format schar-fomat)
+    (implies (integer-format-short-wfp
+              short-format uchar-format schar-format std)
              (>= (integer-format->bit-size short-format)
                  16))
     :rule-classes :linear
     :hints (("Goal"
              :use (:instance integer-format->unsigned-max-upper-bound
                              (format short-format))
-             :in-theory (disable integer-format->unsigned-max-upper-bound)))))
+             :in-theory (disable integer-format->unsigned-max-upper-bound))))
+
+  (defruled integer-format-short-wf-signed-min-upper-bound-when-c23
+    (implies (integer-format-short-wfp
+              short-format uchar-format schar-format (standard-c23))
+             (<= (integer-format->signed-min short-format)
+                 -32768))
+    :rule-classes :linear
+    :enable integer-format->signed-min-as-signed-max-when-c23))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define integer-format-int-wfp ((int-format integer-formatp)
                                 (uchar-format uchar-formatp)
-                                (short-format integer-formatp))
+                                (short-format integer-formatp)
+                                (std standardp))
   :returns (yes/no booleanp)
   :short "Check if an integer format is well-formed
-          when used for (signed and unsigned) @('int')."
+          when used for (signed and unsigned) @('int')
+          for a C standard."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "The format must be well-formed for the standard,
+     as checked by @(tsee integer-format-wfp).")
    (xdoc::p
     "The number of bits must be a multiple of @('CHAR_BIT') [C17:6.2.6.1/4].")
    (xdoc::p
@@ -108,6 +130,11 @@
      the range from -32767 to +32767 (both inclusive) [C17:5.2.4.2.1/1].
      The possible unsigned values must cover at least
      the range from 0 to 65535 (both inclusive) [C17:5.2.4.2.1/1].")
+   (xdoc::p
+    "For C23, the signed range must also include -32768 [C23:5.3.5.3.2].
+     This follows from the lower bound on the signed maximum
+     and the C23 minimum/maximum relation documented with
+     @(tsee integer-format->signed-min), as proved below.")
    (xdoc::p
     "The possible signed values must at least include
      those of @('signed short'),
@@ -121,7 +148,8 @@
        (signed-short-min (integer-format->signed-min short-format))
        (signed-short-max (integer-format->signed-max short-format))
        (unsigned-short-max (integer-format->unsigned-max short-format)))
-    (and (integerp (/ bit-size (uchar-format->size uchar-format)))
+    (and (integer-format-wfp int-format std)
+         (integerp (/ bit-size (uchar-format->size uchar-format)))
          (<= signed-int-min -32767)
          (<= +32767 signed-int-max)
          (<= 65535 unsigned-int-max)
@@ -132,25 +160,38 @@
   ///
 
   (defrule integer-format-int-wf-bit-size-lower-bound
-    (implies (integer-format-int-wfp int-format uchar-format short-fomat)
+    (implies (integer-format-int-wfp int-format uchar-format short-format std)
              (>= (integer-format->bit-size int-format)
                  16))
     :rule-classes :linear
     :hints (("Goal"
              :use (:instance integer-format->unsigned-max-upper-bound
                              (format int-format))
-             :in-theory (disable integer-format->unsigned-max-upper-bound)))))
+             :in-theory (disable integer-format->unsigned-max-upper-bound))))
+
+  (defruled integer-format-int-wf-signed-min-upper-bound-when-c23
+    (implies (integer-format-int-wfp
+              int-format uchar-format short-format (standard-c23))
+             (<= (integer-format->signed-min int-format)
+                 -32768))
+    :rule-classes :linear
+    :enable integer-format->signed-min-as-signed-max-when-c23))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define integer-format-long-wfp ((long-format integer-formatp)
                                  (uchar-format uchar-formatp)
-                                 (int-format integer-formatp))
+                                 (int-format integer-formatp)
+                                 (std standardp))
   :returns (yes/no booleanp)
   :short "Check if an integer format is well-formed
-          when used for (signed and unsigned) @('long')."
+          when used for (signed and unsigned) @('long')
+          for a C standard."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "The format must be well-formed for the standard,
+     as checked by @(tsee integer-format-wfp).")
    (xdoc::p
     "The number of bits must be a multiple of @('CHAR_BIT') [C17:6.2.6.1/4].")
    (xdoc::p
@@ -159,6 +200,11 @@
      [C17:5.2.4.2.1/1].
      The possible unsigned values must cover at least
      the range from 0 to 4294967295 (both inclusive) [C17:5.2.4.2.1/1].")
+   (xdoc::p
+    "For C23, the signed range must also include -2147483648 [C23:5.3.5.3.2].
+     This follows from the lower bound on the signed maximum
+     and the C23 minimum/maximum relation documented with
+     @(tsee integer-format->signed-min), as proved below.")
    (xdoc::p
     "The possible signed values must at least include
      those of @('signed int'),
@@ -172,7 +218,8 @@
        (signed-int-min (integer-format->signed-min int-format))
        (signed-int-max (integer-format->signed-max int-format))
        (unsigned-int-max (integer-format->unsigned-max int-format)))
-    (and (integerp (/ bit-size (uchar-format->size uchar-format)))
+    (and (integer-format-wfp long-format std)
+         (integerp (/ bit-size (uchar-format->size uchar-format)))
          (<= signed-long-min -2147483647)
          (<= +2147483647 signed-long-max)
          (<= 4294967295 unsigned-long-max)
@@ -183,25 +230,38 @@
   ///
 
   (defrule integer-format-long-wf-bit-size-lower-bound
-    (implies (integer-format-long-wfp long-format uchar-format int-fomat)
+    (implies (integer-format-long-wfp long-format uchar-format int-format std)
              (>= (integer-format->bit-size long-format)
                  32))
     :rule-classes :linear
     :hints (("Goal"
              :use (:instance integer-format->unsigned-max-upper-bound
                              (format long-format))
-             :in-theory (disable integer-format->unsigned-max-upper-bound)))))
+             :in-theory (disable integer-format->unsigned-max-upper-bound))))
+
+  (defruled integer-format-long-wf-signed-min-upper-bound-when-c23
+    (implies (integer-format-long-wfp
+              long-format uchar-format int-format (standard-c23))
+             (<= (integer-format->signed-min long-format)
+                 -2147483648))
+    :rule-classes :linear
+    :enable integer-format->signed-min-as-signed-max-when-c23))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define integer-format-llong-wfp ((llong-format integer-formatp)
                                   (uchar-format uchar-formatp)
-                                  (long-format integer-formatp))
+                                  (long-format integer-formatp)
+                                  (std standardp))
   :returns (yes/no booleanp)
   :short "Check if an integer format is well-formed
-          when used for (signed and unsigned) @('long long')."
+          when used for (signed and unsigned) @('long long')
+          for a C standard."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "The format must be well-formed for the standard,
+     as checked by @(tsee integer-format-wfp).")
    (xdoc::p
     "The number of bits must be a multiple of @('CHAR_BIT') [C17:6.2.6.1/4].")
    (xdoc::p
@@ -211,6 +271,12 @@
      The possible unsigned values must cover at least
      the range from 0 to 18446744073709551615 (both inclusive)
      [C17:5.2.4.2.1/1].")
+   (xdoc::p
+    "For C23, the signed range must also include -9223372036854775808
+     [C23:5.3.5.3.2].
+     This follows from the lower bound on the signed maximum
+     and the C23 minimum/maximum relation documented with
+     @(tsee integer-format->signed-min), as proved below.")
    (xdoc::p
     "The possible signed values must at least include
      those of @('signed long'),
@@ -224,7 +290,8 @@
        (signed-long-min (integer-format->signed-min long-format))
        (signed-long-max (integer-format->signed-max long-format))
        (unsigned-long-max (integer-format->unsigned-max long-format)))
-    (and (integerp (/ bit-size (uchar-format->size uchar-format)))
+    (and (integer-format-wfp llong-format std)
+         (integerp (/ bit-size (uchar-format->size uchar-format)))
          (<= signed-llong-min -9223372036854775807)
          (<= +9223372036854775807 signed-llong-max)
          (<= 18446744073709551615 unsigned-llong-max)
@@ -235,14 +302,23 @@
   ///
 
   (defrule integer-format-llong-wf-bit-size-lower-bound
-    (implies (integer-format-llong-wfp llong-format uchar-format long-fomat)
+    (implies (integer-format-llong-wfp
+              llong-format uchar-format long-format std)
              (>= (integer-format->bit-size llong-format)
                  64))
     :rule-classes :linear
     :hints (("Goal"
              :use (:instance integer-format->unsigned-max-upper-bound
                              (format llong-format))
-             :in-theory (disable integer-format->unsigned-max-upper-bound)))))
+             :in-theory (disable integer-format->unsigned-max-upper-bound))))
+
+  (defruled integer-format-llong-wf-signed-min-upper-bound-when-c23
+    (implies (integer-format-llong-wfp
+              llong-format uchar-format long-format (standard-c23))
+             (<= (integer-format->signed-min llong-format)
+                 -9223372036854775808))
+    :rule-classes :linear
+    :enable integer-format->signed-min-as-signed-max-when-c23))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -264,11 +340,13 @@
              (equal (integer-format-short-wfp
                      (integer-format-inc-sign-tcnpnt size)
                      uchar-format
-                     schar-format)
+                     schar-format
+                     std)
                     (and (integerp (/ size (uchar-format->size uchar-format)))
                          (>= size 16)
                          (>= size (uchar-format->size uchar-format)))))
     :enable (integer-format-short-wfp
+             integer-format-wfp-of-integer-format-inc-sign-tcnpnt
              integer-format->bit-size-of-integer-format-inc-sign-tcnpnt
              integer-format->signed-min-of-integer-format-inc-sign-tcnpnt
              integer-format->signed-max-of-integer-format-inc-sign-tcnpnt
@@ -299,11 +377,13 @@
              (equal (integer-format-int-wfp
                      (integer-format-inc-sign-tcnpnt size)
                      uchar-format
-                     (integer-format-inc-sign-tcnpnt size0))
+                     (integer-format-inc-sign-tcnpnt size0)
+                     std)
                     (and (integerp (/ size (uchar-format->size uchar-format)))
                          (>= size 16)
                          (>= size size0))))
     :enable (integer-format-int-wfp
+             integer-format-wfp-of-integer-format-inc-sign-tcnpnt
              integer-format->bit-size-of-integer-format-inc-sign-tcnpnt
              integer-format->signed-min-of-integer-format-inc-sign-tcnpnt
              integer-format->signed-max-of-integer-format-inc-sign-tcnpnt
@@ -331,11 +411,13 @@
              (equal (integer-format-long-wfp
                      (integer-format-inc-sign-tcnpnt size)
                      uchar-format
-                     (integer-format-inc-sign-tcnpnt size0))
+                     (integer-format-inc-sign-tcnpnt size0)
+                     std)
                     (and (integerp (/ size (uchar-format->size uchar-format)))
                          (>= size 32)
                          (>= size size0))))
     :enable (integer-format-long-wfp
+             integer-format-wfp-of-integer-format-inc-sign-tcnpnt
              integer-format->bit-size-of-integer-format-inc-sign-tcnpnt
              integer-format->signed-min-of-integer-format-inc-sign-tcnpnt
              integer-format->signed-max-of-integer-format-inc-sign-tcnpnt
@@ -363,11 +445,13 @@
              (equal (integer-format-llong-wfp
                      (integer-format-inc-sign-tcnpnt size)
                      uchar-format
-                     (integer-format-inc-sign-tcnpnt size0))
+                     (integer-format-inc-sign-tcnpnt size0)
+                     std)
                     (and (integerp (/ size (uchar-format->size uchar-format)))
                          (>= size 64)
                          (>= size size0))))
     :enable (integer-format-llong-wfp
+             integer-format-wfp-of-integer-format-inc-sign-tcnpnt
              integer-format->bit-size-of-integer-format-inc-sign-tcnpnt
              integer-format->signed-min-of-integer-format-inc-sign-tcnpnt
              integer-format->signed-max-of-integer-format-inc-sign-tcnpnt
@@ -399,14 +483,16 @@
   (xdoc::topstring
    (xdoc::p
     "This is the simplest and smallest format for @('short') integers,
-     with two's complement being the most common signed format.
+     with two's complement being the most common signed format in C17
+     and the only one allowed in C23.
      There cannot be any padding bits,
      otherwise the value bits would not suffice to cover
      the required ranges of values.
-     With no padding bits, there is only one possible trap representation,
+     In C17, with no padding bits,
+     there is only one possible trap representation,
      namely the one with sign bit 1 and all value bits 0,
-     but the simplest and most common choice is that it is a valid value instead
-     (the smallest signed value representable in the type)."))
+     but this format uses it for the smallest signed value.
+     This choice is required in C23."))
   (integer-format-inc-sign-tcnpnt 16)
 
   ///
@@ -414,7 +500,11 @@
   (defrule integer-format-short-wfp-of-short-format-16tcnt
     (integer-format-short-wfp (short-format-16tcnt)
                               (uchar-format-8)
-                              (schar-format-8tcnt)))
+                              (schar-format-8tcnt)
+                              std)
+    :enable integer-format-short-wfp-of-integer-format-inc-sign-tcnpnt
+    :disable ((:e short-format-16tcnt)
+              (:e integer-format-inc-sign-tcnpnt)))
 
   (defruled integer-format->bit-size-of-short-format-16tcnt
     (equal (integer-format->bit-size (short-format-16tcnt))
@@ -422,23 +512,20 @@
 
   (defruled uinteger-format->max-of-short-format-16tcnt
     (equal (uinteger-format->max
-            (uinteger+sinteger-format->unsigned
-             (integer-format->pair
-              (short-format-16tcnt))))
+            (integer-format->unsigned
+             (short-format-16tcnt)))
            65535))
 
   (defruled sinteger-format->max-of-short-format-16tcnt
     (equal (sinteger-format->max
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (short-format-16tcnt))))
+            (integer-format->signed
+             (short-format-16tcnt)))
            32767))
 
   (defruled sinteger-format->min-of-short-format-16tcnt
     (equal (sinteger-format->min
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (short-format-16tcnt))))
+            (integer-format->signed
+             (short-format-16tcnt)))
            -32768)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -453,14 +540,16 @@
   (xdoc::topstring
    (xdoc::p
     "This is the simplest and smallest format for @('int') integers,
-     with two's complement being the most common signed format.
+     with two's complement being the most common signed format in C17
+     and the only one allowed in C23.
      There cannot be any padding bits,
      otherwise the value bits would not suffice to cover
      the required ranges of values.
-     With no padding bits, there is only one possible trap representation,
+     In C17, with no padding bits,
+     there is only one possible trap representation,
      namely the one with sign bit 1 and all value bits 0,
-     but the simplest and most common choice is that it is a valid value instead
-     (the smallest signed value representable in the type)."))
+     but this format uses it for the smallest signed value.
+     This choice is required in C23."))
   (integer-format-inc-sign-tcnpnt 16)
 
   ///
@@ -468,7 +557,13 @@
   (defrule integer-format-int-wfp-of-int-format-16tcnt
     (integer-format-int-wfp (int-format-16tcnt)
                             (uchar-format-8)
-                            (short-format-16tcnt)))
+                            (short-format-16tcnt)
+                            std)
+    :enable (short-format-16tcnt
+             integer-format-int-wfp-of-integer-format-inc-sign-tcnpnt)
+    :disable ((:e int-format-16tcnt)
+              (:e short-format-16tcnt)
+              (:e integer-format-inc-sign-tcnpnt)))
 
   (defruled integer-format->bit-size-of-int-format-16tcnt
     (equal (integer-format->bit-size (int-format-16tcnt))
@@ -476,23 +571,20 @@
 
   (defruled uinteger-format->max-of-int-format-16tcnt
     (equal (uinteger-format->max
-            (uinteger+sinteger-format->unsigned
-             (integer-format->pair
-              (int-format-16tcnt))))
+            (integer-format->unsigned
+             (int-format-16tcnt)))
            65535))
 
   (defruled sinteger-format->max-of-int-format-16tcnt
     (equal (sinteger-format->max
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (int-format-16tcnt))))
+            (integer-format->signed
+             (int-format-16tcnt)))
            32767))
 
   (defruled sinteger-format->min-of-int-format-16tcnt
     (equal (sinteger-format->min
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (int-format-16tcnt))))
+            (integer-format->signed
+             (int-format-16tcnt)))
            -32768)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -507,14 +599,16 @@
   (xdoc::topstring
    (xdoc::p
     "This is the simplest and smallest format for @('long') integers,
-     with two's complement being the most common signed format.
+     with two's complement being the most common signed format in C17
+     and the only one allowed in C23.
      There cannot be any padding bits,
      otherwise the value bits would not suffice to cover
      the required ranges of values.
-     With no padding bits, there is only one possible trap representation,
+     In C17, with no padding bits,
+     there is only one possible trap representation,
      namely the one with sign bit 1 and all value bits 0,
-     but the simplest and most common choice is that it is a valid value instead
-     (the smallest signed value representable in the type)."))
+     but this format uses it for the smallest signed value.
+     This choice is required in C23."))
   (integer-format-inc-sign-tcnpnt 32)
 
   ///
@@ -522,7 +616,13 @@
   (defrule integer-format-long-wfp-of-long-format-32tcnt
     (integer-format-long-wfp (long-format-32tcnt)
                              (uchar-format-8)
-                             (int-format-16tcnt)))
+                             (int-format-16tcnt)
+                             std)
+    :enable (int-format-16tcnt
+             integer-format-long-wfp-of-integer-format-inc-sign-tcnpnt)
+    :disable ((:e long-format-32tcnt)
+              (:e int-format-16tcnt)
+              (:e integer-format-inc-sign-tcnpnt)))
 
   (defruled integer-format->bit-size-of-long-format-32tcnt
     (equal (integer-format->bit-size (long-format-32tcnt))
@@ -530,23 +630,20 @@
 
   (defruled uinteger-format->max-of-long-format-32tcnt
     (equal (uinteger-format->max
-            (uinteger+sinteger-format->unsigned
-             (integer-format->pair
-              (long-format-32tcnt))))
+            (integer-format->unsigned
+             (long-format-32tcnt)))
            4294967295))
 
   (defruled sinteger-format->max-of-long-format-32tcnt
     (equal (sinteger-format->max
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (long-format-32tcnt))))
+            (integer-format->signed
+             (long-format-32tcnt)))
            2147483647))
 
   (defruled sinteger-format->min-of-long-format-32tcnt
     (equal (sinteger-format->min
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (long-format-32tcnt))))
+            (integer-format->signed
+             (long-format-32tcnt)))
            -2147483648)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -561,22 +658,30 @@
   (xdoc::topstring
    (xdoc::p
     "This is the simplest and smallest format for @('long long') integers,
-     with two's complement being the most common signed format.
+     with two's complement being the most common signed format in C17
+     and the only one allowed in C23.
      There cannot be any padding bits,
      otherwise the value bits would not suffice to cover
      the required ranges of values.
-     With no padding bits, there is only one possible trap representation,
+     In C17, with no padding bits,
+     there is only one possible trap representation,
      namely the one with sign bit 1 and all value bits 0,
-     but the simplest and most common choice is that it is a valid value instead
-     (the smallest signed value representable in the type)."))
+     but this format uses it for the smallest signed value.
+     This choice is required in C23."))
   (integer-format-inc-sign-tcnpnt 64)
 
   ///
 
-  (defrule integer-format-llong-wfp-of-long-format-64tcnt
+  (defrule integer-format-llong-wfp-of-llong-format-64tcnt
     (integer-format-llong-wfp (llong-format-64tcnt)
                               (uchar-format-8)
-                              (long-format-32tcnt)))
+                              (long-format-32tcnt)
+                              std)
+    :enable (long-format-32tcnt
+             integer-format-llong-wfp-of-integer-format-inc-sign-tcnpnt)
+    :disable ((:e llong-format-64tcnt)
+              (:e long-format-32tcnt)
+              (:e integer-format-inc-sign-tcnpnt)))
 
   (defruled integer-format->bit-size-of-llong-format-64tcnt
     (equal (integer-format->bit-size (llong-format-64tcnt))
@@ -584,131 +689,18 @@
 
   (defruled uinteger-format->max-of-llong-format-64tcnt
     (equal (uinteger-format->max
-            (uinteger+sinteger-format->unsigned
-             (integer-format->pair
-              (llong-format-64tcnt))))
+            (integer-format->unsigned
+             (llong-format-64tcnt)))
            18446744073709551615))
 
   (defruled sinteger-format->max-of-llong-format-64tcnt
     (equal (sinteger-format->max
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (llong-format-64tcnt))))
+            (integer-format->signed
+             (llong-format-64tcnt)))
            9223372036854775807))
 
   (defruled sinteger-format->min-of-llong-format-64tcnt
     (equal (sinteger-format->min
-            (uinteger+sinteger-format->signed
-             (integer-format->pair
-              (llong-format-64tcnt))))
+            (integer-format->signed
+             (llong-format-64tcnt)))
            -9223372036854775808)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod char+short+int+long+llong+bool-format
-  :short "Fixtype of formats of
-          (unsigned, signed, and plain) @('char') objects,
-          (unsigned and signed) @('short') objects,
-          (unsigned and signed) @('int') objects,
-          (unsigned and signed) @('long') objects,
-          (unsigned and signed) @('long long') objects, and
-          @('_Bool') objects."
-  ((uchar uchar-format)
-   (schar schar-format)
-   (char char-format)
-   (short integer-format)
-   (int integer-format)
-   (long integer-format)
-   (llong integer-format)
-   (bool bool-format))
-  :pred char+short+int+long+llong+bool-formatp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define char+short+int+long+llong+bool-format-wfp
-  ((format char+short+int+long+llong+bool-formatp))
-  :returns (yes/no booleanp)
-  :short "Check if the formats of
-          @('char'),
-          @('short'),
-          @('int'),
-          @('long'),
-          @('long long'),
-          and @('_Bool')
-          objects
-          are well-formed."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The formats for @('char') objects already include
-     their own well-formedness in their definition.
-     We impose well-formedness on the other formats."))
-  (b* (((char+short+int+long+llong+bool-format format) format))
-    (and (integer-format-short-wfp format.short format.uchar format.schar)
-         (integer-format-int-wfp format.int format.uchar format.short)
-         (integer-format-long-wfp format.long format.uchar format.int)
-         (integer-format-llong-wfp format.llong format.uchar format.long)
-         (bool-format-wfp format.bool format.uchar)))
-
-  ///
-
-  (defrule char+short+int+long+llong+bool-format-wf-short-bit-size-lower-bound
-    (implies (char+short+int+long+llong+bool-format-wfp format)
-             (>= (integer-format->bit-size
-                  (char+short+int+long+llong+bool-format->short format))
-                 16))
-    :rule-classes :linear)
-
-  (defrule char+short+int+long+llong+bool-format-wf-int-bit-size-lower-bound
-    (implies (char+short+int+long+llong+bool-format-wfp format)
-             (>= (integer-format->bit-size
-                  (char+short+int+long+llong+bool-format->int format))
-                 16))
-    :rule-classes :linear)
-
-  (defrule char+short+int+long+llong+bool-format-wf-long-bit-size-lower-bound
-    (implies (char+short+int+long+llong+bool-format-wfp format)
-             (>= (integer-format->bit-size
-                  (char+short+int+long+llong+bool-format->long format))
-                 32))
-    :rule-classes :linear)
-
-  (defrule char+short+int+long+llong+bool-format-wf-llong-bit-size-lower-bound
-    (implies (char+short+int+long+llong+bool-format-wfp format)
-             (>= (integer-format->bit-size
-                  (char+short+int+long+llong+bool-format->llong format))
-                 64))
-    :rule-classes :linear))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define char8+short16+int16+long32+llong64+bool0-tcnt ()
-  :short "The
-          @('char'),
-          @('short'),
-          @('int'),
-          @('long'),
-          @('long long'), and
-          @('_Bool')
-          integer formats defined by
-          the minimal number of bits with increasing values,
-          two's complement,
-          no trap representations,
-          unsigned plain @('char')s,
-          and one-byte @('_Bool') objects
-          with value in the least significant bit."
-  (make-char+short+int+long+llong+bool-format
-   :uchar (uchar-format-8)
-   :schar (schar-format-8tcnt)
-   :char (char-format-8u)
-   :short (short-format-16tcnt)
-   :int (int-format-16tcnt)
-   :long (long-format-32tcnt)
-   :llong (llong-format-64tcnt)
-   :bool (bool-format-lsb))
-
-  ///
-
-  (defruled wfp-of-char8+short16+int16+long32+llong64+bool0-tcnt
-    (char+short+int+long+llong+bool-format-wfp
-     (char8+short16+int16+long32+llong64+bool0-tcnt))))

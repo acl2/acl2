@@ -1,6 +1,6 @@
 ; Tests of the typed-acl2-arrays utilities
 ;
-; Copyright (C) 2019-2020 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ; Copyright (C) 2019-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -174,12 +174,12 @@
                (NAT-ARRAYP ARRAY-NAME
                            (ASET1 ARRAY-NAME ARRAY INDEX VAL)
                            NUM-VALID-INDICES)))
-    (DEFTHM NAT-ARRAYP-OF-MAKE-EMPTY-ARRAY-AND-0
+    (DEFTHM NAT-ARRAYP-OF-NEW-ARRAY1-AND-0
       (IMPLIES (AND (POSP LEN)
                     (SYMBOLP ARRAY-NAME)
                     (<= LEN *MAX-1D-ARRAY-LENGTH*))
                (NAT-ARRAYP ARRAY-NAME
-                           (MAKE-EMPTY-ARRAY ARRAY-NAME LEN)
+                           (NEW-ARRAY1 ARRAY-NAME LEN)
                            0)))))
 
 ;; The :default value triggers extra theorems to be generated

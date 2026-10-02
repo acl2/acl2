@@ -354,7 +354,7 @@
 ;;; Attachment: brr-near-missp
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; It may seem that section belongs with similar sections in
+; It may seem that this section belongs with similar sections in
 ; boot-strap-pass-2-a.lisp.  However, we need to wait till brr-criteria-alistp
 ; and built-in-brr-near-missp are in :logic mode, which is after the calls of
 ; system-verify-guards above.
@@ -441,10 +441,10 @@
 
 (defun mempos (e lst)
 
-; Even though it is not necessary to define mempos in order to build ACL2, but
-; because the book books/projects/apply/loop.lisp introduces it to establish
-; the loop$-as-correspondence rule, it is best not to let the user define it.
-; It is identically defined in community book books/projects/apply/loop.lisp,
+; It is not necessary to define mempos in order to build ACL2, but because the
+; book books/projects/apply/loop.lisp introduces it to establish the
+; loop$-as-correspondence rule, it is best not to let the user define it.  It
+; is identically defined in community book books/projects/apply/loop.lisp,
 ; which should be included anytime the user is serious about using scions.
 
   (declare (xargs :guard (true-listp lst)))
@@ -457,6 +457,8 @@
   ()
   (verify-termination-boot-strap stobj-print-name)
   (verify-termination-boot-strap eviscerate-do$-alist)
+  (verify-termination-boot-strap collect-non-x)
+  (verify-termination-boot-strap do$-hard-er)
   (local (defthm nfix-list-preserves-consp
            (implies (consp x)
                     (consp (nfix-list x)))))
@@ -529,6 +531,8 @@
  (defwarrant eviscerate-do$-alist)
  (defwarrant loop$-default-values1)
  (defwarrant loop$-default-values)
+ (defwarrant collect-non-x)
+ (defwarrant do$-hard-er)
  (defwarrant do$)
 
  )

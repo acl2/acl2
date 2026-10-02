@@ -1,6 +1,6 @@
 ; A tool to turn 'mv-nth of mv-list' terms into mv-lets
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -67,7 +67,7 @@
   (if (or (variablep term)
           (fquotep term))
       ;; TODO: Support multiple constant values that have been computed into a constant list?:
-      (er hard? 'return-names-of-term "Expected ~x0 to return multiple values.")
+      (er hard? 'return-names-of-term "Expected ~x0 to return multiple values." term)
     (if (call-of 'if term)
         (if (call-of 'mbt (farg1 term)) ; for (if (mbt ...) <then-branch> <else-branch>), analyze <then-branch>:
             (return-names-of-term (farg2 term))
@@ -155,7 +155,7 @@
                      ,returned-val-name))))))))))
 
 (defun mv-nth-of-mv-list-termp (term)
-  (declare (xargs :guard (and (pseudo-termp term))))
+  (declare (xargs :guard (pseudo-termp term)))
   (and (call-of 'mv-nth term) ; example: (mv-nth '0 (mv-list '2 <multi-valued-term>))
        (quotep (farg1 term))
        (natp (unquote (farg1 term)))

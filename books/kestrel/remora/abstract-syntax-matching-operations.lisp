@@ -1,0 +1,268 @@
+; Remora Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "REMORA")
+
+(include-book "abstract-syntax-structurals")
+
+(local (include-book "kestrel/utilities/lists/len-const-theorems" :dir :system))
+(local (include-book "std/lists/len" :dir :system))
+
+(acl2::controlled-configuration)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local (in-theory (enable type+ispace-p-when-result-not-error
+                          type+ispace-listp-when-result-not-error)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ abstract-syntax-matching-operations
+  :parents (abstract-syntax)
+  :short "Operations to match ASTs to patterns."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We introduce operations to check whether
+     certain ASTs match certain patterns,
+     in which case the components of the pattern are returned.")
+   (xdoc::p
+    "We start by adding a few of them that are needed elsewhere,
+     but we plan to add more."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-match-array ((type typep))
+  :returns (type+ispace type+ispace-resultp)
+  :short "Check if a type is a non-variable array type or an atom type,
+          returning its elements' atom type and its ispace if successful."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In ASTs, atom types may be used where array types are expected.
+     Thus, this function succeeds on atom types,
+     regarding them as scalar (i.e. 0-ranked) arrays.
+     The function also succeeds in array types,
+     both explicit and in bracket form.
+     The only case in which this does not succeed is on array type variables,
+     because we could not obtain the element atom type and the ispace."))
+  (cond
+   ((type-atom-kindp type)
+    (make-type+ispace :type type :ispace (ispace-shape (shape-dims nil))))
+   ((type-case type :array)
+    (make-type+ispace :type (type-array->elem type)
+                      :ispace (type-array->ispace type)))
+   ((type-case type :bracket)
+    (make-type+ispace :type (type-bracket->elem type)
+                      :ispace (ispace-shape
+                               (shape-append
+                                (shape-list-from-ispace-list
+                                 (type-bracket->ispaces type))))))
+   (t (reserr nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-list-match-array ((types type-listp))
+  :returns (types+ispaces type+ispace-list-resultp)
+  :short "Check if all the types in a list are @(':array') summands,
+          returning the list of their elements' atom types and its ispaces
+          if successful."
+  (b* (((when (endp types)) nil)
+       ((ok type+ispace) (type-match-array (car types)))
+       ((ok types+ispaces) (type-list-match-array (cdr types))))
+    (cons type+ispace types+ispaces))
+
+  ///
+
+  (defret len-of-type-list-match-array
+    (implies (not (reserrp types+ispaces))
+             (equal (len types+ispaces)
+                    (len types)))
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-match-fun ((type typep))
+  :returns (in+rest type+type-resultp)
+  :short "Check if a type is a function type,
+          peeling off its first input type if successful."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A unary function type is matched directly:
+     we return its input type and its output type.")
+   (xdoc::p
+    "Consistently with the curried view of term applications
+     (see @(tsee expr)),
+     an n-ary function type is treated as
+     the nesting of one-input function types.
+     Accordingly, this matching operation peels off one input type:
+     if the type is an n-ary function type with at least one input,
+     we return the first input type,
+     along with the output type of the function type
+     if there are no other inputs,
+     or otherwise the function type over the remaining inputs.
+     An n-ary function type with no inputs fails to match."))
+  (b* (((when (type-case type :fun))
+        (make-type+type :type1 (type-fun->in type)
+                        :type2 (type-fun->out type)))
+       ((unless (type-case type :funn)) (reserr nil))
+       (ins (type-funn->in type))
+       (out (type-funn->out type))
+       ((unless (consp ins)) (reserr nil)))
+    (make-type+type
+     :type1 (car ins)
+     :type2 (if (consp (cdr ins))
+                (make-type-funn :in (cdr ins) :out out)
+              out))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-match-forall ((type typep))
+  :returns (var+type typevar+type-resultp)
+  :short "Check if a type is a universal type,
+          peeling off its first type parameter variable if successful."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A unary universal type is matched directly:
+     we return its bound variable and its body.")
+   (xdoc::p
+    "Consistently with the curried view of type applications
+     (see @(tsee expr)),
+     an n-ary universal type is treated as
+     the nesting of unary universal types.
+     Accordingly, this matching operation peels off one variable:
+     if the type is an n-ary universal type with at least one variable,
+     we return the first variable,
+     along with the body of the universal type
+     if there are no other variables,
+     or otherwise the universal type over the remaining variables.
+     An n-ary universal type with no variables fails to match."))
+  (b* (((when (type-case type :forall))
+        (make-typevar+type :var (type-forall->param type)
+                           :type (type-forall->body type)))
+       ((unless (type-case type :foralln)) (reserr nil))
+       (params (type-foralln->params type))
+       (body (type-foralln->body type)))
+    (make-typevar+type
+     :var (car params)
+     :type (make-type-forall/foralln (cdr params) body)))
+  :guard-hints
+  (("Goal" :in-theory (enable consp-of-cdr-of-type-foralln->params))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-match-product ((type typep))
+  :returns (var+type ispacevar+type-resultp)
+  :short "Check if a type is a product type,
+          peeling off its first ispace parameter variable if successful."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A unary product type is matched directly:
+     we return its bound variable and its body.")
+   (xdoc::p
+    "Consistently with the curried view of ispace applications
+     (see @(tsee expr)),
+     an n-ary product type is treated as
+     the nesting of unary product types.
+     Accordingly, this matching operation peels off one variable:
+     if the type is an n-ary product type with at least one variable,
+     we return the first variable,
+     along with the body of the product type
+     if there are no other variables,
+     or otherwise the product type over the remaining variables.
+     An n-ary product type with no variables fails to match."))
+  (b* (((when (type-case type :pi))
+        (make-ispacevar+type :var (type-pi->param type)
+                             :type (type-pi->body type)))
+       ((unless (type-case type :pin)) (reserr nil))
+       (params (type-pin->params type))
+       (body (type-pin->body type)))
+    (make-ispacevar+type
+     :var (car params)
+     :type (make-type-pi/pin (cdr params) body)))
+  :guard-hints
+  (("Goal" :in-theory (enable consp-of-cdr-of-type-pin->params))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-match-sum ((type typep))
+  :returns (vars+type ispacevarlist+type-resultp)
+  :short "Check if a type is a sum type,
+          returning its ispace parameter variables and body array type
+          if successful."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Both the unary and n-ary forms of sum type are matched.
+     Unlike @(tsee type-match-product), which peels off one variable
+     (consistently with the curried view of ispace applications),
+     this operation returns all the parameter variables at once,
+     because the n-ary box and unbox constructs
+     bind all their witnesses together;
+     callers that treat sum types in curried fashion,
+     like the checking of unary boxing atoms,
+     peel off the first of the returned variables;
+     a unary sum type yields a single-element list."))
+  (type-case
+   type
+   :sigma (make-ispacevarlist+type :vars (list (type-sigma->param type))
+                                   :type (type-sigma->body type))
+   :sigman (make-ispacevarlist+type :vars (type-sigman->params type)
+                                    :type (type-sigman->body type))
+   :otherwise (reserr nil))
+
+  ///
+
+  (defret consp-of-vars-of-type-match-sum
+    (implies (not (reserrp vars+type))
+             (consp (ispacevarlist+type->vars vars+type)))
+    :hints (("Goal" :in-theory (enable type-match-sum)))
+    :rule-classes ((:rewrite) (:type-prescription))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-match-unannotated-box ((expr exprp))
+  :returns (ispace+expr ispace+expr-resultp)
+  :short "Check if an expression is a zero-rank array
+          of a single unannotated unary boxing atom,
+          returning the atom's ispace and array expression if successful."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This matches the inner boxes of
+     the nest that an n-ary boxing atom desugars to
+     (see @(tsee atom)):
+     each is a unary boxing atom without the type,
+     wrapped into a zero-rank array expression."))
+  (b* (((unless (expr-case expr :array)) (reserr nil))
+       ((expr-array expr) expr)
+       ((unless (endp expr.dims)) (reserr nil))
+       ((unless (endp (cdr expr.atoms)))
+        (reserr nil))
+       (atom (car expr.atoms))
+       ((unless (atom-case atom :box)) (reserr nil))
+       ((atom-box atom) atom))
+    (type-option-case
+     atom.type?
+     :some (reserr nil)
+     :none (make-ispace+expr :ispace atom.ispace :expr atom.array)))
+
+  ///
+
+  (defret expr-count-of-expr-match-unannotated-box
+    (implies (not (reserrp ispace+expr))
+             (< (expr-count (ispace+expr->expr ispace+expr))
+                (expr-count expr)))
+    :rule-classes :linear))

@@ -127,7 +127,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-fun-env ((tunit transunitp))
+(define init-fun-env ((tunit trans-unitp))
   :returns (result fun-env-resultp)
   :short "Initialize the function environment for a translation unit."
   :long
@@ -136,7 +136,7 @@
     "We go though the external declarations that form the translation unit
      and we build the function environment for the function definitions,
      starting from the empty environment."))
-  (init-fun-env-aux (transunit->declons tunit) nil)
+  (init-fun-env-aux (trans-unit->declons tunit) nil)
 
   :prepwork
   ((define init-fun-env-aux ((declons ext-declon-listp) (fenv fun-envp))

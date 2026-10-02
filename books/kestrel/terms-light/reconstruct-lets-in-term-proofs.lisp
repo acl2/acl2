@@ -1,6 +1,6 @@
 ; Proofs about reconstruct-lets-in-term
 ;
-; Copyright (C) 2021-2022 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,9 +13,12 @@
 (include-book "reconstruct-lets-in-term")
 (include-book "free-vars-in-term")
 (include-book "kestrel/lists-light/perm-def" :dir :system)
+(include-book "no-duplicate-lambda-formals-in-termp")
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/lists-light/remove-duplicates-equal" :dir :system))
 (local (include-book "kestrel/lists-light/perm" :dir :system))
-(include-book "no-duplicate-lambda-formals-in-termp")
+
+(local (make-flag reconstruct-lets-in-term-aux))
 
 ;; This proves that the free vars returned by the -aux function are correct:
 (defthm-flag-reconstruct-lets-in-term-aux

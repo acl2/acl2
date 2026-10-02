@@ -1,6 +1,6 @@
 ; Tests of my-make-flag
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -26,7 +26,8 @@
   (my-make-flag evens))
 
 (deftest
-  ;; Test where clique members appear in their own termination theorem:
+  ;; Test where clique members appear in their own termination theorem (see: (tthm 'pseudo-termp)):
+  ;; In this call, the clause-processor finishes the whole proof of the measure conjecture:
   (my-make-flag pseudo-termp))
 
 ;; Fails without the :ruler-extenders argument:
@@ -44,7 +45,3 @@
   ;; The clause-processor doesn't prove the whole measure conjecture, because
   ;; ACL2's simplification makes it harder to prove.
   (my-make-flag tamep))
-
-(deftest
-  ;; In this call, the clause-processor finishes the whole proof of the measure conjecture:
-  (my-make-flag pseudo-termp))

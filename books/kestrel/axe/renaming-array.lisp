@@ -21,7 +21,7 @@
 ;; translation-array.lisp.  The renaming-array may be appropriate for bottom-up
 ;; algorithms that touch every node.
 
-;; See a faster version of essentially the same concept as this book, see renumbering-stobj.lisp.
+;; For a faster version of essentially the same concept as this book, see renumbering-stobj.lisp.
 
 ;; TODO: Can we define this using def-typed-acl2-array?
 
@@ -137,11 +137,11 @@
                   (consp (aref1 renaming-array-name renaming-array nodenum))))
   :hints (("Goal" :in-theory (enable renaming-arrayp-aux))))
 
-(defthm renaming-arrayp-aux-of-make-empty-array
+(defthm renaming-arrayp-aux-of-new-array1
   (implies (and (posp size)
                 (symbolp array-name)
                 (<= size *max-1d-array-length*))
-           (renaming-arrayp-aux array-name (make-empty-array array-name size) -1))
+           (renaming-arrayp-aux array-name (new-array1 array-name size) -1))
   :hints (("Goal" :in-theory (enable renaming-arrayp-aux))))
 
 ;; enabling dargp-rules may avoid the need for these:

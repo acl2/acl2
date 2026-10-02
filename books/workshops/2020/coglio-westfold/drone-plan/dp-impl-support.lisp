@@ -126,14 +126,6 @@
   (implies (good-dr-state*-p x)
            (dr-state*-p x)))
 
-(defthm node-path-p-path-taken
-  (implies (and (dr-state-p drn-st)
-                (consp (dr-state->path-taken drn-st))
-                (node-path-p (dr-state->path-taken drn-st)
-                             (dr-state->dgraph drn-st)))
-           (node-path-p (dr-state->path-taken drn-st)
-                        (dr-state->dgraph drn-st))))
-
 (defforall all-good-dr-state-p (drn-sts) (good-dr-state-p drn-sts)
   :guard t :true-listp t)
 

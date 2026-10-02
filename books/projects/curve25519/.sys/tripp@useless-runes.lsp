@@ -2309,6 +2309,7 @@
  (1 1 (:REWRITE |(equal (- x) (- y))|))
  (1 1 (:REWRITE |(* c (expt d n))|))
  (1 1 (:REWRITE |(* (expt c m) (expt d n))|))
+ (1 1 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  )
 (DM::NATP-VDBL
  (36684 373 (:REWRITE DEFAULT-PLUS-2))
@@ -2336,6 +2337,7 @@
  (51 9 (:REWRITE DEFAULT-CAR))
  (20 8 (:REWRITE DEFAULT-CDR))
  (17 17 (:REWRITE |(* (expt c m) (expt d n))|))
+ (17 17 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  (6 6 (:REWRITE |(* c (expt d n))|))
  (2 1 (:TYPE-PRESCRIPTION DM::NATP-VDBL))
  (2 1 (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
@@ -11410,6 +11412,7 @@
  (2 2 (:REWRITE |(expt (- c) n)|))
  (2 2 (:REWRITE |(* c (expt d n))|))
  (2 2 (:REWRITE |(* (expt c m) (expt d n))|))
+ (2 2 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  (2 1 (:TYPE-PRESCRIPTION DM::NATP-USUM))
  )
 (DM::NATP-VSUM
@@ -11437,6 +11440,7 @@
  (58 10 (:REWRITE DEFAULT-CAR))
  (47 12 (:REWRITE PREFER-POSITIVE-ADDENDS-EQUAL))
  (28 28 (:REWRITE |(* (expt c m) (expt d n))|))
+ (28 28 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  (22 10 (:REWRITE DEFAULT-CDR))
  (14 12 (:REWRITE SIMPLIFY-SUMS-EQUAL))
  (12 12 (:REWRITE REDUCE-MULTIPLICATIVE-CONSTANT-EQUAL))
@@ -12362,6 +12366,7 @@
  (3 3 (:REWRITE |(equal (* x y) 0)|))
  (3 3 (:REWRITE |(< 0 (* x y)) rationalp (* x y)|))
  (3 3 (:REWRITE |(* (expt c m) (expt d n))|))
+ (3 3 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  (2 2 (:REWRITE |(expt (- c) n)|))
  (2 2 (:REWRITE |(* c (expt d n))|))
  (1 1 (:REWRITE INTEGERP-+-REDUCE-CONSTANT))
@@ -14271,6 +14276,7 @@
  (8 8 (:REWRITE |(expt (- c) n)|))
  (6 6 (:REWRITE |(* c (expt d n))|))
  (6 6 (:REWRITE |(* (expt c m) (expt d n))|))
+ (6 6 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  )
 (DM::DECODE3-SUM-34
  (1613 15 (:REWRITE MOD-ZERO . 3))

@@ -41,11 +41,19 @@
             (mv t
                 (er hard? 'parse-executable-bytes "Unexpected kind of file (not PE, ELF, or Mach-O).  Magic number is ~x0. PE file signature is ~x1" magic-number sig))))))))
 
+; todo:
+;; (thm
+;;   (implies (not (mv-nth 0 (parse-executable-bytes bytes filename)))
+;;            (parsed-executabep (mv-nth 1 (parse-executable-bytes bytes filename))))
+;;   :hints (("Goal" :in-theory (enable parse-executable-bytes))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Parses an ELF or Mach-O or PE executable.
 ;; Returns (mv erp contents state) where contents in an alist representing
 ;; the contents of the executable (exact format depends on the type of
 ;; the executable).
-(defun parse-executable (filename state)
+(defund parse-executable (filename state)
   (declare (xargs :guard (stringp filename)
                   :stobjs state))
   (b* (((mv existsp state) (file-existsp filename state))
@@ -58,6 +66,11 @@
        ((mv erp contents) (parse-executable-bytes bytes filename))
        ((when erp) (mv erp nil state)))
     (mv nil contents state)))
+
+(defthm w-of-mv-nth2-of-parse-executable
+  (equal (w (mv-nth 2 (parse-executable filename state)))
+         (w state))
+  :hints (("Goal" :in-theory (e/d (parse-executable) (w)))))
 
 ;; Returns (mv erp event state) where EVENT is a defconst representing the
 ;; parsed form of the executable FILENAME.

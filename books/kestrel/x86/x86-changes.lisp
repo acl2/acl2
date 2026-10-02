@@ -1769,7 +1769,8 @@
 ;logapp ; slow
                                     logext
                                     rflag-RoWs-enables)
-                                   (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
+                                   (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE
+                                    acl2::bvchop-of-logext-becomes-bvsx)))))
 
 ;; See comment on SaR-SPEC-8-alt-def.
 (defthm SaR-SPEC-16-alt-def
@@ -1863,7 +1864,8 @@
                                    zf-spec
                                    logext
                                    rflag-RoWs-enables)
-                                  (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
+                                   (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE
+                                    acl2::bvchop-of-logext-becomes-bvsx)))))
 
 ;; See comment on SaR-SPEC-8-alt-def.
 (defthm SaR-SPEC-32-alt-def
@@ -1956,7 +1958,8 @@
                                     zf-spec
                                     logext
                                     rflag-RoWs-enables)
-                                   (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
+                                   (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE
+                                    acl2::bvchop-of-logext-becomes-bvsx)))))
 
 ;; See comment on SaR-SPEC-8-alt-def.
 (defthm SaR-SPEC-64-alt-def
@@ -2049,7 +2052,8 @@
 ;ACL2::LOGAPP-BECOMES-BVCAT-WHEN-BV
                                     rflag-RoWs-enables
                                     )
-                                   (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
+                                   (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE
+                                    acl2::bvchop-of-logext-becomes-bvsx)))))
 
 
 ;; the normal definition splits with an if!

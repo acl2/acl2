@@ -1,7 +1,7 @@
 ; Versions of functions with guards of t
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -24,8 +24,8 @@
 (include-book "kestrel/bv-arrays/bv-array-read" :dir :system)
 (include-book "kestrel/bv-arrays/bv-array-write" :dir :system)
 (include-book "kestrel/bv/bvplus-def" :dir :system)
-(include-book "kestrel/bv/bvmult" :dir :system)
-(include-book "kestrel/bv/bvxor" :dir :system)
+(include-book "kestrel/bv/bvmult-def" :dir :system)
+(include-book "kestrel/bv/bvxor-def" :dir :system)
 (include-book "kestrel/bv/leftrotate" :dir :system)
 (include-book "kestrel/bv/leftrotate32" :dir :system)
 ;(include-book "kestrel/bv/bvlt" :dir :system)
@@ -41,7 +41,7 @@
 (include-book "kestrel/bv/bvsx-def" :dir :system)
 (include-book "kestrel/bv/bvshl-def" :dir :system)
 (include-book "kestrel/bv/bvshr-def" :dir :system)
-(include-book "kestrel/bv/bvashr" :dir :system)
+(include-book "kestrel/bv/bvashr-def" :dir :system)
 (include-book "kestrel/bv/bvequal" :dir :system)
 (include-book "kestrel/bv/bvminus-def" :dir :system)
 (include-book "kestrel/bv/sbvdiv" :dir :system)
@@ -67,6 +67,7 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/bv-lists/bvchop-list2" :dir :system))
+(local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
 (local (include-book "kestrel/bv/bvsx" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
 (local (include-book "kestrel/bv/logtail" :dir :system))
@@ -857,3 +858,18 @@
          (subrange start end lst))
   :hints (("Goal" :in-theory (enable subrange-unguarded
                                      subrange))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund union-equal-unguarded (l1 l2)
+  (declare (xargs :guard t))
+  (cond ((endp-unguarded l1) l2)
+        ((member-equal-unguarded (car l1) l2)
+         (union-equal-unguarded (cdr l1) l2))
+        (t (cons (car l1)
+                 (union-equal-unguarded (cdr l1) l2)))))
+
+(defthm union-equal-unguarded-correct
+  (equal (union-equal-unguarded l1 l2)
+         (union-equal l1 l2))
+  :hints (("Goal" :in-theory (enable union-equal-unguarded))))

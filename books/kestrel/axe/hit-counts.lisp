@@ -1,7 +1,7 @@
 ; Counting how many times rewrite rules apply
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -105,7 +105,9 @@
 
 ;; NOTE: To debug possible rewrite loops, do:
 ;; (trace$ (acl2::increment-hit-count :entry (car acl2::arglist) :exit :done))
-;; and also supply :count-hits t to the tool, if needed.
+;; and also supply :count-hits t or :print :verbose to the tool, if needed.
+;; NOTE: Loops may also involve replacements made using the memoization,
+;; but those steps won't show up in this trace.
 
 (local
   (defthm hit-count-info-worldp-of-increment-hit-count
@@ -177,6 +179,7 @@
 (defund hit-count-alistp (alist)
   (declare (xargs :guard t))
   (and (symbol-alistp alist)
+       ;; todo: there should be no duplicates among the keys
        (nat-listp (strip-cdrs alist))))
 
 (local
@@ -303,7 +306,7 @@
         t ; the entry with the greater count comes first
       (if (< count1 count2)
           nil
-        ;; counts are equal, some compare the rule names:
+        ;; counts are equal, so compare the rule names:
         ;; the names should not be the same (todo: prove this)
         (symbol< (car e1) (car e2))))))
 
@@ -334,7 +337,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; the alist should have shadowed paris already removed
+;; the alist should have shadowed pairs already removed
 (defund add-counts-in-hit-count-alist (alist acc)
   (declare (xargs :guard (and (hit-count-alistp alist)
                               (natp acc))
@@ -488,7 +491,7 @@
       ;; removes :fake:
       (make-hit-count-alist hit-counts))))
 
-(defthm hitps-of-hit-counts-to-hits
+(defthm hitsp-of-hit-counts-to-hits
   (implies (hit-countsp hit-counts)
            (hitsp (hit-counts-to-hits hit-counts)))
   :hints (("Goal" :in-theory (enable hit-counts-to-hits hitsp hit-countsp))))

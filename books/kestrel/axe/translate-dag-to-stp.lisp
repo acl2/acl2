@@ -39,8 +39,6 @@
 ;; (time$ (len (string-append-all2 (repeat 20000 "foo") "")))
 ;; (time$ (len (string-append-all2 (repeat 30000 "foo") "")))
 
-; TODO: Consider adding support for array terms that are if-then-else nests.
-
 ;The only variables appearing in the translated file should be of the forms NODE<num> or ARRAY<num>.  Even if, say, node 100 is the variable x, it is translated as the variable NODE100.  This should prevent any variable name clashes.
 ;FIXME could put in the real names of true input vars in comments?
 
@@ -185,8 +183,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Returns a string-tree.
 ;just use repeat?
 ;optimize?
+;cons up a list of characters instead of strings?
 (defund n-close-parens (n acc)
   (declare (xargs :guard (natp n)))
   (if (zp n)
@@ -201,12 +201,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Returns a string-tree.
 (defund make-node-var (n)
   (declare (type (integer 0 *) n))
   ;; would it be cheaper to use a version of nat-to-string that returns a string-tree?
+  ;; TODO: Shorten "NODE" to just "V" or "x"?
   (cons "NODE" (nat-to-string n)))
 
 ;; can't be local
@@ -225,14 +224,14 @@
                                   t
                                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 darg)))
                               (nodenum-type-alistp cut-nodenum-type-alist))))
-  (if (consp darg) ;checks for quotep
+  (if (darg-is-quotep darg)
       (if (equal darg *nil*)
           "FALSE"
         (if (equal darg *t*)
             "TRUE"
           ;;i suppose any constant other than nil could be translated like t (but print a warning?!):
           (er hard? 'translate-boolean-arg "Bad constant (should be boolean): ~x0.~%" darg)))
-    ;; arg is a nodenum, so check the type:
+    ;; darg is a nodenum, so check the type:
     (let ((maybe-type (maybe-get-type-of-nodenum darg dag-array-name dag-array cut-nodenum-type-alist)))
       (if (boolean-typep maybe-type)
           (make-node-var darg)
@@ -387,33 +386,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Translates the arg, with padding (but not chopping) as needed to make it have size DESIRED-SIZE.
+;; Translates DARG, with padding (but not chopping) as needed to make it have size DESIRED-SIZE.
 ;; Returns a string-tree.
-;Looks up the size of the arg and pads as appropriate
+;Looks up the size of the darg and pads as appropriate
 ;ffffixme change this to chop and skip all the chops in the callers!
 ;ARG is either a quotep or a nodenum in the DAG-ARRAY
-;FIXME throw an error if the arg is too big for the size (or chop it down? i guess this already in effect chops down constants - is that always sound?)
-(defund translate-bv-arg (arg desired-size dag-array-name dag-array dag-len cut-nodenum-type-alist)
+;FIXME throw an error if the darg is too big for the size (or chop it down? i guess this already in effect chops down constants - is that always sound?)
+(defund translate-bv-arg (darg desired-size dag-array-name dag-array dag-len cut-nodenum-type-alist)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (dargp-less-than arg dag-len)
-                              (bv-arg-okp arg)
+                              (dargp-less-than darg dag-len)
+                              (bv-arg-okp darg)
                               (posp desired-size)
                               (nodenum-type-alistp cut-nodenum-type-alist))
                   :split-types t)
            (type (integer 1 *) desired-size)
            (ignore dag-len) ; only needed for the guard
            )
-  (if (consp arg) ;tests for quotep
-      (translate-bv-constant (unquote arg) desired-size)
-    ;;arg is a nodenum:
-    (let ((maybe-type (maybe-get-type-of-nodenum arg dag-array-name dag-array cut-nodenum-type-alist)))
-      (if (bv-typep maybe-type)
-          (translate-bv-nodenum-and-pad arg desired-size (bv-type-width maybe-type))
-        (er hard? 'translate-bv-arg "bad type, ~x0, for BV argument ~x1, with expression ~x2" maybe-type arg (aref1 dag-array-name dag-array arg))))))
+  (if (darg-is-quotep darg)
+      (translate-bv-constant (unquote darg) desired-size)
+    ;;darg is a nodenum:
+    (let ((maybe-type (maybe-get-type-of-nodenum darg dag-array-name dag-array cut-nodenum-type-alist)))
+      (if (bv-typep maybe-type) ; todo: what about a size of 0?
+          (translate-bv-nodenum-and-pad darg desired-size (bv-type-width maybe-type))
+        (er hard? 'translate-bv-arg "bad type, ~x0, for BV argument ~x1, with expression ~x2" maybe-type darg (aref1 dag-array-name dag-array darg))))))
 
 (local
   (defthm string-treep-of-translate-bv-arg
-    (string-treep (translate-bv-arg arg desired-size dag-array-name dag-array dag-len cut-nodenum-type-alist))
+    (string-treep (translate-bv-arg darg desired-size dag-array-name dag-array dag-len cut-nodenum-type-alist))
     :hints (("Goal" :in-theory (enable translate-bv-arg)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -432,7 +431,7 @@
            (type (integer 1 *) desired-size)
            (ignore dag-len) ; only needed for the guard
            )
-  (if (consp darg)                                        ;tests for quotep
+  (if (darg-is-quotep darg)
       (translate-bv-constant (unquote darg) desired-size) ; puts in exactly DESIRED-SIZE bits of the constant
     ;; darg is a nodenum:
     (let ((maybe-type (maybe-get-type-of-nodenum darg dag-array-name dag-array cut-nodenum-type-alist)))
@@ -930,14 +929,14 @@
                              (er hard? 'translate-dag-expr "bad constant: ~x0" constant))))))
              constant-array-info))
         ;; boolean operators (we could perhaps support BOOLXOR (or just XOR) as well):
-        (not
+        (not ; (not x)
           (if (and (= 1 (len (dargs expr)))
                    (boolean-arg-okp (darg1 expr)))
               (mv (erp-nil)
                   (list* "(NOT(" (translate-boolean-arg (darg1 expr) dag-array-name dag-array cut-nodenum-type-alist) "))")
                   constant-array-info)
             (mv (erp-t) nil constant-array-info)))
-        (booland
+        (booland ; (booland x y)
          (if (and (= 2 (len (dargs expr)))
                   (boolean-arg-okp (darg1 expr))
                   (boolean-arg-okp (darg2 expr)))
@@ -949,7 +948,7 @@
                         ")")
                  constant-array-info)
            (mv (erp-t) nil constant-array-info)))
-        (boolor
+        (boolor ; (boolor x y)
          (if (and (= 2 (len (dargs expr)))
                   (boolean-arg-okp (darg1 expr))
                   (boolean-arg-okp (darg2 expr)))
@@ -961,7 +960,7 @@
                         ")")
                  constant-array-info)
            (mv (erp-t) nil constant-array-info)))
-        (boolif
+        (boolif ; (boolif test x y)
           (if (and (= 3 (len (dargs expr)))
                    (boolean-arg-okp (darg1 expr))
                    (boolean-arg-okp (darg2 expr))
@@ -977,7 +976,7 @@
                   constant-array-info)
             (mv (erp-t) nil constant-array-info)))
         ;; bit operators
-        (bitnot ;; (bitnot x)
+        (bitnot ; (bitnot x)
           (if (and (= 1 (len (dargs expr)))
                    (bv-arg-okp (darg1 expr)))
               (mv (erp-nil)
@@ -986,7 +985,7 @@
                          ")")
                   constant-array-info)
             (mv (erp-t) nil constant-array-info)))
-        (bitand ;; (bitand x y)
+        (bitand ; (bitand x y)
           (if (and (= 2 (len (dargs expr)))
                    (bv-arg-okp (darg1 expr))
                    (bv-arg-okp (darg2 expr)))
@@ -998,7 +997,7 @@
                          ")")
                   constant-array-info)
             (mv (erp-t) nil constant-array-info)))
-        (bitor ;; (bitor x y)
+        (bitor ; (bitor x y)
           (if (and (= 2 (len (dargs expr)))
                    (bv-arg-okp (darg1 expr))
                    (bv-arg-okp (darg2 expr)))
@@ -1010,7 +1009,7 @@
                          ")")
                   constant-array-info)
             (mv (erp-t) nil constant-array-info)))
-        (bitxor ;; (bitxor x y)
+        (bitxor ; (bitxor x y)
           (if (and (= 2 (len (dargs expr)))
                    (bv-arg-okp (darg1 expr))
                    (bv-arg-okp (darg2 expr)))
@@ -1022,8 +1021,8 @@
                          "))")
                   constant-array-info)
             (mv (erp-t) nil constant-array-info)))
-        ;; bv operators:
-        (bvchop ;; (bvchop size x)
+        ;; multi-bit operators:
+        (bvchop ; (bvchop size x)
           (if (and (= 2 (len (dargs expr)))
                    (darg-quoted-posp (darg1 expr))
                    (bv-arg-okp (darg2 expr)))
@@ -1559,9 +1558,9 @@
                          " ENDIF)")
                   constant-array-info))
             (mv (erp-t) nil constant-array-info)))
-        (unsigned-byte-p ;(UNSIGNED-BYTE-P WIDTH X), needed for things like (unsigned-byte-p 1 (bvplus 8 x y))
+        (unsigned-byte-p ; (unsigned-byte-p width x), needed for things like (unsigned-byte-p 1 (bvplus 8 x y))
          (if (and (= 2 (len (dargs expr)))
-                  (darg-quoted-natp (darg1 expr))
+                  (darg-quoted-natp (darg1 expr)) ; require posp? see below...
                   (bv-arg-okp (darg2 expr)))
              (b* ((claimed-width (unquote (darg1 expr)))
                   (bv-arg (darg2 expr))
@@ -1578,6 +1577,7 @@
                        "(TRUE)" ;the unsigned-byte-p doesn't tell us anything new
                      ;;the unsigned-byte-p-claim amounts to saying that the high bits are 0:
                      (list* "(("
+                            ;; todo: this recomputes the size of bv-arg -- optimize?
                             (translate-bv-arg bv-arg known-width dag-array-name dag-array dag-len cut-nodenum-type-alist)
                             "["
                             (nat-to-string (+ -1 known-width))
@@ -1652,7 +1652,7 @@
               (no-nodes-are-variablesp nodes dag-array-name dag-array dag-len)))
   :hints (("Goal" :in-theory (enable no-nodes-are-variablesp))))
 
-(defthm no-nodes-are-variablesp-of-when-not-consp
+(defthm no-nodes-are-variablesp-when-not-consp
   (implies (not (consp list))
            (no-nodes-are-variablesp list dag-array-name dag-array dag-len))
   :hints (("Goal" :in-theory (enable no-nodes-are-variablesp reverse-list))))
@@ -2000,6 +2000,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defconst *valid-string* (concatenate 'string "Valid." (newline-string)))
+;; (defconst *invalid-string* (concatenate 'string "Invalid." (newline-string)))
+;; OLD: (defconst *timed-out-string* "Timed Out, exiting.") ; add newline?
+(defconst *timed-out-string* (concatenate 'string "Timed Out." (newline-string)))
+(defconst *unknown-string* (concatenate 'string "Unknown." (newline-string)))
+
 ;INPUT-FILENAME is the STP input (.cvc) file name
 ;OUTPUT-FILENAME is the STP output (.out) file name
 ;Runs an external script to call STP, using tshell-call.
@@ -2040,12 +2046,12 @@
             (progn$ (er hard? 'call-stp-on-file "!! ERROR: STP experienced an unknown error.  Exit status ~x0.  Input:~%~s1~%Output:~%~s2~% !!"
                         status input-filename output-filename)
                     (mv *error* state))))
-      (let ((chars (read-file-into-character-list output-filename state)))
+      (let* ((chars (read-file-into-character-list output-filename state))
+             (string (coerce chars 'string)))
         (if (null chars)
             (prog2$ (er hard? 'call-stp-on-file "Unable to read STP output from file ~x0.~%" output-filename)
                     (mv *error* state))
-          ;; Check whether the output file contains "Valid."
-          (if (equal chars '(#\V #\a #\l #\i #\d #\. #\Newline)) ;;Look for "Valid."
+          (if (equal string *valid-string*)
               (prog2$ (and (print-level-at-least-tp print) (progn$ (cw "  STP said Valid in ")
                                                                    (print-to-hundredths elapsed-time)
                                                                    (cw "s.~%" )))
@@ -2059,9 +2065,9 @@
                                                                      (cw "s.~%" ))))
                      ;; Print the counterexample (TODO: What if it is huge?):
                      (counterexamplep-chars (butlast chars 9))
-;(- (and print counterexamplep (cw "~%Counterexample:~%~S0" (coerce counterexamplep-chars 'string))))
+                     ;; (- (and print counterexamplep (cw "~%Counterexample:~%~S0" (coerce counterexamplep-chars 'string))))
                      (parsed-counterexample (parse-counterexample counterexamplep-chars nil))
-;(- (and print counterexamplep (cw "~%Parsed counterexample:~%~x0~%" parsed-counterexample)))
+                     ;; (- (and print counterexamplep (cw "~%Parsed counterexample:~%~x0~%" parsed-counterexample)))
                      ((when (eq :error parsed-counterexample))
                       (er hard? 'call-stp-on-file "!! ERROR parsing counterexample.")
                       (mv *error* state)))
@@ -2069,13 +2075,15 @@
                           `(,*counterexample* ,parsed-counterexample)
                         *invalid*)
                       state))
-              (if (or ;(equal chars '(#\T #\i #\m #\e #\d #\Space #\O #\u #\t #\, #\Space  #\e #\x #\i #\t #\i #\n #\g #\.)) ;add newline??
-                   (equal chars '(#\T #\i #\m #\e #\d #\Space #\O #\u #\t #\. #\Newline))) ;;Look for "Timed Out."
+              (if (or (equal string *timed-out-string*)
+                      ;; This has been reported using a recent STP:
+                      (equal string *unknown-string*)
+                      )
                   (prog2$ (and print (progn$ (cw "  STP timed out (max conflicts) in ")
                                              (print-to-hundredths elapsed-time)
                                              (cw "s.~%")))
                           (mv *timedout* state))
-                (prog2$ (er hard? 'call-stp-on-file "STP returned an unexpected result (~x0).  Check the .out file: ~x1.~%" chars output-filename)
+                (prog2$ (er hard? 'call-stp-on-file "STP returned an unexpected result (~X01).  Check the .out file: ~x2.~%" string nil output-filename)
                         (mv *error* state))))))))))
 
 (local
@@ -2457,7 +2465,7 @@
 ;; (defun prove-with-stp-quick (dag-lst var-type-alist max-conflicts state)
 ;;   (declare (xargs
 ;;                   :stobjs state))
-;;   (let* ((dag-array (make-into-array 'dag-array dag-lst))
+;;   (let* ((dag-array (alist-to-array1 'dag-array dag-lst))
 ;;          (dag-len (len dag-lst)))
 ;;     (prove-equality-with-stp (+ -1 dag-len) ;top node of the dag (we prove it equals true)
 ;;                              *t*

@@ -115,7 +115,7 @@ wallet init-from-mnemonic <mnemonic> <passphrase>
 
 Initialize the wallet from a list of mnemonic words and a passphrase.
 
-`<mnemonic> `is a sequence of 12, 15, 18, 21, or 24 words, separated by single
+`<mnemonic>` is a sequence of 12, 15, 18, 21, or 24 words, separated by single
 spaces, chosen from the list of BIP 39 English mnemonic words.  This input
 should be enclosed in double quotes so that it is treated as a single input,
 instead of treating each word as a separate input.

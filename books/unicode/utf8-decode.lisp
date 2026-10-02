@@ -1343,6 +1343,36 @@
                             (sizes (mv-nth 1 (utf8-partition x)))
                             (x x)))))))
 
+;; The decoded form of a validly partitionable byte sequence
+;; satisfies ustring?
+
+(defthm ustring?-of-utf8=>ustring-when-utf8-partition
+  (implies (mv-nth 0 (utf8-partition x))
+           (ustring? (utf8=>ustring x)))
+  :hints(("Goal"
+          :in-theory (enable utf8=>ustring
+                             ustring?-of-utf8-string=>ustring)))
+  :rule-classes (:rewrite :forward-chaining))
+
+;; UTF-8 is self-synchronizing, so the boundary between two validly
+;; partitionable byte sequences is always at a complete-character
+;; boundary and decoding does not cross it.  The proof goes via the
+;; encode/decode round-trip identity to lift the byte-level append
+;; into a codepoint-level append.
+
+(defthm utf8=>ustring-of-append-when-utf8-partition
+  (implies (and (mv-nth 0 (utf8-partition x))
+                (mv-nth 0 (utf8-partition y)))
+           (equal (utf8=>ustring (append x y))
+                  (append (utf8=>ustring x)
+                          (utf8=>ustring y))))
+  :hints(("Goal"
+          ;; Take the round-trip on (append (decode x) (decode y))
+          :use (:instance utf8=>ustring-of-ustring=>utf8
+                          (x (append (utf8=>ustring x)
+                                     (utf8=>ustring y))))
+          :in-theory (disable utf8=>ustring-of-ustring=>utf8))))
+
 
 ;; We now address the validity of the MBE substitution.
 
@@ -1379,4 +1409,3 @@
 
 (verify-guards utf8=>ustring
                :hints(("Goal" :in-theory (enable utf8=>ustring))))
-

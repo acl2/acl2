@@ -1,5 +1,6 @@
 (in-package "DM")
 
+(local (include-book "support/groups"))
 (include-book "products")
 
 ;; Fundamental Theorem of Finite Abelian Groups: Every finitie abelian group is isomorphic to a direct
@@ -41,35 +42,37 @@
 (defun max-ord-aux (g n)
   (if (zp n)
       1
-    (if (elt-of-ord n g)
+    (if (find-elt-of-ord n g)
         n
       (max-ord-aux g (1- n)))))
 
 (defund max-ord (g)
   (max-ord-aux g (order g)))
 
-(local-defun elt-of-greater-ord-aux (l n g)
+(local-defun find-elt-of-greater-ord-aux (l n g)
   (if (consp l)
       (if (> (ord (car l) g) n)
-          (car l)
-	(elt-of-greater-ord-aux (cdr l) n g))
+          (list (car l))
+	(find-elt-of-greater-ord-aux (cdr l) n g))
     ()))
 
-(local-defun elt-of-greater-ord (n g) (elt-of-greater-ord-aux (elts g) n g))
+(local-defun find-elt-of-greater-ord (n g) (find-elt-of-greater-ord-aux (elts g) n g))
+
+(local-defun elt-of-greater-ord (n g) (car (find-elt-of-greater-ord n g)))
 
 (local-defthm elt-of-greater-ord-aux-ord
   (implies (and (groupp g)
                 (natp n)
 		(sublistp l (elts g))
-                (elt-of-greater-ord-aux l n g))
-	   (and (in (elt-of-greater-ord-aux l n g) g)
-	        (> (ord (elt-of-greater-ord-aux l n g) g)
+                (find-elt-of-greater-ord-aux l n g))
+	   (and (in (car (find-elt-of-greater-ord-aux l n g)) g)
+	        (> (ord (car (find-elt-of-greater-ord-aux l n g)) g)
 		   n))))
 
 (local-defthm elt-of-greater-ord-ord
   (implies (and (groupp g)
                 (natp n)
-                (elt-of-greater-ord n g))
+                (find-elt-of-greater-ord n g))
 	   (and (in (elt-of-greater-ord n g) g)
 	        (> (ord (elt-of-greater-ord n g) g)
 		   n))))
@@ -80,7 +83,7 @@
 		(sublistp l (elts g))
 		(member-equal x l)
 		(> (ord x g) n))
-           (elt-of-greater-ord-aux l n g))
+           (find-elt-of-greater-ord-aux l n g))
   :hints (("Subgoal *1/1" :in-theory (enable groupp))))
 
 (local-defthm ord-elt-of-greater-ord
@@ -88,27 +91,27 @@
                 (natp n)
 		(in x g)
 		(> (ord x g) n))
-           (elt-of-greater-ord n g)))
+           (find-elt-of-greater-ord n g)))
 
-(local-in-theory (disable elt-of-ord elt-of-greater-ord))
+(local-in-theory (disable elt-of-ord find-elt-of-ord find-elt-of-greater-ord elt-of-greater-ord))
 
 (local-defthm elt-of-greater-ord-0
   (implies (groupp g)
-           (elt-of-greater-ord 0 g))
+           (find-elt-of-greater-ord 0 g))
   :hints (("Goal" :use ((:instance ord>1 (a (e g)))
                         (:instance ord-elt-of-greater-ord (n 0) (x (e g)))))))
 
 (local-defthmd not-elt-of-greater-ord-order
   (implies (groupp g)
-           (not (elt-of-greater-ord (order g) g)))
+           (not (find-elt-of-greater-ord (order g) g)))
   :hints (("Goal" :use ((:instance ord<=order (a (elt-of-greater-ord (order g) g)))
                         (:instance elt-of-greater-ord-ord (n (order g)))))))
 
 (local-defthmd elt-of-ord-max-ord-aux
   (implies (and (groupp g)
                 (natp n)
-		(not (elt-of-greater-ord n g)))
-	   (and (elt-of-ord (max-ord-aux g n) g)
+		(not (find-elt-of-greater-ord n g)))
+	   (and (find-elt-of-ord (max-ord-aux g n) g)
 		(equal (ord (elt-of-ord (max-ord-aux g n) g) g)
 		       (max-ord-aux g n))
 		(implies (in x g)
@@ -118,7 +121,7 @@
 
 (local-defthmd elt-of-ord-max-ord
   (implies (groupp g)
-           (and (elt-of-ord (max-ord g) g)
+           (and (find-elt-of-ord (max-ord g) g)
 	        (equal (ord (elt-of-ord (max-ord g) g) g)
 		       (max-ord g))
 		(implies (in x g)
@@ -138,7 +141,7 @@
 (local-defthmd max-ord-cyclicp
   (implies (cyclicp g)
 	   (equal (max-ord g) (order g)))
-  :hints (("Goal" :in-theory (enable cyclicp group-gen)
+  :hints (("Goal" :in-theory (enable cyclicp find-group-gen group-gen)
                   :use (max-ord<=order
 		        (:instance elt-of-ord-max-ord (x (group-gen g)))
 		        (:instance elt-of-ord-ord (n (order g)))))))
@@ -173,7 +176,7 @@
   (implies (and (groupp g)
                 (not (cyclicp g)))
 	   (< (max-ord g) (order g)))
-  :hints (("Goal" :in-theory (enable cyclicp group-gen)
+  :hints (("Goal" :in-theory (enable cyclicp find-group-gen group-gen)
                   :use (not-elt-of-greater-ord-order elt-of-ord-max-ord
 		        (:instance ord-elt-of-greater-ord (n (order g)) (x (elt-of-ord (max-ord g) g)))))))
 
@@ -181,7 +184,7 @@
   (implies (and (groupp g)
                 (not (cyclicp g)))
 	   (> (max-ord g) 1))
-  :hints (("Goal" :in-theory (e/d (e cyclicp group-gen) (dlistp-elts))
+  :hints (("Goal" :in-theory (e/d (e cyclicp find-group-gen group-gen) (dlistp-elts))
                   :use (max-ord-upper-bound dlistp-elts
 		        (:instance elt-of-ord-max-ord (x (cadar g)))
 		        (:instance ord>1 (a (cadar g)))
@@ -259,7 +262,7 @@
 	          (p-groupp q p)
 		  (> (order q) 1)
 	          (< (order q) (order g))
-		  (elt-of-ord p q))))
+		  (find-elt-of-ord p q))))
   :hints (("Goal" :in-theory (enable p-groupp phyp)
                   :use (elt-of-ord-p-quotient-1
 			(:instance p-divides-power-p (n (order (quotient g (g1 a g)))))
@@ -415,8 +418,8 @@
            (not (in (y$ a p g) (g1 a g))))
   :hints (("Goal" :in-theory (e/d (phyp j$) (group-closure subgroup-op))
                   :use (in-a-j$-g1 in-a-g1 y$-not-in-g1-1 x$-in-g x$-not-in-g1 elt-of-ord-p-quotient
-		        (:instance subgroup-op (h (g1 a g)) (x (y$ a p g)) (y (power a (j$ a p g) g)))
-		        (:instance group-closure (g (g1 a g)) (x (y$ a p g)) (y (power a (j$ a p g) g)))))))
+		        (:instance subgroup-op (h (g1 a g)) (y (y$ a p g)) (x (power a (j$ a p g) g)))
+		        (:instance group-closure (g (g1 a g)) (y (y$ a p g)) (x (power a (j$ a p g) g)))))))
 
 (local-defthmd y$-not-e
   (implies (phyp a p g)
@@ -1108,7 +1111,7 @@
   (implies (and (groupp g)
 		(posp m))
 	   (consp (elts-of-ord-dividing m g)))
-  :hints (("Goal" :in-theory (enable e elts-of-ord-dividing))))
+  :hints (("Goal" :in-theory (enable e elts-of-ord-dividing) :use (consp-groupp))))
 
 (local-defthm elts-of-ord-dividing-closed
   (implies (and (groupp g)
@@ -1958,7 +1961,7 @@
   (implies (and (groupp g)
 		(natp n))
 	   (consp (power-list n g)))
-  :hints (("Goal" :in-theory (enable power-list))))
+  :hints (("Goal" :in-theory (enable power-list) :use (consp-groupp))))
 
 (local-defthm member-e--power-list-aux
   (implies (and (groupp g)
@@ -1986,7 +1989,7 @@
 		(natp n))
 	   (equal (car (power-list n g))
 		  (e g)))
-  :hints (("Goal" :in-theory (enable power-list))))
+  :hints (("Goal" :in-theory (enable power-list) :use (consp-groupp))))
 
 (local-defthm power-list-closed
   (implies (and (groupp g)
@@ -2576,7 +2579,7 @@
   (implies (and (cyclicp g)
 		(posp n))
 	   (cyclicp (group-power n g)))
-  :hints (("Goal" :in-theory (enable cyclicp group-gen)
+  :hints (("Goal" :in-theory (enable cyclicp find-group-gen group-gen)
                   :use (order-group-gen power-cyclic-4
 		        (:instance ord-elt-of-ord (x (power (group-gen g) n g)) (n (order (group-power n g))) (g (group-power n g)))))))
 

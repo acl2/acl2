@@ -1,7 +1,7 @@
 ; JVM-related syntactic tests
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,7 +14,8 @@
 
 ;; This book defines JVM-related functions used in axe-syntaxp and axe-bind-free rules.
 
-(include-book "kestrel/jvm/jvm" :dir :system) ; for jvm::pc
+(include-book "kestrel/jvm/frames" :dir :system) ; for jvm::pc
+;(include-book "kestrel/jvm/jvm" :dir :system)
 ;(include-book "../dags") ;for dargs
 ;(include-book "../dag-arrays") ;for pseudo-dag-arrayp
 (include-book "../dag-array-printing")
@@ -27,11 +28,50 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 
+(include-book "kestrel/lists-light/memberp" :dir :system)
 (in-theory (disable member-equal-becomes-memberp)) ;causes problems
 
-(local (in-theory (disable myquotep))) ; for speed
+(local (in-theory (disable myquotep default-car default-+-2 rationalp-implies-acl2-numberp))) ; for speed
+
+(local (in-theory (disable natp)))
 
 (local (in-theory (enable rationalp-when-natp)))
+
+(defthm maxelem-of-keep-nodenum-dargs-bound
+  (implies (and (bounded-darg-listp items n)
+                (natp n)
+                (consp (keep-nodenum-dargs items)) ;there must be at least one atom
+                )
+           (< (maxelem (keep-nodenum-dargs items)) n))
+  :rule-classes (:rewrite :linear)
+  :hints (("Goal" :in-theory (enable bounded-darg-listp))))
+
+;;move
+;;not a great linear rule due to the free var
+(defthm <-of-maxelem-of-keep-nodenum-dargs-of-dargs-when-bounded-dag-exprp
+  (implies (and (bounded-dag-exprp n expr)
+                (consp expr)
+                (natp n)
+                (consp (dargs expr))
+                (not (eq 'quote (car expr)))
+                (consp (keep-nodenum-dargs (dargs expr))))
+           (< (maxelem (keep-nodenum-dargs (dargs expr)))
+              n))
+  :rule-classes (:rewrite :linear)
+  :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
+
+;move
+(defthm <-of-maxelem-of-keep-nodenum-dargs-of-dargs-when-pseudo-dag-arrayp-aux
+  (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array n)
+                (consp (aref1 dag-array-name dag-array n))
+                (not (equal 'quote (car (aref1 dag-array-name dag-array n))))
+                (consp (keep-nodenum-dargs (dargs (aref1 dag-array-name dag-array n))))
+                (natp n))
+           (< (maxelem (keep-nodenum-dargs (dargs (aref1 dag-array-name dag-array n))))
+              n))
+  :rule-classes (:rewrite :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;call-stack is now either a nodenum or a quotep
 ;now pops count as -1 (because terms are often represented as a push of a new frame onto a pop of the old stack)
@@ -85,6 +125,8 @@
 (verify-guards count-pushes-above-base
   :hints (("Goal" :in-theory (enable car-becomes-nth-of-0))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;tag these with -dag or -axe?
 ;returns (mv stack-height pc) where both are integers- need to turn the stack height into some expression? - or an mv with at least one nil for failure
 ;bozo this only works if the make-state looks just so - add error checking?
@@ -92,39 +134,7 @@
 
 ;move
 ;not a great linear rule due to the free var
-(defthm maxelem-of-keep-nodenum-dargs-bound
-  (implies (and (bounded-darg-listp items n)
-                (natp n)
-                (consp (keep-nodenum-dargs items)) ;there must be at least one atom
-                )
-           (< (maxelem (keep-nodenum-dargs items)) n))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable bounded-darg-listp))))
 
-;;move
-;;not a great linear rule due to the free var
-(defthm <-of-maxelem-of-keep-nodenum-dargs-of-dargs-when-bounded-dag-exprp
-  (implies (and (bounded-dag-exprp n expr)
-                (consp expr)
-                (natp n)
-                (consp (dargs expr))
-                (not (eq 'quote (car expr)))
-                (consp (keep-nodenum-dargs (dargs expr))))
-           (< (maxelem (keep-nodenum-dargs (dargs expr)))
-              n))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
-
-;move
-(defthm <-of-maxelem-of-keep-nodenum-dargs-of-dargs-when-pseudo-dag-arrayp-aux
-  (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array n)
-                (consp (aref1 dag-array-name dag-array n))
-                (not (equal 'quote (car (aref1 dag-array-name dag-array n))))
-                (consp (keep-nodenum-dargs (dargs (aref1 dag-array-name dag-array n))))
-                (natp n))
-           (< (maxelem (keep-nodenum-dargs (dargs (aref1 dag-array-name dag-array n))))
-              n))
-  :rule-classes (:rewrite :linear))
 
 ;; Returns (mv erp pc) where PC is the PC (if it is a call to make-frame).
 (defund get-pc-from-frame (frame dag-array)
@@ -153,12 +163,15 @@
                 (er hard? 'get-pc-from-frame "Unexpected frame: ~x0.  See DAG just above." expr)
                 (mv (erp-t) nil))))))
 
-(defthm get-stack-height-and-pc-from-frame-type
+(defthm get-pc-from-frame-type
   (implies (not (mv-nth 0 (get-pc-from-frame call-stack dag-array)))
            (natp (mv-nth 1 (get-pc-from-frame call-stack dag-array))))
   :hints (("Goal" :in-theory (enable get-pc-from-frame))))
 
-;; Returns (mv erp stack-height-difference pc) where stack-height-difference is the number of frames about base-stack.  If it is 0, the PC is irrelevant.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp stack-height-difference pc) where stack-height-difference is the number of frames above base-stack.  If it is 0, the PC is irrelevant.
+;; The PC returned has to be a constant.
 (defund get-stack-height-and-pc-from-call-stack (call-stack base-stack dag-array)
   (declare (xargs :guard (and (or (myquotep call-stack)
                                   (and (natp call-stack)
@@ -190,8 +203,6 @@
                 (if erp
                     (mv erp nil nil)
                   (mv (erp-nil) pushes pc))))))))))
-
-(local (in-theory (disable natp)))
 
 (defthm get-stack-height-and-pc-from-call-stack-type
   (implies (not (mv-nth 0 (get-stack-height-and-pc-from-call-stack call-stack base-stack dag-array)))
@@ -252,6 +263,8 @@
            (natp (mv-nth 2 (get-stack-height-and-pc-from-thread-table thread-table base-stack dag-array))))
   :hints (("Goal" :in-theory (enable get-stack-height-and-pc-from-thread-table))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp stack-height-difference pc)
 (defund get-stack-height-and-pc-from-make-state (make-state base-stack dag-array)
   (declare (xargs :guard (and (and (natp make-state)
@@ -277,6 +290,8 @@
   (implies (not (mv-nth 0 (get-stack-height-and-pc-from-make-state nest base-stack dag-array)))
            (natp (mv-nth 2 (get-stack-height-and-pc-from-make-state nest base-stack dag-array))))
   :hints (("Goal" :in-theory (enable get-stack-height-and-pc-from-make-state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund strip-steps (nest dag-array)
   (declare (xargs :guard (or (myquotep nest)
@@ -356,14 +371,18 @@
 ;;status is :ready, then PC and STACK-HEIGHT are integers.  Normally, MYIf
 ;;branches will be eventually be merged, leading to a term that is not a MYIF.
 ;;TODO: Consider adding support for regular old IF in addition to myif.
-(defund get-stack-height-and-pc-to-step-from-myif-nest-helper (nest base-stack dag-array)
+(defund get-stack-height-and-pc-to-step-from-myif-nest-helper (nest
+                                                               base-stack
+                                                               whole-nest ; for error printing
+                                                               dag-array)
   (declare (xargs :guard (and (or (myquotep nest)
                                   (and (natp nest)
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nest))))
                               (or (myquotep base-stack)
                                   (and (natp base-stack)
-                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 base-stack)))))
-
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 base-stack))))
+                              (and (natp whole-nest)
+                                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 whole-nest))))
                   :verify-guards nil ;done below
                   :measure (if (quotep nest)
                                0
@@ -399,10 +418,10 @@
                                                 (< else-branch nest))))))
                         (mv :error nil nil) ;; can't happen
                       (b* (((mv left-status left-sh left-pc)
-                            (get-stack-height-and-pc-to-step-from-myif-nest-helper then-branch base-stack dag-array))
+                            (get-stack-height-and-pc-to-step-from-myif-nest-helper then-branch base-stack whole-nest dag-array))
                            ((when (eq :error left-status)) (mv :error nil nil))
                            ((mv right-status right-sh right-pc)
-                            (get-stack-height-and-pc-to-step-from-myif-nest-helper else-branch base-stack dag-array))
+                            (get-stack-height-and-pc-to-step-from-myif-nest-helper else-branch base-stack whole-nest dag-array))
                            ((when (eq :error right-status)) (mv :error nil nil))
                            ;; There is a :step-present, so there is an unsimplified step around a make-state!
                            ;; Maybe we hit a step limit.
@@ -460,9 +479,10 @@
                                   (if (eq 'jvm::make-state stripped-expr-fn)
                                       (mv :step-present nil nil)
                                     ;; Avoid printing anything here, because steps can stack up around a call to jvm::obtain-and-throw-exception.
-                                    (if (member-eq stripped-expr-fn '(jvm::obtain-and-throw-exception jvm::execute-new)) ; todo: what about jvm::error-state?
+                                    (if (member-eq stripped-expr-fn '(jvm::obtain-and-throw-exception jvm::execute-new jvm::error-state))
                                         (mv :finished nil nil)
-                                      (prog2$ (er hard? 'get-stack-height-and-pc-to-step-from-myif-nest-helper "Unexpected state term: ~x0, after stripping step calls.~%" stripped-expr)
+                                      (progn$ (print-dag-array-node-and-supporters 'dag-array dag-array whole-nest)
+                                              (er hard? 'get-stack-height-and-pc-to-step-from-myif-nest-helper "Unexpected state term: ~x0, after stripping step calls (see DAG just above).~%" stripped-expr)
                                               (mv :error nil nil)))))))))
                       (progn$ (print-dag-array-node-and-supporters 'dag-array dag-array nest)
                               ;;(er hard? 'get-stack-height-and-pc-to-step-from-myif-nest-helper "Unexpected state term: ~X01.~%" expr nil)
@@ -471,13 +491,13 @@
                               (mv :error nil nil))))))))))))))
 
 (defthm rationalp-of-mv-nth-1-of-get-stack-height-and-pc-to-step-from-myif-nest-helper
-  (implies (eq :ready (mv-nth 0 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack dag-array)))
-           (rationalp (mv-nth 1 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack dag-array))))
+  (implies (eq :ready (mv-nth 0 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack whole-nest dag-array)))
+           (rationalp (mv-nth 1 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack whole-nest dag-array))))
   :hints (("Goal" :in-theory (enable get-stack-height-and-pc-to-step-from-myif-nest-helper rationalp-when-natp))))
 
-(defthm rationalp-of-mv-nth-0-of-get-stack-height-and-pc-to-step-from-myif-nest-helper
-  (implies (eq :ready (mv-nth 0 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack dag-array)))
-           (rationalp (mv-nth 2 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack dag-array))))
+(defthm rationalp-of-mv-nth-2-of-get-stack-height-and-pc-to-step-from-myif-nest-helper
+  (implies (eq :ready (mv-nth 0 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack whole-nest dag-array)))
+           (rationalp (mv-nth 2 (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack whole-nest dag-array))))
   :hints (("Goal" :in-theory (enable get-stack-height-and-pc-to-step-from-myif-nest-helper
                                      get-stack-height-and-pc-from-call-stack
                                      get-stack-height-and-pc-from-thread-table
@@ -563,7 +583,7 @@
      ;; (cw "(~x0 branches in myif nest.)~%" (count-myif-branches nest dag-array))
      ;;(cw "Dag: ~x0.~%" (print-dag-array-node-and-supporters-list (list nest) 'dag-array dag-array))
      (mv-let (status stack-height pc)
-       (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack dag-array)
+       (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack nest dag-array)
        (if (eq :ready status)
            (acons 'sh2 (list 'quote stack-height)
                   (acons 'pc (list 'quote pc) nil))
@@ -572,7 +592,7 @@
 
 ;; Check that there are no MYIF branches in NEST that we want to step.  If this
 ;; is true of both branches of a MYIF, we might as well push the
-;; run-until-return over the branches of the MYIF.  NOTE: Assumes the presens
+;; run-until-return over the branches of the MYIF.  NOTE: Assumes the presence
 ;; of a dummy frame, so any state to be stepped must have at least 2 frames
 ;; about base-stack.
 (defund no-state-to-step-p (nest base-stack dag-array)
@@ -581,11 +601,12 @@
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nest))))
                               (or (myquotep base-stack)
                                   (and (natp base-stack)
-                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 base-stack)))))))
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 base-stack)))))
+                  :guard-hints (("Goal" :in-theory (enable rationalp-implies-acl2-numberp)))))
   (if (consp nest)    ;check for quotep
       (er hard? 'no-state-to-step-p "Unexpected (constant) argument.")
     (mv-let (status stack-height pc)
-      (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack dag-array)
+      (get-stack-height-and-pc-to-step-from-myif-nest-helper nest base-stack nest dag-array)
       ;; (declare (ignore stack-height pc)) ;todo: don't bother to compute these?
       (declare (ignore pc)) ;todo: don't bother to compute?
       (if (and (eq :ready status)

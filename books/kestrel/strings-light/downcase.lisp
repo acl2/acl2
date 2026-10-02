@@ -1,6 +1,6 @@
 ; Utilities to downcase characters and strings
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -9,6 +9,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+(local (include-book "kestrel/lists-light/revappend" :dir :system))
 
 ;; Note that the function STRING-DOWNCASE is built-in but requires all chars to
 ;; be "standard characters".  The utilities in this book are more general.
@@ -23,6 +25,8 @@
   (if (standard-char-p char)
       (char-downcase char)
     char))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Convert the CHARS from upper to lower case, leaving non-upper-case-letters
 ;; unchanged.
@@ -40,6 +44,13 @@
            (character-listp (chars-downcase-gen chars acc)))
   :hints (("Goal" :in-theory (enable chars-downcase-gen))))
 
+(defthm len-of-chars-downcase-gen
+  (equal (len (chars-downcase-gen chars acc))
+         (+ (len chars) (len acc)))
+  :hints (("Goal" :in-theory (enable chars-downcase-gen))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Convert the characters in STR from upper to lower case, leaving
 ;; non-upper-case-letters unchanged.
 (defund string-downcase-gen (str)
@@ -48,3 +59,9 @@
 
 (defthm stringp-of-string-downcase-gen
   (stringp (string-downcase-gen str)))
+
+(defthm length-of-string-downcase-gen
+  (implies (stringp str)
+           (equal (length (string-downcase-gen str))
+                  (length str)))
+  :hints (("Goal" :in-theory (enable string-downcase-gen length))))

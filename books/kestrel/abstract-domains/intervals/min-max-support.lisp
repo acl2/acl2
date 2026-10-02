@@ -13,8 +13,6 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "noninterval-arith-support"))
-
 (include-book "kestrel/arithmetic-light/max" :dir :system)
 (include-book "kestrel/arithmetic-light/min" :dir :system)
 
@@ -96,7 +94,7 @@
          (min x y))
   :enable min)
 
-;; This is subsumed by <-of-min-arg1 and <-of-min-arg1.
+;; This is subsumed by <-of-min-arg1 and <-of-min-arg2.
 #!ACL2
 (defruled monotonicity-of-min
   (implies (and (<= x0 x1)
@@ -182,7 +180,7 @@
          (max x y))
   :enable max)
 
-;; This is subsumed by <-of-max-arg1 and <-of-max-arg1.
+;; This is subsumed by <-of-max-arg1 and <-of-max-arg2.
 #!ACL2
 (defruled monotonicity-of-max
   (implies (and (<= x0 x1)

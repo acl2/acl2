@@ -546,7 +546,6 @@
 ;move
 (defthm slice-of-+-of--1-and-expt
   (implies (and (< high i)
-                (posp n)
                 (natp low)
                 (integerp high)
                 (<= low high)
@@ -600,7 +599,7 @@
                        (+ i (- j)))))
   :hints (("Goal"
            :use my-floor-lower-bound
-           :in-theory (e/d (posp) ( ;FLOOR-BOUNDED-BY-/
+           :in-theory (e/d (posp) (;FLOOR-BOUNDED-BY-/
                                    )))))
 
 

@@ -207,6 +207,196 @@ int main(void) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(acl2::must-succeed*
+  (c$::input-files :files '("extern-struct.c")
+                   :const *old*)
+
+  (split-gso *old*
+             *new*
+             :object-name "s"
+             :object-filepath "extern-struct.c"
+             :new-object1 "s1"
+             :new-object2 "s2"
+             :new-type1 "S1"
+             :new-type2 "S2"
+             :split-members ("x"))
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/extern-struct.c"
+    :content "struct S {
+  unsigned int x;
+  unsigned int y;
+};
+
+struct S1 {
+  unsigned int y;
+};
+
+struct S2 {
+  unsigned int x;
+};
+
+struct S1 s1;
+
+struct S2 s2;
+
+struct S1 s1;
+
+struct S2 s2 = {.x = 0};
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files '("extern-struct2.c")
+                   :const *old*)
+
+  (split-gso *old*
+             *new*
+             :object-name "s"
+             :object-filepath "extern-struct2.c"
+             :new-object1 "s1"
+             :new-object2 "s2"
+             :new-type1 "S1"
+             :new-type2 "S2"
+             :split-members ("x"))
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/extern-struct2.c"
+    :content "struct S {
+  unsigned int x;
+  unsigned int y;
+};
+
+struct S1 {
+  unsigned int y;
+};
+
+struct S2 {
+  unsigned int x;
+};
+
+extern struct S1 s1;
+
+extern struct S2 s2;
+
+struct S1 s1;
+
+struct S2 s2 = {.x = 0};
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files '("implicit-initer.c")
+                   :const *old*)
+
+  (split-gso *old*
+             *new*
+             :object-name "my"
+             :new-object1 "my1"
+             :new-object2 "my2"
+             :new-type1 "s1"
+             :new-type2 "s2"
+             :split-members ("y" "z"))
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  ;; TODO: We may also consider removing redundant checks while making the
+  ;; initializers explicit.
+  (assert-file-contents
+    :file "new/implicit-initer.c"
+    :content "struct myStruct {
+  int x;
+  _Bool y;
+  unsigned long int z;
+};
+
+struct s1 {
+  int x;
+};
+
+struct s2 {
+  _Bool y;
+  unsigned long int z;
+};
+
+static struct s1 my1 = {.x = 1, .x = 2};
+
+static struct s2 my2 = {.y = 0, .y = 1, .z = 2};
+
+int main(void) {
+  return my1.x + (-my2.y);
+}
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files '("unnamed-members.c")
+                   :const *old*)
+
+  (split-gso *old*
+             *new*
+             :object-name "my"
+             :new-object1 "my1"
+             :new-object2 "my2"
+             :new-type1 "s1"
+             :new-type2 "s2"
+             :split-members ("a" "b" "f"))
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/unnamed-members.c"
+    :content "struct myStruct {
+  int a;
+  int b : 4;
+  union { int c; int d; };
+  _Bool e;
+  int : 4;
+  unsigned long int f;
+};
+
+struct s1 {
+  union { int c; int d; };
+  _Bool e;
+  int : 4;
+};
+
+struct s2 {
+  int a;
+  int b : 4;
+  unsigned long int f;
+};
+
+static struct s1 my1 = {.c = 1, .e = 1};
+
+static struct s2 my2 = {.f = 1};
+
+int main(void) {
+  return my2.a + (-my1.e);
+}
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Test an ensemble
 
 (acl2::must-succeed*
@@ -257,12 +447,18 @@ struct S {
   int x;
 };
 
-extern struct S s;
+struct S1;
+
+struct S2 {
+  int x;
+};
+
+static struct S static_s;
 
 int foo(void) {
   int x = my.a + (-my.b);
   struct myStruct my;
-  if (s.x) {
+  if (static_s.x) {
     return my.a + (-my.b);
   }
   return 0;
@@ -283,9 +479,13 @@ struct S2 {
   unsigned int x;
 };
 
-static struct S1 s1;
+struct S1 s1;
 
-static struct S2 s2 = {.x = 0};
+struct S2 s2;
+
+struct S1 s1;
+
+struct S2 s2 = {.x = 0};
 ")
 
   :with-output-off nil)
@@ -350,12 +550,12 @@ struct S {
   int x;
 };
 
-extern struct S s;
+static struct S static_s;
 
 int foo(void) {
   int x = my1.a + (-my2.b);
   struct myStruct my;
-  if (s.x) {
+  if (static_s.x) {
     return my.a + (-my.b);
   }
   return 0;
@@ -368,7 +568,9 @@ int foo(void) {
   unsigned int y;
 };
 
-static struct S s = {.x = 0};
+struct S s;
+
+struct S s = {.x = 0};
 ")
 
   :with-output-off nil)
@@ -383,7 +585,7 @@ static struct S s = {.x = 0};
 
   (split-gso *old*
              *new*
-             :object-name "s"
+             :object-name "static_s"
              :object-filepath "static-struct2.c"
              :split-members ("x"))
 
@@ -425,14 +627,14 @@ struct S_1 {
   int x;
 };
 
-struct S_0 s_0;
+static struct S_0 static_s_0;
 
-struct S_1 s_1;
+static struct S_1 static_s_1;
 
 int foo(void) {
   int x = my.a + (-my.b);
   struct myStruct my;
-  if (s_1.x) {
+  if (static_s_1.x) {
     return my.a + (-my.b);
   }
   return 0;
@@ -440,32 +642,15 @@ int foo(void) {
 ")
   (assert-file-contents
     :file "new/extern-struct.c"
-    ;; TODO: this is wrong; struct is static, it shouldn't be split.
     :content "struct S {
   unsigned int x;
   unsigned int y;
 };
 
-struct S_0 {
-  unsigned int y;
-};
+struct S s;
 
-struct S_1 {
-  unsigned int x;
-};
-
-struct S_0 s_0;
-
-struct S_1 s_1 = {.x = 0};
-"
-;;     :content "struct S {
-;;   unsigned int x;
-;;   unsigned int y;
-;; };
-;;
-;; static struct S s = { .x = 0 };
-;; "
-    )
+struct S s = {.x = 0};
+")
 
   :with-output-off nil)
 

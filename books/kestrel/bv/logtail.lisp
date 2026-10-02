@@ -171,9 +171,8 @@
            :in-theory (disable logtail-shift-gen))))
 
 (defthm logtail-of-expt
-  (implies (and
-            (natp n)
-            (integerp size))
+  (implies (and (natp n)
+                (integerp size))
            (equal (logtail n (expt 2 size))
                   (if (<= n size)
                       (expt 2 (- size n))
@@ -195,8 +194,7 @@
 (defthm unsigned-byte-p-of-logtail-strong
   (equal (unsigned-byte-p n (logtail pos i))
          (and (natp n)
-              (unsigned-byte-p (+ n (nfix pos)) (ifix i))))
-  :hints (("Goal" :cases ((integerp x)))))
+              (unsigned-byte-p (+ n (nfix pos)) (ifix i)))))
 
 (defthm logtail-shift-gen2
   (implies (and (<= size n) ;this case
@@ -348,7 +346,7 @@
                   (logtail 1 x)))
   :hints (("Goal" :in-theory (enable logtail ifix))))
 
-(theory-invariant (incompatible (:rewrite floor-of-2) (:definition logtail)))
+(theory-invariant (incompatible (:rewrite floor-of-2-becomes-logtail-of-1) (:definition logtail)))
 
 ;Disabled since logtail is more complex than floor
 (defthmd floor-of-expt-becomes-logtail

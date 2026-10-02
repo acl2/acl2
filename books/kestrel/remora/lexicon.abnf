@@ -1,0 +1,517 @@
+; Remora Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This file contains an ABNF grammar that defines the lexicon of Remora,
+; according to the new syntax specification that is being developed,
+; which will eventually replace the definition in grammar.abnf,
+; extra-grammatical-restrictions.lisp, and parsing.lisp.
+
+; This lexical grammar is an initial version, which will need to be extended.
+; It only covers part of the current design (some of which is still in flux).
+; It consists of only ASCII, not full Unicode.
+
+; As we plan to formalize shortly,
+; certain extra-grammatical restrictions apply to this grammar.
+; One is the longest lexeme rule,
+; i.e. that, at any point, the longest possible lexeme is taken.
+; Another is that certain lexemes must be followed by certain delimiters,
+; e.g. a boolean '#t' must be followed by white space or some punctuator,
+; otherwise '#true' would be the boolean '#t' followed by the symbol 'rue'.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; We give names to some characters that can only be denoted by code in ABNF
+; (i.e. they cannot be written in ABNF string notation).
+
+horizontal-tab = %x09
+
+line-feed = %x0a
+
+space = %x20
+
+double-quote = %x22 ; "
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; We define some categories of characters
+; that are used in subsequent definitions.
+
+; Digits and letters are restricted to ASCII for now.
+
+digit = %x30-39 ; 0-9
+
+letter = %x41-5a ; A-Z
+       / %x61-7a ; a-z
+
+; A 'printable' character is one that "puts ink on a page",
+; described as the 'PRINT' category in the design documents.
+; We include all such ASCII characters only for now.
+
+printable = %x21-7e
+
+printable-not-sharp-or-bar = %x21-22
+                           ; not # (%x23)
+                           / %x24-7b
+                           ; not | (%x7c)
+                           / %x7d-7e
+
+printable-not-double-quote-or-backslash = %x21
+                                        ; not " (%x22)
+                                        / %x23-5b
+                                        ; not \ (%x5c)
+                                        / %x5d-7e
+
+; We ignore the 'MARK', 'JOIN', and 'VS' categories from the design documents,
+; because those are not ASCII.
+; The 'WS' category is captured below.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; White space consists of horizontal tab, space, and line feed.
+
+white-space = horizontal-tab
+            / space
+            / line-feed
+
+; These are all ASCII, and are not meant to be extended beyond ASCII,
+; according to the design documents.
+
+; We exclude carriage return,
+; because we assume a new line normalization pass prior to lexing:
+; a line feed may be optionally preceded by carriage return,
+; but the carriage return is eliminated.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; At the lexical level, there are two kinds of comments.
+; The third kind of comment consists of an s-expression preceded by '#;',
+; which is not a lexical entity, because it involves an s-expression,
+; so it is not formalized here as part of the lexicon.
+
+comment = line-comment
+        / block-comment
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A line comment starts with a semicolon
+; and extends to the end of the line or file.
+; It can contain any printable character,
+; and any white space character except new line.
+
+line-comment-element = printable
+                     / horizontal-tab
+                     / space
+
+line-comment = ";" *line-comment-element
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A block comment consists of printable and white space characters
+; enclosed between '#|' and '|#'.
+; Block comments may be nested,
+; so the grammar rules treat '#' and '|'
+; differently from the other printable characters.
+
+; Block comment elements are the most "common" content of block comments:
+; white space and printable characters other than '#' and '|'.
+
+block-comment-element = white-space
+                      / printable-not-sharp-or-bar
+
+; After the opening '#|',
+; the "normal" state is that of the rest of the block comment,
+; where we stay so long as we keep encountering
+; block comment elements and (nested) block comments.
+
+block-comment = "#|" rest-of-block-comment
+
+rest-of-block-comment = block-comment-element rest-of-block-comment
+                      / block-comment rest-of-block-comment ; nested
+                      / "#" rest-of-block-comment-after-sharp
+                      / "|" rest-of-block-comment-after-bar
+
+; If instead we encounter a '#', we switch to a different state,
+; where we stay so long as we encounter more '#' characters,
+; and which we leave, going back to the "normal" state,
+; if we find a block comment element or a nested block comment.
+; A '|' cannot occur in this state,
+; because otherwise it would have started a nested block comment,
+; together with the preceding '#'.
+
+rest-of-block-comment-after-sharp = block-comment-element rest-of-block-comment
+                                  / block-comment rest-of-block-comment ; nested
+                                  / "#" rest-of-block-comment-after-sharp
+
+; If instead we encounter a '|', we switch to a different state,
+; where we stay so long as we encounter more '|' characters,
+; and which we leave in two possible ways.
+; A '#' ends the whole block comment.
+; A block comment element goes back to the normal state.
+; We cannot have a nested block comment
+; because its opening '#' would end the current block comment.
+
+rest-of-block-comment-after-bar = "#"
+                                / "|" rest-of-block-comment-after-bar
+                                / block-comment-element rest-of-block-comment
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; There are three kinds of numbers.
+
+number = integer
+       / rational
+       / float
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Four numeric bases are supported (2, 8, 10, and 16),
+; so we define digits for each.
+
+binary-digit = %x30-31 ; 0-1
+
+octal-digit = %x30-37 ; 0-7
+
+decimal-digit = %x30-39 ; 0-9
+
+hex-digit = %x30-39 ; 0-9
+          / %x41-46 ; A-F
+          / %x61-66 ; a-f
+
+; Although 'decimal-digit' is the same as 'digit' given earlier,
+; here we are in the context of digits for different numeric bases,
+; while there we are categorizing characters for other purposes.
+
+; We also introduce non-zero digits for the different bases.
+
+nonzero-binary-digit = %x31 ; 1
+
+nonzero-octal-digit = %x31-37 ; 1-7
+
+nonzero-decimal-digit = %x31-39 ; 1-9
+
+nonzero-hex-digit = %x31-39 ; 1-9
+                  / %x41-46 ; A-F
+                  / %x61-66 ; a-f
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Non-empty sequences of digits denote natural numbers.
+; These are parts of larger lexemes, where the numeric base is specified
+; (otherwise '11' could denote four different values: 3, 9, 11, or 17).
+
+binary-natural = 1*binary-digit
+
+octal-natural = 1*octal-digit
+
+decimal-natural = 1*decimal-digit
+
+hex-natural = 1*hex-digit
+
+; Non-empty sequences of digits starting with a non-zero digit
+; denote positive integer numbers.
+; These are part of larger lexemes, where the numeric base is specified.
+
+decimal-positive = nonzero-decimal-digit *decimal-digit
+
+binary-positive = nonzero-binary-digit *binary-digit
+
+octal-positive = nonzero-octal-digit *octal-digit
+
+hex-positive = nonzero-hex-digit *hex-digit
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Signs serve to denote negative numbers,
+; or to emphasize positive numbers;
+; they are also required for exponents.
+
+sign = "+" / "-"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; An integer consists of
+; an optional indication of numeric base (decimal if absent),
+; an optional sign,
+; and a non-empty sequence of digits in the appropriate base.
+
+binary-integer = %s"#b" [ sign ] binary-natural
+
+octal-integer = %s"#o" [ sign ] octal-natural
+
+decimal-integer = [ sign ] decimal-natural
+
+hex-integer = %s"#x" [ sign ] hex-natural
+
+integer = decimal-integer
+        / binary-integer
+        / octal-integer
+        / hex-integer
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A rational consists of
+; an optional indication of numeric base (decimal if absent),
+; an optional sign,
+; a non-empty sequence of digits denoting a numerator,
+; and a non-empty sequence of digits denoting a denominator.
+; The latter sequence must start with a non-zero digit,
+; ensuring that the denominator is not zero;
+; but note that a denominator may not have leading zeros.
+
+binary-rational = %s"#b" [ sign ] binary-natural "/" binary-positive
+
+octal-rational = %s"#o" [ sign ] octal-natural "/" octal-positive
+
+decimal-rational = [ sign ] decimal-natural "/" decimal-positive
+
+hex-rational = %s"#x" [ sign ] hex-natural "/" hex-positive
+
+rational = decimal-rational
+         / binary-rational
+         / octal-rational
+         / hex-rational
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A float that denotes an actual number consists of
+; an optional indication of numeric base (decimal if absent),
+; an optional sign,
+; two non-empty sequences of digits separated by a dot,
+; and an optional exponent.
+; An exponent consists of a capital 'E',
+; a required sign,
+; and a non-empty sequence of decimal digits:
+; an exponent is always written in base 10,
+; and it is meant as a power of 10
+; (although the design documents do not say the latter fact,
+; so we may need to revise this).
+; There are also three floats that do not denote actual numbers,
+; namely positive and negative infinity, and not-a-number.
+
+exponent = %s"E" sign decimal-natural
+
+binary-float = %s"#b" [ sign ] binary-natural "." binary-natural [ exponent ]
+
+octal-float = %s"#o" [ sign ] octal-natural "." octal-natural [ exponent ]
+
+decimal-float = [ sign ] decimal-natural "." decimal-natural [ exponent ]
+
+hex-float = %s"#x" [ sign ] hex-natural "." hex-natural [ exponent ]
+
+float = decimal-float
+      / binary-float
+      / octal-float
+      / hex-float
+      / %s"#nan"
+      / %s"#infinity+"
+      / %s"#infinity-"
+
+; The required sign in an exponent is critical
+; to prevent ambiguities with hexadecimal numbers,
+; e.g. '#x1.3E5' is a float without exponent, while '#x1.3E+5' has an exponent.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Booleans have their own notation.
+
+boolean = %s"#t"
+        / %s"#f"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A character is denoted directly or via a numeric escape.
+; The latter may be in any of three bases.
+; A decimal escape needs an explicit prefix,
+; to prevent confusion in whether '#\0' denotes
+; the digit '0' or the null character;
+; the latter must be denoted as '#\d0'.
+; The design documents do not discuss the 'd' prefix yet,
+; but the intention is to add it, exactly to avoid this confusion.
+
+character-direct = "#\" printable
+
+character-escape = %s"#\o" octal-natural
+                 / %s"#\d" decimal-natural
+                 / %s"#\x" hex-natural
+
+character = character-direct
+          / character-escape
+
+; The design documents discuss many more forms of escapes,
+; but for now we just support these in this grammar.
+; Some escapes are needed in order to denote non-printable characters,
+; but the numeric code suffices to denote all of them.
+; Restrictions on the numeric code are outside this grammar.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A string consists of
+; a (possibly empty) sequence of characters
+; surrounded by double quotes.
+; Each character may be denoted directly,
+; as a printable one (except double quote and backslash) or as white space,
+; or via a numeric escape similar to the ones used for characters.
+; A decimal escape needs no base indicator 'd' here.
+; An escape within a string is surrounded by backslashes;
+; multiple escapes may be between two backslashes, separated by colons.
+; These are the only escapes we allow for now.
+
+string-escape-element = decimal-natural
+                      / %s"o" octal-natural
+                      / %s"x" hex-natural
+
+string-escape = "\" string-escape-element *( ":" string-escape-element ) "\"
+
+string-element = printable-not-double-quote-or-backslash
+               / white-space
+               / string-escape
+
+string = double-quote *string-element double-quote
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Many details of symbols are still in flux in the design documents,
+; but it is clear that we want the ability to denote certain common symbols
+; directly by the sequence of their characters without additional notations,
+; e.g. 'f', 'next-step', 'u32', '+', 'rec->fld', etc.
+; These examples show that we want to use certain graphic characters,
+; as in ACL2 and Common Lisp.
+; While '+' and '-' should be generally allowed,
+; in particular at the start of a symbol,
+; '+3' or '-3' should not be allowed,
+; because they overlap with numbers,
+; and would need extra-grammatical resolutions of the lexical ambiguities.
+; So we treat signs ('+' and '-') separately from the other graphic characters.
+; We also treat '.' differently from others,
+; because although '.3' is not a number according to our rules for numbers,
+; it could be confused for one, so we want to disallow that.
+
+; The following are graphic characters
+; that we allow to start and continue a symbol.
+; These are all the ASCII graphic characters, in code order,
+; except for the ones indicated in comments.
+
+direct-symbol-graphic = "!"
+                      ; no "
+                      ; no #
+                      / "$"
+                      / "%"
+                      / "&"
+                      ; no '
+                      ; no (
+                      ; no )
+                      / "*"
+                      ; no +
+                      ; no ,
+                      ; no -
+                      ; no .
+                      / "/"
+                      ; no :
+                      ; no ;
+                      / "<"
+                      / "="
+                      / ">"
+                      / "?"
+                      / "@"
+                      ; no [
+                      ; no \
+                      ; no ]
+                      / "^"
+                      / "_"
+                      ; no `
+                      ; no {
+                      ; no |
+                      ; no }
+                      / "~"
+
+; A directly notated symbol may start with a letter
+; or with one of the above graphic characters;
+; and it can continue with not only those, but also digits and signs and dot.
+; Alternatively, a directly notated symbol may be just a sign.
+; Or it may start with a sign,
+; not immediately followed by a digit,
+; and then followed by the normal continuation characters except dot.
+; Thus '+3' and '-3' are not symbols, but '+', '--', and '+a' are.
+; Also the potentially confusing '+.3' and '-.3' are not symbols (or numbers).
+
+direct-symbol-start = letter
+                    / direct-symbol-graphic
+
+direct-symbol-continue = letter
+                       / digit
+                       / direct-symbol-graphic
+                       / sign
+                       / "."
+
+direct-symbol-after-sign = letter
+                         / direct-symbol-graphic
+                         / sign
+
+direct-symbol = direct-symbol-start *direct-symbol-continue
+              / sign [ direct-symbol-after-sign *direct-symbol-continue ]
+
+; Alternatively, we can use a string notation preceded by '#s',
+; without restrictions on the characters that form the symbol.
+
+string-symbol = %s"#s" string
+
+symbol = direct-symbol
+       / string-symbol
+
+; There are no package prefixes at this point, unlike ACL2 and Common Lisp.
+
+; Although the design documents disallow '@' to start a symbol,
+; that seems necessary for shape variables, whose sigil is '@'.
+; The other sigils, i.e. '$' and '&' and '*', are all allowed to start a symbol.
+
+; Our grammar rules for symbols make some departures from the design documents,
+; e.g. they disallow colons in directly notated symbols.
+; We just want to keep things simpler for now.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Punctuators are graphic characters or sequences of graphic characters
+; that serve to build larger syntactic constructs.
+; For now we only have round/square/curly parentheses/brackets/braces
+; for lists, vectors, and xectors (see design documents),
+; as well as the '#;' that turns the subsequent s-expression into a comment
+; (the third kind of comment, discussed earlier).
+
+punctuator = "("
+           / ")"
+           / "["
+           / "]"
+           / "{"
+           / "}"
+           / "#;"
+
+; The design documents also discuss quote, backquote, comma, and comma-at.
+; This grammar excludes them for now.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A token is a number, boolean, character, string, symbol, or punctuator.
+
+token = number
+      / boolean
+      / character
+      / string
+      / symbol
+      / punctuator
+
+; A lexeme is a token, white space, or comment.
+
+lexeme = token
+       / white-space
+       / comment
+
+; A file is a sequence of lexemes, possibly none.
+
+file = *lexeme

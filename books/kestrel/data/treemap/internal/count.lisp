@@ -43,16 +43,16 @@
 (define tree-nodes-count-acc
   ((tree treep)
    (acc natp))
+  (declare (xargs :type-prescription :none))
   :returns (count natp :rule-classes :type-prescription)
   (if (tree-empty-p tree)
       (lnfix acc)
     (tree-nodes-count-acc (tree->left tree)
                           (tree-nodes-count-acc (tree->right tree)
-                                                (+ 1 (lnfix acc))))))
+                                                (+ 1 (lnfix acc)))))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-nodes-count-acc)))
 
 (defrule tree-nodes-count-acc-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)
@@ -92,6 +92,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-nodes-count ((tree treep))
+  (declare (xargs :type-prescription :none))
   :parents (implementation)
   :short "The number of elements in a tree."
   :returns (count natp :rule-classes :type-prescription)
@@ -106,8 +107,6 @@
   :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-nodes-count)))
 
 (defrule tree-nodes-count-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)
@@ -141,7 +140,7 @@
            tree-empty-p
            acl2::fix))
 
-(defrule tree-nodes-count-when-tree-emptyp-forward-chaining
+(defrule tree-nodes-count-when-tree-empty-p-forward-chaining
   (implies (tree-empty-p tree)
            (equal (tree-nodes-count tree)
                   0))
@@ -157,7 +156,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled tree-node-count-becomes-tree-nodes-count-of-tree-key-tree
+(defruled tree-nodes-count-becomes-tree-nodes-count-of-tree-key-tree
   (equal (tree-nodes-count tree)
          (treeset::tree-nodes-count (tree-key-tree tree)))
   :rule-classes :definition
@@ -166,11 +165,11 @@
            treeset::tree-nodes-count
            tree-key-tree))
 
-(defrule tree-node-count-when-bstp
+(defrule tree-nodes-count-when-bstp
   (implies (and (bstp tree)
                 (heapp tree))
            (equal (tree-nodes-count tree)
                   (treeset::cardinality (tree-key-set tree))))
   :rule-classes :definition
-  :use tree-node-count-becomes-tree-nodes-count-of-tree-key-tree
+  :use tree-nodes-count-becomes-tree-nodes-count-of-tree-key-tree
   :enable treeset::cardinality)

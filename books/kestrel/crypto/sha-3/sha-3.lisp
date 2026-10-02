@@ -1,6 +1,6 @@
 ; A formal specification of the SHA-3 hash function
 ;
-; Copyright (C) 2019-2024 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -48,16 +48,13 @@
 (local (include-book "kestrel/lists-light/group-and-ungroup" :dir :system))
 (local (include-book "support"))
 
-;(local (in-theory (disable acl2::group-becomes-group2)))
-
-(local (in-theory (disable true-listp ;prevent inductions
-                           bitp)))
-
-(local (in-theory (disable acl2::mod-sum-cases))) ;avoid case splits
-
-(local (in-theory (disable acl2::len-of-group)))
-
-(local (in-theory (enable acl2::memberp-of-cons-when-constant)))
+(local (in-theory (e/d (acl2::memberp-of-cons-when-constant)
+                       (true-listp ;prevent inductions
+                        bitp
+                        acl2::mod-sum-cases ;avoid case splits
+                        acl2::len-of-group
+                        ;; acl2::group-becomes-group2
+                        ))))
 
 (local
   (defthm bitp-when-unsigned-byte-p-1
@@ -779,7 +776,6 @@
 
 (defthm lanep-of-theta-lane
   (implies (and (state-arrayp a w)
-                (natp z)
                 (posp w))
            (lanep (theta-lane 0 x y a d w) w))
   :hints (("Goal" :in-theory (enable lanep))))
@@ -1106,7 +1102,6 @@
 
 (defthm state-arrayp-of-rho-aux
   (implies (and (w-valp w)
-                (natp z)
                 (natp x)
                 (< x 5)
                 (natp y)

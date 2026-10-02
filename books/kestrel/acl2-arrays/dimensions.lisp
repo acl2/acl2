@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function dimensions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -68,8 +68,8 @@
   :hints (("Goal" :in-theory (e/d (array1p dimensions) (dimensions-intro)))))
 
 (defthm consp-of-dimensions-when-array1p
-  (implies (array1p dag-array-name dag-array)
-           (consp (dimensions dag-array-name dag-array)))
+  (implies (array1p array-name array)
+           (consp (dimensions array-name array)))
   :hints (("Goal" :in-theory (e/d (array1p dimensions) (dimensions-intro)))))
 
 (defthmd normalize-dimensions-name

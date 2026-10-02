@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in operation /.
 ;
-; Copyright (C) 2019-2024 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,7 +17,7 @@
 (local (include-book "plus-and-minus"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
-;; Exported in times-and-divides.lisp
+;; Exported in times-and-divide.lisp
 (local
  (defthm *-of-/-same
    (equal (* x (/ x))
@@ -188,7 +188,7 @@
                                   (low 0)
                                   (x (* (/ y) x))))))
 
-;;comutes the args to * in the lhs
+;;commutes the args to * in the lhs
 (defthm integerp-of-*-of-/-when-<-and-negative-alt
   (implies (and (< y x)
                 (<= x 0)
@@ -425,6 +425,14 @@
            (<= (* i (/ j)) (- i)))
   :rule-classes :linear)
 
+(defthm <=-of-*-of-/-when-negative-linear
+  (implies (and (< i 0)
+                (<= 1 j)
+                (rationalp i)
+                (rationalp j))
+           (<= i (* i (/ j))))
+  :rule-classes :linear)
+
 (defthm <=-of-*-of-/-when-negative-and-positive-linear
   (implies (and (<= 0 i)
                 (<= j -1)
@@ -436,10 +444,11 @@
 (defthm <=-of-*-of-/-when-both-nonnegative-linear
   (implies (and (<= 0 i)
                 (<= 1 j)
-                (rationalp i)
+                (not (complex/complex-rationalp i)) ; (real/rationalp i)
                 (rationalp j))
            (<= (* i (/ j)) i))
-  :rule-classes :linear)
+  :rule-classes :linear
+  :hints (("Goal" :cases ((real/rationalp i)))))
 
 (defthm equal-of-*-/-and---same
   (implies (and (rationalp i)

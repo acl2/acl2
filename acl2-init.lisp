@@ -307,7 +307,7 @@ with ordinary ACL2 builds on the same set of books."))))
    (t
 
 ; The absolute value of most-positive-fixnum or of most-negative-fixnum is too
-; sall for ACL2.
+; small for ACL2.
 
     (error "This Lisp implementation is not a suitable host for ACL2:
 the values of most-negative-fixnum and most-positive-fixnum are
@@ -440,7 +440,7 @@ respectively at least (1- (expt 2 29)) and (expt 2 29), which are
       (x arguments)
       (setq result (concatenate 'string result " " x)))
     #-unix
-    (excl::run-shell-commad result)
+    (excl::run-shell-command result)
     #+unix
 
 ; In Allegro CL in Unix, we can avoid spawning a new shell by calling
@@ -1682,7 +1682,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; We pass options "-init -" and "-siteinit -" to inhibit loading init and patch
 ; files because we assume that whatever such files were to be loaded, were in
 ; fact loaded at the time the original Lispworks executable was saved.  Of
-; course, individual users who doesn't like this decision and know better could
+; course, individual users who don't like this decision and know better could
 ; always edit this script file, i.e., lw-exec-file, in the same spirit as
 ; changing the underlying Lisp implementation before building ACL2 (again,
 ; presumably based on knowledge of the host Lisp implementation).
@@ -1760,7 +1760,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
      (str sysout-name :direction :output)
      (let* ((prog1 (car extensions::*command-line-strings*))
             (len (length prog1))
-            (prog2 (cond ((< len 4)
+            (prog2 (cond ((<= len 4)
 
 ; If cmucl is installed by extracting to /usr/local/ then the cmucl command is
 ; simply "lisp" (thanks to Bill Pase for pointing this out).
@@ -1799,13 +1799,15 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 
 ; Starting with CMUCL snapshot-2016-01, -dynamic-space-size can be 0, meaning
 ; that the maximum heap allocation will be used (thanks to Raymond Toy for this
-; option).
+; option).  At one time we tested (string>= (subseq
+; (lisp-implementation-version) 0 16) "snapshot-2016-01") to see if we can use
+; 0 for -dynamic-space-size, but "snapshot-" prefix disappeared sometime before
+; 2025-09 .  At this point, 2016 is quite old; so we'll just use 0 and assume
+; that people have CMUCL versions after snapshot-2016-01, rather than our
+; trying to figure out a maximum -dynamic-space-size based on the platform (as
+; we did formerly).
 
-                        (if (string>=
-                             (subseq (lisp-implementation-version) 0 16)
-                             "snapshot-2016-01")
-                            0
-                          #+darwin 1150 #-darwin 1632)
+                        0
                         (insert-string host-lisp-args)
                         (user-args-string inert-args))))
     (chmod-executable sysout-name)

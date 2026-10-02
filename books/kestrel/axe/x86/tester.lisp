@@ -171,7 +171,7 @@
 ;; contain their signed forms.  (Note that the registers are signed; see rule X86ISA::I64P-XR-RGF.)
 ;; Returns (mv replacement-assumptions type-assumptions).
 ;; TODO: How do these interact with the input-assumptions?
-(defund make-register-replacement-assumptions64 (register-functions vars replacement-assumptions-acc type-assumptions-acc)
+(defund register-replacement-assumptions64 (register-functions vars replacement-assumptions-acc type-assumptions-acc)
   (declare (xargs :guard (and (symbol-listp register-functions)
                               (symbol-listp vars))))
   (if (or (endp register-functions) ; additional params will be on the stack
@@ -179,20 +179,20 @@
       (mv replacement-assumptions-acc type-assumptions-acc)
     (let ((register-name (first register-functions))
           (var (first vars)))
-      (make-register-replacement-assumptions64 (rest register-functions)
+      (register-replacement-assumptions64 (rest register-functions)
                                                (rest vars)
                                                (cons `(equal (,register-name x86) (logext '64 ,var)) replacement-assumptions-acc)
                                                (cons `(unsigned-byte-p '64 ,var) type-assumptions-acc)))))
 
 (local
-  (defthm make-register-replacement-assumptions64-return-type
+  (defthm register-replacement-assumptions64-return-type
     (implies (and (symbol-listp register-functions)
                   (symbol-listp vars)
                   (pseudo-term-listp replacement-assumptions-acc)
                   (pseudo-term-listp type-assumptions-acc))
-             (and (pseudo-term-listp (mv-nth 0 (make-register-replacement-assumptions64 register-functions vars replacement-assumptions-acc type-assumptions-acc)))
-                  (pseudo-term-listp (mv-nth 1 (make-register-replacement-assumptions64 register-functions vars replacement-assumptions-acc type-assumptions-acc)))))
-    :hints (("Goal" :induct t :in-theory (enable make-register-replacement-assumptions64)))))
+             (and (pseudo-term-listp (mv-nth 0 (register-replacement-assumptions64 register-functions vars replacement-assumptions-acc type-assumptions-acc)))
+                  (pseudo-term-listp (mv-nth 1 (register-replacement-assumptions64 register-functions vars replacement-assumptions-acc type-assumptions-acc)))))
+    :hints (("Goal" :induct t :in-theory (enable register-replacement-assumptions64)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -213,10 +213,12 @@
                            assume-bytes
                            stack-slots
                            existing-stack-slots
-                           position-independentp
+                           position-independent
                            feature-flags
                            state)
   (declare (xargs :guard (and (stringp function-name-string)
+                              (parsed-executablep parsed-executable)
+                              ;; param-names
                               (symbol-listp extra-rules)
                               (symbol-listp extra-assumption-rules)
                               (symbol-listp extra-lift-rules)
@@ -248,24 +250,23 @@
                                   (eq :auto stack-slots))
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
-                              (booleanp position-independentp)
-                              (feature-flagsp feature-flags))
+                              (member-eq position-independent '(t nil :auto))
+                              (or (feature-flagsp feature-flags) (eq :auto feature-flags)))
                   :mode :program ; because of apply-tactic-prover and unroll-x86-code-core
                   :stobjs state))
-  (b* ((- (acl2::ensure-x86 parsed-executable))
-       (executable-type (acl2::parsed-executable-type parsed-executable))
+  (b* (((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
+       (- (cw "~%(Testing ~x0.~%" function-name-string))
+       (- (ensure-x86 parsed-executable))
+       (executable-type (parsed-executable-type parsed-executable))
        (32-bitp (member-eq executable-type *executable-types32*))
        ;; This could perhaps be removed once we have some 32-bit formal unit tests:
        ((when 32-bitp)
         (er hard? 'test-function-core "32-bit mode is not yet supported in the Formal Unit Tester.")
         (mv t nil nil state))
-
        (stack-slots (if (eq :auto stack-slots) 100 stack-slots)) ; existing-stack-slots is dealt with in unroll-x86-code-core
        ;; Translate the assumptions supplied by the user:
        (user-assumptions (translate-terms assumptions 'test-function-core (w state)))
 
-       ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
-       (- (cw "~%(Testing ~x0.~%" function-name-string))
        ;; Check the param names, if any:
        ((when (not (or (eq :none param-names)
                        (and (symbol-listp param-names)
@@ -284,7 +285,7 @@
        ((mv register-replacement-assumptions register-type-assumptions)
         (if 32-bitp ;todo: add support for this in 32-bit mode, or is the calling convention too different?
             (mv nil nil)
-          (make-register-replacement-assumptions64 register-names64 param-names nil nil)))
+          (register-replacement-assumptions64 register-names64 param-names nil nil)))
        ;; Assumptions to be added to what unroll-x86-code-core already puts in:
        (extra-assumptions `(,@user-assumptions
                             ;; (equal (x86isa::mxcsrbits->de$inline (mxcsr x86)) 0) ; no denormal result created yet
@@ -311,11 +312,11 @@
           assume-bytes
           stack-slots
           existing-stack-slots
-          position-independentp
+          position-independent
           feature-flags
           :skip ; no input assumptions -- todo
           nil ; type-assumptions-for-array-varsp -- todo
-          '(:register-bool 0) ; output, rax (output should always be boolean), this chops it down to 1 byte (why not one bit?)
+          :al ;; We expect the function to return a boolean.  For C, we check the low byte of RAX/EAX.  TODO: Consider what other languages do.
           ;; t                   ; use-internal-contextsp
           prune-precise
           prune-approx
@@ -366,7 +367,7 @@
        ((when (quotep result-dag-or-quotep))
         (mv-let (elapsed state)
           (real-time-since start-real-time state)
-          (if (equal result-dag-or-quotep ''1)
+          (if (equal result-dag-or-quotep ''1) ; todo: or check for anything nonzero?
               (progn$ (cw "Test ~s0 passed in " function-name-string)
                       (print-to-hundredths elapsed)
                       (cw "s.)~%")
@@ -382,18 +383,18 @@
        (result-dag result-dag-or-quotep)
        ;; Always print the DAG, so we can see the nodenums (e.g., if one is non-pure):
        (- (progn$ (cw "(DAG after lifting:~%")
-                  (acl2::print-list result-dag)
+                  (print-list result-dag)
                   (cw ")~%")))
        ;; Print the term if small:
-       (- (and (acl2::dag-or-quotep-size-less-thanp result-dag 1000)
-               (cw "(Term after lifting: ~X01)~%" (acl2::dag-to-term result-dag) nil)))
+       (- (and (dag-or-quotep-size-less-thanp result-dag 1000)
+               (cw "(Term after lifting: ~X01)~%" (dag-to-term result-dag) nil)))
        (result-dag-fns (dag-fns result-dag))
        ((when (member-eq 'run-until-stack-shorter-than result-dag-fns)) ; TODO: try pruning first ; todo: compare this to what def-unrolled-fn does.
         (cw "ERROR in test ~x0: Did not finish the run.  See DAG above.)~%" function-name-string)
         (mv-let (elapsed state)
           (real-time-since start-real-time state)
           (mv :did-not-finish-the-run nil elapsed state)))
-       (- (and (not (acl2::dag-is-purep result-dag)) ; TODO: This was saying an IF is not pure (why?).  Does it still?
+       (- (and (not (dag-is-purep result-dag)) ; TODO: This was saying an IF is not pure (why?).  Does it still?
                (cw "WARNING: Result of lifting is not pure (see above).~%")))
        ;; Prove the test routine always returns 1 (we pass :bit for the type):
        (proof-rules (set-difference-eq (append (tester-proof-rules) extra-rules extra-proof-rules)
@@ -406,11 +407,11 @@
                                                  ;;acl2::boolif-when-quotep-arg3
                                                  ))))
        ((mv result info-acc state)
-        (acl2::apply-tactic-prover result-dag
+        (apply-tactic-prover result-dag
                                    ;; These are needed because their presence during rewriting can cause BVCHOPs to be dropped:
                                    register-type-assumptions ;TODO: We may need separateness assumptions!
                                    nil ; interpreted-fns
-                                   :bit ; type (means try to prove that the DAG is 1)
+                                   :bit ; type (means try to prove that the DAG is 1) ; todo: should it be "nonzero"?
                                    ;; tests ;a natp indicating how many tests to run
                                    tactics
                                    proof-rules
@@ -425,9 +426,9 @@
                                    t ; normalize-xors
                                    state))
        ((mv elapsed state) (real-time-since start-real-time state)))
-    (if (eq result acl2::*error*)
+    (if (eq result *error*)
         (mv :error-in-tactic-proof nil nil state)
-      (if (eq result acl2::*valid*)
+      (if (eq result *valid*)
           (progn$ (cw "Test ~s0 passed in " function-name-string)
                   (print-to-hundredths elapsed)
                   (cw "s.)~%")
@@ -449,7 +450,7 @@
 ;;If the test passes, EVENT is just (value-triple :invisible).  throws an error if the test failed.
 (defun test-function-fn (function-name-string
                          executable ; a parsed-executable or a string (meaning read from that file)
-                         param-names ; todo: can we somehoe get these from the executable?
+                         param-names ; todo: can we somehow get these from the executable?
                          assumptions
                          extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                          remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
@@ -495,7 +496,7 @@
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
                               (member-eq position-independent '(t nil :auto))
-                              (feature-flagsp feature-flags)
+                              (or (feature-flagsp feature-flags) (eq :auto feature-flags))
                               (member-eq expected-result '(:pass :fail :any)))
                   :mode :program
                   :stobjs state))
@@ -505,19 +506,10 @@
         (mv nil '(value-triple :redundant) state))
        ((mv erp parsed-executable state)
         (if (stringp executable)
-            (acl2::parse-executable executable state)
+            (parse-executable executable state)
           (mv nil executable state)))
        ((when erp) (mv erp nil state))
-       (executable-type (acl2::parsed-executable-type parsed-executable))
-       ;; Handle a :position-independent of :auto: ; todo: eventually drop this (or move to test-function-core !)
-       (position-independentp (if (eq :auto position-independent)
-                                  (if (eq executable-type :mach-o-64)
-                                      t ; since clang seems to produce position-independent code by default
-                                    (if (eq executable-type :elf-64)
-                                        nil ; since gcc seems to not produce position-independent code by default
-                                      ;; TODO: Think about this case:
-                                      t))
-                                position-independent))
+       (executable-type (parsed-executable-type parsed-executable))
        (function-name-string
         (if (eq executable-type :mach-o-64)
             (concatenate 'string "_" function-name-string) ; todo: why do we always have to add the underscore?
@@ -526,7 +518,7 @@
         (test-function-core function-name-string parsed-executable param-names assumptions
                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                            normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp feature-flags state))
+                            normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags state))
        ((when erp) (mv erp nil state))
        (- (cw "Time: ")
           (print-to-hundredths elapsed)
@@ -550,71 +542,70 @@
               (mv :unexpected-result nil state)))))
 
 ;; Test a single function:
-(make-event
- `(defmacro test-function (&whole
-                             whole-form
-                             function-name-string
-                             executable ; a parsed-executable or a string (meaning read from that file) ; TODO: Disallow a parsed-executable here?
-                           &key
-                             (param-names ':none) ; specific to test-function
-                             (assumptions 'nil) ; different form compared to test-file?
+(defmacro test-function (&whole
+                           whole-form
+                           function-name-string
+                           executable ; a parsed-executable or a string (meaning read from that file) ; TODO: Disallow a parsed-executable here?
+                         &key
+                           (param-names ':none) ; specific to test-function
+                           (assumptions 'nil) ; different form compared to test-file?
 
-                             (extra-rules 'nil)
-                             (extra-assumption-rules 'nil)
-                             (extra-lift-rules 'nil)
-                             (extra-proof-rules 'nil)
-                             (remove-rules 'nil)
-                             (remove-assumption-rules 'nil)
-                             (remove-lift-rules 'nil)
-                             (remove-proof-rules 'nil)
-                             (normalize-xors 't) ; todo: try :compact?  maybe not worth it when not equivalence checking
-                             (count-hits 'nil)
-                             (print 'nil)
-                             (max-printed-term-size '10000)
-                             (monitor 'nil)
-                             (step-limit '1000000)
-                             (step-increment '100)
-                             (prune-precise '10000) ; t, nil, or a max size
-                             (prune-approx 't)      ; t, nil, or a max size
-                             (tactics '(:rewrite :stp)) ; todo: try something with :prune
-                             (max-conflicts '1000000)
-                             (inputs-disjoint-from ':code)
-                             (assume-bytes ':all)
-                             (stack-slots ':auto)
-                             (existing-stack-slots ':auto)
-                             (position-independent ':auto)
-                             (feature-flags ',*default-feature-flags*)
-                             (expected-result ':pass) ; todo: use :auto (look at the name)
-                             )
-    `(make-event-quiet
-      (acl2-unwind-protect ; enable cleanup on errors/interrupts
-       "acl2-unwind-protect for test-function"
-       (test-function-fn ',function-name-string
-                         ,executable              ; gets evaluated
-                         ,param-names             ; gets evaluated
-                         ,assumptions             ; gets evaluated
-                         ,extra-rules             ; gets evaluated
-                         ,extra-assumption-rules  ; gets evaluated
-                         ,extra-lift-rules        ; gets evaluated
-                         ,extra-proof-rules       ; gets evaluated
-                         ,remove-rules            ; gets evaluated
-                         ,remove-assumption-rules ; gets evaluated
-                         ,remove-lift-rules       ; gets evaluated
-                         ,remove-proof-rules      ; gets evaluated
-                         ',normalize-xors
-                         ',count-hits
-                         ',print
-                         ',max-printed-term-size
-                         ,monitor ; gets evaluated
-                         ',step-limit ',step-increment ',prune-precise ',prune-approx ',tactics ',max-conflicts
-                         ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent ',feature-flags ',expected-result ',whole-form state)
-       ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
-       ;; Remove the temp-dir, if it exists:
-       (maybe-remove-temp-dir ; ,keep-temp-dir
-        state)
-       ;; Normal exit (remove the temp-dir, if it exists):
-       (maybe-remove-temp-dir ; ,keep-temp-dir
-        state)))))
+                           (extra-rules 'nil)
+                           (extra-assumption-rules 'nil)
+                           (extra-lift-rules 'nil)
+                           (extra-proof-rules 'nil)
+                           (remove-rules 'nil)
+                           (remove-assumption-rules 'nil)
+                           (remove-lift-rules 'nil)
+                           (remove-proof-rules 'nil)
+                           (normalize-xors 't) ; todo: try :compact?  maybe not worth it when not equivalence checking
+                           (count-hits 'nil)
+                           (print 'nil)
+                           (max-printed-term-size '10000)
+                           (monitor 'nil)
+                           (step-limit '1000000)
+                           (step-increment '100)
+                           (prune-precise '10000) ; t, nil, or a max size
+                           (prune-approx 't)      ; t, nil, or a max size
+                           (tactics '(:rewrite :stp)) ; todo: try something with :prune
+                           (max-conflicts '1000000)
+                           (inputs-disjoint-from ':code)
+                           (assume-bytes ':all)
+                           (stack-slots ':auto)
+                           (existing-stack-slots ':auto)
+                           (position-independent ':auto)
+                           (feature-flags ':auto)
+                           (expected-result ':pass) ; todo: use :auto (look at the name)
+                           )
+  `(make-event-quiet
+    (acl2-unwind-protect ; enable cleanup on errors/interrupts
+     "acl2-unwind-protect for test-function"
+     (test-function-fn ',function-name-string
+                       ,executable                ; gets evaluated
+                       ,param-names               ; gets evaluated
+                       ,assumptions               ; gets evaluated
+                       ,extra-rules               ; gets evaluated
+                       ,extra-assumption-rules    ; gets evaluated
+                       ,extra-lift-rules          ; gets evaluated
+                       ,extra-proof-rules         ; gets evaluated
+                       ,remove-rules              ; gets evaluated
+                       ,remove-assumption-rules   ; gets evaluated
+                       ,remove-lift-rules         ; gets evaluated
+                       ,remove-proof-rules        ; gets evaluated
+                       ',normalize-xors
+                       ',count-hits
+                       ',print
+                       ',max-printed-term-size
+                       ,monitor ; gets evaluated
+                       ',step-limit ',step-increment ',prune-precise ',prune-approx ',tactics ',max-conflicts
+                       ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent ',feature-flags ',expected-result ',whole-form state)
+     ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
+     ;; Remove the temp-dir, if it exists:
+     (maybe-remove-temp-dir ; ,keep-temp-dir
+      state)
+     ;; Normal exit (remove the temp-dir, if it exists):
+     (maybe-remove-temp-dir ; ,keep-temp-dir
+      state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -632,7 +623,7 @@
                            assume-bytes
                            stack-slots
                            existing-stack-slots
-                           position-independentp
+                           position-independent
                            feature-flags
                            expected-failures
                            result-alist
@@ -672,14 +663,14 @@
                                   (eq :auto stack-slots))
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
-                              (booleanp position-independentp)
-                              (feature-flagsp feature-flags)
+                              (member-eq position-independent '(t nil :auto))
+                              (or (feature-flagsp feature-flags) (eq :auto feature-flags))
                               (string-listp expected-failures)
                               (alistp result-alist))
                   :mode :program
                   :stobjs state))
   (if (endp function-name-strings)
-      (mv (erp-nil) (acl2::reverse-list result-alist) state)
+      (mv (erp-nil) (reverse-list result-alist) state)
     (b* ((function-name (first function-name-strings))
          ((mv erp passedp elapsed state)
           (test-function-core function-name parsed-executable
@@ -687,7 +678,7 @@
                               (lookup-equal function-name assumptions-alist)
                               extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                               remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
-                              normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp feature-flags state))
+                              normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags state))
          ((when erp) (mv erp nil state))
          (result (if passedp :pass :fail))
          (expected-result (if (member-equal function-name expected-failures)
@@ -699,7 +690,7 @@
                           extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                           remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                           normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                          tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp feature-flags
+                          tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags
                           expected-failures
                           (acons function-name (list result expected-result elapsed) result-alist)
                           state))))
@@ -754,7 +745,7 @@
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
                               (member-eq position-independent '(t nil :auto))
-                              (feature-flagsp feature-flags)
+                              (or (feature-flagsp feature-flags) (eq :auto feature-flags))
                               (or (eq :auto expected-failures)
                                   (string-listp expected-failures)))
                   :mode :program
@@ -763,53 +754,44 @@
        (- (cw "(Testing functions in ~s0:~%" executable))
        ;; Parse the executable (TODO: Can we parse less than the whole thing?):
        ((mv erp parsed-executable state)
-        (acl2::parse-executable executable state))
+        (parse-executable executable state))
        ((when erp) (mv erp nil state))
        ;; Analyze the executable:
-       (executable-type (acl2::parsed-executable-type parsed-executable))
-       ;; Handle a :position-independent of :auto:
-       (position-independentp (if (eq :auto position-independent)
-                                  (if (eq executable-type :mach-o-64)
-                                      t ; since clang seems to produce position-independent code by default
-                                    (if (eq executable-type :elf-64)
-                                        nil ; since gcc seems to not produce position-independent code by default
-                                      ;; TODO: Think about this case:
-                                      t))
-                                position-independent))
+       (executable-type (parsed-executable-type parsed-executable))
        (function-name-strings (if (eq :all include-fns)
                                   ;; We will test all functions whose names begin with test_ or fail_test_ or _test_ or _fail_test_:
                                   ;; Note that for MACH-O executables, the compiler prepends an underscore to function names.
                                   (let ((all-functions
                                           (if (eq :elf-64 executable-type)
-                                              (acl2::parsed-elf-symbols parsed-executable)
+                                              (parsed-elf-symbols parsed-executable)
                                             (if (eq :mach-o-64 executable-type)
-                                                (acl2::get-all-mach-o-symbols parsed-executable)
+                                                (get-all-mach-o-symbols parsed-executable)
                                               (if (eq :pe-64 executable-type)
-                                                  (acl2::get-all-pe-symbols parsed-executable)
+                                                  (get-all-pe-symbols parsed-executable)
                                                 (er hard? 'test-functions-fn "Unsupported executable type: ~x0" executable-type))))))
-                                    (append (acl2::strings-starting-with "test_" all-functions)
-                                            (acl2::strings-starting-with "fail_test_" all-functions)
-                                            (acl2::strings-starting-with "_test_" all-functions)
-                                            (acl2::strings-starting-with "_fail_test_" all-functions)))
+                                    (append (strings-starting-with "test_" all-functions)
+                                            (strings-starting-with "fail_test_" all-functions)
+                                            (strings-starting-with "_test_" all-functions)
+                                            (strings-starting-with "_fail_test_" all-functions)))
                                 ;; The functions to test were given explicitly:
                                 ;; TODO: Should we require the underscore when referring to a mach-o function?
                                 (if (eq executable-type :mach-o-64)
                                     ;; todo: why do we have to add the underscore?
-                                    (acl2::add-prefix-to-strings "_" include-fns)
+                                    (add-prefix-to-strings "_" include-fns)
                                   include-fns)))
        ;; Handle any excludes:
        (exclude-fns (if (eq executable-type :mach-o-64)
-                        (acl2::add-prefix-to-strings "_" exclude-fns)
+                        (add-prefix-to-strings "_" exclude-fns)
                       exclude-fns))
        (function-name-strings (set-difference-equal function-name-strings exclude-fns))
        ;; Determine which test functions are expected to fail:
        (expected-failures (if (eq expected-failures :auto)
-                              (append (acl2::strings-starting-with "fail_test_" function-name-strings)
-                                      (acl2::strings-starting-with "_fail_test_" function-name-strings))
+                              (append (strings-starting-with "fail_test_" function-name-strings)
+                                      (strings-starting-with "_fail_test_" function-name-strings))
                             ;; The expected failures were given explicitly:
                             expected-failures))
        ;; Sort the functions (TODO: What determines the order in the executable? Would that be better to use?  Would like to match the source code, if available)
-       (function-name-strings (acl2::merge-sort-string< function-name-strings))
+       (function-name-strings (merge-sort-string< function-name-strings))
        ;; Associate functions with their assumptions:
        (assumption-alist (if (null assumptions)
                              nil
@@ -831,7 +813,7 @@
                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                             normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
-                            tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independentp feature-flags
+                            tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags
                             expected-failures
                             nil ; empty result-alist
                             state))
@@ -862,7 +844,7 @@
                               (or (string-listp include-fns)
                                   (eq :all include-fns))
                               (string-listp exclude-fns)
-                              ;; assumptions
+                              ;; assumptions are (untranslated) terms
                               (symbol-listp extra-rules)
                               (symbol-listp extra-assumption-rules)
                               (symbol-listp extra-lift-rules)
@@ -895,7 +877,7 @@
                               (or (natp existing-stack-slots)
                                   (eq :auto existing-stack-slots))
                               (member-eq position-independent '(t nil :auto))
-                              (feature-flagsp feature-flags)
+                              (or (feature-flagsp feature-flags) (eq :auto feature-flags))
                               (or (eq :auto expected-failures)
                                   (string-listp expected-failures)))
                   :mode :program
@@ -926,72 +908,103 @@
       (prog2$ (er hard? 'test-file-fn "Unexpected result (see above).")
               (mv t nil state)))))
 
-;; By default, we test all the functions in the file whose names start with any
-;; of the following: "test_", "fail_test_", "_test_", "_fail_test_".
 ;; The :include and :exclude options can be used to override this default.
-(make-event
- `(defmacro test-file (&whole
-                         whole-form
-                         executable ; a string
-                       &key
-                         (include ':all) ; names of functions (strings) to test, or can be :all
-                         (exclude 'nil) ; names of functions (strings) to exclude from testing
-                         (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
-                         (extra-rules 'nil)
-                         (extra-assumption-rules 'nil)
-                         (extra-lift-rules 'nil)
-                         (extra-proof-rules 'nil)
-                         (remove-rules 'nil)
-                         (remove-assumption-rules 'nil)
-                         (remove-lift-rules 'nil)
-                         (remove-proof-rules 'nil)
-                         (normalize-xors 't)
-                         (count-hits 'nil)
-                         (print 'nil)
-                         (max-printed-term-size '10000)
-                         (monitor 'nil)
-                         (step-limit '1000000)
-                         (step-increment '100)
-                         (prune-precise '10000) ; t, nil, or a max size
-                         (prune-approx 't)      ; t, nil, or a max size
-                         (tactics '(:rewrite :stp)) ; todo: try something with :prune
-                         (max-conflicts '1000000)
-                         (inputs-disjoint-from ':code)
-                         (assume-bytes ':all)
-                         (stack-slots ':auto)
-                         (existing-stack-slots ':auto)
-                         (position-independent ':auto)
-                         (feature-flags ',*default-feature-flags*)
-                         (expected-failures ':auto))
-    `(make-event-quiet
-      (acl2-unwind-protect ; enable cleanup on errors/interrupts
-       "acl2-unwind-protect for test-file"
-       (test-file-fn ,executable              ; gets evaluated
-                     ',include                ; todo: evaluate?
-                     ',exclude                ; todo: evaluate?
-                     ,assumptions             ; gets evaluated
-                     ,extra-rules             ; gets evaluated
-                     ,extra-assumption-rules  ; gets evaluated
-                     ,extra-lift-rules        ; gets evaluated
-                     ,extra-proof-rules       ; gets evaluated
-                     ,remove-rules            ; gets evaluated
-                     ,remove-assumption-rules ; gets evaluated
-                     ,remove-lift-rules       ; gets evaluated
-                     ,remove-proof-rules      ; gets evaluated
-                     ',normalize-xors
-                     ',count-hits
-                     ',print
-                     ',max-printed-term-size
-                     ,monitor ; gets evaluated
-                     ',step-limit ',step-increment ',prune-precise ',prune-approx
-                     ',tactics ',max-conflicts ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent ',feature-flags
-                     ',expected-failures
-                     ',whole-form
-                     state)
-       ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
-       ;; Remove the temp-dir, if it exists:
-       (maybe-remove-temp-dir ; ,keep-temp-dir
-        state)
-       ;; Normal exit (remove the temp-dir, if it exists):
-       (maybe-remove-temp-dir ; ,keep-temp-dir
-        state)))))
+(defmacrodoc test-file (&whole
+                       whole-form
+                       executable ; a string
+                     &key
+                       (include ':all)
+                       (exclude 'nil)
+                       (assumptions 'nil)
+                       (extra-rules 'nil)
+                       (extra-assumption-rules 'nil)
+                       (extra-lift-rules 'nil)
+                       (extra-proof-rules 'nil)
+                       (remove-rules 'nil)
+                       (remove-assumption-rules 'nil)
+                       (remove-lift-rules 'nil)
+                       (remove-proof-rules 'nil)
+                       (normalize-xors 't)
+                       (count-hits 'nil)
+                       (print 'nil)
+                       (max-printed-term-size '10000)
+                       (monitor 'nil)
+                       (step-limit '1000000)
+                       (step-increment '100)
+                       (prune-precise '10000)       ; t, nil, or a max size
+                       (prune-approx 't)            ; t, nil, or a max size
+                       (tactics '(:rewrite :stp)) ; todo: try something with :prune
+                       (max-conflicts '1000000)
+                       (inputs-disjoint-from ':code)
+                       (assume-bytes ':all)
+                       (stack-slots ':auto)
+                       (existing-stack-slots ':auto)
+                       (position-independent ':auto)
+                       (feature-flags ':auto)
+                       (expected-failures ':auto))
+  `(make-event-quiet
+    (acl2-unwind-protect ; enable cleanup on errors/interrupts
+     "acl2-unwind-protect for test-file"
+     (test-file-fn ,executable                ; gets evaluated
+                   ',include                  ; todo: evaluate?
+                   ',exclude                  ; todo: evaluate?
+                   ,assumptions               ; gets evaluated
+                   ,extra-rules               ; gets evaluated
+                   ,extra-assumption-rules    ; gets evaluated
+                   ,extra-lift-rules          ; gets evaluated
+                   ,extra-proof-rules         ; gets evaluated
+                   ,remove-rules              ; gets evaluated
+                   ,remove-assumption-rules   ; gets evaluated
+                   ,remove-lift-rules         ; gets evaluated
+                   ,remove-proof-rules        ; gets evaluated
+                   ',normalize-xors
+                   ',count-hits
+                   ',print
+                   ',max-printed-term-size
+                   ,monitor ; gets evaluated
+                   ',step-limit ',step-increment ',prune-precise ',prune-approx
+                   ',tactics ',max-conflicts ',inputs-disjoint-from ',assume-bytes ',stack-slots ',existing-stack-slots ',position-independent ',feature-flags
+                   ',expected-failures
+                   ',whole-form
+                   state)
+     ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
+     ;; Remove the temp-dir, if it exists:
+     (maybe-remove-temp-dir ; ,keep-temp-dir
+      state)
+     ;; Normal exit (remove the temp-dir, if it exists):
+     (maybe-remove-temp-dir ; ,keep-temp-dir
+      state)))
+  :parents (acl2::formal-unit-testing acl2::axe-x86)
+  :short "Formal Unit Tester for x86."
+  :description "Apply the Formal Unit Tester to an x86 program.  See @(see acl2::formal-unit-testing) for background."
+  ;; WARNING: Some of these should be kept in sync with the doc from unroller.lisp:
+  :args ((executable "Path to the executable to test (should be an x86 binary).")
+         (include "Names of the functions to test (a list of strings, or @(':all')).  The special value @(':all') means to test all the functions in the file whose names start with any of the following: \"test_\", \"fail_test_\", \"_test_\", \"_fail_test_\".")
+         (exclude "Names of functions (strings) to exclude from testing.")
+         (expected-failures "Names of the methods that are expected to fail testing.  The special value @(':all') means that a function is expected to fail if its name starts with \"fail_test_\" or \"_fail_test_\.")
+         (assumptions "Assumptions to assume when lifting the functions.  Either a list of terms (to be assumed for every function), or an alist where each entry pairs a function name (a string) with a list of terms to be assumed when testing that function.  Instead of using this option, consider having the test harness check these conditions and return true (skipping further testing) when any of them is false.") ; todo: explain what vars can occur
+         (extra-rules "Extra rewrite rules to use throughout.")
+         (extra-assumption-rules "Extra rewrite rules to use when simplifying assumptions.")
+         (extra-lift-rules "Extra rewrite rules to use when lifting into logic.")
+         (extra-proof-rules "Extra rewrite rules to use when proving the lifted tests always return true.")
+         (remove-rules "Rewrite rules to remove throughout.")
+         (remove-assumption-rules "Rewrite rules to remove when simplifying assumptions.")
+         (remove-lift-rules "Rewrite rules to remove when lifting into logic.")
+         (remove-proof-rules "Rewrite rules to remove when proving the lifted tests always return true.")
+         (normalize-xors "Whether to normalize nests of XORs.")
+         (count-hits "Whether to count successful rewrite rule applications.")
+         (print "How verbose to be.") ; todo: details
+         (max-printed-term-size "Max term-size of a DAG that is allowed to be printed as a term.  Larger DAGs will be printed as DAGs, not terms.")
+         (monitor "Rule names (symbols) to be monitored when rewriting.") ; during assumptions too?
+         (step-limit "Limit on the total number of symbolic executions steps to allow (total number of steps over all branches, if the simulation splits).")
+         (step-increment "Number of model steps to allow before pausing to simplify the DAG and remove unused nodes.")
+         (prune-precise "Whether to prune DAGs using precise contexts.  Either t or nil or a natural number representing the smallest dag size that we deem too large for pruning (where here the size is the number of nodes in the corresponding term).  This kind of pruning can blow up if attempted for DAGs that represent huge terms.")
+         (prune-approx "Whether to prune DAGs using approximate contexts.  Either t or nil or a natural number representing the smallest dag size that we deem too large for pruning (where here the size is the number of nodes in the corresponding term).  This kind of pruning should not blow up but doesn't use fully precise contextual information.")
+         (tactics "Sequence of proof tactics to use.")
+         (max-conflicts "Maximum number of solver conflicts before timeout is declared.")
+         (inputs-disjoint-from "What to assume about the inputs (specified using the :inputs option) being disjoint from the sections/segments in the executable.  The value :all means assume the inputs are disjoint from all sections/segments.  The value :code means assume the inputs are disjoint from the code/text section.  The value nil means do not include any assumptions of this kind.")
+         (assume-bytes "Indication of which sections/segments to assume still have their original bytes, either @(':all') (meaning assume it for all sections/segments) or @(':non-write') (meaning assume it for only non-writeable sections/segments).  Note that global variables may be initialized to certain values but may have then been overwritten before the function being lifted is called, so it may not be appropriate to assume such variables still have their original values.")
+         (stack-slots "How much unused stack space to assume is available, in terms of the number of stack slots, which are 4 bytes for 32-bit executables and 8 bytes for 64-bit executables.  The stack will expand into this space during (symbolic) execution.")
+         (existing-stack-slots "How much available stack space to assume exists.  Usually at least 1, for the saved return address.")
+         (position-independent "Whether to assume that the binary is loaded at the exact numerical position indicated in the executable (@('t'), @('nil'), or @(':auto')).")
+         (feature-flags "A list of the CPU features to assume are supported, or :auto.  Each feature is represented by a keyword.  If :auto is given, the value of the constant @('*default-feature-flags*') is used.")))

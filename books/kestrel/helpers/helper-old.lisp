@@ -43,9 +43,9 @@
           (prove$ claim :hints hints-to-try :ignore-ok t :step-limit 10000))
          ((when erp) (mv erp nil nil state)))
       (if provedp
-          (prog2$ (- (cw "Success!)~%" hints-to-try))
+          (prog2$ (- (cw "Success!)~%"))
                   (mv nil t hints-to-try state))
-        (prog2$ (- (cw "Failed.)~%" hints-to-try))
+        (prog2$ (- (cw "Failed.)~%"))
                 (try-enabling-functions (rest fns) claim state))))))
 
 ;; Returns (mv erp provedp hints state) where if HINTS is nil, then no hints were found.

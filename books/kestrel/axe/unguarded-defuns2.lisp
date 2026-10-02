@@ -1,7 +1,7 @@
 ; More unguarded defuns (not used in evaluator-basic)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -179,7 +179,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; I hope this is still fast in the normal case.
-;; TOOD: For some reason, I am seeing slow array warnings.
+;; TODO: For some reason, I am seeing slow array warnings.
 (defund aref1-unguarded (name l n)
   (declare (xargs :guard t
                   :guard-hints (("Goal" :in-theory (disable array1p header dimensions default)))))

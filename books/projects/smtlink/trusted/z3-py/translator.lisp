@@ -942,8 +942,7 @@
     :returns (translated
               paragraphp
               :hints (("Goal"
-                       :in-theory (enable translate-symbol translate-type
-                                          paragraphp wordp))))
+                       :in-theory (enable translate-symbol paragraphp wordp))))
     (b* ((name (symbol-fix name))
          (type (symbol-fix type))
          (translated-name (translate-symbol name))
@@ -951,7 +950,7 @@
          (type (if fty-item (fty-info->name (cdr fty-item)) type))
          (translated-type
           (translate-type type int-to-rat 'common-type)))
-      `(,translated-name = "z3.Const" #\( #\' ,translated-name #\' #\, #\Space
+      `(,translated-name = "_SMT_.Const" #\( #\' ,translated-name #\' #\, #\Space
                          ,translated-type #\) #\Newline)))
 
   (encapsulate ()
@@ -1010,8 +1009,7 @@
                                              (fty-info fty-info-alist-p)
                                              (int-to-rat booleanp))
     :returns (translated paragraphp
-                         :hints (("Goal" :in-theory (e/d (wordp
-                                                          paragraphp translate-type)
+                         :hints (("Goal" :in-theory (e/d (wordp paragraphp)
                                                          (true-listp)))))
     :measure (len args)
     (b* ((type (symbol-fix type))
@@ -1033,8 +1031,7 @@
                                         (int-to-rat booleanp))
     :returns (translated
               paragraphp
-              :hints (("Goal" :in-theory (e/d (wordp
-                                               paragraphp translate-type)
+              :hints (("Goal" :in-theory (e/d (wordp paragraphp)
                                               (true-listp)))))
     (b* ((fn (func-fix fn))
          ;; Bind everything needed from fn
@@ -1049,7 +1046,7 @@
          (translated-returns
           (translate-uninterpreted-arguments 'returns f.returns
                                              fty-info int-to-rat)))
-      `(,(translate-symbol name) "= z3.Function("
+      `(,(translate-symbol name) "= _SMT_.Function("
         #\' ,name #\' ,translated-formals ,translated-returns
         ")" #\Newline)))
 

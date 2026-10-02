@@ -555,9 +555,9 @@
   (local
    (defun crock-induction (size size1 i j)
      (cond
-      ((zp size) (+ size1 i j))		;To avoid irrelevance
+      ((zp size) (+ size1 i j))                 ;To avoid irrelevance
       (t (crock-induction (1- size) (1+ size1) (logcdr i)
-			  (logcons (logcar i) j))))))
+                          (logcons (logcar i) j))))))
 
   ;; This lemma could have used one of the deleted Type-Prescriptions, I
   ;; think the one for LOGCDR.
@@ -566,8 +566,8 @@
    (defthm unsigned-byte-p-logrev1
      (implies
       (and (unsigned-byte-p size1 j)
-	   (integerp size)
-	   (>= size 0))
+           (integerp size)
+           (>= size 0))
       (unsigned-byte-p (+ size size1) (logrev1 size i j)))
      :rule-classes nil
      :hints
@@ -578,16 +578,16 @@
   (defthm unsigned-byte-p-logrev
     (implies
      (and (>= size1 size)
-	  (>= size 0)
-	  (integerp size)
-	  (integerp size1))
+          (>= size 0)
+          (integerp size)
+          (integerp size1))
      (unsigned-byte-p size1 (logrev size i)))
     :hints
     (("Goal"
       :use ((:instance unsigned-byte-p-logrev1
-		       (size size) (size1 0) (i i) (j 0))
-	    (:instance unsigned-byte-p-unsigned-byte-p
-		       (size size) (size1 size1) (i (logrev size i))))))))
+                       (size size) (size1 0) (i i) (j 0))
+            (:instance unsigned-byte-p-unsigned-byte-p
+                       (size size) (size1 size1) (i (logrev size i))))))))
 
 (local (in-theory (disable logrev)))
 
@@ -1103,8 +1103,8 @@ DEFUN-TYPE/EXEC-THEORY of the functions.</li>
                               ;; How to say that SIZE is a constant expression?
                               (or (eq s/u :SIGNED) (eq s/u :UNSIGNED))
                               (implies saturating-coercion
-				       (and (symbolp saturating-coercion)
-					    (eq s/u :SIGNED)))
+                                       (and (symbolp saturating-coercion)
+                                            (eq s/u :SIGNED)))
                               (implies doc (stringp doc)))))
 
   (let*
@@ -1133,7 +1133,7 @@ DEFUN-TYPE/EXEC-THEORY of the functions.</li>
                                   (:SIGNED `(- (EXPT2 (- ,size 1))))
                                   (:UNSIGNED 0)))
        (DEFUN ,predicate (X)
-	 (DECLARE (XARGS :GUARD T))
+         (DECLARE (XARGS :GUARD T))
          ,(case s/u
             (:SIGNED `(SIGNED-BYTE-P ,size X))
             (:UNSIGNED `(UNSIGNED-BYTE-P ,size X))))
@@ -1144,26 +1144,26 @@ DEFUN-TYPE/EXEC-THEORY of the functions.</li>
             (:SIGNED `(LOGEXT ,size I))
             (:UNSIGNED `(LOGHEAD ,size I))))
        (DEFTHM ,predicate-lemma
-	 (,predicate (,name I)))
+         (,predicate (,name I)))
        (DEFTHM ,coercion-lemma
-	 (IMPLIES
-	  (,predicate I)
-	  (EQUAL (,name I) I)))
+         (IMPLIES
+          (,predicate I)
+          (EQUAL (,name I) I)))
        (DEFTHM ,forward-lemma
          (IMPLIES
           (,predicate X)
           ,(case s/u
              (:SIGNED `(INTEGERP X))
              (:UNSIGNED `(AND (INTEGERP X)
-			      (>= X 0)))))
+                              (>= X 0)))))
          :RULE-CLASSES :FORWARD-CHAINING)
        ,@(when$cl saturating-coercion
            (list
             `(DEFUN ,saturating-coercion (I)
                (DECLARE (XARGS :GUARD (INTEGERP I)))
-	       (LOGSAT ,size I))
+               (LOGSAT ,size I))
             `(DEFTHM ,sat-lemma
-	       (,predicate (,saturating-coercion I)))))
+               (,predicate (,saturating-coercion I)))))
        (IN-THEORY (DISABLE ,predicate ,name ,@(when$cl saturating-coercion
                                                 (list saturating-coercion))))
        (DEFTHEORY ,theory
@@ -1172,8 +1172,8 @@ DEFUN-TYPE/EXEC-THEORY of the functions.</li>
             '(,predicate ,name ,@(when$cl saturating-coercion
                                    (list saturating-coercion))))
           '(,predicate-lemma ,coercion-lemma ,forward-lemma
-			     ,@(when$cl saturating-coercion
-				 (list sat-lemma))))))))
+                             ,@(when$cl saturating-coercion
+                                 (list sat-lemma))))))))
 
 ;;;****************************************************************************
 ;;;
@@ -1186,16 +1186,16 @@ DEFUN-TYPE/EXEC-THEORY of the functions.</li>
 
 (defun defword-tuple-p (tuple)
   (or (and (true-listp tuple)
-	   (or (equal (length tuple) 3)
-	       (equal (length tuple) 4))
-	   (symbolp (first tuple))
-	   (integerp (second tuple))
-	   (> (second tuple) 0)
-	   (integerp (third tuple))
-	   (>= (third tuple) 0)
-	   (implies (fourth tuple) (stringp (fourth tuple))))
+           (or (equal (length tuple) 3)
+               (equal (length tuple) 4))
+           (symbolp (first tuple))
+           (integerp (second tuple))
+           (> (second tuple) 0)
+           (integerp (third tuple))
+           (>= (third tuple) 0)
+           (implies (fourth tuple) (stringp (fourth tuple))))
       (er hard 'defword
-	  "A field designator for DEFWORD must be a list, the first ~
+          "A field designator for DEFWORD must be a list, the first ~
              element of which is a symbol, the second a positive integer, ~
              and the third a non-negative integer.  If a fouth element is ~
              provided it must be a string.  This object violates these ~
@@ -1205,37 +1205,37 @@ DEFUN-TYPE/EXEC-THEORY of the functions.</li>
   (cond
    ((null struct) t)
    (t (and (defword-tuple-p (car struct))
-	   (defword-tuple-p-listp (cdr struct))))))
+           (defword-tuple-p-listp (cdr struct))))))
 
 (defun defword-struct-p (struct)
   (cond
    ((true-listp struct) (defword-tuple-p-listp struct))
    (t (er hard 'defword
-	  "The second argument of DEFWORD must be a true list. ~
+          "The second argument of DEFWORD must be a true list. ~
            This object is not a true list: ~p0" struct))))
 
 (defun defword-guards (name struct conc-name set-conc-name keyword-updater
-			    doc)
+                            doc)
   (and
    (or (symbolp name)
        (er hard 'defword
-	   "The name must be a symbol.  This is not a symbol: ~p0" name))
+           "The name must be a symbol.  This is not a symbol: ~p0" name))
    (defword-struct-p struct)
    (or (symbolp conc-name)
        (er hard 'defword
-	   "The :CONC-NAME must be a symbol. This is not a symbol: ~
+           "The :CONC-NAME must be a symbol. This is not a symbol: ~
             ~p0" conc-name))
    (or (symbolp set-conc-name)
        (er hard 'defword
-	   "The :SET-CONC-NAME must be a symbol. This is not a symbol: ~
+           "The :SET-CONC-NAME must be a symbol. This is not a symbol: ~
             ~p0" conc-name))
    (or (symbolp keyword-updater)
        (er hard 'defword
-	   "The :KEYWORD-UPDATER must be a symbol. This is not a symbol: ~
+           "The :KEYWORD-UPDATER must be a symbol. This is not a symbol: ~
             ~p0" conc-name))
    (or (implies doc (stringp doc))
        (er hard 'defword
-	   "The :DOC must be a string.  This is not a string: ~p0" doc))))
+           "The :DOC must be a string.  This is not a string: ~p0" doc))))
 
 (defun defword-accessor-name (name conc-name field)
   (pack-intern name conc-name field))
@@ -1245,71 +1245,71 @@ DEFUN-TYPE/EXEC-THEORY of the functions.</li>
 
 (defun defword-accessor-definitions (rdb name conc-name tuples)
   (cond ((consp tuples)
-	 (let*
-	   ((tuple (car tuples))
-	    (field (first tuple))
-	    (size (second tuple))
-	    (pos (third tuple))
-	    (doc (fourth tuple))
-	    (accessor (defword-accessor-name name conc-name field)))
-	   (cons
-	    `(DEFMACRO ,accessor (WORD)
-	       ,@(if doc (list doc) nil)
-	       (LIST ',rdb (LIST 'BSP ,size ,pos) WORD))
-	    (defword-accessor-definitions rdb name conc-name (cdr tuples)))))
-	(t ())))
+         (let*
+           ((tuple (car tuples))
+            (field (first tuple))
+            (size (second tuple))
+            (pos (third tuple))
+            (doc (fourth tuple))
+            (accessor (defword-accessor-name name conc-name field)))
+           (cons
+            `(DEFMACRO ,accessor (WORD)
+               ,@(if doc (list doc) nil)
+               (LIST ',rdb (LIST 'BSP ,size ,pos) WORD))
+            (defword-accessor-definitions rdb name conc-name (cdr tuples)))))
+        (t ())))
 
 (defun defword-updater-definitions (wrb name set-conc-name tuples)
   (cond ((consp tuples)
-	 (let*
-	   ((tuple (car tuples))
-	    (field (first tuple))
-	    (size (second tuple))
-	    (pos (third tuple))
-	    (updater (defword-updater-name name set-conc-name field)))
-	   (cons
-	    `(DEFMACRO ,updater (VAL WORD)
-	       (LIST ',wrb VAL (LIST 'BSP ,size ,pos) WORD))
-	    (defword-updater-definitions wrb name set-conc-name
-	      (cdr tuples)))))
-	(t ())))
+         (let*
+           ((tuple (car tuples))
+            (field (first tuple))
+            (size (second tuple))
+            (pos (third tuple))
+            (updater (defword-updater-name name set-conc-name field)))
+           (cons
+            `(DEFMACRO ,updater (VAL WORD)
+               (LIST ',wrb VAL (LIST 'BSP ,size ,pos) WORD))
+            (defword-updater-definitions wrb name set-conc-name
+              (cdr tuples)))))
+        (t ())))
 
 (defloop defword-keyword-field-alist (name set-conc-name field-names)
   (for ((field-name in field-names))
     (collect (cons (intern-in-package-of-symbol (string field-name) :keyword)
-		   (defword-updater-name name set-conc-name field-name)))))
+                   (defword-updater-name name set-conc-name field-name)))))
 
 (defun defword-keyword-updater-body (val args keyword-field-alist)
   (cond
    ((atom args) val)
    (t `(,(cdr (assoc (car args) keyword-field-alist)) ,(cadr args)
-	,(defword-keyword-updater-body val (cddr args) keyword-field-alist)))))
+        ,(defword-keyword-updater-body val (cddr args) keyword-field-alist)))))
 
 (defun defword-keyword-updater-fn (form val args keyword-updater
-					keyword-field-alist)
+                                        keyword-field-alist)
   (declare (xargs :mode :program))
   (let*
     ((keyword-field-names (strip-cars keyword-field-alist)))
     (cond
      ((not (keyword-value-listp args))
       (er hard keyword-updater
-	  "The argument list in the macro invocation ~p0 ~
+          "The argument list in the macro invocation ~p0 ~
            does not match the syntax of a keyword argument ~
            list because ~@1."
-	  form (reason-for-non-keyword-value-listp args)))
+          form (reason-for-non-keyword-value-listp args)))
      ((not (subsetp (evens args) keyword-field-names))
       (er hard keyword-updater
-	  "The argument list in the macro invocation ~p0 is not ~
+          "The argument list in the macro invocation ~p0 is not ~
            a valid keyword argument list because it contains the ~
            ~#1~[keyword~/keywords~] ~&1, which ~#1~[is~/are~] ~
             not the keyword ~#1~[form~/forms~] of any of the ~
             field names ~&2."
-	  FORM (set-difference-equal (evens args) keyword-field-names)
-	  keyword-field-names))
+          FORM (set-difference-equal (evens args) keyword-field-names)
+          keyword-field-names))
      (t (defword-keyword-updater-body val args keyword-field-alist)))))
 
 (defun defword-keyword-updater (name keyword-updater set-conc-name
-				     field-names)
+                                     field-names)
   `(DEFMACRO ,keyword-updater (&WHOLE FORM VAL &REST ARGS)
      (DEFWORD-KEYWORD-UPDATER-FN
        FORM VAL ARGS ',keyword-updater
@@ -1449,8 +1449,8 @@ macro will expand to</p>
                           set-conc-name
                         (pack-intern name "SET-" name "-")))
        (keyword-updater (if keyword-updater
-			    keyword-updater
-			  (pack-intern name "UPDATE-" name)))
+                            keyword-updater
+                          (pack-intern name "UPDATE-" name)))
        (accessor-definitions
         (defword-accessor-definitions 'RDB name conc-name struct))
        (updater-definitions
@@ -1462,7 +1462,7 @@ macro will expand to</p>
          ,@accessor-definitions
          ,@updater-definitions
          ,(defword-keyword-updater
-	    name keyword-updater set-conc-name field-names))))))
+            name keyword-updater set-conc-name field-names))))))
 
 #||
 Example:
@@ -1493,7 +1493,7 @@ Example:
   (cond
    ((endp bit-names) ())
    (t (cons `(,(car bit-names) (LOGBIT ,n ,word))
-	    (bind-word-to-bits-fn (cdr bit-names) (1+ n) word)))))
+            (bind-word-to-bits-fn (cdr bit-names) (1+ n) word)))))
 
 (defsection bind-word-to-bits
   :parents (word/bit-macros)

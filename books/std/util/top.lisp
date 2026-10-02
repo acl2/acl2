@@ -55,6 +55,8 @@
 (include-book "defsum")
 (include-book "defval")
 (include-book "def-bound-theorems")
+(include-book "def-guard-theorem-rewrite")
+(include-book "def-guard-theorem-rewrite-doc")
 (include-book "defthm-commutative")
 (include-book "tuple")
 (include-book "error-value-tuples")
@@ -74,6 +76,8 @@
 (include-book "defsurj-doc")
 (include-book "defiso")
 (include-book "defiso-doc")
+(include-book "definductive")
+(include-book "definductive-doc")
 
 (defxdoc std/util
   :parents (std acl2::macro-libraries)

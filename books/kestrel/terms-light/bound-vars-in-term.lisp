@@ -1,7 +1,7 @@
 ; A utility to gather the lambda-bound vars in a term
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "tools/flag" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
@@ -43,7 +43,7 @@
      (union-eq (bound-vars-in-term (first terms))
                (bound-vars-in-terms (rest terms))))))
 
-(make-flag bound-vars-in-term)
+(local (make-flag bound-vars-in-term))
 
 (defthm-flag-bound-vars-in-term
   (defthm symbol-listp-of-bound-vars-in-term

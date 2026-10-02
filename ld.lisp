@@ -33,7 +33,7 @@
   ((current-package ld-level . ld-skip-proofsp)
    mode
    not-gc-off
-   #+:non-standard-analysis
+   #+non-standard-analysis
    script-mode
    .
    alist)
@@ -46,7 +46,7 @@
 ; The prompt is printed by (fmt "~@0~sr ~@1~*2" a channel state nil), where a
 ; is an alist computed from current-package, ld-level, default-defun-mode,
 ; guard-checking-on, and ld-skip-proofsp, and #\r is bound to "" except for the
-; #+:non-standard-analysis version, where it is bound to "(r)".  To keep from
+; #+non-standard-analysis version, where it is bound to "(r)".  To keep from
 ; consing up this alist every time, we memoize it, storing in 'prompt-memo the
 ; tuple (pkg level skipp defun-mode+ gc-on a), where defun-mode+ is the
 ; default-defun-mode except in raw-mode, where defun-mode+ is nil.  Thus, if
@@ -77,7 +77,7 @@
 
            (eq (access ld-prompt-memo prompt-memo :not-gc-off)
                (f-get-global 'guard-checking-on state))
-           #+:non-standard-analysis
+           #+non-standard-analysis
            (eq (access ld-prompt-memo prompt-memo :script-mode)
                (f-get-global 'script-mode state)))
       (fmt1 "~@0~sr ~@1~*2"
@@ -91,11 +91,11 @@
                                    (make-list-ac (f-get-global 'ld-level state)
                                                  nil nil)))
                    (cons #\r
-                         #+:non-standard-analysis
+                         #+non-standard-analysis
                          (if (f-get-global 'script-mode state)
                              ""
                            "(r)")
-                         #-:non-standard-analysis ""))))
+                         #-non-standard-analysis ""))))
         (pprogn
          (f-put-global
           'prompt-memo
@@ -106,9 +106,9 @@
                 :mode (and (not (raw-mode-p state))
                            (default-defun-mode (w state)))
                 :not-gc-off (not (gc-off state))
-                #+:non-standard-analysis
+                #+non-standard-analysis
                 :script-mode
-                #+:non-standard-analysis
+                #+non-standard-analysis
                 (f-get-global 'script-mode state)
                 :alist alist)
           state)
@@ -1377,7 +1377,7 @@
 (defun ld-read-eval-print (state)
 
 ; This is LD's read-eval-print step.  We read a form from standard-oi, eval it,
-; and print the result to standard-co, will lots of bells and whistles
+; and print the result to standard-co, with lots of bells and whistles
 ; controlled by the various LD specials.  The result of this function is a
 ; triple (mv signal val state), where signal is one of :CONTINUE, :RETURN,
 ; :ERROR, or (:EXIT n).  When the signal is :continue, :error, or (:exit n),
@@ -1566,25 +1566,36 @@
 ; and aborting the inferior LD so that it fails to cleanup after itself.
 
   (mv-let
-   (signal val state)
-   #+acl2-loop-only
-   (ld-read-eval-print state)
-   #-acl2-loop-only
-   (progn (acl2-unwind *ld-level* t)
-          (when (not *wormholep*)
+    (signal val state)
+    #+acl2-loop-only
+    (ld-read-eval-print state)
+    #-acl2-loop-only
+    (progn (acl2-unwind *ld-level* t)
+           (when (not *wormholep*)
 
 ; This seems a reasonable place to reset *trace-level* in case a throw has
 ; been executed that leaves *trace-level* at an unfortunate value.  However, we
 ; don't want to mess with *trace-level* when reading forms inside a brr break
 ; or any other wormhole; hence the condition above.
 
-            (setq *trace-level* 0))
-          (ld-read-eval-print state))
-   (cond ((eq signal :continue)
-          (ld-loop state))
-         ((eq signal :return)
-          (value val))
-         (t (mv t nil state)))))
+             (setq *trace-level* 0))
+           (ld-read-eval-print state))
+    (cond ((eq signal :continue)
+           (ld-loop state))
+          ((eq signal :return)
+           (if (and (eq (debugger-enable state) :never!)
+                    (eq (f-get-global 'ld-level state) 1))
+               (pprogn (io? error nil state nil
+                            (error-fms nil 'top-level nil
+                                       "Normally the top-level LD loop would ~
+                                        exit here, but ~x0 = :NEVER! so that ~
+                                        exit has been disabled.~%"
+                                       (list
+                                        (cons #\0 '(debugger-enable state)))
+                                       state))
+                       (ld-loop state))
+             (value val)))
+          (t (mv t nil state)))))
 
 ; The following raw lisp special variable controls whether the raw lisp version
 ; of ld-fn-body, below, prints the header as per ld-verbose or does not.  The
@@ -2226,8 +2237,8 @@
          (list (cons #\0 (f-get-global 'current-package state))
                (cons #\1 (defun-mode-prompt-string state))
                (cons #\r
-                     #+:non-standard-analysis "(r)"
-                     #-:non-standard-analysis "")
+                     #+non-standard-analysis "(r)"
+                     #-non-standard-analysis "")
                (cons #\2
                      (list "" ">" ">" ">"
                            (make-list-ac (- (f-get-global 'ld-level state) 1)
@@ -2674,7 +2685,7 @@
 ; ? (fact x) = y
 
 ; to obtain a variety of values of x and y that satisfy the relation.
-; Or might might merely be informed that that, yes, there do exist
+; Or one might merely be informed that that, yes, there do exist
 ; values of x and y satisfying the relation, without being given x and
 ; y explicitly.
 
@@ -3250,7 +3261,7 @@
 ; hand it has a non-empty signature and ntep (Non-Trivial-Encapsulate Property)
 ; is false, then it is not puffable.  The remaining case is that ntep is true
 ; and the signature is non-empty.  Then the encapsulate is puffable if and only
-; if any of its signature's function symbols are have unknown-constraints
+; if any of its signature's function symbols have unknown-constraints
 ; (equivalently, all of them).
 
   (and (eq (access-event-tuple-type cddr-car-wrld) 'encapsulate)
@@ -4309,11 +4320,7 @@
                (value :invisible)))
       ((eq flg :none)
        (pprogn (f-put-global 'guard-checking-on :none state)
-               (fms "Turning off guard checking entirely.  To allow execution ~
-                     in raw Lisp for functions with guards other than T, ~
-                     while continuing to mask guard violations, ~
-                     :SET-GUARD-CHECKING NIL.  See :DOC ~
-                     set-guard-checking.~%~%"
+               (fms "Turning off guard checking entirely.~%~%"
                     nil (standard-co state) state nil)
                (value :invisible)))
       (t (pprogn
@@ -4706,6 +4713,8 @@
                       (symbolp (ffn-symb target))))
             (cw *meta-level-function-problem-1c* 'mfc-relieve-hyp target)
             (throw-raw-ev-fncall ev-fncall-val))
+           ((free-varsp hyp alist)
+            (mv nil nil))
            (t
             (let* ((linearp (eq (car rune) :linear))
                    (lemmas (getpropc (ffn-symb target)

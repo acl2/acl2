@@ -57,7 +57,7 @@
   (b* (((mv erp db - state)
         (parse-comp-db "compile_commands.json" nil nil state))
        ((when erp)
-        (value (cw "Error: ~@0~%" erp))))
-    (value (equal db *expected-db*)))
+        (acl2::value (cw "Error: ~@0~%" erp))))
+    (acl2::value (equal db *expected-db*)))
 
   :with-output-off nil)

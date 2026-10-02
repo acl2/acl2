@@ -1,6 +1,6 @@
 ; Fast alists for looking up what nodes rewrote to
 ;
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -62,7 +62,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Records the fact that NODENUM rewrite to DARG.
+;; Records the fact that NODENUM rewrote to DARG.
 (defund update-node-result-alist (nodenum darg alist)
   (declare (xargs :guard (and (natp nodenum)
                               (node-result-alistp alist))))

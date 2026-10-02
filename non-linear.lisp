@@ -234,7 +234,7 @@
 (defun too-many-polysp (var-lst pot-lst counter)
 
 ; Var-list is a list of pot-labels from pot-lst, and counter is initially
-; 1.  We we are about to multiply the polys from the pots in var-lst,
+; 1.  Since we are about to multiply the polys from the pots in var-lst,
 ; we first check whether doing so would generate too many polys.
 
 ; Note: This function has a magic number, 20, which probably should be
@@ -438,7 +438,7 @@
 ; 1. If we can determine that (< 4 x), we can add both (< 0 (/ x)) and
 ; (< (/ x) 1/4).
 ; 2. If we can determine that (< 0 x) and (< x 4), we can add
-; (< 0 (/ x)) and (< (/ x) 1/4).
+; (< 0 (/ x)) and (< 1/4 (/ x)).
 ; 3. If we can only determine that (< -2 x), we cannot add anything about
 ; (/ x) to the pot-lst.
 
@@ -575,7 +575,7 @@
                              bounds-polys1)))
                      (bounds-polys3
                       (cond ((and var-lbd
-                                  (not (eql var-lbd 0))
+                                  (< 0 var-lbd)
                                   (or (null inv-var-ubd)
                                       (< (/ var-lbd) inv-var-ubd)))
                              (cons
@@ -591,7 +591,7 @@
                              bounds-polys2)))
                      (bounds-polys4
                       (cond ((and inv-var-lbd
-                                  (not (eql inv-var-lbd 0))
+                                  (< 0 inv-var-lbd)
                                   (or (null var-ubd)
                                       (< (/ inv-var-lbd) var-ubd)))
                              (cons
@@ -612,8 +612,8 @@
                   (and inv-var-ubd
                        (< inv-var-ubd 0)))
 
-; We try to gather bounds polys in four stages --- a upper bound for inv-var,
-; a upper bound for var, an lower bound for inv-var, and an lower bound
+; We try to gather bounds for polys in four stages --- an upper bound for
+; inv-var, an upper bound for var, a lower bound for inv-var, and a lower bound
 ; for var.
 
               (let* ((ttree1 (cons-tag-trees ttree
@@ -673,7 +673,7 @@
                              bounds-polys1)))
                      (bounds-polys3
                       (cond ((and var-ubd
-                                  (not (eql var-ubd 0))
+                                  (< var-ubd 0)
                                   (or (null inv-var-lbd)
                                       (< inv-var-lbd (/ var-ubd))))
                              (cons
@@ -689,7 +689,7 @@
                              bounds-polys2)))
                      (bounds-polys4
                       (cond ((and inv-var-ubd
-                                  (not (eql inv-var-ubd 0))
+                                  (< inv-var-ubd 0)
                                   (or (null var-lbd)
                                       (< var-lbd (/ inv-var-ubd))))
                              (cons

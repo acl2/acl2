@@ -1,7 +1,7 @@
 ; A tool to read in a Java class and create ACL2 events representing it
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,22 +33,22 @@
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
 
-;; Returns (mv erp event state constant-pool).  Helper function for read-class.
+;; Returns (mv erp event state).  Helper function for read-class.
 ;; Uses the name stored in the class file, ignoring the filename
-(defun read-class-fn (class-file dir whole-form state constant-pool)
-  (declare (xargs :stobjs (state constant-pool)
+(defun read-class-fn (class-file dir whole-form state)
+  (declare (xargs :stobjs (state)
                   :guard (and (stringp class-file)
                               (or (null dir)
                                   (keywordp dir))
                               (consp whole-form)
                               (symbolp (car whole-form)))))
   (b* (((when (command-is-redundantp whole-form state))
-        (mv (erp-nil) '(value-triple :invisible) state constant-pool))
-       ((mv erp class-name class-info field-defconsts state constant-pool)
-        (read-and-parse-class-file-with-dir class-file dir t state constant-pool))
+        (mv (erp-nil) '(value-triple :invisible) state))
+       ((mv erp class-name class-info field-defconsts state)
+        (read-and-parse-class-file-with-dir class-file dir t state))
        ((when erp)
         (er hard? 'read-class-fn "Error reading or parsing ~x0: ~x1" class-file erp)
-        (mv erp nil state constant-pool)))
+        (mv erp nil state)))
     (mv (erp-nil)
         `(progn ,@(events-for-class class-name class-info field-defconsts)
                 ;; Record the fact that the containing book depends on this class:
@@ -58,7 +58,7 @@
                 ;; Print the name of the class constant:
                 (value-triple ',(class-info-constant-name class-name)))
         state
-        constant-pool)))
+       )))
 
 ;; Reads in the indicated Java bytecode .class file and creates a defconst
 ;; containing the parsed contents of the class.  Also adds the class to the
@@ -67,4 +67,4 @@
                              class-file
                              &key
                              (dir 'nil))
-  `(make-event-quiet (read-class-fn ,class-file ',dir ',whole-form state constant-pool)))
+  `(make-event-quiet (read-class-fn ,class-file ',dir ',whole-form state)))

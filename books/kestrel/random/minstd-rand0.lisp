@@ -1,6 +1,6 @@
 ; A simple random number generator
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,7 +20,7 @@
 ;; The Mersenne prime M_31, used as the modulus of the generator.
 (defconst *m31* (- (expt 2 31) 1))
 
-;; The multipler of the generator, equal to 7^5.
+;; The multiplier of the generator, equal to 7^5.
 (defconst *minstd-rand0-multiplier* 16807)
 
 ;; Recognize a (pseudo-random) value.
@@ -43,7 +43,7 @@
   (mod (* *minstd-rand0-multiplier* rand) *m31*))
 
 ;; TODO: Prove that we can never generate 0 (and thus get stuck), given a
-;; current value that satisfies minstd-randp.
+;; current value that satisfies minstd-rand0p.
 
 (defthm minstd-rand0p-of-minstd-rand0-next
   (implies (minstd-rand0p rand)

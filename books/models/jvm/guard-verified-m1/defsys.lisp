@@ -1154,7 +1154,7 @@ QED!
                 replaced all the recursive calls at the end of output CLK+ ~
                 nests by recursive calls of the ~x0.  But the original ~
                 clock function name, ~x0, still occurs in the purported ~
-                induction hint function body, ~x1, contrary to what we ~
+                induction hint function body, ~x2, contrary to what we ~
                 thought was possible!"
                hint fn hint-body))
           (t
@@ -1265,12 +1265,12 @@ QED!
       nil
       (acl2::cw
        "The module named ~x0 calls ~x1 and the called module has ghost ~
-        formals.  (Presumably ~x1 does not necessarily terminate and thus ~
-        thus ~x0 won't either.)  How are the ghost formals for ~x1 passed ~
-        down to its clock function in the clock function for ~x0?  I ~
-        have a really draconian convention:  I allow this only if the calling ~
-        module is MAIN, the only ghostly call MAIN makes is to ~x1, and MAIN ~
-        has identical ghost formals.  Under these circumstances I pass MAIN's ~
+        formals.  (Presumably ~x1 does not necessarily terminate and thus ~x0 ~
+        won't either.)  How are the ghost formals for ~x1 passed down to its ~
+        clock function in the clock function for ~x0?  I have a really ~
+        draconian convention:  I allow this only if the calling module is ~
+        MAIN, the only ghostly call MAIN makes is to ~x1, and MAIN has ~
+        identical ghost formals.  Under these circumstances I pass MAIN's ~
         ghosts down to ~x1.  However, these draconian restrictions are not ~
         met in this system.  I wasn't motivated to figure out what is really ~
         needed in such general cases as this.  I suspect this defsys will ~

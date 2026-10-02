@@ -1,7 +1,7 @@
 ; Theorems about merge-sort-<
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,13 +12,14 @@
 (in-package "ACL2")
 
 (include-book "merge-sort-less-than")
-(include-book "kestrel/typed-lists-light/all-less-than-or-equal" :dir :system)
+(include-book "kestrel/typed-lists-light/all-less-than-or-equal-def" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less-than-or-equal-all" :dir :system)
 (include-book "kestrel/typed-lists-light/less-than-or-equal-all" :dir :system)
 (include-book "kestrel/typed-lists-light/sortedp-less-than-or-equal" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
+(local (include-book "kestrel/typed-lists-light/all-less-than-or-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
@@ -213,7 +214,6 @@
            (sortedp-<= (merge-< l1 l2 acc)))
   :hints (("Goal" :in-theory (enable merge-<
                                      sortedp-<=
-                                     SORTEDP-<=
                                      <=-all
                                      revappend-becomes-append-of-reverse-list
                                      ))))
@@ -415,8 +415,7 @@
 
 (defthm all-natp-of-merge-sort-<
   (equal (all-natp (merge-sort-< lst))
-         (all-natp lst))
-  :hints (("Goal" :in-theory (enable))))
+         (all-natp lst)))
 
 (defthm all-<-of-merge-sort-<
   (equal (all-< (merge-sort-< lst) val)

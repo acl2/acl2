@@ -94,8 +94,8 @@
            (* x y)))
 
 (defthm |(* y (* x z))|
-   (equal (* y (* x z))
-          (* x (* y z))))
+  (equal (* y (* x z))
+         (* x (* y z))))
 
 (defthm |(* (* x y) z)|
     (equal (* (* x y) z)

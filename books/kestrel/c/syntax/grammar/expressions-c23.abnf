@@ -1,0 +1,29 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains grammar rules for expressions in the C23 dialects.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Compound literals in C23 [C23:6.5.3.1] [C23:6.5.3.6] are different from C17.
+
+postfix-expression-c23 = compound-literal
+
+compound-literal =
+    "(" [ storage-class-specifiers ] type-name ")" braced-initializer
+
+storage-class-specifiers = storage-class-specifier
+                         / storage-class-specifiers storage-class-specifier
+
+braced-initializer = "{" "}"
+                   / "{" initializer-list "}"
+                   / "{" initializer-list "," "}"

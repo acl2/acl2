@@ -905,7 +905,7 @@ simply setting the variable to X and then to its real value).</p>")
        ;; expressions the same width.
        ((mv body delta) (vl-stmt-stmttemps body delta x))
        ((unless (vl-stmt-cblock-p body))
-        (raise "Somehow stmttemps screwed up the body?" x)
+        (raise "Somehow stmttemps screwed up the body?: ~x0" x)
         (mv delta nil))
 
        (lvalues (mergesort
@@ -992,5 +992,3 @@ simply setting the variable to X and then to its real value).</p>")
   (b* (((vl-design x) x)
        (new-mods (vl-modulelist-combinational-elim x.mods)))
     (change-vl-design x :mods new-mods)))
-
-

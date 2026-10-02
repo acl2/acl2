@@ -1,7 +1,7 @@
 ; Bit-blasting the spec for AES-128
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,7 +14,7 @@
 
 (in-package "ACL2")
 
-;; A variant of aes-blast,lisp that uses boolean operations for NOT and AND.
+;; A variant of aes-blast.lisp that uses boolean operations for NOT and AND.
 
 (include-book "kestrel/axe/unroll-spec-basic" :dir :system)
 (include-book "kestrel/axe/rewriter-basic" :dir :system)
@@ -64,7 +64,7 @@
                    :rules :auto
                    :extra-rules (append (bit-blast-rules)
                                         (introduce-bv-array-rules)) ; turns nth into bv-array-read
-                   :remove-rules '(bit-to-bool bool-to-bit) ; todo, these rules interfer with pushing these functions to do conversions
+                   :remove-rules '(bit-to-bool bool-to-bit) ; todo, these rules interfere with pushing these functions to do conversions
                    )
 
 (def-simplified-basic *aes-128-encrypt-spec-dag-bit-blasted-as-boolean*

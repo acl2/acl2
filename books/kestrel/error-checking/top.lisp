@@ -44,7 +44,7 @@
     (xdoc::seetopic "er" "soft error")
     ", with an informative message,
      and optionally informative error flag and value,
-     when certain conditions are not satisified.
+     when certain conditions are not satisfied.
      These error checking functions are useful, for instance,
      to programmatically validate inputs of "
     (xdoc::seetopic "event-macros" "event macros")

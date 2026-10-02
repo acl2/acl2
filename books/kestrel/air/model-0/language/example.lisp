@@ -1,5 +1,5 @@
 ; AIR Library
-; Model 0: Dynamic Semantics
+; Model 0: Example of Dynamic Semantics
 ;
 ; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;

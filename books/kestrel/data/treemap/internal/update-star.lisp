@@ -17,7 +17,6 @@
 (include-book "tree-defs")
 (include-book "keys-defs")
 (include-book "update-defs")
-(include-book "update-defs")
 (include-book "split-defs")
 (include-book "submap-defs")
 

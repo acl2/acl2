@@ -1,7 +1,7 @@
 ; Tests of prove-equal-with-axe
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -22,8 +22,6 @@
 ;(include-book "axe-rules") ;for BVAND-OF-CONSTANT-TIGHTEN-AXE
 ;(include-book "bv-rules-axe") ;for BVCAT-TRIM-ARG4-AXE-ALL
 ;(include-book "axe-rules-mixed") ;for NOT-EQUAL-MAX-INT-WHEN-<=
-;(include-book "kestrel/jvm/jvm-rules" :dir :system) ;for G-OF-G-OF-SET-FIELD-WHEN-PAIRS-DIFFERENT
-;(include-book "jvm-rules-axe") ;for SET-FIELD-OF-SET-FIELD-REORDER-PAIRS
 ;todo: move these to equivalence-checker.lisp:
 (include-book "kestrel/lists-light/firstn" :dir :system) ;for firstn-when-zp-cheap
 (include-book "kestrel/lists-light/take" :dir :system)

@@ -19,6 +19,7 @@
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/typed-lists/character-listp" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -66,14 +67,19 @@
      decomposing it and re-adding its components to the first number."))
   (pnumber-case
    number2
-   :digit (make-pnumber-number-digit :number number1 :digit number2.digit)
+   :digit (make-pnumber-number-digit :number number1
+                                     :squotep nil
+                                     :digit number2.digit)
    :dot-digit (make-pnumber-number-digit :number (pnumber-number-dot number1)
+                                         :squotep nil
                                          :digit number2.digit)
    :number-digit (make-pnumber-number-digit
                   :number (concatenate-pnumbers number1 number2.number)
+                  :squotep nil
                   :digit number2.digit)
    :number-nondigit (make-pnumber-number-nondigit
                      :number (concatenate-pnumbers number1 number2.number)
+                     :squotep nil
                      :nondigit number2.nondigit)
    :number-locase-e-sign (make-pnumber-number-locase-e-sign
                           :number (concatenate-pnumbers number1 number2.number)
@@ -96,7 +102,7 @@
 
 (define concatenate-punctuators ((punct1 stringp)
                                  (punct2 stringp)
-                                 (version c::versionp))
+                                 (dialect c::dialectp))
   :returns (mv erp (punct stringp))
   :short "Concatenate two punctuators."
   :long
@@ -109,11 +115,11 @@
      we concanate the strings and see whether the result is a punctuator,
      returning an error if it is not.")
    (xdoc::p
-    "This function is parameterized over the C version,
+    "This function is parameterized over the C dialect,
      which affects the valid punctuators."))
   (b* (((reterr) "")
        (punct (str::cat punct1 punct2)))
-    (if (member-equal punct (c::punctuators-for version))
+    (if (member-equal punct (c::punctuators-for dialect))
         (retok punct)
       (reterr (msg "The concatenation of the punctuators ~s0 and ~s1 ~
                     yields the non-punctuator ~s2."
@@ -202,7 +208,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is always well-defined,
-     because all the characters that can appear in identifers
+     because all the characters that can appear in identifiers
      can also appear, in a non-starting position, in preprocessing numbers.
      The result is a preprocessing number.")
    (xdoc::p
@@ -227,9 +233,15 @@
           (char (char-fix (car rev-chars)))
           (number (concatenate-pnumber-ident-aux number (cdr rev-chars))))
        (cond ((str::letter/uscore-char-p char)
-              (make-pnumber-number-nondigit :number number :nondigit char))
+              (make-pnumber-number-nondigit
+               :number number
+               :squotep nil
+               :nondigit char))
              ((str::dec-digit-char-p char)
-              (make-pnumber-number-digit :number number :digit char))
+              (make-pnumber-number-digit
+               :number number
+               :squotep nil
+               :digit char))
              (t (prog2$
                  (raise "Internal error: character ~x0 in identifier." char)
                  (irr-pnumber)))))
@@ -240,7 +252,7 @@
 
 (define concatenate-tokens ((token1 plexemep)
                             (token2 plexemep)
-                            (version c::versionp))
+                            (dialect c::dialectp))
   :guard (and (plexeme-tokenp token1)
               (plexeme-tokenp token2))
   :returns (mv erp (token plexemep))
@@ -254,17 +266,29 @@
      two punctuators (under conditions),
      an identifier with a preprocessing number (under conditions),
      and a preprocessing number with an identifier.
-     All other combinations do not yield tokens."))
+     All other combinations do not yield tokens.")
+   (xdoc::p
+    "When concatenating two identifiers,
+     we union the provenance lists,
+     because the resulting identifier comes from both identifiers.
+     When concatenating an identifier with a number,
+     the resulting identifier has the same provenance as
+     the identifier to which the number is added."))
   (b* (((reterr) (irr-plexeme)))
     (plexeme-case
      token1
      :ident (plexeme-case
              token2
-             :ident (retok (plexeme-ident (str::cat token1.ident token2.ident)))
+             :ident (retok (make-plexeme-ident
+                            :ident (str::cat token1.ident token2.ident)
+                            :provenance (append token1.provenance
+                                                token2.provenance)))
              :number (b* (((erp ident)
                            (concatenate-ident-pnumber token1.ident
                                                       token2.number)))
-                       (retok (plexeme-ident ident)))
+                       (retok (make-plexeme-ident
+                               :ident ident
+                               :provenance token1.provenance)))
              :otherwise (reterr (msg "Cannot concatenate ~x0 and ~x1."
                                      (plexeme-fix token1)
                                      (plexeme-fix token2))))
@@ -285,7 +309,7 @@
                                     (concatenate-punctuators
                                      token1.punctuator
                                      token2.punctuator
-                                     version)))
+                                     dialect)))
                                 (retok (plexeme-punctuator punctuator)))
                   :otherwise (reterr (msg "Cannot concatenate ~x0 and ~x1."
                                           (plexeme-fix token1)
@@ -305,7 +329,7 @@
 
 (define concatenate-tokens/placemarkers ((token1? plexeme-optionp)
                                          (token2? plexeme-optionp)
-                                         (version c::versionp))
+                                         (dialect c::dialectp))
   :guard (and (or (not token1?) (plexeme-tokenp token1?))
               (or (not token2?) (plexeme-tokenp token2?)))
   :returns (mv erp (token? plexeme-optionp))
@@ -328,7 +352,7 @@
      token1?
      :some (plexeme-option-case
             token2?
-            :some (concatenate-tokens token1?.val token2?.val version)
+            :some (concatenate-tokens token1?.val token2?.val dialect)
             :none (retok (plexeme-option-fix token1?)))
      :none (retok (plexeme-option-fix token2?))))
   :guard-hints (("Goal" :in-theory (enable plexeme-option-some->val)))

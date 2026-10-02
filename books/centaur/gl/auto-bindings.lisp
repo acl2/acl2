@@ -51,7 +51,7 @@ shape-specs) in an easy way.  Here is an example:</p>
                 (:bool enable)                         ; g-boolean with index 26
                 (:mix (:nat a-bus 128)                 ; }  g-integers whose indices are interleaved,
                       (:nat b-bus 128)                 ; }  27 to 414 -- see below
-                      (:rev (:seq (:nat c-bus 64)      ; } 
+                      (:rev (:seq (:nat c-bus 64)      ; }
                                   (:skip 64))))   ; }
                 (:rev (:nat fixup-bits 4))       ; g-integer with indices 420-415
                 ))
@@ -123,7 +123,7 @@ each segment independently.</p>
                   (:int b2 10))
                  :arrange         ;; generate shape spec bindings from the indices
                  ((:int a a1 a2)  ;; a is a g-integer, indices are a1's appended to a2's
-                  (:int b b1 b2)))) 
+                  (:int b b1 b2))))
 })
 
 <p>The first argument is just a list of auto-bindings (though the syntax
@@ -177,7 +177,7 @@ mentioned in the auto-bindings.</p>")
        nil
      (cons (auto-bind-len (car x))
            (auto-bind-len-list (cdr x))))))
-     
+
 
 (mutual-recursion
  (defun auto-bind-xlate (x inside-mix-p)
@@ -356,7 +356,7 @@ mentioned in the auto-bindings.</p>")
 #||
 (auto-bind-generate '(:int a 5) 0 2)
 (auto-bind-generate '(:bool b 1) 0 1)
-(auto-bind-generate 
+(auto-bind-generate
  '(:mix
    (:int a 10)
    (:rev (:seq
@@ -364,8 +364,8 @@ mentioned in the auto-bindings.</p>")
           (:rev (:int c 3))
           (:bool d 1))))
  0 1)
-          
-  
+
+
 (auto-bind-generate-mix '((:int a 5) (:int b 5) (:int c 5)) 0 1 3)
 
 
@@ -378,7 +378,7 @@ mentioned in the auto-bindings.</p>")
  '(:mix (:int a 20)
         (:seq (:skip 4) (:int b 13) (:skip 3)))
  0 1)
-        
+
 ||#
 
 (defun auto-bind-index-map (n skiptable len offset acc)
@@ -391,7 +391,7 @@ mentioned in the auto-bindings.</p>")
                            (hons-acons n (- n offset) acc)))))
 
 
-      
+
 (defun auto-bind-remap-indices-list (x indexmap)
   (b* (((when (atom x)) nil)
        (look (hons-get (car x) indexmap))
@@ -408,8 +408,8 @@ mentioned in the auto-bindings.</p>")
           (auto-bind-remap-indices-table (cdr x) indexmap))))
 
 
-       
-    
+
+
 
 
 
@@ -444,7 +444,7 @@ mentioned in the auto-bindings.</p>")
                      (not (member nil args))))
         (er hard? 'flex-bindings-arrange
                        "Invalid arrange-list entry: ~x0 -- args must be a ~
-                        nonempty list of nonnil symbols" 
+                        nonempty list of nonnil symbols"
                        x)))
     (case key
       (:bool (b* ((len (len args))
@@ -467,8 +467,8 @@ mentioned in the auto-bindings.</p>")
                   (auto-vars (if (eql len 1) args (cdr args))))
                (list varname (g-integer (flex-bindings-append-auto-vars auto-vars auto-alist)))))
       (otherwise (er hard? 'flex-bindings-arrange
-                     "Invalid arrange-list entry: ~x0 -- must begin with :bool or :int.")))))
-                  
+                     "Invalid arrange-list entry: ~x0 -- must begin with :bool or :int." x)))))
+
 
 (defun flex-bindings-arrange (arrange-list auto-alist)
   (if (atom arrange-list)
@@ -534,9 +534,9 @@ mentioned in the auto-bindings.</p>")
        ((list params auto-bindings ?arrange-keyword arrange) case1))
     (cons (list params (flex-bindings-fn auto-bindings arrange 0))
           (flex-param-bindings (cdr in-alist)))))
-    
 
-       
+
+
 
 
 (defun auto-bindings-fn (x)
@@ -566,7 +566,7 @@ mentioned in the auto-bindings.</p>")
                 (:bool enable)                         ; g-boolean with index 25
                 (:mix (:nat a-bus 128)                 ; }  g-integers whose indices are interleaved,
                       (:nat b-bus 128)                 ; }  27 to 412 -- see below
-                      (:rev (:seq (:nat c-bus 64)      ; } 
+                      (:rev (:seq (:nat c-bus 64)      ; }
                                   (:nat dummy 63))))   ; }
                 (:rev (:nat fixup-bits 4))       ; g-integer with indices 417-413
                 )

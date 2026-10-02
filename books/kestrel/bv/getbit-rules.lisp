@@ -31,33 +31,30 @@
                     (bitnot (getbit n x)))))
   :hints (("Goal" ;; :cases ((integerp x))
            :in-theory (e/d (getbit bitnot)
-                                  (
-
-                                   ;BITNOT-OF-SLICE ;bozo
+                                  (;BITNOT-OF-SLICE ;bozo
                                    ;BITXOR-OF-SLICE-ARG2 ;loops with defn getbit
                                    )))))
 
 (local
- (DEFTHM GETBIT-OF-MINUS-EXPT-when->=
-  (IMPLIES (AND (>= SIZE SIZE2)
-                (NATP SIZE)
-                (NATP SIZE2))
-           (EQUAL (GETBIT SIZE (- (EXPT 2 SIZE2)))
-                  1))))
+  (defthm getbit-of-minus-expt-when->=
+    (implies (and (>= i j)
+                  (natp i)
+                  (natp j))
+             (equal (getbit i (- (expt 2 j)))
+                    1))))
 
-(DEFTHM GETBIT-OF-MINUS-EXPT-gen
-  (IMPLIES (AND (NATP SIZE)
-                (NATP SIZE2))
-           (EQUAL (GETBIT SIZE (- (EXPT 2 SIZE2)))
-                  (if (>= SIZE SIZE2)
+(defthm getbit-of-minus-of-expt
+  (implies (and (natp i)
+                (natp j))
+           (equal (getbit i (- (expt 2 j)))
+                  (if (>= i j)
                       1
                     0))))
 
 (defthmd floor-when-equal-of-floor-and-0-and->=
   (implies (and (equal (floor x y) 0)
-                (<= xsmall x)
+                (<= xsmall x) ;drop?
                 (posp y)
-                (natp n)
                 (natp x)
                 (natp xsmall))
            (equal (floor xsmall y)
@@ -83,9 +80,7 @@
                 (natp n))
            (equal (getbit n (floor x y))
                   0))
-  :hints (("Goal" :in-theory (e/d (getbit slice logtail-when-equal-of-logtail-and-0-and->=)
-                                  (
-                                   )))))
+  :hints (("Goal" :in-theory (enable getbit slice logtail-when-equal-of-logtail-and-0-and->=))))
 
 (defthm getbit-when-<=-of-constant-high
   (implies (and (syntaxp (quotep n)) ; to ensure this is cheap
@@ -184,3 +179,10 @@
                   (bitnot (getbit n x))))
   :hints (("Goal" :use (getbit-of-+-of-expt-same-arg1)
            :in-theory (disable getbit-of-+-of-expt-same-arg1))))
+
+(defthm getbit-of-+-of---of-expt-same-arg2
+  (implies (and (natp n)
+                (integerp x))
+           (equal (getbit n (+ x (- (expt 2 n))))
+                  (bitnot (getbit n x))))
+  :hints (("Goal" :in-theory (enable getbit-of-+ bitxor-split))))

@@ -216,7 +216,7 @@ function keyTitle(key)
 
     return (xindexObj.topicExists(key))
         ? (prefix + " &mdash; " + xindexObj.topicName(key))
-        : (prefix + " &mdash; " + key);
+        : (prefix + " &mdash; " + htmlEncode(key));
 }
 
 function searchTitle(query)
@@ -224,7 +224,7 @@ function searchTitle(query)
     let prefix = XDOCTITLE;
     if (!prefix) { prefix = "XDOC"; }
 
-    return prefix + " Search &mdash; " + query;
+    return prefix + " Search &mdash; " + htmlEncode(query);
 }
 
 

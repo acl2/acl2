@@ -1,6 +1,6 @@
 ; A proof of the A.3.3.6 gadget
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -60,7 +60,6 @@
 (defthm mod-of---of-*-of-mod-same
   (implies (and (integerp y) ;gen
                 (integerp x)
-                (integerp k)
                 (posp p))
            (equal (mod (- (* x (mod y p))) p)
                   (mod (- (* x y)) p))))
@@ -281,7 +280,7 @@
 
 ;gen?
 (defthm solve-1
-  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'first_doubling/u3/num var dag-array))
+  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'first_doubling/u3/num var acl2::dag-array))
                 (fep x p)
                 (fep y p)
                 (fep var p)
@@ -293,7 +292,7 @@
 
 ;todo: a way to specialize a rule for a var
 (defthm solve-2
-  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'SECOND_DOUBLING/U3/NUM var dag-array))
+  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'SECOND_DOUBLING/U3/NUM var acl2::dag-array))
                 (fep x p)
                 (fep y p)
                 (fep var p)
@@ -304,7 +303,7 @@
                     (equal var (div x y p))))))
 
 (defthm solve-3
-  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'THIRD_DOUBLING/U3/NUM var dag-array))
+  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'THIRD_DOUBLING/U3/NUM var acl2::dag-array))
                 (fep x p)
                 (fep y p)
                 (fep var p)
@@ -323,7 +322,7 @@
  :hints (("Goal" :in-theory (enable pfield::add-same))))
 
 (defthm solve-4
-  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'first_DOUBLING/V3/NUM var dag-array))
+  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'first_DOUBLING/V3/NUM var acl2::dag-array))
                 (fep x p)
                 (fep y p)
                 (fep z p)
@@ -342,7 +341,7 @@
                                 p))))))
 
 (defthm solve-5
-  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'second_DOUBLING/V3/NUM var dag-array))
+  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'second_DOUBLING/V3/NUM var acl2::dag-array))
                 (fep x p)
                 (fep y p)
                 (fep z p)
@@ -361,7 +360,7 @@
                                 p))))))
 
 (defthm solve-6
-  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'THIRD_DOUBLING/V3/NUM var dag-array))
+  (implies (and (acl2::axe-syntaxp (acl2::is-the-variablep 'THIRD_DOUBLING/V3/NUM var acl2::dag-array))
                 (fep x p)
                 (fep y p)
                 (fep z p)
@@ -909,8 +908,7 @@
                  sub
                  pfield::equal-of-0-and-div-special
                  )
- :rule-lists '((
-                ZCASH::AFFINE-EDWARDS-SPEC
+ :rule-lists '((ZCASH::AFFINE-EDWARDS-SPEC
                 solve-1
                 solve-2
                 solve-3

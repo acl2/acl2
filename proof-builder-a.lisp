@@ -400,7 +400,8 @@
 ; We wrap the pc-command-table guard into this function so that we can redefine
 ; it when modifying the ACL2 system.
 
-  (and (function-symbolp key wrld)
+  (and (symbolp key)
+       (function-symbolp key wrld)
        (or (eq val 'macro)
            (eq val 'atomic-macro)
            (eq val 'meta)

@@ -12,7 +12,7 @@
 
 (include-book "preprocessor-lexemes")
 
-(include-book "../language/implementation-environments/versions")
+(include-book "../language/implementation-environments/dialects")
 
 (include-book "std/strings/eqv" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
@@ -168,7 +168,7 @@
      [C17:6.10.8.1].
      We represent them as having empty replacement list,
      but handle their actual replacement specially in code.
-     The exact predefined macros depend on the version:
+     The exact predefined macros depend on the dialect:
      see @(tsee predefined-macros).
      The predefined macros never change,
      i.e. that component of the macro table stays constant.")
@@ -246,7 +246,13 @@
                           (pnumber-number-digit
                            (pnumber-number-digit
                             (pnumber-digit
-                             #\2) #\0) #\1) #\7) #\1) #\0) #\L))))))
+                             #\2)
+                            nil #\0)
+                           nil #\1)
+                          nil #\7)
+                         nil #\1)
+                        nil #\0)
+                       nil #\L))))))
   :guard-hints (("Goal" :in-theory (enable str::letter/uscore-char-p)))
 
   ///
@@ -277,7 +283,13 @@
                           (pnumber-number-digit
                            (pnumber-number-digit
                             (pnumber-digit
-                             #\2) #\0) #\2) #\3) #\1) #\1) #\L))))))
+                             #\2)
+                            nil #\0)
+                           nil #\2)
+                          nil #\3)
+                         nil #\1)
+                        nil #\1)
+                       nil #\L))))))
   :guard-hints (("Goal" :in-theory (enable str::letter/uscore-char-p)))
 
   ///
@@ -460,21 +472,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define predefined-macros ((version c::versionp))
+(define predefined-macros ((dialect c::dialectp))
   :returns (macros string-macro-info-alistp)
-  :short "Predefined macros for the given C version."
+  :short "Predefined macros for the given C dialect."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We compose the macros according to the version."))
-  (b* (((c::version version) version)
-       (macros (c::standard-case version.std
+    "We compose the macros according to the dialect."))
+  (b* (((c::dialect dialect) dialect)
+       (macros (c::standard-case dialect.std
                                  :c17 (predefined-macros-c17)
                                  :c23 (predefined-macros-c23)))
-       (macros (cond (version.gcc (append macros (predefined-macros-gcc)))
-                     (version.clang (append macros (predefined-macros-clang)))
+       (macros (cond (dialect.gcc (append macros (predefined-macros-gcc)))
+                     (dialect.clang (append macros (predefined-macros-clang)))
                      (t macros))))
-    (if version.cheri
+    (if dialect.cheri
         (append macros (predefined-macros-cheri))
       macros))
 
@@ -519,7 +531,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define macro-init ((version c::versionp))
+(define macro-init ((dialect c::dialectp))
   :returns (table macro-tablep)
   :short "Initial macro table."
   :long
@@ -528,7 +540,7 @@
     "This is the table before we preprocess any file,
      so there are no macros int the dynamic alist.
      But we have the predefined macros."))
-  (make-macro-table :predefined (predefined-macros version)
+  (make-macro-table :predefined (predefined-macros dialect)
                     :dynamic nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -543,7 +555,7 @@
      we give an error outright,
      because [C:6.10.8/2] prohibits redefinition of predefined macros.
      We may need to relax this check at some point,
-     based on the C version,
+     based on the C dialect,
      because GCC allows redefinition of predefined macros.")
    (xdoc::p
     "If the table already contains, in the dynamic alist,
@@ -560,7 +572,7 @@
      because, as explained in @(tsee macro-info),
      we normalize all white space to single spaces.
      We may need to relax this check at some point,
-     based on the C version, because GCC allows redefinition.")
+     based on the C dialect, because GCC allows redefinition.")
    (xdoc::p
     "If the above checks pass, we add the macro to the table,
      at the beginning of the dynamic alist.

@@ -78,7 +78,7 @@
   (implies (symbolp x)
            (in x (v-omega*2)))
   :props (zfc v$prop v-omega+$prop domain$prop prod2$prop inverse$prop))
-  
+
 ; A handy abbreviation, defined so that it's clearly a natural number:
 (defun v-omega+-n-inv (x)
   (let* ((sx (in-in-witness x (image (v-omega+))))
@@ -333,7 +333,7 @@
 
 ; Note:  I think we can do one better, i.e., replacing (+ 2 n) by (1+ n).
 ; This is an immediate corollary of subset-powerset-v-omega+-n+1, which we
-; may not need but seems worth stating. 
+; may not need but seems worth stating.
 
   (implies (and (natp n)
                 (in x (v-omega+-n n)))

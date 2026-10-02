@@ -283,10 +283,10 @@
   :hints(("Goal" :in-theory (enable fgl-object-bindings-eval))))
 
 (defthm sub-alistp-hons-assoc-equal2
-    (implies (and (acl2::sub-alistp a b)
-                  (hons-assoc-equal x a))
-             (equal (hons-assoc-equal x b)
-                    (hons-assoc-equal x a)))
+  (implies (and (acl2::sub-alistp a b)
+                (equal look (hons-assoc-equal x a))
+                look)
+             (equal (hons-assoc-equal x b) look))
     :hints(("Goal" :in-theory (enable acl2::sub-alistp-hons-assoc-equal))))
 
 (defthm assoc-equal-when-key

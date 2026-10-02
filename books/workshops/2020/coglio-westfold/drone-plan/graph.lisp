@@ -66,7 +66,7 @@ We give an implementation with nodes as nats.
            (alistp l)))
 
 ;; fa y in l . (prefixp y x)
-(defforall all-prefixes-p (l x) (prefixp x l) :fixed x :true-listp t)
+(defforall all-prefixes-p (l x) (prefixp l x) :fixed x :true-listp t)
 
 ;; ex y in l . (prefixp x y)
 (defexists some-prefixed-p (x l) (prefixp x l) :fixed x)

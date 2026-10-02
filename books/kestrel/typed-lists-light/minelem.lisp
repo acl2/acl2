@@ -1,7 +1,7 @@
 ; A function to get the minimum of a list of numbers
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -36,7 +36,7 @@
         (car lst)
       (min (car lst) (minelem (cdr lst))))))
 
-(defthm minelem-when-non-consp
+(defthm minelem-when-not-consp
   (implies (not (consp x))
            (equal (minelem x)
                   (infinity)))

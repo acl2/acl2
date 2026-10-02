@@ -15,7 +15,6 @@
 (include-book "standard")
 (include-book "code-ensembles")
 
-(include-book "kestrel/file-io-light/write-bytes-to-file-bang" :dir :system)
 (include-book "std/system/constant-value" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
@@ -33,14 +32,6 @@
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrulel unsigned-byte-listp-8-when-byte-listp
-  (implies (byte-listp x)
-           (acl2::unsigned-byte-listp 8 x))
-  :induct t
-  :enable (byte-listp bytep unsigned-byte-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -121,8 +112,8 @@
                       contains non-all-ASCII identifiers."
                      code desc)))
        ((unless (or (ienv->gcc/clang (code-ensemble->ienv code))
-                    (transunit-ensemble-standardp
-                     (code-ensemble->transunits code))))
+                    (trans-ensemble-standardp
+                     (code-ensemble->trans-units code))))
         (reterr (msg "The code ensemble ~x0 passed as ~@1 ~
                       uses non-standard syntax (i.e. GCC/Clang extensions), ~
                       but the implementation environment indicates that ~
@@ -341,37 +332,14 @@
        ;; Print the abstract syntax.
        (options (make-priopt :indent-size indent-size
                              :paren-nested-conds paren-nested-conds))
-       (tunits (code-ensemble->transunits code))
+       (tunits (code-ensemble->trans-units code))
        (files (print-fileset tunits
                              options
-                             (ienv->version (code-ensemble->ienv code))))
+                             (ienv->dialect (code-ensemble->ienv code))))
        ;; Write the files to the file system.
-       ((erp state)
-        (output-files-gen-files-loop (fileset->unwrap files) base-dir state)))
+       ((erp state) (write-fileset files base-dir state)))
     (retok state))
-  :guard-hints (("Goal" :in-theory (enable code-ensemble-aidentp)))
-  :prepwork
-  ((define output-files-gen-files-loop ((map filepath-filedata-mapp)
-                                        (base-dir stringp)
-                                        state)
-     :returns (mv erp state)
-     :parents nil
-     (b* (((reterr) state)
-          ((when (omap::emptyp map)) (retok state))
-          ((mv filepath data) (omap::head map))
-          (file-string (filepath->unwrap filepath))
-          ((unless (stringp file-string))
-           (reterr (msg "File path must contain a string, ~
-                         but it contains ~x0 instead."
-                        file-string)))
-          (path-to-write (str::cat base-dir "/" file-string))
-          ((mv erp state) (acl2::write-bytes-to-file! (filedata->unwrap data)
-                                                      path-to-write
-                                                      'output-files
-                                                      state))
-          ((when erp)
-           (reterr (msg "Writing ~x0 failed." path-to-write))))
-       (output-files-gen-files-loop (omap::tail map) base-dir state)))))
+  :guard-hints (("Goal" :in-theory (enable code-ensemble-aidentp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -408,7 +376,7 @@
   (b* (((mv erp state)
         (output-files-process-inputs-and-gen-files nil args nil state))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
-    (value '(value-triple :invisible))))
+    (acl2::value '(value-triple :invisible))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

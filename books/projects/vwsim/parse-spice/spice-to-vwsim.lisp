@@ -1027,7 +1027,7 @@
             (otherwise
              (prog2$
               (cw "spice-to-vwsim-help: ignoring line that is not of ~
-                   type :COMMENT, :STATEMENT, or :DEVICE.~%" parsed-line)
+                   type :COMMENT, :STATEMENT, or :DEVICE.~%")
               (spice-to-vwsim-help (cdr netlist) models module-name
                                    module-IOs occs modules
                                    time-stop)))))))))

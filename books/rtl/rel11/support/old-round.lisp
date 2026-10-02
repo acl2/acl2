@@ -2,6 +2,9 @@
 
 (include-book "util")
 
+; Matt K. addition: needed for e0-ord-< below
+(include-book "ordinals/e0-ordinal" :dir :system)
+
 (local (encapsulate ()
 
 (local (include-book "../rel9-rtl-pkg/lib/top"))
@@ -177,6 +180,9 @@
 
 (defnd expo (x)
   (declare (xargs :measure (:? x)
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                  :well-founded-relation e0-ord-<
                   :verify-guards nil))
   (mbe
    :logic
@@ -2495,6 +2501,9 @@
 
 (defnd expo (x)
   (declare (xargs :measure (:? x)
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                  :well-founded-relation e0-ord-<
                   :verify-guards nil))
   (mbe
    :logic

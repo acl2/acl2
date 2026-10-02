@@ -1,7 +1,7 @@
 ; Utilities in support of reasoning about / lifting 32-bit code.
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,7 +17,6 @@
 ;(include-book "support-x86") ; drop? for unsigned-byte-p-of-xr-of-mem
 (include-book "state")
 (include-book "memory32")
-(include-book "state")
 (include-book "flags")
 (include-book "readers-and-writers")
 (include-book "register-readers-and-writers32")
@@ -117,7 +116,7 @@
                   :guard (seg-regp seg-reg)))
   (if (equal *cs* seg-reg)
       0 ;code segment is always expand-up
-    ;; anything other than a code segment (including a stack segment) is treated like a data sgement:
+    ;; anything other than a code segment (including a stack segment) is treated like a data segment:
     (x86isa::data-segment-descriptor-attributesbits->e (seg-hidden-attri seg-reg x86))))
 
 (defthm segment-expand-down-bit-intro
@@ -736,6 +735,22 @@
                               esp
                               unsigned-byte-p))))
 
+(defthm slice-63-32-of-bvplus-64-of-esp-when-stack-segment-assumptions32
+  (implies (and (stack-segment-assumptions32 stack-slots-needed x86)
+                (<= k 11) ; see "for now, assuming it's at least 12 bytes" above
+                (natp k))
+           (equal (slice 63 32 (bvplus 64 k (esp x86)))
+                  0))
+  :hints (("Goal"
+           :use ((:instance acl2::slice-too-high-is-0
+                            (acl2::high 63)
+                            (acl2::low 32)
+                            (x (+ k (esp x86)))))
+           :in-theory (enable stack-segment-assumptions32
+                              esp
+                              unsigned-byte-p
+                              bvplus))))
+
 (defthm data-segment-writeable-bit-when-stack-segment-assumptions32
   (implies (stack-segment-assumptions32 stack-slots-needed x86)
            (equal (data-segment-writeable-bit *ss* x86)
@@ -1095,7 +1110,7 @@
 ;; ;                            SEGMENT-IS-32-BITSP
 ;;                             )
 ;;                            ( ;ACL2::BVCHOP-IDENTITY
-;; ;                            ACL2::BVCHOP-IDENTITY-cheap
+;; ;                            ACL2::bvchop-identity-free
 ;;                             x86isa::!memi$inline
 ;; ;
 ;;                             stack-segment-assumptions32
@@ -1262,7 +1277,7 @@
   (and (<= (segment-min-eff-addr32 seg-reg x86) eff-addr)
        (<= eff-addr (segment-max-eff-addr32 seg-reg x86))))
 
-;; Check whether the N effective addresss starting at EFF-ADDR are all valid
+;; Check whether the N effective addresses starting at EFF-ADDR are all valid
 ;; effective addresses in the segment indicated by SEG-REG.  Theorem
 ;; mv-nth-0-of-ea-to-la shows that this function characterizes the inputs for
 ;; which ea-to-la does not return an error.
@@ -1327,7 +1342,7 @@
                                                           acl2::bvchop-identity)
                                   ( ;acl2::bvchop-+-cancel-seconds
                                    ;x86isa::msri$inline
-                                   acl2::bvminus-becomes-bvplus-of-bvuminus
+                                   ;acl2::bvminus-becomes-bvplus-of-bvuminus
                                    )))))
 
 (defthm read-byte-list-from-segment-of-write-byte-to-segment
@@ -1452,7 +1467,7 @@
                                           ACL2::ASH-0 ; why?
                                           acl2::bvchop-identity
                                           )
-                           (ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                           (;ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                             )))))
 
 (defthm segment-is-32-bitsp-when-stack-segment-assumptions32
@@ -1491,7 +1506,7 @@
                                    bvminus
                                    bvplus
                                    acl2::bvchop-of-sum-cases)
-                                  (acl2::bvminus-becomes-bvplus-of-bvuminus
+                                  (;acl2::bvminus-becomes-bvplus-of-bvuminus
                                    )))))
 
 (defthm <-of-32-bit-segment-size
@@ -1520,7 +1535,7 @@
                                    bvplus
                                    acl2::bvchop-of-sum-cases
                                    esp)
-                                  (acl2::bvminus-becomes-bvplus-of-bvuminus
+                                  (;acl2::bvminus-becomes-bvplus-of-bvuminus
                                    )))))
 
 (defthm segment-max-eff-addr32-bound-when-stack-segment-assumptions32
@@ -1537,7 +1552,7 @@
                                    bvplus
                                    acl2::bvchop-of-sum-cases
                                    esp)
-                                  (acl2::bvminus-becomes-bvplus-of-bvuminus
+                                  (;acl2::bvminus-becomes-bvplus-of-bvuminus
                                    )))))
 
 (local (in-theory (disable esp))) ;prevents loops
@@ -2053,7 +2068,7 @@
 ;;   (or (<= (+ n1 eff-addr1) eff-addr2)
 ;;       (<= (+ n2 eff-addr2) eff-addr1)))
 
-(local (in-theory (disable acl2::bvminus-becomes-bvplus-of-bvuminus)))
+;(local (in-theory (disable acl2::bvminus-becomes-bvplus-of-bvuminus)))
 
 ;; Check whether the ranges of effective addresses (which may wrap around mod 2^32) are disjoint.
 ;uses cyclic ranges
@@ -2465,7 +2480,7 @@
            (equal (read-from-segment n1 eff-addr1 seg-reg (write-to-segment n2 eff-addr2 seg-reg val x86))
                   (read-from-segment n1 eff-addr1 seg-reg x86))))
 
-;same segment (we don't know how other segmentes are laid out)
+;same segment (we don't know how other segments are laid out)
 (defthm read-from-segment-of-write-to-segment-irrel
   (implies (and (sep-eff-addr-ranges eff-addr1 n1 eff-addr2 n2)
                 (integerp eff-addr1)
@@ -3158,8 +3173,7 @@
                             (:e expt)
                             ea-to-la
                             acl2::bvchop-identity)
-                           (
-                            ;acl2::bvcat-equal-rewrite
+                           (;acl2::bvcat-equal-rewrite
                             ;acl2::bvcat-equal-rewrite-alt
                             ACL2::LOGEXT-OF-LOGIOR)))))
 
@@ -3215,8 +3229,7 @@
                             (:e expt)
                             ea-to-la
                             acl2::bvchop-identity)
-                           (
-                            ACL2::LOGEXT-OF-LOGIOR)))))
+                           (ACL2::LOGEXT-OF-LOGIOR)))))
 
 (defthm mv-nth-1-of-rime-size$inline-becomes-read-from-segment-8
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -3270,8 +3283,7 @@
                             (:e expt)
                             ea-to-la
                             acl2::bvchop-identity)
-                           (
-                            ;for speed:
+                           (;for speed:
                             ACL2::LOGEXT-OF-LOGIOR
                             ACL2::UNSIGNED-BYTE-P-LOGIOR
                             ACL2::UNSIGNED-BYTE-P-OF-ASH-alt
@@ -3801,7 +3813,7 @@
                                        32-bit-segment-start
                                        32-bit-segment-start-and-size
                                      )
-                                  (acl2::bvminus-becomes-bvplus-of-bvuminus)))))
+                                  ()))))
 
 
 ;move, localize!

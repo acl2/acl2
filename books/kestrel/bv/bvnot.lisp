@@ -11,6 +11,7 @@
 
 (in-package "ACL2")
 
+(include-book "bvnot-def")
 (include-book "getbit-def")
 (include-book "lognot")
 (local (include-book "unsigned-byte-p"))
@@ -28,11 +29,6 @@
 ;;   (equal (equal x (+ y x))
 ;;          (and (acl2-numberp x)
 ;;               (equal (fix y) 0))))
-
-(defund bvnot (size x)
-  (declare (type integer x)
-           (type (integer 0 *) size))
-  (bvchop size (lognot x)))
 
 (in-theory (disable lognot))
 
@@ -230,5 +226,5 @@
            (equal (equal (bvnot size x) k)
                   (and (unsigned-byte-p size k)
                        (equal (bvchop size x) (bvnot size k)))))
-  :hints (("Goal" :in-theory (enable bvnot lognot acl2::bvchop-of-sum-cases
+  :hints (("Goal" :in-theory (enable bvnot lognot bvchop-of-sum-cases
                                      unsigned-byte-p))))

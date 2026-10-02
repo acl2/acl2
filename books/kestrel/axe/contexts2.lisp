@@ -1,7 +1,7 @@
 ; More material on contexts
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -112,9 +112,9 @@
                               (< nodenum dag-len))))
   (let* ((dag-parent-array (make-minimal-dag-parent-array-with-name dag-len dag-array-name dag-array 'dag-parent-array-for-context)) ; todo: only compute parents for nodes above nodenum?
          ;; Top node has no context (only the value for top-nodenum here will actually be used):
-         (context-array (make-empty-array-with-default 'context-array dag-len (true-context)))
+         (context-array (new-array1-with-default 'context-array dag-len (true-context)))
          (top-nodenum (+ -1 dag-len))
-         (done-array (make-empty-array 'done-array-for-context dag-len))
+         (done-array (new-array1 'done-array-for-context dag-len))
          (done-array (aset1 'done-array-for-context done-array top-nodenum t)) ; mark top node as done
          (context-array (make-context-array-for-ancestors 1000000000
                                                           (list nodenum) ;initial worklist

@@ -641,7 +641,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Recognizes an entry in the program-header-table
+;; Recognizes an entry in the program-header-table.
+;; todo: rename elf-program-headerp ?
+;; Same format for 32-bit and 64-bit (this is after parsing).
 (defund elf-program-header-table-entryp (entry)
   (declare (xargs :guard t))
   (and (symbol-alistp entry)
@@ -651,6 +653,7 @@
        ;; todo: more
        ))
 
+;; Parses a single program-header.
 ;move up
 ;; Returns (mv erp program-header bytes).
 (defund parse-elf-program-header (64-bitp bytes)
@@ -728,8 +731,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 ;; Recognizes a program-header-table.
+;; Same format for 32-bit and 64-bit (this is after parsing).
 (defund elf-program-header-tablep (program-header-table)
   (declare (xargs :guard t))
   (if (not (consp program-header-table))
@@ -744,6 +747,7 @@
              (elf-program-header-tablep (revappend x y)))
     :hints (("Goal" :in-theory (enable elf-program-header-tablep revappend)))))
 
+;; Parses the entire program-header-table.
 ;move up
 ;; Returns (mv erp program-headers) where PROGRAM-HEADERS is a list of alists
 ;; (header entries).
@@ -764,10 +768,10 @@
       (if erp
           (mv erp nil)
         (parse-elf-program-header-table (+ 1 index)
-                                   num-entries
-                                   64-bitp
-                                   (cons program-header acc)
-                                   bytes)))))
+                                        num-entries
+                                        64-bitp
+                                        (cons program-header acc)
+                                        bytes)))))
 
 (local
   (defthm elf-program-header-tablep-of-mv-nth-1-of-parse-elf-program-header-table

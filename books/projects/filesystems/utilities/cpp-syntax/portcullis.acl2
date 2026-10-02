@@ -1,0 +1,1 @@
+(ld "package.lsp")

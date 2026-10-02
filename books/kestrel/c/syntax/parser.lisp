@@ -15,11 +15,28 @@
 (include-book "abstract-syntax-operations")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/basic/fix" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
 (acl2::controlled-configuration
   :no-function nil
   :hooks nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This is used in some proofs about mutually recursive parsing functions,
+; to expand the call of the function that the induction case pertains to,
+; for every possible argument passed to the all except the parser state.
+; The exclusion of the parser state is critical for the expansion to apply
+; only to the call in the conclusion of the subgoal,
+; and not the calls in the premises.
+(local
+ (defun flag-expand-hint (clause world)
+   (declare (xargs :mode :program))
+   (b* ((fn (flag::find-flag-is-hyp clause))
+        ((unless fn) nil)
+        (formals (acl2::formals fn world)))
+     `(:expand ((:free ,(remove-eq 'parstate formals) (,fn ,@formals)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -433,7 +450,7 @@
    (xdoc::p
     "We also temporarily include @('bool') as a synonym of @('_Bool').
      We plan to parameterize this and other functions
-     over the specific version of C,
+     over the specific dialect of C,
      including choice of GCC/Clang extensions."))
   (or (token-keywordp token? "void")
       (token-keywordp token? "char")
@@ -522,7 +539,7 @@
     "We also compare the token against the GCC and Clang keywords.
      Note that these are keywords only if GCC/Clang extensions are supported:
      @(tsee lex-identifier/keyword) checks grammatical identifiers
-     against keywords depending on the C version."))
+     against keywords depending on the C dialect."))
   (or (token-keywordp token? "const")
       (token-keywordp token? "restrict")
       (token-keywordp token? "__restrict")
@@ -706,8 +723,7 @@
      or a string literal (which is a token),
      or a parenthesizes expression (which starts with a certain punctuator),
      or a generic selection (which starts a certain keyword),
-     or a call of a GCC built-in special function,
-     or another primary expression preceded by @('__extension__')."))
+     or a call of a GCC built-in special function."))
   (and token?
        (or (token-case token? :ident)
            (token-case token? :const)
@@ -717,7 +733,6 @@
            (token-keywordp token? "__builtin_offsetof")
            (token-keywordp token? "__builtin_types_compatible_p")
            (token-keywordp token? "__builtin_va_arg")
-           (token-keywordp token? "__extension__")
            (token-keywordp token? "true") ; C23
            (token-keywordp token? "false"))) ; C23
   ///
@@ -761,7 +776,7 @@
      would be an identifier token, not a keyword token.")
    (xdoc::p
     "We also include, in the comparison,
-     the @('__real__') and @('__imag__') operators,
+     the @('__real__'), @('__imag__'), and @('__extension__') operators,
      which are keyword tokens only if GCC/Clang extensions are enabled.")
    (xdoc::p
     "If GCC/Clang extensions are enabled,
@@ -781,6 +796,7 @@
       (token-keywordp token? "__alignof__")
       (token-keywordp token? "__real__")
       (token-keywordp token? "__imag__")
+      (token-keywordp token? "__extension__")
       (and gcc/clang (token-punctuatorp token? "&&")))
   ///
 
@@ -1037,7 +1053,7 @@
       (token-punctuatorp token? ":"))
   ///
 
-  (defrule non-nil-when-token-strut-declarator-start-p
+  (defrule non-nil-when-token-struct-declarator-start-p
     (implies (token-struct-declarator-start-p token?)
              token?)
     :rule-classes :compound-recognizer))
@@ -1071,7 +1087,7 @@
       (and gcc/clang (token-punctuatorp token? ";")))
   ///
 
-  (defrule non-nil-when-token-strut-declaration-start-p
+  (defrule non-nil-when-token-struct-declaration-start-p
     (implies (token-struct-declaration-start-p token? gcc/clang)
              token?)
     :rule-classes :forward-chaining))
@@ -2834,8 +2850,8 @@
                  ;; no larger than the initial one,
                  ;; so we just return the initial parser state.
                  ;; This is just logical: execution stops at the RAISE above.
-                 (b* ((version (c::make-version :std (c::standard-c17)))
-                      (parstate (init-parstate "" nil version nil parstate)))
+                 (b* ((dialect (c::make-dialect :std (c::standard-c17)))
+                      (parstate (init-parstate "" nil dialect nil parstate)))
                    (reterr t)))
                 (parstate (unread-token parstate))) ;
              (parse-postfix-expression parstate))
@@ -3031,10 +3047,10 @@
                          ;; so we just return the empty parser state.
                          ;; This is just logical:
                          ;; execution stops at the RAISE above.
-                         (b* ((version
-                               (c::make-version :std (c::standard-c17)))
+                         (b* ((dialect
+                               (c::make-dialect :std (c::standard-c17)))
                               (parstate
-                               (init-parstate "" nil version nil parstate)))
+                               (init-parstate "" nil dialect nil parstate)))
                            (reterr t)))
                         (parstate (unread-token parstate))) ;
                      (parse-postfix-expression parstate))))))
@@ -3097,9 +3113,9 @@
                      ;; so we just return the empty parser state.
                      ;; This is just logical:
                      ;; execution stops at the RAISE above.
-                     (b* ((version (c::make-version :std (c::standard-c17)))
+                     (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                           (parstate
-                           (init-parstate "" nil version nil parstate)))
+                           (init-parstate "" nil dialect nil parstate)))
                        (reterr t)))
                     (parstate (unread-token parstate))) ;
                  (parse-postfix-expression parstate))))))))
@@ -3139,7 +3155,11 @@
        we parse an expression or type name via a separate function,
        and based on the result we return
        a @('sizeof') or @('_Alignof') expression with
-       an expression, a type name, or an ambiguous type name or expression."))
+       an expression, a type name, or an ambiguous type name or expression.")
+     (xdoc::p
+      "If the token is the GCC/Clang keyword @('__extension__'),
+       we parse a cast expression as its operand,
+       just as for @('__real__') and @('__imag__')."))
     (b* (((reterr) (irr-expr) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
@@ -3316,6 +3336,15 @@
           (retok (make-expr-unary :op unop :arg expr :info nil)
                  (span-join span last-span)
                  parstate)))
+       ;; If token is '__extension__',
+       ;; which can only happen with GCC/Clang extensions,
+       ;; we recursively parse a cast expression as operand.
+       ((token-keywordp token "__extension__") ; __extension__
+        (b* (((erp expr last-span parstate) ; __extension__ expr
+              (parse-cast-expression parstate)))
+          (retok (expr-extension expr)
+                 (span-join span last-span)
+                 parstate)))
        ;; If token is anything else, it is an error.
        (t ; other
         (reterr-msg :where (span->start span)
@@ -3327,7 +3356,8 @@
                                _Generic, ~
                                sizeof,~
                                __real__,~
-                               __imag__~
+                               __imag__,~
+                               __extension__~
                                } ~
                                or a punctuator in {~
                                \"++\", ~
@@ -3806,9 +3836,6 @@
        we parse a call of this built-in function,
        which has an expression and a type name as arguments.")
      (xdoc::p
-      "If the token is the GCC keyword @('__extension__'),
-       we parse the primary expression after it, recursively.")
-     (xdoc::p
       "If the token is none of the above,
        including the token being absent,
        it is an error.")
@@ -3816,7 +3843,7 @@
       "We temporarily allow @('true') and @('false')
        as synonyms of the expressions (constants) @('1') and @('0').
        We plan to parameterize this and other functions
-       over the specific C version,
+       over the specific C dialect,
        including choice of GCC/Clang extensions."))
     (b* (((reterr) (irr-expr) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
@@ -3973,12 +4000,6 @@
               ;; __builtin_va_arg ( list , type )
               (read-punctuator ")" parstate)))
           (retok (make-expr-va-arg :list list :type type)
-                 (span-join span last-span)
-                 parstate)))
-       ((token-keywordp token "__extension__") ; __extension__
-        (b* (((erp expr last-span parstate) ; __extension__ expr
-              (parse-primary-expression parstate)))
-          (retok (expr-extension expr)
                  (span-join span last-span)
                  parstate)))
        (t ; other
@@ -4244,7 +4265,7 @@
        but the check that that is the case is done elsewhere."))
     (b* (((reterr) (irr-const-expr) (irr-span) parstate)
          ((erp expr span parstate) (parse-conditional-expression parstate)))
-      (retok (const-expr expr) span parstate))
+      (retok (make-const-expr :expr expr) span parstate))
     :measure (two-nats-measure (parsize parstate) 17))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4871,7 +4892,8 @@
        ;; a specifier or qualifier is expected.
        ((and token (token-case token :ident)) ; ident
         (retok (spec/qual-typespec
-                (type-spec-typedef (token-ident->ident token)))
+                (make-type-spec-typedef :name (token-ident->ident token)
+                                        :info nil))
                span
                parstate))
        ;; If token is 'typeof' or '__typeof' or '__typeof__',
@@ -5156,7 +5178,8 @@
        ;; a specifier or qualifier is expected.
        ((and token (token-case token :ident)) ; ident
         (retok (decl-spec-typespec
-                (type-spec-typedef (token-ident->ident token)))
+                (make-type-spec-typedef :name (token-ident->ident token)
+                                        :info nil))
                span
                parstate))
        ;; If token is 'typeof' or '__typeof' or '__typeof__',
@@ -5602,10 +5625,12 @@
                          ((erp last-span parstate)
                           ;; struct [attrs] ident { structdeclons }
                           (read-punctuator "}" parstate)))
-                      (retok (type-spec-struct
-                              (make-struni-spec :attribs attrspecs
-                                                :name? ident
-                                                :members structdeclons))
+                      (retok (make-type-spec-struct
+                               :spec
+                               (make-struni-spec :attribs attrspecs
+                                                 :name? ident
+                                                 :members structdeclons)
+                               :info nil)
                              (span-join struct/union-span last-span)
                              parstate)))))
               ;; if we are parsing a union type specifier
@@ -5619,14 +5644,16 @@
                     ;; union [attrs] ident { structdeclons }
                     (read-punctuator "}" parstate)))
                 (retok (if structp
-                           (type-spec-struct
-                            (make-struni-spec :attribs attrspecs
-                                              :name? ident
-                                              :members structdeclons))
-                         (type-spec-union
-                          (make-struni-spec :attribs attrspecs
-                                            :name? ident
-                                            :members structdeclons)))
+                           (make-type-spec-struct
+                            :spec (make-struni-spec :attribs attrspecs
+                                                    :name? ident
+                                                    :members structdeclons)
+                            :info nil)
+                         (make-type-spec-union
+                          :spec (make-struni-spec :attribs attrspecs
+                                                  :name? ident
+                                                  :members structdeclons)
+                          :info nil))
                        (span-join struct/union-span last-span)
                        parstate))))
            ;; If token2 is not an open curly brace,
@@ -5636,14 +5663,16 @@
             (b* ((parstate ; struct/union [attrs] ident
                   (if token2 (unread-token parstate) parstate)))
               (retok (if structp
-                         (type-spec-struct
-                          (make-struni-spec :attribs attrspecs
-                                            :name? ident
-                                            :members nil))
-                       (type-spec-union
-                        (make-struni-spec :attribs attrspecs
-                                          :name? ident
-                                          :members nil)))
+                         (make-type-spec-struct
+                          :spec (make-struni-spec :attribs attrspecs
+                                                  :name? ident
+                                                  :members nil)
+                          :info nil)
+                       (make-type-spec-union
+                        :spec (make-struni-spec :attribs attrspecs
+                                                :name? ident
+                                                :members nil)
+                        :info nil))
                      (span-join struct/union-span span)
                      parstate))))))
        ;; If token is an open curly brace,
@@ -5679,10 +5708,12 @@
                      ((erp last-span parstate)
                       ;; struct [attrs] { structdeclons }
                       (read-punctuator "}" parstate)))
-                  (retok (type-spec-struct
-                          (make-struni-spec :attribs attrspecs
-                                            :name? nil
-                                            :members structdeclons))
+                  (retok (make-type-spec-struct
+                           :spec
+                           (make-struni-spec :attribs attrspecs
+                                             :name? nil
+                                             :members structdeclons)
+                           :info nil)
                          (span-join struct/union-span last-span)
                          parstate)))))
           ;; If we are parsing a union type specifier
@@ -5695,14 +5726,17 @@
                 ;; struct/union [attrs] { structdeclons }
                 (read-punctuator "}" parstate)))
             (retok (if structp
-                       (type-spec-struct
+                       (make-type-spec-struct
+                        :spec
                         (make-struni-spec :attribs attrspecs
                                           :name? nil
-                                          :members structdeclons))
-                     (type-spec-union
-                      (make-struni-spec :attribs attrspecs
-                                        :name? nil
-                                        :members structdeclons)))
+                                          :members structdeclons)
+                        :info nil)
+                     (make-type-spec-union
+                      :spec (make-struni-spec :attribs attrspecs
+                                              :name? nil
+                                              :members structdeclons)
+                      :info nil))
                    (span-join struct/union-span last-span)
                    parstate))))
        ;; If token is neither an identifier nor an open curly brace,
@@ -5815,7 +5849,8 @@
        expr/tyname
        ;; If we parsed an expression,
        ;; we return an @('_Alignas') with an expression.
-       :expr (retok (align-spec-alignas-expr (const-expr expr/tyname.expr))
+       :expr (retok (align-spec-alignas-expr
+                      (make-const-expr :expr expr/tyname.expr))
                     (span-join first-span last-span)
                     parstate)
        ;; If we parsed a type name,
@@ -6729,7 +6764,8 @@
             (b* (((erp cexpr last-span parstate) ; declor : expr
                   (parse-constant-expression parstate)))
               (retok (make-struct-declor :declor? declor
-                                         :expr? cexpr)
+                                         :expr? cexpr
+                                         :info nil)
                      (span-join span last-span)
                      parstate)))
            ;; If token2 is not a colon,
@@ -6737,7 +6773,8 @@
            (t ; declor other
             (b* ((parstate (if token2 (unread-token parstate) parstate)))
               (retok (make-struct-declor :declor? declor
-                                         :expr? nil)
+                                         :expr? nil
+                                         :info nil)
                      span
                      parstate))))))
        ;; If token is a colon,
@@ -6747,7 +6784,8 @@
         (b* (((erp cexpr last-span parstate) ; : expr
               (parse-constant-expression parstate)))
           (retok (make-struct-declor :declor? nil
-                                     :expr? cexpr)
+                                     :expr? cexpr
+                                     :info nil)
                  (span-join span last-span)
                  parstate)))
        ;; If token is anything else, it is an error.
@@ -7004,7 +7042,7 @@
              ((erp attrspecs last-span parstate) ; declspecs attrspecs
               (parse-*-attribute-specifier parstate)))
           (retok (make-param-declon :specs declspecs
-                                    :declor (param-declor-none)
+                                    :declor (param-declor-none nil)
                                     :attribs attrspecs)
                  (if attrspecs
                      (span-join span last-span)
@@ -7049,7 +7087,9 @@
            :absdeclor
            (retok (make-param-declon
                    :specs declspecs
-                   :declor (param-declor-abstract declor/absdeclor.absdeclor)
+                   :declor (make-param-declor-abstract
+                            :declor declor/absdeclor.absdeclor
+                            :info nil)
                    :attribs attrspecs)
                   (if attrspecs
                       (span-join span attrs-span)
@@ -7279,9 +7319,9 @@
                     ;; no larger than the initial one,
                     ;; so we just return the empty parser state.
                     ;; This is just logical: execution stops at the RAISE above.
-                    (b* ((version (c::make-version :std (c::standard-c17)))
+                    (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                          (parstate
-                          (init-parstate "" nil version nil parstate)))
+                          (init-parstate "" nil dialect nil parstate)))
                       (reterr t)))
                    ((erp tyname span parstate) (parse-type-name parstate))
                    ;; Ensure there is a closed parenthesis,
@@ -7317,9 +7357,9 @@
                         ;; so we just return the empty parser state.
                         ;; This is just logical:
                         ;; execution stops at the RAISE above.
-                        (b* ((version (c::make-version :std (c::standard-c17)))
+                        (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                              (parstate
-                              (init-parstate "" nil version nil parstate)))
+                              (init-parstate "" nil dialect nil parstate)))
                           (reterr t)))
                        ((mv erp tyname span-tyname parstate)
                         (parse-type-name parstate)))
@@ -7360,11 +7400,11 @@
                               ;; so we just return the empty parser state.
                               ;; This is just logical:
                               ;; execution stops at the RAISE above.
-                              (b* ((version
-                                    (c::make-version :std (c::standard-c17)))
+                              (b* ((dialect
+                                    (c::make-dialect :std (c::standard-c17)))
                                    (parstate
                                     (init-parstate
-                                     "" nil version nil parstate)))
+                                     "" nil dialect nil parstate)))
                                 (reterr t)))
                              ;; Put back the closing parenthesis,
                              ;; which is not part of the expression.
@@ -7433,11 +7473,11 @@
                                 ;; so we just return the empty parser state.
                                 ;; This is just logical:
                                 ;; execution stops at the RAISE above.
-                                (b* ((version
-                                      (c::make-version :std (c::standard-c17)))
+                                (b* ((dialect
+                                      (c::make-dialect :std (c::standard-c17)))
                                      (parstate
                                       (init-parstate
-                                       "" nil version nil parstate)))
+                                       "" nil dialect nil parstate)))
                                   (reterr t)))
                                ;; Put back the closing parenthesis,
                                ;; which is not part of the expression.
@@ -7465,9 +7505,9 @@
                       ;; no larger than the initial one,
                       ;; so we just return the empty parser state.
                       ;; This is just logical: execution stops at the RAISE above.
-                      (b* ((version (c::make-version :std (c::standard-c17)))
+                      (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                            (parstate
-                            (init-parstate "" nil version nil parstate)))
+                            (init-parstate "" nil dialect nil parstate)))
                         (reterr t)))
                      ((erp tyname span parstate) (parse-type-name parstate))
                      ;; Ensure there is a closed parenthesis,
@@ -7564,9 +7604,9 @@
                 ;; no larger than the initial one,
                 ;; so we just return the empty parser state.
                 ;; This is just logical: execution stops at the RAISE above.
-                (b* ((version (c::make-version :std (c::standard-c17)))
+                (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                      (parstate
-                      (init-parstate "" nil version nil parstate)))
+                      (init-parstate "" nil dialect nil parstate)))
                   (reterr t)))
                ((erp first-span parstate) ; (
                 (read-punctuator "(" parstate))
@@ -7597,8 +7637,8 @@
           ;; so we just return the empty parser state.
           ;; This is just logical:
           ;; execution stops at the RAISE above.
-          (b* ((version (c::make-version :std (c::standard-c17)))
-               (parstate (init-parstate "" nil version nil parstate)))
+          (b* ((dialect (c::make-dialect :std (c::standard-c17)))
+               (parstate (init-parstate "" nil dialect nil parstate)))
             (reterr t)))
          ;; If the parsing of any part of the parenthesized type name fails,
          ;; we have an unambiguous expression, already parsed.
@@ -7636,9 +7676,9 @@
                 ;; so we just return the empty parser state.
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
-                (b* ((version (c::make-version :std (c::standard-c17)))
+                (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                      (parstate
-                      (init-parstate "" nil version nil parstate)))
+                      (init-parstate "" nil dialect nil parstate)))
                   (reterr t))))
             (retok (amb?-expr/tyname-expr expr) span-expr parstate)))
          ((mv erp-tyname tyname & parstate) ; ( tyname
@@ -7662,9 +7702,9 @@
                 ;; so we just return the empty parser state.
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
-                (b* ((version (c::make-version :std (c::standard-c17)))
+                (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                      (parstate
-                      (init-parstate "" nil version nil parstate)))
+                      (init-parstate "" nil dialect nil parstate)))
                   (reterr t))))
             (retok (amb?-expr/tyname-expr expr) span-expr parstate)))
          ((mv erp-close-paren & parstate) ; ( tyname )
@@ -7688,9 +7728,9 @@
                 ;; so we just return the empty parser state.
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
-                (b* ((version (c::make-version :std (c::standard-c17)))
+                (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                      (parstate
-                      (init-parstate "" nil version nil parstate)))
+                      (init-parstate "" nil dialect nil parstate)))
                   (reterr t))))
             (retok (amb?-expr/tyname-expr expr) span-expr parstate)))
          ;; If the parsing of the parenthesized type name succeeds,
@@ -7720,9 +7760,9 @@
                 ;; so we just return the empty parser state.
                 ;; This is just logical:
                 ;; execution stops at the RAISE above.
-                (b* ((version (c::make-version :std (c::standard-c17)))
+                (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                      (parstate
-                      (init-parstate "" nil version nil parstate)))
+                      (init-parstate "" nil dialect nil parstate)))
                   (reterr t))))
             (retok (amb?-expr/tyname-expr expr) span-expr parstate))))
       ;; If the expression is a parenthesized one,
@@ -7796,9 +7836,9 @@
                 ;; no larger than the initial one,
                 ;; so we just return the empty parser state.
                 ;; This is just logical: execution stops at the RAISE above.
-                (b* ((version (c::make-version :std (c::standard-c17)))
+                (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                      (parstate
-                      (init-parstate "" nil version nil parstate)))
+                      (init-parstate "" nil dialect nil parstate)))
                   (reterr t)))
                ((erp absdeclor span parstate)
                 (parse-abstract-declarator parstate)))
@@ -7823,9 +7863,9 @@
               ;; so we just return the empty parser state.
               ;; This is just logical:
               ;; execution stops at the RAISE above.
-              (b* ((version (c::make-version :std (c::standard-c17)))
+              (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                    (parstate
-                    (init-parstate "" nil version nil parstate)))
+                    (init-parstate "" nil dialect nil parstate)))
                 (reterr t)))
              ((mv erp absdeclor span-absdeclor parstate)
               (parse-abstract-declarator parstate)))
@@ -7863,9 +7903,9 @@
                     ;; so we just return the empty parser state.
                     ;; This is just logical:
                     ;; execution stops at the RAISE above.
-                    (b* ((version (c::make-version :std (c::standard-c17)))
+                    (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                          (parstate
-                          (init-parstate "" nil version nil parstate)))
+                          (init-parstate "" nil dialect nil parstate)))
                       (reterr t))))
                 (retok (amb?-declor/absdeclor-declor declor)
                        span-declor
@@ -7926,9 +7966,9 @@
                       ;; so we just return the empty parser state.
                       ;; This is just logical:
                       ;; execution stops at the RAISE above.
-                      (b* ((version (c::make-version :std (c::standard-c17)))
+                      (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                            (parstate
-                            (init-parstate "" nil version nil parstate)))
+                            (init-parstate "" nil dialect nil parstate)))
                         (reterr t))))
                   (retok (amb?-declor/absdeclor-declor declor)
                          span-declor
@@ -8394,9 +8434,9 @@
                 ;; no larger than the initial one,
                 ;; so we just return the empty parser state.
                 ;; This is just logical: execution stops at the RAISE above.
-                (b* ((version (c::make-version :std (c::standard-c17)))
+                (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                      (parstate
-                      (init-parstate "" nil version nil parstate)))
+                      (init-parstate "" nil dialect nil parstate)))
                   (reterr t)))
                ((erp decl span parstate) (parse-declaration parstate)))
             (retok (amb?-declon/stmt-declon decl) span parstate))
@@ -8430,9 +8470,9 @@
                     ;; so we just return the empty parser state.
                     ;; This is just logical:
                     ;; execution stops at the RAISE above.
-                    (b* ((version (c::make-version :std (c::standard-c17)))
+                    (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                          (parstate
-                          (init-parstate "" nil version nil parstate)))
+                          (init-parstate "" nil dialect nil parstate)))
                       (reterr t)))
                    ((mv erp decl span-decl parstate)
                     (parse-declaration parstate)))
@@ -8470,10 +8510,10 @@
                           ;; so we just return the empty parser state.
                           ;; This is just logical:
                           ;; execution stops at the RAISE above.
-                          (b* ((version
-                                (c::make-version :std (c::standard-c17)))
+                          (b* ((dialect
+                                (c::make-dialect :std (c::standard-c17)))
                                (parstate
-                                (init-parstate "" nil version nil parstate)))
+                                (init-parstate "" nil dialect nil parstate)))
                             (reterr t))))
                       (retok (amb?-declon/stmt-stmt expr)
                              (span-join span-expr span-semicolon)
@@ -8509,9 +8549,9 @@
                   ;; so we just return the empty parser state.
                   ;; This is just logical:
                   ;; execution stops at the RAISE above.
-                  (b* ((version (c::make-version :std (c::standard-c17)))
+                  (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                        (parstate
-                        (init-parstate "" nil version nil parstate)))
+                        (init-parstate "" nil dialect nil parstate)))
                     (reterr t)))
                  ((erp decl span parstate) (parse-declaration parstate)))
               (retok (amb?-declon/stmt-declon decl) span parstate))))))
@@ -9953,9 +9993,9 @@
                   ;; no larger than the initial one,
                   ;; so we just return the initial parser state.
                   ;; This is just logical: execution stops at the RAISE above.
-                  (b* ((version (c::make-version :std (c::standard-c17)))
+                  (b* ((dialect (c::make-dialect :std (c::standard-c17)))
                        (parstate
-                        (init-parstate "" nil version nil parstate)))
+                        (init-parstate "" nil dialect nil parstate)))
                     (reterr t)))
                  (parstate (unread-token parstate)) ;
                  ((erp declon span parstate) ; declon
@@ -10027,6 +10067,16 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :hints (("Goal" :in-theory (enable nfix fix)))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  ;; For speed, disable the functions but expand their conclusion calls.
+  ;; Note that ACL2::RECURSIVEP returns the names of the whole clique.
+  :returns-hints (("Goal"
+                   :in-theory (set-difference-theories
+                               (current-theory :here)
+                               (acl2::recursivep 'parse-expression t world)))
+                  (flag-expand-hint clause world))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -10509,306 +10559,12 @@
           (parsize parstate))
       :rule-classes :linear
       :fn parse-block-item-list)
-    :hints
-    (("Goal" :in-theory (enable fix nfix))
-     (cond
-      ((acl2::occur-lst '(acl2::flag-is 'parse-expression)
-                        clause)
-       '(:expand (parse-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-expression-rest)
-                        clause)
-       '(:expand (parse-expression-rest prev-expr prev-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-assignment-expression)
-                        clause)
-       '(:expand (parse-assignment-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-conditional-expression)
-                        clause)
-       '(:expand (parse-conditional-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-logical-or-expression)
-                        clause)
-       '(:expand (parse-logical-or-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-logical-or-expression-rest)
-                        clause)
-       '(:expand (parse-logical-or-expression-rest prev-expr
-                                                   prev-span
-                                                   parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-logical-and-expression)
-                        clause)
-       '(:expand (parse-logical-and-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-logical-and-expression-rest)
-                        clause)
-       '(:expand (parse-logical-and-expression-rest prev-expr
-                                                    prev-span
-                                                    parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-inclusive-or-expression)
-                        clause)
-       '(:expand (parse-inclusive-or-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-inclusive-or-expression-rest)
-                        clause)
-       '(:expand (parse-inclusive-or-expression-rest prev-expr
-                                                     prev-span
-                                                     parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-exclusive-or-expression)
-                        clause)
-       '(:expand (parse-exclusive-or-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-exclusive-or-expression-rest)
-                        clause)
-       '(:expand (parse-exclusive-or-expression-rest prev-expr
-                                                     prev-span
-                                                     parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-and-expression)
-                        clause)
-       '(:expand (parse-and-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-and-expression-rest)
-                        clause)
-       '(:expand (parse-and-expression-rest prev-expr
-                                            prev-span
-                                            parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-equality-expression)
-                        clause)
-       '(:expand (parse-equality-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-equality-expression-rest)
-                        clause)
-       '(:expand (parse-equality-expression-rest prev-expr
-                                                 prev-span
-                                                 parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-relational-expression)
-                        clause)
-       '(:expand (parse-relational-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-relational-expression-rest)
-                        clause)
-       '(:expand (parse-relational-expression-rest prev-expr
-                                                   prev-span
-                                                   parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-shift-expression)
-                        clause)
-       '(:expand (parse-shift-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-shift-expression-rest)
-                        clause)
-       '(:expand (parse-shift-expression-rest prev-expr
-                                              prev-span
-                                              parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-additive-expression)
-                        clause)
-       '(:expand (parse-additive-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-additive-expression-rest)
-                        clause)
-       '(:expand (parse-additive-expression-rest prev-expr
-                                                 prev-span
-                                                 parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-multiplicative-expression)
-                        clause)
-       '(:expand (parse-multiplicative-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-multiplicative-expression-rest)
-                        clause)
-       '(:expand (parse-multiplicative-expression-rest prev-expr
-                                                       prev-span
-                                                       parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-cast-expression)
-                        clause)
-       '(:expand (parse-cast-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-unary-expression)
-                        clause)
-       '(:expand (parse-unary-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-postfix-expression)
-                        clause)
-       '(:expand (parse-postfix-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-postfix-expression-rest)
-                        clause)
-       '(:expand (parse-postfix-expression-rest prev-expr
-                                                prev-span
-                                                parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-argument-expressions)
-                        clause)
-       '(:expand (parse-argument-expressions parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-argument-expressions-rest)
-                        clause)
-       '(:expand (parse-argument-expressions-rest prev-exprs
-                                                  prev-span
-                                                  parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-primary-expression)
-                        clause)
-       '(:expand (parse-primary-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-compound-literal)
-                        clause)
-       '(:expand (parse-compound-literal tyname first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-generic-association)
-                        clause)
-       '(:expand (parse-generic-association parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-generic-associations-rest)
-                        clause)
-       '(:expand (parse-generic-associations-rest prev-genassocs
-                                                  prev-span
-                                                  parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-constant-expression)
-                        clause)
-       '(:expand (parse-constant-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-static-assert-declaration)
-                        clause)
-       '(:expand (parse-static-assert-declaration first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-designator)
-                        clause)
-       '(:expand (parse-designator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-designator-list)
-                        clause)
-       '(:expand (parse-designator-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-initializer)
-                        clause)
-       '(:expand (parse-initializer parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-designation?-initializer)
-                        clause)
-       '(:expand (parse-designation?-initializer parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-initializer-list)
-                        clause)
-       '(:expand (parse-initializer-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-enumerator)
-                        clause)
-       '(:expand (parse-enumerator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-enumerator-list)
-                        clause)
-       '(:expand (parse-enumerator-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-specifier/qualifier)
-                        clause)
-       '(:expand (parse-specifier/qualifier parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-specifier-qualifier-list)
-                        clause)
-       '(:expand ((parse-specifier-qualifier-list tyspec-seenp parstate)
-                  (parse-specifier-qualifier-list nil parstate))))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifier)
-                        clause)
-       '(:expand (parse-declaration-specifier parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifiers)
-                        clause)
-       '(:expand ((parse-declaration-specifiers tyspec-seenp parstate)
-                  (parse-declaration-specifiers nil parstate))))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-or-union-specifier)
-                        clause)
-       '(:expand (parse-struct-or-union-specifier structp
-                                                  struct/union-span
-                                                  parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-enum-specifier)
-                        clause)
-       '(:expand (parse-enum-specifier first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-alignment-specifier)
-                        clause)
-       '(:expand (parse-alignment-specifier first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-abstract-declarator)
-                        clause)
-       '(:expand (parse-abstract-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-direct-abstract-declarator-rest)
-                        clause)
-       '(:expand (parse-direct-abstract-declarator-rest prev-dirabsdeclor
-                                                        prev-span
-                                                        parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-array/function-abstract-declarator)
-                        clause)
-       '(:expand (parse-array/function-abstract-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-array/function-declarator)
-                        clause)
-       '(:expand (parse-array/function-declarator prev-dirdeclor
-                                                  prev-span
-                                                  parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-direct-abstract-declarator)
-                        clause)
-       '(:expand (parse-direct-abstract-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-direct-declarator)
-                        clause)
-       '(:expand (parse-direct-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-direct-declarator-rest)
-                        clause)
-       '(:expand (parse-direct-declarator-rest prev-dirdeclor
-                                               prev-span
-                                               parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declarator)
-                        clause)
-       '(:expand (parse-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declarator)
-                        clause)
-       '(:expand (parse-struct-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declarator-list)
-                        clause)
-       '(:expand (parse-struct-declarator-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declaration)
-                        clause)
-       '(:expand (parse-struct-declaration parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declaration-list)
-                        clause)
-       '(:expand (parse-struct-declaration-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-parameter-declaration)
-                        clause)
-       '(:expand (parse-parameter-declaration parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-parameter-declaration-list)
-                        clause)
-       '(:expand (parse-parameter-declaration-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-type-name)
-                        clause)
-       '(:expand (parse-type-name parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-expression-or-type-name)
-                        clause)
-       '(:expand (parse-expression-or-type-name add-parens-p parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declarator-or-abstract-declarator)
-                        clause)
-       '(:expand (parse-declarator-or-abstract-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-parameters)
-                        clause)
-       '(:expand (parse-attribute-parameters parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute)
-                        clause)
-       '(:expand (parse-attribute parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-list)
-                        clause)
-       '(:expand (parse-attribute-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-specifier)
-                        clause)
-       '(:expand (parse-attribute-specifier uscores first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-*-attribute-specifier)
-                        clause)
-       '(:expand (parse-*-attribute-specifier parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-init-declarator)
-                        clause)
-       '(:expand (parse-init-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-init-declarator-list)
-                        clause)
-       '(:expand (parse-init-declarator-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration)
-                        clause)
-       '(:expand (parse-declaration parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-list)
-                        clause)
-       '(:expand (parse-declaration-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-or-statement)
-                        clause)
-       '(:expand (parse-declaration-or-statement parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-output-operand)
-                        clause)
-       '(:expand (parse-asm-output-operand parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-output-operands)
-                        clause)
-       '(:expand (parse-asm-output-operands parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-?-asm-output-operands)
-                        clause)
-       '(:expand (parse-?-asm-output-operands parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-input-operand)
-                        clause)
-       '(:expand (parse-asm-input-operand parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-input-operands)
-                        clause)
-       '(:expand (parse-asm-input-operands parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-?-asm-input-operands)
-                        clause)
-       '(:expand (parse-?-asm-input-operands parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-statement)
-                        clause)
-       '(:expand (parse-statement parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-compound-statement)
-                        clause)
-       '(:expand (parse-compound-statement open-curly-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-block-item)
-                        clause)
-       '(:expand (parse-block-item parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-block-item-list)
-                        clause)
-       '(:expand (parse-block-item-list parstate))))))
+    ;; For speed, disable the functions but expand their conclusion calls.
+    ;; Note that ACL2::RECURSIVEP returns the names of the whole clique.
+    :hints (("Goal" :in-theory (set-difference-theories
+                                (current-theory :here)
+                                (acl2::recursivep 'parse-expression t world)))
+            (flag-expand-hint clause world)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -11335,222 +11091,12 @@
                    (1- (parsize parstate))))
       :rule-classes :linear
       :fn parse-block-item-list)
-    :hints
-    (("Goal" :in-theory (enable fix nfix))
-     (cond
-      ((acl2::occur-lst '(acl2::flag-is 'parse-expression)
-                        clause)
-       '(:expand (parse-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-assignment-expression)
-                        clause)
-       '(:expand (parse-assignment-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-conditional-expression)
-                        clause)
-       '(:expand (parse-conditional-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-logical-or-expression)
-                        clause)
-       '(:expand (parse-logical-or-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-logical-and-expression)
-                        clause)
-       '(:expand (parse-logical-and-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-inclusive-or-expression)
-                        clause)
-       '(:expand (parse-inclusive-or-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-exclusive-or-expression)
-                        clause)
-       '(:expand (parse-exclusive-or-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-and-expression)
-                        clause)
-       '(:expand (parse-and-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-equality-expression)
-                        clause)
-       '(:expand (parse-equality-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-relational-expression)
-                        clause)
-       '(:expand (parse-relational-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-shift-expression)
-                        clause)
-       '(:expand (parse-shift-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-additive-expression)
-                        clause)
-       '(:expand (parse-additive-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-multiplicative-expression)
-                        clause)
-       '(:expand (parse-multiplicative-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-cast-expression)
-                        clause)
-       '(:expand (parse-cast-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-postfix-expression)
-                        clause)
-       '(:expand (parse-postfix-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-unary-expression)
-                        clause)
-       '(:expand (parse-unary-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-primary-expression)
-                        clause)
-       '(:expand (parse-primary-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-generic-association)
-                        clause)
-       '(:expand (parse-generic-association parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-member-designor)
-                        clause)
-       '(:expand (parse-member-designor parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-compound-literal)
-                        clause)
-       '(:expand (parse-compound-literal tyname first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-constant-expression)
-                        clause)
-       '(:expand (parse-constant-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-static-assert-declaration)
-                        clause)
-       '(:expand (parse-static-assert-declaration first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-abstract-declarator)
-                        clause)
-       '(:expand (parse-abstract-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-direct-abstract-declarator)
-                        clause)
-       '(:expand (parse-direct-abstract-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-direct-declarator)
-                        clause)
-       '(:expand (parse-direct-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-designator)
-                        clause)
-       '(:expand (parse-designator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-designator-list)
-                        clause)
-       '(:expand (parse-designator-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-initializer)
-                        clause)
-       '(:expand (parse-initializer parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-designation?-initializer)
-                        clause)
-       '(:expand (parse-designation?-initializer parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-initializer-list)
-                        clause)
-       '(:expand (parse-initializer-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-enumerator)
-                        clause)
-       '(:expand (parse-enumerator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-enumerator-list)
-                        clause)
-       '(:expand (parse-enumerator-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-specifier/qualifier)
-                        clause)
-       '(:expand (parse-specifier/qualifier parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-specifier-qualifier-list)
-                        clause)
-       '(:expand ((parse-specifier-qualifier-list tyspec-seenp parstate)
-                  (parse-specifier-qualifier-list nil parstate))))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-statement)
-                        clause)
-       '(:expand (parse-statement parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifier)
-                        clause)
-       '(:expand (parse-declaration-specifier parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifiers)
-                        clause)
-       '(:expand ((parse-declaration-specifiers tyspec-seenp parstate)
-                  (parse-declaration-specifiers nil parstate))))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-or-union-specifier)
-                        clause)
-       '(:expand (parse-struct-or-union-specifier structp
-                                                  struct/union-span
-                                                  parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-specifier)
-                        clause)
-       '(:expand (parse-attribute-specifier uscores first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-enum-specifier)
-                        clause)
-       '(:expand (parse-enum-specifier first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-alignment-specifier)
-                        clause)
-       '(:expand (parse-alignment-specifier first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-array/function-abstract-declarator)
-                        clause)
-       '(:expand (parse-array/function-abstract-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-array/function-declarator)
-                        clause)
-       '(:expand (parse-array/function-declarator prev-dirdeclor
-                                                  prev-span
-                                                  parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declarator)
-                        clause)
-       '(:expand (parse-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declarator)
-                        clause)
-       '(:expand (parse-struct-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declarator-list)
-                        clause)
-       '(:expand (parse-struct-declarator-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declaration)
-                        clause)
-       '(:expand (parse-struct-declaration parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declaration-list)
-                        clause)
-       '(:expand (parse-struct-declaration-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-parameter-declaration)
-                        clause)
-       '(:expand (parse-parameter-declaration parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-parameter-declaration-list)
-                        clause)
-       '(:expand (parse-parameter-declaration-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-type-name)
-                        clause)
-       '(:expand (parse-type-name parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-expression-or-type-name)
-                        clause)
-       '(:expand (parse-expression-or-type-name add-parens-p parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declarator-or-abstract-declarator)
-                        clause)
-       '(:expand (parse-declarator-or-abstract-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-parameters)
-                        clause)
-       '(:expand (parse-attribute-parameters parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute)
-                        clause)
-       '(:expand (parse-attribute parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-list)
-                        clause)
-       '(:expand (parse-attribute-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-specifier)
-                        clause)
-       '(:expand (parse-attribute-specifier uscores first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-init-declarator)
-                        clause)
-       '(:expand (parse-init-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-init-declarator-list)
-                        clause)
-       '(:expand (parse-init-declarator-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration)
-                        clause)
-       '(:expand (parse-declaration parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-list)
-                        clause)
-       '(:expand (parse-declaration-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-or-statement)
-                        clause)
-       '(:expand (parse-declaration-or-statement parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-output-operand)
-                        clause)
-       '(:expand (parse-asm-output-operand parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-output-operands)
-                        clause)
-       '(:expand (parse-asm-output-operands parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-input-operand)
-                        clause)
-       '(:expand (parse-asm-input-operand parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-input-operands)
-                        clause)
-       '(:expand (parse-asm-input-operands parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-compound-statement)
-                        clause)
-       '(:expand (parse-compound-statement open-curly-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-block-item)
-                        clause)
-       '(:expand (parse-block-item parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-block-item-list)
-                        clause)
-       '(:expand (parse-block-item-list parstate))))))
+    ;; For speed, disable the functions but expand their conclusion calls.
+    ;; Note that ACL2::RECURSIVEP returns the names of the whole clique.
+    :hints (("Goal" :in-theory (set-difference-theories
+                                (current-theory :here)
+                                (acl2::recursivep 'parse-expression t world)))
+            (flag-expand-hint clause world)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -11565,9 +11111,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (verify-guards parse-expression
-    :hints (("Goal" :in-theory (e/d (acl2::member-of-cons
-                                     token-additive-operator-p)
-                                    ((:e tau-system))))))) ; for speed
+    :hints (("Goal" :in-theory (enable acl2::member-of-cons
+                                       token-additive-operator-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -11835,84 +11380,187 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parse-*-external-declaration ((parstate parstatep))
-  :returns (mv erp
-               (extdecls ext-declon-listp)
-               (span spanp)
-               (eof-pos positionp)
-               (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse a list of zero or more external declarations."
+(define expr-to-hash-if/elif-expr ((expr exprp))
+  :returns (hexpr hash-if/elif-exprp)
+  :short "Map a normal expression to
+          an expression in @('#if') and @('#elif') conditions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is called by @(tsee parse-translation-unit)
-     to parse all the external declarations in a file.
-     If successful, we return the list of external declarations.")
-   (xdoc::p
-    "We also return the position just past the end of the file.
-     The latter is used for a check performed by the caller."))
-  (b* (((reterr) nil (irr-span) (irr-position) parstate)
-       ((erp token span parstate) (read-token parstate))
-       ((when (not token)) ; EOF
-        (retok nil span (span->start span) parstate))
-       (parstate (unread-token parstate))
-       ((erp extdecl first-span parstate) ; extdecl
-        (parse-external-declaration parstate))
-       ((erp extdecls last-span eof-pos parstate) ; extdecl [extdecls]
-        (parse-*-external-declaration parstate)))
-    (retok (cons extdecl extdecls)
-           (span-join first-span last-span)
-           eof-pos
-           parstate))
-  :measure (parsize parstate)
-  :hints (("Goal" :in-theory (enable fix)))
-  :verify-guards :after-returns
-
-  ///
-
-  (more-returns
-   (extdecls true-listp :rule-classes :type-prescription))
-
-  (defret parsize-of-parse-*-external-declaration-uncond
-    (<= (parsize new-parstate)
-        (parsize parstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t))))
+    "Our ABNF grammar, in line with [C17] and [C23],
+     uses @('constant-expression') for the expressions
+     in @('#if') and @('#elif') conditions.
+     This is not quite adequate, because those expressions may include
+     the construct @('defined <ident>') (without parentheses),
+     which does not fit the syntax of normal expressions.
+     However, currently our preprocessor
+     normalizes @('defined <ident>') to @('defined(<ident>)'),
+     which syntactically looks like a function call.
+     Thus, we can use our parsing functions for normal expressions
+     after a @('#if') or @('#elif'),
+     and then convert the resulting expression of type @(tsee expr)
+     to an expression of type @(tsee hash-if/elif-expr).
+     The conversion does not work for all expressions,
+     but it does for the ones produced by our preprocessor."))
+  (expr-case
+   expr
+   :const
+   (const-case
+    expr.const
+    :int (hash-if/elif-expr-number expr.const.iconst)
+    :otherwise (prog2$ (raise "Internal error: unexpected ~x0." (expr-fix expr))
+                       (irr-hash-if/elif-expr)))
+   :paren
+   (hash-if/elif-expr-paren (expr-to-hash-if/elif-expr expr.inner))
+   :funcall
+   (if (and (expr-case expr.fun :ident)
+            (equal (ident->unwrap (expr-ident->ident expr.fun)) "defined")
+            (consp expr.args)
+            (endp (cdr expr.args))
+            (expr-case (car expr.args) :ident))
+       (hash-if/elif-expr-defined (expr-ident->ident (car expr.args)))
+     (prog2$ (raise "Internal error: unexpected ~x0." (expr-fix expr))
+             (irr-hash-if/elif-expr)))
+   :unary
+   (unop-case
+    expr.op
+    :plus (hash-if/elif-expr-plus (expr-to-hash-if/elif-expr expr.arg))
+    :minus (hash-if/elif-expr-minus (expr-to-hash-if/elif-expr expr.arg))
+    :bitnot (hash-if/elif-expr-bitnot (expr-to-hash-if/elif-expr expr.arg))
+    :lognot (hash-if/elif-expr-lognot (expr-to-hash-if/elif-expr expr.arg))
+    :otherwise (prog2$ (raise "Internal error: unexpected ~x0." (expr-fix expr))
+                       (irr-hash-if/elif-expr)))
+   :binary
+   (binop-case
+    expr.op
+    :mul (hash-if/elif-expr-mul (expr-to-hash-if/elif-expr expr.arg1)
+                                (expr-to-hash-if/elif-expr expr.arg2))
+    :div (hash-if/elif-expr-div (expr-to-hash-if/elif-expr expr.arg1)
+                                (expr-to-hash-if/elif-expr expr.arg2))
+    :rem (hash-if/elif-expr-rem (expr-to-hash-if/elif-expr expr.arg1)
+                                (expr-to-hash-if/elif-expr expr.arg2))
+    :add (hash-if/elif-expr-add (expr-to-hash-if/elif-expr expr.arg1)
+                                (expr-to-hash-if/elif-expr expr.arg2))
+    :sub (hash-if/elif-expr-sub (expr-to-hash-if/elif-expr expr.arg1)
+                                (expr-to-hash-if/elif-expr expr.arg2))
+    :shl (hash-if/elif-expr-shl (expr-to-hash-if/elif-expr expr.arg1)
+                                (expr-to-hash-if/elif-expr expr.arg2))
+    :shr (hash-if/elif-expr-shr (expr-to-hash-if/elif-expr expr.arg1)
+                                (expr-to-hash-if/elif-expr expr.arg2))
+    :lt (hash-if/elif-expr-lt (expr-to-hash-if/elif-expr expr.arg1)
+                              (expr-to-hash-if/elif-expr expr.arg2))
+    :gt (hash-if/elif-expr-gt (expr-to-hash-if/elif-expr expr.arg1)
+                              (expr-to-hash-if/elif-expr expr.arg2))
+    :le (hash-if/elif-expr-le (expr-to-hash-if/elif-expr expr.arg1)
+                              (expr-to-hash-if/elif-expr expr.arg2))
+    :ge (hash-if/elif-expr-ge (expr-to-hash-if/elif-expr expr.arg1)
+                              (expr-to-hash-if/elif-expr expr.arg2))
+    :eq (hash-if/elif-expr-eq (expr-to-hash-if/elif-expr expr.arg1)
+                              (expr-to-hash-if/elif-expr expr.arg2))
+    :ne (hash-if/elif-expr-ne (expr-to-hash-if/elif-expr expr.arg1)
+                              (expr-to-hash-if/elif-expr expr.arg2))
+    :bitand (hash-if/elif-expr-bitand (expr-to-hash-if/elif-expr expr.arg1)
+                                      (expr-to-hash-if/elif-expr expr.arg2))
+    :bitxor (hash-if/elif-expr-bitxor (expr-to-hash-if/elif-expr expr.arg1)
+                                      (expr-to-hash-if/elif-expr expr.arg2))
+    :bitior (hash-if/elif-expr-bitior (expr-to-hash-if/elif-expr expr.arg1)
+                                      (expr-to-hash-if/elif-expr expr.arg2))
+    :logand (hash-if/elif-expr-logand (expr-to-hash-if/elif-expr expr.arg1)
+                                      (expr-to-hash-if/elif-expr expr.arg2))
+    :logor (hash-if/elif-expr-logor (expr-to-hash-if/elif-expr expr.arg1)
+                                    (expr-to-hash-if/elif-expr expr.arg2))
+    :otherwise (prog2$ (raise "Internal error: unexpected ~x0." (expr-fix expr))
+                       (irr-hash-if/elif-expr)))
+   :cond
+   (expr-option-case
+    expr.then
+    :some (hash-if/elif-expr-cond (expr-to-hash-if/elif-expr expr.test)
+                                  (expr-to-hash-if/elif-expr expr.then.val)
+                                  (expr-to-hash-if/elif-expr expr.else))
+    :none (prog2$ (raise "Internal error: unexpected ~x0." (expr-fix expr))
+                  (irr-hash-if/elif-expr)))
+   :otherwise (prog2$ (raise "Internal error: unexpected ~x0." (expr-fix expr))
+                      (irr-hash-if/elif-expr)))
+  :measure (expr-count expr)
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parse-include-directive ((hash-span spanp) (parstate parstatep))
+(define parse-hash-if-or-ifdef-or-ifndef ((hash-span spanp)
+                                          (parstate parstatep))
   :returns (mv erp
-               (include header-namep)
+               (if/ifdef/ifndef hash-if/ifdef/ifndef-p)
                (span spanp)
                (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse a @('#include') directive."
+  :short "Parse a @('#if') or @('#ifdef') or @('#ifndef') directive."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is called after parsing the initial @('#').
-     The next token must be the @('include') identifier,
-     and the one after that must be a header name,
-     which we return, because we represent
-     @('#include') directives as header names."))
-  (b* (((reterr) (irr-header-name) (irr-span) parstate)
-       ((erp ident span parstate) (read-identifier parstate))
-       ((unless (equal (ident->unwrap ident) "include"))
-        (reterr-msg :where (span->start span)
-                    :expected "the 'include' identifier"
-                    :found (msg "the '~s0' identifier"
-                                (ident->unwrap ident))))
-       ((erp hname last-span parstate) (read-header-name parstate)))
-    (retok hname (span-join hash-span last-span) parstate))
+    "This is called after parsing the @('#'),
+     so we proceed to parse a token,
+     which must be the keyword @('if'),
+     or the identifier @('ifdef'),
+     or the identifier @('ifndef').")
+   (xdoc::p
+    "For @('#if'), we parse a normal expression
+     and then we convert to the more restricted form.
+     This is not expected to fail if we run our parser on
+     either a file that has been externally preprocessed
+     (in which case we do not even get to this code here)
+     or a file that has been preprocessed by our preprocessor.
+     So it is justified to throw a hard error in the conversion function,
+     should the conversion fail.")
+   (xdoc::p
+    "The use of @(tsee parse-expression) may not be always correct,
+     because that function does not stop at the end of the line,
+     and could potentially continue to parser subsequent lines.
+     However, this should be rare, but more importantly we plan to
+     revise our parser to operate not on bytes/characters
+     (which leads to the current code duplication in the reader and lexer),
+     but instead on higher-level lexeme structures
+     to be produced by our preprocessor."))
+  (b* (((reterr) (irr-hash-if/ifdef/ifndef) (irr-span) parstate)
+       ;; #
+       ((erp token span parstate) (read-token parstate)))
+    (cond
+     ((token-keywordp token "if") ; # if
+      (b* (((erp expr span2 parstate) (parse-expression parstate)) ; # if expr
+           (hexpr (expr-to-hash-if/elif-expr expr)))
+        (retok (hash-if/ifdef/ifndef-if hexpr)
+               (span-join hash-span span2)
+               parstate)))
+     ((and token ; # ifdef
+           (token-case token :ident)
+           (equal (ident->unwrap (token-ident->ident token))
+                  "ifdef"))
+      (b* (((erp macro span2 parstate) ; # ifdef macro
+            (read-identifier parstate)))
+        (retok (hash-if/ifdef/ifndef-ifdef macro)
+               (span-join hash-span span2)
+               parstate)))
+     ((and token ; # ifndef
+           (token-case token :ident)
+           (equal (ident->unwrap (token-ident->ident token))
+                  "ifndef"))
+      (b* (((erp macro span2 parstate) ; # ifndef macro
+            (read-identifier parstate)))
+        (retok (hash-if/ifdef/ifndef-ifndef macro)
+               (span-join hash-span span2)
+               parstate)))
+     (t ; # other
+      (reterr-msg :where (span->start span)
+                  :expected "the keyword 'if' or ~
+                             the identifier 'ifdef' or 'ifndef'"
+                  :found (token-to-msg token)))))
 
   ///
 
-  (defret parsize-of-parse-include-directive-uncond
+  (defret parsize-of-parse-hash-if-or-ifdef-or-ifndef-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-parse-include-directive-cond
+  (defret parsize-of-parse-hash-if-or-ifdef-or-ifndef-cond
     (implies (not erp)
              (<= (parsize new-parstate)
                  (1- (parsize parstate))))
@@ -11920,39 +11568,400 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define parse-*-include-directive ((parstate parstatep))
-  :returns (mv erp
-               (includes header-name-listp)
-               (span spanp)
-               (new-parstate parstatep :hyp (parstatep parstate)))
-  :short "Parse zero or more @('#include') directives."
-  (b* (((reterr) nil (irr-span) parstate)
-       ((erp token span parstate) (read-token parstate))
-       ((unless (token-punctuatorp token "#"))
-        (b* ((parstate (if token (unread-token parstate) parstate)))
-          (retok nil (irr-span) parstate)))
-       ((erp include first-span parstate) (parse-include-directive span parstate))
-       ((erp includes last-span parstate) (parse-*-include-directive parstate)))
-    (retok (cons include includes) (span-join first-span last-span) parstate))
-  :measure (parsize parstate)
-  :verify-guards :after-returns
+(defines parse-translation-items
+  :short "Parse translation items and related entities."
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-translation-item ((parstate parstatep))
+    :returns (mv erp
+                 (item trans-itemp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-translation-items)
+    :short "Parse a translation item."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is called when we expect a translation item,
+       so it is an error if we do not find one.")
+     (xdoc::p
+      "All the directives start with @('#'),
+       otherwise we must parse an external declaration.
+       We do not parse line comments for now.")
+     (xdoc::p
+      "In line with the ABNF grammar,
+       the only accepted directives are
+       @('#include'), @('#define'), @('#undef'),
+       and the opening ones for conditional translation items,
+       namely @('#if'), @('#ifdef'), and @('#ifndef');
+       however, the latter are handled in a separate function.
+       We reject @('#elif'), @('#else'), and @('#endif') here,
+       because those are parsed in a different context."))
+    (b* (((reterr) (irr-trans-item) (irr-span) parstate)
+         ((erp token span parstate) (read-token parstate))
+         ((unless token) ; EOF
+          (reterr-msg :where (span->start span)
+                      :expected "an external declaration or a directive"
+                      :found (token-to-msg token))))
+      (cond
+       ((token-punctuatorp token "#") ; #
+        (b* (((erp token & parstate) (read-token parstate)))
+          (cond
+           ((and token ; # include
+                 (token-case token :ident)
+                 (equal (ident->unwrap (token-ident->ident token)) "include"))
+            (b* (((erp hname last-span parstate) (read-header-name parstate)))
+              (retok (trans-item-include hname)
+                     (span-join span last-span)
+                     parstate)))
+           ((and token ; # define
+                 (token-case token :ident)
+                 (equal (ident->unwrap (token-ident->ident token)) "define"))
+            (b* (((erp ident & parstate) (read-identifier parstate))
+                 ((erp ident1 last-span parstate) (read-identifier parstate))
+                 ((unless (equal ident1 ident))
+                  (reterr-msg :where (span->start last-span)
+                              :expected (msg "the identifier ~x0" ident)
+                              :found (msg "the identifier ~x0" ident1))))
+              (retok (trans-item-define ident)
+                     (span-join span last-span)
+                     parstate)))
+           ((and token ; # undef
+                 (token-case token :ident)
+                 (equal (ident->unwrap (token-ident->ident token)) "undef"))
+            (b* (((erp ident last-span parstate) (read-identifier parstate)))
+              (retok (trans-item-undef ident)
+                     (span-join span last-span)
+                     parstate)))
+           (t ; # other
+            (b* ((parstate (if token (unread-token parstate) parstate)) ; #
+                 ((erp if/ifdef/ifndef & parstate)
+                  ;; # if/ifdef/ifndef expr/ident
+                  (parse-hash-if-or-ifdef-or-ifndef span parstate))
+                 (psize (parsize parstate))
+                 ((erp items & parstate)
+                  ;; # if/ifdef/ifndef expr/ident
+                  ;; transitems
+                  (parse-*-translation-item parstate))
+                 ((unless (mbt (<= (parsize parstate) psize)))
+                  (reterr :impossible))
+                 (psize (parsize parstate))
+                 ((erp elifs & parstate)
+                  ;; # if/ifdef/ifndef expr/ident
+                  ;; transitems
+                  ;; # elif ... transitems
+                  ;; ...
+                  ;; # elif ... transitems
+                  (parse-*-hash-elif parstate))
+                 ((unless (mbt (<= (parsize parstate) psize)))
+                  (reterr :impossible))
+                 ((erp & parstate)
+                  ;; # if/ifdef/ifndef expr/ident
+                  ;; transitems
+                  ;; # elif ... transitems
+                  ;; ...
+                  ;; # elif ... transitems
+                  ;; #
+                  (read-punctuator "#" parstate))
+                 ((erp token2 span2 parstate) (read-token parstate)))
+              (cond
+               ((token-keywordp token2 "else")
+                ;; # if/ifdef/ifndef expr/ident
+                ;; transitems
+                ;; # elif ... transitems
+                ;; ...
+                ;; # elif ... transitems
+                ;; # else
+                (b* ((psize (parsize parstate))
+                     ((erp else-items & parstate)
+                      ;; # if/ifdef/ifndef expr/ident
+                      ;; transitems
+                      ;; # elif ... transitems
+                      ;; ...
+                      ;; # elif ... transitems
+                      ;; # else
+                      ;; transitems
+                      (parse-*-translation-item parstate))
+                     ((unless (<= (parsize parstate) psize))
+                      (reterr :impossible))
+                     ((erp & parstate)
+                      ;; # if/ifdef/ifndef expr/ident
+                      ;; transitems
+                      ;; # elif ... transitems
+                      ;; ...
+                      ;; # elif ... transitems
+                      ;; # else
+                      ;; transitems
+                      ;; #
+                      (read-punctuator "#" parstate))
+                     ((erp must-be-endif last-span parstate)
+                      (read-identifier parstate))
+                     ((unless (equal (ident->unwrap must-be-endif) "endif"))
+                      (reterr-msg :where (span->start last-span)
+                                  :expected "the identifier 'endif'"
+                                  :found (msg "the identifier ~x0"
+                                              must-be-endif))))
+                  ;; # if/ifdef/ifndef expr/ident
+                  ;; transitems
+                  ;; # elif ... transitems
+                  ;; ...
+                  ;; # elif ... transitems
+                  ;; # else
+                  ;; transitems
+                  ;; # endif
+                  (retok (make-trans-item-cond
+                          :if/ifdef/ifndef if/ifdef/ifndef
+                          :items items
+                          :elifs elifs
+                          :else (hash-else-option-some (hash-else else-items)))
+                         (span-join span last-span)
+                         parstate)))
+               ((and token2
+                     (token-case token2 :ident)
+                     (equal (ident->unwrap (token-ident->ident token2))
+                            "endif"))
+                ;; # if/ifdef/ifndef expr/ident
+                ;; transitems
+                ;; # elif ... transitems
+                ;; ...
+                ;; # elif ... transitems
+                ;; # endif
+                (retok (make-trans-item-cond
+                        :if/ifdef/ifndef if/ifdef/ifndef
+                        :items items
+                        :elifs elifs
+                        :else (hash-else-option-none))
+                       (span-join span span2)
+                       parstate))
+               (t
+                ;; # if/ifdef/ifndef expr/ident
+                ;; transitems
+                ;; # elif ... transitems
+                ;; ...
+                ;; # elif ... transitems
+                ;; # other
+                (reterr-msg :where (span->start span2)
+                            :expected "the keyword 'else' ~
+                                       or the identifier 'endif'"
+                            :found (token-to-msg token2)))))))))
+       (t ; not-#
+        (b* ((parstate (unread-token parstate))
+             ((erp declon span parstate) ; extdeclon
+              (parse-external-declaration parstate)))
+          (retok (trans-item-declon declon) span parstate)))))
+    :measure (two-nats-measure (parsize parstate) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-*-translation-item ((parstate parstatep))
+    :returns (mv erp
+                 (items trans-item-listp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-translation-items)
+    :short "Parse a list of zero or more translation items."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We stop when we reach the end of the file,
+       which is the case when this function is called at the top level,
+       i.e. to parse a whole translation unit.
+       We also stop when we reach a @('#elif') or @('#else') or @('#endif'),
+       which happens when we parse nested translation items;
+       when we encounter these directives,
+       we put back tokens including the @('#')."))
+    (b* (((reterr) nil (irr-span) parstate)
+         ((erp token span parstate) (read-token parstate))
+         ((when (not token)) ; EOF
+          (retok nil span parstate)))
+      (cond
+       ((token-punctuatorp token "#") ; #
+        (b* (((erp token2 & parstate) (read-token parstate)))
+          (cond
+           ((or (token-keywordp token2 "else") ; # else
+                (and token2 ; # elif/endif
+                     (token-case token2 :ident)
+                     (member-equal (ident->unwrap (token-ident->ident token2))
+                                   '("elif" "endif"))))
+            (b* ((parstate (unread-token parstate)) ; #
+                 (parstate (unread-token parstate))) ;
+              (retok nil span parstate)))
+           (t ; # other
+            (b* ((parstate (if token2 (unread-token parstate) parstate)) ; #
+                 (parstate (unread-token parstate)) ;
+                 (psize (parsize parstate))
+                 ((erp item span parstate) ; item
+                  (parse-translation-item parstate))
+                 ((unless (<= (parsize parstate) (1- psize)))
+                  (reterr :impossible))
+                 ((erp items last-span parstate) ; items
+                  (parse-*-translation-item parstate)))
+              (retok (cons item items) (span-join span last-span) parstate))))))
+       (t ; not-#
+        (b* ((parstate (unread-token parstate)) ;
+             (psize (parsize parstate))
+             ((erp item span parstate) ; item
+              (parse-translation-item parstate))
+             ((unless (<= (parsize parstate) (1- psize)))
+              (reterr :impossible))
+             ((erp items last-span parstate) ; items
+              (parse-*-translation-item parstate)))
+          (retok (cons item items) (span-join span last-span) parstate)))))
+    :measure (two-nats-measure (parsize parstate) 1))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-hash-elif ((hash-span spanp)
+                           (parstate parstatep))
+    :returns (mv erp
+                 (elif hash-elifp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-translation-items)
+    :short "Parse a @('#elif')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is called when we expect a @('#elif'),
+       and after we have already parsed the @('#') and the @('elif') identifier.
+       So it remains to parse the expression and the translation items.")
+     (xdoc::p
+      "We handle the expression in the same way as in
+       @(tsee parse-hash-if-or-ifdef-or-ifndef):
+       see that function's documentation."))
+    (b* (((reterr) (irr-hash-elif) (irr-span) parstate)
+         ;; # elif
+         ((erp expr & parstate) (parse-expression parstate)) ; # eliif expr
+         (hexpr (expr-to-hash-if/elif-expr expr))
+         ((erp items items-span parstate) ; # elif expr transitems
+          (parse-*-translation-item parstate)))
+      (retok (make-hash-elif :expr hexpr :items items)
+             (span-join hash-span items-span)
+             parstate))
+    :measure (two-nats-measure (parsize parstate) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define parse-*-hash-elif ((parstate parstatep))
+    :returns (mv erp
+                 (elifs hash-elif-listp)
+                 (span spanp)
+                 (new-parstate parstatep :hyp (parstatep parstate)))
+    :parents (parser parse-translation-items)
+    :short "Parse a list of zero or more @('#elif')."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "When we call this function, we must always find a @('#'),
+       either for @('#elif'),
+       or for a @('#else') or @('#endif') that must follow.
+       Then we must have an identifier:
+       if it is @('elif'), we proceed to parse a @('#elif'),
+       and then recursively zero or more @('#elif')s;
+       otherwise, we put back the tokens and we return."))
+    (b* (((reterr) nil (irr-span) parstate)
+         ((erp span parstate) (read-punctuator "#" parstate)) ; #
+         ((erp token span2 parstate) (read-token parstate)))
+      (cond
+       ((and token ; # elif
+             (token-case token :ident)
+             (equal (ident->unwrap (token-ident->ident token)) "elif"))
+        (b* ((psize (parsize parstate))
+             ((erp elif span3 parstate) ; # elif transitems
+              (parse-hash-elif span parstate))
+             ((unless (<= (parsize parstate) (1- psize)))
+              (reterr :impossible))
+             ((erp elifs span4 parstate)
+              ;; # elif transitems ... # elif transitems
+              (parse-*-hash-elif parstate)))
+          (retok (cons elif elifs)
+                 (span-join span (if elifs span4 span3))
+                 parstate)))
+       ((or (token-keywordp token "else") ; # else
+            (and token ; # endif
+                 (token-case token :ident)
+                 (equal (ident->unwrap (token-ident->ident token)) "endif")))
+        (b* ((parstate (unread-token parstate)) ; #
+             (parstate (unread-token parstate))) ;
+          (retok nil span parstate)))
+       (t ; # other
+        (reterr-msg :where (span->start span2)
+                    :expected "the keyword 'else' or ~
+                               the identifier 'elif' or 'endif'"
+                    :found (token-to-msg token)))))
+    :measure (two-nats-measure (parsize parstate) 0))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :hints (("Goal" :in-theory (enable nfix fix)))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :verify-guards nil ; done below
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   ///
 
-  (more-returns
-   (includes true-listp :rule-classes :type-prescription))
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret parsize-of-parse-*-include-directive-uncond
-    (<= (parsize new-parstate)
-        (parsize parstate))
-    :rule-classes :linear
-    :hints (("Goal" :induct t))))
+  (defret-mutual parsize-of-parse-translation-items-uncond
+    (defret parsize-of-parse-translation-item-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-translation-item
+      :hints ('(:expand (parse-translation-item parstate))))
+    (defret parsize-of-parse-*-translation-item-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-*-translation-item
+      :hints ('(:expand (parse-*-translation-item parstate))))
+    (defret parsize-of-parse-hash-elif-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-hash-elif
+      :hints ('(:expand (parse-hash-elif hash-span parstate))))
+    (defret parsize-of-parse-*-hash-elif-uncond
+      (<= (parsize new-parstate)
+          (parsize parstate))
+      :rule-classes :linear
+      :fn parse-*-hash-elif
+      :hints ('(:expand (parse-*-hash-elif parstate)))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual parsize-of-parse-translation-items-cond
+    (defret parsize-of-parse-translation-item-cond
+      (implies (not erp)
+               (<= (parsize new-parstate)
+                   (1- (parsize parstate))))
+      :rule-classes :linear
+      :fn parse-translation-item
+      :hints ('(:expand (parse-translation-item parstate))))
+    (defret parsize-of-parse-hash-elif-cond
+      (implies (not erp)
+               (<= (parsize new-parstate)
+                   (1- (parsize parstate))))
+      :rule-classes :linear
+      :fn parse-hash-elif
+      :hints ('(:expand (parse-hash-elif hash-span parstate))))
+    :skip-others t
+    :hints (("Goal" :in-theory (enable fix))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (verify-guards parse-translation-item
+    :hints (("Goal" :in-theory (enable fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-translation-unit ((parstate parstatep))
   :returns (mv erp
-               (tunit transunitp)
+               (tunit trans-unitp)
                (new-parstate parstatep :hyp (parstatep parstate)))
   :short "Parse a translation unit."
   :long
@@ -11961,53 +11970,23 @@
     "This is called, by @(tsee parse-file),
      on the initial parsing state,
      which contains all the file data bytes.
-     Unless we must skip control lines,
-     we parse zero or more @('#include') directives.
-     Then we parse zero or more external declarations.
-     Unless GCC/Clang extensions are enabled,
-     we reject input with no @('#include') declarations
-     and no external declarations.")
-   (xdoc::p
-    "This is more limited than our ASTs allow,
-     namely @('#include') directives and external declarations in any order.
-     We plan to extend the ABNF, and the parser,
-     to match the ASTs for translation units.")
-   (xdoc::p
-    "Since our tokenizer filters out all comments,
-     our parser never generates any translation items that are comments.
-     This may change in the future.")
+     We parse zero or more translation items.")
    (xdoc::p
     "We also ensure that the file ends in new-line,
      as prescribed in [C17:5.1.1.2/1/2].
-     We check that the end-of-file position,
-     returned by @(tsee parse-*-external-declaration),
-     is at column 0:
-     this means that, since the file is not empty,
-     the last character is a new-line,
+     We check that the final position in the parser state is at column 0:
+     this means that, if the file is not empty,
+     then the last character is a new-line,
      otherwise that position would be at a non-zero column."))
-  (b* (((reterr) (irr-transunit) parstate)
-       ((erp includes & parstate)
-        (if (parstate->skip-control-lines parstate)
-            (mv nil nil nil parstate)
-          (parse-*-include-directive parstate)))
-       ((erp extdecls & eof-pos parstate)
-        (parse-*-external-declaration parstate))
-       ((when (and (endp includes)
-                   (endp extdecls)
-                   (not (parstate->gcc/clang parstate))))
-        (reterr (msg "The translation unit has no external declarations, ~
-                      ~s0 ~
-                      but GCC/Clang extensions (which allow that) ~
-                      are not enabled."
-                     (if (parstate->skip-control-lines parstate)
-                         ""
-                       "and no #include directives"))))
-       ((unless (= (position->column eof-pos) 0))
-        (reterr (msg "The file does not end in new-line.")))
-       (items (append (trans-item-list-include includes)
-                      (trans-item-list-declon extdecls))))
-    (retok (make-transunit :items items
-                           :info nil)
+  (b* (((reterr) (irr-trans-unit) parstate)
+       ((erp items & parstate) (parse-*-translation-item parstate))
+       ((unless (or items
+                    (parstate->gcc/clang parstate)))
+        (reterr (msg "The file does not contain any translation items.")))
+       ((unless (= (position->column (parstate->position parstate)) 0))
+        (reterr (msg "The file does not end in new-line."))))
+    (retok (make-trans-unit :items items
+                            :info nil)
            parstate))
 
   ///
@@ -12021,14 +12000,14 @@
 
 (define parse-file ((path filepathp)
                     (data byte-listp)
-                    (version c::versionp)
+                    (dialect c::dialectp)
                     (skip-control-lines booleanp))
-  :returns (mv erp (tunit transunitp))
+  :returns (mv erp (tunit trans-unitp))
   :short "Parse (the data bytes of) a file."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We also pass an indication of the C version.")
+    "We also pass an indication of the C dialect.")
    (xdoc::p
     "If successful, the result is a translation unit.
      We create a local stobj with the parser state,
@@ -12045,52 +12024,47 @@
   (with-local-stobj
     parstate
     (mv-let (erp tunit parstate)
-        (b* ((file (filepath->unwrap path))
-             ((unless (stringp file))
-              (raise "Internal error: malformed file path ~x0."
-                     (filepath-fix path))
-              (mv t (irr-transunit) parstate))
+        (b* ((file (filepath->string path))
              (parstate
-              (init-parstate file data version skip-control-lines parstate))
+              (init-parstate file data dialect skip-control-lines parstate))
              ((mv erp tunit parstate) (parse-translation-unit parstate)))
           (if erp
               (if (msgp erp)
-                  (mv (msg "Error in file ~x0: ~@1"
-                           (filepath->unwrap path) erp)
-                      (irr-transunit)
+                  (mv (msg "Error in file ~x0: ~@1" file erp)
+                      (irr-trans-unit)
                       parstate)
                 (prog2$
                  (raise "Internal error: ~x0 is not a message." erp)
-                 (mv t (irr-transunit) parstate)))
+                 (mv t (irr-trans-unit) parstate)))
             (mv nil tunit parstate)))
       (mv erp tunit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-fileset ((fileset filesetp)
-                       (version c::versionp)
+                       (dialect c::dialectp)
                        (skip-control-lines booleanp)
                        (keep-going booleanp))
-  :returns (mv erp (tunits transunit-ensemblep))
+  :returns (mv erp (tunits trans-ensemblep))
   :short "Parse a file set."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We pass an indication of the C version to use,
+    "We pass an indication of the C dialect to use,
      and a flag saying whether to keep parsing other translation units
      after a parsing failure.")
    (xdoc::p
     "We go through each file of the file set and parse it,
      obtaining a translation unit for each,
-     which we return in an ensemble of translation units
+     which we return in a translation ensemble
      that corresponds to the file set.
      The file paths are the same for the file set
-     and for the translation unit ensembles
+     and for the translation ensembles
      (they are the keys of the maps)."))
-  (b* (((reterr) (irr-transunit-ensemble))
-       (filemap (fileset->unwrap fileset))
+  (b* (((reterr) (irr-trans-ensemble))
+       (filemap (fileset->files fileset))
        ((erp tunitmap)
-        (parse-fileset-loop filemap version skip-control-lines keep-going))
+        (parse-fileset-loop filemap dialect skip-control-lines keep-going))
        (- (if keep-going
               (b* ((len-filemap (omap::size filemap))
                    (len-tunitmap (omap::size tunitmap))
@@ -12099,34 +12073,35 @@
                     nil
                   (cw "Parsed ~x0/~x1 files.~%" len-tunitmap len-filemap)))
             nil)))
-    (retok (make-transunit-ensemble :units tunitmap
-                                    :info nil)))
+    (retok (make-trans-ensemble :units tunitmap
+                                :resolved-includes nil
+                                :info nil)))
 
   :prepwork
   ((define parse-fileset-loop ((filemap filepath-filedata-mapp)
-                               (version c::versionp)
+                               (dialect c::dialectp)
                                (skip-control-lines booleanp)
                                (keep-going booleanp))
-     :returns (mv erp (tunitmap filepath-transunit-mapp))
+     :returns (mv erp (tunitmap filepath-trans-unit-mapp))
      (b* (((reterr) nil)
           ((when (omap::emptyp filemap)) (retok nil))
           ((mv filepath filedata) (omap::head filemap))
           ((mv erp tunit)
            (parse-file filepath
-                       (filedata->unwrap filedata)
-                       version
+                       (filedata->bytes filedata)
+                       dialect
                        skip-control-lines))
           ((when erp)
            (if keep-going
                (prog2$ (cw "~@0~%" erp)
                        (parse-fileset-loop (omap::tail filemap)
-                                           version
+                                           dialect
                                            skip-control-lines
                                            keep-going))
              (reterr erp)))
           ((erp tunitmap)
            (parse-fileset-loop (omap::tail filemap)
-                               version
+                               dialect
                                skip-control-lines
                                keep-going)))
        (retok (omap::update (filepath-fix filepath) tunit tunitmap)))
@@ -12147,5 +12122,5 @@
   (defret filepaths-of-parse-fileset
     (implies (and (not keep-going)
                   (not erp))
-             (equal (omap::keys (transunit-ensemble->units tunits))
-                    (omap::keys (fileset->unwrap fileset))))))
+             (equal (omap::keys (trans-ensemble->units tunits))
+                    (omap::keys (fileset->files fileset))))))

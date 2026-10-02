@@ -1,7 +1,7 @@
 ; A lightweight book about expt where the base is 2.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -109,6 +109,7 @@
                   (expt 2 (+ a n)))))
 
 ;todo: can this loop with the definition of expt?
+;todo: rename
 (defthmd expt-hack
   (implies (integerp n)
            (equal (* 2 (expt 2 (+ -1 n)))
@@ -296,13 +297,6 @@
                        (<= (+ 1 i) size))))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
-;rename
-(defthm cancel-expts-from-<
-  (implies (integerp i)
-           (equal (< (+ (expt 2 (+ -1 i)) x) (expt 2 i))
-                  (< x (expt 2 (+ -1 i)))))
-  :hints (("Goal" :in-theory (enable expt-of-+))))
-
 ;gen
 (defthm <-of-2-and-expt2
   (implies (integerp i)
@@ -315,13 +309,6 @@
                 (integerp i))
            (<= 2 (expt 2 i)))
   :rule-classes :linear)
-
-;todo: rename
-(defthm expt-hack
-  (implies (integerp n)
-           (equal (* 2 (expt 2 (+ -1 n)))
-                  (expt 2 n)))
-  :hints (("Goal" :in-theory (enable expt))))
 
 (defthm minus-two-expts
   (implies (posp size)

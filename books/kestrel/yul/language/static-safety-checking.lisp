@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -405,9 +405,7 @@
   :verify-guards nil ; done below
   ///
   (verify-guards check-safe-expression
-    :hints
-    (("Goal"
-      :in-theory (enable acl2::natp-when-nat-resultp-and-not-reserrp))))
+    :hints (("Goal" :in-theory (enable acl2::natp-when-result-not-error))))
 
   (fty::deffixequiv-mutual check-safe-expressions))
 
@@ -958,19 +956,14 @@
       nil)
     :measure (fundef-count fundef))
 
-  :prepwork
-  ((local
-    (in-theory (enable mode-setp-when-mode-set-resultp-and-not-reserrp))))
+  :prepwork ((local (in-theory (enable mode-setp-when-result-not-error))))
 
   :flag-local nil
 
   :verify-guards nil ; done below
   ///
   (verify-guards check-safe-statement
-    :hints
-    (("Goal"
-      :in-theory
-      (enable identifier-setp-when-identifier-set-resultp-and-not-reserrp))))
+    :hints (("Goal" :in-theory (enable identifier-setp-when-result-not-error))))
 
   (fty::deffixequiv-mutual check-safe-statements/blocks/cases/fundefs)
 
@@ -1193,4 +1186,4 @@
        check-safe-statement
        check-safe-statement-list
        set::subset-transitive
-       identifier-setp-when-identifier-set-resultp-and-not-reserrp)))))
+       identifier-setp-when-result-not-error)))))

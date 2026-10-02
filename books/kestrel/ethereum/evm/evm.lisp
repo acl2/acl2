@@ -359,7 +359,7 @@
 
 (std::defaggregate block$ ;todo: remove-block-p from the package imports
                    ((header block-headerp)
-                    (transations all-transactionp)
+                    (transactions all-transactionp)
                     (ommer-headers all-block-headerp)))
 
 ; "I"
@@ -1052,7 +1052,7 @@
                          result-to-push ;removal of the operands is handled according to delta
                          guard-hints
                          )
-  (declare (xargs :guard (and (member-eq mnemonic *valid-mnemonics*))
+  (declare (xargs :guard (member-eq mnemonic *valid-mnemonics*)
                   :guard-hints (("Goal" :in-theory (enable acl2::memberp-of-cons-when-constant)))))
   (let* ((name (symbol-name mnemonic))
          (fn (acl2::pack-in-package-of-symbol 'def-simple-op-fn 'execute- name))
@@ -1282,8 +1282,7 @@
   (implies (and (bvlt 256 x k2)
                 (<= k2 (+ -1 k))
                 (unsigned-byte-p 256 x)
-                (unsigned-byte-p 256 k2)
-                (unsigned-byte-p 256 k1))
+                (unsigned-byte-p 256 k2))
            (not (< k x)))
   :hints (("Goal" :in-theory (enable acl2::bvlt))))
 
@@ -1304,7 +1303,7 @@
   (declare (xargs :guard (n256p word)))
   (acl2::unpackbv 32 8 word))
 
-;; Convert an array of 32 bytes into a 256-bit word, in big-endian fashoon,
+;; Convert an array of 32 bytes into a 256-bit word, in big-endian fashion,
 ;; with the first byte occupying the most significant bits of the result, and
 ;; so on.
 (defun bytes-to-word (bytes)
@@ -1320,8 +1319,7 @@
          (old-num-bytes (+ (stack-item 0 mu) 1)))
     (if (< 32 old-num-bytes) ;; no effect (exactly 32 also has no effect, but let's include it in the other case)
         (stack-item 1 mu)
-      (let* (
-             ;; This is index of the sign bit of the value in (stack-item 0 mu),
+      (let* (;; This is index of the sign bit of the value in (stack-item 0 mu),
              ;; which is presumably less than 256-bits wide.
 ;             (t-var (- 256 (* 8 old-num-bytes))) ;; "t" ;; this can be at most 248 (the sign bit of the least significant byte), if it is 0 there is no effect
  ;            (sign-bit (- 256 t-var)) ;using our standard numbering system
@@ -1770,7 +1768,7 @@
                      (list mnemonic (take (+ -1 inst-len) (cdr c)))
                    mnemonic)))
       (cons (list i info)
-            (disassemble-evm-code-aux (+ 1 i) (nthcdr inst-len c))))))
+            (disassemble-evm-code-aux (+ inst-len i) (nthcdr inst-len c))))))
 
 ;; Given the program as a list of bytes, return an array mapping program locations to instruction mnemonics.
 (defun disassemble-evm-code (c)

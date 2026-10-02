@@ -36,6 +36,6 @@ export ACL2_CUSTOMIZATION=NONE
 
 ${THISSCRIPTDIR}/save-exec-for-tester.sh # very fast if it already exists
 
-${KESTREL_ACL2}/jvm/compile-file-if-needed.sh ${JAVA_FILE}
+${THISSCRIPTDIR}/../../jvm/compile-file-if-needed.sh ${JAVA_FILE}
 
 (echo '(test-file-and-exit "'${JAVA_FILE}'")' | ${THISSCRIPTDIR}/acl2-with-tester)

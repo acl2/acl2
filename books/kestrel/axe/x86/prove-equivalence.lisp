@@ -1,6 +1,6 @@
 ; Proving equivalence of two x86 binary functions.
 ;
-; Copyright (C) 2024-2025 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -39,7 +39,7 @@
                               (names-and-typesp inputs2)
                               ;; (output-indicatorp output2)
                               (or (eq :auto count-hits) (acl2::count-hits-argp count-hits))
-                              (or (eq :auto count-hits) (acl2::print-levelp print)))))
+                              (or (eq :auto print) (acl2::print-levelp print)))))
   (b* (((when (and (equal executable1 executable2)
                    (equal target1 target2)
                    (equal output1 output2)))

@@ -1,6 +1,6 @@
 ; A clause-processor to push unary function calls into lambda bodies and ifs
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 (include-book "kestrel/evaluators/if-eval" :dir :system) ; because we are going to process a whole clause
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/terms-light/logic-termp" :dir :system))
 (local (include-book "kestrel/terms-light/termp" :dir :system))
 (local (include-book "kestrel/utilities/arities-okp" :dir :system))
@@ -35,7 +36,7 @@
 (local (in-theory (enable symbolp-when-member-equal-and-symbol-listp)))
 
 (mutual-recursion
-  ;; Wrap ther WRAPPER-FN around term but push it inward through IFs and LAMBDAs.  Also, push unary fns in subterms.
+  ;; Wrap the WRAPPER-FN around term but push it inward through IFs and LAMBDAs.  Also, push unary fns in subterms.
   (defun push-unary-fns-and-wrap (term wrapper-fn unary-fns)
     (declare (xargs :guard (and (pseudo-termp term)
                                 (symbolp wrapper-fn)
@@ -49,7 +50,7 @@
             `(,wrapper-fn ,term) ; just wrap (could try to eval)
           (if (and (eq 'if fn)
                    (= 3 (len (fargs term))))
-              ;; push into IF banches:
+              ;; push into IF branches:
               `(if ,(push-unary-fns-in-term (farg1 term) unary-fns)
                    ,(push-unary-fns-and-wrap (farg2 term) wrapper-fn unary-fns)
                  ,(push-unary-fns-and-wrap (farg3 term) wrapper-fn unary-fns))
@@ -308,7 +309,7 @@
 (defun push-unary-fns-for-all-goals (parity)
   (if parity
       ;; Apply the clause-processor and turn the parity to nil so that next time
-      ;; other proof processes get a chanve:
+      ;; other proof processes get a chance:
       `(:computed-hint-replacement ((push-unary-fns-for-all-goals nil))
         :clause-processor (acl2::push-unary-fns-clause-processor clause))
     ;; Do nothing (ensure other proof processes get a change) but arrange to

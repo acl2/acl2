@@ -127,15 +127,15 @@
 ; will use rationalp as a poor substitute which however suffices for ACL2
 ; objects.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun acl2-realp (x)
   (rationalp x))
 
-#+(and :non-standard-analysis CLTL2)
+#+(and non-standard-analysis CLTL2)
 (if (not (fboundp 'common-lisp::realp))
     (setf (symbol-function 'common-lisp::realp) (symbol-function 'acl2-realp)))
 
-#+(and :non-standard-analysis (not CLTL2))
+#+(and non-standard-analysis (not CLTL2))
 (if (not (fboundp 'lisp::realp))
     (setf (symbol-function 'lisp::realp) (symbol-function 'acl2-realp)))
 
@@ -209,8 +209,8 @@
 ; true, compile-acl2 had by default used a file-by-file load/proclaim/compile
 ; process, while load-acl2 had proclaimed all files after loading the compiled
 ; files.  We believe that this process allowed load-acl2 to come up with more
-; specific function types during load-acl2 than had been used by compile-acl2
-; We may have this change in types lead to buggy behavior.
+; specific function types during load-acl2 than had been used by compile-acl2.
+; It is conceivable that this change in types could lead to buggy behavior.
 
 ; So in order to proclaim during the boot-strap, we use steps as shown below.
 ; First, here is the general process, which is currently unused.  But we could
@@ -511,7 +511,7 @@
    ((and (eq (car form) 'quote)
          (consp (cdr form)))
     (cond ((integerp (cadr form))
-           `(integerp ,(cadr form) ,(cadr form)))
+           `(integer ,(cadr form) ,(cadr form)))
           ((rationalp (cadr form))
            `rational)
           ((numberp (cadr form))
@@ -971,7 +971,7 @@ be SPECIAL.")
         ((eq (car x) *comma-atsign*) nil)
 
 ; See backquote comments below.  We could have a more restrictive test for
-; LAMBDA objects but that's probably not worth it.  Returnig nil is safe.
+; LAMBDA objects but that's probably not worth it.  Returning nil is safe.
 
         ((eq (car x) 'lambda) nil)
         (t (constant-backquote-lst-p x))))
@@ -1279,7 +1279,16 @@ notation causes an error and (b) the use of ,. is not permitted."
                   ((string-equal x "NEWLINE")
                    #\Newline)
                   ((string-equal x "PAGE")
-                   #\Page)
+                   *acl2-page-char*)
+                  #+allegro
+                  ((string-equal x "FORMFEED")
+
+; See *acl2-page-char*.  We allow #\Formfeed in case it has been printed by
+; print-object$: that function prints using prin1, and Allegro CL may print the
+; character with char-code 12 as #\Formfeed.  We want ACL2 to be able to read
+; forms that have been printed using print-object$.
+
+                   *acl2-page-char*)
                   ((string-equal x "RUBOUT")
                    #\Rubout)
                   ((string-equal x "RETURN")
@@ -1342,7 +1351,8 @@ notation causes an error and (b) the use of ,. is not permitted."
                   (symbol-value 'ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD)))
     (return-from sharp-dot-read
                  (funcall *old-sharp-dot-read* stream char n)))
-  (let ((whitespace-chars '(#\Backspace #\Tab #\Newline #\Linefeed #\Page
+  (let ((whitespace-chars '(#\Backspace #\Tab #\Newline #\Linefeed
+                            #.*acl2-page-char*
                             #\Return #\Space)))
     (when (member (peek-char nil stream nil nil t)
                   whitespace-chars)
@@ -2037,7 +2047,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defun ser-cons-reader-macro (stream subchar arg)
   (declare (ignorable subchar arg))
-  ;; This is the reader macro for #Y.  When it is called the #Z part has
+  ;; This is the reader macro for #Y.  When it is called the #Y part has
   ;; already been read, so we just want to read the serialized object.
   (ser-decode-from-stream nil :never stream))
 

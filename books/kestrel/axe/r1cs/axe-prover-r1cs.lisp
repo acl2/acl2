@@ -1,6 +1,6 @@
 ; An Axe Prover for R1CS reasoning
 ;
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -63,8 +63,7 @@
     pfield::add-of-mod-arg1
     pfield::add-of-mod-arg2
     pfield::mul-of-mod-arg1
-    pfield::mul-of-mod-arg1
-    ))
+    pfield::mul-of-mod-arg2))
 
 (make-prover-simple r1cs
                     r1cs

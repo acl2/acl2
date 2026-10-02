@@ -81,6 +81,8 @@
 (defenum fgl-toplevel-sat-check-mode-p
   (t nil :insert))
 
+(defenum reference-ctrex-action-p
+  (:preserve :set nil))
 
 (defconst *fgl-config-fields*
   '((trace-rewrites booleanp :default 'nil
@@ -118,6 +120,15 @@ validity check of its result produces a counterexample, the SAT counterexample
 will be analyzed to try and create a counterexample to the conjecture (in terms
 of its original variables). This also affects any rewrite rules that call
 @('interp-st-run-ctrex') (it will exit without running the counterexample).")
+    (counterexample-consistency-check-enabledp
+     booleanp :default 't
+     "If T (the default) and if @('counterexample-analysis-enabledp'), then after
+a SAT counterexample is analyzed to try and create a conjecture counterexample,
+each Boolean variable binding in the Boolean variable database will be checked
+for consistency: that is, whether the truth value of a Boolean variabe under
+the SAT counterexample is the same as the truth value of the associated FGL
+symbolic object under the conjecture counterexample. Inconsistencies are
+collected and reported. Setting this to NIL disables the consistency check.")
     (prof-enabledp booleanp :default 't
                    "If T (the default), then the interpreter collects rule
 profiling information (like ACL2's @(see acl2::accumulated-persistence)) and
@@ -141,7 +152,13 @@ that the SAT check will be attempted when the interpreter gets there.. If
                         "If NIL, we use SAT to check vacuity of the
 hypotheses. Set to T to disable this vacuity check.")
     (evisc-tuple t :default '(nil 12 100 nil)
-                 "Evisc tuple to use for printing potentially large objects.")))
+                 "Evisc tuple to use for printing potentially large objects.")
+    (reference-ctrex-action
+     reference-ctrex-action-p :default 'nil
+     "If set to :set, copies the counterexample from the previous run into the
+reference counterexample. If :preserve, preserves the reference counterexample
+as-is. By default (nil), empties the reference counterexample. See @(see
+reference-ctrex) for details.")))
 
 (local
  (defun fgl-config-process-field (field)

@@ -40,10 +40,10 @@
    (xdoc::p
     "The formalization of the ACL2 evaluation semantics in this library
      is currently just the work of this library's author.
-     It is not an official descripion of the ACL2 evaluation semantics
+     It is not an official description of the ACL2 evaluation semantics
      in an analogous sense that "
     (xdoc::ahref "http://www.cs.utexas.edu/users/moore/publications/km97a.pdf"
-                 "this techical report")
+                 "this technical report")
     " is an official description of the ACL2 logical semantics.
      Refer to manual pages like "
     (xdoc::seetopic "acl2::evaluation" "this one")

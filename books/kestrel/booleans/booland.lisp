@@ -13,8 +13,10 @@
 
 ;; STATUS: In-progress
 
-(include-book "bool-fix")
+(include-book "bool-fix-def")
+(local (include-book "bool-fix"))
 
+;; Unlike AND, this always returns a boolean
 (defund booland (x y)
   (declare (xargs :guard t))
   (if x (if y t nil) nil))
@@ -36,6 +38,32 @@
 (defthm booland-commutative-2
   (equal (booland x (booland y z))
          (booland y (booland x z)))
+  :hints (("Goal" :in-theory (enable booland))))
+
+(defthm booland-when-arg1-cheap
+  (implies x
+           (equal (booland x y)
+                  (bool-fix y)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable booland))))
+
+(defthm booland-when-arg2-cheap
+  (implies y
+           (equal (booland x y)
+                  (bool-fix x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable booland))))
+
+(defthm booland-when-not-arg1-cheap
+  (implies (not x)
+           (not (booland x y)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable booland))))
+
+(defthm booland-when-not-arg2-cheap
+  (implies (not y)
+           (not (booland x y)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable booland))))
 
 ;drop, since we know how to handle constants?
@@ -112,13 +140,13 @@
 (defthm booland-of-bool-fix-arg1
   (equal (booland (bool-fix x) y)
          (booland x y))
-  :hints (("Goal" :in-theory (enable bool-fix$inline booland))))
+  :hints (("Goal" :in-theory (enable bool-fix$inline))))
 
 ;; Helps justify the STP translation.
 (defthm booland-of-bool-fix-arg2
   (equal (booland x (bool-fix y))
          (booland x y))
-  :hints (("Goal" :in-theory (enable bool-fix$inline booland))))
+  :hints (("Goal" :in-theory (enable bool-fix$inline))))
 
 ;; These help justify some things that Axe does:
 (defcong iff equal (booland x y) 1 :hints (("Goal" :in-theory (enable booland))))

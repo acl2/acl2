@@ -1,6 +1,6 @@
 ; A proof of the A.3.3.5 gadget
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -205,20 +205,6 @@
                                  52435875175126190479447740508185965837690552500527637822603658699938581184513)
                             52435875175126190479447740508185965837690552500527637822603658699938581184513))))
   :hints (("Goal" :use (:instance product-not-equal-helper-2))))
-
-;; xy - x becomes x(y-1)
-(defthmd add-of-mul-and-neg-same-arg1
-  (implies (posp p)
-           (equal (add (mul x y p) (neg x p) p)
-                  (mul x (add y -1 p) p)))
-  :hints (("Goal" :in-theory (enable PFIELD::MUL-OF-ADD-ARG2))))
-
-;; -x + xy becomes x(y-1)
-(defthmd add-of-neg-and-mul-same-arg1
-  (implies (posp p)
-           (equal (add (neg x p) (mul x y p) p)
-                  (mul x (add y -1 p) p)))
-  :hints (("Goal" :in-theory (enable PFIELD::MUL-OF-ADD-ARG2))))
 
 (defthmd solve-for-v3
   (implies (and (fep a p)

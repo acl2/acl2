@@ -1,6 +1,6 @@
 ; Connecting our spec to similar notions from the RTL library
 ;
-; Copyright (C) 2022-2025 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,7 +21,6 @@
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
-(local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -291,7 +290,7 @@
   :hints (("Goal" :in-theory (enable decode-bv-float decode wfn decode-subnormal-number decode-normal-number
                                      emin emax bias
                                      rtl::decode rtl::ndecode rtl::ddecode
-                                     rtl::expf rtl::expf rtl::sgnf
+                                     rtl::expf rtl::sgnf
                                      rtl::encodingp
                                      rtl::formatp
                                      rtl::expw rtl::sigw
@@ -324,7 +323,7 @@
   :hints (("Goal" :in-theory (enable decode-bv-float decode wfn decode-subnormal-number decode-normal-number
                                      emin emax bias
                                      rtl::decode rtl::ndecode rtl::ddecode
-                                     rtl::expf rtl::expf rtl::sgnf
+                                     rtl::expf rtl::sgnf
                                      rtl::encodingp
                                      rtl::formatp
                                      rtl::expw rtl::sigw
@@ -355,7 +354,7 @@
   :hints (("Goal" :in-theory (enable decode-bv-float decode wfn decode-subnormal-number decode-normal-number
                                      emin emax bias
                                      rtl::decode rtl::ndecode rtl::ddecode
-                                     rtl::expf rtl::expf rtl::sgnf
+                                     rtl::expf rtl::sgnf
                                      rtl::encodingp
                                      rtl::formatp
                                      rtl::expw rtl::sigw
@@ -388,7 +387,7 @@
   :hints (("Goal" :in-theory (enable decode-bv-float decode wfn decode-subnormal-number decode-normal-number
                                      emin emax bias
                                      rtl::decode rtl::ndecode rtl::ddecode
-                                     rtl::expf rtl::expf rtl::sgnf
+                                     rtl::expf rtl::sgnf
                                      rtl::encodingp
                                      rtl::formatp
                                      rtl::expw rtl::sigw

@@ -90,19 +90,6 @@
            (node-list-p (alist-vals (initial-assign-fn dr-ids nodes))))
   :hints (("Goal" :in-theory (enable initial-assign-fn))))
 
-(defthm drone-id-list-p-alist-keys-plan-map-p
-  (implies (plan-map-p pm1)
-           (drone-id-list-p (alist-keys pm1)))
-  :hints (("Goal" :in-theory (enable alist-keys))))
-(defthm drone-id-list-p-alist-keys-plan-map-p
-  (implies (plan-map-p pm1)
-           (drone-id-list-p (alist-keys pm1)))
-  :hints (("Goal" :in-theory (enable alist-keys))))
-(defthm drone-id-list-p-alist-keys-plan-map-p
-  (implies (plan-map-p pm1)
-           (drone-id-list-p (alist-keys pm1)))
-  :hints (("Goal" :in-theory (enable alist-keys))))
-
 (define initial-assign ((dr-ids drone-id-list-p) ; !!?
                         (g wf-dgraph-p))
   :guard (and (no-duplicatesp-equal dr-ids)

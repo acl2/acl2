@@ -1,6 +1,6 @@
 ; A predicate that checks whether two alists agree on a given list of keys
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -125,12 +125,12 @@
                                      intersection-equal
                                      member-equal-of-strip-cars-iff))))
 
-(defthm alists-equiv-on-of-alists-equiv-on-when-alists-equiv-on-arg1
+(defthm alists-equiv-on-of-intersection-equal-when-alists-equiv-on-arg1
   (implies (alists-equiv-on keys1 alist1 alist2)
            (alists-equiv-on (intersection-equal keys1 keys2) alist1 alist2))
   :hints (("Goal" :in-theory (enable alists-equiv-on))))
 
-(defthm alists-equiv-on-of-alists-equiv-on-when-alists-equiv-on-arg2
+(defthm alists-equiv-on-of-intersection-equal-when-alists-equiv-on-arg2
   (implies (alists-equiv-on keys2 alist1 alist2)
            (alists-equiv-on (intersection-equal keys1 keys2) alist1 alist2))
   :hints (("Goal" :in-theory (enable alists-equiv-on intersection-equal))))

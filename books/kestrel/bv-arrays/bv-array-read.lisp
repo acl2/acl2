@@ -350,7 +350,7 @@
                   (bv-array-read element-size len (+ i j) data)))
   :hints (("Goal" :in-theory (enable bv-array-read))))
 
-(defthm bv-array-read-of-of-bvchop-bigger
+(defthm bv-array-read-of-bvchop-bigger
   (implies (and (<= (ceiling-of-lg len) size)
                 (natp len)
                 (integerp i)
@@ -376,7 +376,7 @@
   :hints (("Goal" :in-theory (enable bv-array-read bvchop-of-sum-cases))))
 
 (defthmd bv-array-read-out-of-bounds
-  (implies (bvlt (ceiling-of-lg len) (+ -1 len) index) ; can only happen is len is not a power of 2
+  (implies (bvlt (ceiling-of-lg len) (+ -1 len) index) ; can only happen if len is not a power of 2
            (equal (bv-array-read size len index data)
                   0))
   :hints (("Goal" :in-theory (enable bv-array-read bvlt))))

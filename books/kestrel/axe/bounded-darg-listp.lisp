@@ -1,4 +1,4 @@
-; Lists of DAG function args ("dargs") whose nodenum elemements are bounded
+; Lists of DAG function args ("dargs") whose nodenum elements are bounded
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2026 Kestrel Institute
@@ -129,7 +129,6 @@
 
 (defthmd true-listp-of-car-when-bounded-darg-listp
   (implies (and (bounded-darg-listp dargs bound)
-                (natp n)
                 (< 0 (len dargs)))
            (equal (true-listp (car dargs))
                   (consp (car dargs))))

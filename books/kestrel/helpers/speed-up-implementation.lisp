@@ -24,7 +24,7 @@
 
 ;; TODO: Add support for speeding up defuns and defines.
 ;; TODO: Try removing cases hints
-;; TODO: TODO: Handle theorems not at the top level
+;; TODO: Handle theorems not at the top level
 ;; TODO: Handle defthm-flags
 ;; TODO: Try different ruler-extenders
 ;; todo: disallow print nil?
@@ -559,7 +559,7 @@
               (progn$ ;; (cw "Macroexpanding ~x0.~%" event)
                       (speed-up-and-submit-event (magic-macroexpand1$$ event 'speed-up-and-submit-event (w state) state) synonym-alist min-time-savings min-event-time print throw-errorp state))
             (if throw-errorp
-                (prog2$ (er hard? 'speed-up-event-fn "Unsupported event: ~s0.~%" (abbreviate-event event))
+                (prog2$ (er hard? 'speed-up-and-submit-event "Unsupported event: ~s0.~%" (abbreviate-event event))
                         (mv :unsupported-event state))
               (prog2$ (cw "~%Unsupported event: ~s0." (abbreviate-event event))
                               ;; For speed, we skip the proofs (todo: can this interfere with calls to make-event?) when submitting the event:

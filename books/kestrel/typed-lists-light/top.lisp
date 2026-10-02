@@ -1,6 +1,6 @@
-; A lightwright library about lists whose elements have particular types
+; A lightweight library about lists whose elements have particular types
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -38,6 +38,7 @@
 (include-book "all-rationalp")
 (include-book "all-all-integerp")
 (include-book "all-consp")
+(include-book "all-digit-charsp")
 
 (include-book "integer-lists")
 
@@ -54,6 +55,7 @@
 
 (include-book "all-less")
 (include-book "all-less-rules")
+(include-book "all-less-than-or-equal-def")
 (include-book "all-less-than-or-equal")
 (include-book "less-than-all")
 (include-book "less-than-or-equal-all")

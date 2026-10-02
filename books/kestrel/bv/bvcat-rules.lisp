@@ -12,8 +12,8 @@
 (in-package "ACL2")
 
 (include-book "bvcat")
-(include-book "bvxor")
-(include-book "bvor")
+(include-book "bvxor-def")
+(include-book "bvor-def")
 (include-book "bitnot")
 (include-book "bvand-def")
 (include-book "bitand")
@@ -21,11 +21,12 @@
 (include-book "bitxor")
 (include-book "bvplus")
 (include-book "bvmult")
-(include-book "bvminus")
+(include-book "bvminus-def")
 (include-book "bvuminus-def")
 (include-book "bvif")
 (include-book "bvlt-def")
 (local (include-book "bvand"))
+(local (include-book "bvor"))
 (local (include-book "logapp"))
 (local (include-book "logand-b"))
 (local (include-book "logior-b"))
@@ -101,7 +102,7 @@
            (equal (bvand size (bvcat highsize highval lowsize lowval) y)
                   (bvand size (bvcat (- size lowsize) highval lowsize lowval) y)))
   :hints (("Goal" :in-theory (enable bvand bvcat bvchop-of-logapp-bigger ;bvchop-bvchop
-                                     bvchop-of-logapp-bigger))))
+                                     ))))
 
 (defthm bvand-of-bvcat-tighten-arg3
   (implies (and (< size (+ lowsize highsize))
@@ -112,7 +113,7 @@
            (equal (bvand size x (bvcat highsize highval lowsize lowval))
                   (bvand size x (bvcat (- size lowsize) highval lowsize lowval))))
   :hints (("Goal" :in-theory (enable bvand bvcat bvchop-of-logapp-bigger ;bvchop-bvchop
-                                     bvchop-of-logapp-bigger))))
+                                     ))))
 
 (defthmd bvand-of-bvcat-arg3
   (implies (and (equal size (+ lowsize highsize)) ;gen?
@@ -376,7 +377,7 @@
                             (size size2)
                             (x y)
                             (y x)))
-           :in-theory (e/d ( ;bvmult
+           :in-theory (e/d (;bvmult
                             ) (BVMULT-OF-BVCHOP-arg2
                             BVMULT-OF-BVCHOP-arg3
                             )))))
@@ -456,8 +457,7 @@
   (implies (natp n)
            (equal (bvmult n 2 x)
                   (bvcat (+ -1 n) x 1 0)))
-  :hints (("Goal" :in-theory (e/d (bvmult slice getbit bvcat)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvmult slice getbit bvcat))))
 
 
 ;; TODO: organize this stuff:
@@ -527,7 +527,7 @@
   :hints (("Goal" :cases ((and (integerp z) (integerp y))
                           (and (integerp z) (not (integerp y)))
                           (and (not (integerp z)) (integerp y)))
-           :in-theory (e/d (bvcat) ()))))
+           :in-theory (enable bvcat))))
 
 ;move
 (DEFTHM BVCAT-SLICE-SLICE-SAME-2

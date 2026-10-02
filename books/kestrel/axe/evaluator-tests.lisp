@@ -1,7 +1,7 @@
 ; Tests of the evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -56,7 +56,7 @@
                           (not (mv t (not arg1)))
                           (power-of-2p (mv t (power-of-2p arg1)))
                           (lg (mv t (lg-unguarded arg1)))
-                          (bool-to-bit (mv t (eval-in-logic (bool-to-bit arg1))))
+                          (bool-to-bit (mv t (bool-to-bit-unguarded arg1)))
                           (char-code (mv t (char-code-unguarded arg1)))
                           (code-char (mv t (code-char-unguarded arg1)))
                           (symbol-package-name
@@ -193,7 +193,7 @@
                            (ceiling (mv t (ceiling-unguarded arg1 arg2)))
                            (group (mv t (eval-in-logic (group arg1 arg2))))
                            (group2 (mv t (eval-in-logic (group2 arg1 arg2))))
-                           (set::in (mv t (eval-in-logic (set::in-unguarded arg1 arg2))))
+                           (set::in (mv t (set::in-unguarded arg1 arg2)))
                            (symbol< (mv t (symbol<-unguarded arg1 arg2)))
                            (t (mv nil nil))))
                          (let ((args-to-walk-down (cdr args-to-walk-down)))
@@ -235,10 +235,10 @@
                              (bvsx (mv t (bvsx-unguarded arg1 arg2 arg3)))
                              (sbvdiv (mv t (sbvdiv-unguarded arg1 arg2 arg3)))
                              (sbvdivdown (mv t (eval-in-logic (sbvdivdown arg1 arg2 arg3))))
-                             (sbvrem (mv t (eval-in-logic (sbvrem arg1 arg2 arg3))))
+                             (sbvrem (mv t (sbvrem-unguarded arg1 arg2 arg3)))
                              (sbvmoddown (mv t (eval-in-logic (sbvmoddown arg1 arg2 arg3))))
                              (sbvlt
-                                 (mv t (sbvlt-unguarded arg1 (ifix arg2) (ifix arg3))))
+                                 (mv t (sbvlt-unguarded arg1 arg2 arg3)))
                              (sbvle (mv t (sbvle-unguarded arg1 arg2 arg3)))
                              (s (mv t (s arg1 arg2 arg3)))
                              (myif (mv t (myif arg1 arg2 arg3)))
@@ -309,10 +309,7 @@
                                                arg1 arg2 arg3 arg4 arg5))))
                                  (bv-array-write
                                    (mv t
-                                       (bv-array-write-unguarded (nfix arg1)
-                                                                 (nfix arg2)
-                                                                 (nfix arg3)
-                                                                 arg4 arg5)))
+                                       (bv-array-write-unguarded arg1 arg2 arg3 arg4 arg5)))
                                  (bv-array-clear-range
                                       (mv t
                                           (eval-in-logic (bv-array-clear-range
@@ -443,11 +440,11 @@
       ((top-nodenum (top-nodenum-of-dag dag))
        (dag-array-name (pack$ 'dag-array-
                               array-depth '-for-dag-val))
-       (dag-array (make-into-array dag-array-name dag))
+       (dag-array (alist-to-array1 dag-array-name dag))
        (eval-array-name (pack$ 'eval-array-
                                array-depth '-for-dag-val))
        (eval-array
-        (make-empty-array eval-array-name (+ 1 top-nodenum))))
+        (new-array1 eval-array-name (+ 1 top-nodenum))))
       (car (aref1 eval-array-name
                   (eval-dag-with-axe-evaluator
                    (list top-nodenum)
@@ -659,7 +656,7 @@
                         (not (mv t (not arg1)))
                         (power-of-2p (mv t (power-of-2p arg1)))
                         (lg (mv t (lg-unguarded arg1)))
-                        (bool-to-bit (mv t (eval-in-logic (bool-to-bit arg1))))
+                        (bool-to-bit (mv t (bool-to-bit-unguarded arg1)))
                         (char-code (mv t (char-code-unguarded arg1)))
                         (code-char (mv t (code-char-unguarded arg1)))
                         (symbol-package-name
@@ -795,7 +792,7 @@
                            (ceiling (mv t (ceiling-unguarded arg1 arg2)))
                            (group (mv t (eval-in-logic (group arg1 arg2))))
                            (group2 (mv t (eval-in-logic (group2 arg1 arg2))))
-                           (set::in (mv t (eval-in-logic (set::in-unguarded arg1 arg2))))
+                           (set::in (mv t (set::in-unguarded arg1 arg2)))
                            (symbol< (mv t (symbol<-unguarded arg1 arg2)))
                            (t (mv nil nil))))
                         (let ((args-to-walk-down (cdr args-to-walk-down)))
@@ -834,10 +831,10 @@
                             (bvsx (mv t (bvsx-unguarded arg1 arg2 arg3)))
                             (sbvdiv (mv t (sbvdiv-unguarded arg1 arg2 arg3)))
                             (sbvdivdown (mv t (eval-in-logic (sbvdivdown arg1 arg2 arg3))))
-                            (sbvrem (mv t (eval-in-logic (sbvrem arg1 arg2 arg3))))
+                            (sbvrem (mv t (sbvrem-unguarded arg1 arg2 arg3)))
                             (sbvmoddown (mv t (eval-in-logic (sbvmoddown arg1 arg2 arg3))))
                             (sbvlt
-                                 (mv t (sbvlt-unguarded arg1 (ifix arg2) (ifix arg3))))
+                                 (mv t (sbvlt-unguarded arg1 arg2 arg3)))
                             (sbvle (mv t (sbvle-unguarded arg1 arg2 arg3)))
                             (s (mv t (s arg1 arg2 arg3)))
                             (myif (mv t (myif arg1 arg2 arg3)))
@@ -908,10 +905,7 @@
                                               arg1 arg2 arg3 arg4 arg5))))
                                 (bv-array-write
                                    (mv t
-                                       (bv-array-write-unguarded (nfix arg1)
-                                                                 (nfix arg2)
-                                                                 (nfix arg3)
-                                                                 arg4 arg5)))
+                                       (bv-array-write-unguarded arg1 arg2 arg3 arg4 arg5)))
                                 (bv-array-clear-range
                                      (mv t
                                          (eval-in-logic (bv-array-clear-range

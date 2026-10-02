@@ -198,7 +198,8 @@ sublis-fn.
             (er hard 'constraint
                 "Unable to determine constraints on ~x0!  Presumably this ~
                  function was introduced with a partial-encapsulate; see :DOC ~
-                 partial-encapsulate."))
+                 partial-encapsulate."
+                fn))
            (sym (conjoin x))
            (t x))))
 

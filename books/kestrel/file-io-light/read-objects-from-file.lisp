@@ -1,6 +1,6 @@
 ; A lightweight function to read the ACL2 objects from a channel
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,6 +33,10 @@
               objects
               state))))))
 
+(defthm true-listp-of-mv-nth-1-of-read-objects-from-file
+  (true-listp (mv-nth 1 (read-objects-from-file filename state)))
+  :hints (("Goal" :in-theory (enable read-objects-from-file))))
+
 (defthm state-p1-of-mv-nth-2-of-read-objects-from-file
   (implies (and (stringp filename)
                 (state-p1 state))
@@ -44,3 +48,8 @@
                 (state-p state))
            (state-p (mv-nth 2 (read-objects-from-file filename state))))
   :hints (("Goal" :in-theory (enable state-p))))
+
+(defthm w-of-mv-nth-2-of-read-objects-from-file
+  (equal (w (mv-nth 2 (read-objects-from-file filename state)))
+         (w state))
+  :hints (("Goal" :in-theory (e/d (read-objects-from-file) (w)))))

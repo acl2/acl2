@@ -1,7 +1,7 @@
 ; Utilities for unrolling Java code
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -161,7 +161,7 @@
 
 ;; assumes locals-term is a term that represents the locals in the appropriate state
 ;; TODO: Compare to make-input-assumptions and param-assumptions-and-vars-aux
-;; TOOD: Should we assume that params that are references are non-null?  We do for arrays...
+;; TODO: Should we assume that params that are references are non-null?  We do for arrays...
 ;; TODO: Add an option to avoid generating non-null assumptions for arrays (implied by array-refp) and references.
 ;; TODO: Add option for stricter assumptions about subtypes of int
 (defund parameter-assumptions-aux (current-slot parameter-types param-slot-to-name-alist array-length-alist locals-term heap-term vars-for-array-elements method-designator-string)

@@ -1,7 +1,7 @@
 ; Logical negation of a bit
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -85,8 +85,7 @@
   (implies (integerp x)
            (equal (getbit 1 (+ 2 x))
                   (bitnot (getbit 1 x))))
-  :hints (("Goal" :in-theory (e/d (getbit slice bitnot)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable getbit slice bitnot))))
 
 (local
  (defthmd bvnot-1-becomes-bitnot

@@ -474,7 +474,7 @@
                 :hints
                 (("Goal"
                   :in-theory
-                  (enable abnf::treep-when-tree-resultp-and-not-reserrp))))
+                  (enable abnf::treep-when-result-not-error))))
                (rest-input nat-listp))
   :short "Lex a @('1*decimal-digit')."
   (b* (((mv tree input) (lex-decimal-digit input))

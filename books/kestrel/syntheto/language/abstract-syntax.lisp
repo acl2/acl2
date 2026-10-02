@@ -1,10 +1,11 @@
 ; Syntheto Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu) and Stephen Westfold (westfold@kestrel.edu)
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+;          Stephen Westfold (westfold@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1044,17 +1045,6 @@
   :pred transformp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod transform
-  :short "Fixtype of Syntheto transforms."
-  :long
-  (xdoc::topstring-p
-   "Apply transform-name to old-function-name with arguments giving new-function-name.")
-  ((new-function-name identifier)
-   (old-function-name identifier)
-   (transform-name string)
-   (arguments transform-argument-list))
-  :pred transformp)
 
 ;; Map from transform names to parameter info
 ;; For each legal parameter it gives its type and, if optional, the default value

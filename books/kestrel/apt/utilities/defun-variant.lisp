@@ -1,6 +1,6 @@
 ; Choosing which variant of defun to use
 ;
-; Copyright (C) 2016-2023 Kestrel Institute
+; Copyright (C) 2016-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,6 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/enumerations" :dir :system)
 (include-book "std/system/fundef-disabledp" :dir :system)
 (include-book "std/system/non-executablep" :dir :system)
 (include-book "std/system/function-namep" :dir :system)
@@ -28,21 +27,20 @@
                        state)
   (declare (xargs :guard (and (function-namep old-fn (w state))
                               (definedp old-fn (w state))
-                              (t/nil/auto-p new-fn-non-executable)
-                              (t/nil/auto-p new-fn-disabled))
+                              (member-eq new-fn-non-executable '(t nil :auto))
+                              (member-eq new-fn-disabled '(t nil :auto)))
                   :stobjs state
                   :verify-guards nil ; todo: because of fundef-disabledp
                   ))
-  (let* ((old-fn-disabled (fundef-disabledp old-fn state))
-         (old-fn-non-executable (non-executablep old-fn (w state)))
-         (disabled (if (eq new-fn-disabled :auto)
-                       ;; :auto means disable iff the old function is disabled
-                       old-fn-disabled
+  (let* ((disabled (if (eq new-fn-disabled :auto)
+                       ;; :auto means disable iff the old function is disabled:
+                       (fundef-disabledp old-fn state)
                      new-fn-disabled))
          (non-executable (if (eq new-fn-non-executable :auto)
                              ;; :auto means non-exec iff the old function is
-                             ;; non-exec
-                             old-fn-non-executable
+                             ;; non-exec:
+                             (non-executablep old-fn (w state))
+                           ;; Use the explicit boolean value provided:
                            new-fn-non-executable)))
     (if disabled
         (if non-executable

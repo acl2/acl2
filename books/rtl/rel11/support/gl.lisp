@@ -21,7 +21,8 @@
                  0
                (logand (ash x (- j))
                        (1- (ash 1 (1+ (- i j))))))
-           (let ((msg (cw "WARNING: guard violation for the function BITS during a GL proof.~%")))
+           (let ((msg (cw "WARNING: guard violation for the function BITS during a GL proof:~%(BITS ~x0 ~x1 ~x2)~%" x i j)))
+           ;(let ((msg (cw "WARNING: guard violation for the function BITS during a GL proof.~%")))
              (declare (ignore msg))
              (if (or (not (integerp i))
                      (not (integerp j)))
@@ -42,7 +43,8 @@
              (if (< n 0)
                  0
                (if (logbitp n x) 1 0))
-           (let ((msg (cw "WARNING: guard violation for the function BITN during a GL proof.~%")))
+           (let ((msg (cw "WARNING: guard violation for the function BITN during a GL proof:~%(BITN ~x0 ~x1)~%" x n)))
+           ;(let ((msg (cw "WARNING: guard violation for the function BITN during a GL proof.~%")))
              (declare (ignore msg))
              (if (not (integerp n))
                  0

@@ -20,8 +20,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local
- (in-theory (enable abnf::treep-when-tree-resultp-and-not-reserrp
-                    abnf::tree-listp-when-tree-list-resultp-and-not-reserrp)))
+ (in-theory (enable abnf::treep-when-result-not-error
+                    abnf::tree-listp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -144,4 +144,4 @@
         (reserrf (cons :wrong-number-of-system-components cst))))
     (first defs))
   :guard-hints
-  (("Goal" :in-theory (enable systemp-when-system-resultp-and-not-reserrp))))
+  (("Goal" :in-theory (enable systemp-when-result-not-error))))

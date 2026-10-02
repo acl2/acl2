@@ -1,7 +1,7 @@
 ; Rules to convert bitops operations to operations from the Kestrel BV library
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,7 +22,9 @@
 (include-book "bitand")
 (include-book "bitor")
 (include-book "bitxor")
+(include-book "bitnot")
 (local (include-book "bvand"))
+(local (include-book "bvor"))
 (local (include-book "rules"))
 (local (include-book "logand-b"))
 (local (include-book "logior-b"))
@@ -369,3 +371,13 @@
            (equal (b-xor x y)
                   (bitxor x y)))
   :hints (("Goal" :in-theory (e/d (bitxor b-xor) (bvxor-1-becomes-bitxor)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm b-not-becomes-bitnot
+  (equal (b-not b)
+         (if (unsigned-byte-p 1 b)
+             (bitnot b)
+           ;; odd case:
+           1))
+  :hints (("Goal" :in-theory (enable b-not bit-to-bool))))

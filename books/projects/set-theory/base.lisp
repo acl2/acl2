@@ -454,6 +454,10 @@
            (not (subset x y)))
   :hints (("Goal" :use subset-necc)))
 
+(defthmz pair-commutative
+  (equal (pair x y) (pair y x))
+  :hints (("Goal" :in-theory (enable extensionality subset))))
+
 (defthmz in-union2
   (equal (in a (union2 x y))
          (or (in a x) (in a y)))
@@ -2657,3 +2661,11 @@
          (pair a1 a2))
   :hints (("Goal" :in-theory (enable extensionality-rewrite subset)))
   :props (zfc domain$prop))
+
+(defthmz not-in-in-0
+
+; This was developed to support intersection$comprehension-improved in
+; intersection.lisp.
+
+  (not (in-in x 0))
+  :hints (("Goal" :in-theory (enable in-in))))

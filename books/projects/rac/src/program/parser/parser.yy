@@ -232,7 +232,7 @@ program
 program_element
     : type_dec ';'
 {
-  if (!yyast.registerType($1))
+  if ($1 && !yyast.registerType($1))
   {
       yyast.diag()
           .new_error(@$, "Duplicate type definition")
@@ -295,6 +295,20 @@ typedef_dec
     : TYPEDEF typedef_type ID
 {
   $$ = new DefinedType (@$, $3, $2);
+}
+    | TYPEDEF typedef_type TYPEID
+{
+  const Type *existing_type = yyast.getType($3);
+  if (!existing_type->isEqual($2)) {
+    yyast.diag()
+          .new_error(@3, format("Conflicting declaration for %s", $3))
+          .context(@$)
+          .note("previous declaration here:")
+          .note_location(existing_type->get_original_location())
+          .report();
+      YYERROR;
+  }
+  $$ = nullptr;
 }
     | typedef_dec '[' arithmetic_expression ']'
 {

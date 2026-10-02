@@ -1,7 +1,7 @@
 ; BV Lists Library: bytes-to-bits-little
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -52,7 +52,7 @@
   (implies (consp bytes)
            (equal (car (bytes-to-bits-little bytes))
                   (getbit 0 (car bytes))))
-  :hints (("Goal" :in-theory (enable bytes-to-bits-little bytes-to-bits-little))))
+  :hints (("Goal" :in-theory (enable bytes-to-bits-little))))
 
 (defthm cadr-of-bytes-to-bits-little
   (implies (consp bytes)

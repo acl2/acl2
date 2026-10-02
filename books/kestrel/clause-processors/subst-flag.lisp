@@ -1,6 +1,6 @@
 ; A clause-processor for use by my-make-flag
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -530,7 +530,7 @@
                   (equality-eval key a)))
   :hints (("Goal" :in-theory (enable assoc-equal))))
 
-;; Applying sublis-var-and-simplify doesn't change the meaning of the term, of everything in the ALIST is correct.
+;; Applying sublis-var-and-simplify doesn't change the meaning of the term, if everything in the ALIST is correct.
 (defthm-flag-sublis-var-and-simplify
   (defthm sublis-var-and-simplify-correct
     (implies (and (alistp alist) ; usually a symbol-term-alistp

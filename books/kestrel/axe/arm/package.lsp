@@ -31,6 +31,8 @@
     arm::itstate
     arm::endianstate
     arm::memory
+    arm::oracle
+    arm::library-map
 
     arm::read-byte
     arm::read-bytes
@@ -40,7 +42,12 @@
     arm::write
     arm::arm32-decode
     arm::pc
+
     arm::step
+    arm::step-aux
+    arm::step-core
+    arm::run
+
     arm::reg
     arm::set-reg
     arm::pc
@@ -61,9 +68,10 @@
     arm::r14
     arm::r15
     arm::error
-    arm::*pc*
+    arm::*fp*
     arm::*sp*
     arm::*lr*
+    arm::*pc*
     arm::register-numberp
 
     arm::apsr.n
@@ -104,6 +112,32 @@
     arm::cmp-zero
     arm::cmp-carry
     arm::cmp-overflow
+    arm::sub-sign
+    arm::sub-zero
+    arm::sub-carry
+    arm::sub-overflow
+
+    arm::addwithcarry
+    arm::addwithcarry-overflow
+    arm::countleadingzerobits
+    arm::highestsetbit
+
+    arm::eq-condition
+    arm::ne-condition
+    arm::cs-condition
+    arm::cc-condition
+    arm::mi-condition
+    arm::pl-condition
+    arm::vs-condition
+    arm::vc-condition
+    arm::hi-condition
+    arm::ls-condition
+    arm::ge-condition
+    arm::lt-condition
+    arm::gt-condition
+    arm::le-condition
+
+    arm::update-error ; todo: more
     ))
 
 ;; (defconst *arm-symbols-in-acl2-package*

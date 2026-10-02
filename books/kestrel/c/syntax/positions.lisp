@@ -54,7 +54,7 @@
    (xdoc::p
     "We also include an indication of the file that the position refers to,
      for now represented as a string, which we use for a file path.
-     Although generally each file is (pre)procesed individually
+     Although generally each file is (pre)processed individually
      (so that the file in question is contextually known),
      the preprocessing directive @('#line') [C17:6.10.4]
      can change the `presumed' line number and file name.
@@ -118,7 +118,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define position-inc-column ((columns natp) (pos positionp))
+(define position-inc-column ((columns posp) (pos positionp))
   :returns (new-pos positionp)
   :short "Increment a position by a number of columns."
   :long
@@ -126,14 +126,8 @@
    (xdoc::p
     "The line number is unchanged."))
   (change-position pos :column (+ (the unsigned-byte (position->column pos))
-                                  (the unsigned-byte columns)))
-  :inline t
-  :hooks nil
-
-  ///
-
-  (fty::deffixequiv position-inc-column
-    :args ((pos positionp))))
+                                  (the unsigned-byte (lposfix columns))))
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -146,15 +140,9 @@
     "The column is reset to 0."))
   (change-position pos
                    :line (+ (the (integer 1 *) (position->line pos))
-                            (the (integer 1 *) lines))
+                            (the (integer 1 *) (lposfix lines)))
                    :column 0)
-  :inline t
-  :hooks nil
-
-  ///
-
-  (fty::deffixequiv position-inc-line
-    :args ((pos positionp))))
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -167,7 +155,7 @@
    (xdoc::p
     "This is used in user-oriented error messages.
      It consists of file, line, and column, separated by colons."))
-  (msg "~s0:~x1:~x2:"
+  (msg "~s0:~x1:~x2"
        (position->file pos)
        (position->line pos)
        (position->column pos)))

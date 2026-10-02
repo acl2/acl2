@@ -1,7 +1,7 @@
 ; Recognize when all elems of one list are >= all elems of another
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,12 +11,14 @@
 
 (in-package "ACL2")
 
-(include-book "all-less-than-or-equal")
+(include-book "all-less-than-or-equal-def")
 (include-book "all-greater-than-or-equal")
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 
 ;; Checks that everything in X is >= everything in Y.
 (defund all->=-all (x y)
+  (declare (xargs :guard (and (rational-listp x)
+                              (rational-listp y))))
   (if (endp y)
       t
     (and (all->= x (first y))

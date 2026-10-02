@@ -121,7 +121,7 @@
                               whole-form
                               state)
   (declare (xargs :guard (and (symbolp defconst-name)
-                              ;; term is an untranlated term
+                              ;; term is an untranslated term
                               (or (eq :standard rules)
                                   (eq :auto rules)
                                   (symbol-listp rules))
@@ -340,7 +340,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                                        (rules ':standard) ;to completely replace the usual set of rules
                                        ;; (rule-alists) ;to completely replace the usual set of rules (TODO: default should be auto?)
                                        (extra-rules 'nil) ; to add to the usual set of rules
-                                       (remove-rules 'nil) ; to remove from to the usual set of rules
+                                       (remove-rules 'nil) ; to remove from the usual set of rules
                                        (normalize-xors 'nil)
                                        ;; Options that affect performance:
                                        (memoizep 't)
@@ -398,7 +398,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
          (disable-function "Whether to disable the produced function.")
          (function-type "How to create a function for the DAG (:term, :embedded-dag, :lets, or :auto).")
          (function-params "The param to use for the produced function (specifies their order).")
-         (produce-theorem "Whether to create a theorem stating that the dag is equal to the orignal term (using skip-proofs).")
+         (produce-theorem "Whether to create a theorem stating that the dag is equal to the original term (using skip-proofs).")
          (local "Whether to make the result of @('unroll-spec-basic') local to the enclosing book (or @('encapsulate')).  This prevents a large DAG from being stored in the @(tsee certificate) of the book, but it means that the result of @('unroll-spec-basic') is not accessible from other books.  Usually, the default value of @('t') is appropriate, because the book that calls @('unroll-spec-basic') is not included by other books."))
   :description ("Given a specification, unroll all recursion, yielding a DAG that only includes bit-vector and array operations."
                 "To decide which rewrite rules to use, the tool starts with either the @(':rules') if supplied, or a basic default set of rules, @('unroll-spec-basic-rules').  Then the @(':extra-rules') are added and then the @(':remove-rules') are removed."))

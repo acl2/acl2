@@ -53,9 +53,9 @@
                            ;; todo: many of these should either not be imported or be at least disabled:
                            car-of-car-when-pseudo-dagp-aux consp-of-car-when-pseudo-dagp consp-of-car-when-pseudo-dagp-aux consp-of-car-when-pseudo-dagp-aux-2 ; todo: disable globally?
                            integerp-of-nth-when-all-natp
-                           equal-of-non-natp-and-caar-when-when-bounded-natp-alistp
+                           equal-of-non-natp-and-caar-when-bounded-natp-alistp
                            quote-lemma-for-bounded-darg-listp-gen-alt
-                           true-listp-of-car-when-when-bounded-natp-alistp
+                           consp-of-car-when-bounded-natp-alistp
                            len-when-dargp-cheap
                            )))
 

@@ -1,10 +1,10 @@
 ; Event Macros Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -92,18 +92,30 @@
   :parents (evmac-input-print-p)
   :returns (yes/no booleanp)
   :short "Less-than ordering on print levels."
-  (case x
-    ((nil) (or (eq y :error)
-               (eq y :result)
-               (eq y :info)
-               (eq y :all)))
-    (:error (or (eq y :result)
-                (eq y :info)
-                (eq y :all)))
-    (:result (or (eq y :info)
+  (b* ((x (evmac-input-print-fix x))
+       (y (evmac-input-print-fix y)))
+    (case x
+      ((nil) (or (eq y :error)
+                 (eq y :result)
+                 (eq y :info)
                  (eq y :all)))
-    (:info (eq y :all))
-    (:all nil)))
+      (:error (or (eq y :result)
+                  (eq y :info)
+                  (eq y :all)))
+      (:result (or (eq y :info)
+                   (eq y :all)))
+      (:info (eq y :all))
+      (:all nil)))
+
+  ///
+
+  (defthm evmac-input-print-<-of-evmac-input-print-fix-1
+    (equal (evmac-input-print-< (evmac-input-print-fix x) y)
+           (evmac-input-print-< x y)))
+
+  (defthm evmac-input-print-<-of-evmac-input-print-fix-2
+    (equal (evmac-input-print-< x (evmac-input-print-fix y))
+           (evmac-input-print-< x y))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -112,7 +124,18 @@
   :returns (yes/no booleanp)
   :short "Less-than-or-equal-to ordering on print levels."
   (or (evmac-input-print-< x y)
-      (equal x y)))
+      (equal (evmac-input-print-fix x)
+             (evmac-input-print-fix y)))
+
+  ///
+
+  (defthm evmac-input-print-<=-of-evmac-input-print-fix-1
+    (equal (evmac-input-print-<= (evmac-input-print-fix x) y)
+           (evmac-input-print-<= x y)))
+
+  (defthm evmac-input-print-<=-of-evmac-input-print-fix-2
+    (equal (evmac-input-print-<= x (evmac-input-print-fix y))
+           (evmac-input-print-<= x y))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -120,7 +143,17 @@
   :parents (evmac-input-print-p)
   :returns (yes/no booleanp)
   :short "Greater-than ordering on print levels."
-  (evmac-input-print-< y x))
+  (evmac-input-print-< y x)
+
+  ///
+
+  (defthm evmac-input-print->-of-evmac-input-print-fix-1
+    (equal (evmac-input-print-> (evmac-input-print-fix x) y)
+           (evmac-input-print-> x y)))
+
+  (defthm evmac-input-print->-of-evmac-input-print-fix-2
+    (equal (evmac-input-print-> x (evmac-input-print-fix y))
+           (evmac-input-print-> x y))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -128,4 +161,14 @@
   :parents (evmac-input-print-p)
   :returns (yes/no booleanp)
   :short "Greater-than-or-equal-to ordering on print levels."
-  (evmac-input-print-<= y x))
+  (evmac-input-print-<= y x)
+
+  ///
+
+  (defthm evmac-input-print->=-of-evmac-input-print-fix-1
+    (equal (evmac-input-print->= (evmac-input-print-fix x) y)
+           (evmac-input-print->= x y)))
+
+  (defthm evmac-input-print->=-of-evmac-input-print-fix-2
+    (equal (evmac-input-print->= x (evmac-input-print-fix y))
+           (evmac-input-print->= x y))))

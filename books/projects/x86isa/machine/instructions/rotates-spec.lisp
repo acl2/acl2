@@ -283,10 +283,9 @@ the most-significant bit of the result.</p>"
 
              (case src
                (0
-                ;; No flags, except OF, affected. OF is undefined.
-                (b* ((undefined-flags (the (unsigned-byte 32)
-                                        (!rflagsBits->of 1 0))))
-                  (mv input-rflags undefined-flags)))
+                ;; No flags are affected when the masked count is 0
+                ;; (per Intel SDM, RCL/RCR/ROL/ROR "Flags Affected").
+                (mv input-rflags 0))
                (1
                 ;; CF and OF are the only affected flags.
                 (b* ((cf
@@ -661,12 +660,9 @@ the result.</p>"
 
              (case src
                (0
-                ;; No flags, except OF, affected.
-                (b* ((undefined-flags (the (unsigned-byte 32)
-                                        (!rflagsBits->of 1 0))))
-
-                  (mv input-rflags undefined-flags)))
-
+                ;; No flags are affected when the masked count is 0
+                ;; (per Intel SDM, RCL/RCR/ROL/ROR "Flags Affected").
+                (mv input-rflags 0))
                (1
                 ;; CF and OF are the only affected flags.
                 (b* ((cf

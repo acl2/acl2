@@ -51,7 +51,9 @@
                     (cat "A list of @(see? " (xdoc::full-escape-symbol x.elt-type)
                          ") objects.")))
        (long    (or (getarg :long nil kwd-alist)
-                    (cat "<p>This is an ordinary @(see fty::deflist).</p>"))))
+                    (cat "<p>This is an ordinary @(see fty::deflist), containing @(see? "
+			 (xdoc::full-escape-symbol x.elt-type)
+			 ") elements.</p>"))))
     (mv `((defxdoc ,x.name
             :parents ,parents
             :short ,short
@@ -73,7 +75,7 @@
        (short   (or (getarg :short nil kwd-alist)
                     (cat "An alist mapping " key-link " to " val-link ".")))
        (long    (or (getarg :long nil kwd-alist)
-                    (cat "<p>This is an ordinary @(see fty::defalist).</p>"))))
+                    (cat "<p>This is an ordinary @(see fty::defalist), mapping " key-link " to " val-link ".</p>"))))
     (mv `((defxdoc ,x.name
             :parents ,parents
             :short ,short
@@ -598,7 +600,52 @@ binder.</p>")
                     (cat "A set of @(see? " (xdoc::full-escape-symbol x.elt-type)
                          ") objects.")))
        (long    (or (getarg :long nil kwd-alist)
-                    (cat "<p>This is an ordinary @(see fty::defset).</p>"))))
+                    (cat "<p>This is an ordinary @(see fty::defset), containing @(see? "
+			 (xdoc::full-escape-symbol x.elt-type)
+			 ") elements.</p>"))))
+    (mv `((defxdoc ,x.name
+            :parents ,parents
+            :short ,short
+            :long ,long
+            :no-override t))
+        state)))
+
+(defun flextreeset->defxdoc (x parents kwd-alist state)
+  ;; Returns (mv events state)
+  (declare (ignorable state))
+  (b* (((flextreeset x) x)
+       (parents (getarg :parents parents kwd-alist))
+       (short   (or (getarg :short nil kwd-alist)
+                    (cat "A @(see acl2::treeset) of @(see? "
+                         (xdoc::full-escape-symbol x.elt-type)
+                         ") objects.")))
+       (long    (or (getarg :long nil kwd-alist)
+                    (cat "<p>This is an ordinary @(see fty::deftreeset), containing @(see? "
+                         (xdoc::full-escape-symbol x.elt-type)
+                         ") elements.</p>"))))
+    (mv `((defxdoc ,x.name
+            :parents ,parents
+            :short ,short
+            :long ,long
+            :no-override t))
+        state)))
+
+(defun flextreemap->defxdoc (x parents kwd-alist state)
+  ;; Returns (mv events state)
+  (declare (ignorable state))
+  (b* (((flextreemap x) x)
+       (parents (getarg :parents parents kwd-alist))
+       (key-link (if x.key-type
+                     (cat "@(see? " (xdoc::full-escape-symbol x.key-type) ")")
+                   "anything"))
+       (val-link (if x.val-type
+                     (cat "@(see? " (xdoc::full-escape-symbol x.val-type) ")")
+                   "anything"))
+       (short   (or (getarg :short nil kwd-alist)
+                    (cat "A @(see treemap::treemap) mapping " key-link " to " val-link ".")))
+       (long    (or (getarg :long nil kwd-alist)
+                    (cat "<p>This is an ordinary @(see fty::deftreemap), mapping " key-link " to "
+                         val-link ".</p>"))))
     (mv `((defxdoc ,x.name
             :parents ,parents
             :short ,short
@@ -620,7 +667,8 @@ binder.</p>")
        (short   (or (getarg :short nil kwd-alist)
                     (cat "An omap mapping " key-link " to " val-link ".")))
        (long    (or (getarg :long nil kwd-alist)
-                    (cat "<p>This is an ordinary @(see fty::defomap).</p>"))))
+                    (cat "<p>This is an ordinary @(see fty::defomap), mapping " key-link " to "
+			 val-link ".</p>"))))
     (mv `((defxdoc ,x.name
             :parents ,parents
             :short ,short

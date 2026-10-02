@@ -1,7 +1,7 @@
 ; More rules about floor
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -97,8 +97,7 @@
                 (< 0 j))
            (equal (< (mod i j) 1)
                   (equal (mod i j) 0)))
-  :hints (("Goal" :in-theory (disable)
-           :cases ((equal (MOD I J) 0)))))
+  :hints (("Goal" :cases ((equal (MOD I J) 0)))))
 
 ;move
 (defthm floor-of-divide-hack
@@ -130,7 +129,7 @@
 ;for stuff like this (where we can prove it for a constant but not in general), try to figure out which literals are needed by analyzing what happens with the constant.  here, it's all 3 of the big ones
 
 (local
- (defthmd helper-lemmm
+ (defthmd helper-lemma
    (IMPLIES (AND (POSP N)
                  (POSP J)
                  (NOT (EQUAL (+ (FLOOR N J)
@@ -265,13 +264,11 @@
     :hints (("Goal" :in-theory (disable  /r-when-abs-numerator=1
                                          x*y>1-positive
                                          integerp-of-*-of-/-when-<-and-negative
-                                         x*y>1-positive
                                          ;; for speed:
                                          distributivity
                                          <=-of-*-and-*-same-linear
                                          ;commutativity-2-of-*
-                                         )))
-    ))
+                                         )))))
 
 (encapsulate ()
 ; (local (include-book "ihs/ihs-lemmas" :dir :system)) ;todo
@@ -289,7 +286,7 @@
                         (<= (* k j) (mod n (* m j)))
                         (< (mod n (* m j)) (* j (+ 1 k))))))
    :otf-flg t
-   :hints (("Goal" :use (:instance helper-lemmm (m m ;17
+   :hints (("Goal" :use (:instance helper-lemma (m m ;17
                                                    ))
             :in-theory (e/d (mod
                              natp)
@@ -341,7 +338,7 @@
 ;;  (implies (posp n)
 ;;           (equal (equal (mod (floor n 4) 16) 0)  ;;says that n mod 64 is in [0,3]??
 ;;                  (< (mod n 64) 4)))
-;;  :hints (("Goal" :in-theory (e/d (mod)(MOD-=-0 MOD-RECOLLAPSE-LEMMA MOD-RECOLLAPSE-LEMMA2
+;;  :hints (("Goal" :in-theory (e/d (mod) (MOD-=-0 MOD-RECOLLAPSE-LEMMA MOD-RECOLLAPSE-LEMMA2
 ;;                                                 FLOOR-=-X/Y
 ;;                                                 FLOOR-WHEN-DIVISIBLE)))))
 
@@ -451,13 +448,13 @@
 
 ;yuck?
 (defthm floor-must-be-1
-  (implies (and (< x (* 2 N))
-                (<= N x)
+  (implies (and (< x (* 2 n))
+                (<= n x)
                 (rationalp x)
-                (rationalp N))
+                (rationalp n))
            (equal (floor x n)
                   1))
-  :hints (("Goal" :use (:instance FLOOR-UNIQUE (i x) (j n) (n 1)))))
+  :hints (("Goal" :use (:instance floor-unique (i x) (j n) (n 1)))))
 
 (defthm mod-of-floor-is-0-when-multiple
   (implies (and (equal (mod n (* i j)) 0)

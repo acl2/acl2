@@ -25,7 +25,8 @@
 (define list-equal
   ((x true-listp)
    (y true-listp))
-  (declare (xargs :split-types t)
+  (declare (xargs :split-types t
+                  :type-prescription :none)
            (type list x y))
   :returns (yes/no booleanp :rule-classes (:rewrite :type-prescription))
   (mbe :logic (list-equiv x y)
@@ -39,8 +40,6 @@
                                            list-equal))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t list-equal)))
 
 (defequiv list-equiv
   :package :equiv)

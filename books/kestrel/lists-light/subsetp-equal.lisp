@@ -368,6 +368,28 @@
            (member-equal x lst))
   :hints (("Goal" :in-theory (enable subsetp-equal member-equal))))
 
+;; The refuting orientations of the two rules just above.  Those rewrite a
+;; MEMBER-EQUAL call to T; these rewrite one to NIL, which the proving
+;; versions cannot do, so both directions are worth having.  BIG is a free
+;; variable in each, and which ordering can bind it depends on which fact is
+;; present in the context -- hence both orderings, as above.  Disabled, since
+;; free-variable rules are expensive as blanket rewrites.
+
+(defthmd not-member-equal-when-subsetp-equal-1
+  (implies (and (subsetp-equal small big) ;big is a free var
+                (not (member-equal a big)))
+           (not (member-equal a small)))
+  :rule-classes ((:rewrite :match-free :all))
+  :hints (("Goal" :induct (len small)
+           :in-theory (enable subsetp-equal))))
+
+(defthmd not-member-equal-when-subsetp-equal-2
+  (implies (and (not (member-equal a big)) ;big is a free var
+                (subsetp-equal small big))
+           (not (member-equal a small)))
+  :rule-classes ((:rewrite :match-free :all))
+  :hints (("Goal" :in-theory (enable not-member-equal-when-subsetp-equal-1))))
+
 ;; If there are at least two As in Y, then removing A from Y makes no
 ;; difference.  Otherwise, A must not be in X.
 (defthm subsetp-equal-of-remove1-equal

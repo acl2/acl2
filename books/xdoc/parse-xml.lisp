@@ -489,7 +489,7 @@
     ("forall" "\\forall" 8704)
     ("exist"  "\\exist" 8707)
     ("empty"  "\\empty" 8709)
-    ("isin"   "\\isin" 8712)
+    ("isin"   "\\in" 8712)
     ("notin"  "\\notin" 8713)
     ("prod"   "\\prod" 8719)
     ("sum"    "\\sum" 8721)

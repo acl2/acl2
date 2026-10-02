@@ -25,7 +25,8 @@
 (local
  (defthmd assoc-equal-when-not-symbolp-and-open-channels-p
    (implies (and (not (symbolp channel))
-                 (open-channels-p channels))
+                 (bind-to-bool output-p)
+                 (open-channels-p channels output-p))
             (equal (assoc-equal channel channels)
                    nil))
    :hints (("Goal" :in-theory (enable open-channels-p ordered-symbol-alistp)))))
@@ -100,4 +101,9 @@
   (implies (consp (cddr (assoc-equal channel (open-input-channels state))))
            (< (len (cddr (assoc-equal channel (open-input-channels (mv-nth 2 (read-object channel state))))))
               (len (cddr (assoc-equal channel (open-input-channels state))))))
+  :hints (("Goal" :in-theory (enable read-object))))
+
+(defthm w-of-mv-nth-2-of-read-object
+  (equal (w (mv-nth 2 (read-object channel state)))
+         (w state))
   :hints (("Goal" :in-theory (enable read-object))))

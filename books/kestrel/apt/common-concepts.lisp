@@ -130,7 +130,7 @@
      "If @(':wrapper-name') is @(':auto') but @(':new-name') is not,
       the rules are the same as the previous case,
       but with the roles of the new and wrapper function names swapped.
-      That is, the wrapper function name is a numberd name
+      That is, the wrapper function name is a numbered name
       whose base is the same as the target function,
       and whose index is the smallest one that is
       greater than the index of the target function

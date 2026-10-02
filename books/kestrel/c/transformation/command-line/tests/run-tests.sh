@@ -7,6 +7,8 @@ echo "OS is $OS."
 
 # Note that the first test takes longer because we have to save an image
 
+rm -f do-nothing.output/*.*
+../transform-c.sh do-nothing.json
 rm -f split-gso.output/*.*
 ../transform-c.sh split-gso.json
 rm -f split-gso-no-extensions.output/*.*
@@ -32,6 +34,13 @@ fi
 # gcc -O0 -c *.c
 # ls *.o
 # cd ..
+
+cd do-nothing.output
+gcc -O0 -c *.c
+echo "Results in do-nothing.output:"
+ls -l *.c
+ls -l *.o
+cd ..
 
 cd split-gso.output
 gcc -O0 -c *.c

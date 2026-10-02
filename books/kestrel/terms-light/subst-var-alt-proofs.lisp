@@ -1,6 +1,6 @@
 ; Proofs about subst-var-alt
 ;
-; Copyright (C) 2023-2025 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -31,7 +31,7 @@
 (local (include-book "empty-eval-helpers"))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
-(local (include-book "make-lambda-application-simple-proof"))
+(local (include-book "make-lambda-application-simple-proofs"))
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -49,6 +49,8 @@
 ;; TODO: Clean up the proofs in this file, and separate them out.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local (make-flag subst-var-alt))
 
 ;; subst-var-alt preserves closedness of lambdas.
 (defthm-flag-subst-var-alt

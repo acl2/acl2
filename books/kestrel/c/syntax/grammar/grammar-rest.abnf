@@ -1,0 +1,557 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains the rest of the grammar rules
+; that are not in the other *.abnf files in this directory.
+; We are in the process of dividing this file into other files,
+; to obtain a modular definition of our grammar;
+; eventually this file will disappear.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Declarations [C17:A.2.2]
+
+; As a temporary C23 extension, we include 'bool' as a synonym of '_Bool'.
+; We plan to modularize this grammar according to C versions.
+
+; As a GCC extension, we allow the GCC keyword '__extension__'
+; to occur at the start of a (member) structure declaration
+; and at the start of a (non-static-assertion) declaration.
+
+; As a GCC extension,
+; we allow declaration specifiers, as well as specifier and qualifier lists,
+; to include attribute specifiers;
+; these can be easily distinguished from other declaration specifiers
+; by the starting '__attribute__' or '__attribute' GCC keyword.
+
+; As a GCC extension,
+; we allow the '__stdcall' keyword as a declaration specifier.
+; The latter is documented as an attribute 'stdcall' in the GCC manual,
+; which should therefore have the syntax '__attribute__((stdcall))',
+; but apparently it is also accepted by itself, with two underscores in front,
+; but only in certain places (not everywhere normal attributes are allowed).
+; This seems to be a MSVC (Microsoft Visual C++) extension
+; (https://learn.microsoft.com/en-us/cpp/cpp/stdcall),
+; apparently adopted by GCC.
+
+; As a GCC extension,
+; we allow the '__declspec' attribute syntax as a declaration specifier.
+; This seems to be a MSVC (Microsoft Visual C++) extension
+; (https://learn.microsoft.com/en-us/cpp/cpp/declspec),
+; apparently adopted by GCC.
+
+; As a GCC extension,
+; we include type qualifiers for x86 named address spaces
+; (see https://gcc.gnu.org/onlinedocs/gcc/Named-Address-Spaces.html,
+; which says that they are used like type qualifiers).
+
+; As a Clang extension,
+; we include the nullability type qualifiers described in
+; the 'Nullability Attributess' section of [CLA]
+; https://clang.llvm.org/docs/AttributeReference.html#nullability-attributes
+; (which, despite the name, also describes type qualifiers).
+; The nullability type qualifiers can only appear in
+; the type-qualifier-and-attribute-specifier-list in a pointer after the '*',
+; but we enforce this outside the grammar.
+
+; As a GCC extension, we allow a list of type qualifiers
+; to also contains attribute specifiers.
+; Thus we use type-qualifier-and-attribute-specifier-list
+; instead of just type-qualifier-list.
+; As noted above, with Clang extensions,
+; nullability type qualifiers may appear after the '*' in a pointer.
+
+; As a GCC extension, we allow attribute specifiers
+; at the end of a parameter declaration,
+; just after the non-abstract or abstract declarator.
+
+; As a GCC extension, we allow attribute specifiers
+; at the end of a top-level declarator in an initialization declarator,
+; just after the assembler name specifier if any.
+; This extension,
+; including the fact that it follows the assembler name specifier if any,
+; is documented in https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html,
+; under 'All other attributes', 5th paragraph
+; (this reference might change as the GCC manual gets updated).
+
+; The above may not the only places where attribute specifiers may occur,
+; in the full GCC extensions, but they are places that have been observed.
+; Our purpose in supporting the GCC extensions, for now,
+; is not to be exhaustive,
+; but rather to be able to handle practical C code that
+; does not quite comply with the standard due to the presence of GCC extensions.
+
+; As a GCC extension, we allow an optional assembler name specifier
+; just after top-level declarators in initializer declarators,
+; and before the attributes (see below).
+
+; As GCC extensions, we include
+; the '__signed' and '__signed__' variants of 'signed' as type specifiers.
+
+; As GCC extensions, we include the type specifiers
+; '__int128',
+; '__float80',
+; '__float128',
+; '_Float16',
+; '_Float16x',
+; '_Float32',
+; '_Float32x',
+; '_Float64',
+; '_Float64x',
+; '_Float128',
+; '_Float128x',
+; and '__builtin_va_list'.
+; See https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html
+; for the '__float...' and '_Float...' types.
+
+; We include the GCC extension for the 'typeof' operator,
+; along with its '__typeof' and '__typeof__' variants.
+; This is documented at https://gcc.gnu.org/onlinedocs/gcc/Typeof.html.
+; This must fit into the grammar as a type specifier.
+
+; As a GCC extension, we include the '__auto_type' abbreviation
+; (see the end of https://gcc.gnu.org/onlinedocs/gcc/Typeof.html),
+; which is a type specifier.
+
+; As a GCC extension, we allow structures with no members:
+; see https://gcc.gnu.org/onlinedocs/gcc/Empty-Structures.html.
+
+; As a GCC extension, we allow attributes just after 'struct' or 'union'
+; in a structure or union specifier.
+
+; We also allow a lone semicolon as a structure declaration.
+; This is definitely not grammatical according to [C17],
+; and we did not find it anywhere in the GCC documentation;
+; nonetheless, we encountered it in practical code.
+; Presumably, it may make it easier to write certain macros.
+; Semantically, it amounts to nothing, i.e. it is ignored.
+
+; As a GCC extension, we allow range designators
+; (see https://gcc.gnu.org/onlinedocs/gcc/Designated-Inits.html).
+; Since they extend standard single-element designators,
+; which are constant expressions,
+; it seems reasonable that the two expressions of the range are also constant,
+; although the GCC documentation is not explicit about this.
+
+; As a GCC extension, we allow initializers consisting of
+; just an open and closing brace, without nothing in between.
+
+declaration = [ %s"__extension__" ] ; GCC extension
+              declaration-specifiers
+              [ init-declarator-list ]
+              ";"
+            / static-assert-declaration
+
+declaration-specifiers =
+      storage-class-specifier [ declaration-specifiers ]
+    / type-specifier [ declaration-specifiers ]
+    / type-qualifier [ declaration-specifiers ]
+    / function-specifier [ declaration-specifiers ]
+    / alignment-specifier [ declaration-specifiers ]
+    ; GCC extensions:
+    / attribute-specifier [ declaration-specifiers ]
+    / %s"__stdcall" [ declaration-specifiers ]
+    / %s"__declspec" "(" identifier ")" [ declaration-specifiers ]
+
+init-declarator-list = init-declarator
+                     / init-declarator-list "," init-declarator
+
+init-declarator =
+      declarator [ asm-name-specifier ] *attribute-specifier
+    / declarator [ asm-name-specifier ] *attribute-specifier "=" initializer
+
+storage-class-specifier = %s"typedef"
+                        / %s"extern"
+                        / %s"static"
+                        / %s"_Thread_local"
+                        / %s"auto"
+                        / %s"register"
+
+type-specifier = %s"void"
+               / %s"char"
+               / %s"short"
+               / %s"int"
+               / %s"long"
+               / %s"float"
+               / %s"double"
+               / signed-keyword
+               / %s"unsigned"
+               / %s"bool" ; C23
+               / %s"_Bool"
+               / %s"_Complex"
+               / atomic-type-specifier
+               / struct-or-union-specifier
+               / enum-specifier
+               / typedef-name
+               ; GCC extensions:
+               / %s"__int128"
+               / %s"__float80"
+               / %s"__float128"
+               / %s"_Float16"
+               / %s"_Float16x"
+               / %s"_Float32"
+               / %s"_Float32x"
+               / %s"_Float64"
+               / %s"_Float64x"
+               / %s"_Float128"
+               / %s"_Float128x"
+               / %s"__builtin_va_list"
+               / typeof-keyword "(" expression ")"
+               / typeof-keyword "(" type-name ")"
+               / %s"__auto_type"
+
+struct-or-union-specifier = struct-or-union
+                            *attribute-specifier ; GCC extension
+                            [ identifier ]
+                            "{" struct-declaration-list "}"
+                          / struct-or-union
+                            *attribute-specifier ; GCC extension
+                            identifier
+                          ; GCC extension:
+                          / %s"struct" *attribute-specifier
+                            [ identifier ] "{" "}"
+
+struct-or-union = %s"struct"
+                / %s"union"
+
+struct-declaration-list = struct-declaration
+                        / struct-declaration-list struct-declaration
+
+struct-declaration = [ %s"__extension__" ] ; GCC extension
+                     specifier-qualifier-list
+                     [ struct-declarator-list ]
+                     *attribute-specifier ; GCC extension
+                     ";"
+                   / static-assert-declaration
+                   / ";"
+
+specifier-qualifier-list = type-specifier [ specifier-qualifier-list ]
+                         / type-qualifier [ specifier-qualifier-list ]
+                         / alignment-specifier [ specifier-qualifier-list ]
+                         ; GCC extension:
+                         / attribute-specifier [ specifier-qualifier-list ]
+
+struct-declarator-list = struct-declarator
+                       / struct-declarator-list "," struct-declarator
+
+struct-declarator = declarator
+                  / [ declarator ] ":" constant-expression
+
+enum-specifier = %s"enum" [ identifier ] "{" enumerator-list "}"
+               / %s"enum" [ identifier ] "{" enumerator-list "," "}"
+               / %s"enum" identifier
+
+enumerator-list = enumerator
+                / enumerator-list "," enumerator
+
+enumerator = enumeration-constant
+           / enumeration-constant "=" constant-expression
+
+atomic-type-specifier = %s"_Atomic" "(" type-name ")"
+
+type-qualifier = %s"const"
+               / restrict-keyword
+               / volatile-keyword
+               / %s"_Atomic"
+               / %s"__seg_fs" ; GCC extension
+               / %s"__seg_gs" ; GCC extension
+               / nullability-qualifier ; Clang extension
+
+nullability-qualifier = %s"_Nonnull"
+                      / %s"_Null_unspecified"
+                      / %s"_Nullable"
+                      / %s"_Nullable_result"
+
+function-specifier = inline-keyword
+                   / %s"_Noreturn"
+
+alignment-specifier = %s"_Alignas" "(" type-name ")"
+                    / %s"_Alignas" "(" constant-expression ")"
+
+declarator = [ pointer ] direct-declarator
+
+direct-declarator =
+      identifier
+    / "(" declarator ")"
+    / direct-declarator
+      "[" [ type-qualifier-and-attribute-specifier-list ]
+          [ assignment-expression ] "]"
+    / direct-declarator
+      "[" %s"static" [ type-qualifier-and-attribute-specifier-list ]
+          assignment-expression "]"
+    / direct-declarator
+      "[" type-qualifier-and-attribute-specifier-list %s"static"
+          assignment-expression "]"
+    / direct-declarator
+      "[" [ type-qualifier-and-attribute-specifier-list ] "*" "]"
+    / direct-declarator "(" parameter-type-list ")"
+    / direct-declarator "(" [ identifier-list ] ")"
+
+pointer = "*" [ type-qualifier-and-attribute-specifier-list ]
+        / "*" [ type-qualifier-and-attribute-specifier-list ] pointer
+
+type-qualifier-or-attribute-specifier = type-qualifier / attribute-specifier
+
+type-qualifier-and-attribute-specifier-list =
+      type-qualifier-or-attribute-specifier
+    / type-qualifier-and-attribute-specifier-list
+      type-qualifier-or-attribute-specifier
+
+parameter-type-list = parameter-list
+                    / parameter-list "," "..."
+
+parameter-list = parameter-declaration
+               / parameter-list "," parameter-declaration
+
+parameter-declaration = declaration-specifiers
+                        declarator
+                        *attribute-specifier ; GCC extension
+                      / declaration-specifiers
+                        [ abstract-declarator ]
+                        *attribute-specifier ; GCC extension
+
+type-name = specifier-qualifier-list [ abstract-declarator ]
+
+abstract-declarator = pointer
+                    / [ pointer ] direct-abstract-declarator
+
+direct-abstract-declarator =
+      "(" abstract-declarator ")"
+    / [ direct-abstract-declarator ]
+      "[" [ type-qualifier-and-attribute-specifier-list ]
+          [ assignment-expression ] "]"
+    / [ direct-abstract-declarator ]
+      "[" %s"static" [ type-qualifier-and-attribute-specifier-list ]
+          assignment-expression "]"
+    / [ direct-abstract-declarator ]
+      "[" type-qualifier-and-attribute-specifier-list %s"static"
+          assignment-expression "]"
+    / [ direct-abstract-declarator ] "[" "*" "]"
+    / [ direct-abstract-declarator ] "(" [ parameter-type-list ] ")"
+
+typedef-name = identifier
+
+initializer = assignment-expression
+            / "{" initializer-list "}"
+            / "{" initializer-list "," "}"
+            / "{" "}" ; GCC extension
+
+initializer-list = [ designation ] initializer
+                 / initializer-list "," [ designation ] initializer
+
+designation = designator-list "="
+
+designator-list = designator
+                / designator-list designator
+
+designator = "[" constant-expression
+                 [ "..." constant-expression ] ; GCC extension
+             "]"
+           / "." identifier
+
+static-assert-declaration =
+    %s"_Static_assert" "(" constant-expression "," 1*string-literal ")" ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Statements [C17:A.2.3]
+
+; As a GCC extension, we allow label attributes
+; (https://gcc.gnu.org/onlinedocs/gcc/Label-Attributes.html).
+
+; As a GCC extension, we allow case ranges
+; (https://gcc.gnu.org/onlinedocs/gcc/Case-Ranges.html).
+; That is, instead of a single constant expression just after 'case',
+; we allow two, separated by the three-dot punctuator
+; (this punctuator also exists in standard C, for a different purpose).
+
+; As a GCC extension, we allow locally declared labels,
+; which may only occur at the beginning of blocks.
+
+; As a GCC extension, we allow 'goto' to be followed by an expression.
+; This causes a syntactic ambiguity between the case of a label
+; and the case of an identifier expression
+; (e.g. a variable that has been assigned '&&lab' for some label 'lab');
+; the disambiguator disambiguated the two situations.
+
+; As a GCC extension, we include statement attributes
+; (https://gcc.gnu.org/onlinedocs/gcc/Statement-Attributes.html).
+; According to that page of the GCC manual,
+; these are single attribute specifiers
+; that precede a null statement,
+; or a return statement with an expression
+; Since the grammar in [C17], which we follow as much as possible,
+; covers null statements as a special case of expression statements
+; (namely, the special case with no expression),
+; we add a new alternative to the grammar rule for statements,
+; for null statements with an attribute specifier.
+; Similarly, since the grammar in [C17] defines return statements
+; as having an optional expression,
+; we add a new alternative to the rule for statements.
+
+; As a GCC extension, we allow assembler statements.
+
+statement = labeled-statement
+          / compound-statement
+          / expression-statement
+          / selection-statement
+          / iteration-statement
+          / jump-statement
+          / attributed-null-statement ; GCC extension
+          / attributed-return-statement ; GCC extension
+          / asm-statement ; GCC extension
+
+labeled-statement = identifier ":"
+                    *attribute-specifier ; GCC extension
+                    statement
+                  / %s"case" constant-expression
+                    [ "..." constant-expression ] ; GCC extension
+                    ":" statement
+                  / %s"default" ":" statement
+
+; GCC extension:
+label-declaration = %s"__label__" identifier *( "," identifier ) ";"
+
+compound-statement = "{"
+                     *label-declaration ; GCC extension
+                     [ block-item-list ]
+                     "}"
+
+block-item-list = block-item
+                / block-item-list block-item
+
+block-item = declaration
+           / statement
+
+expression-statement = [ expression ] ";"
+
+selection-statement = %s"if" "(" expression ")" statement
+                    / %s"if" "(" expression ")" statement %s"else" statement
+                    / %s"switch" "(" expression ")" statement
+
+iteration-statement =
+      %s"while" "(" expression ")" statement
+    / %s"do" statement %s"while" "(" expression ")" ";"
+    / %s"for" "(" [ expression ] ";" [ expression ] ";" [ expression ] ")"
+      statement
+    / %s"for" "(" declaration [ expression ] ";" [ expression ] ")"
+      statement
+
+jump-statement = %s"goto" identifier ";"
+               / %s"goto" expression ";" ; GCC extension
+               / %s"continue" ";"
+               / %s"break" ";"
+               / %s"return" [ expression ] ";"
+
+attributed-null-statement = attribute-specifier ";"
+
+attributed-return-statement = attribute-specifier %s"return" expression ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; External Definitions [C17:A.2.4]
+
+; As a GCC extension, we allow the GCC keyword '__extension__'
+; to occur at the start of a function definition.
+; We also allow an assembler name specifier
+; just after the declarator of a function definition,
+; possibly followed by zero or more attribute specifiers;
+; this is similar to initializer declarators.
+
+; We also allow a lone semicolon as an external declaration.
+; This is definitely not grammatical according to [C17] or [C23],
+; and we did not find it anywhere in the GCC documentation;
+; nonetheless, we encountered it in practical code.
+; Presumably, it may make it easier to write certain macros.
+; Semantically, it amounts to nothing, i.e. it is ignored.
+; Note that this is not a null statement,
+; because we are the top level.
+
+; As a GCC extension, we allow assembler statements at the top level,
+; i.e. as external declarations.
+; We could not find a place in the GCC documentation saying that
+; assembler statements can occur at the top level,
+; but we encountered that in practical code.
+
+external-declaration = function-definition
+                     / declaration
+                     / ";" ; GCC extension
+                     / asm-statement ; GCC extension
+
+function-definition = [ %s"__extension__" ] ; GCC extension
+                      declaration-specifiers
+                      declarator
+                      [asm-name-specifier] ; GCC extension
+                      *attribute-specifier ; GCC extension
+                      [ declaration-list ]
+                      compound-statement
+
+declaration-list = declaration
+                 / declaration-list declaration
+
+; Although [C17:6.9] and [C23:6.9] present the rule for translation units
+; together with the ones above, we present it below,
+; because it is more elaborate for us.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Translation Units
+
+; Since our preprocessor preserves certain preprocessing constructs,
+; our grammar rule for translation units
+; is more complicated than [C17] and [C23].
+; In particular, we introduce a notion of translation item,
+; absent from [C17] and [C23],
+; as the entity whose sequences form translation units.
+
+; Although [C17] and [C23] forbid empty translation units,
+; we have found that GCC and Clang allow them.
+; So here we allow empty ones as well.
+
+translation-unit = *translation-item
+
+; A translation item is an external declaration,
+; or a directive picked from a subset of all directives,
+; or a conditional construct that may recursively contain translation items.
+; The allowed directives are #include's with explicit header names
+; (the preprocessor has already expanded indirect #include's),
+; identity #define's for object-like macros
+; (see :doc preservable-inclusions for motivation for this form),
+; and #undef's.
+; The conditional constructs start with any of #if, #ifdef, and #ifndef,
+; may contain any number of #elif's, an optional #else, and a mandatory #endif.
+; We also allow line comments as translation items;
+; this only concerns like comments that appear at the top level,
+; while others are discarded along with white space.
+
+translation-item = external-declaration
+                 / "#" %s"include" header-name
+                 / "#" %s"define" identifier identifier
+                 / "#" %s"undef" identifier
+                 / conditional-item
+                 / line-comment
+
+conditional-item = hash-if-or-ifdef-or-ifndef
+                   *translation-item
+                   *hash-elif
+                   [ hash-else ]
+                   "#" %s"endif"
+
+hash-if-or-ifdef-or-ifndef = "#" %s"if" constant-expression
+                           / "#" %s"ifdef" identifier
+                           / "#" %s"ifndef" identifier
+
+hash-elif = "#" %s"elif" constant-expression
+            *translation-item
+
+hash-else = "#" %s"else"
+            *translation-item

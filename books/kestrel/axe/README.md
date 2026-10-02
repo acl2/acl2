@@ -30,7 +30,7 @@ See also the examples in:
 [risc-v/examples/](risc-v/examples)
 
 For more information, see the [Axe Webpage][Axe] and the [Axe
-Documentation][Axe-doc].  Much more documenation is available as
+Documentation][Axe-doc].  Much more documentation is available as
 comments in the source files themselves.
 
 [Axe]: https://kestrel.edu/research/axe/

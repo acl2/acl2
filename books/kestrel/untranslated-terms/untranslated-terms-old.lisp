@@ -1190,7 +1190,7 @@
   :hints (("Goal" :in-theory (enable rename-fns-in-untranslated-term-list (:i len)))))
 
 (verify-guards clean-up-0ary-lambdas-in-untranslated-term-list
-  :hints (("Goal" :in-theory (enable untranslated-termp untranslated-termp)
+  :hints (("Goal" :in-theory (enable untranslated-termp)
            :expand ((untranslated-termp term)
                     (untranslated-lambda-exprp (car term))))))
 
@@ -1292,7 +1292,7 @@
   :hints (("Goal" :in-theory (enable rename-fns-in-untranslated-term-list (:i len)))))
 
 (verify-guards clean-up-implies-of-t-in-untranslated-term-list
-  :hints (("Goal" :in-theory (enable untranslated-termp untranslated-termp)
+  :hints (("Goal" :in-theory (enable untranslated-termp)
            :expand ((untranslated-termp term)
                     (untranslated-lambda-exprp (car term))))))
 
@@ -2689,8 +2689,7 @@
     :flag sublis-var-untranslated-term-list)
   :hints (("goal" :in-theory (enable untranslated-lambda-exprp
                                      legal-case-match-casesp)
-           :expand ((sublis-var-untranslated-term term alist)
-                    (SUBLIS-VAR-CASE-MATCH-CASES ALIST CASES)))))
+           :expand ((sublis-var-case-match-cases alist cases)))))
 
 (local
  (defthm last-when-equal-of-len

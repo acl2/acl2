@@ -1,7 +1,7 @@
 ; Basic Axe rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -181,13 +181,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The name is to avoid a conflict with a (probably unnecessary)
-;; :type-prescrpiption rule in centaur/fty/basetypes.lisp.
+;; :type-prescription rule in centaur/fty/basetypes.lisp.
 (defthmd booleanp-of-bool-fix-rewrite
   (booleanp (bool-fix x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Can help resolve whethere there is an error, when the error is a cons and nil means no error
+;; Can help resolve whether there is an error, when the error is a cons and nil means no error
 (defthmd not-of-cons
   (equal (not (cons x y))
          nil))

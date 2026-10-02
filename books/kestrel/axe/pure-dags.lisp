@@ -1,7 +1,7 @@
 ; Check whether a DAG has only supported expressions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -52,7 +52,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: consisder checking the size of the elements
+;; todo: consider checking the size of the elements
 (defund bv-array-arg-okp (len arg)
   (declare (xargs :guard (and (integerp len)
                               (<= 2 len) ; an array of length 1 would have no index bits

@@ -159,7 +159,7 @@
 ; This function returns a list of pairs (hyps . concl) such that the
 ; conjunction of all (implies (and . hyps) concl) is equivalent to
 ; term.  Hyps is a list of hypotheses, implicitly conjoined.  Concl
-; does not begin with an AND (of course, its a macro, but concl
+; does not begin with an AND (of course, it's a macro, but concl
 ; doesn't begin with an IF that represents an AND) or IMPLIES.
 ; In addition concl doesn't begin with an open lambda.
 
@@ -278,7 +278,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-acl2-number*
               :terms '((acl2-numberp x)))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (8) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -294,7 +294,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-intersection *ts-acl2-number* (ts-complement *ts-zero*))
               :terms '((acl2-numberp x) (not (equal x '0))))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (7) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -305,7 +305,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-intersection *ts-rational* (ts-complement *ts-zero*))
               :terms '((rationalp x) (not (equal x '0))))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (5) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -316,7 +316,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-union *ts-positive-rational* *ts-zero*)
               :terms '((rationalp x) (not (< x '0))))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (4) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -337,7 +337,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-intersection *ts-integer* (ts-complement *ts-zero*))
               :terms '((integerp x) (not (equal x '0))))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (4) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -348,7 +348,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-positive-rational*
               :terms'((rationalp x) (< '0 x)))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (3) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -369,7 +369,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts (ts-union *ts-negative-integer* *ts-zero*)
               :terms '((integerp x) (not (< '0 x))))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (2) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -380,7 +380,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-ratio*
               :terms'((rationalp x) (not (integerp x))))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (1) bit
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -396,7 +396,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-negative-integer*
               :terms'((integerp x) (< x '0)))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (1) bit
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -412,7 +412,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-positive-integer*
               :terms'((integerp x) (< '0 x)))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (2) bits
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -428,7 +428,7 @@
               :rune *fake-rune-for-anonymous-enabled-rule*
               :ts *ts-complex-rational*
               :terms'((complex-rationalp x)))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make type-set-inverter-rule                 ;;; _ (1) bit
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*
@@ -800,7 +800,7 @@
            ((splitter-if-intro
              splitter-case-split
              splitter-immed-forced)
-; Shape: rune (Note: objects are a subset 'lemmas objects.)
+; Shape: rune (Note: objects are a subset of 'lemmas objects.)
             ans)
            (elim-sequence
 ; Shape: ((rune rhs lhs alist restricted-vars var-to-runes-alist ttree) ...)
@@ -845,6 +845,12 @@
 ; ttree, the ttree from that bddnote is also added to the same given ttree.
 ; So, we don't really think of a bddnote as containing a "ttree" per se, but
 ; rather, a sort of data structure that is isomorphic to a ttree.
+
+            ans)
+           (induction-record
+
+; As with bddnote tags, the runes in an induction-record are recorded
+; elsewhere.
 
             ans)
            (case-limit
@@ -938,21 +944,21 @@
 ; We were tempted to call such a set a ``type'' of the term but felt that was
 ; inappropriate because the literature on types is so extensive and we have no
 ; interest in defending the proposition that our objects are ``types''.  We
-; really don't think of them as anything more than sets of recognizers known
-; known to be true.  We could not use the words ``sorts'' or ``kinds'' for
-; similar reasons.  So we temporarily adopted the name ``recognizer sets''
-; abbreviated ``rs.''  But this was an unfortunate acronym for two reasons:
-; typically pronounced ``are ess'' it was unclear whether to write ``given an
-; rs'' or ``given a rs'' since the former ``sounds right'' when ``rs'' is
-; pronounced ``are ess'' but wrong when ``rs'' is read ``recognizer set.''
-; Furthermore, is ``rs'' singular or plural?  Did we really want to write
-; ``Given a set of rses?''  Nevertheless, we got this idea working, in a
-; stand-alone way, under the name rs.  Only when it was integrated into ACL2
-; proper did adopt the name ``tau'' for these objects.  We chose ``tau''
-; because it had no fixed connotation in the literature, it is short, and it
-; started with a pronounced consonant.  We use ``tau'' as both a singular noun
-; and a plural one.  We might say ``t1 is a tau'' and we might say that the
-; ``tau of x and y are t1 and t2 respectively''.
+; really don't think of them as anything more than sets of recognizers known to
+; be true.  We could not use the words ``sorts'' or ``kinds'' for similar
+; reasons.  So we temporarily adopted the name ``recognizer sets'' abbreviated
+; ``rs.''  But this was an unfortunate acronym for two reasons: typically
+; pronounced ``are ess'' it was unclear whether to write ``given an rs'' or
+; ``given a rs'' since the former ``sounds right'' when ``rs'' is pronounced
+; ``are ess'' but wrong when ``rs'' is read ``recognizer set.''  Furthermore,
+; is ``rs'' singular or plural?  Did we really want to write ``Given a set of
+; rses?''  Nevertheless, we got this idea working, in a stand-alone way, under
+; the name rs.  Only when it was integrated into ACL2 proper did adopt the name
+; ``tau'' for these objects.  We chose ``tau'' because it had no fixed
+; connotation in the literature, it is short, and it started with a pronounced
+; consonant.  We use ``tau'' as both a singular noun and a plural one.  We
+; might say ``t1 is a tau'' and we might say that the ``tau of x and y are t1
+; and t2 respectively''.
 
 ; On Some Basic Ideas
 
@@ -1637,7 +1643,7 @@
     (and
      (or (null lo) ; represents negative infinity
          (<?-rational-v-number (access tau-interval interval :lo-rel) lo x))
-     (or (null hi) ; represents negative infinity
+     (or (null hi) ; represents positive infinity
          (<?-number-v-rational (access tau-interval interval :hi-rel) x hi)))))
 
 (defun eval-tau-interval (interval evg)
@@ -1657,7 +1663,7 @@
 
 (defun decode-tau-interval (interval e skip-domain-flg)
 ; This function actually returns a list of untranslated terms whose
-; conjunction is describes the interval.
+; conjunction describes the interval.
   (cond
    ((null interval) nil)
    ((and (eq (access tau-interval interval :domain) nil)
@@ -1913,7 +1919,7 @@
 ; that some p in :pos-pairs evaluates to false on evg or some p in :neg-pairs
 ; evaluates to true on evg or is outside the given interval.  For example, if
 ; :pos-pairs includes NATP, it is illegal to include (the singleton list
-; containing) LOAD in :neg-evgs.  That inequality is implied by :pos-evgs.
+; containing) LOAD in :neg-evgs.  That inequality is implied by :pos-pairs.
 
 ; Restriction 5: The interval of a tau has as its domain one of INTEGERP,
 ; RATIONALP, ACL2-NUMBERP, or NIL; if INTEGERP both relations are nil (<=) and
@@ -1999,7 +2005,7 @@
 
 ; We will be more precise about the database later, but Simple rules are used
 ; to populate the database, storing all the implications of a given
-; recognizers truth or falsity.  These implications are just tau representing
+; recognizer's truth or falsity.  These implications are just tau representing
 ; the set of all truths that follow.  For example, under NATP we will store the
 ; tau of all known recognizers implied by t/NATP, as well as all known
 ; recognizers implied by nil/NATP.  The database is used to collect known
@@ -2018,7 +2024,7 @@
 ; one of the elements of C and if so we can add the negation of the omitted
 ; element of C.
 
-; This brings us to Signature rules of both forms.  Signature rules tells us
+; This brings us to Signature rules of both forms.  Signature rules tell us
 ; facts about the value of a function given facts about its inputs.  Signature
 ; rules play the primary role in determining the tau of a term (or of its
 ; MV-NTH components) given tau assumptions about subterms.
@@ -2038,7 +2044,7 @@
 ; mixing of the hypotheses.  The representation of such a formula as a
 ; signature-rule is:
 
-; :inputs-tau-list  - (tau_1 ... tau_n) -- required tau of corresponding vars
+; :input-tau-list   - (tau_1 ... tau_n) -- required tau of corresponding vars
 ; :vars             - (v1 ... vn) -- the vars used in the conclusion
 ; :dependent-hyps   - list of terms in vars ((dhyp_1 v1 ... vn) ...)
 ; :output-sign      - T (positive) or NIL (negative)
@@ -2244,6 +2250,22 @@
 ; error message warning that certain functions, including these, can't be
 ; totally disabled.
 
+; We also treat NATP and POSP specially, ignoring their enabled/disabled
+; status.  If we do not, and, say, NATP and its executable counterpart are
+; disabled, then (thm (implies (not (equal x 'abc)) (not (natp x)))) causes a
+; Lisp error when ev-fncall-w-tau-recog returns :UNEVALABLE.  The analogous
+; error happens if POSP and its counterpart are disabled for the POSP version
+; of the thm above.  The :UNEVALABLE for the natp case causes us to form the
+; tau ((NIL (ABC)) NIL ((18 . NATP))) -- which recognizes objects that are nats
+; and not 'ABC.  But then we try to tighten the bounds on the natural interval
+; NIL, calling TIGHTEN-BOUND which then tries to see whether ABC is below 0.
+; We can avoid this walk-about into the weeds by making ev-fncall-w-tau-recog
+; actually evaluate NATP to determine that ABC isn't one!  Thanks to Stephen
+; Westfold and Claude for uncovering this error.  (Interestingly, the analogous
+; error doesn't happen for MINUSP, which also gives rise to non-trivial
+; intervals, perhaps because MINUSP is on *expandable-boot-strap-non-rec-fns*
+; and and POSP is not?)
+
 ; Warning: If this function is changed to call itself recursively, reconsider
 ; the setf expression in the comment after this defun.
 
@@ -2251,6 +2273,8 @@
    ((eq fn 'integerp) (integerp (car evg-lst)))
    ((eq fn 'rationalp) (rationalp (car evg-lst)))
    ((eq fn 'acl2-numberp) (acl2-numberp (car evg-lst)))
+   ((eq fn 'natp) (natp (car evg-lst)))
+   ((eq fn 'posp) (posp (car evg-lst)))
    ((enabled-xfnp fn ens wrld)
     (let* ((ubk (getpropc fn 'unevalable-but-known nil wrld))
            (temp (if ubk
@@ -3266,7 +3290,7 @@
 ; neg-evgs2, or (b) subsumed by the tau-interval interval2, (c) subsumed by an
 ; element of pos-pairs2, or (d) subsumed by an element of neg-pairs2.  For
 ; example, if an element of neg-evgs1 is /=7 then it might be subsumed in
-; another tau by with an explicit /=7 in it, or by an interval not including 7,
+; another tau by an explicit /=7 in it, or by an interval not including 7,
 ; or by some sign/recognizer in the other tau being false on it.  We could do
 ; this by mapping over neg-evgs1 and just check member-neg-evgs and the other
 ; checks each element.  But that method is quadratic in the lengths of the two
@@ -6732,7 +6756,7 @@
 ; add all the implicants of q to the implicants of p.  However, if adding q to
 ; the implicants of p didn't really change p (and provided the database was
 ; already closed), then we don't have to do anything.  Also, if q-recog is not
-; a tau-pair but is a singleton evg list, we don't chase it's implicants.
+; a tau-pair but is a singleton evg list, we don't chase its implicants.
 
                (tau-put*-tau
                 p-sign p-recog
@@ -6955,7 +6979,7 @@
 (defconst *non-tau-monadic-boolean-functions*
   '(NOT DEBUGGER-ENABLEDP))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun classicalp (fn wrld)
 
 ; WARNING: This function is expected to return t for fn = :?, in support of
@@ -6976,7 +7000,7 @@
 ;; of classical function names (i.e., not descended from the
 ;; non-standard function symbols)
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun classical-fn-list-p (names wrld)
   (cond ((null names) t)
         ((not (classicalp (car names) wrld))
@@ -6994,7 +7018,7 @@
 ; We exclude all non-classical functions from consideration by tau.  It is not clear
 ; that this is necessary but it's a safe thing to do until we've thought more about it.
 
-          #+:non-standard-analysis
+          #+non-standard-analysis
           (classicalp fn wrld)
 
           (equal (arity fn wrld) 1)
@@ -7755,7 +7779,7 @@
 ; are classical.  However, it is simplest to check that every function in the formula is
 ; classical.
 
-   #+:non-standard-analysis
+   #+non-standard-analysis
    ((not (classical-fn-list-p
           (all-fnnames1 nil concl
                         (all-fnnames1 t hyps nil))
@@ -7959,7 +7983,7 @@
 ; since we know that all tau predicates are classical.  However, it is simplest
 ; to check that every function in the formula is classical.
 
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (classical-fn-list-p
          (all-fnnames1 nil term nil)
          wrld)
@@ -8704,7 +8728,7 @@
 ; return a list of lists of terms.  If cnfp is t, the answer should be
 ; interpreted as a conjunction of disjunctions.  If cnfp is nil, the answer
 ; should be interpreted as a disjunction of conjunctions.  This function is not
-; particularly efficient; it's only intended use at the time of its
+; particularly efficient; its only intended use at the time of its
 ; creation is to preprocess the hypotheses of rules so that from
 ; (AND p (OR q r) s) we could get (OR (AND p q r) (AND p r s)), as in
 ; the following use:
@@ -8957,7 +8981,7 @@
 
 ; Term is a bounder correctness theorem of form 1 or 2 (depending on form), j
 ; is the form 2 slot, and bc is the bounder-correctness record that represents
-; term.  We add it to the list of of bounder-correctness records for the
+; term.  We add it to the list of bounder-correctness records for the
 ; subject-fn.
 
        (mv nil (add-tau-bounder-rule rune form j bc wrld0)))
@@ -9142,8 +9166,8 @@
                  (tau-like-propositionp var (fargn term 3) wrld)))
            ((eq (ffn-symb term) 'RETURN-LAST)
             (tau-like-propositionp var (fargn term 3) wrld))
-           ((and (eq (ffn-symb term) 'NOT)
-                 (eq (ffn-symb term) 'NULL))
+           ((or (eq (ffn-symb term) 'NOT)
+                (eq (ffn-symb term) 'NULL))
             (tau-like-propositionp var (fargn term 1) wrld))
            ((or (eq (ffn-symb term) 'IMPLIES)
                 (eq (ffn-symb term) 'IFF))
@@ -9320,8 +9344,8 @@
 ; Note on Terminology: Below we use the expression ``ancestor literal'' which
 ; was introduced by Bob Kowalski in the early 1970s to name a literal
 ; previously resolved upon in an SL-resolution proof.  Our ancestor literals
-; are similar in spirit but we make no claim that they are the exactly the same
-; as Kowalski's; they may be, but we haven't thought about it.  The word
+; are similar in spirit but we make no claim that they are exactly the same as
+; Kowalski's; they may be, but we haven't thought about it.  The word
 ; ``ancestor'' is just appropriate.  We define our use of the term below.
 
 (defun subsumes-but-for-one-negation (hyps1 hyps2 ancestor-lits)
@@ -9634,10 +9658,10 @@
 ; functions.  It will expand the (AB x) in the hypothesis, because it is a
 ; conjunction, but it will not expand it in the conclusion.  The result is that
 ; tau-clausep is presented with: ((NOT (A x)) (NOT (B x)) (AB (fn x))) and
-; without some more work, tau does not know know that A & B --> AB.  That is
-; the role of tau-subrs below.  It essentially recognizes nonrecursive
-; conjunctions of tau and adds the appropriate tau rules in both directions:
-; (A & B) --> AB and AB --> A and AB --> B.
+; without some more work, tau does not know that A & B --> AB.  That is the
+; role of tau-subrs below.  It essentially recognizes nonrecursive conjunctions
+; of tau and adds the appropriate tau rules in both directions: (A & B) --> AB
+; and AB --> A and AB --> B.
 
 ; Below is an example.  The first thm below failed until tau-subrs was implemented.
 
@@ -9971,7 +9995,7 @@
 ; exists after the defchoose is not syntactically acceptable for a tau Boolean
 ; rule and the revelation that pick-a-bool is in fact Boolean only comes via a
 ; subsequent defthm event which will be visited eventually.  By similar
-; reasoning, we the defchoose axiom can never be a big-switch or an mv-nth
+; reasoning, the defchoose axiom can never be a big-switch or an mv-nth
 ; synonym.
 
   (mv-let (msgp wrld1)
@@ -11449,7 +11473,7 @@
 
 ; Assuming term true produces a contradiction, so it must be false.  But
 ; the negation of term must be false, which means term must be true.  A
-; global contradiction has be discovered.
+; global contradiction has been discovered.
 
 ; ctr1   mbt1   mbf1   ctr2   mbt2   mbf2        short answer
 ; (NIL    T      NIL    NIL    NIL    T  )       mbt!
@@ -11857,11 +11881,10 @@
 ; may involve a little linear reasoning).  But we do not use tau reasoning
 ; because of the issue reported in On Loops in Relieving Dependent Hyps in Tau
 ; Signature Rules.  However, in case we find a better heuristic, we continue to
-; pass both tau-alist and  into this function.  Note that this also means
-; that the incoming calist is always equal to the outgoing calist for this
-; function, but we don't code for that.  We return the calist to our callers,
-; so that we could change the heuristic later without damage to the rest of
-; this nest.
+; pass tau-alist into this function.  Note that this also means that the
+; incoming calist is always equal to the outgoing calist for this function, but
+; we don't code for that.  We return the calist to our callers, so that we
+; could change the heuristic later without damage to the rest of this nest.
 
   (cond
    ((endp hyps) (mv t calist))
@@ -12691,7 +12714,7 @@
 ; - multi-sig-cnt-1: how many functions have more than 1 form 1 signature
 ; - multi-sig-cnt-2: how many functions have more than 1 form 2 signature
 ;    for some slot
-; - multi-sig-cnt-alist: for each fn with with more than one signature
+; - multi-sig-cnt-alist: for each fn with more than one signature
 ;    (of either form)
 
 (defun tau-get-all-sig-fns (wrld fns-seen)
@@ -12923,6 +12946,7 @@
      (t nil))))
 
 (defmacro tau-data (fn)
+  (declare (xargs :guard (symbolp fn)))
   `(tau-data-fn ',fn (w state)))
 
 (defun all-fnnames-world1 (trips logicp wrld ans)

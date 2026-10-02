@@ -123,34 +123,83 @@
                 (ubdd-fix x bound))
          :hints(("Goal" :in-theory (enable ubdd-fix)))))
 
+(define aignet-pathcond-eval-exec-env (env aignet-pathcond aignet)
+  :guard (aignet::aignet-pathcond-boundedp aignet-pathcond (aignet::num-fanins aignet))
+  (b* (((acl2::local-stobjs aignet::vals aignet::invals aignet::regvals)
+        (mv res aignet::vals aignet::invals aignet::regvals))
+       (aignet::invals (alist-to-bitarr (aignet::num-ins aignet) env aignet::invals))
+       (aignet::regvals (aignet::resize-bits (aignet::num-regs aignet) aignet::regvals))
+       (aignet::vals (aignet::resize-bits (aignet::num-fanins aignet) aignet::vals))
+       (aignet::vals (aignet::aignet-record-vals
+                      aignet::vals aignet::invals aignet::regvals aignet))
+       (val 
+        (aignet::aignet-pathcond-eval-exec aignet-pathcond aignet::vals)))
+    (mv val aignet::vals aignet::invals aignet::regvals))
+  ///
+  ;; (local (defcong bits-equiv equal (aignet::Aignet-pathcond-eval aignet nbalist invals regvals) 4))
+  (local (defthm repeat-0-under-bits-equiv
+           (aignet::bits-equiv (acl2::repeat n 0) nil)
+           :hints(("Goal" :in-theory (enable aignet::bits-equiv)))))
+  (defthm aignet-pathcond-eval-exec-env-redef
+    (implies (aignet::aignet-pathcond-boundedp aignet-pathcond (aignet::num-fanins aignet))
+             (equal (aignet-pathcond-eval-exec-env env aignet-pathcond aignet)
+                    (aignet::aignet-pathcond-eval
+                     aignet aignet-pathcond
+                     (alist-to-bitarr (aignet::num-ins aignet) env nil)
+                     nil)))))
+
+
 (define logicman-pathcond-eval (env pathcond &optional (logicman 'logicman))
-  (declare (xargs :non-executable t))
+  ;; (declare (xargs :non-executable t))
   :no-function t
-  :verify-guards nil
+  ;; :verify-guards nil
+  :guard (lbfr-case
+           :aignet (stobj-let ((aignet-pathcond (pathcond-aignet pathcond)))
+                              (ok)
+                              (stobj-let ((aignet (logicman->aignet logicman)))
+                                         (ok)
+                                         (aignet::aignet-pathcond-boundedp aignet-pathcond (aignet::num-fanins aignet))
+                                         ok)
+                              ok)
+           :bdd t :aig t)
   :hooks ((:fix :hints ((and stable-under-simplificationp
                              '(:in-theory (enable bfr-eval bfr-fix))))))
-  (prog2$ (acl2::throw-nonexec-error 'logicman-pathcond-eval-fn (list env pathcond logicman))
-          (if (pathcond-enabledp pathcond)
-              (lbfr-case
-                :bdd (b* ((pathcond-bdd (mbe :logic ;; (lbfr-fix (pathcond-bdd pathcond))
-                                             (acl2::ubdd-fix (pathcond-bdd pathcond))
-                                             :exec (pathcond-bdd pathcond))))
-                       (acl2::eval-bdd pathcond-bdd env))
-                :aig (stobj-let ((calist-stobj (pathcond-aig pathcond)))
-                                (ans)
-                                (calist-eval calist-stobj env)
-                                ans)
-                :aignet (stobj-let ((aignet-pathcond (pathcond-aignet pathcond)))
-                                   (ans)
-                                   (stobj-let ((aignet   (logicman->aignet logicman)))
-                                              (ans)
-                                              (aignet::aignet-pathcond-eval
-                                               aignet aignet-pathcond
-                                               (alist-to-bitarr (aignet::num-ins aignet) env nil)
-                                               nil)
-                                              ans)
-                                   ans))
-            t))
+  ;; (prog2$ (acl2::throw-nonexec-error 'logicman-pathcond-eval-fn (list env pathcond logicman))
+  (if (pathcond-enabledp pathcond)
+      (lbfr-case
+        :bdd (b* ((pathcond-bdd (mbe :logic ;; (lbfr-fix (pathcond-bdd pathcond))
+                                     (acl2::ubdd-fix (pathcond-bdd pathcond))
+                                     :exec (pathcond-bdd pathcond))))
+               (acl2::eval-bdd pathcond-bdd env))
+        :aig (stobj-let ((calist-stobj (pathcond-aig pathcond)))
+                        (ans)
+                        (non-exec (calist-eval calist-stobj env))
+                        ans)
+        :aignet (stobj-let ((aignet-pathcond (pathcond-aignet pathcond)))
+                           (ans)
+                           (stobj-let ((aignet   (logicman->aignet logicman)))
+                                      (ans)
+                                      (mbe :logic
+                                           (non-exec
+                                            (aignet::aignet-pathcond-eval
+                                             aignet aignet-pathcond
+                                             (alist-to-bitarr (aignet::num-ins aignet) env nil)
+                                             nil))
+                                           :exec
+                                           (aignet-pathcond-eval-exec-env env aignet-pathcond aignet)
+                                           ;; (b* (((acl2::local-stobjs aignet::vals aignet::invals aignet::regvals)
+                                           ;;       (mv res aignet::vals aignet::invals aignet::regvals))
+                                           ;;      (aignet::invals (alist-to-bitarr (aignet::num-ins aignet) env aignet::invals))
+                                           ;;      (aignet::vals (aignet::resize-bits (aignet::num-fanins aignet) aignet::vals))
+                                           ;;      (aignet::vals (aignet::aignet-record-vals
+                                           ;;               aignet::vals aignet::invals aignet::regvals aignet))
+                                           ;;      (val 
+                                           ;;       (aignet::aignet-pathcond-eval-exec aignet-pathcond aignet::vals)))
+                                           ;;   (mv val aignet::vals aignet::invals aignet::regvals))
+                                           )
+                                      ans)
+                           ans))
+    t)
   ///
   #!aignet
   (local (defthm aignet-pathcond-eval-of-alist-to-bitarr-aignet-extension

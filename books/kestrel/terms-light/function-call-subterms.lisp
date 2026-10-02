@@ -1,6 +1,6 @@
 ; A utility to find subterms that are function calls
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,7 @@
 
 (include-book "non-trivial-formals")
 (include-book "free-vars-in-term")
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
@@ -57,7 +58,7 @@
      (union-equal (find-all-fn-call-subterms (first terms) dead-vars)
                   (find-all-fn-call-subterms-lst (rest terms) dead-vars)))))
 
-(make-flag find-all-fn-call-subterms)
+(local (make-flag find-all-fn-call-subterms))
 
 (defthm-flag-find-all-fn-call-subterms
   (defthm pseudo-term-listp-of-find-all-fn-call-subterms

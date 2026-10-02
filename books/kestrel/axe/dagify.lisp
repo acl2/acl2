@@ -1,7 +1,7 @@
 ; DAG builders that depend on the evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -72,7 +72,9 @@
                            ;; myquotep
                            ;; ;; mv-nth-of-if
                            ;; symbol-alistp ;don't induct
-                           )))
+                           nth-when-equal-of-take-and-constant
+                           nth-when-equal-of-firstn-and-constant
+                           consp-of-car-when-pseudo-dagp)))
 
 ;(local (in-theory (enable caadr-when-consecutivep-of-strip-cars)))
 
@@ -108,7 +110,7 @@
            (alistp (set-difference-equal x y))))
 
 ;;use elsewhere?
-;; recoginize a suitable call of the form (dag-val-with-axe-evaluator dag alist interpreted-function-alist array-depth).
+;; recognizes a suitable call of the form (dag-val-with-axe-evaluator dag alist interpreted-function-alist array-depth).
 (defund-inline call-of-dag-val-with-axe-evaluator-with-inlineable-dagp (fn arg-nodenums-or-quoteps interpreted-function-alist)
   (declare (xargs :guard (and ;(symbolp fn)
                           (darg-listp arg-nodenums-or-quoteps)
@@ -314,7 +316,7 @@
                                                               variable-node-alist-for-dag
                                                               dag-array dag-len dag-parent-array
                                                               dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-                                                              (make-empty-array 'renaming-array-for-merge-embedded-dag-into-dag-array (+ 1 (top-nodenum dag))) ; nil ;the translation-alist
+                                                              (new-array1 'renaming-array-for-merge-embedded-dag-into-dag-array (+ 1 (top-nodenum dag))) ; nil ;the translation-alist
                                                               interpreted-function-alist))
                           ;;fixme are the aux data structures updated right?
                           ((when erp) (mv erp nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
@@ -344,7 +346,7 @@
 
  ;;TERMS are trees with variables, nodenums (new!), and quoteps at the leaves
  ;; Returns (mv erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
-;fixme use a changep flag to not recons the list of the terms are constants
+;fixme use a changep flag to not recons the list if the terms are constants
  (defund merge-terms-into-dag-array (terms
                                     var-replacement-alist
                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
@@ -449,7 +451,7 @@
 
 ;drop?
 (defthm-flag-merge-term-into-dag-array
-  (defthm dag-constant-alistp-of-mv-nth-5-of-merge-term-into-dag-array
+  (defthm dag-constant-alistp-of-mv-nth-5-of-merge-term-into-dag-array-gen ;fewer hyps
     (implies (and (dag-constant-alistp dag-constant-alist)
                   (natp dag-len))
              (dag-constant-alistp (mv-nth 5 (merge-term-into-dag-array
@@ -457,7 +459,7 @@
                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                              interpreted-function-alist))))
     :flag merge-term-into-dag-array)
-  (defthm dag-constant-alistp-of-mv-nth-5-of-merge-terms-into-dag-array
+  (defthm dag-constant-alistp-of-mv-nth-5-of-merge-terms-into-dag-array-gen ; fewer hyps
     (implies (and (dag-constant-alistp dag-constant-alist)
                   (natp dag-len))
              (dag-constant-alistp (mv-nth 5 (merge-terms-into-dag-array
@@ -779,7 +781,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; does not translate the term
-;todo: reduce to take wlrd instead of state?
+;todo: reduce to take wrld instead of state?
 (defun dag-or-term-to-term (item state)
   (declare (xargs :stobjs state))
   (if (eq nil item) ; we assume nil is the constant nil, not an empty DAG

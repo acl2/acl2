@@ -1,7 +1,7 @@
 ; Mixed Axe rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -26,6 +26,7 @@
 (include-book "kestrel/bv/bvdiv" :dir :system)
 (include-book "kestrel/bv/trim" :dir :system)
 (include-book "kestrel/bv/bvmult" :dir :system)
+(include-book "kestrel/bv/bvuminus-def" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 (include-book "kestrel/booleans/boolor" :dir :system)
 (include-book "kestrel/booleans/booland" :dir :system)
@@ -91,7 +92,7 @@
            (equal (+ x (- y))
                   (bvplus xsize x (bvuminus xsize y))))
   :hints (("Goal" :use ((:instance minus-becomes-bv (free xsize)))
-           :in-theory (e/d (unsigned-byte-p-forced) ( minus-becomes-bv)))))
+           :in-theory (e/d (unsigned-byte-p-forced) (minus-becomes-bv)))))
 
 ;rename
 (defthmd plus-of-minus-becomes-bv-dag-alt
@@ -107,7 +108,7 @@
 
 
 ;; ;gen the 32
-;; (defthm floor-of-when-usb-bind-free-dag-32
+;; (defthm floor-when-usb-bind-free-dag-32
 ;;   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
 ;;                 (unsigned-byte-p-forced xsize x))
 ;;            (equal (floor x 32)
@@ -129,8 +130,8 @@
                       t
                     (< (bvplus xsize x (bvuminus xsize y)) k))))
   :hints (("Goal" :use (:instance plus-of-minus-becomes-bv-dag)
-           :in-theory (e/d (unsigned-byte-p-forced usb-hack-100 bvlt bvplus bvuminus bvminus)
-                           (plus-of-minus-becomes-bv-dag BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
+           :in-theory (e/d (unsigned-byte-p-forced usb-hack-100 bvlt bvplus)
+                           (plus-of-minus-becomes-bv-dag )))))
 
 (defthmd equal-of-+-of-minus-and-bv
   (implies (and (axe-bind-free (bind-bv-size-axe k 'ksize dag-array) '(ksize))
@@ -145,7 +146,7 @@
                     (equal k (bvplus xsize x (bvuminus xsize y))))))
   :hints (("Goal" :use (:instance plus-of-minus-becomes-bv-dag)
            :in-theory (e/d (unsigned-byte-p-forced usb-hack-100 bvlt bvplus bvuminus bvminus)
-                           (plus-of-minus-becomes-bv-dag BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
+                           (plus-of-minus-becomes-bv-dag)))))
 
 (defthmd +-of-minus-bind-free
   (implies (and (syntaxp (quotep k))
@@ -185,9 +186,8 @@
                     nil)))
   :hints (("Goal"
            :cases ((unsigned-byte-p xsize y))
-           :in-theory (e/d (bvplus bvlt bvuminus bvchop-of-sum-cases bvminus UNSIGNED-BYTE-P-FORCED
-                                   UNSIGNED-BYTE-P-when-UNSIGNED-BYTE-P-free-better)
-                           (bvminus-becomes-bvplus-of-bvuminus)))))
+           :in-theory (enable bvplus bvlt bvuminus bvchop-of-sum-cases bvminus unsigned-byte-p-forced
+                              unsigned-byte-p-when-unsigned-byte-p-free-better))))
 
 ;rename
 (defthmd equal-of-floor-of-expt-and-bv-constant-version-dag
@@ -248,7 +248,7 @@
                   (if (equal x 0) (+ -1 y) (+ y (bvplus xsize -1 x)))))
   :hints (("Goal" :use (:instance +-of-minus-1-and-bv2 (free xsize))
            :in-theory (e/d (unsigned-byte-p-forced natp ;yuck
-                                                   ) ( +-of-minus-1-and-bv2)))))
+                                                   ) (+-of-minus-1-and-bv2)))))
 
 (defthmd <-of-+-of-minus-becomes-bvlt
   (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
@@ -320,7 +320,7 @@
                 (< ysize 32)
                 (natp ysize)
                 (integerp k)
-                (< (bvchop 32 k) (- (expt 2 30) (expt 2 ysize))) ;should get computed (shows that there is no oveflow)
+                (< (bvchop 32 k) (- (expt 2 30) (expt 2 ysize))) ;should get computed (shows that there is no overflow)
                 (unsigned-byte-p-forced ysize y)
                 )
            (equal (bvplus '32 x (bvplus '30 k y))

@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -53,7 +53,7 @@
 
 (define value-pointer-dangling ((reftype typep))
   :returns (ptr valuep)
-  :short "Danling pointer for a given referenced type."
+  :short "Dangling pointer for a given referenced type."
   (make-value-pointer :core (pointer-dangling) :reftype reftype)
 
   ///
@@ -84,9 +84,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Currently this just means that the pointer is not null.
-     However, when (as planned) we extend our model with dangling pointers,
-     this predicate will also exclude dangling pointers.")
+    "This means that the pointer is not null and not dangling.")
    (xdoc::p
     "Using `valid' for this notion is perhaps not ideal
      because null pointers are perfectly ``valid''values

@@ -1,6 +1,6 @@
 ; A library about manipulating :hints
 ;
-; Copyright (C) 2017-2023 Kestrel Institute
+; Copyright (C) 2017-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -179,6 +179,17 @@
                     ,(apply-renaming-to-computed-theory (farg2 val) renaming-alist))
             (er hard? 'apply-renaming-to-computed-theory "Unsupported theory in hint: ~x0." val)))))))
 
+(defun apply-renaming-to-e/d-args (args renaming-alist)
+  (declare (xargs :guard (and (true-listp args)
+                              (symbol-alistp renaming-alist))))
+  (if (endp args)
+      nil
+    (let ((arg (first args)))
+      (if (not (true-listp arg))
+          (er hard? 'apply-renaming-to-e/d-args "Bad e/d argument: ~x0." arg)
+        (cons (apply-renaming-to-symbols-or-runes (first args) renaming-alist)
+              (apply-renaming-to-e/d-args (rest args) renaming-alist))))))
+
 (defun apply-renaming-to-in-theory-hint (val renaming-alist)
   (declare (xargs :guard (symbol-alistp renaming-alist)))
   (if (null val)                 ; nil is apparently legal
@@ -190,12 +201,8 @@
                  (true-listp (fargs val)))
             `(,fn ,@(apply-renaming-to-symbols-or-runes (fargs val) renaming-alist))
           (if (and (member-eq fn '(e/d e/d*))
-                   (consp (cdr val))
-                   (listp (cddr val))
-                   (symbol-listp (farg1 val))
-                   (symbol-listp (farg2 val)))
-              `(,fn ,(apply-renaming-to-symbols-or-runes (farg1 val) renaming-alist)
-                    ,(apply-renaming-to-symbols-or-runes (farg2 val) renaming-alist))
+                   (true-listp (fargs val)))
+              `(,fn ,@(apply-renaming-to-e/d-args (fargs val) renaming-alist))
             (if (member-eq fn '(quote append union-theories set-difference-theories intersection-theories
                                       function-theory executable-counterpart-theory theory universal-theory current-theory))
                 (apply-renaming-to-computed-theory val renaming-alist)
@@ -328,4 +335,4 @@
                     val)))
         (cons key
               (cons val
-                    (apply-renaming-to-hints-in-keyword-value-list (cddr kv) renaming-alist)))))))
+                    (apply-renaming-to-guard-hints-in-keyword-value-list (cddr kv) renaming-alist)))))))

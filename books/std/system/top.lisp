@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -19,6 +19,7 @@
 (include-book "add-suffix-to-fn-or-const-lst")
 (include-book "arglistp")
 (include-book "constant-queries")
+(include-book "current-package-plus")
 (include-book "enhanced-utilities")
 (include-book "event-landmark-names")
 (include-book "event-name-queries")

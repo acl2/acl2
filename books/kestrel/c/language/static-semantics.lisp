@@ -1081,9 +1081,7 @@
   (const-case c
               :int (b* (((okf type) (check-iconst c.get)))
                      (make-expr-type :type type :lvalue nil))
-              :float (reserrf (list :unsupported-float-const (const-fix c)))
-              :enum (reserrf (list :unsupported-enum-const (const-fix c)))
-              :char (reserrf (list :unsupported-char-const (const-fix c))))
+              :enum (reserrf (list :unsupported-enum-const (const-fix c))))
   :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
   :no-function nil)
 
@@ -1421,7 +1419,7 @@
                             (binop-fix op)
                             (expr-fix arg1-expr)
                             (expr-fix arg2-expr)
-                            :required :integer :integer
+                            :required :scalar :scalar
                             :supplied
                             (type-fix arg1-type)
                             (type-fix arg2-type)))))
@@ -1494,14 +1492,15 @@
      if needed, for both branches of the conditional expression.)
      To avoid this complication,
      for now we make our static semantics more restrictive:
-     we require the two branches to have the same promoted type.
-     This means that that promoted type is also
-     the type resulting from the usual arithmetic conversions,
-     as can be easily seen in @(tsee uaconvert-types).
+     we require the two branches to have the same type,
+     and that type to have at least the rank of @('int').
+     Under these conditions, the usual arithmetic conversions have no effect,
+     and the common type of the two branches
+     is also the type of the conditional expression.
      We may relax the treatment eventually,
      but note that we would have to restructure the static semantics
      to return possibly modified abstract syntax.
-     This is not surprising, as it is a used approach for compiler-like tools,
+     This is not surprising, as it is a common approach for compiler-like tools,
      namely annotating abstract syntax trees with additional information.
      We apply both lvalue conversion and array-to-pointer conversion.
      A conditional expression is never an lvalue.")
@@ -1530,11 +1529,11 @@
         (reserrf (list :cond-mistype-else test-expr then-expr else-expr
                        :required :arithmetic
                        :supplied else-type)))
-       (then-type (promote-type then-type))
-       (else-type (promote-type else-type))
        ((unless (equal then-type else-type))
-        (reserrf (list :diff-promoted-types then-type else-type)))
-       (type then-type))
+        (reserrf (list :cond-diff-types then-type else-type)))
+       (type then-type)
+       ((unless (type-promoted-arithmeticp type))
+        (reserrf (list :cond-type-lower-than-int-rank type))))
     (make-expr-type :type type :lvalue nil))
   :no-function nil)
 
@@ -1713,9 +1712,8 @@
                   :hints (("Goal"
                            :induct t
                            :in-theory
-                           (enable
-                            typep-when-type-resultp-and-not-reserrp
-                            type-listp-when-type-list-resultp-and-not-reserrp))))
+                           (enable typep-when-result-not-error
+                                   type-listp-when-result-not-error))))
   :short "Check a list of pure expressions."
   :long
   (xdoc::topstring
@@ -2036,8 +2034,8 @@
     "We return the updated variable table.
      If there is no initializer,
      in our C subset this must be in a file scope;
-     since we require no @('extern') storage class specifier for now,
-     in this case this must be a tentative definition [C17:6.9.2/2].
+     if there is no @('extern') storage class specifier,
+     this must be a tentative definition [C17:6.9.2/2].
      If instead there is an intializer,
      then it is a definition,
      regardless of whether it has file scope or block scope."))
@@ -2054,7 +2052,12 @@
         (if initp
             (reserrf (list :declon-initializer-required
                            (obj-declon-fix declon)))
-          (var-table-add-var var type (var-defstatus-tentative) vartab)))
+          (var-table-add-var var
+                             type
+                             (scspecseq-case scspec
+                                             :none (var-defstatus-tentative)
+                                             :extern (var-defstatus-undefined))
+                             vartab)))
        (init init?)
        ((okf init-type) (check-initer init funtab vartab tagenv constp))
        ((okf &) (init-type-matchp init-type type)))
@@ -2291,14 +2294,7 @@
                   (equal (types+vartab->variables result)
                          (var-table-fix vartab))))
        :flag check-stmt)
-     (defthm check-block-item-var-table
-       t
-       :rule-classes nil
-       :flag check-block-item)
-     (defthm check-block-item-list-var-table
-       t
-       :rule-classes nil
-       :flag check-block-item-list)
+     :skip-others t
      :hints (("Goal"
               :in-theory (enable (:e tau-system))
               :expand ((check-stmt s funtab vartab tagenv))))))
@@ -2450,7 +2446,8 @@
      this may be relaxed in the future.")
    (xdoc::p
     "We also extend the function table with the new function.
-     It is an error if a function with the same name is already in the table.
+     It is an error if a function with the same name but a different definition
+     is already in the table.
      In general, this must be done before checking the body:
      the function is in scope, in its own body.")
    (xdoc::p
@@ -2553,7 +2550,7 @@
      obtaining a list of member types if successful.
      We ensure that there is at least one member [C17:6.2.5/20],
      or at least two members if the last member is a flexible array member
-     [C17:6.2.5/18].
+     [C17:6.7.2.1/18].
      We use @(tsee tag-env-add) to ensure that there is not already
      another structure or union or enumeration type with the same tag,
      since these share one name space [C17:6.2.3].")
@@ -2563,7 +2560,7 @@
      [C17:6.2.1/7] says that the scope of the tag starts where it appears,
      so it includes the members;
      and [C17:6.7.2.1/9] says that a member type must be complete,
-     which pointer types are [C17:6:2.5/20].
+     which pointer types are [C17:6.2.5/20].
      However, we implicitly disallow even this form of recursion for now,
      because we check the member types against the current tag environment,
      which does not include the structure type yet."))
@@ -2587,9 +2584,7 @@
    :union (reserrf (list :union-not-supported (tag-declon-fix declon)))
    :enum (reserrf (list :enum-not-supported (tag-declon-fix declon))))
   :guard-hints
-  (("Goal"
-    :in-theory
-    (enable member-type-listp-when-member-type-list-resultp-and-not-reserrp)))
+  (("Goal" :in-theory (enable member-type-listp-when-result-not-error)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2664,7 +2659,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-transunit ((tunit transunitp))
+(define check-trans-unit ((tunit trans-unitp))
   :returns (wf wellformed-resultp)
   :short "Check a translation unit."
   :long
@@ -2683,6 +2678,12 @@
      These are all ordinary identifiers [C17:6.2.3/1],
      and therefore must be distinct in the same (file) scope.")
    (xdoc::p
+    "We also check that all the variables are defined;
+     we perform this check on the variable table
+     that results from checking the external declarations.
+     This might be too strict with multiple translation units,
+     but for now we only really support one translation unit.")
+   (xdoc::p
     "We also check that all the functions are defined;
      we perform this check on the function table
      that results from checking the external declarations.
@@ -2692,9 +2693,9 @@
      However, as we look at a translation unit in isolation here,
      we do not have the rest of the program,
      and thus we make the stricter check for now."))
-  (b* (((transunit tunit) tunit)
+  (b* (((trans-unit tunit) tunit)
        ((unless (consp tunit.declons))
-        (reserrf (list :transunit-empty)))
+        (reserrf (list :trans-unit-empty)))
        (funtab (fun-table-init))
        (vartab (var-table-init))
        (tagenv (tag-env-init))
@@ -2705,56 +2706,56 @@
        (overlap (set::intersect (omap::keys funtab)
                                 (omap::keys (car vartab))))
        ((unless (set::emptyp overlap))
-        (reserrf (list :transunit-fun-obj-overlap overlap)))
-       ((unless (var-table-add-block vartab))
-        (reserrf (list :transunit-has-undef-var vartab)))
+        (reserrf (list :trans-unit-fun-obj-overlap overlap)))
+       ((unless (var-table-all-definedp vartab))
+        (reserrf (list :trans-unit-has-undef-var vartab)))
        ((unless (fun-table-all-definedp funtab))
-        (reserrf (list :transunit-has-undef-fun funtab))))
+        (reserrf (list :trans-unit-has-undef-fun funtab))))
     :wellformed)
   :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define preprocess ((tunits transunit-ensemblep))
-  :returns (tunit transunit-resultp)
-  :short "Preprocess a translation unit ensemble [C17:5.1.1.2/4]."
+(define preprocess ((tunits trans-ensemblep))
+  :returns (tunit trans-unit-resultp)
+  :short "Preprocess a translation ensemble [C17:5.1.1.2/4]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is a very simplified model of C preprocessing [C17:6.10].
-     If there is no header, this is essentially a no-op:
+     If there is no header file, this is essentially a no-op:
      we return the translation unit for the source file.
-     If there is a header, as explained in @(tsee transunit-ensemble),
+     If there is a header file, as explained in @(tsee trans-ensemble),
      it is implicitly included in the source file
      (without an explicit representation of the @('#include') directive):
-     we concatenate the external declarations from the header
+     we concatenate the external declarations from the header file
      and the external declarations from the source file,
      and wrap the concatenation into a translation unit.
      This amounts to replacing the (implicit) @('#include')
-     with the included header,
+     with the included header file,
      which is assumed to be at the beginning of the source file.
-     The path without extension component of the translation unit ensemble
+     The path without extension component of the translation ensemble
      is currently ignored, because the @('#include') is implicit."))
-  (b* ((h-extdecls (and (transunit-ensemble->dot-h tunits)
-                        (transunit->declons
-                         (transunit-ensemble->dot-h tunits))))
-       (c-extdecls (transunit->declons
-                    (transunit-ensemble->dot-c tunits))))
-    (make-transunit :declons (append h-extdecls c-extdecls))))
+  (b* ((h-extdecls (and (trans-ensemble->dot-h tunits)
+                        (trans-unit->declons
+                         (trans-ensemble->dot-h tunits))))
+       (c-extdecls (trans-unit->declons
+                    (trans-ensemble->dot-c tunits))))
+    (make-trans-unit :declons (append h-extdecls c-extdecls))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-transunit-ensemble ((tunits transunit-ensemblep))
+(define check-trans-ensemble ((tunits trans-ensemblep))
   :returns (wf wellformed-resultp)
-  :short "Check a translation unit ensemble."
+  :short "Check a translation ensemble."
   :long
   (xdoc::topstring
    (xdoc::p
-    "First we preprocess the translation unit ensemble.
+    "First we preprocess the translation ensemble.
      If preprocessing is successful,
      we check the translation unit."))
   (b* (((okf tunit) (preprocess tunits)))
-    (check-transunit tunit))
+    (check-trans-unit tunit))
   :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
   :no-function nil)

@@ -52,3 +52,10 @@
   (implies (open-output-channel-any-p channel state)
            (open-output-channel-any-p channel (prin1$ x channel2 state)))
   :hints (("Goal" :in-theory (enable open-output-channel-p))))
+
+(local (include-book "kestrel/utilities/w" :dir :system))
+
+(defthm w-of-prin1$
+  (equal (w (prin1$ x channel state))
+         (w state))
+  :hints (("Goal" :in-theory (enable prin1$))))

@@ -1,7 +1,7 @@
 ; Tests of rewriter-new
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -59,7 +59,7 @@
 (check-rewrite '(foo x) '(foo y) :assumptions '((equal x y)))
 (check-rewrite '(foo x) '(foo y) :assumptions '((equal (foo x) (foo y))))
 (check-rewrite 'x ''3 :assumptions '((equal x '3)))
-(check-rewrite '(foo x) ''7 :assumptions '((equal x '3)(equal (foo '3) '7)))
+(check-rewrite '(foo x) ''7 :assumptions '((equal x '3) (equal (foo '3) '7)))
 
 ;; ;the lambda gets expanded when the term is made into a dag:
 ;; (rewrite-term '((lambda (x y) (binary-+ x y)) '2 '3) nil nil)
@@ -93,8 +93,8 @@
 (check-rewrite '(DAG-VAL-WITH-AXE-EVALUATOR '((0 . x)) (acons 'x y 'nil) 'nil '0) 'y :runes (lookup-rules))
 (check-rewrite '(DAG-VAL-WITH-AXE-EVALUATOR '((0 . x)) (acons 'x '3 'nil) 'nil '0) ''3 :runes (lookup-rules))
 ;fffixme do these even make sense, if we don't pass in a definition for foo??
-(check-rewrite '(DAG-VAL-WITH-AXE-EVALUATOR '((2 foo 1 0)(1 . y)(0 . x)) (acons 'x x (acons 'y y 'nil)) 'nil '0) '(foo y x)  :runes (lookup-rules))
-(check-rewrite '(DAG-VAL-WITH-AXE-EVALUATOR '((2 foo 1 0)(1 . y)(0 . x)) (acons 'x '3 (acons 'y z 'nil)) 'nil '0) '(foo z '3)  :runes (lookup-rules))
+(check-rewrite '(DAG-VAL-WITH-AXE-EVALUATOR '((2 foo 1 0) (1 . y) (0 . x)) (acons 'x x (acons 'y y 'nil)) 'nil '0) '(foo y x)  :runes (lookup-rules))
+(check-rewrite '(DAG-VAL-WITH-AXE-EVALUATOR '((2 foo 1 0) (1 . y) (0 . x)) (acons 'x '3 (acons 'y z 'nil)) 'nil '0) '(foo z '3)  :runes (lookup-rules))
 
 
 ;this is a weakening
@@ -123,18 +123,18 @@
 (check-rewrite 'x 'x :rewrite-objective 'nil :runes '(test-of-rewrite-objective))
 (check-rewrite 'x 'x :rewrite-objective '? :runes '(test-of-rewrite-objective))
 
-(check-rewrite '(< '3 x) '(< '3 x) :rewrite-objective '? :assumptions '((not (equal '3 x))(integerp x)) :runes '(test-of-rewrite-objective))
-(check-rewrite '(< '3 x) '(< '3 x) :rewrite-objective 'nil :assumptions '((not (equal '3 x))(integerp x)) :runes '(test-of-rewrite-objective))
+(check-rewrite '(< '3 x) '(< '3 x) :rewrite-objective '? :assumptions '((not (equal '3 x)) (integerp x)) :runes '(test-of-rewrite-objective))
+(check-rewrite '(< '3 x) '(< '3 x) :rewrite-objective 'nil :assumptions '((not (equal '3 x)) (integerp x)) :runes '(test-of-rewrite-objective))
 ;here the polarity rule fires, because we want to weaken (< 3 x)
-(check-rewrite '(< '3 x) '(< '2 x) :rewrite-objective 't :assumptions '((not (equal '3 x))(integerp x)) :runes '(test-of-rewrite-objective))
-(check-rewrite '(not (< '3 x)) '(not (< '3 x)) :rewrite-objective '? :assumptions '((not (equal '3 x))(integerp x)) :runes '(test-of-rewrite-objective))
+(check-rewrite '(< '3 x) '(< '2 x) :rewrite-objective 't :assumptions '((not (equal '3 x)) (integerp x)) :runes '(test-of-rewrite-objective))
+(check-rewrite '(not (< '3 x)) '(not (< '3 x)) :rewrite-objective '? :assumptions '((not (equal '3 x)) (integerp x)) :runes '(test-of-rewrite-objective))
 ;here the polarity rule fires, because we want to strengthen (not (< 3 x)) and so we want to weaken (< 3 x):
-(check-rewrite '(not (< '3 x)) '(not (< '2 x)) :rewrite-objective 'nil :assumptions '((not (equal '3 x))(integerp x)) :runes '(test-of-rewrite-objective))
+(check-rewrite '(not (< '3 x)) '(not (< '2 x)) :rewrite-objective 'nil :assumptions '((not (equal '3 x)) (integerp x)) :runes '(test-of-rewrite-objective))
 ;does not fire:
-(check-rewrite '(not (< '3 x)) '(not (< '3 x)) :rewrite-objective 't :assumptions '((not (equal '3 x))(integerp x)) :runes '(test-of-rewrite-objective))
+(check-rewrite '(not (< '3 x)) '(not (< '3 x)) :rewrite-objective 't :assumptions '((not (equal '3 x)) (integerp x)) :runes '(test-of-rewrite-objective))
 
 ;two nots is like no nots:
-(check-rewrite '(not (not (< '3 x))) '(not (not (< '2 x))) :rewrite-objective 't :assumptions '((not (equal '3 x))(integerp x)) :runes '(test-of-rewrite-objective))
+(check-rewrite '(not (not (< '3 x))) '(not (not (< '2 x))) :rewrite-objective 't :assumptions '((not (equal '3 x)) (integerp x)) :runes '(test-of-rewrite-objective))
 
 
 ;; fixme add some tests with assumptions and free variable matching

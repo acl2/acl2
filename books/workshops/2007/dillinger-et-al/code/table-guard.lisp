@@ -12,6 +12,8 @@
 (progn+touchable
  :all
  (redefun+rewrite
+; Table-fn1 is defined in ACL2 source file history-management.lisp:
+; (depends-on "../../../../../history-management.lisp")
   table-fn1
   (:pat (cond
          ((and (iff mv-p (cdr stobjs-out))

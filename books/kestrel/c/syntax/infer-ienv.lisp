@@ -122,7 +122,9 @@
        (cheri-extensions (not (equal cheri-extensions-str "0")))
        ((when (and gcc-extensions clang-extensions))
         (retmsg$ "Both GCC and Clang extensions appear to be enabled."))
-       (version (c::make-version
+       ((when (and cheri-extensions (not clang-extensions)))
+        (retmsg$ "CHERI extensions are only supported with Clang."))
+       (dialect (c::make-dialect
                   :std (if (= std-c 17) (c::standard-c17) (c::standard-c23))
                   :gcc gcc-extensions
                   :clang clang-extensions
@@ -204,7 +206,7 @@
         (retmsg$ "pointer-bytes is not positive: ~x0"
                  pointer-bytes?)))
     (retok (make-ienv
-             :version version
+             :dialect dialect
              :bool-bytes bool-bytes?
              :short-bytes short-bytes?
              :int-bytes int-bytes?
@@ -214,7 +216,8 @@
              :double-bytes double-bytes?
              :ldouble-bytes ldouble-bytes?
              :pointer-bytes pointer-bytes?
-             :plain-char-signedp plain-char-signedp))))
+             :plain-char-signedp plain-char-signedp)))
+  :guard-hints (("Goal" :in-theory (enable not))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -274,7 +277,7 @@
   (b* (((mv er? event state)
         (infer-ienv-process-inputs-and-gen-event name cc args state))
        ((when er?) (er-soft+ ctx t '(_) "~@0" er?)))
-    (value event)))
+    (acl2::value event)))
 
 (defmacro infer-ienv
   (name

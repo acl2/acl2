@@ -48,7 +48,7 @@
     "We use variable names like @('pc') @('acc')
      for program counters and accumulators,
      which are natural numbers, which are also field elements.
-     We use variables names like @('op') for field encodings of opcodes,
+     We use variable names like @('op') for field encodings of opcodes,
      while we use variable names @('opcode') for opcodes themselves.
      We use variable names like @('hlt') for bit encodings of halted flags,
      while we use variable names like @('halted') for boolean flags.")
@@ -165,7 +165,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This applies to each pair of consecurive rows."))
+    "This applies to each pair of consecutive rows."))
   (pfcs::parse-def
    "transition(pc, acc, op, hlt, pc_next, acc_next, op_next, hlt_next) := {
         pc_transition(pc, op, hlt, pc_next),
@@ -568,7 +568,7 @@
      The opcodes are the ones on that path,
      and the accumulators are constrained to be bytes
      (see @(tsee pfcs-accumulators) for a discussion of this)."))
-  (b* ((n (1+ (min-termination-limit prog input0)))
+  (b* ((n (min-termination-limit prog input0))
        (path (execution-path prog input0))
        (opcodes (fetch-list prog path)))
     (list (pfcs-initial)

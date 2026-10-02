@@ -92,7 +92,8 @@
         (,(defstobj-fnname field :boundp :hash-table renaming) ak ,stobj)
 ;; Leave out the get? function because we prefer to just expand its definition.
 ;;        (,(defstobj-fnname field :accessor? :hash-table renaming) ak ,stobj)
-        (,(defstobj-fnname field :count :hash-table renaming) ,stobj)))
+        (,(defstobj-fnname field :count :hash-table renaming) ,stobj)
+        (,(defstobj-fnname field :keys :hash-table renaming) ,stobj)))
      ((array-specp spec)
       `((,(defstobj-fnname field :accessor :array renaming) ai ,stobj)
         (,(defstobj-fnname field :length :array renaming) ,stobj)))
@@ -110,7 +111,8 @@
              (clr (defstobj-fnname field :clear :hash-table renaming))
              (acc (defstobj-fnname field :accessor :hash-table renaming))
              (bdp (defstobj-fnname field :boundp :hash-table renaming))
-             (cnt (defstobj-fnname field :count :hash-table renaming)))
+             (cnt (defstobj-fnname field :count :hash-table renaming))
+             (kys (defstobj-fnname field :keys :hash-table renaming)))
         ;; Hoo boy.
         `((defthm ,(incat stobj (symbol-name stobj) "-"
                           (symbol-name acc) "-"
@@ -179,7 +181,29 @@
           (defthm ,(incat stobj  (symbol-name stobj) "-"
                           (symbol-name cnt) "-"
                           (symbol-name clr))
-            (equal (,cnt (,clr ,stobj)) 0)))))
+            (equal (,cnt (,clr ,stobj)) 0))
+          (defthm ,(incat stobj (symbol-name stobj) "-"
+                          (symbol-name kys) "-"
+                          (symbol-name create))
+            (equal (,kys (,create)) nil))
+          (defthm ,(incat stobj  (symbol-name stobj) "-"
+                          (symbol-name kys) "-"
+                          (symbol-name upd))
+            (equal (,kys (,upd mk v ,stobj))
+                   (if (,bdp mk ,stobj)
+                       (,kys ,stobj)
+                     (merge-lexorder (list mk) (,kys ,stobj)))))
+          (defthm ,(incat stobj  (symbol-name stobj) "-"
+                          (symbol-name kys) "-"
+                          (symbol-name rem))
+            (equal (,kys (,rem mk ,stobj))
+                   (if (,bdp mk ,stobj)
+                       (remove1-equal mk (,kys ,stobj))
+                     (,kys ,stobj))))
+          (defthm ,(incat stobj  (symbol-name stobj) "-"
+                          (symbol-name kys) "-"
+                          (symbol-name clr))
+            (equal (,kys (,clr ,stobj)) nil)))))
      ((array-specp spec)
       (let* ((upd (defstobj-fnname field :updater :array renaming))
              (rsz (defstobj-fnname field :resize :array renaming))
@@ -313,6 +337,7 @@
                   (clr (defstobj-fnname field :clear :hash-table renaming))
                   (bdp (defstobj-fnname field :boundp :hash-table renaming))
                   (cnt (defstobj-fnname field :count :hash-table renaming))
+                  (kys (defstobj-fnname field :keys :hash-table renaming))
                   (stobj-rec
                    (defstobj-fnname stobj :recognizer :top renaming)))
              (value
@@ -323,6 +348,10 @@
                 (defthm ,(incat stobj (symbol-name stobj) "-NATP-"
                                 (symbol-name cnt))
                   (natp (,cnt ,stobj))
+                  :rule-classes :type-prescription)
+                (defthm ,(incat stobj (symbol-name stobj) "-NATP-"
+                                (symbol-name kys))
+                  (true-listp (,kys ,stobj))
                   :rule-classes :type-prescription)
                 (defthm ,(incat stobj (symbol-name stobj-rec) "-"
                                 (symbol-name upd))

@@ -20,7 +20,7 @@
 (include-book "rightrotate")
 (include-book "bvcat")
 (include-book "bitnot")
-(include-book "bvxor")
+(include-book "bvxor-def")
 (include-book "bitxor")
 (include-book "rotate")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -75,7 +75,7 @@
   (implies (and (< 32 n)
                 (integerp n))
            (equal (bvplus 32 z (bvplus n x y))
-                  (bvplus 32 (bvplus 32 x y) z)))
+                  (bvplus 32 z (bvplus 32 x y))))
   :hints (("Goal" :in-theory (enable bvplus))))
 
 (defthm bvcat-of-bitnot-low
@@ -137,8 +137,7 @@
            (equal (bvcat 1 (bitxor k highval) lowsize lowval)
                   (bvxor (+ 1 lowsize)
                                (bvcat 1 k lowsize 0) ;should get computed
-                               (bvcat 1 highval lowsize lowval))))
-  :hints (("Goal" :cases ((equal 0 highsize)))))
+                               (bvcat 1 highval lowsize lowval)))))
 
 (defthm bvcat-of-bvnot-high
   (implies (and (natp lowsize)
@@ -303,8 +302,8 @@
                 ;;(<= low2 high2minus1)
                 ;;(natp low1)
                 ;;(natp low2)
-                (natp mid1)
-                (natp mid2)
+                ;; (natp mid1)
+                ;; (natp mid2)
                 (natp high1)
                 (natp high2)
                 (posp mid1) ;why?
@@ -333,8 +332,8 @@
                 ;;(<= low2 high2minus1)
                 ;;(natp low1)
                 ;;(natp low2)
-                (natp mid1)
-                (natp mid2)
+                ;; (natp mid1)
+                ;; (natp mid2)
                 (natp high1)
                 (natp high2)
                 (posp mid1) ;why?
@@ -453,8 +452,8 @@
                 ;(<= low2 high2minus1)
                 (natp low1)
                 (natp low2)
-                (natp high1)
-                (natp high2)
+                ;; (natp high1)
+                ;; (natp high2)
                 (posp high1) ;why?
                 (posp high2) ;why?
                 (natp zsize))
@@ -480,8 +479,8 @@
                 ;(<= low2 high2minus1)
                 (natp low1)
                 (natp low2)
-                (natp high1)
-                (natp high2)
+                ;; (natp high1)
+                ;; (natp high2)
                 (posp high1) ;why?
                 (posp high2) ;why?
                 (natp zsize))
@@ -512,8 +511,8 @@
                 ;;(<= low2 high2minus1)
                 ;;(natp low1)
                 ;;(natp low2)
-                (natp mid1)
-                (natp mid2)
+                ;; (natp mid1)
+                ;; (natp mid2)
                 (natp high1)
                 (natp high2)
                 (posp mid1)  ;why?
@@ -546,8 +545,8 @@
                 ;;(<= low2 high2minus1)
                 ;;(natp low1)
                 ;;(natp low2)
-                (natp mid1)
-                (natp mid2)
+                ;; (natp mid1)
+                ;; (natp mid2)
                 (natp high1)
                 (natp high2)
                 (posp mid1)  ;why?
@@ -728,9 +727,7 @@
            (equal (getbit n (+ x (* (expt 2 n) bit)))
                   (bitxor bit (getbit n x))))
   :hints (("Goal" :cases ((equal bit 0))
-           :in-theory (e/d (getbit slice bitnot BVCHOP-OF-SUM-CASES)
-                           (
-                            )))))
+           :in-theory (enable getbit slice bitnot BVCHOP-OF-SUM-CASES))))
 
 (defthm getbit-of-+-of-*-of-expt-when-bitp-arg2-arg2
   (implies (and (bitp bit)

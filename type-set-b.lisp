@@ -25,8 +25,8 @@
 ;; positive-, negative-, and complex-irrationals.
 
 (defconst *number-of-numeric-type-set-bits*
-  #+:non-standard-analysis 10
-  #-:non-standard-analysis 7)
+  #+non-standard-analysis 10
+  #-non-standard-analysis 7)
 
 (defconst *type-set-binary-+-table-list*
   (let ((len (expt 2 *number-of-numeric-type-set-bits*)))
@@ -60,13 +60,13 @@
 ;; and negative irrationals.
 
 (defconst *type-set-<-table-list*
-  #+:non-standard-analysis
+  #+non-standard-analysis
   (cons (list :header
               :dimensions '(256 256)
               :maximum-length (1+ (* 256 256))
               :name '*type-set-<-table*)
         (type-set-<-alist 255 255 nil))
-  #-:non-standard-analysis
+  #-non-standard-analysis
   (cons (list :header
               :dimensions '(64 64)
               :maximum-length (1+ (* 64 64))
@@ -968,7 +968,7 @@
 ; if a proof attempt was aborted then we had to carefully clean up the property
 ; list structures so that they once again reflected the current (global)
 ; theory.  The beauty of the ACL2 approach is that local hint settings have no
-; affect on the global theory and yet involve no overhead.
+; effect on the global theory and yet involve no overhead.
 
 ; A delicacy of the current implementation however concerns the relation
 ; between the global enabled structure and undoing.  If the world is backed up
@@ -1396,7 +1396,7 @@
      (case-match y
        (('and . b)
         `(and ,@a ,@b))
-       (& `(and ,@a y))))
+       (& `(and ,@a ,y))))
     (&
      (case-match y
        (('and . a)
@@ -2312,7 +2312,7 @@
 ;; Historical Comment from Ruben Gamboa:
 ;; I added this function analogously to rational-type-set.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defmacro real-type-set (ts)
 
 ; Warning:  This is a dangerous macro because it evaluates ts more than once!
@@ -2596,14 +2596,14 @@
 
                (let ((temp-ts
                       (if (or (ts-intersectp ts1
-                                             #+:non-standard-analysis
+                                             #+non-standard-analysis
                                              *ts-complex*
-                                             #-:non-standard-analysis
+                                             #-non-standard-analysis
                                              *ts-complex-rational*)
                               (ts-intersectp ts2
-                                             #+:non-standard-analysis
+                                             #+non-standard-analysis
                                              *ts-complex*
-                                             #-:non-standard-analysis
+                                             #-non-standard-analysis
                                              *ts-complex-rational*))
                           *ts-boolean*
                         (aref2 'type-set-<-table
@@ -2685,14 +2685,14 @@
                       (*ts-one* *ts-negative-integer*)
                       (*ts-integer>1* *ts-negative-integer*)
                       (*ts-positive-ratio* *ts-negative-ratio*)
-                      #+:non-standard-analysis
+                      #+non-standard-analysis
                       (*ts-positive-non-ratio* *ts-negative-non-ratio*)
                       (*ts-negative-integer* *ts-positive-integer*)
                       (*ts-negative-ratio* *ts-positive-ratio*)
-                      #+:non-standard-analysis
+                      #+non-standard-analysis
                       (*ts-negative-non-ratio* *ts-positive-non-ratio*)
                       (*ts-complex-rational* *ts-complex-rational*)
-                      #+:non-standard-analysis
+                      #+non-standard-analysis
                       (*ts-complex-non-rational* *ts-complex-non-rational*))
           (puffert ttree))))))
 
@@ -2710,12 +2710,12 @@
                                              (ts-complement0 *ts-one*)))
                           (*ts-positive-ratio* *ts-positive-rational*)
                           (*ts-negative-rational* *ts-negative-rational*)
-                          #+:non-standard-analysis
+                          #+non-standard-analysis
                           (*ts-positive-non-ratio* *ts-positive-non-ratio*)
-                          #+:non-standard-analysis
+                          #+non-standard-analysis
                           (*ts-negative-non-ratio* *ts-negative-non-ratio*)
                           (*ts-complex-rational* *ts-complex-rational*)
-                          #+:non-standard-analysis
+                          #+non-standard-analysis
                           (*ts-complex-non-rational*
                            *ts-complex-non-rational*))))
     (cond
@@ -2752,7 +2752,7 @@
 ;; result is real, not necessarily irrational.
 
 (defun type-set-realpart (ts ttree ttree0)
-  (cond #+:non-standard-analysis
+  (cond #+non-standard-analysis
         ((ts-intersectp ts *ts-complex-non-rational*)
          (mv *ts-real* (puffert ttree0)))
         ((ts-intersectp ts *ts-complex-rational*)
@@ -2768,17 +2768,17 @@
          (mv (ts-union *ts-positive-rational*
                        *ts-negative-rational*)
              (puffert ttree)))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         ((ts-subsetp ts *ts-complex*)
          (mv (ts-union *ts-positive-real*
                        *ts-negative-real*)
              (puffert ttree)))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         ((ts-intersectp ts *ts-complex-non-rational*)
          (mv *ts-real* (puffert ttree0)))
         ((ts-intersectp ts *ts-complex-rational*)
-         (mv *ts-rational* (puffert #+:non-standard-analysis ttree
-                                    #-:non-standard-analysis ttree0)))
+         (mv *ts-rational* (puffert #+non-standard-analysis ttree
+                                    #-non-standard-analysis ttree0)))
         (t
          (mv *ts-zero* (puffert ttree)))))
 
@@ -2787,19 +2787,19 @@
 ;; ts1 and ts2.
 
 (defun type-set-complex (ts1 ts2 ttree ttree0)
-  (let ((ts1 #+:non-standard-analysis
+  (let ((ts1 #+non-standard-analysis
              (real-type-set ts1)
-             #-:non-standard-analysis
+             #-non-standard-analysis
              (rational-type-set ts1))
-        (ts2 #+:non-standard-analysis
+        (ts2 #+non-standard-analysis
              (real-type-set ts2)
-             #-:non-standard-analysis
+             #-non-standard-analysis
              (rational-type-set ts2)))
     (cond ((ts= ts2 *ts-zero*)
            (mv ts1 (puffert ttree)))
           ((ts= (ts-intersection ts2 *ts-zero*)
                 *ts-empty*)
-           #+:non-standard-analysis
+           #+non-standard-analysis
            (cond ((and (ts-subsetp ts1 *ts-rational*)
                        (ts-subsetp ts2 *ts-rational*))
                   (mv *ts-complex-rational* (puffert ttree)))
@@ -2807,17 +2807,17 @@
                       (ts-subsetp ts2 *ts-non-ratio*))
                   (mv *ts-complex-non-rational* (puffert ttree)))
                  (t (mv *ts-complex* (puffert ttree))))
-           #-:non-standard-analysis
+           #-non-standard-analysis
            (mv *ts-complex-rational* (puffert ttree)))
-          #+:non-standard-analysis
+          #+non-standard-analysis
           ((ts= ts1 *ts-real*)
            (mv *ts-acl2-number* (puffert ttree0)))
-          #-:non-standard-analysis
+          #-non-standard-analysis
           ((ts= ts1 *ts-rational*)
            (mv *ts-acl2-number* (puffert ttree0)))
           (t
            (mv (ts-union ts1
-                         #+:non-standard-analysis
+                         #+non-standard-analysis
                          (cond ((and (ts-subsetp ts1 *ts-rational*)
                                      (ts-subsetp ts2 *ts-rational*))
                                 *ts-complex-rational*)
@@ -2826,14 +2826,14 @@
                                                               *ts-zero*)))
                                 *ts-complex-non-rational*)
                                (t *ts-complex*))
-                         #-:non-standard-analysis
+                         #-non-standard-analysis
                          *ts-complex-rational*)
                (puffert ttree))))))
 
 ;; Historical Comment from Ruben Gamboa:
 ;; I added this function to account for the new built-in floor1.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun type-set-floor1 (ts ttree ttree0)
   (let* ((ts1 (real-type-set ts))
          (ans (ts-builder ts1
@@ -2850,7 +2850,7 @@
 ;; Historical Comment from Ruben Gamboa:
 ;; I added this function to account for the new built-in standard-part.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun type-set-standard-part (ts ttree ttree0)
   (let* ((ts1 (numeric-type-set ts))
          (ans (ts-builder ts1
@@ -2872,7 +2872,7 @@
 ;; Historical Comment from Ruben Gamboa:
 ;; I added this function to account for the new built-in standardp.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun type-set-standardp (ts ttree ttree0)
   (cond ((ts= ts *ts-zero*)
          (mv *ts-t* (puffert ttree)))
@@ -2908,7 +2908,7 @@
 ; meaning of these records.
 
 ; In a recognizer-tuple, fn is the name of some Boolean-valued
-; function of one argument.  True-ts and and false-ts are type sets.
+; function of one argument.  True-ts and false-ts are type sets.
 ; If such a record is on the recognizer-alist then it is the case that
 ; (fn x) implies that the type set of x is a subset of true-ts and
 ; (not (fn x)) implies that the type set of x is a subset of false-ts.
@@ -3018,7 +3018,7 @@
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*)
 
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make recognizer-tuple
               :fn 'realp
               :true-ts *ts-real*
@@ -3035,7 +3035,7 @@
               :nume nil
               :rune *fake-rune-for-anonymous-enabled-rule*)
 
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (make recognizer-tuple
               :fn 'complexp
               :true-ts *ts-complex*
@@ -3110,7 +3110,7 @@
 
 (defun most-recent-enabled-recog-tuple1 (lst ens)
 
-; This function finds the first recognizer-tuple in lst whose whose :nume is
+; This function finds the first recognizer-tuple in lst whose :nume is
 ; enabled-numep.  Thus, primitive recognizer tuples, like that for rationalp,
 ; are always "enabled."
 
@@ -3121,7 +3121,7 @@
 
 (defun most-recent-enabled-recog-tuple (fn wrld ens)
 
-; This function finds the first recognizer-tuple for fn whose whose :nume is
+; This function finds the first recognizer-tuple for fn whose :nume is
 ; enabled-numep.  Thus, primitive recognizer tuples, like that for rationalp,
 ; are always "enabled."
 
@@ -3266,7 +3266,7 @@
                       ((> evg 0) *ts-positive-ratio*)
                       (t *ts-negative-ratio*)))
 
-               #+:non-standard-analysis
+               #+non-standard-analysis
                ((realp evg)
                 (cond ((> evg 0) *ts-positive-non-ratio*)
                       (t *ts-negative-non-ratio*)))
@@ -3274,7 +3274,7 @@
                ((complex-rationalp evg)
                 *ts-complex-rational*)
 
-               #+:non-standard-analysis
+               #+non-standard-analysis
                ((complexp evg)
                 *ts-complex-non-rational*)
 
@@ -4919,6 +4919,9 @@
 
 (defrec ancestor
 
+; As the rewriter backchains, these records are added to the ancestors stack by
+; push-ancestor (or using make-ancestor-binding-hyp, for binding hyps).
+
 ; Note: if lit is :binding-hyp, then atm is hyp, fn-count is unify-subst and
 ; tokens is nil (see relevant comment in earlier-ancestor-biggerp).  See
 ; make-ancestor-binding-hyp, ancestor-binding-hyp-p, ancestor-binding-hyp/hyp,
@@ -5609,7 +5612,7 @@
                                      (merged-additive-const-ts
                                       (type-set-quote merged-additive-const))
 
-; We have have the following type information:
+; We have the following type information:
 ; ts:
 ;   type of orig-term (the term we are typing), which intersects both
 ;   *ts-ratio* and *ts-integer* and is contained in *ts-rational*
@@ -7222,27 +7225,27 @@
          arg2
          (ts-intersection ts2
                           (ts-complement *ts-one*)
-                          #+:non-standard-analysis
+                          #+non-standard-analysis
                           (ts-union *ts-positive-real*
                                     *ts-complex*)
-                          #-:non-standard-analysis
+                          #-non-standard-analysis
                           (ts-union *ts-positive-rational*
                                     *ts-complex-rational*))
          (cons-tag-trees ttree xttree)
          type-alist w))
 ; assuming true: if arg1 is nonnegative then arg2 is positive
        ((and (ts-subsetp ts1
-                         (ts-union #+:non-standard-analysis
+                         (ts-union #+non-standard-analysis
                                    *ts-non-negative-real*
-                                   #-:non-standard-analysis
+                                   #-non-standard-analysis
                                    *ts-non-negative-rational*
                                    (ts-complement *ts-acl2-number*)))
              (ts-intersectp
               ts2
               (ts-complement
-               #+:non-standard-analysis
+               #+non-standard-analysis
                (ts-union *ts-positive-real* *ts-complex*)
-               #-:non-standard-analysis
+               #-non-standard-analysis
                (ts-union *ts-positive-rational* *ts-complex-rational*))))
 
 ; The test says: We are dealing with (< arg1 arg2) where arg1 is non-negative
@@ -7262,34 +7265,34 @@
          ;;*** -simple
          arg2
          (ts-intersection ts2
-                          #+:non-standard-analysis
+                          #+non-standard-analysis
                           (ts-union *ts-positive-real* *ts-complex*)
-                          #-:non-standard-analysis
+                          #-non-standard-analysis
                           (ts-union *ts-positive-rational*
                                     *ts-complex-rational*))
          (cons-tag-trees ttree xttree)
          type-alist w))
 ; assuming true: if arg2 is not positive then arg1 is negative
        ((and (ts-subsetp ts2
-                         (ts-union #+:non-standard-analysis
+                         (ts-union #+non-standard-analysis
                                    *ts-non-positive-real*
-                                   #-:non-standard-analysis
+                                   #-non-standard-analysis
                                    *ts-non-positive-rational*
                                    (ts-complement *ts-acl2-number*)))
              (ts-intersectp
               ts1
               (ts-complement
-               #+:non-standard-analysis
+               #+non-standard-analysis
                (ts-union *ts-negative-real* *ts-complex*)
-               #-:non-standard-analysis
+               #-non-standard-analysis
                (ts-union *ts-negative-rational* *ts-complex-rational*))))
         (extend-type-alist
          ;;*** -simple
          arg1
          (ts-intersection ts1
-                          #+:non-standard-analysis
+                          #+non-standard-analysis
                           (ts-union *ts-negative-real* *ts-complex*)
-                          #-:non-standard-analysis
+                          #-non-standard-analysis
                           (ts-union *ts-negative-rational*
                                     *ts-complex-rational*))
          (cons-tag-trees ttree xttree)
@@ -7300,15 +7303,15 @@
 
 ; assuming false: if arg1 is negative then arg2 is negative
    ((and (ts-subsetp ts1
-                     #+:non-standard-analysis
+                     #+non-standard-analysis
                      *ts-negative-real*
-                     #-:non-standard-analysis
+                     #-non-standard-analysis
                      *ts-negative-rational*)
          (ts-intersectp ts2
-                        #+:non-standard-analysis
+                        #+non-standard-analysis
                         (ts-complement (ts-union *ts-complex*
                                                  *ts-negative-real*))
-                        #-:non-standard-analysis
+                        #-non-standard-analysis
                         (ts-complement (ts-union *ts-complex-rational*
                                                  *ts-negative-rational*))))
 ; We are dealing with (not (< arg1 arg2)) which is (<= arg2 arg1) and we here
@@ -7319,25 +7322,25 @@
      ;;*** -simple
      arg2
      (ts-intersection ts2
-                      #+:non-standard-analysis
+                      #+non-standard-analysis
                       (ts-union *ts-complex*
                                 *ts-negative-real*)
-                      #-:non-standard-analysis
+                      #-non-standard-analysis
                       (ts-union *ts-complex-rational*
                                 *ts-negative-rational*))
      (cons-tag-trees ttree xttree)
      type-alist w))
 ; assuming false: if arg1 is not positive then arg2 is not positive
    ((and (ts-subsetp ts1
-                     (ts-union #+:non-standard-analysis
+                     (ts-union #+non-standard-analysis
                                *ts-non-positive-real*
-                               #-:non-standard-analysis
+                               #-non-standard-analysis
                                *ts-non-positive-rational*
                                (ts-complement *ts-acl2-number*)))
          (ts-intersectp ts2
-                        #+:non-standard-analysis
+                        #+non-standard-analysis
                         *ts-positive-real*
-                        #-:non-standard-analysis
+                        #-non-standard-analysis
                         *ts-positive-rational*))
 
 ; Here we are dealing with (not (< arg1 arg2)) which is (<= arg2 arg1).  We
@@ -7354,19 +7357,19 @@
      arg2
      (ts-intersection
       ts2
-      (ts-complement #+:non-standard-analysis *ts-positive-real*
-                     #-:non-standard-analysis *ts-positive-rational*))
+      (ts-complement #+non-standard-analysis *ts-positive-real*
+                     #-non-standard-analysis *ts-positive-rational*))
      (cons-tag-trees ttree xttree)
      type-alist w))
 ; assuming false: if arg2 is positive then arg1 is positive
    ((and (ts-subsetp ts2
-                     #+:non-standard-analysis *ts-positive-real*
-                     #-:non-standard-analysis *ts-positive-rational*)
+                     #+non-standard-analysis *ts-positive-real*
+                     #-non-standard-analysis *ts-positive-rational*)
          (ts-intersectp ts1
                         (ts-complement
-                         #+:non-standard-analysis
+                         #+non-standard-analysis
                          (ts-union *ts-complex* *ts-positive-real*)
-                         #-:non-standard-analysis
+                         #-non-standard-analysis
                          (ts-union *ts-complex-rational*
                                    *ts-positive-rational*))))
     (extend-type-alist
@@ -7374,9 +7377,9 @@
      arg1
      (ts-intersection
       ts1
-      #+:non-standard-analysis
+      #+non-standard-analysis
       (ts-union *ts-complex* *ts-positive-real*)
-      #-:non-standard-analysis
+      #-non-standard-analysis
       (ts-union *ts-complex-rational*
                 *ts-positive-rational*))
      (cons-tag-trees ttree xttree)
@@ -7385,21 +7388,21 @@
    ((and (ts-subsetp
           ts2
           (ts-complement
-           #+:non-standard-analysis
+           #+non-standard-analysis
            (ts-union *ts-complex* *ts-negative-real*)
-           #-:non-standard-analysis
+           #-non-standard-analysis
            (ts-union *ts-complex-rational*
                      *ts-negative-rational*)))
          (ts-intersectp ts1
-                        #+:non-standard-analysis *ts-negative-real*
-                        #-:non-standard-analysis *ts-negative-rational*))
+                        #+non-standard-analysis *ts-negative-real*
+                        #-non-standard-analysis *ts-negative-rational*))
     (extend-type-alist
      ;;*** -simple
      arg1
      (ts-intersection
       ts1
-      (ts-complement #+:non-standard-analysis *ts-negative-real*
-                     #-:non-standard-analysis *ts-negative-rational*))
+      (ts-complement #+non-standard-analysis *ts-negative-real*
+                     #-non-standard-analysis *ts-negative-rational*))
      (cons-tag-trees ttree xttree)
      type-alist w))
    (t type-alist)))
@@ -7739,7 +7742,7 @@
 ; var whose most-recent-enabled-recog-tuple has those strongp, true-ts, and
 ; false-ts fields, in which case var is :one and rune[s] is a single rune; or
 ; else x is a call of IF on a tree of strong compound-recognizer calls of var,
-; in which case rune[s] is is a list of runes justifying that conclusion.
+; in which case rune[s] is a list of runes justifying that conclusion.
 
   (cond
    ((eq (ffn-symb x) 'if)
@@ -9170,7 +9173,7 @@
                                ttree0
                                pot-lst pt backchain-limit)
                  (type-set-unary-/ ts1 ttree ttree0)))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (floor1
          (mv-let (ts1 ttree)
                  (type-set-rec (fargn term 1)
@@ -9207,7 +9210,7 @@
                                ttree0
                                pot-lst pt backchain-limit)
                  (type-set-numerator ts1 ttree ttree0)))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (standardp
          (mv-let (ts1 ttree)
                  (type-set-rec (fargn term 1)
@@ -9220,7 +9223,7 @@
                                ttree0
                                pot-lst pt backchain-limit)
                  (type-set-standardp ts1 ttree ttree0)))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (standard-part
          (mv-let (ts1 ttree)
                  (type-set-rec (fargn term 1)
@@ -9233,7 +9236,7 @@
                                ttree0
                                pot-lst pt backchain-limit)
                  (type-set-standard-part ts1 ttree ttree0)))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (i-large-integer
          (mv *ts-integer>1* (puffert ttree0)))
         (car
@@ -10844,16 +10847,16 @@
                          ((equal arg1 *0*)
                           (cond
                            ((ts-subsetp ts2
-                                        #+:non-standard-analysis *ts-positive-real*
-                                        #-:non-standard-analysis *ts-positive-rational*)
+                                        #+non-standard-analysis *ts-positive-real*
+                                        #-non-standard-analysis *ts-positive-rational*)
                             (mv-atf not-flg t nil type-alist nil
                                     ttree
                                     xttree))
                            ((ts-subsetp ts2
                                         (ts-union (ts-complement *ts-acl2-number*)
-                                                  #+:non-standard-analysis
+                                                  #+non-standard-analysis
                                                   *ts-non-positive-real*
-                                                  #-:non-standard-analysis
+                                                  #-non-standard-analysis
                                                   *ts-non-positive-rational*))
                             (mv-atf not-flg nil t nil type-alist
                                     ttree
@@ -10865,11 +10868,11 @@
                                     (and (not (eq ignore :tta))
                                          (let ((ts (ts-intersection
                                                     ts2
-                                                    #+:non-standard-analysis
+                                                    #+non-standard-analysis
                                                     (ts-union
                                                      *ts-positive-real*
                                                      *ts-complex*)
-                                                    #-:non-standard-analysis
+                                                    #-non-standard-analysis
                                                     (ts-union
                                                      *ts-positive-rational*
                                                      *ts-complex-rational*))))
@@ -10887,9 +10890,9 @@
                                          (let ((ts (ts-intersection
                                                     ts2
                                                     (ts-complement
-                                                     #+:non-standard-analysis
+                                                     #+non-standard-analysis
                                                      *ts-positive-real*
-                                                     #-:non-standard-analysis
+                                                     #-non-standard-analysis
                                                      *ts-positive-rational*))))
                                            (cond
                                             ((ts= ts2 ts)
@@ -11071,18 +11074,18 @@
                          ((equal arg2 *0*)
                           (cond
                            ((ts-subsetp ts1
-                                        #+:non-standard-analysis
+                                        #+non-standard-analysis
                                         *ts-negative-real*
-                                        #-:non-standard-analysis
+                                        #-non-standard-analysis
                                         *ts-negative-rational*)
                             (mv-atf not-flg t nil type-alist nil
                                     ttree
                                     xttree))
                            ((ts-subsetp ts1
                                         (ts-union (ts-complement *ts-acl2-number*)
-                                                  #+:non-standard-analysis
+                                                  #+non-standard-analysis
                                                   *ts-non-negative-real*
-                                                  #-:non-standard-analysis
+                                                  #-non-standard-analysis
                                                   *ts-non-negative-rational*))
                             (mv-atf not-flg nil t nil type-alist
                                     ttree
@@ -11094,11 +11097,11 @@
                                     (and (not (eq ignore :tta))
                                          (let ((ts (ts-intersection
                                                     ts1
-                                                    #+:non-standard-analysis
+                                                    #+non-standard-analysis
                                                     (ts-union
                                                      *ts-negative-real*
                                                      *ts-complex*)
-                                                    #-:non-standard-analysis
+                                                    #-non-standard-analysis
                                                     (ts-union
                                                      *ts-negative-rational*
                                                      *ts-complex-rational*))))
@@ -11115,9 +11118,9 @@
                                          (let ((ts (ts-intersection
                                                     ts1
                                                     (ts-complement
-                                                     #+:non-standard-analysis
+                                                     #+non-standard-analysis
                                                      *ts-negative-real*
-                                                     #-:non-standard-analysis
+                                                     #-non-standard-analysis
                                                      *ts-negative-rational*))))
                                            (cond
                                             ((ts= ts1 ts)
@@ -11997,7 +12000,7 @@
 ; type-alist-equality-loop1.  We discovered this in Version_2.7 during
 ; regression tests, specifically, with the last form in the community book
 ; books/workshops/2000/manolios/pipeline/pipeline/deterministic-systems/128/top/ma128-isa128.
-; This function was being called differently because of a change in in
+; This function was being called differently because of a change in
 ; built-in-clausep to use forward-chaining.
 
                       (equal type-alist type-alist0))

@@ -60,9 +60,6 @@
                   (cadr x))
                  (t x))))
     (cond ((acl2-numberp x)
-
-; Translate will check that numeric arguments of a df primitive are
-
            (cond ((dfp x)
 
 ; It might be reasonable to return the double-float (to-df x) when we are in
@@ -111,7 +108,7 @@
                  (cons ',fn-name (to-df?-args (list ,@formals))))
                ,(if (eq macro-name 'df-log)
 
-; We don't support having df-log stand for both binary-df-log and unary-df--log
+; We don't support having df-log stand for both binary-df-log and unary-df-log
 ; when used in theory functions.
 
                     `(table untrans-table ',fn-name '(,macro-name))
@@ -276,10 +273,11 @@
 
 (defun df-macro-name (fn)
 
-; This utility creates a macro name corresponding to fn when fn ends in "-FN".
+; This utility returns a macro name corresponding to fn when fn ends in "-FN".
 ; For example, (df-macro-name 'df-sin-fn) evaluates to the symbol, df-sin.
+; Otherwise, nil is returned.
 
-; Thus, if fn is a or the form unary-xxx or binary-xxx, we return nil, as we
+; Thus, if fn is of the form unary-xxx or binary-xxx, nil is returned; we
 ; handle those in another way.  We don't even create a macro corresponding to
 ; the zero-ary function, df-pi.
 
@@ -341,8 +339,8 @@
 
 (defun df-events (sigs flg)
 
-; Flg is non-nil if and only we are generating events for constrained versions
-; of the df operations.
+; Flg is non-nil if and only if we are generating events for constrained
+; versions of the df operations.
 
   (declare (xargs :guard (and (symbol-alistp sigs)
                               (all->=-len sigs 2)

@@ -1,6 +1,6 @@
 ; Equivalence relations used by Axe
 ;
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,7 +25,7 @@
   (declare (xargs :guard t)) ; strengthen but note that fast alists can be non-true-lists
   (cdr (hons-get key alist)))
 
-;; We may some day support more equivalence relation, but for now we only
+;; We may some day support more equivalence relations, but for now we only
 ;; support 'equal and 'iff.
 (defund equivp (x)
   (declare (xargs :guard t))

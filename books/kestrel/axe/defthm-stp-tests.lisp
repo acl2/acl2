@@ -1,7 +1,7 @@
 ; Tests of defthm-stp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -109,7 +109,7 @@
 ;;                 (bv-array-write 8 17 index2 val2 array2)))
 ;;     :print t))
 
-;; ;; TODO: Sould this pass?  The array equality gets cut out, but in fact we know it is false.
+;; ;; TODO: Should this pass?  The array equality gets cut out, but in fact we know it is false.
 ;; ;; This depends on knowing that the arrays can't be equal because they have different lengths.
 ;; (must-fail
 ;;   (defthm-stp array4
@@ -153,7 +153,7 @@
              z)
     :print t))
 
-;; This work because the whole BVPLUS node gets cut out due to the bad argument.  A warning is printed.
+;; This works because the whole BVPLUS node gets cut out due to the bad argument.  A warning is printed.
 (defthm-stp type-test3
   (equal (bvplus 8 x 'foo)
          (bvplus 8 x 'foo))

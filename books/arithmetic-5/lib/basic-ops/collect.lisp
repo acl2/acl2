@@ -182,7 +182,9 @@
                     (if (equal (fix c) 0)
                         0
                       (- (expt 2 (+ c-pow (* d-pow n))))))))
+
 
+
 (defthm |(* (/ x) (expt x n))|
     (implies (integerp n)
              (equal (collect-* (/ x) (expt x n))
@@ -327,6 +329,61 @@
                              (not (equal n 0)))
                         0
                       (expt x (+ m n))))))
+
+; Moore Modification: Without the rule below the theorem
+
+
+; (thm
+;  (implies (integerp n)
+;           (equal (expt 3/2 n)
+;                  (* (expt 3 n) (expt 2 (- n))))))
+
+; can't be proved and, in fact, introduces and leaves COLLECT-* in the problem.
+; Theorems like this have also caused infinite loops through
+; SIMPLIFY-PRODUCTS-GATHER-EXPONENTS-EQUAL, which can repeatedly multiply both
+; sides by (EXPT 3/2 (- N)) but fail to recognize the opportunity to cancel
+; against (EXPT 3 N).  (Note: While this behavior was witnessed by me while
+; tracking down loops, I can no longer get it to occur because of changes
+; elsewhere in the library.  Sorry!)
+
+; Following Robert's convention this rule's name suggests it rewrites
+; a *-term, but it actually rewrites a COLLECT-*-term.
+
+; Because this gathers exponents, the rule shouldn't be used if we're
+; scattering exponents.  But that's not a problem here because it rewrites a
+; COLLECT-*-term.  (Recall that COLLECT-* is injected into a goal by the rule
+; BUBBLE-DOWN-*-MATCH-1, found in the file
+; arithmetic-5/lib/basic-ops/collect.lisp and which is triggered by the
+; presence of a BUBBLE-DOWN term.  But BUBBLE-DOWN is injected by the rule
+; NORMALIZE-FACTORS-GATHER-EXPONENTS, found in the file
+; arithmetic-5/lib/basic-ops/normalize.lisp.  And that rule is enabled only if
+; (gather-exponents) has been executed (which is the default).  So if COLLECT-*
+; is in the problem, we're gathering exponents.)
+
+; Note: The rule below requires c and d to be quoted rational constants.  Once
+; upon a time it was more general, allowing c and d (then called x and y) to be
+; any terms whatsoever.  However that caused many loops because it conflicted
+; with |(expt (* x y) n)|.  In particular, the generalized version, |(binary-*
+; (expt x m) (expt y (- m)))| converted two expts into one, pushing x and (/ y)
+; together under a single exponent m, while Robert's |(expt (* x y) n)|
+; converted that one expt back into the original two.  So I've restricted it to
+; quoted numeric constants which therefore fuse into a new numeric constant
+; instead of introducing another product term.
+
+(defthm |(* (expt c m) (expt d (- m)))|
+  (implies (and (syntaxp (and (rational-constant-p c)
+                              (rational-constant-p d)))
+                (syntaxp
+                 (not (disabledp-fn '(:e use-new-arith-5-rules)
+                                    (access rewrite-constant
+                                            (access metafunction-context mfc :rcnst)
+                                            :current-enabled-structure)
+                                    (w state))))
+                (integerp m)
+                (integerp n)
+                (equal m (- n)))
+           (equal (collect-* (expt c m) (expt d n))
+                  (expt (/ c d) m))))
 
 (defthm |(* (expt c m) (expt d n))|
     (implies (and (syntaxp (rational-constant-p c))

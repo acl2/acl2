@@ -1,7 +1,7 @@
 ; Basic Axe rules about BVs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,12 +17,13 @@
 ;; file does not use the Axe syntax functions.
 
 (include-book "kestrel/bv/bvplus-def" :dir :system)
-(include-book "kestrel/bv/bvxor" :dir :system)
-(include-book "kestrel/bv/bvor" :dir :system)
+(include-book "kestrel/bv/bvxor-def" :dir :system)
+(include-book "kestrel/bv/bvor-def" :dir :system)
 (include-book "kestrel/bv/bvnot" :dir :system)
 (include-book "kestrel/bv/bvand" :dir :system)
 (include-book "kestrel/bv/bitxor" :dir :system)
 (include-book "kestrel/bv/sbvlt-def" :dir :system)
+(include-book "kestrel/bv/sbvdiv-def" :dir :system)
 (include-book "kestrel/bv/bvlt" :dir :system)
 (include-book "kestrel/bv/leftrotate32" :dir :system)
 (include-book "kestrel/bv/rightrotate32" :dir :system)
@@ -175,3 +176,11 @@
 ;; Only needed for Axe (ACL2 knows this by type reasoning).
 (defthmd natp-of-bool-to-bit
    (natp (bool-to-bit x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd natp-of-sbvdiv
+  (natp (sbvdiv size x y)))
+
+(defthmd integerp-of-sbvdiv
+  (integerp (sbvdiv size x y)))

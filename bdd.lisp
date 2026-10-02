@@ -80,10 +80,9 @@
 ; DILEMMA:  Do we let this macro box (1+ x) or not, and if so, when?  Here are
 ; some thoughts on the issue.
 
-; Use this macro to increment mx-id,in order to guarantee that mx-id remains a
+; Use this macro to increment mx-id, in order to guarantee that mx-id remains a
 ; fixnum.  X is known to be a nonnegative fixnum; this macro checks that we
-; keep it a fixnum by adding 1 to it.  It actually checks even more, namely,
-; that
+; keep it a fixnum by adding 1 to it.
 
   `(the-fixnum
     (let ((x ,x))
@@ -290,7 +289,7 @@
         ((complex-rationalp x) 'complex-rational)
         ((stringp x) 'string)
         ((characterp x) 'character)
-        (t (er hard 'fn-symb "Unexpected object, ~x0."
+        (t (er hard 'evg-type "Unexpected object, ~x0."
                x))))
 
 (defun make-if-cst (unique-id tst tbr fbr bdd-constructors)
@@ -318,10 +317,10 @@
                    (cond
                     ((and (leafp fbr)
                           (bdd-constructor-trm-p (trm fbr) bdd-constructors))
-                     (msg "true branch with ~#0~[function symbol ~x1~/explicit ~
-                         value of type ~x2~] and false branch with ~
-                         ~#3~[function symbol ~x4~/explicit value  of type ~
-                         ~x5~]"
+                     (msg "true branch with ~#0~[function symbol ~
+                           ~x1~/explicit value of type ~x2~] and false branch ~
+                           with ~#3~[function symbol ~x4~/explicit value of ~
+                           type ~x5~]"
                           (if (eq (car true-fn) 'quote) 1 0)
                           (car true-fn)
                           (and (eq (car true-fn) 'quote)
@@ -441,8 +440,8 @@
 
 (defun boolean-hyps-vars (hyps)
 
-; If hyps consists of terms of the form (booleanp v), or perhaps the
-; equivalent, then we return a list indices of such v.
+; If hyps consists entirely of terms of the form (booleanp v), or perhaps the
+; equivalent, then we return a list of such v.  Otherwise we return t.
 
   (if (endp hyps)
       nil
@@ -454,40 +453,53 @@
               (cons v rst)
             t))))))
 
-(defun first-boolean-type-prescription (type-prescription-list ens formals)
+(defun first-boolean-type-prescription (type-prescription-list ens)
 
 ; This function finds the most recent enabled type-prescription rule from the
-; given list whose :basic-ts is boolean and :hyps are all of the form (booleanp
-; v) or a "clearly" equivalent form, where the :term is of the form (fn ... v
-; ...).  It returns two values.  The first is the :rune of the rule, which is
-; non-nil if and only if such a rule is found.  If the first value is non-nil,
-; then the second value is a "mask" as described in the comment in bool-mask.
+; given list whose :basic-ts is boolean, whose :term is the application of a
+; function symbol to distinct formals (v1 ... vk), and whose :hyps are all of
+; the form (booleanp vi) for some vi or a "clearly" equivalent form.  The first
+; value returned is the :rune of the rule, which is non-nil if and only if such
+; a rule is found.  If the first value is non-nil, then the second value is (v1
+; ... vk) and the third value is the :vars of the rule.
 
   (cond
    ((endp type-prescription-list)
-    (mv nil nil))
-   ((and (enabled-numep
-          (access type-prescription (car type-prescription-list) :nume)
-          ens)
-         (ts-subsetp
-          (access type-prescription (car type-prescription-list) :basic-ts)
-          *ts-boolean*))
+    (mv nil nil nil))
+   (t
     (let* ((tp (car type-prescription-list))
-           (hyps (access type-prescription tp :hyps))
-           (vars (access type-prescription tp :vars)))
-      (if hyps
-          (let ((more-vars (boolean-hyps-vars hyps)))
-            (if (or (eq more-vars t)
-                    (not (subsetp-eq more-vars formals)))
-                (first-boolean-type-prescription (cdr type-prescription-list)
-                                                 ens
-                                                 formals)
-              (mv (access type-prescription tp :rune)
-                  (union-eq vars more-vars))))
-        (mv (access type-prescription tp :rune)
-            vars))))
-   (t (first-boolean-type-prescription
-       (cdr type-prescription-list) ens formals))))
+           (term (access type-prescription tp :term))
+           (new-formals (if (and (nvariablep term) ; should always be true
+; The following is equivalent to (arglistp (fargs term)), but is more efficient.
+                                 (symbol-listp (fargs term))
+                                 (no-duplicatesp-eq (fargs term)))
+                            (fargs term)
+                          :error)))
+      (cond
+       ((eq new-formals :error)
+        (first-boolean-type-prescription (cdr type-prescription-list) ens))
+       ((and (enabled-numep
+              (access type-prescription (car type-prescription-list) :nume)
+              ens)
+             (ts-subsetp
+              (access type-prescription (car type-prescription-list) :basic-ts)
+              *ts-boolean*))
+        (let ((hyps (access type-prescription tp :hyps))
+              (vars (access type-prescription tp :vars)))
+          (if hyps
+              (let ((more-vars (boolean-hyps-vars hyps)))
+                (if (or (eq more-vars t)
+                        (not (subsetp-eq more-vars new-formals)))
+                    (first-boolean-type-prescription
+                     (cdr type-prescription-list) ens)
+                  (mv (access type-prescription tp :rune)
+                      new-formals
+                      (union-eq vars more-vars))))
+            (mv (access type-prescription tp :rune)
+                new-formals
+                vars))))
+       (t (first-boolean-type-prescription (cdr type-prescription-list)
+                                           ens)))))))
 
 (defun recognizer-rune (recognizer-alist wrld ens)
   (cond
@@ -527,11 +539,10 @@
    (t
     (let ((rune (recognizer-rune (getpropc fn 'recognizer-alist nil wrld)
                                  wrld
-                                 ens))
-          (formals (formals fn wrld)))
+                                 ens)))
       (if rune
-          (bool-mask1 formals nil rune)
-        (mv-let (rune vars)
+          (bool-mask1 (formals fn wrld) nil rune)
+        (mv-let (rune new-formals vars)
 
 ; We only consider the most recent type prescription with Boolean base type.
 ; Some day we might consider somehow combining all such type prescription
@@ -539,10 +550,9 @@
 
                 (first-boolean-type-prescription
                  (getpropc fn 'type-prescriptions nil wrld)
-                 ens
-                 formals)
+                 ens)
                 (and rune
-                     (bool-mask1 formals vars rune))))))))
+                     (bool-mask1 new-formals vars rune))))))))
 
 (defun commutative-p1 (fn lemmas ens)
 
@@ -3130,7 +3140,7 @@
           (msg "There ~#0~[are no hypotheses~/is only one hypothesis~/are only ~
                 ~n0 hypotheses~] in this goal, but your :BDD hint suggested ~
                 that there would be at least ~x1 ~
-                ~#1~[~/hypothesis~/hypotheses]."
+                ~#1~[~/hypothesis~/hypotheses~]."
                (1- (length top-clause))
                (1+ literal-hint))
           nil

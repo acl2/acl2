@@ -1,7 +1,7 @@
 ; Index for variable nodes in DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,7 +17,7 @@
 ;; cannot use the parent-array to find them.  The entries in the
 ;; dag-variable-alist should be sorted by decreasing nodenum.
 
-;; TODO: Consider having users of this call fast-alist-free when then are
+;; TODO: Consider having users of this call fast-alist-free when they are
 ;; finished with each DAG, to free the hash-table on Lisps other than CCL or
 ;; SBCL.
 
@@ -141,7 +141,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; We use a fast-alist operation here.  This attaches a hash-table to the alist
-;; the first time it is called on a given alist.  Add additions to a
+;; the first time it is called on a given alist.  All additions to a
 ;; dag-variable-alist should be made by calling this function.
 (defund-inline add-to-dag-variable-alist (var nodenum dag-variable-alist)
   (declare (xargs :guard (and (symbolp var)

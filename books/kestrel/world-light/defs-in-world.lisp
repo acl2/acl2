@@ -1,6 +1,6 @@
 ; Getting all defuns and defthms from the world.
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -40,7 +40,7 @@
                        t)))
               (defuns-and-defthms-in-world (rest world) triple-to-stop-at whole-world (cons symb defuns-acc) defthms-acc)
             (if (eq prop 'theorem)
-                ;; We assume anything with an 'theorem property is a defthm/defaxiom:
+                ;; We assume anything with a 'theorem property is a defthm/defaxiom:
                 (defuns-and-defthms-in-world (rest world) triple-to-stop-at whole-world defuns-acc (cons symb defthms-acc))
               (defuns-and-defthms-in-world (rest world) triple-to-stop-at whole-world defuns-acc defthms-acc))))))))
 

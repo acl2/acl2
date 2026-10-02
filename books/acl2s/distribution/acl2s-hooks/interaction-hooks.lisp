@@ -143,6 +143,8 @@
 
 ; package dump stuff
 (redefun+rewrite
+; Defpkg-fn is defined in ACL2 source file other-events.lisp:
+; (depends-on "../../../../other-events.lisp")
  acl2::defpkg-fn
  (:carpat (let* ((acl2::imports %val%)
                  . %rst%)
@@ -173,6 +175,8 @@
 ;; if guard-checking is :none and there are functions being
 ;; traced, also use that during proofs
 (redefun+rewrite
+; Prove is defined in ACL2 source file prove.lisp:
+; (depends-on "../../../../prove.lisp")
  acl2::prove
  (:carpat (acl2::state-global-let*
            ((acl2::guard-checking-on nil)

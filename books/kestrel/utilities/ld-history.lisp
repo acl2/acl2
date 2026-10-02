@@ -35,7 +35,6 @@
     (and (consp stobjs-out/value)
          (cdr stobjs-out/value))))
 
-;; Returns the most recent THM or DEFTHM submitted by the user, or throws an error is there isn't one.
 (defund most-recent-failed-command-aux (ld-history
                                         whole-ld-history ; just for the error message
                                         event-types)
@@ -71,7 +70,7 @@
             ;; Keep looking:
             (most-recent-failed-command-aux (rest ld-history) whole-ld-history event-types)))))))
 
-;; Returns the most recent THM or DEFTHM submitted by the user, or throws an error is there isn't one.
+;; Returns the most recent command that is one of the given EVENT-TYPES, or throws an error is there isn't one.
 ;; TODO: What if the most recent theorem is inside an encapsulate or some other compound event (see what redo-flat does?)?
 (defund most-recent-failed-command (event-types state)
   (declare (xargs :guard (and (symbol-listp event-types)

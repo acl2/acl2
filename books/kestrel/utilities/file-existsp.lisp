@@ -1,6 +1,6 @@
 ; A tool to tell whether a file or directory exists
 ;
-; Copyright (C) 2015-2023 Kestrel Institute
+; Copyright (C) 2015-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -9,6 +9,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+(local (include-book "read-acl2-oracle"))
 
 ;; Returns (mv existsp state) according to whether PATH exists (as a file or
 ;; directory or link).  If PATH is a relative path, it is interprted relative
@@ -24,3 +26,8 @@
     (file-write-date$ path state)
     (mv (if file-date t nil)
         state)))
+
+(defthm w-of-mv-nth-1-of-file-existsp
+  (equal (w (mv-nth 1 (file-existsp path state)))
+         (w state))
+  :hints (("Goal" :in-theory (e/d (file-existsp) (w)))))

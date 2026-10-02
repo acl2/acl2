@@ -1,7 +1,7 @@
 ; Addresses and new addresses
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -145,7 +145,7 @@
                            (ads (set::delete CURRENT-TRY ADS))
                            (current-try (+ 1 current-try))))
           ("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (new-ad-aux) ( ;DELETE-FROM-SET-IS-JUST-REMOVE
+           :in-theory (e/d (new-ad-aux) (;DELETE-FROM-SET-IS-JUST-REMOVE
                                          )))))
 
 ;The key property of NEW-AD.
@@ -854,7 +854,7 @@
                                                dom)))
          (nth-new-ad 4 dom))
   :hints (("Goal" :use (:instance new-address-hack)
-           :in-theory (e/d (SET::INSERT-INSERT) ( new-address-hack)))))
+           :in-theory (e/d (SET::INSERT-INSERT) (new-address-hack)))))
 
 (defthm new-address-hack2
   (equal (new-ad (set::insert (nth-new-ad 2 dom)

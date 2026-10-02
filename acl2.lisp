@@ -282,6 +282,67 @@
 
 (proclaim *acl2-optimize-form*)
 
+#+sbcl
+(require :sb-introspect) ; for the progn form below
+
+#+sbcl
+(progn
+
+; SBCL Version 2.6.8 (and probably earlier versions) performs optimizations
+; that are problematic for ACL2.  This made it possible to certify the original
+; versions of the following files in the community books, each proving nil, in
+; ACL2 Version 8.7 (as described in those books):
+
+; books/system/tests/integer-length-bad-optimization.lisp
+; books/system/tests/length-bad-optimization.lsp
+
+; Here, we avoid those optimizations for built-in functions by following a
+; suggestion of Stas Boukarev by proclaiming them notinline.  (An alternative
+; would be to replace, for each return type, any expression of the form
+; (signed-byte n) or (unsigned-byte n) by signed-byte or unsigned-byte,
+; respectively.)
+
+; We are in package "CL-USER".  To avoid (very unlikely) name conficts, we
+; prefix each of these functions with "acl2tf-", to indicate that we are doing
+; Type Fixes for ACL2.
+
+(defun acl2tf-find-limited-integer-in-tree (x)
+
+; Note that even (integer n) could be problematic, as such a number is bounded
+; below.  Also note that type bit need not be included: quite possibly no
+; built-in function with a bit output is called by an ACL2 function, but even
+; if it is, its type would be valid even in ACL2.
+
+  (cond ((atom x) nil)
+        ((and (member (car x)
+                      '(signed-byte unsigned-byte mod integer)
+                      :test #'eq)
+              (consp (cdr x))
+              (integerp (cadr x)))
+         t)
+        (t (or (acl2tf-find-limited-integer-in-tree (car x))
+               (acl2tf-find-limited-integer-in-tree (cdr x))))))
+
+(defun acl2tf-suspect-fns ()
+  (let (ans)
+    (do-symbols (sym "COMMON-LISP")
+                (let ((type (and (eq (find-symbol (symbol-name sym)
+                                                  "COMMON-LISP")
+                                     sym)
+                                 (fboundp sym)
+                                 (sb-introspect:function-type sym))))
+                  (when (and (consp type)
+                             (progn (assert (and (null (cdr (last type)))
+                                                 (= (length type) 3)))
+                                    (and (eq (car type) 'function)
+                                         (acl2tf-find-limited-integer-in-tree
+                                          (caddr type)))))
+                    (push sym ans))))
+    ans))
+
+(eval `(declaim (notinline ,@(acl2tf-suspect-fns))))
+)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                               FILES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -583,7 +644,7 @@
 ; We have tried to build under ECL (Embeddable Common-Lisp), and with some
 ; modifications, we made progress -- except there appears (as of Sept. 2011) to
 ; be no good way for us to save an executable image.  Specifically, it appears
-; that c:build-program not will suffice for saving state (properties etc.) --
+; that c:build-program will not suffice for saving state (properties etc.) --
 ; it's just for saving specified .o files.  (This impression seems to be
 ; confirmed at http://stackoverflow.com/questions/7686246/saving-lisp-state .)
 
@@ -823,9 +884,9 @@
                  package whose name begins with the ~%four letters ``ACL2'', ~
                  so ACL2 may not work in this Lisp." (package-name p))
         (cond ((package-use-list p)
-               (format t "~%~%Warning:  The package with name ~a ~
-                   USES the packages in the list ~a.  ACL2 will not work ~
-                   in state of affairs."
+               (format t "~%~%Warning:  The package with name ~a USES the ~
+                          packages in the list ~a.  ACL2 will not work in ~
+                          this state of affairs."
                        (package-name p) (package-use-list p)))))))
 
 (or (find-package "ACL2")
@@ -1834,8 +1895,19 @@ ACL2 from scratch.")
 ;  the simpler solution of putting the defconstant in this file, which is
 ;  loaded only once (there is no compiled version of this file to load).
 
+(defconstant *acl2-page-char*
+
+; Starting sometime after 2025, Allegro CL might not recognize #\Page as
+; (code-char 12), recognizing #\Formfeed (and printing it with prin1) instead.
+; Some such situation might eventually be the case for other Common Lisps.  So
+; we introduce this constant to use as that character
+
+; Note however that ACL2 supports #\Page in its read-eval-print loop.
+
+  (code-char 12))
+
 (defconstant *acl2-read-character-terminators*
-  '(#\Tab #\Newline #\Page #\Space #\" #\' #\( #\) #\; #\` #\,))
+  '(#\Tab #\Newline #.*acl2-page-char* #\Space #\" #\' #\( #\) #\; #\` #\,))
 
 (our-with-compilation-unit
 
@@ -1999,6 +2071,15 @@ ACL2 from scratch.")
                   *my-most-positive-double-float*)
                (error () 0.0d0))
               'double-float))
+
+; For GCL on no-sigfpe machines, avoid getting an error at unexpected times
+; later by flushing out the error now.
+
+     #+(and gcl no-sigfpe)
+     (progn (ignore-errors (si::flush-floating-point-exceptions
+                            nil nil (lambda nil nil)))
+            t)
+
      #+sbcl
      (member :overflow
              (cadr (member :traps
@@ -2372,6 +2453,7 @@ which is saved just in case it's needed later.")
 ; So, we manage this simply by modifying the character reader so that
 ; the #\ notation only works for single characters and for Space, Tab,
 ; Newline, Page, Rubout, and Return; an error is caused otherwise.
+; (See the comment about Page in *acl2-page-char* above.)
 
 ; Our algorithm for reading character objects starting with #\ is
 ; quite simple.  We accumulate characters until encountering a
@@ -2381,8 +2463,9 @@ which is saved just in case it's needed later.")
 ; which we ignore in the multiple-character case) SPACE, TAB, NEWLINE,
 ; PAGE, RUBOUT, and RETURN.  Otherwise we cause an error.  Note that
 ; if we do NOT cause an error, then any dpANS-compliant Common Lisp
-; implementation's character reader would behave the same way, because
-; dpANS says (in the section ``Sharpsign Backslash'') the following.
+; implementation's character reader would behave the same way (but
+; note the remark about Page in *acl2-page-char*), because dpANS says
+; (in the section ``Sharpsign Backslash'') the following.
 
 ;    .....  After #\ is read, the reader backs up
 ;    over the slash and then reads a token, treating the initial slash
@@ -2913,6 +2996,11 @@ You are using version ~s.~s.~s."
 
 ; See the comment in *rewrite-depth-max* about rewrite stack depth:
 ; (push :acl2-rewrite-meter *features*)
+
+; See the comment in *pass2-def-time-info* about collecting times for
+; definitions made during pass 2 of certify-book, which is accomplished by
+; building ACL2 after uncommenting the following line.
+; (push :acl2-pass2-def-time-info *features*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            PROMPTS

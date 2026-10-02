@@ -1,5 +1,5 @@
 ; AIR Library
-; Model 0: Execution Traces
+; Model 0: Example of Execution Traces
 ;
 ; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;

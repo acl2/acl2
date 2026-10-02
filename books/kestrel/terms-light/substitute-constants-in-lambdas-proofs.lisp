@@ -1,6 +1,6 @@
 ; Proofs about substitute-constants-in-lambdas.lisp
 ;
-; Copyright (C) 2024-2025 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,6 +17,7 @@
 (include-book "no-nils-in-termp")
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "empty-eval-helpers"))
 (local (include-book "helpers"))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -98,6 +99,8 @@
     (implies (myquotep term)
              (no-nils-in-termp term))
     :hints (("Goal" :in-theory (enable no-nils-in-termp)))))
+
+(local (make-flag substitute-constants-in-lambdas-aux))
 
 (local
   (defthm-flag-substitute-constants-in-lambdas-aux
@@ -499,6 +502,9 @@
                         (:instance empty-eval-of-fncall-args
                                    (a a))))))
 
+(local (make-flag free-vars-in-term))
+
+;move?
 (defthm-flag-free-vars-in-term
   (defthm empty-eval-when-not-consp-of-free-vars
     (implies (and (syntaxp (not (equal a *nil*)))
@@ -642,14 +648,12 @@
     (defthm no-duplicate-lambda-formals-in-termp-of-substitute-constants-in-lambdas-aux
       (implies (and (no-duplicate-lambda-formals-in-termp term)
                     (myquote-listp (strip-cdrs alist))
-                    (no-duplicate-lambda-formals-in-termp term)
                     (pseudo-termp term))
                (no-duplicate-lambda-formals-in-termp (substitute-constants-in-lambdas-aux term alist)))
       :flag substitute-constants-in-lambdas-aux)
     (defthm no-duplicate-lambda-formals-in-termsp-of-substitute-constants-in-lambdas-aux-lst
       (implies (and (no-duplicate-lambda-formals-in-termsp terms)
                     (myquote-listp (strip-cdrs alist))
-                    (no-duplicate-lambda-formals-in-termsp terms)
                     (pseudo-term-listp terms))
                (no-duplicate-lambda-formals-in-termsp (substitute-constants-in-lambdas-aux-lst terms alist)))
       :flag substitute-constants-in-lambdas-aux-lst)

@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (www.alessandrocoglio.info)
+; Supporting author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -12,6 +13,7 @@
 
 (include-book "abstract-syntax-irrelevants")
 (include-book "abstract-syntax-structurals")
+(include-book "implementation-environments")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -24,6 +26,66 @@
   :short "Operations on the abstract syntax."
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dec/oct/hex-const->value ((const dec/oct/hex-constp))
+  :returns (value natp)
+  :short "Evaluate a decimal, octal, or hexadecimal constant to a natural number."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For a decimal or octal constant, the value is a component of the fixtype.
+     For a hexadecimal constant, we use a library function
+     to convert the digits into a value;
+     the digits are as they appear in the concrete syntax,
+     i.e. in big-endian order."))
+  (dec/oct/hex-const-case
+    const
+    :dec const.value
+    :oct const.value
+    :hex (str::hex-digit-chars-value const.digits))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nat-to-iconst ((n natp) (ienv ienvp))
+  :returns (iconst? iconst-optionp)
+  :short "Create an integer constant from a natural number."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A ``length'' suffix is added to the constant if
+     the number is not otherwise be representable.
+     An ``unsigned'' suffix is added only if
+     the number cannot be represented as a @('signed long long').")
+   (xdoc::p
+    "If the number is not representable by an integer type,
+     @('nil') is returned instead."))
+  (b* ((n (lnfix n))
+       (core (if (= (the unsigned-byte n) 0)
+                 (make-dec/oct/hex-const-oct :leading-zeros 1 :value 0)
+               (dec/oct/hex-const-dec n)))
+       ((mv too-big-p suffix?)
+        (cond ((<= n (ienv->sint-max ienv))
+               (mv nil nil))
+              ((<= n (ienv->slong-max ienv))
+               (mv nil (isuffix-l (lsuffix-locase-l))))
+              ((<= n (ienv->sllong-max ienv))
+               (mv nil (isuffix-l (lsuffix-locase-ll))))
+              ((<= n (ienv->ullong-max ienv))
+               (mv nil
+                   (make-isuffix-ul :unsigned (usuffix-locase-u)
+                                    :length (lsuffix-locase-ll))))
+              (t (mv t nil)))))
+    (if too-big-p
+        nil
+      (make-iconst :core core :suffix? suffix?)))
+
+  ///
+  (defrule iconstp-of-nat-to-iconst-undef-iff
+    (iff (iconstp (nat-to-iconst n ienv))
+         (nat-to-iconst n ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -53,8 +115,7 @@
                     :stmt
                     :tycompat
                     :offsetof
-                    :va-arg
-                    :extension))
+                    :va-arg))
        t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -217,7 +278,7 @@
    :tycompat (expr-priority-primary)
    :offsetof (expr-priority-primary)
    :va-arg (expr-priority-primary)
-   :extension (expr-priority-primary)))
+   :extension (expr-priority-unary)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -445,6 +506,102 @@
   ///
 
   (fty::deffixequiv-mutual declor/dirdeclor->ident))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines declor/dirdeclor-derived-type-depth
+  :short "Depth of the type derived by a declarator or direct declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the number of array, pointer, and function type constructors
+     contributed by the (direct) declarator.
+     Parentheses do not contribute to the depth."))
+
+  (define declor-derived-type-depth ((declor declorp))
+    :returns (depth natp)
+    :parents (declor/dirdeclor-derived-type-depth abstract-syntax-operations)
+    :short "Depth of the type derived by a declarator."
+    (b* (((declor declor) declor))
+      (+ (len declor.pointers)
+         (dirdeclor-derived-type-depth declor.direct)))
+    :measure (declor-count declor))
+
+  (define dirdeclor-derived-type-depth ((dirdeclor dirdeclorp))
+    :returns (depth natp)
+    :parents (declor/dirdeclor-derived-type-depth abstract-syntax-operations)
+    :short "Depth of the type derived by a direct declarator."
+    (dirdeclor-case
+      dirdeclor
+      :ident 0
+      :paren (declor-derived-type-depth dirdeclor.inner)
+      :array (1+ (dirdeclor-derived-type-depth dirdeclor.declor))
+      :array-static1 (1+ (dirdeclor-derived-type-depth dirdeclor.declor))
+      :array-static2 (1+ (dirdeclor-derived-type-depth dirdeclor.declor))
+      :array-star (1+ (dirdeclor-derived-type-depth dirdeclor.declor))
+      :function-params (1+ (dirdeclor-derived-type-depth dirdeclor.declor))
+      :function-names (1+ (dirdeclor-derived-type-depth dirdeclor.declor)))
+    :measure (dirdeclor-count dirdeclor))
+
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines absdeclor/dirabsdeclor-derived-type-depth
+  :short "Depth of the type derived by an abstract declarator
+          or direct abstract declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the number of array, pointer, and function type constructors
+     contributed by the (direct) abstract declarator.
+     Parentheses do not contribute to the depth."))
+
+  (define absdeclor-derived-type-depth ((absdeclor absdeclorp))
+    :returns (depth natp)
+    :parents (absdeclor/dirabsdeclor-derived-type-depth
+              abstract-syntax-operations)
+    :short "Depth of the type derived by an abstract declarator."
+    (b* (((absdeclor absdeclor) absdeclor))
+      (+ (len absdeclor.pointers)
+         (dirabsdeclor-option-derived-type-depth absdeclor.direct?)))
+    :measure (absdeclor-count absdeclor))
+
+  (define dirabsdeclor-option-derived-type-depth
+    ((dirabsdeclor? dirabsdeclor-optionp))
+    :returns (depth natp)
+    :parents (absdeclor/dirabsdeclor-derived-type-depth
+              abstract-syntax-operations)
+    :short "Depth of the type derived by an optional direct abstract
+            declarator."
+    (dirabsdeclor-option-case
+      dirabsdeclor?
+      :none 0
+      :some (dirabsdeclor-derived-type-depth dirabsdeclor?.val))
+    :measure (dirabsdeclor-option-count dirabsdeclor?))
+
+  (define dirabsdeclor-derived-type-depth ((dirabsdeclor dirabsdeclorp))
+    :returns (depth natp)
+    :parents (absdeclor/dirabsdeclor-derived-type-depth
+              abstract-syntax-operations)
+    :short "Depth of the type derived by a direct abstract declarator."
+    (dirabsdeclor-case
+      dirabsdeclor
+      :dummy-base 0
+      :paren (absdeclor-derived-type-depth dirabsdeclor.inner)
+      :array
+      (1+ (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?))
+      :array-static1
+      (1+ (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?))
+      :array-static2
+      (1+ (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?))
+      :array-star
+      (1+ (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?))
+      :function
+      (1+ (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?)))
+    :measure (dirabsdeclor-count dirabsdeclor))
+
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -799,6 +956,58 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-ext-declon-declon ((edeclon ext-declonp))
+  :returns (declon? declon-optionp)
+  :short "Check if an external declaration is a declaration,
+          return the declaration if successful."
+  (if (ext-declon-case edeclon :declon)
+      (ext-declon-declon->declon edeclon)
+    nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-ext-declon-fundef ((edeclon ext-declonp))
+  :returns (fundef? fundef-optionp)
+  :short "Check if an external declaration is a function definition,
+          return the function definition if successful."
+  (if (ext-declon-case edeclon :fundef)
+      (ext-declon-fundef->fundef edeclon)
+    nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-trans-item-ext-declon ((item trans-itemp))
+  :returns (edeclon? ext-declon-optionp)
+  :short "Check if a translation item is an external declaration,
+          returning the external declaration if successful."
+  (if (trans-item-case item :declon)
+      (trans-item-declon->declon item)
+    nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-trans-item-declon ((item trans-itemp))
+  :returns (declon? declon-optionp)
+  :short "Check if a translation item is a declaration,
+          returning the declaration if successful."
+  (b* ((edeclon (check-trans-item-ext-declon item)))
+    (if edeclon
+        (check-ext-declon-declon edeclon)
+      nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-trans-item-fundef ((item trans-itemp))
+  :returns (fundef? fundef-optionp)
+  :short "Check if a translation item is a function definition,
+          returning the function definition if successful."
+  (b* ((edeclon (check-trans-item-ext-declon item)))
+    (if edeclon
+        (check-ext-declon-fundef edeclon)
+      nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-struni-spec-no-members ((struni-spec struni-specp))
   :returns (ident? ident-optionp)
   :short "Check if a structure or union specifier has no members,
@@ -852,7 +1061,16 @@
        ((mv yes/no tyspecs) (check-decl-spec-list-all-typespec (cdr declspecs))))
     (if yes/no
         (mv t (cons (decl-spec-typespec->spec declspec) tyspecs))
-      (mv nil nil))))
+      (mv nil nil)))
+
+  ///
+
+  (defrule check-decl-spec-list-all-typespec-of-decl-spec-typespec-list
+    (equal (check-decl-spec-list-all-typespec
+            (decl-spec-typespec-list tyspecs))
+           (mv t (type-spec-list-fix tyspecs)))
+    :induct t
+    :enable decl-spec-typespec-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -903,7 +1121,26 @@
                                     declspecs))
                          nil)))
     :induct t
-    :enable check-decl-spec-list-all-typespec))
+    :enable check-decl-spec-list-all-typespec)
+
+  (defrule
+    check-decl-spec-list-all-typespec/stoclass-of-decl-spec-typespec-list
+    (equal (check-decl-spec-list-all-typespec/stoclass
+            (decl-spec-typespec-list tyspecs))
+           (mv t (type-spec-list-fix tyspecs) nil))
+    :induct t
+    :enable decl-spec-typespec-list)
+
+  (defrule
+    check-decl-spec-list-all-typespec/stoclass-of-stoclass-and-typespec-append-lists
+    (equal (check-decl-spec-list-all-typespec/stoclass
+            (append (decl-spec-stoclass-list stor-specs)
+                    (decl-spec-typespec-list tyspecs)))
+           (mv t
+               (type-spec-list-fix tyspecs)
+               (stor-spec-list-fix stor-specs)))
+    :induct t
+    :enable decl-spec-stoclass-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -922,7 +1159,16 @@
        ((mv yes/no tyspecs) (check-spec/qual-list-all-typespec (cdr specquals))))
     (if yes/no
         (mv t (cons (spec/qual-typespec->spec specqual) tyspecs))
-      (mv nil nil))))
+      (mv nil nil)))
+
+  ///
+
+  (defrule check-spec/qual-list-all-typespec-of-spec/qual-typespec-list
+    (equal (check-spec/qual-list-all-typespec
+            (spec/qual-typespec-list tyspecs))
+           (mv t (type-spec-list-fix tyspecs)))
+    :induct t
+    :enable spec/qual-typespec-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -951,6 +1197,103 @@
         (cons (decl-spec-stoclass->spec declspec)
               (decl-spec-list-to-stor-spec-list (cdr declspecs)))
       (decl-spec-list-to-stor-spec-list (cdr declspecs)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define decl-spec-list-standalone-tag-gcc-okp ((declspecs decl-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of declaration specifiers
+          is allowed by GCC in a standalone tag declaration."
+  :long
+  (xdoc::topstring-p
+   "See @(tsee check-declon-standalone-tag).
+    GCC does not treat a declaration as a standalone tag declaration
+    if it has storage class specifiers
+    (other than @('_Thread_local') and @('__thread')),
+    type qualifiers,
+    or alignment specifiers.")
+  (b* (((when (endp declspecs)) t)
+       (declspec (car declspecs))
+       ((when (decl-spec-case declspec '(:typequal :align))) nil)
+       ((when (and (decl-spec-case declspec :stoclass)
+                   (not (stor-spec-case (decl-spec-stoclass->spec declspec)
+                                        :thread))))
+        nil))
+    (decl-spec-list-standalone-tag-gcc-okp (cdr declspecs))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-declon-standalone-tag ((declon declonp) (dialect c::dialectp))
+  :returns (mv (ident? ident-optionp) (unionp booleanp))
+  :short "Check if a declaration is a standalone tag declaration,
+          returning the tag and whether it is a union tag
+          if the check succeeds."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A declaration of the form @('struct-or-union identifier ;')
+     declares the identifier as the tag of a new type in the current scope,
+     even if a tag with the same name is visible from an outer scope
+     [C17:6.7.2.3/7] [C23:6.7.3.4/11].
+     In other contexts, a structure or union type specifier without members
+     refers to the visible tag, if any [C17:6.7.2.3/9] [C23:6.7.3.4/13].
+     The standard does not name this form of declaration;
+     we introduce the term `standalone tag declaration' for it,
+     generalized to the GCC and Clang extensions as described below.")
+   (xdoc::p
+    "In all dialects,
+     the declaration must have no declarators
+     and exactly one type specifier,
+     which must be a structure or union type specifier
+     with a tag and no members.
+     Attributes between the @('struct') or @('union') keyword and the tag
+     are allowed.
+     The other declaration specifiers, if any, depend on the dialect:")
+   (xdoc::ul
+    (xdoc::li
+     "Without GCC or Clang extensions,
+      there must be no other declaration specifiers,
+      as in the standard.")
+    (xdoc::li
+     "With GCC extensions,
+      the other declaration specifiers
+      must satisfy @(tsee decl-spec-list-standalone-tag-gcc-okp).
+      This is not documented in the GCC manual,
+      but it is the observed behavior,
+      and it is described in the comments of the GCC test
+      @('gcc.dg/c99-tag-3.c').")
+    (xdoc::li
+     "With Clang extensions,
+      the type specifier must be the last declaration specifier,
+      i.e. any other declaration specifiers must precede it.
+      This is not documented in the Clang manual,
+      but it is the observed behavior."))
+   (xdoc::p
+    "If the check fails, we return @('nil') as the tag."))
+  (b* (((unless (declon-case declon :declon)) (mv nil nil))
+       (specs (declon-declon->specs declon))
+       ((when (consp (declon-declon->declors declon))) (mv nil nil))
+       (tyspecs (decl-spec-list-to-type-spec-list specs))
+       ((unless (and (consp tyspecs)
+                     (endp (cdr tyspecs))))
+        (mv nil nil))
+       (tyspec (car tyspecs))
+       ((unless (type-spec-case tyspec '(:struct :union))) (mv nil nil))
+       (unionp (type-spec-case tyspec :union))
+       ((struni-spec struni-spec) (if unionp
+                                      (type-spec-union->spec tyspec)
+                                    (type-spec-struct->spec tyspec)))
+       ((unless (and struni-spec.name?
+                     (endp struni-spec.members)))
+        (mv nil nil))
+       ((unless (cond ((c::dialect->gcc dialect)
+                       (decl-spec-list-standalone-tag-gcc-okp specs))
+                      ((c::dialect->clang dialect)
+                       (equal (car (last specs))
+                              (decl-spec-typespec tyspec)))
+                      (t (endp (cdr specs)))))
+        (mv nil nil)))
+    (mv struni-spec.name? unionp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1029,6 +1372,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define string-list-map-ident
+  ((strings string-listp))
+  :returns (idents ident-listp)
+  :short "Map @(tsee ident) over a list of strings."
+  (if (endp strings)
+      nil
+    (cons (ident (mbe :logic (acl2::str-fix (first strings))
+                      :exec (first strings)))
+          (string-list-map-ident (rest strings))))
+  :guard-hints (("Goal" :in-theory (enable string-listp)))
+  ///
+
+  (more-returns
+   (idents true-listp :rule-classes :type-prescription)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ident-list-map-expr-ident
   ((idents ident-listp))
   :returns (exprs expr-listp)
@@ -1094,7 +1454,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define transunit-emptyp ((tunit transunitp))
+(define trans-unit-emptyp ((tunit trans-unitp))
   :returns (yes/no booleanp)
   :short "Check if a translation unit is empty, in the sense of having
           no external declarations and no @('#include') directives."
@@ -1103,13 +1463,13 @@
    (xdoc::p
     "That is, if the translation unit only contains comments,
      it is regarded as effectively empty, according to this predicate."))
-  (trans-item-list-commentp (transunit->items tunit)))
+  (trans-item-list-commentp (trans-unit->items tunit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define transunit-ensemble-paths ((tunits transunit-ensemblep))
+(define trans-ensemble-paths ((tunits trans-ensemblep))
   :returns (paths filepath-setp)
-  :short "Set of file paths in a translation unit ensemble."
+  :short "Set of file paths in a translation ensemble."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1118,27 +1478,276 @@
     "It is more concise, and more abstract,
      than extracting the map and then the keys.")
    (xdoc::p
-    "Together with @(tsee transunit-at-path),
-     it can be used as an API to inspect translation unit ensembles."))
-  (omap::keys (transunit-ensemble->units tunits)))
+    "Together with @(tsee trans-unit-at-path),
+     it can be used as an API to inspect translation ensembles."))
+  (omap::keys (trans-ensemble->units tunits)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define transunit-at-path ((path filepathp) (tunits transunit-ensemblep))
-  :guard (set::in path (transunit-ensemble-paths tunits))
-  :returns (tunit transunitp)
-  :short "Translation unit at a certain path in a translation unit ensemble."
+(define trans-unit-at-path ((path filepathp) (tunits trans-ensemblep))
+  :guard (set::in path (trans-ensemble-paths tunits))
+  :returns (tunit trans-unitp)
+  :short "Translation unit at a certain path in a translation ensemble."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the value associated to the key (path) in the map,
-     which the guard requires to be in the translation unit ensemble.")
+     which the guard requires to be in the translation ensemble.")
    (xdoc::p
     "It is more concise, and more abstract,
      than accessing the map and then looking up the path.")
    (xdoc::p
-    "Together with @(tsee transunit-ensemble-paths),
+    "Together with @(tsee trans-ensemble-paths),
      it can be used an as API to inspect a file set."))
-  (transunit-fix
-   (omap::lookup (filepath-fix path) (transunit-ensemble->units tunits)))
-  :guard-hints (("Goal" :in-theory (enable transunit-ensemble-paths))))
+  (trans-unit-fix
+   (omap::lookup (filepath-fix path) (trans-ensemble->units tunits)))
+  :guard-hints (("Goal" :in-theory (enable trans-ensemble-paths))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines expr-syntactic-lvalue-p
+  (define expr-syntactic-lvalue-p ((expr exprp))
+    :returns (yes/no booleanp)
+    :short "Check if an expression is a syntactic lvalue."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "An ``lvalue'' is an expression that
+       ``potentially designates an object'' [C17:6.3.2.1/1].
+       Whether an expression is an lvalue is determined by a combination
+       of syntactic and semantic conditions.
+       This predicate is an overapproximate recognizer for lvalues,
+       checking only the syntactic conditions.")
+     (xdoc::p
+      "To determine whether an expression may be an lvalue,
+       we consider the following cases.")
+      (xdoc::ul
+       (xdoc::li
+        "An identifier is an lvalue if it has been declared
+         and designates an object [C17:6.5.1/2].
+         In our syntactic approximation,
+         an identifier is always considered an lvalue.")
+       (xdoc::li
+        "A string literal is always an lvalue [C17:6.5.1/4].")
+       (xdoc::li
+        "A parenthesized expression is an lvalue iff
+         the subexpression is an lvalue [C17:6.5.1/5].")
+       (xdoc::li
+        "A generic selection is an lvalue if
+         its result expression is an lvalue [C17:6.5.1.1/4].
+         Although not stated explicitly,
+         we interpret this to be the <emph>only</emph> case
+         in which a generic selection is an lvalue.
+         In our syntactic overapproximation,
+         we do not determine the result expression.
+         Instead, we check whether any of the possible result expressions
+         is an lvalue.")
+       (xdoc::li
+        "An array subscript expression is considered identical
+         to the corresponding dereference expression [C17:6.5.2.1/2].
+         Therefore, the array subscript is an lvalue iff
+         the dereference expression an lvalue.
+         The dereference expression is an lvalue if the dereferenced pointer
+         points to an object [C17:6.5.3.2/4].
+         In our syntactic approximation, an array subscript expression
+         is always considered an lvalue.")
+       (xdoc::li
+        "A direct member access expression
+         (i.e. an expression with the infix @('.') operator)
+         is an lvalue if the subexpression is an lvalue [C17:6.5.2.3/3].
+         When the standard says ``if'' in this case,
+         we take it to mean ``if and only if''.
+         Therefore, we recurse on the subexpression.")
+       (xdoc::li
+        "An indirect member access expression
+         (i.e. an expression with the infix @('->') operator)
+         is always an lvalue [C17:6.5.2.3/4].")
+       (xdoc::li
+        "A compound literal is always an lvalue [C17:6.5.2.5/4].")
+       (xdoc::li
+        "A dereference expression is an lvalue if
+         it points to an object [C17:6.5.3.2/4].
+         Again, we take this to mean ``if and only if.''
+         It is never stated whether any of the other
+         unary operator expressions are or are not lvalues.
+         Our interpretation is that they are not.")
+       (xdoc::li
+        "@(':stmt') (GCC extension):
+         The GCC manual [GCCM:6.12.1] documents statement expressions
+         but does not explicitly state their lvalue status.
+         Experiments with GCC indicate that a statement expression
+         is an lvalue iff its last expression is an lvalue,
+         and that a labeled statement is never an lvalue
+         (even if its body ends in an lvalue).")
+       (xdoc::li
+        "An expression beginning with @('__extension__ ')
+         is identical to the subexpression,
+         except that it may suppress certain warnings [GCCM:6.12.23].
+         It is therefore an lvalue iff the subexpression is an lvalue."))
+     (xdoc::p
+      "Finally, we note the expression cases not covered above,
+       and justify why they cannot be lvalues.")
+      (xdoc::ul
+       (xdoc::li
+        "It is explicitly stated that cast expressions are not lvalues
+         [C17:6.5.4/5, footnote 108].")
+       (xdoc::li
+        "All assignment expressions are explicitly stated to not be lvalues
+         [C17:6.5.16/3].
+         No other binary operator expression is explicitly characterized.
+         Our interpretation is that <emph>no</emph>
+         binary operator expression is an lvalue.")
+       (xdoc::li
+        "A conditional expression is explicitly said
+         to not be an lvalue [C17:6.5.15/4, footnote 114].")
+       (xdoc::li
+        "A comma expression is explicitly stated
+         to not be an lvalue [C17:6.5.17/2, footnote 117].")
+       (xdoc::li
+        "@('__builtin_types_compatible_p'),
+         @('__builtin_va_arg'),
+         and @('__builtin_offset_of')
+         are all GCC extensions.
+         The GCC manual does not indicate whether they yield lvalues.
+         Experiments with GCC indicate that they do not.")
+       (xdoc::li
+        "The remaining cases &mdash;
+         constant expressions and function calls &mdash;
+         are not characterized either way.
+         Once again, we interpret them as never being lvalues.")))
+    (expr-case
+     expr
+     :ident t
+     :const nil
+     :string t
+     :paren (expr-syntactic-lvalue-p expr.inner)
+     :gensel (if (endp expr.assocs)
+                 nil
+               (genassoc-list-syntactic-lvalue-p expr.assocs))
+     :arrsub t
+     :funcall nil
+     :member (expr-syntactic-lvalue-p expr.arg)
+     :memberp t
+     :complit t
+     :unary (unop-case expr.op :indir t :otherwise nil)
+     :label-addr nil
+     :sizeof nil
+     :sizeof-ambig nil
+     :alignof nil
+     :alignof-ambig nil
+     :cast nil
+     :binary nil
+     :cond nil
+     :comma nil
+     :stmt (comp-stmt-syntactic-lvalue-p expr.stmt)
+     :tycompat nil
+     :offsetof nil
+     :va-arg nil
+     :extension (expr-syntactic-lvalue-p expr.expr)
+     :cast/call-ambig nil
+     :cast/mul-ambig nil
+     :cast/add-ambig nil
+     :cast/sub-ambig nil
+     :cast/and-ambig nil
+     :cast/logand-ambig nil)
+    :measure (expr-count expr))
+
+  (define comp-stmt-syntactic-lvalue-p ((cstmt comp-stmtp))
+    :returns (yes/no booleanp)
+    (b* (((comp-stmt cstmt) cstmt)
+         ((when (endp cstmt.items)) nil))
+      (block-item-list-syntactic-lvalue-p cstmt.items))
+    :measure (comp-stmt-count cstmt))
+
+  (define block-item-list-syntactic-lvalue-p ((items block-item-listp))
+    :guard (not (endp items))
+    :returns (yes/no booleanp)
+    (b* (((unless (mbt (not (endp items)))) nil)
+         ((when (endp (cdr items)))
+          (block-item-syntactic-lvalue-p (car items))))
+      (block-item-list-syntactic-lvalue-p (cdr items)))
+    :measure (block-item-list-count items))
+
+  (define block-item-syntactic-lvalue-p ((item block-itemp))
+    :returns (yes/no booleanp)
+    (block-item-case
+     item
+     :declon nil
+     :stmt (stmt-syntactic-lvalue-p item.stmt)
+     :ambig nil)
+    :measure (block-item-count item))
+
+  (define genassoc-list-syntactic-lvalue-p ((assocs genassoc-listp))
+    :guard (not (endp assocs))
+    :returns (yes/no booleanp)
+    (b* (((unless (mbt (not (endp assocs)))) nil)
+         ((when (genassoc-syntactic-lvalue-p (car assocs))) t)
+         ((when (endp (cdr assocs))) nil))
+      (genassoc-list-syntactic-lvalue-p (cdr assocs)))
+    :measure (genassoc-list-count assocs))
+
+  (define genassoc-syntactic-lvalue-p ((assoc genassocp))
+    :returns (yes/no booleanp)
+    (genassoc-case
+     assoc
+     :type (expr-syntactic-lvalue-p assoc.expr)
+     :default (expr-syntactic-lvalue-p assoc.expr))
+    :measure (genassoc-count assoc))
+
+  (define stmt-syntactic-lvalue-p ((stmt stmtp))
+    :returns (yes/no booleanp)
+    (stmt-case
+     stmt
+     :labeled nil
+     :compound (comp-stmt-syntactic-lvalue-p stmt.stmt)
+     :expr (expr-option-case
+            stmt.expr?
+            :some (expr-syntactic-lvalue-p stmt.expr?.val)
+            :none nil)
+     :otherwise nil)
+    :measure (stmt-count stmt))
+
+  ///
+
+  (fty::deffixequiv-mutual expr-syntactic-lvalue-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define unop-requires-lvalue-p ((op unopp))
+  :returns (yes/no booleanp)
+  :short "Recognize unary operators which require an lvalue operand."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The operand must be an lvalue for
+     prefix increments/decrements [C17:6.5.3.1/1]
+     and postfix increments/decrements [C17:6.5.2.4/1].")
+   (xdoc::p
+    "The operand to the address operator @('&') may be an lvalue,
+     but it is not required [C17:6.5.3.2/1].
+     It may also be a function designator,
+     a dereference expression,
+     or an array subscript expression."))
+  (and (unop-case op '(:preinc :predec :postinc :postdec))
+       t))
+
+(define binop-arg1-requires-lvalue-p ((op binopp))
+  :returns (yes/no booleanp)
+  :short "Recognize binary operators which require an lvalue
+          for the first operand."
+  :long
+  (xdoc::topstring-p
+   "All assignment operators must have an lvalue
+    for the first operand [C17:6.5.16].")
+  (and (binop-case op '(:asg
+                        :asg-mul
+                        :asg-div
+                        :asg-rem
+                        :asg-add
+                        :asg-sub
+                        :asg-shl
+                        :asg-shr
+                        :asg-and
+                        :asg-xor
+                        :asg-ior))
+       t))

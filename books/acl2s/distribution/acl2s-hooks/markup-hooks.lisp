@@ -53,6 +53,8 @@
 (progn+touchable :all
 
 (redefun+rewrite
+; Waterfall-msg1 is defined in ACL2 source file prove.lisp:
+; (depends-on "../../../../prove.lisp")
  acl2::waterfall-msg1
  (:carpat %body%
   :vars %body%
@@ -65,6 +67,8 @@
          %body%)))
 
 (redefun+rewrite
+; Waterfall is defined in ACL2 source file prove.lisp:
+; (depends-on "../../../../prove.lisp")
  acl2::waterfall
  (:carpat %body%
   :vars %body%

@@ -1,6 +1,6 @@
-; Gathering events from the world since the book-strap
+; Gathering events from the world since the boot-strap
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,7 +23,7 @@
              (eq fn 'reset-prehistory)))))
 
 ;; Returns a subset of the triples in WRLD.
-;; In the result, the oldest tripes come first
+;; In the result, the oldest triples come first
 (defun world-since-boot-strap (wrld
                                syms-to-keep ; the cars of the triples to keep
                                acc)
@@ -50,7 +50,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; ;; Looks for the triple (embedded-event-lst global-value) to indicate the end
-;; ;; of the include-book but also handled nested include-books.
+;; ;; of the include-book but also handles nested include-books.
 ;; (defun skip-trips-through-end-of-include-book (trips)
 ;;   (declare (xargs :measure (len trips)
 ;;                   :mode :program ; todo

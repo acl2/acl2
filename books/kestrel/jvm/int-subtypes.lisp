@@ -1,7 +1,7 @@
 ; Representation of subtypes of int in the JVM model
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -36,9 +36,9 @@
 (assert-event (acl2::java-byte-as-int-p 0))
 (assert-event (acl2::java-byte-as-int-p 127))
 (assert-event (not (acl2::java-byte-as-int-p 128)))
-(assert-event (acl2::java-byte-as-int-p (acl2::bvchop 32 -1)))
-(assert-event (acl2::java-byte-as-int-p (acl2::bvchop 32 -128)))
-(assert-event (not (acl2::java-byte-as-int-p (acl2::bvchop 32 -129))))
+(assert-event (acl2::java-byte-as-int-p (bvchop 32 -1)))
+(assert-event (acl2::java-byte-as-int-p (bvchop 32 -128)))
+(assert-event (not (acl2::java-byte-as-int-p (bvchop 32 -129))))
 
 ;; A short represented as part of a 32-bit int
 (defund acl2::java-short-as-int-p (i)
@@ -52,9 +52,9 @@
 (assert-event (acl2::java-short-as-int-p 0))
 (assert-event (acl2::java-short-as-int-p 32767))
 (assert-event (not (acl2::java-short-as-int-p 32768)))
-(assert-event (acl2::java-short-as-int-p (acl2::bvchop 32 -1)))
-(assert-event (acl2::java-short-as-int-p (acl2::bvchop 32 -32768)))
-(assert-event (not (acl2::java-short-as-int-p (acl2::bvchop 32 -32769))))
+(assert-event (acl2::java-short-as-int-p (bvchop 32 -1)))
+(assert-event (acl2::java-short-as-int-p (bvchop 32 -32768)))
+(assert-event (not (acl2::java-short-as-int-p (bvchop 32 -32769))))
 
 ;; A char represented as part of a 32-bit int
 ;; TODO: Add tests

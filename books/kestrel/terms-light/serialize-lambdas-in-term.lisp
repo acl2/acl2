@@ -1,6 +1,6 @@
 ; A tool to turn multi-var lambdas into nests of single-var lambdas
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,6 +17,7 @@
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/utilities/fresh-names" :dir :system)
 (include-book "kestrel/utilities/non-trivial-bindings" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "make-lambda-nest-proofs"))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -218,7 +219,7 @@
      (cons (serialize-lambdas-in-term (first terms) vars-to-avoid)
            (serialize-lambdas-in-terms (rest terms) vars-to-avoid)))))
 
-(make-flag serialize-lambdas-in-term)
+(local (make-flag serialize-lambdas-in-term))
 
 ;; Serializing lambdas preserves pseudo-termp.
 (defthm-flag-serialize-lambdas-in-term

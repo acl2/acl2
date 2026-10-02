@@ -33,9 +33,9 @@
      Here we define predicates that characterize the standard subset.")
    (xdoc::p
     "We plan to extend this predicate to one that takes a "
-    (xdoc::seetopic "c::version" "C version")
+    (xdoc::seetopic "c::dialect" "C dialect")
     " as an additional argument,
-     and says whether the syntax conforms to that version.")
+     and says whether the syntax conforms to that dialect.")
    (xdoc::p
     "The current definition is a bit out of date
      with respect to all the GCC and Clang extensions in our ASTs.
@@ -113,9 +113,9 @@
           hash-if/elif-expr
           hash-if/ifdef/ifndef
           trans-items
-          transunit
-          filepath-transunit-map
-          transunit-ensemble)
+          trans-unit
+          filepath-trans-unit-map
+          trans-ensemble)
   :result booleanp
   :default t
   :combine and
@@ -171,6 +171,8 @@
    (type-spec :signed (keyword-uscores-case
                        (type-spec-signed->uscores type-spec) :none))
    (type-spec :int128 nil)
+   (type-spec :locase-float80 nil)
+   (type-spec :locase-float128 nil)
    (type-spec :float16 nil)
    (type-spec :float16x nil)
    (type-spec :float32 nil)
@@ -255,7 +257,8 @@
                 (comp-stmt-standardp (fundef->body fundef))))
    (ext-declon :empty nil)
    (ext-declon :asm nil)
-   (transunit (and (not (trans-item-list-commentp
-                         (transunit->items transunit)))
-                   (trans-item-list-standardp
-                    (transunit->items transunit))))))
+   (trans-unit (and (not (trans-item-list-commentp
+                          (trans-unit->items trans-unit)))
+                    (trans-item-list-standardp
+                     (trans-unit->items trans-unit)))))
+  :name abstract-syntax-standardp)

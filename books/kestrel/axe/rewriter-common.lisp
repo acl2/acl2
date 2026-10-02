@@ -1,7 +1,7 @@
 ; Functions common to the various rewriters
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -18,8 +18,7 @@
 (include-book "stored-rules")
 (include-book "unify-term-and-dag-fast")
 (include-book "alist-suitable-for-hypsp")
-(include-book "dags") ;drop
-(include-book "refined-assumption-alists")
+(include-book "refined-assumption-alists") ; for bounded-darg-list-listp
 (local (include-book "unify-term-and-dag-fast-correct"))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))

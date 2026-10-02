@@ -22,6 +22,7 @@
 (include-book "type-specifier-lists")
 (include-book "storage-specifier-lists")
 (include-book "abstraction-mapping")
+(include-book "abstract-syntax-formal-subset-and-mapping")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -60,4 +61,5 @@
                     ascii-identifiers
                     type-specifier-lists
                     storage-specifier-lists
-                    abstraction-mapping))
+                    abstraction-mapping
+                    abstract-syntax-formal-subset-and-mapping))

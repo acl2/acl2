@@ -1,6 +1,6 @@
 ; A simple clause-processor to push calls of unary functions into lambda bodies
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 (include-book "kestrel/evaluators/if-eval" :dir :system) ; because we are going to process a whole clause
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/terms-light/logic-termp" :dir :system))
 (local (include-book "kestrel/terms-light/termp" :dir :system))
 (local (include-book "kestrel/utilities/arities-okp" :dir :system))
@@ -286,8 +287,7 @@
 
 ;; Supports the :well-formedness-guarantee.
 (defthm logic-term-list-listp-of-push-unary-fns-into-lambdas-clause-processor
-  (implies (and (logic-term-listp clause w)
-                )
+  (implies (logic-term-listp clause w)
            (logic-term-list-listp (push-unary-fns-into-lambdas-clause-processor clause) w))
   :hints (("Goal" :in-theory (enable push-unary-fns-into-lambdas-clause-processor))))
 

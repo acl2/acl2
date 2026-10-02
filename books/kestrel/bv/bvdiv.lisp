@@ -1,7 +1,7 @@
 ; Bit-vector division
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (include-book "bvchop")
-(include-book "unsigned-byte-p")
+(local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 
 ;(local (in-theory (disable floor-bounded-by-/))) ;causes forcing
@@ -174,7 +174,7 @@
   :hints (("Goal" :in-theory (e/d (bvdiv
                                    bvchop-of-*-when-unsigned-byte-p-of-*-of-bvchop-and-bvchop
                                    UNSIGNED-BYTE-P)
-                                  ( ;BVCHOP-IDENTITY
+                                  (;BVCHOP-IDENTITY
                                    ;;todo: clean these up:
                                    bvchop-times-cancel-better-alt
                                    bvchop-times-cancel-better

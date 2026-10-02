@@ -39,6 +39,16 @@
 ;; Checking the preconditions stated in the proof of correctness of
 ;; the zero-copy program (proof in proofs/zeroCopy/zeroCopy.lisp).
 
+;; NOTE: This file is out of date.  It is not part of the build (it is
+;; not a book), and it makes calls to older versions of several
+;; functions whose signatures have since changed, including
+;; las-to-pas, rb, all-xlation-governing-entries-paddrs, and
+;; program-at (which used to take a list of linear addresses and now
+;; take a byte count and a starting address), init-x86-state (whose
+;; argument list has changed), and the accessors cr3-slice and
+;; seg-sel-layout-slice (superseded by the cr3Bits and
+;; segment-selectorBits bit structures).
+
 (in-package "X86ISA")
 
 (include-book "../../top" :ttags :all)

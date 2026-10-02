@@ -26,7 +26,7 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
 (defmap map-packbv (itemcount itemsize items-lst) (packbv itemcount itemsize items-lst) :fixed (itemcount itemsize)
-  :declares ((xargs :guard (and (natp itemsize)(natp itemcount) ;automatically generate this from the guard for packbv?
+  :declares ((xargs :guard (and (natp itemsize) (natp itemcount) ;automatically generate this from the guard for packbv?
                                 (all-true-listp items-lst)
                                 (all-all-integerp items-lst)
                                 ))))

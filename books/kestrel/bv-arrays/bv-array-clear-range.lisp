@@ -292,7 +292,6 @@
            :induct t
            :in-theory (e/d (bv-array-clear-range)
                            (;bv-array-clear-range-same
-                            ;update-nth-becomes-update-nth2-extend-gen
                             )))))
 
 (theory-invariant (incompatible (:rewrite bv-array-clear-of-bv-array-clear-range) (:rewrite bv-array-clear-range-of-bv-array-clear)))
@@ -303,9 +302,9 @@
 ;;                 (< LOWINDEX LEN)
 ;;                 (< INDEX LEN)
 ;;                 (natp index)
-;;                 (natp elemement-width))
-;;            (equal (bv-array-clear elemement-width len index (bv-array-clear-range elemement-width len lowindex highindex data))
-;;                   (bv-array-clear-range elemement-width len lowindex highindex (bv-array-clear elemement-width len index data))))
+;;                 (natp element-width))
+;;            (equal (bv-array-clear element-width len index (bv-array-clear-range element-width len lowindex highindex data))
+;;                   (bv-array-clear-range element-width len lowindex highindex (bv-array-clear element-width len index data))))
 ;;   :hints (("Goal" :in-theory (enable bv-array-clear-range))))
 
 (defthm bv-array-clear-range-of-bv-array-write-contained
@@ -363,7 +362,6 @@
 ;; ;                           BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-RANGE
 ;;                             BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-RANGE-ADJACENT1
 ;;                             BV-ARRAY-CLEAR-RANGE-OF-BV-ARRAY-CLEAR-ADJACENT1
-;;                             UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
                             )))))
 
 (defthm bv-array-clear-range-of-bv-array-write-too-high
@@ -446,8 +444,7 @@
                   (if (and (<= low index)
                            (<= index high))
                       (bv-array-clear-range size len low high data)
-                    (bv-array-write size len index val (bv-array-clear-range size len low high data)))))
-  :hints (("Goal" :in-theory (disable))))
+                    (bv-array-write size len index val (bv-array-clear-range size len low high data))))))
 
 (defthm bv-array-clear-of-bv-array-clear-range-contained
   (implies (and (<= lowindex index1)

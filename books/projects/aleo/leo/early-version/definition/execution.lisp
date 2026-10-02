@@ -166,7 +166,7 @@
   ((local
     (in-theory
      (enable
-      vcscope-dinfo-listp-when-vcscope-dinfo-list-resultp-and-not-reserrp))))
+      vcscope-dinfo-listp-when-result-not-error))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

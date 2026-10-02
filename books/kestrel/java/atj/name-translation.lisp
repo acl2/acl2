@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -374,7 +374,7 @@
      which generates the Java imports.")
    (xdoc::p
     "We also disallow Java keywords, boolean literals, and the null literal,
-     which are not valid Java identiers.
+     which are not valid Java identifiers.
      There is no need to exclude the empty string explicitly
      (unlike @(tsee *atj-disallowed-jvar-names*)),
      because ACL2 package names are never empty
@@ -571,7 +571,7 @@
      To avoid conflicts with these predefined names,
      we add a @('$') at the end of every method name
      that happens to be one of the predefined ones
-     (where the function is not the primitive one associated to that name.")
+     (where the function is not the primitive one associated to that name).")
    (xdoc::p
     "The generation of the method name
      does not consider the package name of the function:

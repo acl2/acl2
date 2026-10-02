@@ -227,6 +227,11 @@
 (verify-termination-boot-strap brr-data-lst) ; and guards
 (verify-termination-boot-strap cbd-fn)
 (verify-guards cbd-fn :hints (("Goal" :in-theory (enable state-p1))))
+(verify-termination-boot-strap remove-adjacent-duplicates)
+(verify-termination-boot-strap pairs-to-macro-alias-msgs)
+(verify-termination-boot-strap defevaluator-check-msg)
+(verify-termination-boot-strap defevaluator-guard-msg)
+; See books/system/error1.lisp for defevaluator-check.
 
 ; The following has caused the following error with "make proofs".
 ; > Error: HARD ACL2 ERROR in EXECUTABLE-BADGE:  It is illegal to call this function
@@ -234,6 +239,9 @@
 ; >        and badges not yet computed!
 ; So clear-brr-data-lst has been put into *system-verify-guards-alist*.
 ; (verify-termination-boot-strap clear-brr-data-lst) ; and guards
+
+(verify-termination-boot-strap untranslated-constant-p)
+(verify-termination-boot-strap untranslated-duplicate-free-constant-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite

@@ -45,9 +45,8 @@
            (< x (- (expt 2 n))))
   :rule-classes (:rewrite ;:linear
                  )
-  :hints (("Goal" :in-theory (e/d (getbit slice logtail
-                                          floor-when-negative-and-small)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable getbit slice logtail
+                                     floor-when-negative-and-small))))
 
 (defthmd high-slice-when-negative
   (implies (and (< x 0)
@@ -98,8 +97,7 @@
                 (<= low high)
                 (natp low)
                 (natp high)
-                (posp size)
-                (natp n))
+                (posp size))
            (equal (slice high low x)
                   (repeatbit (+ 1 high (- low))
                              (getbit (+ -1 size) x))))
@@ -183,10 +181,8 @@
 
 (defthm logapp-less-than
   (implies (and (natp lowsize)
-                (natp highsize)
                 (integerp x)
-                (integerp highval)
-                )
+                (integerp highval))
            (equal (< (logapp lowsize lowval highval) x)
                   (or (< highval (logtail lowsize x))
                       (and (equal highval (logtail lowsize x))
@@ -234,8 +230,7 @@
                   (boolor (bvlt highsize x (slice (+ -1 size) lowsize k))
                           (booland (equal (bvchop highsize x) (slice (+ -1 size) lowsize k))
                                    (bvlt lowsize y k)))))
-  :hints (("Goal" :in-theory (e/d (bvlt)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 ;; below we further restrict to x or y being constant
 (defthm bvlt-of-bvcat-arg2-constant
@@ -287,7 +282,6 @@
 
 (defthmd logapp-less-than-alt-helper-1
   (IMPLIES (AND (NATP LOWSIZE)
-                (NATP HIGHSIZE)
                 (INTEGERP X)
                 (INTEGERP HIGHVAL)
                 (< (LOGTAIL LOWSIZE X) HIGHVAL))
@@ -301,7 +295,6 @@
 ;; (<= (+ 1 HIGHVAL) (LOGTAIL LOWSIZE X))
 (defthm logapp-less-than-alt-helper-2
   (IMPLIES (AND (NATP LOWSIZE)
-                (NATP HIGHSIZE)
                 (INTEGERP X)
                 (INTEGERP HIGHVAL)
                 (<= HIGHVAL (LOGTAIL LOWSIZE X))
@@ -317,7 +310,6 @@
 
 (defthm logapp-less-than-alt
   (implies (and (natp lowsize)
-                (natp highsize)
                 (integerp x)
                 (integerp highval)
                 )
@@ -327,10 +319,10 @@
                            (< (bvchop lowsize x)
                               (bvchop lowsize lowval))))))
   :hints (("Goal"
-           :use ( ;(:instance multiply-both-sides-hack (x (LOGTAIL LOWSIZE X)) (y (+ 1 HIGHVAL)) (z (expt 2 lowsize)))
+           :use (;(:instance multiply-both-sides-hack (x (LOGTAIL LOWSIZE X)) (y (+ 1 HIGHVAL)) (z (expt 2 lowsize)))
                  )
            :in-theory (e/d (logapp slice  logapp-less-than-alt-helper-1)
-                           ( ;;plus-of-times-expt-bound2
+                           (;;plus-of-times-expt-bound2
                             PLUS-OF-TIMES-EXPT-BOUND
                             anti-slice
                             <-of-logtail-arg1 ;logtail-lessp
@@ -377,7 +369,7 @@
                                   (bvchop lowsize lowval))))))))
   :hints (("Goal" :use ((:instance BVCAT-NUMERIC-BOUND (k (EXPT 2 (+ LOWSIZE HIGHSIZE))))
                         <-of-bvcat-alt-helper)
-           :in-theory (e/d (UNSIGNED-BYTE-P)(<-OF-BVCAT <-of-bvcat-alt-helper)))))
+           :in-theory (e/d (UNSIGNED-BYTE-P) (<-OF-BVCAT <-of-bvcat-alt-helper)))))
 
 (defthm bvlt-of-bvcat-arg3
   (implies (and (equal size (+ lowsize highsize))
@@ -388,8 +380,7 @@
                   (boolor (bvlt highsize (slice (+ -1 size) lowsize k) x)
                           (booland (equal (bvchop highsize x) (slice (+ -1 size) lowsize k))
                                    (bvlt lowsize k y)))))
-  :hints (("Goal" :in-theory (e/d (bvlt)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 ;; below we further restrict to x or y being constant
 (defthm bvlt-of-bvcat-arg3-constant

@@ -1,7 +1,7 @@
 ; The "X" package for x86 Axe proofs
 ;
 ; Copyright (C) 2017-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -58,7 +58,7 @@
 
     x86isa::n48$inline
     x86isa::n48
-    x86isa::app-view$inline
+    ;; x86isa::app-view$inline
     x86isa::app-view
     x86isa::app-view$a
     x86isa::canonical-address-p$inline
@@ -428,22 +428,22 @@
     x86isa::32-bit-mode-two-byte-opcode-modr/m-p
     x86isa::32-bit-compute-mandatory-prefix-for-two-byte-opcode$inline
 
-    ;; my x86 stuff (what package should this stuff be in?)
-    x86isa::lift-subroutine
-    x86isa::lift-subroutine-fn
-    x86isa::x86-lifter-table
-    x86isa::run-until-exit-segment-or-hit-loop-header
+    ;; my x86 stuff (todo: what package should this stuff be in?)
+    ;; x86isa::lift-subroutine
+    ;; x86isa::lift-subroutine-fn
+    ;; x86isa::x86-lifter-table
+    ;;x86isa::run-until-exit-segment-or-hit-loop-header
 
     x86isa::segment-selectorbits->rpl$inline
 
-    x86isa::text-offset ;variables put in by the lifter
+    x86isa::text-offset ;variables put in by the lifter ; todo: think about these
     x86isa::x86_0
     x86isa::x86_1
     x86isa::x86_2
     x86isa::x86_3 ; todo: add more like this?
 
     ;;my stuff (move this to the X package):
-    x86isa::lifter-rules
+    ;; x86isa::lifter-rules
 
     x86isa::!app-view
     x86isa::init-x86-state-64
@@ -464,7 +464,7 @@
 
     x86isa::x86-run
     x86isa::x86-run-halt
-    x86isa::prefixes-slice
+    ;; x86isa::prefixes-slice
 
     x86isa::disjoint-p
     x86isa::subset-p
@@ -477,7 +477,7 @@
     ;; special symbol that can appear in the MS field:
     x86isa::X86-HLT
 
-    x86isa::increment-*ip ; remove?
+    ;; x86isa::increment-*ip
     x86isa::one-byte-opcode-execute
 
     x86isa::fault
@@ -1043,7 +1043,7 @@
     x86isa::code-segment-descriptor-attributesbits->p$inline
     x86isa::code-segment-descriptor-attributesbits-fix
 
-    x86isa::data-segment-descriptor-attributesbits->
+    x86isa::data-segment-descriptor-attributesbits->e
     x86isa::data-segment-descriptor-attributesbits->e$inline
 
     ;; error values:
@@ -1306,7 +1306,9 @@
     x86isa::sib->index
     x86isa::sib->scale
 
-    x86isa::bitcount8))
+    x86isa::bitcount8
+    x86isa::tzcnt
+    x86isa::blsi))
 
 ;; formals that appear in theorems (or do we want to import these from acl2?):
 ;; also includes some vars that are let-bound in definitions
@@ -1385,14 +1387,8 @@
     x86isa::*ip+delta))
 
 (defconst *axe-x86-implementation-functions*
-  '(ensure-x86
-    parse-executable
-    parsed-executable-type
-    parsed-elf-type
-    parsed-elf-program-header-table
-    ensure-target-exists-in-executable
-    simplify-dag-x86
-    ))
+  '(ensure-x86 ; should these just be in the X or X86ISA package?
+    simplify-dag-x86))
 
 (defpkg "X"
     (append *symbols-from-acl2-package*

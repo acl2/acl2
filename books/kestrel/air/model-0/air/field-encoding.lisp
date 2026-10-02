@@ -1,5 +1,5 @@
 ; AIR Library
-; Model 0: PFCS Constraints
+; Model 0: Field Encoding
 ;
 ; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;

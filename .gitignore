@@ -22,6 +22,7 @@ devel-check.out
 *.axpf
 *.bin
 *.d64fsl
+*.da64fsl
 *.data
 *.dfsl
 *.dx32fsl

@@ -1,6 +1,6 @@
 ; Formalization of one's complement arithmetic
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,11 +11,12 @@
 
 (in-package "ACL2")
 
-(include-book "bvnot")
+(include-book "bvnot-def")
 (include-book "bvplus-def")
 (include-book "bvuminus-def")
 (local (include-book "unsigned-byte-p"))
 (local (include-book "bvchop"))
+(local (include-book "bvnot"))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -271,7 +272,7 @@
                                    bvplus
                                    bvchop-of-sum-cases
                                    unsigned-byte-p)
-                                  ( ;; for speed:
+                                  (;; for speed:
                                    distributivity-of-minus-over-+)))))
 
 ;; Check whether X is equal to positive 0 (all zeros) or negative 0 (all ones).

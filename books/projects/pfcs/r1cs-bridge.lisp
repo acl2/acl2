@@ -164,7 +164,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "An R!CS is formalized as consisting of
+    "An R1CS is formalized as consisting of
      a prime, a list of variables, and a list of constraints.
      We translate this to a PFCS with no definitions
      and whose constraints are the ones of the R1CS (translated).

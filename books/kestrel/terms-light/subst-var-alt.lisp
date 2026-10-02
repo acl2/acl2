@@ -1,6 +1,6 @@
 ; An alternative to subst-var that can sometimes go into lambda bodies
 ;
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,7 @@
 (include-book "free-vars-in-term")
 (include-book "make-lambda-application-simple")
 (include-book "std/util/bstar" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 
 ;; See also the built-in function subst-var.  This handles lambdas differently, not simply
 ;; substituting in the arguments.  This also avoids introducing unserialized
@@ -83,7 +84,7 @@
                      (subst-var-alt-lst var replacement (rest terms))
                      terms))))
 
-(make-flag subst-var-alt)
+(local (make-flag subst-var-alt))
 
 (defthm len-of-subst-var-alt-lst
   (equal (len (subst-var-alt-lst var replacement terms))

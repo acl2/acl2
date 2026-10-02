@@ -1,7 +1,7 @@
 ; Bounded variant of dag-parent-arrayp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -75,16 +75,16 @@
   :hints (("Subgoal *1/5" :cases ((< n (alen1 dag-parent-array-name dag-parent-array))))
           ("Goal" :in-theory (enable bounded-dag-parent-entriesp))))
 
-(defthm bounded-dag-parent-entriesp-of-make-empty-array
+(defthm bounded-dag-parent-entriesp-of-new-array1
   (implies (and (symbolp dag-parent-array-name)
                 (integerp n)
                 (<= n parent-array-len)
                 (posp parent-array-len)
                 (<= parent-array-len *max-1d-array-length*))
-           (bounded-dag-parent-entriesp n dag-parent-array-name (make-empty-array dag-parent-array-name parent-array-len) limit))
+           (bounded-dag-parent-entriesp n dag-parent-array-name (new-array1 dag-parent-array-name parent-array-len) limit))
   :hints (("Goal" :expand ((bounded-dag-parent-entriesp
                             0 dag-parent-array-name
-                            (make-empty-array dag-parent-array-name parent-array-len)
+                            (new-array1 dag-parent-array-name parent-array-len)
                             limit))
            :in-theory (enable bounded-dag-parent-entriesp))))
 
@@ -100,25 +100,25 @@
                                     dag-parent-array
                                     dag-len)))
 
-(defthm bounded-dag-parent-arrayp-forward-to-bounded-dag-parent-arrayp
+(defthm bounded-dag-parent-arrayp-forward-to-dag-parent-arrayp
   (implies (bounded-dag-parent-arrayp dag-parent-array-name dag-parent-array dag-len)
            (dag-parent-arrayp dag-parent-array-name dag-parent-array))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable bounded-dag-parent-arrayp))))
 
-(defthm bounded-dag-parent-arrayp-of-make-empty-array
+(defthm bounded-dag-parent-arrayp-of-new-array1
   (implies (and (posp dag-len)
                 (<= dag-len *max-1d-array-length*)
                 (symbolp dag-parent-array-name))
-           (bounded-dag-parent-arrayp dag-parent-array-name (make-empty-array dag-parent-array-name dag-len) dag-len))
+           (bounded-dag-parent-arrayp dag-parent-array-name (new-array1 dag-parent-array-name dag-len) dag-len))
   :hints (("Goal" :in-theory (enable bounded-dag-parent-arrayp))))
 
-(defthm bounded-dag-parent-arrayp-of-make-empty-array-gen
+(defthm bounded-dag-parent-arrayp-of-new-array1-gen
   (implies (and (posp dag-len)
                 (<= dag-len *max-1d-array-length*)
                 (symbolp dag-parent-array-name)
                 (<= lim dag-len))
-           (bounded-dag-parent-arrayp dag-parent-array-name (make-empty-array dag-parent-array-name dag-len) lim))
+           (bounded-dag-parent-arrayp dag-parent-array-name (new-array1 dag-parent-array-name dag-len) lim))
   :hints (("Goal" :in-theory (enable bounded-dag-parent-arrayp))))
 
 (defthm all-<-of-aref1-when-bounded-dag-parent-arrayp

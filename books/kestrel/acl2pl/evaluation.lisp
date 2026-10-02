@@ -1,6 +1,6 @@
 ; ACL2 Programming Language Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -208,7 +208,7 @@
          (eval-symbol-package-name (first arguments))))
    ((symbol-value-equiv name (lift-symbol 'acl2::symbol-name))
     (and (= (len arguments) 1)
-         (eval-symbol-package-name (first arguments))))
+         (eval-symbol-name (first arguments))))
    ((symbol-value-equiv name (lift-symbol 'acl2::intern-in-package-of-symbol))
     (and (= (len arguments) 2)
          (eval-intern-in-package-of-symbol (first arguments)
@@ -300,7 +300,7 @@
      we run it in one step:
      we use @(tsee call-primitive-function),
      and if it returns @('nil') we go into the error state,
-     otherwise we replace the term in the curren frame
+     otherwise we replace the term in the current frame
      with the quoted result of the primitive function call.
      Note that, in this case, the primitive function is never @(tsee if),
      because that case would have already been handled non-strictly.

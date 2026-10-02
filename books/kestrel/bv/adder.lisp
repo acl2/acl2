@@ -1,7 +1,7 @@
 ; Expressing a sum as a ripple-carry adder
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -146,11 +146,10 @@
   (implies (and (unsigned-byte-p n y)
                 (posp n)
                 (integerp x)
-                (integerp a)
-                (integerp b))
+                (integerp a))
            (equal (equal (+ y x) (+ a (bvchop (+ -1 n) y)))
                   (equal (+ x (* (expt 2 (+ -1 n)) (getbit (+ -1 n) y)))
-                         (+ a))))
+                         a)))
   :hints (("Goal" :in-theory (enable bvcat logapp getbit)
            :use (:instance split-bv (x y)
                            (m (+ -1 n))))))
@@ -290,7 +289,7 @@
                     (and (equal 1 carry) (equal 0 (GETBIT (+ -1 N) x)) (equal 1 (GETBIT (+ -1 N) y)))
                     (and (equal 1 carry) (equal 1 (GETBIT (+ -1 N) x)) (equal 0 (GETBIT (+ -1 N) y)))
                     (and (equal 1 carry) (equal 1 (GETBIT (+ -1 N) x)) (equal 1 (GETBIT (+ -1 N) y))))
-;            :use ( ;(:instance getbit-of-+ (size n) (y (+ carry y)))
+;            :use (;(:instance getbit-of-+ (size n) (y (+ carry y)))
 ;(:instance getbit-of-+ (size n) (x carry))
 ;                  (:instance getbit-of-+-bvchop-expand2 (n (+ -1 n)) (y (+ 1 (BVCHOP (+ -1 N) Y))))
 ;                 (:instance getbit-of-+-bvchop-expand2 (n (+ -1 n)))
@@ -331,14 +330,14 @@
                              ;; UNSIGNED-BYTE-P-OF-+-OF-MINUS-ALT
                              BVPLUS-COMMUTATIVE
                              )))
-           ;; ("subgoal *1/2" :cases ((and (equal 0 (GETBIT 0 CARRY)) (equal 0 (GETBIT 0 X))(equal 0 (GETBIT 0 y)))
-           ;;                                    (and (equal 0 (GETBIT 0 CARRY))(equal 0 (GETBIT 0 X))(equal 1 (GETBIT 0 y)))
-           ;;                                    (and (equal 0 (GETBIT 0 CARRY))(equal 1 (GETBIT 0 X))(equal 0 (GETBIT 0 y)))
-           ;;                                    (and (equal 0 (GETBIT 0 CARRY))(equal 1 (GETBIT 0 X))(equal 1 (GETBIT 0 y)))
-           ;;                                    (and (equal 1 (GETBIT 0 CARRY))(equal 0 (GETBIT 0 X))(equal 0 (GETBIT 0 y)))
-           ;;                                    (and (equal 1 (GETBIT 0 CARRY))(equal 0 (GETBIT 0 X))(equal 1 (GETBIT 0 y)))
-           ;;                                    (and (equal 1 (GETBIT 0 CARRY))(equal 1 (GETBIT 0 X))(equal 0 (GETBIT 0 y)))
-           ;;                                    (and (equal 1 (GETBIT 0 CARRY))(equal 1 (GETBIT 0 X))(equal 1 (GETBIT 0 y)))))
+           ;; ("subgoal *1/2" :cases ((and (equal 0 (GETBIT 0 CARRY)) (equal 0 (GETBIT 0 X)) (equal 0 (GETBIT 0 y)))
+           ;;                                    (and (equal 0 (GETBIT 0 CARRY)) (equal 0 (GETBIT 0 X)) (equal 1 (GETBIT 0 y)))
+           ;;                                    (and (equal 0 (GETBIT 0 CARRY)) (equal 1 (GETBIT 0 X)) (equal 0 (GETBIT 0 y)))
+           ;;                                    (and (equal 0 (GETBIT 0 CARRY)) (equal 1 (GETBIT 0 X)) (equal 1 (GETBIT 0 y)))
+           ;;                                    (and (equal 1 (GETBIT 0 CARRY)) (equal 0 (GETBIT 0 X)) (equal 0 (GETBIT 0 y)))
+           ;;                                    (and (equal 1 (GETBIT 0 CARRY)) (equal 0 (GETBIT 0 X)) (equal 1 (GETBIT 0 y)))
+           ;;                                    (and (equal 1 (GETBIT 0 CARRY)) (equal 1 (GETBIT 0 X)) (equal 0 (GETBIT 0 y)))
+           ;;                                    (and (equal 1 (GETBIT 0 CARRY)) (equal 1 (GETBIT 0 X)) (equal 1 (GETBIT 0 y)))))
            ("Goal" :induct (RIPPLE-CARRY-ADDER N X Y CARRY)
             :in-theory (e/d (;ripple-carry-adder
                              (:induction ripple-carry-adder)
@@ -396,14 +395,14 @@
                 (unsigned-byte-p 1 z))
            (equal (full-adder-carry x y z)
                   (getbit 1 (+ x y z))))
-  :hints (("Goal" :cases ((and (equal 0 x)(equal 0 y)(equal 0 z))
-                          (and (equal 0 x)(equal 0 y)(equal 1 z))
-                          (and (equal 0 x)(equal 1 y)(equal 0 z))
-                          (and (equal 0 x)(equal 1 y)(equal 1 z))
-                          (and (equal 1 x)(equal 0 y)(equal 0 z))
-                          (and (equal 1 x)(equal 0 y)(equal 1 z))
-                          (and (equal 1 x)(equal 1 y)(equal 0 z))
-                          (and (equal 1 x)(equal 1 y)(equal 1 z))))))
+  :hints (("Goal" :cases ((and (equal 0 x) (equal 0 y) (equal 0 z))
+                          (and (equal 0 x) (equal 0 y) (equal 1 z))
+                          (and (equal 0 x) (equal 1 y) (equal 0 z))
+                          (and (equal 0 x) (equal 1 y) (equal 1 z))
+                          (and (equal 1 x) (equal 0 y) (equal 0 z))
+                          (and (equal 1 x) (equal 0 y) (equal 1 z))
+                          (and (equal 1 x) (equal 1 y) (equal 0 z))
+                          (and (equal 1 x) (equal 1 y) (equal 1 z))))))
 
 ;; (defthm full-adder-sum-rewrite
 ;;   (implies (and (unsigned-byte-p 1 x)

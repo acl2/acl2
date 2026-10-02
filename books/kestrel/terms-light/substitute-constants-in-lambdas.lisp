@@ -1,7 +1,7 @@
 ; A tool to substitute lambda vars that are bound to constants
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,8 +14,8 @@
 ;; Crucially, this pushes constants through intervening lambdas.
 
 (include-book "make-lambda-with-hint")
-(include-book "tools/flag" :dir :system)
 (include-book "kestrel/utilities/myquotep" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
@@ -117,7 +117,7 @@
   :hints (("Goal" :induct (len terms)
            :in-theory (enable substitute-constants-in-lambdas-aux-lst))))
 
-(make-flag substitute-constants-in-lambdas-aux)
+(local (make-flag substitute-constants-in-lambdas-aux))
 
 (defthm-flag-substitute-constants-in-lambdas-aux
   (defthm pseudo-termp-of-substitute-constants-in-lambdas-aux

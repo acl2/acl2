@@ -1,7 +1,7 @@
 ; Tool to auto-generate theorems about functions that build dags
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -33,6 +33,8 @@
 ;; The function should also take the 5 parts of the dag-array as arguments.
 (defun def-dag-builder-theorems-fn (call ret-spec dag-array-name dag-parent-array-name hyps hyps-everywhere hints recursivep expand dont-enable)
   (b* ((return-vals (cdr ret-spec))
+       ;; todo: check that the number of return-values is right (otherwise, we can get proof failures)
+       ;; we should also check that each thing in the ret-spec is accurate, but that is harder
        (expected-return-vals '(erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
        ((when (not (subsetp-eq expected-return-vals ret-spec)))
         (er hard? 'def-dag-builder-theorems-fn "Missing return values: ~x0." (set-difference-eq expected-return-vals ret-spec)))
@@ -176,7 +178,7 @@
                   :in-theory '(wf-dagp))))
 
        ;; implied by wf-dagp (someday, when wf-dagp is never opened, we might not need this)
-       (defthm ,(pack$ 'bounded-dag-dag-constant-alistp-of-mv-nth- dag-constant-alist-rv '-of- fn)
+       (defthm ,(pack$ 'bounded-dag-constant-alistp-of-mv-nth- dag-constant-alist-rv '-of- fn)
          (implies (and (wf-dagp ,dag-array-name dag-array dag-len ,dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth ,erp-rv ,call)) ;no error
                        ,@hyps)
@@ -187,17 +189,17 @@
 
        ;; implied by wf-dagp (someday, when wf-dagp is never opened, we might not need this)
        ;; It may often be possible to drop the first 2 hyps
-       (defthm ,(pack$ 'dag-dag-constant-alistp-of-mv-nth- dag-constant-alist-rv '-of- fn)
+       (defthm ,(pack$ 'dag-constant-alistp-of-mv-nth- dag-constant-alist-rv '-of- fn)
          (implies (and (wf-dagp ,dag-array-name dag-array dag-len ,dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth ,erp-rv ,call)) ;no error
                        ,@hyps)
                   (dag-constant-alistp (mv-nth ,dag-constant-alist-rv ,call)))
-         :hints (("Goal" :use ,(pack$ 'bounded-dag-dag-constant-alistp-of-mv-nth- dag-constant-alist-rv '-of- fn)
+         :hints (("Goal" :use ,(pack$ 'bounded-dag-constant-alistp-of-mv-nth- dag-constant-alist-rv '-of- fn)
                   :in-theory '(bounded-dag-constant-alistp-forward-to-dag-constant-alistp))))
 
        ;; implied by wf-dagp (someday, when wf-dagp is never opened, we might not need this)
        ;; We could also add a theorem that simplify shows dag-variable-alistp.
-       (defthm ,(pack$ 'bounded-dag-dag-variable-alistp-of-mv-nth- dag-variable-alist-rv '-of- fn)
+       (defthm ,(pack$ 'bounded-dag-variable-alistp-of-mv-nth- dag-variable-alist-rv '-of- fn)
          (implies (and (wf-dagp ,dag-array-name dag-array dag-len ,dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth ,erp-rv ,call)) ;no error
                        ,@hyps)

@@ -20,7 +20,7 @@
 (include-book "kestrel/fty/deffold-map" :dir :system)
 
 (include-book "../../syntax/abstract-syntax-operations")
-(include-book "../../syntax/validation-information")
+(include-book "../../syntax/validation-annotations")
 
 (include-book "qualified-ident")
 
@@ -39,8 +39,8 @@
     (xdoc::p
       "Attributes may either be associated to @(see qualified-ident)s, or to
        @(see c$::UID)s directly
-       (see @(tsee transunit-ensemble-add-attributes-with-qualified-idents)
-       and @(tsee transunit-ensemble-add-attributes), respectively).")
+       (see @(tsee trans-ensemble-add-attributes-with-qualified-idents)
+       and @(tsee trans-ensemble-add-attributes), respectively).")
     (xdoc::p
       "When adding attributes to declaration, it is not clear whether it is
        necessary to add the attribute to <i>each</i> declaration of the same
@@ -110,8 +110,8 @@
 
 (define resolve-qualified-ident-attrib-spec-list-map
   ((map qualified-ident-attrib-spec-list-mapp)
-   (ensemble transunit-ensemblep))
-  :guard (transunit-ensemble-annop ensemble)
+   (ensemble trans-ensemblep))
+  :guard (trans-ensemble-annop ensemble)
   :returns (mv (er? maybe-msgp)
                (map$ uid-attrib-spec-list-mapp))
   (b* (((reterr) nil)
@@ -188,10 +188,10 @@
         nil)
        (attrs (uid-attrib-spec-list-mfix attrs))
        ((init-declor declor) (first declors))
-       ((unless (c$::init-declor-infop declor.info))
+       ((unless (c$::init-declor-vinfop declor.info))
         (er hard? 'add-attributes
             "Initializer declarator info is not well-formed."))
-       (uid? (c$::init-declor-info->uid? declor.info))
+       (uid? (c$::init-declor-vinfo->uid declor.info))
        (attribs (if uid? (cdr (omap::assoc uid? attrs)) nil))
        (rest-attribs+declors
          (init-declor-list-add-attrib-split (rest declors) attrs))
@@ -266,9 +266,9 @@
               hash-if/elif-expr
               hash-if/ifdef/ifndef
               trans-items
-              transunit
-              filepath-transunit-map
-              transunit-ensemble)
+              trans-unit
+              filepath-trans-unit-map
+              trans-ensemble)
   :extra-args
   ((attrs uid-attrib-spec-list-mapp))
   :override
@@ -293,7 +293,7 @@
                (block-item-list-add-attributes (rest c$::block-item-list) attrs))))
    (c$::fundef
      (b* (((fundef fundef) c$::fundef)
-          ((unless (fundef-infop fundef.info))
+          ((unless (type+uid-vinfop fundef.info))
            (er hard? 'add-attributes
                "Function definition info is not well-formed.")
            (fundef-fix c$::fundef))
@@ -305,7 +305,7 @@
              :attribs (attrib-spec-list-add-attributes fundef.attribs attrs)
              :declons (declon-list-add-attributes fundef.declons attrs)
              :body (comp-stmt-add-attributes fundef.body attrs)))
-          (uid (c$::fundef-info->uid fundef.info))
+          (uid (c$::type+uid-vinfo->uid fundef.info))
           (attrib-specs?
             (omap::assoc uid (uid-attrib-spec-list-mfix attrs)))
           ((unless attrib-specs?)
@@ -330,17 +330,18 @@
             :otherwise (list trans-item))
            :otherwise (list trans-item))))
       (append split-trans-items
-              (trans-item-list-add-attributes (rest c$::trans-item-list) attrs))))))
+              (trans-item-list-add-attributes (rest c$::trans-item-list) attrs)))))
+  :name abstract-syntax-add-attributes)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define transunit-ensemble-add-attributes-with-qualified-idents
-  ((ensemble transunit-ensemblep)
+(define trans-ensemble-add-attributes-with-qualified-idents
+  ((ensemble trans-ensemblep)
    (attrs qualified-ident-attrib-spec-list-mapp))
-  :guard (transunit-ensemble-annop ensemble)
+  :guard (trans-ensemble-annop ensemble)
   :returns (mv (er? maybe-msgp)
-               (ensemble$ transunit-ensemblep))
-  (b* (((reterr) (irr-transunit-ensemble))
+               (ensemble$ trans-ensemblep))
+  (b* (((reterr) (irr-trans-ensemble))
        ((erp attrs$)
         (resolve-qualified-ident-attrib-spec-list-map attrs ensemble)))
-    (retok (transunit-ensemble-add-attributes ensemble attrs$))))
+    (retok (trans-ensemble-add-attributes ensemble attrs$))))

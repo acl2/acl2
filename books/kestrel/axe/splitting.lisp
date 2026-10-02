@@ -1,7 +1,7 @@
 ; Support for the Axe Prover splitting a proof into cases
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -261,7 +261,7 @@
                            expr)
                 (nat-listp acc))
            (nat-listp (maybe-add-split-candidates expr dag-array-name dag-array dag-len acc)))
-  :hints (("Goal" :cases ((integerp (nth '0 (dargs$inline expr))))
+  :hints (("Goal" :cases ((integerp (nth 0 (dargs$inline expr))))
            :in-theory (e/d (maybe-add-split-candidates
                             car-becomes-nth-of-0
                             bounded-dag-exprp
@@ -277,7 +277,7 @@
                 (all-< acc dag-len))
            (all-< (maybe-add-split-candidates expr dag-array-name dag-array dag-len acc)
                   dag-len))
-  :hints (("Goal" :cases ((integerp (nth '0 (dargs$inline expr))))
+  :hints (("Goal" :cases ((integerp (nth 0 (dargs$inline expr))))
            :in-theory (e/d (maybe-add-split-candidates
                             car-becomes-nth-of-0
                             bounded-dag-exprp
@@ -497,7 +497,7 @@
 ;; Returns a nodenum to split on, or nil.
 ;can we speed this up?
 ;destroys 'size-array and 'done-array
-;;fffixme could the node to spit on ever be a literal?  or the negation of a literal? avoid that (could lead to loops)
+;;fffixme could the node to split on ever be a literal?  or the negation of a literal? avoid that (could lead to loops)
 ;redid this now that we are not dropping unused nodes (thus, this now only examines nodes that support the literals)
 ;todo: have this return the size of the split node, so we know whether to print it?
 (defund find-node-to-split-for-prover (dag-array-name dag-array dag-len
@@ -511,7 +511,7 @@
                                  :in-theory (enable all-rationalp-when-nat-listp
                                                     true-listp-when-nat-listp-rewrite)))))
   (let* ((max-literal-nodenum (maxelem literal-nodenums))
-         (done-array (make-empty-array 'done-array (+ 1 max-literal-nodenum)))
+         (done-array (new-array1 'done-array (+ 1 max-literal-nodenum)))
          ;;won't include any nodes that are calls to not:
          (candidate-nodenums (find-node-to-split-candidates-work-list literal-nodenums dag-array-name dag-array dag-len done-array nil))
          (candidate-nodenums (merge-sort-< candidate-nodenums))

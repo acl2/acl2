@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,6 +13,8 @@
 
 (include-book "values")
 (include-book "flexible-array-member-removal")
+
+(local (include-book "std/lists/nthcdr" :dir :system))
 
 (acl2::controlled-configuration)
 
@@ -73,7 +75,31 @@
           :enable (value-struct-read-aux
                    member-type-lookup
                    member-types-of-member-values
-                   member-type-of-member-value)))))))
+                   member-type-of-member-value))))
+
+     (defruled valuep-of-value-struct-read-aux-when-nth
+       (implies (and (equal (c::member-value->name (nth index members))
+                            name)
+                     (natp index)
+                     (< index (len members)))
+                (c::valuep (c::value-struct-read-aux name members)))
+       :induct t
+       :enable (nth
+                len))
+
+     (defruled value-struct-read-aux-of-nthcdr
+       (implies (and (natp index)
+                     (< index (len members)))
+                (equal (value-struct-read-aux name (nthcdr index members))
+                       (if (equal (member-value->name (nth index members))
+                                  (ident-fix name))
+                           (member-value->value (nth index members))
+                         (value-struct-read-aux
+                          name (nthcdr (1+ index) members)))))
+       :induct t
+       :enable (nth
+                nthcdr
+                len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -213,6 +239,14 @@
     (implies (not (errorp new-struct))
              (equal (value-kind new-struct)
                     :struct)))
+
+  (defruled type-of-value-of-value-struct-write
+    (b* ((new-struct (value-struct-write name val struct)))
+      (implies (and (value-case struct :struct)
+                    (not (errorp new-struct)))
+               (equal (type-of-value new-struct)
+                      (type-of-value struct))))
+    :enable type-of-value)
 
   (defruled valuep-of-value-struct-write
     (b* ((old (value-struct-read name struct))

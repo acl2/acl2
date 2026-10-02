@@ -92,6 +92,21 @@
 
 (def-constant-opener bvcount)
 
+;; todo: more
+(def-constant-opener arm::lsl_c)
+(def-constant-opener arm::lsl)
+(def-constant-opener arm::lsr_c)
+(def-constant-opener arm::lsr)
+(def-constant-opener arm::SignExtend)
+(def-constant-opener arm::asr_c)
+(def-constant-opener arm::ror_c)
+(def-constant-opener arm::ror)
+(def-constant-opener arm::rrx_c)
+(def-constant-opener arm::rrx)
+(def-constant-opener arm::shift_c)
+(def-constant-opener arm::shift)
+
+
 ;replace the other
 (defthm arm::set-reg-of-set-reg-diff-2
   (implies (and (syntaxp (and (quotep reg1)
@@ -103,4 +118,4 @@
                   (set-reg reg2 val2 (set-reg reg1 val1 stat))))
   :rule-classes ((:rewrite :loop-stopper nil))
   :hints (("Goal" ;:use write32-xreg-of-write32-xreg-diff-helper
-           :in-theory (enable))))
+           )))

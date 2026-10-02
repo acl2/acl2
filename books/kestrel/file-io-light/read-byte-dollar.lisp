@@ -72,6 +72,11 @@
            (open-input-channel-any-p1 channel (mv-nth 1 (read-byte$ channel2 state))))
   :hints (("Goal" :in-theory (enable open-input-channel-any-p1))))
 
+(defthm open-input-channel-any-p-of-mv-nth-1-of-read-byte$
+  (implies (open-input-channel-any-p channel state)
+           (open-input-channel-any-p channel (mv-nth 1 (read-byte$ channel2 state))))
+  :hints (("Goal" :in-theory (enable open-input-channel-any-p))))
+
 (defthm open-input-channels-of-mv-nth-1-of-read-byte$
   (implies (and (open-input-channel-p1 channel :byte state)
                 (state-p1 state)
@@ -97,7 +102,8 @@
                        ;; (cddr (assoc-equal channel (open-input-channels state)))
                        )))
   :hints (("Goal" :use (:instance nat-listp-of-cddr-of-assoc-equal-when-open-channel-listp
-                                  (channels (open-input-channels state)))
+                                  (channels (open-input-channels state))
+                                  (output-p nil))
            :in-theory (e/d (read-byte$ channel-contents)
                            (nat-listp-of-cddr-of-assoc-equal-when-open-channel-listp
                             true-listp)))))
@@ -108,7 +114,8 @@
            (iff (integerp (mv-nth 0 (read-byte$ channel state)))
                 (mv-nth 0 (read-byte$ channel state))))
   :hints (("Goal" :use (:instance nat-listp-of-cddr-of-assoc-equal-when-open-channel-listp
-                                  (channels (open-input-channels state)))
+                                  (channels (open-input-channels state))
+                                  (output-p nil))
            :in-theory (e/d (read-byte$ channel-contents)
                            (nat-listp-of-cddr-of-assoc-equal-when-open-channel-listp
                             true-listp)))))
@@ -119,7 +126,8 @@
            (iff (unsigned-byte-p 8 (mv-nth 0 (read-byte$ channel state)))
                 (mv-nth 0 (read-byte$ channel state))))
   :hints (("Goal" :use (:instance unsigned-byte-listp-of-cddr-of-assoc-equal-when-open-channel-listp
-                                  (channels (open-input-channels state)))
+                                  (channels (open-input-channels state))
+                                  (output-p nil))
            :in-theory (e/d (read-byte$ channel-contents UNSIGNED-BYTE-LISTP)
                            (unsigned-byte-listp-of-cddr-of-assoc-equal-when-open-channel-listp
                             true-listp)))))
@@ -130,7 +138,8 @@
            (not (< (mv-nth 0 (read-byte$ channel state))
                    0)))
   :hints (("Goal" :use (:instance nat-listp-of-cddr-of-assoc-equal-when-open-channel-listp
-                                  (channels (open-input-channels state)))
+                                  (channels (open-input-channels state))
+                                  (output-p nil))
            :in-theory (e/d (read-byte$ channel-contents open-input-channel-p1)
                            (nat-listp-of-cddr-of-assoc-equal-when-open-channel-listp
                             true-listp)))))
@@ -159,3 +168,10 @@
            (< (len (cddr (assoc-equal channel (open-input-channels (mv-nth 1 (read-byte$ channel state))))))
               (len (cddr (assoc-equal channel (open-input-channels state))))))
   :hints (("Goal" :in-theory (enable read-byte$ channel-contents))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm w-of-mv-nth-1-of-read-byte$
+  (equal (w (mv-nth 1 (read-byte$ channel state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable read-byte$))))

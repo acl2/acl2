@@ -24,6 +24,55 @@
 (table acl2-defaults-table :state-ok t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Moore Modification: A way to select between the original rules by Robert Krug
+; and a few modifications by Moore in 2026.
+
+; After Moore modified a few of the original arithmetic-5 rules to prevent
+; looping, he realized some legacy proofs (not in the regression) might depend
+; on the original rules (which fire under fewer restrictions and might not
+; always cause loops when so firing).  So, following a suggested by Matt
+; Kaufmann, I add a placeholder function, use-new-arith-5-rules.  When the
+; executable-counterpart of that function, (:e use-new-arith-5-rules), is
+; enabled, the arithmetic-5 library uses the modified rules; when it is
+; disabled, it uses the original rules.  (:E use-new-arith-5-rules) is DISABLED
+; by default.
+
+(defun use-new-arith-5-rules (x)
+
+; This is just a placeholder used to implement the feature allowing us to
+; switch between using the original arithmetic-5 rules and the slightly
+; modified new rules that avoid some loops.  When the executable-counterpart of
+; this function is enabled the system will use the new rules; when it is
+; disabled the system will use the original rules.
+
+  (declare (xargs :guard t))
+  x)
+
+; As noted above, (:e use-new-arith-5-rules) is DISABLED by default.  Here is
+; where we disable it.  If you wish to certify arithmetic-5 using the new rules
+; and change the default to ENABLED, comment out this line:
+
+(in-theory (disable (:e use-new-arith-5-rules)))
+
+(defun use-original-arith-5-rules (mfc state)
+
+; This function can be used inside an extended syntaxp term.  If the term
+; (syntaxp (use-original-arith-5-rules mfc state)) is among the hyps of a rule,
+; then the rule will fire only if we're supposed to use the original rules and
+; not the new ones.  However, more often than not, the Moore Modifications use
+; the disabledp-fn term below in predicates that test different conditions
+; depending on the enabled status of (:e use-new-arith-5-rules).  The latter
+; idiom is more efficient than having two rules, one conditioned on
+; (use-original-arith-5-rules mfc state) and the other on its negation.
+
+  (declare (xargs :mode :program :stobjs state))
+  (disabledp-fn '(:e use-new-arith-5-rules)
+                (access rewrite-constant
+                        (access metafunction-context mfc :rcnst)
+                        :current-enabled-structure)
+                (w state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; Since we mostly deal with binary operations in our bind-freee
 ;;; rules, we define a couple of functions for accessing the first and

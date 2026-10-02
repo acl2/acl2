@@ -57,13 +57,13 @@
         (retok fundef)))
     (trans-item-list-find-fundef ident (rest items))))
 
-(define transunit-find-fundef
+(define trans-unit-find-fundef
   ((ident identp)
-   (transunit transunitp))
+   (trans-unit trans-unitp))
   :returns (mv (erp booleanp)
                (fundef fundefp))
-  (b* (((transunit transunit) transunit))
-    (trans-item-list-find-fundef ident transunit.items)))
+  (b* (((trans-unit trans-unit) trans-unit))
+    (trans-item-list-find-fundef ident trans-unit.items)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -77,25 +77,28 @@
 
 (defmacro test-subst-free (input &key fun subst expected)
   `(assert-event
-    (b* ((version (c::make-version :std (c::standard-c17) :gcc t))
+    (b* ((dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+         (ienv (c$::change-ienv (c$::ienv-default) :dialect dialect))
          ((mv erp1 ast) (c$::parse-file (filepath "test")
                                        (acl2::string=>nats ,input)
-                                       version
+                                       dialect
                                        t))
-         ((mv erp2 ast) (c$::dimb-transunit ast version))
-         ((mv erp3 fundef) (transunit-find-fundef (c$::ident ,fun) ast))
+         (dstate (c$::init-dstate (filepath "") ienv))
+         ((mv erp2 ast & &) (c$::dimb-trans-unit ast dstate nil nil nil 1000))
+         ((mv erp3 fundef) (trans-unit-find-fundef (c$::ident ,fun) ast))
          ((mv fundef$ -)
           ;; (fundef-subst-free fundef (mergesort ',subst) nil))
           (fundef-subst-free fundef ,subst nil))
          ((mv erp4 ast-expected)
           (c$::parse-file (filepath "test")
                           (acl2::string=>nats ,expected)
-                          (c::make-version :std (c::standard-c17)
+                          (c::make-dialect :std (c::standard-c17)
                                            :gcc t)
                           t))
-         ((mv erp5 ast-expected) (c$::dimb-transunit ast-expected version))
+         ((mv erp5 ast-expected & &)
+          (c$::dimb-trans-unit ast-expected dstate nil nil nil 1000))
          ((mv erp6 fundef-expected)
-          (transunit-find-fundef (c$::ident ,fun) ast-expected)))
+          (trans-unit-find-fundef (c$::ident ,fun) ast-expected)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
             (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2))
             (erp3 (cw "~%Could not find function: ~x0~%" ,fun))

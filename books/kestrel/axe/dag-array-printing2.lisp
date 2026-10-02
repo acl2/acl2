@@ -1,7 +1,7 @@
 ; More utilities for printing DAG arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -27,7 +27,7 @@
       (cw "~x0~%" nodenum-or-quotep)
     ;; it's a nodenum:
     (let ((nodenum nodenum-or-quotep))
-      ;;todo: stop checking the size as soon as soon as the max-term-size is exceeded:
+      ;;todo: stop checking the size as soon as the max-term-size is exceeded:
       (let ((term-size (nfix (size-of-node nodenum dag-array-name dag-array dag-len)))) ;todo: drop the nfix
         (if (< term-size max-term-size)
             (cw "~x0~%" (dag-to-term-aux-array dag-array-name dag-array nodenum))

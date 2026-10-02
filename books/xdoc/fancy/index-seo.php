@@ -11,19 +11,6 @@
    error_reporting(E_ALL);
    ini_set('display_errors', 1);
    
-   // function to prevent SQL injection attacks. Unfortunately, there
-   // seems to be no alternative for SQLite, and no documentation on
-   // what the function does exactly, so we err on the safe side:
-   if(!function_exists('sqlite_escape_string')){ 
-       function sqlite_escape_string($string) {
-       // only allow characters which we know occur in the keys
-           if (preg_match('/^[-._A-Za-z0-9]+$/',$string)!==1)
-           // preg_match returns 1 on match (safe), 0 on no-match (unsafe), false on error.
-           // Use !==1 to reject both unsafe input and errors.
-             return '';
-           else return $string; // the string is safe!
-       }
-   }
 
    class MyDB extends SQLite3
    {
@@ -44,13 +31,16 @@
    $showIndex=false;
    if($key=="*") {$showIndex=true;$key=$index;unset($_GET['path']);}
    
-   $ret = $db->query("SELECT * from xdoc_data where XKEY='".sqlite_escape_string($key)."'");
+   $stmt = $db->prepare("SELECT * from xdoc_data where XKEY=:xkey");
+   $stmt->bindValue(':xkey', $key, SQLITE3_TEXT);
+   $ret = $stmt->execute();
    $page = $ret->fetchArray(SQLITE3_ASSOC);
-   
+
    if(!$page || $page['XKEY']!=$key){
      header("HTTP/1.0 404 Not Found");
      $key  = $notFound;
-     $ret  = $db->query("SELECT * from xdoc_data where XKEY='".$key."'");
+     $stmt->bindValue(':xkey', $key, SQLITE3_TEXT);
+     $ret  = $stmt->execute();
      $page = $ret->fetchArray(SQLITE3_ASSOC);
    }else 
    if(!$showIndex){
@@ -81,7 +71,9 @@
      if(isset($lookup[$nextID])){ // loop found! Abort
        $parents = array();
      }else{
-       $ret = $db->query("SELECT * from xdoc_data where ID='".sqlite_escape_string($nextID)."'");
+       $stmt2 = $db->prepare("SELECT * from xdoc_data where ID=:id");
+       $stmt2->bindValue(':id', $nextID, SQLITE3_TEXT);
+       $ret = $stmt2->execute();
        $cur = $ret->fetchArray(SQLITE3_ASSOC);
        if($cur){
          $lookup[$cur['ID']] = $cur;
@@ -98,7 +90,9 @@
    function lookup_by_id($id){
      global $lookup, $lookupx, $db;
      if(!isset($lookup[$id])){
-       $ret = $db->query("SELECT * from xdoc_data where ID='".sqlite_escape_string($id)."'");
+       $stmt = $db->prepare("SELECT * from xdoc_data where ID=:id");
+       $stmt->bindValue(':id', $id, SQLITE3_TEXT);
+       $ret = $stmt->execute();
        $cur = $ret->fetchArray(SQLITE3_ASSOC);
        $lookup[$cur['ID']] = $cur;
        $lookupx[$cur['XKEY']] = $cur;
@@ -108,7 +102,9 @@
    function lookup_by_xkey($xkey){
      global $lookup, $lookupx, $db;
      if(!isset($lookupx[$xkey])){
-       $ret = $db->query("SELECT * from xdoc_data where XKEY='".sqlite_escape_string($xkey)."'");
+       $stmt = $db->prepare("SELECT * from xdoc_data where XKEY=:xkey");
+       $stmt->bindValue(':xkey', $xkey, SQLITE3_TEXT);
+       $ret = $stmt->execute();
        $cur = $ret->fetchArray(SQLITE3_ASSOC);
        $lookup[$cur['ID']] = $cur;
        $lookupx[$cur['XKEY']] = $cur;

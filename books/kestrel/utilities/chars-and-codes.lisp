@@ -1,6 +1,6 @@
 ; A lightweight book about code-char and char-code
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -31,3 +31,28 @@
                   (< x 256))
              x
            0)))
+
+(defthm equal-of-char-code-and-constant
+  (implies (syntaxp (and (quotep k)
+                         (not (quotep char)) ; prevents rare loops
+                         ))
+           (equal (equal (char-code char) k)
+                  (and (natp k)
+                       (< k 256)
+                       (if (characterp char)
+                           ;; We expect (code-char k) to be evaluated:
+                           (equal char (code-char k))
+                         (equal k 0))))))
+
+(defthm equal-of-code-char-and-constant
+  (implies (syntaxp (and (quotep k)
+                         (not (quotep code)) ; prevents rare loops
+                         ))
+           (equal (equal (code-char code) k)
+                  (and (characterp k)
+                       (if (and (natp code)
+                                (< code 256))
+                           ;; We expect (char-code k) to be evaluated:
+                           (equal code (char-code k))
+                         ;; We expect (code-char 0) to be evaluated:
+                         (equal k (code-char 0)))))))

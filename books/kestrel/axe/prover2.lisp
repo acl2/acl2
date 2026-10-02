@@ -1,7 +1,7 @@
 ; More Axe Prover material
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -50,7 +50,7 @@
   (if (not (axe-prover-args-okay clause hints))
       (prog2$ (hard-error 'axe-prover "Bad inputs.  clause: ~x0.  hints: ~x1." (acons #\0 clause (acons #\1 hints nil)))
               (mv (erp-t) (list clause) state))
-    (b* ( ;(state (make-temp-dir state)) ;maybe delay until needed?
+    (b* (;(state (make-temp-dir state)) ;maybe delay until needed?
          ;;(supplied-id (g :id hints))
          ;;(goal-spec (if supplied-id (string-for-tilde-@-clause-id-phrase supplied-id) "unknown"))
 ;           (unroll (g :unroll hints))         ;format?
@@ -125,14 +125,14 @@
          (- (and print (cw "(~x0 tries.)~%" tries)))
          (- (maybe-print-hit-counts hit-counts)))
       (if (eq :proved result)
-          (prog2$ (cw "!! The DAG prover proved the clause)~%")
+          (prog2$ (cw "!! The DAG prover proved the clause)~%") ; Matches "(Starting DAG prover"
                   ;;fixme very cryptic error message when we only returned the one value
                   (mv (erp-nil)
                       (list (list *t*)) ;the clause-list containing the single clause t
                       ;;fffixme try an empty list of clauses
                       state))
         ;;failed or timed out:
-        (prog2$ (cw "!! The Axe prover FAILED to prove the clause)~%")
+        (prog2$ (cw "!! The Axe prover FAILED to prove the clause)~%") ; Matches "(Starting DAG prover"
                 (mv (erp-nil)
                     ;;the clause processor didn't do anything:
                     (list clause) ;the clause list containing the original clause

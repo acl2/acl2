@@ -1,6 +1,6 @@
 ; A simple model to recommend :induct hints.
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,12 +21,15 @@
 (include-book "kestrel/world-light/defined-functionp" :dir :system)
 (include-book "std/system/measured-subset-plus" :dir :system)
 ;(include-book "kestrel/utilities/rational-printing" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/remove-duplicates-equal" :dir :system))
 
 (verify-termination induction-depth-limit) ; move
 ;; (verify-guards induction-depth-limit) ; todo: needs a guard
+
+(local (acl2::make-flag acl2::find-all-fn-call-subterms))
 
 (acl2::defthm-flag-find-all-fn-call-subterms
   (defthm theorem-for-find-all-fn-call-subterms
@@ -97,8 +100,7 @@
 
 ;; Just to check
 (defthm no-duplicatesp-equal-of-induct-expressions-in-term
-  (implies (no-duplicatesp-equal calls)
-           (no-duplicatesp-equal (induct-expressions-in-term term wrld)))
+  (no-duplicatesp-equal (induct-expressions-in-term term wrld))
   :hints (("Goal" :in-theory (enable induct-expressions-in-term))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

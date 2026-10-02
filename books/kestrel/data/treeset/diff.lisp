@@ -27,6 +27,7 @@
 (include-book "intersect-defs")
 (include-book "to-oset-defs")
 (include-book "generic-typed-defs")
+(include-book "iter-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -49,6 +50,9 @@
 (local (include-book "union"))
 (local (include-book "intersect"))
 (local (include-book "generic-typed"))
+(local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
+(local (include-book "min-max"))
+(local (include-book "iter"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -129,26 +133,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule emptyp-of-diff-when-emptyp-of-arg1
-  (implies (emptyp x)
-           (emptyp (diff x y)))
-  :enable (diff
-           emptyp
-           fix
-           empty))
-
-(defrule emptyp-of-diff-when-tree-emptyp-of-arg2
-  (implies (emptyp y)
-           (equal (diff x y)
-                  (fix x)))
-  :enable (diff
-           emptyp
-           fix
-           setp
-           empty))
-
-;;;;;;;;;;;;;;;;;;;;
-
 (defrule in-of-diff
   (equal (in a (diff x y))
          (and (in a x)
@@ -162,8 +146,9 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule subset-of-diff
-  (subset (diff x y) x)
-  :enable pick-a-point)
+  (implies (subset x z)
+           (subset (diff x y) z))
+  :enable pick-a-point-polar)
 
 ;; TODO: clean up proof?
 (defrule subset-of-arg1-and-diff
@@ -184,6 +169,17 @@
            (subset (diff x0 y0)
                    (diff x1 y1)))
   :enable pick-a-point)
+
+;; The free variable is bound by a subset hypothesis on arg2,
+;; which cardinality-when-subset-linear cannot use directly.
+(defrule cardinality-of-diff-when-subset-of-arg2-linear
+  (implies (subset y0 y1)
+           (<= (cardinality (diff x y1))
+               (cardinality (diff x y0))))
+  :rule-classes :linear
+  :use (:instance cardinality-when-subset-linear
+                  (x (diff x y1))
+                  (y (diff x y0))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -209,7 +205,10 @@
   (implies (emptyp y)
            (equal (diff x y)
                   (fix x)))
-  :enable extensionality)
+  :enable (diff
+           fix
+           setp
+           empty))
 
 (defrule diff-when-emptyp-of-arg2-cheap
   (implies (emptyp y)
@@ -223,6 +222,11 @@
          (fix x))
   :enable diff-when-emptyp-of-arg2)
 
+(defrule diff-of-arg1-and-arg1
+  (equal (diff x x)
+         (empty))
+  :enable extensionality)
+
 (defrule diff-of-union
   (equal (diff (union x y) z)
          (union (diff x z) (diff y z)))
@@ -233,6 +237,16 @@
          (intersect (diff x y) (diff x z)))
   :enable extensionality)
 
+(defrule union-of-arg1-and-diff
+  (equal (union x (diff y x))
+         (union x y))
+  :enable extensionality)
+
+(defrule union-of-diff-and-arg2
+  (equal (union (diff y x) x)
+         (union y x))
+  :enable extensionality)
+
 (defruled diff-of-diff-becomes-diff-of-union
   (equal (diff (diff x y) z)
          (diff x (union y z)))
@@ -241,6 +255,11 @@
 (defrule diff-of-diff
   (equal (diff (diff x y) z)
          (intersect (diff x y) (diff x z)))
+  :enable extensionality)
+
+(defruled diff-of-diff-and-diff-becomes-diff-of-union
+  (equal (diff (diff x z) (diff y z))
+         (diff x (union z y)))
   :enable extensionality)
 
 (defrule diff-of-intersect
@@ -270,6 +289,7 @@
   (implies (in a y)
            (equal (diff (insert a x) y)
                   (diff x y)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by diff-of-insert-when-in-of-arg2)
 
 (defruled diff-of-insert-when-not-in-of-arg2
@@ -391,12 +411,17 @@
 (defruled oset-difference-becomes-diff
   (equal (set::difference x y)
          (to-oset (diff (from-oset x)
-                        (from-oset y))))
-  :enable set::expensive-rules)
+                        (from-oset y)))))
 
 (add-to-ruleset from-oset-theory '(oset-difference-becomes-diff))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule emptyp-of-diff
+  (equal (emptyp (diff x y))
+         (subset x y))
+  :enable to-oset-theory
+  :disable from-oset-theory)
 
 (defrule cardinality-of-diff
   (equal (cardinality (diff x y))
@@ -437,3 +462,46 @@
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
                                             set-all-eqlablep
                                             diff))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The value of an @(see iterator) as an extremum: the least of what has not
+;; been passed, and the greatest of what has been reached. Each characterizes
+;; @(tsee value) for a walk in one direction, with the other side subtracted
+;; from the whole.
+
+(defruled value-becomes-min-of-diff
+  (implies (has-valuep iter)
+           (equal (value iter)
+                  (min (diff (from-iter iter) (before iter)))))
+  :enable (equal-of-min-becomes-sk
+           not-<<-all-l-sk
+           data::<<-rules)
+  :use (
+        (:instance in-when-emptyp
+                   (x (value iter))
+                   (set (diff (from-iter iter) (before iter))))
+        (:instance <<-of-value-when-in-of-after
+                   (x (not-<<-all-l-sk-witness
+                        (diff (from-iter iter) (before iter))
+                        (value iter)))))
+  :disable (<<-of-value-when-in-of-after
+            in-of-value))
+
+(defruled value-becomes-max-of-diff
+  (implies (has-valuep iter)
+           (equal (value iter)
+                  (max (diff (from-iter iter) (after iter)))))
+  :enable (equal-of-max-becomes-sk
+           not-<<-all-r-sk
+           data::<<-rules)
+  :use (
+        (:instance in-when-emptyp
+                   (x (value iter))
+                   (set (diff (from-iter iter) (after iter))))
+        (:instance <<-of-arg1-and-value-when-in-of-before
+                   (x (not-<<-all-r-sk-witness
+                        (value iter)
+                        (diff (from-iter iter) (after iter))))))
+  :disable (<<-of-arg1-and-value-when-in-of-before
+            in-of-value))

@@ -1,7 +1,7 @@
 ; Tools to rebuild DAGs while applying node translations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -19,6 +19,7 @@
 (include-book "kestrel/typed-lists-light/sortedp-less-than-or-equal" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less-than-or-equal-all" :dir :system)
 (include-book "kestrel/typed-lists-light/less-than-or-equal-all" :dir :system)
+(local (include-book "kestrel/typed-lists-light/all-less-than-or-equal" :dir :system))
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
@@ -101,8 +102,7 @@
            :in-theory (disable all-<=-of-keep-nodenum-dargs))))
 
 (defthm ALL-<=-ALL-when-ALL-<=-ALL-of-cdr-arg2
-  (implies (and (ALL-<=-ALL x (cdr y))
-                )
+  (implies (ALL-<=-ALL x (cdr y))
            (equal (ALL-<=-ALL x y)
                   (or (not (consp y))
                       (all-<= x (car y)))))
@@ -331,7 +331,7 @@
   (rebuild-nodes-aux worklist
                      translation-array
                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                     (make-empty-array 'worklist-array (alen1 'translation-array translation-array))))
+                     (new-array1 'worklist-array (alen1 'translation-array translation-array))))
 
 (def-dag-builder-theorems
   (rebuild-nodes worklist translation-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)

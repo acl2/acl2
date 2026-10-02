@@ -19,11 +19,11 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
-(local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system)) ;for UNSIGNED-BYTE-P-INTEGER-LENGTH-ONE-LESS
+(local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
 
 ;; Writes VAL, which should be a BV of size ELEMENT-SIZE, at position INDEX of
 ;; DATA, which should be a bv-array of length LEN whose elements are BVs of
@@ -137,7 +137,7 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable bv-array-write update-nth2))))
 
-;;Do not remove.  This helps justify te correctness of the translation to STP.
+;;Do not remove.  This helps justify the correctness of the translation to STP.
 ;a write out of bounds has essentially no effect
 ;note that the index is chopped down before the comparison
 (defthmd bv-array-write-when-index-is-too-large
@@ -154,9 +154,7 @@
   (implies (syntaxp (not (equal index ''0))) ;prevents loops
            (equal (bv-array-write size 1 index val data)
                   (bv-array-write size 1 0 val '(0))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2 UPDATE-NTH)
-                                  (;update-nth-becomes-update-nth2-extend-gen
-                                   )))))
+  :hints (("Goal" :in-theory (enable bv-array-write update-nth2 UPDATE-NTH))))
 
 (defthm bv-array-write-when-len-is-not-natp
   (implies (not (natp len))
@@ -171,9 +169,7 @@
               (equal 1 (len k))
               (equal (car k) (bvchop size val))))
   :hints (("Goal"
-           :in-theory (e/d (bv-array-write update-nth2 UPDATE-NTH)
-                           (;update-nth-becomes-update-nth2-extend-gen
-                            )))))
+           :in-theory (enable bv-array-write update-nth2 UPDATE-NTH))))
 
 ;move
 (defthm equal-of-bv-array-write-of-1-constant-version
@@ -183,9 +179,7 @@
                        (equal 1 (len k))
                        (equal (car k) (bvchop size val)))))
   :hints (("Goal"
-           :in-theory (e/d (bv-array-write update-nth2 UPDATE-NTH)
-                           (;update-nth-becomes-update-nth2-extend-gen
-                            )))))
+           :in-theory (enable bv-array-write update-nth2 UPDATE-NTH))))
 
 ;; width is a free var
 (defthmd update-nth2-becomes-bv-array-write
@@ -229,8 +223,7 @@
                 (integerp size))
            (equal (bv-array-write element-size len index (bvchop size val) data)
                   (bv-array-write element-size len index val data)))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) (;UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
-                                                                 )))))
+  :hints (("Goal" :in-theory (enable bv-array-write update-nth2))))
 
 (defthm nthcdr-of-bv-array-write-is-nil
   (implies (and (<= len n)
@@ -240,20 +233,20 @@
                   nil)))
 
 (defthm bv-array-write-of-bvchop-list
-  (equal (bv-array-write elemement-width len index val (bvchop-list elemement-width array))
-         (bv-array-write elemement-width len index val array))
+  (equal (bv-array-write element-width len index val (bvchop-list element-width array))
+         (bv-array-write element-width len index val array))
   :hints (("Goal" :in-theory (enable bv-array-write update-nth2 bvchop-list-of-take-of-bvchop-list))))
 
 (defthm bv-array-write-of-take
   (implies (and (<= len n)
                 (natp n))
-           (equal (bv-array-write elemement-width len index val (take n array))
-                  (bv-array-write elemement-width len index val array)))
+           (equal (bv-array-write element-width len index val (take n array))
+                  (bv-array-write element-width len index val array)))
   :hints (("Goal" :in-theory (enable bv-array-write update-nth2 bvchop-list-of-take-of-bvchop-list take))))
 
 (defthm bv-array-write-of-take-same
-  (equal (bv-array-write elemement-width len index val (take len array))
-         (bv-array-write elemement-width len index val array))
+  (equal (bv-array-write element-width len index val (take len array))
+         (bv-array-write element-width len index val array))
   :hints (("Goal" :in-theory (enable bv-array-write update-nth2 bvchop-list-of-take-of-bvchop-list take))))
 
 ;fixme can loop?
@@ -321,7 +314,7 @@
                 )
            (equal (bv-array-write element-size1 len index1 val1 (bv-array-write element-size2 len index2 val2 lst))
                   (bv-array-write element-size1 len index2 (bvchop element-size2 val2)
-;the bvchop-list should have no affect when lst is a bv-array-write nest with element-size2
+;the bvchop-list should have no effect when lst is a bv-array-write nest with element-size2
                                   (bv-array-write element-size1 len index1 val1 (bvchop-list element-size2 lst)))))
   :hints
   (("Goal" :cases ((<= len (len lst)))
@@ -415,8 +408,7 @@
   (("Goal"
     :in-theory (e/d (update-nth2 ;list::update-nth-update-nth-diff
                      bv-array-write)
-                    (;UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
-                     ;BV-ARRAY-WRITE-EQUAL-REWRITE-ALT
+                    (;BV-ARRAY-WRITE-EQUAL-REWRITE-ALT
                      ;BV-ARRAY-WRITE-EQUAL-REWRITE
                      )))))
 
@@ -497,18 +489,11 @@
                         (bvchop-list element-size (cdr (take len (true-list-fix lst))))
                       (bv-array-write element-size (- len 1) (- key 1) val (nthcdr 1 lst))))))
   :hints (("Goal"
-           :cases ((and (< len 0)
-                        (< key n))
-                   (and (not (< len 0))
-                        (< key n))
-                   (and (< len 0)
-                        (not (< key n)))
-                   (and (not (< len 0))
-                        (not (< key n))))
+
            :in-theory (e/d (update-nth2 bv-array-write-opener
                             ;bv-array-write
                             ) (ceiling-of-lg
-                               update-nth-becomes-update-nth2-extend-gen)))))
+                               )))))
 
 (defthmd bv-array-write-redef-special
   (implies (and (equal len (len data)) ; this case

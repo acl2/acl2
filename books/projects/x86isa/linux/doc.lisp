@@ -4,7 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2024 Intel Corporation
-; Copyright (C) 2024 Yahya Sohail
+; Copyright (C) 2024-2026 Yahya Sohail
 
 ; All rights reserved.
 
@@ -50,6 +50,10 @@
 (make-event
   `(defconst *linux-init-script*
              ,(read-file-into-string "init")))
+
+(make-event
+  `(defconst *linux-networked-init-script*
+             ,(read-file-into-string "init-networked")))
 
 (defxdoc running-linux
          :parents (x86isa)
@@ -343,3 +347,114 @@
          Once that is done you should have a cpio archive @('<archive
          path>.img') containing your rootfs, which can be used to boot
          Linux.</p>"))
+
+(defxdoc networked-linux
+         :parents (running-linux)
+         :short "How to build rootfs and Linux to enable networking and sshd on x86isa model"
+         :long
+         (xdoc::topstring
+           "<p>Despite the x86isa model having no network card model, we can
+           connect the Linux system running in it to a network with the host
+           computer by tunneling the network over the TTY. This topic shows how
+           to do this and connect to Linux running on the model over @('ssh')
+           using <a href=\"https://github.com/yaso9/tunstdio\">@('tunstdio')</a>,
+           a tool for tunneling networks. @('tunstdio') only works on Linux, so
+           we assume the system being used to build the rootfs and kernel and
+           run the model is a Linux system. The network connection that this
+           method establishes is quite slow, but it is good enough to establish
+           an ssh connection. Rather than completely restating how to build and
+           run a rootfs and kernel, this topic notes what additional steps are
+           needed when following the @(see building-linux), @(see building-rootfs),
+           and @(see running-linux) topics to enable networking and
+           @('ssh').</p>
+
+           <h3>Building the rootfs</h3>
+           <p>For use with networking and ssh, we build the rootfs largely the
+           same as described in @(see building-rootfs), but with a few changes.
+           Before using bsdtar to create the image, we install OpenSSH
+           @('sshd'), setup hostkeys, set the @('root') user password, include
+           the @('tunstdio') binary, and change the @('init') script to start
+           @('sshd') and @('tunstdio').</p>
+
+           <p>We will install @('sshd') in the rootfs image by @('chroot')ing
+           into the rootfs directory and using @('apk'), Alpine Linux's package
+           manager, to install it. Execute the following to do so:</p>
+           <code>
+           $ cp /etc/resolv.conf /path/to/rootfs/etc/resolv.conf # Copy DNS config into the chroot
+           $ sudo chroot /path/to/rootfs apk --no-cache add openssh # Install openssh
+           $ rm /path/to/rootfs/etc/resolv.conf # Cleanup file we copied
+           </code>
+
+           <p>To setup @('sshd'), we need to generate hostkeys. We will do this
+           by @('chroot')ing into the rootfs again and using @('ssh-keygen').
+           This requires mounting /dev in the rootfs. You can do this by
+           executing the following commands:</p>
+           <code>
+           $ sudo mount --bind /dev /path/to/rootfs/dev # Mount /dev in rootfs
+           $ sudo chroot /path/to/rootfs ssh-keygen -A # Generate hostkeys
+           $ sudo chown -R $USER:$USER /path/to/rootfs # Change ownership of generated files to current user
+           $ sudo umount /path/to/rootfs/dev # Unmount /dev from rootfs to cleanup
+           </code>
+
+           <p>Next, we need to set the root user password. We'll do this by
+           modifying @('/etc/shadow') to set the root user's password to
+           @('root').</p>
+           <code>
+           $ sed -i 's/^root:\*::0:::::$/root:$1$CDn.vhmi$CS2D3QHr.K7WYM\/k66RMN1::0:::::/' /path/to/rootfs/etc/shadow
+           </code>
+
+           <p>Additionally, in order to log in as the @('root') user over ssh
+           using the password we set, we need to enable password authentication
+           for root login in the @('sshd') config. Run the following:</p>
+           <code>
+           $ sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /path/to/rootfs/etc/ssh/sshd_config
+           </code>
+
+           <p>A tunstdio binary can be downloaded from <a
+           href=\"https://github.com/yaso9/tunstdio/releases/download/v1.0.0/tunstdio\">here</a>.
+           Download this file and place it at @('/path/to/rootfs/tunstdio'). Be
+           sure to make it executable with @('chmod +x /path/to/rootfs/tunstdio').</p>
+
+           <p>Finally, we need to use the following @('init') script. It can be
+           found at @('books/projects/x86isa/linux/init-networked') in the ACL2
+           source tree. In addition to what the non-networking @('init') script
+           does, it starts @('sshd') and @('tunstdio'). Place it in
+           @('/path/to/rootfs/init').</p>"
+
+           (xdoc::@{} *linux-networked-init-script*)
+
+           "<p>The rootfs image cpio archive can now be built with @('bsdtar')
+           as described in @(see building-rootfs).</p>
+
+           <h3>Building network enabled Linux kernel</h3>
+
+           <p>Follow the instructions in @(see building-linux) to download and
+           patch the kernel, but before building run @('make menuconfig') and
+           set the following options: @('NET=y'), @('INET=y'), @('TUN=y'), and
+           @('UNIX=y'). After setting these options, you can build the kernel
+           as described.</p>
+
+           <h3>Running the model</h3>
+
+           <p>Run the model exactly as described in @(see running-linux) with
+           our networking enabled kernel and rootfs image, but instead of
+           connecting to the model's shell with @('socat'), we use @('socat')
+           and @('tunstdio') to connect to the network via the TTY TCP socket.
+           On your host machine, when ACL2 hangs waiting for a TCP connection,
+           execute the following:</p>
+           <code>
+           $ sudo socat tcp-connect:localhost:6444 \"exec:/path/to/tunstdio 10.0.0.2/24,pipes\"
+           </code>
+           <p>In the above, @('/path/to/tunstdio') is the same @('tunstdio')
+           binary we downloaded above and put in the rootfs image.</p>
+
+           <p>Once the model is done booting, you can @('ssh') into it by
+           running the following ssh command:</p>
+           <code>
+           $ ssh root@10.0.0.1
+           </code>
+           <p>The command may look like it has hung because it takes a long
+           time to connect. One can pass the @('-vvv') flag to @('ssh') for
+           verbose output to see how it is progressing. Once it connects, you
+           will be prompted for the root user's password, which we set to
+           @('root') above.</p>"))

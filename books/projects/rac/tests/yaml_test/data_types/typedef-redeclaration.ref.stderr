@@ -1,3 +1,6 @@
-typedef-redeclaration.cpp:4 (12-18): syntax error, unexpected TYPEID, expecting ID
- 4 | typedef int MyType;
-   |             ^^^^^^
+typedef-redeclaration.cpp:7 (22-28): Conflicting declaration for MyType
+ 7 | typedef array<int, 3> MyType;
+   |                       ^^^^^^
+note: previous declaration here:
+ 6 | typedef int MyType;
+   | ^^^^^^^^^^^^^^^^^^

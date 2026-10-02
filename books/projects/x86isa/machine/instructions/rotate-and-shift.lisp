@@ -207,35 +207,35 @@
        ;; Computing the flags and the result:
        (input-rflags (the (unsigned-byte 32) (rflags x86)))
 
-       ((mv result
-            (the (unsigned-byte 32) output-rflags)
-            (the (unsigned-byte 32) undefined-flags))
-        (case reg
-          (0
-           ;; ROL
-           (rol-spec reg/mem-size reg/mem shift/rotate-by input-rflags))
-          (1
-           ;; ROR
-           (ror-spec reg/mem-size reg/mem shift/rotate-by input-rflags))
-          (2
-           ;; RCL
-           (rcl-spec reg/mem-size reg/mem shift/rotate-by input-rflags))
-          (3
-           ;; RCR
-           (rcr-spec reg/mem-size reg/mem shift/rotate-by input-rflags))
-          (4
-           ;; SAL/SHL
-           (sal/shl-spec reg/mem-size reg/mem shift/rotate-by input-rflags))
-          (5
-           ;; SHR
-           (shr-spec reg/mem-size reg/mem shift/rotate-by input-rflags))
-          (7
-           ;; SAR
-           (sar-spec reg/mem-size reg/mem shift/rotate-by input-rflags))
-          ;; The guard for this function will ensure that we don't
-          ;; reach here.
-          (otherwise
-           (mv 0 0 0))))
+      ((mv result
+           (the (unsigned-byte 32) output-rflags)
+           (the (unsigned-byte 32) undefined-flags))
+       (case reg
+         (0
+          ;; ROL
+          (rol-spec reg/mem-size reg/mem shift/rotate-by input-rflags))
+         (1
+          ;; ROR
+          (ror-spec reg/mem-size reg/mem shift/rotate-by input-rflags))
+         (2
+          ;; RCL
+          (rcl-spec reg/mem-size reg/mem shift/rotate-by input-rflags))
+         (3
+          ;; RCR
+          (rcr-spec reg/mem-size reg/mem shift/rotate-by input-rflags))
+         (4
+          ;; SAL/SHL
+          (sal/shl-spec reg/mem-size reg/mem shift/rotate-by input-rflags))
+         (5
+          ;; SHR
+          (shr-spec reg/mem-size reg/mem shift/rotate-by input-rflags))
+         (7
+          ;; SAR
+          (sar-spec reg/mem-size reg/mem shift/rotate-by input-rflags))
+         ;; The guard for this function will ensure that we don't
+         ;; reach here.
+         (otherwise
+          (mv 0 0 0))))
 
        ;; Update the x86 state:
 
@@ -385,21 +385,21 @@
 
        (input-rflags (the (unsigned-byte 32) (rflags x86)))
 
-       ((mv result
-            result-undefined?
-            (the (unsigned-byte 32) output-rflags)
-            (the (unsigned-byte 32) undefined-flags))
-        (case opcode
-          ((#xA4 #xA5) (shld-spec
-                        operand-size dst-value src-value count input-rflags))
-          ((#xAC #xAD) (shrd-spec
-                        operand-size dst-value src-value count input-rflags))
-          (otherwise (mv 0 nil 0 0)))) ; unreachable
+      ((mv result
+           result-undefined?
+           (the (unsigned-byte 32) output-rflags)
+           (the (unsigned-byte 32) undefined-flags))
+       (case opcode
+         ((#xA4 #xA5) (shld-spec
+                       operand-size dst-value src-value count input-rflags))
+         ((#xAC #xAD) (shrd-spec
+                       operand-size dst-value src-value count input-rflags))
+         (otherwise (mv 0 nil 0 0)))) ; unreachable
 
-       ((mv result x86)
-        (if result-undefined?
-            (undef-read x86)
-          (mv result x86)))
+      ((mv result x86)
+       (if result-undefined?
+           (undef-read x86)
+         (mv result x86)))
 
        ;; update the state:
 

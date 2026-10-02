@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -934,7 +934,7 @@
 (define tailrec-gen-var-v ((old$ symbolp))
   :returns (v "A @(tsee symbolp).")
   :mode :program
-  :short "Generate the variable @('u') to use in the
+  :short "Generate the variable @('v') to use in the
           @(':domain-of-combine'),
           @(':domain-of-combine-uncond'),
           @(':combine-associativity'), and
@@ -947,7 +947,7 @@
 (define tailrec-gen-var-w ((old$ symbolp))
   :returns (w "A @(tsee symbolp).")
   :mode :program
-  :short "Generate the variable @('u') to use in the
+  :short "Generate the variable @('w') to use in the
           @(':combine-associativity') and
           @(':combine-associativity-uncond')
           applicability conditions."

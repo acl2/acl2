@@ -1,6 +1,6 @@
 ; A clause-processor that helps after :use-ing a conjunction
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -86,7 +86,7 @@
 
 (defun simplify-after-using-conjunction-clause-processor (clause)
   (declare (xargs :guard (pseudo-term-listp clause)))
-  (let* ( ;(clause (first (sublis-var-and-simplify-clause-processor clause)))
+  (let* (;(clause (first (sublis-var-and-simplify-clause-processor clause)))
          (new-clause (simplify-assumptions-in-clause clause))
          ;;(new-clause (first (flatten-literals-clause-processor clause)))
          ;;(clause (first (push-o-p-clause-processor clause))) ;this is a bit out of place here
@@ -105,7 +105,7 @@
                 (my-make-flag-eval (conjoin-clauses (simplify-after-using-conjunction-clause-processor clause)) a))
            (my-make-flag-eval (disjoin clause) a))
   :rule-classes :clause-processor
-  :hints (("Goal" :in-theory (e/d ( ;sublis-var-and-simplify-clause-processor
+  :hints (("Goal" :in-theory (e/d (;sublis-var-and-simplify-clause-processor
                                    simple-subsumption-clause-processor
                                    ;FLATTEN-LITERALS-CLAUSE-PROCESSOR
                                    ;SUBLIS-VAR-AND-SIMPLIFY-CLAUSE-PROCESSOR

@@ -209,7 +209,7 @@
      That is, the termination test is just that the limit is 0.")
    (xdoc::p
     "It is functionally equivalent to @(tsee run), as we prove below.
-     The reason for introducting it is that
+     The reason for introducing it is that
      it facilitates certain induction proofs."))
   (if (zp limit)
       (vm-state-fix st)
@@ -344,12 +344,12 @@
   :guard (and (program-well-formed-p prog)
               (terminatesp prog input))
   :returns (limit natp)
-  :short "Mininum termination limit for a terminating program."
+  :short "Minimum termination limit for a terminating program."
   :long
   (xdoc::topstring
    (xdoc::p
     "While @(tsee termination-limit) returns
-     some (unspcified but fixed) limit
+     some (unspecified but fixed) limit
      sufficient to run a terminating program to completion,
      here we return the smallest such limit,
      which always exists."))

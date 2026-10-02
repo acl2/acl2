@@ -1,6 +1,6 @@
 ; Getting the defined functions from a term, etc.
 ;
-; Copyright (C) 2022 Kestrel-2023 Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;

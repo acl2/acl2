@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/c/syntax/input-files" :dir :system)
+(include-book "kestrel/c/syntax/abstract-syntax-formal-mapping-direct" :dir :system)
 (include-book "kestrel/c/language/dynamic-semantics" :dir :system)
 (include-book "kestrel/c/representation/integers" :dir :system)
 (include-book "kestrel/c/proof-support/const-ast-accessors" :dir :system)
@@ -42,14 +43,14 @@
 
 ; Check that the C code is within the subset with formal semantics.
 (assert-event
- (c$::transunit-ensemble-formalp
-  (c$::code-ensemble->transunits *add-uints*)))
+ (c$::trans-ensemble-formalp
+  (c$::code-ensemble->trans-units *add-uints*)))
 
 ; Map the code to the form over which the formal semantics is defined.
 (defconst *add-uints-formal*
   (b* (((mv & tunits)
-        (c$::ldm-transunit-ensemble
-         (c$::code-ensemble->transunits *add-uints*))))
+        (c$::ldm-trans-ensemble
+         (c$::code-ensemble->trans-units *add-uints*))))
     tunits))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

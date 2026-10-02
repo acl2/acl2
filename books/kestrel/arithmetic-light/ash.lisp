@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function ash
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -77,12 +77,12 @@
 
 (defthm unsigned-byte-p-ash-alt-strong
   (implies (and (natp i)
-                (natp size)
                 (natp count)
-                (<= COUNT SIZE) ;move to conc
+                (<= count size) ;try to move to conc
                 )
            (equal (unsigned-byte-p size (ash i count))
-                  (unsigned-byte-p (- size count) i)))
+                  (and (unsigned-byte-p (- size count) i)
+                       (natp size))))
   :hints (("Goal" :in-theory (enable ash expt-of-+))))
 
 ;; could make a version restricted to constant c and k
@@ -115,6 +115,7 @@
   :rule-classes ((:linear :trigger-terms ((ash i c))))
   :hints (("Goal" :in-theory (enable ash))))
 
+;; or just make the definition of into a linear rule?
 (defthm <-of-ash-linear-when-<-free-linear
   (implies (and (< i free)
                 (integerp i)
@@ -186,15 +187,15 @@
 ;move
 (local
   (defthm <=-of-*-of-expt-2-when-negative-linear
-    (implies (and (< c 0)
+    (implies (and (<= c 0)
                   (<= 0 i)
                   (integerp c)
                   (rationalp i))
              (<= (* i (expt 2 c)) i))
     :rule-classes :linear))
 
-(defthm <=-of-ash-when-left-shift-linear
-  (implies (and (<= c 0) ; left shift (or no shift)
+(defthm <=-of-ash-when-right-shift-linear
+  (implies (and (<= c 0) ; right shift (or no shift)
                 ;; (integerp c)
                 (<= 0 i))
            (<= (ash i c) i))
@@ -203,8 +204,8 @@
                           (and (integerp c) (not (equal c 0))))
            :in-theory (enable ash <-of-floor-arg2-gen))))
 
-(defthm <-of-ash-when-left-shift-linear
-  (implies (and (< c 0) ; left shift
+(defthm <-of-ash-when-right-shift-linear
+  (implies (and (< c 0) ; right shift
                 ;; (integerp i)
                 (< 0 i) ; positive i means the shifted value is strictly less
                 (integerp c))

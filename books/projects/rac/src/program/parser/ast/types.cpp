@@ -29,8 +29,9 @@ std::string Type::to_string() const {
 }
 
 Sexpression *
-Type::cast(Expression *rval) const { // virtual (overridden by IntType)
+Type::cast(Expression *rval, bool &has_changed) const { // virtual (overridden by IntType)
   // Convert rval to an S-expression to be assigned to an object of this type.
+  has_changed = false;
   return rval->ACL2Expr();
 }
 
@@ -80,7 +81,7 @@ PrimType *uintType = PrimType::Uint();
 PrimType *int64Type = PrimType::Int64();
 PrimType *uint64Type = PrimType::Uint64();
 
-Sexpression *PrimType::cast(Expression *rval) const {
+Sexpression *PrimType::cast(Expression *rval, bool &has_changed) const {
 
   const Type *rval_type = rval->get_type();
   Sexpression *sexpr = rval->ACL2Expr();
@@ -89,8 +90,10 @@ Sexpression *PrimType::cast(Expression *rval) const {
 
   // If they are the same no conversion needed.
   if (rval_type->isEqual(this)) {
+    has_changed = false;
     return sexpr;
   }
+  has_changed = true;
 
   // If rval is a constant we are able to make optimize based on its value
   // rather its type.
@@ -103,7 +106,7 @@ Sexpression *PrimType::cast(Expression *rval) const {
   // If the destination is a bool, we should ensure that the result if
   // always_cast zero or one. TODO
   if (rank_ == PrimType::Rank::Bool) {
-    
+
     if (auto rt = dynamic_cast<const PrimType *>(rval_type))
       if (rt->ACL2ValWidth() <= 1)
         return sexpr;
@@ -287,16 +290,19 @@ unsigned IntType::ACL2ValWidth() const {
   return width()->evalConst();
 }
 
-Sexpression *IntType::cast(Expression *rval) const {
+Sexpression *IntType::cast(Expression *rval, bool &has_changed) const {
 
+  has_changed = true;
   // Try to figure out if the bits/si are really necessary.
   const Type *rval_type = rval->get_type();
 
   if (rval_type->isEqual(this)) {
     auto rt = always_cast<const IntType *>(rval_type);
     if (rt->isSigned()->isStaticallyEvaluable()
-        && !rt->isSigned()->evalConst())
+        && !rt->isSigned()->evalConst()) {
+      has_changed = false;
       return rval->ACL2Expr();
+    }
   }
 
   if (!disable_optimizations) {
@@ -311,6 +317,7 @@ Sexpression *IntType::cast(Expression *rval) const {
         if (!s) {
           if (auto c = dynamic_cast<Constant *>(rval)) {
             if (c->fitInside(s, w_dst)) {
+              has_changed = false;
               return rval->ACL2Expr();
             }
           }
@@ -321,6 +328,7 @@ Sexpression *IntType::cast(Expression *rval) const {
               p->isSigned()->isStaticallyEvaluable() &&
               !p->isSigned()->evalConst() &&
               rval_type->ACL2ValWidth() <= w_dst) {
+            has_changed = false;
             return rval->ACL2Expr();
           }
         }
@@ -330,6 +338,7 @@ Sexpression *IntType::cast(Expression *rval) const {
       // value to its binnary represenation and if it fits inside this.
       if (auto p = dynamic_cast<const PrimType *>(rval_type)) {
         if (!p->signed_ && p->ACL2ValWidth() <= w_dst) {
+          has_changed = false;
           return rval->ACL2Expr();
         }
       }
@@ -460,8 +469,9 @@ bool ArrayType::isEqual(const Type *other) const {
   }
 }
 
-Sexpression *ArrayType::cast(Expression *rval) const {
+Sexpression *ArrayType::cast(Expression *rval, bool &has_changed) const {
 
+  has_changed = false;
   if (auto init = dynamic_cast<Initializer *>(rval)) {
     // Array initializer must be a double initializer list (see comment in
     // typing.cpp). "vals" is guarranted to have a single element: an
@@ -481,10 +491,10 @@ Sexpression *ArrayType::default_initializer_value() const {
     return &s_nil;
   }
   Plist *result = new Plist({});
-  
+
   //TODO do not support template
   assert(dim->isStaticallyEvaluable());
-  
+
   result->add(&s_list);
   unsigned size = dim->evalConst();
   for (unsigned i = 0; i < size; ++i) {
@@ -573,8 +583,9 @@ bool StructType::isEqual(const Type *other) const {
   return false;
 }
 
-Sexpression *StructType::cast(Expression *rval) const {
+Sexpression *StructType::cast(Expression *rval, bool &has_changed) const {
 
+  has_changed = false;
   if (auto init = dynamic_cast<Initializer *>(rval)) {
     return init->ACL2StructExpr(this);
   } else {
@@ -741,7 +752,8 @@ bool CompositeType::isEqual(const Type *other) const {
 }
 } // namespace priv
 
-Sexpression *MvType::cast(Expression *rval) const {
+Sexpression *MvType::cast(Expression *rval, bool &has_changed) const {
+  has_changed = false;
   if (auto init = dynamic_cast<Initializer *>(rval)) {
     return init->ACL2TupleExpr(this);
   } else {

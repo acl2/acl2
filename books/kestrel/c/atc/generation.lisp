@@ -11,7 +11,8 @@
 
 (in-package "C")
 
-(include-book "pretty-printer" :ttags ((:open-output-channel!)))
+(include-book "../syntax/abstract-syntax-formal-mapping-inverse")
+(include-book "../syntax/printer" :ttags ((:file-io!)))
 (include-book "shallow-embedding")
 (include-book "table")
 (include-book "expression-generation")
@@ -54,7 +55,11 @@
    (xdoc::p
     "We generate C abstract syntax,
      which we pretty-print to files
-     and also assign to a named constant.")
+     and also assign to a named constant.
+     To print the files, we map the generated abstract syntax
+     with @(tsee c$::ildm-trans-ensemble) and use the "
+    (xdoc::seetopic "c$::printer" "pretty-printer for the syntax for tools")
+    ".")
    (xdoc::p
     "Given the restrictions on the target functions,
      the translation is relatively straightforward, by design.")
@@ -157,24 +162,25 @@
   (xdoc::topstring
    (xdoc::p
     "If the @(':header') input is @('t'), we generate two declarations:
-     one for the header, with @('extern') and without initializer
+     one for the header file, with @('extern') and without initializer
      (whether the @(tsee defobject) has an initializer or not);
-     and one for the source file, without @('extern'),
+     and one for the @('.c') source file, without @('extern'),
      and with or without the intiializer
      depending of whether the @(tsee defobject) has it or not.
      If instead the @(':header') input is @('nil'),
-     we generate one declaration, for the source file,
+     we generate one declaration, for the @('.c') source file,
      without @('extern'),
      and with or without the intiializer
      depending of whether the @(tsee defobject) has it or not.
-     In other words, we always generate a declaration for the source file,
+     In other words,
+     we always generate a declaration for the @('.c') source file,
      the same regardless of @(':header'),
-     and we optionally generate an @('extern') one for the header,
+     and we optionally generate an @('extern') one for the header file,
      always without initializer.
      The @('extern') serves so that the declaration
      does not count like a tentative definition,
      and the only definition (tentative if it has no initializer)
-     is in the source file."))
+     is in the @('.c') source file."))
   (b* ((id (defobject-info->name-ident info))
        (type (defobject-info->type info))
        (initer? (defobject-info->init info))
@@ -226,20 +232,20 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The first list, @('exts-h'), is for the generated header;
-     the second list, @('exts-c'), is for the generated source file.
-     The flag @('header') controls whether the header is generated or not:
+    "The first list, @('exts-h'), is for the generated header file;
+     the second list, @('exts-c'), is for the generated @('.c') source file.
+     The flag @('header') controls whether the header file is generated or not:
      if the flag is @('nil'), @('exts-h') is empty,
-     i.e. we only generate external declarations for the source file.")
+     i.e. we only generate external declarations for the @('.c') source file.")
    (xdoc::p
-    "If the header is generated,
+    "If the header file is generated,
      all the structs and external objects go there,
      while only declarations for the functions go there;
      furthermore, the external objects have no initializers there.
-     The function definitions go into the source file,
+     The function definitions go into the @('.c') source file,
      together with the external objects that have initializers.
-     If the header is not generated,
-     everything goes into the source file."))
+     If the header file is not generated,
+     everything goes into the @('.c') source file."))
   (b* (((reterr) nil nil nil nil)
        (wrld (w state))
        ((when (endp targets)) (retok nil nil nil names-to-avoid))
@@ -410,11 +416,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-prog-const ((prog-const symbolp)
-                            (tunits transunit-ensemblep)
+                            (tunits trans-ensemblep)
                             (print evmac-input-print-p))
   :returns (events pseudo-event-form-listp)
   :short "Generate the named constant for the abstract syntax tree
-          of the generated C code (i.e. translation unit ensemble)."
+          of the generated C code (i.e. translation ensemble)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -447,27 +453,27 @@
   (xdoc::topstring
    (xdoc::p
     "The theorem asserts that
-     running the static semantics (i.e. @(tsee check-transunit-ensemble))
+     running the static semantics (i.e. @(tsee check-trans-ensemble))
      on the C code succeeds.
-     We also include an assertion that the C code is a translation unit ensemble
-     (i.e. that it satisfies @(tsee transunit-ensemblep));
-     this does not directly follow from @(tsee check-transunit-ensemble),
-     which fixes its argument to be a translation unit ensemble.")
+     We also include an assertion that the C code is a translation ensemble
+     (i.e. that it satisfies @(tsee trans-ensemblep));
+     this does not directly follow from @(tsee check-trans-ensemble),
+     which fixes its argument to be a translation ensemble.")
    (xdoc::p
     "Since this is a ground theorem,
      we expect that it should be easily provable
      using just the executable counterparts
-     of @(tsee check-transunit-ensemble) and @(tsee transunit-ensemblep),
+     of @(tsee check-trans-ensemble) and @(tsee trans-ensemblep),
      which are executable functions."))
   (b* (((unless proofs) nil)
        ((mv local-event exported-event)
         (evmac-generate-defthm
          wf-thm
-         :formula `(and (transunit-ensemblep ,prog-const)
-                        (equal (check-transunit-ensemble ,prog-const)
+         :formula `(and (trans-ensemblep ,prog-const)
+                        (equal (check-trans-ensemble ,prog-const)
                                :wellformed))
-         :hints '(("Goal" :in-theory '((:e check-transunit-ensemble)
-                                       (:e transunit-ensemblep))))
+         :hints '(("Goal" :in-theory '((:e check-trans-ensemble)
+                                       (:e trans-ensemblep))))
          :enable nil))
        (progress-start?
         (and (evmac-input-print->= print :info)
@@ -487,7 +493,7 @@
 (define atc-gen-init-fun-env-thm ((init-fun-env-thm symbolp)
                                   (proofs booleanp)
                                   (prog-const symbolp)
-                                  (tunits transunit-ensemblep))
+                                  (tunits trans-ensemblep))
   :returns (local-events pseudo-event-form-listp)
   :short "Generate the theorem asserting that
           applying @(tsee init-fun-env) to the translation unit
@@ -496,7 +502,7 @@
   (xdoc::topstring
    (xdoc::p
     "The rationale for generating this theorem
-     is explained in @(tsee atc-gen-transunit-ensemble)."))
+     is explained in @(tsee atc-gen-trans-ensemble)."))
   (b* (((unless proofs) nil)
        (tunit (preprocess tunits))
        ((when (reserrp tunit))
@@ -521,22 +527,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-transunit-ensemble ((targets symbol-listp)
-                                    (path-wo-ext stringp)
-                                    (proofs booleanp)
-                                    (prog-const symbolp)
-                                    (wf-thm symbolp)
-                                    (fn-thms symbol-symbol-alistp)
-                                    (header booleanp)
-                                    (print evmac-input-print-p)
-                                    (names-to-avoid symbol-listp)
-                                    state)
+(define atc-gen-trans-ensemble ((targets symbol-listp)
+                                (path-wo-ext stringp)
+                                (proofs booleanp)
+                                (prog-const symbolp)
+                                (wf-thm symbolp)
+                                (fn-thms symbol-symbol-alistp)
+                                (header booleanp)
+                                (print evmac-input-print-p)
+                                (names-to-avoid symbol-listp)
+                                state)
   :returns (mv erp
-               (tunits transunit-ensemblep)
+               (tunits trans-ensemblep)
                (events pseudo-event-form-listp)
                (updated-names-to-avoid symbol-listp
                                        :hyp (symbol-listp names-to-avoid)))
-  :short "Generate a translation unit ensemble from the ATC targets,
+  :short "Generate a translation ensemble from the ATC targets,
           and accompanying events."
   :long
   (xdoc::topstring
@@ -547,7 +553,7 @@
      we generate a theorem to ``cache''
      the result of calling @(tsee init-fun-env)
      on the generated translation unit
-     (obtained by preprocessing the generated translation unit ensemble),
+     (obtained by preprocessing the generated translation ensemble),
      to avoid recomputing that for every function environment theorem.
      We need to generate the name of this (local) theorem
      before generating the function environment theorems,
@@ -559,7 +565,7 @@
      and then we generate the theorem;
      however, in the generated events,
      we put that theorem before the ones for the functions."))
-  (b* (((reterr) (irr-transunit-ensemble) nil nil)
+  (b* (((reterr) (irr-trans-ensemble) nil nil)
        (wrld (w state))
        ((mv appcond-events fn-appconds appcond-thms names-to-avoid)
         (if proofs
@@ -586,11 +592,11 @@
                                   fn-thms fn-appconds appcond-thms
                                   header print
                                   names-to-avoid state))
-       (tunit-h (and header (make-transunit :declons exts-h)))
-       (tunit-c (make-transunit :declons exts-c))
-       (tunits (make-transunit-ensemble :path-wo-ext path-wo-ext
-                                        :dot-h tunit-h
-                                        :dot-c tunit-c))
+       (tunit-h (and header (make-trans-unit :declons exts-h)))
+       (tunit-c (make-trans-unit :declons exts-c))
+       (tunits (make-trans-ensemble :path-wo-ext path-wo-ext
+                                    :dot-h tunit-h
+                                    :dot-c tunit-c))
        (init-fun-env-events (atc-gen-init-fun-env-thm init-fun-env-thm
                                                       proofs
                                                       prog-const
@@ -608,16 +614,110 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define atc-gen-transunit-ensemble-event ((tunits transunit-ensemblep)
-                                          (file-name stringp)
-                                          (pretty-printing pprint-options-p)
-                                          (print evmac-input-print-p))
+(define atc-printer-dialect ()
+  :returns (dialect dialectp)
+  :short "The C dialect used by the pretty-printer."
+  (make-dialect :std (standard-c17)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-add-generated-comment-to-trans-unit ((tunit c$::trans-unitp))
+  :returns (new-tunit c$::trans-unitp)
+  :short "Add ATC's generated-file comment to a translation unit."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "ATC generates translation units
+     using the ASTs in the language formalization,
+     which we convert to the ASTs for tools for printing.
+     The ASTs for tools include comments,
+     so we add the generated-file comment to the translation unit
+     after conversion and let the pretty-printer emit it."))
+  (c$::change-trans-unit
+   tunit
+   :items (cons (c$::trans-item-line-comment
+                 (acl2::string=>nats "This file is generated by ATC."))
+                (c$::trans-unit->items tunit)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define atc-add-generated-comment-to-filepath-trans-unit-map
+  ((map c$::filepath-trans-unit-mapp))
+  :returns (new-map c$::filepath-trans-unit-mapp
+                    :hyp (c$::filepath-trans-unit-mapp map))
+  :short "Add ATC's generated-file comment to every translation unit in a map."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee atc-add-generated-comment-to-trans-unit) for rationale."))
+  (b* (((when (omap::emptyp (c$::filepath-trans-unit-map-fix map))) nil)
+       ((mv path tunit) (omap::head map))
+       (new-tunit (atc-add-generated-comment-to-trans-unit tunit))
+       (new-map
+        (atc-add-generated-comment-to-filepath-trans-unit-map
+         (omap::tail map))))
+    (omap::update path new-tunit new-map))
+  :verify-guards :after-returns
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define atc-add-generated-comments-to-trans-ensemble
+  ((tunits c$::trans-ensemblep))
+  :returns (new-tunits c$::trans-ensemblep)
+  :short "Add ATC's generated-file comment to a translation ensemble."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee atc-add-generated-comment-to-trans-unit) for rationale."))
+  (c$::make-trans-ensemble
+   :units
+   (atc-add-generated-comment-to-filepath-trans-unit-map
+    (c$::trans-ensemble->units tunits))
+   :resolved-includes (c$::trans-ensemble->resolved-includes tunits)
+   :info (c$::trans-ensemble->info tunits))
+  :hooks nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-fileset ((file-name stringp)
+                         (tunits trans-ensemblep)
+                         (options c$::prioptp))
+  :guard (b* ((new-tunits
+               (atc-add-generated-comments-to-trans-ensemble
+                (c$::ildm-trans-ensemble file-name tunits)))
+              (dialect (atc-printer-dialect)))
+           (and (c$::trans-ensemble-unambp new-tunits)
+                (c$::trans-ensemble-aidentp new-tunits dialect)))
+  :returns (fileset c$::filesetp)
+  :short "Generate a file set from a translation unit ensemble."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We map ATC's abstract syntax to the abstract syntax for tools,
+     add ATC's generated-file comment to each translation unit,
+     and print the result to a file set with the C17 dialect option;
+     the pretty-printing options are determined from the ones given to ATC."))
+  (b* ((new-tunits (atc-add-generated-comments-to-trans-ensemble
+                    (c$::ildm-trans-ensemble file-name tunits)))
+       (dialect (atc-printer-dialect)))
+    (c$::print-fileset new-tunits options dialect))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atc-gen-trans-ensemble-event ((tunits trans-ensemblep)
+                                      (output-dir stringp)
+                                      (file-name stringp)
+                                      (pretty-printing c$::prioptp)
+                                      (print evmac-input-print-p))
   :returns (event pseudo-event-formp)
   :short "Event to pretty-print the generated C code to the file system."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This serves to run @(tsee pprint-transunit-ensemble)
+    "This serves to generate and write the file set
      after the constant and theorem events have been submitted.
      This function generates an event form
      that is put (by @(tsee atc-gen-everything))
@@ -633,18 +733,21 @@
      as done with the constant and theorem events.")
    (xdoc::p
     "In order to generate an embedded event form for output file generation,
-     we generate a @(tsee make-event) whose argument generates the file.
+     we generate a @(tsee make-event) whose argument
+     calls @(tsee atc-gen-fileset) to generate the file set
+     and @(tsee c$::write-fileset) to write it under @('output-dir').
      The argument must also return an embedded event form,
      so we use @(tsee value-triple) with @(':invisible'),
      so there is no extra screen output.
      This is a ``dummy'' event, which is not supposed to do anything:
      it is the execution of the @(tsee make-event) argument that matters,
-     because it writes the translation unit ensemble to the file system.
+     because it writes the translation ensemble to the file system.
      In essence, we use @(tsee make-event) to turn a computation
      (the one that writes the output files)
      into an event.
-     But we cannot use just @(tsee value-triple)
-     because our computation returns an error triple."))
+     Since @(tsee c$::write-fileset) returns an error flag and state,
+     we turn any error into an error triple;
+     on success, we return the invisible value triple."))
   (b* ((progress-start?
         (and (evmac-input-print->= print :info)
              `((cw-event "~%Generating the file(s)..."))))
@@ -652,11 +755,13 @@
                            `((cw-event " done.~%"))))
        (file-gen-event
         `(make-event
-          (b* (((er &)
-                (pprint-transunit-ensemble ',tunits
-                                           ,file-name
-                                           ',pretty-printing
-                                           state)))
+          (b* ((fileset
+                (atc-gen-fileset ,file-name
+                                 ',tunits
+                                 ',pretty-printing))
+               ((mv erp state)
+                (c$::write-fileset fileset ,output-dir state))
+               ((when erp) (mv erp nil state)))
             (acl2::value '(value-triple :invisible))))))
     `(progn ,@progress-start?
             ,file-gen-event
@@ -693,10 +798,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-everything ((targets symbol-listp)
+                            (output-dir stringp)
                             (file-name stringp)
                             (path-wo-ext stringp)
                             (header booleanp)
-                            (pretty-printing pprint-options-p)
+                            (pretty-printing c$::prioptp)
                             (proofs booleanp)
                             (prog-const symbolp)
                             (wf-thm symbolp)
@@ -728,22 +834,23 @@
   (b* (((reterr) '(_))
        (names-to-avoid (list* prog-const wf-thm (strip-cdrs fn-thms)))
        ((erp tunits events &)
-        (atc-gen-transunit-ensemble targets path-wo-ext proofs
-                                    prog-const wf-thm fn-thms
-                                    header print names-to-avoid state))
-       (tunits-gen-event (atc-gen-transunit-ensemble-event tunits
-                                                           file-name
-                                                           pretty-printing
-                                                           print))
+        (atc-gen-trans-ensemble targets path-wo-ext proofs
+                                prog-const wf-thm fn-thms
+                                header print names-to-avoid state))
+       (tunits-gen-event (atc-gen-trans-ensemble-event tunits
+                                                       output-dir
+                                                       file-name
+                                                       pretty-printing
+                                                       print))
        (assert-events (atc-gen-thm-assert-events wf-thm fn-thms proofs))
        (encapsulate
-           `(encapsulate ()
-              (evmac-prepare-proofs)
-              (local (acl2::use-trivial-ancestors-check))
-              (set-ignore-ok t)
-              ,@events
-              ,@assert-events
-              ,tunits-gen-event))
+         `(encapsulate ()
+                       (evmac-prepare-proofs)
+                       (local (acl2::use-trivial-ancestors-check))
+                       (set-ignore-ok t)
+                       ,@events
+                       ,@assert-events
+                       ,tunits-gen-event))
        (encapsulate+ (restore-output? (eq print :all) encapsulate))
        (info (make-atc-call-info :encapsulate encapsulate))
        (table-event (atc-table-record-event call info)))

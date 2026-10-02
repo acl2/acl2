@@ -1,7 +1,7 @@
 ; Axe trees
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -25,7 +25,6 @@
 ;like pseudo-termp but allows integers (nodenums in some DAG) to also appear
 ;; TODO: Make a more abstract interface to this (e.g., axe-tree-args instead of cdr)
 ;; See also bounded-axe-treep.
-;; TODO: Disable these:
 (mutual-recursion
  (defund axe-treep (tree)
    (declare (xargs :guard t))
@@ -35,7 +34,7 @@
            )
      (let ((fn (ffn-symb tree)))
        (if (eq fn 'quote)
-           ;; a quoted constant;
+           ;; a quoted constant:
            (and (= 1 (len (fargs tree)))
                 (true-listp (fargs tree)))
          ;; the application of a function symbol or lambda to args that are axe trees:
@@ -210,7 +209,7 @@
                   ))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
   :hints (("Goal" :in-theory (e/d (axe-treep)
-                                  ( ;; for speed:
+                                  (;; for speed:
                                    equal-of-len-and-0)))))
 
 ;todo: prove from the above
@@ -370,7 +369,7 @@
                 (< tree bound)))
      (let ((fn (ffn-symb tree)))
        (if (eq fn 'quote)
-           ;; a quoted constant;
+           ;; a quoted constant:
            (and (= 1 (len (fargs tree)))
                 (true-listp (fargs tree)))
          ;; the application of a function symbol or lambda to args that are axe trees:
@@ -550,12 +549,10 @@
            (bounded-axe-tree-listp (cdr trees) dag-len))
   :hints (("Goal" :in-theory (enable bounded-axe-tree-listp))))
 
-;; because it's a pseudo-term
+;; because the lambda body is a pseudo-term, any bound works
 (defthm bounded-axe-treep-of-nth-2-of-car
-  (implies (and ;(bounded-axe-treep tree bound2) ;free var
-;                (<= bound bound2)
-            (axe-treep tree)
-            (consp (car tree)))
+  (implies (and (consp (car tree)) ; it's a lambda application
+                (axe-treep tree))
            (bounded-axe-treep (nth 2 (car tree)) bound) ;the lambda body
            )
   :hints (("Goal" :expand ((axe-treep tree)
@@ -563,10 +560,8 @@
                            ))))
 
 (defthm bounded-axe-treep-of-nth-2-of-car-alt
-  (implies (and ;(bounded-axe-treep tree bound2) ;free var
-;                (<= bound bound2)
-            (axe-treep tree)
-            (consp (car tree)))
+  (implies (and (consp (car tree))
+                (axe-treep tree))
            (bounded-axe-treep (nth 2 (nth 0 tree)) bound) ;the lambda body
            )
   :hints (("Goal" :expand ((axe-treep tree)
@@ -586,7 +581,7 @@
                 )
            (bounded-axe-treep (nth n args) bound))
   :hints (("Goal" :expand (bounded-axe-tree-listp args bound2)
-           :in-theory (e/d (bounded-axe-tree-listp (:i nth)) ( ;nth-of-cdr
+           :in-theory (e/d (bounded-axe-tree-listp (:i nth)) (;nth-of-cdr
                                                              )))))
 
 (defthm bounded-axe-tree-listp-of-append

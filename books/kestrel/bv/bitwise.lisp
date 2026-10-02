@@ -1,7 +1,7 @@
 ; Rules about bitwise operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,9 +12,9 @@
 (in-package "ACL2")
 
 (include-book "bvand-def")
-(include-book "bvxor")
-(include-book "bvnot")
-(include-book "bvor")
+(include-book "bvxor-def")
+(include-book "bvnot-def")
+(include-book "bvor-def")
 (include-book "bitxor")
 (include-book "bitand")
 (include-book "bitnot")
@@ -30,6 +30,7 @@
 (local (include-book "single-bit"))
 (local (include-book "slice"))
 (local (include-book "bvand"))
+(local (include-book "bvor"))
 (local (include-book "getbit"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
@@ -529,7 +530,7 @@
                 (< n size)
                 (integerp n)
                 (integerp size)
-                (unsigned-byte-p-forced xsize x))
+                (force (unsigned-byte-p-forced xsize x)))
            (equal (getbit n (bvor size x y))
                   (getbit n y)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced getbit-too-high))))
@@ -541,7 +542,7 @@
                 (< n size)
                 (integerp n)
                 (integerp size)
-                (unsigned-byte-p-forced ysize y))
+                (force (unsigned-byte-p-forced ysize y)))
            (equal (getbit n (bvor size x y))
                   (getbit n x)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced getbit-too-high))))
@@ -555,7 +556,7 @@
                 (natp low)
                 (natp high)
                 (integerp size)
-                (unsigned-byte-p-forced xsize x))
+                (force (unsigned-byte-p-forced xsize x)))
            (equal (slice high low (bvor size x y))
                   (slice high low y)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced getbit-too-high))))
@@ -568,7 +569,7 @@
                 (natp low)
                 (natp high)
                 (integerp size)
-                (unsigned-byte-p-forced ysize y))
+                (force (unsigned-byte-p-forced ysize y)))
            (equal (slice high low (bvor size x y))
                   (slice high low x)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced getbit-too-high))))

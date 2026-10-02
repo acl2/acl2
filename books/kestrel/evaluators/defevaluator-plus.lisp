@@ -1,6 +1,6 @@
 ; A nicer interface to defevaluator
 ;
-; Copyright (C) 2014-2024 Kestrel Institute
+; Copyright (C) 2014-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -75,7 +75,7 @@
          :rule-classes :type-prescription
          :hints (("Goal" :induct (len terms) :in-theory (enable true-listp (:i len)))))
 
-       (defthm ,(add-suffix eval-list-name "-OF-TRUE-LIST_FIX")
+       (defthm ,(add-suffix eval-list-name "-OF-TRUE-LIST-FIX")
          (equal (,eval-list-name (true-list-fix terms) a)
                 (,eval-list-name terms a))
          :hints (("Goal" :in-theory (enable append (:I len)))))
@@ -118,13 +118,13 @@
        ,@(and (member-eq 'if fns)
               (let ((all-true-name (add-prefix-to-fn "ALL-EVAL-TO-TRUE-WITH-" eval-name))
                     (all-false-name (add-prefix-to-fn "ALL-EVAL-TO-FALSE-WITH-" eval-name)))
-                `((defthm ,(add-suffix eval-list-name "-OF-DISJOIN2-IFF")
+                `((defthm ,(add-suffix eval-name "-OF-DISJOIN2-IFF")
                     (iff (,eval-name (disjoin2 term1 term2) a)
                          (or (,eval-name term1 a)
                              (,eval-name term2 a)))
                     :hints (("Goal" :in-theory (enable disjoin2))))
 
-                  (defthm ,(add-suffix eval-list-name "-OF-DISJOIN-OF-CONS-IFF")
+                  (defthm ,(add-suffix eval-name "-OF-DISJOIN-OF-CONS-IFF")
                     (iff (,eval-name (disjoin (cons term terms)) a)
                          (or (,eval-name term a)
                              (,eval-name (disjoin terms) a)))

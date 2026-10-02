@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function mod.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; For mod-sum-cases, see the copyright on the RTL library.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -345,8 +345,8 @@
   :hints (("Goal" :in-theory (e/d (mod unicity-of-0)
                                   (|(* y x)| ; for speed
                                    integerp-of-*))
-           :use ((:instance integerp-of-* (x (* y1 (/ y2)))
-                            (y (floor x y1)))
+           :use (;; (:instance integerp-of-* (x (* y1 (/ y2)))
+                 ;;            (y (floor x y1)))
                  (:instance floor-of-+-when-mult-arg1
                             (i1 (* y1 (floor i y1)))
                             (i2 x)
@@ -610,8 +610,7 @@
            (equal (* 2 (floor i 2))
                   (if (equal 1 (mod i 2))
                       (+ -1 i)
-                    i)))
-  :hints (("Goal" :in-theory (enable))))
+                    i))))
 
 ;two ways of saying that i is even
 (defthmd equal-of-*-2-of-floor-of-2-same
@@ -871,7 +870,7 @@
   :hints (("Goal" :in-theory (enable mod))))
 
 ;; Enable?
-(defthmd floor-of-when-mod-known
+(defthmd floor-when-mod-known
   (implies (and (equal k (mod i j)) ; k is a free var
                 (syntaxp (quotep k))
                 (natp k)

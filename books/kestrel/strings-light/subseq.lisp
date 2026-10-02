@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function subseq.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,3 +37,12 @@
                   (and (stringp seq)
                        (<= end start))))
   :hints (("Goal" :in-theory (enable subseq))))
+
+(defthm length-of-subseq
+  (implies (and (<= start end)
+                (<= end (length seq))
+                (natp start)
+                (natp end))
+           (equal (length (subseq seq start end))
+                  (- end start)))
+    :hints (("Goal" :in-theory (enable subseq length))))

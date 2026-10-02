@@ -1,6 +1,6 @@
 ; More rules about reading and writing
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,6 +18,7 @@
 (include-book "kestrel/memory/memory48" :dir :system)
 (local (include-book "kestrel/bv/rules3" :dir :system)) ; for +-of-minus-constant-version
 (local (include-book "kestrel/bv/bvuminus" :dir :system))
+(local (include-book "kestrel/bv/bvminus" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -72,7 +73,7 @@
                 ;; (integerp ad2)
                 (UNSIGNED-BYTE-P '48 LEN1)
                 (UNSIGNED-BYTE-P '48 LEN2)
-                (UNSIGNED-BYTE-P '48 n1)
+                ;; (UNSIGNED-BYTE-P '48 n1)
                 (UNSIGNED-BYTE-P '48 n2)
                 )
            (equal (read-byte ad1 (write n2 ad2 val x86))
@@ -269,7 +270,6 @@
                         (:instance read-of-bvchop-48 (addr (+ ad1 x ad2))))
            :in-theory (e/d (ifix) (read-of-bvchop-48)))))
 
-(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -316,7 +316,7 @@
            :in-theory (e/d ((:i read)
                             bvplus ;bvuminus acl2::bvchop-of-sum-cases
                             subregion48p
-                            bvlt
+                            bvlt acl2::bvminus-becomes-bvplus-of-bvuminus
                             in-region48p read-becomes-read-byte
                             ifix)
                            (;distributivity
@@ -403,6 +403,7 @@
            :in-theory (e/d (read-bytes nfix subregion48p in-region48p
                                        ;;read-bytes-of-+--arg2
                                        bvplus acl2::bvchop-of-sum-cases
+                                       acl2::bvminus-becomes-bvplus-of-bvuminus
                                        bvlt)
                            (acl2::bvplus-trim-leading-constant ;looped
                             acl2::+-of-minus-constant-version  ; looped
@@ -412,7 +413,7 @@
 
 ;todo: split out:
 
-(include-book "read-bytes-and-write-bytes")
+;;(include-book "read-bytes-and-write-bytes")
 
 (local
   ;rename
@@ -473,7 +474,7 @@
                             bvlt
                             in-region48p read-becomes-read-byte
                             ifix
-                            acl2::bvchop-of-sum-cases
+                            acl2::bvchop-of-sum-cases acl2::bvminus-becomes-bvplus-of-bvuminus
                             bv-array-read-chunk-little
                             )
                            (;distributivity
@@ -629,8 +630,8 @@
            :in-theory (e/d (disjoint-regions48p bvlt)
                            (read-of-write-of-write-irrel-inner)))))
 
-;; We don't know which whether the write to ad2 has an effect, but any writes
-;; inside the write to ad1 (of size n1) can't possibly affect the read to ad1
+;; We don't know whether the write to ad2 has an effect, but any writes inside
+;; the write to ad1 (of size n1) can't possibly affect the outer read to ad1
 ;; (of size n1).  Can help clarify failures.
 (defthm read-of-write-of-write-of-write-same-middle-bv
   (implies (and (unsigned-byte-p 48 n1)

@@ -40,23 +40,31 @@
          are the practical worst-case complexities of core operations:")
       ;; TODO: technically, these also scale multiplicatively with the size of
       ;;   the elements, since << is O(n). Same for the hash.
-      (xdoc::ul
-        (xdoc::li
-          "@(tsee setp) &mdash; @($O(n)$)")
-        (xdoc::li
-          "@(tsee in) &mdash; @($O(\\log(n))$)")
-        (xdoc::li
-          "@(tsee subset) &mdash; @($O(m\\log(n/m))$)")
-        (xdoc::li
-          "@(tsee insert) &mdash; @($O(\\log(n))$)")
-        (xdoc::li
-          "@(tsee delete) &mdash; @($O(\\log(n))$)")
-        (xdoc::li
-          "@(tsee union) &mdash; @($O(m\\log(n/m))$)")
-        (xdoc::li
-          "@(tsee intersect) &mdash; @($O(m\\log(n/m))$)")
-        (xdoc::li
-          "@(tsee diff) &mdash; @($O(m\\log(n/m))$)"))
+      (xdoc::table_
+        (xdoc::tr
+          (xdoc::td "@(tsee setp)")
+          (xdoc::td "@($O(n)$)"))
+        (xdoc::tr
+          (xdoc::td "@(tsee in)")
+          (xdoc::td "@($O(\\log(n))$)"))
+        (xdoc::tr
+          (xdoc::td "@(tsee subset)")
+          (xdoc::td "@($O(m\\log(n/m))$)"))
+        (xdoc::tr
+          (xdoc::td "@(tsee insert)")
+          (xdoc::td "@($O(\\log(n))$)"))
+        (xdoc::tr
+          (xdoc::td "@(tsee delete)")
+          (xdoc::td "@($O(\\log(n))$)"))
+        (xdoc::tr
+          (xdoc::td "@(tsee union)")
+          (xdoc::td "@($O(m\\log(n/m))$)"))
+        (xdoc::tr
+          (xdoc::td "@(tsee intersect)")
+          (xdoc::td "@($O(m\\log(n/m))$)"))
+        (xdoc::tr
+          (xdoc::td "@(tsee diff)")
+          (xdoc::td "@($O(m\\log(n/m))$)")))
       (xdoc::p
         "(where @($m < n$)).")
       (xdoc::p
@@ -71,9 +79,10 @@
          @(see treeset)s (@(tsee min) and @(tsee tail)), it would be
          inefficient to use them for iteration. Instead, one should use an
          @(see iterator). This requires an initial step to create the
-         @(see iterator) (via @(tsee iter)), but once one has an iterator, one
+         @(see iterator) (via @(tsee iter-min)), but once one has an iterator, one
          can call @(tsee value) and @(tsee next) as you would @(tsee set::head)
-         and @(tsee set::tail). If you are going to iterate over the entire
+         and @(tsee set::tail). To walk the other way, start from @(tsee
+         iter-max) and use @(tsee prev). If you are going to iterate over the entire
          set (i.e. you don't need to ``exit early''), you could also use
          @('to-oset'). All these methods of iteration take @($O(n)$) time.")))
   :order-subtopics t)

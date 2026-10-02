@@ -1,7 +1,7 @@
 ; More tools to compute DAG sizes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -47,7 +47,7 @@
                                 size-array
                                 (+ (if (consp darg) ;check for a quotep, which we say has size 1
                                        1
-                                     ;; dargs is a nodenum, so look up its size:
+                                     ;; darg is a nodenum, so look up its size:
                                      (the (integer 0 *) (aref1 size-array-name size-array darg)))
                                    acc)))))
 
@@ -76,7 +76,7 @@
                       size-array
                       (+ (if (consp darg) ;check for a quotep, which we say has size 1
                              1
-                           ;; dargs is a nodenum, so look up its size:
+                           ;; darg is a nodenum, so look up its size:
                            (the (integer 0 *) (aref1 'size-array size-array darg)))
                          acc)))))
 

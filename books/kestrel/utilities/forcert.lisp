@@ -78,15 +78,6 @@
   :val-type str::string-list
   :pred bookdepsp)
 
-(define just-cert-pns ((pns string-listp))
-  :returns (cert-pns string-listp)
-  (if (endp pns)
-      nil
-    (if (cert-pathnamep (first pns))
-        (cons (strip-cert (first pns))
-              (just-cert-pns (rest pns)))
-      (just-cert-pns (rest pns)))))
-
 (define update-many ((alist alistp) (bd bookdepsp) (exceptions string-listp))
      :returns (ret bookdepsp :hyp :guard)
      :verify-guards nil

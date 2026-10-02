@@ -219,6 +219,8 @@
 ;; Install use of revert-super-history-on-error at the top-level
 (defttag :acl2s-super-history)
 
+; Ld-read-eval-print is defined in ACL2 source file ld.lisp:
+; (depends-on "../../../../ld.lisp")
 (progn+touchable :all
   (redefun+rewrite
    acl2::ld-read-eval-print

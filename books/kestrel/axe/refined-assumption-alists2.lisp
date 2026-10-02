@@ -92,8 +92,7 @@
                                      bounded-possibly-negated-nodenump
                                      ;STRIP-NOT-FROM-POSSIBLY-NEGATED-NODENUM
                                      BOUNDED-DAG-EXPRP)
-           :expand (
-                    (DARGS (CAR POSSIBLY-NEGATED-NODENUMS))
+           :expand ((DARGS (CAR POSSIBLY-NEGATED-NODENUMS))
                     (BOUNDED-DARG-LISTP (CDR (CAR POSSIBLY-NEGATED-NODENUMS))
                                          DAG-LEN)
                     (BOUNDED-DARG-LISTP (CDDR (CAR POSSIBLY-NEGATED-NODENUMS))

@@ -1,7 +1,7 @@
 ; Rules about sbvdiv
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -15,7 +15,7 @@
 (include-book "sbvdiv")
 (include-book "bvdiv")
 (include-book "bvuminus-def")
-(include-book "bvminus")
+(include-book "bvminus-def")
 (include-book "sbvlt") ;for sbvle
 (include-book "bitnot")
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -47,7 +47,7 @@
 (defthmd slice-of-bvuminus
   (implies (and (< high size)
                 (<= low high)
-                (integerp x)
+                ;(integerp x)
                 (integerp size)
                 (natp low)
                 (natp high))
@@ -69,7 +69,7 @@
 ;can cause a case split
 (defthm getbit-of-bvuminus
   (implies (and (< low size)
-                (integerp x)
+                ;; (integerp x)
                 (integerp size)
                 (natp low))
            (equal (getbit low (bvuminus size x))
@@ -109,8 +109,8 @@
 ;;(bvuminus 32 (bvdiv 31 (bvuminus 31 x) y))
 
 (defthmd sbvdiv-when-both-positive
-  (implies (and (integerp x)
-                (integerp y)
+  (implies (and ;(integerp x)
+                ;(integerp y)
                 (sbvle size 0 x)
                 (sbvle size 0 y)
                 (natp size)
@@ -130,7 +130,7 @@
                                    sbvlt
                                    bvchop-identity
                                    truncate-becomes-floor
-                                   ) ( ;UNSIGNED-BYTE-P-RESOLVER
+                                   ) (;UNSIGNED-BYTE-P-RESOLVER
                                    ;<-Y-*-Y-X
                                    ;MOD-BOUNDED-BY-MODULUS
                                    my-FLOOR-upper-BOUND
@@ -141,8 +141,8 @@
                                    )))))
 
 (defthmd sbvdiv-when-both-negative
-  (implies (and (integerp x)
-                (integerp y)
+  (implies (and ;(integerp x)
+                ;(integerp y)
                 (sbvlt size x 0)
                 (sbvlt size y 0)
                 (posp size)
@@ -160,7 +160,7 @@
            :in-theory (e/d (sbvdiv bvdiv logapp bvuminus bvminus sbvlt
                                    bvchop-reduce-when-top-bit-known
                                    truncate-becomes-floor-gen)
-                           ( floor-of-minus-and-minus
+                           (floor-of-minus-and-minus
                              ;floor-minus
                              BVCAT-OF-GETBIT-AND-X-ADJACENT
                              ;<-Y-*-Y-X
@@ -197,7 +197,7 @@
   (IMPLIES (AND (FORCE (RATIONALP X))
                 (RATIONALP Y1)
                 (RATIONALP Y2)
-                (NOT (EQUAL '0 (+ Y1 y2))))
+                (NOT (EQUAL 0 (+ Y1 y2))))
            (EQUAL (FLOOR X (+ (- y1) Y2))
                   (IF (INTEGERP (* X (/ (- y1 y2))))
                       (- (FLOOR X (- y1 y2)))
@@ -205,6 +205,7 @@
   :hints (("Goal" :use (:instance floor-minus-arg2
                                   (y (+ y1 (- y2)))))))
 
+;localize?
 (defthm /-of-+-of---arg1
   (equal (/ x (+ (- y1) y2))
          (- (/ x (+ y1 (- y2)))))
@@ -215,8 +216,8 @@
                             /-of--)))))
 
 (defthmd sbvdiv-when-x-negative
-  (implies (and (integerp x)
-                (integerp y)
+  (implies (and ;(integerp x)
+                ;(integerp y)
                 (sbvlt size x 0)
                 (sbvle size 0 y)
                 (posp size))
@@ -240,8 +241,8 @@
                             )))))
 
 (defthmd sbvdiv-when-y-negative
-  (implies (and (integerp x)
-                (integerp y)
+  (implies (and ;(integerp x)
+                ;(integerp y)
                 (sbvlt size y 0)
                 (sbvle size 0 x)
                 (posp size)
@@ -256,7 +257,7 @@
                                    bvchop-reduce-when-top-bit-known
                                    truncate-becomes-floor-other
                                    FLOOR-MINUS-ARG2-lemma)
-                           ( floor-of-minus-and-minus
+                           (floor-of-minus-and-minus
                              FLOOR-OF---ARG1
                              BVCAT-OF-GETBIT-AND-X-ADJACENT
                              my-FLOOR-upper-BOUND
@@ -265,8 +266,8 @@
 
 ;can we tighten any of the sizes?
 (defthm sbvdiv-rewrite
-  (implies (and (integerp x)
-                (integerp y)
+  (implies (and ;(integerp x)
+                ;(integerp y)
                 (posp size))
            (equal (sbvdiv size x y)
                   (if (sbvle size 0 x)
@@ -282,6 +283,8 @@
                                      sbvdiv-when-both-negative
                                      sbvdiv-when-both-positive))))
 
+;move?
+;; both branches of the result should get evaluated.
 (defthm equal-of-if-constants
   (implies (syntaxp (and (quotep k1)
                          (quotep k2)
@@ -293,8 +296,8 @@
 
 ;gen!
 (defthmd sbvdiv-of-sbvdiv-arg2
-  (implies (and (natp size)
-                (natp x)
+  (implies (and; (natp size)
+;                (natp x)
                 (unsigned-byte-p (+ -1 size) x)  ; x is non-negative (gen?) ;todo: drop
                 (unsigned-byte-p (+ -1 size) y1) ; y1 is non-negative (gen?)
                 (unsigned-byte-p (+ -1 size) y2) ; y2 is non-negative (gen?)
@@ -309,7 +312,7 @@
                     0)))
   :hints (("Goal" :cases ((equal y1 0)
                           (and (not (equal y1 0))
-                               (EQUAL (BVCHOP (+ '-1 SIZE) X) '0)))
+                               (EQUAL (BVCHOP (+ -1 SIZE) X) 0)))
            :in-theory (e/d (;SBVDIV-WHEN-BOTH-POSITIVE
                             sbvlt
                             bvdiv
@@ -321,14 +324,14 @@
                             bvchop-of-sum-cases
                             ;BVCHOP-WHEN-TOP-BIT-0-WIDEN ; in rules.lisp
                             )
-                           ( ;BVCHOP-IDENTITY
+                           (;BVCHOP-IDENTITY
                             ;;todo: clean these up:
                             BVCHOP-TIMES-CANCEL-BETTER-ALT
                             BVCHOP-TIMES-CANCEL-BETTER
                             BVCHOP-OF-*-OF-BVCHOP-ARG2
                             BVCHOP-OF-*-OF-BVCHOP
                             ;;slow:
-                            USB-PLUS-FROM-BOUNDS
+                            ;USB-PLUS-FROM-BOUNDS
                             getbit-of-0-when-bitp
                             BVCHOP-WHEN-TOP-BIT-NOT-1-FAKE-FREE
                             )))))

@@ -172,4 +172,4 @@
 ;;                     (if (zp n)
 ;;                         (take (+ -1 len) (cdr list))
 ;;                         (update-nth2 len (+ -1 n) val (cdr list))))))
-;;   :hints (("Goal" :in-theory (e/d (update-nth2 posp) (update-nth-becomes-update-nth2-extend-gen)))))
+;;   :hints (("Goal" :in-theory (e/d (update-nth2 posp) ()))))

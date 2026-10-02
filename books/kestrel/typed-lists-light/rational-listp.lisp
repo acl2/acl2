@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function rational-listp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,7 +15,14 @@
 
 (in-theory (disable rational-listp))
 
-(defthm rationalp-of-car-when-rational-listp-cheap
+;; The -better name is to avoid a clash with STD, whose rule uses IFF
+(defthm rationalp-of-car-when-rational-listp-better
+  (implies (and (rational-listp x)
+                (consp x))
+           (rationalp (car x)))
+  :hints (("Goal" :in-theory (enable rational-listp))))
+
+(defthm rationalp-of-car-when-rational-listp-type
   (implies (and (rational-listp x)
                 (consp x))
            (rationalp (car x)))

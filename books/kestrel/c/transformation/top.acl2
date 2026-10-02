@@ -1,0 +1,18 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(include-book "portcullis")
+
+; This book includes json-rpc/top, which loads the JSON-RPC socket server
+; (kestrel/jsonrpc/top); hence the additional :jsonrpc-socket trust tag beyond
+; the default set in cert.acl2.  Including that book only defines the server
+; functions; no socket is opened during certification.
+
+; cert-flags: ? t :ttags ((:quicklisp) (:quicklisp.shellpool) (:tshell) (:quicklisp.osicat) (:oslib) (:file-io!) (:jsonrpc-socket) (:quicklisp.usocket))

@@ -1,4 +1,4 @@
-; More general variant of dag-parent-arrray.lisp
+; More general variant of dag-parent-array.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2026 Kestrel Institute
@@ -378,7 +378,7 @@
                               (symbolp dag-parent-array-name))))
   (let* ((parent-array-len (max 1 dag-len)) ;arrays must have size at least 1
          ;; The :default value is nil:
-         (dag-parent-array (make-empty-array dag-parent-array-name parent-array-len)))
+         (dag-parent-array (new-array1 dag-parent-array-name parent-array-len)))
     (make-dag-parent-array-with-name-aux 0 dag-array-name dag-array dag-parent-array-name dag-parent-array dag-len)))
 
 (defthm dag-parent-arrayp-of-make-minimal-dag-parent-array-with-name
@@ -426,7 +426,7 @@
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (symbolp dag-parent-array-name))))
   (let* (;; The :default value is nil:
-         (dag-parent-array (make-empty-array dag-parent-array-name (alen1 dag-array-name dag-array))))
+         (dag-parent-array (new-array1 dag-parent-array-name (alen1 dag-array-name dag-array))))
     (make-dag-parent-array-with-name-aux 0 dag-array-name dag-array dag-parent-array-name dag-parent-array dag-len)))
 
 (defthm dag-parent-arrayp-of-make-dag-parent-array-with-name2
@@ -467,6 +467,6 @@
 
 (defthm make-dag-parent-array-with-name2-of-0
   (equal (make-dag-parent-array-with-name2 0 dag-array-name dag-array dag-parent-array-name)
-         (make-empty-array dag-parent-array-name (alen1 dag-array-name dag-array)))
+         (new-array1 dag-parent-array-name (alen1 dag-array-name dag-array)))
   :hints (("Goal" :in-theory (enable make-dag-parent-array-with-name2
                                      make-dag-parent-array-with-name-aux))))

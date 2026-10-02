@@ -11,25 +11,12 @@
 
 (in-package "ACL2")
 
-;(include-book "bvchop")
+(include-book "bvor-def")
 (include-book "getbit-def")
 (local (include-book "slice"))
 (local (include-book "getbit"))
 (local (include-book "logior-b"))
 (local (include-book "unsigned-byte-p"))
-
-(defund bvor (size x y)
-  (declare (type integer x y)
-           (type (integer 0 *) size))
-  (logior (bvchop size x)
-          (bvchop size y)))
-
-(defthm bvor-type
-  (and (integerp (bvor size x y))
-       (<= 0 (bvor size x y)))
-  :rule-classes :type-prescription)
-
-(in-theory (disable (:type-prescription bvor))) ; bvor-type is at least as good
 
 (defthm bvor-commutative
   (equal (bvor size x y)

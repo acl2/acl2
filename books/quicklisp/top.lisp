@@ -29,6 +29,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 ; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
 ; Contributing author: Grant Jurgensen <grant@kestrel.edu>
+; Contributing author: Eric McCarthy (bendyarm on GitHub)
 
 (in-package "ACL2")
 (include-book "base")
@@ -43,6 +44,10 @@
 (include-book "shellpool")
 (include-book "uiop")
 (include-book "cffi")
+(include-book "dexador")
+(include-book "usocket")
+#-allegro  ; See comment in base-raw.lsp
+(include-book "zippy")
 
 (defsection quicklisp
   :parents (interfacing-tools)
@@ -152,6 +157,9 @@ to the list.</li>
 <li>Run the @('update-libs.sh') script.  This should download the new libraries
 into your @('quicklisp/bundle') directory.</li>
 
+<li> IMPORTANT: Look at the PATCHES TO CHECK output after running
+@('update-libs.sh'), and reapply any patches needed.</li>
+
 <li>Extend @('quicklisp/base-raw.lsp') to load the new library and
 certify it.  This @('base') book really is just a way to get the bundle loaded
 into an ACL2 session so that the libraries can be found as needed.  It
@@ -164,9 +172,7 @@ books in the Quicklisp directory.  The book doesn't really need to live in the
 @('quicklisp') directory, but keeping them there makes it easy to see what we
 are depending on and, if necessary, to change the way the wrappers work.</li>
 
-<li>Include your new book in @('quicklisp/top.lisp'), just for
-completeness.  (Hrmn, actually this book probably isn't very useful for
-anything.)</li>
+<li>Include your new book in @('quicklisp/top.lisp') (useful for certification.)</li>
 
 </ul>
 
@@ -258,22 +264,32 @@ following:</p>
 
 <h4>Fix Instructions</h4>
 
-<p>Check the timestamps of the files @('libosicat.so') and
-@('wrappers__wrapper.o') in the directory:</p>
+<p>Check the timestamp of @('wrappers__wrapper.o') to make sure it
+is greater than or equal to the timestamps of
+@('libosicat.so') (or @('libosicat.dylib') on macOS) and @('wrappers.processed-wrapper-file')
+in the directory:</p>
 
 @({
 <path-to-acl2>/books/quicklisp/asdf-home/cache/common-lisp/*/<path-to-acl2>/books/quicklisp/bundle/software/osicat-20220220-git/posix/
 })
 
+<p>Important detail: file timestamp comparisons are all at whole-second granularity;
+fractional seconds are truncated.</p>
+
 <p>On Linux, you can use @('ls -la --time-style=full-iso <file>') to see the
 full timestamp. On macOS, you can use @('ls -lT <file>').</p>
 
-<p>If the timestamp seconds are different between the two files, this is the
-issue. The fix is to update the timestamp of @('wrappers__wrapper.o') to fall
-within the same second as @('libosicat.so'). This can be done with the command
-@('touch -r wrappers__wrapper.o libosicat.so') (the @('-r') flag stands for
-``reference''; the command changes the timestamp of @('wrappers_wrapper.o') to
-match that of @('libosicat.so')).
+<p>If the timestamp second for @('wrappers__wrapper.o') is earlier than either
+of the other two timestamps, this is the issue.
+The fix is to update the timestamp of @('wrappers__wrapper.o') to fall
+within the same second as the later of the other two timestamps.  For example, if
+you are on linux and @('wrappers__wrapper.o') and
+@('libosicat.so') were written in the
+same second, but @('wrappers.processed-wrapper-file') was written in the
+next second, you can use the command
+@('touch -r wrappers.processed-wrapper-file wrappers__wrapper.o') (the @('-r') flag stands for
+``reference''; the command changes the timestamp of @('wrappers__wrapper.o') to
+match that of @('wrappers.processed-wrapper-file')).
 </p>
 
 <h4>Explanation</h4>
@@ -284,8 +300,7 @@ certification to attempt to read the compiled binary while the other is
 deleting it to rebuild.</p>
 
 <p>The timestamps are compared to check whether some part of @(see OSICAT)
-needs to be rebuilt. Timestamps are truncated internally to the nearest second
+needs to be rebuilt. Timestamps are truncated internally to the second
 and the @('wrappers__wrapper.o') file is considered out of date if its
-truncated timestamp is earlier than @('libosicat.so').</p>
-
-<p>Thank you to Eric McCarthy for investigating and debugging this issue.</p>")
+truncated timestamp is earlier than either @('libosicat.so') or
+@('wrappers.processed-wrapper-file').</p>")

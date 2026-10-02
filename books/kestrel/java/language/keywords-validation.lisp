@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -33,7 +33,7 @@
      define reserved and contextual keywords
      `directly', i.e. without reference to the grammar.
      Here we introduce alternative predicates based on the grammar,
-     and we show the equivalent to
+     and we show them equivalent to
      @(tsee reserved-keywordp) and @(tsee contextual-keywordp)."))
   :order-subtopics t
   :default-parent t)

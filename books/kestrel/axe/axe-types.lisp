@@ -1,7 +1,7 @@
 ; Utilities dealing with types that Axe knows about
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -49,7 +49,7 @@
 ;; width).
 
 ;may change
-;a BV type is (now) an positive integer representing the width (maybe 0 is allowed too?)
+;a BV type is (now) a positive integer representing the width (maybe 0 is allowed too?)
 (defund bv-typep (type)
   (declare (xargs :guard t))
   (natp type))
@@ -223,7 +223,7 @@
 ;;   (declare (xargs :guard (pseudo-termp term)
 ;;                   :guard-hints (("Goal" ;:do-not '(generalize eliminate-destructors)
 ;;                                  :in-theory (e/d (;pseudo-termp-hack LIST::LEN-POS-REWRITE
-;;                                                   ) ( ;CAR-BECOMES-NTH-OF-0 consp-cdr
+;;                                                   ) (;CAR-BECOMES-NTH-OF-0 consp-cdr
 ;;                                                      3-cdrs
 ;;                                                      ))))))
 ;;   (if (not (consp term)) ;must be a variable

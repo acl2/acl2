@@ -1,7 +1,7 @@
 ; Call stacks
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -29,8 +29,7 @@
 (defund call-stackp (stack)
   (declare (xargs :guard t))
   (and (true-listp stack)
-       ;; (all-framep stack) ;;todo: put back (search for all-framep-change for other changes, but this will require real work to show that all created frames are ok; first clean up invokespecial and prove RV rules for lookup-method-for-invokespecial)
-       ))
+       (all-framep stack)))
 
 (defthm call-stackp-of-empty-call-stack
   (call-stackp (empty-call-stack)))
@@ -46,7 +45,7 @@
 
 ;fixme should be types for the different uses (e.g., for the call stack, obj must be a framep)
 (defund push-frame (obj stack)
- (declare (xargs :guard (and (call-stackp stack) (framep obj))))
+ (declare (xargs :guard (and (framep obj) (call-stackp stack))))
  (cons obj stack))
 
 ;guard to require a non-empty-stack?
@@ -58,6 +57,13 @@
 (defund pop-frame (stack)
   (declare (xargs :guard (call-stackp stack) :guard-hints (("Goal" :in-theory (enable call-stackp)))))
   (cdr stack))
+
+;strengthen?
+(defthm framep-of-top-frame
+  (implies (and (not (empty-call-stackp call-stack))
+                (call-stackp call-stack))
+           (framep (top-frame call-stack)))
+  :hints (("Goal" :in-theory (enable top-frame empty-call-stackp call-stackp))))
 
 (defthm all-framep-of-pop-frame
   (implies (all-framep frames)
@@ -104,9 +110,8 @@
 (defthm call-stackp-of-push-frame
   (equal (call-stackp (push-frame frame stack))
          (and (call-stackp stack)
-              ;; (framep frame) ;all-framep-change
-              ))
-  :hints (("Goal" :in-theory (enable call-stackp push-frame))))
+              (framep frame)))
+  :hints (("Goal" :in-theory (e/d (call-stackp push-frame) ((:e tau-system))))))
 
 (defthm call-stackp-of-pop-frame
   (implies (call-stackp stack)
@@ -201,6 +206,6 @@
 
 ;move
 (defthm acl2::empty-call-stackp-redef
-  (equal (jvm::empty-call-stackp call-stack)
-         (equal 0 (jvm::call-stack-size call-stack)))
-  :hints (("Goal" :in-theory (enable jvm::empty-call-stackp jvm::call-stack-size))))
+  (equal (empty-call-stackp call-stack)
+         (equal 0 (call-stack-size call-stack)))
+  :hints (("Goal" :in-theory (enable empty-call-stackp call-stack-size))))

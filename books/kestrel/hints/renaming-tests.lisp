@@ -1,6 +1,6 @@
 ; Tests of the functions in renaming.lisp.
 ;
-; Copyright (C) 2017-2023 Kestrel Institute
+; Copyright (C) 2017-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -51,6 +51,11 @@
  (apply-renaming-to-hints '(("Goal" :in-theory (e/d (foo) (baz foo))))
                           (acons 'foo 'bar nil))
  '(("Goal" :in-theory (e/d (bar) (baz bar)))))
+
+(assert-equal
+ (apply-renaming-to-hints '(("Goal" :in-theory (e/d (foo) (baz foo) (bat) (gar foo))))
+                          (acons 'foo 'bar nil))
+ '(("Goal" :in-theory (e/d (bar) (baz bar) (bat) (gar bar)))))
 
 ;; Test :induct
 (assert-equal

@@ -143,8 +143,14 @@
       0
     (if (< x 0) -1 +1)))
 
+; Matt K. addition: needed for e0-ord-< just below
+(include-book "ordinals/e0-ordinal" :dir :system)
+
 (defnd expo (x)
-  (declare (xargs :measure (:? x)))
+  (declare (xargs :measure (:? x)
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                  :well-founded-relation e0-ord-<))
   (mbe :logic (cond ((or (not (rationalp x)) (equal x 0)) 0)
                     ((< x 0) (expo (- x)))
                     ((< x 1) (1- (expo (* 2 x))))

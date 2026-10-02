@@ -1,10 +1,10 @@
 ; String Utilities
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -13,6 +13,8 @@
 (include-book "char-code-theorems")
 (include-book "chars-codes")
 (include-book "chars-codes-fty")
+(include-book "char-code-set")
+(include-book "char-code-map")
 (include-book "hexchars")
 (include-book "hex-digit-char-theorems")
 (include-book "hexstrings")

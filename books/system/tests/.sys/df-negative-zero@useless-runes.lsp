@@ -1,0 +1,4 @@
+(BAD)
+(GOOD)
+(BAD-IS-GOOD)
+(BAD-IS-NOT-GOOD)

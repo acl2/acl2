@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -69,7 +69,14 @@
   (defret uchar-format->size-lower-bound
     (>= size 8)
     :fn uchar-format->size
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defruled expt-of-one-less-than-uchar-format->size-lower-bound
+    (>= (expt 2 (1- (uchar-format->size format))) 128)
+    :rule-classes :linear
+    :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                    (x 2) (m 7) (n (1- (uchar-format->size format))))
+    :disable acl2::expt-is-weakly-increasing-for-base->-1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -81,7 +88,7 @@
    (xdoc::p
     "This directly derives from @('CHAR_BIT'),
      as discussed in @(tsee uchar-format),
-     and in footnote 50 of [C17:6.2.6.1//3],
+     and in footnote 50 of [C17:6.2.6.1/3],
      which says that @('unsigned char') values
      range from 0 to @($2^{\\mathtt{CHAR\\_BIT}}-1$).")
    (xdoc::p
@@ -90,7 +97,7 @@
 
   ///
 
-  (defret uchar-format->-max-type-prescription
+  (defret uchar-format->max-type-prescription
     (and (posp max)
          (> max 1))
     :rule-classes :type-prescription
@@ -107,7 +114,7 @@
     (>= max 255)
     :rule-classes :linear))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define uchar-format-8 ()
   :returns (format uchar-formatp)

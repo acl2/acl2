@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-;; This book collections logops rules only needed by Axe (e.g., things that
+;; This book collects logops rules only needed by Axe (e.g., things that
 ;; ACL2 already "knows").
 
 (include-book "ihs/basic-definitions" :dir :system) ; for logmask$inline

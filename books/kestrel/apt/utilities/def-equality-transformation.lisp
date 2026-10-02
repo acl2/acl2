@@ -40,14 +40,14 @@
 (include-book "names")
 (include-book "kestrel/utilities/my-get-event" :dir :system)
 (include-book "verify-guards-for-defun")
-(include-book "kestrel/utilities/system/world-queries" :dir :system)
+(include-book "std/system/get-well-founded-relation" :dir :system)
 (include-book "kestrel/utilities/defmacroq" :dir :system)
 (include-book "kestrel/utilities/maybe-unquote" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-defined" :dir :system)
 (include-book "kestrel/error-checking/ensure-function-is-logic-mode" :dir :system)
 (include-book "kestrel/error-checking/ensure-value-is-function-name" :dir :system)
-(include-book "kestrel/utilities/error-checking/top" :dir :system) ; for ensure-function-known-measure
+(include-book "kestrel/error-checking/ensure-function-known-measure" :dir :system)
 (include-book "kestrel/utilities/messages2" :dir :system) ;for message-string
 (include-book "kestrel/utilities/add-not-normalized-suffixes" :dir :system)
 
@@ -85,7 +85,7 @@
 ;; Returns an event
 (defun def-equality-transformation-fn (name
                                        function-body-transformer ; args must be exactly: fn, untranslated-body, state, then the transform-specific-required-args, then the transform-specific-keyword-args
-                                       infop
+                                       function-body-transformer-kind
                                        transform-specific-required-args ;arguments to function-body-transformer
                                        transform-specific-keyword-args-and-defaults ;arguments to function-body-transformer
                                        enables ; used for each function (currently)
@@ -102,7 +102,7 @@
                                        )
   (declare (xargs :guard (and (symbolp name)
                               (symbolp function-body-transformer)
-                              (booleanp infop)
+                              (member-eq function-body-transformer-kind '(:body :body-and-info :body-and-info-and-state))
                               (symbol-listp transform-specific-required-args)
                               (no-duplicatesp transform-specific-required-args)
                               (keyword-args-and-defaultsp transform-specific-keyword-args-and-defaults)
@@ -136,7 +136,7 @@
             transform-specific-arg-names)))
     `(progn
        ;; Builds a new defun by transforming FN.  Calls FUNCTION-BODY-TRANSFORMER to transform the body.
-       ;; Returns (mv new-defun info).
+       ;; Returns (mv new-defun info state).
        ;; When function-body-transformer is an identity, this generates a function that just copies FN and fixes up recursive calls as appropriate.
        ;; TODO: What if more than simple renaming is needed to fix up recursive calls (e.g., re-ordering params)?
        (defun ,apply-to-defun-name (fn ;the old function to transform (possibly one function in a mutual-recursion)
@@ -146,7 +146,7 @@
                                     rec
                                     function-disabled ; whether to disable the new function
                                     measure ; either :auto or an (untranslated) term
-                                    measure-hints ; either :auto or a list of hints like (("Goal" :in-theory (enable car-cons)))
+                                    measure-hints ; either nil or :auto or a list of hints like (("Goal" :in-theory (enable car-cons)))
                                     normalize
                                     state ; in general, we may need state
                                     )
@@ -155,7 +155,7 @@
                                      (defun-or-mutual-recursion-formp fn-event)
                                      (function-renamingp function-renaming)
                                      (member-eq rec '(nil :single :mutual))
-                                     (t/nil/auto-p function-disabled)
+                                     (member-eq function-disabled '(t nil :auto))
                                      ;; TODO: Guards for measure, and measure-hints
                                      (fn-definedp fn (w state))
                                      (booleanp normalize))
@@ -206,19 +206,22 @@
                             (if (not (translatable-termp measure wrld))
                                 (er hard ',apply-to-defun-name "Measure, ~x0, is not a recognized term." measure)
                               (replace-xarg-in-declares :measure measure declares)))))
-              ;; Handle the (termination) :hints xarg:
+              ;; Handle the :hints xarg (measure-hints):
               (measure-enables ',measure-enables)
               (declares (if (not rec)
-                            declares ; no termination since not recursive
+                            declares ; no termination proof since not recursive
                           ;; single or mutual recursion:
-                          (replace-xarg-in-declares
-                           :hints
-                           (if (eq :auto measure-hints)
-                               `(("Goal" :in-theory ',measure-enables
-                                         ;; ACL2 automatically replaces the old functions with the new ones in this:
-                                         :use (:instance (:termination-theorem ,fn))))
-                             measure-hints)
-                           declares)))
+                          (if (equal :none measure-hints)
+                              (remove-xarg-in-declares :hints declares)
+                            (replace-xarg-in-declares
+                              :hints
+                              (if (eq :auto measure-hints)
+                                  `(("Goal" :in-theory ',measure-enables
+                                     ;; ACL2 automatically replaces the old functions with the new ones in this:
+                                     :use (:instance (:termination-theorem ,fn))))
+                                ;; put in the explicitly supplied hints:
+                                measure-hints)
+                              declares))))
               ;; Handle the :stobjs xarg:
               (declares (set-stobjs-in-declares-to-match declares fn wrld))
               ;; Handle the :type-prescription xarg:
@@ -235,10 +238,12 @@
               ;; TODO: What about irrelevant declares?  They need to be handled at a higher level, since they may depend on mut-rec partners.
               ;; We should clear them out here and set them if needed in ,event-generator-name
               ;; Here we actually make the new body:
-              ,@(if infop
-                    `(((mv body info) (,function-body-transformer fn body state ,@transform-specific-arg-names)))
-                  `((body (,function-body-transformer fn body state ,@transform-specific-arg-names))
-                    (info nil)))
+              ,@(if (eq function-body-transformer-kind :body-and-info-and-state)
+                    `(((mv body info state) (,function-body-transformer fn body state ,@transform-specific-arg-names)))
+                  (if (eq function-body-transformer-kind :body-and-info)
+                      `(((mv body info) (,function-body-transformer fn body state ,@transform-specific-arg-names)))
+                    `((body (,function-body-transformer fn body state ,@transform-specific-arg-names))
+                      (info nil))))
               ;; (new-fns-arity-alist (pairlis$ (strip-cdrs function-renaming)
               ;;                                (fn-arities (strip-cars function-renaming) wrld)))
               ;; ;; New fns from the renaming may appear as recursive calls, but they are not yet in the world:
@@ -261,12 +266,12 @@
               (defun (if (eq rec :mutual)
                          defun ; irrelevant declares for mutual recursions must be handled at a higher level
                        (fixup-irrelevants-in-defun-form defun state))))
-           (mv defun info)))
+           (mv defun info state)))
 
        ;; Go through all the functions in the clique. For each, if it is in
        ;; TARGET-FNS, we both transform it and update rec calls in it (yes, for
        ;; copy-function the transform part is a no-op).  Otherwise, we just update rec
-       ;; calls.  Returns (mv new-defuns info-alist) where the INFO-ALIST associates old function names with info (alists).
+       ;; calls.  Returns (mv new-defuns info-alist state) where the INFO-ALIST associates old function names with info (alists).
        (defun ,apply-to-defuns-name (fns
                                      ,@transform-specific-arg-names
                                      target-fns ;; the functions to which the transformation is being applied (a no-op for copy-function but not in general)
@@ -283,31 +288,31 @@
                                      (symbol-listp target-fns)
                                      (all-fn-definedp fns (w state))
                                      (function-renamingp function-renaming)
-                                     (t/nil/auto-p function-disabled)
+                                     (member-eq function-disabled '(t nil :auto))
                                      (symbol-alistp measure-alist)
                                      (booleanp normalize))
                          :mode :program))
          (if (endp fns)
-             (mv nil nil)
+             (mv nil nil state)
            (b* ((fn (first fns))
-                ((mv new-defun fn-info)
+                ((mv new-defun fn-info state)
                  (if (member-eq fn target-fns)
                      ;; transform the function:
                      (,apply-to-defun-name fn
                                            ,@transform-specific-arg-names
                                            fn-event function-renaming :mutual function-disabled
                                            (lookup-eq fn measure-alist)
-                                           (if firstp measure-hints :auto) ; attach measure hints to only the first function
+                                           (if firstp measure-hints :none) ; attach measure hints to only the first function
                                            normalize
                                            state)
                    ;; Just copy the function and update rec calls:
                    ;; (For copy-function only, this happens to be the same as the branch above.)
                    (copy-function-in-defun fn fn-event function-renaming :mutual function-disabled
                                            (lookup-eq fn measure-alist)
-                                           (if firstp measure-hints :auto) ; attach measure hints to only the first function
+                                           (if firstp measure-hints :none) ; attach measure hints to only the first function
                                            normalize
                                            state)))
-                ((mv new-defuns rest-info)
+                ((mv new-defuns rest-info state)
                  (,apply-to-defuns-name (rest fns)
                                         ,@transform-specific-arg-names
                                         target-fns fn-event function-renaming function-disabled
@@ -316,7 +321,8 @@
                                         nil ;no longer the first function
                                         state)))
              (mv (cons new-defun new-defuns)
-                 (acons fn fn-info rest-info)))))
+                 (acons fn fn-info rest-info)
+                 state))))
 
        ;; Generates the event that the transformation will submit.
        ;; Returns (mv erp result state), where result is usually an event but in the erp case might contain other useful info.
@@ -366,7 +372,7 @@
                ;; we are operating on a single, non-recursive function:
                (b* ((new-fn (pick-new-name fn new-name state))
                     (function-renaming (acons fn new-fn nil))
-                    ((mv new-defun ?info)
+                    ((mv new-defun ?info state)
                      (,apply-to-defun-name fn
                                            ,@transform-specific-arg-names
                                            fn-event
@@ -409,7 +415,7 @@
                  ;;we are operating on a single, recursive function:
                  (b* ((new-fn (pick-new-name fn new-name state))
                       (function-renaming (acons fn new-fn nil))
-                      ((mv new-defun ?info)
+                      ((mv new-defun ?info state)
                        (,apply-to-defun-name fn
                                              ,@transform-specific-arg-names
                                              fn-event
@@ -457,7 +463,7 @@
                      (elaborate-mut-rec-option2 measure :measure fns ctx))
                     ;; (new-fns (strip-cdrs function-renaming))
                     ;; (new-fn (lookup-eq-safe fn function-renaming))
-                    ((mv new-defuns ?info-alist)
+                    ((mv new-defuns ?info-alist state)
                      (,apply-to-defuns-name fns
                                             ,@transform-specific-arg-names
                                             fns ;we'll say all the functions in the nest are targets (though for copy-function it doesn't matter)
@@ -557,12 +563,12 @@
     ))
 
 (defmacro def-equality-transformation (name ; name of the transformation to create
-                                       function-body-transformer ; args should be: function name, untranslated body, state, and then the transform-specific-args.  should return either the new-defun or (mv new-defun info) according to infop
+                                       function-body-transformer ; args should be: function name, untranslated body, state, and then the transform-specific-args.  should return either the new-defun or (mv new-defun info) according to function-body-transformer-kind
                                        transform-specific-required-args
                                        transform-specific-keyword-args-and-defaults ; a list of doublets containing arg names and quoted default values
                                        &key
                                        ;; All of these are baked into the generated transformation, not passed into each call of the transformation:
-                                       (infop 'nil) ; whether the function body transformer returns additional info, which then is (currently) used to create more enables for the proofs.
+                                       (function-body-transformer-kind ':body) ; whether the function body transformer returns additional info, which then is (currently) used to create more enables for the proofs.
                                        (enables 'nil) ; enables to use in all equivalence proofs, a form to be spliced into the generated code, can mention FN and state
                                        (measure-enables 'nil) ; for when :measure-hints is :auto
                                        (guard-enables 'nil) ; for when :guard-hints is :auto
@@ -576,7 +582,7 @@
   `(make-event (def-equality-transformation-fn
                  ',name
                  ',function-body-transformer
-                 ',infop
+                 ',function-body-transformer-kind
                  ',transform-specific-required-args
                  ',transform-specific-keyword-args-and-defaults
                  ',enables

@@ -4,7 +4,7 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -787,7 +787,7 @@
 (define abstract-repeat ((tree treep))
   :returns (range repeat-rangep)
   :short "A @('repeat') parse tree is abstracted to
-          its correspoding repetition range."
+          its corresponding repetition range."
   :long
   (xdoc::topstring-p
    "The two alternatives of the @('repeat') rule

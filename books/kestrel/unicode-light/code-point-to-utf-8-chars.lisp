@@ -1,6 +1,6 @@
 ; Encode a code point as UTF-8 chars
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,7 @@
 (include-book "kestrel/typed-lists-light/map-code-char" :dir :system)
 (local (include-book "kestrel/arithmetic-light/ash" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
+(local (include-book "kestrel/bv-lists/byte-listp" :dir :system))
 (local (include-book "kestrel/bv/logior" :dir :system))
 (local (include-book "kestrel/bv/logand" :dir :system))
 

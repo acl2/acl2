@@ -13,8 +13,10 @@
 
 ;; STATUS: In-progress
 
-(include-book "bool-fix")
+(include-book "bool-fix-def")
+(local (include-book "bool-fix"))
 
+;; Unlike OR, this always returns a boolean
 (defund boolor (x y)
   (declare (xargs :guard t))
   (if x t (if y t nil)))
@@ -35,6 +37,32 @@
 (defthm boolor-commutative-2
   (equal (boolor x (boolor y z))
          (boolor y (boolor x z)))
+  :hints (("Goal" :in-theory (enable boolor))))
+
+(defthm boolor-when-arg1-cheap
+  (implies x
+           (boolor x y))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable boolor))))
+
+(defthm boolor-when-arg2-cheap
+  (implies y
+           (boolor x y))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable boolor))))
+
+(defthm boolor-when-not-arg1-cheap
+  (implies (not x)
+           (equal (boolor x y)
+                  (bool-fix y)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable boolor))))
+
+(defthm boolor-when-not-arg2-cheap
+  (implies (not y)
+           (equal (boolor x y)
+                  (bool-fix x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable boolor))))
 
 (defthm boolor-combine-constants

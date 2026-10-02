@@ -1,7 +1,7 @@
 ; BV Library: Theorems about bvcat
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 (include-book "slice-def")
 (include-book "getbit-def")
 (include-book "bvchop")
+(include-book "kestrel/utilities/polarity" :dir :system)
 (local (include-book "unsigned-byte-p"))
 (local (include-book "logapp"))
 (local (include-book "slice"))
@@ -427,11 +428,7 @@
                  )
             (equal (getbit k (bvcat highsize highval lowsize lowval))
                    (getbit k lowval)))
-   :hints
-   (("Goal" :in-theory (e/d (bvcat getbit slice logtail-logapp)
-                            (
-
-                             ))))))
+   :hints (("Goal" :in-theory (enable bvcat getbit slice logtail-logapp)))))
 
 (defthm getbit-of-bvcat-low-better
   (implies (and (< k lowsize)
@@ -473,9 +470,7 @@
                           (and (not (integerp lowval)) (integerp highval)))
            :do-not '(preprocess)
            :in-theory (e/d (bvcat getbit slice logtail-of-bvchop logtail-logapp)
-                           (bvchop-of-logtail
-                             bvchop-of-logtail
-                            )))))
+                           (bvchop-of-logtail)))))
 
 ;keeping this disabled, since it causes case splits
 (defthmd getbit-of-bvcat-low-better-all-cases
@@ -546,8 +541,7 @@
                                     ;;bvchop
                                     logtail
                                     bvcat-recombine)
-                                   (
-                                    bvchop-of-logtail)))))
+                                   (bvchop-of-logtail)))))
 
 (defthm bvchop-of-logapp-both
   (implies (natp n2)
@@ -1042,7 +1036,7 @@
            :cases ((< (+ highsize lowsize) n)
                    (equal n lowsize)
                    )
-           :in-theory (e/d ( ;logtail
+           :in-theory (e/d (;logtail
                             bvcat
                             ;;logapp
                             zip floor-normalize-denominator
@@ -1309,12 +1303,10 @@
 (defthmd bvchop-when-top-bit-1
   (implies (and (equal 1 (getbit (+ -1 size) x))
                 (integerp size)
-                (< 0 size)
-                )
+                (< 0 size))
            (equal (bvchop size x)
                   (+ (expt 2 (+ -1 size))
                      (bvchop (+ -1 size) x))))
-  :rule-classes ((:rewrite :backchain-limit-lst (1 nil nil)))
   :hints (("Goal"
            :in-theory (enable bvcat logapp posp bvchop getbit)
            :use ((:instance split-with-bvcat (x x) (hs 1) (ls (+ -1 size)))))))
@@ -1323,8 +1315,7 @@
 (defthmd bvchop-when-top-bit-1-cheap
   (implies (and (equal 1 (getbit (+ -1 size) x))
                 (integerp size)
-                (< 0 size)
-                )
+                (< 0 size))
            (equal (bvchop size x)
                   (+ (expt 2 (+ -1 size))
                      (bvchop (+ -1 size) x))))
@@ -1580,3 +1571,18 @@
                          (+ -1 highsize lowsize)
                          (bvcat (+ -1 highsize) highval lowsize lowval))))
   :hints (("Goal" :in-theory (enable natp))))
+
+(defthm equal-of-slice-and-constant-when-equal-of-bvchop-and-constant
+  (implies (and (syntaxp (or (want-to-strengthen (equal k2 (slice high low y)))
+                             (want-to-strengthen (equal (slice high low y) k2))))
+                (syntaxp (quotep k2))
+                (equal (bvchop low y) k1)
+                (syntaxp (quotep k1))
+                (natp low)
+                (natp high)
+                (<= low high))
+           (equal (equal k2 (slice high low y))
+                  (and (unsigned-byte-p (- (+ 1 high) low) k2)
+                       (equal (bvchop (+ 1 high) y) (bvcat (- (+ 1 high) low) k2 low k1)))))
+  :hints (("Goal" :in-theory (disable ;BVCHOP-SUBST-CONSTANT SLICE-SUBST-CONSTANT
+                               ))))

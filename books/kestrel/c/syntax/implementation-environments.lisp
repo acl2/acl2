@@ -13,12 +13,13 @@
 
 (include-book "../language/implementation-environments/top")
 
-(include-book "std/util/defirrelevant" :dir :system)
-
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
 (acl2::controlled-configuration)
+
+(local (in-theory (disable (:e c::uchar-format-8)
+                           (:e c::schar-format-8tcnt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -60,10 +61,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We include an indication of the version of C; see @(tsee c::version).
-     Currently we mainly support C17,
-     with and without GCC and Clang extensions,
-     but we are starting to adding some support for C23 as well.")
+    "We include an indication of the dialect of C; see @(tsee c::dialect).")
    (xdoc::p
     "We assume that bytes are 8 bits,
      that signed integers use two's complement,
@@ -71,11 +69,12 @@
      (except for @('_Bool')s, which are padded to at least one byte).
      Therefore, the characteristics of the integer types
      are defined by five numbers,
-     i.e. the numbers of bytes of @('_Bool'), and (signed and unsigned)
+     i.e. the numbers of bytes of @('_Bool'),
+     and of (signed and unsigned)
      @('short'), @('int'), @('long'), and @('long long');
-     constraints on those number are derived from
-     [C17:5.2.4.2.1] (for the minima)
-     and [C17:6.2.5/8] (for the increasing sizes).")
+     constraints on those numbers are derived from
+     [C17:5.2.4.2.1] [C23:5.3.5.3.2] (for the minima)
+     and [C17:6.2.5/8] [C23:6.2.5] (for the increasing sizes).")
    (xdoc::p
     "The floating types are characterized by their sizes.
      We make no assumptions about their respective sizes for now.")
@@ -90,14 +89,17 @@
      has the same range as @('signed char') or not [C17:6.2.5/15].
      If the flag is false, it has the same range as @('unsigned char').")
    (xdoc::p
-    "This type will likely be expanded in the future
+    "We always use a Unicode character set with certain new lines,
+     so there is no variability information here.")
+   (xdoc::p
+    "This fixtype will likely be expanded in the future
      to include further information about the environment.
      This may include details about standard library types
      (such as @('size_t'), @('ptrdiff_t'), etc.),
      alignment and padding policies,
      endianness,
      and so on."))
-  ((version c::version)
+  ((dialect c::dialect)
    (bool-bytes pos)
    (short-bytes pos
                 :reqfix (if (and (<= short-bytes int-bytes)
@@ -167,7 +169,7 @@
    (xdoc::p
     "This can be used as a dummy value of the type."))
   :type ienvp
-  :body (make-ienv :version (c::irr-version)
+  :body (make-ienv :dialect (c::irr-dialect)
                    :bool-bytes 1
                    :short-bytes 2
                    :int-bytes 2
@@ -181,6 +183,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define charset ((std c::standardp))
+  :returns (charset c::charsetp)
+  :short "Character set of the syntax for tools."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Our C syntax for tools uses a Unicode character set,
+     for both source and execution characters;
+     it allows LF, CR, and CR LF as new-line character sequences;
+     see the @(see grammar)."))
+  (b* ((end-of-lines (set::mergesort (list (list 10) (list 13) (list 13 10)))))
+    (c::charset-unicode std end-of-lines))
+  :guard-hints (("Goal" :in-theory (enable c::source-charset-end-of-lines-wfp
+                                           (:e c::unicode-chars))))
+
+  ///
+
+  (defret charset-wfp-of-charset
+    (c::charset-wfp charset std uchar-format schar-format char-format)
+    :hints (("Goal" :in-theory (enable c::source-charset-end-of-lines-wfp
+                                       (:e c::unicode-chars))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ldm-ienv ((ienv ienvp))
   :returns (ienv1 c::ienvp)
   :short "Map an implementation environment of type @(tsee ienv)
@@ -190,14 +216,15 @@
    (xdoc::p
     "The @('ldm') part of this function's name
      is related to the one used for the functions in
-     @(see mapping-to-language-definition),
+     @(see abstract-syntax-formal-mapping-direct),
      since we are mapping from the C syntax for tools
      to the formal language definition.")
    (xdoc::p
     "Given our assumptions (stated in @(tsee ienv))
      that bytes are 8 bits,
      that signed integers are two's complement,
-     and that there are no padding bits and no trap representations,
+     and that there are no padding bits (except for @('_Bool'))
+     or trap representations,
      this mapping could still be defined in different ways,
      based on the exact choice of bit layouts,
      which is captured in @(tsee c::ienv) but not in @(tsee ienv).
@@ -205,7 +232,11 @@
      consisting of increasing bit values,
      ended by the sign bit for signed integers.
      The exact choice of bit layout does not matter,
-     since the main purpose of the mapping is to exhibit a correspondence."))
+     since the main purpose of the mapping is to exhibit a correspondence.")
+   (xdoc::p
+    "For @('_Bool'), we use the specified number of bytes,
+     with bit index 0 as the value bit
+     and all remaining bits as padding."))
   (b* (((ienv ienv) ienv)
        (uchar-format (c::uchar-format-8))
        (schar-format (c::schar-format-8tcnt))
@@ -214,42 +245,44 @@
        (int-format (c::integer-format-inc-sign-tcnpnt (* 8 ienv.int-bytes)))
        (long-format (c::integer-format-inc-sign-tcnpnt (* 8 ienv.long-bytes)))
        (llong-format (c::integer-format-inc-sign-tcnpnt (* 8 ienv.llong-bytes)))
-       (bool-format (c::bool-format-lsb))
-       (char+short+int+long+llong+bool-format
-        (c::char+short+int+long+llong+bool-format uchar-format
-                                                  schar-format
-                                                  char-format
-                                                  short-format
-                                                  int-format
-                                                  long-format
-                                                  llong-format
-                                                  bool-format)))
+       (bool-format (c::bool-format ienv.bool-bytes 0 nil))
+       (charset (charset (c::dialect->std ienv.dialect))))
     (c::make-ienv
-     :version ienv.version
-     :char+short+int+long+llong+bool-format
-     char+short+int+long+llong+bool-format))
+     :dialect ienv.dialect
+     :uchar uchar-format
+     :schar schar-format
+     :char char-format
+     :short short-format
+     :int int-format
+     :long long-format
+     :llong llong-format
+     :bool bool-format
+     :charset charset))
   :guard-hints (("Goal" :in-theory (enable ldm-ienv-wfp-lemma)))
 
   :prepwork
   ((defruled ldm-ienv-wfp-lemma
-     (c::char+short+int+long+llong+bool-format-wfp
-      (c::char+short+int+long+llong+bool-format
-       '((c::size . 8))
-       '((c::signed :twos-complement) (c::trap))
-       char-format
-       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->short-bytes ienv)))
-       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->int-bytes ienv)))
-       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->long-bytes ienv)))
-       (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->llong-bytes ienv)))
-       '((byte-size . 1) (c::value-index . 0) (c::trap))))
+     (c::ienv-requirep
+      (ienv->dialect ienv)
+      (c::uchar-format-8)
+      (c::schar-format-8tcnt)
+      (c::char-format (ienv->plain-char-signedp ienv))
+      (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->short-bytes ienv)))
+      (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->int-bytes ienv)))
+      (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->long-bytes ienv)))
+      (c::integer-format-inc-sign-tcnpnt (* 8 (ienv->llong-bytes ienv)))
+      (c::bool-format (ienv->bool-bytes ienv) 0 nil)
+      (charset (c::dialect->std (ienv->dialect ienv))))
      :use (:instance ienv-requirements (x ienv))
-     :enable (c::char+short+int+long+llong+bool-format-wfp
+     :enable (c::ienv-requirep
+              c::schar-format-wfp-of-schar-format-8tcnt
               c::integer-format-short-wfp-of-integer-format-inc-sign-tcnpnt
               c::integer-format-int-wfp-of-integer-format-inc-sign-tcnpnt
               c::integer-format-long-wfp-of-integer-format-inc-sign-tcnpnt
               c::integer-format-llong-wfp-of-integer-format-inc-sign-tcnpnt
               c::bool-format-wfp
-              fix)
+              fix
+              (:e c::uchar-format-8))
      :disable ienv-requirements)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -288,7 +321,8 @@
     (equal (ienv->uchar-max ienv)
            (c::ienv->uchar-max (ldm-ienv ienv)))
     :enable (ldm-ienv
-             c::ienv->uchar-max)))
+             c::ienv->uchar-max
+             (:e c::uchar-format-8))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -311,7 +345,9 @@
     (equal (ienv->schar-max ienv)
            (c::ienv->schar-max (ldm-ienv ienv)))
     :enable (ldm-ienv
-             c::ienv->schar-max)))
+             c::ienv->schar-max
+             (:e c::uchar-format-8)
+             (:e c::schar-format-8tcnt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -333,7 +369,9 @@
     (equal (ienv->schar-min ienv)
            (c::ienv->schar-min (ldm-ienv ienv)))
     :enable (ldm-ienv
-             c::ienv->schar-min)))
+             c::ienv->schar-min
+             (:e c::uchar-format-8)
+             (:e c::schar-format-8tcnt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -353,13 +391,15 @@
            (c::ienv->char-max (ldm-ienv ienv)))
     :enable (ldm-ienv
              c::ienv->char-max
-             ldm-ienv-wfp-lemma)))
+             ldm-ienv-wfp-lemma
+             (:e c::uchar-format-8)
+             (:e c::schar-format-8tcnt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->char-min ((ienv ienvp))
   :returns (min integerp)
-  :short "The ACL2 integer value of @('CHAR_MAX') [C17:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('CHAR_MIN') [C17:5.2.4.2.1/1]."
   (if (ienv->plain-char-signedp ienv)
       -128
     0)
@@ -372,7 +412,9 @@
            (c::ienv->char-min (ldm-ienv ienv)))
     :enable (ldm-ienv
              c::ienv->char-min
-             ldm-ienv-wfp-lemma)))
+             ldm-ienv-wfp-lemma
+             (:e c::uchar-format-8)
+             (:e c::schar-format-8tcnt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -675,7 +717,7 @@
 
 (define ienv-uchar-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned char')."
   (and (<= 0 (lifix val))
        (<= (lifix val) (ienv->uchar-max ienv)))
@@ -692,7 +734,7 @@
 
 (define ienv-schar-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed char')."
   (and (<= (ienv->schar-min ienv) (lifix val))
        (<= (lifix val) (ienv->schar-max ienv)))
@@ -710,7 +752,7 @@
 
 (define ienv-char-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('char')."
   (and (<= (ienv->char-min ienv) (lifix val))
        (<= (lifix val) (ienv->char-max ienv)))
@@ -728,7 +770,7 @@
 
 (define ienv-ushort-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned short')."
   (and (<= 0 (lifix val))
        (<= (lifix val) (ienv->ushort-max ienv)))
@@ -745,7 +787,7 @@
 
 (define ienv-sshort-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed short')."
   (and (<= (ienv->sshort-min ienv) (lifix val))
        (<= (lifix val) (ienv->sshort-max ienv)))
@@ -763,7 +805,7 @@
 
 (define ienv-uint-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned int')."
   (and (<= 0 (lifix val))
        (<= (lifix val) (ienv->uint-max ienv)))
@@ -780,7 +822,7 @@
 
 (define ienv-sint-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed int')."
   (and (<= (ienv->sint-min ienv) (lifix val))
        (<= (lifix val) (ienv->sint-max ienv)))
@@ -798,7 +840,7 @@
 
 (define ienv-ulong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned long')."
   (and (<= 0 (lifix val))
        (<= (lifix val) (ienv->ulong-max ienv)))
@@ -815,7 +857,7 @@
 
 (define ienv-slong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed long')."
   (and (<= (ienv->slong-min ienv) (lifix val))
        (<= (lifix val) (ienv->slong-max ienv)))
@@ -833,7 +875,7 @@
 
 (define ienv-ullong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('unsigned long long')."
   (and (<= 0 (lifix val))
        (<= (lifix val) (ienv->ullong-max ienv)))
@@ -850,7 +892,7 @@
 
 (define ienv-sllong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
-  :short "Check if an ACl2 integer is
+  :short "Check if an ACL2 integer is
           in the range of (i.e. representable in) type @('signed long long')."
   (and (<= (ienv->sllong-min ienv) (lifix val))
        (<= (lifix val) (ienv->sllong-max ienv)))
@@ -887,14 +929,14 @@
 (define ienv->gcc ((ienv ienvp))
   :returns (yes/no booleanp)
   :short "Flag saying whether GCC extensions are enabled or not."
-  (c::version->gcc (ienv->version ienv)))
+  (c::dialect->gcc (ienv->dialect ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->clang ((ienv ienvp))
   :returns (yes/no booleanp)
   :short "Flag saying whether Clang extensions are enabled or not."
-  (c::version->clang (ienv->version ienv)))
+  (c::dialect->clang (ienv->dialect ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -904,23 +946,23 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "There is very large overlap between the of extensions
+    "There is a very large overlap between the extensions
      supported by GCC and by Clang.
      Therefore, it is most often sufficient to check
-     if the version includes either."))
-  (c::version-gcc/clangp (ienv->version ienv)))
+     if the dialect includes either."))
+  (c::dialect-gcc/clangp (ienv->dialect ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->std ((ienv ienvp))
   :returns (std c::standardp)
   :short "The base C standard (regardless of extensions)."
-  (c::version->std (ienv->version ienv)))
+  (c::dialect->std (ienv->dialect ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ienv-default (&key ((version (or (eq version :auto)
-                                         (c::versionp version)))
+(define ienv-default (&key ((dialect (or (eq dialect :auto)
+                                         (c::dialectp dialect)))
                             ':auto))
   :short "A default implementation environment."
   :long
@@ -931,19 +973,19 @@
      that do not necessarily involve @(tsee input-files).")
    (xdoc::p
     "We default to the C17 standard without any extensions.
-     This is the C version with the strongest support.
+     This is the C dialect with the strongest support.
      Optionally, this can be overridden
-     with the @(':version') keyword argument.
-     The argument provided for the @(':version') keyword, if provided,
-     must be @(':auto') or a @(see c::version).")
+     with the @(':dialect') keyword argument.
+     The argument provided for the @(':dialect') keyword, if provided,
+     must be @(':auto') or a @(see c::dialect).")
    (xdoc::p
     "For the type sizes and signedness options,
      we use values which have anecdotally appeared common
      on 64-bit machines."))
-  (b* ((version (if (eq version :auto)
-                    (c::make-version :std (c::standard-c17))
-                  version)))
-    (make-ienv :version version
+  (b* ((dialect (if (eq dialect :auto)
+                    (c::make-dialect :std (c::standard-c17))
+                  dialect)))
+    (make-ienv :dialect dialect
                :bool-bytes 1
                :short-bytes 2
                :int-bytes 4

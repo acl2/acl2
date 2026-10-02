@@ -34,6 +34,8 @@
 ;; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 ;; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+;; ----------------------------------------------------------------------
+
 ;; This book is a slightly modified version of the records book by Rob
 ;; Sumners and Matt Kaufmann (books/misc/records.lisp).
 

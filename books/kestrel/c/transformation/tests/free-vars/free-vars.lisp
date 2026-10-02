@@ -53,13 +53,13 @@
         (retok fundef)))
     (trans-item-list-find-fundef ident (rest items))))
 
-(define transunit-find-fundef
+(define trans-unit-find-fundef
   ((ident identp)
-   (transunit transunitp))
+   (trans-unit trans-unitp))
   :returns (mv (erp booleanp)
                (fundef fundefp))
-  (b* (((transunit transunit) transunit))
-    (trans-item-list-find-fundef ident transunit.items)))
+  (b* (((trans-unit trans-unit) trans-unit))
+    (trans-item-list-find-fundef ident trans-unit.items)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -73,15 +73,17 @@
 
 (defmacro test-free-vars (input &key fun vars)
   `(assert-event
-    (b* ((version (c::make-version :std (c::standard-c17) :gcc t))
+    (b* ((dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+         (ienv (c$::change-ienv (c$::ienv-default) :dialect dialect))
          ((mv erp1 ast) (c$::parse-file (filepath "test")
                                         (acl2::string=>nats ,input)
-                                        version
+                                        dialect
                                         t))
-         ((mv erp2 ast) (c$::dimb-transunit ast version))
-         ((mv erp3 fundef) (transunit-find-fundef (c$::ident ,fun) ast))
-         (free-vars (free-vars-fundef fundef nil))
-         (expected (mergesort (ident-map (list ,@vars)))))
+         (dstate (c$::init-dstate (filepath "") ienv))
+         ((mv erp2 ast & &) (c$::dimb-trans-unit ast dstate nil nil nil 1000))
+         ((mv erp3 fundef) (trans-unit-find-fundef (c$::ident ,fun) ast))
+         (free-vars (free-vars-fundef fundef (treeset::empty)))
+         (expected (treeset::from-list (ident-map (list ,@vars)))))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
             (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2))
             (erp3 (cw "~%Could not find function: ~x0~%" ,fun))

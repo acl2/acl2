@@ -225,7 +225,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is similar to @(tsee generate-trace*),
+    "This is similar to @(tsee generate-trace),
      but it always generates a trace of length @('limit + 1'),
      by replicating the final halted state row,
      if a halted state is reached.")

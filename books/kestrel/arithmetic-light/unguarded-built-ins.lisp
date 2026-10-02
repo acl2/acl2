@@ -1,7 +1,7 @@
 ; Versions of built-in functions with guards of t
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -69,7 +69,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun truncate-unguarded (i j)
+(defund truncate-unguarded (i j)
   (declare (xargs :guard t))
   (let* ((q (binary-*-unguarded i (unary-/-unguarded j)))
          (n (numerator-unguarded q))

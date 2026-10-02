@@ -1,7 +1,7 @@
 ; Tools to clean up lambda applications in terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,10 +21,10 @@
 ;; TODO: Consider (optionally?) not lambda-binding a value that is only used
 ;; once in the lambda body.
 
-(include-book "tools/flag" :dir :system)
 (include-book "filter-formals-and-actuals")
 (include-book "free-vars-in-term")
 (include-book "make-lambda-with-hint")
+(local (include-book "tools/flag" :dir :system))
 ;(local (include-book "std/system/all-vars" :dir :system))
 (local (include-book "filter-formals-and-actuals-proofs"))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
@@ -85,7 +85,7 @@
                      (drop-unused-lambda-bindings-lst (rest terms))
                      terms))))
 
-(make-flag drop-unused-lambda-bindings)
+(local (make-flag drop-unused-lambda-bindings))
 
 (defthm-flag-drop-unused-lambda-bindings
   (defthm pseudo-termp-of-drop-unused-lambda-bindings
