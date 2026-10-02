@@ -939,3 +939,55 @@
 (test-check-top-expr
  "(unbox ($d v (box (2) [[1 2] [3 4]] (Sigma ($e) (A Int (dims $e 2)))))
    ((index2d v) [0 1]))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; sum : (Pi (@s) (-> [Int @s] Int))
+
+; The type has no universal binder, and the elements must be integers:
+; a type application and non-integer elements are rejected.
+(test-check-top-expr-fail
+ "((t-app sum Int) [1 2 3])")
+(test-check-top-expr-fail
+ "(sum [#t #f])")
+
+; The shape variable is inferred as the whole shape of the argument,
+; which may be a vector, a matrix, or even a scalar (with the empty shape):
+; the sum of a matrix is the sum of all its elements.
+(test-check-top-expr
+ "(sum [1 2 3])")
+(test-check-top-expr
+ "(sum [[1 2] [3 4]])")
+(test-check-top-expr
+ "(sum 5)")
+
+; Summing the rows of a matrix instead requires
+; the explicit instantiation at the shape of the rows,
+; which yields the frame [2]:
+; the inference matches the whole shape, so there is no frame.
+(test-check-top-expr
+ "(@sum _ ([3]) [[1 2 3] [4 5 6]])")
+
+; Chains with inference in all the applications:
+; the sum of a tail, and the sum of a vector of sums.
+(test-check-top-expr
+ "(sum (tail [1 2 3]))")
+(test-check-top-expr
+ "(sum [(sum [1 2]) (sum [3 4])])")
+
+; Inference under ispace binders:
+; the shape variable is inferred as the bound shape variable
+; (compare with length, which rejects an array of unknown shape),
+; or as the shape with the bound dimension variable;
+; the elements must be integers, not of an abstract type.
+(test-check-top-expr
+ "(i-fn (@s) (fn ((x (A Int @s))) (sum x)))")
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int $n])) (sum x)))")
+(test-check-top-expr-fail
+ "(t-fn (&t) (i-fn ($n) (fn ((x [&t $n])) (sum x))))")
+
+; The shape is inferred from the witness of an unboxing,
+; which does not escape, since the result is a scalar.
+(test-check-top-expr
+ "(unbox ($d v (box (3) [1 2 3] (Sigma ($e) (A Int $e)))) (sum v))")
