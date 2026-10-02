@@ -49,8 +49,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Each bit in the object representation of unsigned integers [C17:6.2.6.2/1]
-     is either a value bit (representing a power of 2) or a padding bit.
+    "Each bit in the object representation of unsigned integers
+     is either a value bit (representing a power of 2) or a padding bit
+     [C17:6.2.6.2/1] [C23:6.2.6.2].
      This fixtype represents these choices,
      where the natural number in the @(':value') case
      is the exponent @($i$) of the power @($2^i$).")
@@ -77,10 +78,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Each bit in the object representation of signed integers [C17:6.2.6.2/2]
+    "Each bit in the object representation of signed integers
      is either a value bit (representing a power of 2)
      or a padding bit
-     or a sign bit.
+     or a sign bit
+     [C17:6.2.6.2/2] [C23:6.2.6.2].
      This fixtype represents these choices,
      where the natural number in the @(':value') case
      is the exponent @($i$) of the power @($2^i$).")
@@ -187,7 +189,7 @@
    (xdoc::p
     "If the list of bit roles is well-formed
      (see @(tsee uinteger-bit-roles-wfp)),
-     this is the number @('N') of value bits [C17:6.2.6.2/1],
+     this is the number @('N') of value bits [C17:6.2.6.2/1] [C23:6.2.6.2],
      whose associated exponents go from @('0') to @('N-1')."))
   (cond ((endp roles) 0)
         ((uinteger-bit-role-case (car roles) :value)
@@ -225,7 +227,11 @@
    (xdoc::p
     "If the list of bit roles is well-formed
      (see @(tsee sinteger-bit-roles-wfp)),
-     this is the number @('M') of value bits [C17:6.2.6.2/2],
+     this is the number of value bits,
+     i.e. @('M') in [C17:6.2.6.2/2],
+     which is @('N-1') in [C23:6.2.6.2]
+     (where @('N') is the number of value bits
+     of the corresponding unsigned integer type),
      whose associated exponents go from @('0') to @('M-1')."))
   (cond ((endp roles) 0)
         ((sinteger-bit-role-case (car roles) :value)
@@ -268,7 +274,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "According to [C17:6.2.6.2/1],
+    "According to [C17:6.2.6.2/1] [C23:6.2.6.2],
      there must be exactly one value bit for each exponent
      in a range from 0 to @('N-1') for some @('N').
      We express that by saying that,
@@ -277,7 +283,7 @@
      where @('N') is the number of collected exponents.
      Note that this prohibits duplicates.
      We also require @('N') to be non-zero,
-     although this is not explicated in [C17]."))
+     although this is not explicated in [C17] [C23]."))
   (b* ((exponents (uinteger-bit-roles-exponents roles))
        (n (len exponents))
        ((when (= n 0)) nil)
@@ -310,18 +316,22 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "According to [C17:6.2.6.2/2],
+    "According to [C17:6.2.6.2/2] [C23:6.2.6.2],
      there must be exactly one value bit for each exponent
-     in a range from 0 to @('M-1') for some @('M').
+     in a range from 0 to @('M-1') for some @('M'),
+     where @('M') is actually @('N-1') in [C23]
+     (where @('N') is the number of value bits
+     of the corresponding unsigned integer type).
      We express that by saying that,
      after collecting the exponents and sorting them,
      we must have the list @('(0 1 ... M-1)'),
      where @('M') is the number of collected exponents.
      Note that this prohibits duplicates.
      We also require @('M') to be non-zero,
-     although this is not explicated in [C17].")
+     although this is not explicated in [C17] [C23].")
    (xdoc::p
-    "[C17:6.2.6.2/2] also says that there must be exactly one sign bit,
+    "[C17:6.2.6.2/2] [C23:6.2.6.2] also say that
+     there must be exactly one sign bit,
      i.e. the number of sign bits must be 1."))
   (b* ((exponents (sinteger-bit-roles-exponents roles))
        (m (len exponents))
@@ -370,21 +380,25 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "[C17:6.2.6.2/2] says each signed integer value bit
+    "[C17:6.2.6.2/2] [C23:6.2.6.2] say each signed integer value bit
      must be the same as the corresponding unsigned integer value bit;
      but the unsigned integer type may have more value bits.
      We check this by going through the two lists of bits,
      and making sure that, every time we encounter a signed value bit,
      the corresponding unsigned value bit is for the same exponent.")
    (xdoc::p
-    "[C17:6.2.5/6] says that corresponding signed and unsigned integer types
+    "[C17:6.2.5/6] [C23:6.2.5] say that
+     corresponding signed and unsigned integer types
      take the same amount of storage.
      In our model, it means that they must have the same number of bits.
      We check this requirement in this recursive predicate,
      by ensuring that the two lists end at the same time.")
    (xdoc::p
     "We show that this predicate guarantees
-     the inequality @('M <= N') mentioned in [C17:6.2.6.2/2]."))
+     the inequality @('M <= N') mentioned in [C17:6.2.6.2/2].
+     This is strengthened to @('M = N-1') in [C23:6.2.6.2],
+     but this latter requirement is captured in a separate predicate,
+     which also takes the C standard as input."))
   (b* (((when (endp uroles)) (endp sroles))
        ((when (endp sroles)) nil)
        (srole (car sroles))
@@ -433,7 +447,7 @@
     "This is for unsigned integer objects
      other than those of type @('unsigned char'),
      which are covered by @(tsee uchar-format).
-     See [C17:6.2.6.2/1].")
+     See [C17:6.2.6.2/1] [C23:6.2.6.2].")
    (xdoc::p
     "The format definition includes a list of bit roles,
      which should be thought of as the juxtaposition of
@@ -456,7 +470,7 @@
      The list of bit roles must be well-formed.")
    (xdoc::p
     "We also include a placeholder component meant to define
-     which bit values are trap representations [C17:6.2.6.2/5].
+     which bit values are trap representations [C17:6.2.6.2/5] [C23:6.2.6.2].
      We plan to flesh this out in the future."))
   ((bits uinteger-bit-role-listp
          :reqfix (if (uinteger-bit-roles-wfp bits)
@@ -476,7 +490,7 @@
     "This is for signed integer objects
      other than those of type @('signed char'),
      which are covered by @(tsee schar-format).
-     See [C17:6.2.6.2/2].")
+     See [C17:6.2.6.2/2] [C23:6.2.6.2].")
    (xdoc::p
     "The format definition includes a list of bit roles,
      with the same ordering and indexing convention
@@ -493,23 +507,26 @@
     "The format description also identifies one of the three signed formats.
      It is not clear from [C17] whether all the signed integer types,
      within an implementation, use that same signed format,
-     but our model allows them to differ.")
+     but our model allows them to differ.
+     [C23] requires two's complement:
+     we capture that requirement in a separate predicate
+     that takes the C standard as additional input.")
    (xdoc::p
-    "The @('special-trap') component is a boolean flag
-     saying whether the special pattern of sign and value bits
-     described in [C17:6.2.6.2/2] is a trap representation.
+    "The @('special-trap') component is a boolean flag saying whether
+     the special pattern of sign and value bits described in [C17:6.2.6.2/2]
+     is a trap representation.
      The sign bit is 1 in this pattern;
      the value bits are all 0 for sign and magnitude and two's complement,
      and all 1 for ones' complement.
-     When not reserved as a trap, this pattern represents
-     the most negative value for two's complement,
+     When not reserved as a trap,
+     this pattern represents the most negative value for two's complement,
      and negative zero for the other signed formats.
      This component corresponds to the @('trap') component
-     of @(tsee schar-format).")
-   (xdoc::p
-    "These representation choices support C17.
-     For C23, @(tsee sinteger-format-wfp) requires two's complement
-     and a false @('special-trap') flag.")
+     of @(tsee schar-format).
+     This only applies to C17:
+     [C23] does not allow this trap representation;
+     in a separate predicate that takes the C standard as additional input,
+     we require @('special-trap') to be @('nil').")
    (xdoc::p
     "The @('other-traps') component is a placeholder for
      trap representations caused by combinations of padding bits
@@ -626,7 +643,10 @@
    (xdoc::p
     "This is determined by the number @('M') of value bits,
      the signed format, and possibly the trap representations
-     [C17:6.2.6.2/2].
+     [C17:6.2.6.2/2] [C23:6.2.6.2],
+     where @('M') is @('N-1') in C23,
+     where @('N') is the number of value bits
+     of the corresponding unsigned integer type.
      If the signed format is either sign and magnitude or ones' complement,
      the minimum value is the negation of the maximum value,
      i.e. @('- (2^M - 1)').
@@ -690,10 +710,10 @@
   (xdoc::topstring
    (xdoc::p
     "Each signed integer type has a corresponding unsigned integer type
-     [C17:6.2.5/6].
+     [C17:6.2.5/6] [C23:6.2.5].
      There are constraints between the representations of
      two corresponding signed and unsigned integer types
-     [C17:6.2.6.2/2].
+     [C17:6.2.6.2/2] [C23:6.2.6.2].
      Thus, we introduce a notion for the format of
      corresponding unsigned and signed integer types.
      This is for @('signed short') and @('unsigned short'),

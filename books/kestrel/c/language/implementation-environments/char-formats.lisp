@@ -38,7 +38,7 @@
    (xdoc::p
     "The @('char') type has the same representation as
      either @('unsigned char') or @('signed char')
-     [C17:6.2.5/15].
+     [C17:6.2.5/15] [C23:6.2.5].
      The choice is captured by a boolean."))
   ((signedp bool))
   :pred char-formatp)
@@ -49,11 +49,12 @@
                           (uchar-format uchar-formatp)
                           (schar-format schar-formatp))
   :returns (max posp)
-  :short "The ACL2 integer value of @('CHAR_MAX') [C17:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('CHAR_MAX')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "As explained in [C17:5.2.4.2.1/2],
+    "As explained in [C17:5.2.4.2.1/2] and implied in [C23:5.3.5.3.2],
      this is the same as either @('UCHAR_MAX') or @('SCHAR_MAX')."))
   (if (char-format->signedp char-format)
       (schar-format->max schar-format uchar-format)
@@ -80,11 +81,12 @@
                           (uchar-format uchar-formatp)
                           (schar-format schar-formatp))
   :returns (min integerp)
-  :short "The ACL2 integer value of @('CHAR_MIN') [C17:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('CHAR_MIN')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "As explained in [C17:5.2.4.2.1/2],
+    "As explained in [C17:5.2.4.2.1/2] and implied in [C23:5.3.5.3.2],
      this is either 0 or the same as @('SCHAR_MIN')."))
   (if (char-format->signedp char-format)
       (schar-format->min schar-format uchar-format)
