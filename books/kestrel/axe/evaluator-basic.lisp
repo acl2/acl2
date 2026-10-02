@@ -78,6 +78,7 @@
     (repeat repeat-unguarded)
     (binary-append binary-append-unguarded)
     (member-equal member-equal-unguarded)
+    (union-equal union-equal-unguarded)
     (unary-- unary---unguarded) ; primitive
     (expt expt-unguarded)
     (unary-/ unary-/-unguarded) ; primitive
