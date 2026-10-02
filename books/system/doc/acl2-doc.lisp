@@ -109913,6 +109913,9 @@ it."
 ; @('translate.lisp'), for a Lisp comment providing further explanation.
 ; Thanks to Eric Smith for passing along this issue from Anthropic's Claude.
 
+; Improved error messages from attempts to add :type-set-inverter rules, in
+; particular when the user has swapped the orientation of the equality.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -110306,6 +110309,27 @@ it."
  <p>See also @(see community-books)
  @('system/tests/ec-call-in-quoted-lambda.lisp.lisp') and
  @('system/tests/ec-call-lambda-bypasses-1star.lisp').</p>
+
+ <p>Fixed an error that could be inappropriately caused by running @(tsee
+ apply$) on a @(tsee lambda$) expression from within a @(':')@(tsee
+ program)-mode function.  Below is an example that formerly caused an error, as
+ indicated.</p>
+
+ @({
+ (defconst *ar*
+   (compress1 'a '((:header :dimensions (4) :maximum-length 6
+                            :default 0 :name a)
+                   (0 . 0) (1 . 0) (2 . 0) (3 . 0))))
+
+ (defun foo (ar n v)
+   (declare (xargs :mode :program))
+   (apply$
+    (lambda$ (x) (aset1 'a (car x) (cadr x) (caddr x)))
+    (list (list ar n v))))
+
+ ; Formerly an error:
+ (foo *ar* 0 1)
+ })
 
  <h3>Other Bug Fixes</h3>
 

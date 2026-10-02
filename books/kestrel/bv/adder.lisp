@@ -149,7 +149,7 @@
                 (integerp a))
            (equal (equal (+ y x) (+ a (bvchop (+ -1 n) y)))
                   (equal (+ x (* (expt 2 (+ -1 n)) (getbit (+ -1 n) y)))
-                         (+ a))))
+                         a)))
   :hints (("Goal" :in-theory (enable bvcat logapp getbit)
            :use (:instance split-bv (x y)
                            (m (+ -1 n))))))

@@ -112,7 +112,7 @@
            (lambdas-closed-in-termsp terms))
   :hints (("Goal" :in-theory (enable lambdas-closed-in-termsp symbol-listp))))
 
-(defthm lambdas-closed-in-termsp-of-when-lambdas-closed-in-termp
+(defthm lambdas-closed-in-termsp-of-cdr-when-lambdas-closed-in-termp
    (implies (and (lambdas-closed-in-termp term)
                  (not (equal 'quote (car term))))
            (lambdas-closed-in-termsp (cdr term)))

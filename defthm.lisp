@@ -7590,7 +7590,7 @@
                        (all-vars (fargn term 2)))))
       (er soft ctx
           "The :COROLLARY of a :TYPE-SET-INVERTER rule must be of the form ~
-           (equal old-expr new-expr), where new-expr and old-expr are each ~
+           (equal new-expr old-expr), where new-expr and old-expr are each ~
            terms containing the single free variable X.  ~p0 is not of this ~
            form, so ~x1 is an illegal :TYPE-SET-INVERTER rule.  See :DOC ~
            type-set-inverter."
@@ -7637,14 +7637,18 @@
              (tautologyp (fcons-term* 'iff (fargn term 2) required-old-expr)
                          wrld))
             (er soft ctx
-                "The right-hand side of the :COROLLARY of a :TYPE-SET-INVERTER ~
-                 rule with :TYPE-SET ~x0 must be propositionally equivalent to ~
-                 ~p1 but you have specified ~p2.  Thus, ~x3 is an illegal ~
-                 :TYPE-SET-INVERTER rule.  See :doc type-set-inverter."
-                ts2
-                (untranslate required-old-expr t wrld)
-                (untranslate (fargn term 2) t wrld)
-                name))
+                "~x0 is an illegal :TYPE-SET-INVERTER rule because the ~
+                 right-hand side,~|~%[right-hand side]:~%~Y12~%is not ~
+                 propositionally equivalent to the primitive recognizer term ~
+                 of type-set ~x3.~|~%[prim recog for ts ~
+                 ~x3]:~%~Y42.~%``Propositional equivalence'' here means we ~
+                 don't expand definitions, just rearrange and simplify IFs ~
+                 and primitive type-set recognizers."
+                name           ; 0
+                (fargn term 2) ; 1
+                nil            ; 2
+                ts2            ; 3
+                required-old-expr)) ; 4
            (t (value ttree)))))))))))
 
 (defun add-type-set-inverter-rule (rune nume ts term ens wrld)

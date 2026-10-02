@@ -1652,7 +1652,7 @@
               (no-nodes-are-variablesp nodes dag-array-name dag-array dag-len)))
   :hints (("Goal" :in-theory (enable no-nodes-are-variablesp))))
 
-(defthm no-nodes-are-variablesp-of-when-not-consp
+(defthm no-nodes-are-variablesp-when-not-consp
   (implies (not (consp list))
            (no-nodes-are-variablesp list dag-array-name dag-array dag-len))
   :hints (("Goal" :in-theory (enable no-nodes-are-variablesp reverse-list))))

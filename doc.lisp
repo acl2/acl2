@@ -107235,6 +107235,25 @@ Bug Fixes From AI via Eric Smith
   [30m[47msystem/tests/ec-call-in-quoted-lambda.lisp.lisp[0m[0m and
   [30m[47msystem/tests/ec-call-lambda-bypasses-1star.lisp[0m[0m.
 
+  Fixed an error that could be inappropriately caused by running
+  [30m[47m[apply$][0m[0m on a [30m[47m[lambda$][0m[0m expression from within a [30m[47m:[0m[0m[30m[47m[program][0m[0m-mode
+  function.  Below is an example that formerly caused an error, as
+  indicated.
+
+    (defconst *ar*
+      (compress1 'a '((:header :dimensions (4) :maximum-length 6
+                               :default 0 :name a)
+                      (0 . 0) (1 . 0) (2 . 0) (3 . 0))))
+
+    (defun foo (ar n v)
+      (declare (xargs :mode :program))
+      (apply$
+       (lambda$ (x) (aset1 'a (car x) (cadr x) (caddr x)))
+       (list (list ar n v))))
+
+    ; Formerly an error:
+    (foo *ar* 0 1)
+
 
 Other Bug Fixes
 
