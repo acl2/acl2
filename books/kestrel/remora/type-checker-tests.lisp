@@ -1295,3 +1295,48 @@
 (test-check-top-expr-fail
  "(i-fn ($n) (fn ((x [Int $n]))
     ((((i-app (t-app fold Int Int) $n) +) 0) x)))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; iota : (Pi ($d) (-> [Int $d] (Sigma (@s) [Int @s])))
+
+; The argument is the vector of the dimensions of the result,
+; whose length $d is inferred;
+; a scalar or a vector of booleans is rejected.
+(test-check-top-expr
+ "(iota [2 3])")
+(test-check-top-expr-fail
+ "(iota 3)")
+(test-check-top-expr-fail
+ "(iota [#t #f])")
+
+; The argument may be any integer vector, e.g. produced by iota/static.
+(test-check-top-expr
+ "(iota (i-app iota/static (dims 2)))")
+
+; OBJECTIVE: a matrix is a frame of vectors,
+; so iota should be applied to each row, over the frame [2],
+; yielding a vector of boxes;
+; but the inference does not handle frames yet.
+; The fully explicit instantiation is accepted, with the frame.
+(test-check-top-expr-fail
+ "(iota [[1 2] [3 4]])")
+(test-check-top-expr
+ "(@iota _ (2) [[1 2] [3 4]])")
+
+; The result is a box whose witness is the shape of the array,
+; which is not known statically:
+; after unboxing, the array can be summed (any shape is accepted),
+; but its length cannot be inferred (the shape may be empty),
+; and the array itself cannot escape the unboxing.
+(test-check-top-expr
+ "(unbox (@s v (iota [2 3])) (sum v))")
+(test-check-top-expr-fail
+ "(unbox (@s v (iota [2 3])) (length v))")
+(test-check-top-expr-fail
+ "(unbox (@s v (iota [2 3])) v)")
+
+; Inference under an ispace binder:
+; the length of the vector of dimensions is inferred as the bound variable.
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int $n])) (iota x)))")
