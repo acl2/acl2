@@ -4093,180 +4093,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defconst *-1* (quote (quote -1)))
 (defconst *2* (quote (quote 2)))
 
-#-acl2-loop-only
-(declaim (inline ec-call1-raw-dfs))
-
-#-acl2-loop-only
-(defun ec-call1-raw-dfs (x flg form n)
-
-; If flg is nil or x is a double-float, then return x.  Otherwise x should be a
-; representable rational (because x was produced by a df or df{i} expression),
-; and we return the double-float that represents x.
-
-; But what is the point of this function?
-
-; Ec-call presents a bit of an implementation challenge.  Recall that ec-call
-; invokes executable-counterpart (*1*) functions.  Also note that code
-; generated for *1* functions is designed to return ordinary objects, not
-; double-floats.  Yet ec-call invokes *1* functions, hence returns ordinary
-; objects where raw Lisp code might expect a double-float.
-
-; When a guard-verified function or program-mode function leads to evaluation
-; of an ec-call form in raw Lisp, the caller may expect double-float outputs.
-; So ec-call's expansions in raw Lisp need to make adjustments to the outputs
-; when double-floats are expected.  The :dfs-out argument of ec-call tells Lisp
-; when to convert rationals returned by a *1* function to double-floats.
-
-  (cond ((null flg) x)
-        ((typep x 'double-float) x)
-        (t (let ((val (and (rationalp x)
-                           (let ((val (to-df x)))
-                             (and (= val x)
-                                  val)))))
-             (or val
-                 (let ((*print-pretty* t))
-                   (error "Implementation error (please contact the ACL2 ~
-                           implementors):~%~s error:~%Form: ~s~%Value~a that ~
-                           does not represent a double-float:~%  ~s"
-                          'ec-call
-                          form
-                          (if n
-                              (format nil " (at position ~s)" n)
-                            "")
-                          x)))))))
-
-(defun qdfs-check (qdfs)
-
-; Qdfs might be nil, 'nil, or '(b1 ... bk) where each bi is Boolean.  Note that
-; 'nil is actually a special case of the last of these, where k=0.
-
-  (declare (xargs :guard t))
-  (or (null qdfs)
-      (and (true-listp qdfs)
-           (= (length qdfs) 2)
-           (eq (car qdfs) 'quote)
-           (boolean-listp (cadr qdfs)))))
-
-#-acl2-loop-only
-(defmacro ec-call1-raw (qdfs-in/qdfs-out x)
-
-; X is a call of ec-call.  Qdfs-in/qdfs-out is either nil or is a term of the
-; form (cons qdfs-in qdfs-out), where each of qdfs-in and qdfs-out is either
-; nil or the quoted :dfs-in/:dfs-out argument from an ec-call.
-
-  (declare (xargs :guard (or (null qdfs-in/qdfs-out)
-                             (and (true-listp qdfs-in/qdfs-out)
-                                  (eq (car qdfs-in/qdfs-out) 'cons)))))
-  (let ((qdfs-in (cadr qdfs-in/qdfs-out))
-        (qdfs-out (caddr qdfs-in/qdfs-out)))
-    (cond
-     ((not (and (consp x) (symbolp (car x))))
-
-; This case is normally impossible, as enforced by translate.  However, it can
-; happen if we are not translating for execution; an example is (non-exec
-; (ec-call x)).  In that case we simply cause an error at execution time, as a
-; precaution, while fully expecting that we never actually hit this case.
-
-      `(error "Implementation error: It is unexpected to be executing a ~
-               call~%of ec-call on other than the application of a symbol ~
-               to~%arguments, but we are executing it on the form,~%~s."
-              ',x))
-     ((not (qdfs-check qdfs-in))
-      `(error "Implementation error (or incorrect use of implementation ~%~
-               macros for ec-call): the :dfs-in argument should be nil or a ~%~
-               quoted list of booleans, but it is ~s."
-              ',qdfs-in))
-     ((not (qdfs-check qdfs-out))
-      `(error "Implementation error (or incorrect use of implementation ~%~
-               macros for ec-call): the :dfs-out argument should be nil or ~%~
-               a quoted list of booleans, but it is ~s."
-              ',qdfs-out))
-     (t
-      (let* ((dfs-in (and qdfs-in (member-eq t (cadr qdfs-in)) (cadr qdfs-in)))
-             (dfs-out (and qdfs-out (member-eq t (cadr qdfs-out)) (cadr qdfs-out)))
-             (fn (car x))
-             (*1*fn (*1*-symbol fn))
-             (*1*fn$inline (add-suffix (*1*-symbol (car x)) *inline-suffix*))
-             (*1*args (if dfs-in
-                          (loop for arg in (cdr x)
-                                as d in dfs-in
-                                collect
-                                (if d
-                                    `(rational ,arg)
-                                  arg))
-                        (cdr x)))
-             (form
-              `(cond (*safe-mode-verified-p*
-
-; We are presumably in a context where we know that evaluation will not lead to
-; an ill-guarded call in raw Lisp.  See *safe-mode-verified-p*.
-
-                      ,x)
-
-; Through Version_8.2 we had a single funcall below, where the first argument
-; depended on whether (fboundp ',*1*fn) or else (fboundp ',*1*fn$inline).  But
-; SBCL took a very long time to compile the function apply$-prim in
-; books/projects/apply-model-2/apply-prim.lisp (and perhaps other such
-; apply$-prim definitions), which we fixed by lifting those fboundp tests above
-; the calls of funcall.  This reduced the time (presumably virtually all of it
-; for compilation) from 1294.33 seconds to 8.12 seconds.
-
-                     ((fboundp ',*1*fn)
-                      (funcall ',*1*fn ,@*1*args))
-                     ((fboundp ',*1*fn$inline)
-                      (funcall
-; The following call of macro-function is a sanity check that could be
-; omitted.
-                       (assert$ (macro-function ',fn)
-                                ',*1*fn$inline)
-                       ,@*1*args))
-                     (t
-                      (error "Undefined function, ~s.  Please contact the ~
-                              ACL2 implementors."
-                             ',*1*fn)))))
-        (cond
-         ((null dfs-out) form)
-         ((null (cdr dfs-out)) ; hence dfs-out = (t)
-          `(ec-call1-raw-dfs ,form t ',x nil))
-         (t `(let ((lst (multiple-value-list ,form)))
-               (values-list
-                (loop for e in lst
-                      as flg in ',dfs-out
-                      as n from 0
-                      collect
-                      (ec-call1-raw-dfs e flg ',x n)))))))))))
-
-(defmacro ec-call1 (qdfs-in0 qdfs-out0 x)
-
-; We introduce ec-call1 inbetween the ultimate macroexpansion of an ec-call
-; form to a return-last form, simply because untranslate will produce (ec-call1
-; nil x) from (return-last 'ec-call1-raw nil x).
-
-  (let ((qdfs-in (if (null qdfs-in0) *nil* qdfs-in0))
-        (qdfs-out (if (null qdfs-out0) *nil* qdfs-out0)))
-    `(return-last 'ec-call1-raw
-                  ,(if (and (equal qdfs-in *nil*)
-                            (equal qdfs-out *nil*))
-                       *nil*
-                     `(cons ,qdfs-in ,qdfs-out))
-                  ,x)))
-
-(defmacro ec-call (&whole w x &key dfs-in dfs-out)
-  (declare (xargs :guard t))
-  (let ((dfs-in-check (qdfs-check dfs-in))
-        (dfs-out-check (qdfs-check dfs-out)))
-    (cond ((and dfs-in-check dfs-out-check)
-           `(ec-call1 ,dfs-in ,dfs-out ,x))
-          (t (illegal 'ec-call
-                      "The call~|~x0~|is illegal because the ~#1~[:dfs-in ~
-                       argument fails~/:dfs-out argument fails~/:dfs-in and ~
-                       :dfs-out arguments each fail~] to be either nil or a ~
-                       quoted true list of Booleans.  See :DOC ec-call."
-                      (list (cons #\0 w)
-                            (cons #\1 (cond (dfs-out-check 0)
-                                            (dfs-in-check 1)
-                                            (t 2)))))))))
-
 (defmacro non-exec (x)
   (declare (xargs :guard t))
   `(prog2$ (throw-nonexec-error :non-exec ',x)
@@ -22570,6 +22396,181 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (declare (xargs :guard (state-p state)))
   (getpropc 'known-package-alist 'global-value))
+
+;  Ec-call
+
+#-acl2-loop-only
+(declaim (inline ec-call1-raw-dfs))
+
+#-acl2-loop-only
+(defun ec-call1-raw-dfs (x flg form n)
+
+; If flg is nil or x is a double-float, then return x.  Otherwise x should be a
+; representable rational (because x was produced by a df or df{i} expression),
+; and we return the double-float that represents x.
+
+; But what is the point of this function?
+
+; Ec-call presents a bit of an implementation challenge.  Recall that ec-call
+; invokes executable-counterpart (*1*) functions.  Also note that code
+; generated for *1* functions is designed to return ordinary objects, not
+; double-floats.  Yet ec-call invokes *1* functions, hence returns ordinary
+; objects where raw Lisp code might expect a double-float.
+
+; When a guard-verified function or program-mode function leads to evaluation
+; of an ec-call form in raw Lisp, the caller may expect double-float outputs.
+; So ec-call's expansions in raw Lisp need to make adjustments to the outputs
+; when double-floats are expected.  The :dfs-out argument of ec-call tells Lisp
+; when to convert rationals returned by a *1* function to double-floats.
+
+  (cond ((null flg) x)
+        ((typep x 'double-float) x)
+        (t (let ((val (and (rationalp x)
+                           (let ((val (to-df x)))
+                             (and (= val x)
+                                  val)))))
+             (or val
+                 (let ((*print-pretty* t))
+                   (error "Implementation error (please contact the ACL2 ~
+                           implementors):~%~s error:~%Form: ~s~%Value~a that ~
+                           does not represent a double-float:~%  ~s"
+                          'ec-call
+                          form
+                          (if n
+                              (format nil " (at position ~s)" n)
+                            "")
+                          x)))))))
+
+(defun qdfs-check (qdfs)
+
+; Qdfs might be nil, 'nil, or '(b1 ... bk) where each bi is Boolean.  Note that
+; 'nil is actually a special case of the last of these, where k=0.
+
+  (declare (xargs :guard t))
+  (or (null qdfs)
+      (and (true-listp qdfs)
+           (= (length qdfs) 2)
+           (eq (car qdfs) 'quote)
+           (boolean-listp (cadr qdfs)))))
+
+#-acl2-loop-only
+(defmacro ec-call1-raw (qdfs-in/qdfs-out x)
+
+; X is expected to be the argument of a call of ec-call.  Qdfs-in/qdfs-out is
+; expected to be either nil or a term of the form (cons qdfs-in qdfs-out),
+; where each of qdfs-in and qdfs-out is either nil or the quoted
+; :dfs-in/:dfs-out argument from an ec-call.
+
+  (mv-let (flg qdfs-in qdfs-out)
+    (cond ((equal qdfs-in/qdfs-out ''nil)
+           (mv t nil nil))
+          ((and (true-listp qdfs-in/qdfs-out)
+                (eq (car qdfs-in/qdfs-out) 'cons))
+           (mv t (cadr qdfs-in/qdfs-out) (caddr qdfs-in/qdfs-out)))
+          (t (mv nil nil nil)))
+    (cond
+     ((not (and flg
+                (true-listp x)
+                (symbolp (car x))
+                (qdfs-check qdfs-in)
+                (qdfs-check qdfs-out)))
+
+; This case is normally impossible, as enforced by translate.  However, it can
+; happen if we are not translating for execution; an example is (non-exec
+; (ec-call x)).  In that case we simply cause an error at execution time, as a
+; precaution, while fully expecting that we never actually hit this case.
+
+      `(er hard! 'ec-call1-raw
+           "Ill-formed call of ~x0, which is presumably not from the expansion of a call
+           of ~x1:~|~x2"
+           'ec-call1-raw
+           'ec-call
+           '(ec-call1-raw ,qdfs-in/qdfs-out ,x)))
+     (t
+      (let* ((dfs-in (and qdfs-in (member-eq t (cadr qdfs-in)) (cadr qdfs-in)))
+             (dfs-out (and qdfs-out (member-eq t (cadr qdfs-out)) (cadr qdfs-out)))
+             (fn (car x))
+             (*1*fn (*1*-symbol fn))
+             (*1*fn$inline (add-suffix (*1*-symbol (car x)) *inline-suffix*))
+             (*1*args (if dfs-in
+                          (loop for arg in (cdr x)
+                                as d in dfs-in
+                                collect
+                                (if d
+                                    `(rational ,arg)
+                                  arg))
+                        (cdr x)))
+             (form
+              `(cond (*safe-mode-verified-p*
+
+; We are presumably in a context where we know that evaluation will not lead to
+; an ill-guarded call in raw Lisp.  See *safe-mode-verified-p*.
+
+                      ,x)
+
+; Through Version_8.2 we had a single funcall below, where the first argument
+; depended on whether (fboundp ',*1*fn) or else (fboundp ',*1*fn$inline).  But
+; SBCL took a very long time to compile the function apply$-prim in
+; books/projects/apply-model-2/apply-prim.lisp (and perhaps other such
+; apply$-prim definitions), which we fixed by lifting those fboundp tests above
+; the calls of funcall.  This reduced the time (presumably virtually all of it
+; for compilation) from 1294.33 seconds to 8.12 seconds.
+
+                     ((fboundp ',*1*fn)
+                      (funcall ',*1*fn ,@*1*args))
+                     ((fboundp ',*1*fn$inline)
+                      (funcall
+; The following call of macro-function is a sanity check that could be
+; omitted.
+                       (assert$ (macro-function ',fn)
+                                ',*1*fn$inline)
+                       ,@*1*args))
+                     (t
+                      (error "Undefined function, ~s.  Please contact the ~
+                              ACL2 implementors."
+                             ',*1*fn)))))
+        (cond
+         ((null dfs-out) form)
+         ((null (cdr dfs-out)) ; hence dfs-out = (t)
+          `(ec-call1-raw-dfs ,form t ',x nil))
+         (t `(let ((lst (multiple-value-list ,form)))
+               (values-list
+                (loop for e in lst
+                      as flg in ',dfs-out
+                      as n from 0
+                      collect
+                      (ec-call1-raw-dfs e flg ',x n)))))))))))
+
+(defmacro ec-call1 (qdfs-in0 qdfs-out0 x)
+
+; We introduce ec-call1 inbetween the ultimate macroexpansion of an ec-call
+; form to a return-last form, simply because untranslate will produce (ec-call1
+; nil x) from (return-last 'ec-call1-raw nil x).
+
+  (let ((qdfs-in (if (null qdfs-in0) *nil* qdfs-in0))
+        (qdfs-out (if (null qdfs-out0) *nil* qdfs-out0)))
+    `(return-last 'ec-call1-raw
+                  ,(if (and (equal qdfs-in *nil*)
+                            (equal qdfs-out *nil*))
+                       *nil*
+                     `(cons ,qdfs-in ,qdfs-out))
+                  ,x)))
+
+(defmacro ec-call (&whole w x &key dfs-in dfs-out)
+  (declare (xargs :guard t))
+  (let ((dfs-in-check (qdfs-check dfs-in))
+        (dfs-out-check (qdfs-check dfs-out)))
+    (cond ((and dfs-in-check dfs-out-check)
+           `(ec-call1 ,dfs-in ,dfs-out ,x))
+          (t (illegal 'ec-call
+                      "The call~|~x0~|is illegal because the ~#1~[:dfs-in ~
+                       argument fails~/:dfs-out argument fails~/:dfs-in and ~
+                       :dfs-out arguments each fail~] to be either nil or a ~
+                       quoted true list of Booleans.  See :DOC ec-call."
+                      (list (cons #\0 w)
+                            (cons #\1 (cond (dfs-out-check 0)
+                                            (dfs-in-check 1)
+                                            (t 2)))))))))
 
 ;  Prin1
 

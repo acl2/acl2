@@ -4216,6 +4216,10 @@
 ; Keep this in sync with all-fnnames1, all-fnnames!, and
 ; all-fnnames1-invariant-risk.
 
+; This function collects into acc all function symbols that could be called in
+; raw Lisp, bypassing their *1* functions, in guard-verified code.  In
+; particular, we do not collect foo in (ec-call (foo ...)).
+
   (cond (flg ; x is a list of terms
          (cond ((null x) acc)
                (t (all-fnnames1-exec nil (car x)
@@ -4232,7 +4236,9 @@
                      (nvariablep (fargn x 3))
                      (not (fquotep (fargn x 3)))
                      (not (flambdap (ffn-symb (fargn x 3)))))
-                (all-fnnames1-exec t (fargs (fargn x 3)) acc))
+                (all-fnnames1-exec t
+                                   (fargs (fargn x 3))
+                                   acc))
                (t (all-fnnames1-exec t
                                      (fargs x)
                                      (add-to-set-eq (ffn-symb x) acc)))))
@@ -4241,6 +4247,11 @@
                             (add-to-set-eq (ffn-symb x) acc)))))
 
 (defmacro all-fnnames-exec (term)
+
+; This function returns a list of all function symbols that could be called in
+; raw Lisp, bypassing their *1* functions, in guard-verified code.  In
+; particular, we do not collect foo in (ec-call (foo ...)).
+
   `(all-fnnames1-exec nil ,term nil))
 
 (defun collect-guards-and-bodies (lst)
@@ -6062,8 +6073,8 @@
 (defun all-fnnames1-invariant-risk (flg x i wrld acc)
 
 ; Keep this in sync with all-fnnames1, all-fnnames1-exec, and all-fnnames!.
-; Also see the comment about all-fnnames1-exec in put-invariant-risk before
-; modifying this function.
+; Also see the comment about all-fnnames1-invariant-risk in put-invariant-risk
+; before modifying this function.
 
 ; This function collects into acc all function symbols whose calls, during
 ; evaluation of x, might lead to invariant-risk sorts of violations.  (Notice
@@ -6190,10 +6201,40 @@
                         (all-fnnames1-invariant-risk t bodies nil wrld nil)
                         wrld))))))))))
 
+; The following record collects information related to the use of lambda,
+; lambda$ and loop$ forms in defuns.  We document what the items are below.
+; But here we explain why we pack them together.  These items are extracted and
+; returned (ultimately) by chk-acceptable-defuns as part of its 2nd result, a
+; list of over 20 items.  When lambda objects were added, it would have been
+; natural for us to add these items to the list.  However, the number of
+; lambda-related items keeps growing and some user books call
+; chk-acceptable-defuns expecting the list to be of a certain length (whatever
+; it was when the book was created).  So we added one new item to
+; chk-acceptable-defuns list, this record, and changed the user books to expect
+; that new length.  And now we're free to collect additional information during
+; checking without having to mess with user books (unless they begin to use the
+; lambda information here).
+
+(defrec lambda-info
+  (loop$-recursion            ; T or NIL indicating that recursive calls of the
+                              ; (single) function being defined are allowed
+                              ; inside LOOP$ statements.  The function must
+                              ; be tame and return only one result!
+
+   new-lambda$-alist-pairs    ; Maps the obvious untranslated terms to their
+                              ; respective translations
+
+   new-loop$-alist-pairs      ; Maps untranslated loop$ statements to
+                              ; loop$-alist-entry records containing those
+                              ; translations after converting them from logic
+                              ; to runnable code.
+   )
+  nil)
+
 (defun defuns-fn-short-cut (loop$-recursion-checkedp
                             loop$-recursion
                             names docs pairs guards measures split-types-terms
-                            bodies non-executablep ctx wrld state)
+                            bodies lambda-info non-executablep ctx wrld state)
 
 ; This function is called by defuns-fn when the functions to be defined are
 ; :program.  It short cuts the normal put-induction-info and other such
@@ -6247,8 +6288,8 @@
                              'defuns-fn-short-cut)
    (er-progn
     (cond
-     ((and (null (cdr names))                                ; single function
-           (not (equal (car measures) *no-measure*))         ; explicit measure
+     ((and (null (cdr names))                        ; single function
+           (not (equal (car measures) *no-measure*)) ; explicit measure
            (not loop$-recursion)
            (not (ffnnamep-mod-mbe (car names) (car bodies)))) ; not recursive
 
@@ -6278,8 +6319,44 @@
                     names 'guard guards *t*
                     (putprop-x-lst2-unless
                      names 'split-types-term split-types-terms *t*
-                     wrld1)))))
-      (value (cons wrld2 nil))))))
+                     wrld1))))
+
+; We now store the lambda$-info into the lambda$-alist and the loop$-alist
+; world globals.  We don't store the loop$-recursion info because we know
+; loop$-recursion is nil here.  In order to keep this code as close as possible
+; to the :logic mode counterpart in defuns-fn1, we just copied the relevant
+; code and rename our current wrld2 to be wrld6 so we can proceed with
+; the defuns-fn1 code...
+
+           (wrld6a wrld2)
+           (lambda$-alist-wrld6a
+            (global-val 'lambda$-alist wrld6a))
+           (new-lambda$-alist-pairs (access lambda-info
+                                            lambda-info
+                                            :new-lambda$-alist-pairs))
+           (wrld6b
+            (if (subsetp-equal new-lambda$-alist-pairs
+                               lambda$-alist-wrld6a)
+                wrld6a
+                (global-set 'lambda$-alist
+                            (union-equal new-lambda$-alist-pairs
+                                         lambda$-alist-wrld6a)
+                            wrld6a)))
+           (loop$-alist-wrld6b
+            (global-val 'loop$-alist wrld6b))
+           (new-loop$-alist-pairs (access lambda-info
+                                          lambda-info
+                                          :new-loop$-alist-pairs))
+           (wrld6c
+            (if (subsetp-equal new-loop$-alist-pairs
+                               loop$-alist-wrld6b)
+                wrld6b
+                (global-set 'loop$-alist
+                            (union-equal new-loop$-alist-pairs
+                                         loop$-alist-wrld6b)
+                            wrld6b)))
+           )
+      (value (cons wrld6c nil))))))
 
 ; Now we develop the output for the defun event.
 
@@ -9173,8 +9250,9 @@
 ; would give the wrong answer when applying the untranslated (lambda$ (x) (+ 1
 ; x)).
 
+  (declare (ignore symbol-class))
   (cond
-   ((and (not (eq symbol-class :program))
+   ((and ; (not (eq symbol-class :program))
          (not (global-val 'boot-strap-flg wrld)))
     (let ((new-pairs
            (raw-lambda$s-to-lambdas
@@ -9255,7 +9333,7 @@
 
 (mutual-recursion
 
-(defun logic-code-to-runnable-code (already-in-mv-listp term wrld)
+(defun logic-code-to-runnable-code (already-in-mv-listp term rrl wrld)
 
 ; Note: This function used to be called ``twoify''.
 
@@ -9273,6 +9351,8 @@
 ; y z) versus (+ x (+ y z)), so we do not flatten +-nests -- both result in two
 ; calls of the machine's +.
 
+; Argument rrl is non-nil when we are to Remove Return-Last calls.
+
   (declare (xargs :guard (and (pseudo-termp term)
                               (plist-worldp wrld))))
   (cond ((variablep term) term)
@@ -9288,14 +9368,22 @@
          (cons (list 'lambda (lambda-formals (ffn-symb term))
                      (logic-code-to-runnable-code nil
                                                   (lambda-body (ffn-symb term))
+                                                  rrl
                                                   wrld))
-               (logic-code-to-runnable-code-lst (fargs term) wrld)))
+               (logic-code-to-runnable-code-lst (fargs term) rrl wrld)))
         ((eq (ffn-symb term) 'if)
-         `(if ,(logic-code-to-runnable-code nil (fargn term 1) wrld)
-              ,(logic-code-to-runnable-code nil (fargn term 2) wrld)
-            ,(logic-code-to-runnable-code nil (fargn term 3) wrld)))
+         `(if ,(logic-code-to-runnable-code nil (fargn term 1) rrl wrld)
+              ,(logic-code-to-runnable-code nil (fargn term 2) rrl wrld)
+            ,(logic-code-to-runnable-code nil (fargn term 3) rrl wrld)))
         ((eq (ffn-symb term) 'return-last)
-         (logic-code-to-runnable-code nil (fargn term 3) wrld))
+         (let ((arg3
+                (logic-code-to-runnable-code nil (fargn term 3) rrl wrld)))
+           (if rrl
+               arg3
+             (fcons-term* 'return-last
+                          (logic-code-to-runnable-code nil (fargn term 1) rrl wrld)
+                          (logic-code-to-runnable-code nil (fargn term 2) rrl wrld)
+                          arg3))))
         ((eq (ffn-symb term) 'do$)
 
 ; We use ec-call here in case stobjs are involved, following the use of ec-call
@@ -9304,7 +9392,7 @@
          (let* ((do$-stobjs-out (do$-stobjs-out (fargs term)))
                 (call `(ec-call (do$ ,@(logic-code-to-runnable-code-lst
                                         (fargs term)
-                                        wrld)))))
+                                        rrl wrld)))))
            (convert-to-dfs
             (if (cdr (do$-stobjs-out (fargs term)))
                 `(values-list ,call)
@@ -9318,7 +9406,7 @@
 ; have to transform its subterms.
 
          `(mv-list ,(fargn term 1)
-                   ,(logic-code-to-runnable-code t (fargn term 2) wrld)))
+                   ,(logic-code-to-runnable-code t (fargn term 2) rrl wrld)))
         (t (let* ((fn (ffn-symb term))
                   (stobjs-out (stobjs-out fn wrld))
                   (pair (assoc-eq fn *primitive-untranslate-alist*))
@@ -9352,7 +9440,7 @@
 ; the former rules out stobj creators.
                         (not (and (all-nils stobjs-out)
                                   (all-nils (stobjs-in fn wrld))))))
-                  (args (logic-code-to-runnable-code-lst (fargs term) wrld))
+                  (args (logic-code-to-runnable-code-lst (fargs term) rrl wrld))
                   (call (if pair ; hence not ec-call-p
                             (cons (cdr pair) args)
                           (let ((call0 (cons-with-hint fn args term)))
@@ -9365,12 +9453,12 @@
                `(mv-list ',(length stobjs-out) ,call))
               (t call))))))
 
-(defun logic-code-to-runnable-code-lst (terms wrld)
+(defun logic-code-to-runnable-code-lst (terms rrl wrld)
   (declare (xargs :guard (and (pseudo-term-listp terms)
                               (plist-worldp wrld))))
   (cond ((endp terms) nil)
-        (t (cons-with-hint (logic-code-to-runnable-code nil (car terms) wrld)
-                           (logic-code-to-runnable-code-lst (cdr terms) wrld)
+        (t (cons-with-hint (logic-code-to-runnable-code nil (car terms) rrl wrld)
+                           (logic-code-to-runnable-code-lst (cdr terms) rrl wrld)
                            terms)))))
 
 (defun authenticate-tagged-lambda$ (x state)
@@ -9521,20 +9609,16 @@
                    (DECLARE (IGNORABLE ,@formals))
                    ,(logic-code-to-runnable-code
                      nil
-                     (remove-guard-holders
-                      (or (cadr (assoc-keyword :guard
-                                               (cdr (assoc-eq 'xargs
-                                                              (cdr dcl)))))
-                          *t*)
-                      wrld)
+                     (or (cadr (assoc-keyword :guard
+                                              (cdr (assoc-eq 'xargs
+                                                             (cdr dcl)))))
+                         *t*)
+                     nil
                      wrld))
           `(LAMBDA ,formals
                    ,@(let ((d (remove-double-float-types (cdr dcl))))
                        (and d `((declare ,@d))))
-                   ,(logic-code-to-runnable-code
-                     nil
-                     (remove-guard-holders body wrld)
-                     wrld)))))))
+                   ,(logic-code-to-runnable-code nil body nil wrld)))))))
 
 (defun convert-tagged-loop$s-to-pairs (lst flg wrld)
 
@@ -9548,6 +9632,7 @@
                              :term (logic-code-to-runnable-code
                                     nil
                                     (fargn (car lst) 3)
+                                    t
                                     wrld)
                              :flg flg))
                  (convert-tagged-loop$s-to-pairs (cdr lst) flg wrld)))))
@@ -9589,6 +9674,7 @@
                  (equal (logic-code-to-runnable-code
                          nil
                          (fargn tkey 3)
+                         t
                          wrld)
                         val-term))
 
@@ -9623,6 +9709,7 @@
                   (logic-code-to-runnable-code
                    nil
                    (fargn tkey 3)
+                   t
                    wrld)
                   val-term))))))))
 
@@ -9700,8 +9787,9 @@
 ; possibility that the user has incorrectly counterfeited a translated loop$,
 ; we must check that the alleged translations are actually correct!
 
+  (declare (ignore symbol-class))
   (cond
-   ((and (not (eq symbol-class :program))
+   ((and ; (not (eq symbol-class :program))
          (not (global-val 'boot-strap-flg wrld)))
     (let* ((certify-book-info (f-get-global 'certify-book-info state))
            (new-pairs
@@ -10060,36 +10148,6 @@
 ;   (declare (xargs :loop$-recursion t))
 ;   (cond ((atom x) (my-scion '(lambda (x) (bar x)) x))
 ;         (t (loop$ for e in x collect (bar e)))))
-
-; The following record collects information related to the use of lambda,
-; lambda$ and loop$ forms in defuns.  We document what the items are below.
-; But here we explain why we pack them together.  These items are extracted and
-; returned (ultimately) by chk-acceptable-defuns as part of its 2nd result, a
-; list of over 20 items.  When lambda objects were added, it would have been
-; natural for us to add these items to the list.  However, the number of
-; lambda-related items keeps growing and some user books call
-; chk-acceptable-defuns expecting the list to be of a certain length (whatever
-; it was when the book was created).  So we added one new item to
-; chk-acceptable-defuns list, this record, and changed the user books to expect
-; that new length.  And now we're free to collect additional information during
-; checking without having to mess with user books (unless they begin to use the
-; lambda information here).
-
-(defrec lambda-info
-  (loop$-recursion            ; T or NIL indicating that recursive calls of the
-                              ; (single) function being defined are allowed
-                              ; inside LOOP$ statements.  The function must
-                              ; be tame and return only one result!
-
-   new-lambda$-alist-pairs    ; Maps the obvious untranslated terms to their
-                              ; respective translations
-
-   new-loop$-alist-pairs      ; Maps untranslated loop$ statements to
-                              ; loop$-alist-entry records containing those
-                              ; translations after converting them from logic
-                              ; to runnable code.
-   )
-  nil)
 
 ; We need some machinery about type-prescriptions, which was in defthm.lisp
 ; before April 2021, in support of xargs :type-prescription for defun.
@@ -11804,7 +11862,7 @@
       t ; loop$-recursion-checkp, because chk-acceptable-defuns has approved.
       (access lambda-info lambda-info :loop$-recursion)
       names docs pairs guards measures split-types-terms
-      bodies non-executablep ctx wrld state))
+      bodies lambda-info non-executablep ctx wrld state))
    (t
     (let ((ens (ens state))
           (big-mutrec (big-mutrec names)))
