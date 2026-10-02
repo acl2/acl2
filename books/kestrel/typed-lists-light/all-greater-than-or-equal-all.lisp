@@ -17,6 +17,8 @@
 
 ;; Checks that everything in X is >= everything in Y.
 (defund all->=-all (x y)
+  (declare (xargs :guard (and (rational-listp x)
+                              (rational-listp y))))
   (if (endp y)
       t
     (and (all->= x (first y))
