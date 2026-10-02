@@ -978,15 +978,21 @@
                              (c::read-object (c::objdesign-of-var var
                                                                   new-compst)
                                              new-compst)))
-             :enable (c::compustate-has-var-with-type-p
-                      c::read-object
-                      c::objdesign-of-var
-                      c::top-frame
-                      c::compustate-frames-number)
              :use ((:instance assoc-when-static-equivp
                               (var (c::ident-fix var))
                               (old-static (c::compustate->static old-compst))
-                              (new-static (c::compustate->static new-compst)))))
+                              (new-static (c::compustate->static new-compst)))
+                   objdesign-of-var-when-compustate-equivp
+                   (:instance c::objdesign-kind-of-objdesign-of-var
+                              (c::var var)
+                              (c::compst new-compst)))
+             :in-theory '(compustate-equivp
+                          c::compustate-has-var-with-type-p
+                          c::read-object
+                          c::scopep-of-compustate->static
+                          c::objdesign-static->name-of-objdesign-of-var
+                          member-equal
+                          (:e equal)))
            (defruled compustate-has-var-with-type-p-when-compustate-equivp
              (implies (and (compustate-equivp old-compst new-compst)
                            (not (equal (c::ident-fix var) ',old-cname))
