@@ -1340,3 +1340,59 @@
 ; the length of the vector of dimensions is inferred as the bound variable.
 (test-check-top-expr
  "(i-fn ($n) (fn ((x [Int $n])) (iota x)))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; reify-dim : (Pi ($d) Int)
+
+; The type has no function type:
+; the only application is the ispace application to a dimension
+; (not a shape), yielding an integer;
+; an application to an expression is rejected.
+(test-check-top-expr
+ "(i-app reify-dim 3)")
+(test-check-top-expr-fail
+ "(i-app reify-dim (dims 3))")
+(test-check-top-expr-fail
+ "(reify-dim 3)")
+
+; The reified dimension may be a bound dimension variable,
+; or the witness of an unboxing
+; (equivalently to the length of the unboxed vector).
+(test-check-top-expr
+ "(i-fn ($n) (+ (i-app reify-dim $n) 1))")
+(test-check-top-expr
+ "(unbox ($d v (box (3) [1 2 3] (Sigma ($e) (A Int $e))))
+   (i-app reify-dim $d))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; reify-shape : (Pi (@s) (Sigma ($r) [Int $r]))
+
+; The type has no function type:
+; the only application is the ispace application to a shape
+; (not a dimension), yielding a box;
+; an application to an expression is rejected.
+(test-check-top-expr
+ "(i-app reify-shape (dims 2 3))")
+(test-check-top-expr-fail
+ "(i-app reify-shape 3)")
+(test-check-top-expr-fail
+ "(reify-shape [2 3])")
+
+; The box contains the vector of the dimensions of the shape,
+; whose length (the rank) is the witness:
+; after unboxing, the vector can be summed,
+; its length can be inferred (compare with iota),
+; but it has no head, since the rank may be 0.
+(test-check-top-expr
+ "(unbox ($r v (i-app reify-shape (dims 2 3))) (sum v))")
+(test-check-top-expr
+ "(unbox ($r v (i-app reify-shape (dims 2 3))) (length v))")
+(test-check-top-expr-fail
+ "(unbox ($r v (i-app reify-shape (dims 2 3))) (head v))")
+
+; The reified shape may be a bound shape variable,
+; whose rank is thus obtained.
+(test-check-top-expr
+ "(i-fn (@s) (unbox ($r v (i-app reify-shape @s)) (length v)))")
