@@ -40,17 +40,17 @@
 (defthm all-<=-all-of-cdr-arg1
   (implies (all-<=-all x y)
            (all-<=-all (cdr x) y))
-  :hints (("Goal" :in-theory (enable all-<=-all))))
+  :hints (("Goal" :in-theory (enable all-<=-all all-<=))))
 
 (defthm all-<=-all-when-not-consp-arg1-cheap
   (implies (not (consp x))
            (all-<=-all x y))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable all-<=-all))))
+  :hints (("Goal" :in-theory (enable all-<=-all all-<=))))
 
 (defthmd <=-of-car-and-car-when-all-<=-all
   (implies (and (all-<=-all x y)
                 (consp x)
                 (consp y))
            (<= (car x) (car y)))
-  :hints (("Goal" :in-theory (enable all-<=-all))))
+  :hints (("Goal" :in-theory (enable all-<=-all all-<=))))
