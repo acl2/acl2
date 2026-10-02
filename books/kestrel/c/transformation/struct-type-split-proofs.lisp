@@ -884,7 +884,13 @@
        (event
         `(define compustate-equivp ((old-compst c::compustatep)
                                     (new-compst c::compustatep))
-           :returns (yes/no booleanp)
+           :returns (yes/no booleanp
+                            :hints
+                            (("Goal"
+                              :in-theory
+                              '(booleanp-compound-recognizer
+                                compustate-equivp
+                                (:t c::compustate-has-static-var-with-type-p)))))
            (and (static-equivp (c::compustate->static old-compst)
                                (c::compustate->static new-compst))
                 (equal (c::compustate->frames old-compst)
@@ -897,7 +903,22 @@
                  ',newl-cname (c::type-struct ',newl-ctag) new-compst)
                 (c::compustate-has-static-var-with-type-p
                  ',newr-cname (c::type-struct ',newr-ctag) new-compst))
-           :hooks (:fix)
+           :guard-simplify :limited
+           :guard-hints
+           (("Goal"
+             :in-theory '(c::scopep-of-compustate->static
+                          c::return-type-of-type-struct
+                          (:e c::identp))))
+           :hooks
+           ((:fix
+             :hints
+             (("Goal"
+               :in-theory
+               '(compustate-equivp
+                 c::compustate->static$inline-of-compustate-fix-x
+                 c::compustate->frames$inline-of-compustate-fix-x
+                 c::compustate->heap$inline-of-compustate-fix-x
+                 c::compustate-has-static-var-with-type-p-of-compustate-fix-compst)))))
            ///
            (defruled struct-value-equivp-when-compustate-equivp
              (b* ((old-val
@@ -930,8 +951,12 @@
                     struct-value-equivp-when-static-equivp
                     (old-static (c::compustate->static old-compst))
                     (new-static (c::compustate->static new-compst))))
-             :enable
-             c::assoc-static-when-compustate-has-static-var-with-type-p)
+             :in-theory
+             '(compustate-equivp
+               c::scopep-of-compustate->static
+               c::assoc-static-when-compustate-has-static-var-with-type-p
+               (:e c::ident-fix)
+               (:e c::identp)))
            (defruled objdesign-of-var-when-compustate-equivp
              (implies (and (compustate-equivp old-compst new-compst)
                            (not (equal (c::ident-fix var) ',old-cname))
@@ -939,13 +964,15 @@
                            (not (equal (c::ident-fix var) ',newr-cname)))
                       (equal (c::objdesign-of-var var old-compst)
                              (c::objdesign-of-var var new-compst)))
-             :enable (c::objdesign-of-var
-                      c::top-frame
-                      c::compustate-frames-number)
              :use (:instance assoc-when-static-equivp
                              (var (c::ident-fix var))
                              (old-static (c::compustate->static old-compst))
-                             (new-static (c::compustate->static new-compst))))
+                             (new-static (c::compustate->static new-compst)))
+             :in-theory '(compustate-equivp
+                          c::objdesign-of-var
+                          c::top-frame
+                          c::compustate-frames-number
+                          c::scopep-of-compustate->static))
            (defruled read-object-when-compustate-equivp
              (implies (and (compustate-equivp old-compst new-compst)
                            (not (equal (c::ident-fix var) ',old-cname))
@@ -960,15 +987,21 @@
                              (c::read-object (c::objdesign-of-var var
                                                                   new-compst)
                                              new-compst)))
-             :enable (c::compustate-has-var-with-type-p
-                      c::read-object
-                      c::objdesign-of-var
-                      c::top-frame
-                      c::compustate-frames-number)
              :use ((:instance assoc-when-static-equivp
                               (var (c::ident-fix var))
                               (old-static (c::compustate->static old-compst))
-                              (new-static (c::compustate->static new-compst)))))
+                              (new-static (c::compustate->static new-compst)))
+                   objdesign-of-var-when-compustate-equivp
+                   (:instance c::objdesign-kind-of-objdesign-of-var
+                              (c::var var)
+                              (c::compst new-compst)))
+             :in-theory '(compustate-equivp
+                          c::compustate-has-var-with-type-p
+                          c::read-object
+                          c::scopep-of-compustate->static
+                          c::objdesign-static->name-of-objdesign-of-var
+                          member-equal
+                          (:e equal)))
            (defruled compustate-has-var-with-type-p-when-compustate-equivp
              (implies (and (compustate-equivp old-compst new-compst)
                            (not (equal (c::ident-fix var) ',old-cname))
@@ -980,15 +1013,15 @@
                              (c::compustate-has-var-with-type-p var
                                                                 type
                                                                 old-compst)))
-             :enable (c::compustate-has-var-with-type-p
-                      c::objdesign-of-var
-                      c::read-object
-                      c::top-frame
-                      c::compustate-frames-number)
-             :use (:instance assoc-when-static-equivp
-                             (var (c::ident-fix var))
-                             (old-static (c::compustate->static old-compst))
-                             (new-static (c::compustate->static new-compst)))))))
+             :use (objdesign-of-var-when-compustate-equivp
+                   (:instance read-object-when-compustate-equivp
+                              (type (c::type-of-value
+                                     (c::read-object
+                                      (c::objdesign-of-var var old-compst)
+                                      old-compst)))))
+             :in-theory '(c::compustate-has-var-with-type-p
+                          c::type-fix-when-typep
+                          c::typep-of-type-of-value)))))
     (retok event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1040,11 +1073,23 @@
                             old-eval
                             (equal (c::type-of-value old-val)
                                    (c::type-fix type)))))
-            :enable (c::exec-expr
-                     c::exec-ident
-                     c::compustate-has-var-with-type-p)
             :use (objdesign-of-var-when-compustate-equivp
-                  read-object-when-compustate-equivp))
+                  read-object-when-compustate-equivp)
+            :in-theory '(c::exec-expr
+                         c::exec-ident
+                         c::compustate-has-var-with-type-p
+                         c::return-type-of-expr-ident
+                         c::expr-ident->get-of-expr-ident
+                         c::exec-ident-of-ident-fix-id
+                         c::expr-value->value-of-expr-value
+                         c::type-of-value-of-value-fix-val
+                         c::errorp-of-error
+                         compustate-equivp-of-compustate-fix-old-compst
+                         compustate-equivp-of-compustate-fix-new-compst
+                         (:t c::expr-value)
+                         mv-nth
+                         iff
+                         (:e equal)))
           (defruled expr-const-congruence-under-compustate-equivp
             (b* ((expr (c::expr-const const))
                  ((mv old-eval old-compst1)
@@ -1065,13 +1110,15 @@
                             (compustate-equivp old-compst1 new-compst1)
                             old-eval
                             (equal (c::type-of-value old-val) type))))
-            :enable (c::exec-expr
-                     c::exec-const
-                     c::eval-const
-                     c::eval-iconst
-                     c::check-iconst
-                     c::type-of-value)
-            :disable ((:e tau-system)))
+            :use (:instance expr-const-congruence (compst old-compst))
+            :in-theory '(c::exec-expr
+                         c::return-type-of-expr-const
+                         c::expr-const->get-of-expr-const
+                         compustate-equivp-of-compustate-fix-old-compst
+                         compustate-equivp-of-compustate-fix-new-compst
+                         mv-nth
+                         iff
+                         (:e equal)))
           (defruled expr-binary-pure-strict-congruence-under-compustate-equivp
             (b* ((old (c::expr-binary op old-arg1 old-arg2))
                  (new (c::expr-binary op new-arg1 new-arg2))
@@ -1125,20 +1172,37 @@
                                                         '(:shl :shr))
                                           (c::promote-type type1))
                                          (t (c::type-sint)))))))
+            :use (:instance expr-binary-pure-strict-congruence
+                            (compst old-compst)
+                            (new-arg1 old-arg1)
+                            (new-arg2 old-arg2)
+                            (new-fenv old-fenv))
             :expand ((c::exec-expr
                       (c::expr-binary op old-arg1 old-arg2)
                       old-compst old-fenv limit)
                      (c::exec-expr
                       (c::expr-binary op new-arg1 new-arg2)
                       new-compst new-fenv limit))
-            :disable ((:e c::type-sint))
-            :enable (c::binop-purep
-                     c::binop-strictp
-                     c::exec-binary-strict-pure
-                     c::eval-binary-strict-pure
-                     c::not-errorp-when-expr-valuep
-                     c::apconvert-expr-value-when-not-array
-                     c::value-kind-not-array-when-value-integerp)))))
+            :in-theory '(c::return-type-of-expr-binary
+                         c::expr-binary->op-of-expr-binary
+                         c::expr-binary->arg1-of-expr-binary
+                         c::expr-binary->arg2-of-expr-binary
+                         c::exec-expr-of-expr-fix-e
+                         c::expr-purep-of-expr-fix-expr
+                         c::binop-purep-of-binop-fix-op
+                         c::binop-strictp-of-binop-fix-op
+                         c::exec-binary-strict-pure-of-binop-fix-op
+                         c::errorp-of-error
+                         c::exec-binary-strict-pure
+                         c::apconvert-expr-value-when-not-array
+                         c::type-nonchar-integerp-of-type-of-value
+                         c::value-kind-not-array-when-value-integerp
+                         c::not-errorp-when-expr-valuep
+                         c::expr-valuep-of-expr-value-fix
+                         c::expr-value->value$inline-of-expr-value-fix-x
+                         mv-nth
+                         iff
+                         (:e equal))))))
     (retok events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1165,11 +1229,16 @@
                               ,compst)
                              (c::objdesign-of-var ',cname ,compst))
                             (c::compustate-fix ,compst))))
-        :enable
-        (c::exec-expr
-         c::exec-ident
-         compustate-equivp
-         c::objdesign-of-var-when-compustate-has-static-var-with-type-p)))))
+        :in-theory
+        '(c::exec-expr
+          c::exec-ident
+          compustate-equivp
+          c::objdesign-of-var-when-compustate-has-static-var-with-type-p
+          (:e c::expr-ident)
+          (:e c::expr-kind)
+          (:e c::expr-ident->get)
+          (:e c::objdesign-static)
+          (:e equal))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1216,6 +1285,16 @@
                              'newlp
                            'newrp))
                    'struct-value-))
+       (old-acc (packn-pos (list 'struct-value-old- (c::ident->name cmem))
+                          'struct-value-))
+       (new-acc (packn-pos (list 'struct-value- new '- (c::ident->name cmem))
+                          'struct-value-))
+       (valuep-of-old-acc (packn-pos (list 'valuep-of- old-acc) 'struct-value-))
+       (valuep-of-new-acc (packn-pos (list 'valuep-of- new-acc) 'struct-value-))
+       (type-of-value-of-old-acc
+        (packn-pos (list 'type-of-value-of- old-acc) 'struct-value-))
+       (type-of-value-of-new-acc
+        (packn-pos (list 'type-of-value-of- new-acc) 'struct-value-))
        (event
         `(defruled ,thm-name
            (b* ((old-expr (c::expr-member (c::expr-ident ',old-cname) ',cmem))
@@ -1242,17 +1321,44 @@
                     (c::exec-expr ',(c::expr-member (c::expr-ident new-cname)
                                                     cmem)
                                   new-compst new-fenv limit))
-           :enable (exec-old-struct
-                    ,exec-new-struct
-                    c::not-errorp-when-expr-valuep
-                    c::not-errorp-when-valuep
-                    c::exec-member
-                    c::apconvert-expr-value
-                    struct-value-equivp
-                    value-kind-when-struct-value-oldp
-                    ,value-kind-when-struct-value-newp
-                    ,value-struct-read-mem-when-struct-value-oldp
-                    ,value-struct-read-mem-when-struct-value-newp)
+           :in-theory '(exec-old-struct
+                        ,exec-new-struct
+                        c::not-errorp-when-expr-valuep
+                        c::not-errorp-when-valuep
+                        c::exec-member
+                        c::apconvert-expr-value-when-not-array
+                        struct-value-equivp
+                        value-kind-when-struct-value-oldp
+                        ,value-kind-when-struct-value-newp
+                        ,value-struct-read-mem-when-struct-value-oldp
+                        ,value-struct-read-mem-when-struct-value-newp
+                        ,valuep-of-old-acc
+                        ,valuep-of-new-acc
+                        ,type-of-value-of-old-acc
+                        ,type-of-value-of-new-acc
+                        c::expr-value->value-of-expr-value
+                        c::expr-value-fix-when-expr-valuep
+                        c::expr-valuep-of-expr-value
+                        c::value-kind$inline-of-value-fix-x
+                        c::value-struct-read-of-value-fix-struct
+                        c::value-fix-when-valuep
+                        c::type-of-value-of-value-fix-val
+                        compustate-equivp-of-compustate-fix-old-compst
+                        compustate-equivp-of-compustate-fix-new-compst
+                        c::errorp-of-error
+                        car-cons
+                        cdr-cons
+                        mv-nth
+                        zp
+                        (:t c::expr-value)
+                        (:e c::expr-ident)
+                        (:e c::expr-member)
+                        (:e c::expr-kind)
+                        (:e c::expr-member->target)
+                        (:e c::expr-member->name)
+                        (:e equal)
+                        (:e binary-+)
+                        (:e <))
            :prep-lemmas
            ((defruled lemma
               (b* ((old-expr
@@ -1264,7 +1370,19 @@
               :expand (c::exec-expr ',(c::expr-member (c::expr-ident old-cname)
                                                       cmem)
                                     old-compst old-fenv limit)
-              :enable c::exec-expr))))
+              :in-theory '(c::exec-expr
+                           c::errorp-of-error
+                           mv-nth
+                           zp
+                           (:e c::expr-ident)
+                           (:e c::expr-member)
+                           (:e c::expr-kind)
+                           (:e c::expr-member->target)
+                           (:e c::expr-member->name)
+                           (:e c::expr-ident->get)
+                           (:e equal)
+                           (:e binary-+)
+                           (:e <))))))
        ((erp events)
         (stsp-exec-mem-eq (cdr mems) (cdr types) lmems
                           old-name newl-name newr-name)))
