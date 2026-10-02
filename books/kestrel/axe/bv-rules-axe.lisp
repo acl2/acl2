@@ -1469,7 +1469,7 @@
 ;;            :in-theory (enable BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT))))
 
 ;todo: make rules like this for other ops!
-(defthmd bvsx-too-high-axe
+(defthmd bvsx-when-unsigned-byte-p-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (< xsize old-size)
                 (<= old-size new-size)
