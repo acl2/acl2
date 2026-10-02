@@ -1333,7 +1333,19 @@
               :expand (c::exec-expr ',(c::expr-member (c::expr-ident old-cname)
                                                       cmem)
                                     old-compst old-fenv limit)
-              :enable c::exec-expr))))
+              :in-theory '(c::exec-expr
+                           c::errorp-of-error
+                           mv-nth
+                           zp
+                           (:e c::expr-ident)
+                           (:e c::expr-member)
+                           (:e c::expr-kind)
+                           (:e c::expr-member->target)
+                           (:e c::expr-member->name)
+                           (:e c::expr-ident->get)
+                           (:e equal)
+                           (:e binary-+)
+                           (:e <))))))
        ((erp events)
         (stsp-exec-mem-eq (cdr mems) (cdr types) lmems
                           old-name newl-name newr-name)))
