@@ -5922,8 +5922,7 @@
 
 (defthm sha1-loop-hack2
   (implies (and (not (bvlt 31 y x))
-                (bvlt 31 4 x)
-                (not (bvlt 31 y x)))
+                (bvlt 31 4 x))
            (bvlt 31 (bvplus 31 y (bvuminus 31 x)) 2147483644))
   :hints (("Goal" :in-theory (e/d (bvplus bvmod bvchop-of-sum-cases
                                           bvuminus

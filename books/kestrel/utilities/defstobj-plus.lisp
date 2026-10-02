@@ -96,7 +96,7 @@
                  ;; is (nth n l) here okay (not a variable)?
                  ;(type-claim-for-nth-n-l (translate-declaration-to-guard-gen element-type '(nth n l) t nil))
                  (length-fn (defstobj-fnname name :length :array renaming))
-                 (resize-fn (defstobj-fnname name :resize :array renaming))
+                 (resize-fn (defstobj-fnname name :resize :array renaming)) ; todo: what if not resizable?
                  (accessor-fn (defstobj-fnname name :accessor :array renaming))
                  (updater-fn (defstobj-fnname name :updater :array renaming))
                  ;; todo: suppress these if they are 't:
@@ -340,11 +340,13 @@
          (type (assoc-keyword-with-default :type keyword-value-list t))
          (type-kind (if (consp type) (car type) type)))
     (cond
-     ((eq 'array type-kind)
+     ((eq 'array type-kind) ; ex: (array integer (10000))
       (let* ((initial-value (assoc-keyword-with-default :initially keyword-value-list nil))
              (resizable (assoc-keyword-with-default :resizable keyword-value-list nil))
              (element-type (cadr type))
              (element-type-pred (type-spec-to-name element-type 'element-type))
+             (parenthesized-length (caddr type))
+             (length-item (car parenthesized-length)) ; todo: what if ill-formed? ; this may be a number or the name of a defined constant
              (nil-obviously-satisfies-element-typep (and (not (eq 'element-type element-type-pred)) ; todo: perhaps use the result of translate-declaration-to-guard-gen here?
                                                          (nil-satisfies-predp element-type-pred state)))
              ;; is (nth n l) here okay (not a variable)?
@@ -505,7 +507,7 @@
                                   :in-theory (e/d (,top-recognizer ,accessor-fn ,length-fn)
                                                   (,(pack$ element-type-pred '-of-nth-when- recognizer))))))))
 
-              ,@(and resizable
+              ,@(if resizable
                      `(;; Helper theorem:
                        (defthm ,(pack$ recognizer '-of-resize-list)
                          (implies (and (,recognizer lst)
@@ -549,8 +551,21 @@
                                          (if (< i new-size)
                                              (,updater-fn i v (,resize-fn new-size ,stobj-name))
                                            (,resize-fn new-size ,stobj-name))))
-                         :hints (("Goal" :in-theory (enable ,updater-fn ,resize-fn ,length-fn))))
-                       ))
+                         :hints (("Goal" :in-theory (enable ,updater-fn ,resize-fn ,length-fn)))))
+                  `(;; The length function returns a constant (since the array is not resizable).
+                    ;; This may help if the rule below is disabled.
+                    (defthm ,(pack$ length-fn '-linear)
+                      (implies (,top-recognizer ,stobj-name)
+                               (equal (,length-fn ,stobj-name)
+                                      ,length-item))
+                      :rule-classes :linear
+                      :hints (("Goal" :in-theory (enable ,length-fn))))
+
+                    ;; Not clear whether this should be enabled by default, as these are 2 ways to talk about the same quantity.
+                    (defthm ,(pack$ length-fn '-becomes-constant) ; improve name?
+                      (implies (,top-recognizer ,stobj-name)
+                               (equal (,length-fn ,stobj-name)
+                                      ,length-item)))))
               ,@(interaction-theorems-for-array-field all-field-infos 0 stobj-name renaming field-num updater-fn resize-fn)
               )
             ;; names:
