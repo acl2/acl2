@@ -1462,3 +1462,78 @@
 ; The type and shape may be bound variables.
 (test-check-top-expr
  "(t-fn (&t) (i-fn (@s) (i-app (t-app undefined &t) @s)))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The monomorphic primitive operations, from + to bool->f (see primop-types),
+; have function types between base types, without binders:
+; there is no inference, just rank-polymorphic application (see check-app).
+; We test representatives of each group of operations.
+
+; Integer arithmetic, on scalars,
+; and lifted over the frames of the arguments
+; (a vector and a scalar; a matrix and a vector, whose frame is a prefix);
+; the frames must agree.
+(test-check-top-expr
+ "(+ 1 2)")
+(test-check-top-expr
+ "(+ [1 2] 3)")
+(test-check-top-expr
+ "(+ [[1 2] [3 4]] [10 20])")
+(test-check-top-expr-fail
+ "(+ [1 2] [1 2 3])")
+
+; Currying: a partial application is a function,
+; possibly lifted over a frame, and applied to the remaining argument;
+; an application to more arguments than inputs is rejected.
+(test-check-top-expr
+ "(+ 1)")
+(test-check-top-expr
+ "((+ 1) 2)")
+(test-check-top-expr
+ "((+ [1 2]) 10)")
+(test-check-top-expr-fail
+ "(+ 1 2 3)")
+
+; The arguments must have the base types of the inputs:
+; integer and float operations are distinct.
+(test-check-top-expr-fail
+ "(+ 1 #t)")
+(test-check-top-expr-fail
+ "(+ 1.5 2)")
+(test-check-top-expr
+ "(f.+ 1.5 2.5)")
+(test-check-top-expr-fail
+ "(f.+ 1 2)")
+
+; Unary operations, on scalars and lifted.
+(test-check-top-expr
+ "(bit-not 5)")
+(test-check-top-expr
+ "(not [#t #f])")
+(test-check-top-expr
+ "(sqrt 2.0)")
+
+; Relational operations yield booleans, also when lifted.
+(test-check-top-expr
+ "(< 1 2)")
+(test-check-top-expr
+ "(< [1 2 3] 2)")
+(test-check-top-expr
+ "(f.< 1.0 2.0)")
+
+; Boolean operations.
+(test-check-top-expr
+ "(and #t #f)")
+(test-check-top-expr
+ "(and [#t #f] #t)")
+
+; Conversions, whose results have the converted types.
+(test-check-top-expr
+ "(i->f 3)")
+(test-check-top-expr
+ "(+ (truncate 2.5) 1)")
+(test-check-top-expr
+ "(+ (bool->i #t) 1)")
+(test-check-top-expr-fail
+ "(+ (i->f 3) 1)")
