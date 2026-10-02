@@ -53,16 +53,15 @@
 
 ; rename "-monotone"?
 (defthm all-<-transitive
-  (implies (and (all-< lst bound2)
-                (<= bound2 bound))
+  (implies (and (all-< lst free)
+                (<= free bound))
            (all-< lst bound))
   :hints (("Goal" :in-theory (enable all-<))))
 
 ;rename monotone?
 (defthm all-<-transitive-free-2
   (implies (and (<= free bound)
-                (all-< l free)
-                (rationalp free))
+                (all-< l free))
            (all-< l bound))
   :hints (("Goal" :in-theory (enable all-<))))
 
