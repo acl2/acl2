@@ -1196,3 +1196,53 @@
  "(i-fn ($n) (head (i-app iota/static (dims (+ 1 $n)))))")
 (test-check-top-expr-fail
  "(i-fn ($n) (head (i-app iota/static (dims $n))))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; reduce : (Forall (&t)
+;           (Pi ($d @s)
+;            (-> ((-> ([&t @s] [&t @s]) [&t @s]) [&t (+ 1 $d) @s]) [&t @s])))
+
+; OBJECTIVE: as for append, the inference fails for
+; both the n-ary application and the unary application to the function,
+; because the dimension $d occurs only in the second input type.
+(test-check-top-expr-fail
+ "(reduce + [1 2 3])")
+(test-check-top-expr-fail
+ "((reduce +) [1 2 3])")
+
+; The fully explicit instantiation is accepted,
+; with a primitive or a lambda abstraction as the function:
+; the n-ary function type of the latter is equivalent to
+; the curried function type in the type of reduce.
+(test-check-top-expr
+ "(@reduce (Int) (2 []) + [1 2 3])")
+(test-check-top-expr
+ "(@reduce (Int) (2 []) (fn ((x Int) (y Int)) (+ x y)) [1 2 3])")
+
+; With the type and the dimension explicit,
+; the shape is inferred from the function argument (see type-match):
+; the empty shape from a function on scalars,
+; and the shape [2] from a function on vectors of length 2,
+; in which case the array must be a matrix with rows of that length;
+; the function must operate on the element type.
+(test-check-top-expr
+ "(((i-app (t-app reduce Int) 2) +) [1 2 3])")
+(test-check-top-expr
+ "(((i-app (t-app reduce Int) 1) (fn ((x [Int 2]) (y [Int 2])) (+ x y)))
+   [[1 2] [3 4]])")
+(test-check-top-expr-fail
+ "(((i-app (t-app reduce Int) 1) (fn ((x [Int 2]) (y [Int 2])) (+ x y)))
+   [[1 2 3] [4 5 6]])")
+(test-check-top-expr-fail
+ "(((i-app (t-app reduce Int) 2) and) [1 2 3])")
+
+; Under an ispace binder, with the dimension explicit:
+; a vector of length (+ 1 $n) is reduced,
+; but not one of length $n, which may be empty.
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int (+ 1 $n)]))
+    (((i-app (t-app reduce Int) $n) +) x)))")
+(test-check-top-expr-fail
+ "(i-fn ($n) (fn ((x [Int $n]))
+    (((i-app (t-app reduce Int) $n) +) x)))")
