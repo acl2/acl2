@@ -1396,3 +1396,36 @@
 ; whose rank is thus obtained.
 (test-check-top-expr
  "(i-fn (@s) (unbox ($r v (i-app reify-shape @s)) (length v)))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; trace : (Forall (&t &r) (Pi (@s @q) (-> ([&t @s] [&r @q]) [&r @q])))
+
+; OBJECTIVE: as for append, the inference fails for
+; both the n-ary application and the unary application to the first argument,
+; because the type and shape of the second argument
+; occur only in the second input type.
+(test-check-top-expr-fail
+ "(trace [1 2] #t)")
+(test-check-top-expr-fail
+ "((trace [1 2]) #t)")
+
+; The fully explicit instantiation is accepted,
+; and its result, which has the type of the second argument,
+; is used by further inference.
+(test-check-top-expr
+ "(@trace (Int Bool) ([2] []) [1 2] #t)")
+(test-check-top-expr
+ "(length (@trace (Int Int) ([] [3]) 0 [1 2 3]))")
+
+; With both shapes instantiated as empty,
+; the application is lifted over the frames of the arguments,
+; which must agree.
+(test-check-top-expr
+ "(@trace (Int Int) ([] []) [1 2] [3 4])")
+(test-check-top-expr-fail
+ "(@trace (Int Int) ([] []) [1 2] [3 4 5])")
+
+; The types and shapes may be bound variables.
+(test-check-top-expr
+ "(t-fn (&t) (i-fn (@s) (fn ((x (A &t @s))) (@trace (&t Int) (@s []) x 0))))")
