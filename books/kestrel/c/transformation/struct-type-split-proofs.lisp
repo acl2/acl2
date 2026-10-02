@@ -1229,11 +1229,16 @@
                               ,compst)
                              (c::objdesign-of-var ',cname ,compst))
                             (c::compustate-fix ,compst))))
-        :enable
-        (c::exec-expr
-         c::exec-ident
-         compustate-equivp
-         c::objdesign-of-var-when-compustate-has-static-var-with-type-p)))))
+        :in-theory
+        '(c::exec-expr
+          c::exec-ident
+          compustate-equivp
+          c::objdesign-of-var-when-compustate-has-static-var-with-type-p
+          (:e c::expr-ident)
+          (:e c::expr-kind)
+          (:e c::expr-ident->get)
+          (:e c::objdesign-static)
+          (:e equal))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
