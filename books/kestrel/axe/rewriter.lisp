@@ -1158,7 +1158,7 @@
                                         work-hard-when-instructedp
                                         tag limits state)
   (declare (xargs :mode :program
-                  :guard (and (rule-limitsp limits) ;todo: add more guard conjuncts
+                  :guard (and ;;todo: add more guard conjuncts
                               (maybe-bounded-memoizationp memoization dag-len)
                               ;; For soundness, we should not have both memoization and a non-nil internal-context-array!
                               ;; We could consider memoizing per node, or using a memoization for nodes that have no context.

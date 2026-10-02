@@ -98,7 +98,7 @@
                        (pseudo-termp (farg1 x))))
          ;; (:enable ...fns-or-runes...)
          (:enable (and (true-listp (fargs x))
-                       (true-listp (fargs x)) ; todo: strengthen?
+                       ;; todo: strengthen?
                        ))
          (:direct (null (cdr x)))
          (otherwise nil))))

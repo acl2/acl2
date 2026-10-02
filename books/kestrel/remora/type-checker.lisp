@@ -1896,7 +1896,9 @@
           ((ok types) (var+type?-list->type-list-or-err atom.params))
           ((unless (check-type-list types senv)) (reserr nil))
           ((ok types) (senv-expand-type-list types senv))
-          ((ok senv) (senv-add-vars+types atom.params senv))
+          ((ok senv)
+           (senv-add-vars+types (var+type?-list-set-types types atom.params)
+                                senv))
           ((ok (type+expr be)) (check-expr atom.body senv)))
        (make-type+atom
         :type (make-type-funn :in types :out be.type)
