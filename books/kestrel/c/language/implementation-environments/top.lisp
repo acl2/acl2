@@ -50,7 +50,8 @@
    (xdoc::p
     "We start by capturing some aspects of the C implementation environment.
      More will be added in the future."))
-  :order-subtopics (uchar-formats
+  :order-subtopics (dialects
+                    uchar-formats
                     signed-formats
                     schar-formats
                     char-formats
