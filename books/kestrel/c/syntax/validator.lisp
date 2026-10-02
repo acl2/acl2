@@ -82,6 +82,14 @@
      an extension of the disambiguation tables used by the disambiguator.
      See @(tsee valid-table).")
    (xdoc::p
+    "Each translation unit of a translation ensemble
+     is validated independently, starting from an initial validation table.
+     The information about identifiers with external linkage
+     and the type completions of the translation units
+     are then merged,
+     checking that they are consistent across translation units.
+     See @(tsee valid-trans-ensemble).")
+   (xdoc::p
     "We use "
     (xdoc::seetopic "acl2::error-value-tuples" "error-value tuples")
     " to handle errors in the validator.")
