@@ -30,24 +30,10 @@
 
 ; move these (but need bitnot):
 
-(defthm getbit-of-+-of-expt-same-arg1
-  (implies (and (natp n)
-                (integerp x))
-           (equal (getbit n (+ (expt 2 n) x))
-                  (bitnot (getbit n x))))
-  :hints (("Goal" :in-theory (enable getbit-of-+))))
-
 (defthm getbit-of-+-of---of-expt-same-arg2
   (implies (and (natp n)
                 (integerp x))
            (equal (getbit n (+ x (- (expt 2 n))))
-                  (bitnot (getbit n x))))
-  :hints (("Goal" :in-theory (enable getbit-of-+))))
-
-(defthm getbit-of-+-of-expt-same-arg2
-  (implies (and (natp n)
-                (integerp x))
-           (equal (getbit n (+ x (expt 2 n)))
                   (bitnot (getbit n x))))
   :hints (("Goal" :in-theory (enable getbit-of-+))))
 
