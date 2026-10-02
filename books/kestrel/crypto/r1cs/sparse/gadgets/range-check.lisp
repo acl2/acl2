@@ -346,7 +346,7 @@
                   (indices-for-0s high low c)))
   :hints (("Goal" :in-theory (enable indices-for-0s))))
 
-(defthm indices-for-0s-of-when-low-bit-is-0
+(defthm indices-for-0s-when-low-bit-is-0
   (implies (and (equal (getbit low c) 0)
                 (integerp high)
                 (natp low)
@@ -356,7 +356,7 @@
                           (list low))))
   :hints (("Goal" :in-theory (enable indices-for-0s))))
 
-(defthmd indices-for-0s-of-when-low-bit-is-1
+(defthmd indices-for-0s-when-low-bit-is-1
   (implies (and (equal (getbit low c) 1)
                 (integerp high)
                 (natp low)
@@ -365,7 +365,7 @@
                   (indices-for-0s high (+ 1 low) c)))
   :hints (("Goal" :in-theory (enable indices-for-0s))))
 
-(defthm pivars-for-1s-of-when-low-bit-is-1
+(defthm pivars-for-1s-when-low-bit-is-1
   (implies (and (equal (getbit low c) 1)
                 (integerp high)
                 (natp low)
@@ -377,7 +377,7 @@
                           (list (nth low pivars)))))
   :hints (("Goal" :in-theory (enable pivars-for-1s))))
 
-(defthmd pivars-for-1s-of-when-low-bit-is-0
+(defthmd pivars-for-1s-when-low-bit-is-0
   (implies (and (equal (getbit low c) 0)
                 (integerp high)
                 (natp low)
@@ -1591,7 +1591,7 @@
            :in-theory (e/d ((:i make-range-check-pi-constraints-aux)
                             bitp-of-mul-forced
                             <=-of-0-and-lookup-equal
-                            indices-for-0s-of-when-low-bit-is-1)
+                            indices-for-0s-when-low-bit-is-1)
                            (bitp
                             indices-for-0s-of-+-of-1 ;looped
                             )))))
@@ -1702,7 +1702,7 @@
            :in-theory (e/d ((:i make-range-check-pi-constraints-aux)
                             bitp-of-mul-forced
                             <=-of-0-and-lookup-equal
-                            indices-for-0s-of-when-low-bit-is-1
+                            indices-for-0s-when-low-bit-is-1
                             CONSTRAINTS-IMPLIED-BY-PIVARS-CORRECTP
                             natp
                             helper3
@@ -1827,7 +1827,7 @@
            :in-theory (e/d ((:i make-range-check-pi-constraints-aux)
                             bitp-of-mul-forced
                             <=-of-0-and-lookup-equal
-                            indices-for-0s-of-when-low-bit-is-1
+                            indices-for-0s-when-low-bit-is-1
                             natp)
                            (bitp
                             indices-for-0s-of-+-of-1 ;looped

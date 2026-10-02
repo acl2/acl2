@@ -492,7 +492,7 @@
 
 
 ;special case of add-of-neg-of-mul-of-power-of-2-other for k=1
-(defthmd add-of-neg-of-when-bitp
+(defthmd add-of-neg-when-bitp
   (implies (and (bitp x)
                 (integerp y)
                 (posp p))
