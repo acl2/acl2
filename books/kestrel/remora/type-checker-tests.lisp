@@ -1026,3 +1026,74 @@
  "(@reshape (Int) ([3] [2 2]) [1 2 3 4])")
 (test-check-top-expr
  "(@reshape (Int) ([4] [3 3]) [1 2 3 4])")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; flatten : (Forall (&t)
+;            (Pi ($m $n @s)
+;             (-> [&t $m $n @s] [&t (* $m $n) @s])))
+
+; The two dimensions are inferred from the matrix,
+; and the shape variable as the shape of its elements
+; (empty for a matrix of scalars);
+; a vector has only one dimension.
+(test-check-top-expr
+ "(flatten [[1 2 3] [4 5 6]])")
+(test-check-top-expr
+ "(flatten [[[1 2] [3 4]] [[5 6] [7 8]]])")
+(test-check-top-expr-fail
+ "(flatten [1 2 3])")
+
+; The result has length (* 2 3),
+; with the multiplication uninterpreted (see ispace-equivalence-checker):
+; its length is inferred as (* 2 3), and matches the explicit (* 2 3);
+; its sum is inferred, since any shape matches.
+(test-check-top-expr
+ "(length (flatten [[1 2 3] [4 5 6]]))")
+(test-check-top-expr
+ "((i-app (t-app length Int) (* 2 3)) (flatten [[1 2 3] [4 5 6]]))")
+(test-check-top-expr
+ "(sum (flatten [[1 2 3] [4 5 6]]))")
+
+; OBJECTIVE: the length (* 2 3) is equivalent to 6,
+; so the flattened matrix should match the explicit length 6
+; and should have a head (since the length is a successor);
+; but multiplication is uninterpreted, for now.
+(test-check-top-expr-fail
+ "((i-app (t-app length Int) 6) (flatten [[1 2 3] [4 5 6]]))")
+(test-check-top-expr-fail
+ "(head (flatten [[1 2 3] [4 5 6]]))")
+
+; OBJECTIVE: as for the other operations,
+; the explicit dimensions match the matrices of a three-dimensional array,
+; so flatten should be applied to each matrix, over the frame [2];
+; but the inference does not handle frames yet.
+; The fully explicit instantiation is accepted, with the frame.
+(test-check-top-expr-fail
+ "((i-app (t-app flatten Int) 1 2) [[[1 2]] [[3 4]]])")
+(test-check-top-expr
+ "(@flatten (Int) (1 2 []) [[[1 2]] [[3 4]]])")
+
+; Inference under ispace binders:
+; the dimensions and the shape are inferred as the bound variables,
+; and the length of the result is inferred as the product (* $m $n).
+(test-check-top-expr
+ "(i-fn ($m $n @s) (fn ((x [Int $m $n @s])) (flatten x)))")
+(test-check-top-expr
+ "(i-fn ($m $n) (fn ((x [Int $m $n])) (length (flatten x))))")
+
+; OBJECTIVE: the product of the successors (+ 1 $m) and (+ 1 $n)
+; is a successor, so the flattened matrix should have a head;
+; but multiplication is uninterpreted, for now.
+(test-check-top-expr-fail
+ "(i-fn ($m $n) (fn ((x [Int (+ 1 $m) (+ 1 $n)])) (head (flatten x))))")
+
+; The first dimension is inferred as the witness of an unboxing,
+; and the result has length (* $d 2), so the witness escapes;
+; re-boxing the result avoids the escape.
+(test-check-top-expr-fail
+ "(unbox ($d v (box (2) [[1 2] [3 4]] (Sigma ($e) (A Int (dims $e 2)))))
+   (flatten v))")
+(test-check-top-expr
+ "(unbox ($d v (box (2) [[1 2] [3 4]] (Sigma ($e) (A Int (dims $e 2)))))
+   (box ($d) (flatten v) (Sigma ($e) (A Int (* $e 2)))))")
