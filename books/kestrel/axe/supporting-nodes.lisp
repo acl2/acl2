@@ -679,7 +679,7 @@
                                       (mv-nth 1 (build-reduced-dag-with-name n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
                                       nodenums
                                       acc)))
-  :hints (("Goal" :in-theory (e/d (nat-listp aref1-list-aux ALL-TAGGEDP-WITH-NAME) (natp)))))
+  :hints (("Goal" :in-theory (e/d (nat-listp aref1-list-aux ALL-TAGGEDP-WITH-NAME all-<=) (natp)))))
 
 (defthm nat-listp-of-aref1-list-of-mv-nth-1-of-build-reduced-dag-with-name-when-all-taggedp-with-name
   (implies (and (all-taggedp-with-name nodenums 'tag-array tag-array)

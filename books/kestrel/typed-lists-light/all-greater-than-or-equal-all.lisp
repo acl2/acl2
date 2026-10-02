@@ -34,7 +34,7 @@
   (equal (all->=-all (cons a x) y)
          (and (all-<= y a)
               (all->=-all x y)))
-  :hints (("Goal" :in-theory (enable all->=-all))))
+  :hints (("Goal" :in-theory (enable all->=-all all-<=))))
 
 (defthm all->=-all-of-append
   (equal (all->=-all x (append y1 y2))

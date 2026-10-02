@@ -1065,7 +1065,7 @@
                  (all-<= (strip-cars acc) max-literal-nodenum))
             (all-<= (strip-cars (drop-irrelevant-subst-candidates subst-candidates max-literal-nodenum acc))
                     max-literal-nodenum))
-   :hints (("Goal" :in-theory (enable drop-irrelevant-subst-candidates)))))
+   :hints (("Goal" :in-theory (enable drop-irrelevant-subst-candidates all-<=)))))
 
 ;drop?
 (local

@@ -487,7 +487,7 @@
                 )
            (all-< (aref1-list-aux 'translation-array translation-array nodenums acc)
                   bound))
-  :hints (("Goal" :in-theory (enable aref1-list-aux aref1-list))))
+  :hints (("Goal" :in-theory (enable aref1-list-aux aref1-list all-<=))))
 
 (defthm all-<-of-aref1-list-aux-when-bounded-translation-arrayp-aux-gen
   (implies (and (bounded-translation-arrayp-aux top-nodenum-to-check translation-array bound)
@@ -502,7 +502,7 @@
                 )
            (all-< (aref1-list-aux 'translation-array translation-array nodenums acc)
                   bound2))
-  :hints (("Goal" :in-theory (enable aref1-list-aux aref1-list))))
+  :hints (("Goal" :in-theory (enable aref1-list-aux aref1-list all-<=))))
 
 (defthm all-<-of-aref1-list-when-bounded-translation-arrayp-aux-gen
   (implies (and (bounded-translation-arrayp-aux top-nodenum-to-check translation-array bound)
