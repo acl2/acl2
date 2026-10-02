@@ -2516,3 +2516,83 @@ void f(void) {
 }
 "
  :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Multiple translation units.
+
+;; Identifiers with internal linkage in different translation units
+;; denote different entities [C17:6.2.2/3].
+(test-valid
+ "static int x;
+"
+ "static int x;
+")
+
+;; Structure types in different translation units are incompatible
+;; if they differ in tag or members [C17:6.2.7/1].
+(test-valid-fail
+ "struct s { int a; };
+extern struct s x;
+"
+ "struct t { int a; };
+extern struct t x;
+")
+
+(test-valid-fail
+ "struct s { int a; };
+extern struct s x;
+"
+ "struct s { int b; };
+extern struct s x;
+")
+
+(test-valid-fail
+ "struct s { int a; };
+extern struct s x;
+"
+ "struct s { long a; };
+extern struct s x;
+")
+
+;; The composite type retained across translation units
+;; may be a composite structure type.
+(test-valid
+ "struct s { int (*p)[]; };
+extern struct s x;
+"
+ "struct s { int (*p)[10]; };
+extern struct s x;
+")
+
+(test-valid-fail
+ "struct s { int (*p)[]; };
+extern struct s x;
+"
+ "struct s { int (*p)[10]; };
+extern struct s x;
+"
+ "struct s { int (*p)[20]; };
+extern struct s x;
+")
+
+;; The composite type is retained
+;; whatever the order of the translation units.
+(test-valid-fail
+ "extern int a[10];
+"
+ "extern int a[];
+"
+ "extern int a[20];
+")
+
+(test-valid-fail
+ "struct s { int (*p)[10]; };
+extern struct s x;
+"
+ "struct s { int (*p)[]; };
+extern struct s x;
+"
+ "struct s { int (*p)[20]; };
+extern struct s x;
+")
