@@ -1,7 +1,7 @@
 ; C Library
 ;
 ; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -27,7 +27,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are described in [C17:5.2.1] and [C23:5.3.1].")
+    "These are described in [C17:5.2.1] [C23:5.3.1].")
    (xdoc::p
     "The members of these sets are more abstract entities
      than the values of the character types [C17:6.2.5/15] [C23:6.2.5].
@@ -94,7 +94,7 @@
      we retrieve the corresponding source and execution characters,
      and we check that the map associates them.")
    (xdoc::p
-    "[C17] and [C23] do not seem to require this explicitly,
+    "[C17] [C23] do not seem to require this explicitly,
      but it seems an obvious structural constraint."))
   (forall (bchar)
           (implies (set::in bchar (ascii-basic-source-chars std))
