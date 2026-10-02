@@ -28,15 +28,6 @@
 
 (local (in-theory (disable logext-when-non-negative-becomes-bvchop))) ;for speed
 
-; move these (but need bitnot):
-
-(defthm getbit-of-+-of---of-expt-same-arg2
-  (implies (and (natp n)
-                (integerp x))
-           (equal (getbit n (+ x (- (expt 2 n))))
-                  (bitnot (getbit n x))))
-  :hints (("Goal" :in-theory (enable getbit-of-+))))
-
 ;Normal case: no overflow or underflow.  Because of symmetry, we can reorder
 ;the arguments to signed-addition-overflowsp and signed-addition-underflowsp if
 ;we'd like.
