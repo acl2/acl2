@@ -15,6 +15,8 @@
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 
 (defund all-<=-all (x y)
+  (declare (xargs :guard (and (rational-listp x)
+                              (rational-listp y))))
   (if (endp y)
       t
     (and (all-<= x (first y))
