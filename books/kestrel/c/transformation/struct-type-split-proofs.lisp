@@ -1110,13 +1110,15 @@
                             (compustate-equivp old-compst1 new-compst1)
                             old-eval
                             (equal (c::type-of-value old-val) type))))
-            :enable (c::exec-expr
-                     c::exec-const
-                     c::eval-const
-                     c::eval-iconst
-                     c::check-iconst
-                     c::type-of-value)
-            :disable ((:e tau-system)))
+            :use (:instance expr-const-congruence (compst old-compst))
+            :in-theory '(c::exec-expr
+                         c::return-type-of-expr-const
+                         c::expr-const->get-of-expr-const
+                         compustate-equivp-of-compustate-fix-old-compst
+                         compustate-equivp-of-compustate-fix-new-compst
+                         mv-nth
+                         iff
+                         (:e equal)))
           (defruled expr-binary-pure-strict-congruence-under-compustate-equivp
             (b* ((old (c::expr-binary op old-arg1 old-arg2))
                  (new (c::expr-binary op new-arg1 new-arg2))
