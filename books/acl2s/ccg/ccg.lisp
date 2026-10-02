@@ -7349,6 +7349,7 @@ e2-e1+1.
       nil nil ; loop$-recursion-checkedp and loop$-recursion
       names docs pairs guards measures split-types-terms
       bodies
+      new-lambda$-alist-pairs ; Matt K. addition 10/1/2026: should probably be lambda-info
       non-executablep ; not sure about this, but seems plausible
       ctx wrld state))
    (t
