@@ -1073,11 +1073,23 @@
                             old-eval
                             (equal (c::type-of-value old-val)
                                    (c::type-fix type)))))
-            :enable (c::exec-expr
-                     c::exec-ident
-                     c::compustate-has-var-with-type-p)
             :use (objdesign-of-var-when-compustate-equivp
-                  read-object-when-compustate-equivp))
+                  read-object-when-compustate-equivp)
+            :in-theory '(c::exec-expr
+                         c::exec-ident
+                         c::compustate-has-var-with-type-p
+                         c::return-type-of-expr-ident
+                         c::expr-ident->get-of-expr-ident
+                         c::exec-ident-of-ident-fix-id
+                         c::expr-value->value-of-expr-value
+                         c::type-of-value-of-value-fix-val
+                         c::errorp-of-error
+                         compustate-equivp-of-compustate-fix-old-compst
+                         compustate-equivp-of-compustate-fix-new-compst
+                         (:t c::expr-value)
+                         mv-nth
+                         iff
+                         (:e equal)))
           (defruled expr-const-congruence-under-compustate-equivp
             (b* ((expr (c::expr-const const))
                  ((mv old-eval old-compst1)
