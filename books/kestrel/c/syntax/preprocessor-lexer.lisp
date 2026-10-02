@@ -2221,7 +2221,7 @@
                        ppstate))))))
          ((utf8-= char2 (char-code #\=)) ; > =
           (retok (plexeme-punctuator ">=")
-                 (make-span :start pos :end pos)
+                 (make-span :start pos :end pos2)
                  ppstate))
          (t ; > other
           (b* ((ppstate (unread-pchar ppstate))) ; >
