@@ -66,7 +66,7 @@
 (define make-dummy-fileset (input)
   :returns (fileset fileset)
   (fileset (make-dummy-filepath-filedata-map
-             '("test0" "test1" "test2" "test2" "test3" "test4" "test5" "test6")
+             '("test0" "test1" "test2" "test3" "test4" "test5" "test6" "test7")
              input)))
 
 (defmacro test-valid (&rest args)
