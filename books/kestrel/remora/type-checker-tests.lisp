@@ -991,3 +991,38 @@
 ; which does not escape, since the result is a scalar.
 (test-check-top-expr
  "(unbox ($d v (box (3) [1 2 3] (Sigma ($e) (A Int $e)))) (sum v))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; reshape : (Forall (&t) (Pi (@s1 @s2) (-> [&t @s1] [&t @s2])))
+
+; The output shape @s2 does not occur in the input type,
+; so it cannot be inferred from the argument, and the application fails,
+; whether the other arguments are inferred or explicit.
+(test-check-top-expr-fail
+ "(reshape [1 2 3 4])")
+(test-check-top-expr-fail
+ "((i-app (t-app reshape Int) [4]) [1 2 3 4])")
+
+; OBJECTIVE: the output shape is determined by
+; the type annotation of the binding,
+; from which the inference could obtain it;
+; but the inference only uses the argument, for now.
+(test-check-top-expr-fail
+ "(let ((val (m : [Int 2 2]) (reshape [1 2 3 4]))) m)")
+
+; The fully explicit instantiation is accepted;
+; its result is used by further inference.
+(test-check-top-expr
+ "(@reshape (Int) ([4] [2 2]) [1 2 3 4])")
+(test-check-top-expr
+ "((index2d (@reshape (Int) ([4] [2 2]) [1 2 3 4])) [1 0])")
+
+; The explicit input shape must match the argument,
+; but the type does not relate the sizes of the input and output shapes:
+; a reshape to an incompatible size type-checks,
+; and the mismatch is only detected by evaluation (see prim-reshape).
+(test-check-top-expr-fail
+ "(@reshape (Int) ([3] [2 2]) [1 2 3 4])")
+(test-check-top-expr
+ "(@reshape (Int) ([4] [3 3]) [1 2 3 4])")
