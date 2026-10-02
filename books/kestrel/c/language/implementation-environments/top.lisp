@@ -512,7 +512,7 @@
 
 (define ienv->bool-bit-size ((ienv ienvp))
   :returns (size posp)
-  :short "Number of bits of @('_Bool') objects."
+  :short "Number of bits of @('bool') (or @('_Bool')) objects."
   (* (bool-format->byte-size (ienv->bool ienv))
      (uchar-format->size (ienv->uchar ienv))))
 
@@ -520,7 +520,7 @@
 
 (define ienv->bool-byte-size ((ienv ienvp))
   :returns (size posp)
-  :short "Number of bytes of @('_Bool') objects."
+  :short "Number of bytes of @('bool') (or @('_Bool')) objects."
   (bool-format->byte-size (ienv->bool ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
