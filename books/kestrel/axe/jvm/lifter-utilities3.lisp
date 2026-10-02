@@ -185,8 +185,7 @@
                                        state)
   (declare (xargs :mode :program
                   :stobjs state
-                  :guard (and (symbol-listp extra-rules)
-                              (jvm::class-name-listp class-names)
+                  :guard (and (jvm::class-name-listp class-names)
                               ;; what about th?
                               (weak-dag-or-quotep s-dag)
                               (pseudo-term-listp hyps)
