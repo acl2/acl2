@@ -1977,7 +1977,7 @@
   :returns (mv (erp maybe-msgp)
                (new-stage stsp-stagep)
                (rest-new-items trans-item-listp)
-               (events pseudo-event-form-listp))
+               (gout goutp))
   :short "Generate events for an external declaration."
   :long
   (xdoc::topstring
@@ -1998,7 +1998,7 @@
      and there is no stage change.")
    (xdoc::p
     "If it is a declaration, we use a separate function to handle it."))
-  (b* (((reterr) (irr-stsp-stage) nil nil))
+  (b* (((reterr) (irr-stsp-stage) nil (irr-gout)))
     (ext-declon-case
      old-edeclon
      :fundef
@@ -2023,9 +2023,18 @@
                         gin)))
        (retok (stsp-stage-fix stage)
               (trans-item-list-fix (cdr new-items))
-              (gout->events gout)))
+              gout))
      :declon
-     (stsp-declon old-edeclon.declon new-items tag tag2 rmems stage)
+     (b* (((erp new-stage rest-new-items events)
+           (stsp-declon old-edeclon.declon new-items tag tag2 rmems stage))
+          (gout (gout-no-thm gin))
+          (gout (change-gout gout
+                             ;; events in GOUT are reversed
+                             :events (append (rev events)
+                                             (gout->events gout)))))
+       (retok new-stage
+              rest-new-items
+              gout))
      :empty
      (b* ((new-item (car new-items))
           ((unless (trans-item-equiv new-item
@@ -2038,7 +2047,7 @@
                     (trans-item-fix new-item))))
        (retok (stsp-stage-fix stage)
               (trans-item-list-fix (cdr new-items))
-              nil))
+              (gout-no-thm gin)))
      :asm (retmsg$ "Unsupported proof generation for assembler.")))
   :no-function nil
 
@@ -2069,7 +2078,7 @@
   :returns (mv (erp maybe-msgp)
                (new-stage stsp-stagep)
                (rest-new-items trans-item-listp)
-               (events pseudo-event-form-listp))
+               (gout goutp))
   :short "Generate events for a translation item."
   :long
   (xdoc::topstring
@@ -2082,7 +2091,7 @@
      There is no change to the scanning stage.")
    (xdoc::p
     "For an external declaration, we use a separate function."))
-  (b* (((reterr) (irr-stsp-stage) nil nil))
+  (b* (((reterr) (irr-stsp-stage) nil (irr-gout)))
     (trans-item-case
      old-item
      :declon (stsp-ext-declon old-item.declon
@@ -2107,7 +2116,7 @@
                     (trans-item-fix new-item))))
        (retok (stsp-stage-fix stage)
               (trans-item-list-fix (cdr new-items))
-              nil))))
+              (gout-no-thm gin)))))
   :no-function nil
 
   ///
@@ -2134,7 +2143,7 @@
               (trans-item-list-annop old-items)
               (trans-item-list-annop new-items))
   :returns (mv (erp maybe-msgp)
-               (events pseudo-event-form-listp))
+               (gout goutp))
   :short "Generate events for a list of translation items."
   :long
   (xdoc::topstring
@@ -2151,7 +2160,7 @@
      along with one or two translation items from the new list
      (see the separate function for details).
      Then we continue with the rest of the translation items."))
-  (b* (((reterr) nil)
+  (b* (((reterr) (irr-gout))
        ((when (endp old-items))
         (b* (((unless (endp new-items))
               (retmsg$ "The new code has extra translation items ~x0. ~
@@ -2165,29 +2174,28 @@
                            missing struct type and object.")
            :types (retmsg$ "Unsupported proof generation for ~
                             struct object.")
-           :objects (retok nil))))
+           :objects (retok (gout-no-thm gin)))))
        ((when (endp new-items))
         (retmsg$ "The old code has extra translation items ~x0. ~
                   This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
                   was not called on ~
                   the old and new code of STRUCT-TYPE-SPLIT."
                  (trans-item-list-fix old-items)))
-       ((erp stage rest-new-items events) (stsp-trans-item (car old-items)
-                                                           new-items
-                                                           tag
-                                                           tag2
-                                                           rmems
-                                                           stage
-                                                           gin))
-       ((erp more-events)
-        (stsp-trans-item-list (cdr old-items)
-                              rest-new-items
-                              tag
-                              tag2
-                              rmems
-                              stage
-                              gin)))
-    (retok (append events more-events)))
+       ((erp stage rest-new-items gout) (stsp-trans-item (car old-items)
+                                                         new-items
+                                                         tag
+                                                         tag2
+                                                         rmems
+                                                         stage
+                                                         gin))
+       (gin (gin-update gin gout)))
+    (stsp-trans-item-list (cdr old-items)
+                          rest-new-items
+                          tag
+                          tag2
+                          rmems
+                          stage
+                          gin))
   :no-function nil
   :guard-hints
   (("Goal"
@@ -2206,7 +2214,7 @@
               (trans-unit-annop old-tunit)
               (trans-unit-annop new-tunit))
   :returns (mv (erp maybe-msgp)
-               (events pseudo-event-form-listp))
+               (gout goutp))
   :short "Generate events for a translation unit."
   :long
   (xdoc::topstring
@@ -2269,12 +2277,12 @@
                   for multiple translation units."))
        (old-tunit (omap::head-val old-tunits))
        (new-tunit (omap::head-val new-tunits))
-       ((erp events) (stsp-trans-unit old-tunit new-tunit tag tag2 rmems gin)))
+       ((erp gout) (stsp-trans-unit old-tunit new-tunit tag tag2 rmems gin)))
     (retok `(encapsulate
               ()
               (local (include-book "std/lists/top" :dir :system))
               (local (include-book "std/omaps/delete" :dir :system))
-              ,@events)))
+              ,@(rev (gout->events gout))))) ; events in GOUT are in reverse
   :guard-hints (("Goal"
                  :expand
                  ((:free (tens) (omap::size (trans-ensemble->units tens)))))))
