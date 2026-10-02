@@ -1153,3 +1153,46 @@
 (test-check-top-expr
  "(unbox ($d v (box (2) [[1 2] [3 4]] (Sigma ($e) (A Int (dims $e 2)))))
    (box ($d) (transpose2d v) (Sigma ($e) (A Int (dims 2 $e)))))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; iota/static : (Pi (@s) [Int @s])
+
+; The type has no function type:
+; the only application is the ispace application to the shape,
+; which cannot be inferred;
+; an application to an expression is rejected.
+(test-check-top-expr
+ "(i-app iota/static (dims 2 3))")
+(test-check-top-expr-fail
+ "(iota/static 3)")
+
+; The result is used by further inference:
+; the length and the head of a matrix or vector,
+; and the element of a matrix at a pair of indices;
+; an empty vector has no head.
+(test-check-top-expr
+ "(length (i-app iota/static (dims 2 3)))")
+(test-check-top-expr
+ "(head (i-app iota/static (dims 3)))")
+(test-check-top-expr
+ "((index2d (i-app iota/static (dims 2 3))) [1 2])")
+(test-check-top-expr-fail
+ "(head (i-app iota/static (dims 0)))")
+
+; The shape may be a let-bound ispace variable,
+; whose definition is expanded before the inference.
+(test-check-top-expr
+ "(let ((ispace @s (dims 2 3)))
+   ((i-app (t-app length Int) 2) (i-app iota/static @s)))")
+
+; Under ispace binders, the shape may be a bound shape variable
+; or a shape with a bound dimension variable:
+; the sum of an array of any shape is inferred,
+; and the head of a vector of length (+ 1 $n), but not of length $n.
+(test-check-top-expr
+ "(i-fn (@s) (sum (i-app iota/static @s)))")
+(test-check-top-expr
+ "(i-fn ($n) (head (i-app iota/static (dims (+ 1 $n)))))")
+(test-check-top-expr-fail
+ "(i-fn ($n) (head (i-app iota/static (dims $n))))")
