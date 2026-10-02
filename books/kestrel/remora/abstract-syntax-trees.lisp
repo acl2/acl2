@@ -624,7 +624,15 @@
   :elt-type type-option
   :true-listp t
   :elementp-of-nil t
-  :pred type-option-listp)
+  :pred type-option-listp
+
+  ///
+
+  (defrule type-option-listp-when-type-listp
+    (implies (type-listp x)
+             (type-option-listp x))
+    :induct t
+    :enable type-option-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
