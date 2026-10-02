@@ -225,14 +225,6 @@
                   (signed-byte-p size x)))
   :hints (("Goal" :in-theory (e/d (logext logbitp logtail unsigned-byte-p) (LOGBITP-TO-GETBIT-EQUAL-1)))))
 
-;; see also logext-identity
-(defthm logext-does-nothing
-  (implies (signed-byte-p size x)
-           (equal (logext size x)
-                  x))
-  :hints (("Goal" :use logext-does-nothing-rewrite
-           :in-theory (disable logext-does-nothing-rewrite))))
-
 ;; See also logext-identity
 (defthm logext-when-signed-byte-p
   (implies (signed-byte-p size x)
@@ -424,9 +416,9 @@
                 (posp n))
            (equal (logext n x)
                   (bvchop (+ -1 n) x)))
-  :hints (("Goal" :use ((:instance logext-does-nothing (size n) (x (bvchop n x))))
+  :hints (("Goal" :use ((:instance logext-when-signed-byte-p (size n) (x (bvchop n x))))
            :in-theory (e/d (logext)
-                           (logext-does-nothing
+                           (logext-when-signed-byte-p
                             logext-does-nothing-rewrite)))))
 
 ;could loop?
