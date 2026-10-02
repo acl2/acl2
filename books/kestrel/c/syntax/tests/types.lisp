@@ -766,8 +766,8 @@
 ;; The composite of two types, constructed from an empty composites map,
 ;; along with the composite relation on it.
 (define type-composite-and-relation ((x typep) (y typep) (ienv ienvp))
-  (b* (((mv composite completions & &)
-        (type-composite x y nil (treemap::empty) nil 1)))
+  (b* (((mv composite completions & & &)
+        (type-composite x y nil (treemap::empty) (treeset::empty) nil 1)))
     (list composite
           (type-composite-3p x y composite completions ienv))))
 
@@ -992,8 +992,9 @@
             (list (make-type-struni-member :name? (ident "p") :type array-10)
                   (make-type-struni-member :name? (ident "q") :type array-inc))
             nil)))
-       ((mv composite completions composites next-uid-num)
-        (type-composite foo bar completions (treemap::empty) nil 3)))
+       ((mv composite completions composites & next-uid-num)
+        (type-composite foo bar completions
+                        (treemap::empty) (treeset::empty) nil 3)))
     (list composite
           (treemap::lookup (uid-local 3 nil) completions)
           (treemap::lookup (make-uid-pair
@@ -1042,10 +1043,12 @@
                          (treemap::update (uid-local 2 (filepath "bar.c"))
                                           (list member-10)
                                           nil)))
-       ((mv composite1 & & next-uid-num1)
-        (type-composite foo bar completions (treemap::empty) nil 3))
-       ((mv composite2 & & next-uid-num2)
-        (type-composite bar foo completions (treemap::empty) nil 3)))
+       ((mv composite1 & & & next-uid-num1)
+        (type-composite foo bar completions
+                        (treemap::empty) (treeset::empty) nil 3))
+       ((mv composite2 & & & next-uid-num2)
+        (type-composite bar foo completions
+                        (treemap::empty) (treeset::empty) nil 3)))
     (list composite1 next-uid-num1 composite2 next-uid-num2))
   (let ((bar (make-type-struct :uid (uid-local 2 (filepath "bar.c"))
                                :tag/members (type-struni-tag/members-tagged
@@ -1062,10 +1065,12 @@
        (member (make-type-struni-member :name? (ident "x") :type (type-sint)))
        (completions
         (treemap::update (uid-local 1 (filepath "foo.c")) (list member) nil))
-       ((mv composite1 & & &)
-        (type-composite foo bar completions (treemap::empty) nil 3))
-       ((mv composite2 & & &)
-        (type-composite bar foo completions (treemap::empty) nil 3)))
+       ((mv composite1 & & & &)
+        (type-composite foo bar completions
+                        (treemap::empty) (treeset::empty) nil 3))
+       ((mv composite2 & & & &)
+        (type-composite bar foo completions
+                        (treemap::empty) (treeset::empty) nil 3)))
     (list composite1 composite2))
   (let ((foo (make-type-struct :uid (uid-local 1 (filepath "foo.c"))
                                :tag/members (type-struni-tag/members-tagged
@@ -1108,8 +1113,9 @@
                   (make-type-struni-member :name? (ident "p") :type array-10)
                   (make-type-struni-member :name? (ident "q") :type array-inc))
             nil)))
-       ((mv composite completions & next-uid-num)
-        (type-composite foo bar completions (treemap::empty) nil 3)))
+       ((mv composite completions & & next-uid-num)
+        (type-composite foo bar completions
+                        (treemap::empty) (treeset::empty) nil 3)))
     (list (treemap::lookup (uid-local 3 nil) completions)
           next-uid-num
           (type-composite-3p foo bar composite completions (irr-ienv))))
@@ -1160,8 +1166,8 @@
                                                :type array-10)
                       (make-type-struni-member :name? (ident "q")
                                                :type array-inc)))))
-       ((mv composite completions & next-uid-num)
-        (type-composite foo bar nil (treemap::empty) nil 3)))
+       ((mv composite completions & & next-uid-num)
+        (type-composite foo bar nil (treemap::empty) (treeset::empty) nil 3)))
     (list composite
           completions
           next-uid-num
@@ -1209,15 +1215,17 @@
                          (treemap::update (uid-local 2 (filepath "bar.c"))
                                           (list member-10)
                                           nil)))
-       ((mv composite1 & & &)
-        (type-composite foo bar completions (treemap::empty) nil 3))
-       ((mv composite2 & & &)
+       ((mv composite1 & & & &)
+        (type-composite foo bar completions
+                        (treemap::empty) (treeset::empty) nil 3))
+       ((mv composite2 & & & &)
         (type-composite foo
                         bar
                         (treemap::update (uid-local 2 (filepath "bar.c"))
                                          (list member-10)
                                          nil)
                         (treemap::empty)
+                        (treeset::empty)
                         nil
                         3)))
     (list composite1
@@ -1252,13 +1260,13 @@
 ;; Without struct or union types, the composites map is unchanged
 ;; and no UIDs are minted.
 (acl2::assert-equal
-  (b* (((mv & & composites next-uid-num)
+  (b* (((mv & & composites & next-uid-num)
         (type-composite
           (make-type-array :of (type-sint)
                            :kind (type-array-kind-incomplete))
           (make-type-array :of (type-sint)
                            :kind (make-type-array-kind-const-len :len 10))
-          nil (treemap::empty) nil 1)))
+          nil (treemap::empty) (treeset::empty) nil 1)))
     (list composites next-uid-num))
   (list (treemap::empty) 1))
 

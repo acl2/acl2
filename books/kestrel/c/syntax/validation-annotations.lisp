@@ -254,7 +254,9 @@
      the validator adds to translation ensembles.
      The information consists of
      the validation information related to identifiers with external linkage
-     and the map of structure and union type UIDs to their members."))
+     and the map of structure and union type UIDs to their members.
+     Both are obtained by merging the corresponding information
+     from each translation unit."))
   ((externals valid-externals)
    (completions type-completions))
   :pred trans-ensemble-vinfop)
