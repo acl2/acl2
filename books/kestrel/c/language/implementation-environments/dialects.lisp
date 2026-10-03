@@ -89,7 +89,7 @@
         :default nil)
    (clang booleanp
           :reqfix (if (and gcc clang)
-                      (if cheri t nil)
+                      cheri
                     clang)
           :default nil)
    (cheri booleanp

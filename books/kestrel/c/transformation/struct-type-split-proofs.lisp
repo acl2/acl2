@@ -1847,7 +1847,7 @@
        ((mv & ctype) (ldm-type info.type)) ; ERP is NIL because FORMALP
        ((unless (omap::assoc cvar gin.vartys)) (retok gout-no-thm))
        (hints `(("Goal"
-                 :in-theory '((:e c::expr-ident)
+                 :in-theory '((:e c::ident-fix)
                               (:e c::type-fix)
                               (:e c::expr-ident)
                               expr-compustate-vars)
@@ -1906,7 +1906,108 @@
                            was not called on ~
                            the old and new code of STRUCT-TYPE-SPLIT."
                           (expr-fix old-expr) (expr-fix new-expr)))
-     :otherwise (retok (gout-no-thm gin)))))
+     :binary
+     (expr-case
+      new-expr
+      :binary (b* (((erp gout) (stsp-expr old-expr.arg1
+                                          new-expr.arg1
+                                          old-name
+                                          newl-name
+                                          newr-name
+                                          gin))
+                   (gin (gin-update gin gout))
+                   ((erp gout) (stsp-expr old-expr.arg2
+                                          new-expr.arg2
+                                          old-name
+                                          newl-name
+                                          newr-name
+                                          gin)))
+                (retok gout))
+      :otherwise (retmsg$ "The expressions ~x0 and ~x1 do not match. ~
+                           This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                           was not called on ~
+                           the old and new code of STRUCT-TYPE-SPLIT."
+                          (expr-fix old-expr) (expr-fix new-expr)))
+     :otherwise (retok (gout-no-thm gin))))
+  :measure (expr-count old-expr)
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-param-declon-list ((old-params param-declon-listp)
+                                (new-params param-declon-listp))
+  :guard (and (param-declon-list-unambp old-params)
+              (param-declon-list-unambp new-params)
+              (param-declon-list-annop old-params)
+              (param-declon-list-annop new-params))
+  :returns (mv (erp maybe-msgp) (vartys c::ident-type-mapp))
+  :short "Generate the initial variables in scope
+          from the parameters of a function definition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only add entries for parameters
+     that are non-abstract
+     and whose type is integer except @('bool') or plain @('char').
+     We skip over the parameters that do not satisfy these conditions."))
+  (b* (((reterr) nil)
+       ((when (endp old-params))
+        (if (endp new-params)
+            (retok nil)
+          (retmsg$ "The new function has more parameters than the old one, ~
+                    namely the extra parameters ~x0. ~
+                    This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                    was not called on ~
+                    the old and new code of STRUCT-TYPE-SPLIT."
+                   (param-declon-list-fix new-params))))
+       ((when (endp new-params))
+        (retmsg$ "The new function has more parameters than the old one, ~
+                  namely the extra parameters ~x0. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 (param-declon-list-fix old-params)))
+       (old-param (car old-params))
+       (new-param (car new-params))
+       (type (param-declon-type old-param))
+       ((unless (equal type (param-declon-type new-param)))
+        (retmsg$ "The parameter types ~x0 and ~x1 do not match. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 type (param-declon-type new-param)))
+       ((mv erp ctype) (ldm-type type))
+       ((when erp) (stsp-param-declon-list (cdr old-params) (cdr new-params)))
+       ((unless (c::type-nonchar-integerp ctype))
+        (stsp-param-declon-list (cdr old-params) (cdr new-params)))
+       (old-pdeclor (c$::param-declon->declor old-param))
+       (new-pdeclor (c$::param-declon->declor new-param))
+       ((unless (eq (c$::param-declor-kind old-pdeclor)
+                    (c$::param-declor-kind new-pdeclor)))
+        (retmsg$ "The parameter declarators ~x0 and ~x1 do not match. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 old-pdeclor new-pdeclor))
+       ((unless (param-declor-case old-pdeclor :nonabstract))
+        (stsp-param-declon-list (cdr old-params) (cdr new-params)))
+       (ident (declor->ident (param-declor-nonabstract->declor old-pdeclor)))
+       ((unless (equal ident
+                       (declor->ident
+                        (param-declor-nonabstract->declor new-pdeclor))))
+        (retmsg$ "The identifiers ~x0 and ~x1 do not match. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 ident
+                 (declor->ident
+                  (param-declor-nonabstract->declor new-pdeclor))))
+       ((mv erp cident) (ldm-ident ident))
+       ((when erp) (stsp-param-declon-list (cdr old-params) (cdr new-params)))
+       ((erp vartys)
+        (stsp-param-declon-list (cdr old-params) (cdr new-params))))
+    (retok (omap::update cident ctype vartys)))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1928,6 +2029,28 @@
    (xdoc::p
     "This is still work in progress."))
   (b* (((reterr) (irr-gout))
+       (old-declor (fundef->declor old-fundef))
+       (new-declor (fundef->declor new-fundef))
+       (old-dirdeclor (declor->direct old-declor))
+       (new-dirdeclor (declor->direct new-declor))
+       ((unless (or
+                 (and (dirdeclor-case old-dirdeclor :function-params)
+                      (dirdeclor-case new-dirdeclor :function-params))
+                 (and (dirdeclor-case old-dirdeclor :function-names)
+                      (dirdeclor-case new-dirdeclor :function-names)
+                      (endp (dirdeclor-function-names->names old-dirdeclor))
+                      (endp (dirdeclor-function-names->names new-dirdeclor)))))
+        (retmsg$ "Unsupported proof generation for ~
+                  functions whose declarator does not have ~
+                  function parameters or empty function names."))
+       (old-params (if (dirdeclor-case old-dirdeclor :function-params)
+                       (dirdeclor-function-params->params old-dirdeclor)
+                     nil))
+       (new-params (if (dirdeclor-case new-dirdeclor :function-params)
+                       (dirdeclor-function-params->params new-dirdeclor)
+                     nil))
+       ((erp vartys) (stsp-param-declon-list old-params new-params))
+       (gin (change-gin gin :vartys vartys))
        (old-body (fundef->body old-fundef))
        (new-body (fundef->body new-fundef))
        (old-items (comp-stmt->items old-body))
@@ -1977,7 +2100,7 @@
   :returns (mv (erp maybe-msgp)
                (new-stage stsp-stagep)
                (rest-new-items trans-item-listp)
-               (events pseudo-event-form-listp))
+               (gout goutp))
   :short "Generate events for an external declaration."
   :long
   (xdoc::topstring
@@ -1998,7 +2121,7 @@
      and there is no stage change.")
    (xdoc::p
     "If it is a declaration, we use a separate function to handle it."))
-  (b* (((reterr) (irr-stsp-stage) nil nil))
+  (b* (((reterr) (irr-stsp-stage) nil (irr-gout)))
     (ext-declon-case
      old-edeclon
      :fundef
@@ -2023,9 +2146,18 @@
                         gin)))
        (retok (stsp-stage-fix stage)
               (trans-item-list-fix (cdr new-items))
-              (gout->events gout)))
+              gout))
      :declon
-     (stsp-declon old-edeclon.declon new-items tag tag2 rmems stage)
+     (b* (((erp new-stage rest-new-items events)
+           (stsp-declon old-edeclon.declon new-items tag tag2 rmems stage))
+          (gout (gout-no-thm gin))
+          (gout (change-gout gout
+                             ;; events in GOUT are reversed
+                             :events (append (rev events)
+                                             (gout->events gout)))))
+       (retok new-stage
+              rest-new-items
+              gout))
      :empty
      (b* ((new-item (car new-items))
           ((unless (trans-item-equiv new-item
@@ -2038,7 +2170,7 @@
                     (trans-item-fix new-item))))
        (retok (stsp-stage-fix stage)
               (trans-item-list-fix (cdr new-items))
-              nil))
+              (gout-no-thm gin)))
      :asm (retmsg$ "Unsupported proof generation for assembler.")))
   :no-function nil
 
@@ -2069,7 +2201,7 @@
   :returns (mv (erp maybe-msgp)
                (new-stage stsp-stagep)
                (rest-new-items trans-item-listp)
-               (events pseudo-event-form-listp))
+               (gout goutp))
   :short "Generate events for a translation item."
   :long
   (xdoc::topstring
@@ -2082,7 +2214,7 @@
      There is no change to the scanning stage.")
    (xdoc::p
     "For an external declaration, we use a separate function."))
-  (b* (((reterr) (irr-stsp-stage) nil nil))
+  (b* (((reterr) (irr-stsp-stage) nil (irr-gout)))
     (trans-item-case
      old-item
      :declon (stsp-ext-declon old-item.declon
@@ -2107,7 +2239,7 @@
                     (trans-item-fix new-item))))
        (retok (stsp-stage-fix stage)
               (trans-item-list-fix (cdr new-items))
-              nil))))
+              (gout-no-thm gin)))))
   :no-function nil
 
   ///
@@ -2134,7 +2266,7 @@
               (trans-item-list-annop old-items)
               (trans-item-list-annop new-items))
   :returns (mv (erp maybe-msgp)
-               (events pseudo-event-form-listp))
+               (gout goutp))
   :short "Generate events for a list of translation items."
   :long
   (xdoc::topstring
@@ -2151,7 +2283,7 @@
      along with one or two translation items from the new list
      (see the separate function for details).
      Then we continue with the rest of the translation items."))
-  (b* (((reterr) nil)
+  (b* (((reterr) (irr-gout))
        ((when (endp old-items))
         (b* (((unless (endp new-items))
               (retmsg$ "The new code has extra translation items ~x0. ~
@@ -2165,33 +2297,29 @@
                            missing struct type and object.")
            :types (retmsg$ "Unsupported proof generation for ~
                             struct object.")
-           :objects (retok nil))))
+           :objects (retok (gout-no-thm gin)))))
        ((when (endp new-items))
         (retmsg$ "The old code has extra translation items ~x0. ~
                   This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
                   was not called on ~
                   the old and new code of STRUCT-TYPE-SPLIT."
                  (trans-item-list-fix old-items)))
-       ((erp stage rest-new-items events) (stsp-trans-item (car old-items)
-                                                           new-items
-                                                           tag
-                                                           tag2
-                                                           rmems
-                                                           stage
-                                                           gin))
-       ((erp more-events)
-        (stsp-trans-item-list (cdr old-items)
-                              rest-new-items
-                              tag
-                              tag2
-                              rmems
-                              stage
-                              gin)))
-    (retok (append events more-events)))
-  :no-function nil
-  :guard-hints
-  (("Goal"
-    :in-theory (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite))))
+       ((erp stage rest-new-items gout) (stsp-trans-item (car old-items)
+                                                         new-items
+                                                         tag
+                                                         tag2
+                                                         rmems
+                                                         stage
+                                                         gin))
+       (gin (gin-update gin gout)))
+    (stsp-trans-item-list (cdr old-items)
+                          rest-new-items
+                          tag
+                          tag2
+                          rmems
+                          stage
+                          gin))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2206,7 +2334,7 @@
               (trans-unit-annop old-tunit)
               (trans-unit-annop new-tunit))
   :returns (mv (erp maybe-msgp)
-               (events pseudo-event-form-listp))
+               (gout goutp))
   :short "Generate events for a translation unit."
   :long
   (xdoc::topstring
@@ -2269,12 +2397,12 @@
                   for multiple translation units."))
        (old-tunit (omap::head-val old-tunits))
        (new-tunit (omap::head-val new-tunits))
-       ((erp events) (stsp-trans-unit old-tunit new-tunit tag tag2 rmems gin)))
+       ((erp gout) (stsp-trans-unit old-tunit new-tunit tag tag2 rmems gin)))
     (retok `(encapsulate
               ()
               (local (include-book "std/lists/top" :dir :system))
               (local (include-book "std/omaps/delete" :dir :system))
-              ,@events)))
+              ,@(rev (gout->events gout))))) ; events in GOUT are in reverse
   :guard-hints (("Goal"
                  :expand
                  ((:free (tens) (omap::size (trans-ensemble->units tens)))))))
