@@ -53,7 +53,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod charset
-  :parents (character-sets)
   :short "Fixtype of character sets."
   :long
   (xdoc::topstring
