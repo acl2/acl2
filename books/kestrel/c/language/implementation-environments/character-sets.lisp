@@ -318,7 +318,7 @@
 
   ///
 
-  (defrule charset-source-to-exec-in-charset-exec-chars
+  (defruled charset-source-to-exec-in-charset-exec-chars
     (implies (and (charset-wfp charset std
                                uchar-format schar-format char-format)
                   (set::in source-char (charset-source-chars charset)))
