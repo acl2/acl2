@@ -1906,7 +1906,108 @@
                            was not called on ~
                            the old and new code of STRUCT-TYPE-SPLIT."
                           (expr-fix old-expr) (expr-fix new-expr)))
-     :otherwise (retok (gout-no-thm gin)))))
+     :binary
+     (expr-case
+      new-expr
+      :binary (b* (((erp gout) (stsp-expr old-expr.arg1
+                                          new-expr.arg1
+                                          old-name
+                                          newl-name
+                                          newr-name
+                                          gin))
+                   (gin (gin-update gin gout))
+                   ((erp gout) (stsp-expr old-expr.arg2
+                                          new-expr.arg2
+                                          old-name
+                                          newl-name
+                                          newr-name
+                                          gin)))
+                (retok gout))
+      :otherwise (retmsg$ "The expressions ~x0 and ~x1 do not match. ~
+                           This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                           was not called on ~
+                           the old and new code of STRUCT-TYPE-SPLIT."
+                          (expr-fix old-expr) (expr-fix new-expr)))
+     :otherwise (retok (gout-no-thm gin))))
+  :measure (expr-count old-expr)
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-param-declon-list ((old-params param-declon-listp)
+                                (new-params param-declon-listp))
+  :guard (and (param-declon-list-unambp old-params)
+              (param-declon-list-unambp new-params)
+              (param-declon-list-annop old-params)
+              (param-declon-list-annop new-params))
+  :returns (mv (erp maybe-msgp) (vartys c::ident-type-mapp))
+  :short "Generate the initial variables in scope
+          from the parameters of a function definition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only add entries for parameters
+     that are non-abstract
+     and whose type is integer except @('bool') or plain @('char').
+     We skip over the parameters that do not satisfy these conditions."))
+  (b* (((reterr) nil)
+       ((when (endp old-params))
+        (if (endp new-params)
+            (retok nil)
+          (retmsg$ "The new function has more parameters than the old one, ~
+                    namely the extra parameters ~x0. ~
+                    This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                    was not called on ~
+                    the old and new code of STRUCT-TYPE-SPLIT."
+                   (param-declon-list-fix new-params))))
+       ((when (endp new-params))
+        (retmsg$ "The new function has more parameters than the old one, ~
+                  namely the extra parameters ~x0. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 (param-declon-list-fix old-params)))
+       (old-param (car old-params))
+       (new-param (car new-params))
+       (type (param-declon-type old-param))
+       ((unless (equal type (param-declon-type new-param)))
+        (retmsg$ "The parameter types ~x0 and ~x1 do not match. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 type (param-declon-type new-param)))
+       ((mv erp ctype) (ldm-type type))
+       ((when erp) (stsp-param-declon-list (cdr old-params) (cdr new-params)))
+       ((unless (c::type-nonchar-integerp ctype))
+        (stsp-param-declon-list (cdr old-params) (cdr new-params)))
+       (old-pdeclor (c$::param-declon->declor old-param))
+       (new-pdeclor (c$::param-declon->declor new-param))
+       ((unless (eq (c$::param-declor-kind old-pdeclor)
+                    (c$::param-declor-kind new-pdeclor)))
+        (retmsg$ "The parameter declarators ~x0 and ~x1 do not match. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 old-pdeclor new-pdeclor))
+       ((unless (param-declor-case old-pdeclor :nonabstract))
+        (stsp-param-declon-list (cdr old-params) (cdr new-params)))
+       (ident (declor->ident (param-declor-nonabstract->declor old-pdeclor)))
+       ((unless (equal ident
+                       (declor->ident
+                        (param-declor-nonabstract->declor new-pdeclor))))
+        (retmsg$ "The identifiers ~x0 and ~x1 do not match. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 ident
+                 (declor->ident
+                  (param-declor-nonabstract->declor new-pdeclor))))
+       ((mv erp cident) (ldm-ident ident))
+       ((when erp) (stsp-param-declon-list (cdr old-params) (cdr new-params)))
+       ((erp vartys)
+        (stsp-param-declon-list (cdr old-params) (cdr new-params))))
+    (retok (omap::update cident ctype vartys)))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1928,6 +2029,28 @@
    (xdoc::p
     "This is still work in progress."))
   (b* (((reterr) (irr-gout))
+       (old-declor (fundef->declor old-fundef))
+       (new-declor (fundef->declor new-fundef))
+       (old-dirdeclor (declor->direct old-declor))
+       (new-dirdeclor (declor->direct new-declor))
+       ((unless (or
+                 (and (dirdeclor-case old-dirdeclor :function-params)
+                      (dirdeclor-case new-dirdeclor :function-params))
+                 (and (dirdeclor-case old-dirdeclor :function-names)
+                      (dirdeclor-case new-dirdeclor :function-names)
+                      (endp (dirdeclor-function-names->names old-dirdeclor))
+                      (endp (dirdeclor-function-names->names new-dirdeclor)))))
+        (retmsg$ "Unsupported proof generation for ~
+                  functions whose declarator does not have ~
+                  function parameters or empty function names."))
+       (old-params (if (dirdeclor-case old-dirdeclor :function-params)
+                       (dirdeclor-function-params->params old-dirdeclor)
+                     nil))
+       (new-params (if (dirdeclor-case new-dirdeclor :function-params)
+                       (dirdeclor-function-params->params new-dirdeclor)
+                     nil))
+       ((erp vartys) (stsp-param-declon-list old-params new-params))
+       (gin (change-gin gin :vartys vartys))
        (old-body (fundef->body old-fundef))
        (new-body (fundef->body new-fundef))
        (old-items (comp-stmt->items old-body))
