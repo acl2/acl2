@@ -189,7 +189,7 @@
 
 ;rename
 (defund lookup-args-in-result-array2 (args
-                                      arg-objectives ;;a list of objectives, or nil (meaning use '? for all)
+                                      arg-objectives ;;a list of objectives, or nil (meaning use :? for all)
                                       result-array-stobj)
   (declare (xargs :guard (and (bounded-darg-listp args (thearray-length result-array-stobj)) ;; too strong?
                               (rewrite-objective-listp arg-objectives)
@@ -206,7 +206,7 @@
           (cons arg
                 (lookup-args-in-result-array2 (rest args) (rest arg-objectives) result-array-stobj))
         (cons (get-result arg
-                          (if arg-objectives (first arg-objectives) '?)
+                          (if arg-objectives (first arg-objectives) :?)
                           result-array-stobj) ;(aref1 'result-array result-array arg)
               (lookup-args-in-result-array2 (rest args) (rest arg-objectives) result-array-stobj))))))
 

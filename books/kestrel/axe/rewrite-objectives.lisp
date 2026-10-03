@@ -12,13 +12,12 @@
 
 (in-package "ACL2")
 
-;Recognizes a rewrite-objective: t, nil, or ?
+;Recognizes a rewrite-objective: t, nil, or :?
 (defund rewrite-objectivep (obj)
   (declare (xargs :guard t))
   (or (eq t obj)   ; trying to prove the thing is true
       (eq nil obj) ; trying to prove the thing is false
-      ;; todo: use :?
-      (eq '? obj)  ; not targeting true or false
+      (eq ':? obj)  ; not targeting true or false
       ))
 
 (defthm rewrite-objectivep-forward-to-symbolp
@@ -33,10 +32,8 @@
       nil
     (if (eq nil obj)
         t
-      ;; must be '?:
+      ;; must be :?
       obj)))
-
-(defconst *all-rewrite-objectives* '(? t nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

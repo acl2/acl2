@@ -117,10 +117,10 @@
                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))))))))
 
 ;;each stack entry is either <nodenum> or (<nodenum> . <t-or-nil-rewrite-objective>)
-;;the former indicates a rewrite-objective of '?
+;;the former indicates a rewrite-objective of :?
 
 (defmacro push-stack-entry (nodenum rewrite-objective stack)
-  `(if (eq '? ,rewrite-objective)
+  `(if (eq :? ,rewrite-objective)
        (cons ,nodenum ,stack)
      ;;rewrite-objective of t or nil:
      (cons (cons ,nodenum ,rewrite-objective) ,stack)))
@@ -149,13 +149,13 @@
 ;either returns nil (no args are untagged) or extends acc with the untagged args
 ;if any of the args are not rewritten yet, this returns an extended version of stack, else nil.
 (defun get-args-to-simplify (args
-                             arg-objectives ;;a list of objectives, or nil (meaning use '? for all)
+                             arg-objectives ;;a list of objectives, or nil (meaning use :? for all)
                              stack
                              found-an-arg-to-rewritep
                              result-array-stobj)
   (declare (xargs :guard (and ;(array1p 'result-array result-array)
                           (true-listp args)
-                          (rewrite-objective-listp arg-objectives) ; nil means use '? for all
+                          (rewrite-objective-listp arg-objectives) ; nil means use :? for all
                           (darg-listp args)
                           ;; this was too strong:
                           ;; (bounded-darg-listp
@@ -170,7 +170,7 @@
           stack
         nil)
     (let* ((arg (first args))
-           (rewrite-objective (if arg-objectives (first arg-objectives) '?))
+           (rewrite-objective (if arg-objectives (first arg-objectives) :?))
            )
       (if (or (consp arg) ;it's a quotep, so skip it
               (get-result ;-expandable
@@ -618,7 +618,7 @@
                              interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj)
          (let* ((stack-entry (first stack)) ;use "top"?
                 (nodenum (if (atom stack-entry) stack-entry (car stack-entry)))
-                (rewrite-objective (if (atom stack-entry) '? (cdr stack-entry))))
+                (rewrite-objective (if (atom stack-entry) :? (cdr stack-entry))))
            (if previous-stack-result
                ;;we just popped off a stack that was pushed to rewrite the top node of the current stack
                (let ((result-array-stobj (set-result nodenum rewrite-objective previous-stack-result result-array-stobj)))
@@ -973,7 +973,7 @@
 ;; Returns (mv erp dag-lst-or-quotep state)
 ;things to consider adding: remove-duplicate-rulesp, use-internal-contextsp, context-array (really an assumptions array)?, work-hard-when-instructedp
 (defmacro rewrite-dag (dag-lst &key
-                               (rewrite-objective ''?)
+                               (rewrite-objective ':?)
                                (assumptions 'nil)
                                (interpreted-function-alist 'nil)
                                (runes 'nil) ;todo: rename to rules
@@ -1026,7 +1026,7 @@
 ; Calls the new rewriter.
 ;; Returns (mv erp dag-lst-or-quotep state)
 (defmacro rewrite-term (term &key
-                             (rewrite-objective ''?)
+                             (rewrite-objective ':?)
                              (assumptions 'nil)
                              (interpreted-function-alist 'nil)
                              (runes 'nil)
@@ -1147,6 +1147,6 @@
                                  (oi-runes 'nil)
                                  (interpreted-function-alist 'nil)
                                  (assumptions 'nil)
-                                 (rewrite-objective ''?)
+                                 (rewrite-objective ':?)
                                  (print ''t))
   `(make-event (check-rewrite-fn ,term-in ,term-out ,runes ,oi-runes ,interpreted-function-alist ,assumptions ,rewrite-objective ,print state)))
