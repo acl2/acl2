@@ -20,6 +20,7 @@
 ;(include-book "dags")
 (include-book "bounded-darg-listp")
 (include-book "darg-listp")
+(include-book "rewrite-objectives")
 (local (include-book "kestrel/lists-light/resize-list" :dir :system))
 
 ;a result-array maps nodenums to alists from rewrite-objectives to nodenums-or-quoteps (the alist is nil if the node is not yet rewritten)
@@ -27,15 +28,15 @@
 (defund result-alistp (alist)
   (declare (xargs :guard t))
   (and (alistp alist)
-       (subsetp-eq (strip-cars alist) '(? t nil))
+       (subsetp-eq (strip-cars alist) *all-rewrite-objectives*) ; or define a rewrite-objective-listp
        (darg-listp (strip-cdrs alist))))
 
 (defthm result-alistp-of-cons
   (equal (result-alistp (cons entry alist))
-         (and (member-eq (car entry) '(? t nil))
+         (and (rewrite-objectivep (car entry))
               (dargp (cdr entry))
               (result-alistp alist)))
-  :hints (("Goal" :in-theory (enable result-alistp))))
+  :hints (("Goal" :in-theory (enable result-alistp member-eq rewrite-objectivep))))
 
 (defthm result-alistp-forward-to-alistp
   (implies (result-alistp alist)
@@ -173,7 +174,7 @@
            (xargs :stobjs result-array-stobj
 ;:verify-guards nil
                   :guard (and (DARGP result)
-                              (member-eq rewrite-objective '(? t nil))
+                              (rewrite-objectivep rewrite-objective)
                               (< nodenum (thearray-length result-array-stobj)))
                   :guard-hints (("Goal" :in-theory (enable ;RESULT-ALISTP
                                                     )))

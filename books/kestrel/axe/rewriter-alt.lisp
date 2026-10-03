@@ -55,23 +55,7 @@
                            ;list::len-when-consp-linear
                            )))
 
-;Recognizes a rewrite-objective: t, nil, or ?
-(defund rewrite-objectivep (obj)
-  (declare (xargs :guard t))
-  (or (eq t obj)   ; trying to prove the thing is true
-      (eq nil obj) ; trying to prove the thing is false
-      ;; todo: use :?
-      (eq '? obj)  ; not targeting true or false
-      ))
 
-(defund-inline flip-objective (obj)
-  (declare (xargs :guard (rewrite-objectivep obj)))
-  (if (eq t obj)
-      nil
-    (if (eq nil obj)
-        t
-      ;; must be '?:
-      obj)))
 
 ;checks whether all vars in term appear as keys in alist
 ;fixme maybe this handles (closed) lambdas naturally?
