@@ -47,7 +47,12 @@
   (:meta    ((name pseudo-fnsym-p)))
   :layout :list)
 
-(fty::deflist fgl-runelist :elt-type fgl-rune :true-listp t)
+(fty::defprod fgl-rune-prio
+  ((rune fgl-rune-p)
+   (prio integerp))
+  :layout :list)
+
+(fty::deflist fgl-rune-priolist :elt-type fgl-rune-prio :true-listp t)
 
 
 (fty::deftagsum fgl-rule
@@ -97,7 +102,12 @@
   (:bmeta ((name pseudo-fnsym-p)))
   :layout :list)
 
-(fty::deflist fgl-binder-runelist :elt-type fgl-binder-rune :true-listp t)
+(fty::defprod fgl-binder-rune-prio
+  ((rune fgl-binder-rune)
+   (prio integerp))
+  :layout :list)
+
+(fty::deflist fgl-binder-rune-priolist :elt-type fgl-binder-rune-prio :true-listp t)
 
 (fty::deftagsum fgl-binder-rule
   (:brewrite ((rune fgl-binder-rune-p)

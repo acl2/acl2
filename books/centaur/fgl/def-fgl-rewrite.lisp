@@ -183,66 +183,130 @@
   (:default ())
   (:first ())
   (:last ())
+  (:prio ((prio integerp)))
   (:before ((rule symbolp)))
+  (:same   ((rule symbolp)))
   (:after  ((rule symbolp)))
   :layout :list)
 
-(fty::deflist fgl-generic-runelist :elt-type fgl-generic-rune :true-listp t
+(defprod fgl-generic-rune-prio
+  ((rune fgl-generic-rune)
+   (prio integerp))
+  :layout :list)
+
+(fty::deflist fgl-generic-rune-priolist :elt-type fgl-generic-rune-prio :true-listp t
   ///
-  (defthm fgl-generic-runelist-of-take
-    (implies (and (fgl-generic-runelist-p x)
+  (defthm fgl-generic-rune-priolist-of-take
+    (implies (and (fgl-generic-rune-priolist-p x)
                   (case-split (<= (nfix n) (len x))))
-             (fgl-generic-runelist-p (take n x))))
+             (fgl-generic-rune-priolist-p (take n x))))
 
-  (defthm fgl-generic-runelist-of-remove-equal
-    (implies (fgl-generic-runelist-p x)
-             (fgl-generic-runelist-p (remove-equal y x))))
+  (defthm fgl-generic-rune-priolist-p-of-append
+    (implies (and (fgl-generic-rune-priolist-p x)
+                  (fgl-generic-rune-priolist-p y))
+             (fgl-generic-rune-priolist-p (append x y)))))
 
-  (defthm fgl-generic-runelist-p-of-append
-    (implies (and (fgl-generic-runelist-p x)
-                  (fgl-generic-runelist-p y))
-             (fgl-generic-runelist-p (append x y)))))
-
-(define member-rune-list ((name symbolp) (runes fgl-generic-runelist-p))
-  :returns (tail fgl-generic-runelist-p)
+(define member-rune-list ((name symbolp) (runes fgl-generic-rune-priolist-p))
+  :returns (tail fgl-generic-rune-priolist-p)
   (if (atom runes)
       nil
-    (if (eq name (fgl-generic-rune->name (car runes)))
-        (fgl-generic-runelist-fix runes)
+    (if (eq name (fgl-generic-rune->name
+                  (fgl-generic-rune-prio->rune (car runes))))
+        (fgl-generic-rune-priolist-fix runes)
       (member-rune-list name (cdr runes))))
   ///
   (defret len-of-<fn>
     (<= (len tail) (len runes))
     :rule-classes :linear))
 
-(define add-rune-to-ordered-list ((rune fgl-generic-rune-p)
-                                  (order fgl-add-rule-order-p)
-                                  (runes fgl-generic-runelist-p))
-  :returns (mv ok (new-runes fgl-generic-runelist-p))
+(define member-rune-name-in-prio-list ((name symbolp) (runes fgl-generic-rune-priolist-p))
+  :returns (tail fgl-generic-rune-priolist-p)
+  (if (atom runes)
+      nil
+    (if (eq name (fgl-generic-rune->name
+                  (fgl-generic-rune-prio->rune (car runes))))
+        (fgl-generic-rune-priolist-fix runes)
+      (member-rune-name-in-prio-list name (cdr runes))))
+  ///
+  (defret len-of-<fn>
+    (<= (len tail) (len runes))
+    :rule-classes :linear))
+
+(define member-rune-in-prio-list ((x fgl-generic-rune-p) (runes fgl-generic-rune-priolist-p))
+  :returns (tail fgl-generic-rune-priolist-p)
+  (if (atom runes)
+      nil
+    (if (equal (fgl-generic-rune-fix x)
+               (fgl-generic-rune-prio->rune (car runes)))
+        (fgl-generic-rune-priolist-fix runes)
+      (member-rune-in-prio-list x (cdr runes))))
+  ///
+  (defret len-of-<fn>
+    (<= (len tail) (len runes))
+    :rule-classes :linear))
+
+(define remove-rune-from-prio-list ((x fgl-generic-rune-p)
+                                    (runes fgl-generic-rune-priolist-p))
+  :returns (rest fgl-generic-rune-priolist-p)
+  (if (atom runes)
+      nil
+    (if (equal (fgl-generic-rune-fix x)
+               (fgl-generic-rune-prio->rune (car runes)))
+        (fgl-generic-rune-priolist-fix (cdr runes))
+      (cons-with-hint (fgl-generic-rune-prio-fix (car runes))
+                      (remove-rune-from-prio-list x (cdr runes))
+                      (fgl-generic-rune-priolist-fix runes)))))
+
+(define add-rune-to-list-by-priority ((x fgl-generic-rune-prio-p)
+                                      (runes fgl-generic-rune-priolist-p))
+  :returns (new-runes fgl-generic-rune-priolist-p)
+  (if (atom runes)
+      (list (fgl-generic-rune-prio-fix x))
+    (b* (((fgl-generic-rune-prio x))
+         ((fgl-generic-rune-prio r1) (car runes))
+         ((when (<= x.prio r1.prio))
+          (cons (fgl-generic-rune-prio-fix x)
+                (fgl-generic-rune-priolist-fix runes))))
+      (cons (fgl-generic-rune-prio-fix r1)
+            (add-rune-to-list-by-priority x (cdr runes))))))
+
+(define add-rune-to-list-by-order ((rune fgl-generic-rune-p)
+                                   (order fgl-add-rule-order-p)
+                                   (runes fgl-generic-rune-priolist-p))
+  :returns (mv ok (new-runes fgl-generic-rune-priolist-p))
   (b* ((rune (fgl-generic-rune-fix rune))
-       (runes (fgl-generic-runelist-fix runes)))
-    (fgl-add-rule-order-case order
-      :default (mv t (add-to-set-equal rune runes))
-      :first (mv t (cons rune (remove-equal rune runes)))
-      :last (mv t (append (remove-equal rune runes) (list rune)))
-      :before (let* ((runes (remove-equal rune runes))
-                     (tail (member-rune-list order.rule runes)))
-                (if tail
-                    (mv t (append (take (- (len runes) (len tail)) runes)
-                                  (cons rune tail)))
-                  (mv nil runes)))
-      :after (let* ((runes (remove-equal rune runes))
-                    (tail (member-rune-list order.rule runes)))
-               (if tail
-                   (mv t (append (take (- (len runes) (len tail)) runes)
-                                 (list* (car tail) rune (cdr tail))))
-                 (mv nil runes))))))
+       (runes (fgl-generic-rune-priolist-fix runes))
+       (prio (fgl-add-rule-order-case order
+               :default (let ((look (member-rune-in-prio-list rune runes)))
+                          (if look
+                              (fgl-generic-rune-prio->prio (car look))
+                            0))
+               :first (if (consp runes)
+                          (+ -1 (fgl-generic-rune-prio->prio (car runes)))
+                        0)
+               :last (if (consp runes)
+                         (+ 1 (fgl-generic-rune-prio->prio (car (last runes))))
+                       0)
+               :before (let ((tail (member-rune-name-in-prio-list order.rule runes)))
+                         (and (consp tail)
+                              (+ -1 (fgl-generic-rune-prio->prio (car tail)))))
+               :same (let ((tail (member-rune-name-in-prio-list order.rule runes)))
+                       (and (consp tail)
+                            (fgl-generic-rune-prio->prio (car tail))))
+               :after (let ((tail (member-rune-name-in-prio-list order.rule runes)))
+                        (and (consp tail)
+                             (+ 1 (fgl-generic-rune-prio->prio (car tail)))))
+               :prio order.prio))
+       ((unless prio) (mv nil runes))
+       (runes (remove-rune-from-prio-list rune runes)))
+    (mv t
+        (add-rune-to-list-by-priority (fgl-generic-rune-prio rune prio) runes))))
 
 (defun branch-merge-alist-add-rune-entries (fns rune order alist)
   (b* (((when (atom fns)) alist)
        (runes (fgl-branch-merge-runes-lookup (car fns) alist))
        ((mv ok new-runes)
-        (add-rune-to-ordered-list rune order runes))
+        (add-rune-to-list-by-order rune order runes))
        (alist (if ok
                   (hons-acons (car fns) new-runes alist)
                 alist)))
@@ -252,7 +316,7 @@
   (b* (((when (atom fns)) alist)
        (runes (fgl-binder-runes-lookup (car fns) alist))
        ((mv ok new-runes)
-        (add-rune-to-ordered-list rune order runes))
+        (add-rune-to-list-by-order rune order runes))
        (alist (if ok
                   (hons-acons (car fns) new-runes alist)
                 alist)))
@@ -263,7 +327,7 @@
   (b* (((when (atom fns)) alist)
        (runes (fgl-rewrite-runes-lookup (car fns) alist world))
        ((mv ok new-runes)
-        (add-rune-to-ordered-list rune order runes))
+        (add-rune-to-list-by-order rune order runes))
        (alist (if ok
                   (hons-acons (car fns) new-runes alist)
                 alist)))
@@ -276,7 +340,7 @@
                               (eq (fgl-rune-formula->name rune) (car fns)))))
         (alist-remove-rune-entries (cdr fns) rune alist))
        (alist (hons-acons (car fns)
-                          (remove-equal rune (cdr look))
+                          (remove-rune-from-prio-list rune (cdr look))
                           alist)))
     (alist-remove-rune-entries (cdr fns) rune alist)))
 
@@ -362,13 +426,14 @@ exist or is not associated with any of the leading function symbols." name order
     (alist-remove-rune-entries fns rune alist)))
 
 
-(defun add-fgl-rewrites-fn (names alist world)
+(defun add-fgl-rewrites-fn (names order alist world)
   (declare (xargs :mode :program))
   (if (atom names)
       alist
     (add-fgl-rewrites-fn (cdr names)
-                        (add-fgl-rewrite-fn (car names) '(:default) alist world)
-                        world)))
+                         order
+                         (add-fgl-rewrite-fn (car names) order alist world)
+                         world)))
 
 (defun remove-fgl-rewrites-fn (names alist world)
   (declare (xargs :mode :program))
@@ -378,29 +443,31 @@ exist or is not associated with any of the leading function symbols." name order
                            (remove-fgl-rewrite-fn (car names) alist world)
                            world)))
 
-(defun add-fgl-branch-merges-fn (names alist world)
+(defun add-fgl-branch-merges-fn (names order alist world)
   (declare (xargs :mode :program))
   (if (atom names)
       alist
     (add-fgl-branch-merges-fn (cdr names)
-                              (add-fgl-branch-merge-fn (car names) '(:default) alist world)
-                             world)))
+                              order
+                              (add-fgl-branch-merge-fn (car names) order alist world)
+                              world)))
 
 (defun remove-fgl-branch-merges-fn (names alist world)
   (declare (xargs :mode :program))
   (if (atom names)
       alist
     (remove-fgl-branch-merges-fn (cdr names)
-                                (remove-fgl-branch-merge-fn (car names) alist world)
-                                world)))
+                                 (remove-fgl-branch-merge-fn (car names) alist world)
+                                 world)))
 
-(defun add-fgl-brewrites-fn (names alist world)
+(defun add-fgl-brewrites-fn (names order alist world)
   (declare (xargs :mode :program))
   (if (atom names)
       alist
     (add-fgl-brewrites-fn (cdr names)
-                        (add-fgl-brewrite-fn (car names) '(:default) alist world)
-                        world)))
+                          order
+                          (add-fgl-brewrite-fn (car names) order alist world)
+                          world)))
 
 (defun remove-fgl-brewrites-fn (names alist world)
   (declare (xargs :mode :program))
@@ -420,39 +487,62 @@ depends on the invocation: if a name given is simply a symbol, then the formula
 of that theorem or function name is used.  If a name is instead a @(':rewrite')
 or @(':definition') rune, then the corresponding lemma is used.  A
 @(':formula') rune (which is not a valid ACL2 rune but is a valid FGL rune) is
-treated the same as a bare symbol.</p>")
+treated the same as a bare symbol.</p>
 
-(defmacro add-fgl-rewrites (&rest names)
-  `(table fgl-rewrite-rules
-          nil
-          (add-fgl-rewrites-fn ',names
-                               (make-fast-alist (table-alist 'fgl-rewrite-rules world))
-                               world)
-          :clear))
-
-(defxdoc add-fgl-rewrite
-  :parents (add-fgl-rewrites)
-  :short "Enable a rewrite rule for use in FGL"
-  :long "<p>See @(see add-fgl-rewrites). This macro only enables one rule and allows one
-additional keyword argument that specifies the order in which the rule will be
-tried--one of:</p>
+<p>One keyword argument @(':order') is recognized. This may be one of the
+following (or an expression evaluating to one of the following):</p>
 
 <ul>
-<li>@('(:default)') -- keep the current order if already enabled, else first</li>
+<li>@('(:default)') -- keep the current order if already enabled, else priority 0</li>
+<li>@('(:prio <priority>)') -- ordered according to the given priority, an integer, lowest first.</li>
 <li>@('(:first)') -- first among currently enabled rules</li>
 <li>@('(:last)') -- last among currently enabled rules</li>
 <li>@('(:before <other>)') -- before the rule named @('<other>') if it exists, else error</li>
-<li>@('(:after <other>)') -- after the rule named @('<other>') if it exists, else error.</li>
-</ul> ")
+<li>@('(:same <other>)') -- same priority as the rule named @('<other>') if it exists, else error</li>
+<li>@('(:after <other>)') -- after the rule named @('<other>') if it exists, else error</li>
+</ul>
 
-(defmacro add-fgl-rewrite (name &key (order '(:default)))
-  `(table fgl-rewrite-rules
+<p>Rules are kept ordered according to priority, a signed integer. The default
+priority is 0, and rules with lesser priority (including negative) are tried
+before rules with greater priority. The order types that don't deal directly
+with priority determine the priority of the rule relative to other existing
+rules. E.g., for order @('(:first)') the priority is set to one less than the
+lowest priority rule for the given function; for order @('(:after)') the
+priority is set to one greater than the priority of the argument rule
+@('<other>').</p>
+
+")
+
+                                 
+(defun split-rule-names-and-order (names-order)
+  (b* (((mv kwd-alist names) (std::extract-keywords
+                              'add-fgl-rules
+                              '(:order) names-order nil))
+       (order (std::getarg :order '(:default) kwd-alist))
+       (order (if (and (consp order)
+                       (keywordp (car order)))
+                  (kwote order)
+                order)))
+    (mv names order)))
+  
+
+
+(defmacro add-fgl-rewrites (&rest names-order)
+  (b* (((mv names order) (split-rule-names-and-order names-order)))
+    `(table fgl-rewrite-rules
           nil
-          (add-fgl-rewrite-fn ',name
-                              ',order
+          (add-fgl-rewrites-fn ',names
+                               ,order
                                (make-fast-alist (table-alist 'fgl-rewrite-rules world))
                                world)
-          :clear))
+          :clear)))
+
+(defxdoc add-fgl-rewrite
+  :parents (add-fgl-rewrites)
+  :short "Alias for @(see add-fgl-rewrites) that just takes one name.")
+
+(defmacro add-fgl-rewrite (name &key (order '(:default)))
+  `(add-fgl-rewrites ,name :order ,order))
 
 (defxdoc remove-fgl-rewrites
   :short "Disable some rewrite rules' use in FGL."
@@ -477,34 +567,26 @@ rewrite rule runes recognized in FGL.</p>")
   :short "Enable some rewrite rules's use for branch merging in FGL."
   :long "<p>Adds the given rewrite rule runes to the @('fgl-branch-merge-rules') table so
 that they can be used to merge @('if') branches in FGL. See @(see
-add-fgl-rewrites) for details on rewrite rule runes recognized in FGL.  Each rule
-must have as its LHS a call of @('if') with a function call as its @('then')
-branch.</p>")
+add-fgl-rewrites) for details on rewrite rule runes recognized in FGL and the
+optional @(':order') keyword argument.  Each rule must have as its LHS a call
+of @('if') with a function call as its @('then') branch.</p>")
 
 
-(defmacro add-fgl-branch-merges (&rest names)
-  `(table fgl-branch-merge-rules
-          nil
-          (add-fgl-branch-merges-fn ',names
-                                    (make-fast-alist (table-alist 'fgl-branch-merge-rules world))
-                                    world)
-          :clear))
+(defmacro add-fgl-branch-merges (&rest names-order)
+  (b* (((mv names order) (split-rule-names-and-order names-order)))
+    `(table fgl-branch-merge-rules
+            nil
+            (add-fgl-branch-merges-fn ',names ,order
+                                      (make-fast-alist (table-alist 'fgl-branch-merge-rules world))
+                                      world)
+            :clear)))
 
 (defxdoc add-fgl-branch-merge
   :parents (add-fgl-branch-merges)
-  :short "Enable a branch merge rule for use in FGL"
-  :long "<p>See @(see add-fgl-branch-merges). This macro only enables one rule and allows one
-additional keyword argument that specifies the order in which the rule will be
-tried; see @(see add-fgl-rewrite) for ordering specifiers.</p>")
+  :short "Alias for @(see add-fgl-branch-merges) that just takes one name.")
 
 (defmacro add-fgl-branch-merge (name &key (order '(:default)))
-  `(table fgl-branch-merge-rules
-          nil
-          (add-fgl-branch-merge-fn ',name
-                                   ',order
-                                   (make-fast-alist (table-alist 'fgl-branch-merge-rules world))
-                                   world)
-          :clear))
+  `(add-fgl-branch-merges ,name :order ,order))
 
 (defxdoc remove-fgl-branch-merges
   :short "Disable some rewrite rules' use for branch merging in FGL."
@@ -541,32 +623,27 @@ treated the same as a bare symbol.</p>
 
 <p>The literal runes stored in the table are slightly different than the ones
 accepted as input: a formula rune is stored as @('(:bformula name)') whereas a
-rewrite rune is stored as @('(:brewrite name)').</p>")
+rewrite rune is stored as @('(:brewrite name)').</p>
+
+<p>See @(see add-fgl-rewrites) for details about the optional @(':order')
+keyword argument.</p>")
 
 
-(defmacro add-fgl-brewrites (&rest names)
-  `(table fgl-binder-rules
-          nil
-          (add-fgl-brewrites-fn ',names
-                                (make-fast-alist (table-alist 'fgl-binder-rules world))
-                                world)
-          :clear))
+(defmacro add-fgl-brewrites (&rest names-order)
+  (b* (((mv names order) (split-rule-names-and-order names-order)))
+    `(table fgl-binder-rules
+            nil
+            (add-fgl-brewrites-fn ',names ,order
+                                  (make-fast-alist (table-alist 'fgl-binder-rules world))
+                                  world)
+            :clear)))
 
 (defxdoc add-fgl-brewrite
   :parents (add-fgl-brewrites)
-  :short "Enable a binder rewrite rule for use in FGL"
-  :long "<p>See @(see add-fgl-brewrites). This macro only enables one rule and allows one
-additional keyword argument that specifies the order in which the rule will be
-tried; see @(see add-fgl-rewrite) for ordering specifiers.</p>")
+  :short "Alias for @(see add-fgl-brewrites) that just takes one name.")
 
 (defmacro add-fgl-brewrite (name &key (order '(:default)))
-  `(table fgl-binder-rules
-          nil
-          (add-fgl-brewrite-fn ',name
-                               ',order
-                               (make-fast-alist (table-alist 'fgl-binder-rules world))
-                               world)
-          :clear))
+  `(add-fgl-brewrites ,name :order ,order))
 
 (defsection def-fgl-brewrite
   :parents (fgl-rewrite-rules)
@@ -635,7 +712,7 @@ defined as an FGL primitive and installed in the current attachment for
 @('fgl-primitive-fncall-stub') using the @('install-fgl-metafns') event.</p>
 
 <p>The order argument is optional; see the discussion in @(see
-add-fgl-rewrite).</p>")
+add-fgl-rewrites).</p>")
 
 
 (defmacro add-fgl-primitive (trigger-fn primitive-fn &key (order '(:default)))
@@ -692,7 +769,7 @@ metafunction and installed in the current attachment for
 @('fgl-meta-fncall-stub') using the @('install-fgl-metafns') event.</p>
 
 <p>The order argument is optional; see the discussion in @(see
-add-fgl-rewrite).</p>")
+add-fgl-rewrites).</p>")
 
 (defmacro remove-fgl-meta (trigger-fn meta-fn)
   `(table fgl-rewrite-rules
@@ -737,7 +814,7 @@ metafunction and installed in the current attachment for
 @('fgl-binder-fncall-stub') using the @('install-fgl-metafns') event.</p>
 
 <p>The order argument is optional; see the discussion in @(see
-add-fgl-rewrite).</p>")
+add-fgl-rewrites).</p>")
 
 (defmacro remove-fgl-binder-meta (trigger-fn meta-fn)
   `(table fgl-binder-rules
