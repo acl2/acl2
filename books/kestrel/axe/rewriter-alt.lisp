@@ -155,7 +155,7 @@
                              result-array-stobj)
   (declare (xargs :guard (and ;(array1p 'result-array result-array)
                           (true-listp args)
-                          (true-listp arg-objectives)
+                          (rewrite-objective-listp arg-objectives) ; nil means use '? for all
                           (darg-listp args)
                           ;; this was too strong:
                           ;; (bounded-darg-listp
@@ -163,7 +163,8 @@
                           ;;  (len (thearray-length result-array-stobj)) ;2147483646
                           ;;  )
                           )
-                  :stobjs result-array-stobj))
+                  :stobjs result-array-stobj
+                  :guard-hints (("Goal" :in-theory (enable rewrite-objective-listp)))))
   (if (endp args)
       (if found-an-arg-to-rewritep
           stack

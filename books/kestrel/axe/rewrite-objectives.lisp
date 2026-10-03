@@ -21,6 +21,12 @@
       (eq '? obj)  ; not targeting true or false
       ))
 
+(defthm rewrite-objectivep-forward-to-symbolp
+  (implies (rewrite-objectivep obj)
+           (symbolp obj))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable rewrite-objectivep))))
+
 (defund-inline flip-objective (obj)
   (declare (xargs :guard (rewrite-objectivep obj)))
   (if (eq t obj)
@@ -31,3 +37,18 @@
       obj)))
 
 (defconst *all-rewrite-objectives* '(? t nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund rewrite-objective-listp (objs)
+  (declare (xargs :guard t))
+  (if (atom objs)
+      (null objs)
+    (and (rewrite-objectivep (first objs))
+         (rewrite-objective-listp (rest objs)))))
+
+(defthm rewrite-objective-listp-forward-to-symbol-listp
+  (implies (rewrite-objective-listp objs)
+           (symbol-listp objs))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable rewrite-objective-listp symbol-listp))))

@@ -28,7 +28,7 @@
 (defund result-alistp (alist)
   (declare (xargs :guard t))
   (and (alistp alist)
-       (subsetp-eq (strip-cars alist) *all-rewrite-objectives*) ; or define a rewrite-objective-listp
+       (rewrite-objective-listp (strip-cars alist))
        (darg-listp (strip-cdrs alist))))
 
 (defthm result-alistp-of-cons
@@ -36,7 +36,7 @@
          (and (rewrite-objectivep (car entry))
               (dargp (cdr entry))
               (result-alistp alist)))
-  :hints (("Goal" :in-theory (enable result-alistp member-eq rewrite-objectivep))))
+  :hints (("Goal" :in-theory (enable result-alistp member-eq rewrite-objective-listp))))
 
 (defthm result-alistp-forward-to-alistp
   (implies (result-alistp alist)
@@ -46,10 +46,10 @@
 (defthm result-alistp-forward-to-symbol-alistp
   (implies (result-alistp alist)
            (symbol-alistp alist))
-  :hints (("Goal" :in-theory (enable result-alistp))))
+  :hints (("Goal" :in-theory (enable result-alistp rewrite-objective-listp rewrite-objectivep))))
 
 ;A stobj representing an unbounded array from natural number indices to values.
-;The values are result-alistp (alists from rewrite-objectives to
+;The values are result-alists (alists from rewrite-objectives to
 ;nodenums/quoteps).  The array is resized when an attempt is made to set an
 ;element outside of the current size.  Elements beyond the max array size are
 ;;stored in the extra-elements field (accessing them will be slow). ;fixme
@@ -72,35 +72,34 @@
 
 (local (in-theory (enable alistp-of-nth-when-thearrayp)))
 
-(defthm alistp-of-thearrayi
-  (implies (and (result-array-stobjp result-array-stobj)
-                (natp n)
-                (< n (thearray-length result-array-stobj)))
-           (alistp (thearrayi n result-array-stobj)))
-  :hints (("Goal" :in-theory (enable result-alistp result-array-stobjp thearrayi thearrayp THEARRAY-LENGTH))))
+(local
+ (defthm alistp-of-thearrayi
+   (implies (and (result-array-stobjp result-array-stobj)
+                 (natp n)
+                 (< n (thearray-length result-array-stobj)))
+            (alistp (thearrayi n result-array-stobj)))
+   :hints (("Goal" :in-theory (enable result-alistp result-array-stobjp thearrayi thearrayp THEARRAY-LENGTH)))))
 
-(defthmd symbol-alistp-of-nth-when-thearrayp
-  (implies (and (thearrayp array)
-                (natp n)
-                (< n (len array)))
-           (symbol-alistp (nth n array)))
-  :hints (("Goal" :in-theory (enable thearrayp))))
+(local
+ (defthmd symbol-alistp-of-nth-when-thearrayp
+   (implies (and (thearrayp array)
+                 (natp n)
+                 (< n (len array)))
+            (symbol-alistp (nth n array)))
+   :hints (("Goal" :in-theory (enable thearrayp)))))
 
-(defthm symbol-alistp-of-thearrayi
-  (implies (and (result-array-stobjp result-array-stobj)
-                (natp n)
-                (< n (thearray-length result-array-stobj)))
-           (symbol-alistp (thearrayi n result-array-stobj)))
-  :hints (("Goal" :in-theory (enable result-alistp result-array-stobjp thearrayi thearrayp THEARRAY-LENGTH
-                                     symbol-alistp-of-nth-when-thearrayp))))
+(local
+ (defthm symbol-alistp-of-thearrayi
+   (implies (and (result-array-stobjp result-array-stobj)
+                 (natp n)
+                 (< n (thearray-length result-array-stobj)))
+            (symbol-alistp (thearrayi n result-array-stobj)))
+   :hints (("Goal" :in-theory (enable result-alistp result-array-stobjp thearrayi thearrayp THEARRAY-LENGTH
+                                      symbol-alistp-of-nth-when-thearrayp)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (defthm symbol-alistp-of-car-when-thearrayp
-;;   (implies (and (thearrayp x)
-;;                 (< 0 (len x)))
-;;            (symbol-alistp (car x)))
-;;   :hints (("Goal" :in-theory (enable result-alistp))))
-
+;; Helper function to handle out-of-range indices.
 (defun get-from-result-array-stobj (index result-array-stobj)
   (declare (xargs :stobjs result-array-stobj)
            (type (integer 0 *) index)
@@ -111,6 +110,7 @@
       nil ;(default-array-value result-array-stobj)
       )))
 
+;; Helper function to handle out-of-range indices.
 (defun set-in-result-array-stobj (index value result-array-stobj)
   (declare (xargs :stobjs result-array-stobj
                   :guard (result-alistp value))
@@ -153,15 +153,17 @@
 ;;   :hints (("Goal" :in-theory (enable LEN-UPDATE-NTH)
 ;;            :do-not '(generalize eliminate-destructors))))
 
-
 ;if nodenum is too big, returns nil
 ;make a macro?
 ;will we ever know nodenum is not too big?
-(defun get-result (nodenum rewrite-objective result-array-stobj)
-  (declare (type (integer 0 *) nodenum)
-           (xargs :stobjs result-array-stobj
-                  ;;:guard (< nodenum (thearray-length result-array-stobj))
-                  ))
+(defund get-result (nodenum rewrite-objective result-array-stobj)
+  (declare (xargs :guard (and (natp nodenum)
+                              (rewrite-objectivep rewrite-objective)
+                              ;; (< nodenum (thearray-length result-array-stobj))
+                              )
+                  :split-types t
+                  :stobjs result-array-stobj)
+           (type (integer 0 *) nodenum))
   ;;interesting.  we don't need an upper bound on index, but this will give a hard error is index>=2^28-1
   (let ((result (lookup-eq rewrite-objective (get-from-result-array-stobj nodenum result-array-stobj))))
     (prog2$ nil ;(if result (cw "hit~%") (cw "miss~%"))
@@ -169,16 +171,15 @@
 
 ;make a macro?
 ;todo: nested induction
-(defun set-result (nodenum rewrite-objective result result-array-stobj)
-  (declare (type (integer 0 *) nodenum)
-           (xargs :stobjs result-array-stobj
-;:verify-guards nil
-                  :guard (and (DARGP result)
+(defund set-result (nodenum rewrite-objective result result-array-stobj)
+  (declare (xargs :guard (and (natp nodenum)
                               (rewrite-objectivep rewrite-objective)
-                              (< nodenum (thearray-length result-array-stobj)))
-                  :guard-hints (("Goal" :in-theory (enable ;RESULT-ALISTP
-                                                    )))
-                  )
+                              (dargp result)
+                              (< nodenum (thearray-length result-array-stobj)) ;;  too strong?
+                              )
+                  :split-types t
+                  :stobjs result-array-stobj)
+           (type (integer 0 *) nodenum)
            ;;interesting.  we don't need an upper bound on index, but this will give a hard error is index>=2^28-1
            )
   (set-in-result-array-stobj nodenum
@@ -186,18 +187,17 @@
                                          (get-from-result-array-stobj nodenum result-array-stobj))
                              result-array-stobj))
 
-;; test: (defconst-computed2 *bar* (mv '3 state result-array-stobj))
-
-(defun lookup-args-in-result-array2 (args
-                                     arg-objectives ;;a list of objectives, or nil (meaning use '? for all)
-                                     result-array-stobj)
-  (declare (xargs ;:verify-guards nil ;;fixme need to say that the array entires are alists..
-            :guard (and (bounded-darg-listp args (thearray-length result-array-stobj))
-                        (or (not arg-objectives)
-                            (equal (len arg-objectives)
-                                   (len args))))
-                  :stobjs result-array-stobj
-                  ))
+;rename
+(defund lookup-args-in-result-array2 (args
+                                      arg-objectives ;;a list of objectives, or nil (meaning use '? for all)
+                                      result-array-stobj)
+  (declare (xargs :guard (and (bounded-darg-listp args (thearray-length result-array-stobj)) ;; too strong?
+                              (rewrite-objective-listp arg-objectives)
+                              (or (not arg-objectives)
+                                  (equal (len arg-objectives)
+                                         (len args))))
+                  :guard-hints (("Goal" :in-theory (enable rewrite-objective-listp)))
+                  :stobjs result-array-stobj))
   (if (endp args)
       nil
     (let ((arg (car args)))
@@ -210,23 +210,22 @@
                           result-array-stobj) ;(aref1 'result-array result-array arg)
               (lookup-args-in-result-array2 (rest args) (rest arg-objectives) result-array-stobj))))))
 
-(defun clear-result-array-stobj-elements (index result-array-stobj)
-  (declare (xargs :stobjs (result-array-stobj)
-;                  :verify-guards nil
-                  :guard (and (integerp index)
-                              (<= -1 index)
-                              (< index (thearray-length result-array-stobj)))
-                  :measure (nfix (+ 1 index))
-                  ))
-  (if (not (natp index))
-      result-array-stobj
-    (let ((result-array-stobj (update-thearrayi index nil result-array-stobj)))
-      (clear-result-array-stobj-elements (+ -1 index) result-array-stobj))))
+;; ;; Clears the elements from INDEX down through 0.
+;; (defund clear-result-array-stobj-elements (index result-array-stobj)
+;;   (declare (xargs :guard (and (integerp index)
+;;                               (<= -1 index)
+;;                               (< index (thearray-length result-array-stobj)))
+;;                   :stobjs (result-array-stobj)
+;;                   :measure (nfix (+ 1 index))))
+;;   (if (not (natp index))
+;;       result-array-stobj
+;;     (let ((result-array-stobj (update-thearrayi index nil result-array-stobj)))
+;;       (clear-result-array-stobj-elements (+ -1 index) result-array-stobj))))
 
-(defun clear-result-array-stobj (result-array-stobj)
-  (declare (xargs :stobjs (result-array-stobj)))
-  (let* ((result-array-stobj (resize-thearray 100 result-array-stobj))
-         (result-array-stobj (clear-result-array-stobj-elements 99 result-array-stobj)))
-    result-array-stobj))
+;; (defund clear-result-array-stobj (result-array-stobj)
+;;   (declare (xargs :stobjs (result-array-stobj)))
+;;   (let* ((result-array-stobj (resize-thearray 100 result-array-stobj))
+;;          (result-array-stobj (clear-result-array-stobj-elements 99 result-array-stobj)))
+;;     result-array-stobj))
 
-;fixme make a function to print the stobj?
+;todo: make a function to print the stobj?
