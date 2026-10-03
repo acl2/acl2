@@ -1,7 +1,7 @@
 ; A variant of aset1 that checks its index
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,8 +13,6 @@
 (in-package "ACL2")
 
 (include-book "alen1")
-
-(in-theory (disable (:executable-counterpart break$))) ;keeps it from breaking when it's evaluated during a proof, e.g., proofs about aset1-safe
 
 ;this makes sure the index is in bounds, which prevents memory from getting trashed if this is called on bad arguments
 (defund aset1-safe (name l n val)
