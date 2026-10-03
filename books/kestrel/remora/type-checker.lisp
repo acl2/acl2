@@ -109,7 +109,7 @@
     (dim-case
      dim
      :var (consp (omap::assoc (ispace-var-dim dim.name)
-                              (senv->ispace-vars senv)))
+                              (ispace-senv->ispaces (senv->ienv senv))))
      :const t
      :add (check-dim-list dim.dims senv)
      :mul (check-dim-list dim.dims senv)
@@ -168,7 +168,7 @@
     (shape-case
      shape
      :var (consp (omap::assoc (ispace-var-shape shape.name)
-                              (senv->ispace-vars senv)))
+                              (ispace-senv->ispaces (senv->ienv senv))))
      :dims (check-dim-list shape.dims senv)
      :append (check-shape-list shape.shapes senv)
      :splice (check-ispace-list shape.ispaces senv))
@@ -700,7 +700,7 @@
      with its definition (see @(tsee senv-ispace-subst)).
      Since shapes contain no binders, this substitution cannot capture."))
   (b* (((stringdimmap+stringshapemap subst)
-        (senv-ispace-subst (senv->ispace-vars senv))))
+        (senv-ispace-subst (ispace-senv->ispaces (senv->ienv senv)))))
     (shape-subst-ispace-vars shape subst.dim-map subst.shape-map)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -716,7 +716,7 @@
      with its definition (see @(tsee senv-ispace-subst)).
      Since ispaces contain no binders, this substitution cannot capture."))
   (b* (((stringdimmap+stringshapemap subst)
-        (senv-ispace-subst (senv->ispace-vars senv))))
+        (senv-ispace-subst (ispace-senv->ispaces (senv->ienv senv)))))
     (ispace-subst-ispace-vars ispace subst.dim-map subst.shape-map)))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -757,7 +757,7 @@
         (senv-type-subst (senv->type-vars senv)))
        (type (type-subst-type-vars-alpha type tsubst.1st tsubst.2nd))
        ((stringdimmap+stringshapemap isubst)
-        (senv-ispace-subst (senv->ispace-vars senv))))
+        (senv-ispace-subst (ispace-senv->ispaces (senv->ienv senv)))))
     (type-subst-ispace-vars-alpha type isubst.dim-map isubst.shape-map)))
 
 ;;;;;;;;;;;;;;;;;;;;

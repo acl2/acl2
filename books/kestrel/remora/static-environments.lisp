@@ -45,6 +45,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod ispace-senv
+  :short "Fixtype of ispace static environments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An ispace static environment is
+     a map from the ispace variables in scope to optional ispaces.
+     This corresponds to @($\\Theta$);
+     since our ispace variables include their own sort,
+     the keys suffice to capture the sorts,
+     as opposed to a map from variables to sorts.
+     The optional ispace associated to a variable is absent
+     when the variable is bound by an abstraction,
+     i.e. it does not stand for any specific ispace;
+     it is present when the variable is bound by a @('let')
+     to a specific ispace, which is then its definition."))
+  ((ispaces ispace-var-ispace-option-map))
+  :pred ispace-senvp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod senv
   :short "Fixtype of static environments."
   :long
@@ -53,18 +74,7 @@
     "A static environment consists of:")
    (xdoc::ul
     (xdoc::li
-     "A map from the ispace variables in scope to optional ispaces.
-      This corresponds to @($\\Theta$);
-      since our ispace variables include their own sort,
-      the keys suffice to capture the sorts,
-      as opposed to a map from variables to sorts.
-      The optional ispace associated to a variable is absent
-      when the variable is bound by an abstraction,
-      i.e. it does not stand for any specific ispace;
-      it is present when the variable is bound by a @('let')
-      to a specific ispace, which is then its definition.
-      The definitions are taken into account
-      by ispace and type equivalence.")
+     "An ispace static environment.")
     (xdoc::li
      "A map from the type variables in scope to optional types.
       This corresponds to @($\\Delta$);
@@ -88,7 +98,7 @@
      indeed, they are distinguished by the prefixes.
      The variables in a static environment are similarly separated,
      in the three components and via fixtype sum tags."))
-  ((ispace-vars ispace-var-ispace-option-map)
+  ((ienv ispace-senv)
    (type-vars type-var-type-option-map)
    (expr-vars string-type-map))
   :pred senvp)
@@ -363,7 +373,7 @@
    (xdoc::p
     "This is the initial, i.e. top-level, static environment.
      It only contains the primitive operations in scope."))
-  (make-senv :ispace-vars nil
+  (make-senv :ienv (ispace-senv nil)
              :type-vars nil
              :expr-vars (primop-types)))
 
@@ -380,10 +390,11 @@
      this is the case for variables bound by abstractions.
      A variable already present is overwritten,
      which realizes the intended shadowing."))
-  (change-senv senv
-               :ispace-vars (omap::update (ispace-var-fix var)
-                                          nil
-                                          (senv->ispace-vars senv))))
+  (b* ((ienv (senv->ienv senv))
+       (imap (ispace-senv->ispaces ienv))
+       (new-imap (omap::update (ispace-var-fix var) nil imap))
+       (new-ienv (change-ispace-senv ienv :ispaces new-imap)))
+    (change-senv senv :ienv new-ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -445,10 +456,13 @@
      this is the case for variables bound by @('let')s.
      A variable already present is overwritten,
      which realizes the intended shadowing."))
-  (b* ((new-ispace-vars (omap::update (ispace-var-fix var)
-                                      (ispace-fix ispace)
-                                      (senv->ispace-vars senv))))
-    (change-senv senv :ispace-vars new-ispace-vars)))
+  (b* ((ienv (senv->ienv senv))
+       (imap (ispace-senv->ispaces ienv))
+       (new-imap (omap::update (ispace-var-fix var)
+                               (ispace-fix ispace)
+                               imap))
+       (new-ienv (change-ispace-senv ienv :ispaces new-imap)))
+    (change-senv senv :ienv new-ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
