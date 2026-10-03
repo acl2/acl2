@@ -126,7 +126,7 @@
 (check-rewrite '(< '3 x) '(< '3 x) :rewrite-objective '? :assumptions '((not (equal '3 x)) (integerp x)) :runes '(test-of-rewrite-objective))
 (check-rewrite '(< '3 x) '(< '3 x) :rewrite-objective 'nil :assumptions '((not (equal '3 x)) (integerp x)) :runes '(test-of-rewrite-objective))
 ;here the polarity rule fires, because we want to weaken (< 3 x)
-(check-rewrite '(< '3 x) '(< '2 x) :rewrite-objective 't :assumptions '((not (equal '3 x)) (integerp x)) :runes '(test-of-rewrite-objective))
+(deftest (check-rewrite '(< '3 x) '(< '2 x) :rewrite-objective 't :assumptions '((not (equal '3 x)) (integerp x)) :runes '(test-of-rewrite-objective))) ; todo wrap more tests in deftest
 (check-rewrite '(not (< '3 x)) '(not (< '3 x)) :rewrite-objective '? :assumptions '((not (equal '3 x)) (integerp x)) :runes '(test-of-rewrite-objective))
 ;here the polarity rule fires, because we want to strengthen (not (< 3 x)) and so we want to weaken (< 3 x):
 (check-rewrite '(not (< '3 x)) '(not (< '2 x)) :rewrite-objective 'nil :assumptions '((not (equal '3 x)) (integerp x)) :runes '(test-of-rewrite-objective))
