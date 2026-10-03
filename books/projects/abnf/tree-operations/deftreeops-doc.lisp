@@ -210,10 +210,10 @@
       The generated theorems whose names end in @('-match'),
       the @('<prefix>-<rulename>-conc?-possibilities') theorems,
       the @('<prefix>-%<b><min>-<max>-nat-bounds') theorems,
-      and the @(tsee fty::deffixequiv) theorems
+      and the fixing theorems
       are enabled;
       all the other generated theorems are disabled.
-      Furthermore, the generated functions are introduced via @(tsee define)
+      The generated functions are introduced via @(tsee define)
       with @(':returns') specifications,
       and thus each generated function also comes with
       an enabled rewrite rule about the type of its result,
@@ -275,8 +275,7 @@
       " are also generated that link the macro names to the function names:
        this way, the predicates can be opened (in proofs)
        via their macro names.
-       The intermediate predicates are accompanied by
-       @(tsee fty::deffixequiv) theorems."))
+       The intermediate predicates are accompanied by fixing theorems."))
 
     (xdoc::desc
      "@('<prefix>-<rulename>-nonleaf')"
@@ -317,8 +316,8 @@
       "For each rule name defined in the grammar
        by an alternation of two or more concatenations:
        a theorem stating equivalences between
-       (i) the branches (of a tree matching the rule name)
-       matching each concatenation and
+       (i) the fact that the branches (of a tree matching the rule name)
+       match each concatenation and
        (ii) some term over the branches
        that discriminates among the concatenations that define the rule name;
        there is an equivalence for each concatenation,
@@ -373,7 +372,7 @@
         which asserts that the function returns @('<i>')
         iff the subtrees match the concatenation.")
       (xdoc::li
-       "@(tsee fty::deffixequiv) theorems for the function."))
+       "Fixing theorems for the function."))
      (xdoc::p
       "Currently this is generated if and only if
        the alternation consists of two or more concatenations
@@ -403,7 +402,7 @@
         which asserts that the result of the function
         matches the concatenation @('<i>').")
       (xdoc::li
-       "@(tsee fty::deffixequiv) theorems for the function."))
+       "Fixing theorems for the function."))
      (xdoc::p
       "If the alternation that defines the rule name
        consists of just one concatenation,
@@ -452,7 +451,7 @@
         which asserts that the result of the function
         matches the repetition.")
       (xdoc::li
-       "@(tsee fty::deffixequiv) theorems for the function."))
+       "Fixing theorems for the function."))
      (xdoc::p
       "If the alternation that defines the rule name
        consists of just one concatenation,
@@ -517,7 +516,7 @@
         which asserts that the result of the function
         matches the element of the repetition.")
       (xdoc::li
-       "@(tsee fty::deffixequiv) theorems for the function."))
+       "Fixing theorems for the function."))
      (xdoc::p
       "If the alternation that defines the rule name
        consists of just one concatenation,
@@ -555,7 +554,7 @@
         has @('<min>') as lower bound and @('<max>') as upper bound.
         This theorem is generated as an enabled linear rule.")
       (xdoc::li
-       "@(tsee fty::deffixequiv) theorems for the function.")))
+       "Fixing theorems for the function.")))
 
     (xdoc::desc
      (list
