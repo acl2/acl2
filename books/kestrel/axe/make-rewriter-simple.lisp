@@ -1028,6 +1028,10 @@
                                                  rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits
                                                  node-replacement-array node-replacement-count refined-assumption-alist
                                                  rewrite-stobj (+ -1 count))))
+                     (:axe-rewrite-objective ; (:axe-rewrite-objective <obj>)
+                      ;; For now, we always fail on a hyp with :axe-rewrite-objective:
+                      ;; Could print a warning.
+                      (mv (erp-nil) nil alist rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array))
                      (otherwise ; normal hyp or a call of axe-smt:
                        (b* ((old-try-count tries) ; might be nil
                             ((mv ?axe-smtp hyp) ; strip but remember a call of axe-smt, if any ; todo: allow args to be passed in for stp as well? ; ? here means axe-smtp is ignorable

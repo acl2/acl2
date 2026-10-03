@@ -286,10 +286,9 @@
      (b* ((hyp (first hyps)) ;known to be a non-lambda function call
           (fn (ffn-symb hyp))
           (- (and (eq :verbose! print) (cw "Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
-       (if (eq 'axe-rewrite-objective fn)
-           (let ((arg (farg1 hyp)))
-             (if (and (quotep arg) ;check when making the rule?  would we ever want a term that evaluates to an objective?
-                      (eq rewrite-objective (unquote arg)))
+       (if (eq :axe-rewrite-objective fn) ; (axe-rewrite-objective . <obj>)
+           (let ((rule-obj (cdr hyp)))
+             (if (eq rule-obj rewrite-objective) ; the rule-obj is either t or nil, and the rewrite-objective must match it.
                  ;;this hyp counts as relieved:
                  (relieve-rewrite-rule-hyps (rest hyps) (+ 1 hyp-num) rewrite-objective alist rule-symbol
                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
