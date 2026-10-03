@@ -17,8 +17,10 @@
 ; For array length issues
 
 (defthm len-of-resize-list
-  (equal (len (resize-list lst size init))
-         (nfix size)))
+  ;; [2026-09-27] David Taylor renamed parameters to remove a conflict with the
+  ;; standard libarary.
+  (equal (len (resize-list lst n default))
+         (nfix n)))
 
 (defconst *2^60* (expt 2 60))
 
