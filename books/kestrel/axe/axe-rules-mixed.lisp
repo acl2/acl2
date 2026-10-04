@@ -379,7 +379,7 @@
                                                  REWRITE-<-WHEN-SIZES-DONT-MATCH2
                                                  GETBIT-WHEN-BVLT-OF-SMALL)))))
 
-(defthmd bvlt-of-constant-arg2-weaken
+(defthmd bvlt-of-constant-arg2-weaken-axe
   (implies (and (syntaxp (quotep k))
                 (axe-rewrite-objective 't)
                 (not (equal k (bvchop size x))) ;can this loop?
@@ -390,7 +390,7 @@
                   (bvlt size (+ -1 k) x)))
   :hints (("Goal" :in-theory (enable bvlt))))
 
-(defthmd bvlt-of-constant-arg2-strengthen
+(defthmd bvlt-of-constant-arg2-strengthen-axe
   (implies (and (syntaxp (quotep k))
                 (axe-rewrite-objective 'nil)
                 (not (equal free (bvchop size x))) ;can this loop?
@@ -403,7 +403,7 @@
                   (bvlt size (+ 1 k) x)))
   :hints (("Goal" :in-theory (enable bvlt))))
 
-(defthmd bvlt-of-constant-arg3-strengthen
+(defthmd bvlt-of-constant-arg3-strengthen-axe
   (implies (and (syntaxp (quotep k))
                 (< 0 k)
                 (axe-rewrite-objective 'nil)
@@ -417,7 +417,7 @@
                   (bvlt size x (+ -1 k))))
   :hints (("Goal" :in-theory (enable bvlt))))
 
-(defthmd bvlt-of-constant-arg3-weaken
+(defthmd bvlt-of-constant-arg3-weaken-axe
   (implies (and (syntaxp (quotep k))
                 (axe-rewrite-objective 't)
                 (not (equal k (bvchop size x))) ;can this loop?
@@ -427,6 +427,61 @@
            (equal (bvlt size x k)
                   (bvlt size x (+ 1 k))))
   :hints (("Goal" :in-theory (enable bvlt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; here are the non-axe versions (todo: check for dups!):
+
+(defthmd bvlt-of-constant-arg2-weaken
+  (implies (and (syntaxp (quotep k))
+                (syntaxp (want-to-weaken (bvlt size k x)))
+                (not (equal k (bvchop size x))) ;can this loop?
+                (unsigned-byte-p size k)
+                (natp size)
+                (< 0 k))
+           (equal (bvlt size k x)
+                  (bvlt size (+ -1 k) x)))
+  :hints (("Goal" :in-theory (enable bvlt))))
+
+(defthmd bvlt-of-constant-arg2-strengthen
+  (implies (and (syntaxp (quotep k))
+                (syntaxp (want-to-strengthen (bvlt size k x)))
+                (not (equal free (bvchop size x))) ;can this loop?
+                (syntaxp (quotep free))
+                (equal free (+ 1 k)) ;gets computed
+                (unsigned-byte-p size k)
+                (< k (+ -1 (expt 2 size)))
+                (natp size))
+           (equal (bvlt size k x)
+                  (bvlt size (+ 1 k) x)))
+  :hints (("Goal" :in-theory (enable bvlt))))
+
+(defthmd bvlt-of-constant-arg3-strengthen
+  (implies (and (syntaxp (quotep k))
+                (< 0 k)
+                (syntaxp (want-to-strengthen (bvlt size x k)))
+                (not (equal free (bvchop size x))) ;can this loop?
+                (syntaxp (quotep free))
+                (equal free (+ -1 k))
+                (unsigned-byte-p size k)
+                (natp size)
+                )
+           (equal (bvlt size x k)
+                  (bvlt size x (+ -1 k))))
+  :hints (("Goal" :in-theory (enable bvlt))))
+
+(defthmd bvlt-of-constant-arg3-weaken
+  (implies (and (syntaxp (quotep k))
+                (syntaxp (want-to-weaken (bvlt size x k)))
+                (not (equal k (bvchop size x))) ;can this loop?
+                (unsigned-byte-p size k)
+                (< k (+ -1 (expt 2 size)))
+                (natp size))
+           (equal (bvlt size x k)
+                  (bvlt size x (+ 1 k))))
+  :hints (("Goal" :in-theory (enable bvlt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;gen
 (defthm bvlt-must-be-axe
