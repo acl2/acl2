@@ -1649,10 +1649,10 @@
         (let ((monitor-table (monitor-table s))
               (object-to-unlock (addressfix (locked-object frame))))
           (if (null-refp object-to-unlock)
-              (obtain-and-throw-exception *NullPointerException* (list :lreturn object-to-unlock) th s)
+              (obtain-and-throw-exception *NullPointerException* (list :dreturn object-to-unlock) th s)
             (if (not (thread-owns-monitorp th object-to-unlock monitor-table))
                 (if (bound-to-a-non-interfacep *illegalmonitorstateexception* (class-table s))
-                    (obtain-and-throw-exception *IllegalMonitorStateException* (list :lreturn object-to-unlock) th s)
+                    (obtain-and-throw-exception *IllegalMonitorStateException* (list :dreturn object-to-unlock) th s)
                   (error-state :bad-binding-for-illegalmonitorstateexception s))
               ;;FIXME Think about structured locking.
               (let* ((s (modify th s :monitor-table (decrement-mcount object-to-unlock monitor-table))))
@@ -5640,7 +5640,7 @@
              (len (len contents)))
         (if (or (acl2::sbvlt 32 index 0) ;should I use boolor in places like this to avoid replication of terms? or a version of boolor that always gets opened?
                 (acl2::sbvge 32 index len))
-            (obtain-and-throw-exception *ArrayIndexOutOfBoundsException* (list :SALOAD (decode-signed index) arrayref) th s)
+            (obtain-and-throw-exception *ArrayIndexOutOfBoundsException* (list :saload (decode-signed index) arrayref) th s)
           (modify th s
                   :pc (+ 1 ;(inst-length inst)
                          (pc (thread-top-frame th s)))
@@ -5661,7 +5661,7 @@
              (len (len old-array-contents)))
         (if (or (acl2::sbvlt 32 index 0)
                 (acl2::sbvge 32 index len))
-            (obtain-and-throw-exception *ArrayIndexOutOfBoundsException* (list :SASTORE (decode-signed index) arrayref) th s)
+            (obtain-and-throw-exception *ArrayIndexOutOfBoundsException* (list :sastore (decode-signed index) arrayref) th s)
           (modify th s
                   :pc (+ 1 ;(inst-length inst)
                          (pc (thread-top-frame th s)))
@@ -6061,10 +6061,10 @@
          (contents (acl2::array-contents arrayref (heap s)))
          (len (len contents)))
     (if (null-refp arrayref)
-        (obtain-and-throw-exception *NullPointerException* (list :faload arrayref) th s)
+        (obtain-and-throw-exception *NullPointerException* (list :daload arrayref) th s)
       (if (or (acl2::sbvlt 32 index 0)
               (acl2::sbvge 32 index len))
-          (obtain-and-throw-exception *ArrayIndexOutOfBoundsException* (list :faload (decode-signed index) arrayref) th s)
+          (obtain-and-throw-exception *ArrayIndexOutOfBoundsException* (list :daload (decode-signed index) arrayref) th s)
         (modify th s
                 :pc (+ 1 ;(inst-length inst)
                        (pc frame))
