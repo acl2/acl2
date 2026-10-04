@@ -16,6 +16,7 @@
 ;; representable value than the rounded value.
 
 (include-book "ieee-floats")
+(local (include-book "kestrel/arithmetic-light/log2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-times" :dir :system))
