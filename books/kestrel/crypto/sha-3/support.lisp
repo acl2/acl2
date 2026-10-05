@@ -56,7 +56,7 @@
                 (true-listp x))
            (equal (ungroup n (group n x))
                   x))
-  :hints (("Goal" :in-theory (enable group ungroup equal-of-append))))
+  :hints (("Goal" :in-theory (enable group ungroup equal-of-append firstn))))
 
 ;move
 (defthm len-of-group-2
