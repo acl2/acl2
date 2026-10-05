@@ -32,14 +32,6 @@
 (local (include-book "ieee-floats-helpers"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
-;move
-(local
- (defthm <-of-expt2-and-1
-   (implies (integerp i)
-            (equal (< (expt 2 i) 1)
-                   (< i 0)))
-   :hints (("Goal" :in-theory (enable expt)))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund int-part (x)
@@ -437,16 +429,17 @@
                                                                   even-not-equal-odd-hack)
                            (int-part-must-be)))))
 
-(defthm final-helper
-  (implies (and (formatp k p)
-                (rationalp rat)
-                (< 0 rat)
-                (< rat (infinity-threshold k p)))
-           (< (+ 1/2
-                 (* rat (expt 2 (+ -1 p))
-                    (/ (expt 2 (emax k p)))))
-              (expt 2 p)))
-  :hints (("Goal" :in-theory (enable infinity-threshold))))
+(local
+  (defthm final-helper
+    (implies (and (formatp k p)
+                  (rationalp rat)
+                  (< 0 rat)
+                  (< rat (infinity-threshold k p)))
+             (< (+ 1/2
+                   (* rat (expt 2 (+ -1 p))
+                      (/ (expt 2 (emax k p)))))
+                (expt 2 p)))
+    :hints (("Goal" :in-theory (enable infinity-threshold)))))
 
 (defthm <-of-infinity-threshold-when-representable-positive-subnormalp
   (implies (and (representable-positive-subnormalp k p rat)
@@ -480,11 +473,12 @@
          )
     (* (expt 2 exponent) rounded-significand)))
 
-(defthm <=-of-1-and-*-of-/-of-expt-of-log-same
-  (implies (and (rationalp rat)
-                (< 0 rat))
-           (<= 1 (* rat (/ (expt 2 (log2 rat))))))
-  :rule-classes (:rewrite :type-prescription))
+(local
+  (defthm <=-of-1-and-*-of-/-of-expt-of-log-same
+    (implies (and (rationalp rat)
+                  (< 0 rat))
+             (<= 1 (* rat (/ (expt 2 (log2 rat))))))
+    :rule-classes (:rewrite :type-prescription)))
 
 (local
   (defthm bound-helper
@@ -711,43 +705,46 @@
                    (equal (* x y) 2)))
    :hints (("Goal" :in-theory (enable expt-of-+)))))
 
-(defthm mantissa-bound-linear
-  (implies (and (< 0 rat)
-                (rationalp rat))
-           (< (* rat (/ (expt 2 (log2 rat))))
-              2))
-  :rule-classes :linear)
+(local
+  (defthm mantissa-bound-linear
+    (implies (and (< 0 rat)
+                  (rationalp rat))
+             (< (* rat (/ (expt 2 (log2 rat))))
+                2))
+    :rule-classes :linear))
 
-(defthm step1
-  (implies (and (formatp k p)
-                (rationalp rat)
-                (representable-positive-normalp k p rat))
-           (<= (* rat (/ (expt 2 (log2 rat))) (expt 2 (+ -1 p)))
-               (+ -1 (expt 2 p))))
-  :hints (("Goal"
-           :use (:instance h1
-                           (i (expt 2 p))
-                           (x (* rat (/ (expt 2 (log2 rat))) (expt 2 (+ -1 p)))))
-           :in-theory (enable representable-positive-normalp))))
+(local
+  (defthm step1
+    (implies (and (formatp k p)
+                  (rationalp rat)
+                  (representable-positive-normalp k p rat))
+             (<= (* rat (/ (expt 2 (log2 rat))) (expt 2 (+ -1 p)))
+                 (+ -1 (expt 2 p))))
+    :hints (("Goal"
+             :use (:instance h1
+                             (i (expt 2 p))
+                             (x (* rat (/ (expt 2 (log2 rat))) (expt 2 (+ -1 p)))))
+             :in-theory (enable representable-positive-normalp)))))
 
 ;;switches from (log2 rat) to (emax k p)
-(defthm step2
-  (implies (and (formatp k p)
-                (rationalp rat)
-                (representable-positive-normalp k p rat))
-           (<= (* rat (/ (expt 2 (emax k p))) (expt 2 (+ -1 p)))
-               (+ -1 (expt 2 p))))
-  :hints (("Goal"
-           :use (step1
-                  (:instance <-of-expt-and-expt-same-base
-                             (r 2)
-                             (i (+ -1 p (- (emax k p))))
-                             (j (+ -1 p (- (log2 rat))))))
-           :in-theory (e/d (representable-positive-normalp
-                            *-of-/-of-expt-and-expt)
-                           (<-of-log2-arg1
-                            <-of-log2-arg2
-                            <-of-expt-and-expt-same-base)))))
+(local
+  (defthm step2
+    (implies (and (formatp k p)
+                  (rationalp rat)
+                  (representable-positive-normalp k p rat))
+             (<= (* rat (/ (expt 2 (emax k p))) (expt 2 (+ -1 p)))
+                 (+ -1 (expt 2 p))))
+    :hints (("Goal"
+             :use (step1
+                    (:instance <-of-expt-and-expt-same-base
+                               (r 2)
+                               (i (+ -1 p (- (emax k p))))
+                               (j (+ -1 p (- (log2 rat))))))
+             :in-theory (e/d (representable-positive-normalp
+                              *-of-/-of-expt-and-expt)
+                             (<-of-log2-arg1
+                              <-of-log2-arg2
+                              <-of-expt-and-expt-same-base))))))
 
 (defthm <-of-infinity-threshold-when-representable-positive-normalp
   (implies (and (formatp k p)
