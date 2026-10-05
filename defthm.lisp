@@ -12173,12 +12173,12 @@
                     (list hyps)))))
 
 #+non-standard-analysis
-(defun weaken-using-transfer-principle (term)
+(defun weaken-using-transfer-principle (tterm)
 
-; Term is an untranslated expression.
+; Tterm is a translated expression.
 
-  (let ((vars (all-vars term)))
-    (case-match term
+  (let ((vars (all-vars tterm)))
+    (case-match tterm
                 (('implies hyps ('standardp subterm))
                  (declare (ignore subterm))
                  (list 'implies
@@ -12194,7 +12194,7 @@
                 (&
                  (list 'implies
                        (cons 'and (add-hyp-standardp-var-lst vars))
-                       term)))))
+                       tterm)))))
 
 #+non-standard-analysis
 (defun remove-standardp-hyp (tterm)
@@ -12229,7 +12229,6 @@
 
 #+non-standard-analysis
 (defun chk-classical-term-or-standardp-of-classical-term (tterm term ctx wrld state)
-
 ; Tterm is the translation of term.
 
   (let* ((names (all-fnnames (remove-standardp-hyps-and-standardp-conclusion tterm)))
@@ -12327,7 +12326,7 @@
                   (er-progn
                    (chk-classical-term-or-standardp-of-classical-term
                     tterm0 term ctx wrld state)
-                   (translate (weaken-using-transfer-principle term)
+                   (translate (weaken-using-transfer-principle tterm0)
                               t t t ctx wrld state))
                 (value tterm0))
               #-non-standard-analysis
