@@ -3088,7 +3088,7 @@
             slice-when-bvlt-gen      ;wed mar 16 00:52:46 2011
             slice-when-not-bvlt-free ;wed mar 16 00:52:46 2011
             equal-of-0-and-slice-when-bvlt
-            equal-of-bvchop-extend-when-bvlt
+            equal-of-bvchop-extend-when-bvlt-axe
             equal-of-bvchop-extend-when-not-bvlt-axe
             bvlt-when-bvchop-known-subst-alt
             bvlt-when-bvchop-known-subst
@@ -3099,7 +3099,7 @@
             bvlt-of-constant-arg2-strengthen-axe
             bvlt-of-constant-arg3-strengthen-axe
             bvlt-of-constant-arg3-weaken-axe
-            equal-of-constant-and-bvchop-when-bvlt ;new!
+            equal-of-constant-and-bvchop-when-bvlt-axe ;new!
             bvlt-of-two-less-than-max-when-not-max  ;yuck?
             equal-of-constant-and-slice-when-bvlt   ;new
             equal-of-constant-and-slice-when-equal-of-constant-and-bvchop
@@ -3216,7 +3216,7 @@
              bvlt-transitive-5-a
              bvlt-transitive-5-b
 
-             equal-of-bvchop-extend-when-bvlt     ;new
+             equal-of-bvchop-extend-when-bvlt-axe     ;new
              bvplus-of-bvuminus-of-bvcat-of-slice32 ;new
              bvplus-of-bvuminus-of-bvcat-of-slice   ;new
              bvlt-of-floor-arg3
@@ -3258,7 +3258,7 @@
              bvcat-of-slice-when-slice-known
              nth-becomes-bv-array-read-strong2
              nth-of-bv-when-all-same
-             unsigned-byte-p-of-+-of-minus-better
+             unsigned-byte-p-of-+-of-minus-better-axe
              bv-array-write-shorten-constant-data
              EQUAL-OF-CONSTANT-AND-BVXOR-OF-CONSTANT
              bvlt-6-4
@@ -3300,7 +3300,7 @@
              unsigned-byte-p-false-when-not-longer
              equal-of-0-and-bvchop-6
              bvlt-of-64
-             unsigned-byte-p-of-+-of-minus2
+             unsigned-byte-p-of-+-of-minus2-axe
              sbvlt-of-+-arg1
              sbvlt-of-+-arg2
              bvplus-of-unary-minus-arg2
@@ -3474,7 +3474,7 @@
              bvlt-of-bitxor-of-1-same-two
 
              <-of-constant-and-+-of-bv-and-minus-and-bv-axe
-             <-of-+-of-minus-becomes-bvlt
+             <-of-+-of-minus-becomes-bvlt-axe
              unsigned-byte-p-of-slice-one-more
              equal-of-plus-minus-move
              equal-of-0-and-+-of-minus ;these should have similar names
@@ -3614,9 +3614,9 @@
 ;(bit-blast-rules-basic) ;new! we only want these when mitering?
              unsigned-byte-p-of-+-of-constant-strong
              nth-of-repeat
-             +-of-minus-1-and-bv2-alt-bind-free
+             +-of-minus-1-and-bv2-alt-bind-free-axe
              <-of-constant-and-+-of-bv-and-minus-axe
-             <-of-constant-and-+-of-minus-and-bv
+             <-of-constant-and-+-of-minus-and-bv-axe
 
              nth-of-plus-of-bv-and-minus
              nth-of-plus-of-bv-and-minus-alt

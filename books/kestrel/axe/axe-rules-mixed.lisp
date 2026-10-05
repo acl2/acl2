@@ -227,7 +227,7 @@
                               unsigned-byte-p-forced bvplus bvchop-of-sum-cases ;yuck
                               UNSIGNED-BYTE-P-WHEN-UNSIGNED-BYTE-P-FREE-BETTER))))
 
-(defthmd <-of-constant-and-+-of-minus-and-bv
+(defthmd <-of-constant-and-+-of-minus-and-bv-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (<= 0 k) ;could this be expensive?
                 (natp y)
@@ -239,7 +239,7 @@
   :hints (("Goal" :use (:instance <-of-constant-and-+-of-bv-and-minus-axe)
            :in-theory (disable <-of-constant-and-+-of-bv-and-minus-axe))))
 
-(defthmd +-of-minus-1-and-bv2-alt-bind-free
+(defthmd +-of-minus-1-and-bv2-alt-bind-free-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (unsigned-byte-p-forced xsize x))
            (equal (+ -1 (+ x y))
@@ -248,7 +248,7 @@
            :in-theory (e/d (unsigned-byte-p-forced natp ;yuck
                                                    ) (+-of-minus-1-and-bv2)))))
 
-(defthmd <-of-+-of-minus-becomes-bvlt
+(defthmd <-of-+-of-minus-becomes-bvlt-axe
   (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (unsigned-byte-p ysize k) ;add (syntaxp (quotep k))?
                 (natp x)
@@ -275,9 +275,9 @@
                   (if (<= y (+ x z))
                       (< k (bvplus (+ 1 (max xsize zsize)) (bvplus (+ 1 (max xsize zsize)) x z) (- y)))
                     nil)))
-  :hints (("Goal" :use (:instance <-of-constant-and-+-of-minus-and-bv (x (+ x z)) (xsize (+ 1 (max xsize zsize))))
+  :hints (("Goal" :use (:instance <-of-constant-and-+-of-minus-and-bv-axe (x (+ x z)) (xsize (+ 1 (max xsize zsize))))
            :in-theory (e/d (unsigned-byte-p-forced BVPLUS-OF-+-ARG2 bvplus-of-+-arg3)
-                           (<-of-constant-and-+-of-minus-and-bv
+                           (<-of-constant-and-+-of-minus-and-bv-axe
                             SIZE-NON-NEGATIVE-WHEN-UNSIGNED-BYTE-P-FREE)))))
 
 (defthmd equal-of-constant-and-+-of-minus-and-bv-axe
@@ -312,7 +312,7 @@
 
 ;gen
 ;fixme what if this loops?
-(defthmd bvplus-of-bvplus-of-constant-and-short-expand
+(defthmd bvplus-of-bvplus-of-constant-and-short-expand-axe
   (implies (and (syntaxp (quotep k))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (< ysize 32)
@@ -328,7 +328,7 @@
   )
 
 ;fixme use signed comparisons more when values can go negative?!
-(defthmd unsigned-byte-p-of-+-of-minus2
+(defthmd unsigned-byte-p-of-+-of-minus2-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (<= (+ 1 n) xsize)
@@ -343,7 +343,7 @@
 ;           :cases ((equal 1 (GETBIT 29 X)))
            :in-theory (enable bvlt sbvlt bvplus bvuminus bvminus bvchop-of-sum-cases unsigned-byte-p-forced getbit-of-+ sbvlt-rewrite))))
 
-(defthmd unsigned-byte-p-of-+-of-minus-better
+(defthmd unsigned-byte-p-of-+-of-minus-better-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (<= n (max xsize ysize))
@@ -358,7 +358,7 @@
            :in-theory (enable unsigned-byte-p-forced))))
 
 ;gen!
-(defthmd equal-of-constant-and-bvchop-when-bvlt
+(defthmd equal-of-constant-and-bvchop-when-bvlt-axe
   (implies (and (axe-rewrite-objective 't)
                 (bvlt 6 x free)
                 (bvlt 6 free 32)
@@ -493,7 +493,7 @@
                   (not (equal k (bvchop 6 x)))))
   :hints (("Goal" :in-theory (e/d (bvlt bvchop-of-sum-cases bvminus) (<-OF-+-OF-MINUS-AND-CONSTANT)))))
 
-;; (defthmd equal-of-bvchop-extend-when-bvlt
+;; (defthmd equal-of-bvchop-extend-when-bvlt-axe
 ;;   (implies (and (axe-rewrite-objective 'nil)
 ;;                 (syntaxp (quotep k))
 ;;                 (bvlt size2 x free) ;x is bounded such that its top bit must be 0 (fixme make a version for 1...)
@@ -508,7 +508,7 @@
 ;;                          (bvchop (+ 1 size) x))))
 ;;   :hints (("Goal" :use (:instance equal-of-bvchop-extend (free 0)))))
 
-(defthmd equal-of-bvchop-extend-when-bvlt
+(defthmd equal-of-bvchop-extend-when-bvlt-axe
   (implies (and (axe-rewrite-objective 'nil)
                 (syntaxp (quotep k))
                 (bvlt size2 x free) ;x is bounded such that its top bit must be 0 (fixme make a version for 1...)
@@ -535,7 +535,7 @@
 ;;                   (equal k ;(bvcat 1 free size k)
 ;;                          (bvchop (+ 1 size) x))))
 ;;   :hints (("Goal" :in-theory (enable bvlt)
-;;            :use (:instance equal-of-bvchop-extend-when-bvlt (free (+ 1 free))))))
+;;            :use (:instance equal-of-bvchop-extend-when-bvlt-axe (free (+ 1 free))))))
 
 (defthmd equal-of-bvchop-extend-when-not-bvlt-axe
    (implies (and (axe-rewrite-objective 'nil)
