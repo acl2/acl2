@@ -3095,10 +3095,10 @@
             bvlt-must-be-axe ;fixme more like this?
             not-equal-when-not-equal-bvchop
             not-equal-bvchop-when-not-equal-bvchop
-            bvlt-of-constant-arg2-weaken
-            bvlt-of-constant-arg2-strengthen
-            bvlt-of-constant-arg3-strengthen
-            bvlt-of-constant-arg3-weaken
+            bvlt-of-constant-arg2-weaken-axe
+            bvlt-of-constant-arg2-strengthen-axe
+            bvlt-of-constant-arg3-strengthen-axe
+            bvlt-of-constant-arg3-weaken-axe
             equal-of-constant-and-bvchop-when-bvlt ;new!
             bvlt-of-two-less-than-max-when-not-max  ;yuck?
             equal-of-constant-and-slice-when-bvlt   ;new

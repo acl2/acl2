@@ -203,7 +203,10 @@
     axe-binding-hyp
     axe-smt
     work-hard ; may not be needed
-    axe-rewrite-objective ; may not be needed
+    axe-rewrite-objective
+    rewrite-objective-strengthen
+    rewrite-objective-weaken
+    rewrite-objective-?
 
     ;; These are for writing axe-syntaxp and axe-bind-free functions:
     pseudo-dag-arrayp

@@ -514,38 +514,48 @@
                       `((:axe-binding-hyp ,var . ,expr))
                       (cons var bound-vars) ;; the var becomes bound
                       ))
-            ;; not a special hyp:
-            (b* ((all-fns (fns-in-term hyp))
-                 ;; These 2 checks catch common errors:
-                 ((when (member-eq 'axe-syntaxp all-fns))
-                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to axe-syntaxp that is not at the top level." hyp rule-symbol)
-                  (mv :bad-hyp *unrelievable-hyps* bound-vars))
-                 ((when (member-eq 'axe-bind-free all-fns))
-                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to axe-bind-free that is not at the top level." hyp rule-symbol)
-                  (mv :bad-hyp *unrelievable-hyps* bound-vars))
-                 ;; todo: check for work-hards not at the top-level?
-                 ;; These 3 checks ensure that expanding the lambdas in a normal hyp doesn't result in a special hyp:
-                 ((when (member-eq :axe-syntaxp all-fns)) ;todo: prove that this never happens?
-                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :axe-syntaxp, which is not a legal function name." hyp rule-symbol)
-                  (mv :bad-hyp *unrelievable-hyps* bound-vars))
-                 ((when (member-eq :axe-bind-free all-fns)) ;todo: prove that this never happens?
-                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :axe-bind-free, which is not a legal function name." hyp rule-symbol)
-                  (mv :bad-hyp *unrelievable-hyps* bound-vars))
-                 ((when (member-eq :free-vars all-fns)) ;todo: prove that this never happens?
-                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :free-vars which is not a legal function name." hyp rule-symbol)
-                  (mv :bad-hyp *unrelievable-hyps* bound-vars))
-                 ((when (member-eq :axe-binding-hyp all-fns)) ;todo: prove that this never happens?
-                  (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :axe-binding-hyp which is not a legal function name." hyp rule-symbol)
-                  (mv :bad-hyp *unrelievable-hyps* bound-vars))
-                 ;; todo: should we call pre-simplify here instead of below?
-                 ;; Check for free vars in the hyp:
-                 (hyp-free-vars (set-difference-eq (free-vars-in-term hyp) bound-vars)))
-              (if hyp-free-vars
-                  ;; Free vars but not a binding-hyp.  Will be relieved by matching against assumptions:
-                  (b* (;; Must expand lambdas to allow for matching:
-                       (expanded-hyp (expand-lambdas-in-term hyp)) ; todo: print a note here, if this does anything.
-                       (expanded-hyp-free-vars (set-difference-eq (free-vars-in-term expanded-hyp) bound-vars))
-                       ((when (not expanded-hyp-free-vars)) ; unusual case: such a hyp doesn't really fit this case or the normal case
+              (if (call-of 'axe-rewrite-objective hyp) ; (axe-rewrite-objective obj) -> (:axe-rewrite-objective . obj)
+                  (let* ((obj (farg1 hyp))
+                         ;; obj must be a boolean or quoted boolean
+                         (obj (if (myquotep obj) (unquote obj) obj)))
+                    (if (booleanp obj)
+                        (mv (erp-nil) `((:axe-rewrite-objective . ,obj)) bound-vars)
+                      (mv :bad-rewrite-objective *unrelievable-hyps* bound-vars)))
+                ;; not a special hyp:
+                (b* ((all-fns (fns-in-term hyp))
+                     ;; These 2 checks catch common errors:
+                     ((when (member-eq 'axe-syntaxp all-fns))
+                      (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to axe-syntaxp that is not at the top level." hyp rule-symbol)
+                      (mv :bad-hyp *unrelievable-hyps* bound-vars))
+                     ((when (member-eq 'axe-bind-free all-fns))
+                      (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to axe-bind-free that is not at the top level." hyp rule-symbol)
+                      (mv :bad-hyp *unrelievable-hyps* bound-vars))
+                     ;; todo: check for work-hards not at the top-level?
+                     ;; These 3 checks ensure that expanding the lambdas in a normal hyp doesn't result in a special hyp:
+                     ((when (member-eq :axe-syntaxp all-fns)) ;todo: prove that this never happens?
+                      (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :axe-syntaxp, which is not a legal function name." hyp rule-symbol)
+                      (mv :bad-hyp *unrelievable-hyps* bound-vars))
+                     ((when (member-eq :axe-bind-free all-fns)) ;todo: prove that this never happens?
+                      (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :axe-bind-free, which is not a legal function name." hyp rule-symbol)
+                      (mv :bad-hyp *unrelievable-hyps* bound-vars))
+                     ((when (member-eq :free-vars all-fns)) ;todo: prove that this never happens?
+                      (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :free-vars which is not a legal function name." hyp rule-symbol)
+                      (mv :bad-hyp *unrelievable-hyps* bound-vars))
+                     ((when (member-eq :axe-binding-hyp all-fns)) ;todo: prove that this never happens?
+                      (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :axe-binding-hyp which is not a legal function name." hyp rule-symbol)
+                      (mv :bad-hyp *unrelievable-hyps* bound-vars))
+                     ((when (member-eq :axe-rewrite-objective all-fns)) ;todo: prove that this never happens?
+                      (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 contains a call to :axe-rewrite-objective which is not a legal function name." hyp rule-symbol)
+                      (mv :bad-hyp *unrelievable-hyps* bound-vars))
+                     ;; todo: should we call pre-simplify here instead of below?
+                     ;; Check for free vars in the hyp:
+                     (hyp-free-vars (set-difference-eq (free-vars-in-term hyp) bound-vars)))
+                  (if hyp-free-vars
+                      ;; Free vars but not a binding-hyp.  Will be relieved by matching against assumptions:
+                      (b* (;; Must expand lambdas to allow for matching:
+                           (expanded-hyp (expand-lambdas-in-term hyp)) ; todo: print a note here, if this does anything.
+                           (expanded-hyp-free-vars (set-difference-eq (free-vars-in-term expanded-hyp) bound-vars))
+                           ((when (not expanded-hyp-free-vars)) ; unusual case: such a hyp doesn't really fit this case or the normal case
                         (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 has free vars that disappear when lambdas are expanded." hyp rule-symbol)
                         (mv :bad-hyp *unrelievable-hyps* bound-vars))
                          ;; todo: consider cleaning up the hyp in other ways?
@@ -602,12 +612,13 @@
                                 (eq :axe-bind-free (ffn-symb hyp))
                                 (eq :free-vars (ffn-symb hyp))
                                 (eq :axe-binding-hyp (ffn-symb hyp))
+                                (eq :axe-rewrite-objective (ffn-symb hyp))
                                 (not (subsetp-equal (free-vars-in-term hyp) bound-vars)))) ; todo: prove that this can't happen: pre-simplify can't introduce new functions
                       (prog2$ (er hard? 'make-axe-rule-hyps-for-hyp "Unexpected form of hyp, ~x0, in ~x1 after pre-simplification!" hyp rule-symbol)
                               (mv :bad-hyp *unrelievable-hyps* bound-vars))))
                   (mv (erp-nil)
                       (list hyp) ; hyp is not wrapped
-                      bound-vars)))))))))))
+                      bound-vars))))))))))))
 
 (local
  (defthm axe-rule-hyp-listp-of-mv-nth-1-of-make-axe-rule-hyps-for-hyp
