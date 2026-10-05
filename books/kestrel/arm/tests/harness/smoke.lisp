@@ -137,8 +137,8 @@
                           ("muls r3, r5, r4 on ARMv4" :apsr)))))))
 
 ;; Vectors for the outcome classes that the model's errors decide (see
-;; error-class in harness.lisp), and a mismatch that a waiver excuses.  Each
-;; expects what another implementation might have done.
+;; error-class in harness.lisp), and mismatches that waivers excuse or do not.
+;; Each expects what another implementation might have done.
 
 (defconst *class-vectors*
   '(;; UNPREDICTABLE on ARMv4, which may trap: pass.
@@ -170,12 +170,64 @@
     ;; mismatch, which the first waiver below excuses.
     (:id "adds r0, r1, r2, trap expected"
      :pc #x1000 :code (#xE0910002)
-     :expect (:trap :undefined))))
+     :expect (:trap :undefined))
+
+    ;; A store of the PC, expecting the instruction address plus 12, as on
+    ;; the ARM7TDMI; the model stores plus 8, which is also permitted before
+    ;; ARMv7: mismatch, which the second waiver below excuses.
+    (:id "str pc, [r1] on ARMv4, PC+12 expected"
+     :arch 4
+     :pc #x1000 :code (#xE581F000)
+     :regs ((1 . #x3000))
+     :expect (:pc #x1004 :mem ((#x3000 4 #x100C))))
+
+    ;; The same store, expecting a value that the second waiver's PC offsets
+    ;; do not cover: mismatch, which no waiver excuses.
+    (:id "str pc, [r1] on ARMv4, PC+16 expected"
+     :arch 4
+     :pc #x1000 :code (#xE581F000)
+     :regs ((1 . #x3000))
+     :expect (:pc #x1004 :mem ((#x3000 4 #x1010))))
+
+    ;; The first store on ARMv7, which requires plus 8, so expecting plus 12
+    ;; is wrong: mismatch, which the second waiver's :max-arch keeps it from
+    ;; excusing.
+    (:id "str pc, [r1] on ARMv7, PC+12 expected"
+     :arch 7
+     :pc #x1000 :code (#xE581F000)
+     :regs ((1 . #x3000))
+     :expect (:pc #x1004 :mem ((#x3000 4 #x100C))))
+
+    ;; A store of several registers, the PC among them, expecting the
+    ;; instruction address plus 12 in the PC's slot: mismatch, which the
+    ;; third waiver below excuses.
+    (:id "stmia r1, {r0, pc} on ARMv4, PC+12 expected"
+     :arch 4
+     :pc #x1000 :code (#xE8818001)
+     :regs ((0 . #x5555) (1 . #x3000))
+     :expect (:pc #x1004 :mem ((#x3000 4 #x5555) (#x3004 4 #x100C))))
+
+    ;; The same store, expecting also 4 more than r0 in r0's slot.  The third
+    ;; waiver excuses the PC's slot but not r0's, whose value is not computed
+    ;; from the PC: mismatch.
+    (:id "stmia r1, {r0, pc} on ARMv4, r0+4 expected"
+     :arch 4
+     :pc #x1000 :code (#xE8818001)
+     :regs ((0 . #x5555) (1 . #x3000))
+     :expect (:pc #x1004 :mem ((#x3000 4 #x5559) (#x3004 4 #x100C))))))
 
 (defconst *class-waivers*
   '((:mask #x0FE00000 :value #x00800000 :field :trap
      :reason :oracle-limitation :cite "smoke.lisp"
      :note "Excuses the ADD above, to test waivers.")
+    (:mask #x0C50F000 :value #x0400F000 :field :mem
+     :expected-pc-offset 12 :actual-pc-offset 8 :max-arch 6
+     :reason :implementation-defined :cite "DDI 0406C.d A2.3, page A2-47"
+     :note "Excuses the ARMv4 STR of PC+12 above, but not the ARMv7 one.")
+    (:mask #x0E508000 :value #x08008000 :field :mem
+     :expected-pc-offset 12 :actual-pc-offset 8 :max-arch 6
+     :reason :implementation-defined :cite "DDI 0406C.d A2.3, page A2-47"
+     :note "Excuses the PC's slot of the STMs above.")
     (:name :sub-immediate :field :apsr :bits #x20000000
      :reason :oracle-limitation :cite "smoke.lisp"
      :note "Matches nothing, to test the report of unused waivers.")))
@@ -186,12 +238,22 @@
     (prog2$ (print-summary summary 10 nil)
             (and (equal (report-get :counts summary nil)
                         '((:pass . 1)
-                          (:mismatch . 0)
-                          (:waived . 1)
+                          (:mismatch . 3)
+                          (:waived . 3)
                           (:unknown-dependent . 0)
                           (:coverage-gap . 1)
                           (:unsupported . 1)
                           (:unpredictable . 1)
                           (:skipped . 0)))
+                 (equal (report-get :mismatches summary nil)
+                        '(("str pc, [r1] on ARMv4, PC+16 expected"
+                           :str-immediate #xE581F000
+                           ((:mem #x3000) :expected #x1010 :actual #x1008))
+                          ("str pc, [r1] on ARMv7, PC+12 expected"
+                           :str-immediate #xE581F000
+                           ((:mem #x3000) :expected #x100C :actual #x1008))
+                          ("stmia r1, {r0, pc} on ARMv4, r0+4 expected"
+                           :stm/stmia/stmea #xE8818001
+                           ((:mem #x3000) :expected #x5559 :actual #x5555))))
                  (equal (report-get :unused-waivers summary nil)
-                        (cdr *class-waivers*))))))
+                        (last *class-waivers*))))))
