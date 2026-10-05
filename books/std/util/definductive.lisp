@@ -1897,9 +1897,9 @@
 
 ;;;;;;;;;;
 
-(define defind-proof-constr-return-thm ((pred-name symbolp)
-                                        (irule-name symbolp)
-                                        (name symbolp))
+(define defind-proof-constr-return-thm-name ((pred-name symbolp)
+                                             (irule-name symbolp)
+                                             (name symbolp))
   :returns (thm-name symbolp)
   :short "Name of the return theorem of
           the constructor of a @('p[i]-proof') fixtype."
@@ -5077,7 +5077,7 @@
        (proof-validp (defind-proof-valid-fn-name cinfo.name name))
        (irule-validp (defind-irule-valid-fn-name cinfo.name info.name name))
        (constr-return-thm
-        (defind-proof-constr-return-thm cinfo.name info.name name))
+        (defind-proof-constr-return-thm-name cinfo.name info.name name))
        (var-of-constr-thms
         (defind-proof-var-of-constr-thm-names cinfo.name info.name vars name))
        (hints `(("Goal"
