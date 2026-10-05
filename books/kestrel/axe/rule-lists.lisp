@@ -3089,7 +3089,7 @@
             slice-when-not-bvlt-free ;wed mar 16 00:52:46 2011
             equal-of-0-and-slice-when-bvlt
             equal-of-bvchop-extend-when-bvlt
-            equal-of-bvchop-extend-when-not-bvlt
+            equal-of-bvchop-extend-when-not-bvlt-axe
             bvlt-when-bvchop-known-subst-alt
             bvlt-when-bvchop-known-subst
             bvlt-must-be-axe ;fixme more like this?
@@ -3421,7 +3421,7 @@
 
              bvplus-of-bvuminus-of-bvcat-and-bvcat
 
-             unsigned-byte-p-of-smaller
+             unsigned-byte-p-of-smaller-axe
              bvxor-cancel-2-of-more-and-1-of-more
              bitxor-when-equal-of-constant-and-bvchop-arg1
              bitxor-when-equal-of-constant-and-bvchop-arg2
@@ -3467,13 +3467,13 @@
              floor-of-*-of-8-and-32
              consp-of-ungroup
 
-             equal-of-constant-and-+-of-minus-and-bv
+             equal-of-constant-and-+-of-minus-and-bv-axe
              group-of-cons
              <-of-non-integerp-and-integerp
              bvlt-of-bitxor-of-1-same
              bvlt-of-bitxor-of-1-same-two
 
-             <-of-constant-and-+-of-bv-and-minus-and-bv
+             <-of-constant-and-+-of-bv-and-minus-and-bv-axe
              <-of-+-of-minus-becomes-bvlt
              unsigned-byte-p-of-slice-one-more
              equal-of-plus-minus-move
@@ -3615,7 +3615,7 @@
              unsigned-byte-p-of-+-of-constant-strong
              nth-of-repeat
              +-of-minus-1-and-bv2-alt-bind-free
-             <-of-constant-and-+-of-bv-and-minus
+             <-of-constant-and-+-of-bv-and-minus-axe
              <-of-constant-and-+-of-minus-and-bv
 
              nth-of-plus-of-bv-and-minus
@@ -3637,7 +3637,7 @@
              equal-of-getbit-and-bitxor-same
              equal-of-getbit-and-bitxor-same-alt
              equal-of-floor-of-expt-and-bv-constant-version-axe
-             <-of-diff-of-bv-and-constant
+             <-of-diff-of-bv-and-constant-axe
              <-of-constant-when-<=-of-free
              bvxor-cancel-lemma1-bvchop-version-alt3
              bvxor-cancel-lemma1-bvchop-version-alt2
@@ -3645,7 +3645,7 @@
              equal-of-bvplus-cancel-arg2-alt ;more?
              equal-of-constant-and-bvif-of-constant-and-constant
 
-             ;;                                      <-of-constant-and-+-of-minus
+             ;;                                      <-of-constant-and-+-of-minus-axe
              ;;                                      <-of-*-of-floor-and-same
              ;;                                      +-of-bvplus-of-1-and-unary-minus-same
              ;;                                      +-of-bvplus-of-2-and-unary-minus-same
