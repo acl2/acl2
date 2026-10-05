@@ -153,12 +153,15 @@
              (assoc-equal key alist))
     :hints (("Goal" :in-theory (enable assoc-equal reverse-list)))))
 
+;; todo: use the main one but first fix its termination test and guard
 ;; ;might be better to strip the keys and call NO-DUPLICATESP?
-(defun myduplicate-keysp (alist)
-  (cond ((endp alist) nil)
-        ((assoc-equal (caar alist) (cdr alist))
-         t)
-        (t (myduplicate-keysp (cdr alist)))))
+(local
+  (defun myduplicate-keysp (alist)
+    (declare (xargs :guard (alistp alist)))
+    (cond ((endp alist) nil)
+          ((assoc-equal (caar alist) (cdr alist))
+           t)
+          (t (myduplicate-keysp (cdr alist))))))
 
 (local
   (defthm assoc-equal-of-reverse-list
@@ -183,9 +186,10 @@
 ;;          nil)
 ;;   :hints (("Goal" :in-theory (enable assoc-equal))))
 
-(defthm not-of-myduplicate-keysp-of-compress11
-  (not (myduplicate-keysp (compress11 name l i n default)))
-  :hints (("Goal" :in-theory (enable compress11))))
+(local
+  (defthm not-of-myduplicate-keysp-of-compress11
+    (not (myduplicate-keysp (compress11 name l i n default)))
+    :hints (("Goal" :in-theory (enable compress11)))))
 
 ;; (in-theory (disable (:i assoc-equal)))
 
