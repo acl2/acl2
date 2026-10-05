@@ -106,7 +106,8 @@
       (print-symbols (rest syms)))))
 
 (defun print-symbols-4-per-line (syms)
-  (declare (xargs :guard (symbol-listp syms)))
+  (declare (xargs :guard (symbol-listp syms)
+                  :guard-hints (("Goal" :in-theory (enable firstn)))))
   (if (endp syms)
       nil
     (b* ((- (cw "  "))
