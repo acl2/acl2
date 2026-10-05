@@ -2052,6 +2052,21 @@ an unknown.</p>"
     :args ((lsb 2vecx) (width 2vecx) (in 4vec) (val 4vec))
     :hints(("Goal" :in-theory (enable 2vecx-fix)))))
 
+(define 4vec-array-select ((index 4vec-p)
+                            (width 4vec-p)
+                            (in 4vec-p))
+  :short "Array select operation: select the @('index')th @('width')-bit slot of @('in')."
+  :returns (res 4vec-p)
+  (4vec-part-select (4vec-times index width) width in))
+
+(define 4vec-array-install ((index 4vec-p)
+                             (width 4vec-p)
+                             (in 4vec-p)
+                             (val 4vec-p))
+  :short "Array install operation: replace the @('index')th @('width')-bit slot of @('in')."
+  :returns (res 4vec-p)
+  (4vec-part-install (4vec-times index width) width in val))
+
 
 
 
