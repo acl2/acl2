@@ -230,18 +230,19 @@
                               (symbol-listp monitor)
                               (acl2::plist-worldp wrld))))
   (simplify-term-to-term-basic term
-                                     assumptions
-                                     rule-alist
-                                     nil
-                                     (known-booleans wrld)
-                                     nil
-                                     nil ; limits
-                                     t ; memoizep
-                                     nil
-                                     t ;:brief  ;nil
-                                     monitor
-                                     *no-warn-ground-functions*
-                                     nil))
+                               assumptions
+                               rule-alist
+                               nil
+                               (known-booleans wrld)
+                               nil       ; normalize-xors
+                               nil       ; limits
+                               (rewrite-objective-?)        ; todo: do better?
+                               t         ; memoizep
+                               nil
+                               t ;:brief  ;nil
+                               monitor
+                               *no-warn-ground-functions*
+                               nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -736,6 +737,7 @@
            (known-booleans (w state))
            nil ; normalize-xors
            nil ; limits
+           (rewrite-objective-?) ; todo: do better?
            nil ; memoizep
            nil ; count-hits
            :brief ; print
@@ -1028,7 +1030,7 @@
        (- (cw "(Proving that there is no overlap between ~x0 bytes starting at ~x1 and ~x2 bytes starting at ~x3.~%" num-bytes1 base-addr1 num-bytes2 base-addr2))
        (separation-term `(disjoint-regions48p ,num-bytes1 ,base-addr1 ,num-bytes2 ,base-addr2))
        ((mv erp result & state)
-        (acl2::simplify-term-x86 separation-term assumptions rule-alist nil (known-booleans (w state)) nil nil nil nil nil nil nil nil state))
+        (acl2::simplify-term-x86 separation-term assumptions rule-alist nil (known-booleans (w state)) nil nil (rewrite-objective-weaken) nil nil nil nil nil nil state))
        ((when erp) (mv erp nil state)))
     (if (equal result *t*)
         (progn$ (cw "Proved that there is not overlap.)~%")
@@ -1096,7 +1098,7 @@
           `(equal ,address-term ,(acl2::sublis-var-simple (acons state-var one-rep-term nil) address-term)))
          ((mv erp result & state)
           (acl2::simplify-term-to-term-x86 address-unchanged-term nil ; assumptions
-                                           rule-alist nil (known-booleans (w state)) nil nil nil nil nil nil nil nil state))
+                                           rule-alist nil (known-booleans (w state)) nil nil (rewrite-objective-weaken) nil nil nil nil nil nil state))
          ((when erp) (mv erp nil state)))
       (if (equal result *t*)
           (prog2$ (cw "(Proved that address ~x0 is unchanged.)~%" address-term)
@@ -1443,7 +1445,7 @@
          (- (and (acl2::print-level-at-least-tp print) (cw "(Assumptions to use: ~x0.)~%" assumptions)))
          ;; Try to prove the invariant by rewriting:
          ((mv erp simplified-invariant & state)
-          (acl2::simplify-term-to-term-x86 term-to-prove assumptions rule-alist nil (known-booleans (w state)) nil nil nil
+          (acl2::simplify-term-to-term-x86 term-to-prove assumptions rule-alist nil (known-booleans (w state)) nil nil (rewrite-objective-weaken) nil
                                nil nil
                                '(x86isa::xr-of-xw-diff
                                  acl2::bvchop-of-bvplus-same) ; rules-to-monitor
@@ -2109,7 +2111,7 @@
          (acl2::simplify-term-x86 loop-function-call-term
                                   nil ; assumptions
                                   (make-rule-alist! (append (extra-loop-lifter-rules) lifter-rules) (w state))
-                                  nil (known-booleans (w state)) nil nil nil nil nil nil nil nil state))
+                                  nil (known-booleans (w state)) nil nil (rewrite-objective-weaken) nil nil nil nil nil nil state))
         ((when erp) (mv erp nil nil nil state))
         ;; Write the values computed by the loop back into the state:
         ((mv erp new-state-dag) (wrap-term-around-dag updated-state-term :loop-function-result loop-function-call-dag))
@@ -2478,7 +2480,9 @@
         ;;                                   t ; todo: do this warning just once?
         ;;                                   state))
         ((mv erp assumptions &)
-         (acl2::simplify-conjunction-basic assumptions rule-alist (known-booleans (w state)) rules-to-monitor
+         (acl2::simplify-conjunction-basic assumptions rule-alist (known-booleans (w state))
+                                           (rewrite-objective-strengthen)
+                                           rules-to-monitor
                                            *no-warn-ground-functions*
                                            nil ; don't memoize (avoids time spent making empty-memoizations)
                                            nil ; count-hits

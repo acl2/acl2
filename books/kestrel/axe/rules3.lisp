@@ -13131,7 +13131,6 @@
                           (and (equal (bvchop (+ -1 size) x) 0) (equal (bvchop size y) 1)))
            :in-theory (enable sbvdiv-rewrite
                               ;bvuminus
-                              ;;bvlt-of-constant-arg2-strengthen
                               sbvlt-rewrite))))
 
 (local (include-book "kestrel/bv/bvdiv-rules" :dir :system))

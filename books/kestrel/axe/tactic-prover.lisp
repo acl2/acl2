@@ -354,6 +354,7 @@
                              (known-booleans (w state))
                              normalize-xors
                              nil ; limits
+                             (rewrite-objective-?) ; todo: do better?
                              nil ; memoizep
                              t ; count-hits ; todo: pass in
                              print
