@@ -75,6 +75,41 @@
            (alistp (merge-sort-cdr-< alist)))
   :hints (("Goal" :in-theory (enable merge-sort-cdr-<))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+ (defthm nat-listp-of-strip-cdrs-of-merge-cdr-<
+   (implies (and (nat-listp (strip-cdrs x))
+                 (nat-listp (strip-cdrs y))
+                 (nat-listp (strip-cdrs z)))
+            (nat-listp (strip-cdrs (merge-cdr-< x y z))))
+   :hints (("Goal" :in-theory (enable merge-cdr-<)))))
+
+(local
+ (defthm nat-listp-of-strip-cdrs-after-split-list-fast-aux
+   (implies (and (nat-listp (strip-cdrs x))
+                 (nat-listp (strip-cdrs y))
+                 (nat-listp (strip-cdrs z))
+                 (<= (len y) (len x)))
+            (and (nat-listp (strip-cdrs (mv-nth 0 (split-list-fast-aux x y z))))
+                 (nat-listp (strip-cdrs (mv-nth 1 (split-list-fast-aux x y z))))))
+   :hints (("Goal" :induct (split-list-fast-aux x y z)
+                   :in-theory (e/d (split-list-fast-aux strip-cdrs) (natp))))))
+
+(local
+ (defthm nat-listp-of-strip-cdrs-after-split-list-fast
+   (implies (nat-listp (strip-cdrs l))
+            (and (nat-listp (strip-cdrs (mv-nth 0 (split-list-fast l))))
+                 (nat-listp (strip-cdrs (mv-nth 1 (split-list-fast l))))))
+   :hints (("Goal" :in-theory (enable split-list-fast)))))
+
+(defthm nat-listp-of-strip-cdrs-of-merge-sort-cdr-<
+  (implies (nat-listp (strip-cdrs l))
+           (nat-listp (strip-cdrs (merge-sort-cdr-< l))))
+  :hints (("Goal" :in-theory (enable merge-sort-cdr-<))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defforall-simple pair-with-rational-cdrp)
 
 (defthm rationalp-of-lookup-equal-when
@@ -116,7 +151,8 @@
       (print-symbols-4-per-line (nthcdr 4 syms)))))
 
 (defun print-function-counts (alist)
-  (declare (xargs :guard (alistp alist)))
+  (declare (xargs :guard (and (alistp alist)
+                              (nat-listp (strip-cdrs alist)))))
   (if (endp alist)
       nil
     (b* ((entry (first alist))
@@ -149,22 +185,40 @@
                (alist (acons-unique fn new-count alist)))
           (tabulate-dag-fns-aux (cdr dag) alist))))))
 
-(defthm true-listp-of-tabulate-dag-fns-aux
-  (implies (true-listp alist)
-           (true-listp (tabulate-dag-fns-aux dag alist))))
+(local
+ (defthm true-listp-of-tabulate-dag-fns-aux
+   (implies (true-listp alist)
+            (true-listp (tabulate-dag-fns-aux dag alist)))))
 
-(defthm alistp-of-tabulate-dag-fns-aux
-  (implies (alistp alist)
-           (alistp (tabulate-dag-fns-aux dag alist))))
+(local
+ (defthm alistp-of-tabulate-dag-fns-aux
+   (implies (alistp alist)
+            (alistp (tabulate-dag-fns-aux dag alist)))))
 
-(defthm all-pair-with-rational-cdrp-of-tabulate-dag-fns-aux
-  (implies (all-pair-with-rational-cdrp alist)
-           (all-pair-with-rational-cdrp (tabulate-dag-fns-aux dag alist)))
-  :hints (("Goal" :in-theory (enable tabulate-dag-fns-aux))))
+(local
+ (defthm all-pair-with-rational-cdrp-of-tabulate-dag-fns-aux
+   (implies (all-pair-with-rational-cdrp alist)
+            (all-pair-with-rational-cdrp (tabulate-dag-fns-aux dag alist)))
+   :hints (("Goal" :in-theory (enable tabulate-dag-fns-aux)))))
+
+(local
+ (defthm nat-listp-of-strip-cdrs-of-tabulate-dag-fns-aux
+   (implies (nat-listp (strip-cdrs alist))
+            (nat-listp (strip-cdrs (tabulate-dag-fns-aux dag alist))))
+   :hints (("Goal" :in-theory (enable tabulate-dag-fns-aux)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun tabulate-dag-fns (dag)
   (declare (xargs :guard (weak-dagp dag)))
   (tabulate-dag-fns-aux dag nil))
+
+(local
+ (defthm nat-listp-of-strip-cdrs-of-tabulate-dag-fns
+   (nat-listp (strip-cdrs (tabulate-dag-fns dag)))
+   :hints (("Goal" :in-theory (enable tabulate-dag-fns)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Instead of the print-sizep option, consider trying to print the size
 ;; but giving up if it is too big (and thus would take too long to compute)
