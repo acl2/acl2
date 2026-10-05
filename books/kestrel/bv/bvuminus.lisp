@@ -20,7 +20,7 @@
 (local (include-book "slice"))
 (local (include-book "bvplus"))
 (local (include-book "unsigned-byte-p"))
-(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 

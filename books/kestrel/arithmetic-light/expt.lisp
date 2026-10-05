@@ -281,23 +281,7 @@
 
 (theory-invariant (incompatible (:rewrite expt-of-unary--) (:rewrite /-of-expt)))
 
-;seems helpful (e.g., in proving that 2^(i-1) + x < 2^i when x < 2^(i-1)).
-(defthm expt-half-linear
-  (implies (integerp i)
-           (equal (expt 2 i)
-                  (+ (expt 2 (+ -1 i))
-                     (expt 2 (+ -1 i)))))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable expt-of-+))))
-
-;gen the 1
 (defthm <-of-1-and-expt
-  (implies (integerp n)
-           (equal (< 1 (expt 2 n))
-                  (< 0 n)))
-  :hints (("Goal" :in-theory (enable expt))))
-
-(defthm <-of-1-and-expt-gen
   (implies (and (< 1 r)
                 (integerp i)
                 (rationalp r)
@@ -401,7 +385,7 @@
                                    (i 0)
                                    (j (+ (- i) j)))
             :in-theory (e/d (expt-monotone-strong expt-of-+)
-                            (<-of-1-and-expt-gen))))))
+                            (<-of-1-and-expt))))))
 
 ;todo: rename vars
 (defthm <-of-expt-and-expt-same-base
@@ -464,34 +448,39 @@
   :hints (("Goal" :in-theory (enable expt))))
 
 (defthm integerp-of-*-of-expt-and-expt
-  (implies (and (integerp i)
+  (implies (and (< 1 r)
+                (integerp r)
+                (integerp i)
                 (integerp j))
-           (equal (integerp (* (expt 2 i) (expt 2 j)))
+           (equal (integerp (* (expt r i) (expt r j)))
                   (<= 0 (+ i j))))
   :hints (("Goal" :in-theory (e/d (expt-of-+)
                                   (;integerp-of-expt
                                    ;;<-OF-0-AND-EXPT
                                    integerp-of-expt-when-natp
                                    INTEGERP-OF-EXPT-HELPER))
-           :use (:instance integerp-of-expt-when-natp (r 2) (i (+ i j))))))
+           :use (:instance integerp-of-expt-when-natp (i (+ i j))))))
 
 (defthm integerp-of-*-of-expt-and-/-of-expt
-  (implies (and (integerp i)
+  (implies (and (< 1 r)
+                (integerp r)
+                (integerp i)
                 (integerp j))
-           (equal (integerp (* (expt 2 i) (/ (expt 2 j))))
+           (equal (integerp (* (expt r i) (/ (expt r j))))
                   (<= j i)))
   :hints (("Goal" :in-theory (e/d (expt-of-+)
                                   (;integerp-of-expt
                                    ;;<-OF-0-AND-EXPT
                                    integerp-of-expt-when-natp
                                    INTEGERP-OF-EXPT-HELPER))
-           :use (:instance integerp-of-expt-when-natp (r 2) (i (+ i (- j)))))))
+           :use (:instance integerp-of-expt-when-natp (i (+ i (- j)))))))
 
 ;gen the 1
 (defthm *-of-expt-and-expt-of-1minus
-  (implies (integerp size)
-           (equal (* (expt 2 size) (expt 2 (+ 1 (- size))))
-                  2))
+  (implies (and (integerp size)
+                (rationalp r))
+           (equal (* (expt r size) (expt r (+ 1 (- size))))
+                  r))
   :hints (("Goal" :in-theory (enable expt-of-+))))
 
 (defthm expt-of---arg1

@@ -24,7 +24,7 @@
 (include-book "kestrel/axe/priorities" :dir :system)
 (local (include-book "kestrel/arithmetic-light/lg" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
-(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
