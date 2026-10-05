@@ -4504,12 +4504,69 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-gen-ind-fn-prem-acc-thms ((pred-name symbolp)
+                                         (infos defind-irule-info-listp)
+                                         (clique-preds symbol-setp)
+                                         (name symbolp))
+  :returns (thms symbol-listp)
+  :short "Names of the return theorems of the premise accessors
+          for the recursive calls of a @('p[i]-induct') function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There is one theorem for each recursive call,
+     i.e. for each premise that calls a predicate of the same clique,
+     in each rule whose conclusion is @('p[i]');
+     see @(tsee defind-gen-ind-fn-case-calls)."))
+  (b* (((when (endp infos)) nil)
+       ((defind-irule-info info) (car infos))
+       (thms (defind-gen-ind-fn-prem-acc-thms
+               pred-name (cdr infos) clique-preds name))
+       ((unless (equal (defind-conclusion-info->name info.conclusion)
+                       (symbol-lfix pred-name)))
+        thms))
+    (append (defind-gen-ind-fn-prem-acc-thms-loop
+              info.premises pred-name info.name 1 clique-preds name)
+            thms))
+
+  :prepwork
+
+  ((define defind-gen-ind-fn-prem-acc-thms-loop
+     ((infos defind-premise-info-listp)
+      (pred-name symbolp)
+      (irule-name symbolp)
+      (num posp)
+      (clique-preds symbol-setp)
+      (name symbolp))
+     :returns (thms symbol-listp)
+     :parents nil
+     (b* (((when (endp infos)) nil)
+          (info (car infos)))
+       (defind-premise-info-case
+         info
+         :pred
+         (b* ((thms (defind-gen-ind-fn-prem-acc-thms-loop
+                      (cdr infos) pred-name irule-name
+                      (1+ (lposfix num)) clique-preds name)))
+           (if (set::in info.name (symbol-sfix clique-preds))
+               (cons (defind-proof-prem-acc-return-thm-name
+                       info.name pred-name irule-name num name)
+                     thms)
+             thms))
+         :other
+         (defind-gen-ind-fn-prem-acc-thms-loop
+           (cdr infos) pred-name irule-name num clique-preds name))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-gen-ind-fn-hint-parts ((pred-infos defind-pred-info-listp)
+                                      (irule-infos defind-irule-info-listp)
+                                      (clique-preds symbol-setp)
                                       (standalonep booleanp)
                                       (name symbolp))
   :returns (mv (expands true-listp)
                (uses true-listp)
-               (enables true-listp))
+               (rules true-listp))
   :short "Generate the pieces of the termination hints of
           the @('p[i]-induct') functions of a clique."
   :long
@@ -4517,18 +4574,25 @@
    (xdoc::p
     "For each predicate of the clique we expand
      the validity and the count of its witness proof,
-     and we supply the kind of that proof.
-     The latter is needed because a fixtype of proofs with a single summand
-     yields no case split, and so never establishes its kind,
-     which leaves the FTY linear rules for the counts of its accessors,
-     which are conditional on the kind, unable to fire.")
+     and we supply the possible kinds of that proof.
+     The latter are needed because
+     the count function is defined by cases on the kind,
+     and returns a number only for the kinds of the fixtype.")
    (xdoc::p
-    "The @('p[i]-proof-count-bound') theorems are not supplied explicitly:
-     they are @(':linear') rules whose trigger terms
-     occur in the measure conjecture,
+    "The rules, which the caller puts into a quoted theory,
+     are the following, for each predicate of the clique:
+     the definition of the predicate,
+     which exposes the validity of its witness proof;
+     the theorem saying that the count function returns a natural number;
+     the @('p[i]-proof-count-bound') theorem,
+     which is a @(':linear') rule whose trigger term
+     occurs in the measure conjecture,
      and whose validity hypothesis comes first,
      so that free variable matching binds the proof from it
-     rather than from the weaker recognizer hypothesis."))
+     rather than from the weaker recognizer hypothesis;
+     and the return theorems of the premise accessors
+     (see @(tsee defind-gen-ind-fn-prem-acc-thms)),
+     which relieve that recognizer hypothesis."))
   (b* (((when (endp pred-infos)) (mv nil nil nil))
        ((defind-pred-info pred-info) (car pred-infos))
        (witness (defind-proof-witness-fn-name pred-info.name name))
@@ -4539,13 +4603,21 @@
        (xvar (defind-proof-xvar-name name))
        (count-natp-thm (defind-proof-count-natp-thm-name
                          pred-info.name standalonep name))
-       ((mv expands uses enables)
-        (defind-gen-ind-fn-hint-parts (cdr pred-infos) standalonep name)))
+       (count-bound-thm (defind-proof-count-bound-thm-name
+                          pred-info.name name))
+       (prem-acc-thms (defind-gen-ind-fn-prem-acc-thms
+                        pred-info.name irule-infos clique-preds name))
+       ((mv expands uses rules)
+        (defind-gen-ind-fn-hint-parts
+          (cdr pred-infos) irule-infos clique-preds standalonep name)))
     (mv (list* `(,proof-validp ,wcall ,@pred-info.formals)
                `(,count-fn ,wcall)
                expands)
         (cons `(:instance ,poss-thm (,xvar ,wcall)) uses)
-        (list* pred-info.name count-natp-thm enables))))
+        (list* pred-info.name
+               count-natp-thm
+               count-bound-thm
+               (append prem-acc-thms rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4593,15 +4665,12 @@
        ((unless (defind-pred-recursivep pred-info1.name irule-infos))
         (mv nil nil nil))
        (standalonep (endp (cdr pred-infos)))
-       ((mv expands uses enables)
-        (defind-gen-ind-fn-hint-parts pred-infos standalonep name))
-       ;; The ordinal and arithmetic facts are enabled explicitly, because
-       ;; the surrounding book may have restricted the theory; without them
-       ;; the measure conjecture resorts to induction, which fails outright
-       ;; where the induction depth limit is 0.
+       ((mv expands uses rules)
+        (defind-gen-ind-fn-hint-parts
+          pred-infos irule-infos clique-preds standalonep name))
        (hints `(("Goal" :expand ,expands
                         :use ,uses
-                        :in-theory (enable o-p o-finp o< natp ,@enables))))
+                        :in-theory '(eql o-p o-finp o< natp ,@rules))))
        (fn-name1 (defind-ind-fn-name pred-info1.name name))
        (count-fn1 (defind-proof-count-fn-name pred-info1.name name))
        (witness1 (defind-proof-witness-fn-name pred-info1.name name))
