@@ -19,7 +19,7 @@
 (include-book "default")
 (include-book "header")
 (include-book "array1p")
-(include-book "bounded-integer-alistp")
+(local (include-book "bounded-integer-alistp"))
 (include-book "dimensions") ; make local?
 (include-book "compress1") ; make local?
 (include-book "compress11") ; make local?
