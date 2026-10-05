@@ -3636,7 +3636,7 @@
              equal-of-0-and-floor
              equal-of-getbit-and-bitxor-same
              equal-of-getbit-and-bitxor-same-alt
-             equal-of-floor-of-expt-and-bv-constant-version-dag
+             equal-of-floor-of-expt-and-bv-constant-version-axe
              <-of-diff-of-bv-and-constant
              <-of-constant-when-<=-of-free
              bvxor-cancel-lemma1-bvchop-version-alt3
@@ -3950,8 +3950,8 @@
              equal-of-bvxor-and-bvor
              equal-of-bvxor-and-bvor-alt
 
-             plus-of-minus-becomes-bv-dag-axe
-             plus-of-minus-becomes-bv-dag-alt-axe
+             plus-of-minus-becomes-bv-axe
+             plus-of-minus-becomes-bv-alt-axe
 
              bvlt-of-slice-29-30-2
              slice-when-not-bvlt-gen

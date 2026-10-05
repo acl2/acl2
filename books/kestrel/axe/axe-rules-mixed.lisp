@@ -81,7 +81,7 @@
                             UNSIGNED-BYTE-P-OF-BVCHOP-BIGGER2)))))
 
 ;rename
-(defthmd plus-of-minus-becomes-bv-dag-axe
+(defthmd plus-of-minus-becomes-bv-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (unsigned-byte-p xsize y) ;this has been expensive
                 (not (bvlt xsize x y))
@@ -93,7 +93,7 @@
            :in-theory (e/d (unsigned-byte-p-forced) (minus-becomes-bv)))))
 
 ;rename
-(defthmd plus-of-minus-becomes-bv-dag-alt-axe
+(defthmd plus-of-minus-becomes-bv-alt-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (unsigned-byte-p xsize y)
                 (not (bvlt xsize x y))
@@ -101,12 +101,12 @@
                 (unsigned-byte-p-forced xsize x))
            (equal (+ (- y) x)
                   (bvplus xsize x (bvuminus xsize y))))
-  :hints (("Goal" :use (:instance plus-of-minus-becomes-bv-dag-axe)
-           :in-theory (disable plus-of-minus-becomes-bv-dag-axe))))
+  :hints (("Goal" :use (:instance plus-of-minus-becomes-bv-axe)
+           :in-theory (disable plus-of-minus-becomes-bv-axe))))
 
 
 ;; ;gen the 32
-;; (defthm floor-when-usb-bind-free-dag-32
+;; (defthm floor-when-usb-bind-free-axe-32
 ;;   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
 ;;                 (unsigned-byte-p-forced xsize x))
 ;;            (equal (floor x 32)
@@ -127,9 +127,9 @@
                   (if (< x y)
                       t
                     (< (bvplus xsize x (bvuminus xsize y)) k))))
-  :hints (("Goal" :use (:instance plus-of-minus-becomes-bv-dag-axe)
+  :hints (("Goal" :use (:instance plus-of-minus-becomes-bv-axe)
            :in-theory (e/d (unsigned-byte-p-forced usb-hack-100 bvlt bvplus)
-                           (plus-of-minus-becomes-bv-dag-axe)))))
+                           (plus-of-minus-becomes-bv-axe)))))
 
 (defthmd equal-of-+-of-minus-and-bv-axe
   (implies (and (axe-bind-free (bind-bv-size-axe k 'ksize dag-array) '(ksize))
@@ -142,9 +142,9 @@
                   (if (< x y)
                       nil
                     (equal k (bvplus xsize x (bvuminus xsize y))))))
-  :hints (("Goal" :use (:instance plus-of-minus-becomes-bv-dag-axe)
+  :hints (("Goal" :use (:instance plus-of-minus-becomes-bv-axe)
            :in-theory (e/d (unsigned-byte-p-forced usb-hack-100 bvlt bvplus bvuminus bvminus)
-                           (plus-of-minus-becomes-bv-dag-axe)))))
+                           (plus-of-minus-becomes-bv-axe)))))
 
 (defthmd +-of-minus-bind-free-axe
   (implies (and (syntaxp (quotep k))
@@ -188,7 +188,7 @@
                               unsigned-byte-p-when-unsigned-byte-p-free-better))))
 
 ;rename
-(defthmd equal-of-floor-of-expt-and-bv-constant-version-dag
+(defthmd equal-of-floor-of-expt-and-bv-constant-version-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (power-of-2p k)
                 (natp (lg k))
