@@ -145,6 +145,7 @@
                              memoizep
                              count-hits
                              nil ; normalize-xors
+                             (acl2::rewrite-objective-?)
                              print
                              whole-form
                              state)))
