@@ -15,7 +15,7 @@
 (include-book "kestrel/c/representation/integer-operations" :dir :system)
 (include-book "kestrel/c/atc/let-designations" :dir :system) ; for assign and declar
 (local (include-book "kestrel/c/atc/symbolic-execution-rules/integers" :dir :system))
-(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 
 (in-theory (disable (:e sint-from-integer)
                     (:e sint-dec-const) ; ensures these are retained by simplify
