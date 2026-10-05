@@ -18,7 +18,7 @@
 (local (include-book "bit-lists-fixing"))
 (local (include-book "lists"))
 
-(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
