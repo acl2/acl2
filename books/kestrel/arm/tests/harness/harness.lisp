@@ -463,6 +463,18 @@
              (acl2::unsigned-byte-listp 32 (vec-get :code vec nil)))
     :rule-classes :forward-chaining))
 
+(local
+  (defthm addressp-of-pc-when-test-vectorp
+    (implies (test-vectorp vec)
+             (addressp (vec-get :pc vec 0)))
+    :rule-classes :forward-chaining))
+
+(local
+  (defthm natp-of-arch-when-test-vectorp
+    (implies (test-vectorp vec)
+             (natp (vec-get :arch vec 7)))
+    :rule-classes :forward-chaining))
+
 ;; The record for VEC, whose real mismatches are MISMATCHES and whose
 ;; UNKNOWN-dependent fields are FIELDS.  A mismatch on :error, or on :trap
 ;; with a non-nil actual value, means the model reported an error; unless the
@@ -484,6 +496,8 @@
     (list :id (vec-get :id vec "")
           :name name
           :word word
+          :pc (vec-get :pc vec 0)
+          :arch (vec-get :arch vec 7)
           :gap-key (if name nil (gap-key word))
           :error-class (and error
                             (error-class error (and (vec-get :trap expect nil) t)))
