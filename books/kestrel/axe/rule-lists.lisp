@@ -3650,7 +3650,7 @@
              ;;                                      +-of-bvplus-of-1-and-unary-minus-same
              ;;                                      +-of-bvplus-of-2-and-unary-minus-same
 
-             +-of-minus-bind-free-constant-version ;more like this?!
+             +-of-minus-bind-free-constant-version-axe ;more like this?!
              unsigned-byte-p-of-floor-of-expt-constant-version
              bvplus-of-floor-4-32
              bvplus-of-floor-4-32-alt
@@ -3710,8 +3710,8 @@
              bvplus-of-+-arg2
              slice-of-+-becomes-slice-of-bvplus ;ffixme complete set..
              bv-array-read-of-+
-             <-of-+-of-minus-and-bv
-             equal-of-+-of-minus-and-bv
+             <-of-+-of-minus-and-bv-axe
+             equal-of-+-of-minus-and-bv-axe
              nth-of-bv-array-write-becomes-bv-array-read-strong
              sha1-hack-four-million-six
              equal-of-0-and-bvplus-of-bvuminus-alt
@@ -3950,8 +3950,8 @@
              equal-of-bvxor-and-bvor
              equal-of-bvxor-and-bvor-alt
 
-             plus-of-minus-becomes-bv-dag
-             plus-of-minus-becomes-bv-dag-alt
+             plus-of-minus-becomes-bv-dag-axe
+             plus-of-minus-becomes-bv-dag-alt-axe
 
              bvlt-of-slice-29-30-2
              slice-when-not-bvlt-gen
@@ -4080,7 +4080,7 @@
              equal-of-bvplus-and-bvplus-cancel-gen-alt
              equal-of-bvplus-and-bvplus-cancel-gen
              unsigned-byte-p-of-bvplus-tighten
-             bvlt-tighten-arg1
+             bvlt-tighten-arg1-axe
 ;bvlt-tighten-arg2 ;wed feb 24 01:14:46 2010
              acl2-numberp-when-unsigned-byte-p
              bvlt-of-plus-arg1

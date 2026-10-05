@@ -38,7 +38,7 @@
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system)) ;drop?
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system)) ; for EXPT-BOUND-LINEAR-2
 
-(defthmd bvlt-tighten-arg2
+(defthmd bvlt-tighten-arg2-axe
   (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (syntaxp (not (quotep y)))
                 (< ysize size)
@@ -56,7 +56,7 @@
                                    UNSIGNED-BYTE-P-OF-BVCHOP-BIGGER2)))))
 
 
-(defthmd bvlt-tighten-arg1
+(defthmd bvlt-tighten-arg1-axe
   (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (syntaxp (not (quotep y))) ;needed?
                 (< ysize size)
@@ -80,10 +80,8 @@
                             bvlt-tighten
                             UNSIGNED-BYTE-P-OF-BVCHOP-BIGGER2)))))
 
-
-
 ;rename
-(defthmd plus-of-minus-becomes-bv-dag
+(defthmd plus-of-minus-becomes-bv-dag-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (unsigned-byte-p xsize y) ;this has been expensive
                 (not (bvlt xsize x y))
@@ -95,7 +93,7 @@
            :in-theory (e/d (unsigned-byte-p-forced) (minus-becomes-bv)))))
 
 ;rename
-(defthmd plus-of-minus-becomes-bv-dag-alt
+(defthmd plus-of-minus-becomes-bv-dag-alt-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (unsigned-byte-p xsize y)
                 (not (bvlt xsize x y))
@@ -103,8 +101,8 @@
                 (unsigned-byte-p-forced xsize x))
            (equal (+ (- y) x)
                   (bvplus xsize x (bvuminus xsize y))))
-  :hints (("Goal" :use (:instance plus-of-minus-becomes-bv-dag)
-           :in-theory (disable plus-of-minus-becomes-bv-dag))))
+  :hints (("Goal" :use (:instance plus-of-minus-becomes-bv-dag-axe)
+           :in-theory (disable plus-of-minus-becomes-bv-dag-axe))))
 
 
 ;; ;gen the 32
@@ -118,7 +116,7 @@
 
 ;kind of gross?
 ;more like this?
-(defthmd <-of-+-of-minus-and-bv
+(defthmd <-of-+-of-minus-and-bv-axe
   (implies (and (axe-bind-free (bind-bv-size-axe k 'ksize dag-array) '(ksize))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (natp y)
@@ -129,11 +127,11 @@
                   (if (< x y)
                       t
                     (< (bvplus xsize x (bvuminus xsize y)) k))))
-  :hints (("Goal" :use (:instance plus-of-minus-becomes-bv-dag)
+  :hints (("Goal" :use (:instance plus-of-minus-becomes-bv-dag-axe)
            :in-theory (e/d (unsigned-byte-p-forced usb-hack-100 bvlt bvplus)
-                           (plus-of-minus-becomes-bv-dag )))))
+                           (plus-of-minus-becomes-bv-dag-axe)))))
 
-(defthmd equal-of-+-of-minus-and-bv
+(defthmd equal-of-+-of-minus-and-bv-axe
   (implies (and (axe-bind-free (bind-bv-size-axe k 'ksize dag-array) '(ksize))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (natp y)
@@ -144,11 +142,11 @@
                   (if (< x y)
                       nil
                     (equal k (bvplus xsize x (bvuminus xsize y))))))
-  :hints (("Goal" :use (:instance plus-of-minus-becomes-bv-dag)
+  :hints (("Goal" :use (:instance plus-of-minus-becomes-bv-dag-axe)
            :in-theory (e/d (unsigned-byte-p-forced usb-hack-100 bvlt bvplus bvuminus bvminus)
-                           (plus-of-minus-becomes-bv-dag)))))
+                           (plus-of-minus-becomes-bv-dag-axe)))))
 
-(defthmd +-of-minus-bind-free
+(defthmd +-of-minus-bind-free-axe
   (implies (and (syntaxp (quotep k))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (unsigned-byte-p xsize k)
@@ -161,7 +159,7 @@
                                      unsigned-byte-p-forced
                                      ))))
 
-(defthmd +-of-minus-bind-free-constant-version
+(defthmd +-of-minus-bind-free-constant-version-axe
   (implies (and (syntaxp (quotep k))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (unsigned-byte-p xsize (- k))
@@ -170,8 +168,8 @@
                 (unsigned-byte-p-forced xsize x))
            (equal (binary-+ k x)
                   (bvplus xsize k x)))
-  :hints (("Goal" :use (:instance +-of-minus-bind-free (k (- k)))
-           :in-theory (disable +-of-minus-bind-free))))
+  :hints (("Goal" :use (:instance +-of-minus-bind-free-axe (k (- k)))
+           :in-theory (disable +-of-minus-bind-free-axe))))
 
 (defthmd <-of-constant-and-+-of-minus
   (implies (and (syntaxp (quotep k))
