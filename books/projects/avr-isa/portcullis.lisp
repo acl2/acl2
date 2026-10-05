@@ -1,0 +1,4 @@
+; This file is not part of the original "avr-isa" project.  We added it to
+; resolve a name conflict by wrapping the project in its own package.
+
+(in-package "AVR-ISA")
