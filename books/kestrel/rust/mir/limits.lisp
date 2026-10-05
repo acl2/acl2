@@ -14,7 +14,7 @@
 
 (include-book "std/util/defval" :dir :system)
 
-(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 (acl2::controlled-configuration)
