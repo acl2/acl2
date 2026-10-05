@@ -1,7 +1,7 @@
 ; Rules about group, group2, etc.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -51,8 +51,6 @@
            (equal (group n x)
                   (group2 n x)))
   :hints (("Goal" :in-theory (enable group group2))))
-
-(in-theory (disable firstn)) ; move up?!
 
 (defthm take-of-group-2
   (implies (and (<= m (floor (len x) n)) ;m is at most the number of complete blocks
