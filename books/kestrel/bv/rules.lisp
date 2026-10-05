@@ -4342,7 +4342,8 @@
                 (rationalp x))
            (equal (integerp (* 1/2 (mod x (expt 2 size))))
                   (integerp (* 1/2 x))))
-  :hints (("Goal" :in-theory (enable (:i expt) expt))))
+  :hints (("Goal" :expand (expt 2 size) ; for speed
+           :in-theory (enable (:i expt) expt))))
 
 ;todo: prove a getbit-of-sum-cases rule?  does it already exist?  see getbit-of-+
 ;; (thm
@@ -4429,11 +4430,7 @@
                       (sbvlt 32
                              (bvuminus 32 k) ;gets computed
                              x)))))
-  :hints (("Goal" :in-theory (enable sbvlt ;-rewrite
-                                     bvuminus
-                                     bvminus
-                                     bvlt bvplus bvchop-of-sum-cases
-                                     logext-of-plus))))
+  :hints (("Goal" :in-theory (enable sbvlt bvuminus logext-of-minus))))
 
 ;rename or drop?
 (defthmd sbvlt-of-bvuminus
@@ -4473,14 +4470,7 @@
                       (sbvlt size
                              (bvuminus size k) ;gets computed
                              x)))))
-  :hints (("Goal" :in-theory (e/d (sbvlt ;-rewrite
-                                     bvuminus
-                                     bvminus
-                                     bvlt bvplus bvchop-of-sum-cases
-                                     logext-of-plus
-                                     logext-when-equal-of-bvchop
-                                     logext-when-equal-of-bvchop-safe)
-                                  (getbit-of-bvchop-both)))))
+  :hints (("Goal" :in-theory (enable sbvlt bvuminus logext-of-minus logext-when-equal-of-bvchop logext-cases))))
 
 (defthm sbvlt-of-bvplus-of-0-and-constant
   (implies (and (syntaxp (quotep k))
@@ -5023,14 +5013,7 @@
   (implies (sbvlt 32 x y)
            (< (bvminus 32 y (bvplus 32 1 x))
               (bvminus 32 y x)))
-  :hints (("Goal"
-           :cases ((equal 0 (getbit 31 y)))
-           :in-theory (e/d (bvminus sbvlt-rewrite
-                                    bvlt bvplus ; bvchop
-                                    BVCHOP-WHEN-TOP-BIT-1
-                                    bvCHOP-WHEN-TOP-BIT-0
-                                    bvchop-of-sum-cases) (REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1 ;looped
-                                    )))))
+  :hints (("Goal" :in-theory (enable bvminus bvplus sbvlt bvchop-of-sum-cases))))
 
 (defthm equal-of-bvchop-32-and-bvchop-31
   (equal (EQUAL (BVCHOP 32 X) (BVCHOP 31 Y))
