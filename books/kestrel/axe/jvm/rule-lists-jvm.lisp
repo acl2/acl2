@@ -483,6 +483,7 @@
     jvm::do-inst-of-astore_1
     jvm::do-inst-of-astore_2
     jvm::do-inst-of-astore_3
+    jvm::do-inst-of-athrow
     jvm::do-inst-of-baload
     jvm::do-inst-of-bastore
     jvm::do-inst-of-bipush

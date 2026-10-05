@@ -1354,6 +1354,7 @@
     acl2::bvlt-of-bvmult-of-expt-arg3-constant-version
 
     acl2::bvplus-of-bvplus-tighten-arg3 ; new
+    acl2::logext-of-+-of-logext-arg1
     acl2::logext-of-+-of-logext-arg2
 
     acl2::bvminus-becomes-bvplus-of-bvuminus-constant-version
@@ -2484,8 +2485,6 @@
 ;            combine-bytes-and-byte-ify
             acl2::logext-of-bvchop-same
             acl2::logext-identity
-            acl2::logext-of-+-of-logext-arg1
-            acl2::logext-of-+-of-logext-arg2
 ;            x86isa::xw-xr-same
             ;; acl2::bvplus-commutative-axe ;is this based on nodenum or term weight?
 
