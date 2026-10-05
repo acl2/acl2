@@ -31,17 +31,17 @@
 ;; rationalp-expt-type-prescription
 ;; expt-type-prescription-non-zero-base
 
-(defthm expt-when-not-integerp
-  (implies (not (integerp i))
-           (equal (expt r i)
-                  1))
-  :hints (("Goal" :in-theory (enable expt))))
-
 (defthm integerp-of-expt
   (implies (and (integerp r)
                 (<= 0 i))
            (integerp (expt r i)))
   :hints (("Goal" :in-theory (enable expt))))
+
+(defthm integerp-of-expt-type
+  (implies (and (integerp r)
+                (<= 0 i))
+           (integerp (expt r i)))
+  :rule-classes :type-prescription)
 
 (defthm natp-of-expt
   (implies (and (natp r)
@@ -51,11 +51,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm <-of-0-and-expt
-  (implies (and (< 0 r)
-                (rationalp r))
-           (< 0 (expt r i)))
-  :hints (("Goal" :in-theory (enable zip expt))))
+(defthm expt-when-not-integerp
+  (implies (not (integerp i))
+           (equal (expt r i)
+                  1))
+  :hints (("Goal" :in-theory (enable expt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Comparing EXPT to 0
 
 (local
  ;; induction function that subtracts 2 each time
@@ -68,11 +72,23 @@
          (ind-sub2 (+ 2 i))
        (ind-sub2 (+ -2 i))))))
 
+(defthm <-of-0-and-expt
+  (implies (rationalp r)
+           (equal (< 0 (expt r i))
+                  (or (< 0 r)
+                      (not (integerp i)) ; expt gives 1
+                      (equal 0 i) ; since r^0 = 1
+                      (and (< r 0)
+                           (evenp i)))))
+  :hints (("Goal" :induct (ind-sub2 i)
+           :expand (expt r i)
+           :in-theory (enable expt zip))))
+
 (defthm <-of-expt-and-0
   (implies (rationalp r)
            (equal (< (expt r i) 0)
-                  (and (integerp i)
-                       (< r 0)
+                  (and (< r 0)
+                       (integerp i)
                        (not (evenp i)))))
   :hints (("Goal" :induct (ind-sub2 i)
            :expand (expt r i)
@@ -82,17 +98,11 @@
   (equal (equal 0 (expt r i))
          (and (equal 0 (fix r))
               (integerp i)
-              (not (equal 0 i)) ;since r^0 = 1
+              (not (equal 0 i)) ; since r^0 = 1
               ))
   :hints (("Goal" :in-theory (enable zip expt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm integerp-of-expt-type
-  (implies (and (integerp r)
-                (<= 0 i))
-           (integerp (expt r i)))
-  :rule-classes :type-prescription)
 
 (defthm <-of-0-and-expt-type
   (implies (and (< 0 r)
@@ -126,12 +136,12 @@
            :expand (expt r i)
            :in-theory (enable expt))))
 
-;; The cases of positive r and non-negative r are covered elsewhere.
+;; The cases of positive r and non-negative r are covered above
 (defthm expt-type-odd-exponent-negative-base
-  (implies (and (not (evenp i))
-                (< r 0)
-                (rationalp r)
-                (integerp i))
+  (implies (and (< r 0) ; unusual
+                (not (evenp i))
+                (integerp i)
+                (rationalp r))
            (< (expt r i) 0))
   :rule-classes :type-prescription)
 
@@ -158,6 +168,8 @@
   (equal (expt r 1)
          (fix r))
   :hints (("Goal" :in-theory (enable expt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd expt-of-+-of--1-arg2
   (implies (and (integerp i)
