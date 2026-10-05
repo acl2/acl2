@@ -3088,8 +3088,8 @@
             slice-when-bvlt-gen      ;wed mar 16 00:52:46 2011
             slice-when-not-bvlt-free ;wed mar 16 00:52:46 2011
             equal-of-0-and-slice-when-bvlt
-            equal-of-bvchop-extend-when-bvlt
-            equal-of-bvchop-extend-when-not-bvlt
+            equal-of-bvchop-extend-when-bvlt-axe
+            equal-of-bvchop-extend-when-not-bvlt-axe
             bvlt-when-bvchop-known-subst-alt
             bvlt-when-bvchop-known-subst
             bvlt-must-be-axe ;fixme more like this?
@@ -3099,7 +3099,7 @@
             bvlt-of-constant-arg2-strengthen-axe
             bvlt-of-constant-arg3-strengthen-axe
             bvlt-of-constant-arg3-weaken-axe
-            equal-of-constant-and-bvchop-when-bvlt ;new!
+            equal-of-constant-and-bvchop-when-bvlt-axe ;new!
             bvlt-of-two-less-than-max-when-not-max  ;yuck?
             equal-of-constant-and-slice-when-bvlt   ;new
             equal-of-constant-and-slice-when-equal-of-constant-and-bvchop
@@ -3216,7 +3216,7 @@
              bvlt-transitive-5-a
              bvlt-transitive-5-b
 
-             equal-of-bvchop-extend-when-bvlt     ;new
+             equal-of-bvchop-extend-when-bvlt-axe     ;new
              bvplus-of-bvuminus-of-bvcat-of-slice32 ;new
              bvplus-of-bvuminus-of-bvcat-of-slice   ;new
              bvlt-of-floor-arg3
@@ -3258,7 +3258,7 @@
              bvcat-of-slice-when-slice-known
              nth-becomes-bv-array-read-strong2
              nth-of-bv-when-all-same
-             unsigned-byte-p-of-+-of-minus-better
+             unsigned-byte-p-of-+-of-minus-better-axe
              bv-array-write-shorten-constant-data
              EQUAL-OF-CONSTANT-AND-BVXOR-OF-CONSTANT
              bvlt-6-4
@@ -3300,7 +3300,7 @@
              unsigned-byte-p-false-when-not-longer
              equal-of-0-and-bvchop-6
              bvlt-of-64
-             unsigned-byte-p-of-+-of-minus2
+             unsigned-byte-p-of-+-of-minus2-axe
              sbvlt-of-+-arg1
              sbvlt-of-+-arg2
              bvplus-of-unary-minus-arg2
@@ -3421,7 +3421,7 @@
 
              bvplus-of-bvuminus-of-bvcat-and-bvcat
 
-             unsigned-byte-p-of-smaller
+             unsigned-byte-p-of-smaller-axe
              bvxor-cancel-2-of-more-and-1-of-more
              bitxor-when-equal-of-constant-and-bvchop-arg1
              bitxor-when-equal-of-constant-and-bvchop-arg2
@@ -3467,14 +3467,14 @@
              floor-of-*-of-8-and-32
              consp-of-ungroup
 
-             equal-of-constant-and-+-of-minus-and-bv
+             equal-of-constant-and-+-of-minus-and-bv-axe
              group-of-cons
              <-of-non-integerp-and-integerp
              bvlt-of-bitxor-of-1-same
              bvlt-of-bitxor-of-1-same-two
 
-             <-of-constant-and-+-of-bv-and-minus-and-bv
-             <-of-+-of-minus-becomes-bvlt
+             <-of-constant-and-+-of-bv-and-minus-and-bv-axe
+             <-of-+-of-minus-becomes-bvlt-axe
              unsigned-byte-p-of-slice-one-more
              equal-of-plus-minus-move
              equal-of-0-and-+-of-minus ;these should have similar names
@@ -3614,9 +3614,9 @@
 ;(bit-blast-rules-basic) ;new! we only want these when mitering?
              unsigned-byte-p-of-+-of-constant-strong
              nth-of-repeat
-             +-of-minus-1-and-bv2-alt-bind-free
-             <-of-constant-and-+-of-bv-and-minus
-             <-of-constant-and-+-of-minus-and-bv
+             +-of-minus-1-and-bv2-alt-bind-free-axe
+             <-of-constant-and-+-of-bv-and-minus-axe
+             <-of-constant-and-+-of-minus-and-bv-axe
 
              nth-of-plus-of-bv-and-minus
              nth-of-plus-of-bv-and-minus-alt
@@ -3636,8 +3636,8 @@
              equal-of-0-and-floor
              equal-of-getbit-and-bitxor-same
              equal-of-getbit-and-bitxor-same-alt
-             equal-of-floor-of-expt-and-bv-constant-version-dag
-             <-of-diff-of-bv-and-constant
+             equal-of-floor-of-expt-and-bv-constant-version-axe
+             <-of-diff-of-bv-and-constant-axe
              <-of-constant-when-<=-of-free
              bvxor-cancel-lemma1-bvchop-version-alt3
              bvxor-cancel-lemma1-bvchop-version-alt2
@@ -3645,12 +3645,12 @@
              equal-of-bvplus-cancel-arg2-alt ;more?
              equal-of-constant-and-bvif-of-constant-and-constant
 
-             ;;                                      <-of-constant-and-+-of-minus
+             ;;                                      <-of-constant-and-+-of-minus-axe
              ;;                                      <-of-*-of-floor-and-same
              ;;                                      +-of-bvplus-of-1-and-unary-minus-same
              ;;                                      +-of-bvplus-of-2-and-unary-minus-same
 
-             +-of-minus-bind-free-constant-version ;more like this?!
+             +-of-minus-bind-free-constant-version-axe ;more like this?!
              unsigned-byte-p-of-floor-of-expt-constant-version
              bvplus-of-floor-4-32
              bvplus-of-floor-4-32-alt
@@ -3710,8 +3710,8 @@
              bvplus-of-+-arg2
              slice-of-+-becomes-slice-of-bvplus ;ffixme complete set..
              bv-array-read-of-+
-             <-of-+-of-minus-and-bv
-             equal-of-+-of-minus-and-bv
+             <-of-+-of-minus-and-bv-axe
+             equal-of-+-of-minus-and-bv-axe
              nth-of-bv-array-write-becomes-bv-array-read-strong
              sha1-hack-four-million-six
              equal-of-0-and-bvplus-of-bvuminus-alt
@@ -3950,8 +3950,8 @@
              equal-of-bvxor-and-bvor
              equal-of-bvxor-and-bvor-alt
 
-             plus-of-minus-becomes-bv-dag
-             plus-of-minus-becomes-bv-dag-alt
+             plus-of-minus-becomes-bv-axe
+             plus-of-minus-becomes-bv-alt-axe
 
              bvlt-of-slice-29-30-2
              slice-when-not-bvlt-gen
@@ -4080,7 +4080,7 @@
              equal-of-bvplus-and-bvplus-cancel-gen-alt
              equal-of-bvplus-and-bvplus-cancel-gen
              unsigned-byte-p-of-bvplus-tighten
-             bvlt-tighten-arg1
+             bvlt-tighten-arg1-axe
 ;bvlt-tighten-arg2 ;wed feb 24 01:14:46 2010
              acl2-numberp-when-unsigned-byte-p
              bvlt-of-plus-arg1
