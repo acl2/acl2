@@ -31,6 +31,12 @@
 ;; rationalp-expt-type-prescription
 ;; expt-type-prescription-non-zero-base
 
+(defthm expt-when-not-integerp
+  (implies (not (integerp i))
+           (equal (expt r i)
+                  1))
+  :hints (("Goal" :in-theory (enable expt))))
+
 (defthm integerp-of-expt
   (implies (and (integerp r)
                 (<= 0 i))
@@ -43,16 +49,12 @@
            (natp (expt r i)))
   :hints (("Goal" :in-theory (enable expt))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm <-of-0-and-expt
   (implies (and (< 0 r)
                 (rationalp r))
            (< 0 (expt r i)))
-  :hints (("Goal" :in-theory (enable zip expt))))
-
-(defthm <=-of-0-and-expt
-  (implies (and (<= 0 r)
-                (rationalp r))
-           (<= 0 (expt r i)))
   :hints (("Goal" :in-theory (enable zip expt))))
 
 (local
@@ -67,10 +69,10 @@
        (ind-sub2 (+ -2 i))))))
 
 (defthm <-of-expt-and-0
-  (implies (and (rationalp r)
-                (integerp i))
+  (implies (rationalp r)
            (equal (< (expt r i) 0)
-                  (and (< r 0)
+                  (and (integerp i)
+                       (< r 0)
                        (not (evenp i)))))
   :hints (("Goal" :induct (ind-sub2 i)
            :expand (expt r i)
@@ -957,3 +959,44 @@
            (equal (* (expt r i) (expt r (+ j (- i))))
                   (expt r j)))
   :hints (("Goal" :in-theory (enable expt-of-+))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+  (defthm <-of-expt-and-1-when-<-of-0
+    (implies (and (< 0 r)
+                  (rationalp r))
+             (equal (< (expt r i) 1)
+                    (and (integerp i)
+                         (not (equal 0 i))
+                         (if (< 0 i)
+                             (< r 1)
+                           (< 1 r)))))
+    :hints (("Goal" :cases ((not (integerp i)) (< 1 r))
+             :in-theory (enable <-of-expt-and-1-linear)))))
+
+;; Exact characterization of when (expt r i) < 1, for a rational base.  The
+;; exponent must be a nonzero integer (otherwise expt returns 1).  Then the
+;; result is less than 1 when the base is 0 (giving 0), when the base is
+;; negative and the exponent is odd (giving a negative result), and otherwise
+;; exactly when the magnitude of the base is less than 1 and the exponent is
+;; positive, or the magnitude of the base is greater than 1 and the exponent is
+;; negative.
+; todo: gen the 1
+(defthm <-of-expt-and-1
+  (implies (rationalp r)
+           (equal (< (expt r i) 1)
+                  (and (integerp i)
+                       (not (equal 0 i))
+                       (or (equal 0 r)
+                           (and (< r 0)
+                                (not (evenp i)))
+                           (if (< 0 i)
+                               (and (< -1 r)
+                                    (< r 1))
+                             (or (< r -1)
+                                 (< 1 r)))))))
+  :hints (("Goal" :cases ((< r 0))
+           :use (<-of-expt-and-1-when-<-of-0
+                  (:instance <-of-expt-and-1-when-<-of-0 (r (- r))))
+           :in-theory (disable <-of-expt-and-1-when-<-of-0))))

@@ -123,7 +123,7 @@
   (implies (and (< i 0)
                 (integerp i))
            (< (expt 2 i) 1))
-  :rule-classes (:rewrite :linear)
+  :rule-classes :linear
   :hints (("Goal" :induct (expt 2 i)
            :in-theory (enable expt expt-of-+))))
 
