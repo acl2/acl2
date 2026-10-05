@@ -102,7 +102,7 @@ remora interpret -e '(let ((fun (@vec-length (&t) ($d) (vec (A &t (dims $d))) : 
 
 (assert-event (and (not (reserrp *long-int-type+expr*))
                    (not (reserrp *long-bool-type+expr*))
-                   (not (reserrp *short-bool-type+expr*))
+                   (not (reserrp *short-int-type+expr*))
                    (not (reserrp *short-bool-type+expr*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

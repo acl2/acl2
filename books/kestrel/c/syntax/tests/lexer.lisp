@@ -59,12 +59,13 @@
        parstate))
     parstate))
 
-(defmacro test-lex-fail (fn input &key pos more-inputs dialect)
+(defmacro test-lex-fail (fn input &key pos more-inputs dialect cond)
   ;; INPUT is an ACL2 term with the text to lex,
   ;; where the term evaluates to a string or a list of bytes.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
   ;; DIALECT indicates the C dialect.
+  ;; Optional COND may be over variables ERP and PARSTATE.
   `(assert!-stobj
     (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
          (parstate (init-parstate ""
@@ -81,7 +82,7 @@
                '(mv erp & & & parstate)
              '(mv erp & & parstate))
           (,fn ,@more-inputs parstate)))
-      (mv erp parstate))
+      (mv (and erp ,(or cond t)) parstate))
     parstate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1264,3 +1265,26 @@
  lex-lexeme
  "0xe+1"
  :more-inputs (nil))
+
+(test-lex-fail ; report the first non-octal digit
+ lex-lexeme
+ "08;"
+ :more-inputs (nil)
+ :cond (and (consp erp)
+            (equal (cdr (assoc-equal #\0 (cdr erp)))
+                   (position-to-msg (position "" 1 1)))
+            (equal (cdr (assoc-equal #\1 (cdr erp))) "octal digit")
+            (equal (cdr (assoc-equal #\2 (cdr erp)))
+                   (char-to-msg (char-code #\8)))))
+
+(test-lex-fail ; report the first non-octal digit
+ lex-lexeme
+ "089;"
+ :pos (position "" 8 4)
+ :more-inputs (nil)
+ :cond (and (consp erp)
+            (equal (cdr (assoc-equal #\0 (cdr erp)))
+                   (position-to-msg (position "" 8 5)))
+            (equal (cdr (assoc-equal #\1 (cdr erp))) "octal digit")
+            (equal (cdr (assoc-equal #\2 (cdr erp)))
+                   (char-to-msg (char-code #\8)))))

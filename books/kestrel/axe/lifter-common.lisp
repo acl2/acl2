@@ -626,6 +626,7 @@
         (simplify-conjunction-basic assumptions
                                     assumption-rule-alist
                                     (known-booleans (w state))
+                                    (rewrite-objective-strengthen)
                                     nil ;; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
                                     no-warn-ground-functions
                                     nil ; don't memoize (avoids time spent making empty-memoizations)

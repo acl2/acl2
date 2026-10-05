@@ -12,7 +12,7 @@
 
 ;; See all-less-than-or-equal.lisp for theorems.
 
-(defun all-<= (x n)
+(defund all-<= (x n)
   (declare (xargs :guard (and (rational-listp x) (rationalp n))))
   (if (atom x)
       t

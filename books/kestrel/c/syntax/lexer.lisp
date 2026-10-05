@@ -2413,7 +2413,7 @@
                        (t (position-fix zero-pos)))
                  parstate)))
        (t ; 0 not-all-octal-digits
-        (b* ((parstate (unread-chars (len digits) parstate)) ; 0
+        (b* ((parstate (unread-chars (1+ (len digits)) parstate)) ; 0
              ((erp nonoctdig pos parstate) (lex-non-octal-digit parstate)))
           (reterr-msg :where pos
                       :expected "octal digit"

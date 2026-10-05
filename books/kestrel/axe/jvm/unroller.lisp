@@ -778,6 +778,7 @@
           all-assumptions
           assumption-rule-alists
           (acl2::known-booleans (w state))
+          (rewrite-objective-strengthen)
           nil ; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
           nil ; no-warn-ground-functions
           nil ; don't memoize (avoids time spent making empty-memoizations)

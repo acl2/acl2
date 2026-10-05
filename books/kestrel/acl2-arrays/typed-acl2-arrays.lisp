@@ -331,9 +331,9 @@
        (defthm ,(pack$ fn '-of-new-array1-with-default-and-0)
          (implies (and (posp len)
                        (symbolp array-name)
-                       (<= len 2147483646))
+                       (<= len *max-1d-array-length*))
                   (,fn array-name (new-array1-with-default array-name len ,default) 0 ,@extra-vars))
-         :hints (("Goal" :in-theory (enable ,fn new-array1))))
+         :hints (("Goal" :in-theory (enable ,fn))))
 
        ,@(and (equal default nil) ;since new-array1 puts uses 0 for the default and fn checks the default
               ;; true even if the default does not satisfy the pred, because the 0
