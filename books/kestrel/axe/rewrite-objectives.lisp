@@ -35,6 +35,11 @@
       ;; must be :?
       obj)))
 
+(defthm rewrite-objectivep-of-flip-objective
+  (implies (rewrite-objectivep obj)
+           (rewrite-objectivep (flip-objective obj)))
+  :hints (("Goal" :in-theory (enable flip-objective))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund rewrite-objective-listp (objs)
@@ -49,3 +54,19 @@
            (symbol-listp objs))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable rewrite-objective-listp symbol-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Nil is the strongest thing we can say (it implies anything):
+(defmacro rewrite-objective-strengthen () nil)
+
+;; T is the weakest thing we can say (it tells us nothing):
+(defmacro rewrite-objective-weaken () t)
+
+(defmacro rewrite-objective-? () :?)
+
+;; Sanity check:
+(thm
+ (and (rewrite-objectivep (rewrite-objective-strengthen))
+      (rewrite-objectivep (rewrite-objective-weaken))
+      (rewrite-objectivep (rewrite-objective-?))))
