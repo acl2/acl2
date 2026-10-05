@@ -525,7 +525,12 @@
                            (and (or (myquotep result-dag-or-quotep)
                                     (pseudo-dagp result-dag-or-quotep))
                                 (hitsp hits)))))
-       :hints (("Goal" :in-theory (e/d (,name acl2-numberp-when-natp) (member-equal quotep)))))
+       :hints (("Goal" :in-theory (e/d (,name acl2-numberp-when-natp)
+                                       (member-equal
+                                        quotep
+                                        ;; for speed:
+                                        min
+                                        string-append-lst)))))
 
      (defthm ,(pack-in-package-of-symbol name 'pseudo-dagp-of- name)
        (implies (and (natp steps-done)
