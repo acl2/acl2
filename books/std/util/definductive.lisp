@@ -1930,6 +1930,61 @@
 
 ;;;;;;;;;;
 
+(define defind-proof-prem-acc-return-thm-names ((pred-name symbolp)
+                                                (infos defind-irule-info-listp)
+                                                (prem-preds symbol-setp)
+                                                (name symbolp))
+  :returns (thm-names symbol-listp)
+  :short "Names of the return theorems of the premise accessors of
+          a @('p[i]-proof') fixtype,
+          for the premises that call the predicates in a set."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There is one theorem for each premise
+     that calls a predicate in @('prem-preds'),
+     in each rule whose conclusion is @('p[i]')."))
+  (b* (((when (endp infos)) nil)
+       ((defind-irule-info info) (car infos))
+       (thm-names (defind-proof-prem-acc-return-thm-names
+                    pred-name (cdr infos) prem-preds name))
+       ((unless (equal (defind-conclusion-info->name info.conclusion)
+                       (symbol-lfix pred-name)))
+        thm-names))
+    (append (defind-proof-prem-acc-return-thm-names-loop
+              info.premises pred-name info.name 1 prem-preds name)
+            thm-names))
+
+  :prepwork
+
+  ((define defind-proof-prem-acc-return-thm-names-loop
+     ((infos defind-premise-info-listp)
+      (pred-name symbolp)
+      (irule-name symbolp)
+      (num posp)
+      (prem-preds symbol-setp)
+      (name symbolp))
+     :returns (thm-names symbol-listp)
+     :parents nil
+     (b* (((when (endp infos)) nil)
+          (info (car infos)))
+       (defind-premise-info-case
+         info
+         :pred
+         (b* ((thm-names (defind-proof-prem-acc-return-thm-names-loop
+                           (cdr infos) pred-name irule-name
+                           (1+ (lposfix num)) prem-preds name)))
+           (if (set::in info.name (symbol-sfix prem-preds))
+               (cons (defind-proof-prem-acc-return-thm-name
+                       info.name pred-name irule-name num name)
+                     thm-names)
+             thm-names))
+         :other
+         (defind-proof-prem-acc-return-thm-names-loop
+           (cdr infos) pred-name irule-name num prem-preds name))))))
+
+;;;;;;;;;;
+
 (define defind-proof-count-return-thm-name ((pred-name symbolp)
                                             (name symbolp))
   :returns (thm-name symbolp)
@@ -4504,61 +4559,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defind-gen-ind-fn-prem-acc-thms ((pred-name symbolp)
-                                         (infos defind-irule-info-listp)
-                                         (clique-preds symbol-setp)
-                                         (name symbolp))
-  :returns (thms symbol-listp)
-  :short "Names of the return theorems of the premise accessors
-          for the recursive calls of a @('p[i]-induct') function."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "There is one theorem for each recursive call,
-     i.e. for each premise that calls a predicate of the same clique,
-     in each rule whose conclusion is @('p[i]');
-     see @(tsee defind-gen-ind-fn-case-calls)."))
-  (b* (((when (endp infos)) nil)
-       ((defind-irule-info info) (car infos))
-       (thms (defind-gen-ind-fn-prem-acc-thms
-               pred-name (cdr infos) clique-preds name))
-       ((unless (equal (defind-conclusion-info->name info.conclusion)
-                       (symbol-lfix pred-name)))
-        thms))
-    (append (defind-gen-ind-fn-prem-acc-thms-loop
-              info.premises pred-name info.name 1 clique-preds name)
-            thms))
-
-  :prepwork
-
-  ((define defind-gen-ind-fn-prem-acc-thms-loop
-     ((infos defind-premise-info-listp)
-      (pred-name symbolp)
-      (irule-name symbolp)
-      (num posp)
-      (clique-preds symbol-setp)
-      (name symbolp))
-     :returns (thms symbol-listp)
-     :parents nil
-     (b* (((when (endp infos)) nil)
-          (info (car infos)))
-       (defind-premise-info-case
-         info
-         :pred
-         (b* ((thms (defind-gen-ind-fn-prem-acc-thms-loop
-                      (cdr infos) pred-name irule-name
-                      (1+ (lposfix num)) clique-preds name)))
-           (if (set::in info.name (symbol-sfix clique-preds))
-               (cons (defind-proof-prem-acc-return-thm-name
-                       info.name pred-name irule-name num name)
-                     thms)
-             thms))
-         :other
-         (defind-gen-ind-fn-prem-acc-thms-loop
-           (cdr infos) pred-name irule-name num clique-preds name))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define defind-gen-ind-fn-hint-parts ((pred-infos defind-pred-info-listp)
                                       (irule-infos defind-irule-info-listp)
                                       (clique-preds symbol-setp)
@@ -4590,9 +4590,11 @@
      and whose validity hypothesis comes first,
      so that free variable matching binds the proof from it
      rather than from the weaker recognizer hypothesis;
-     and the return theorems of the premise accessors
-     (see @(tsee defind-gen-ind-fn-prem-acc-thms)),
-     which relieve that recognizer hypothesis."))
+     and the return theorems of the premise accessors,
+     for the premises that call predicates of the clique,
+     i.e. the ones that give rise to the recursive calls
+     (see @(tsee defind-gen-ind-fn-case-calls));
+     these theorems relieve that recognizer hypothesis."))
   (b* (((when (endp pred-infos)) (mv nil nil nil))
        ((defind-pred-info pred-info) (car pred-infos))
        (witness (defind-proof-witness-fn-name pred-info.name name))
@@ -4605,7 +4607,7 @@
                          pred-info.name standalonep name))
        (count-bound-thm (defind-proof-count-bound-thm-name
                           pred-info.name name))
-       (prem-acc-thms (defind-gen-ind-fn-prem-acc-thms
+       (prem-acc-thms (defind-proof-prem-acc-return-thm-names
                         pred-info.name irule-infos clique-preds name))
        ((mv expands uses rules)
         (defind-gen-ind-fn-hint-parts
