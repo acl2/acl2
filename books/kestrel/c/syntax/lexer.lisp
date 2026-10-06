@@ -63,7 +63,9 @@
    (xdoc::p
     "This builds on the @(see reader):
      it turns read characters into lexemes.
-     It provides a layer upon which the (rest of) the parser is built."))
+     It provides a layer upon which the (rest of) the parser is built.")
+   (xdoc::p
+    "Currently this support C17, and most of C23."))
   :order-subtopics t
   :default-parent t)
 
