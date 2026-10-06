@@ -2643,16 +2643,24 @@
      after reading the initial @('//').")
    (xdoc::p
     "We read characters in a loop until
-     either we find a new-line character (success)
-     or we find end of file (failure).
+     either we find a new-line character or the end of file.
      In case of success, we return
      a lexeme that currently contains no information
      (but that may change in the future),
      and a span calculated from
      the position of the first @('/') in the opening @('//'),
      which is passed to this function,
-     and the position of the closing new-line,
-     which is returned by the loop function."))
+     and the position of the closing new-line or end-of-file,
+     which is returned by the loop function.")
+   (xdoc::p
+    "When encountering the end of file,
+     we succeed and return the line comment,
+     even though [C17] [C23] prohibit a non-empty file
+     to end without a new line.
+     However, this condition can be enforced elsewhere,
+     and GCC and Clang actually relaxes this condition.
+     So it is more flexible for this lexing function
+     to handle end of file as successfully ending the line comment."))
   (b* (((reterr) (irr-lexeme) (irr-span) parstate)
        ((erp last-pos parstate) (lex-line-comment-loop first-pos parstate)))
     (retok (lexeme-comment)
@@ -2670,14 +2678,10 @@
           ((erp char pos parstate) (read-char parstate)))
        (cond
         ((not char) ; EOF
-         (reterr-msg :where pos
-                     :expected "a character"
-                     :found (char-to-msg char)
-                     :extra (msg "The line comment starting at (~@0) ~
-                                  never ends."
-                                 (position-to-msg first-pos))))
-        ((utf8-= char 10) ; new-line
          (retok pos parstate))
+        ((utf8-= char 10) ; new-line
+         (b* ((parstate (unread-char parstate)))
+           (retok pos parstate)))
         (t ; other
          (lex-line-comment-loop first-pos parstate))))
      :measure (parsize parstate)
@@ -2689,13 +2693,6 @@
        (<= (parsize new-parstate)
            (parsize parstate))
        :rule-classes :linear
-       :hints (("Goal" :induct t)))
-
-     (defret parsize-of-lex-line-comment-loop-cond
-       (implies (not erp)
-                (<= (parsize new-parstate)
-                    (1- (parsize parstate))))
-       :rule-classes :linear
        :hints (("Goal" :induct t)))))
 
   ///
@@ -2703,12 +2700,6 @@
   (defret parsize-of-lex-line-comment-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
-    :rule-classes :linear)
-
-  (defret parsize-of-lex-line-comment-cond
-    (implies (not erp)
-             (<= (parsize new-parstate)
-                 (1- (parsize parstate))))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2729,14 +2720,13 @@
      see the documentation in @(tsee parstate).")
    (xdoc::p
     "We read characters in a loop until
-     either we find a new-line character (success)
-     or we find end of file (failure).
+     either we find a new-line character or the end of file.
      In case of success, we return
      a lexeme that currently contains no information
      (but that may change in the future),
      and a span calculated from
      the position of the @('#'), which is passed to this function,
-     and the position of the closing new-line,
+     and the position of the closing new-line or end-of-file,
      which is returned by the loop function."))
   (b* (((reterr) (irr-lexeme) (irr-span) parstate)
        ((erp last-pos parstate) (lex-control-line-loop first-pos parstate)))
@@ -2755,14 +2745,10 @@
           ((erp char pos parstate) (read-char parstate)))
        (cond
         ((not char) ; EOF
-         (reterr-msg :where pos
-                     :expected "a character"
-                     :found (char-to-msg char)
-                     :extra (msg "The preprocessing directive starting at (~@0) ~
-                                  never ends."
-                                 (position-to-msg first-pos))))
-        ((utf8-= char 10) ; new-line
          (retok pos parstate))
+        ((utf8-= char 10) ; new-line
+         (b* ((parstate (unread-char parstate)))
+           (retok pos parstate)))
         (t ; other
          (lex-control-line-loop first-pos parstate))))
      :measure (parsize parstate)
@@ -2774,13 +2760,6 @@
        (<= (parsize new-parstate)
            (parsize parstate))
        :rule-classes :linear
-       :hints (("Goal" :induct t)))
-
-     (defret parsize-of-lex-control-line-loop-cond
-       (implies (not erp)
-                (<= (parsize new-parstate)
-                    (1- (parsize parstate))))
-       :rule-classes :linear
        :hints (("Goal" :induct t)))))
 
   ///
@@ -2788,12 +2767,6 @@
   (defret parsize-of-lex-control-line-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
-    :rule-classes :linear)
-
-  (defret parsize-of-lex-control-line-cond
-    (implies (not erp)
-             (<= (parsize new-parstate)
-                 (1- (parsize parstate))))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
