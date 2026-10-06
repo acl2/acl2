@@ -20,6 +20,7 @@
 (include-book "instructions")
 (include-book "methods")
 (include-book "classes")
+(include-book "mentioned-classes")
 (include-book "operand-stacks")
 (include-book "bindings")
 (include-book "th")

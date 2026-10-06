@@ -481,7 +481,7 @@
     ))
 
 ;; Returns (mv erp failedp state)
-(defun run-formal-test-on-method (method-id class-name methods-expected-to-fail error-on-unexpectedp method-info-alist assumptions classes-to-assume-initialized root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor state)
+(defun run-formal-test-on-method (method-id class-name methods-expected-to-fail error-on-unexpectedp method-info-alist assumptions classes-to-assume-initialized class-alist count-hits print extra-rules remove-rules prune-precise prune-approx monitor state)
   (declare (xargs :guard (and (jvm::method-idp method-id)
                               (jvm::class-namep class-name)
                               (or (eq :any methods-expected-to-fail)
@@ -492,7 +492,7 @@
                               (lookup-equal method-id method-info-alist)
                               ;; TODO: translate the assumptions!
                               (classes-to-assume-initialized-optionp classes-to-assume-initialized)
-                              (stringp root-of-class-hierarchy) ;a directory name
+                              (class-table-alistp class-alist)
                               (count-hits-argp count-hits)
                               ;;print
                               (symbol-listp extra-rules)
@@ -525,12 +525,6 @@
             (cw "(Will try to show that it returns true.)~%")))
        (param-slot-to-name-alist (make-param-slot-to-name-alist method-info :auto))
        (param-var-assumptions (parameter-var-assumptions method-info param-slot-to-name-alist))
-       ;; Populate the jvm::global-class-alist (so that unroll-java-code can find the code):
-       ;; TODO: Pull this out
-       ;; TODO: Don't bother to submit this event, just add the class to an alist?
-       (state
-        (submit-event-quiet `(read-class-from-hierarchy ,class-name :root ,root-of-class-hierarchy)
-                            state))
        (output-indicator (if (eq variant :assert)
                              :all
                            :return-value))
@@ -539,6 +533,7 @@
                                     nil ;; exception branches may be pruned below
                                     ))
        (assert-assumptions (assert-assumptions class-name))
+
        (- (cw "(Unrolling code:~%"))
        ((mv erp dag & & & state)
         ;; TODO: Use assumptions here:
@@ -581,6 +576,7 @@
                                :auto ; param-names
                                t ; chunkedp
                                error-on-incomplete-runsp
+                               class-alist
                                state))
        ((when erp) (mv erp t state))
        ;; ;;prune again: todo: shouldn't be needed!:
@@ -692,7 +688,7 @@
                   state)))))
 
 ;; Returns (mv erp results state).
-(defun run-formal-tests-on-methods (method-ids class-name methods-expected-to-fail error-on-unexpectedp method-info-alist classes-to-assume-initialized root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor results-acc state)
+(defun run-formal-tests-on-methods (method-ids class-name methods-expected-to-fail error-on-unexpectedp method-info-alist classes-to-assume-initialized class-alist count-hits print extra-rules remove-rules prune-precise prune-approx monitor results-acc state)
   (declare (xargs :guard (and (jvm::method-id-listp method-ids)
                               (jvm::class-namep class-name)
                               (or (eq :any methods-expected-to-fail)
@@ -701,7 +697,7 @@
                               (booleanp error-on-unexpectedp)
                               (jvm::method-info-alistp method-info-alist)
                               (classes-to-assume-initialized-optionp classes-to-assume-initialized)
-                              (stringp root-of-class-hierarchy) ;a directory name
+                              (class-table-alistp class-alist)
                               (count-hits-argp count-hits)
                               ;;print
                               (symbol-listp extra-rules)
@@ -714,14 +710,45 @@
       (mv (erp-nil) (reverse results-acc) state)
     (let ((method-id (first method-ids)))
       (mv-let (erp failedp state)
-        (run-formal-test-on-method method-id class-name methods-expected-to-fail error-on-unexpectedp method-info-alist nil classes-to-assume-initialized root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor state)
+        (run-formal-test-on-method method-id class-name methods-expected-to-fail error-on-unexpectedp method-info-alist nil classes-to-assume-initialized class-alist count-hits print extra-rules remove-rules prune-precise prune-approx monitor state)
         (if erp
             (mv erp nil state)
           (run-formal-tests-on-methods (rest method-ids)
                                        class-name
-                                       methods-expected-to-fail error-on-unexpectedp method-info-alist classes-to-assume-initialized root-of-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor
+                                       methods-expected-to-fail error-on-unexpectedp method-info-alist classes-to-assume-initialized class-alist count-hits print extra-rules remove-rules prune-precise prune-approx monitor
                                        (cons (cons method-id (if failedp "FAILED" "PASSED")) results-acc)
                                        state))))))
+
+;move
+(defthm class-table-alistp-of-acons
+  (equal (class-table-alistp (acons class-name class-info class-alist))
+         (and (jvm::class-namep class-name)
+              (jvm::class-infop class-info class-name)
+              (class-table-alistp class-alist)))
+  :hints (("Goal" :in-theory (enable class-table-alistp))))
+
+;; Returns (mv erp class-alist state).
+(defun extend-class-alist (class-names root-dir class-alist state)
+  (declare (xargs :guard (and (jvm::class-name-listp class-names) ; do better?
+                              (stringp root-dir)
+                              (class-table-alistp class-alist))
+                  :verify-guards nil ; todo
+                  :stobjs state))
+  (if (endp class-names)
+      (mv (erp-nil) class-alist state)
+    (b* ((class-name (first class-names))
+         ((mv erp
+              class-name-from-class-file
+              class-info
+              & ;field-defconsts
+              state)
+          (read-and-parse-class-file (concatenate 'string root-dir "/" (path-of-class-file-within-dir class-name)) t state))
+         ((when erp) (mv erp nil state))
+         ((when (not (equal class-name class-name-from-class-file)))
+          (er hard? 'extend-class-alist "Class name mismatch: ~s0 and ~s1." class-name class-name-from-class-file)
+          (mv :class-name-mismatch nil state))
+         (class-alist (acons class-name class-info class-alist)))
+      (extend-class-alist (rest class-names) root-dir class-alist state))))
 
 ;; Returns (mv erp event state), but the event is always an
 ;; empty progn.  This may need to be called inside a make-event.
@@ -757,41 +784,43 @@
        ((when (not java-bootstrap-classes-root))
         (er hard? 'test-file-fn "Please set your JAVA_BOOTSTRAP_CLASSES_ROOT environment var to a directory that contains a hierarchy of class files.")
         (mv :JAVA_BOOTSTRAP_CLASSES_ROOT-unset nil state))
-       ;; TODO: Don't bother to submit these events:
        ;; TODO: Build in many more classes?
        ;; TODO: Should we save these when we build the FUT executable?
        ;; TODO: Any way to track these dependencies?
-       (state
-        (submit-event-quiet `(read-class-from-hierarchy "java.lang.Object" :root ,java-bootstrap-classes-root)
-                            state))
-       (state
-        (submit-event-quiet `(read-class-from-hierarchy "java.lang.Class" :root ,java-bootstrap-classes-root)
-                            state))
-       (state
-        (submit-event-quiet `(read-class-from-hierarchy "java.lang.Math" :root ,java-bootstrap-classes-root)
-                            state))
+
+       (class-alist nil) ; better name than nil?
+       ((mv erp class-alist state)
+        (extend-class-alist '("java.lang.Object"
+                              "java.lang.Class"
+                              "java.lang.Math")
+                            java-bootstrap-classes-root
+                            class-alist state))
+       ((when erp) (mv erp nil state))
+
        (absolute-path-to-java-file
         (if (equal #\/ (char path-to-java-file 0))
-            path-to-java-file ;; already starts with slash
+            path-to-java-file ; starts with slash so already absolute
           (concatenate 'string (cbd) path-to-java-file)))
        (- (cw "Running tester on:~% ~s0.~%~%" absolute-path-to-java-file)) ;ex: "/home/emily/foo/bar/baz/Search.java"
-       (base-name (substring-before-last-occurrence absolute-path-to-java-file #\.)) ;strip the dot and extension, ex: "/home/emily/foo/bar/baz/Search"
-       ;; (- (cw "Base name: ~s0~%" base-name))
-       (root-of-user-class-hierarchy (substring-before-last-occurrence base-name #\/)) ;; for now, we assume the given class is at the top level of the hierarchy (todo: deduce the root using the fully qualified name stored in the class file)
+       (absolute-path-no-extension (substring-before-last-occurrence absolute-path-to-java-file #\.)) ;strip the dot and extension, ex: "/home/emily/foo/bar/baz/Search"
+       ;; (- (cw "Base name: ~s0~%" absolute-path-no-extension))
+       ;; (root-of-user-class-hierarchy (substring-before-last-occurrence absolute-path-no-extension #\/)) ;; for now, we assume the given class is at the top level of the hierarchy (todo: deduce the root using the fully qualified name stored in the class file) ex: "/home/emily/foo/bar/baz"
        ;; (- (cw "Directory: ~s0~%" root-of-user-class-hierarchy))
-       (class-name (substring-after-last-occurrence base-name #\/)) ;todo: add support for fully-qualified names
+       (class-name (substring-after-last-occurrence absolute-path-no-extension #\/)) ;todo: add support for fully-qualified names
        ;; (- (cw "Class name: ~s0~%" class-name))
-       (class-file-name (concatenate 'string base-name ".class"))
-       ;; (- (cw "Class file name: ~s0~%" class-file-name))
+       (absolute-path-to-class-file (concatenate 'string absolute-path-no-extension ".class"))
+       ;; (- (cw "Class file name: ~s0~%" absolute-path-to-class-file))
        ;; Read the class file:
        ((mv erp class-name-from-class-file class-info
             & ; field-defconsts
-            state) (read-and-parse-class-file class-file-name t state))
+            state) (read-and-parse-class-file absolute-path-to-class-file t state)) ; todo: pass an absolute path?
        ((when erp) (mv erp nil state))
        ((when (not (equal class-name-from-class-file
                           class-name)))
         (er hard? 'test-file-fn "Class-name mismatch: ~x0 vs ~x1." class-name class-name-from-class-file)
         (mv :class-name-mismatch nil state))
+       (class-alist (acons class-name class-info class-alist))
+
        ;; We'll test any method whose name starts with "test" or "fail_test": ;; todo: update all docs to mention "fail_test"
        (method-info-alist (jvm::class-decl-methods class-info))
        (test-method-ids (select-method-ids-to-test method-info-alist methods-to-test))
@@ -814,7 +843,7 @@
        ;; (- (cw ")~%"))
        ;; Run the tests:
        ((mv erp results state)
-        (run-formal-tests-on-methods test-method-ids class-name methods-expected-to-fail error-on-unexpectedp method-info-alist classes-to-assume-initialized root-of-user-class-hierarchy count-hits print extra-rules remove-rules prune-precise prune-approx monitor
+        (run-formal-tests-on-methods test-method-ids class-name methods-expected-to-fail error-on-unexpectedp method-info-alist classes-to-assume-initialized class-alist count-hits print extra-rules remove-rules prune-precise prune-approx monitor
                       nil ;empty accumulator
                       state))
        ((when erp) (mv erp nil state))
