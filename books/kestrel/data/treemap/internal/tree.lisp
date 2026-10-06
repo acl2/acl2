@@ -803,6 +803,49 @@
   :enable (tree-node
            acl2-count))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tree-node-with-hint
+  ((head tree-element-p)
+   (left treep)
+   (right treep)
+   (hint treep))
+  :returns (tree treep)
+  :short "A variant of @(tsee tree-node) which reuses an existing node."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "Logically, this is just @(tsee tree-node). In execution, it uses @(tsee
+      cons-with-hint) to return @('hint'), or its pair of children, if the
+      corresponding components are already pointer-equal. This avoids
+      allocation when a node is rebuilt from components which are unchanged,
+      e.g., when rebuilding a node with the head and subtrees of @('hint')."))
+  (mbe :logic (tree-node head left right)
+       :exec (cons-with-hint head
+                             (cons-with-hint left right (cdr hint))
+                             hint))
+  :enabled t
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable tree-node))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tree-leaf
+  ((head tree-element-p))
+  :returns (tree treep)
+  :short "Construct a @(see tree) with a single node."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "Logically, this is just @(tsee tree-node) with empty subtrees. In
+      execution, the pair of empty subtrees is a quoted constant, so it is
+      shared rather than allocated anew for each leaf."))
+  (mbe :logic (tree-node head nil nil)
+       :exec (cons head '(nil)))
+  :enabled t
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable tree-node))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-induct (tree)

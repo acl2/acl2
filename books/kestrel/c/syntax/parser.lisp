@@ -437,6 +437,8 @@
     "We similarly include the GCC extension types
      @('__int128'),
      @('__int128_t'),
+     @('__float80'),
+     @('__float128'),
      @('_Float16'),
      @('_Float16x'),
      @('_Float32'),
@@ -468,6 +470,8 @@
       (token-keywordp token? "_Complex")
       (token-keywordp token? "__int128")
       (token-keywordp token? "__int128_t")
+      (token-keywordp token? "__float80")
+      (token-keywordp token? "__float128")
       (token-keywordp token? "_Float16")
       (token-keywordp token? "_Float16x")
       (token-keywordp token? "_Float32")
