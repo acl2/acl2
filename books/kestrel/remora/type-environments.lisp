@@ -36,7 +36,7 @@
     "A type environment is a @(tsee string-type-mapp) from variable names to
      their types.  These operations look up, record, and restrict the types
      of locally bound variables, and turn a type environment into the
-     @(tsee senv) the type checker checks against.  They are used by
+     @(tsee expr-senv) the type checker checks against.  They are used by
      @(tsee lambda-lifting) and by @(tsee monomorphize)."))
   :order-subtopics t
   :default-parent t)
@@ -122,18 +122,16 @@
   :measure (acl2-count (string-type-map-fix tenv))
   :verify-guards :after-returns)
 
-(define tenv-to-senv ((tenv string-type-mapp))
-  :returns (senv senvp)
-  :short "The static environment for checking in the local environment."
+(define tenv-to-expr-senv ((tenv string-type-mapp))
+  :returns (eenv expr-senvp)
+  :short "The expression static environment
+          for checking in the local environment."
   :long
   (xdoc::topstring
    (xdoc::p
     "The variables in scope are the local ones over the primitive
-     operations, with no ispace or type variables."))
-  (make-senv :ienv (ispace-senv nil)
-             :tenv (type-senv nil)
-             :eenv (expr-senv (omap::update* (string-type-map-fix tenv)
-                                             (primop-types)))))
+     operations."))
+  (expr-senv (omap::update* (string-type-map-fix tenv) (primop-types))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -172,11 +170,14 @@
      which they do; this keeps the invariant that the environment holds only
      well-formed types provable without a theorem about the checker."))
   (b* ((tenv (string-type-map-fix tenv))
-       (sbs (check-bind-list binds (tenv-to-senv tenv)))
+       (sbs (check-bind-list binds
+                             (ispace-senv nil)
+                             (type-senv nil)
+                             (tenv-to-expr-senv tenv)))
        ((when (reserrp sbs)) tenv)
        (new (restrict-to-keys (bind-list-bound-expr-vars binds)
-                              (expr-senv->exprs
-                               (senv->eenv (senv+binds->senv sbs)))))
+                              (expr-senv->exprs (senvs+binds->eenv sbs))))
        ((unless (type-map-all-wfp new)) tenv))
     (omap::update* new tenv))
-  :guard-hints (("Goal" :in-theory (enable senv+binds-p-when-result-not-error))))
+  :guard-hints
+  (("Goal" :in-theory (enable senvs+binds-p-when-result-not-error))))
