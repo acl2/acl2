@@ -20,8 +20,6 @@
 ; but the lists may be incomplete, and it will be extended as needed.
 
 keyword-gcc = %s"__float80"
-            / %s"__float128"
-            / %s"_Float16"
             / %s"_Float32"
             / %s"_Float32x"
             / %s"_Float64"
