@@ -280,7 +280,7 @@
        in the environment extended with the bound ispace variables."))
     (type-case
      type
-     :var (consp (omap::assoc type.var (senv->type-vars senv)))
+     :var (consp (omap::assoc type.var (type-senv->types (senv->tenv senv))))
      :base t
      :array (and (check-type type.elem senv)
                  (type-atom-kindp type.elem)
@@ -576,7 +576,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is used to turn
-     the @('ispace-vars') component of a static environment
+     the map in an ispace static environment
      into a dimension substitution and a shape substitution,
      consisting of the variables that have a definition
      (i.e. a present optional ispace);
@@ -640,7 +640,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is used to turn
-     the @('type-vars') component of a static environment
+     the map in a type static environment
      into an atom-kind type substitution and an array-kind type substitution,
      consisting of the variables that have a definition
      (i.e. a present optional type);
@@ -754,7 +754,7 @@
      @(tsee type-subst-type-vars-alpha) and @(tsee type-subst-ispace-vars-alpha)
      automatically alpha-rename the bound variables as needed to avoid it."))
   (b* (((string-type-map-pair tsubst)
-        (senv-type-subst (senv->type-vars senv)))
+        (senv-type-subst (type-senv->types (senv->tenv senv))))
        (type (type-subst-type-vars-alpha type tsubst.1st tsubst.2nd))
        ((stringdimmap+stringshapemap isubst)
         (senv-ispace-subst (ispace-senv->ispaces (senv->ienv senv)))))

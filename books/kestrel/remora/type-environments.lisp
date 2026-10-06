@@ -131,7 +131,7 @@
     "The variables in scope are the local ones over the primitive
      operations, with no ispace or type variables."))
   (make-senv :ienv (ispace-senv nil)
-             :type-vars nil
+             :tenv (type-senv nil)
              :expr-vars (omap::update* (string-type-map-fix tenv)
                                        (primop-types))))
 

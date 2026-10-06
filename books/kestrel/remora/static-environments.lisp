@@ -56,13 +56,34 @@
      since our ispace variables include their own sort,
      the keys suffice to capture the sorts,
      as opposed to a map from variables to sorts.
-     The optional ispace associated to a variable is absent
-     when the variable is bound by an abstraction,
+     The optional ispace associated to a variable:
+     is absent when the variable is bound by an abstraction,
      i.e. it does not stand for any specific ispace;
      it is present when the variable is bound by a @('let')
      to a specific ispace, which is then its definition."))
   ((ispaces ispace-var-ispace-option-map))
   :pred ispace-senvp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod type-senv
+  :short "Fixtype of type static environments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A type static environment is
+     a map from the type variables in scope to optional types.
+     This corresponds to @($\\Delta$);
+     since our type variables include their own kind,
+     the keys suffice to capture the kinds,
+     as opposed to a map from variables to kinds.
+     The optional type associated to a variable:
+     is absent when the variable is bound by an abstraction,
+     i.e. it does not stand for any specific type;
+     it is present when the variable is bound by a @('let')
+     to a specific type, which is then its definition."))
+  ((types type-var-type-option-map))
+  :pred type-senvp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -76,13 +97,7 @@
     (xdoc::li
      "An ispace static environment.")
     (xdoc::li
-     "A map from the type variables in scope to optional types.
-      This corresponds to @($\\Delta$);
-      since our type variables include their own kind,
-      the keys suffice to capture the kinds,
-      as opposed to a map from variables to kinds.
-      The optional type is absent or present,
-      and is used analogously to the ispace variables described above.")
+     "A type static environment.")
     (xdoc::li
      "A map from the expression variables in scope to their types.
       This corresponds to @($\\Gamma$)."))
@@ -99,7 +114,7 @@
      The variables in a static environment are similarly separated,
      in the three components and via fixtype sum tags."))
   ((ienv ispace-senv)
-   (type-vars type-var-type-option-map)
+   (tenv type-senv)
    (expr-vars string-type-map))
   :pred senvp)
 
@@ -374,7 +389,7 @@
     "This is the initial, i.e. top-level, static environment.
      It only contains the primitive operations in scope."))
   (make-senv :ienv (ispace-senv nil)
-             :type-vars nil
+             :tenv (type-senv nil)
              :expr-vars (primop-types)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -423,10 +438,11 @@
      this is the case for variables bound by abstractions.
      A variable already present is overwritten,
      which realizes the intended shadowing."))
-  (change-senv senv
-               :type-vars (omap::update (type-var-fix var)
-                                        nil
-                                        (senv->type-vars senv))))
+  (b* ((tenv (senv->tenv senv))
+       (tmap (type-senv->types tenv))
+       (new-tmap (omap::update (type-var-fix var) nil tmap))
+       (new-tenv (change-type-senv tenv :types new-tmap)))
+    (change-senv senv :tenv new-tenv)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -478,10 +494,13 @@
      this is the case for variables bound by @('let')s.
      A variable already present is overwritten,
      which realizes the intended shadowing."))
-  (b* ((new-type-vars (omap::update (type-var-fix var)
-                                    (type-fix type)
-                                    (senv->type-vars senv))))
-    (change-senv senv :type-vars new-type-vars)))
+  (b* ((tenv (senv->tenv senv))
+       (tmap (type-senv->types tenv))
+       (new-tmap (omap::update (type-var-fix var)
+                               (type-fix type)
+                               tmap))
+       (new-tenv (change-type-senv tenv :types new-tmap)))
+    (change-senv senv :tenv new-tenv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
