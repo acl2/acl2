@@ -38,9 +38,10 @@ Contents (alphabetical order):
   and a citation.  Another model's harness could use it unchanged.
 
 * smoke.lisp: Hand-computed vectors, checked when the book is certified: the
-  smoke tests proper, vectors whose results include UNKNOWN values, and one
-  vector for each outcome class decided by the model's errors, plus
-  mismatches that waivers excuse or do not.
+  smoke tests proper, vectors whose results include UNKNOWN values, vectors
+  for the APSR's GE bits (compared only from ARMv6), and one vector for each
+  outcome class decided by the model's errors, plus mismatches that waivers
+  excuse or do not.
 
 * unknown-values.lisp: Makes instructions with UNKNOWN results executable,
   by attaching an executable function to the model's unknown-bits.  It
@@ -60,6 +61,7 @@ writes to smoke.cert.out among the other output; for example:
   % grep 'smoke.*vectors' smoke.cert.out
   smoke: 12 vectors, 12 pass, 0 mismatch
   smoke UNKNOWN: 2 vectors, 0 mismatch, 2 UNKNOWN-dependent
+  smoke GE: 3 vectors, 2 pass, 1 mismatch
   smoke classes: 10 vectors, 1 pass, 3 mismatch, 3 waived, 1 coverage gap, 1 unsupported, 1 unpredictable
 ```
 
