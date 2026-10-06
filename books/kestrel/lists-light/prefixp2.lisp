@@ -1,7 +1,7 @@
 ; Additional theorems about prefixp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,8 +15,9 @@
 
 (include-book "prefixp")
 (include-book "add-to-end")
-(include-book "firstn")
+(include-book "firstn-def")
 (local (include-book "len"))
+(local (include-book "firstn"))
 
 (defthm prefixp-of-add-to-end
   (equal (prefixp (add-to-end item lst) lst2)

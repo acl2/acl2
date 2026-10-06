@@ -306,7 +306,7 @@
 (defun-df-*1*-from-function-sigs)
 
 (defun-df-*1*-unary unary-df-)
-(defun-df-*1*-unary unary-df/)
+(defun-df-*1*-unary unary-df/ (not (= x 0)))
 (defun-df-*1*-unary df-rationalize)
 
 (defun-df-*1*-binary binary-df+)

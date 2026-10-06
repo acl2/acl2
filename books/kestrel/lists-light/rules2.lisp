@@ -961,7 +961,8 @@
                               take
                               cdr-of-nthcdr
                               equal-cons-cases2
-                              equal-of-append))))
+                              equal-of-append
+                              update-subrange-of-0))))
 
 ;for Axe proofs - shouldn't we open endp?
 ;drop?

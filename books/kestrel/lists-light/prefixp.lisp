@@ -143,8 +143,7 @@
   :hints (("Goal" :in-theory (enable prefixp nth))))
 
 (defthm prefixp-of-take-arg1-same
-  (implies (and (<= n (len x))
-                (natp n))
+  (implies (<= n (len x))
            (prefixp (take n x) x))
   :hints (("Goal" :in-theory (enable prefixp take))))
 
