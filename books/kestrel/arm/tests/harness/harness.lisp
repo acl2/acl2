@@ -281,7 +281,10 @@
 ;; Returns a list of mismatches; nil means the test passed.  When a trap is
 ;; expected, the mismatch on :trap has the model's error as its actual value
 ;; (see report-records for which errors agree with a trap); a model error of
-;; :undefined agrees with a trap of :undefined here.
+;; :undefined agrees with a trap of :undefined here.  Before ARMv6 the GE bits
+;; of the APSR (19:16) are not compared, whatever the vector's :apsr-mask:
+;; they are reserved there (DDI 0406C.d D15.2.1, page D15-2575), and reserved
+;; APSR bits are UNKNOWN (A2.4, page A2-49).
 (defund check-vector (vec arm)
   (declare (xargs :guard (test-vectorp vec) :stobjs arm))
   (b* ((expect (vec-get :expect vec nil))
@@ -293,7 +296,10 @@
         (compare-field :trap trap (error arm)))
        ((when (error arm))
         (compare-field :error nil (error arm)))
-       (mask (vec-get :apsr-mask expect #xF0000000)))
+       (mask (vec-get :apsr-mask expect #xF0000000))
+       (mask (if (< (vec-get :arch vec 7) 6)
+                 (bvand 32 #xFFF0FFFF mask)
+               mask)))
     (append (compare-field :pc (vec-get :pc expect nil) (pc arm))
             (check-regs 0 (vec-get :regs expect nil) (vec-get :regs vec nil) arm)
             (compare-field :apsr
