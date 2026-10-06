@@ -65,7 +65,7 @@
                (tree$ treep))
   (if (tree-empty-p tree)
       (mv nil
-          (tree-node (tree-element (hash x) x) nil nil))
+          (tree-leaf (tree-element (hash x) x)))
     (let* ((head (tree->head tree))
            (head-elem (tree-element->val head)))
       (mv-let (equalp ltp)
@@ -269,7 +269,7 @@
                       (tree-insert x nil)
                 (declare (ignore inp))
                 tree)
-       :exec (tree-node (tree-element hash x) nil nil))
+       :exec (tree-leaf (tree-element hash x)))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable data::u32-equal
@@ -296,7 +296,7 @@
        :exec
        (if (tree-empty-p tree)
            (mv nil
-               (tree-node (tree-element hash x) nil nil))
+               (tree-leaf (tree-element hash x)))
          (let* ((head (tree->head tree))
                 (head-elem (tree-element->val head)))
            (mv-let (equalp ltp)
@@ -354,7 +354,7 @@
        :exec
        (if (tree-empty-p tree)
            (mv nil
-               (tree-node (tree-element (acl2-number-hash x) x) nil nil))
+               (tree-leaf (tree-element (acl2-number-hash x) x)))
          (let* ((head (tree->head tree))
                 (head-elem (tree-element->val head)))
            (mv-let (equalp ltp)
@@ -412,7 +412,7 @@
        :exec
        (if (tree-empty-p tree)
            (mv nil
-               (tree-node (tree-element (symbol-hash x) x) nil nil))
+               (tree-leaf (tree-element (symbol-hash x) x)))
          (let* ((head (tree->head tree))
                 (head-elem (tree-element->val head)))
            (mv-let (equalp ltp)
@@ -470,7 +470,7 @@
        :exec
        (if (tree-empty-p tree)
            (mv nil
-               (tree-node (tree-element (eqlable-hash x) x) nil nil))
+               (tree-leaf (tree-element (eqlable-hash x) x)))
          (let* ((head (tree->head tree))
                 (head-elem (tree-element->val head)))
            (mv-let (equalp ltp)

@@ -35,6 +35,7 @@
           tree->right
           tree-node
           tree-node-with-hint
+          tree-leaf
           tree-listp
           tree-list-fix
           tree-all-acl2-numberp

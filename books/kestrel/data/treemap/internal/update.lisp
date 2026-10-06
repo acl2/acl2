@@ -77,7 +77,7 @@
       @(tsee tree-update-with-hash) for a variant which accepts a precomputed
       hash."))
   (if (tree-empty-p tree)
-      (tree-node (tree-element (hash key) key val) nil nil)
+      (tree-leaf (tree-element (hash key) key val))
     (let* ((head (tree->head tree))
            (head-key (tree-element->key head)))
       ;; TODO: Should the << check come first? Most of the time, key and
@@ -283,7 +283,7 @@
   :guard (mbe :logic (equal (hash key) hash)
               :exec (data::u32-equal (hash key) hash))
   (mbe :logic (tree-update key val nil)
-       :exec (tree-node (tree-element hash key val) nil nil))
+       :exec (tree-leaf (tree-element hash key val)))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable data::u32-equal
@@ -310,7 +310,7 @@
   (mbe :logic (tree-update key val tree)
        :exec
        (if (tree-empty-p tree)
-           (tree-node (tree-element hash key val) nil nil)
+           (tree-leaf (tree-element hash key val))
          (let* ((head (tree->head tree))
                 (head-key (tree-element->key head)))
            (mv-let (equalp ltp)
@@ -359,7 +359,7 @@
   (mbe :logic (tree-update key val tree)
        :exec
        (if (tree-empty-p tree)
-           (tree-node (tree-element (acl2-number-hash key) key val) nil nil)
+           (tree-leaf (tree-element (acl2-number-hash key) key val))
          (let* ((head (tree->head tree))
                 (head-key (tree-element->key head)))
            (mv-let (equalp ltp)
@@ -406,7 +406,7 @@
   (mbe :logic (tree-update key val tree)
        :exec
        (if (tree-empty-p tree)
-           (tree-node (tree-element (symbol-hash key) key val) nil nil)
+           (tree-leaf (tree-element (symbol-hash key) key val))
          (let* ((head (tree->head tree))
                 (head-key (tree-element->key head)))
            (mv-let (equalp ltp)
@@ -453,7 +453,7 @@
   (mbe :logic (tree-update key val tree)
        :exec
        (if (tree-empty-p tree)
-           (tree-node (tree-element (eqlable-hash key) key val) nil nil)
+           (tree-leaf (tree-element (eqlable-hash key) key val))
          (let* ((head (tree->head tree))
                 (head-key (tree-element->key head)))
            (mv-let (equalp ltp)
