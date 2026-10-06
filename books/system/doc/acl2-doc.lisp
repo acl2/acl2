@@ -110340,6 +110340,11 @@ it."
  behavior is that the new rule could erase refinements; see @(see
  community-book) @('system/tests/equivalence-coarsenings-reset.lisp').</p>
 
+ <p>Fixed a soundness bug in a check on terms, which allowed illegal use of
+ @(see type-prescription) rules saved in a book's @(see certificate).  For an
+ example see @(see community-book)
+ @('system/tests/cert-data-guarded-termp.lisp').</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2

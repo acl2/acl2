@@ -107264,6 +107264,11 @@ Bug Fixes From AI via Eric Smith
   could erase refinements; see [community-book]
   [30m[47msystem/tests/equivalence-coarsenings-reset.lisp[0m[0m.
 
+  Fixed a soundness bug in a check on terms, which allowed illegal use
+  of [type-prescription] rules saved in a book's [certificate].  For
+  an example see [community-book]
+  [30m[47msystem/tests/cert-data-guarded-termp.lisp[0m[0m.
+
 
 Other Bug Fixes
 
