@@ -229,38 +229,42 @@
    (xdoc::p
     "Additionally, also to facilitate (the rest of) equivalence checking,
      we turn an n-ary function type without input types into its output type,
-     to which it is equivalent (see @(tsee type))."))
+     to which it is equivalent (see @(tsee type)).")
+   (xdoc::p
+    "The normalization is recursive."))
   (type-case
    type
    :array (if (ispace-equivp type.ispace
                              (ispace-shape (shape-dims nil)))
-              type.elem
+              (normalize-type type.elem)
             (type-fix type))
    :bracket (if (ispace-equivp (ispace-shape
                                 (shape-append
                                  (shape-list-from-ispace-list type.ispaces)))
                                (ispace-shape (shape-dims nil)))
-                type.elem
+                (normalize-type type.elem)
               (type-fix type))
    :funn (if (endp type.in)
-             type.out
+             (normalize-type type.out)
            (type-fix type))
    :otherwise (type-fix type))
+  :measure (type-count type)
 
   ///
 
   (defret type-count-of-normalize-type
     (<= (type-count type1)
         (type-count type))
-    :rule-classes :linear)
+    :rule-classes :linear
+    :hints (("Goal" :induct t)))
 
   (defrule type-binders-count-of-normalize-type
     (implies (equal (type-count (normalize-type type))
                     (type-count type))
              (equal (type-binders-count (normalize-type type))
                     (type-binders-count type)))
-    :enable (normalize-type type-binders-count)
-    :expand ((type-count type))))
+    :induct t
+    :enable type-binders-count))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
