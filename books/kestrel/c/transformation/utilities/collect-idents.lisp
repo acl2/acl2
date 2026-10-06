@@ -61,6 +61,6 @@
           trans-ensemble)
   :result ident-setp
   :default nil
-  :combine union
-  :override ((ident (insert (ident-fix ident) nil)))
+  :combine treeset::union
+  :override ((ident (treeset::insert (ident-fix ident) (treeset::empty))))
   :name abstract-syntax-collect-idents)

@@ -1547,7 +1547,7 @@
                                                        (1+f acc)
                                                        (1+f calls))
                                      (+f 2 calls)))))
-           #+:non-standard-analysis
+           #+non-standard-analysis
            ((realp evg)
             (prog2$ (er hard? 'fn-count-evg
                         "Encountered an irrational in fn-count-evg!")
@@ -1558,7 +1558,7 @@
                                                 (1+f acc)
                                                 (1+f calls))
                               (+f 2 calls)))
-           #+:non-standard-analysis
+           #+non-standard-analysis
            ((complexp evg)
             (prog2$ (er hard? 'fn-count-evg
                         "Encountered a complex irrational in ~ fn-count-evg!")
@@ -1849,7 +1849,7 @@
 ; Rational-poly-p is a boolean flag used in non-linear arithmetic.  When it is
 ; true, then the right-hand side of the inequality (the polynomial) is known to
 ; have a rational number value.  (But note that for ACL2(r), i.e. for
-; #+:non-standard-analysis, the value need only be real.  Through the linear
+; #+non-standard-analysis, the value need only be real.  Through the linear
 ; and non-linear arithmetic code, references to "rational" should be considered
 ; as references to "real".)  The flag is needed because of the presence of
 ; complex numbers in ACL2's logic.  Note that sums and products of rational

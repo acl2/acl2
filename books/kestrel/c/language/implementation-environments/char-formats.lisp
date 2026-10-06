@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -38,7 +38,7 @@
    (xdoc::p
     "The @('char') type has the same representation as
      either @('unsigned char') or @('signed char')
-     [C17:6.2.5/15].
+     [C17:6.2.5/15] [C23:6.2.5].
      The choice is captured by a boolean."))
   ((signedp bool))
   :pred char-formatp)
@@ -49,11 +49,12 @@
                           (uchar-format uchar-formatp)
                           (schar-format schar-formatp))
   :returns (max posp)
-  :short "The ACL2 integer value of @('CHAR_MAX') [C17:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('CHAR_MAX')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "As explained in [C17:5.2.4.2.1/2],
+    "As explained in [C17:5.2.4.2.1/2] and implied in [C23:5.3.5.3.2],
      this is the same as either @('UCHAR_MAX') or @('SCHAR_MAX')."))
   (if (char-format->signedp char-format)
       (schar-format->max schar-format uchar-format)
@@ -68,6 +69,10 @@
 
   (defret char-format->max-lower-bound
     (>= max 127)
+    :rule-classes :linear)
+
+  (defret char-format->max-lte-uchar-format->max
+    (<= max (uchar-format->max uchar-format))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -76,11 +81,12 @@
                           (uchar-format uchar-formatp)
                           (schar-format schar-formatp))
   :returns (min integerp)
-  :short "The ACL2 integer value of @('CHAR_MIN') [C17:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('CHAR_MIN')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "As explained in [C17:5.2.4.2.1/2],
+    "As explained in [C17:5.2.4.2.1/2] and implied in [C23:5.3.5.3.2],
      this is either 0 or the same as @('SCHAR_MIN')."))
   (if (char-format->signedp char-format)
       (schar-format->min schar-format uchar-format)
@@ -109,7 +115,10 @@
   (xdoc::topstring
    (xdoc::p
     "This is the simplest format of @('char').
-     It is not clear whether it is the most common or not."))
+     It is not clear whether it is the most common or not.")
+   (xdoc::p
+    "The 8-bit size actually comes from the @(tsee uchar-format-8)
+     that is intended to accompany this @(tsee char-format) format."))
   (make-char-format :signedp nil)
 
   ///

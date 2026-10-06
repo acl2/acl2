@@ -1,6 +1,6 @@
 ; Reading a file into a list of lines (strings)
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -90,6 +90,13 @@
                                      read-char$ ;todo
                                      ))))
 
+(defthm w-of-mv-nth-1-of-read-channel-into-line-list
+  (equal (w (mv-nth 1 (read-channel-into-line-list channel newlinesp chars-acc lines-acc state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable read-channel-into-line-list
+                                     read-char$ ;todo
+                                     ))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Reads the file indicated by PATH-TO-FILE into a list of strings, one for
@@ -127,6 +134,11 @@
                 (stringp path-to-file))
            (state-p (mv-nth 2 (read-file-into-line-list path-to-file newlinesp state)))))
 
+(defthm w-of-mv-nth-2-of-read-file-into-line-list
+  (equal (w (mv-nth 2 (read-file-into-line-list path-to-file newlinesp state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable read-file-into-line-list))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv lines state).  This wrapper does not pass back errors, but it
@@ -156,3 +168,8 @@
   (implies (and (state-p state)
                 (stringp path-to-file))
            (state-p (mv-nth 1 (read-file-into-line-list-no-error path-to-file newlinesp state)))))
+
+(defthm w-of-mv-nth-1-of-read-file-into-line-list-no-error
+  (equal (w (mv-nth 1 (read-file-into-line-list-no-error path-to-file newlinesp state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable read-file-into-line-list-no-error))))

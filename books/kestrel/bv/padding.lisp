@@ -18,6 +18,7 @@
 (include-book "bvif")
 (include-book "bvcat")
 (include-book "bvxor-def")
+(include-book "unsigned-byte-p-forced")
 
 ;Depending on how we translate to SMT, We might prefer, for example:
 ;(bvxor 8 (bvchop 8 (foo x)) (slice 7 0 y))
@@ -40,12 +41,12 @@
                 (< xsize size)
                 (natp size)
                 (natp xsize)
-                (force (unsigned-byte-p xsize x))
+                (force (unsigned-byte-p-forced xsize x))
                 (integerp y)
                 )
            (equal (bvmult size x y)
                   (bvmult size (bvcat (- size xsize) 0 xsize x) y)))
-  :hints (("Goal" :in-theory (e/d (bvchop-identity)
+  :hints (("Goal" :in-theory (e/d (bvchop-identity unsigned-byte-p-forced)
                                   (;add-bvchop-to-bvxor-1
                                    ;add-bvchop-to-bvxor-2
                                    )))))
@@ -57,7 +58,7 @@
                 (< ysize size)
                 (natp size)
                 (natp ysize)
-                (force (unsigned-byte-p ysize y))
+                (force (unsigned-byte-p-forced ysize y))
                 (integerp y)
                 )
            (equal (BVMULT size x y)
@@ -67,15 +68,14 @@
                                    ;ADD-BVCHOP-TO-BVXOR-2
                                    )))))
 
-(theory-invariant (incompatible (:rewrite bvmult-pad-arg1) (:rewrite BVCAT-OF-0)))
-(theory-invariant (incompatible (:rewrite bvmult-pad-arg2) (:rewrite BVCAT-OF-0)))
-
+(theory-invariant (incompatible (:rewrite bvmult-pad-arg1) (:rewrite bvcat-of-0-arg2)))
+(theory-invariant (incompatible (:rewrite bvmult-pad-arg2) (:rewrite bvcat-of-0-arg2)))
 
 ;after this fires, the associativity rule should fire too
 ;bozo make a high version
 (defthmd bvcat-pad-low
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize lowval) (newsize))
-                (unsigned-byte-p newsize lowval)
+                (force (unsigned-byte-p-forced newsize lowval))
                 (< newsize lowsize)
                 (natp lowsize)
                 (natp newsize)
@@ -88,7 +88,7 @@
 
 (defthmd bvcat-pad-high
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize highval) (newsize))
-                (unsigned-byte-p newsize highval)
+                (force (unsigned-byte-p-forced newsize highval))
                 (< newsize highsize)
                 (natp highsize)
                 (natp newsize)
@@ -103,7 +103,7 @@
 (defthmd bvif-pad-arg-1-with-zeros
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize x) (newsize))
                 (< newsize size)
-                (unsigned-byte-p newsize x)
+                (force (unsigned-byte-p-forced newsize x))
                 (integerp x)
                 (integerp y)
                 (natp newsize)
@@ -116,7 +116,7 @@
 (defthmd bvif-pad-arg-2-with-zeros
   (implies (and (bind-free (bind-var-to-bv-term-size 'newsize y) (newsize))
                 (< newsize size)
-                (unsigned-byte-p newsize y)
+                (force (unsigned-byte-p-forced newsize y))
                 (integerp x)
                 (integerp y)
                 (natp newsize)
@@ -131,7 +131,7 @@
                 (< newsize size)
                 (natp size)
                 (natp newsize)
-                (force (unsigned-byte-p newsize x))
+                (force (unsigned-byte-p-forced newsize x))
                 (integerp y)
                 )
            (equal (bvxor size x y)
@@ -146,7 +146,7 @@
                 (< newsize size)
                 (natp size)
                 (natp newsize)
-                (force (unsigned-byte-p newsize y))
+                (force (unsigned-byte-p-forced newsize y))
                 (integerp x)
                 )
            (equal (bvxor size x y)

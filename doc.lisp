@@ -14771,7 +14771,7 @@ Subtopics
             ((eql op *boole-nor*) (lognor i1 i2))
             ((eql op *boole-orc1*) (logorc1 i1 i2))
             ((eql op *boole-orc2*) (logorc2 i1 i2))
-            ((eql op *boole-set*) 1)
+            ((eql op *boole-set*) -1)
             ((eql op *boole-xor*) (logxor i1 i2))
             (t 0)))")
  (BOOLEAN-LISTP
@@ -15837,6 +15837,7 @@ Subtopics
             \"[books]/system/doc/developers-guide.lisp\")
        (do-not-hint \"[books]/tools/do-not.lisp\")
        (easy-simplify-term \"[books]/tools/easy-simplify.lisp\")
+       (emacs-workflow \"[books]/doc/practices.lisp\")
        (er-soft+ \"[books]/kestrel/utilities/er-soft-plus.lisp\")
        (final-cdr \"[books]/std/lists/final-cdr.lisp\")
        (fty \"[books]/centaur/fty/top.lisp\")
@@ -15849,6 +15850,7 @@ Subtopics
        (list-equiv \"[books]/std/lists/equiv.lisp\")
        (list-fix \"[books]/std/lists/list-fix.lisp\")
        (logbitp-reasoning \"[books]/centaur/bitops/equal-by-logbitp.lisp\")
+       (magic-ev \"[books]/clause-processors/meta-extract-user.lisp\")
        (make-flag \"[books]/tools/flag.lisp\")
        (make-termination-theorem
             \"[books]/kestrel/utilities/make-termination-theorem.lisp\")
@@ -15870,6 +15872,7 @@ Subtopics
        (note-8-5-books \"[books]/doc/relnotes.lisp\")
        (note-8-6-books \"[books]/doc/relnotes.lisp\")
        (note-8-7-books \"[books]/doc/relnotes.lisp\")
+       (note-8-8-books \"[books]/doc/relnotes.lisp\")
        (str::numbers \"[books]/std/strings/top.lisp\")
        (open-trace-file! \"[books]/tools/open-trace-file-bang.lisp\")
        (oracle-timelimit \"[books]/tools/oracle-timelimit.lisp\")
@@ -31730,11 +31733,10 @@ Section 4: Syntactic Restrictions
   declaration [30m[47m:dfs (v1 ... vk)[0m[0m.  If [30m[47mk[0m[0m is [30m[47m1[0m[0m then one may write [30m[47m:dfs v1[0m[0m
   to abbreviate [30m[47m:dfs (v1)[0m[0m.  These declared dfs are the [3mknown df
   variables[0m at the top level of the user-supplied body, guard, and
-  measure of [30m[47mf[0m[0m.  The rules below indicate, for a set [30m[47mV[0m[0m of known df
-  variables, when an expression is a df with respect to [30m[47mV[0m[0m; and these
-  rules also speak to legality of certain expressions.
+  measure of [30m[47mf[0m[0m.  We present precise rules below for determining when
+  an expression is a df with respect to a set of known df variables.
 
-  Before presenting those rules, we extend the notion of a df
+  But before presenting those rules, we extend the notion of a df
   expression (again, df for short) to that of a [3mdf{i} expression[0m
   ([3mdf{i}[0m for short).  Such an expression is one that returns multiple
   values when the ith value is to be considered a df.  For example,
@@ -31745,10 +31747,15 @@ Section 4: Syntactic Restrictions
   similarly, an expression that returns multiple values maybe a df{i}
   expression for various i but it is never a df expression.
 
-  Here are the rules promised above.  They are not complete; for
-  example, they do not cover [30m[47m[stobj-let][0m[0m expressions.  But those and
-  other cases should present no surprises in practice.  Let [30m[47mu[0m[0m be a
-  user-supplied term (that is, an [3muntranslated[0m term; see [term]).
+  We now turn to presenting the rules promised above.  They are not
+  complete; for example, they do not cover [30m[47m[stobj-let][0m[0m expressions.
+  But those and other cases should present no surprises in practice.
+  These rules indicate, for a set [30m[47mV[0m[0m of known df variables, when an
+  expression is a df with respect to [30m[47mV[0m[0m; and these rules also speak to
+  legality of certain expressions.
+
+  Let [30m[47mu[0m[0m be a user-supplied term (that is, an [3muntranslated[0m term; see
+  [term]).
 
     * If [30m[47mu[0m[0m is a variable, then [30m[47mu[0m[0m is a df with respect to [30m[47mV[0m[0m if and only if
       it is in [30m[47mV[0m[0m.
@@ -33259,8 +33266,7 @@ Subtopics
     (defun do$ (measure-fn alist do-fn finally-fn values dolia)
      (declare (xargs :guard (and (apply$-guard measure-fn '(nil))
                                  (apply$-guard do-fn '(nil))
-                                 (apply$-guard finally-fn '(nil))
-                                 (weak-dolia-p dolia))))
+                                 (apply$-guard finally-fn '(nil)))))
      (let* ((stobj-values-p (not (all-nils (true-list-fix values))))
             (old-measure-value (and stobj-values-p
                                     (apply$ measure-fn (list alist))))
@@ -33269,52 +33275,21 @@ Subtopics
             (val (cadr triple))
             (new-alist (caddr triple)))
       (cond
-       ((eq exit-token :return) val)
-       ((eq exit-token :loop-finish)
-        (let*
-         ((triple (true-list-fix (apply$ finally-fn (list new-alist))))
-          (exit-token (car triple))
-          (val (cadr triple)))
-         (if (eq exit-token :return) val nil)))
-       ((l< (lex-fix (apply$ measure-fn (list new-alist)))
-            (lex-fix (if stobj-values-p old-measure-value
-                       (apply$ measure-fn (list alist)))))
-        (do$ measure-fn new-alist
-             do-fn finally-fn values dolia))
-       (t
-        (prog2$
-         (let
-           ((all-stobj-names
-                 (true-list-fix (access dolia dolia :all-stobj-names)))
-            (untrans-measure (access dolia dolia :untrans-measure))
-            (untrans-do-loop$ (access dolia dolia :untrans-do-loop$)))
-          (er
-           hard? 'do$
-           \"The measure, ~x0, used in the do loop$ ~
-                    statement~%~Y12~%failed to decrease!  Recall that do$ tracks ~
-                    the values of do loop$ variables in an alist.  The measure is ~
-                    computed using the values in the alist from before and after ~
-                    execution of the body.  We cannot print the values of double ~
-                    floats and live stobjs, if any are found in the alist, ~
-                    because they are raw Lisp objects, not ACL2 objects.  We ~
-                    print any double float as its corresponding rational and ~
-                    simply print the name of any live stobj (as a ~
-                    string).~%~%Before execution of the do body the alist ~
-                    was~%~Y32.~|After the execution of the do body the alist ~
-                    was~%~Y42.~|Before the execution of the body the measure ~
-                    was~%~x5.~|After the execution of the body the measure ~
-                    was~%~x6.~|~%Logically, in this situation the do$ returns the ~
-                    value of a term whose output signature is ~x7, where the ~
-                    value of any component of type :df is #d0.0 and the value of ~
-                    any stobj component is the last latched value of that stobj.\"
-           untrans-measure untrans-do-loop$ nil
-           (eviscerate-do$-alist alist all-stobj-names)
-           (eviscerate-do$-alist new-alist all-stobj-names)
-           (if stobj-values-p old-measure-value
-             (apply$ measure-fn (list alist)))
-           (apply$ measure-fn (list new-alist))
-           values))
-         (loop$-default-values values new-alist))))))
+        ((eq exit-token :return) val)
+        ((eq exit-token :loop-finish)
+         (let*
+          ((triple (true-list-fix (apply$ finally-fn (list new-alist))))
+           (exit-token (car triple))
+           (val (cadr triple)))
+          (if (eq exit-token :return) val nil)))
+        ((l< (lex-fix (apply$ measure-fn (list new-alist)))
+             (lex-fix (if stobj-values-p old-measure-value
+                        (apply$ measure-fn (list alist)))))
+         (do$ measure-fn new-alist
+              do-fn finally-fn values dolia))
+        (t (do$-hard-er measure-fn
+                        alist values dolia stobj-values-p
+                        old-measure-value new-alist)))))
 
   The last argument is only relevant in the error message printed if
   the [30m[47mdo$[0m[0m fails to terminate and that message is not part of the
@@ -34257,8 +34232,7 @@ SEMANTICS
     (defun do$ (measure-fn alist do-fn finally-fn values dolia)
      (declare (xargs :guard (and (apply$-guard measure-fn '(nil))
                                  (apply$-guard do-fn '(nil))
-                                 (apply$-guard finally-fn '(nil))
-                                 (weak-dolia-p dolia))))
+                                 (apply$-guard finally-fn '(nil)))))
      (let* ((stobj-values-p (not (all-nils (true-list-fix values))))
             (old-measure-value (and stobj-values-p
                                     (apply$ measure-fn (list alist))))
@@ -34267,52 +34241,21 @@ SEMANTICS
             (val (cadr triple))
             (new-alist (caddr triple)))
       (cond
-       ((eq exit-token :return) val)
-       ((eq exit-token :loop-finish)
-        (let*
-         ((triple (true-list-fix (apply$ finally-fn (list new-alist))))
-          (exit-token (car triple))
-          (val (cadr triple)))
-         (if (eq exit-token :return) val nil)))
-       ((l< (lex-fix (apply$ measure-fn (list new-alist)))
-            (lex-fix (if stobj-values-p old-measure-value
-                       (apply$ measure-fn (list alist)))))
-        (do$ measure-fn new-alist
-             do-fn finally-fn values dolia))
-       (t
-        (prog2$
-         (let
-           ((all-stobj-names
-                 (true-list-fix (access dolia dolia :all-stobj-names)))
-            (untrans-measure (access dolia dolia :untrans-measure))
-            (untrans-do-loop$ (access dolia dolia :untrans-do-loop$)))
-          (er
-           hard? 'do$
-           \"The measure, ~x0, used in the do loop$ ~
-                    statement~%~Y12~%failed to decrease!  Recall that do$ tracks ~
-                    the values of do loop$ variables in an alist.  The measure is ~
-                    computed using the values in the alist from before and after ~
-                    execution of the body.  We cannot print the values of double ~
-                    floats and live stobjs, if any are found in the alist, ~
-                    because they are raw Lisp objects, not ACL2 objects.  We ~
-                    print any double float as its corresponding rational and ~
-                    simply print the name of any live stobj (as a ~
-                    string).~%~%Before execution of the do body the alist ~
-                    was~%~Y32.~|After the execution of the do body the alist ~
-                    was~%~Y42.~|Before the execution of the body the measure ~
-                    was~%~x5.~|After the execution of the body the measure ~
-                    was~%~x6.~|~%Logically, in this situation the do$ returns the ~
-                    value of a term whose output signature is ~x7, where the ~
-                    value of any component of type :df is #d0.0 and the value of ~
-                    any stobj component is the last latched value of that stobj.\"
-           untrans-measure untrans-do-loop$ nil
-           (eviscerate-do$-alist alist all-stobj-names)
-           (eviscerate-do$-alist new-alist all-stobj-names)
-           (if stobj-values-p old-measure-value
-             (apply$ measure-fn (list alist)))
-           (apply$ measure-fn (list new-alist))
-           values))
-         (loop$-default-values values new-alist))))))
+        ((eq exit-token :return) val)
+        ((eq exit-token :loop-finish)
+         (let*
+          ((triple (true-list-fix (apply$ finally-fn (list new-alist))))
+           (exit-token (car triple))
+           (val (cadr triple)))
+          (if (eq exit-token :return) val nil)))
+        ((l< (lex-fix (apply$ measure-fn (list new-alist)))
+             (lex-fix (if stobj-values-p old-measure-value
+                        (apply$ measure-fn (list alist)))))
+         (do$ measure-fn new-alist
+              do-fn finally-fn values dolia))
+        (t (do$-hard-er measure-fn
+                        alist values dolia stobj-values-p
+                        old-measure-value new-alist)))))
 
   We conclude by returning to an earlier example that illustrates
   runtime guard-checking.  But this time we do some tracing, as
@@ -35758,12 +35701,16 @@ Miscellaneous efficiency ideas
     (implies hyp (equiv lhs x))
 
   where [30m[47mequiv[0m[0m is a known equivalence relation (see [defequiv]); [30m[47mx[0m[0m is a
-  variable symbol; and [30m[47mlhs[0m[0m contains one or more terms (called
+  variable symbol; [30m[47mlhs[0m[0m contains one or more terms (called
   ``destructor terms'') of the form [30m[47m(fn v1 ... vn)[0m[0m, where [30m[47mfn[0m[0m is a
   function symbol and the [30m[47mvi[0m[0m are distinct variable symbols, [30m[47mv1[0m[0m, ...,
   [30m[47mvn[0m[0m include all the variable symbols in the formula, no [30m[47mfn[0m[0m occurs in
-  [30m[47mlhs[0m[0m in more than one destructor term, and all occurrences of [30m[47mx[0m[0m in
-  [30m[47mlhs[0m[0m are inside destructor terms.
+  [30m[47mlhs[0m[0m in more than one destructor term, all occurrences of [30m[47mx[0m[0m in [30m[47mlhs[0m[0m
+  are inside destructor terms, and every occurrence of [30m[47mx[0m[0m in [30m[47mhyp[0m[0m can
+  be replaced any term [30m[47mequiv[0m[0m to [30m[47mx[0m[0m without changing the propositional
+  value of [30m[47mhyp[0m[0m.  (This last condition can be succinctly stated as
+  saying that all occurrences of [30m[47mx[0m[0m in [30m[47mhyp[0m[0m are [30m[47mequiv[0m[0m-hittable
+  preserving [30m[47miff[0m[0m.  We discuss this more below.)
 
   An [30m[47m:elim[0m[0m rule is available for a given destructor function (in the
   manner described below) when it is the most recently added
@@ -35803,7 +35750,7 @@ Miscellaneous efficiency ideas
 
   Many successful users of ACL2 take advantage of the Emacs editor, for
   example by running ACL2 in an Emacs shell buffer.  See
-  emacs-workflow.  If you use ACL2 with Emacs, then you may wish to
+  [emacs-workflow].  If you use ACL2 with Emacs, then you may wish to
   load the file [30m[47memacs-acl2.el[0m[0m, which provides many helpful
   ACL2-specific commands and settings.  Most users should use the
   following Emacs command:
@@ -56783,12 +56730,12 @@ Frequent Contributors
 
   See also [magic-ev-fncall] for a related utility that is a bit less
   general (operating only on function calls applied to argument
-  lists; but see also magic-ev) but has the advantage of having some
-  logical content (see [meta-extract]).  Unlike [30m[47mmagic-ev-fncall[0m[0m and
-  [30m[47mmagic-ev[0m[0m, [30m[47min-logic-mode[0m[0m does not cause errors that can be caused by
-  [safe-mode].  [30m[47mIn-logic-mode[0m[0m also has a simpler interface than those
-  utilities, but unlike those utilities, [30m[47min-logic-mode[0m[0m not only takes
-  [30m[47m[state][0m[0m but also returns [30m[47mstate[0m[0m.
+  lists; but see also [magic-ev]) but has the advantage of having
+  some logical content (see [meta-extract]).  Unlike [30m[47mmagic-ev-fncall[0m[0m
+  and [30m[47mmagic-ev[0m[0m, [30m[47min-logic-mode[0m[0m does not cause errors that can be
+  caused by [safe-mode].  [30m[47mIn-logic-mode[0m[0m also has a simpler interface
+  than those utilities, but unlike those utilities, [30m[47min-logic-mode[0m[0m not
+  only takes [30m[47m[state][0m[0m but also returns [30m[47mstate[0m[0m.
 
     General Form:
     (in-logic-mode <form> state &optional (quote <variable-list>))
@@ -75144,7 +75091,7 @@ Subtopics
     * A reasonable model for [30m[47m(magic-ev-fncall 'fn (list a1 a2 ...) state h
       aokp)[0m[0m is [30m[47m(ec-call (fn a1 a2 ...))[0m[0m.
 
-    * See also magic-ev and [in-logic-mode] for related utilities.")
+    * See also [magic-ev] and [in-logic-mode] for related utilities.")
  (MAILING-LISTS
   (ACL2 ABOUT-ACL2 COMMUNITY)
   "Mailing lists for ACL2 users
@@ -77890,7 +77837,13 @@ Subtopics
   [30m[47mnil[0m[0m for [30m[47m:condition[0m[0m and [30m[47m:stats[0m[0m can avoid memoization overhead when
   one simply wishes to call [30m[47mg[0m[0m in place of [30m[47mfn[0m[0m; you may override those
   defaults if you actually want to save computed values and use
-  [30m[47m(memsum)[0m[0m to see statistics.
+  [30m[47m(memsum)[0m[0m to see statistics.  WARNING: As noted above, the required
+  theorems need to be in the current ACL2 [world].  Hence, the
+  following event fails to be admitted.
+
+    (encapsulate ()
+      (local (defthm f-is-g (equal (f x) (g x)) :rule-classes nil))
+      (memoize 'f :invoke 'g))
 
   Keyword parameter [30m[47m:recursive[0m[0m is [30m[47mt[0m[0m by default, which means that
   recursive calls of [30m[47mfn[0m[0m will be memoized just as ``top-level'' calls
@@ -82176,12 +82129,10 @@ SECTION: Precise documentation for [30m[47mstobj-let[0m[0m
                 CONSUMER)))
 
   Moreover, ACL2 places restrictions on the resulting expression: [30m[47mST[0m[0m
-  must not occur free in [30m[47mPRODUCER[0m[0m when at least one variable in
-  [30m[47mSTOBJ-LET-BOUND-VARIABLES[0m[0m occurs in [30m[47mPRODUCER[0m[0m; and every variable in
-  [30m[47mSTOBJ-LET-BOUND-VARIABLES[0m[0m must not occur free in [30m[47mCONSUMER[0m[0m.  If one
-  of these conditions is violated, you will see an error message
-  saying that ``It is forbidden to use'' the variable where it should
-  not occur free.
+  must not occur free in [30m[47mPRODUCER[0m[0m when at least one variable belons
+  to both [30m[47mSTOBJ-LET-BOUND-VARIABLES[0m[0m and [30m[47mPRODUCER-VARS[0m[0m; [30m[47mST[0m[0m must not
+  belong to [30m[47mPRODUCER-VARS[0m[0m; and no variable in
+  [30m[47mSTOBJ-LET-BOUND-VARIABLES[0m[0m may occur free in [30m[47mCONSUMER[0m[0m.
 
   [30m[47mStobj-let[0m[0m forms can be evaluated using ordinary objects in theorem
   contexts, much as any form.  They can also, of course, appear in
@@ -106898,14 +106849,15 @@ Experimental Versions
 
   Below we roughly organize the changes to ACL2 since Version 8.7 into
   the following categories of changes: existing features, new
-  features, heuristic and efficiency improvements, bug fixes, changes
-  at the system level, Emacs support, and experimental versions.
-  Each change is described in just one category, though of course
-  many changes could be placed in more than one category.
+  features, heuristic and efficiency improvements, bug fixes (two
+  sections), changes at the system level, Emacs support, and
+  experimental versions.  Each change is described in just one
+  category, though of course many changes could be placed in more
+  than one category.
 
   Note that only ACL2 system changes are listed below.  See also
-  note-8-8-books for a summary of changes made to the ACL2 Community
-  Books since ACL2 8.7, including the build system.
+  [note-8-8-books] for a summary of changes made to the ACL2
+  Community Books since ACL2 8.7, including the build system.
 
 
 Changes to Existing Features
@@ -106938,7 +106890,7 @@ Changes to Existing Features
   Improved error messages for ill-formed first and second arguments of
   [30m[47m[defund][0m[0m, [30m[47m[defun-nx][0m[0m, and [30m[47m[defund-nx][0m[0m.  The case of [30m[47mdefund-nx[0m[0m was
   reported by Claude Code as showing no error message at all, for
-  example when evaluting the form, [30m[47m(defund-nx 42 (x) x)[0m[0m.  Thanks to
+  example when evaluating the form, [30m[47m(defund-nx 42 (x) x)[0m[0m.  Thanks to
   Eric Smith for bringing these to our attention.
 
   Improved the [guard], as well as the guard violation message, for
@@ -106992,7 +106944,333 @@ New Features
 Heuristic and Efficiency Improvements
 
 
-Bug Fixes
+Bug Fixes From AI via Eric Smith
+
+  [3mThe bugs described in this section were all reported by Eric Smith,
+  who used Anthropic's Claude to find the bugs.  We thank Eric for
+  his persistence and skilled queries of Claude, and for filtering
+  out false positives.  (There are also some Claude-inspired fixes in
+  other sections besides bug fixes.)[0m
+
+  An additional restriction was added to [30m[47m:[0m[0m[30m[47m[elim][0m[0m rules, namely, for the
+  general form [30m[47m(implies hyp (equiv lhs x))[0m[0m, all occurrences of [30m[47mx[0m[0m in
+  [30m[47mhyp[0m[0m must be [30m[47mequiv[0m[0m-hittable preserving [30m[47miff[0m[0m.  See [elim].  This
+  corrected a soundness bug; see [community-books]
+  [30m[47msystem/tests/elim-iff-hyp.lisp[0m[0m and
+  [30m[47msystem/tests/elim-iff-hyp-2.lisp[0m[0m.  These illustrate the restriction
+  added when an [30m[47m:elim[0m[0m rule is submitted; comments in source function
+  [30m[47mapply-instantiated-elim-rule[0m[0m illustrate a corresponding restriction
+  when the rule is applied.
+
+  Restrictions on [30m[47m:[0m[0m[30m[47m[refinement][0m[0m, [30m[47m:[0m[0m[30m[47m[compound-recognizer][0m[0m, and
+  [30m[47m:[0m[0m[30m[47m[type-set-inverter][0m[0m rules were erroneously not being made in the
+  second pass of an [30m[47m[encapsulate][0m[0m event, resulting in soundness bugs
+  that we have fixed; see [community-books] [30m[47msystem/tests/refine.lisp[0m[0m,
+  [30m[47msystem/tests/compound-recognizer-pass-2.lisp[0m[0m, and
+  [30m[47msystem/tests/tsi-pass2.lisp[0m[0m.
+
+  The [functional-instantiation] code was modified to correct a
+  soundness bug caused by our failure to completely avoid variable
+  capture when instantiating the constraints.  See the comment in
+  [30m[47mremove-capture-in-constraint-lst[0m[0m.
+
+  When [30m[47m[make-event][0m[0m expansion takes place, the result might not be a
+  valid ACL2 object.  ACL2 checked for this situation, but only when
+  the [known-package-alist] changed.  Now the check is done
+  unconditionally, which fixes a soundness bug.  See [community-book]
+  [30m[47msystem/tests/make-event-bad-char.lisp[0m[0m.
+
+  A soundness bug was caused by function [30m[47m[df-string][0m[0m due to the
+  distinction in raw Lisp between 0.0 and -0.0.  See [community-book]
+  [30m[47msystem/tests/df-negative-zero.lisp[0m[0m.
+
+  Soundness bugs were caused by inadequate redundancy checks (see
+  [redundant-events]) for calls of [30m[47m[defun][0m[0m and its variants,
+  including [30m[47m[defun-nx][0m[0m).  The redundancy checks, which have been
+  fixed, failed to account properly for the following, as explained
+  in the indicated [community-books]:
+
+    * the default measure function (see [set-measure-function]) in checking
+      redundancy of a [30m[47mdefun[0m[0m (incomplete checking) --- see
+      [30m[47msystem/tests/measure-fn-redundancy.lisp[0m[0m;
+
+    * the [well-founded-relation] in checking redundancy of a [30m[47mdefun[0m[0m; see
+      [30m[47msystem/tests/wfr-redundancy.lisp[0m[0m;
+
+    * the value of the [xargs] keyword, [30m[47m:[0m[0m[30m[47m[loop$-recursion][0m[0m, in checking
+      redundancy of a [30m[47mdefun[0m[0m;
+
+    * the measure and the verify-guards status in checking redundancy of a
+      [30m[47mdefun-nx[0m[0m event or other [non-executable] definition; see
+      [30m[47msystem/tests/nx2.lisp[0m[0m and
+      [30m[47msystem/tests/nonexec-requiring-verify-guards.lisp[0m[0m; and
+
+    * both the default measure function and the default
+      well-founded-relation in checking redundancy of an
+      [30m[47m[encapsulate][0m[0m event; see
+      [30m[47msystem/tests/measure-fn-redundancy-encap.lisp[0m[0m.
+
+  Monotonicity properties of [30m[47m[df-round][0m[0m and [30m[47m[to-df][0m[0m ---
+  [30m[47mconstrained-to-df-monotonicity[0m[0m, [30m[47mto-df-monotonicity[0m[0m, and
+  [30m[47mdf-round-monotonicity[0m[0m --- have been removed, because they are
+  (surprisingly, to us) not supported by some Common Lisp
+  implementations and in fact render ACL2 unsound in those host
+  Lisps.  The issue is described in a comment in the event
+  [30m[47mconstrained-to-df-monotonicity) in ACL2 source file
+  @('float-a.lisp[0m[0m.
+
+  Fixed two related soundness bugs in the application of [30m[47m:[0m[0m[30m[47m[bdd][0m[0m
+  [hints].  See [community-books] [30m[47msystem/tests/bdd-1.lisp[0m[0m and
+  [30m[47msystem/tests/bdd-2.lisp[0m[0m.
+
+  Fixed a soundness bug in [30m[47m[boole$][0m[0m, which axiomatized [30m[47m(boole$
+  *boole-set* x y)[0m[0m to be [30m[47m1[0m[0m instead of the correct value, [30m[47m-1[0m[0m.  See
+  [community-book] [30m[47msystem/tests/boole-set.lisp[0m[0m.
+
+  Fixed an assertion failure that could occur when an accessor call in
+  a [30m[47m[stobj-let][0m[0m's bindings was on a quoted non-numeric index.  As
+  part of the fix, extended a guard optimization for constant indices
+  from just the numeric case.
+
+  Checks were improved to avoid raw Lisp errors in the following
+  situations.  (Aside: Claude reported, for the first two: ``Four
+  subagents tested ~270 malformed inputs across nearly every ACL2
+  event type.... Out of ~270 tests, only 2 bugs were found''.)
+
+    * when the first argument of a call of [30m[47m[table][0m[0m is not a symbol;
+
+    * when a [computed-hint] evaluates to an expression of the form
+      [30m[47m(:computed-hint-replacement x ...)[0m[0m where [30m[47mx[0m[0m is neither [30m[47mt[0m[0m, [30m[47mnil[0m[0m,
+      nor a true list; and
+
+    * when the second argument of [30m[47m[defevaluator][0m[0m is ill-formed.
+
+  Fixed many dozens of typos in comments and error messages.
+
+  Applied fixes from Claude for bugs in the raw Lisp definitions
+  supporting [30m[47m[mfc-rw+][0m[0m and [30m[47m[mfc-relieve-hyp][0m[0m.
+
+  Fixed a bug that could mangle messages from [30m[47m[theory-invariant][0m[0m
+  [events].  Closes PR #2042.
+
+  Fixed a bug in the creation of executable-counterpart functions (see
+  [evaluation] for [30m[47m[stobj-let][0m[0m.  See [community-book]
+  [30m[47msystem/tests/oneify-stobj-let.lisp[0m[0m.  Closes PR #2043.
+
+  Fixed a bug (in source function [30m[47mtau-like-propositionp[0m[0m that could
+  prevent creation of some [tau-system] rules.  Closes PR #2044.
+
+  Fixed bugs (missing commas inside backquotes) in an ACL2 source
+  function [30m[47minfo-for-lemmas[0m[0m that could affect output from utilities
+  [30m[47m:[0m[0m[30m[47m[pl][0m[0m, [30m[47m:[0m[0m[30m[47m[pr][0m[0m, [30m[47m:[0m[0m[30m[47m[pr!][0m[0m, and [30m[47m:[0m[0m[30m[47m[show-bodies][0m[0m.  Closes PR #2045.
+
+  Fixed a bug that could cause free variable warnings to be suppressed
+  when a [30m[47m:[0m[0m[30m[47m[forward-chaining][0m[0m rule has more than one trigger term.
+  Closes PR #2046.
+
+  Fixed a soundness bug by adding a check in each of [30m[47m[compress1][0m[0m and
+  [30m[47m[compress2][0m[0m that its arguments satisfy its [30m[47m[array1p][0m[0m or [30m[47m[array2p][0m[0m
+  [guard], respectively.  To see why this is necessary, see
+  [community-book] [30m[47msystem/tests/compress1-invariant-risk.lisp[0m[0m.
+  (Note: This did not observably slow down running of the complete
+  ACL2 regression suite.)
+
+  Fixed a soundness bug in [30m[47m[compress1][0m[0m in the case of an array whose
+  [30m[47m:order[0m[0m is either [30m[47m<[0m[0m (the default) or [30m[47m>[0m[0m and whose indices are already
+  in order, but whose length exceeds the [30m[47m:maximum-length[0m[0m:
+  recompression was required but was not performed.  See
+  [community-book] [30m[47msystem/tests/compress1-length-bug.lisp[0m[0m.
+
+  Fixed a soundness bug caused by failing to account for
+  [invariant-risk] for function calls inside calls of [30m[47m[loop$][0m[0m.  See
+  [community-book] [30m[47msystem/tests/loop-invariant-risk.lisp[0m[0m.
+
+  Fixed a soundness bug in [30m[47m[compress2][0m[0m due to an inadequate ordering
+  check in raw Lisp; see [community-book]
+  [30m[47msystem/tests/compress2-order-bug.lisp[0m[0m.
+
+  Fixed a soundness bug due to careless generation of a fresh variable,
+  in particular when supporting the processing of a
+  [30m[47m:[0m[0m[30m[47m[compound-recognizer][0m[0m rule.  Thanks to Eric McCarthy and Jim
+  McDonald for an idea leading to Eric Smith's prompt to Claude.  For
+  an example of the issue, see [community-book]
+  [30m[47msystem/tests/cr-empty.lisp[0m[0m.
+
+  Fixed a soundness bug that could occur when a type declaration has
+  the form [30m[47m(type (or t <type>) <var>)[0m[0m.  For an example, see
+  [community-book] [30m[47msystem/tests/dcl-guardian-nil.lisp[0m[0m.
+
+  Fixed a soundness bug based on the interaction between the
+  [macro-aliases-table] and [30m[47m[memoize][0m[0m with the [30m[47m:invoke[0m[0m argument.  The
+  fix is to check for the required theorems even during the second
+  pass of [30m[47m[encapsulate][0m[0m and the include-book pass of [30m[47m[certify-book][0m[0m.
+  For an example of the issue, see [community-book]
+  [30m[47msystem/tests/memoize-invoke-macro-alias.lisp[0m[0m.
+
+  Fixed a soundness bug due to allowing [30m[47m[double-float][0m[0m type
+  [declaration]s that were not at the top level.  For an example, see
+  [community-book] [30m[47msystem/tests/double-float-type-is-atomic.lisp[0m[0m.
+
+  Improved error messages from [30m[47m[verify-termination][0m[0m in two situations:
+  when the function symbol is built in without a defining event (like
+  [30m[47mcar[0m[0m); and when the function symbol was introduced in support of a
+  [stobj], i.e., with a [30m[47m[defstobj][0m[0m or [30m[47m[defabsstobj][0m[0m event.
+
+  Fixed a soundness bug in the evaluation of lambda forms, specifically
+  with respect to their [30m[47m[type][0m[0m [declaration]s.  See
+  [30m[47msystem/tests/exploit-lambda-guard-typedecl.lisp[0m[0m.
+
+  Fixed a soundness bug in non-linear arithmetic, specifically in
+  function [30m[47minverse-polys[0m[0m.  See
+  [30m[47msystem/tests/linear-inverse-polys.lisp[0m[0m.  Thanks to Eric Smith for
+  supplying the fix.
+
+  Fixed a soundness bug where the [30m[47mkeys[0m[0m function for a [stobj-table]
+  field returned internal stand-in symbols instead of the real stobj
+  names.  For an example of the issue, see [community-book]
+  [30m[47msystem/tests/stobj-table-keys.lisp[0m[0m.  Thanks to Grant Jurgensen for
+  supplying the bug fix (in PR #2049).
+
+  Fixed a soundness bug that allowed a [congruence] rule whose
+  hypothesis has the form [30m[47m(equiv x x)[0m[0m, with the same variable as both
+  arguments.  Such a rule is vacuous, yet it was accepted as a
+  [patterned-congruence] rule with the same effect as a genuine
+  congruence rule.  For an example, see [community-book]
+  [30m[47msystem/tests/congruence-same-var.lisp[0m[0m.  Thanks to Grant Jurgensen
+  for supplying the bug fix.
+
+  Fixed a soundness bug in the application of [30m[47m[mfc-relieve-hyp][0m[0m, which
+  could cause it to succeed inappropriately when violating the
+  documented restriction that the given hypothesis must not have free
+  variables (see [extended-metafunctions]).  For an example, see
+  [community-book] [30m[47msystem/tests/meta-extract-relieve-hyp.lisp[0m[0m.
+
+  Fixed a [tau-system] bug that could produce a raw Lisp error.  Thanks
+  to Stephen Westfold for passing along Claude's fix along with the
+  following example, which exhibited the bug.
+
+    (in-theory (disable natp (:e natp)))
+    (defstub p (x) t)
+    (thm (implies (and (not (equal x 'abc)) (natp x)) (p x)))
+
+  Fixed a soundness bug in the rewriter's handling of [30m[47m[implies][0m[0m.  When
+  the conclusion of [30m[47m(implies test concl)[0m[0m rewrote to [30m[47mnil[0m[0m, the whole
+  implication was unconditionally rewritten to an [30m[47miff[0m[0m-equivalent of
+  the negation of the test.  Therefore, the Boolean implication could
+  be rewritten to a non-Boolean.  For an example, see
+  [community-book] [30m[47msystem/tests/implies-not-nil.lisp[0m[0m.  Thanks to
+  Grant Jurgensen for supplying the bug fix.
+
+  Fixed a [proof-builder] soundness bug that failed to require [force]d
+  hypotheses to be proved when an application of the [30m[47m:s[0m[0m command found
+  a contradiction in the assumptions governing the current subterm.
+  (These are the union of the set of top-level assumptions and the
+  set of governing IF-tests.)  For an example, see [community-book]
+  [30m[47msystem/tests/proof-builder-assumptions-contradiction.lisp[0m[0m.
+
+  Fixed a soundness bug by adding the following restriction on
+  [30m[47m[stobj-let][0m[0m forms: the parent [stobj] must not belong to the list
+  of producer variables.  For a relevant example, see
+  [community-book] [30m[47msystem/tests/nested-stobj-errors-input.lsp[0m[0m under
+  the header, ``Example involving exclusion of parent stobj from
+  producer-vars''.
+
+  Fixed a soundness bug which was fixed by tweaking the raw Lisp code
+  for [30m[47m[set-bad-lisp-consp-memoize][0m[0m.
+
+  Fixed a soundness bug in [30m[47m[defabsstobj][0m[0m due to a failure of ACL2 to
+  consider congruent stobjs when deciding whether to require [30m[47m:PROTECT
+  T[0m[0m to be specified for an exported function.  For an example, see
+  [community-book] [30m[47msystem/tests/protect-congruent-stobj.lisp[0m[0m.
+
+  Fixed several bugs with [30m[47mdo$[0m[0m that manifested themselves differently
+  but were all caused by the same flaw.  The sixth argument of [30m[47mdo$[0m[0m is
+  irrelevant to its value and was supposed to be used only to print a
+  certain runtime hard error.  But several other utilities in our
+  source code treated the sixth argument as meaningful and this
+  opened up the possibility that a user could supply bogus
+  information in that argument.  At least one such exploit allowed
+  Claude to construct a proof of [30m[47mnil[0m[0m.  The (mis-)uses of the sixth
+  argument have been eliminated.
+
+  Fixed a bug in the compilation of [30m[47mdo$[0m[0m loops that allowed the
+  compilation of an [30m[47mmv-setq[0m[0m to reassign a [30m[47mlet[0m[0m-bound variable due to
+  our failure to generate a sufficiently ``fresh'' variable to
+  temporarily hold the vector of results computed by the body of the
+  [30m[47mmv-setq[0m[0m expression.  See the comment in [30m[47mcmp-do-body[0m[0m for an example.
+  The guard-verified logical definition returns a different result
+  than the compiled raw lisp code due to this variable capture..
+  Claude then exploited this bug to prove [30m[47mnil[0m[0m using a metafunction.
+  See [community-book] [30m[47msystem/tests/do-mv-capture.lisp[0m[0m.
+
+  Fixed a bug in the generation of termination conditions for functions
+  defined with [loop$-recursion].  The bug, which was caused by the
+  inadvertent application of a substitution to a formula to which
+  that substitution had already been applied, caused the termination
+  conditions for some loop$-recursive functions to be incomplete or
+  bogus.
+
+  Fixed a soundness bug caused by removal of [30m[47m[guard-holders][0m[0m before
+  compiling [lambda] objects for the compiled lambda cache (see :DOC
+  print-cl-cache).  An additional effect of this change (besides
+  removing unsoundness) is to stop avoiding calls of [30m[47m[cw][0m[0m and other
+  side effects when using [30m[47m[apply$][0m[0m.  Consider for example an
+  evaluation of the following term, where the body of the [30m[47m[lambda][0m[0m
+  object is the translation of [30m[47m(prog2$ (cw \"Hello~%\") nil)[0m[0m: before
+  the fix, [30m[47m\"Hello\"[0m[0m was not printed, but after the fix, it is printed.
+
+    (apply$ '(lambda ()
+                (RETURN-LAST
+                 'PROGN
+                 (FMT-TO-COMMENT-WINDOW '\"Hello~%\"
+                                        (PAIRLIS2 '(#0 #1 #2 #3 #4 #5 #6 #7 #8 #9)
+                                                  'NIL)
+                                        '0
+                                        'NIL
+                                        'NIL)
+                 'NIL))
+             nil)
+
+  See also [community-books]
+  [30m[47msystem/tests/ec-call-in-quoted-lambda.lisp.lisp[0m[0m and
+  [30m[47msystem/tests/ec-call-lambda-bypasses-1star.lisp[0m[0m.
+
+  Fixed an error that could be inappropriately caused by running
+  [30m[47m[apply$][0m[0m on a [30m[47m[lambda$][0m[0m expression from within a [30m[47m:[0m[0m[30m[47m[program][0m[0m-mode
+  function.  Below is an example that formerly caused an error, as
+  indicated.
+
+    (defconst *ar*
+      (compress1 'a '((:header :dimensions (4) :maximum-length 6
+                               :default 0 :name a)
+                      (0 . 0) (1 . 0) (2 . 0) (3 . 0))))
+
+    (defun foo (ar n v)
+      (declare (xargs :mode :program))
+      (apply$
+       (lambda$ (x) (aset1 'a (car x) (cadr x) (caddr x)))
+       (list (list ar n v))))
+
+    ; Formerly an error:
+    (foo *ar* 0 1)
+
+  When an [30m[47m:[0m[0m[equivalence] rule is considered for admission, it is no
+  longer an error if the indicated equivalence relation is already a
+  known equivalence relation (other than [30m[47mequal[0m[0m).  Instead, the
+  intended new [30m[47m:equivalence[0m[0m rule has no effect, even though the
+  actual event (typically a call of [30m[47m[defequiv][0m[0m) is admitted.  This
+  former error did not occur during [30m[47m[include-book][0m[0m --- but more
+  important than that incompatible behavior is that the new rule
+  could erase refinements; see [community-book]
+  [30m[47msystem/tests/equivalence-coarsenings-reset.lisp[0m[0m.
+
+  Fixed a soundness bug in a check on terms, which allowed illegal use
+  of [type-prescription] rules saved in a book's [certificate].  For
+  an example see [community-book]
+  [30m[47msystem/tests/cert-data-guarded-termp.lisp[0m[0m.
+
+
+Other Bug Fixes
 
   Fixed a soundness bug caused by creation of a character that is not
   an ACL2 character.  All ACL2 characters have codes less than 256,
@@ -107019,35 +107297,21 @@ Bug Fixes
   Thanks to Aakash Koneru for pointing us in the direction of these
   changes.
 
-  Checks were improved to avoid raw Lisp errors in the following
-  situations:
-
-    * when the first argument of a call of [30m[47m[table][0m[0m is not a symbol;
-
-    * when a [computed-hint] evaluates to an expression of the form
-      [30m[47m(:computed-hint-replacement x ...)[0m[0m where [30m[47mx[0m[0m is neither [30m[47mt[0m[0m, [30m[47mnil[0m[0m,
-      nor a true list; and
-
-    * when the second argument of [30m[47m[defevaluator][0m[0m is ill-formed.
-
-  Thanks to Eric Smith for passing along these bug reports from Claude
-  Code (which reported, for the first two: ``Four subagents tested
-  ~270 malformed inputs across nearly every ACL2 event type.... Out
-  of ~270 tests, only 2 bugs were found'').
-
-  Fixed many dozens of typos in comments and error messages, as
-  reported by Eric Smith, who used Claude Code and filtered out some
-  false positives.
+  (SBCL only) Soundness bugs were caused by SBCL compiler optimizations
+  for calls of built-in functions having types with bounded integer
+  return values.  These bugs are now avoided by proclaiming those
+  functions [30m[47mnotinline[0m[0m.  Thanks to Grant Jurgensen for reporting the
+  use of Anthropic's Claude to find these bugs; see [community-books]
+  files [30m[47msystem/tests/integer-length-bad-optimization.lisp[0m[0m and
+  [30m[47msystem/tests/length-bad-optimization.lsp[0m[0m.  Thanks also to Stas
+  Boukarev for suggesting the use of [30m[47mnotinline[0m[0m, as our original
+  solution was more complicated (by modifying function types), and to
+  Eric Smith for pointing out a bug in our initial implementation.
 
   Fixed the behavior of aborts to avoid printing a newline to the
   terminal when, like everything else, it should be printed to
   standard output.  Thanks to Eric McCarthy for finding this bug as
   well as providing a detailed explanation and the fix.
-
-  Fixed bugs in the raw Lisp definitions supporting [30m[47m[mfc-rw+][0m[0m and
-  [30m[47m[mfc-relieve-hyp][0m[0m.  Thanks to Eric Smith for sending a report he
-  produced with Claude Code that points out the bugs and provides the
-  fixes.
 
   A release note item in [note-8-7] mentions a new feature in the
   preceding ACL2 release, for which ``definitions are saved in the
@@ -107085,6 +107349,9 @@ Bug Fixes
   But unlike before, the body of the [30m[47mdefconst[0m[0m form is translated
   during both passes, not just the first.
 
+  Fixed a bug reported by Eric Smith that resulted in a raw Lisp error,
+  instead of a guard violation, for [30m[47m(unary-df/ (df0))[0m[0m.
+
 
 Changes at the System Level
 
@@ -107118,7 +107385,7 @@ Changes at the System Level
       particular, [30m[47m[break$][0m[0m does not enter the Lisp debugger ---
       except that in addition, you cannot exit the ACL2 loop.  This
       effectively disables [30m[47m:q[0m[0m as a means for going into raw Lisp (and
-      also [30m[47m(value :q)[0m[0m, etc.; see [q].
+      also [30m[47m(value :q)[0m[0m, etc.; see [q]).
 
     * So to avoid the possibility of interaction with raw Lisp for ACL2
       built on CCL or SBCL, provided trust tags are avoided (see
@@ -107131,7 +107398,7 @@ Changes at the System Level
           #+sbcl (setq sb-ext:*invoke-debugger-hook* 'our-abort)
           #+sbcl (lp)
 
-          ; Disable entering the debugger and disable existing the ACL2 loop:
+          ; Disable entering the debugger and disable exiting the ACL2 loop:
           (set-debugger-enable :never!)
           (push-untouchable set-debugger-enable-fn t)
           (push-untouchable debugger-enable nil)
@@ -107153,6 +107420,12 @@ Changes at the System Level
   on an Arm-based Mac.  Thanks to Yahya Sohail for supplying that
   change, which handles certain floating-point exceptions.  (ACL2
   supports floating-point computations; see [df].)
+
+  (CMUCL only) Fixed CMUCL builds of ACL2 so that [30m[47m\"lisp\"[0m[0m can be the
+  specified Lisp program name and to avoid a problem with
+  [30m[47m-dynamic-space-size[0m[0m on some systems.  However, the CMUCL version
+  must now be from at least 2016.  Thanks to Grant Jurgensen for
+  bringing those issues to our attention.
 
 
 EMACS Support
@@ -114013,11 +114286,11 @@ Implementation
   relations, which (as in the classic case) we call the ``inner'' and
   ``outer'' equivalences, respectively.  The terms [30m[47mlhs[0m[0m and [30m[47mrhs[0m[0m are
   function calls, and we call these the [30m[47mlhs[0m[0m and [30m[47mrhs[0m[0m of the rule,
-  respectively.  The variable [30m[47mx[0m[0m occurs in [30m[47mlhs[0m[0m and the variable [30m[47my[0m[0m
-  occurs in [30m[47mrhs[0m[0m.  These must be the only occurrences of [30m[47mx[0m[0m and [30m[47my[0m[0m in
-  either [30m[47mlhs[0m[0m or [30m[47mrhs[0m[0m, and [30m[47mrhs[0m[0m must be the result of substituting [30m[47my[0m[0m for
-  [30m[47mx[0m[0m in [30m[47mlhs[0m[0m.  None of the following may occur as a function symbol of
-  [30m[47mlhs[0m[0m (or, equivalently, [30m[47mrhs[0m[0m): [30m[47mif[0m[0m, [30m[47mimplies[0m[0m, [30m[47mequal[0m[0m, or a [30m[47m[lambda][0m[0m.
+  respectively.  The variables [30m[47mx[0m[0m and [30m[47my[0m[0m are distinct, [30m[47mx[0m[0m occurs in [30m[47mlhs[0m[0m,
+  and [30m[47my[0m[0m occurs in [30m[47mrhs[0m[0m.  These must be the only occurrences of [30m[47mx[0m[0m and [30m[47my[0m[0m
+  in either [30m[47mlhs[0m[0m or [30m[47mrhs[0m[0m, and [30m[47mrhs[0m[0m must be the result of substituting [30m[47my[0m[0m
+  for [30m[47mx[0m[0m in [30m[47mlhs[0m[0m.  None of the following may occur as a function symbol
+  of [30m[47mlhs[0m[0m (or, equivalently, [30m[47mrhs[0m[0m): [30m[47mif[0m[0m, [30m[47mimplies[0m[0m, [30m[47mequal[0m[0m, or a [30m[47m[lambda][0m[0m.
 
   Patterned congruence rules are used, much like classic congruence
   rules, by the ACL2 rewriter to determine which equivalence
@@ -128499,14 +128772,15 @@ Subtopics
 
   The typical way for an [30m[47mencapsulate[0m[0m event to be redundant is when a
   syntactically identical [30m[47mencapsulate[0m[0m has already been executed under
-  the same [30m[47m[default-defun-mode][0m[0m, [30m[47m[default-ruler-extenders][0m[0m, and
-  [30m[47m[default-verify-guards-eagerness][0m[0m.  But more generally, the
-  [30m[47mencapsulate[0m[0m events need not be syntactically identical; for
-  example, it suffices that they agree when the contents of [30m[47m[local][0m[0m
-  sub-events are ignored.  Detailed criteria for redundancy are given
-  below, but let us first look at a consequence of the point just
-  made about ignoring the contents of [30m[47m[local][0m[0m sub-events.  Consider
-  the following sequence of two events.
+  the same [30m[47m[default-defun-mode][0m[0m, [30m[47m[default-ruler-extenders][0m[0m,
+  [30m[47m[default-verify-guards-eagerness][0m[0m, default measure-function (see
+  [set-measure-function]), and default [well-founded-relation].  But
+  more generally, the [30m[47mencapsulate[0m[0m events need not be syntactically
+  identical; for example, it suffices that they agree when the
+  contents of [30m[47m[local][0m[0m sub-events are ignored.  Detailed criteria for
+  redundancy are given below, but let us first look at a consequence
+  of the point just made about ignoring the contents of [30m[47m[local][0m[0m
+  sub-events.  Consider the following sequence of two events.
 
     (encapsulate
      ()
@@ -128726,9 +129000,10 @@ Subtopics
   each function to be introduced, there has already been introduced a
   function with the same name, formals, and body (before
   macroexpansion), and with the same values [declare]d for the
-  [30m[47m:[0m[0m[30m[47m[guard][0m[0m, [30m[47m:[0m[0m[30m[47m[measure][0m[0m, types, [30m[47m:[0m[0m[30m[47m[ruler-extenders][0m[0m, [30m[47m:non-executable[0m[0m,
-  [30m[47m:type-prescription[0m[0m, [30m[47m:[0m[0m[30m[47m[stobj][0m[0m[30m[47ms[0m[0m, and [30m[47m:[0m[0m[30m[47m[split-types][0m[0m, provided that
-  the [defun-mode]s are appropriate (see the ``Note About Appropriate
+  [30m[47m:[0m[0m[30m[47m[guard][0m[0m, [30m[47m:[0m[0m[30m[47m[measure][0m[0m, [30m[47m:[0m[0m[30m[47m[well-founded-relation][0m[0m, types,
+  [30m[47m:[0m[0m[30m[47m[ruler-extenders][0m[0m, [30m[47m:non-executable[0m[0m, [30m[47m:type-prescription[0m[0m, [30m[47m:[0m[0m[30m[47m[stobj][0m[0m[30m[47ms[0m[0m,
+  [30m[47m:[0m[0m[30m[47m[loop$-recursion][0m[0m, and [30m[47m:[0m[0m[30m[47m[split-types][0m[0m, provided that the
+  [defun-mode]s are appropriate (see the ``Note About Appropriate
   Modes'' below).  Moreover, the order of the combined [30m[47m:[0m[0m[30m[47m[guard][0m[0m and
   type declarations must be the same in both cases.  Exceptions and
   clarifications:
@@ -128742,12 +129017,32 @@ Subtopics
       other to have no explicit guard (hence, the guard is implicitly
       [30m[47mt[0m[0m).
 
-   3. The [30m[47m:measure[0m[0m check is avoided if the old definition is non-recursive
-      (and not defined within a [30m[47m[mutual-recursion][0m[0m) or we are
-      skipping proofs (for example, during [30m[47m[include-book][0m[0m).
-      Otherwise, the new definition may have a [30m[47m:measure[0m[0m of [30m[47m(:? v1 ...
-      vk)[0m[0m, where [30m[47m(v1 ... vk)[0m[0m enumerates the variables occurring in
-      the measure stored for the old definition.
+   3. The [30m[47m:measure[0m[0m and [30m[47m:well-founded-relation[0m[0m checks are avoided if the old
+      definition is non-recursive (and not defined within a
+      [30m[47m[mutual-recursion][0m[0m) or we are skipping proofs (for example,
+      during [30m[47m[include-book][0m[0m).  The precise measure check requires
+      that one of the following conditions is met.
+
+        * The old and new definitions supply a (non-[30m[47mnil[0m[0m) value for the
+          [30m[47m:measure[0m[0m, and those values are identical.
+
+        * Neither the old nor the new definition supplies a value for the
+          [30m[47m:measure[0m[0m, and the current default measure function (see
+          [set-measure-function]) is the function symbol of the
+          measure stored for the old definition (from the default
+          measure function at the time it was admitted).
+
+        * The new definition specifies a [30m[47m:measure[0m[0m of [30m[47m(:? v1 ... vk)[0m[0m, where [30m[47m(v1
+          ... vk)[0m[0m enumerates, without repetition, the variables
+          occurring in the measure stored for the old definition.
+
+      The precise well-founded relation check requires that the
+      well-founded relation for the old definition is the same as the
+      well-founded relation proposed for the new definition, whether
+      the proposed well-founded relation is supplied explicitly using
+      the [30m[47m:well-founded-relation[0m[0m [30m[47m[xargs][0m[0m keyword or implicitly using
+      the current default well-founded relation (see
+      [set-well-founded-relation]).
 
    4. If either the old or new event is a [30m[47m[mutual-recursion][0m[0m event, then
       redundancy requires that both are [30m[47m[mutual-recursion][0m[0m events
@@ -129064,14 +129359,12 @@ Subtopics
   [break-rewrite] to determine that a rule failed the refinement
   check and for advice about how to ``fix'' such a problem.
 
-  [30m[47m:refinement[0m[0m lemmas cannot be disabled.  That is, once one equivalence
+  [30m[47m:Refinement[0m[0m lemmas cannot be disabled.  That is, once one equivalence
   relation has been shown to be a refinement of another, there is no
   way to prevent the system from using that information.
   Furthermore, [30m[47m:refinement[0m[0m lemmas are not tracked and are thus not
   reported in the [summary].  Of course, individual [30m[47m:[0m[0m[30m[47m[rewrite][0m[0m rules
-  can be disabled.
-
-  More will be written about this as we develop the techniques.")
+  can be disabled.")
  (REFINEMENT-FAILURE
   (INTRODUCTION-TO-THE-THEOREM-PROVER BREAK-REWRITE)
   "what to do when a rewrite rule fails the refinement check
@@ -155255,11 +155548,11 @@ Introductory Examples
 Documentation
 
     General Forms:
-    :trans t form
-    :trans nil form
-    :trans n form
-    :trans -n form
-    :trans (x) form ; for x = t, nil, n, or -n
+    :trans* t form
+    :trans* nil form
+    :trans* n form
+    :trans* -n form
+    :trans* (x) form ; for x = t, nil, n, or -n
 
   where [30m[47mn[0m[0m is a positive integer and [30m[47mform[0m[0m is any ACL2 expression (i.e.,
   any untranslated term; see [term]).  These commands repeat
@@ -158134,16 +158427,16 @@ Subtopics
   recognize [30m[47m[type-set][0m[0m [30m[47mn[0m[0m.  For a given [30m[47mn[0m[0m, the exact form of [30m[47mold-expr[0m[0m
   is generated by
 
-    (convert-type-set-to-term 'x n (ens state) (w state) nil)].
+    (convert-type-set-to-term 'x n (ens state) (w state) nil).
 
   If the [30m[47m:[0m[0m[30m[47m[type-set][0m[0m field of the rule-class is omitted, we attempt to
   compute it from the right-hand side, [30m[47mold-expr[0m[0m, of the corollary.
   That computation is done by [30m[47mtype-set-implied-by-term[0m[0m (see
   [type-set]).  However, it is possible that the type-set we compute
-  from [30m[47mlhs[0m[0m does not have the required property that when inverted
-  with [30m[47mconvert-type-set-to-term[0m[0m the result is [30m[47mlhs[0m[0m.  If you omit
-  [30m[47m:[0m[0m[30m[47m[type-set][0m[0m and an error is caused because [30m[47mlhs[0m[0m has the incorrect
-  form, you should manually specify both [30m[47m:[0m[0m[30m[47m[type-set][0m[0m and the [30m[47mlhs[0m[0m
+  from [30m[47mold-expr[0m[0m does not have the required property that when
+  inverted with [30m[47mconvert-type-set-to-term[0m[0m the result is [30m[47mold-expr[0m[0m.  If
+  you omit [30m[47m:[0m[0m[30m[47m[type-set][0m[0m and such an error is caused, you should
+  manually specify the [30m[47m:[0m[0m[30m[47m[type-set][0m[0m so that [30m[47mold-expr[0m[0m is the term
   generated by [30m[47mconvert-type-set-to-term[0m[0m.
 
   The rule generated will henceforth make [30m[47mnew-expr[0m[0m be the term used by
@@ -158161,7 +158454,15 @@ Subtopics
   current hypotheses.  For example, if the original conjecture
   contained the hypothesis [30m[47m(integerp x)[0m[0m then the context used while
   working on that conjecture will include the assignment to [30m[47mx[0m[0m of the
-  type-set [30m[47m*ts-integer*[0m[0m.")
+  type-set [30m[47m*ts-integer*[0m[0m.
+
+  Even when a [30m[47m:type-set-inverter[0m[0m rule is legal when certifying a book,
+  the checks on the rule may fail in unusual cases when including
+  that book because skipping the book's [30m[47m[local][0m[0m [events] affects
+  those checks.  Similarly, in unusual cases a [30m[47m:type-set-inverter[0m[0m
+  rule may fail to be admissible in the second pass of an
+  [30m[47m[encapsulate][0m[0m event even though it was admitted during the first
+  pass.")
  (TYPE-SPEC
   (DECLARE THE)
   "Type specifiers can be used in Common Lisp type declarations and
@@ -162489,10 +162790,12 @@ Subtopics
 
   Note that if [30m[47mfn1[0m[0m is already in [30m[47m:[0m[0m[30m[47m[logic][0m[0m mode, then the
   [30m[47mverify-termination[0m[0m call has no effect.  It is generally considered
-  to be redundant, in the sense that it returns without error; but if
-  the [30m[47mfn1[0m[0m is a constrained function (i.e., introduced in the
-  signature of an [30m[47m[encapsulate][0m[0m, or by [30m[47m[defchoose][0m[0m), then an error
-  occurs.  This error is intended to highlight unintended uses of
+  to be redundant, in the sense that it returns without error; but an
+  error occurs in the following cases: if [30m[47mfn1[0m[0m is a constrained
+  function (i.e., introduced in the signature of an [30m[47m[encapsulate][0m[0m, or
+  by [30m[47m[defchoose][0m[0m), a built-in function without a defining event (like
+  [30m[47m[car][0m[0m), or a function introduced with a [30m[47m[defstobj][0m[0m or [30m[47m[defabsstobj][0m[0m
+  event.  This error is intended to highlight unintended uses of
   [30m[47mverify-termination[0m[0m; but if you do not want to see an error in this
   case, you can write and use your own macro in place of
   [30m[47mverify-termination[0m[0m.  The following explanation of the
@@ -162503,8 +162806,8 @@ Subtopics
   only for those who want to create variants of [30m[47mverify-termination[0m[0m,
   or who are interested in seeing an application of [30m[47m[make-event][0m[0m.
 
-  Consider the following proof of [30m[47mnil[0m[0m, which succeeded up through
-  Version_3.4 of ACL2.
+  Consider the following attempt to prove [30m[47mnil[0m[0m, which succeeded up
+  through Version_3.4 of ACL2.
 
     (encapsulate
      ()

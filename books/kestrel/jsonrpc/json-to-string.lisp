@@ -12,18 +12,24 @@
 
 (include-book "kestrel/json/top" :dir :system)
 (include-book "kestrel/utilities/nat-to-string" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ json-to-string
   :parents (jsonrpc)
   :short "Serializing JSON values to strings."
-  :long "<p>These functions serialize @(see valuep) objects to JSON strings
-  suitable for writing to files or sending over a transport. The main function
-  is @('value-to-json-string'). String values are properly escaped per
-  RFC 4627. Integer-valued rationals are printed without a decimal point.
-  Non-integer rationals (fractions) are not valid JSON numbers and cannot be
-  serialized; see @(see rational-to-json-string) for details.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These functions serialize @(see valuep) objects to JSON strings
+     suitable for writing to files or sending over a transport.
+     The main function is @('value-to-json-string').
+     String values are properly escaped per RFC 4627.
+     Integer-valued rationals are printed without a decimal point.
+     Non-integer rationals (fractions) are not valid JSON numbers
+     and cannot be serialized;
+     see @(see rational-to-json-string) for details."))
   :order-subtopics t
   :default-parent t)
 
@@ -55,11 +61,14 @@
   (json-escape-string-chars (coerce s 'list)))
 
 (define rational-to-json-string ((r rationalp))
-  :short "Serialize a rational number to a JSON number string."
-  :long "<p>Integer-valued rationals are printed without a decimal point.
-  Non-integer rationals (fractions) are not valid JSON numbers; this function
-  throws a hard error if given one.</p>"
   :returns (s stringp)
+  :short "Serialize a rational number to a JSON number string."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Integer-valued rationals are printed without a decimal point.
+     Non-integer rationals (fractions) are not valid JSON numbers;
+     this function throws a hard error if given one."))
   (if (integerp r)
       (if (< r 0)
           (string-append "-" (nat-to-string (- r)))
@@ -72,9 +81,13 @@
 
 (defines value-to-json-string
   :short "Serialize a @(see valuep) to a JSON string."
-  :long "<p>Recursively converts a JSON value to its string representation.
-  Strings are escaped per RFC 4627.  Numbers must be integer-valued rationals;
-  see @(see rational-to-json-string) for the limitation on fractions.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Recursively converts a JSON value to its string representation.
+     Strings are escaped per RFC 4627.
+     Numbers must be integer-valued rationals;
+     see @(see rational-to-json-string) for the limitation on fractions."))
 
   (define value-to-json-string ((val valuep))
     :returns (s stringp)

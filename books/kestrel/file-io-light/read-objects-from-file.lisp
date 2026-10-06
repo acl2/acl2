@@ -48,3 +48,8 @@
                 (state-p state))
            (state-p (mv-nth 2 (read-objects-from-file filename state))))
   :hints (("Goal" :in-theory (enable state-p))))
+
+(defthm w-of-mv-nth-2-of-read-objects-from-file
+  (equal (w (mv-nth 2 (read-objects-from-file filename state)))
+         (w state))
+  :hints (("Goal" :in-theory (e/d (read-objects-from-file) (w)))))

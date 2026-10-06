@@ -4093,180 +4093,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defconst *-1* (quote (quote -1)))
 (defconst *2* (quote (quote 2)))
 
-#-acl2-loop-only
-(declaim (inline ec-call1-raw-dfs))
-
-#-acl2-loop-only
-(defun ec-call1-raw-dfs (x flg form n)
-
-; If flg is nil or x is a double-float, then return x.  Otherwise x should be a
-; representable rational (because x was produced by a df or df{i} expression),
-; and we return the double-float that represents x.
-
-; But what is the point of this function?
-
-; Ec-call presents a bit of an implementation challenge.  Recall that ec-call
-; invokes executable-counterpart (*1*) functions.  Also note that code
-; generated for *1* functions is designed to return ordinary objects, not
-; double-floats.  Yet ec-call invokes *1* functions, hence returns ordinary
-; objects where raw Lisp code might expect a double-float.
-
-; When a guard-verified function or program-mode function leads to evaluation
-; of an ec-call form in raw Lisp, the caller may expect double-float outputs.
-; So ec-call's expansions in raw Lisp need to make adjustments to the outputs
-; when double-floats are expected.  The :dfs-out argument of ec-call tells Lisp
-; when to convert rationals returned by a *1* function to double-floats.
-
-  (cond ((null flg) x)
-        ((typep x 'double-float) x)
-        (t (let ((val (and (rationalp x)
-                           (let ((val (to-df x)))
-                             (and (= val x)
-                                  val)))))
-             (or val
-                 (let ((*print-pretty* t))
-                   (error "Implementation error (please contact the ACL2 ~
-                           implementors):~%~s error:~%Form: ~s~%Value~a that ~
-                           does not represent a double-float:~%  ~s"
-                          'ec-call
-                          form
-                          (if n
-                              (format nil " (at position ~s)" n)
-                            "")
-                          x)))))))
-
-(defun qdfs-check (qdfs)
-
-; Qdfs might be nil, 'nil, or '(b1 ... bk) where each bi is Boolean.  Note that
-; 'nil is actually a special case of the last of these, where k=0.
-
-  (declare (xargs :guard t))
-  (or (null qdfs)
-      (and (true-listp qdfs)
-           (= (length qdfs) 2)
-           (eq (car qdfs) 'quote)
-           (boolean-listp (cadr qdfs)))))
-
-#-acl2-loop-only
-(defmacro ec-call1-raw (qdfs-in/qdfs-out x)
-
-; X is a call of ec-call.  Qdfs-in/qdfs-out is either nil or is a term of the
-; form (cons qdfs-in qdfs-out), where each of qdfs-in and qdfs-out is either
-; nil or the quoted :dfs-in/:dfs-out argument from an ec-call.
-
-  (declare (xargs :guard (or (null qdfs-in/qdfs-out)
-                             (and (true-listp qdfs-in/qdfs-out)
-                                  (eq (car qdfs-in/qdfs-out) 'cons)))))
-  (let ((qdfs-in (cadr qdfs-in/qdfs-out))
-        (qdfs-out (caddr qdfs-in/qdfs-out)))
-    (cond
-     ((not (and (consp x) (symbolp (car x))))
-
-; This case is normally impossible, as enforced by translate.  However, it can
-; happen if we are not translating for execution; an example is (non-exec
-; (ec-call x)).  In that case we simply cause an error at execution time, as a
-; precaution, while fully expecting that we never actually hit this case.
-
-      `(error "Implementation error: It is unexpected to be executing a ~
-               call~%of ec-call on other than the application of a symbol ~
-               to~%arguments, but we are executing it on the form,~%~s."
-              ',x))
-     ((not (qdfs-check qdfs-in))
-      `(error "Implementation error (or incorrect use of implementation ~%~
-               macros for ec-call): the :dfs-in argument should be nil or a ~%~
-               quoted list of booleans, but it is ~s."
-              ',qdfs-in))
-     ((not (qdfs-check qdfs-out))
-      `(error "Implementation error (or incorrect use of implementation ~%~
-               macros for ec-call): the :dfs-out argument should be nil or ~%~
-               a quoted list of booleans, but it is ~s."
-              ',qdfs-out))
-     (t
-      (let* ((dfs-in (and qdfs-in (member-eq t (cadr qdfs-in)) (cadr qdfs-in)))
-             (dfs-out (and qdfs-out (member-eq t (cadr qdfs-out)) (cadr qdfs-out)))
-             (fn (car x))
-             (*1*fn (*1*-symbol fn))
-             (*1*fn$inline (add-suffix (*1*-symbol (car x)) *inline-suffix*))
-             (*1*args (if dfs-in
-                          (loop for arg in (cdr x)
-                                as d in dfs-in
-                                collect
-                                (if d
-                                    `(rational ,arg)
-                                  arg))
-                        (cdr x)))
-             (form
-              `(cond (*safe-mode-verified-p*
-
-; We are presumably in a context where we know that evaluation will not lead to
-; an ill-guarded call in raw Lisp.  See *safe-mode-verified-p*.
-
-                      ,x)
-
-; Through Version_8.2 we had a single funcall below, where the first argument
-; depended on whether (fboundp ',*1*fn) or else (fboundp ',*1*fn$inline).  But
-; SBCL took a very long time to compile the function apply$-prim in
-; books/projects/apply-model-2/apply-prim.lisp (and perhaps other such
-; apply$-prim definitions), which we fixed by lifting those fboundp tests above
-; the calls of funcall.  This reduced the time (presumably virtually all of it
-; for compilation) from 1294.33 seconds to 8.12 seconds.
-
-                     ((fboundp ',*1*fn)
-                      (funcall ',*1*fn ,@*1*args))
-                     ((fboundp ',*1*fn$inline)
-                      (funcall
-; The following call of macro-function is a sanity check that could be
-; omitted.
-                       (assert$ (macro-function ',fn)
-                                ',*1*fn$inline)
-                       ,@*1*args))
-                     (t
-                      (error "Undefined function, ~s.  Please contact the ~
-                              ACL2 implementors."
-                             ',*1*fn)))))
-        (cond
-         ((null dfs-out) form)
-         ((null (cdr dfs-out)) ; hence dfs-out = (t)
-          `(ec-call1-raw-dfs ,form t ',x nil))
-         (t `(let ((lst (multiple-value-list ,form)))
-               (values-list
-                (loop for e in lst
-                      as flg in ',dfs-out
-                      as n from 0
-                      collect
-                      (ec-call1-raw-dfs e flg ',x n)))))))))))
-
-(defmacro ec-call1 (qdfs-in0 qdfs-out0 x)
-
-; We introduce ec-call1 inbetween the ultimate macroexpansion of an ec-call
-; form to a return-last form, simply because untranslate will produce (ec-call1
-; nil x) from (return-last 'ec-call1-raw nil x).
-
-  (let ((qdfs-in (if (null qdfs-in0) *nil* qdfs-in0))
-        (qdfs-out (if (null qdfs-out0) *nil* qdfs-out0)))
-    `(return-last 'ec-call1-raw
-                  ,(if (and (equal qdfs-in *nil*)
-                            (equal qdfs-out *nil*))
-                       *nil*
-                     `(cons ,qdfs-in ,qdfs-out))
-                  ,x)))
-
-(defmacro ec-call (&whole w x &key dfs-in dfs-out)
-  (declare (xargs :guard t))
-  (let ((dfs-in-check (qdfs-check dfs-in))
-        (dfs-out-check (qdfs-check dfs-out)))
-    (cond ((and dfs-in-check dfs-out-check)
-           `(ec-call1 ,dfs-in ,dfs-out ,x))
-          (t (illegal 'ec-call
-                      "The call~|~x0~|is illegal because the ~#1~[:dfs-in ~
-                       argument fails~/:dfs-out argument fails~/:dfs-in and ~
-                       :dfs-out arguments each fail~] to be either nil or a ~
-                       quoted true list of Booleans.  See :DOC ec-call."
-                      (list (cons #\0 w)
-                            (cons #\1 (cond (dfs-out-check 0)
-                                            (dfs-in-check 1)
-                                            (t 2)))))))))
-
 (defmacro non-exec (x)
   (declare (xargs :guard t))
   `(prog2$ (throw-nonexec-error :non-exec ',x)
@@ -9891,7 +9717,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defmacro verify-termination (&rest lst)
   `(make-event
-    (verify-termination-fn ',lst state)))
+    (verify-termination-fn ',lst state)
+    :on-behalf-of :quiet!))
 
 #+acl2-loop-only
 (defmacro verify-termination-boot-strap (&whole event-form &rest lst)
@@ -11776,7 +11603,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                                      (caddr x) tflg))
         ((eq x 'rational) (list 'rationalp var))
         ((eq x 'real) (list 'real/rationalp var))
-        ((eq x 'double-float) (list 'dfp var))
         ((eq x 'complex) (list 'complex/complex-rationalp var))
         ((eq x 'number) (list 'acl2-numberp var))
         ((and (consp x)
@@ -11978,18 +11804,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
  ;; This was modified to change the moniker 'complex to use
  ;; complexp instead of complex-rationalp.
 
-(defun translate-declaration-to-guard-gen (x var tflg wrld)
+(defun translate-declaration-to-guard-gen-rec (x var tflg wrld)
 
 ; Warning: Keep this in sync with non-common-lisp-compliants-in-satisfies.
 
 ; This function is typically called on the sort of x you might write in a TYPE
-; declaration, e.g., (DECLARE (TYPE x var1 ... varn)).  Thus, x might be
-; something like '(or symbol cons (integer 0 128)) meaning that var is either a
-; symbolp, a consp, or an integer in the given range.  X is taken as a
-; declaration about the variable symbol var and is converted into an either an
-; untranslated term or a translated term about var (depending on tflg), except
-; that we return nil if x is seen not to be a valid type-spec for ACL2.  See
-; get-guards2 for a discussion of tflg.
+; declaration, e.g., (DECLARE (TYPE x var1 ... varn)).  (Exception: This
+; doesn't comprehend double-float, which is handled in
+; translate-declaration-to-guard-gen.)  Thus, x might be something like '(or
+; symbol cons (integer 0 128)) meaning that var is either a symbolp, a consp,
+; or an integer in the given range.  X is taken as a declaration about the
+; variable symbol var and is converted into an either an untranslated term or a
+; translated term about var (depending on tflg), except that we return nil if x
+; is seen not to be a valid type-spec for ACL2.  See get-guards2 for a
+; discussion of tflg.
 
 ; Wrld is an ACL2 logical world or a symbol (typically, nil), the difference
 ; being that a symbol indicates that we should do a weaker check.  This extra
@@ -12010,7 +11838,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq (car x) 'not)
          (cond ((and (true-listp x)
                      (equal (length x) 2))
-                (let ((term (translate-declaration-to-guard-gen
+                (let ((term (translate-declaration-to-guard-gen-rec
                              (cadr x)
                              var
                              tflg
@@ -12043,12 +11871,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         ((eq (car x) 'complex)
          (cond ((and (consp (cdr x))
                      (null (cddr x)))
-                (let ((r (translate-declaration-to-guard-gen
+                (let ((r (translate-declaration-to-guard-gen-rec
                           (cadr x)
                           (list 'realpart var)
                           tflg
                           wrld))
-                      (i (translate-declaration-to-guard-gen
+                      (i (translate-declaration-to-guard-gen-rec
                           (cadr x)
                           (list 'imagpart var)
                           tflg
@@ -12064,7 +11892,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun translate-declaration-to-guard-gen-lst (l var tflg wrld)
 
 ; Wrld is an ACL2 logical world or a symbol; see
-; translate-declaration-to-guard-gen.
+; translate-declaration-to-guard-gen-rec.
 
   (declare (xargs ; :measure (acl2-count l)
             :guard (and (true-listp l)
@@ -12073,7 +11901,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                             (plist-worldp wrld)))
             :mode :program))
   (and (consp l)
-       (let ((frst (translate-declaration-to-guard-gen
+       (let ((frst (translate-declaration-to-guard-gen-rec
                     (car l)
                     var
                     tflg
@@ -12092,6 +11920,23 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
  )
 
+(defun translate-declaration-to-guard-gen (x var tflg wrld)
+
+; This is just translate-declaration-to-guard-gen-rec, except that double-float
+; cannot occur within other type expressions, so it is handled here.
+
+  (declare (xargs :guard (or (symbolp wrld)
+                             (plist-worldp wrld))
+                  :mode :program
+
+; See the comment above translate-declaration-to-guard/integer-gen.
+
+;                  :measure (acl2-count x)
+                  ))
+  (cond ((eq x 'double-float)
+         (list 'dfp var))
+        (t (translate-declaration-to-guard-gen-rec x var tflg wrld))))
+
 (defun translate-declaration-to-guard (x var wrld)
   (declare (xargs :guard (or (symbolp wrld)
                              (plist-worldp wrld))
@@ -12106,20 +11951,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; = nil for backwards compatibility.  See get-guards2 for a discussion of tflg.
 
   (translate-declaration-to-guard-gen x var nil wrld))
-
-(defun translate-declaration-to-guard-lst (l var wrld)
-  (declare (xargs ; :measure (acl2-count l)
-            :guard (and (true-listp l)
-                        (consp l)
-                        (or (null wrld)
-                            (plist-worldp wrld)))
-            :mode :program))
-
-; This is just the special case of translate-declaration-to-guard-gen-lst for
-; tflg = nil for backwards compatibility.  See get-guards2 for a discussion of
-; tflg.
-
-  (translate-declaration-to-guard-gen-lst l var nil wrld))
 
 (defun the-check (guard x y)
 
@@ -13248,7 +13079,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          (num ; to be the number of elements in the compressed alist
           1))
     (declare (type (integer 0 #.*array-maximum-length-bound*) num))
+    (when (not (array1p name l))
 
+; We avoid having to mark compress1 with 'invariant-risk (see
+; *boot-strap-invariant-risk-alist*) by checking array1p before compressing.
+; See community book books/system/tests/compress1-invariant-risk.lisp.
+
+      (hard-error 'compress1
+                  "Attempted to compress an alleged one-dimensional array ~
+                   that fails to satisfy (array1p name x) where:~|name = ~y0~
+                   x = ~Y12"
+                  (list (cons #\0 name)
+                        (cons #\1 l)
+                        (cons #\2 (evisc-tuple 4 12 nil nil)))))
     (when (and (null order)
                (> (length l) maximum-length))
       (hard-error 'compress1
@@ -13339,7 +13182,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
           ((null tl))
           (setf (svref ar (caar tl))
                 (cdar tl)))
-      (setq num (length (cdr l))))
+      (setq num (length l)))
      (t
       (do ((tl l (cdr tl)))
 ; The following termination test is true immediately if l consists only of the
@@ -13710,6 +13553,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
          ar
          in-order)
 
+    (when (not (array2p name l))
+
+; As with compress1, we avoid having to mark compress2 with 'invariant-risk
+; (see *boot-strap-invariant-risk-alist*) by checking array2p before
+; compressing.
+
+      (hard-error 'compress2
+                  "Attempted to compress an alleged two-dimensional array ~
+                   that fails to satisfy (array2p name x) where:~|name = ~y0~
+                   x = ~Y12"
+                  (list (cons #\0 name)
+                        (cons #\1 l)
+                        (cons #\2 (evisc-tuple 4 12 nil nil)))))
+
 ;  Get an array that is filled with the special mark *invisible-array-mark*.
 
     (cond ((and old
@@ -13777,10 +13634,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                     (caaar tl))
                                (the (integer 0 #.*array-maximum-length-bound*)
                                     (caaadr tl)))
-                            (> (the (integer 0 #.*array-maximum-length-bound*)
-                                    (cdaar tl))
-                               (the (integer 0 #.*array-maximum-length-bound*)
-                                    (cdaadr tl)))))
+                            (>= (the (integer 0 #.*array-maximum-length-bound*)
+                                     (cdaar tl))
+                                (the (integer 0 #.*array-maximum-length-bound*)
+                                     (cdaadr tl)))))
                    (setq in-order nil)
                    (return nil)))))
             (t (setq in-order nil)))
@@ -17205,7 +17062,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ((eql op *BOOLE-NOR*)    (lognor i1 i2))
     ((eql op *BOOLE-ORC1*)   (logorc1 i1 i2))
     ((eql op *BOOLE-ORC2*)   (logorc2 i1 i2))
-    ((eql op *BOOLE-SET*)    1)
+    ((eql op *BOOLE-SET*)    -1)
     ((eql op *BOOLE-XOR*)    (logxor i1 i2))
     (t 0) ; added so that we get an integer type for integer i1 and i2
     ))
@@ -22540,6 +22397,181 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (xargs :guard (state-p state)))
   (getpropc 'known-package-alist 'global-value))
 
+;  Ec-call
+
+#-acl2-loop-only
+(declaim (inline ec-call1-raw-dfs))
+
+#-acl2-loop-only
+(defun ec-call1-raw-dfs (x flg form n)
+
+; If flg is nil or x is a double-float, then return x.  Otherwise x should be a
+; representable rational (because x was produced by a df or df{i} expression),
+; and we return the double-float that represents x.
+
+; But what is the point of this function?
+
+; Ec-call presents a bit of an implementation challenge.  Recall that ec-call
+; invokes executable-counterpart (*1*) functions.  Also note that code
+; generated for *1* functions is designed to return ordinary objects, not
+; double-floats.  Yet ec-call invokes *1* functions, hence returns ordinary
+; objects where raw Lisp code might expect a double-float.
+
+; When a guard-verified function or program-mode function leads to evaluation
+; of an ec-call form in raw Lisp, the caller may expect double-float outputs.
+; So ec-call's expansions in raw Lisp need to make adjustments to the outputs
+; when double-floats are expected.  The :dfs-out argument of ec-call tells Lisp
+; when to convert rationals returned by a *1* function to double-floats.
+
+  (cond ((null flg) x)
+        ((typep x 'double-float) x)
+        (t (let ((val (and (rationalp x)
+                           (let ((val (to-df x)))
+                             (and (= val x)
+                                  val)))))
+             (or val
+                 (let ((*print-pretty* t))
+                   (error "Implementation error (please contact the ACL2 ~
+                           implementors):~%~s error:~%Form: ~s~%Value~a that ~
+                           does not represent a double-float:~%  ~s"
+                          'ec-call
+                          form
+                          (if n
+                              (format nil " (at position ~s)" n)
+                            "")
+                          x)))))))
+
+(defun qdfs-check (qdfs)
+
+; Qdfs might be nil, 'nil, or '(b1 ... bk) where each bi is Boolean.  Note that
+; 'nil is actually a special case of the last of these, where k=0.
+
+  (declare (xargs :guard t))
+  (or (null qdfs)
+      (and (true-listp qdfs)
+           (= (length qdfs) 2)
+           (eq (car qdfs) 'quote)
+           (boolean-listp (cadr qdfs)))))
+
+#-acl2-loop-only
+(defmacro ec-call1-raw (qdfs-in/qdfs-out x)
+
+; X is expected to be the argument of a call of ec-call.  Qdfs-in/qdfs-out is
+; expected to be either nil or a term of the form (cons qdfs-in qdfs-out),
+; where each of qdfs-in and qdfs-out is either nil or the quoted
+; :dfs-in/:dfs-out argument from an ec-call.
+
+  (mv-let (flg qdfs-in qdfs-out)
+    (cond ((equal qdfs-in/qdfs-out ''nil)
+           (mv t nil nil))
+          ((and (true-listp qdfs-in/qdfs-out)
+                (eq (car qdfs-in/qdfs-out) 'cons))
+           (mv t (cadr qdfs-in/qdfs-out) (caddr qdfs-in/qdfs-out)))
+          (t (mv nil nil nil)))
+    (cond
+     ((not (and flg
+                (true-listp x)
+                (symbolp (car x))
+                (qdfs-check qdfs-in)
+                (qdfs-check qdfs-out)))
+
+; This case is normally impossible, as enforced by translate.  However, it can
+; happen if we are not translating for execution; an example is (non-exec
+; (ec-call x)).  In that case we simply cause an error at execution time, as a
+; precaution, while fully expecting that we never actually hit this case.
+
+      `(er hard! 'ec-call1-raw
+           "Ill-formed call of ~x0, which is presumably not from the expansion of a call
+           of ~x1:~|~x2"
+           'ec-call1-raw
+           'ec-call
+           '(ec-call1-raw ,qdfs-in/qdfs-out ,x)))
+     (t
+      (let* ((dfs-in (and qdfs-in (member-eq t (cadr qdfs-in)) (cadr qdfs-in)))
+             (dfs-out (and qdfs-out (member-eq t (cadr qdfs-out)) (cadr qdfs-out)))
+             (fn (car x))
+             (*1*fn (*1*-symbol fn))
+             (*1*fn$inline (add-suffix (*1*-symbol (car x)) *inline-suffix*))
+             (*1*args (if dfs-in
+                          (loop for arg in (cdr x)
+                                as d in dfs-in
+                                collect
+                                (if d
+                                    `(rational ,arg)
+                                  arg))
+                        (cdr x)))
+             (form
+              `(cond (*safe-mode-verified-p*
+
+; We are presumably in a context where we know that evaluation will not lead to
+; an ill-guarded call in raw Lisp.  See *safe-mode-verified-p*.
+
+                      ,x)
+
+; Through Version_8.2 we had a single funcall below, where the first argument
+; depended on whether (fboundp ',*1*fn) or else (fboundp ',*1*fn$inline).  But
+; SBCL took a very long time to compile the function apply$-prim in
+; books/projects/apply-model-2/apply-prim.lisp (and perhaps other such
+; apply$-prim definitions), which we fixed by lifting those fboundp tests above
+; the calls of funcall.  This reduced the time (presumably virtually all of it
+; for compilation) from 1294.33 seconds to 8.12 seconds.
+
+                     ((fboundp ',*1*fn)
+                      (funcall ',*1*fn ,@*1*args))
+                     ((fboundp ',*1*fn$inline)
+                      (funcall
+; The following call of macro-function is a sanity check that could be
+; omitted.
+                       (assert$ (macro-function ',fn)
+                                ',*1*fn$inline)
+                       ,@*1*args))
+                     (t
+                      (error "Undefined function, ~s.  Please contact the ~
+                              ACL2 implementors."
+                             ',*1*fn)))))
+        (cond
+         ((null dfs-out) form)
+         ((null (cdr dfs-out)) ; hence dfs-out = (t)
+          `(ec-call1-raw-dfs ,form t ',x nil))
+         (t `(let ((lst (multiple-value-list ,form)))
+               (values-list
+                (loop for e in lst
+                      as flg in ',dfs-out
+                      as n from 0
+                      collect
+                      (ec-call1-raw-dfs e flg ',x n)))))))))))
+
+(defmacro ec-call1 (qdfs-in0 qdfs-out0 x)
+
+; We introduce ec-call1 inbetween the ultimate macroexpansion of an ec-call
+; form to a return-last form, simply because untranslate will produce (ec-call1
+; nil x) from (return-last 'ec-call1-raw nil x).
+
+  (let ((qdfs-in (if (null qdfs-in0) *nil* qdfs-in0))
+        (qdfs-out (if (null qdfs-out0) *nil* qdfs-out0)))
+    `(return-last 'ec-call1-raw
+                  ,(if (and (equal qdfs-in *nil*)
+                            (equal qdfs-out *nil*))
+                       *nil*
+                     `(cons ,qdfs-in ,qdfs-out))
+                  ,x)))
+
+(defmacro ec-call (&whole w x &key dfs-in dfs-out)
+  (declare (xargs :guard t))
+  (let ((dfs-in-check (qdfs-check dfs-in))
+        (dfs-out-check (qdfs-check dfs-out)))
+    (cond ((and dfs-in-check dfs-out-check)
+           `(ec-call1 ,dfs-in ,dfs-out ,x))
+          (t (illegal 'ec-call
+                      "The call~|~x0~|is illegal because the ~#1~[:dfs-in ~
+                       argument fails~/:dfs-out argument fails~/:dfs-in and ~
+                       :dfs-out arguments each fail~] to be either nil or a ~
+                       quoted true list of Booleans.  See :DOC ec-call."
+                      (list (cons #\0 w)
+                            (cons #\1 (cond (dfs-out-check 0)
+                                            (dfs-in-check 1)
+                                            (t 2)))))))))
+
 ;  Prin1
 
 (defun symbol-in-current-package-p (x state)
@@ -22879,6 +22911,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; untouchable!)
 
     aset1-trusted ; version of aset1 without invariant-risk
+
+; Here are proof-builder functions to protect.  We are playing it safe here; as
+; of this writing (9/2026), we haven't tried to exploit the lack of
+; untouchability of these functions up till now.
+
+    initialize-pc-acl2
+    pc-single-step-primitive
+    pc-single-step
+    assign-event-name-and-rule-classes
+    save-fn
     ))
 
 (defconst *initial-untouchable-vars*
@@ -23027,7 +23069,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     raw-include-book-dir!-alist raw-include-book-dir-alist
     deferred-ttag-notes
     deferred-ttag-notes-saved
-    pc-assign
     illegal-to-certify-message
     acl2-sources-dir
     including-uncertified-p
@@ -23041,6 +23082,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     fast-cert-status
     inside-progn-fn1
     warnings-as-errors
+    pc-output pc-ss-alist
     ))
 
 ; There is a variety of state global variables, 'ld-skip-proofsp among them,
@@ -23256,13 +23298,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; Keep this code in sync with legal-acl2-character-p.
 
-                (cons "The only legal ACL2 characters are those recognized by ~
-                       the function legal-acl2-character-p.  The character ~
-                       with ~x0 = ~x1 that CLTL displays as ~s2 is not one of ~
-                       those."
-                      (list (cons #\0 'char-code)
-                            (cons #\1 (char-code x))
-                            (cons #\2 (coerce (list x) 'string)))))))
+                (let ((display (ignore-errors (coerce (list x) 'string))))
+                  (cons "The only legal ACL2 characters are those recognized ~
+                         by the function legal-acl2-character-p.  The ~
+                         character with ~x0 = ~x1~#2~[~/ that CLTL displays ~
+                         as ~s3~] is not one of those."
+                        (list (cons #\0 'char-code)
+                              (cons #\1 (char-code x))
+                              (cons #\2 (if (null display) 0 1))
+                              (cons #\3 display)))))))
         ((typep x 'ratio)
          (or (bad-lisp-atomp (numerator x))
              (bad-lisp-atomp (denominator x))))
@@ -23624,11 +23668,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                                (list (cons #\0 val)))
                    state))))
 
+(defmacro default-measure-function-from-table (alist)
+  `(or (cdr (assoc-eq :measure-function ,alist))
+       'acl2-count))
+
 (defun default-measure-function (wrld)
   (declare (xargs :guard (and (plist-worldp wrld)
-                              (alistp (table-alist 'acl2-defaults-table wrld)))))
-  (or (cdr (assoc-eq :measure-function (table-alist 'acl2-defaults-table wrld)))
-      'acl2-count))
+                              (alistp (table-alist 'acl2-defaults-table
+                                                   wrld)))))
+  (default-measure-function-from-table (table-alist 'acl2-defaults-table
+                                                    wrld)))
 
 #+acl2-loop-only
 (defmacro set-measure-function (name)
@@ -23642,11 +23691,16 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (declare (ignore name))
   nil)
 
+(defmacro default-well-founded-relation-from-table (alist)
+  `(or (cdr (assoc-eq :well-founded-relation ,alist))
+       'o<))
+
 (defun default-well-founded-relation (wrld)
   (declare (xargs :guard (and (plist-worldp wrld)
-                              (alistp (table-alist 'acl2-defaults-table wrld)))))
-  (or (cdr (assoc-eq :well-founded-relation (table-alist 'acl2-defaults-table wrld)))
-      'o<))
+                              (alistp (table-alist 'acl2-defaults-table
+                                                   wrld)))))
+  (default-well-founded-relation-from-table (table-alist 'acl2-defaults-table
+                                                         wrld)))
 
 #+acl2-loop-only
 (defmacro set-well-founded-relation (rel)
@@ -24395,6 +24449,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun untrans-table (wrld)
   (declare (xargs :guard (plist-worldp wrld)))
   (table-alist 'untrans-table wrld))
+
+(table untrans-table nil nil
+       :guard
+       (and (symbolp key)
+            (consp val)
+            (symbolp (car val))
+            (booleanp (cdr val))))
 
 (table untrans-table nil
        '((binary-+ + . t)

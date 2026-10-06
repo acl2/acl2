@@ -15,6 +15,7 @@
 (include-book "alen1")
 (include-book "constants")
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
+(local (include-book "bounded-integer-alistp"))
 (local (include-book "maximum-length"))
 (local (include-book "header"))
 (local (include-book "dimensions"))

@@ -41,13 +41,19 @@
 (mutual-recursion
 
   (defund embed (x phi k f)
-    (declare (xargs :measure (list (len phi) (acl2-count x))))
+    (declare (xargs :measure (list (len phi) (acl2-count x))
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                    :well-founded-relation l<))
     (if (consp phi)
         (peval (pembed x (cdr phi) k f) (car phi) k)
       (flift x f k)))
 
   (defun pembed (p phi k f)
-    (declare (xargs :measure (list (len phi) (acl2-count p))))
+    (declare (xargs :measure (list (len phi) (acl2-count p))
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                    :well-founded-relation l<))
     (if (consp p)
         (cons (embed (car p) phi k f)
               (pembed (cdr p) phi k f))

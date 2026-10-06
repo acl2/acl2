@@ -515,7 +515,7 @@ then restart the ACL2-Doc browser to view that manual."
 ; Based on http://ergoemacs.org/emacs/elisp_syntax_coloring.html:
 (defvar acl2-doc-keywords
   '(("\\[\\([^ \t]*[^0-9 \t][^ \t]*\\)\\]"
-     . 1)))
+     1 'acl2-doc-link-face)))
 
 ; Can be modified by user; set to the desired link color, or nil if none.
 (defv *acl2-doc-link-color* "#0000FF") ; blue
@@ -542,9 +542,7 @@ then restart the ACL2-Doc browser to view that manual."
           (lambda ()
             (when *acl2-doc-link-color*
               (set-face-foreground 'acl2-doc-link-face *acl2-doc-link-color*)
-              (setq font-lock-defaults '(acl2-doc-keywords t))
-              (set (make-local-variable 'font-lock-keyword-face)
-                   'acl2-doc-link-face))))
+              (setq font-lock-defaults '(acl2-doc-keywords t)))))
 
 ; Arrange that files ending in .acl2-doc come up in acl2-doc mode.
 ; See also the emacs documentation for auto-mode-alist.

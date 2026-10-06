@@ -47,7 +47,12 @@
                   (nat-set-p (treeset::empty))
                   (not (nat-set-p (treeset::insert 'a (treeset::empty))))
                   (not (nat-set-p 7))
-                  (equal (nat-set-fix s) s)))))
+                  (equal (nat-set-fix s) s))))
+  ;; The fixer is bounded by any bound of its argument.
+  (defthm subset-of-nat-set-fix-test
+    (implies (treeset::subset x y)
+             (treeset::subset (nat-set-fix x) y))
+    :hints (("Goal" :in-theory '(subset-of-nat-set-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -345,3 +350,31 @@
 
     (fty::deftreeset dup-bset
       :elt-type dup)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A loop over a typed treeset. An iterator carries no element type, so the
+;; guard of nat-id at (treeset::value iter) is discharged by the generated
+;; natp-of-value-when-nat-set-p-of-from-iter, with no hints.
+
+(include-book "kestrel/data/treeset/iter" :dir :system)
+
+(must-succeed*
+  (fty::deftreeset nat-set
+    :elt-type nat)
+
+  (define nat-id ((n natp))
+    (mbe :logic (nfix n) :exec n))
+
+  (define nat-set-loop ((iter treeset::iterp))
+    :guard (nat-set-p (treeset::from-iter iter))
+    (if (treeset::has-valuep iter)
+        (cons (nat-id (treeset::value iter))
+              (nat-set-loop (treeset::next iter)))
+      nil)
+    :measure (treeset::nexts iter))
+
+  (assert! (equal (nat-set-loop
+                   (treeset::iter-min
+                    (treeset::insert 2 (treeset::insert 1 (treeset::empty)))))
+                  '(1 2))))

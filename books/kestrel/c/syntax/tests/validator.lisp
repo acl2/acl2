@@ -24,6 +24,7 @@
 ;; LONG-BYTES is the number of bytes of longs (default 8).
 ;; LLONG-BYTES is the number of bytes of long longs (default 8).
 ;; PLAIN-CHAR-SIGNEDP is T if plain chars are signed, else NIL (the default).
+;; KEEP-GOING is T to continue past a failing unit, else NIL (the default).
 ;; Optional COND may be over variables AST.
 
 (defconst *test-valid-allowed-options*
@@ -33,6 +34,7 @@
     :long-bytes
     :llong-bytes
     :plain-char-signedp
+    :keep-going
     :cond))
 
 (defconst *test-valid-fail-allowed-options*
@@ -82,6 +84,7 @@
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
        (dialect (or (cdr (assoc-eq :dialect options))
                     '(c::make-dialect :std (c::standard-c17))))
+       (keep-going (cdr (assoc-eq :keep-going options)))
        (cond (cdr (assoc-eq :cond options)))
        (bool-bytes 1)
        (float-bytes 4)
@@ -101,9 +104,9 @@
                              :ldouble-bytes ,ldouble-bytes
                              :pointer-bytes ,pointer-bytes
                              :plain-char-signedp ,plain-char-signedp))
-            ((mv erp1 ast) (parse-fileset ',fileset ,dialect t nil))
-            ((mv erp2 ast) (dimb-trans-ensemble ast ienv nil))
-            ((mv erp3 ?ast) (valid-trans-ensemble ast ienv nil)))
+            ((mv erp1 ast) (parse-fileset ',fileset ,dialect t ,keep-going))
+            ((mv erp2 ast) (dimb-trans-ensemble ast ienv ,keep-going))
+            ((mv erp3 ?ast) (valid-trans-ensemble ast ienv ,keep-going)))
          (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
                (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2))
                (erp3 (cw "~%VALIDATOR ERROR: ~@0~%" erp3))
@@ -174,6 +177,26 @@
 ")
 
 (test-valid
+ "int f(int x, int *p) {
+    int y = __extension__ (int)*p;
+    if (__extension__ !x)
+      return __extension__ -y;
+    return __extension__ p[x]++ + __extension__ sizeof(int);
+  }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "int f(int x) {
+    return __extension__ __extension__ (int)-x;
+  }
+  int g(int x) {
+    return __extension__ f(x);
+  }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-valid
  "void f();
 ")
 
@@ -237,6 +260,23 @@ void f() {
 (test-valid
  "void f(void * x) {
   f(0);
+}
+")
+
+;; As in assignment, GCC and Clang allow a function pointer
+;; to be passed for a void pointer, but standard C does not.
+(test-valid
+ "void f(void * x);
+void g(void) {
+  f(g);
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "void f(void * x);
+void g(void) {
+  f(g);
 }
 ")
 
@@ -2055,3 +2095,421 @@ int (*f(int))[20];
   "void g(int a[static 10], int b[const static 20]);
 void h(int [static 10], int [const static 20]);
 ")
+
+(test-valid
+ "int f(double x) {
+  return __builtin_isinf(x);
+}
+void * g(void) {
+  return __builtin_frame_address(0);
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; Under :keep-going, a unit that fails disambiguation
+;; does not discard the units disambiguated before it.
+(test-valid
+ "int a;
+"
+ "int i = sizeof(x);
+"
+ "int b;
+"
+ :keep-going t
+ :cond (equal (omap::size (trans-ensemble->units ast)) 2))
+
+;; Nor does a unit that fails validation discard
+;; the information from the units validated before it.
+(test-valid
+ "int a;
+"
+ "int e = ~1.0;
+"
+ "int b;
+"
+ :keep-going t
+ :cond (b* ((externals (trans-ensemble-vinfo->externals
+                        (trans-ensemble->info ast))))
+         (and (equal (omap::size (trans-ensemble->units ast)) 2)
+              (treemap::lookup (ident "a") externals)
+              (treemap::lookup (ident "b") externals))))
+
+;; Both operands of a conditional expression may have void type [C17:6.5.15/3].
+(test-valid
+ "void f(int x) {
+  x ? (void)0 : (void)0;
+}
+")
+
+;; GCC and Clang also allow just one of the operands to have void type.
+(test-valid
+ "void f(int x) {
+  x ? (void)0 : 0;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "void f(int x) {
+  x ? (void)0 : 0;
+}
+")
+
+;; The controlling expression of a selection or iteration statement
+;; undergoes array-to-pointer and function-to-pointer conversion
+;; [C17:6.3.2.1/3] [C17:6.3.2.1/4], so it may be an array or a function
+;; designator [C17:6.8.4.1/1] [C17:6.8.5/2].
+(test-valid
+ "void f(void) {
+  char a[8];
+  if (a) {}
+  if (a) {} else {}
+  while (a) break;
+  do break; while (a);
+  for (; a; ) break;
+  for (int i = 0; a; ) break;
+}
+")
+
+(test-valid
+ "void g(void);
+void f(void) {
+  if (g) {}
+  if (g) {} else {}
+  while (g) break;
+  do break; while (g);
+  for (; g; ) break;
+  for (int i = 0; g; ) break;
+}
+")
+
+(test-valid-fail
+ "struct s { int m; };
+void f(struct s x) {
+  if (x) {}
+}
+")
+
+;; A subscript designator requires an array
+;; with a nonnegative index [C17:6.7.9/6].
+(test-valid-fail
+ "struct s { int m; };
+struct s v = {[0] = 1};
+")
+
+(test-valid-fail
+ "int a[3] = {[-1] = 1};
+")
+
+;; Positional initializers after a subscript designator
+;; continue with the next subobject [C17:6.7.9/17].
+(test-valid
+ "struct t { int a[2]; int b; };
+struct t x = {.a[1] = 1, 2};
+int y[3] = {[1] = 2, 3};
+")
+
+;; In a function definition, only the innermost function declarator
+;; gives the parameters of the function being defined.
+;; An outer function declarator, whether with a parameter type list
+;; or with an identifier list, is part of the return type.
+(test-valid
+ "int k(a, b) int a, b; {
+  return a + b;
+}
+")
+
+(test-valid
+ "int (*h(a))(int) int a; {
+  (void)a;
+  return 0;
+}
+")
+
+(test-valid
+ "int (*g(a))() int a; {
+  (void)a;
+  return 0;
+}
+")
+
+(test-valid
+ "void (*f(int x))() {
+  (void)x;
+  return 0;
+}
+")
+
+;; GCC and Clang allow comparing a pointer with a null pointer constant
+;; using a relational operator, in either order.
+(test-valid
+ "int f(int * p) {
+  return (p > 0) + (p <= 0) + (0 < p) + (0 >= p);
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "int f(int * p) {
+  return p > 0;
+}
+")
+
+;; The left operand of += and -= must be a modifiable lvalue [C17:6.5.16/2],
+;; so it does not undergo array-to-pointer or function-to-pointer conversion.
+;; Array parameters are adjusted to pointers [C17:6.7.6.3/7].
+(test-valid-fail
+ "void f(void) {
+  int a[3];
+  a += 1;
+}
+")
+
+(test-valid-fail
+ "void g(void);
+void f(void) {
+  g -= 1;
+}
+")
+
+(test-valid
+ "void f(int * p, int a[3]) {
+  p += 1;
+  a -= 1;
+}
+")
+
+;; Declarations of the same tagged type in the same scope
+;; must use the same kind of tag [C17:6.7.2.3/2].
+(test-valid-fail
+ "union s;
+struct s { int m; };
+")
+
+(test-valid-fail
+ "struct s;
+union s { int m; };
+")
+
+(test-valid-fail
+ "union s;
+struct s {};
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; A tag in an inner scope declares a distinct type [C17:6.7.2.3/5].
+(test-valid
+ "struct s;
+void f(void) {
+  union s { int m; } x;
+}
+")
+
+;; GCC labels as values and computed goto.
+(test-valid
+ "int f(int n) {
+  void * p = n ? &&a : &&b;
+  goto *p;
+ a: return 1;
+ b: return 0;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; The elements of a UTF-8 string literal have type char in C17
+;; [C17:6.4.5/6], but char8_t, i.e. unsigned char, in C23
+;; [C23:6.4.5/6] [C23:7.30/3].
+(test-valid
+ "char * p = u8\"x\";
+")
+
+(test-valid
+ "unsigned char * p = u8\"x\";
+unsigned char * q = u8\"x\" u8\"y\";
+"
+ :dialect (c::make-dialect :std (c::standard-c23)))
+
+(test-valid-fail
+ "char * p = u8\"x\";
+"
+ :dialect (c::make-dialect :std (c::standard-c23)))
+
+;; A cast type must be void or scalar [C17:6.5.4/2],
+;; even if the type of the operand is unknown,
+;; as for the generic selection below.
+(test-valid-fail
+ "struct S { int m; };
+struct S v;
+void f(void) {
+  struct S t = (struct S) _Generic(1, default: v);
+}
+")
+
+(test-valid-fail
+ "union U { int i; double d; };
+int x;
+void f(void) {
+  union U u = (union U) x;
+}
+")
+
+(test-valid
+ "int x;
+void f(void) {
+  (void) __atomic_load_n(&x, 0);
+  long y = (long) __atomic_load_n(&x, 0);
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; GCC and Clang allow casting a structure or union to its own type,
+;; and casting to a union type from the type of one of its members.
+(test-valid
+ "struct S { int m; };
+union U { int i; double d; };
+struct S v;
+int x;
+void f(void) {
+  struct S t = (struct S) v;
+  struct S w = (struct S) _Generic(1, default: v);
+  union U u = (union U) x;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "struct S { int m; };
+int x;
+void f(void) {
+  struct S t = (struct S) x;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "int x;
+void f(void) {
+  (int[2]) x;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; A declaration of the form "struct-or-union identifier ;"
+;; declares the identifier as the tag of a new type in the current scope,
+;; even if a tag with the same name is visible from an outer scope
+;; [C17:6.7.2.3/7].
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  struct s;
+  struct s * p = 0;
+  struct s { double d; };
+  (void)p->d;
+}
+")
+
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  union s;
+  union s * p = 0;
+  union s { double d; };
+  (void)p->d;
+}
+")
+
+;; In the same scope, it refers to the tag already declared there.
+(test-valid
+ "struct s;
+struct s;
+struct s { int m; };
+struct s x;
+")
+
+(test-valid-fail
+ "void f(void) {
+  struct s;
+  union s;
+}
+")
+
+;; Without such a declaration, a visible tag from an outer scope is used
+;; [C17:6.7.2.3/9].
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  struct s * p = 0;
+  (void)p->a;
+}
+")
+
+;; With GCC extensions, a declaration with a type qualifier
+;; is not a standalone tag declaration,
+;; but one with attributes is.
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  const struct s;
+  struct s * p = 0;
+  struct s { double d; };
+  (void)p->a;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  struct __attribute__((packed)) s;
+  struct s * p = 0;
+  struct s { double d; };
+  (void)p->d;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  struct s __attribute__((packed));
+  struct s * p = 0;
+  struct s { double d; };
+  (void)p->d;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; With Clang extensions, a declaration is a standalone tag declaration
+;; if the structure or union type specifier is the last specifier.
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  const struct s;
+  struct s * p = 0;
+  struct s { double d; };
+  (void)p->d;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  struct s const;
+  struct s * p = 0;
+  struct s { double d; };
+  (void)p->a;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-valid
+ "struct s { int a; };
+void f(void) {
+  struct s __attribute__((packed));
+  struct s * p = 0;
+  struct s { double d; };
+  (void)p->a;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))

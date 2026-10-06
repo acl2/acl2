@@ -29,17 +29,17 @@
            (alistp (acons-unique key val alist)))
   :hints (("Goal" :in-theory (enable acons-unique))))
 
-(defthmd not-member-equal-of-strip-cars-of-acons-unique
-  (implies (and (not (member-equal key1 (strip-cars alist)))
-                (not (equal key1 key2)))
-           (not (member-equal key1 (strip-cars (acons-unique key2 val alist)))))
+(defthm member-equal-of-strip-cars-of-acons-unique
+  (iff (member-equal key1 (strip-cars (acons-unique key2 val alist)))
+       (or (equal key1 key2)
+           (member-equal key1 (strip-cars alist))))
   :hints (("Goal" :in-theory (enable acons-unique))))
 
 (defthmd no-duplicatesp-equal-of-strip-cars-of-acons-unique
   (implies (no-duplicatesp-equal (strip-cars alist))
            (no-duplicatesp-equal (strip-cars (acons-unique key val alist))))
   :hints (("Goal" :in-theory (enable acons-unique
-                                     not-member-equal-of-strip-cars-of-acons-unique))))
+                                     member-equal-of-strip-cars-of-acons-unique))))
 
 (defthm symbol-alistp-of-acons-unique
   (implies (symbol-alistp alist)
@@ -65,6 +65,7 @@
           (cons (cons key val) (cdr alist))
         (cons entry (acons-unique-eq key val (cdr alist)))))))
 
+;; We always immediately turn acons-unique-eq into acons-unique for reasoning.
 (defthm acons-unique-eq-becomes-acons-unique
   (equal (acons-unique-eq key val alist)
          (acons-unique key val alist))
@@ -72,20 +73,3 @@
                                      acons-unique))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Could make non-local if we ever need it.
-(local
- (defthm member-equal-of-strip-cars-of-acons-unique
-   (iff (member-equal key (strip-cars (acons-unique key2 val alist)))
-        (or (equal key key2)
-            (member-equal key (strip-cars alist))))
-   :hints (("Goal" :in-theory (enable acons-unique)))))
-
-;; Could make non-local if we ever need it.
-(local
- ;; If there were no duplicate keys before, there are still no duplicate keys
- ;; after we call acons-unique-eq.
- (defthm no-duplicatesp-equal-of-strip-cars-of-acons-unique-eq
-   (implies (no-duplicatesp-equal (strip-cars alist))
-            (no-duplicatesp-equal (strip-cars (acons-unique-eq key val alist))))
-   :hints (("Goal" :in-theory (enable acons-unique)))))

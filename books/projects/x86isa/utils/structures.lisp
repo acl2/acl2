@@ -467,36 +467,45 @@
   (define evex->aaa ((evex-prefixes evex-prefixes-p))
     :returns (aaa (unsigned-byte-p 3 aaa) :hyp :guard)
     :short "Get the @('aaa') field of @('evex-prefixes')."
+    ;; We inline these to avoid slow compilation in the
+    ;; evex-opcodes-dispatch book:
+    :inline nil
     (evex-byte3->aaa (evex-prefixes->byte3 evex-prefixes)))
 
   (define evex->z ((evex-prefixes evex-prefixes-p))
     :returns (z (unsigned-byte-p 1 z) :hyp :guard)
     :short "Get the @('z') field of @('evex-prefixes')."
+    :inline nil
     (evex-byte3->z (evex-prefixes->byte3 evex-prefixes)))
 
   (define evex->vvvv ((evex-prefixes evex-prefixes-p))
     :returns (vvvv (unsigned-byte-p 4 vvvv) :hyp :guard)
     :short "Get the @('vvvv') field of @('evex-prefixes')."
+    :inline nil
     (evex-byte2->vvvv (evex-prefixes->byte2 evex-prefixes)))
 
   (define evex->v-prime ((evex-prefixes evex-prefixes-p))
     :returns (v-prime (unsigned-byte-p 1 v-prime) :hyp :guard)
     :short "Get the @('v-prime') field of @('evex-prefixes')."
+    :inline nil
     (evex-byte3->v-prime (evex-prefixes->byte3 evex-prefixes)))
 
   (define evex->vl/rc ((evex-prefixes evex-prefixes-p))
     :returns (vl/rc (unsigned-byte-p 2 vl/rc) :hyp :guard)
     :short "Get the @('vl/rc') field of @('evex-prefixes')."
+    :inline nil
     (evex-byte3->vl/rc (evex-prefixes->byte3 evex-prefixes)))
 
   (define evex->pp ((evex-prefixes evex-prefixes-p))
     :returns (pp (unsigned-byte-p 2 pp) :hyp :guard)
     :short "Get the @('pp') field of @('evex-prefixes')."
+    :inline nil
     (evex-byte2->pp (evex-prefixes->byte2 evex-prefixes)))
 
   (define evex->w ((evex-prefixes evex-prefixes-p))
     :returns (w (unsigned-byte-p 1 w) :hyp :guard)
     :short "Get the @('W') field of @('evex-prefixes')."
+    :inline nil
     (evex-byte2->w (evex-prefixes->byte2 evex-prefixes))))
 
 (defsection ModR/M-structures

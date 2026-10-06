@@ -120,9 +120,9 @@
      In C, @('0') is always an octal integer constant,
      so our abstract syntax here captures a bit more,
      namely a decimal integer constant 0 that does not exist in C.
-     This is not an issue for now,
-     because our pretty-printer turns that into @('0')
-     in the same way as if it were octal.")
+     When mapping to the abstract syntax for tools,
+     @(tsee c$::ildm-iconst) turns a decimal integer constant 0
+     into an octal integer constant 0.")
    (xdoc::p
     "In base 8, the value has a unique syntactic representation
      if we assume exactly one leading 0,
@@ -242,7 +242,7 @@
      elements of a sequence are present or absent:
      for example, @('(make-tyspecseq-sshort :signed t :int nil)')
      represents @('signed short');
-     see the pretty-printer for details.
+     see @(tsee c$::ildm-tyspecseq) for the mapping to the syntax for tools.
      However, we do not capture
      different sequentializations of the same multiset,
      e.g. we capture @('signed short') but not @('short signed').

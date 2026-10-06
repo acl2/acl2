@@ -68,7 +68,7 @@
      ;; Interesting case
      :ident (b* ((lookup (omap::assoc expr.ident subst)))
               (expr-fix (if (and lookup
-                                 (not (in expr.ident bound-vars)))
+                                 (not (treeset::in expr.ident bound-vars)))
                             (cdr lookup)
                           expr)))
      :const (expr-fix expr)
@@ -672,7 +672,7 @@
     (dirdeclor-case
      dirdeclor
      :ident (mv (dirdeclor-fix dirdeclor)
-                (insert dirdeclor.ident (ident-set-fix bound-vars))
+                (treeset::insert dirdeclor.ident (ident-set-fix bound-vars))
                 nil)
      :paren
      (b* (((mv inner bound-vars -)
@@ -1501,7 +1501,7 @@
        (specs (decl-spec-list-subst-free fundef.specs subst bound-vars))
        ((mv declor bound-vars param-bound-vars)
         (declor-subst-free fundef.declor subst bound-vars))
-       (body-bound-vars (union bound-vars param-bound-vars))
+       (body-bound-vars (treeset::union bound-vars param-bound-vars))
        (attribs (attrib-spec-list-subst-free fundef.attribs subst body-bound-vars))
        ((mv declons body-bound-vars)
         (declon-list-subst-free fundef.declons subst body-bound-vars))

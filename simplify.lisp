@@ -6609,7 +6609,7 @@
          :all-fnnames '(acl2-count o< integerp not < equal))
 
 ; Realpart and imagpart decrease on complexps.
-   #+:non-standard-analysis
+   #+non-standard-analysis
    (make built-in-clause
          :nume nil
          :rune *fake-rune-for-anonymous-enabled-rule*
@@ -6618,7 +6618,7 @@
                    (not (complexp x)))
          :all-fnnames
          '(acl2-count realpart o< complexp not))
-   #-:non-standard-analysis
+   #-non-standard-analysis
    (make built-in-clause
          :nume nil
          :rune *fake-rune-for-anonymous-enabled-rule*
@@ -6627,7 +6627,7 @@
                    (not (complex-rationalp x)))
          :all-fnnames
          '(acl2-count realpart o< complex-rationalp not))
-   #+:non-standard-analysis
+   #+non-standard-analysis
    (make built-in-clause
          :nume nil
          :rune *fake-rune-for-anonymous-enabled-rule*
@@ -6636,7 +6636,7 @@
                    (not (complexp x)))
          :all-fnnames
          '(acl2-count imagpart o< complexp not))
-   #-:non-standard-analysis
+   #-non-standard-analysis
    (make built-in-clause
          :nume nil
          :rune *fake-rune-for-anonymous-enabled-rule*
@@ -8471,7 +8471,7 @@
 (defun filter-disabled-expand-terms (terms ens wrld)
 
 ; We build expand hint structures, throwing certain terms out of terms.
-; Variables and constants are kept (but they should never be there).  Lambda
+; Variables and constants are dropped (but they should never be there).  Lambda
 ; applications are kept.  Function symbol applications are kept provided the
 ; symbol has a non-nil, enabled def-body.  There is no point in keeping on
 ; :expand-lst a term whose function symbol has no def-body, because it is there
@@ -8486,7 +8486,20 @@
     nil)
    ((or (variablep (car terms))
         (fquotep (car terms)))
-    nil)
+
+; We believe that each list (of terms) supplied to this function contains only
+; terms that were at one point considered induction candidates as selected by
+; get-induction-cands, which adds no variables or quotes to the answer.  Then
+; those terms are passed around through and combined with various fields of
+; candidate records, e.g., induction-term, xinduction-term, and xother-terms.
+
+; If we are proved wrong in that belief, we can simply replace the following
+; hard error with (filter-disabled-expand-terms (cdr terms) ens wrld).
+
+    (er hard! 'filter-disabled-expand-terms
+        "Implementation error: Encountered ~#0~[variable~/quotep~], ~x1."
+        (if (variablep (car terms)) 0 1)
+        (car terms)))
    (t
     (cond ((flambdap (ffn-symb (car terms)))
            (cons (make expand-hint

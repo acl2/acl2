@@ -1,6 +1,6 @@
 ; FTY Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,6 +13,7 @@
 (include-book "nat-set")
 
 (include-book "kestrel/fty/defomap" :dir :system)
+(include-book "std/omaps/identity" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -31,4 +32,10 @@
     (implies (any-nat-mapp map)
              (nat-setp (omap::values map)))
     :induct t
-    :enable omap::values))
+    :enable omap::values)
+
+  (defruled any-nat-mapp-of-identity
+    (implies (nat-setp keys)
+             (any-nat-mapp (omap::identity keys)))
+    :induct (omap::identity keys)
+    :enable omap::identity))

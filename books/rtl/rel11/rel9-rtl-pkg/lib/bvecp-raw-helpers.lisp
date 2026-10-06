@@ -42,6 +42,9 @@
 
 (defnd expo (x)
   (declare (xargs :measure (:? x)
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                  :well-founded-relation e0-ord-<
                   :verify-guards nil))
   (mbe
    :logic

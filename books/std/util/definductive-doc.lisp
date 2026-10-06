@@ -277,11 +277,11 @@
       "The variables of a rule must differ from
        the variables that the events for the representation of proofs
        use for the arguments of the conclusion,
-       which are @('concl.x[i,1]'), ..., @('concl.x[i,m[i]]'),
+       which are @('_x[i,1]'), ..., @('_x[i,m[i]]'),
        differ from the names of the fields
        that hold the proofs of the premises,
        which are @('premise[1]-proof'), @('premise[2]-proof'), and so on,
-       and differ from @('proof$'),
+       and differ from @('_proof'),
        which is the variable of the fixtypes of proofs
        of that representation."))
 
@@ -424,6 +424,11 @@
       "These predicates are currently not guard-verified,
        because they may involve arbitrary user-supplied terms.")
      (xdoc::p
+      "These predicates are defined without normalization
+       (see @(see acl2::normalize)),
+       so that their bodies keep all the conditions as conjuncts,
+       even the ones that ACL2 could prove by type reasoning.")
+     (xdoc::p
       "These predicates are disabled;
        they are added to the ruleset described below."))
 
@@ -553,9 +558,29 @@
        rather than from the weaker latter.")
      (xdoc::p
       "If XDOC is generated,
-       these theorems and the @('p[i]-proof-count-bound') theorems below
+       these theorems,
+       the @('p[i]-proof-validp-when-p[i]') theorems,
+       and the @('p[i]-proof-count-bound') theorems below
        are put in a @(tsee defsection) whose name is obtained by
        extending the @('name') input with the suffix @('-valid-proofs').")
+     (xdoc::p
+      "These theorems are disabled."))
+
+    (xdoc::desc
+     (list
+      "@('p[1]-proof-validp-when-p[1]')"
+      "@('...')"
+      "@('p[n]-proof-validp-when-p[n]')")
+     (xdoc::p
+      "Theorems saying that, if @('(p[i] x[i,1] ... x[i,m[i]])') holds,
+       the witness proof tree produced by @('p[i]-proof')
+       is in the @('p[i]-proof') fixtype
+       and is valid for those arguments.
+       These are the converses of the theorems just above,
+       for the witness proof tree.")
+     (xdoc::p
+      "If XDOC is generated, they go in the @(tsee defsection)
+       mentioned just above.")
      (xdoc::p
       "These theorems are disabled."))
 

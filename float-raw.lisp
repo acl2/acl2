@@ -114,6 +114,14 @@
 
 (defun df-string (x)
   (the string (cond ((typep x 'double-float)
+                     (when (equal x -0.0d0)
+
+; Df-string is intended to create a string based on the numeric value.  If we
+; aren't careful here then we can get unsoundness based on a distinction
+; between 0.0 and -0.0; see community book system/tests/df-negative-zero.lisp.
+; So we avoid creating a string for -0.0.
+
+                       (setq x 0.0d0))
 
 ; We make some effort to make the result independent of what is printed by the
 ; host Lisp.  Some lisps use "e" for the exponent while others use "E", and
@@ -298,7 +306,7 @@
 (defun-df-*1*-from-function-sigs)
 
 (defun-df-*1*-unary unary-df-)
-(defun-df-*1*-unary unary-df/)
+(defun-df-*1*-unary unary-df/ (not (= x 0)))
 (defun-df-*1*-unary df-rationalize)
 
 (defun-df-*1*-binary binary-df+)

@@ -10,6 +10,9 @@
 
 (in-package "C$")
 
+; Avoid ACL2(p) failure.
+(acl2::set-waterfall-parallelism nil)
+
 (include-book "centaur/fty/top" :dir :system)
 (include-book "std/typed-lists/unsigned-byte-listp" :dir :system)
 (include-book "std/util/deffixer" :dir :system)

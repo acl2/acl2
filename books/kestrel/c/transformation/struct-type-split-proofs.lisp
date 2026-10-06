@@ -13,9 +13,11 @@
 (include-book "struct-type-split")
 
 (include-book "variables-in-computation-states")
+(include-book "proof-generation")
 
 (include-book "kestrel/c/language/dynamic-semantics" :dir :system)
 (include-book "kestrel/c/syntax/abstract-syntax-formal-mapping-direct" :dir :system)
+(include-book "kestrel/c/syntax/types-formal-subset-and-mapping" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 
 (include-book "std/basic/symbol-lfix" :dir :system)
@@ -67,7 +69,37 @@
      into the @(tsee struct-type-split) transformation.")
    (xdoc::p
     "This is work in progress;
-     only some of the events are currently generated."))
+     only some of the events are currently generated.")
+   (xdoc::p
+    "For proofs to be generated, the old code must consist of
+     a single translation unit, which must consist of
+     (1) a declaration of the struct type being split
+     (without @('typedef')),
+     which becomes two declarations in the new code;
+     (2) a declaration of a (global) variable of that type
+     (without initializer),
+     which becomes two declarations in the new code;
+     and (3) zero or more function definitions
+     that may read (not write) the members of the struct object(s),
+     but not otherwise reference the struct type(s) or object(s).
+     The struct type(s) must have all integer members
+     except @('_Bool'), plain @('char'), and enumerated types
+     (which are currently not supported in our formal semantics).
+     The function definitions must have bodies consisting of
+     single return statements with expressions.
+     We also allow line comments in the code, which are just skipped.")
+   (xdoc::p
+    "Theorems are generated from (1) and (2) above;
+     we are working on generating theorems from (3) above,
+     and also on enforcing the requirements for (3) described above.
+     From (1) and (2) we also generate definitions,
+     particularly the notion of equivalence between computation states;
+     this is currently specific to the code,
+     but we plan to generalize it into a reusable predicate
+     that is parameterized over the struct type specifics.
+     The checks that we perform on the code w.r.t. (1) and (2)
+     ensure that the computation state equivalence predicate
+     correctly characterizes the computation states for the code."))
   :order-subtopics t
   :default-parent t)
 
@@ -112,7 +144,12 @@
 
   (defret code-ensemble-annop-of-stsp-process-const-old/new
     (implies (not erp)
-             (code-ensemble-annop code))))
+             (code-ensemble-annop code)))
+
+  (std::defretd symbolp-const-when-stsp-process-const-old/new
+    (implies (not erp)
+             (symbolp const))
+    :rule-classes :forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -169,7 +206,23 @@
 
   (defret code-ensemble-annop-of-stsp-process-inputs.new-code
     (implies (not erp)
-             (code-ensemble-annop new-code))))
+             (code-ensemble-annop new-code)))
+
+  (std::defretd symbolp-const-old-when-stsp-process-inputs
+    (implies (not erp)
+             (symbolp const-old))
+    :rule-classes :forward-chaining
+    :hints
+    (("Goal"
+      :in-theory (enable symbolp-const-when-stsp-process-const-old/new))))
+
+  (std::defretd symbolp-const-new-when-stsp-process-inputs
+    (implies (not erp)
+             (symbolp const-new))
+    :rule-classes :forward-chaining
+    :hints
+    (("Goal"
+      :in-theory (enable symbolp-const-when-stsp-process-const-old/new)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -188,13 +241,22 @@
     "This fixtype captures the possible stages of that scan.
      Starting with @(':init'),
      we switch to @(':types') when we have found the struct types
-     (where we store all the memebers and the left members,
+     (where we store all the members, their types, and the left members,
      while the right members are available from the user inputs),
-     then to @(':objects') when we have found the struct objects.
-     See the scanning code for details."))
+     then to @(':objects') when we have found the struct objects
+     (where we store the names of the old and new objects).
+     See the scanning code for details.
+     The member names and types must have the same length."))
   (:init ())
-  (:types ((mems ident-list) (lmems ident-list)))
-  (:objects ())
+  (:types ((mems ident-list
+                 :reqfix (if (equal (len types) (len mems)) mems nil))
+           (types type-list
+                  :reqfix (if (equal (len types) (len mems)) types nil))
+           (lmems ident-list))
+   :require (equal (len types) (len mems)))
+  (:objects ((old-name ident)
+             (newl-name ident)
+             (newr-name ident)))
   :pred stsp-stagep)
 
 ;;;;;;;;;;
@@ -211,7 +273,8 @@
               (declon-annop declon))
   :returns (mv (erp maybe-msgp)
                (tag identp)
-               (mems ident-listp))
+               (mems ident-listp)
+               (types type-listp))
   :short "Check if a declaration is that of a struct type
           that we currently support for proof generation."
   :long
@@ -219,9 +282,12 @@
    (xdoc::p
     "The declaration must consists of a single struct type specifier
      with a tag and with members each of which consists of
-     an identifier with type specifiers for an integer type.
-     If that is the case, we return the tag and the names of the members."))
-  (b* (((reterr) (irr-ident) nil)
+     an identifier with type specifiers for an integer type
+     (except for plain @('char'),
+     for which we do not have formal semantics yet).
+     If that is the case, we return the tag,
+     and the names and types of the members."))
+  (b* (((reterr) (irr-ident) nil nil)
        ((unless (and (declon-case declon :declon)
                      (not (declon-declon->extension declon))
                      (endp (declon-declon->declors declon))))
@@ -242,18 +308,19 @@
                      (consp suspec.members)))
         (retmsg$ "Unsupported proof generation for ~x0." (declon-fix declon)))
        (tag suspec.name?)
-       ((erp mems) (stsp-check-struct-type-declon-loop suspec.members)))
-    (retok tag mems))
+       ((erp mems types) (stsp-check-struct-type-declon-loop suspec.members)))
+    (retok tag mems types))
 
   :prepwork
   ((define stsp-check-struct-type-declon-loop ((members struct-declon-listp))
      :guard (and (struct-declon-list-unambp members)
                  (struct-declon-list-annop members))
      :returns (mv (erp maybe-msgp)
-                  (mems ident-listp))
+                  (mems ident-listp)
+                  (types type-listp))
      :parents nil
-     (b* (((reterr) nil)
-          ((when (endp members)) (retok nil))
+     (b* (((reterr) nil nil)
+          ((when (endp members)) (retok nil nil))
           (sdeclon (struct-declon-fix (car members)))
           ((unless (struct-declon-case sdeclon :member))
            (retmsg$ "Unsupported proof generation for ~x0." sdeclon))
@@ -273,11 +340,26 @@
           ((unless (and sdeclor.declor?
                         (not sdeclor.expr?)))
            (retmsg$ "Unsupported proof generation for ~x0." sdeclon))
-          ((unless (type-integerp (type-vinfo->type sdeclor.info)))
+          (type (type-vinfo->type sdeclor.info))
+          ((unless (and (3definitely (type-integer-3p type))
+                        (not (type-case type :char))))
            (retmsg$ "Unsupported proof generation for ~x0." sdeclon))
           (mem (declor->ident sdeclor.declor?))
-          ((erp mems) (stsp-check-struct-type-declon-loop (cdr members))))
-       (retok (cons mem mems))))))
+          ((erp mems types) (stsp-check-struct-type-declon-loop (cdr members))))
+       (retok (cons mem mems) (cons type types)))
+
+     ///
+
+     (defret len-of-stsp-check-struct-type-declon-loop
+       (implies (not erp)
+                (equal (len types) (len mems)))
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret len-of-stsp-check-struct-type-declon
+    (implies (not erp)
+             (equal (len types) (len mems)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -336,7 +418,9 @@
 
 (define stsp-struct-value-pred ((onlr (member-eq onlr '(old newl newr)))
                                 (tag identp)
-                                (mems ident-listp))
+                                (mems ident-listp)
+                                (types type-listp))
+  :guard (equal (len types) (len mems))
   :returns (mv (erp maybe-msgp)
                (event pseudo-event-formp))
   :short "Generate a predicate characterizing a struct value
@@ -354,10 +438,14 @@
         (packn-pos (list 'value-kind-when- struct-value-onlrp)
                    struct-value-onlrp))
        ((erp ctag) (ldm-ident tag) :iferr "")
-       ((erp b*-bindings) (stsp-struct-value-pred-loop mems 0)))
+       ((erp b*-bindings) (stsp-struct-value-pred-loop mems types 0)))
     (retok
      `(define ,struct-value-onlrp ((sval c::valuep))
-        :returns (yes/no booleanp)
+        :returns (yes/no booleanp
+                        :hints (("Goal"
+                                 :in-theory
+                                 '(booleanp-compound-recognizer
+                                   (:t ,struct-value-onlrp)))))
         (b* (((unless (c::value-case sval :struct)) nil)
              ((unless (equal (c::value-struct->tag sval) ',ctag)) nil)
              (memvals (c::value-struct->members sval))
@@ -365,31 +453,68 @@
              ,@b*-bindings
              ((unless (not (c::value-struct->flexiblep sval))) nil))
           t)
-        :guard-hints (("Goal" :in-theory (enable len)))
+        :guard-simplify :limited
+        :guard-hints
+        (("Goal"
+          :do-not '(preprocess) ; for speed
+          :in-theory '(c::member-value-listp-of-value-struct->members
+                       c::member-valuep-of-nth-when-member-value-listp
+                       c::valuep-of-member-value->value
+                       (:t c::value-struct->members)
+                       (:e nfix)
+                       (:e <))))
+        :hooks
+        ((:fix
+          :hints
+          (("Goal"
+            :do-not '(preprocess) ; for speed
+            :in-theory
+            '(,struct-value-onlrp
+              c::value-kind$inline-of-value-fix-x
+              c::value-struct->tag$inline-of-value-fix-x
+              c::value-struct->members$inline-of-value-fix-x
+              c::value-struct->flexiblep$inline-of-value-fix-x)))))
         ///
         (defruled ,value-kind-when-struct-value-onlrp
           (implies (,struct-value-onlrp sval)
-                   (equal (c::value-kind sval) :struct))))))
+                   (equal (c::value-kind sval) :struct))
+          :in-theory '(,struct-value-onlrp)))))
 
   :prepwork
-  ((define stsp-struct-value-pred-loop ((mems ident-listp) (index natp))
+  ((define stsp-struct-value-pred-loop ((mems ident-listp)
+                                        (types type-listp)
+                                        (index natp))
+     :guard (equal (len types) (len mems))
      :returns (mv (erp maybe-msgp)
-                  (b*-binders true-listp))
+                  (b*-bindings true-listp))
      :parents nil
      (b* (((reterr) nil)
           ((when (endp mems)) (retok nil))
           (memval `(nth ,(lnfix index) memvals))
           ((erp cmem) (ldm-ident (car mems)) :iferr "")
-          (b*-binder
-           `((unless (equal (c::member-value->name ,memval) ',cmem)) nil))
-          ((erp b*-binders)
-           (stsp-struct-value-pred-loop (cdr mems) (1+ (lnfix index)))))
-       (retok (cons b*-binder b*-binders))))))
+          (b*-bindings
+           `(((unless (equal (c::member-value->name ,memval)
+                             ',cmem))
+              nil)
+             ((unless (c::value-case (c::member-value->value ,memval)
+                                     ,(type-kind (car types))))
+              nil)))
+          ((erp more-b*-bindings)
+           (stsp-struct-value-pred-loop (cdr mems)
+                                        (cdr types)
+                                        (1+ (lnfix index)))))
+       (retok (append b*-bindings more-b*-bindings)))
+     :hooks
+     ((:fix
+       :hints (("Goal" :induct t :in-theory (enable c$::cdr-of-type-list-fix
+                                                    ident-list-fix))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define stsp-struct-value-accs ((onlr (member-eq onlr '(old newl newr)))
-                                (mems ident-listp))
+                                (mems ident-listp)
+                                (types type-listp))
+  :guard (equal (len types) (len mems))
   :returns (mv (erp maybe-msgp)
                (events pseudo-event-form-listp))
   :short "Generate the accessor functions for the values of
@@ -404,11 +529,20 @@
   (b* (((reterr) nil)
        ((when (endp mems)) (retok nil))
        ((erp cmem) (ldm-ident (car mems)) :iferr "")
+       ((erp ctype) (ldm-type (car types)) :iferr "")
+       (type-constructor
+        (packn-pos (list 'c::type- (c::type-kind ctype)) 'c::type-))
        (struct-value-onlr-mem
         (packn-pos (list 'struct-value- onlr '- (c::ident->name cmem))
                    'struct-value-))
        (struct-value-onlrp (packn-pos (list 'struct-value- onlr 'p)
                                       'struct-value-))
+       (value-kind-of-struct-value-onlr-mem
+        (packn-pos (list 'value-kind-of- struct-value-onlr-mem)
+                   'struct-value-))
+       (type-of-value-of-struct-value-onlr-mem
+        (packn-pos (list 'type-of-value-of- struct-value-onlr-mem)
+                   'struct-value-))
        (value-struct-read-mem-when-struct-value-onlrp
         (packn-pos (list 'value-struct-read-
                          (c::ident->name cmem)
@@ -418,18 +552,84 @@
        (event
         `(define ,struct-value-onlr-mem ((sval c::valuep))
            :guard (,struct-value-onlrp sval)
-           :returns (mval c::valuep)
+           :returns (mval c::valuep
+                          :hints
+                          (("Goal"
+                            :in-theory '(,struct-value-onlr-mem
+                                         c::return-type-of-value-fix.new-x))))
            (c::value-fix (c::value-struct-read ',cmem sval))
+           :guard-simplify :limited
+           :guard-hints
+           (("Goal"
+             :do-not '(preprocess) ; for speed
+             :in-theory '(,struct-value-onlrp
+                          c::value-struct-read
+                          c::valuep-of-value-struct-read-aux-when-nth
+                          eq
+                          not
+                          (:e c::identp)
+                          (:e natp)
+                          (:e <))))
            :prepwork ((local (in-theory (enable ,struct-value-onlrp
                                                 c::value-struct-read
-                                                c::value-struct-read-aux))))
+                                                c::value-struct-read-aux
+                                                nth))))
+           :hooks
+           ((:fix
+             :hints
+             (("Goal"
+               :in-theory '(,struct-value-onlr-mem
+                            c::value-struct-read-of-value-fix-struct)))))
            ///
+           (defret ,value-kind-of-struct-value-onlr-mem
+             (equal (c::value-kind mval) ,(type-kind (car types)))
+             :hyp (,struct-value-onlrp sval)
+             :hints
+             (("Goal"
+               :in-theory '(,struct-value-onlr-mem
+                            ,struct-value-onlrp
+                            c::value-struct-read
+                            c::value-kind$inline-of-value-fix-x
+                            c::value-struct-read-aux-of-nthcdr
+                            acl2::nthcdr-when-zp
+                            (:e zp)
+                            (:e natp)
+                            (:e <)
+                            (:e binary-+)
+                            (:e equal)
+                            (:e c::ident-fix))
+               :use ((:instance c::value-struct-read-aux-of-nthcdr
+                                (c::name ',cmem)
+                                (c::index 0)
+                                (c::members
+                                 (c::value-struct->members sval)))))))
+           (defret ,type-of-value-of-struct-value-onlr-mem
+             (equal (c::type-of-value mval) ',ctype)
+             :hyp (,struct-value-onlrp sval)
+             :hints
+             (("Goal"
+               :in-theory '(c::type-of-value
+                            ,value-kind-of-struct-value-onlr-mem
+                            (:e ,type-constructor)))))
            (defruled ,value-struct-read-mem-when-struct-value-onlrp
              (implies (,struct-value-onlrp sval)
                       (equal (c::value-struct-read ',cmem sval)
-                             (,struct-value-onlr-mem sval))))))
-       ((erp events) (stsp-struct-value-accs onlr (cdr mems))))
-    (retok (cons event events))))
+                             (,struct-value-onlr-mem sval)))
+             :do-not '(preprocess) ; for speed
+             :in-theory '(,struct-value-onlr-mem
+                          ,struct-value-onlrp
+                          c::value-struct-read
+                          c::valuep-of-value-struct-read-aux-when-nth
+                          (:e natp)
+                          (:e <))
+             :use ((:instance c::value-fix-when-valuep
+                              (c::x (c::value-struct-read ',cmem sval)))))))
+       ((erp events) (stsp-struct-value-accs onlr (cdr mems) (cdr types))))
+    (retok (cons event events)))
+  :hooks ((:fix :hints (("Goal"
+                         :induct t
+                         :in-theory (enable c$::cdr-of-type-list-fix
+                                            ident-list-fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -448,16 +648,36 @@
      and that the accessor of each old member returns the same value as
      the corresponding accessor of each new member."))
   (b* (((reterr) '(_))
-       ((erp conjuncts) (stsp-struct-value-equiv-loop mems lmems rmems))
+       ((erp conjuncts fix-thms)
+        (stsp-struct-value-equiv-loop mems lmems rmems))
        (event
         `(define struct-value-equivp ((old-val c::valuep)
                                       (newl-val c::valuep)
                                       (newr-val c::valuep))
-           :returns (yes/no booleanp)
+           :returns (yes/no booleanp
+                            :hints
+                            (("Goal"
+                              :in-theory
+                              '(booleanp-compound-recognizer
+                                (:t struct-value-equivp)
+                                struct-value-equivp
+                                (:t struct-value-newrp)))))
            (and (struct-value-oldp old-val)
                 (struct-value-newlp newl-val)
                 (struct-value-newrp newr-val)
-                ,@conjuncts))))
+                ,@conjuncts)
+           :guard-simplify :limited
+           :guard-hints (("Goal" :in-theory nil))
+           :hooks
+           ((:fix
+             :hints
+             (("Goal"
+               :do-not '(preprocess) ; for speed
+               :in-theory '(struct-value-equivp
+                            struct-value-oldp-of-value-fix-sval
+                            struct-value-newlp-of-value-fix-sval
+                            struct-value-newrp-of-value-fix-sval
+                            ,@fix-thms))))))))
     (retok event))
 
   :prepwork
@@ -465,36 +685,38 @@
                                          (lmems ident-listp)
                                          (rmems ident-listp))
      :returns (mv (erp maybe-msgp)
-                  (conjuncts true-listp))
+                  (conjuncts true-listp)
+                  (fix-thms symbol-listp))
      :parents nil
-     (b* (((reterr) nil)
-          ((when (endp mems)) (retok nil))
+     (b* (((reterr) nil nil)
+          ((when (endp mems)) (retok nil nil))
           (mem (car mems))
           ((erp cmem) (ldm-ident mem) :iferr "")
           (old-acc (packn-pos (list 'struct-value-old- (c::ident->name cmem))
                               'struct-value-))
-          ((erp (cons new-acc new-val))
+          ((erp new-acc new-val)
            (cond ((member-equal (ident-fix mem) (ident-list-fix lmems))
                   (retok
-                   (cons
-                    (packn-pos (list 'struct-value-newl- (c::ident->name cmem))
-                               'struct-value-)
-                    'newl-val)))
+                   (packn-pos (list 'struct-value-newl- (c::ident->name cmem))
+                              'struct-value-)
+                   'newl-val))
                  ((member-equal (ident-fix mem) (ident-list-fix rmems))
                   (retok
-                   (cons
-                    (packn-pos (list 'struct-value-newr- (c::ident->name cmem))
-                               'struct-value-)
-                    'newr-val)))
+                   (packn-pos (list 'struct-value-newr- (c::ident->name cmem))
+                              'struct-value-)
+                   'newr-val))
                  (t (retmsg$ "Member ~x0 is neither in ~x1 nor in ~x2."
                              (ident-fix mem)
                              (ident-list-fix lmems)
                              (ident-list-fix rmems)))))
           (conjunct `(equal (,old-acc old-val)
                             (,new-acc ,new-val)))
-          ((erp conjuncts)
+          (old-fix-thm (packn-pos (list old-acc '-of-value-fix-sval) old-acc))
+          (new-fix-thm (packn-pos (list new-acc '-of-value-fix-sval) new-acc))
+          ((erp conjuncts fix-thms)
            (stsp-struct-value-equiv-loop (cdr mems) lmems rmems)))
-       (retok (cons conjunct conjuncts))))))
+       (retok (cons conjunct conjuncts)
+              (list* old-fix-thm new-fix-thm fix-thms))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -519,7 +741,13 @@
        (event
         `(define static-equivp ((old-static c::scopep)
                                 (new-static c::scopep))
-           :returns (yes/no booleanp)
+           :returns (yes/no booleanp
+                            :hints
+                            (("Goal"
+                              :induct t
+                              :in-theory '(booleanp-compound-recognizer
+                                           static-equivp
+                                           (:t omap::emptyp)))))
            (b* (((when (omap::emptyp (c::scope-fix old-static)))
                  (omap::emptyp (c::scope-fix new-static)))
                 ((mv var old-val) (omap::head old-static)))
@@ -550,6 +778,33 @@
                     (new-static
                      (omap::delete var (c::scope-fix new-static))))
                  (static-equivp old-static new-static))))
+           :measure (acl2-count old-static)
+           :hints
+           (("Goal"
+             :in-theory '(c::emptyp-of-scope-fix-to-not-scope-or-emptyp
+                          omap::tail-count
+                          acl2::o<-when-o-finp-cheap
+                          acl2::o-finp-compound-recognizer
+                          (:t acl2-count))))
+           :guard-simplify :limited
+           :guard-hints
+           (("Goal"
+             :in-theory '(c::mapp-when-scopep
+                          c::scope-fix-when-scopep
+                          c::scopep-of-delete
+                          c::scopep-of-tail
+                          c::valuep-of-cdr-of-assoc-scopep
+                          c::valuep-of-head-val-when-scopep
+                          (:t omap::assoc))))
+           :hooks
+           ((:fix
+             :hints
+             (("Goal"
+               :induct t
+               :in-theory '(static-equivp
+                            c::scope-fix-when-scopep
+                            c::scopep-of-scope-fix
+                            c::emptyp-of-scope-fix-to-not-scope-or-emptyp)))))
            ///
            (defruled struct-value-equivp-when-static-equivp
              (b* ((old-var+val (omap::assoc ',old-cname old-static))
@@ -564,7 +819,38 @@
                              (struct-value-equivp (cdr old-var+val)
                                                   (cdr newl-var+val)
                                                   (cdr newr-var+val)))))
-             :induct (static-equivp old-static new-static)))))
+             :induct (static-equivp old-static new-static)
+             :in-theory '(static-equivp
+                          c::scope-fix-when-scopep
+                          c::scopep-of-tail
+                          c::scopep-of-delete
+                          omap::assoc-of-delete
+                          cdr-cons
+                          (:e equal)
+                          (:t omap::assoc))
+             :expand (omap::assoc ',old-cname old-static))
+           (defruled assoc-when-static-equivp
+             (implies (and (c::scopep old-static)
+                           (c::scopep new-static)
+                           (static-equivp old-static new-static)
+                           (not (equal var ',old-cname))
+                           (not (equal var ',newl-cname))
+                           (not (equal var ',newr-cname)))
+                      (equal (omap::assoc var old-static)
+                             (omap::assoc var new-static)))
+             :induct t
+             :in-theory '(static-equivp
+                          c::scope-fix-when-scopep
+                          c::scopep-of-tail
+                          c::scopep-of-delete
+                          omap::assoc-of-delete
+                          omap::assoc-when-emptyp
+                          omap::car-of-assoc-when-assoc
+                          car-cons
+                          cdr-cons
+                          (:e equal)
+                          (:t omap::assoc))
+             :expand (omap::assoc var old-static)))))
     (retok event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -598,7 +884,13 @@
        (event
         `(define compustate-equivp ((old-compst c::compustatep)
                                     (new-compst c::compustatep))
-           :returns (yes/no booleanp)
+           :returns (yes/no booleanp
+                            :hints
+                            (("Goal"
+                              :in-theory
+                              '(booleanp-compound-recognizer
+                                compustate-equivp
+                                (:t c::compustate-has-static-var-with-type-p)))))
            (and (static-equivp (c::compustate->static old-compst)
                                (c::compustate->static new-compst))
                 (equal (c::compustate->frames old-compst)
@@ -611,6 +903,22 @@
                  ',newl-cname (c::type-struct ',newl-ctag) new-compst)
                 (c::compustate-has-static-var-with-type-p
                  ',newr-cname (c::type-struct ',newr-ctag) new-compst))
+           :guard-simplify :limited
+           :guard-hints
+           (("Goal"
+             :in-theory '(c::scopep-of-compustate->static
+                          c::return-type-of-type-struct
+                          (:e c::identp))))
+           :hooks
+           ((:fix
+             :hints
+             (("Goal"
+               :in-theory
+               '(compustate-equivp
+                 c::compustate->static$inline-of-compustate-fix-x
+                 c::compustate->frames$inline-of-compustate-fix-x
+                 c::compustate->heap$inline-of-compustate-fix-x
+                 c::compustate-has-static-var-with-type-p-of-compustate-fix-compst)))))
            ///
            (defruled struct-value-equivp-when-compustate-equivp
              (b* ((old-val
@@ -643,14 +951,264 @@
                     struct-value-equivp-when-static-equivp
                     (old-static (c::compustate->static old-compst))
                     (new-static (c::compustate->static new-compst))))
-             :enable
-             c::assoc-static-when-compustate-has-static-var-with-type-p))))
+             :in-theory
+             '(compustate-equivp
+               c::scopep-of-compustate->static
+               c::assoc-static-when-compustate-has-static-var-with-type-p
+               (:e c::ident-fix)
+               (:e c::identp)))
+           (defruled objdesign-of-var-when-compustate-equivp
+             (implies (and (compustate-equivp old-compst new-compst)
+                           (not (equal (c::ident-fix var) ',old-cname))
+                           (not (equal (c::ident-fix var) ',newl-cname))
+                           (not (equal (c::ident-fix var) ',newr-cname)))
+                      (equal (c::objdesign-of-var var old-compst)
+                             (c::objdesign-of-var var new-compst)))
+             :use (:instance assoc-when-static-equivp
+                             (var (c::ident-fix var))
+                             (old-static (c::compustate->static old-compst))
+                             (new-static (c::compustate->static new-compst)))
+             :in-theory '(compustate-equivp
+                          c::objdesign-of-var
+                          c::top-frame
+                          c::compustate-frames-number
+                          c::scopep-of-compustate->static))
+           (defruled read-object-when-compustate-equivp
+             (implies (and (compustate-equivp old-compst new-compst)
+                           (not (equal (c::ident-fix var) ',old-cname))
+                           (not (equal (c::ident-fix var) ',newl-cname))
+                           (not (equal (c::ident-fix var) ',newr-cname))
+                           (c::compustate-has-var-with-type-p var
+                                                              type
+                                                              old-compst))
+                      (equal (c::read-object (c::objdesign-of-var var
+                                                                  old-compst)
+                                             old-compst)
+                             (c::read-object (c::objdesign-of-var var
+                                                                  new-compst)
+                                             new-compst)))
+             :use ((:instance assoc-when-static-equivp
+                              (var (c::ident-fix var))
+                              (old-static (c::compustate->static old-compst))
+                              (new-static (c::compustate->static new-compst)))
+                   objdesign-of-var-when-compustate-equivp
+                   (:instance c::objdesign-kind-of-objdesign-of-var
+                              (c::var var)
+                              (c::compst new-compst)))
+             :in-theory '(compustate-equivp
+                          c::compustate-has-var-with-type-p
+                          c::read-object
+                          c::scopep-of-compustate->static
+                          c::objdesign-static->name-of-objdesign-of-var
+                          member-equal
+                          (:e equal)))
+           (defruled compustate-has-var-with-type-p-when-compustate-equivp
+             (implies (and (compustate-equivp old-compst new-compst)
+                           (not (equal (c::ident-fix var) ',old-cname))
+                           (not (equal (c::ident-fix var) ',newl-cname))
+                           (not (equal (c::ident-fix var) ',newr-cname)))
+                      (equal (c::compustate-has-var-with-type-p var
+                                                                type
+                                                                new-compst)
+                             (c::compustate-has-var-with-type-p var
+                                                                type
+                                                                old-compst)))
+             :use (objdesign-of-var-when-compustate-equivp
+                   (:instance read-object-when-compustate-equivp
+                              (type (c::type-of-value
+                                     (c::read-object
+                                      (c::objdesign-of-var var old-compst)
+                                      old-compst)))))
+             :in-theory '(c::compustate-has-var-with-type-p
+                          c::type-fix-when-typep
+                          c::typep-of-type-of-value)))))
     (retok event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stsp-exec-strct-thm ((onlr (member-eq onlr '(old newl newr)))
-                             (name identp))
+(define stsp-exec-expr-congruences ((old-name identp)
+                                    (newl-name identp)
+                                    (newr-name identp))
+  :returns (mv (erp maybe-msgp)
+               (events pseudo-event-form-listp))
+  :short "Generate congruence theorems for expression execution."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are similar to the generic rules in @(see exec-congruence-theorems),
+     but they relax the equality of the old and new computation states,
+     using equivalence instead.
+     Since the equivalence is specific to the struct type and objects,
+     these theorems are generated for each call of the proof generator.")
+   (xdoc::p
+    "We should generalize these theorems,
+     along with the computation state equivalence predicates,
+     and along with several other artifacts we generate here.
+     The current version is preliminary, as we are exploring approaches."))
+  (b* (((reterr) nil)
+       ((erp old-cname) (ldm-ident old-name) :iferr "")
+       ((erp newl-cname) (ldm-ident newl-name) :iferr "")
+       ((erp newr-cname) (ldm-ident newr-name) :iferr "")
+       (events
+        `((defruled expr-ident-congruence-under-compustate-equivp
+            (b* ((expr (c::expr-ident var))
+                 ((mv old-eval old-compst1)
+                  (c::exec-expr expr old-compst old-fenv limit))
+                 ((mv new-eval new-compst1)
+                  (c::exec-expr expr new-compst new-fenv limit))
+                 (old-val (c::expr-value->value old-eval))
+                 (new-val (c::expr-value->value new-eval)))
+              (implies (and (not (equal (c::ident-fix var) ',old-cname))
+                            (not (equal (c::ident-fix var) ',newl-cname))
+                            (not (equal (c::ident-fix var) ',newr-cname))
+                            (not (c::errorp old-eval))
+                            (compustate-equivp old-compst new-compst)
+                            (c::compustate-has-var-with-type-p var
+                                                               type
+                                                               old-compst))
+                       (and (not (c::errorp new-eval))
+                            (iff old-eval new-eval)
+                            (equal old-val new-val)
+                            (compustate-equivp old-compst1 new-compst1)
+                            old-eval
+                            (equal (c::type-of-value old-val)
+                                   (c::type-fix type)))))
+            :use (objdesign-of-var-when-compustate-equivp
+                  read-object-when-compustate-equivp)
+            :in-theory '(c::exec-expr
+                         c::exec-ident
+                         c::compustate-has-var-with-type-p
+                         c::return-type-of-expr-ident
+                         c::expr-ident->get-of-expr-ident
+                         c::exec-ident-of-ident-fix-id
+                         c::expr-value->value-of-expr-value
+                         c::type-of-value-of-value-fix-val
+                         c::errorp-of-error
+                         compustate-equivp-of-compustate-fix-old-compst
+                         compustate-equivp-of-compustate-fix-new-compst
+                         (:t c::expr-value)
+                         mv-nth
+                         iff
+                         (:e equal)))
+          (defruled expr-const-congruence-under-compustate-equivp
+            (b* ((expr (c::expr-const const))
+                 ((mv old-eval old-compst1)
+                  (c::exec-expr expr old-compst old-fenv limit))
+                 ((mv new-eval new-compst1)
+                  (c::exec-expr expr new-compst new-fenv limit))
+                 (old-val (c::expr-value->value old-eval))
+                 (new-val (c::expr-value->value new-eval))
+                 (iconst (c::const-int->get const))
+                 (type (c::check-iconst iconst)))
+              (implies (and (equal (c::const-kind const) :int)
+                            (c::typep type)
+                            (not (c::errorp old-eval))
+                            (compustate-equivp old-compst new-compst))
+                       (and (not (c::errorp new-eval))
+                            (iff old-eval new-eval)
+                            (equal old-val new-val)
+                            (compustate-equivp old-compst1 new-compst1)
+                            old-eval
+                            (equal (c::type-of-value old-val) type))))
+            :use (:instance expr-const-congruence (compst old-compst))
+            :in-theory '(c::exec-expr
+                         c::return-type-of-expr-const
+                         c::expr-const->get-of-expr-const
+                         compustate-equivp-of-compustate-fix-old-compst
+                         compustate-equivp-of-compustate-fix-new-compst
+                         mv-nth
+                         iff
+                         (:e equal)))
+          (defruled expr-binary-pure-strict-congruence-under-compustate-equivp
+            (b* ((old (c::expr-binary op old-arg1 old-arg2))
+                 (new (c::expr-binary op new-arg1 new-arg2))
+                 ((mv old-arg1-eval old-arg1-compst)
+                  (c::exec-expr old-arg1 old-compst old-fenv (1- limit)))
+                 ((mv old-arg2-eval old-arg2-compst)
+                  (c::exec-expr old-arg2 old-arg1-compst old-fenv (1- limit)))
+                 ((mv new-arg1-eval new-arg1-compst)
+                  (c::exec-expr new-arg1 new-compst new-fenv (1- limit)))
+                 ((mv new-arg2-eval new-arg2-compst)
+                  (c::exec-expr new-arg2 new-arg1-compst new-fenv (1- limit)))
+                 (old-arg1-val (c::expr-value->value old-arg1-eval))
+                 (old-arg2-val (c::expr-value->value old-arg2-eval))
+                 (new-arg1-val (c::expr-value->value new-arg1-eval))
+                 (new-arg2-val (c::expr-value->value new-arg2-eval))
+                 ((mv old-eval old-compst1)
+                  (c::exec-expr old old-compst old-fenv limit))
+                 ((mv new-eval new-compst1)
+                  (c::exec-expr new new-compst new-fenv limit))
+                 (old-val (c::expr-value->value old-eval))
+                 (new-val (c::expr-value->value new-eval))
+                 (type1 (c::type-of-value old-arg1-val))
+                 (type2 (c::type-of-value old-arg2-val)))
+              (implies (and (c::binop-purep op)
+                            (c::binop-strictp op)
+                            (c::expr-purep new-arg1)
+                            (c::expr-purep new-arg2)
+                            (not (c::errorp old-eval))
+                            (not (c::errorp new-arg1-eval))
+                            (not (c::errorp new-arg2-eval))
+                            (iff old-arg1-eval new-arg1-eval)
+                            (iff old-arg2-eval new-arg2-eval)
+                            (equal old-arg1-val new-arg1-val)
+                            (equal old-arg2-val new-arg2-val)
+                            (compustate-equivp old-compst new-compst)
+                            (compustate-equivp old-arg1-compst new-arg1-compst)
+                            (compustate-equivp old-arg2-compst new-arg2-compst)
+                            (c::type-nonchar-integerp type1)
+                            (c::type-nonchar-integerp type2))
+                       (and (not (c::errorp new-eval))
+                            (iff old-eval new-eval)
+                            (equal old-val new-val)
+                            (compustate-equivp old-compst1 new-compst1)
+                            old-eval
+                            (equal (c::type-of-value old-val)
+                                   (cond ((member-equal (c::binop-kind op)
+                                                        '(:mul :div :rem :add :sub
+                                                          :bitand :bitxor :bitior))
+                                          (c::uaconvert-types type1 type2))
+                                         ((member-equal (c::binop-kind op)
+                                                        '(:shl :shr))
+                                          (c::promote-type type1))
+                                         (t (c::type-sint)))))))
+            :use (:instance expr-binary-pure-strict-congruence
+                            (compst old-compst)
+                            (new-arg1 old-arg1)
+                            (new-arg2 old-arg2)
+                            (new-fenv old-fenv))
+            :expand ((c::exec-expr
+                      (c::expr-binary op old-arg1 old-arg2)
+                      old-compst old-fenv limit)
+                     (c::exec-expr
+                      (c::expr-binary op new-arg1 new-arg2)
+                      new-compst new-fenv limit))
+            :in-theory '(c::return-type-of-expr-binary
+                         c::expr-binary->op-of-expr-binary
+                         c::expr-binary->arg1-of-expr-binary
+                         c::expr-binary->arg2-of-expr-binary
+                         c::exec-expr-of-expr-fix-e
+                         c::expr-purep-of-expr-fix-expr
+                         c::binop-purep-of-binop-fix-op
+                         c::binop-strictp-of-binop-fix-op
+                         c::exec-binary-strict-pure-of-binop-fix-op
+                         c::errorp-of-error
+                         c::exec-binary-strict-pure
+                         c::apconvert-expr-value-when-not-array
+                         c::type-nonchar-integerp-of-type-of-value
+                         c::value-kind-not-array-when-value-integerp
+                         c::not-errorp-when-expr-valuep
+                         c::expr-valuep-of-expr-value-fix
+                         c::expr-value->value$inline-of-expr-value-fix-x
+                         mv-nth
+                         iff
+                         (:e equal))))))
+    (retok events)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-exec-struct-thm ((onlr (member-eq onlr '(old newl newr)))
+                              (name identp))
   :returns (mv (erp maybe-msgp)
                (event pseudo-event-formp))
   :short "Generate the theorem saying
@@ -671,28 +1229,37 @@
                               ,compst)
                              (c::objdesign-of-var ',cname ,compst))
                             (c::compustate-fix ,compst))))
-        :enable
-        (c::exec-expr
-         c::exec-ident
-         compustate-equivp
-         c::objdesign-of-var-when-compustate-has-static-var-with-type-p)))))
+        :in-theory
+        '(c::exec-expr
+          c::exec-ident
+          compustate-equivp
+          c::objdesign-of-var-when-compustate-has-static-var-with-type-p
+          (:e c::expr-ident)
+          (:e c::expr-kind)
+          (:e c::expr-ident->get)
+          (:e c::objdesign-static)
+          (:e equal))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define stsp-exec-mem-eq ((mems ident-listp)
+                          (types type-listp)
                           (lmems ident-listp)
                           (old-name identp)
                           (newl-name identp)
                           (newr-name identp))
+  :guard (equal (len types) (len mems))
   :returns (mv (erp maybe-msgp)
                (events pseudo-event-form-listp))
-  :short "Generate the theorems ssaying that
+  :short "Generate the theorems saying that
           the execution of each member in the old code
-          returns the same as the corresponding member in the new code."
+          returns the same as the corresponding member in the new code,
+          with the declared member type."
   (b* (((reterr) nil)
        ((when (endp mems)) (retok nil))
        (mem (car mems))
        ((erp cmem) (ldm-ident mem) :iferr "")
+       ((erp ctype) (ldm-type (car types)) :iferr "")
        (thm-name (packn-pos (list 'exec-member- (c::ident->name cmem))
                             'struct-value-))
        ((mv new newp new-name)
@@ -718,6 +1285,16 @@
                              'newlp
                            'newrp))
                    'struct-value-))
+       (old-acc (packn-pos (list 'struct-value-old- (c::ident->name cmem))
+                          'struct-value-))
+       (new-acc (packn-pos (list 'struct-value- new '- (c::ident->name cmem))
+                          'struct-value-))
+       (valuep-of-old-acc (packn-pos (list 'valuep-of- old-acc) 'struct-value-))
+       (valuep-of-new-acc (packn-pos (list 'valuep-of- new-acc) 'struct-value-))
+       (type-of-value-of-old-acc
+        (packn-pos (list 'type-of-value-of- old-acc) 'struct-value-))
+       (type-of-value-of-new-acc
+        (packn-pos (list 'type-of-value-of- new-acc) 'struct-value-))
        (event
         `(defruled ,thm-name
            (b* ((old-expr (c::expr-member (c::expr-ident ',old-cname) ',cmem))
@@ -729,38 +1306,91 @@
                 (old-val (c::expr-value->value old-eval))
                 (new-val (c::expr-value->value new-eval)))
              (implies (and (compustate-equivp old-compst new-compst)
-                           (integerp limit)
-                           (>= limit 2))
-                      (and (not (c::errorp old-eval))
-                           (not (c::errorp new-eval))
+                           (not (c::errorp old-eval)))
+                      (and (not (c::errorp new-eval))
                            old-eval
                            new-eval
                            (equal old-val new-val)
-                           (equal old-compst1
-                                  (c::compustate-fix old-compst))
-                           (equal new-compst1
-                                  (c::compustate-fix new-compst)))))
-           :use struct-value-equivp-when-compustate-equivp
+                           (compustate-equivp old-compst1 new-compst1)
+                           (equal (c::type-of-value old-val) ',ctype))))
+           :use (struct-value-equivp-when-compustate-equivp
+                 lemma)
            :expand ((c::exec-expr ',(c::expr-member (c::expr-ident old-cname)
                                                     cmem)
                                   old-compst old-fenv limit)
                     (c::exec-expr ',(c::expr-member (c::expr-ident new-cname)
                                                     cmem)
                                   new-compst new-fenv limit))
-           :enable (exec-old-struct
-                    ,exec-new-struct
-                    c::not-errorp-when-expr-valuep
-                    c::not-errorp-when-valuep
-                    c::exec-member
-                    c::apconvert-expr-value
-                    struct-value-equivp
-                    value-kind-when-struct-value-oldp
-                    ,value-kind-when-struct-value-newp
-                    ,value-struct-read-mem-when-struct-value-oldp
-                    ,value-struct-read-mem-when-struct-value-newp)))
+           :in-theory '(exec-old-struct
+                        ,exec-new-struct
+                        c::not-errorp-when-expr-valuep
+                        c::not-errorp-when-valuep
+                        c::exec-member
+                        c::apconvert-expr-value-when-not-array
+                        struct-value-equivp
+                        value-kind-when-struct-value-oldp
+                        ,value-kind-when-struct-value-newp
+                        ,value-struct-read-mem-when-struct-value-oldp
+                        ,value-struct-read-mem-when-struct-value-newp
+                        ,valuep-of-old-acc
+                        ,valuep-of-new-acc
+                        ,type-of-value-of-old-acc
+                        ,type-of-value-of-new-acc
+                        c::expr-value->value-of-expr-value
+                        c::expr-value-fix-when-expr-valuep
+                        c::expr-valuep-of-expr-value
+                        c::value-kind$inline-of-value-fix-x
+                        c::value-struct-read-of-value-fix-struct
+                        c::value-fix-when-valuep
+                        c::type-of-value-of-value-fix-val
+                        compustate-equivp-of-compustate-fix-old-compst
+                        compustate-equivp-of-compustate-fix-new-compst
+                        c::errorp-of-error
+                        car-cons
+                        cdr-cons
+                        mv-nth
+                        zp
+                        (:t c::expr-value)
+                        (:e c::expr-ident)
+                        (:e c::expr-member)
+                        (:e c::expr-kind)
+                        (:e c::expr-member->target)
+                        (:e c::expr-member->name)
+                        (:e equal)
+                        (:e binary-+)
+                        (:e <))
+           :prep-lemmas
+           ((defruled lemma
+              (b* ((old-expr
+                    (c::expr-member (c::expr-ident ',old-cname) ',cmem))
+                   ((mv old-eval &)
+                    (c::exec-expr old-expr old-compst old-fenv limit)))
+                (implies (not (c::errorp old-eval))
+                         (>= limit 2)))
+              :expand (c::exec-expr ',(c::expr-member (c::expr-ident old-cname)
+                                                      cmem)
+                                    old-compst old-fenv limit)
+              :in-theory '(c::exec-expr
+                           c::errorp-of-error
+                           mv-nth
+                           zp
+                           (:e c::expr-ident)
+                           (:e c::expr-member)
+                           (:e c::expr-kind)
+                           (:e c::expr-member->target)
+                           (:e c::expr-member->name)
+                           (:e c::expr-ident->get)
+                           (:e equal)
+                           (:e binary-+)
+                           (:e <))))))
        ((erp events)
-        (stsp-exec-mem-eq (cdr mems) lmems old-name newl-name newr-name)))
-    (retok (cons event events))))
+        (stsp-exec-mem-eq (cdr mems) (cdr types) lmems
+                          old-name newl-name newr-name)))
+    (retok (cons event events)))
+  :hooks ((:fix :hints (("Goal"
+                         :induct t
+                         :in-theory (enable c$::cdr-of-type-list-fix
+                                            ident-list-fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -779,6 +1409,7 @@
   :returns (mv (erp maybe-msgp)
                (events pseudo-event-form-listp)
                (mems ident-listp)
+               (types type-listp)
                (lmems ident-listp))
   :short "Check, and generate events for,
           the declarations of the old and new left and right struct types."
@@ -797,11 +1428,16 @@
     "If everything checks out, we generate
      the three predicates that characterize the struct values,
      the accessors of the member values in the old and new structs,
-     and the equivalence predicates over struct values."))
-  (b* (((reterr) nil nil nil)
-       ((erp old-tag old-mems) (stsp-check-struct-type-declon old-declon))
-       ((erp newl-tag newl-mems) (stsp-check-struct-type-declon new-declon))
-       ((erp newr-tag newr-mems) (stsp-check-struct-type-declon new-declon2))
+     and the equivalence predicates over struct values.
+     We also return the old member names and types,
+     and the left member names."))
+  (b* (((reterr) nil nil nil nil)
+       ((erp old-tag old-mems old-types)
+        (stsp-check-struct-type-declon old-declon))
+       ((erp newl-tag newl-mems newl-types)
+        (stsp-check-struct-type-declon new-declon))
+       ((erp newr-tag newr-mems newr-types)
+        (stsp-check-struct-type-declon new-declon2))
        ((unless (equal old-tag (ident-fix tag)))
         (retmsg$ "Unsupported proof generation for ~x0."
                  (declon-fix old-declon)))
@@ -821,12 +1457,15 @@
                  (list (declon-fix old-declon)
                        (declon-fix new-declon)
                        (declon-fix new-declon2))))
-       ((erp old-pred) (stsp-struct-value-pred 'old old-tag old-mems))
-       ((erp newl-pred) (stsp-struct-value-pred 'newl newl-tag newl-mems))
-       ((erp newr-pred) (stsp-struct-value-pred 'newr newr-tag newr-mems))
-       ((erp old-accs) (stsp-struct-value-accs 'old old-mems))
-       ((erp newl-accs) (stsp-struct-value-accs 'newl newl-mems))
-       ((erp newr-accs) (stsp-struct-value-accs 'newr newr-mems))
+       ((erp old-pred)
+        (stsp-struct-value-pred 'old old-tag old-mems old-types))
+       ((erp newl-pred)
+        (stsp-struct-value-pred 'newl newl-tag newl-mems newl-types))
+       ((erp newr-pred)
+        (stsp-struct-value-pred 'newr newr-tag newr-mems newr-types))
+       ((erp old-accs) (stsp-struct-value-accs 'old old-mems old-types))
+       ((erp newl-accs) (stsp-struct-value-accs 'newl newl-mems newl-types))
+       ((erp newr-accs) (stsp-struct-value-accs 'newr newr-mems newr-types))
        ((erp equiv-pred)
         (stsp-struct-value-equiv old-mems newl-mems newr-mems)))
     (retok (append (list old-pred)
@@ -837,11 +1476,18 @@
                    newr-accs
                    (list equiv-pred))
            old-mems
+           old-types
            newl-mems))
   :guard-hints
   (("Goal"
     :in-theory (enable c$::true-listp-when-ident-listp
-                       acl2::true-listp-when-pseudo-event-form-listp-rewrite))))
+                       acl2::true-listp-when-pseudo-event-form-listp-rewrite)))
+
+  ///
+
+  (defret len-of-stsp-struct-type-declon
+    (implies (not erp)
+             (equal (len types) (len mems)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -851,14 +1497,19 @@
                                    (tag identp)
                                    (tag2 identp)
                                    (mems ident-listp)
+                                   (types type-listp)
                                    (lmems ident-listp))
   :guard (and (declon-unambp old-declon)
               (declon-unambp new-declon)
               (declon-unambp new-declon2)
               (declon-annop old-declon)
               (declon-annop new-declon)
-              (declon-annop new-declon2))
+              (declon-annop new-declon2)
+              (equal (len types) (len mems)))
   :returns (mv (erp maybe-msgp)
+               (old-name identp)
+               (newl-name identp)
+               (newr-name identp)
                (events pseudo-event-form-listp))
   :short "Check, and generate events for,
           the declarations of the old and new left and right struct objects."
@@ -873,8 +1524,10 @@
    (xdoc::p
     "If everything checks out, we generate
      the equivalence predicate on old and new static stores
-     and the equivalence predicate on the old and new computation states."))
-  (b* (((reterr) nil)
+     and the equivalence predicate on the old and new computation states.")
+   (xdoc::p
+    "We also return the names of the struct objects."))
+  (b* (((reterr) (irr-ident) (irr-ident) (irr-ident) nil)
        ((erp old-tag old-name) (stsp-check-struct-object-declon old-declon))
        ((erp newl-tag newl-name) (stsp-check-struct-object-declon new-declon))
        ((erp newr-tag newr-name) (stsp-check-struct-object-declon new-declon2))
@@ -892,17 +1545,26 @@
        ((erp compustate-equiv-pred)
         (stsp-compustate-equiv old-name newl-name newr-name
                                old-tag newl-tag newr-tag))
-       ((erp exec-old-struct) (stsp-exec-strct-thm 'old old-name))
-       ((erp exec-newl-struct) (stsp-exec-strct-thm 'newl newl-name))
-       ((erp exec-newr-struct) (stsp-exec-strct-thm 'newr newr-name))
+       ((erp exec-congs)
+        (stsp-exec-expr-congruences old-name newl-name newr-name))
+       ((erp exec-old-struct) (stsp-exec-struct-thm 'old old-name))
+       ((erp exec-newl-struct) (stsp-exec-struct-thm 'newl newl-name))
+       ((erp exec-newr-struct) (stsp-exec-struct-thm 'newr newr-name))
        ((erp exec-members)
-        (stsp-exec-mem-eq mems lmems old-name newl-name newr-name)))
-    (retok (list* static-equiv-pred
-                  compustate-equiv-pred
-                  exec-old-struct
-                  exec-newl-struct
-                  exec-newr-struct
-                  exec-members))))
+        (stsp-exec-mem-eq mems types lmems old-name newl-name newr-name)))
+    (retok old-name
+           newl-name
+           newr-name
+           (append (list static-equiv-pred
+                         compustate-equiv-pred)
+                   exec-congs
+                   (list exec-old-struct
+                         exec-newl-struct
+                         exec-newr-struct)
+                   exec-members)))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -974,13 +1636,14 @@
                     (trans-item-declon (ext-declon-declon old-declon))
                     (trans-item-fix new-item)
                     (trans-item-fix new-item2)))
-          ((erp events mems lmems) (stsp-struct-type-declon old-declon
-                                                            new-declon
-                                                            new-declon2
-                                                            tag
-                                                            tag2
-                                                            rmems)))
-       (retok (stsp-stage-types mems lmems)
+          ((erp events mems types lmems)
+           (stsp-struct-type-declon old-declon
+                                   new-declon
+                                   new-declon2
+                                   tag
+                                   tag2
+                                   rmems)))
+       (retok (stsp-stage-types mems types lmems)
               (trans-item-list-fix (cdr new-items))
               events))
      :types
@@ -1007,14 +1670,19 @@
                     (trans-item-declon (ext-declon-declon old-declon))
                     (trans-item-fix new-item)
                     (trans-item-fix new-item2)))
-          ((erp events) (stsp-struct-object-declon old-declon
-                                                   new-declon
-                                                   new-declon2
-                                                   tag
-                                                   tag2
-                                                   stage.mems
-                                                   stage.lmems)))
-       (retok (stsp-stage-objects)
+          ((erp old-name
+                newl-name
+                newr-name
+                events)
+           (stsp-struct-object-declon old-declon
+                                      new-declon
+                                      new-declon2
+                                      tag
+                                      tag2
+                                      stage.mems
+                                      stage.types
+                                      stage.lmems)))
+       (retok (stsp-stage-objects old-name newl-name newr-name)
               (trans-item-list-fix (cdr new-items))
               events))
      :objects (retmsg$ "Unsupported proof generation for ~
@@ -1035,21 +1703,385 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define stsp-gen-expr-thm ((old exprp)
+                           (new exprp)
+                           (vartys c::ident-type-mapp)
+                           (const-new symbolp)
+                           (thm-index posp)
+                           (hints true-listp))
+  :guard (and (expr-unambp old)
+              (expr-unambp new)
+              (expr-annop old)
+              (expr-annop new))
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (updated-thm-index posp))
+  :short "Generate a theorem for the STS transformation of an expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee gen-expr-thm),
+     but it relaxes the equality of the initial computation states
+     (which is a single @('compst') variable in that function)
+     to equivalent computation states.
+     We plan to generalize @(tsee gen-expr-thm)
+     so that it can be used for STS proof generation as well."))
+  (b* ((old (expr-fix old))
+       (new (expr-fix new))
+       ((unless (expr-formalp old))
+        (raise "Internal error: ~x0 is not in the formalized subset." old)
+        (mv '(_) nil 1))
+       ((unless (expr-formalp new))
+        (raise "Internal error: ~x0 is not in the formalized subset." new)
+        (mv '(_) nil 1))
+       (type (expr-type old))
+       ((unless (equal (expr-type new)
+                       type))
+        (raise "Internal error: ~
+                the type ~x0 of the new expression ~x1 differs from ~
+                the type ~x2 of the old expression ~x3."
+               (expr-type new) new type old)
+        (mv '(_) nil 1))
+       ((unless (type-formalp type))
+        (raise "Internal error: expression ~x0 has type ~x1." old type)
+        (mv '(_) nil 1))
+       ((mv & old-expr) (ldm-expr old)) ; ERP is NIL because FORMALP
+       ((mv & new-expr) (ldm-expr new)) ; ERP is NIL because FORMALP
+       ((mv & ctype) (ldm-type type)) ; ERP is NIL because FORMALP
+       (vars-pre (gen-var-assertions vartys 'old-compst))
+       (vars-post (gen-var-assertions vartys 'old-compst1))
+       (formula
+        `(b* ((old-expr ',old-expr)
+              (new-expr ',new-expr)
+              ((mv old-eval old-compst1)
+               (c::exec-expr old-expr old-compst old-fenv limit))
+              ((mv new-eval new-compst1)
+               (c::exec-expr new-expr new-compst new-fenv limit))
+              (old-val (c::expr-value->value old-eval))
+              (new-val (c::expr-value->value new-eval)))
+           (implies (and (compustate-equivp old-compst new-compst)
+                         ,@vars-pre
+                         (not (c::errorp old-eval)))
+                    (and (not (c::errorp new-eval))
+                         ,@(if (c::type-case ctype :void)
+                               '((not old-eval)
+                                 (not new-eval))
+                             `(old-eval
+                               new-eval
+                               (equal old-val new-val)
+                               (equal (c::type-of-value old-val) ',ctype)))
+                         (compustate-equivp old-compst1 new-compst1)
+                         ,@vars-post))))
+       ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
+       (thm-event `(defrule ,thm-name
+                     ,formula
+                     :rule-classes nil
+                     :hints ,(true-list-fix hints))))
+    (mv thm-event thm-name thm-index))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-expr-ident ((old-ident identp)
+                         (new-ident identp)
+                         (info var-vinfop)
+                         (old-name identp)
+                         (newl-name identp)
+                         (newr-name identp)
+                         (gin ginp))
+  :returns (mv (erp maybe-msgp) (gout goutp))
+  :short "STS proof generation for an identifier expression (i.e. variable)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee xeq-expr-ident),
+     but for STS proof generation;
+     unlike that function,
+     it does not perform the transformation,
+     but it only generates proofs,
+     so it is given (the components of)
+     both the old and new expression as inputs,
+     which it sanity-checks.")
+   (xdoc::p
+    "If the old expression is the name of the old struct object,
+     we ensure that the new expression is
+     the name of one of the new struct objects,
+     which should always be the case.
+     We generate no theorem in this case,
+     because the ``leaf'' theorems involve
+     member expressions involving those struct objects,
+     and those theorems are generated
+     when processing the declarations of the struct objects.")
+   (xdoc::p
+    "Otherwise, the old and new expressions must be identical,
+     and we generate a theorem similar to @(tsee xeq-expr-ident)."))
+  (b* (((reterr) (irr-gout))
+       ((gin gin) gin)
+       (gout-no-thm (gout-no-thm gin))
+       ((when (equal (ident-fix old-ident)
+                     (ident-fix old-name)))
+        (b* (((unless (member-equal (ident-fix new-ident)
+                                    (list (ident-fix newl-name)
+                                          (ident-fix newr-name))))
+              (retmsg$ "The identifiers ~x0 and ~x1 do not match. ~
+                        This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                        was not called on ~
+                        the old and new code of STRUCT-TYPE-SPLIT."
+                       (ident-fix old-ident) (ident-fix new-ident))))
+          (retok gout-no-thm)))
+       ((unless (equal (ident-fix old-ident)
+                       (ident-fix new-ident)))
+        (retmsg$ "The identifiers ~x0 and ~x1 do not match. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 (ident-fix old-ident) (ident-fix new-ident)))
+       (ident (ident-fix old-ident))
+       ((var-vinfo info) (var-vinfo-fix info))
+       ((unless (and (ident-formalp ident)
+                     (type-formalp info.type)
+                     (not (type-case info.type :void))
+                     (not (type-case info.type :char))))
+        (retok gout-no-thm))
+       ((mv & cvar) (ldm-ident ident)) ; ERP is NIL because FORMALP
+       ((mv & ctype) (ldm-type info.type)) ; ERP is NIL because FORMALP
+       ((unless (omap::assoc cvar gin.vartys)) (retok gout-no-thm))
+       (hints `(("Goal"
+                 :in-theory '((:e c::ident-fix)
+                              (:e c::type-fix)
+                              (:e c::expr-ident)
+                              expr-compustate-vars)
+                 :use (:instance expr-ident-congruence-under-compustate-equivp
+                                 (var ',cvar)
+                                 (type ',ctype)))))
+       ((mv thm-event thm-name thm-index)
+        (stsp-gen-expr-thm (expr-ident ident info)
+                           (expr-ident ident info)
+                           gin.vartys
+                           gin.const-new
+                           gin.thm-index
+                           hints)))
+    (retok
+     (make-gout :events (cons thm-event gin.events)
+                :thm-index thm-index
+                :thm-name thm-name
+                :vartys gin.vartys))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-expr ((old-expr exprp)
+                   (new-expr exprp)
+                   (old-name identp)
+                   (newl-name identp)
+                   (newr-name identp)
+                   (gin ginp))
+  :guard (and (expr-unambp old-expr)
+              (expr-unambp new-expr)
+              (expr-annop old-expr)
+              (expr-annop new-expr))
+  :returns (mv (erp maybe-msgp) (gout goutp))
+  :short "STS proof generation for an expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This does not perform the transformation; it only generates proofs.
+     So it takes as input both old and new expression.
+     This is very limited for now:
+     we only generate theorems for identifier expressions."))
+  (b* (((reterr) (irr-gout)))
+    (expr-case
+     old-expr
+     :ident
+     (expr-case
+      new-expr
+      :ident (stsp-expr-ident old-expr.ident
+                              new-expr.ident
+                              old-expr.info
+                              old-name
+                              newl-name
+                              newr-name
+                              gin)
+      :otherwise (retmsg$ "The expressions ~x0 and ~x1 do not match. ~
+                           This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                           was not called on ~
+                           the old and new code of STRUCT-TYPE-SPLIT."
+                          (expr-fix old-expr) (expr-fix new-expr)))
+     :binary
+     (expr-case
+      new-expr
+      :binary (b* (((erp gout) (stsp-expr old-expr.arg1
+                                          new-expr.arg1
+                                          old-name
+                                          newl-name
+                                          newr-name
+                                          gin))
+                   (gin (gin-update gin gout))
+                   ((erp gout) (stsp-expr old-expr.arg2
+                                          new-expr.arg2
+                                          old-name
+                                          newl-name
+                                          newr-name
+                                          gin)))
+                (retok gout))
+      :otherwise (retmsg$ "The expressions ~x0 and ~x1 do not match. ~
+                           This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                           was not called on ~
+                           the old and new code of STRUCT-TYPE-SPLIT."
+                          (expr-fix old-expr) (expr-fix new-expr)))
+     :otherwise (retok (gout-no-thm gin))))
+  :measure (expr-count old-expr)
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-param-declon-list ((old-params param-declon-listp)
+                                (new-params param-declon-listp))
+  :guard (and (param-declon-list-unambp old-params)
+              (param-declon-list-unambp new-params)
+              (param-declon-list-annop old-params)
+              (param-declon-list-annop new-params))
+  :returns (mv (erp maybe-msgp) (vartys c::ident-type-mapp))
+  :short "Generate the initial variables in scope
+          from the parameters of a function definition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only add entries for parameters
+     that are non-abstract
+     and whose type is integer except @('bool') or plain @('char').
+     We skip over the parameters that do not satisfy these conditions."))
+  (b* (((reterr) nil)
+       ((when (endp old-params))
+        (if (endp new-params)
+            (retok nil)
+          (retmsg$ "The new function has more parameters than the old one, ~
+                    namely the extra parameters ~x0. ~
+                    This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                    was not called on ~
+                    the old and new code of STRUCT-TYPE-SPLIT."
+                   (param-declon-list-fix new-params))))
+       ((when (endp new-params))
+        (retmsg$ "The new function has more parameters than the old one, ~
+                  namely the extra parameters ~x0. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 (param-declon-list-fix old-params)))
+       (old-param (car old-params))
+       (new-param (car new-params))
+       (type (param-declon-type old-param))
+       ((unless (equal type (param-declon-type new-param)))
+        (retmsg$ "The parameter types ~x0 and ~x1 do not match. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 type (param-declon-type new-param)))
+       ((mv erp ctype) (ldm-type type))
+       ((when erp) (stsp-param-declon-list (cdr old-params) (cdr new-params)))
+       ((unless (c::type-nonchar-integerp ctype))
+        (stsp-param-declon-list (cdr old-params) (cdr new-params)))
+       (old-pdeclor (c$::param-declon->declor old-param))
+       (new-pdeclor (c$::param-declon->declor new-param))
+       ((unless (eq (c$::param-declor-kind old-pdeclor)
+                    (c$::param-declor-kind new-pdeclor)))
+        (retmsg$ "The parameter declarators ~x0 and ~x1 do not match. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 old-pdeclor new-pdeclor))
+       ((unless (param-declor-case old-pdeclor :nonabstract))
+        (stsp-param-declon-list (cdr old-params) (cdr new-params)))
+       (ident (declor->ident (param-declor-nonabstract->declor old-pdeclor)))
+       ((unless (equal ident
+                       (declor->ident
+                        (param-declor-nonabstract->declor new-pdeclor))))
+        (retmsg$ "The identifiers ~x0 and ~x1 do not match. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 ident
+                 (declor->ident
+                  (param-declor-nonabstract->declor new-pdeclor))))
+       ((mv erp cident) (ldm-ident ident))
+       ((when erp) (stsp-param-declon-list (cdr old-params) (cdr new-params)))
+       ((erp vartys)
+        (stsp-param-declon-list (cdr old-params) (cdr new-params))))
+    (retok (omap::update cident ctype vartys)))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define stsp-fundef ((old-fundef fundefp)
                      (new-fundef fundefp)
-                     (tag identp)
-                     (tag2 identp)
-                     (rmems ident-listp))
+                     (old-name identp)
+                     (newl-name identp)
+                     (newr-name identp)
+                     (gin ginp))
   :guard (and (fundef-unambp old-fundef)
               (fundef-unambp new-fundef)
               (fundef-annop old-fundef)
               (fundef-annop new-fundef))
   :returns (mv (erp maybe-msgp)
-               (events pseudo-event-form-listp))
+               (gout goutp))
   :short "Generate events for a function definition."
-  (declare (ignore new-fundef tag tag2 rmems))
-  (retok
-   `((acl2::cw-event "TODO: theorems for ~x0~%" ',(fundef-fix old-fundef)))))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is still work in progress."))
+  (b* (((reterr) (irr-gout))
+       (old-declor (fundef->declor old-fundef))
+       (new-declor (fundef->declor new-fundef))
+       (old-dirdeclor (declor->direct old-declor))
+       (new-dirdeclor (declor->direct new-declor))
+       ((unless (or
+                 (and (dirdeclor-case old-dirdeclor :function-params)
+                      (dirdeclor-case new-dirdeclor :function-params))
+                 (and (dirdeclor-case old-dirdeclor :function-names)
+                      (dirdeclor-case new-dirdeclor :function-names)
+                      (endp (dirdeclor-function-names->names old-dirdeclor))
+                      (endp (dirdeclor-function-names->names new-dirdeclor)))))
+        (retmsg$ "Unsupported proof generation for ~
+                  functions whose declarator does not have ~
+                  function parameters or empty function names."))
+       (old-params (if (dirdeclor-case old-dirdeclor :function-params)
+                       (dirdeclor-function-params->params old-dirdeclor)
+                     nil))
+       (new-params (if (dirdeclor-case new-dirdeclor :function-params)
+                       (dirdeclor-function-params->params new-dirdeclor)
+                     nil))
+       ((erp vartys) (stsp-param-declon-list old-params new-params))
+       (gin (change-gin gin :vartys vartys))
+       (old-body (fundef->body old-fundef))
+       (new-body (fundef->body new-fundef))
+       (old-items (comp-stmt->items old-body))
+       (new-items (comp-stmt->items new-body))
+       ((unless (and (consp old-items)
+                     (endp (cdr old-items))
+                     (consp new-items)
+                     (endp (cdr new-items))))
+        (retmsg$ "Unsupported proof generation for ~
+                  function bodies with multiple block items."))
+       (old-item (car old-items))
+       (new-item (car new-items))
+       ((unless (and (block-item-case old-item :stmt)
+                     (block-item-case new-item :stmt)))
+        (retmsg$ "Unsupported proof generation for ~
+                  function bodies whose block item is not a statement."))
+       (old-stmt (block-item-stmt->stmt old-item))
+       (new-stmt (block-item-stmt->stmt new-item))
+       ((unless (and (stmt-case old-stmt :return)
+                     (stmt-case new-stmt :return)))
+        (retmsg$ "Unsupported proof generation for ~
+                  function bodies whose statement is not a retun."))
+       (old-expr? (stmt-return->expr? old-stmt))
+       (new-expr? (stmt-return->expr? new-stmt))
+       ((unless (and old-expr?
+                     new-expr?))
+        (retmsg$ "Unsupported proof generation for ~
+                  function bodies whose return statement has no expression."))
+       (old-expr old-expr?)
+       (new-expr new-expr?))
+    (stsp-expr old-expr new-expr old-name newl-name newr-name gin)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1058,7 +2090,8 @@
                          (tag identp)
                          (tag2 identp)
                          (rmems ident-listp)
-                         (stage stsp-stagep))
+                         (stage stsp-stagep)
+                         (gin ginp))
   :guard (and (ext-declon-unambp old-edeclon)
               (ext-declon-annop old-edeclon)
               (trans-item-list-unambp new-items)
@@ -1067,7 +2100,7 @@
   :returns (mv (erp maybe-msgp)
                (new-stage stsp-stagep)
                (rest-new-items trans-item-listp)
-               (events pseudo-event-form-listp))
+               (gout goutp))
   :short "Generate events for an external declaration."
   :long
   (xdoc::topstring
@@ -1088,38 +2121,56 @@
      and there is no stage change.")
    (xdoc::p
     "If it is a declaration, we use a separate function to handle it."))
-  (b* (((reterr) (irr-stsp-stage) nil nil))
+  (b* (((reterr) (irr-stsp-stage) nil (irr-gout)))
     (ext-declon-case
      old-edeclon
      :fundef
      (b* ((new-item (car new-items))
           (new-fundef (c$::check-trans-item-fundef new-item))
           ((unless new-fundef)
-           (raise "Internal error: ~x0 transformed into ~x1."
-                  (trans-item-declon old-edeclon)
-                  (trans-item-fix new-item))
-           (retmsg$ ""))
+           (retmsg$ "The translation items ~x0 and ~x1 do not match. ~
+                     This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                     was not called on ~
+                     the old and new code of STRUCT-TYPE-SPLIT."
+                    (trans-item-declon old-edeclon)
+                    (trans-item-fix new-item)))
           ((unless (stsp-stage-case stage :objects))
            (retmsg$ "Unsupported proof generation for ~
                      function definition before struct type or object."))
-          ((erp events)
-           (stsp-fundef old-edeclon.fundef new-fundef tag tag2 rmems)))
+          ((erp gout)
+           (stsp-fundef old-edeclon.fundef
+                        new-fundef
+                        (stsp-stage-objects->old-name stage)
+                        (stsp-stage-objects->newl-name stage)
+                        (stsp-stage-objects->newr-name stage)
+                        gin)))
        (retok (stsp-stage-fix stage)
               (trans-item-list-fix (cdr new-items))
-              events))
+              gout))
      :declon
-     (stsp-declon old-edeclon.declon new-items tag tag2 rmems stage)
+     (b* (((erp new-stage rest-new-items events)
+           (stsp-declon old-edeclon.declon new-items tag tag2 rmems stage))
+          (gout (gout-no-thm gin))
+          (gout (change-gout gout
+                             ;; events in GOUT are reversed
+                             :events (append (rev events)
+                                             (gout->events gout)))))
+       (retok new-stage
+              rest-new-items
+              gout))
      :empty
      (b* ((new-item (car new-items))
           ((unless (trans-item-equiv new-item
                                      (trans-item-declon (ext-declon-empty))))
-           (raise "Internal error: ~x0 transformed into ~x1."
-                  (trans-item-declon old-edeclon)
-                  (trans-item-fix new-item))
-           (retmsg$ "")))
+           (retmsg$ "The translation items ~x0 and ~x1 do not match. ~
+                     This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                     was not called on ~
+                     the old and new code of STRUCT-TYPE-SPLIT."
+                    (trans-item-declon old-edeclon)
+                    (trans-item-fix new-item))))
        (retok (stsp-stage-fix stage)
               (trans-item-list-fix (cdr new-items))
-              nil))
+              (gout-no-thm gin)))
      :asm (retmsg$ "Unsupported proof generation for assembler.")))
   :no-function nil
 
@@ -1140,7 +2191,8 @@
                          (tag identp)
                          (tag2 identp)
                          (rmems ident-listp)
-                         (stage stsp-stagep))
+                         (stage stsp-stagep)
+                         (gin ginp))
   :guard (and (trans-item-unambp old-item)
               (trans-item-annop old-item)
               (trans-item-list-unambp new-items)
@@ -1149,7 +2201,7 @@
   :returns (mv (erp maybe-msgp)
                (new-stage stsp-stagep)
                (rest-new-items trans-item-listp)
-               (events pseudo-event-form-listp))
+               (gout goutp))
   :short "Generate events for a translation item."
   :long
   (xdoc::topstring
@@ -1162,10 +2214,16 @@
      There is no change to the scanning stage.")
    (xdoc::p
     "For an external declaration, we use a separate function."))
-  (b* (((reterr) (irr-stsp-stage) nil nil))
+  (b* (((reterr) (irr-stsp-stage) nil (irr-gout)))
     (trans-item-case
      old-item
-     :declon (stsp-ext-declon old-item.declon new-items tag tag2 rmems stage)
+     :declon (stsp-ext-declon old-item.declon
+                              new-items
+                              tag
+                              tag2
+                              rmems
+                              stage
+                              gin)
      :include (retmsg$ "Unsupported proof generation for #include.")
      :define (retmsg$ "Unsupported proof generation for #define.")
      :undef (retmsg$ "Unsupported proof generation for #undef.")
@@ -1173,13 +2231,15 @@
      :line-comment
      (b* ((new-item (car new-items))
           ((unless (trans-item-equiv new-item old-item))
-           (raise "Internal error: ~x0 transformed into ~x1."
-                  (trans-item-fix old-item)
-                  (trans-item-fix new-item))
-           (retmsg$ "")))
+           (retmsg$ "The translation items ~x0 and ~x1 do not match. ~
+                     This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                     was not called on ~
+                     the old and new code of STRUCT-TYPE-SPLIT."
+                    (trans-item-fix old-item)
+                    (trans-item-fix new-item))))
        (retok (stsp-stage-fix stage)
               (trans-item-list-fix (cdr new-items))
-              nil))))
+              (gout-no-thm gin)))))
   :no-function nil
 
   ///
@@ -1199,13 +2259,14 @@
                               (tag identp)
                               (tag2 identp)
                               (rmems ident-listp)
-                              (stage stsp-stagep))
+                              (stage stsp-stagep)
+                              (gin ginp))
   :guard (and (trans-item-list-unambp old-items)
               (trans-item-list-unambp new-items)
               (trans-item-list-annop old-items)
               (trans-item-list-annop new-items))
   :returns (mv (erp maybe-msgp)
-               (events pseudo-event-form-listp))
+               (gout goutp))
   :short "Generate events for a list of translation items."
   :long
   (xdoc::topstring
@@ -1222,41 +2283,43 @@
      along with one or two translation items from the new list
      (see the separate function for details).
      Then we continue with the rest of the translation items."))
-  (b* (((reterr) nil)
+  (b* (((reterr) (irr-gout))
        ((when (endp old-items))
         (b* (((unless (endp new-items))
-              (raise "Internal error: extra new translation items ~x0."
-                     (trans-item-list-fix new-items))
-              (retmsg$ "")))
+              (retmsg$ "The new code has extra translation items ~x0. ~
+                        This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                        was not called on ~
+                        the old and new code of STRUCT-TYPE-SPLIT."
+                       (trans-item-list-fix new-items))))
           (stsp-stage-case
            stage
            :init (retmsg$ "Unsupported proof generation for ~
                            missing struct type and object.")
            :types (retmsg$ "Unsupported proof generation for ~
                             struct object.")
-           :objects (retok nil))))
+           :objects (retok (gout-no-thm gin)))))
        ((when (endp new-items))
-        (raise "Internal error: extra old translation items ~x0."
-               (trans-item-list-fix old-items))
-        (retmsg$ ""))
-       ((erp stage rest-new-items events) (stsp-trans-item (car old-items)
-                                                           new-items
-                                                           tag
-                                                           tag2
-                                                           rmems
-                                                           stage))
-       ((erp more-events)
-        (stsp-trans-item-list (cdr old-items)
-                              rest-new-items
-                              tag
-                              tag2
-                              rmems
-                              stage)))
-    (retok (append events more-events)))
-  :no-function nil
-  :guard-hints
-  (("Goal"
-    :in-theory (enable acl2::true-listp-when-pseudo-event-form-listp-rewrite))))
+        (retmsg$ "The old code has extra translation items ~x0. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 (trans-item-list-fix old-items)))
+       ((erp stage rest-new-items gout) (stsp-trans-item (car old-items)
+                                                         new-items
+                                                         tag
+                                                         tag2
+                                                         rmems
+                                                         stage
+                                                         gin))
+       (gin (gin-update gin gout)))
+    (stsp-trans-item-list (cdr old-items)
+                          rest-new-items
+                          tag
+                          tag2
+                          rmems
+                          stage
+                          gin))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1264,13 +2327,14 @@
                          (new-tunit trans-unitp)
                          (tag identp)
                          (tag2 identp)
-                         (rmems ident-listp))
+                         (rmems ident-listp)
+                         (gin ginp))
   :guard (and (trans-unit-unambp old-tunit)
               (trans-unit-unambp new-tunit)
               (trans-unit-annop old-tunit)
               (trans-unit-annop new-tunit))
   :returns (mv (erp maybe-msgp)
-               (events pseudo-event-form-listp))
+               (gout goutp))
   :short "Generate events for a translation unit."
   :long
   (xdoc::topstring
@@ -1282,12 +2346,14 @@
                         tag
                         tag2
                         rmems
-                        (stsp-stage-init)))
+                        (stsp-stage-init)
+                        gin))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define stsp-gen-everything ((old-code code-ensemblep)
                              (new-code code-ensemblep)
+                             (const-new symbolp)
                              (tag identp)
                              (tag2 identp)
                              (rmems ident-listp))
@@ -1309,6 +2375,18 @@
    (xdoc::p
     "For now we only support single translation units."))
   (b* (((reterr) '(_))
+       (ienv (code-ensemble->ienv old-code))
+       ((unless (equal ienv (code-ensemble->ienv new-code)))
+        (retmsg$ "The implementation environments ~x0 and ~x1 do not match. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 ienv (code-ensemble->ienv new-code)))
+       (gin (make-gin :ienv ienv
+                      :const-new const-new
+                      :vartys nil
+                      :events nil
+                      :thm-index 1))
        (old-tens (code-ensemble->trans-units old-code))
        (new-tens (code-ensemble->trans-units new-code))
        (old-tunits (trans-ensemble->units old-tens))
@@ -1319,12 +2397,12 @@
                   for multiple translation units."))
        (old-tunit (omap::head-val old-tunits))
        (new-tunit (omap::head-val new-tunits))
-       ((erp events) (stsp-trans-unit old-tunit new-tunit tag tag2 rmems)))
+       ((erp gout) (stsp-trans-unit old-tunit new-tunit tag tag2 rmems gin)))
     (retok `(encapsulate
               ()
               (local (include-book "std/lists/top" :dir :system))
               (local (include-book "std/omaps/delete" :dir :system))
-              ,@events)))
+              ,@(rev (gout->events gout))))) ; events in GOUT are in reverse
   :guard-hints (("Goal"
                  :expand
                  ((:free (tens) (omap::size (trans-ensemble->units tens)))))))
@@ -1352,7 +2430,9 @@
                              new-tag
                              right-members
                              (w state))))
-    (stsp-gen-everything old-code new-code tag tag2 rmems)))
+    (stsp-gen-everything old-code new-code const-new tag tag2 rmems))
+  :guard-hints
+  (("Goal" :in-theory (enable symbolp-const-new-when-stsp-process-inputs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

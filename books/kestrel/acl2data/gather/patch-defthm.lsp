@@ -14,7 +14,7 @@
                         hints
                         otf-flg
                         event-form
-                        #+:non-standard-analysis std-p)
+                        #+non-standard-analysis std-p)
   (with-ctx-summarized
    (cons 'defthm name)
 
@@ -55,7 +55,7 @@
              (cert-data-flg (value (car cert-data-flg/tterm0)))
              (tterm0 (value (cdr cert-data-flg/tterm0)))
              (tterm
-              #+:non-standard-analysis
+              #+non-standard-analysis
               (if std-p
                   (er-progn
                    (chk-classical-term-or-standardp-of-classical-term
@@ -63,11 +63,11 @@
                    (translate (weaken-using-transfer-principle term)
                               t t t ctx wrld state))
                 (value tterm0))
-              #-:non-standard-analysis
+              #-non-standard-analysis
               (value tterm0))
              (classes
 
-; (#+:non-standard-analysis) We compute rule classes with respect to the
+; (#+non-standard-analysis) We compute rule classes with respect to the
 ; original (translated) term.  The modified term is only relevant for proof.
 
               (translate-rule-classes name rule-classes tterm0 ctx (ens state)
@@ -124,7 +124,7 @@
                                                       :INSTRUCTIONS and ~
                                                       :HINTS to DEFTHM."))
                                          (t (value nil)))
-                                   #+:non-standard-analysis
+                                   #+non-standard-analysis
                                    (if std-p
 
 ; How could this happen?  Presumably the user created a defthm event using the
@@ -339,7 +339,7 @@
                        hints
                        otf-flg
                        event-form
-                       #+:non-standard-analysis std-p)
+                       #+non-standard-analysis std-p)
 
 ; Important Note:  Don't change the formals of this function without
 ; reading the *initial-event-defmacros* discussion in axioms.lisp.
@@ -357,7 +357,7 @@
                  hints
                  otf-flg
                  event-form
-                 #+:non-standard-analysis std-p)))
+                 #+non-standard-analysis std-p)))
 ;;; Open a new er-let* to support syntactic match with original definition,
 ;;; which ends above in three right parens.
       (er-let* (#+acl2-advice ;patch;

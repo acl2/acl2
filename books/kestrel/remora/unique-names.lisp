@@ -1377,7 +1377,7 @@
               (mv used (atom-boxn (ispace-list-rename-ispace-vars
                                    x.ispaces r-.dim r-.shape)
                                   new-array
-                                  (type-rename-all-vars x.type r))))))
+                                  (type-option-rename-all-vars x.type? r))))))
 
   (define uniq-atom-list ((x atom-listp) (used string-listp) (r var-renamings-p))
     :short "Uniquify binder names in a list of atoms."

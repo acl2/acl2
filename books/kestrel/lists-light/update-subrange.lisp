@@ -154,7 +154,7 @@
                                   (update-nth-of-update-subrange-diff)))))
 
 (defthm update-subrange-start-start
-  (implies (and (natp start))
+  (implies (natp start)
            (equal (update-subrange start start vals lst)
                   (update-nth start (car vals) lst)))
   :hints (("Goal" :in-theory (enable nth update-subrange)
@@ -318,8 +318,8 @@
            :in-theory (e/d (update-subrange UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF-BACK)
                            (UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF)))))
 
-(defthm cdr-of-update-subrange-from-zero
-  (implies (and (natp end))
+(defthm cdr-of-update-subrange-of-0
+  (implies (natp end)
            (equal (cdr (update-subrange 0 end vals lst))
                   (update-subrange 0 (+ -1 end) (cdr vals) (CDR lst))))
   :hints (("Goal" :expand (update-subrange 0 end vals lst)
@@ -348,7 +348,7 @@
 
 ;move
 ;disable?
-(defthm equal-of-update-nth-of-0
+(defthmd equal-of-update-nth-of-0
   (equal (equal (update-nth 0 val lst) x)
          (and (consp x)
               (equal (car x) val)
@@ -371,7 +371,8 @@
            :in-theory (e/d (take update-subrange)
                            (equal-of-cons)))))
 
-(defthm update-subrange-of-0
+;; Quite strong!
+(defthmd update-subrange-of-0
   (equal (update-subrange 0 end vals lst)
          (if (natp end)
              (append (take (+ 1 end) vals)
@@ -526,7 +527,8 @@
                 (< n (len lst))
                 )
            (equal (update-subrange 0 n vals lst)
-                  (append vals (nthcdr (+ 1 n) lst)))))
+                  (append vals (nthcdr (+ 1 n) lst))))
+  :hints (("Goal" :in-theory (enable update-subrange-of-0))))
 
 (defthm update-subrange-not-nil1
   (implies (consp lst)
@@ -599,4 +601,4 @@
                 )
            (equal (update-subrange (len lst) end vals lst)
                   (append lst (take (+ 1 (- end (len lst))) vals))))
-  :hints (("Goal" :in-theory (enable update-subrange equal-of-append))))
+  :hints (("Goal" :in-theory (enable update-subrange equal-of-append update-subrange-of-0))))

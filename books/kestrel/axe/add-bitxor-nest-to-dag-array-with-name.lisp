@@ -1,7 +1,7 @@
 ; Adding a nest of bitxors to the DAG
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -62,37 +62,40 @@
                                                     nest-nodenum
                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)))))
 
-(def-dag-builder-theorems
-  (add-bitxor-nest-to-dag-array-with-name-aux rev-leaves nest-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
-  (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-  :dag-array-name dag-array-name
-  :dag-parent-array-name dag-parent-array-name
-  :hyps ((true-listp rev-leaves)
-         (natp nest-nodenum)
-         (< nest-nodenum dag-len)
-         (bounded-darg-listp rev-leaves dag-len)))
+(local
+ (def-dag-builder-theorems
+     (add-bitxor-nest-to-dag-array-with-name-aux rev-leaves nest-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)
+     (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+   :dag-array-name dag-array-name
+   :dag-parent-array-name dag-parent-array-name
+   :hyps ((true-listp rev-leaves)
+          (natp nest-nodenum)
+          (< nest-nodenum dag-len)
+          (bounded-darg-listp rev-leaves dag-len))))
 
 ;drop some hyps?
-(defthm dargp-of-mv-nth-1-of-add-bitxor-nest-to-dag-array-with-name-aux
-  (implies (and (natp nest-nodenum)
-                (< nest-nodenum dag-len)
-                (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+(local
+ (defthm dargp-of-mv-nth-1-of-add-bitxor-nest-to-dag-array-with-name-aux
+   (implies (and (natp nest-nodenum)
+                 (< nest-nodenum dag-len)
+                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
 ;                (true-listp rev-leaves)
-                (bounded-darg-listp rev-leaves dag-len)
-                (not (mv-nth 0 (add-bitxor-nest-to-dag-array-with-name-aux rev-leaves nest-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
-           (dargp (mv-nth 1 (add-bitxor-nest-to-dag-array-with-name-aux rev-leaves nest-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
-  :hints (("Goal" :in-theory (enable add-bitxor-nest-to-dag-array-with-name-aux))))
+                 (bounded-darg-listp rev-leaves dag-len)
+                 (not (mv-nth 0 (add-bitxor-nest-to-dag-array-with-name-aux rev-leaves nest-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
+            (dargp (mv-nth 1 (add-bitxor-nest-to-dag-array-with-name-aux rev-leaves nest-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
+   :hints (("Goal" :in-theory (enable add-bitxor-nest-to-dag-array-with-name-aux)))))
 
-(defthm dargp-less-than-of-mv-nth-1-of-add-bitxor-nest-to-dag-array-with-name-aux
-  (implies (and (natp nest-nodenum)
-                (< nest-nodenum dag-len)
-                (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+(local
+ (defthm dargp-less-than-of-mv-nth-1-of-add-bitxor-nest-to-dag-array-with-name-aux
+   (implies (and (natp nest-nodenum)
+                 (< nest-nodenum dag-len)
+                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
 ;                (true-listp rev-leaves)
-                (bounded-darg-listp rev-leaves dag-len)
-                (not (mv-nth 0 (add-bitxor-nest-to-dag-array-with-name-aux rev-leaves nest-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
-           (dargp-less-than (mv-nth 1 (add-bitxor-nest-to-dag-array-with-name-aux rev-leaves nest-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))
-                                       (mv-nth 3 (add-bitxor-nest-to-dag-array-with-name-aux rev-leaves nest-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
-  :hints (("Goal" :in-theory (enable add-bitxor-nest-to-dag-array-with-name-aux))))
+                 (bounded-darg-listp rev-leaves dag-len)
+                 (not (mv-nth 0 (add-bitxor-nest-to-dag-array-with-name-aux rev-leaves nest-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
+            (dargp-less-than (mv-nth 1 (add-bitxor-nest-to-dag-array-with-name-aux rev-leaves nest-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))
+                             (mv-nth 3 (add-bitxor-nest-to-dag-array-with-name-aux rev-leaves nest-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
+   :hints (("Goal" :in-theory (enable add-bitxor-nest-to-dag-array-with-name-aux)))))
 
 ;; KEEP IN SYNC WITH ADD-BVXOR-NEST-TO-DAG-ARRAY-WITH-NAME
 ;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).

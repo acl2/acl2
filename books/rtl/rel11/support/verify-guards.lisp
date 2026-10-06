@@ -415,7 +415,8 @@
   :hints (("subgoal 2" :use expo-exec-thm :expand ((expo-exec x) (expo x)))))
 
 (defnd expo(x)
-  (declare (xargs :measure (:? x)))
+  (declare (xargs :measure (:? x)
+                  :well-founded-relation e0-ord-<))
   (mbe
    :logic
    (cond ((or (not (rationalp x)) (equal x 0)) 0)

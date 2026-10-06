@@ -43,7 +43,6 @@
 (include-book "equiv")
 (include-book "final-cdr")
 (include-book "flatten")
-(include-book "intersection")
 (include-book "index-of")
 (include-book "intersection")
 (include-book "intersectp")

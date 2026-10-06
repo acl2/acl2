@@ -39,7 +39,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ primitives-evaluation-first-order
-  :parents (dynamic-semantics)
+  :parents (evaluation)
   :short "First-order evaluation of Remora primitives on expressions."
   :long
   (xdoc::topstring

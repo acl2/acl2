@@ -105,7 +105,7 @@
 (defthmd floor-when-usb-bind-free
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
                 (natp n)
-                (unsigned-byte-p-forced xsize x))
+                (force (unsigned-byte-p-forced xsize x)))
            (equal (floor x (expt 2 n))
                   (slice (+ -1 xsize) n x)))
   :hints

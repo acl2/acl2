@@ -59,7 +59,7 @@
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/alists-light/pairlis-dollar-fast" :dir :system)
 (include-book "kestrel/arrays-2d/arrays-2d" :dir :system) ;for array-elem-2d
-(include-book "kestrel/maps/maps" :dir :system) ;for key-list, todo: brings in too much, like osets
+(include-book "kestrel/maps/rkeys-def" :dir :system) ;for key-list, todo: brings in too much, like osets
 (include-book "make-evaluator")
 (include-book "unguarded-primitives")
 (include-book "unguarded-built-ins")
@@ -273,7 +273,7 @@
         (car items)
       (first-non-member-unguarded (cdr items) items-to-exclude))))
 
-(defthm first-non-member-correct
+(defthm first-non-member-unguarded-correct
   (equal (first-non-member-unguarded items items-to-exclude)
          (first-non-member items items-to-exclude))
   :hints (("Goal" :in-theory (enable first-non-member-unguarded
@@ -356,7 +356,7 @@
            (not not arg1)                         ;unguarded
            (power-of-2p power-of-2p arg1)         ;unguarded
            (lg lg-unguarded arg1)                 ;see lg-unguarded-correct
-           (bool-to-bit . (eval-in-logic (bool-to-bit arg1)))
+           (bool-to-bit . (bool-to-bit-unguarded arg1)) ; see bool-to-bit-unguarded-correct
            (char-code char-code-unguarded arg1) ;see char-code-unguarded-correct
            (code-char code-char-unguarded arg1) ;see code-char-unguarded-correct
            (symbol-package-name symbol-package-name-unguarded arg1) ;see symbol-package-name-unguarded-correct
@@ -490,7 +490,7 @@
                   (ceiling ceiling-unguarded arg1 arg2)
                   (group . (eval-in-logic (group arg1 arg2)))
                   (group2 . (eval-in-logic (group2 arg1 arg2)))
-                  (set::in . (eval-in-logic (set::in-unguarded arg1 arg2)))
+                  (set::in . (set::in-unguarded arg1 arg2)) ; see set::in-unguarded-correct
                   (symbol< symbol<-unguarded arg1 arg2))
                 (acons 3
                        '((repeat-tail repeat-tail arg1 arg2 arg3) ;; can this blow up?
@@ -524,11 +524,11 @@
                          (bvdiv bvdiv-unguarded arg1 arg2 arg3) ;see bvdiv-unguarded-correct
 
                          (bvsx bvsx-unguarded arg1 arg2 arg3)
-                         (sbvdiv sbvdiv-unguarded arg1 arg2 arg3)
+                         (sbvdiv sbvdiv-unguarded arg1 arg2 arg3) ; see sbvdiv-unguarded-correct
                          (sbvdivdown . (eval-in-logic (sbvdivdown arg1 arg2 arg3)))
-                         (sbvrem . (eval-in-logic (sbvrem arg1 arg2 arg3)))
+                         (sbvrem . (sbvrem-unguarded arg1 arg2 arg3)) ; see sbvrem-unguarded-correct
                          (sbvmoddown . (eval-in-logic (sbvmoddown arg1 arg2 arg3)))
-                         (sbvlt sbvlt-unguarded arg1 (ifix arg2) (ifix arg3)) ;probably okay - may not be needed if guards for the defining functions were better
+                         (sbvlt sbvlt-unguarded arg1 arg2 arg3)
                          (sbvle sbvle-unguarded arg1 arg2 arg3)
                          (s s arg1 arg2 arg3) ;unguarded
 ;;                         (nth2 nth2 arg1 arg2 arg3)
@@ -553,7 +553,7 @@
                                 (bv-array-read bv-array-read-unguarded arg1 arg2 arg3 arg4)
                                 (bvif bvif-unguarded arg1 arg2 arg3 arg4))
                               (acons 5 '((update-subrange2 . (eval-in-logic (update-subrange2 arg1 arg2 arg3 arg4 arg5))) ;new
-                                         (bv-array-write bv-array-write-unguarded (nfix arg1) (nfix arg2) (nfix arg3) arg4 arg5) ; see bv-array-write-unguarded-correct
+                                         (bv-array-write bv-array-write-unguarded arg1 arg2 arg3 arg4 arg5) ; see bv-array-write-unguarded-correct
                                          (bv-array-clear-range . (eval-in-logic (bv-array-clear-range arg1 arg2 arg3 arg4 arg5)))
                                          )
                                      nil))))))

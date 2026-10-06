@@ -35,47 +35,13 @@
     (xdoc::seetopic "dynamic-semantics" "dynamic environment")
     ".")
    (xdoc::p
-    "Our static environments correspond to the combination of
+    "There are three kinds of static environments,
+     for ispace variables, type variables, and expression variables.
+     They correspond to, respectively,
      the sort environment @($\\Theta$),
      the kind environment @($\\Delta$), and
      the type environment @($\\Gamma$)
-     in [thesis], [arxiv], and [esop]."))
-  :order-subtopics t
-  :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod senv
-  :short "Fixtype of static environments."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A static environment consists of:")
-   (xdoc::ul
-    (xdoc::li
-     "A map from the ispace variables in scope to optional ispaces.
-      This corresponds to @($\\Theta$);
-      since our ispace variables include their own sort,
-      the keys suffice to capture the sorts,
-      as opposed to a map from variables to sorts.
-      The optional ispace associated to a variable is absent
-      when the variable is bound by an abstraction,
-      i.e. it does not stand for any specific ispace;
-      it is present when the variable is bound by a @('let')
-      to a specific ispace, which is then its definition.
-      The definitions are taken into account
-      by ispace and type equivalence.")
-    (xdoc::li
-     "A map from the type variables in scope to optional types.
-      This corresponds to @($\\Delta$);
-      since our type variables include their own kind,
-      the keys suffice to capture the kinds,
-      as opposed to a map from variables to kinds.
-      The optional type is absent or present,
-      and is used analogously to the ispace variables described above.")
-    (xdoc::li
-     "A map from the expression variables in scope to their types.
-      This corresponds to @($\\Gamma$)."))
+     in [thesis], [arxiv], and [esop].")
    (xdoc::p
     "Variables are in five separate name spaces:
      one for dimension variables,
@@ -86,19 +52,72 @@
      E.g. @('$x'), @('@x'), @('&x'), @('*x'), and @('x')
      are all distinct variables, despite the common @('x') part;
      indeed, they are distinguished by the prefixes.
-     The variables in a static environment are similarly separated,
-     in the three components and via fixtype sum tags."))
-  ((ispace-vars ispace-var-ispace-option-map)
-   (type-vars type-var-type-option-map)
-   (expr-vars string-type-map))
-  :pred senvp)
+     The variables in static environments are similarly separated,
+     in the three kinds of environments and via fixtype sum tags."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod ispace-senv
+  :short "Fixtype of ispace static environments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An ispace static environment is
+     a map from the ispace variables in scope to optional ispaces.
+     This corresponds to @($\\Theta$);
+     since our ispace variables include their own sort,
+     the keys suffice to capture the sorts,
+     as opposed to a map from variables to sorts.
+     The optional ispace associated to a variable:
+     is absent when the variable is bound by an abstraction,
+     i.e. it does not stand for any specific ispace;
+     it is present when the variable is bound by a @('let')
+     to a specific ispace, which is then its definition."))
+  ((ispaces ispace-var-ispace-option-map))
+  :pred ispace-senvp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod type-senv
+  :short "Fixtype of type static environments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A type static environment is
+     a map from the type variables in scope to optional types.
+     This corresponds to @($\\Delta$);
+     since our type variables include their own kind,
+     the keys suffice to capture the kinds,
+     as opposed to a map from variables to kinds.
+     The optional type associated to a variable:
+     is absent when the variable is bound by an abstraction,
+     i.e. it does not stand for any specific type;
+     it is present when the variable is bound by a @('let')
+     to a specific type, which is then its definition."))
+  ((types type-var-type-option-map))
+  :pred type-senvp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod expr-senv
+  :short "Fixtype of expression static environments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An expression static environment is
+     a map from the expression variables in scope to their types.
+     This corresponds to @($\\Gamma$)."))
+  ((exprs string-type-map))
+  :pred expr-senvp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::defresult senv-result
-  :short "Fixtype of static environments and errors."
-  :ok senv
-  :pred senv-resultp)
+(fty::defresult expr-senv-result
+  :short "Fixtype of expression static environments and errors."
+  :ok expr-senv
+  :pred expr-senv-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -356,22 +375,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-senv ()
-  :short "Initial static environment."
+(define init-expr-senv ()
+  :returns (eenv expr-senvp)
+  :short "Initial expression static environment."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the initial, i.e. top-level, static environment.
-     It only contains the primitive operations in scope."))
-  (make-senv :ispace-vars nil
-             :type-vars nil
-             :expr-vars (primop-types)))
+    "This is the initial, i.e. top-level, expression static environment.
+     It only contains the primitive operations in scope.
+     The initial ispace and type static environments are empty."))
+  (expr-senv (primop-types)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define senv-add-ispace-var ((var ispace-varp) (senv senvp))
-  :returns (new-senv senvp)
-  :short "Add an ispace variable to the static environment."
+(define ispace-senv-add-var ((var ispace-varp) (ienv ispace-senvp))
+  :returns (new-ienv ispace-senvp)
+  :short "Add an ispace variable to the ispace static environment."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -380,30 +399,30 @@
      this is the case for variables bound by abstractions.
      A variable already present is overwritten,
      which realizes the intended shadowing."))
-  (change-senv senv
-               :ispace-vars (omap::update (ispace-var-fix var)
-                                          nil
-                                          (senv->ispace-vars senv))))
+  (change-ispace-senv ienv
+                      :ispaces (omap::update (ispace-var-fix var)
+                                             nil
+                                             (ispace-senv->ispaces ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define senv-add-ispace-vars ((vars ispace-var-listp) (senv senvp))
-  :returns (new-senv senvp)
-  :short "Add zero or more ispace variables to the static environment."
+(define ispace-senv-add-vars ((vars ispace-var-listp) (ienv ispace-senvp))
+  :returns (new-ienv ispace-senvp)
+  :short "Add zero or more ispace variables to the ispace static environment."
   :long
   (xdoc::topstring
    (xdoc::p
-    "See @(tsee senv-add-ispace-var),
+    "See @(tsee ispace-senv-add-var),
      which this function repeats for each variable."))
-  (b* (((when (endp vars)) (senv-fix senv))
-       (senv (senv-add-ispace-var (car vars) senv)))
-    (senv-add-ispace-vars (cdr vars) senv)))
+  (b* (((when (endp vars)) (ispace-senv-fix ienv))
+       (ienv (ispace-senv-add-var (car vars) ienv)))
+    (ispace-senv-add-vars (cdr vars) ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define senv-add-type-var ((var type-varp) (senv senvp))
-  :returns (new-senv senvp)
-  :short "Add a type variable to the static environment."
+(define type-senv-add-var ((var type-varp) (tenv type-senvp))
+  :returns (new-tenv type-senvp)
+  :short "Add a type variable to the type static environment."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -412,31 +431,33 @@
      this is the case for variables bound by abstractions.
      A variable already present is overwritten,
      which realizes the intended shadowing."))
-  (change-senv senv
-               :type-vars (omap::update (type-var-fix var)
-                                        nil
-                                        (senv->type-vars senv))))
+  (change-type-senv tenv
+                    :types (omap::update (type-var-fix var)
+                                         nil
+                                         (type-senv->types tenv))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define senv-add-type-vars ((vars type-var-listp) (senv senvp))
-  :returns (new-senv senvp)
-  :short "Add zero or more type variables to the static environment."
+(define type-senv-add-vars ((vars type-var-listp) (tenv type-senvp))
+  :returns (new-tenv type-senvp)
+  :short "Add zero or more type variables to the type static environment."
   :long
   (xdoc::topstring
    (xdoc::p
-    "See @(tsee senv-add-type-var),
+    "See @(tsee type-senv-add-var),
      which this function repeats for each variable."))
-  (b* (((when (endp vars)) (senv-fix senv))
-       (senv (senv-add-type-var (car vars) senv)))
-    (senv-add-type-vars (cdr vars) senv)))
+  (b* (((when (endp vars)) (type-senv-fix tenv))
+       (tenv (type-senv-add-var (car vars) tenv)))
+    (type-senv-add-vars (cdr vars) tenv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define senv-add-ispace-def ((var ispace-varp) (ispace ispacep) (senv senvp))
-  :returns (new-senv senvp)
+(define ispace-senv-add-def ((var ispace-varp)
+                             (ispace ispacep)
+                             (ienv ispace-senvp))
+  :returns (new-ienv ispace-senvp)
   :short "Add an ispace variable with its ispace definition
-          to the static environment."
+          to the ispace static environment."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -445,17 +466,17 @@
      this is the case for variables bound by @('let')s.
      A variable already present is overwritten,
      which realizes the intended shadowing."))
-  (b* ((new-ispace-vars (omap::update (ispace-var-fix var)
-                                      (ispace-fix ispace)
-                                      (senv->ispace-vars senv))))
-    (change-senv senv :ispace-vars new-ispace-vars)))
+  (change-ispace-senv ienv
+                      :ispaces (omap::update (ispace-var-fix var)
+                                             (ispace-fix ispace)
+                                             (ispace-senv->ispaces ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define senv-add-type-def ((var type-varp) (type typep) (senv senvp))
-  :returns (new-senv senvp)
+(define type-senv-add-def ((var type-varp) (type typep) (tenv type-senvp))
+  :returns (new-tenv type-senvp)
   :short "Add a type variable with its type definition
-          to the static environment."
+          to the type static environment."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -464,16 +485,16 @@
      this is the case for variables bound by @('let')s.
      A variable already present is overwritten,
      which realizes the intended shadowing."))
-  (b* ((new-type-vars (omap::update (type-var-fix var)
-                                    (type-fix type)
-                                    (senv->type-vars senv))))
-    (change-senv senv :type-vars new-type-vars)))
+  (change-type-senv tenv
+                    :types (omap::update (type-var-fix var)
+                                         (type-fix type)
+                                         (type-senv->types tenv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define senv-add-var+type ((var stringp) (type typep) (senv senvp))
-  :returns (new-senv senvp)
-  :short "Add a variable with a type to the static environment."
+(define expr-senv-add-var+type ((var stringp) (type typep) (eenv expr-senvp))
+  :returns (new-eenv expr-senvp)
+  :short "Add a variable with a type to the expression static environment."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -482,31 +503,32 @@
    (xdoc::p
     "This may override an existing variable,
      which is intended hiding behavior."))
-  (b* ((expr-vars (senv->expr-vars senv))
-       (new-expr-vars (omap::update (str::str-fix var)
-                                    (type-ensure-array type)
-                                    expr-vars)))
-    (change-senv senv :expr-vars new-expr-vars)))
+  (change-expr-senv eenv
+                    :exprs (omap::update (str::str-fix var)
+                                         (type-ensure-array type)
+                                         (expr-senv->exprs eenv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define senv-add-vars+types ((vars+types var+type?-listp) (senv senvp))
+(define expr-senv-add-vars+types ((vars+types var+type?-listp)
+                                  (eenv expr-senvp))
   :guard (no-duplicatesp-equal (var+type?-list->var vars+types))
-  :returns (new-senv senv-resultp)
-  :short "Add zero or more variables with types to the static environment."
+  :returns (new-eenv expr-senv-resultp)
+  :short "Add zero or more variables with types
+          to the expression static environment."
   :long
   (xdoc::topstring
    (xdoc::p
     "This function actually takes a list of variables with optional types,
      but it fails if some type is missing.")
    (xdoc::p
-    "This repeatedly calls @(tsee senv-add-var+type).
+    "This repeatedly calls @(tsee expr-senv-add-var+type).
      The guard ensures that the order of the list does not matter.")
    (xdoc::p
     "Since we do not perform type inference yet,
      this fails if any of the variables has no type."))
-  (b* (((when (endp vars+types)) (senv-fix senv))
+  (b* (((when (endp vars+types)) (expr-senv-fix eenv))
        (vt (car vars+types))
        ((ok type) (var+type?->type-or-err vt))
-       (senv (senv-add-var+type (var+type?->var vt) type senv)))
-    (senv-add-vars+types (cdr vars+types) senv)))
+       (eenv (expr-senv-add-var+type (var+type?->var vt) type eenv)))
+    (expr-senv-add-vars+types (cdr vars+types) eenv)))

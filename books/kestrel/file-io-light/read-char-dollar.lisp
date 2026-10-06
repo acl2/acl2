@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function read-char$.
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -26,16 +26,16 @@
                            member-equal)))
 
 (defthm state-p1-of-mv-nth-1-of-read-char$
-  (implies (and (state-p1 state)
-                (assoc-equal channel (open-input-channels state)) ;todo: instead say it's an open input channel?x
-                )
-           (state-p1 (mv-nth 1 (read-char$ channel state))))
+  (implies (state-p1 state)
+           (equal (state-p1 (mv-nth 1 (read-char$ channel state)))
+                  (if (assoc-equal channel (open-input-channels state)) ;todo: instead say it's an open input channel?
+                      t nil)))
   :hints (("Goal" :in-theory (enable read-char$))))
 
 (defthm state-p-of-mv-nth-1-of-read-char$
-  (implies (and (state-p state)
-                (assoc-equal channel (open-input-channels state)))
-           (state-p (mv-nth 1 (read-char$ channel state))))
+  (implies (state-p state)
+           (equal (state-p (mv-nth 1 (read-char$ channel state)))
+                  (if (assoc-equal channel (open-input-channels state)) t nil)))
   :hints (("Goal" :in-theory (enable state-p))))
 
 (defthm open-input-channel-p1-of-mv-nth-1-of-read-char$
@@ -51,6 +51,11 @@
 (defthm open-input-channel-any-p1-of-mv-nth-1-of-read-char$-gen
   (implies (open-input-channel-any-p1 channel state)
            (open-input-channel-any-p1 channel (mv-nth 1 (read-char$ channel2 state)))))
+
+(defthm open-input-channel-any-p-of-mv-nth-1-of-read-char$
+  (implies (open-input-channel-any-p channel state)
+           (open-input-channel-any-p channel (mv-nth 1 (read-char$ channel2 state))))
+  :hints (("Goal" :in-theory (enable open-input-channel-any-p))))
 
 (defthm open-input-channels-of-mv-nth-1-of-read-char$
   (implies (and (state-p1 state)
@@ -104,4 +109,9 @@
   (implies (consp (cddr (assoc-equal channel (open-input-channels state))))
            (< (len (cddr (assoc-equal channel (open-input-channels (mv-nth 1 (read-char$ channel state))))))
               (len (cddr (assoc-equal channel (open-input-channels state))))))
+  :hints (("Goal" :in-theory (enable read-char$))))
+
+(defthm w-of-mv-nth-1-of-read-char$
+  (equal (w (mv-nth 1 (read-char$ channel state)))
+         (w state))
   :hints (("Goal" :in-theory (enable read-char$))))

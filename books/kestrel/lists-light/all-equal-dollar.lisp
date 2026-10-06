@@ -65,7 +65,7 @@
 (defthm all-equal$-of-nthcdr-when-all-equal$-of-nthcdr
   (implies (and (all-equal$ x (nthcdr n lst))
                 (<= n n+)
-                (natp n)
+                ;; (natp n)
                 (natp n+))
            (all-equal$ x (nthcdr n+ lst)))
   :hints (("Goal" :in-theory (enable nthcdr all-equal$))))

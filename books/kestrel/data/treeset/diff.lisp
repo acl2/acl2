@@ -133,16 +133,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule emptyp-of-diff-when-emptyp-of-arg1
-  (implies (emptyp x)
-           (emptyp (diff x y)))
-  :enable (diff
-           emptyp
-           fix
-           empty))
-
-;;;;;;;;;;;;;;;;;;;;
-
 (defrule in-of-diff
   (equal (in a (diff x y))
          (and (in a x)
@@ -156,8 +146,9 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule subset-of-diff
-  (subset (diff x y) x)
-  :enable pick-a-point)
+  (implies (subset x z)
+           (subset (diff x y) z))
+  :enable pick-a-point-polar)
 
 ;; TODO: clean up proof?
 (defrule subset-of-arg1-and-diff
@@ -178,6 +169,17 @@
            (subset (diff x0 y0)
                    (diff x1 y1)))
   :enable pick-a-point)
+
+;; The free variable is bound by a subset hypothesis on arg2,
+;; which cardinality-when-subset-linear cannot use directly.
+(defrule cardinality-of-diff-when-subset-of-arg2-linear
+  (implies (subset y0 y1)
+           (<= (cardinality (diff x y1))
+               (cardinality (diff x y0))))
+  :rule-classes :linear
+  :use (:instance cardinality-when-subset-linear
+                  (x (diff x y1))
+                  (y (diff x y0))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -220,6 +222,11 @@
          (fix x))
   :enable diff-when-emptyp-of-arg2)
 
+(defrule diff-of-arg1-and-arg1
+  (equal (diff x x)
+         (empty))
+  :enable extensionality)
+
 (defrule diff-of-union
   (equal (diff (union x y) z)
          (union (diff x z) (diff y z)))
@@ -230,6 +237,16 @@
          (intersect (diff x y) (diff x z)))
   :enable extensionality)
 
+(defrule union-of-arg1-and-diff
+  (equal (union x (diff y x))
+         (union x y))
+  :enable extensionality)
+
+(defrule union-of-diff-and-arg2
+  (equal (union (diff y x) x)
+         (union y x))
+  :enable extensionality)
+
 (defruled diff-of-diff-becomes-diff-of-union
   (equal (diff (diff x y) z)
          (diff x (union y z)))
@@ -238,6 +255,11 @@
 (defrule diff-of-diff
   (equal (diff (diff x y) z)
          (intersect (diff x y) (diff x z)))
+  :enable extensionality)
+
+(defruled diff-of-diff-and-diff-becomes-diff-of-union
+  (equal (diff (diff x z) (diff y z))
+         (diff x (union z y)))
   :enable extensionality)
 
 (defrule diff-of-intersect
@@ -394,6 +416,12 @@
 (add-to-ruleset from-oset-theory '(oset-difference-becomes-diff))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule emptyp-of-diff
+  (equal (emptyp (diff x y))
+         (subset x y))
+  :enable to-oset-theory
+  :disable from-oset-theory)
 
 (defrule cardinality-of-diff
   (equal (cardinality (diff x y))

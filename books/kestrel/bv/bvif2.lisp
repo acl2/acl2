@@ -1,7 +1,7 @@
 ; Rule about bvif together with other functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -69,10 +69,10 @@
   :hints (("Goal" :in-theory (enable bvif boolif))))
 
 (defthm bvlt-of-bvif-arg2-safe
-  (implies (and (syntaxp (and (quotep x)
-                              (or (quotep a) (quotep b))
-                              (quotep size)
-                              (quotep size2))))
+  (implies (syntaxp (and (quotep x)
+                         (or (quotep a) (quotep b))
+                         (quotep size)
+                         (quotep size2)))
            (equal (bvlt size (bvif size2 test a b) x)
                   (boolif test
                           ;; at least one of these two branches gets computed:
@@ -97,10 +97,10 @@
   :hints (("Goal" :in-theory (enable bvif boolif))))
 
 (defthm bvlt-of-bvif-arg3-safe
-  (implies (and (syntaxp (and (quotep x)
-                              (or (quotep a) (quotep b))
-                              (quotep size)
-                              (quotep size2))))
+  (implies (syntaxp (and (quotep x)
+                         (or (quotep a) (quotep b))
+                         (quotep size)
+                         (quotep size2)))
            (equal (bvlt size x (bvif size2 test a b))
                   (boolif test
                           ;; at least one of these two branches gets computed:
@@ -143,7 +143,8 @@
   :hints (("Goal" :in-theory (enable bvif boolif))))
 
 ;doesn't replicate any big terms
-(defthm equal-of-bvif-safe-alt
+; only needed for axe?
+(defthmd equal-of-bvif-safe-alt
   (implies (syntaxp (and (quotep x)
                          ;;could drop this one?:
                          (or (quotep a)
@@ -168,13 +169,14 @@
                           (equal x (bvchop size b)))))
   :hints (("Goal" :in-theory (enable bvif boolif))))
 
-(defthm equal-of-bvif-safe2-alt
+; only needed for axe?
+(defthmd equal-of-bvif-safe2-alt
   (implies (syntaxp (and (quotep x)
                          ;; ;;could drop this one?:
                          ;; (or (quotep a)
                          ;;     (quotep b))
                          (quotep size)))
-           (equal (equal x (bvif size test a b))
+           (equal (equal (bvif size test a b) x)
                   (boolif test
                           (equal x (bvchop size a))
                           (equal x (bvchop size b)))))

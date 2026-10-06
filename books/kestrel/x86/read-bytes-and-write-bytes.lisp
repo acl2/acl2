@@ -124,7 +124,7 @@
   :hints (("Goal" :in-theory (enable read-bytes))))
 
 (defthm read-bytes-of-bvchop-48
-  (implies (and (integerp addr))
+  (implies (integerp addr)
            (equal (read-bytes n (bvchop 48 addr) x86)
                   (read-bytes n addr x86))))
 

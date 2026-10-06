@@ -17,4 +17,5 @@
 (include-book "not-eval")
 (include-book "if-eval")
 (include-book "if-and-not-eval")
+(include-book "if-and-implies-eval")
 (include-book "equality-eval")

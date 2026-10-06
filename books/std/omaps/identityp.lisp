@@ -95,6 +95,18 @@
     :enable (compose-is-restrict-when-Y-identityp-helper
              extensionality))
 
+  (defruled compose-when-identityp-left
+    (implies (and (identityp x)
+                  (set::subset (values y) (keys x)))
+             (equal (compose x y) (mfix y)))
+    :enable (extensionality
+             assoc-of-compose
+             assoc-when-identityp
+             cons-of-key-and-cdr-assoc
+             assoc-to-in-of-keys
+             set::expensive-rules)
+    :disable identityp)
+
   (defruled self-compose-is-self-when-identityp
       (implies (identityp x)
                (equal (compose x x)
@@ -108,7 +120,18 @@
              (equal (lookup key map)
                     key))
     :induct t
-    :enable lookup))
+    :enable lookup)
+
+  (defruled lookup*-when-identityp
+    (implies (and (identityp map)
+                  (set::subset keys (keys map)))
+             (equal (lookup* keys map)
+                    (set::sfix keys)))
+    :induct (lookup* keys map)
+    :enable (lookup*
+             lookup-when-identityp
+             assoc-to-in-of-keys
+             set::expensive-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

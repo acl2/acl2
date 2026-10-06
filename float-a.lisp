@@ -490,11 +490,14 @@
 
   (equal (constrained-to-df 0) 0))
 
+#+to-df-monotonicity ; see comments below
 (defthm constrained-to-df-monotonicity
 
-; Why do we include this theorem, and why is it justified?
+; Why do we want to include this theorem, why is it justified, and why do we
+; not actually include it (and consequences of it; these are all marked with
+; #+to-df-monotonicity).
 
-; To see why we include it, consider the following example where guard
+; To see why we want to include it, consider the following example where guard
 ; verification fails but could otherwise succeed.
 
 ;   (defun foo (n)
@@ -537,11 +540,50 @@
 ;   and object is not already a float, then the result is a single
 ;   float.)
 
+; Unfortunately, CCL Version 1.13 (as of early-to-mid-September 2026) can prove
+; the following using this axiom, as discovered by Anthropic's Claude.
+
+;   (defthm nil-proved
+;     nil
+;     :rule-classes nil
+;     :hints (("Goal"
+;              :use ((:instance to-df-monotonicity
+;                               (x 213617472249081840001/2000)
+;                               (y 534043680622704603/5))))))
+
+; This corresponds to the following evaluation in plain CCL.
+
+;   ? (let ((x 213617472249081840001/2000) (y 534043680622704603/5))
+;       (list (<= x y) (<= (float x 0.0d0) (float y 0.0d0))))
+;   (T NIL)
+;   ? 
+
+; This same behavior occurs in GCL 2.7.2pre, at least of August 2026:
+
+;   >(let ((x 213617472249081840001/2000) (y 534043680622704603/5))
+;       (list (<= x y) (<= (float x 0.0d0) (float y 0.0d0))))
+;   
+;   (T NIL)
+;   
+;   >
+
+; We have also observed it in Allegro CL 10.1.
+
+; Actually SBCL had a similar bug until it was fixed in Version 2.6.2, released
+; late February 2026: "bug fix: rounding of floats converted from ratios.
+; (lp#2139007)".  Apparently (according to Claude) the SBCL fix was in commit
+; d5c73810519bfc71e3b76d7d475d1eb6eff071f2, "Correctly round floats converted
+; from ratios", "Broken since 1993".
+
+; When we are reasonably confident that this axiom is valid in all supporting
+; host Lisps, we may uncomment it.
+
   (implies (and (<= x y)
                 (rationalp x)
                 (rationalp y))
            (<= (constrained-to-df x) (constrained-to-df y)))
   :rule-classes (:linear :rewrite))
+
 )
 )
 
@@ -560,6 +602,7 @@
 (defthm to-df-default
   (implies (not (rationalp x))
            (equal (to-df x) 0)))
+#+to-df-monotonicity ; until constrained-to-df-monotonicity is restored
 (defthm to-df-monotonicity
 
 ; See comments in constrained-to-df-monotonicity.
@@ -765,6 +808,7 @@
            (equal (df-round r)
                   r)))
 
+#+to-df-monotonicity ; until constrained-to-df-monotonicity is restored
 (defthm df-round-monotonicity
 
 ; To see why we include this property, consider the following example.

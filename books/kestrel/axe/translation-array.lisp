@@ -16,7 +16,7 @@
 (include-book "dag-arrays")
 (include-book "kestrel/utilities/erp" :dir :system)
 (include-book "kestrel/acl2-arrays/aref1-list" :dir :system) ; for some rules below
-(include-book "kestrel/typed-lists-light/all-less-than-or-equal" :dir :system)
+(include-book "kestrel/typed-lists-light/all-less-than-or-equal-def" :dir :system)
 (local (include-book "rational-lists"))
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -487,7 +487,7 @@
                 )
            (all-< (aref1-list-aux 'translation-array translation-array nodenums acc)
                   bound))
-  :hints (("Goal" :in-theory (enable aref1-list-aux aref1-list))))
+  :hints (("Goal" :in-theory (enable aref1-list-aux aref1-list all-<=))))
 
 (defthm all-<-of-aref1-list-aux-when-bounded-translation-arrayp-aux-gen
   (implies (and (bounded-translation-arrayp-aux top-nodenum-to-check translation-array bound)
@@ -502,7 +502,7 @@
                 )
            (all-< (aref1-list-aux 'translation-array translation-array nodenums acc)
                   bound2))
-  :hints (("Goal" :in-theory (enable aref1-list-aux aref1-list))))
+  :hints (("Goal" :in-theory (enable aref1-list-aux aref1-list all-<=))))
 
 (defthm all-<-of-aref1-list-when-bounded-translation-arrayp-aux-gen
   (implies (and (bounded-translation-arrayp-aux top-nodenum-to-check translation-array bound)

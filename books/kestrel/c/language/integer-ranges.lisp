@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -399,7 +399,7 @@
             @('signed char') and @('signed short') minima."
     ,(if (= (char-bits) (short-bits))
          '(= (schar-min) (sshort-min))
-       '(>= (schar-min) (sshort-min)))
+       '(> (schar-min) (sshort-min)))
     :rule-classes :linear
     ,@(if (= (char-bits) (short-bits))
           '(:enable (schar-min sshort-min)
@@ -418,7 +418,7 @@
          '(= (sshort-min) (sint-min))
        '(> (sshort-min) (sint-min)))
     :rule-classes :linear
-    ,@(if (= (char-bits) (short-bits))
+    ,@(if (= (short-bits) (int-bits))
           '(:enable (sshort-min sint-min)
             :use short-bits-vs-int-bits)
         '(:enable (sshort-min sint-min short-bits-vs-int-bits)
@@ -488,7 +488,7 @@
          '(= (sshort-max) (sint-max))
        '(< (sshort-max) (sint-max)))
     :rule-classes :linear
-    ,@(if (= (char-bits) (short-bits))
+    ,@(if (= (short-bits) (int-bits))
           '(:enable (sshort-max sint-max)
             :use short-bits-vs-int-bits)
         '(:enable (sshort-max sint-max short-bits-vs-int-bits)
@@ -563,7 +563,7 @@
  `(defruled uchar-max-vs-slong-max
     :parents (uchar-max slong-max)
     :short "Relation between
-            @('unsigned char') and @('signed int') maxima."
+            @('unsigned char') and @('signed long') maxima."
     ,(if (<= (uchar-max) (slong-max))
          '(<= (uchar-max) (slong-max))
        '(> (uchar-max) (slong-max)))
@@ -578,7 +578,7 @@
  `(defruled ushort-max-vs-slong-max
     :parents (ushort-max slong-max)
     :short "Relation between
-            @('unsigned char') and @('signed int') maxima."
+            @('unsigned short') and @('signed long') maxima."
     ,(if (<= (ushort-max) (slong-max))
          '(<= (ushort-max) (slong-max))
        '(> (ushort-max) (slong-max)))
@@ -605,7 +605,7 @@
  `(defruled uchar-max-vs-sllong-max
     :parents (uchar-max sllong-max)
     :short "Relation between
-            @('unsigned int') and @('signed long long') maxima."
+            @('unsigned char') and @('signed long long') maxima."
     ,(if (<= (uchar-max) (sllong-max))
          '(<= (uchar-max) (sllong-max))
        '(> (uchar-max) (sllong-max)))
@@ -621,7 +621,7 @@
  `(defruled ushort-max-vs-sllong-max
     :parents (ushort-max sllong-max)
     :short "Relation between
-            @('unsigned int') and @('signed long long') maxima."
+            @('unsigned short') and @('signed long long') maxima."
     ,(if (<= (ushort-max) (sllong-max))
          '(<= (ushort-max) (sllong-max))
        '(> (ushort-max) (sllong-max)))

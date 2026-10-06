@@ -27,6 +27,10 @@
 	((< x 1) (cons 1 (fl (/ x))))
 	(t (fl x))))
 
+; Matt K. addition from expo-proofs after bug fix to require well-founded
+; relations to match for a redundant definition:
+(set-well-founded-relation e0-ord-<)
+
 (defund expo (x)
   (declare (xargs :guard t
                   :measure (expo-measure x)))
@@ -35,7 +39,6 @@
 	((< x 1) (1- (expo (* 2 x))))
 	((< x 2) 0)
 	(t (1+ (expo (/ x 2))))))
-
 
 ;probably get this anyway when we define expo
 (defthm expo-integer-type

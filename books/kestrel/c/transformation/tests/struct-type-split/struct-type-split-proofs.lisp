@@ -15,6 +15,8 @@
 (include-book "../../../syntax/input-files")
 (include-book "../../../syntax/output-files")
 
+(include-book "std/system/theorem-symbolp" :dir :system)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (c$::input-files :files '("gso.c")
@@ -36,3 +38,6 @@
                           :struct-tag "s"
                           :new-tag "s2"
                           :right-members ("b"))
+
+; Ensure expected last generated theorem is present.
+(assert-event (acl2::theorem-symbolp '*new*-thm-1 (w state)))

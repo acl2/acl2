@@ -84,9 +84,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Currently this just means that the pointer is not null.
-     However, when (as planned) we extend our model with dangling pointers,
-     this predicate will also exclude dangling pointers.")
+    "This means that the pointer is not null and not dangling.")
    (xdoc::p
     "Using `valid' for this notion is perhaps not ideal
      because null pointers are perfectly ``valid''values

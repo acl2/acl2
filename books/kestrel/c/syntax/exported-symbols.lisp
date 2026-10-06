@@ -463,6 +463,7 @@
     make-stmt-for-declon
     stmt-return
     make-stmt-return
+    stmt-return->expr?
     stmt-return-attrib
     make-stmt-return-attrib
     stmt-gotoe
@@ -475,6 +476,7 @@
     make-block-item-declon
     block-item-stmt
     make-block-item-stmt
+    block-item-stmt->stmt
 
     block-item-listp
     block-item-list-fix
@@ -492,6 +494,7 @@
     fundef-fix
     make-fundef
     fundef->declor
+    fundef->body
     fundef->info
 
     fundef-optionp
@@ -780,6 +783,7 @@
 
     type-pointer->to
 
+    type-list
     type-listp
     type-list-count
 
@@ -812,7 +816,7 @@
 
     type-formalp
     type-to-value-kind
-    type-integerp
+    type-integer-3p
 
     iconst-vinfo
 

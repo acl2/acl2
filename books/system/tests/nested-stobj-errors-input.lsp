@@ -47,6 +47,35 @@
    (sub1-fld sub1)
    val))
 
+; Example involving exclusion of parent stobj from producer-vars:
+
+; Here is a proof of nil in ACL2 Version 8.7, fixed on 9/27/2026.  It was
+; produced by Anthropic's Claude and passed along by Eric Smith.   The fix is
+; to cause an error when defining slbad, by disallowing slst (the parent stobj)
+; from occurring in the producer-vars, (v slst).
+
+(encapsulate ()
+  (defstobj slsub (slsub-fld :type (integer 0 10) :initially 0))
+  (defstobj slst (slfld :type slsub))
+  (defun slupd (slst)
+    (declare (xargs :stobjs slst))
+    (stobj-let ((slsub (slfld slst))) (slsub) (update-slsub-fld 1 slsub) slst))
+  (defun slbad (slst)
+    (declare (xargs :stobjs slst))
+    (stobj-let ((slsub (slfld slst))) ; SLSUB not a producer var => parent allowed
+               (v slst)
+               (let* ((v1 (slsub-fld slsub))
+                      (slst (slupd slst)) ; aliased update of that child
+                      (v2 (slsub-fld slsub)))
+                 (mv (equal v1 v2) slst))
+               (mv v slst)))
+  (defun sltest () (declare (xargs :guard t))
+         (with-local-stobj slst (mv-let (v slst) (slbad slst) v)))
+  (defthm sltest-is-true (sltest)
+    :hints (("Goal" :in-theory (disable (sltest) (slbad) (slupd)))))
+  (defthm sl-nil nil :rule-classes nil
+    :hints (("Goal" :use sltest-is-true :in-theory (disable sltest-is-true)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Here are a few random examples of using stobjs that have
 ;;; hash-table fields with stobj value types.  This might

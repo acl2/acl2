@@ -10,6 +10,9 @@
 
 (in-package "ACL2")
 
+; Avoid ACL2(p) proof failure.
+(set-waterfall-parallelism nil)
+
 ; cert_param: (uses-stp)
 
 ;; TODO: Move the defthm-axe tests to a separate file?
