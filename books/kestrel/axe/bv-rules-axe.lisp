@@ -468,6 +468,7 @@
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
 ;ex: strengthen x<4 to x<=3
+;todo: dup?
 (defthmd bvlt-of-constant-arg3
   (implies (and (axe-rewrite-objective 'nil)
                 (not (equal 0 (bvchop size k)))
@@ -480,6 +481,7 @@
            :in-theory (enable bvlt bvchop-of-sum-cases))))
 
 ;ex: strengthen 10<x to 11<=x
+;todo: dup?
 (defthmd bvlt-of-constant-arg2
   (implies (and (axe-rewrite-objective 'nil)
                 (not (equal (+ -1 (expt 2 size)) (bvchop size k)))

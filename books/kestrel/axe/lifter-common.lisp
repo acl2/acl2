@@ -525,7 +525,12 @@
                            (and (or (myquotep result-dag-or-quotep)
                                     (pseudo-dagp result-dag-or-quotep))
                                 (hitsp hits)))))
-       :hints (("Goal" :in-theory (e/d (,name acl2-numberp-when-natp) (member-equal quotep)))))
+       :hints (("Goal" :in-theory (e/d (,name acl2-numberp-when-natp)
+                                       (member-equal
+                                        quotep
+                                        ;; for speed:
+                                        min
+                                        string-append-lst)))))
 
      (defthm ,(pack-in-package-of-symbol name 'pseudo-dagp-of- name)
        (implies (and (natp steps-done)
@@ -626,6 +631,7 @@
         (simplify-conjunction-basic assumptions
                                     assumption-rule-alist
                                     (known-booleans (w state))
+                                    (rewrite-objective-strengthen)
                                     nil ;; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
                                     no-warn-ground-functions
                                     nil ; don't memoize (avoids time spent making empty-memoizations)

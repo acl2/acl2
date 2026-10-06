@@ -110331,6 +110331,15 @@ it."
  (foo *ar* 0 1)
  })
 
+ <p>When an @(':')@(see equivalence) rule is considered for admission, it is no
+ longer an error if the indicated equivalence relation is already a known
+ equivalence relation (other than @('equal')).  Instead, the intended new
+ @(':equivalence') rule has no effect, even though the actual event (typically
+ a call of @(tsee defequiv)) is admitted.  This former error did not occur
+ during @(tsee include-book) &mdash; but more important than that incompatible
+ behavior is that the new rule could erase refinements; see @(see
+ community-book) @('system/tests/equivalence-coarsenings-reset.lisp').</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2

@@ -107254,6 +107254,16 @@ Bug Fixes From AI via Eric Smith
     ; Formerly an error:
     (foo *ar* 0 1)
 
+  When an [30m[47m:[0m[0m[equivalence] rule is considered for admission, it is no
+  longer an error if the indicated equivalence relation is already a
+  known equivalence relation (other than [30m[47mequal[0m[0m).  Instead, the
+  intended new [30m[47m:equivalence[0m[0m rule has no effect, even though the
+  actual event (typically a call of [30m[47m[defequiv][0m[0m) is admitted.  This
+  former error did not occur during [30m[47m[include-book][0m[0m --- but more
+  important than that incompatible behavior is that the new rule
+  could erase refinements; see [community-book]
+  [30m[47msystem/tests/equivalence-coarsenings-reset.lisp[0m[0m.
+
 
 Other Bug Fixes
 

@@ -11098,7 +11098,7 @@
                 (all-unsigned-byte-p 32 data))
            (equal (equal (bv-array-write 32 (bvplus 5 1 n) n 0 data) (repeat (bvplus 5 1 n) 0))
                   (equal (firstn n data) (repeat n 0))))
-  :hints (("Goal" :in-theory (e/d (BV-ARRAY-WRITE update-nth2 bvplus ceiling-of-lg equal-of-append repeat unsigned-byte-p-of-+-of-constant-strong)
+  :hints (("Goal" :in-theory (e/d (BV-ARRAY-WRITE update-nth2 bvplus ceiling-of-lg equal-of-append repeat unsigned-byte-p-of-+-of-constant-strong firstn)
                                   (equal-of-cons)))))
 
 ;gen
@@ -13131,7 +13131,6 @@
                           (and (equal (bvchop (+ -1 size) x) 0) (equal (bvchop size y) 1)))
            :in-theory (enable sbvdiv-rewrite
                               ;bvuminus
-                              ;;bvlt-of-constant-arg2-strengthen
                               sbvlt-rewrite))))
 
 (local (include-book "kestrel/bv/bvdiv-rules" :dir :system))

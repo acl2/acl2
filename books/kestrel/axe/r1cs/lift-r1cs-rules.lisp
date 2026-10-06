@@ -679,6 +679,7 @@
                 (POWER-OF-2P K2))
            (INTEGERP (* (/ K1) K2)))
   :hints (("Goal" :use (:instance acl2::integerp-of-*-of-expt-and-/-of-expt
+                                  (r 2)
                                   (i (+ -1 (INTEGER-LENGTH K2)))
                                   (j (+ -1 (INTEGER-LENGTH K1))))
            :in-theory (e/d (POWER-OF-2P) (acl2::integerp-of-*-of-expt-and-/-of-expt)))))
