@@ -732,7 +732,6 @@
   :returns (er? maybe-msgp)
   :short "Iterator loop implementing @(tsee sts-check-completions)."
   :measure (treemap::nexts iter)
-  :guard-hints (("Goal" :cases ((treemap::after-lastp iter))))
   (b* (((when (mbe :logic (not (treemap::has-valuep iter))
                    :exec (treemap::after-lastp iter)))
         nil)
