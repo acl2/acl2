@@ -539,6 +539,9 @@
                                     nil ;; exception branches may be pruned below
                                     ))
        (assert-assumptions (assert-assumptions class-name))
+       (class-alist (jvm::global-class-alist state))
+       ((when (not (class-table-alistp class-alist)))
+        (mv :bad-global-class-alist t state))
        (- (cw "(Unrolling code:~%"))
        ((mv erp dag & & & state)
         ;; TODO: Use assumptions here:
@@ -581,6 +584,7 @@
                                :auto ; param-names
                                t ; chunkedp
                                error-on-incomplete-runsp
+                               class-alist
                                state))
        ((when erp) (mv erp t state))
        ;; ;;prune again: todo: shouldn't be needed!:
