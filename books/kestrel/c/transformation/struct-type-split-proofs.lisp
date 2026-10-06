@@ -1869,6 +1869,57 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define stsp-expr-member ((arg exprp)
+                          (arg-new exprp)
+                          (arg-thm-name symbolp)
+                          (name identp)
+                          (info1 type-vinfop)
+                          (info2 type-vinfop)
+                          (old-name identp)
+                          (newl-name identp)
+                          (newr-name identp)
+                          (gin ginp))
+  :guard (and (expr-unambp arg)
+              (expr-unambp arg-new)
+              (expr-annop arg)
+              (expr-annop arg-new))
+  :returns (mv (erp maybe-msgp) (gout goutp))
+  :short "STS proof generation for a member expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now this is only used to recognize
+     an access to the struct type being split,
+     so that we can return, as part of the @(tsee gout),
+     the name of the theorem about that field access,
+     which is generated in @(tsee stsp-exec-mem-eq)."))
+  (declare (ignore arg-thm-name info1 info2))
+  (b* (((reterr) (irr-gout))
+       ((gin gin))
+       (gout-no-thm (gout-no-thm gin))
+       ((when (and (expr-case arg :ident)
+                   (equal (expr-ident->ident arg)
+                          (ident-fix old-name))))
+        (b* (((unless (and (expr-case arg-new :ident)
+                           (member-equal (expr-ident->ident arg-new)
+                                         (list (ident-fix newl-name)
+                                               (ident-fix newr-name)))))
+              (retmsg$ "The expressions ~x0 and ~x1 do not match. ~
+                        This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                        was not called on ~
+                        the old and new code of STRUCT-TYPE-SPLIT."
+                       (expr-fix arg) (expr-fix arg-new)))
+             ((erp cmem) (ldm-ident name) :iferr "")
+             (thm-name (packn-pos (list 'exec-member- (c::ident->name cmem))
+                                  'struct-value-)))
+          (retok (make-gout :events gin.events
+                            :thm-index gin.thm-index
+                            :thm-name thm-name
+                            :vartys gin.vartys)))))
+    (retok gout-no-thm)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define stsp-expr-binary ((op binopp)
                           (arg1 exprp)
                           (arg1-new exprp)
@@ -1933,7 +1984,11 @@
                             (:e c::type-sint)
                             (:e member-equal)
                             (:e c::expr-purep)
-                            expr-compustate-vars)
+                            expr-compustate-vars
+                            ;; TODO: remove the following two rules
+                            ;; after exec-member-... has been rephrased:
+                            (:e c::expr-ident)
+                            (:e c::expr-member))
                :use ((:instance ,arg1-thm-name
                                 (limit (1- limit)))
                      (:instance ,arg2-thm-name
@@ -1959,6 +2014,7 @@
                                 (op ',cop)
                                 (arg1 ',old-arg1)
                                 (arg2 ',old-arg2)
+                                (compst old-compst)
                                 (fenv old-fenv))))))
            ((mv thm-event thm-name thm-index)
             (stsp-gen-expr-thm (expr-binary op
@@ -2018,6 +2074,38 @@
                               newl-name
                               newr-name
                               gin)
+      :otherwise (retmsg$ "The expressions ~x0 and ~x1 do not match. ~
+                           This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                           was not called on ~
+                           the old and new code of STRUCT-TYPE-SPLIT."
+                          (expr-fix old-expr) (expr-fix new-expr)))
+     :member
+     (expr-case
+      new-expr
+      :member (b* (((unless (equal old-expr.name new-expr.name))
+                    (retmsg$ "The member names ~x0 and ~x1 do not match. ~
+                              This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                              was not called on ~
+                              the old and new code of STRUCT-TYPE-SPLIT."
+                             old-expr.name new-expr.name))
+                   ((erp gout) (stsp-expr old-expr.arg
+                                          new-expr.arg
+                                          old-name
+                                          newl-name
+                                          newr-name
+                                          gin))
+                   (arg-thm-name (gout->thm-name gout))
+                   (gin (gin-update gin gout)))
+                (stsp-expr-member old-expr.arg
+                                  new-expr.arg
+                                  arg-thm-name
+                                  old-expr.name ; = new-expr.name
+                                  old-expr.info
+                                  new-expr.info
+                                  old-name
+                                  newl-name
+                                  newr-name
+                                  gin))
       :otherwise (retmsg$ "The expressions ~x0 and ~x1 do not match. ~
                            This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
                            was not called on ~
