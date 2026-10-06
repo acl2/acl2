@@ -1897,9 +1897,9 @@
 
 ;;;;;;;;;;
 
-(define defind-proof-constr-return-thm ((pred-name symbolp)
-                                        (irule-name symbolp)
-                                        (name symbolp))
+(define defind-proof-constr-return-thm-name ((pred-name symbolp)
+                                             (irule-name symbolp)
+                                             (name symbolp))
   :returns (thm-name symbolp)
   :short "Name of the return theorem of
           the constructor of a @('p[i]-proof') fixtype."
@@ -1927,6 +1927,61 @@
                    '-of-
                    (defind-proof-prem-acc-name pred-name irule-name num name))
              (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-prem-acc-return-thm-names ((pred-name symbolp)
+                                                (infos defind-irule-info-listp)
+                                                (prem-preds symbol-setp)
+                                                (name symbolp))
+  :returns (thm-names symbol-listp)
+  :short "Names of the return theorems of the premise accessors of
+          a @('p[i]-proof') fixtype,
+          for the premises that call the predicates in a set."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There is one theorem for each premise
+     that calls a predicate in @('prem-preds'),
+     in each rule whose conclusion is @('p[i]')."))
+  (b* (((when (endp infos)) nil)
+       ((defind-irule-info info) (car infos))
+       (thm-names (defind-proof-prem-acc-return-thm-names
+                    pred-name (cdr infos) prem-preds name))
+       ((unless (equal (defind-conclusion-info->name info.conclusion)
+                       (symbol-lfix pred-name)))
+        thm-names))
+    (append (defind-proof-prem-acc-return-thm-names-loop
+              info.premises pred-name info.name 1 prem-preds name)
+            thm-names))
+
+  :prepwork
+
+  ((define defind-proof-prem-acc-return-thm-names-loop
+     ((infos defind-premise-info-listp)
+      (pred-name symbolp)
+      (irule-name symbolp)
+      (num posp)
+      (prem-preds symbol-setp)
+      (name symbolp))
+     :returns (thm-names symbol-listp)
+     :parents nil
+     (b* (((when (endp infos)) nil)
+          (info (car infos)))
+       (defind-premise-info-case
+         info
+         :pred
+         (b* ((thm-names (defind-proof-prem-acc-return-thm-names-loop
+                           (cdr infos) pred-name irule-name
+                           (1+ (lposfix num)) prem-preds name)))
+           (if (set::in info.name (symbol-sfix prem-preds))
+               (cons (defind-proof-prem-acc-return-thm-name
+                       info.name pred-name irule-name num name)
+                     thm-names)
+             thm-names))
+         :other
+         (defind-proof-prem-acc-return-thm-names-loop
+           (cdr infos) pred-name irule-name num prem-preds name))))))
 
 ;;;;;;;;;;
 
@@ -4326,7 +4381,9 @@
                       (,pred-info.name ,@concl-vars))
              :hints (("Goal"
                       :induct (,descend ,proof ,@concl-vars)
-                      :in-theory (enable ,suff ,minimalp))))))
+                      :in-theory '(,suff
+                                   ,minimalp
+                                   (:induction ,descend)))))))
        (proof-valid-when-pred-event
         `(defruled ,proof-valid-when-pred
            (implies (,pred-info.name ,@pred-info.formals)
@@ -4357,8 +4414,7 @@
                                 (:instance ,minimalp-necc
                                            (,proof (,witness ,@concl-vars))
                                            (,proof2 ,proof)))
-                          :in-theory (e/d (,when-valid-proof)
-                                          (,minimalp-necc))))))))
+                          :in-theory '(,when-valid-proof)))))))
        (print-event?
         (and (evmac-input-print->= print :result)
              `((cw-event "Function ~x0.~%" ',minimalp)
@@ -4505,11 +4561,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defind-gen-ind-fn-hint-parts ((pred-infos defind-pred-info-listp)
+                                      (irule-infos defind-irule-info-listp)
+                                      (clique-preds symbol-setp)
                                       (standalonep booleanp)
                                       (name symbolp))
   :returns (mv (expands true-listp)
                (uses true-listp)
-               (enables true-listp))
+               (rules true-listp))
   :short "Generate the pieces of the termination hints of
           the @('p[i]-induct') functions of a clique."
   :long
@@ -4517,18 +4575,27 @@
    (xdoc::p
     "For each predicate of the clique we expand
      the validity and the count of its witness proof,
-     and we supply the kind of that proof.
-     The latter is needed because a fixtype of proofs with a single summand
-     yields no case split, and so never establishes its kind,
-     which leaves the FTY linear rules for the counts of its accessors,
-     which are conditional on the kind, unable to fire.")
+     and we supply the possible kinds of that proof.
+     The latter are needed because
+     the count function is defined by cases on the kind,
+     and returns a number only for the kinds of the fixtype.")
    (xdoc::p
-    "The @('p[i]-proof-count-bound') theorems are not supplied explicitly:
-     they are @(':linear') rules whose trigger terms
-     occur in the measure conjecture,
+    "The rules, which the caller puts into a quoted theory,
+     are the following, for each predicate of the clique:
+     the definition of the predicate,
+     which exposes the validity of its witness proof;
+     the theorem saying that the count function returns a natural number;
+     the @('p[i]-proof-count-bound') theorem,
+     which is a @(':linear') rule whose trigger term
+     occurs in the measure conjecture,
      and whose validity hypothesis comes first,
      so that free variable matching binds the proof from it
-     rather than from the weaker recognizer hypothesis."))
+     rather than from the weaker recognizer hypothesis;
+     and the return theorems of the premise accessors,
+     for the premises that call predicates of the clique,
+     i.e. the ones that give rise to the recursive calls
+     (see @(tsee defind-gen-ind-fn-case-calls));
+     these theorems relieve that recognizer hypothesis."))
   (b* (((when (endp pred-infos)) (mv nil nil nil))
        ((defind-pred-info pred-info) (car pred-infos))
        (witness (defind-proof-witness-fn-name pred-info.name name))
@@ -4539,13 +4606,21 @@
        (xvar (defind-proof-xvar-name name))
        (count-natp-thm (defind-proof-count-natp-thm-name
                          pred-info.name standalonep name))
-       ((mv expands uses enables)
-        (defind-gen-ind-fn-hint-parts (cdr pred-infos) standalonep name)))
+       (count-bound-thm (defind-proof-count-bound-thm-name
+                          pred-info.name name))
+       (prem-acc-thms (defind-proof-prem-acc-return-thm-names
+                        pred-info.name irule-infos clique-preds name))
+       ((mv expands uses rules)
+        (defind-gen-ind-fn-hint-parts
+          (cdr pred-infos) irule-infos clique-preds standalonep name)))
     (mv (list* `(,proof-validp ,wcall ,@pred-info.formals)
                `(,count-fn ,wcall)
                expands)
         (cons `(:instance ,poss-thm (,xvar ,wcall)) uses)
-        (list* pred-info.name count-natp-thm enables))))
+        (list* pred-info.name
+               count-natp-thm
+               count-bound-thm
+               (append prem-acc-thms rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4593,15 +4668,12 @@
        ((unless (defind-pred-recursivep pred-info1.name irule-infos))
         (mv nil nil nil))
        (standalonep (endp (cdr pred-infos)))
-       ((mv expands uses enables)
-        (defind-gen-ind-fn-hint-parts pred-infos standalonep name))
-       ;; The ordinal and arithmetic facts are enabled explicitly, because
-       ;; the surrounding book may have restricted the theory; without them
-       ;; the measure conjecture resorts to induction, which fails outright
-       ;; where the induction depth limit is 0.
+       ((mv expands uses rules)
+        (defind-gen-ind-fn-hint-parts
+          pred-infos irule-infos clique-preds standalonep name))
        (hints `(("Goal" :expand ,expands
                         :use ,uses
-                        :in-theory (enable o-p o-finp o< natp ,@enables))))
+                        :in-theory '(eql o-p o-finp o< natp ,@rules))))
        (fn-name1 (defind-ind-fn-name pred-info1.name name))
        (count-fn1 (defind-proof-count-fn-name pred-info1.name name))
        (witness1 (defind-proof-witness-fn-name pred-info1.name name))
@@ -5006,7 +5078,7 @@
        (proof-validp (defind-proof-valid-fn-name cinfo.name name))
        (irule-validp (defind-irule-valid-fn-name cinfo.name info.name name))
        (constr-return-thm
-        (defind-proof-constr-return-thm cinfo.name info.name name))
+        (defind-proof-constr-return-thm-name cinfo.name info.name name))
        (var-of-constr-thms
         (defind-proof-var-of-constr-thm-names cinfo.name info.name vars name))
        (hints `(("Goal"
