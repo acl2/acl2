@@ -30,7 +30,8 @@
 ;;                here must be unchanged from its initial value
 ;;     :apsr      the expected APSR (default 0), compared under :apsr-mask
 ;;     :apsr-mask which APSR bits to compare (default #xF0000000, that is,
-;;                the N, Z, C, and V flags)
+;;                the N, Z, C, and V flags); before ARMv6 the GE bits (19:16)
+;;                are never compared, since they are reserved there
 ;;     :mem       a list of (address size value) triples expected in memory
 ;;
 ;; :error asserts the model's own error value, and is for vectors written by
