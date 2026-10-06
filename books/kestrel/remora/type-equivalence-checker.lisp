@@ -263,8 +263,7 @@
                     (type-count type))
              (equal (type-binders-count (normalize-type type))
                     (type-binders-count type)))
-    :induct t
-    :enable type-binders-count))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
