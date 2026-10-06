@@ -59,7 +59,7 @@ writes to smoke.cert.out among the other output; for example:
 
 ```
   % grep 'smoke.*vectors' smoke.cert.out
-  smoke: 12 vectors, 12 pass, 0 mismatch
+  smoke: 14 vectors, 14 pass, 0 mismatch
   smoke UNKNOWN: 2 vectors, 0 mismatch, 2 UNKNOWN-dependent
   smoke GE: 3 vectors, 2 pass, 1 mismatch
   smoke classes: 10 vectors, 1 pass, 3 mismatch, 3 waived, 1 coverage gap, 1 unsupported, 1 unpredictable

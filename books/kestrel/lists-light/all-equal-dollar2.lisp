@@ -47,7 +47,7 @@
 (defthm nthcdr-when-all-equal$
   (implies (and (all-equal$ x lst)
                 (natp n)
-                (< n (len lst))
+                ;; (< n (len lst))
                 (true-listp lst))
            (equal (nthcdr n lst)
                   (repeat (- (len lst) n) x)))

@@ -41,7 +41,7 @@
   (done-node-array :type (array t (100)) :initially nil :resizable t)
   :inline t)
 
-(defun set-done-vals-to-nil (i test-case-stobj)
+(defund set-done-vals-to-nil (i test-case-stobj)
   (declare (xargs :guard (and (integerp i)
                               (< i (done-node-array-length test-case-stobj)))
                   :stobjs test-case-stobj
@@ -51,11 +51,13 @@
     (let ((test-case-stobj (update-done-node-arrayi i nil test-case-stobj)))
       (set-done-vals-to-nil (+ -1 i) test-case-stobj))))
 
-(defthm done-node-array-length-of-set-done-vals-to-nil
-  (implies (and ; (integerp i)
-                (< i (done-node-array-length test-case-stobj)))
-           (equal (done-node-array-length (set-done-vals-to-nil i test-case-stobj))
-                  (done-node-array-length test-case-stobj))))
+(local
+ (defthm done-node-array-length-of-set-done-vals-to-nil
+   (implies (and ; (integerp i)
+             (< i (done-node-array-length test-case-stobj)))
+            (equal (done-node-array-length (set-done-vals-to-nil i test-case-stobj))
+                   (done-node-array-length test-case-stobj)))
+   :hints (("Goal" :in-theory (enable set-done-vals-to-nil)))))
 
 ;; (defthm test-case-stobjp-of-set-done-vals-to-nil
 ;;   (implies (test-case-stobjp test-case-stobj)
@@ -99,42 +101,48 @@
         (add-args-not-done-in-test-case-stobj (rest dargs) (cons darg worklist) t test-case-stobj ;we've extended the worklist
                                               )))))
 
-(defthm add-args-not-done-in-test-case-stobj-of-nil-arg1
-  (equal (add-args-not-done-in-test-case-stobj nil worklist worklist-extendedp test-case-stobj)
-         (mv worklist worklist-extendedp))
-  :hints (("Goal" :in-theory (enable add-args-not-done-in-test-case-stobj))))
+(local
+ (defthm add-args-not-done-in-test-case-stobj-of-nil-arg1
+   (equal (add-args-not-done-in-test-case-stobj nil worklist worklist-extendedp test-case-stobj)
+          (mv worklist worklist-extendedp))
+   :hints (("Goal" :in-theory (enable add-args-not-done-in-test-case-stobj)))))
 
-(defthm nat-listp-of-mv-nth-0-of-add-args-not-done-in-test-case-stobj
-  (implies (and ;(array1p 'test-case-stobj test-case-stobj)
+(local
+ (defthm nat-listp-of-mv-nth-0-of-add-args-not-done-in-test-case-stobj
+   (implies (and ;(array1p 'test-case-stobj test-case-stobj)
              (darg-listp args) ; (bounded-darg-listp args (alen1 'test-case-stobj test-case-stobj))
              (NAT-LISTP WORKLIST))
-           (nat-listp (mv-nth 0 (add-args-not-done-in-test-case-stobj args worklist worklist-extendedp test-case-stobj))))
-  :hints (("Goal" :in-theory (enable add-args-not-done-in-test-case-stobj))))
+            (nat-listp (mv-nth 0 (add-args-not-done-in-test-case-stobj args worklist worklist-extendedp test-case-stobj))))
+   :hints (("Goal" :in-theory (enable add-args-not-done-in-test-case-stobj)))))
 
-(defthm all-<-of-mv-nth-0-of-add-args-not-done-in-test-case-stobj
-  (implies (and ;(array1p 'test-case-stobj test-case-stobj)
+(local
+ (defthm all-<-of-mv-nth-0-of-add-args-not-done-in-test-case-stobj
+   (implies (and ;(array1p 'test-case-stobj test-case-stobj)
              (bounded-darg-listp args bound)
              (all-< WORKLIST bound))
-           (all-< (mv-nth 0 (add-args-not-done-in-test-case-stobj args worklist worklist-extendedp test-case-stobj))
-                  bound))
-  :hints (("Goal" :in-theory (enable add-args-not-done-in-test-case-stobj))))
+            (all-< (mv-nth 0 (add-args-not-done-in-test-case-stobj args worklist worklist-extendedp test-case-stobj))
+                   bound))
+   :hints (("Goal" :in-theory (enable add-args-not-done-in-test-case-stobj)))))
 
-(defthm true-listp-of-mv-nth-0-of-add-args-not-done-in-test-case-stobj
-  (implies (true-listp worklist)
-           (true-listp (mv-nth 0 (add-args-not-done-in-test-case-stobj args worklist worklist-extendedp test-case-stobj))))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable add-args-not-done-in-test-case-stobj))))
+(local
+ (defthm true-listp-of-mv-nth-0-of-add-args-not-done-in-test-case-stobj
+   (implies (true-listp worklist)
+            (true-listp (mv-nth 0 (add-args-not-done-in-test-case-stobj args worklist worklist-extendedp test-case-stobj))))
+   :rule-classes :type-prescription
+   :hints (("Goal" :in-theory (enable add-args-not-done-in-test-case-stobj)))))
 
 ;; once it's true, it stays true
-(defthm mv-nth-1-of-add-args-not-done-in-test-case-stobj-of-t
-  (mv-nth 1 (add-args-not-done-in-test-case-stobj args worklist t test-case-stobj))
-  :hints (("Goal" :in-theory (enable add-args-not-done-in-test-case-stobj))))
+(local
+ (defthm mv-nth-1-of-add-args-not-done-in-test-case-stobj-of-t
+   (mv-nth 1 (add-args-not-done-in-test-case-stobj args worklist t test-case-stobj))
+   :hints (("Goal" :in-theory (enable add-args-not-done-in-test-case-stobj)))))
 
-(defthm mv-nth-0-of-add-args-not-done-in-test-case-stobj-when-not-mv-nth-1-of-add-args-not-done-in-test-case-stobj
-  (implies (not (mv-nth 1 (add-args-not-done-in-test-case-stobj args worklist worklist-extendedp test-case-stobj)))
-           (equal (mv-nth 0 (add-args-not-done-in-test-case-stobj args worklist worklist-extendedp test-case-stobj))
-                  worklist))
-  :hints (("Goal" :in-theory (enable add-args-not-done-in-test-case-stobj))))
+(local
+ (defthm mv-nth-0-of-add-args-not-done-in-test-case-stobj-when-not-mv-nth-1-of-add-args-not-done-in-test-case-stobj
+   (implies (not (mv-nth 1 (add-args-not-done-in-test-case-stobj args worklist worklist-extendedp test-case-stobj)))
+            (equal (mv-nth 0 (add-args-not-done-in-test-case-stobj args worklist worklist-extendedp test-case-stobj))
+                   worklist))
+   :hints (("Goal" :in-theory (enable add-args-not-done-in-test-case-stobj)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
