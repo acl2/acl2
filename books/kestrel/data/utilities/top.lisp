@@ -16,6 +16,7 @@
 (include-book "lists/equiv")
 (include-book "lists/reverse")
 (include-book "oset")
+(include-book "total-order/compare")
 (include-book "total-order/max")
 (include-book "total-order/min")
 (include-book "total-order/min-max")

@@ -1245,6 +1245,16 @@ struct s arr[] = {1, [0].y = 2, {.x = 3, 4}, 5};
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
+ "__float80 x;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "__float128 x;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
  "void (*f(float x, double y))(int z) {
   return (void (*)(int))0;
 }
@@ -1365,12 +1375,27 @@ void bar() {
   :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
+  "typedef float _Float16x;
+"
+  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
   "typedef float _Float32;
 "
   :dialect (c::make-dialect :std (c::standard-c17) :clang t))
 
 (test-valid-fail
   "typedef float _Float16;
+"
+  :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-valid
+  "typedef __float128 _Float128;
+"
+  :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-valid-fail
+  "typedef float __float128;
 "
   :dialect (c::make-dialect :std (c::standard-c17) :clang t))
 
