@@ -76,14 +76,14 @@
                   :exec (tree-join (tree->left tree)
                                    (tree->right tree))))
             (ltp
-             ;; TODO: Return a flag indicating whether or not the subtree we
-             ;; recursed on changed.
-             (tree-node (tree->head tree)
-                        (tree-delete key (tree->left tree))
-                        (tree->right tree)))
-            (t (tree-node (tree->head tree)
-                          (tree->left tree)
-                          (tree-delete key (tree->right tree)))))))
+             (tree-node-with-hint (tree->head tree)
+                                  (tree-delete key (tree->left tree))
+                                  (tree->right tree)
+                                  tree))
+            (t (tree-node-with-hint (tree->head tree)
+                                    (tree->left tree)
+                                    (tree-delete key (tree->right tree))
+                                    tree)))))
   :verify-guards :after-returns
   :guard-hints (("Goal" :in-theory (enable tree-join-at))))
 
@@ -228,14 +228,17 @@
                   (tree-join (tree->left tree)
                              (tree->right tree)))
                  (ltp
-                  (tree-node (tree->head tree)
-                             (acl2-number-tree-delete key (tree->left tree))
-                             (tree->right tree)))
-                 (t (tree-node (tree->head tree)
-                               (tree->left tree)
-                               (acl2-number-tree-delete
-                                 key
-                                 (tree->right tree))))))))
+                  (tree-node-with-hint
+                    (tree->head tree)
+                    (acl2-number-tree-delete key (tree->left tree))
+                    (tree->right tree)
+                    tree))
+                 (t (tree-node-with-hint (tree->head tree)
+                                         (tree->left tree)
+                                         (acl2-number-tree-delete
+                                           key
+                                           (tree->right tree))
+                                         tree))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-delete
                                            acl2-number-tree-delete
@@ -258,12 +261,16 @@
                   (tree-join (tree->left tree)
                              (tree->right tree)))
                  (ltp
-                  (tree-node (tree->head tree)
-                             (symbol-tree-delete key (tree->left tree))
-                             (tree->right tree)))
-                 (t (tree-node (tree->head tree)
-                               (tree->left tree)
-                               (symbol-tree-delete key (tree->right tree))))))))
+                  (tree-node-with-hint
+                    (tree->head tree)
+                    (symbol-tree-delete key (tree->left tree))
+                    (tree->right tree)
+                    tree))
+                 (t (tree-node-with-hint
+                      (tree->head tree)
+                      (tree->left tree)
+                      (symbol-tree-delete key (tree->right tree))
+                      tree))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-delete
                                            symbol-tree-delete
@@ -287,13 +294,17 @@
                   (tree-join (tree->left tree)
                              (tree->right tree)))
                  (ltp
-                  (tree-node (tree->head tree)
-                             (eqlable-tree-delete key (tree->left tree))
-                             (tree->right tree)))
-                 (t (tree-node (tree->head tree)
-                               (tree->left tree)
-                               (eqlable-tree-delete key
-                                                    (tree->right tree))))))))
+                  (tree-node-with-hint
+                    (tree->head tree)
+                    (eqlable-tree-delete key (tree->left tree))
+                    (tree->right tree)
+                    tree))
+                 (t (tree-node-with-hint
+                      (tree->head tree)
+                      (tree->left tree)
+                      (eqlable-tree-delete key
+                                           (tree->right tree))
+                      tree))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-delete
                                            eqlable-tree-delete

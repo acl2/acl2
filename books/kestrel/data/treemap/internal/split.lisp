@@ -90,9 +90,10 @@
                     ;; inlined).
                     :exec (mv assoc
                               left$
-                              (tree-node (tree->head tree)
-                                         right$
-                                         (tree->right tree))))))
+                              (tree-node-with-hint (tree->head tree)
+                                                   right$
+                                                   (tree->right tree)
+                                                   tree)))))
             (t
              (mv-let (assoc left$ right$)
                      (tree-split key (tree->right tree))
@@ -103,9 +104,10 @@
                                             (tree-node key left$ right$)))))
                              (mv assoc (tree->left tree$) (tree->right tree$)))
                     :exec (mv assoc
-                              (tree-node (tree->head tree)
-                                         (tree->left tree)
-                                         left$)
+                              (tree-node-with-hint (tree->head tree)
+                                                   (tree->left tree)
+                                                   left$
+                                                   tree)
                               right$)))))))
   :verify-guards :after-returns)
 
@@ -627,16 +629,18 @@
                           (acl2-number-tree-split key (tree->left tree))
                     (mv assoc
                         left$
-                        (tree-node (tree->head tree)
-                                   right$
-                                   (tree->right tree)))))
+                        (tree-node-with-hint (tree->head tree)
+                                             right$
+                                             (tree->right tree)
+                                             tree))))
                  (t
                   (mv-let (assoc left$ right$)
                           (acl2-number-tree-split key (tree->right tree))
                     (mv assoc
-                        (tree-node (tree->head tree)
-                                   (tree->left tree)
-                                   left$)
+                        (tree-node-with-hint (tree->head tree)
+                                             (tree->left tree)
+                                             left$
+                                             tree)
                         right$)))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-split
@@ -664,16 +668,18 @@
                           (symbol-tree-split key (tree->left tree))
                     (mv assoc
                         left$
-                        (tree-node (tree->head tree)
-                                   right$
-                                   (tree->right tree)))))
+                        (tree-node-with-hint (tree->head tree)
+                                             right$
+                                             (tree->right tree)
+                                             tree))))
                  (t
                   (mv-let (assoc left$ right$)
                           (symbol-tree-split key (tree->right tree))
                     (mv assoc
-                        (tree-node (tree->head tree)
-                                   (tree->left tree)
-                                   left$)
+                        (tree-node-with-hint (tree->head tree)
+                                             (tree->left tree)
+                                             left$
+                                             tree)
                         right$)))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-split
@@ -702,16 +708,18 @@
                           (eqlable-tree-split key (tree->left tree))
                     (mv assoc
                         left$
-                        (tree-node (tree->head tree)
-                                   right$
-                                   (tree->right tree)))))
+                        (tree-node-with-hint (tree->head tree)
+                                             right$
+                                             (tree->right tree)
+                                             tree))))
                  (t
                   (mv-let (assoc left$ right$)
                           (eqlable-tree-split key (tree->right tree))
                     (mv assoc
-                        (tree-node (tree->head tree)
-                                   (tree->left tree)
-                                   left$)
+                        (tree-node-with-hint (tree->head tree)
+                                             (tree->left tree)
+                                             left$
+                                             tree)
                         right$)))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-split
