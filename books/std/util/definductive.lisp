@@ -4414,8 +4414,7 @@
                                 (:instance ,minimalp-necc
                                            (,proof (,witness ,@concl-vars))
                                            (,proof2 ,proof)))
-                          :in-theory (e/d (,when-valid-proof)
-                                          (,minimalp-necc))))))))
+                          :in-theory '(,when-valid-proof)))))))
        (print-event?
         (and (evmac-input-print->= print :result)
              `((cw-event "Function ~x0.~%" ',minimalp)
