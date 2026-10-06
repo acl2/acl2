@@ -305,6 +305,143 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Type and ispace definitions in parameter types are expanded
+; when the binder is checked (see check-atom and check-bind),
+; so a later shadowing of the defined variable,
+; by an inner definition or by an inner abstraction,
+; does not change the type of the parameter.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The parameter of a unary term abstraction has type &t, defined as Int;
+; the body redefines &t as Bool, but x is still an Int.
+(test-check-top-expr
+ "(let ((type &t Int))
+  ((fn ((x &t))
+     (let ((type &t Bool)) (+ x 1)))
+   1))")
+
+; The parameters of an n-ary term abstraction have type &t, defined as Int;
+; the body redefines &t as Bool, but x is still an Int.
+(test-check-top-expr
+ "(let ((type &t Int))
+  ((fn ((x &t) (y &t))
+     (let ((type &t Bool)) (+ x 1)))
+   1 2))")
+
+; The same, with the body abstracting over &t instead of redefining it:
+; inside the type abstraction, &t has no definition, but x is still an Int.
+(test-check-top-expr
+ "(let ((type &t Int))
+  ((fn ((x &t) (y &t))
+     (t-app (t-fn (&t) (+ x y)) Int))
+   1 2))")
+
+; The same, with an ispace definition instead of a type definition:
+; the parameters are vectors of length $d, defined as 2;
+; the body redefines $d as 3, but x still has length 2.
+(test-check-top-expr
+ "(let ((ispace $d 2))
+  ((fn ((x [Int $d]) (y [Int $d]))
+     (let ((ispace $d 3)) (@length (Int) (2 []) x)))
+   [1 2] [3 4]))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The same shadowing inside the body of a function binding.
+(test-check-top-expr
+ "(let ((type &t Int)
+       (fun (f (x &t) (y &t) : Int)
+         (let ((type &t Bool)) (+ x 1))))
+  (f 1 2))")
+
+; With an ispace definition.
+(test-check-top-expr
+ "(let ((ispace $d 2)
+       (fun (f (x [Int $d]) (y [Int $d]) : Int)
+         (let ((ispace $d 3)) (@length (Int) (2 []) x))))
+  (f [1 2] [3 4]))")
+
+; The recorded type of a let-bound function is expanded as well:
+; f takes an Int, and still does after &t is redefined as Bool,
+; so applying it to a boolean fails and applying it to an integer succeeds.
+(test-check-top-expr-fail
+ "(let ((type &t Int)
+       (fun (f (x &t) : Int) x))
+  (let ((type &t Bool))
+    (f #t)))")
+(test-check-top-expr
+ "(let ((type &t Int)
+       (fun (f (x &t) : Int) x))
+  (let ((type &t Bool))
+    (f 1)))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The same for a combined function binding,
+; whose parameter types are expanded in the environment
+; extended with its own type and ispace parameters.
+(test-check-top-expr
+ "(let ((type &t Int)
+       (fun (@f () () (x &t) (y &t) : Int)
+         (let ((type &t Bool)) (+ x 1))))
+  (f 1 2))")
+(test-check-top-expr-fail
+ "(let ((type &t Int)
+       (fun (@f () () (x &t) : Int) x))
+  (let ((type &t Bool))
+    (f #t)))")
+(test-check-top-expr
+ "(let ((type &t Int)
+       (fun (@f () () (x &t) : Int) x))
+  (let ((type &t Bool))
+    (f 1)))")
+
+; A type parameter of the binding shadows the outer definition of &t,
+; so x has the abstract type &t, instantiated at the application:
+; applying f at Bool to a boolean succeeds, and to an integer fails.
+(test-check-top-expr
+ "(let ((type &t Int)
+       (fun (@f (&t) () (x &t) : &t) x))
+  (@f (Bool) () #t))")
+(test-check-top-expr-fail
+ "(let ((type &t Int)
+       (fun (@f (&t) () (x &t) : &t) x))
+  (@f (Bool) () 1))")
+
+; Similarly, an ispace parameter of the binding shadows
+; the outer definition of $d.
+(test-check-top-expr
+ "(let ((ispace $d 2)
+       (fun (@f () ($d) (x [Int $d]) : Int) (@length (Int) ($d []) x)))
+  (@f () (3) [1 2 3]))")
+(test-check-top-expr-fail
+ "(let ((ispace $d 2)
+       (fun (@f () ($d) (x [Int $d]) : Int) (@length (Int) ($d []) x)))
+  (@f () (3) [1 2]))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The tests below are commented out because they currently fail:
+; the type checker accepts these expressions, but it should reject them.
+; The parameter x has the abstract type &t (or the abstract length $d),
+; bound by the enclosing abstraction;
+; the body then defines &t (or $d),
+; and the lookup of x expands its recorded type with that definition
+; (see the var case of check-expr),
+; so x appears to be an Int (or to have length 3).
+; If the expansion at lookup is removed
+; (every type recorded in the environment is already expanded),
+; these should become passing tests.
+; (test-check-top-expr-fail
+;  "(t-fn (&t) (fn ((x &t)) (let ((type &t Int)) (+ x 1))))")
+; (test-check-top-expr-fail
+;  "(i-fn ($d)
+;   (fn ((x [Int $d]))
+;     (let ((ispace $d 3)) (@length (Int) (3 []) x))))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Inference of type and ispace applications (see check/infer-app):
 ; a function with a universal or product type
 ; is applied directly to an argument,
@@ -620,3 +757,920 @@
  "(unbox ($d v (box (3) [1 2 3] (Sigma ($e) (A Int $e)))) (head v))")
 (test-check-top-expr
  "(unbox ($d v (box (2) [1 2 3] (Sigma ($e) (A Int (+ 1 $e))))) (head v))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; tail : (Forall (&t) (Pi ($d @s) (-> [&t (+ 1 $d) @s] [&t $d @s])))
+
+; The input type is the same as for head, so the inference is the same;
+; but the output type keeps the inferred dimension,
+; which the following tests use.
+
+; The tail of a vector of length 3 has length 2,
+; the tail of a matrix with 2 rows has 1 row,
+; and the tail of a singleton vector is empty.
+(test-check-top-expr
+ "(tail [1 2 3])")
+(test-check-top-expr
+ "(tail (array [2 3] 1 2 3 4 5 6))")
+(test-check-top-expr
+ "(tail [7])")
+
+; A scalar has no tail.
+(test-check-top-expr-fail
+ "(tail 5)")
+
+; The inferred length of the result is used by further inference:
+; the tail of a vector of length 3 has a head,
+; and can be tailed twice more, but not three times more,
+; because the length of the third tail is 0;
+; the tail of a singleton vector has a length (namely 0) but no head.
+(test-check-top-expr
+ "(head (tail [1 2 3]))")
+(test-check-top-expr
+ "(tail (tail (tail [1 2 3])))")
+(test-check-top-expr-fail
+ "(tail (tail (tail (tail [1 2 3]))))")
+(test-check-top-expr
+ "(length (tail [7]))")
+(test-check-top-expr-fail
+ "(head (tail [7]))")
+
+; Partial explicit instantiation, with the shape inferred.
+(test-check-top-expr
+ "((i-app (t-app tail Int) 2) [1 2 3])")
+
+; OBJECTIVE: as for head, the explicit dimension matches the rows,
+; so tail should be applied to each row, over the frame [2],
+; yielding the matrix without its first column;
+; but the inference does not handle frames yet.
+; The fully explicit instantiation is accepted, with the frame.
+(test-check-top-expr-fail
+ "((i-app (t-app tail Int) 2) [[1 2 3] [4 5 6]])")
+(test-check-top-expr
+ "(@tail (Int) (2 []) [[1 2 3] [4 5 6]])")
+
+; Inference under an ispace binder,
+; with the result used by further inference:
+; the tail of a vector of length (+ 1 $n) has length $n,
+; so it may be empty and has no head;
+; the tail of a vector of length (+ 2 $n) has length (+ 1 $n),
+; so it has a head.
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int (+ 1 $n)])) (tail x)))")
+(test-check-top-expr-fail
+ "(i-fn ($n) (fn ((x [Int (+ 1 $n)])) (head (tail x))))")
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int (+ 2 $n)])) (head (tail x))))")
+
+; The shape variable is inferred as the bound shape variable
+; through a chain of applications:
+; the tails of an array of shape [3 @s] have shapes [2 @s] and [1 @s],
+; and the head of the latter has shape @s.
+(test-check-top-expr
+ "(i-fn (@s) (fn ((x [Int 3 @s])) (head (tail (tail x)))))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; append : (Forall (&t)
+;           (Pi ($m $n @s)
+;            (-> ([&t $m @s] [&t $n @s]) [&t (+ $m $n) @s])))
+
+; OBJECTIVE: append takes two arguments,
+; but the inference is limited to unary applications:
+; the n-ary application performs no inference,
+; and the unary application to the first argument fails,
+; because the dimension $n of the second input
+; does not occur in the first input,
+; so it cannot be inferred from the first argument;
+; the inference should consider all the arguments of an n-ary application,
+; or defer the instantiation of $n to the application to the second argument.
+(test-check-top-expr-fail
+ "(append [1 2] [3 4 5])")
+(test-check-top-expr-fail
+ "((append [1 2]) [3 4 5])")
+
+; The fully explicit instantiation is accepted;
+; the length (+ 2 3) of the result is used by further inference
+; modulo additive equivalence:
+; the length is inferred as 5,
+; and the head is inferred with the explicit dimension 4,
+; since (+ 1 4) and (+ 2 3) are both normalized to 5.
+(test-check-top-expr
+ "(@append (Int) (2 3 []) [1 2] [3 4 5])")
+(test-check-top-expr
+ "(length (@append (Int) (2 3 []) [1 2] [3 4 5]))")
+(test-check-top-expr
+ "((i-app (t-app head Int) 4) (@append (Int) (2 3 []) [1 2] [3 4 5]))")
+
+; Partial explicit instantiation, with the dimensions explicit
+; and the shape inferred from the first argument,
+; which fixes the shape of the elements of the second argument:
+; the elements of the vectors are scalars,
+; and the elements of the matrices are vectors of length 2;
+; the explicit dimension of the second argument is checked.
+(test-check-top-expr
+ "(((i-app (t-app append Int) 2 3) [1 2]) [3 4 5])")
+(test-check-top-expr
+ "(((i-app (t-app append Int) 1 2) [[1 2]]) [[3 4] [5 6]])")
+(test-check-top-expr-fail
+ "(((i-app (t-app append Int) 2 3) [1 2]) [3 4])")
+
+; Under ispace binders, with the bound dimension variables explicit,
+; the shape is inferred from the first argument:
+; the first input type [Int $m @s] contains the bound variable $m,
+; which is rigid, i.e. not a pattern variable.
+(test-check-top-expr
+ "(i-fn ($m $n) (fn ((x [Int $m]) (y [Int $n]))
+    (((i-app (t-app append Int) $m $n) x) y)))")
+
+; The result of a fully explicit instantiation under ispace binders
+; has length (+ $m $n), which is used by further inference:
+; its length is inferred as (+ $m $n);
+; it has no head, since (+ $m $n) may be 0;
+; it has a head when the first vector has length (+ 1 $m).
+(test-check-top-expr
+ "(i-fn ($m $n) (fn ((x [Int $m]) (y [Int $n]))
+    (length (@append (Int) ($m $n []) x y))))")
+(test-check-top-expr-fail
+ "(i-fn ($m $n) (fn ((x [Int $m]) (y [Int $n]))
+    (head (@append (Int) ($m $n []) x y))))")
+(test-check-top-expr
+ "(i-fn ($m $n) (fn ((x [Int (+ 1 $m)]) (y [Int $n]))
+    (head (@append (Int) ((+ 1 $m) $n []) x y))))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; reverse : (Forall (&t) (Pi ($d @s) (-> [&t $d @s] [&t $d @s])))
+
+; The input type is the same as for length, so the inference is the same;
+; the output type is the same as the input type.
+(test-check-top-expr
+ "(reverse [1 2 3])")
+(test-check-top-expr
+ "(reverse (array [2 3] 1 2 3 4 5 6))")
+
+; A scalar cannot be reversed:
+; the type of the argument must have at least one dimension.
+(test-check-top-expr-fail
+ "(reverse 5)")
+
+; Chains with head and tail:
+; the reverse of a vector of length 3 has a head,
+; the tail of a vector of length 3 can be reversed,
+; and the reverse of the (empty) tail of a singleton vector has no head.
+(test-check-top-expr
+ "(head (reverse [1 2 3]))")
+(test-check-top-expr
+ "(reverse (tail [1 2 3]))")
+(test-check-top-expr-fail
+ "(head (reverse (tail [7])))")
+
+; Partial explicit instantiation, with the shape inferred.
+(test-check-top-expr
+ "((i-app (t-app reverse Int) 3) [1 2 3])")
+
+; OBJECTIVE: as for length, the explicit dimension matches the rows,
+; so reverse should be applied to each row, over the frame [2];
+; but the inference does not handle frames yet.
+; The fully explicit instantiation is accepted, with the frame.
+(test-check-top-expr-fail
+ "((i-app (t-app reverse Int) 3) [[1 2 3] [4 5 6]])")
+(test-check-top-expr
+ "(@reverse (Int) (3 []) [[1 2 3] [4 5 6]])")
+
+; Inference under an ispace binder,
+; with the result used by further inference:
+; the reverse of a vector of length $n has length $n,
+; so it may be empty and has no head;
+; the reverse of a vector of length (+ 1 $n) has a head.
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int $n])) (reverse x)))")
+(test-check-top-expr-fail
+ "(i-fn ($n) (fn ((x [Int $n])) (head (reverse x))))")
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int (+ 1 $n)])) (head (reverse x))))")
+
+; The dimension is inferred as the witness of an unboxing,
+; but the result has the same type as the unboxed vector,
+; so the witness escapes (compare with length);
+; re-boxing the result avoids the escape.
+(test-check-top-expr-fail
+ "(unbox ($d v (box (3) [1 2 3] (Sigma ($e) (A Int $e)))) (reverse v))")
+(test-check-top-expr
+ "(unbox ($d v (box (3) [1 2 3] (Sigma ($e) (A Int $e))))
+   (box ($d) (reverse v) (Sigma ($e) (A Int $e))))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; index : (Forall (&t) (Pi ($m) (-> ([&t $m] Int) &t)))
+
+; OBJECTIVE: as for append, the n-ary application performs no inference.
+(test-check-top-expr-fail
+ "(index [10 20 30] 1)")
+
+; Unlike append, the unary application to the first argument succeeds,
+; because all the variables occur in the first input type:
+; the element type and the length are inferred from the vector,
+; and the resulting function is applied to the index.
+(test-check-top-expr
+ "((index [10 20 30]) 1)")
+
+; The element type is inferred as the result type:
+; a boolean, or a function, which is applied.
+(test-check-top-expr
+ "((index [#t #f]) 1)")
+(test-check-top-expr
+ "(((index [(fn ((x Int)) x)]) 0) 7)")
+
+; A scalar cannot be indexed.
+(test-check-top-expr-fail
+ "((index 5) 0)")
+
+; The second argument is checked after the inference:
+; it must be an integer, as a scalar,
+; or as a vector of indices, over which the application is lifted,
+; yielding a vector of elements.
+(test-check-top-expr-fail
+ "((index [10 20 30]) #t)")
+(test-check-top-expr
+ "((index [10 20 30]) [0 2])")
+
+; OBJECTIVE: a matrix is a frame of rows,
+; so index should be applied to each row, over the frame [2],
+; yielding the column at the index;
+; but the inference does not handle frames yet.
+; The fully explicit instantiation is accepted, with the frame.
+(test-check-top-expr-fail
+ "((index [[1 2] [3 4]]) 0)")
+(test-check-top-expr
+ "(@index (Int) (2) [[1 2] [3 4]] 0)")
+
+; Partial explicit instantiation, with the length inferred.
+(test-check-top-expr
+ "(((t-app index Int) [10 20 30]) 1)")
+
+; Inference under an ispace binder:
+; the length is inferred as the bound variable
+; (an index out of range is only a dynamic error).
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int $n]) (i Int)) ((index x) i)))")
+
+; The length is inferred as the witness of an unboxing,
+; which does not escape, since the result is a scalar.
+(test-check-top-expr
+ "(unbox ($d v (box (3) [1 2 3] (Sigma ($e) (A Int $e)))) ((index v) 0))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; index2d : (Forall (&t) (Pi ($m $n) (-> ([&t $m $n] [Int 2]) &t)))
+
+; OBJECTIVE: as for index, the n-ary application performs no inference.
+(test-check-top-expr-fail
+ "(index2d [[1 2 3] [4 5 6]] [1 2])")
+
+; As for index, the unary application to the first argument succeeds,
+; because all the variables occur in the first input type:
+; the element type and the two dimensions are inferred from the matrix,
+; and the resulting function is applied to the pair of indices.
+(test-check-top-expr
+ "((index2d [[1 2 3] [4 5 6]]) [1 2])")
+
+; A vector has only one dimension.
+(test-check-top-expr-fail
+ "((index2d [1 2 3]) [0 0])")
+
+; The second argument is checked after the inference:
+; it must be a pair of integers,
+; or a vector of pairs, over which the application is lifted,
+; yielding a vector of elements.
+(test-check-top-expr-fail
+ "((index2d [[1 2] [3 4]]) [0])")
+(test-check-top-expr
+ "((index2d [[1 2] [3 4]]) [[0 0] [1 1]])")
+
+; OBJECTIVE: a three-dimensional array is a frame of matrices,
+; so index2d should be applied to each matrix, over the frame [2],
+; yielding a vector of elements;
+; but the inference does not handle frames yet.
+; The fully explicit instantiation is accepted, with the frame.
+(test-check-top-expr-fail
+ "((index2d [[[1 2]] [[3 4]]]) [0 0])")
+(test-check-top-expr
+ "(@index2d (Int) (1 2) [[[1 2]] [[3 4]]] [0 0])")
+
+; Partial explicit instantiation, with the dimensions inferred.
+(test-check-top-expr
+ "(((t-app index2d Int) [[1 2 3] [4 5 6]]) [1 2])")
+
+; Inference under ispace binders:
+; the dimensions are inferred as the bound variables;
+; an array of shape [$m @s] may not be a matrix, so it cannot be indexed.
+(test-check-top-expr
+ "(i-fn ($m $n) (fn ((x [Int $m $n]) (i [Int 2])) ((index2d x) i)))")
+(test-check-top-expr-fail
+ "(i-fn ($m @s) (fn ((x [Int $m @s])) ((index2d x) [0 0])))")
+
+; The first dimension is inferred as the witness of an unboxing,
+; which does not escape, since the result is a scalar.
+(test-check-top-expr
+ "(unbox ($d v (box (2) [[1 2] [3 4]] (Sigma ($e) (A Int (dims $e 2)))))
+   ((index2d v) [0 1]))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; sum : (Pi (@s) (-> [Int @s] Int))
+
+; The type has no universal binder, and the elements must be integers:
+; a type application and non-integer elements are rejected.
+(test-check-top-expr-fail
+ "((t-app sum Int) [1 2 3])")
+(test-check-top-expr-fail
+ "(sum [#t #f])")
+
+; The shape variable is inferred as the whole shape of the argument,
+; which may be a vector, a matrix, or even a scalar (with the empty shape):
+; the sum of a matrix is the sum of all its elements.
+(test-check-top-expr
+ "(sum [1 2 3])")
+(test-check-top-expr
+ "(sum [[1 2] [3 4]])")
+(test-check-top-expr
+ "(sum 5)")
+
+; Summing the rows of a matrix instead requires
+; the explicit instantiation at the shape of the rows,
+; which yields the frame [2]:
+; the inference matches the whole shape, so there is no frame.
+(test-check-top-expr
+ "(@sum _ ([3]) [[1 2 3] [4 5 6]])")
+
+; Chains with inference in all the applications:
+; the sum of a tail, and the sum of a vector of sums.
+(test-check-top-expr
+ "(sum (tail [1 2 3]))")
+(test-check-top-expr
+ "(sum [(sum [1 2]) (sum [3 4])])")
+
+; Inference under ispace binders:
+; the shape variable is inferred as the bound shape variable
+; (compare with length, which rejects an array of unknown shape),
+; or as the shape with the bound dimension variable;
+; the elements must be integers, not of an abstract type.
+(test-check-top-expr
+ "(i-fn (@s) (fn ((x (A Int @s))) (sum x)))")
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int $n])) (sum x)))")
+(test-check-top-expr-fail
+ "(t-fn (&t) (i-fn ($n) (fn ((x [&t $n])) (sum x))))")
+
+; The shape is inferred from the witness of an unboxing,
+; which does not escape, since the result is a scalar.
+(test-check-top-expr
+ "(unbox ($d v (box (3) [1 2 3] (Sigma ($e) (A Int $e)))) (sum v))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; reshape : (Forall (&t) (Pi (@s1 @s2) (-> [&t @s1] [&t @s2])))
+
+; The output shape @s2 does not occur in the input type,
+; so it cannot be inferred from the argument, and the application fails,
+; whether the other arguments are inferred or explicit.
+(test-check-top-expr-fail
+ "(reshape [1 2 3 4])")
+(test-check-top-expr-fail
+ "((i-app (t-app reshape Int) [4]) [1 2 3 4])")
+
+; OBJECTIVE: the output shape is determined by
+; the type annotation of the binding,
+; from which the inference could obtain it;
+; but the inference only uses the argument, for now.
+(test-check-top-expr-fail
+ "(let ((val (m : [Int 2 2]) (reshape [1 2 3 4]))) m)")
+
+; The fully explicit instantiation is accepted;
+; its result is used by further inference.
+(test-check-top-expr
+ "(@reshape (Int) ([4] [2 2]) [1 2 3 4])")
+(test-check-top-expr
+ "((index2d (@reshape (Int) ([4] [2 2]) [1 2 3 4])) [1 0])")
+
+; The explicit input shape must match the argument,
+; but the type does not relate the sizes of the input and output shapes:
+; a reshape to an incompatible size type-checks,
+; and the mismatch is only detected by evaluation (see prim-reshape).
+(test-check-top-expr-fail
+ "(@reshape (Int) ([3] [2 2]) [1 2 3 4])")
+(test-check-top-expr
+ "(@reshape (Int) ([4] [3 3]) [1 2 3 4])")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; flatten : (Forall (&t)
+;            (Pi ($m $n @s)
+;             (-> [&t $m $n @s] [&t (* $m $n) @s])))
+
+; The two dimensions are inferred from the matrix,
+; and the shape variable as the shape of its elements
+; (empty for a matrix of scalars);
+; a vector has only one dimension.
+(test-check-top-expr
+ "(flatten [[1 2 3] [4 5 6]])")
+(test-check-top-expr
+ "(flatten [[[1 2] [3 4]] [[5 6] [7 8]]])")
+(test-check-top-expr-fail
+ "(flatten [1 2 3])")
+
+; The result has length (* 2 3),
+; with the multiplication uninterpreted (see ispace-equivalence-checker):
+; its length is inferred as (* 2 3), and matches the explicit (* 2 3);
+; its sum is inferred, since any shape matches.
+(test-check-top-expr
+ "(length (flatten [[1 2 3] [4 5 6]]))")
+(test-check-top-expr
+ "((i-app (t-app length Int) (* 2 3)) (flatten [[1 2 3] [4 5 6]]))")
+(test-check-top-expr
+ "(sum (flatten [[1 2 3] [4 5 6]]))")
+
+; OBJECTIVE: the length (* 2 3) is equivalent to 6,
+; so the flattened matrix should match the explicit length 6
+; and should have a head (since the length is a successor);
+; but multiplication is uninterpreted, for now.
+(test-check-top-expr-fail
+ "((i-app (t-app length Int) 6) (flatten [[1 2 3] [4 5 6]]))")
+(test-check-top-expr-fail
+ "(head (flatten [[1 2 3] [4 5 6]]))")
+
+; OBJECTIVE: as for the other operations,
+; the explicit dimensions match the matrices of a three-dimensional array,
+; so flatten should be applied to each matrix, over the frame [2];
+; but the inference does not handle frames yet.
+; The fully explicit instantiation is accepted, with the frame.
+(test-check-top-expr-fail
+ "((i-app (t-app flatten Int) 1 2) [[[1 2]] [[3 4]]])")
+(test-check-top-expr
+ "(@flatten (Int) (1 2 []) [[[1 2]] [[3 4]]])")
+
+; Inference under ispace binders:
+; the dimensions and the shape are inferred as the bound variables,
+; and the length of the result is inferred as the product (* $m $n).
+(test-check-top-expr
+ "(i-fn ($m $n @s) (fn ((x [Int $m $n @s])) (flatten x)))")
+(test-check-top-expr
+ "(i-fn ($m $n) (fn ((x [Int $m $n])) (length (flatten x))))")
+
+; OBJECTIVE: the product of the successors (+ 1 $m) and (+ 1 $n)
+; is a successor, so the flattened matrix should have a head;
+; but multiplication is uninterpreted, for now.
+(test-check-top-expr-fail
+ "(i-fn ($m $n) (fn ((x [Int (+ 1 $m) (+ 1 $n)])) (head (flatten x))))")
+
+; The first dimension is inferred as the witness of an unboxing,
+; and the result has length (* $d 2), so the witness escapes;
+; re-boxing the result avoids the escape.
+(test-check-top-expr-fail
+ "(unbox ($d v (box (2) [[1 2] [3 4]] (Sigma ($e) (A Int (dims $e 2)))))
+   (flatten v))")
+(test-check-top-expr
+ "(unbox ($d v (box (2) [[1 2] [3 4]] (Sigma ($e) (A Int (dims $e 2)))))
+   (box ($d) (flatten v) (Sigma ($e) (A Int (* $e 2)))))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; transpose2d : (Forall (&t) (Pi ($m $n) (-> [&t $m $n] [&t $n $m])))
+
+; The two dimensions are inferred from the matrix,
+; and swapped in the result;
+; a vector has only one dimension.
+(test-check-top-expr
+ "(transpose2d [[1 2 3] [4 5 6]])")
+(test-check-top-expr-fail
+ "(transpose2d [1 2 3])")
+
+; The swapped dimensions are used by further inference:
+; the transposed matrix has 3 rows, not 2,
+; its head is a vector (the first column of the original matrix),
+; and transposing it again yields a matrix with 2 rows.
+(test-check-top-expr
+ "((i-app (t-app length Int) 3) (transpose2d [[1 2 3] [4 5 6]]))")
+(test-check-top-expr-fail
+ "((i-app (t-app length Int) 2) (transpose2d [[1 2 3] [4 5 6]]))")
+(test-check-top-expr
+ "(head (transpose2d [[1 2 3] [4 5 6]]))")
+(test-check-top-expr
+ "((i-app (t-app length Int) 2)
+   (transpose2d (transpose2d [[1 2 3] [4 5 6]])))")
+
+; OBJECTIVE: a three-dimensional array is a frame of matrices,
+; so transpose2d should be applied to each matrix, over the frame [2];
+; but the inference does not handle frames yet.
+; The fully explicit instantiation is accepted, with the frame.
+(test-check-top-expr-fail
+ "(transpose2d [[[1 2]] [[3 4]]])")
+(test-check-top-expr
+ "(@transpose2d (Int) (1 2) [[[1 2]] [[3 4]]])")
+
+; Inference under ispace binders:
+; the dimensions are inferred as the bound variables, and swapped;
+; the transposed matrix has $n rows, so it may have no head,
+; unless the original matrix has (+ 1 $n) columns.
+(test-check-top-expr
+ "(i-fn ($m $n) (fn ((x [Int $m $n])) (transpose2d x)))")
+(test-check-top-expr-fail
+ "(i-fn ($m $n) (fn ((x [Int $m $n])) (head (transpose2d x))))")
+(test-check-top-expr
+ "(i-fn ($m $n) (fn ((x [Int $m (+ 1 $n)])) (head (transpose2d x))))")
+
+; The first dimension is inferred as the witness of an unboxing,
+; which is the second dimension of the result, so the witness escapes;
+; re-boxing the result avoids the escape.
+(test-check-top-expr-fail
+ "(unbox ($d v (box (2) [[1 2] [3 4]] (Sigma ($e) (A Int (dims $e 2)))))
+   (transpose2d v))")
+(test-check-top-expr
+ "(unbox ($d v (box (2) [[1 2] [3 4]] (Sigma ($e) (A Int (dims $e 2)))))
+   (box ($d) (transpose2d v) (Sigma ($e) (A Int (dims 2 $e)))))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; iota/static : (Pi (@s) [Int @s])
+
+; The type has no function type:
+; the only application is the ispace application to the shape,
+; which cannot be inferred;
+; an application to an expression is rejected.
+(test-check-top-expr
+ "(i-app iota/static (dims 2 3))")
+(test-check-top-expr-fail
+ "(iota/static 3)")
+
+; The result is used by further inference:
+; the length and the head of a matrix or vector,
+; and the element of a matrix at a pair of indices;
+; an empty vector has no head.
+(test-check-top-expr
+ "(length (i-app iota/static (dims 2 3)))")
+(test-check-top-expr
+ "(head (i-app iota/static (dims 3)))")
+(test-check-top-expr
+ "((index2d (i-app iota/static (dims 2 3))) [1 2])")
+(test-check-top-expr-fail
+ "(head (i-app iota/static (dims 0)))")
+
+; The shape may be a let-bound ispace variable,
+; whose definition is expanded before the inference.
+(test-check-top-expr
+ "(let ((ispace @s (dims 2 3)))
+   ((i-app (t-app length Int) 2) (i-app iota/static @s)))")
+
+; Under ispace binders, the shape may be a bound shape variable
+; or a shape with a bound dimension variable:
+; the sum of an array of any shape is inferred,
+; and the head of a vector of length (+ 1 $n), but not of length $n.
+(test-check-top-expr
+ "(i-fn (@s) (sum (i-app iota/static @s)))")
+(test-check-top-expr
+ "(i-fn ($n) (head (i-app iota/static (dims (+ 1 $n)))))")
+(test-check-top-expr-fail
+ "(i-fn ($n) (head (i-app iota/static (dims $n))))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; reduce : (Forall (&t)
+;           (Pi ($d @s)
+;            (-> ((-> ([&t @s] [&t @s]) [&t @s]) [&t (+ 1 $d) @s]) [&t @s])))
+
+; OBJECTIVE: as for append, the inference fails for
+; both the n-ary application and the unary application to the function,
+; because the dimension $d occurs only in the second input type.
+(test-check-top-expr-fail
+ "(reduce + [1 2 3])")
+(test-check-top-expr-fail
+ "((reduce +) [1 2 3])")
+
+; The fully explicit instantiation is accepted,
+; with a primitive or a lambda abstraction as the function:
+; the n-ary function type of the latter is equivalent to
+; the curried function type in the type of reduce.
+(test-check-top-expr
+ "(@reduce (Int) (2 []) + [1 2 3])")
+(test-check-top-expr
+ "(@reduce (Int) (2 []) (fn ((x Int) (y Int)) (+ x y)) [1 2 3])")
+
+; With the type and the dimension explicit,
+; the shape is inferred from the function argument (see type-match):
+; the empty shape from a function on scalars,
+; and the shape [2] from a function on vectors of length 2,
+; in which case the array must be a matrix with rows of that length;
+; the function must operate on the element type.
+(test-check-top-expr
+ "(((i-app (t-app reduce Int) 2) +) [1 2 3])")
+(test-check-top-expr
+ "(((i-app (t-app reduce Int) 1) (fn ((x [Int 2]) (y [Int 2])) (+ x y)))
+   [[1 2] [3 4]])")
+(test-check-top-expr-fail
+ "(((i-app (t-app reduce Int) 1) (fn ((x [Int 2]) (y [Int 2])) (+ x y)))
+   [[1 2 3] [4 5 6]])")
+(test-check-top-expr-fail
+ "(((i-app (t-app reduce Int) 2) and) [1 2 3])")
+
+; Under an ispace binder, with the dimension explicit:
+; a vector of length (+ 1 $n) is reduced,
+; but not one of length $n, which may be empty.
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int (+ 1 $n)]))
+    (((i-app (t-app reduce Int) $n) +) x)))")
+(test-check-top-expr-fail
+ "(i-fn ($n) (fn ((x [Int $n]))
+    (((i-app (t-app reduce Int) $n) +) x)))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; fold : (Forall (&t &t2)
+;         (Pi ($d @s @s2)
+;          (-> ((-> ([&t2 @s2] [&t @s]) [&t2 @s2]) [&t2 @s2] [&t (+ 1 $d) @s])
+;              [&t2 @s2])))
+
+; OBJECTIVE: as for reduce, the inference fails for
+; both the n-ary application and the unary application to the function,
+; because the dimension $d occurs only in the third input type.
+(test-check-top-expr-fail
+ "(fold + 0 [1 2 3])")
+(test-check-top-expr-fail
+ "(((fold +) 0) [1 2 3])")
+
+; The fully explicit instantiation is accepted,
+; with the same or different types for the accumulator and the elements.
+(test-check-top-expr
+ "(@fold (Int Int) (2 [] []) + 0 [1 2 3])")
+(test-check-top-expr
+ "(@fold (Int Bool) (2 [] [])
+   (fn ((acc Bool) (x Int)) (and acc (< 0 x))) #t [1 2 3])")
+
+; With the types and the dimension explicit,
+; both shapes are inferred from the function argument:
+; the empty shapes from a function on scalars,
+; and the shape [2] of the accumulator from a function on a vector
+; (with the empty shape of the elements),
+; in which case the initial value must be a vector of that length.
+(test-check-top-expr
+ "((((i-app (t-app fold Int Int) 2) +) 0) [1 2 3])")
+(test-check-top-expr
+ "((((i-app (t-app fold Int Int) 1) (fn ((acc [Int 2]) (x Int)) (+ acc x)))
+    [0 0])
+   [1 2])")
+(test-check-top-expr-fail
+ "((((i-app (t-app fold Int Int) 1) (fn ((acc [Int 2]) (x Int)) (+ acc x)))
+    0)
+   [1 2])")
+
+; Under an ispace binder, with the dimension explicit:
+; a vector of length (+ 1 $n) is folded, but not one of length $n.
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int (+ 1 $n)]))
+    ((((i-app (t-app fold Int Int) $n) +) 0) x)))")
+(test-check-top-expr-fail
+ "(i-fn ($n) (fn ((x [Int $n]))
+    ((((i-app (t-app fold Int Int) $n) +) 0) x)))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; iota : (Pi ($d) (-> [Int $d] (Sigma (@s) [Int @s])))
+
+; The argument is the vector of the dimensions of the result,
+; whose length $d is inferred;
+; a scalar or a vector of booleans is rejected.
+(test-check-top-expr
+ "(iota [2 3])")
+(test-check-top-expr-fail
+ "(iota 3)")
+(test-check-top-expr-fail
+ "(iota [#t #f])")
+
+; The argument may be any integer vector, e.g. produced by iota/static.
+(test-check-top-expr
+ "(iota (i-app iota/static (dims 2)))")
+
+; OBJECTIVE: a matrix is a frame of vectors,
+; so iota should be applied to each row, over the frame [2],
+; yielding a vector of boxes;
+; but the inference does not handle frames yet.
+; The fully explicit instantiation is accepted, with the frame.
+(test-check-top-expr-fail
+ "(iota [[1 2] [3 4]])")
+(test-check-top-expr
+ "(@iota _ (2) [[1 2] [3 4]])")
+
+; The result is a box whose witness is the shape of the array,
+; which is not known statically:
+; after unboxing, the array can be summed (any shape is accepted),
+; but its length cannot be inferred (the shape may be empty),
+; and the array itself cannot escape the unboxing.
+(test-check-top-expr
+ "(unbox (@s v (iota [2 3])) (sum v))")
+(test-check-top-expr-fail
+ "(unbox (@s v (iota [2 3])) (length v))")
+(test-check-top-expr-fail
+ "(unbox (@s v (iota [2 3])) v)")
+
+; Inference under an ispace binder:
+; the length of the vector of dimensions is inferred as the bound variable.
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int $n])) (iota x)))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; reify-dim : (Pi ($d) Int)
+
+; The type has no function type:
+; the only application is the ispace application to a dimension
+; (not a shape), yielding an integer;
+; an application to an expression is rejected.
+(test-check-top-expr
+ "(i-app reify-dim 3)")
+(test-check-top-expr-fail
+ "(i-app reify-dim (dims 3))")
+(test-check-top-expr-fail
+ "(reify-dim 3)")
+
+; The reified dimension may be a bound dimension variable,
+; or the witness of an unboxing
+; (equivalently to the length of the unboxed vector).
+(test-check-top-expr
+ "(i-fn ($n) (+ (i-app reify-dim $n) 1))")
+(test-check-top-expr
+ "(unbox ($d v (box (3) [1 2 3] (Sigma ($e) (A Int $e))))
+   (i-app reify-dim $d))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; reify-shape : (Pi (@s) (Sigma ($r) [Int $r]))
+
+; The type has no function type:
+; the only application is the ispace application to a shape
+; (not a dimension), yielding a box;
+; an application to an expression is rejected.
+(test-check-top-expr
+ "(i-app reify-shape (dims 2 3))")
+(test-check-top-expr-fail
+ "(i-app reify-shape 3)")
+(test-check-top-expr-fail
+ "(reify-shape [2 3])")
+
+; The box contains the vector of the dimensions of the shape,
+; whose length (the rank) is the witness:
+; after unboxing, the vector can be summed,
+; its length can be inferred (compare with iota),
+; but it has no head, since the rank may be 0.
+(test-check-top-expr
+ "(unbox ($r v (i-app reify-shape (dims 2 3))) (sum v))")
+(test-check-top-expr
+ "(unbox ($r v (i-app reify-shape (dims 2 3))) (length v))")
+(test-check-top-expr-fail
+ "(unbox ($r v (i-app reify-shape (dims 2 3))) (head v))")
+
+; The reified shape may be a bound shape variable,
+; whose rank is thus obtained.
+(test-check-top-expr
+ "(i-fn (@s) (unbox ($r v (i-app reify-shape @s)) (length v)))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; trace : (Forall (&t &r) (Pi (@s @q) (-> ([&t @s] [&r @q]) [&r @q])))
+
+; OBJECTIVE: as for append, the inference fails for
+; both the n-ary application and the unary application to the first argument,
+; because the type and shape of the second argument
+; occur only in the second input type.
+(test-check-top-expr-fail
+ "(trace [1 2] #t)")
+(test-check-top-expr-fail
+ "((trace [1 2]) #t)")
+
+; The fully explicit instantiation is accepted,
+; and its result, which has the type of the second argument,
+; is used by further inference.
+(test-check-top-expr
+ "(@trace (Int Bool) ([2] []) [1 2] #t)")
+(test-check-top-expr
+ "(length (@trace (Int Int) ([] [3]) 0 [1 2 3]))")
+
+; With both shapes instantiated as empty,
+; the application is lifted over the frames of the arguments,
+; which must agree.
+(test-check-top-expr
+ "(@trace (Int Int) ([] []) [1 2] [3 4])")
+(test-check-top-expr-fail
+ "(@trace (Int Int) ([] []) [1 2] [3 4 5])")
+
+; The types and shapes may be bound variables.
+(test-check-top-expr
+ "(t-fn (&t) (i-fn (@s) (fn ((x (A &t @s))) (@trace (&t Int) (@s []) x 0))))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; undefined : (Forall (&t) (Pi (@s) [&t @s]))
+
+; The type has no function type:
+; undefined is instantiated, at any type and shape,
+; by type and ispace applications, which yield a value of that type;
+; a partial instantiation has the remaining product type;
+; an application to an expression is rejected.
+(test-check-top-expr
+ "(i-app (t-app undefined Int) (dims 2 3))")
+(test-check-top-expr
+ "(t-app undefined Int)")
+(test-check-top-expr-fail
+ "(undefined 3)")
+
+; The instantiated value is used by further inference,
+; according to its type:
+; the length of a matrix of integers is inferred,
+; but a vector of booleans cannot be summed.
+(test-check-top-expr
+ "(length (i-app (t-app undefined Int) (dims 2 3)))")
+(test-check-top-expr-fail
+ "(sum (i-app (t-app undefined Bool) (dims 2)))")
+
+; Instantiated at a function type, the value is applied.
+(test-check-top-expr
+ "((i-app (t-app undefined (-> Int Int)) []) 7)")
+
+; The type and shape may be bound variables.
+(test-check-top-expr
+ "(t-fn (&t) (i-fn (@s) (i-app (t-app undefined &t) @s)))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The monomorphic primitive operations, from + to bool->f (see primop-types),
+; have function types between base types, without binders:
+; there is no inference, just rank-polymorphic application (see check-app).
+; We test representatives of each group of operations.
+
+; Integer arithmetic, on scalars,
+; and lifted over the frames of the arguments
+; (a vector and a scalar; a matrix and a vector, whose frame is a prefix);
+; the frames must agree.
+(test-check-top-expr
+ "(+ 1 2)")
+(test-check-top-expr
+ "(+ [1 2] 3)")
+(test-check-top-expr
+ "(+ [[1 2] [3 4]] [10 20])")
+(test-check-top-expr-fail
+ "(+ [1 2] [1 2 3])")
+
+; Currying: a partial application is a function,
+; possibly lifted over a frame, and applied to the remaining argument;
+; an application to more arguments than inputs is rejected.
+(test-check-top-expr
+ "(+ 1)")
+(test-check-top-expr
+ "((+ 1) 2)")
+(test-check-top-expr
+ "((+ [1 2]) 10)")
+(test-check-top-expr-fail
+ "(+ 1 2 3)")
+
+; The arguments must have the base types of the inputs:
+; integer and float operations are distinct.
+(test-check-top-expr-fail
+ "(+ 1 #t)")
+(test-check-top-expr-fail
+ "(+ 1.5 2)")
+(test-check-top-expr
+ "(f.+ 1.5 2.5)")
+(test-check-top-expr-fail
+ "(f.+ 1 2)")
+
+; Unary operations, on scalars and lifted.
+(test-check-top-expr
+ "(bit-not 5)")
+(test-check-top-expr
+ "(not [#t #f])")
+(test-check-top-expr
+ "(sqrt 2.0)")
+
+; Relational operations yield booleans, also when lifted.
+(test-check-top-expr
+ "(< 1 2)")
+(test-check-top-expr
+ "(< [1 2 3] 2)")
+(test-check-top-expr
+ "(f.< 1.0 2.0)")
+
+; Boolean operations.
+(test-check-top-expr
+ "(and #t #f)")
+(test-check-top-expr
+ "(and [#t #f] #t)")
+
+; Conversions, whose results have the converted types.
+(test-check-top-expr
+ "(i->f 3)")
+(test-check-top-expr
+ "(+ (truncate 2.5) 1)")
+(test-check-top-expr
+ "(+ (bool->i #t) 1)")
+(test-check-top-expr-fail
+ "(+ (i->f 3) 1)")

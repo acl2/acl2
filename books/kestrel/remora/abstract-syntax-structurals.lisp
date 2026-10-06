@@ -229,6 +229,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::defprojection var+type?-list->type? ((x var+type?-listp))
+  :returns (type?s type-option-listp)
+  :short "Lift @(tsee var+type?->type?) to lists."
+  (var+type?->type? x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define var+type?->type-or-err ((vt var+type?-p))
   :returns (type type-resultp)
   :short "Extract the type from a variable with an optional type,
@@ -266,9 +273,7 @@
     (implies (not (reserrp types))
              (type-list-wfp types))
     :hyp (var+type?-list-wfp x)
-    :hints (("Goal"
-             :induct t
-            ))))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -545,7 +550,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var+type?-list-set-vars ((vars string-listp) (var+types var+type?-listp))
+(define var+type?-list-set-vars ((vars string-listp)
+                                 (var+types var+type?-listp))
   :returns (new-var+types var+type?-listp)
   :short "Replace, in a list of variables with optional types,
           the variables with given ones, keeping the optional types."
@@ -565,7 +571,12 @@
   (defret len-of-var+type?-list-set-vars
     (equal (len new-var+types)
            (len var+types))
-    :hints (("Goal" :induct t :in-theory (enable len)))))
+    :hints (("Goal" :induct t :in-theory (enable len))))
+
+  (defret var+type?-list->type?-of-var+type?-list-set-vars
+    (equal (var+type?-list->type? new-var+types)
+           (var+type?-list->type? var+types))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -590,7 +601,12 @@
   (defret len-of-var+type?-list-set-types
     (equal (len new-var+types)
            (len var+types))
-    :hints (("Goal" :induct t :in-theory (enable len)))))
+    :hints (("Goal" :induct t :in-theory (enable len))))
+
+  (defret var+type?-list->var-of-var+type?-list-set-types
+    (equal (var+type?-list->var new-var+types)
+           (var+type?-list->var var+types))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

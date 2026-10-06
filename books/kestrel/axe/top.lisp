@@ -197,6 +197,7 @@
 (include-book "replace-using-assumptions")
 (include-book "replace-var-rules")
 (include-book "result-array")
+(include-book "rewrite-objectives")
 (include-book "rewriter-common")
 (include-book "rewriter-support")
 (include-book "rule-alists")

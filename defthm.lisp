@@ -6301,9 +6301,15 @@
 ; during initialization.
 
            (cond
-            ((or (eq fn 'equal)
-                 (and (not (flambdap fn))
-                      (getpropc fn 'coarsenings nil wrld)))
+            ((eq fn 'equal)
+
+; Through ACL2 Version_8.7 we caused an error here when fn, even if fn is not
+; equal, is already known to be an equivalence relation.  But Anthropic's
+; Claude pointed out that this error is avoided when including a book.  We see
+; no reason to cause an error in this case, but we do make an observation -- in
+; add-equivalence-rule, not here, so that the observation is made even during
+; include-book.
+
              (er soft ctx
                  "~x0 is already known to be an equivalence relation."
                  fn))
@@ -6465,49 +6471,60 @@
 ;           ("Subgoal 2.1" :use ((:instance fn-symm (x y1) (y y2)))
 ;                          :in-theory (disable fn-symm))))
 
-; We do not store with the equivalence relation the name of the event
-; that established that it is an equivalence relation.  That means we
-; can't report it in our dependencies or disable it.
+; We do not store with the equivalence relation the name of the event that
+; established that it is an equivalence relation.  That means we can't report
+; it in our dependencies or disable it.  It's just as well that we can't
+; disable it, since (below) we ignore duplicate equivalence rules.
 
   (let* ((act-clauses (shallow-clausify term))
-         (fn (find-candidate-equivalence-relation act-clauses)))
-    (putprop
-     fn
-     'coarsenings
-     (list fn)
-     (putprop 'equal
-              'coarsenings
-              (append (getpropc 'equal 'coarsenings nil wrld)
-                      (list fn))
-              (putprop fn
-                       'congruences
-                       (cons (list 'equal
-                                   (list (make congruence-rule
-                                               :rune rune
-                                               :nume nume
-                                               :equiv fn))
-                                   (list (make congruence-rule
-                                               :rune rune
-                                               :nume nume
-                                               :equiv fn)))
-                             (getpropc fn 'congruences nil wrld))
-                       (cond
-                        ((mv-let
-                          (ts ttree)
-                          (type-set (fcons-term* fn 'x 'y) nil nil nil ens wrld
-                                    nil nil nil)
-                          (declare (ignore ttree))
-                          (ts-subsetp ts *ts-boolean*))
-                         wrld)
-                        (t
-                         (add-type-prescription-rule
-                          rune nume
-                          (fcons-term* fn 'x 'y)
-                          (fcons-term* 'booleanp
-                                       (fcons-term* fn 'x 'y))
-                          nil ; backchain-limit-lst
-                          ens wrld
-                          t))))))))
+         (fn (find-candidate-equivalence-relation act-clauses))
+         (equal-coarsenings (getpropc 'equal 'coarsenings nil wrld)))
+    (cond
+     ((member-eq fn equal-coarsenings)
+      (prog2$ (observation-cw 'add-equivalence-rule
+                              "A rule of class :equivalence with name ~x0 is ~
+                               being ignored, because ~x1 is already a known ~
+                               equivalence relation."
+                              (base-symbol rune)
+                              fn)
+              wrld))
+     (t
+      (putprop
+       fn
+       'coarsenings
+       (list fn)
+       (putprop 'equal
+                'coarsenings
+                (append equal-coarsenings (list fn))
+                (putprop fn
+                         'congruences
+                         (cons (list 'equal
+                                     (list (make congruence-rule
+                                                 :rune rune
+                                                 :nume nume
+                                                 :equiv fn))
+                                     (list (make congruence-rule
+                                                 :rune rune
+                                                 :nume nume
+                                                 :equiv fn)))
+                               (getpropc fn 'congruences nil wrld))
+                         (cond
+                          ((mv-let
+                             (ts ttree)
+                             (type-set (fcons-term* fn 'x 'y) nil nil nil ens wrld
+                                       nil nil nil)
+                             (declare (ignore ttree))
+                             (ts-subsetp ts *ts-boolean*))
+                           wrld)
+                          (t
+                           (add-type-prescription-rule
+                            rune nume
+                            (fcons-term* fn 'x 'y)
+                            (fcons-term* 'booleanp
+                                         (fcons-term* fn 'x 'y))
+                            nil ; backchain-limit-lst
+                            ens wrld
+                            t))))))))))
 
 ;---------------------------------------------------------------------------
 ; Section:  :REFINEMENT Rules

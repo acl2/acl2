@@ -329,7 +329,6 @@
     (:REWRITE ALL-<-OF-CDR)
     (:REWRITE ALL-<-OF-NIL)
     (:REWRITE ALL-<-TRANSITIVE)
-    (:REWRITE ALL-<-TRANSITIVE-FREE)
     (:REWRITE ALL-<-TRANSITIVE-FREE-2)
     (:REWRITE AXE-TREE-LISTP-OF-CDR)
     (:REWRITE AXE-TREE-LISTP-OF-CDR-2)
@@ -1295,52 +1294,56 @@
                                                         rule-symbol
                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                         equiv-alist rule-alist nodenums-to-assume-false1 nodenums-to-assume-false2 assumption-array assumption-array-num-valid-nodes print hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
-                           ;; HYP is normal:
-                           ;; TODO: Strip a work-hard?
-                           ;; First, we substitute in for all the vars in HYP:
-                           (b* ((instantiated-hyp (,instantiate-hyp-no-free-vars-name hyp alist interpreted-function-alist))
-                                ;; todo: consider checking for quotep here
-                                ;; INSTANTIATED-HYP is now a tree with leaves that are quoteps and nodenums (from vars already bound).
-                                ;; No more free vars remain in the hyp, so we try to relieve the fully instantiated hyp:
-                                (old-try-count tries)
-                                ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries)
-                                 ;;try to relieve through rewriting (this tests atom hyps for symbolp even though i think that's impossible - but should be rare):
-                                 (,simplify-tree-name instantiated-hyp
-                                                      'iff
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                      rule-alist
-                                                      nodenums-to-assume-false1 nodenums-to-assume-false2 assumption-array assumption-array-num-valid-nodes equiv-alist print
-                                                      hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator
-                                                      prover-depth options (+ -1 count)))
-                                ((when erp) (mv erp
-                                                nil ;hyps-relievedp
-                                                nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries))
-                                (try-diff (and old-try-count (subtract-tries tries old-try-count))))
-                             (if (consp new-nodenum-or-quotep) ;tests for quotep
-                                 (if (unquote new-nodenum-or-quotep) ;hyp rewrote to a non-nil constant:
-                                     (prog2$ (and old-try-count (< 100 try-diff) (cw "(~x0 tries used(p) ~x1:~x2)~%" try-diff rule-symbol hyp-num))
-                                             (,relieve-rule-hyps-name
-                                              (rest hyps) (+ 1 hyp-num) alist rule-symbol ;alist may have been extended by a hyp with free vars
-                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                              equiv-alist rule-alist nodenums-to-assume-false1 nodenums-to-assume-false2 assumption-array assumption-array-num-valid-nodes print hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
-                                   ;;hyp rewrote to *nil* :
-                                   (progn$
-                                     (and old-try-count print (< 100 try-diff) (cw "(~x1 tries wasted(p) ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
-                                     (and (member-eq rule-symbol monitored-symbols)
-                                          (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.~%Alist: ~x2.~%Assumptions1 (to assume false):~%~x3~%Assumptions2 (to assume false):~%~x4~%DAG:~x5)~%"
-                                              hyp
-                                              rule-symbol
-                                              alist
-                                              nodenums-to-assume-false1
-                                              nodenums-to-assume-false2
-                                              :elided ;;todo: print dag-array? ;could print only the part of the dag below the maxnodenum in alist? can this stack overflow?
-                                              ))
-                                     (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries)))
-                               ;;hyp didn't rewrite to a constant:
-                               (prog2$
-                                 (and old-try-count print (< 100 try-diff) (cw "(~x1 tries wasted(p): ~x0:~x2 (non-constant result))~%" rule-symbol try-diff hyp-num))
-                                 ;; Give up:
-                                 (prog2$ ;todo: improve this printing?
+                           (if (eq :axe-rewrite-objective fn) ; (:axe-rewrite-objective . <obj>)
+                               ;; For now, we always fail on a hyp with :axe-rewrite-objective:
+                               ;; Could print a warning.
+                               (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries)
+                             ;; HYP is normal:
+                             ;; TODO: Strip a work-hard?
+                             ;; First, we substitute in for all the vars in HYP:
+                             (b* ((instantiated-hyp (,instantiate-hyp-no-free-vars-name hyp alist interpreted-function-alist))
+                                  ;; todo: consider checking for quotep here
+                                  ;; INSTANTIATED-HYP is now a tree with leaves that are quoteps and nodenums (from vars already bound).
+                                  ;; No more free vars remain in the hyp, so we try to relieve the fully instantiated hyp:
+                                  (old-try-count tries)
+                                  ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries)
+                                   ;;try to relieve through rewriting (this tests atom hyps for symbolp even though i think that's impossible - but should be rare):
+                                   (,simplify-tree-name instantiated-hyp
+                                                        'iff
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                        rule-alist
+                                                        nodenums-to-assume-false1 nodenums-to-assume-false2 assumption-array assumption-array-num-valid-nodes equiv-alist print
+                                                        hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator
+                                                        prover-depth options (+ -1 count)))
+                                  ((when erp) (mv erp
+                                                  nil ;hyps-relievedp
+                                                  nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries))
+                                  (try-diff (and old-try-count (subtract-tries tries old-try-count))))
+                               (if (consp new-nodenum-or-quotep) ;tests for quotep
+                                   (if (unquote new-nodenum-or-quotep) ;hyp rewrote to a non-nil constant:
+                                       (prog2$ (and old-try-count (< 100 try-diff) (cw "(~x0 tries used(p) ~x1:~x2)~%" try-diff rule-symbol hyp-num))
+                                               (,relieve-rule-hyps-name
+                                                (rest hyps) (+ 1 hyp-num) alist rule-symbol ;alist may have been extended by a hyp with free vars
+                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                equiv-alist rule-alist nodenums-to-assume-false1 nodenums-to-assume-false2 assumption-array assumption-array-num-valid-nodes print hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator prover-depth options (+ -1 count)))
+                                     ;;hyp rewrote to *nil* :
+                                     (progn$
+                                      (and old-try-count print (< 100 try-diff) (cw "(~x1 tries wasted(p) ~x0:~x2 (rewrote to NIL))~%" rule-symbol try-diff hyp-num))
+                                      (and (member-eq rule-symbol monitored-symbols)
+                                           (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.~%Alist: ~x2.~%Assumptions1 (to assume false):~%~x3~%Assumptions2 (to assume false):~%~x4~%DAG:~x5)~%"
+                                               hyp
+                                               rule-symbol
+                                               alist
+                                               nodenums-to-assume-false1
+                                               nodenums-to-assume-false2
+                                               :elided ;;todo: print dag-array? ;could print only the part of the dag below the maxnodenum in alist? can this stack overflow?
+                                               ))
+                                      (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries)))
+                                 ;;hyp didn't rewrite to a constant:
+                                 (prog2$
+                                  (and old-try-count print (< 100 try-diff) (cw "(~x1 tries wasted(p): ~x0:~x2 (non-constant result))~%" rule-symbol try-diff hyp-num))
+                                  ;; Give up:
+                                  (prog2$ ;todo: improve this printing?
                                    (and (member-eq rule-symbol monitored-symbols)
                                         (progn$ (cw "(Failed to relieve hyp ~x0, namely, ~x1, for ~x2. " hyp-num hyp rule-symbol)
                                                 (cw "Reason: Rewrote to:~%")
@@ -1352,7 +1355,7 @@
                                                 (print-dag-array-node-and-supporters-lst nodenums-to-assume-false2 'dag-array dag-array)
                                                 (cw "))~%") ;;(cw "Alist: ~x0.~%Assumptions (to assume false): ~x1~%DAG:~x2)~%" alist nodenums-to-assume-false dag-array)
                                                 ))
-                                   (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries)))))))))))))
+                                   (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries))))))))))))))
 
            ;; returns (mv erp new-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries)
            ;; where if new-rhs-or-nil is nil, no rule applied. otherwise, new-rhs-or-nil is a tree with nodenums and quoteps at the leaves (what about free vars?  should free vars in the RHS be an error?)

@@ -335,12 +335,13 @@
            (implies (and ,@vars-pre
                          (not (c::errorp old-eval)))
                     (and (not (c::errorp new-eval))
-                         (iff old-eval new-eval)
-                         (equal old-val new-val)
                          (equal old-compst new-compst)
                          ,@(if (c::type-case ctype :void)
-                               '((not old-eval))
+                               '((not old-eval)
+                                 (not new-eval))
                              `(old-eval
+                               new-eval
+                               (equal old-val new-val)
                                (equal (c::type-of-value old-val) ',ctype)))
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))

@@ -2413,7 +2413,7 @@
                        (t (position-fix zero-pos)))
                  parstate)))
        (t ; 0 not-all-octal-digits
-        (b* ((parstate (unread-chars (len digits) parstate)) ; 0
+        (b* ((parstate (unread-chars (1+ (len digits)) parstate)) ; 0
              ((erp nonoctdig pos parstate) (lex-non-octal-digit parstate)))
           (reterr-msg :where pos
                       :expected "octal digit"
@@ -3393,7 +3393,7 @@
                        parstate))))))
          ((utf8-= char2 (char-code #\=)) ; > =
           (retok (lexeme-token (token-punctuator ">="))
-                 (make-span :start first-pos :end first-pos)
+                 (make-span :start first-pos :end pos2)
                  parstate))
          (t ; > other
           (b* ((parstate (unread-char parstate))) ; >

@@ -734,7 +734,7 @@
                             expt-of-+
                             floor-normalize-denominator
                             frac-part-intro)
-                           (<-of-expt-2-of-log2-same
+                           (;<-of-expt-2-of-log2-same
                             distributivity
                             floor-of-*-of-/-and-1
                             floor-of-times-1/2)))))
@@ -776,7 +776,7 @@
                             expt-of-+
                             floor-normalize-denominator
                             frac-part-intro)
-                           (<-of-expt-2-of-log2-same
+                           (;<-of-expt-2-of-log2-same
                             distributivity
                             floor-of-*-of-/-and-1
                             floor-of-times-1/2)))))

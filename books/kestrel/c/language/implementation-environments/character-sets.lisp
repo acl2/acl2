@@ -1,7 +1,7 @@
 ; C Library
 ;
 ; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -27,7 +27,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are described in [C17:5.2.1] and [C23:5.3.1].")
+    "These are described in [C17:5.2.1] [C23:5.3.1].")
    (xdoc::p
     "The members of these sets are more abstract entities
      than the values of the character types [C17:6.2.5/15] [C23:6.2.5].
@@ -53,7 +53,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod charset
-  :parents (character-sets)
   :short "Fixtype of character sets."
   :long
   (xdoc::topstring
@@ -94,7 +93,7 @@
      we retrieve the corresponding source and execution characters,
      and we check that the map associates them.")
    (xdoc::p
-    "[C17] and [C23] do not seem to require this explicitly,
+    "[C17] [C23] do not seem to require this explicitly,
      but it seems an obvious structural constraint."))
   (forall (bchar)
           (implies (set::in bchar (ascii-basic-source-chars std))
@@ -224,20 +223,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define charset-source-char-code (schar (charset charsetp))
-  :guard (set::in schar (charset-source-chars charset))
+(define charset-source-char-code (sch (charset charsetp))
+  :guard (set::in sch (charset-source-chars charset))
   :returns (code natp)
   :short "Code of a source character."
-  (source-char-code schar (charset->source charset))
+  (source-char-code sch (charset->source charset))
   :guard-hints (("Goal" :in-theory (enable charset-source-chars))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define charset-exec-char-value (echar (charset charsetp))
-  :guard (set::in echar (charset-exec-chars charset))
+(define charset-exec-char-value (ech (charset charsetp))
+  :guard (set::in ech (charset-exec-chars charset))
   :returns (val natp)
   :short "Value of an execution character."
-  (exec-char-value echar (charset->exec charset))
+  (exec-char-value ech (charset->exec charset))
   :guard-hints (("Goal" :in-theory (enable charset-exec-chars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -318,7 +317,7 @@
 
   ///
 
-  (defrule charset-source-to-exec-in-charset-exec-chars
+  (defruled charset-source-to-exec-in-charset-exec-chars
     (implies (and (charset-wfp charset std
                                uchar-format schar-format char-format)
                   (set::in source-char (charset-source-chars charset)))
@@ -449,7 +448,6 @@
        (omap::identity (source-chars (source-charset-ascii end-of-lines))))
       (basic-exec-char bchar (exec-charset-ascii std) std
                        uchar-format schar-format char-format)))
-    :disable in-of-ascii-chars
     :enable (source-chars-of-source-charset-ascii
              basic-source-char-of-source-charset-ascii
              basic-exec-char-of-exec-charset-ascii

@@ -20,7 +20,8 @@
 
 ;; Stored-rules are what is stored in rule-alists / rule-dbs.
 
-;; todo: the guards of these should be stored-axe-rulep:
+;; TODO: Consider having the rewrite-objective be a field of the stored-rule,
+;; or perhaps require any axe-rewrite-objective hyp to be the first hyp.
 
 ;; See also axe-rulep.  A stored rule has the form (lhs-args hyps rule-symbol
 ;; . rhs).  The top function symbol of the LHS is not stored.
@@ -31,10 +32,10 @@
                          item))
              (hyps (second ;stored-rule-hyps
                      item))
-             (rhs (cdddr ;stored-rule-rhs
-                    item))
              (rule-symbol (third ;stored-rule-symbol
-                            item)))
+                           item))
+             (rhs (cdddr ;stored-rule-rhs
+                    item)))
          (and (pseudo-term-listp lhs-args) ;should be lambda-free
               (axe-rule-hyp-listp hyps)
               (bound-vars-suitable-for-hypsp (free-vars-in-terms lhs-args) hyps)

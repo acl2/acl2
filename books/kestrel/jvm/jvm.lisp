@@ -15,7 +15,18 @@
 (in-package "JVM")
 
 (include-book "states")
-(local (include-book "kestrel/sequences/defforall" :dir :system))
+(include-book "locals")
+(include-book "strings") ; reduce?
+(include-book "kestrel/alists-light/lookup" :dir :system)
+(include-book "kestrel/bv/bvsx-def" :dir :system)
+(include-book "kestrel/bv/sbvlt-def" :dir :system)
+(include-book "kestrel/bv/defs" :dir :system) ; reduce?
+(include-book "kestrel/bv-arrays/bv-array-read" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-write" :dir :system)
+(include-book "kestrel/lists-light/update-subrange2" :dir :system)
+(include-book "kestrel/lists-light/subrange" :dir :system)
+(include-book "kestrel/booleans/bool-fix-def" :dir :system)
+(include-book "float-to-bits")
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -749,7 +760,7 @@
          (low (farg2 inst))
          (high (farg3 inst))
          (jump-offsets (farg4 inst)) ;there are high-low+1 of these
-         (index (top-operand (stack (thread-top-frame th s))))
+         (index (decode-signed (top-operand (stack (thread-top-frame th s)))))
          (offset (if (or (< index low)
                          (> index high))
                      default
@@ -1638,10 +1649,10 @@
         (let ((monitor-table (monitor-table s))
               (object-to-unlock (addressfix (locked-object frame))))
           (if (null-refp object-to-unlock)
-              (obtain-and-throw-exception *NullPointerException* (list :lreturn object-to-unlock) th s)
+              (obtain-and-throw-exception *NullPointerException* (list :dreturn object-to-unlock) th s)
             (if (not (thread-owns-monitorp th object-to-unlock monitor-table))
                 (if (bound-to-a-non-interfacep *illegalmonitorstateexception* (class-table s))
-                    (obtain-and-throw-exception *IllegalMonitorStateException* (list :lreturn object-to-unlock) th s)
+                    (obtain-and-throw-exception *IllegalMonitorStateException* (list :dreturn object-to-unlock) th s)
                   (error-state :bad-binding-for-illegalmonitorstateexception s))
               ;;FIXME Think about structured locking.
               (let* ((s (modify th s :monitor-table (decrement-mcount object-to-unlock monitor-table))))
@@ -2648,7 +2659,7 @@
                        (pop-operand (stack (thread-top-frame th s))))))
 
 ;; Test for the "special case" for IDIV:
-(assert-event (equal (acl2::sbvdiv 32 *min-signed-int32* -1) *min-signed-int32*))
+(assert-event (let ((val (encode-signed *min-signed-int32*))) (equal (acl2::sbvdiv 32 val -1) val)))
 
 ;; (:IDIV)
 ;; ;FIXME is this correct? seems okay...
@@ -5358,7 +5369,7 @@
                             (stack (thread-top-frame th s)))))
 
 ;; Test for the "special case" for LDIV:
-(assert-event (equal (acl2::sbvdiv 64 *min-signed-int64* -1) *min-signed-int64*))
+(assert-event (let ((val (encode-signed-long *min-signed-int64*))) (equal (acl2::sbvdiv 64 val -1) val)))
 
 ;; (:LDIV)
 ;fixme is the division exactly right?
@@ -5629,7 +5640,7 @@
              (len (len contents)))
         (if (or (acl2::sbvlt 32 index 0) ;should I use boolor in places like this to avoid replication of terms? or a version of boolor that always gets opened?
                 (acl2::sbvge 32 index len))
-            (obtain-and-throw-exception *ArrayIndexOutOfBoundsException* (list :SALOAD (decode-signed index) arrayref) th s)
+            (obtain-and-throw-exception *ArrayIndexOutOfBoundsException* (list :saload (decode-signed index) arrayref) th s)
           (modify th s
                   :pc (+ 1 ;(inst-length inst)
                          (pc (thread-top-frame th s)))
@@ -5650,7 +5661,7 @@
              (len (len old-array-contents)))
         (if (or (acl2::sbvlt 32 index 0)
                 (acl2::sbvge 32 index len))
-            (obtain-and-throw-exception *ArrayIndexOutOfBoundsException* (list :SASTORE (decode-signed index) arrayref) th s)
+            (obtain-and-throw-exception *ArrayIndexOutOfBoundsException* (list :sastore (decode-signed index) arrayref) th s)
           (modify th s
                   :pc (+ 1 ;(inst-length inst)
                          (pc (thread-top-frame th s)))
@@ -5689,7 +5700,7 @@
 
 (defun execute-D2I (th s)
   (let* ((value (top-long (stack (thread-top-frame th s))))
-         (result (d2i value)))
+         (result (encode-signed (d2i value))))
     (modify th s
             :pc (+ 1 ;(inst-length inst)
                    (pc (thread-top-frame th s)))
@@ -5698,7 +5709,7 @@
 
 (defun execute-D2L (th s)
   (let* ((value (top-long (stack (thread-top-frame th s))))
-         (result (d2l value)))
+         (result (encode-signed-long (d2l value))))
     (modify th s
             :pc (+ 1 ;(inst-length inst)
                    (pc (thread-top-frame th s)))
@@ -6050,10 +6061,10 @@
          (contents (acl2::array-contents arrayref (heap s)))
          (len (len contents)))
     (if (null-refp arrayref)
-        (obtain-and-throw-exception *NullPointerException* (list :faload arrayref) th s)
+        (obtain-and-throw-exception *NullPointerException* (list :daload arrayref) th s)
       (if (or (acl2::sbvlt 32 index 0)
               (acl2::sbvge 32 index len))
-          (obtain-and-throw-exception *ArrayIndexOutOfBoundsException* (list :faload (decode-signed index) arrayref) th s)
+          (obtain-and-throw-exception *ArrayIndexOutOfBoundsException* (list :daload (decode-signed index) arrayref) th s)
         (modify th s
                 :pc (+ 1 ;(inst-length inst)
                        (pc frame))

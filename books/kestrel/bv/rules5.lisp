@@ -22,34 +22,11 @@
 (local (include-book "bvminus"))
 ;; (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
-;; (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (local (in-theory (disable logext-when-non-negative-becomes-bvchop))) ;for speed
-
-; move these (but need bitnot):
-
-(defthm getbit-of-+-of-expt-same-arg1
-  (implies (and (natp n)
-                (integerp x))
-           (equal (getbit n (+ (expt 2 n) x))
-                  (bitnot (getbit n x))))
-  :hints (("Goal" :in-theory (enable getbit-of-+))))
-
-(defthm getbit-of-+-of---of-expt-same-arg2
-  (implies (and (natp n)
-                (integerp x))
-           (equal (getbit n (+ x (- (expt 2 n))))
-                  (bitnot (getbit n x))))
-  :hints (("Goal" :in-theory (enable getbit-of-+))))
-
-(defthm getbit-of-+-of-expt-same-arg2
-  (implies (and (natp n)
-                (integerp x))
-           (equal (getbit n (+ x (expt 2 n)))
-                  (bitnot (getbit n x))))
-  :hints (("Goal" :in-theory (enable getbit-of-+))))
 
 ;Normal case: no overflow or underflow.  Because of symmetry, we can reorder
 ;the arguments to signed-addition-overflowsp and signed-addition-underflowsp if

@@ -7506,6 +7506,7 @@
                               (pseudo-dag-arrayp miter-array-name miter-array (+ 1 nodenum))
                               (array1p tag-array-name tag-array)
                               (< nodenum (alen1 tag-array-name tag-array)))
+                  :guard-hints (("Goal" :in-theory (enable all-<=)))
                   :stobjs state))
   (non-tagged-supporters-with-rec-fns-to-handle-aux (list nodenum) miter-array-name miter-array tag-array-name tag-array
                                                     'done-array-name
@@ -8004,7 +8005,8 @@
 (defund node-is-purep (nodenum dag-array-name dag-array var-type-alist)
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
-                              (var-type-alistp var-type-alist))))
+                              (var-type-alistp var-type-alist))
+                  :guard-hints (("Goal" :in-theory (enable all-<=)))))
   (nodes-are-purep (list nodenum) dag-array-name dag-array (+ 1 nodenum) (new-array1 'done-array-temp (+ 1 nodenum)) var-type-alist))
 
 ;; Checks whether smaller-nodenum and larger-nodenum and all of their supporters are pure.
@@ -8014,7 +8016,8 @@
                               (natp larger-nodenum)
                               (< smaller-nodenum larger-nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 larger-nodenum))
-                              (var-type-alistp var-type-alist))))
+                              (var-type-alistp var-type-alist))
+                  :guard-hints (("Goal" :in-theory (enable all-<=)))))
   (nodes-are-purep (list smaller-nodenum larger-nodenum) dag-array-name dag-array (+ 1 larger-nodenum) (new-array1 'done-array-temp (+ 1 larger-nodenum)) var-type-alist))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

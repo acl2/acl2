@@ -226,7 +226,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the simplest and most common format for @('signed char')."))
+    "This is the simplest and most common format for @('signed char').")
+   (xdoc::p
+    "The 8-bit size actually comes from the @(tsee uchar-format-8)
+     that is intended to accompany this @(tsee schar-format) format."))
   (make-schar-format :signed (signed-format-twos-complement)
                      :trap nil)
 

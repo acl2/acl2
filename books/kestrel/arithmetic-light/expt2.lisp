@@ -25,6 +25,15 @@
 (local (include-book "floor")) ; because integer-length calls floor
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
+;seems helpful (e.g., in proving that 2^(i-1) + x < 2^i when x < 2^(i-1)).
+(defthm expt-half-linear
+  (implies (integerp i)
+           (equal (expt 2 i)
+                  (+ (expt 2 (+ -1 i))
+                     (expt 2 (+ -1 i)))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable expt-of-+))))
+
 (defthm integerp-of-expt2
   (implies (integerp i)
            (equal (integerp (expt 2 i))
@@ -123,7 +132,7 @@
   (implies (and (< i 0)
                 (integerp i))
            (< (expt 2 i) 1))
-  :rule-classes (:rewrite :linear)
+  :rule-classes :linear
   :hints (("Goal" :induct (expt 2 i)
            :in-theory (enable expt expt-of-+))))
 
