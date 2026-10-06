@@ -92,30 +92,24 @@
                           (tree->right tree)))
               (ltp
                (let* ((left$ (tree-update key val (tree->left tree)))
-                      (head-left$ (tree->head left$))
-                      (tree$ (tree-node head
-                                        left$
-                                        (tree->right tree))))
+                      (head-left$ (tree->head left$)))
                  (if (heap<-with-hashes
                        head-key
                        (tree-element->key head-left$)
                        (tree-element->hash head)
                        (tree-element->hash head-left$))
-                     (rotate-right tree$)
-                   tree$)))
+                     (tree-node-rotate-right head left$ (tree->right tree))
+                   (tree-node head left$ (tree->right tree)))))
               (t
                (let* ((right$ (tree-update key val (tree->right tree)))
-                      (head-right$ (tree->head right$))
-                      (tree$ (tree-node head
-                                        (tree->left tree)
-                                        right$)))
+                      (head-right$ (tree->head right$)))
                  (if (heap<-with-hashes
                        head-key
                        (tree-element->key head-right$)
                        (tree-element->hash head)
                        (tree-element->hash head-right$))
-                     (rotate-left tree$)
-                   tree$)))))))
+                     (tree-node-rotate-left head (tree->left tree) right$)
+                   (tree-node head (tree->left tree) right$))))))))
   ;; Verified below
   :verify-guards nil)
 
@@ -330,33 +324,27 @@
                                                          hash
                                                          val
                                                          (tree->left tree)))
-                           (head-left$ (tree->head left$))
-                           (tree$ (tree-node head
-                                             left$
-                                             (tree->right tree))))
+                           (head-left$ (tree->head left$)))
                       (if (heap<-with-hashes
                             head-key
                             (tree-element->key head-left$)
                             (tree-element->hash head)
                             (tree-element->hash head-left$))
-                          (rotate-right tree$)
-                        tree$)))
+                          (tree-node-rotate-right head left$ (tree->right tree))
+                        (tree-node head left$ (tree->right tree)))))
                    (t
                     (let* ((right$ (tree-update-with-hash key
                                                           hash
                                                           val
                                                           (tree->right tree)))
-                           (head-right$ (tree->head right$))
-                           (tree$ (tree-node head
-                                             (tree->left tree)
-                                             right$)))
+                           (head-right$ (tree->head right$)))
                       (if (heap<-with-hashes
                             head-key
                             (tree-element->key head-right$)
                             (tree-element->hash head)
                             (tree-element->hash head-right$))
-                          (rotate-left tree$)
-                        tree$))))))))
+                          (tree-node-rotate-left head (tree->left tree) right$)
+                        (tree-node head (tree->left tree) right$)))))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable data::u32-equal
                                            tree-update-with-hash)
@@ -384,32 +372,26 @@
                     (let* ((left$ (acl2-number-tree-update key
                                                            val
                                                            (tree->left tree)))
-                           (head-left$ (tree->head left$))
-                           (tree$ (tree-node head
-                                             left$
-                                             (tree->right tree))))
+                           (head-left$ (tree->head left$)))
                       (if (heap<-with-hashes
                             head-key
                             (tree-element->key head-left$)
                             (tree-element->hash head)
                             (tree-element->hash head-left$))
-                          (rotate-right tree$)
-                        tree$)))
+                          (tree-node-rotate-right head left$ (tree->right tree))
+                        (tree-node head left$ (tree->right tree)))))
                    (t
                     (let* ((right$ (acl2-number-tree-update key
                                                             val
                                                             (tree->right tree)))
-                           (head-right$ (tree->head right$))
-                           (tree$ (tree-node head
-                                             (tree->left tree)
-                                             right$)))
+                           (head-right$ (tree->head right$)))
                       (if (heap<-with-hashes
                             head-key
                             (tree-element->key head-right$)
                             (tree-element->hash head)
                             (tree-element->hash head-right$))
-                          (rotate-left tree$)
-                        tree$))))))))
+                          (tree-node-rotate-left head (tree->left tree) right$)
+                        (tree-node head (tree->left tree) right$)))))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable acl2-number-tree-update
                                            tree-keys-acl2-numberp)
@@ -437,32 +419,26 @@
                     (let* ((left$ (symbol-tree-update key
                                                       val
                                                       (tree->left tree)))
-                           (head-left$ (tree->head left$))
-                           (tree$ (tree-node head
-                                             left$
-                                             (tree->right tree))))
+                           (head-left$ (tree->head left$)))
                       (if (heap<-with-hashes
                             head-key
                             (tree-element->key head-left$)
                             (tree-element->hash head)
                             (tree-element->hash head-left$))
-                          (rotate-right tree$)
-                        tree$)))
+                          (tree-node-rotate-right head left$ (tree->right tree))
+                        (tree-node head left$ (tree->right tree)))))
                    (t
                     (let* ((right$ (symbol-tree-update key
                                                        val
                                                        (tree->right tree)))
-                           (head-right$ (tree->head right$))
-                           (tree$ (tree-node head
-                                             (tree->left tree)
-                                             right$)))
+                           (head-right$ (tree->head right$)))
                       (if (heap<-with-hashes
                             head-key
                             (tree-element->key head-right$)
                             (tree-element->hash head)
                             (tree-element->hash head-right$))
-                          (rotate-left tree$)
-                        tree$))))))))
+                          (tree-node-rotate-left head (tree->left tree) right$)
+                        (tree-node head (tree->left tree) right$)))))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable symbol-tree-update
                                            tree-keys-symbolp)
@@ -490,32 +466,26 @@
                     (let* ((left$ (eqlable-tree-update key
                                                        val
                                                        (tree->left tree)))
-                           (head-left$ (tree->head left$))
-                           (tree$ (tree-node head
-                                             left$
-                                             (tree->right tree))))
+                           (head-left$ (tree->head left$)))
                       (if (heap<-with-hashes
                             head-key
                             (tree-element->key head-left$)
                             (tree-element->hash head)
                             (tree-element->hash head-left$))
-                          (rotate-right tree$)
-                        tree$)))
+                          (tree-node-rotate-right head left$ (tree->right tree))
+                        (tree-node head left$ (tree->right tree)))))
                    (t
                     (let* ((right$ (eqlable-tree-update key
                                                         val
                                                         (tree->right tree)))
-                           (head-right$ (tree->head right$))
-                           (tree$ (tree-node head
-                                             (tree->left tree)
-                                             right$)))
+                           (head-right$ (tree->head right$)))
                       (if (heap<-with-hashes
                             head-key
                             (tree-element->key head-right$)
                             (tree-element->hash head)
                             (tree-element->hash head-right$))
-                          (rotate-left tree$)
-                        tree$))))))))
+                          (tree-node-rotate-left head (tree->left tree) right$)
+                        (tree-node head (tree->left tree) right$)))))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable eqlable-tree-update
                                            tree-keys-eqlablep)

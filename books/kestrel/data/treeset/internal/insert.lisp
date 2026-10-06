@@ -78,35 +78,33 @@
                        (tree-insert x (tree->left tree))
                  (if inp
                      (mv t (tree-fix tree))
-                   (let ((head-left$ (tree->head left$))
-                         (tree$ (tree-node head
-                                           left$
-                                           (tree->right tree))))
+                   (let ((head-left$ (tree->head left$)))
                      (mv nil
                          (if (heap<-with-hashes
                                head-elem
                                (tree-element->val head-left$)
                                (tree-element->hash head)
                                (tree-element->hash head-left$))
-                             (rotate-right tree$)
-                           tree$))))))
+                             (tree-node-rotate-right head
+                                                     left$
+                                                     (tree->right tree))
+                           (tree-node head left$ (tree->right tree))))))))
               (t
                (mv-let (inp right$)
                        (tree-insert x (tree->right tree))
                  (if inp
                      (mv t (tree-fix tree))
-                   (let ((head-right$ (tree->head right$))
-                         (tree$ (tree-node head
-                                           (tree->left tree)
-                                           right$)))
+                   (let ((head-right$ (tree->head right$)))
                      (mv nil
                          (if (heap<-with-hashes
                                head-elem
                                (tree-element->val head-right$)
                                (tree-element->hash head)
                                (tree-element->hash head-right$))
-                             (rotate-left tree$)
-                           tree$))))))))))
+                             (tree-node-rotate-left head
+                                                    (tree->left tree)
+                                                    right$)
+                           (tree-node head (tree->left tree) right$)))))))))))
   ;; Verified below
   :verify-guards nil)
 
@@ -311,35 +309,35 @@
                             (tree-insert-with-hash x hash (tree->left tree))
                       (if inp
                           (mv t (tree-fix tree))
-                        (let ((head-left$ (tree->head left$))
-                              (tree$ (tree-node head
-                                                left$
-                                                (tree->right tree))))
+                        (let ((head-left$ (tree->head left$)))
                           (mv nil
                               (if (heap<-with-hashes
                                     head-elem
                                     (tree-element->val head-left$)
                                     (tree-element->hash head)
                                     (tree-element->hash head-left$))
-                                  (rotate-right tree$)
-                                tree$))))))
+                                  (tree-node-rotate-right head
+                                                          left$
+                                                          (tree->right tree))
+                                (tree-node head left$ (tree->right tree))))))))
                    (t
                     (mv-let (inp right$)
                             (tree-insert-with-hash x hash (tree->right tree))
                       (if inp
                           (mv t (tree-fix tree))
-                        (let ((head-right$ (tree->head right$))
-                              (tree$ (tree-node head
-                                                (tree->left tree)
-                                                right$)))
+                        (let ((head-right$ (tree->head right$)))
                           (mv nil
                               (if (heap<-with-hashes
                                     head-elem
                                     (tree-element->val head-right$)
                                     (tree-element->hash head)
                                     (tree-element->hash head-right$))
-                                  (rotate-left tree$)
-                                tree$)))))))))))
+                                  (tree-node-rotate-left head
+                                                         (tree->left tree)
+                                                         right$)
+                                (tree-node head
+                                           (tree->left tree)
+                                           right$))))))))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable data::u32-equal
                                            tree-insert
@@ -369,35 +367,35 @@
                             (acl2-number-tree-insert x (tree->left tree))
                       (if inp
                           (mv t (tree-fix tree))
-                        (let ((head-left$ (tree->head left$))
-                              (tree$ (tree-node head
-                                                left$
-                                                (tree->right tree))))
+                        (let ((head-left$ (tree->head left$)))
                           (mv nil
                               (if (heap<-with-hashes
                                     head-elem
                                     (tree-element->val head-left$)
                                     (tree-element->hash head)
                                     (tree-element->hash head-left$))
-                                  (rotate-right tree$)
-                                tree$))))))
+                                  (tree-node-rotate-right head
+                                                          left$
+                                                          (tree->right tree))
+                                (tree-node head left$ (tree->right tree))))))))
                    (t
                     (mv-let (inp right$)
                             (acl2-number-tree-insert x (tree->right tree))
                       (if inp
                           (mv t (tree-fix tree))
-                        (let ((head-right$ (tree->head right$))
-                              (tree$ (tree-node head
-                                                (tree->left tree)
-                                                right$)))
+                        (let ((head-right$ (tree->head right$)))
                           (mv nil
                               (if (heap<-with-hashes
                                     head-elem
                                     (tree-element->val head-right$)
                                     (tree-element->hash head)
                                     (tree-element->hash head-right$))
-                                  (rotate-left tree$)
-                                tree$)))))))))))
+                                  (tree-node-rotate-left head
+                                                         (tree->left tree)
+                                                         right$)
+                                (tree-node head
+                                           (tree->left tree)
+                                           right$))))))))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-insert
                                            acl2-number-tree-insert
@@ -427,35 +425,35 @@
                             (symbol-tree-insert x (tree->left tree))
                       (if inp
                           (mv t (tree-fix tree))
-                        (let ((head-left$ (tree->head left$))
-                              (tree$ (tree-node head
-                                                left$
-                                                (tree->right tree))))
+                        (let ((head-left$ (tree->head left$)))
                           (mv nil
                               (if (heap<-with-hashes
                                     head-elem
                                     (tree-element->val head-left$)
                                     (tree-element->hash head)
                                     (tree-element->hash head-left$))
-                                  (rotate-right tree$)
-                                tree$))))))
+                                  (tree-node-rotate-right head
+                                                          left$
+                                                          (tree->right tree))
+                                (tree-node head left$ (tree->right tree))))))))
                    (t
                     (mv-let (inp right$)
                             (symbol-tree-insert x (tree->right tree))
                       (if inp
                           (mv t (tree-fix tree))
-                        (let ((head-right$ (tree->head right$))
-                              (tree$ (tree-node head
-                                                (tree->left tree)
-                                                right$)))
+                        (let ((head-right$ (tree->head right$)))
                           (mv nil
                               (if (heap<-with-hashes
                                     head-elem
                                     (tree-element->val head-right$)
                                     (tree-element->hash head)
                                     (tree-element->hash head-right$))
-                                  (rotate-left tree$)
-                                tree$)))))))))))
+                                  (tree-node-rotate-left head
+                                                         (tree->left tree)
+                                                         right$)
+                                (tree-node head
+                                           (tree->left tree)
+                                           right$))))))))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-insert
                                            symbol-tree-insert
@@ -485,35 +483,35 @@
                             (eqlable-tree-insert x (tree->left tree))
                       (if inp
                           (mv t (tree-fix tree))
-                        (let ((head-left$ (tree->head left$))
-                              (tree$ (tree-node head
-                                                left$
-                                                (tree->right tree))))
+                        (let ((head-left$ (tree->head left$)))
                           (mv nil
                               (if (heap<-with-hashes
                                     head-elem
                                     (tree-element->val head-left$)
                                     (tree-element->hash head)
                                     (tree-element->hash head-left$))
-                                  (rotate-right tree$)
-                                tree$))))))
+                                  (tree-node-rotate-right head
+                                                          left$
+                                                          (tree->right tree))
+                                (tree-node head left$ (tree->right tree))))))))
                    (t
                     (mv-let (inp right$)
                             (eqlable-tree-insert x (tree->right tree))
                       (if inp
                           (mv t (tree-fix tree))
-                        (let ((head-right$ (tree->head right$))
-                              (tree$ (tree-node head
-                                                (tree->left tree)
-                                                right$)))
+                        (let ((head-right$ (tree->head right$)))
                           (mv nil
                               (if (heap<-with-hashes
                                     head-elem
                                     (tree-element->val head-right$)
                                     (tree-element->hash head)
                                     (tree-element->hash head-right$))
-                                  (rotate-left tree$)
-                                tree$)))))))))))
+                                  (tree-node-rotate-left head
+                                                         (tree->left tree)
+                                                         right$)
+                                (tree-node head
+                                           (tree->left tree)
+                                           right$))))))))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-insert
                                            eqlable-tree-insert
