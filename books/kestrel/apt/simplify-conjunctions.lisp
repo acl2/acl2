@@ -57,12 +57,20 @@
                                                         ;; extra-function-renaming
                                                         untranslate
                                                         rule-names
-                                                        monitor)
+                                                        extra-enables ; todo: instead, make a table mapping axe rules to normal rules
+                                                        remove-enables
+                                                        rewrite-objective
+                                                        monitor
+                                                        count-hits)
   (declare (xargs :guard (and (symbolp fn)
                               ;; (doublet-listp extra-function-renaming)
                               (member-eq untranslate '(t nil :nice))
                               (symbol-listp rule-names)
-                              (symbol-listp monitor))
+                              (symbol-listp extra-enables)
+                              (symbol-listp remove-enables)
+                              (rewrite-objectivep rewrite-objective)
+                              (symbol-listp monitor)
+                              (count-hits-argp count-hits))
                   :stobjs state
                   :mode :program ;; because of untranslate and directed-untranslate$
                   )
@@ -80,10 +88,11 @@
        ((mv erp new-conjuncts &) (simplify-conjunction-basic conjuncts
                                                              (make-rule-alist! rule-names (w state))
                                                              (known-booleans wrld)
+                                                             rewrite-objective
                                                              monitor
                                                              nil ; no-warn-ground-functions
                                                              nil ; memoizep
-                                                             nil ; count-hits
+                                                             count-hits
                                                              t ; warn-missingp
                                                              ))
        ((when erp)
@@ -98,10 +107,12 @@
                          new-body ;TODO clean up macros at least?  clean up mvs too?
                        (if (eq t untranslate)
                            (untranslate new-body nil wrld)
-                         (directed-untranslate$ new-body untranslated-body wrld)))))))
-    ;; todo: consider returning only those rule-names that got used:
-    (mv new-body (acons :enables rule-names nil) state)))
-
+                         (directed-untranslate$ new-body untranslated-body wrld))))))
+       ;; todo: consider returning only those rule-names that got used:
+       (enables rule-names)
+       (enables (set-difference-eq enables remove-enables))
+       (enables (union-eq extra-enables enables)))
+    (mv new-body (acons :enables enables nil) state)))
 
 (defund simplify-conjunctions-enables (fn rule-names wrld)
   (declare (xargs :guard (and (symbolp fn)
@@ -123,7 +134,11 @@
   ;; transform-specific-keyword-args-and-defaults:
   ((untranslate 't)
    (rule-names 'nil)
-   (monitor 'nil))
+   (extra-enables 'nil)
+   (remove-enables 'nil)
+   (rewrite-objective ':?)
+   (monitor 'nil)
+   (count-hits 'nil))
   :function-body-transformer-kind :body-and-info-and-state ; because we return the rule-names as extra enables for the proof
   :enables (simplify-conjunctions-enables fn rule-names (w state)) ; form to compute the enables for the 'becomes theorem' ; TODO: Allow the function-body-transformer to return pre-events and hints?
   :short "Simplify conjunctions in a function using the Axe Rewriter."
@@ -135,4 +150,8 @@ arguments.</p>"
   (;; (extra-function-renaming "The renaming to apply to called functions (each entry should have a corresponding entry in the renaming-rule-table).")
    (untranslate "How to untranslate the function body after changing it.")
    (rule-names "Names of rules to use when simplifying.  These should be usable both as ACL2 rules and as Axe rules.")
-   (monitor "Rule names to monitor.")))
+   (extra-enables "Names of rules to enable for the proof (e.g., ACL2 counterparts of Axe rules that are removed with the remove-enables.")
+   (remove-enables "Names of rules to avoid enabling for the proof (e.g., Axe rules).")
+   (monitor "Rule names to monitor.")
+   (rewrite-objective "Whether to try to strength (nil) or weaken (t) the conjuncts, using rules with hypotheses that mention axe-rewrite-objective.  Or :?, meaning just apply normal rules.")
+   (count-hits "Whether to count hits when rewriting.")))

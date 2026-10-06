@@ -365,23 +365,28 @@
                                                      rule-symbol
                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                      equiv-alist rule-alist nodenums-to-assume-false print hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator work-hard-when-instructedp prover-depth options (+ -1 count) state))
-               ;; HYP is not a call to :axe-syntaxp or :axe-bind-free or :axe-binding-hyp or :free-vars:
-               ;; Set the work-hard flag and strip-off work-hard if present:
-               (mv-let
-                 (work-hardp hyp)
-                 (if (eq 'work-hard fn)
-                     (mv t (farg1 hyp)) ;strip off the call of work-hard
-                   (mv nil hyp))
-                 (b* (;; First, we substitute in for all the vars in HYP:
-                      (instantiated-hyp (instantiate-hyp-basic-no-free-vars2 hyp alist interpreted-function-alist))
-                      ;; INSTANTIATED-HYP is now a tree with leaves that are quoteps and nodenums (from vars already bound).
-                      ;; No more free vars remain in the hyp, so we try to relieve the fully instantiated hyp:
-                        (old-try-count tries)
-                        ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
-                         ;;try to relieve through rewriting (this tests atom hyps for symbolp even though i think that's impossible - but should be rare:
-                         (simplify-tree-and-add-to-dag-for-axe-prover instantiated-hyp
-                                                                      'iff
-                                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                 (if (eq :axe-rewrite-objective fn) ; (:axe-rewrite-objective . <obj>)
+                     ;; For now, we always fail on a hyp with :axe-rewrite-objective:
+                     ;; Could print a warning.
+                     (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
+
+                   ;; HYP is not a call to :axe-syntaxp or :axe-bind-free or :axe-binding-hyp or :free-vars:
+                   ;; Set the work-hard flag and strip-off work-hard if present:
+                   (mv-let
+                       (work-hardp hyp)
+                       (if (eq 'work-hard fn)
+                           (mv t (farg1 hyp)) ;strip off the call of work-hard
+                         (mv nil hyp))
+                     (b* (;; First, we substitute in for all the vars in HYP:
+                          (instantiated-hyp (instantiate-hyp-basic-no-free-vars2 hyp alist interpreted-function-alist))
+                          ;; INSTANTIATED-HYP is now a tree with leaves that are quoteps and nodenums (from vars already bound).
+                          ;; No more free vars remain in the hyp, so we try to relieve the fully instantiated hyp:
+                          (old-try-count tries)
+                          ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
+                           ;;try to relieve through rewriting (this tests atom hyps for symbolp even though i think that's impossible - but should be rare:
+                           (simplify-tree-and-add-to-dag-for-axe-prover instantiated-hyp
+                                                                        'iff
+dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                       rule-alist
                                                                       nodenums-to-assume-false equiv-alist print
                                                                       hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator
@@ -481,7 +486,7 @@
                                         (print-dag-array-node-and-supporters-lst nodenums-to-assume-false 'dag-array dag-array)
                                         (cw "))~%") ;;(cw "Alist: ~x0.~%Assumptions (to assume false): ~x1~%DAG:~x2)~%" alist nodenums-to-assume-false dag-array)
                                         ))
-                           (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)))))))))))))))
+                           (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))))))))))))))))
 
  ;; returns (mv erp new-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
  ;; where if new-rhs-or-nil is nil, no rule applied. otherwise, new-rhs-or-nil is a tree with nodenums and quoteps at the leaves (what about free vars?  should free vars in the RHS be an error?)

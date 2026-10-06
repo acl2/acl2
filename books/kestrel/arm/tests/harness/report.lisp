@@ -22,6 +22,9 @@
 ;;   :name         the name of the instruction, or nil if the model's decoder
 ;;                 rejects it
 ;;   :word         the instruction word, a natural number
+;;   :pc           the address of the instruction, a natural number
+;;   :arch         the version of the architecture the vector is for, a
+;;                 natural number
 ;;   :gap-key      for an instruction the decoder rejects, what to tally it by
 ;;   :error-class  nil, or the outcome class of the vector when the model's
 ;;                 error alone decides it (see below)
@@ -62,6 +65,14 @@
 ;;   :bits     optional: the bits it applies to, for a numeric field; it then
 ;;             applies only when the expected and actual values differ in no
 ;;             other bits
+;;   :expected-pc-offset
+;;             optional: an integer; the waiver then applies only when the
+;;             expected value is the address of the instruction plus this
+;;             integer, as for a stored copy of the program counter
+;;   :actual-pc-offset
+;;             optional: the same for the actual value
+;;   :max-arch optional: an integer; the waiver then applies only to vectors
+;;             for an architecture version no later than this
 ;;   :reason   why the mismatch is not a bug in the model: :unknown (UNKNOWN
 ;;             per the manual), :implementation-defined (IMPLEMENTATION
 ;;             DEFINED per the manual), :oracle-limitation (the expectation is
@@ -165,7 +176,7 @@
                 (assoc-equal key x))))
 
 (defconst *record-keys*
-  '(:id :name :word :gap-key :error-class :mismatches :unknown))
+  '(:id :name :word :pc :arch :gap-key :error-class :mismatches :unknown))
 
 (defun report-recordp (x)
   (declare (xargs :guard t))
@@ -173,6 +184,8 @@
        (subsetp-eq (evens x) *record-keys*)
        (no-duplicatesp-equal (evens x))
        (natp (report-get :word x nil))
+       (natp (report-get :pc x nil))
+       (natp (report-get :arch x nil))
        (let ((class (report-get :error-class x nil)))
          (or (null class)
              (member-eq class *error-classes*)))
@@ -182,10 +195,13 @@
 ;; A record built with list, as a model's harness builds them, satisfies
 ;; report-recordp if its values do.
 (defthm report-recordp-of-list
-  (equal (report-recordp (list :id id :name name :word word :gap-key gap-key
-                               :error-class error-class :mismatches mismatches
-                               :unknown unknown))
+  (equal (report-recordp (list :id id :name name :word word :pc pc
+                               :arch arch :gap-key gap-key
+                               :error-class error-class
+                               :mismatches mismatches :unknown unknown))
          (and (natp word)
+              (natp pc)
+              (natp arch)
               (or (null error-class)
                   (member-eq error-class *error-classes*))
               (mismatch-listp mismatches)
@@ -199,7 +215,9 @@
     (and (report-recordp (car x))
          (report-record-listp (cdr x)))))
 
-(defconst *waiver-keys* '(:name :mask :value :field :bits :reason :cite :note))
+(defconst *waiver-keys*
+  '(:name :mask :value :field :bits :expected-pc-offset :actual-pc-offset
+    :max-arch :reason :cite :note))
 
 (defconst *waiver-reasons*
   '(:unknown :implementation-defined :oracle-limitation :model-feature-absent))
@@ -217,6 +235,12 @@
        (report-get :field x nil)
        (let ((bits (report-get :bits x nil)))
          (or (null bits) (natp bits)))
+       (let ((offset (report-get :expected-pc-offset x nil)))
+         (or (null offset) (integerp offset)))
+       (let ((offset (report-get :actual-pc-offset x nil)))
+         (or (null offset) (integerp offset)))
+       (let ((max-arch (report-get :max-arch x nil)))
+         (or (null max-arch) (integerp max-arch)))
        (member-eq (report-get :reason x nil) *waiver-reasons*)
        (let ((cite (report-get :cite x nil)))
          (and (stringp cite)
@@ -235,19 +259,52 @@
            (true-listp x))
   :rule-classes :forward-chaining)
 
+;; What the guard of waiver-applies-p needs from waiverp, whose guard proof
+;; would otherwise open waiverp and split on its cases.
+
+(defthm keyword-value-listp-when-waiverp
+  (implies (waiverp x)
+           (keyword-value-listp x))
+  :rule-classes :forward-chaining)
+
+(defthm integerp-of-mask-when-waiverp
+  (implies (and (waiverp x)
+                (not (report-get :name x nil)))
+           (integerp (report-get :mask x nil)))
+  :rule-classes :forward-chaining)
+
+(defthm integerp-of-bits-when-waiverp
+  (implies (and (waiverp x)
+                (report-get :bits x nil))
+           (integerp (report-get :bits x nil)))
+  :rule-classes :forward-chaining)
+
+(defthm integerp-of-max-arch-when-waiverp
+  (implies (and (waiverp x)
+                (report-get :max-arch x nil))
+           (integerp (report-get :max-arch x nil)))
+  :rule-classes :forward-chaining)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Applying waivers.
 
-;; Whether WAIVER excuses MISMATCH, of the instruction with NAME and WORD.
-(defun waiver-applies-p (waiver name word mismatch)
+;; Whether WAIVER excuses MISMATCH, of the instruction with NAME and WORD at
+;; address PC, in a vector for architecture version ARCH.
+(defun waiver-applies-p (waiver name word pc arch mismatch)
   (declare (xargs :guard (and (waiverp waiver)
                               (natp word)
-                              (mismatchp mismatch))))
+                              (natp pc)
+                              (natp arch)
+                              (mismatchp mismatch))
+                  :guard-hints (("Goal" :in-theory (disable waiverp)))))
   (b* ((field (car mismatch))
        (waiver-field (report-get :field waiver nil))
        (waiver-name (report-get :name waiver nil))
        (bits (report-get :bits waiver nil))
+       (expected-offset (report-get :expected-pc-offset waiver nil))
+       (actual-offset (report-get :actual-pc-offset waiver nil))
+       (max-arch (report-get :max-arch waiver nil))
        (expected (report-get :expected (cdr mismatch) nil))
        (actual (report-get :actual (cdr mismatch) nil)))
     (and (if waiver-name
@@ -260,40 +317,62 @@
          (or (null bits)
              (and (integerp expected)
                   (integerp actual)
-                  (equal 0 (logand (lognot bits) (logxor expected actual))))))))
+                  (equal 0 (logand (lognot bits) (logxor expected actual)))))
+         (or (null expected-offset)
+             (and (integerp expected)
+                  (equal (- expected pc) expected-offset)))
+         (or (null actual-offset)
+             (and (integerp actual)
+                  (equal (- actual pc) actual-offset)))
+         (or (null max-arch)
+             (<= arch max-arch)))))
 
 ;; The first of WAIVERS that excuses MISMATCH, or nil.
-(defun find-waiver (waivers name word mismatch)
+(defun find-waiver (waivers name word pc arch mismatch)
   (declare (xargs :guard (and (waiver-listp waivers)
                               (natp word)
+                              (natp pc)
+                              (natp arch)
                               (mismatchp mismatch))))
   (if (endp waivers)
       nil
-    (if (waiver-applies-p (car waivers) name word mismatch)
+    (if (waiver-applies-p (car waivers) name word pc arch mismatch)
         (car waivers)
-      (find-waiver (cdr waivers) name word mismatch))))
+      (find-waiver (cdr waivers) name word pc arch mismatch))))
 
 (defthm waiverp-of-find-waiver
   (implies (and (waiver-listp waivers)
-                (find-waiver waivers name word mismatch))
-           (waiverp (find-waiver waivers name word mismatch)))
+                (find-waiver waivers name word pc arch mismatch))
+           (waiverp (find-waiver waivers name word pc arch mismatch)))
   :hints (("Goal" :in-theory (disable waiverp waiver-applies-p))))
 
-;; Splits MISMATCHES, of the instruction with NAME and WORD, into those no
-;; waiver excuses and those some waiver does.  Returns (mv unwaived waived
-;; used), where each element of WAIVED is (MISMATCH REASON CITE), and USED is
-;; USED with the waivers that applied added.
-(defund apply-waivers (mismatches name word waivers used)
+(defthm keyword-value-listp-of-find-waiver
+  (implies (and (waiver-listp waivers)
+                (find-waiver waivers name word pc arch mismatch))
+           (keyword-value-listp (find-waiver waivers name word pc arch mismatch)))
+  :hints (("Goal" :use waiverp-of-find-waiver
+                  :in-theory (disable waiverp-of-find-waiver find-waiver))))
+
+;; Splits MISMATCHES, of the instruction with NAME and WORD at address PC, in a
+;; vector for architecture version ARCH, into those no waiver excuses and those
+;; some waiver does.  Returns (mv unwaived waived used), where each element of
+;; WAIVED is (MISMATCH REASON CITE), and USED is USED with the waivers that
+;; applied added.
+(defund apply-waivers (mismatches name word pc arch waivers used)
   (declare (xargs :guard (and (mismatch-listp mismatches)
                               (natp word)
+                              (natp pc)
+                              (natp arch)
                               (waiver-listp waivers)
-                              (true-listp used))))
+                              (true-listp used))
+                  :guard-hints (("Goal" :in-theory (disable find-waiver
+                                                            waiver-applies-p)))))
   (if (endp mismatches)
       (mv nil nil used)
     (b* ((mismatch (car mismatches))
-         (waiver (find-waiver waivers name word mismatch))
+         (waiver (find-waiver waivers name word pc arch mismatch))
          ((mv unwaived waived used)
-          (apply-waivers (cdr mismatches) name word waivers
+          (apply-waivers (cdr mismatches) name word pc arch waivers
                          (if waiver (add-to-set-equal waiver used) used))))
       (if waiver
           (mv unwaived
@@ -306,7 +385,7 @@
 
 (defthm true-listp-of-mv-nth-2-of-apply-waivers
   (implies (true-listp used)
-           (true-listp (mv-nth 2 (apply-waivers mismatches name word waivers used))))
+           (true-listp (mv-nth 2 (apply-waivers mismatches name word pc arch waivers used))))
   :hints (("Goal" :in-theory (e/d (apply-waivers) (find-waiver)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -438,6 +517,8 @@
         (apply-waivers (report-get :mismatches record nil)
                        (report-get :name record nil)
                        (report-get :word record nil)
+                       (report-get :pc record nil)
+                       (report-get :arch record nil)
                        waivers used)))
     (mv (cond (unwaived :mismatch)
               (waived :waived)

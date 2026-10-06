@@ -305,6 +305,143 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Type and ispace definitions in parameter types are expanded
+; when the binder is checked (see check-atom and check-bind),
+; so a later shadowing of the defined variable,
+; by an inner definition or by an inner abstraction,
+; does not change the type of the parameter.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The parameter of a unary term abstraction has type &t, defined as Int;
+; the body redefines &t as Bool, but x is still an Int.
+(test-check-top-expr
+ "(let ((type &t Int))
+  ((fn ((x &t))
+     (let ((type &t Bool)) (+ x 1)))
+   1))")
+
+; The parameters of an n-ary term abstraction have type &t, defined as Int;
+; the body redefines &t as Bool, but x is still an Int.
+(test-check-top-expr
+ "(let ((type &t Int))
+  ((fn ((x &t) (y &t))
+     (let ((type &t Bool)) (+ x 1)))
+   1 2))")
+
+; The same, with the body abstracting over &t instead of redefining it:
+; inside the type abstraction, &t has no definition, but x is still an Int.
+(test-check-top-expr
+ "(let ((type &t Int))
+  ((fn ((x &t) (y &t))
+     (t-app (t-fn (&t) (+ x y)) Int))
+   1 2))")
+
+; The same, with an ispace definition instead of a type definition:
+; the parameters are vectors of length $d, defined as 2;
+; the body redefines $d as 3, but x still has length 2.
+(test-check-top-expr
+ "(let ((ispace $d 2))
+  ((fn ((x [Int $d]) (y [Int $d]))
+     (let ((ispace $d 3)) (@length (Int) (2 []) x)))
+   [1 2] [3 4]))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The same shadowing inside the body of a function binding.
+(test-check-top-expr
+ "(let ((type &t Int)
+       (fun (f (x &t) (y &t) : Int)
+         (let ((type &t Bool)) (+ x 1))))
+  (f 1 2))")
+
+; With an ispace definition.
+(test-check-top-expr
+ "(let ((ispace $d 2)
+       (fun (f (x [Int $d]) (y [Int $d]) : Int)
+         (let ((ispace $d 3)) (@length (Int) (2 []) x))))
+  (f [1 2] [3 4]))")
+
+; The recorded type of a let-bound function is expanded as well:
+; f takes an Int, and still does after &t is redefined as Bool,
+; so applying it to a boolean fails and applying it to an integer succeeds.
+(test-check-top-expr-fail
+ "(let ((type &t Int)
+       (fun (f (x &t) : Int) x))
+  (let ((type &t Bool))
+    (f #t)))")
+(test-check-top-expr
+ "(let ((type &t Int)
+       (fun (f (x &t) : Int) x))
+  (let ((type &t Bool))
+    (f 1)))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The same for a combined function binding,
+; whose parameter types are expanded in the environment
+; extended with its own type and ispace parameters.
+(test-check-top-expr
+ "(let ((type &t Int)
+       (fun (@f () () (x &t) (y &t) : Int)
+         (let ((type &t Bool)) (+ x 1))))
+  (f 1 2))")
+(test-check-top-expr-fail
+ "(let ((type &t Int)
+       (fun (@f () () (x &t) : Int) x))
+  (let ((type &t Bool))
+    (f #t)))")
+(test-check-top-expr
+ "(let ((type &t Int)
+       (fun (@f () () (x &t) : Int) x))
+  (let ((type &t Bool))
+    (f 1)))")
+
+; A type parameter of the binding shadows the outer definition of &t,
+; so x has the abstract type &t, instantiated at the application:
+; applying f at Bool to a boolean succeeds, and to an integer fails.
+(test-check-top-expr
+ "(let ((type &t Int)
+       (fun (@f (&t) () (x &t) : &t) x))
+  (@f (Bool) () #t))")
+(test-check-top-expr-fail
+ "(let ((type &t Int)
+       (fun (@f (&t) () (x &t) : &t) x))
+  (@f (Bool) () 1))")
+
+; Similarly, an ispace parameter of the binding shadows
+; the outer definition of $d.
+(test-check-top-expr
+ "(let ((ispace $d 2)
+       (fun (@f () ($d) (x [Int $d]) : Int) (@length (Int) ($d []) x)))
+  (@f () (3) [1 2 3]))")
+(test-check-top-expr-fail
+ "(let ((ispace $d 2)
+       (fun (@f () ($d) (x [Int $d]) : Int) (@length (Int) ($d []) x)))
+  (@f () (3) [1 2]))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The tests below are commented out because they currently fail:
+; the type checker accepts these expressions, but it should reject them.
+; The parameter x has the abstract type &t (or the abstract length $d),
+; bound by the enclosing abstraction;
+; the body then defines &t (or $d),
+; and the lookup of x expands its recorded type with that definition
+; (see the var case of check-expr),
+; so x appears to be an Int (or to have length 3).
+; If the expansion at lookup is removed
+; (every type recorded in the environment is already expanded),
+; these should become passing tests.
+; (test-check-top-expr-fail
+;  "(t-fn (&t) (fn ((x &t)) (let ((type &t Int)) (+ x 1))))")
+; (test-check-top-expr-fail
+;  "(i-fn ($d)
+;   (fn ((x [Int $d]))
+;     (let ((ispace $d 3)) (@length (Int) (3 []) x))))")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Inference of type and ispace applications (see check/infer-app):
 ; a function with a universal or product type
 ; is applied directly to an argument,

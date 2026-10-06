@@ -1,7 +1,7 @@
 ; Rules about instructions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -64,6 +64,8 @@
 (def-do-inst-theorem-with-inst anewarray)
 
 (def-do-inst-theorem areturn)
+
+(def-do-inst-theorem athrow)
 
 (def-do-inst-theorem arraylength)
 

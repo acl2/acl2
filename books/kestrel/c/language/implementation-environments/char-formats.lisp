@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -115,7 +115,10 @@
   (xdoc::topstring
    (xdoc::p
     "This is the simplest format of @('char').
-     It is not clear whether it is the most common or not."))
+     It is not clear whether it is the most common or not.")
+   (xdoc::p
+    "The 8-bit size actually comes from the @(tsee uchar-format-8)
+     that is intended to accompany this @(tsee char-format) format."))
   (make-char-format :signedp nil)
 
   ///

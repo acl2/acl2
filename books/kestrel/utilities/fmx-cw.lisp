@@ -1,4 +1,4 @@
-; Cert flags for make-memory-region-machinery.lisp
+; Support for reasoning about fmx-cw
 ;
 ; Copyright (C) 2026 Kestrel Institute
 ;
@@ -8,5 +8,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Don't compile, since SBCL is very slow to compile this book:
-; cert-flags: ? NIL
+(in-package "ACL2")
+
+(local (include-book "kestrel/utilities/defopeners" :dir :system))
+
+(defopeners fmx-cw-msg-1)

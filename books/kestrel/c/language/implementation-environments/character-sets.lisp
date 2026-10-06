@@ -53,7 +53,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod charset
-  :parents (character-sets)
   :short "Fixtype of character sets."
   :long
   (xdoc::topstring
@@ -224,20 +223,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define charset-source-char-code (schar (charset charsetp))
-  :guard (set::in schar (charset-source-chars charset))
+(define charset-source-char-code (sch (charset charsetp))
+  :guard (set::in sch (charset-source-chars charset))
   :returns (code natp)
   :short "Code of a source character."
-  (source-char-code schar (charset->source charset))
+  (source-char-code sch (charset->source charset))
   :guard-hints (("Goal" :in-theory (enable charset-source-chars))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define charset-exec-char-value (echar (charset charsetp))
-  :guard (set::in echar (charset-exec-chars charset))
+(define charset-exec-char-value (ech (charset charsetp))
+  :guard (set::in ech (charset-exec-chars charset))
   :returns (val natp)
   :short "Value of an execution character."
-  (exec-char-value echar (charset->exec charset))
+  (exec-char-value ech (charset->exec charset))
   :guard-hints (("Goal" :in-theory (enable charset-exec-chars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -318,7 +317,7 @@
 
   ///
 
-  (defrule charset-source-to-exec-in-charset-exec-chars
+  (defruled charset-source-to-exec-in-charset-exec-chars
     (implies (and (charset-wfp charset std
                                uchar-format schar-format char-format)
                   (set::in source-char (charset-source-chars charset)))
@@ -449,7 +448,6 @@
        (omap::identity (source-chars (source-charset-ascii end-of-lines))))
       (basic-exec-char bchar (exec-charset-ascii std) std
                        uchar-format schar-format char-format)))
-    :disable in-of-ascii-chars
     :enable (source-chars-of-source-charset-ascii
              basic-source-char-of-source-charset-ascii
              basic-exec-char-of-exec-charset-ascii
