@@ -190,7 +190,6 @@
     "__float80"
     "__float128"
     "_Float16"
-    "_Float16x"
     "_Float32"
     "_Float32x"
     "_Float64"
@@ -269,7 +268,6 @@
     (set-difference-equal
       *keywords-gcc*
       '("__float80"
-        "_Float16x"
         "_Float32"
         "_Float32x"
         "_Float64"

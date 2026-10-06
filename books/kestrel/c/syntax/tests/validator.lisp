@@ -1365,6 +1365,11 @@ void bar() {
   :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
+  "typedef float _Float16x;
+"
+  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
   "typedef float _Float32;
 "
   :dialect (c::make-dialect :std (c::standard-c17) :clang t))

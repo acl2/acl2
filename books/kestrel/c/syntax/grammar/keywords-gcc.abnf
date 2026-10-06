@@ -22,7 +22,6 @@
 keyword-gcc = %s"__float80"
             / %s"__float128"
             / %s"_Float16"
-            / %s"_Float16x"
             / %s"_Float32"
             / %s"_Float32x"
             / %s"_Float64"
