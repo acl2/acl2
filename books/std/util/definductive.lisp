@@ -4381,7 +4381,9 @@
                       (,pred-info.name ,@concl-vars))
              :hints (("Goal"
                       :induct (,descend ,proof ,@concl-vars)
-                      :in-theory (enable ,suff ,minimalp))))))
+                      :in-theory '(,suff
+                                   ,minimalp
+                                   (:induction ,descend)))))))
        (proof-valid-when-pred-event
         `(defruled ,proof-valid-when-pred
            (implies (,pred-info.name ,@pred-info.formals)
