@@ -14,6 +14,7 @@
 
 (include-book "kestrel/data/utilities/fixed-size-words/u32-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
+(include-book "kestrel/data/utilities/total-order/compare-defs" :dir :system)
 
 (include-book "../hash-defs")
 (include-book "tree-defs")
@@ -67,43 +68,45 @@
           (tree-node (tree-element (hash x) x) nil nil))
     (let* ((head (tree->head tree))
            (head-elem (tree-element->val head)))
-      (cond ((equal x head-elem)
-             (mv t
-                 (tree-fix tree)))
-            ((<< x head-elem)
-             (mv-let (inp left$)
-                     (tree-insert x (tree->left tree))
-               (if inp
-                   (mv t (tree-fix tree))
-                 (let ((head-left$ (tree->head left$))
-                       (tree$ (tree-node head
-                                         left$
-                                         (tree->right tree))))
-                   (mv nil
-                       (if (heap<-with-hashes
-                             head-elem
-                             (tree-element->val head-left$)
-                             (tree-element->hash head)
-                             (tree-element->hash head-left$))
-                           (rotate-right tree$)
-                         tree$))))))
-            (t
-             (mv-let (inp right$)
-                     (tree-insert x (tree->right tree))
-               (if inp
-                   (mv t (tree-fix tree))
-                 (let ((head-right$ (tree->head right$))
-                       (tree$ (tree-node head
-                                         (tree->left tree)
-                                         right$)))
-                   (mv nil
-                       (if (heap<-with-hashes
-                             head-elem
-                             (tree-element->val head-right$)
-                             (tree-element->hash head)
-                             (tree-element->hash head-right$))
-                           (rotate-left tree$)
-                         tree$)))))))))
+      (mv-let (equalp ltp)
+              (data::compare-<< x head-elem)
+        (cond (equalp
+               (mv t
+                   (tree-fix tree)))
+              (ltp
+               (mv-let (inp left$)
+                       (tree-insert x (tree->left tree))
+                 (if inp
+                     (mv t (tree-fix tree))
+                   (let ((head-left$ (tree->head left$))
+                         (tree$ (tree-node head
+                                           left$
+                                           (tree->right tree))))
+                     (mv nil
+                         (if (heap<-with-hashes
+                               head-elem
+                               (tree-element->val head-left$)
+                               (tree-element->hash head)
+                               (tree-element->hash head-left$))
+                             (rotate-right tree$)
+                           tree$))))))
+              (t
+               (mv-let (inp right$)
+                       (tree-insert x (tree->right tree))
+                 (if inp
+                     (mv t (tree-fix tree))
+                   (let ((head-right$ (tree->head right$))
+                         (tree$ (tree-node head
+                                           (tree->left tree)
+                                           right$)))
+                     (mv nil
+                         (if (heap<-with-hashes
+                               head-elem
+                               (tree-element->val head-right$)
+                               (tree-element->hash head)
+                               (tree-element->hash head-right$))
+                             (rotate-left tree$)
+                           tree$))))))))))
   ;; Verified below
   :verify-guards nil)
 
@@ -298,43 +301,45 @@
                (tree-node (tree-element hash x) nil nil))
          (let* ((head (tree->head tree))
                 (head-elem (tree-element->val head)))
-           (cond ((equal x head-elem)
-                  (mv t
-                      (tree-fix tree)))
-                 ((<< x head-elem)
-                  (mv-let (inp left$)
-                          (tree-insert-with-hash x hash (tree->left tree))
-                    (if inp
-                        (mv t (tree-fix tree))
-                      (let ((head-left$ (tree->head left$))
-                            (tree$ (tree-node head
-                                              left$
-                                              (tree->right tree))))
-                        (mv nil
-                            (if (heap<-with-hashes
-                                  head-elem
-                                  (tree-element->val head-left$)
-                                  (tree-element->hash head)
-                                  (tree-element->hash head-left$))
-                                (rotate-right tree$)
-                              tree$))))))
-                 (t
-                  (mv-let (inp right$)
-                          (tree-insert-with-hash x hash (tree->right tree))
-                    (if inp
-                        (mv t (tree-fix tree))
-                      (let ((head-right$ (tree->head right$))
-                            (tree$ (tree-node head
-                                              (tree->left tree)
-                                              right$)))
-                        (mv nil
-                            (if (heap<-with-hashes
-                                  head-elem
-                                  (tree-element->val head-right$)
-                                  (tree-element->hash head)
-                                  (tree-element->hash head-right$))
-                                (rotate-left tree$)
-                              tree$))))))))))
+           (mv-let (equalp ltp)
+                   (data::compare-<< x head-elem)
+             (cond (equalp
+                    (mv t
+                        (tree-fix tree)))
+                   (ltp
+                    (mv-let (inp left$)
+                            (tree-insert-with-hash x hash (tree->left tree))
+                      (if inp
+                          (mv t (tree-fix tree))
+                        (let ((head-left$ (tree->head left$))
+                              (tree$ (tree-node head
+                                                left$
+                                                (tree->right tree))))
+                          (mv nil
+                              (if (heap<-with-hashes
+                                    head-elem
+                                    (tree-element->val head-left$)
+                                    (tree-element->hash head)
+                                    (tree-element->hash head-left$))
+                                  (rotate-right tree$)
+                                tree$))))))
+                   (t
+                    (mv-let (inp right$)
+                            (tree-insert-with-hash x hash (tree->right tree))
+                      (if inp
+                          (mv t (tree-fix tree))
+                        (let ((head-right$ (tree->head right$))
+                              (tree$ (tree-node head
+                                                (tree->left tree)
+                                                right$)))
+                          (mv nil
+                              (if (heap<-with-hashes
+                                    head-elem
+                                    (tree-element->val head-right$)
+                                    (tree-element->hash head)
+                                    (tree-element->hash head-right$))
+                                  (rotate-left tree$)
+                                tree$)))))))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable data::u32-equal
                                            tree-insert
@@ -354,43 +359,45 @@
                (tree-node (tree-element (acl2-number-hash x) x) nil nil))
          (let* ((head (tree->head tree))
                 (head-elem (tree-element->val head)))
-           (cond ((= x head-elem)
-                  (mv t
-                      (tree-fix tree)))
-                 ((data::acl2-number-<< x head-elem)
-                  (mv-let (inp left$)
-                          (acl2-number-tree-insert x (tree->left tree))
-                    (if inp
-                        (mv t (tree-fix tree))
-                      (let ((head-left$ (tree->head left$))
-                            (tree$ (tree-node head
-                                              left$
-                                              (tree->right tree))))
-                        (mv nil
-                            (if (heap<-with-hashes
-                                  head-elem
-                                  (tree-element->val head-left$)
-                                  (tree-element->hash head)
-                                  (tree-element->hash head-left$))
-                                (rotate-right tree$)
-                              tree$))))))
-                 (t
-                  (mv-let (inp right$)
-                          (acl2-number-tree-insert x (tree->right tree))
-                    (if inp
-                        (mv t (tree-fix tree))
-                      (let ((head-right$ (tree->head right$))
-                            (tree$ (tree-node head
-                                              (tree->left tree)
-                                              right$)))
-                        (mv nil
-                            (if (heap<-with-hashes
-                                  head-elem
-                                  (tree-element->val head-right$)
-                                  (tree-element->hash head)
-                                  (tree-element->hash head-right$))
-                                (rotate-left tree$)
-                              tree$))))))))))
+           (mv-let (equalp ltp)
+                   (data::acl2-number-compare-<< x head-elem)
+             (cond (equalp
+                    (mv t
+                        (tree-fix tree)))
+                   (ltp
+                    (mv-let (inp left$)
+                            (acl2-number-tree-insert x (tree->left tree))
+                      (if inp
+                          (mv t (tree-fix tree))
+                        (let ((head-left$ (tree->head left$))
+                              (tree$ (tree-node head
+                                                left$
+                                                (tree->right tree))))
+                          (mv nil
+                              (if (heap<-with-hashes
+                                    head-elem
+                                    (tree-element->val head-left$)
+                                    (tree-element->hash head)
+                                    (tree-element->hash head-left$))
+                                  (rotate-right tree$)
+                                tree$))))))
+                   (t
+                    (mv-let (inp right$)
+                            (acl2-number-tree-insert x (tree->right tree))
+                      (if inp
+                          (mv t (tree-fix tree))
+                        (let ((head-right$ (tree->head right$))
+                              (tree$ (tree-node head
+                                                (tree->left tree)
+                                                right$)))
+                          (mv nil
+                              (if (heap<-with-hashes
+                                    head-elem
+                                    (tree-element->val head-right$)
+                                    (tree-element->hash head)
+                                    (tree-element->hash head-right$))
+                                  (rotate-left tree$)
+                                tree$)))))))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-insert
                                            acl2-number-tree-insert
@@ -410,43 +417,45 @@
                (tree-node (tree-element (symbol-hash x) x) nil nil))
          (let* ((head (tree->head tree))
                 (head-elem (tree-element->val head)))
-           (cond ((eq x head-elem)
-                  (mv t
-                      (tree-fix tree)))
-                 ((data::symbol-<< x head-elem)
-                  (mv-let (inp left$)
-                          (symbol-tree-insert x (tree->left tree))
-                    (if inp
-                        (mv t (tree-fix tree))
-                      (let ((head-left$ (tree->head left$))
-                            (tree$ (tree-node head
-                                              left$
-                                              (tree->right tree))))
-                        (mv nil
-                            (if (heap<-with-hashes
-                                  head-elem
-                                  (tree-element->val head-left$)
-                                  (tree-element->hash head)
-                                  (tree-element->hash head-left$))
-                                (rotate-right tree$)
-                              tree$))))))
-                 (t
-                  (mv-let (inp right$)
-                          (symbol-tree-insert x (tree->right tree))
-                    (if inp
-                        (mv t (tree-fix tree))
-                      (let ((head-right$ (tree->head right$))
-                            (tree$ (tree-node head
-                                              (tree->left tree)
-                                              right$)))
-                        (mv nil
-                            (if (heap<-with-hashes
-                                  head-elem
-                                  (tree-element->val head-right$)
-                                  (tree-element->hash head)
-                                  (tree-element->hash head-right$))
-                                (rotate-left tree$)
-                              tree$))))))))))
+           (mv-let (equalp ltp)
+                   (data::symbol-compare-<< x head-elem)
+             (cond (equalp
+                    (mv t
+                        (tree-fix tree)))
+                   (ltp
+                    (mv-let (inp left$)
+                            (symbol-tree-insert x (tree->left tree))
+                      (if inp
+                          (mv t (tree-fix tree))
+                        (let ((head-left$ (tree->head left$))
+                              (tree$ (tree-node head
+                                                left$
+                                                (tree->right tree))))
+                          (mv nil
+                              (if (heap<-with-hashes
+                                    head-elem
+                                    (tree-element->val head-left$)
+                                    (tree-element->hash head)
+                                    (tree-element->hash head-left$))
+                                  (rotate-right tree$)
+                                tree$))))))
+                   (t
+                    (mv-let (inp right$)
+                            (symbol-tree-insert x (tree->right tree))
+                      (if inp
+                          (mv t (tree-fix tree))
+                        (let ((head-right$ (tree->head right$))
+                              (tree$ (tree-node head
+                                                (tree->left tree)
+                                                right$)))
+                          (mv nil
+                              (if (heap<-with-hashes
+                                    head-elem
+                                    (tree-element->val head-right$)
+                                    (tree-element->hash head)
+                                    (tree-element->hash head-right$))
+                                  (rotate-left tree$)
+                                tree$)))))))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-insert
                                            symbol-tree-insert
@@ -466,43 +475,45 @@
                (tree-node (tree-element (eqlable-hash x) x) nil nil))
          (let* ((head (tree->head tree))
                 (head-elem (tree-element->val head)))
-           (cond ((eql x head-elem)
-                  (mv t
-                      (tree-fix tree)))
-                 ((data::eqlable-<< x head-elem)
-                  (mv-let (inp left$)
-                          (eqlable-tree-insert x (tree->left tree))
-                    (if inp
-                        (mv t (tree-fix tree))
-                      (let ((head-left$ (tree->head left$))
-                            (tree$ (tree-node head
-                                              left$
-                                              (tree->right tree))))
-                        (mv nil
-                            (if (heap<-with-hashes
-                                  head-elem
-                                  (tree-element->val head-left$)
-                                  (tree-element->hash head)
-                                  (tree-element->hash head-left$))
-                                (rotate-right tree$)
-                              tree$))))))
-                 (t
-                  (mv-let (inp right$)
-                          (eqlable-tree-insert x (tree->right tree))
-                    (if inp
-                        (mv t (tree-fix tree))
-                      (let ((head-right$ (tree->head right$))
-                            (tree$ (tree-node head
-                                              (tree->left tree)
-                                              right$)))
-                        (mv nil
-                            (if (heap<-with-hashes
-                                  head-elem
-                                  (tree-element->val head-right$)
-                                  (tree-element->hash head)
-                                  (tree-element->hash head-right$))
-                                (rotate-left tree$)
-                              tree$))))))))))
+           (mv-let (equalp ltp)
+                   (data::eqlable-compare-<< x head-elem)
+             (cond (equalp
+                    (mv t
+                        (tree-fix tree)))
+                   (ltp
+                    (mv-let (inp left$)
+                            (eqlable-tree-insert x (tree->left tree))
+                      (if inp
+                          (mv t (tree-fix tree))
+                        (let ((head-left$ (tree->head left$))
+                              (tree$ (tree-node head
+                                                left$
+                                                (tree->right tree))))
+                          (mv nil
+                              (if (heap<-with-hashes
+                                    head-elem
+                                    (tree-element->val head-left$)
+                                    (tree-element->hash head)
+                                    (tree-element->hash head-left$))
+                                  (rotate-right tree$)
+                                tree$))))))
+                   (t
+                    (mv-let (inp right$)
+                            (eqlable-tree-insert x (tree->right tree))
+                      (if inp
+                          (mv t (tree-fix tree))
+                        (let ((head-right$ (tree->head right$))
+                              (tree$ (tree-node head
+                                                (tree->left tree)
+                                                right$)))
+                          (mv nil
+                              (if (heap<-with-hashes
+                                    head-elem
+                                    (tree-element->val head-right$)
+                                    (tree-element->hash head)
+                                    (tree-element->hash head-right$))
+                                  (rotate-left tree$)
+                                tree$)))))))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-insert
                                            eqlable-tree-insert

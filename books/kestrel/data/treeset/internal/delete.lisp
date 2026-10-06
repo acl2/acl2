@@ -13,6 +13,7 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
+(include-book "kestrel/data/utilities/total-order/compare-defs" :dir :system)
 
 (include-book "tree-defs")
 (include-book "bst-defs")
@@ -52,23 +53,25 @@
      "After deletion, the tree is rebalanced with respect to the @(tsee
       heapp) property."))
   :returns (tree$ treep)
-  (cond ((tree-empty-p tree)
-         nil)
-        ((equal x (tree-element->val (tree->head tree)))
-         (mbe :logic (tree-join-at (tree-element->val (tree->head tree))
-                                   (tree->left tree)
-                                   (tree->right tree))
-              :exec (tree-join (tree->left tree)
-                               (tree->right tree))))
-        ((<< x (tree-element->val (tree->head tree)))
-         ;; TODO: Return a flag indicating whether or not the subtree we
-         ;; recursed on changed.
-         (tree-node (tree->head tree)
-                    (tree-delete x (tree->left tree))
-                    (tree->right tree)))
-        (t (tree-node (tree->head tree)
-                      (tree->left tree)
-                      (tree-delete x (tree->right tree)))))
+  (if (tree-empty-p tree)
+      nil
+    (mv-let (equalp ltp)
+            (data::compare-<< x (tree-element->val (tree->head tree)))
+      (cond (equalp
+             (mbe :logic (tree-join-at (tree-element->val (tree->head tree))
+                                       (tree->left tree)
+                                       (tree->right tree))
+                  :exec (tree-join (tree->left tree)
+                                   (tree->right tree))))
+            (ltp
+             ;; TODO: Return a flag indicating whether or not the subtree we
+             ;; recursed on changed.
+             (tree-node (tree->head tree)
+                        (tree-delete x (tree->left tree))
+                        (tree->right tree)))
+            (t (tree-node (tree->head tree)
+                          (tree->left tree)
+                          (tree-delete x (tree->right tree)))))))
   :verify-guards :after-returns
   :guard-hints (("Goal" :in-theory (enable tree-join-at))))
 
@@ -186,18 +189,24 @@
    (tree acl2-number-treep))
   (mbe :logic (tree-delete x tree)
        :exec
-       (cond ((tree-empty-p tree)
-              nil)
-             ((= x (tree-element->val (tree->head tree)))
-              (tree-join (tree->left tree)
-                         (tree->right tree)))
-             ((data::acl2-number-<< x (tree-element->val (tree->head tree)))
-              (tree-node (tree->head tree)
-                         (acl2-number-tree-delete x (tree->left tree))
-                         (tree->right tree)))
-             (t (tree-node (tree->head tree)
-                           (tree->left tree)
-                           (acl2-number-tree-delete x (tree->right tree))))))
+       (if (tree-empty-p tree)
+           nil
+         (mv-let (equalp ltp)
+                 (data::acl2-number-compare-<<
+                   x
+                   (tree-element->val (tree->head tree)))
+           (cond (equalp
+                  (tree-join (tree->left tree)
+                             (tree->right tree)))
+                 (ltp
+                  (tree-node (tree->head tree)
+                             (acl2-number-tree-delete x (tree->left tree))
+                             (tree->right tree)))
+                 (t (tree-node (tree->head tree)
+                               (tree->left tree)
+                               (acl2-number-tree-delete
+                                 x
+                                 (tree->right tree))))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-delete
                                            acl2-number-tree-delete
@@ -211,18 +220,21 @@
    (tree symbol-treep))
   (mbe :logic (tree-delete x tree)
        :exec
-       (cond ((tree-empty-p tree)
-              nil)
-             ((eq x (tree-element->val (tree->head tree)))
-              (tree-join (tree->left tree)
-                         (tree->right tree)))
-             ((data::symbol-<< x (tree-element->val (tree->head tree)))
-              (tree-node (tree->head tree)
-                         (symbol-tree-delete x (tree->left tree))
-                         (tree->right tree)))
-             (t (tree-node (tree->head tree)
-                           (tree->left tree)
-                           (symbol-tree-delete x (tree->right tree))))))
+       (if (tree-empty-p tree)
+           nil
+         (mv-let (equalp ltp)
+                 (data::symbol-compare-<< x
+                                          (tree-element->val (tree->head tree)))
+           (cond (equalp
+                  (tree-join (tree->left tree)
+                             (tree->right tree)))
+                 (ltp
+                  (tree-node (tree->head tree)
+                             (symbol-tree-delete x (tree->left tree))
+                             (tree->right tree)))
+                 (t (tree-node (tree->head tree)
+                               (tree->left tree)
+                               (symbol-tree-delete x (tree->right tree))))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-delete
                                            symbol-tree-delete
@@ -236,18 +248,22 @@
    (tree eqlable-treep))
   (mbe :logic (tree-delete x tree)
        :exec
-       (cond ((tree-empty-p tree)
-              nil)
-             ((eql x (tree-element->val (tree->head tree)))
-              (tree-join (tree->left tree)
-                         (tree->right tree)))
-             ((data::eqlable-<< x (tree-element->val (tree->head tree)))
-              (tree-node (tree->head tree)
-                         (eqlable-tree-delete x (tree->left tree))
-                         (tree->right tree)))
-             (t (tree-node (tree->head tree)
-                           (tree->left tree)
-                           (eqlable-tree-delete x (tree->right tree))))))
+       (if (tree-empty-p tree)
+           nil
+         (mv-let (equalp ltp)
+                 (data::eqlable-compare-<<
+                   x
+                   (tree-element->val (tree->head tree)))
+           (cond (equalp
+                  (tree-join (tree->left tree)
+                             (tree->right tree)))
+                 (ltp
+                  (tree-node (tree->head tree)
+                             (eqlable-tree-delete x (tree->left tree))
+                             (tree->right tree)))
+                 (t (tree-node (tree->head tree)
+                               (tree->left tree)
+                               (eqlable-tree-delete x (tree->right tree))))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-delete
                                            eqlable-tree-delete

@@ -12,6 +12,7 @@
 (include-book "kestrel/data/treeset/internal/heap-order-defs" :dir :system)
 (include-book "kestrel/data/utilities/fixed-size-words/u32-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
+(include-book "kestrel/data/utilities/total-order/compare-defs" :dir :system)
 
 (include-book "keys-defs")
 (include-book "rotate-defs")
