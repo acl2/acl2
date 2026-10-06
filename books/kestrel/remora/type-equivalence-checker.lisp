@@ -252,6 +252,11 @@
 
   ///
 
+  (defrule normalize-type-of-normalize-type
+    (equal (normalize-type (normalize-type type))
+           (normalize-type type))
+    :induct t)
+
   (defret type-count-of-normalize-type
     (<= (type-count type1)
         (type-count type))
