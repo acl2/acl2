@@ -2651,7 +2651,8 @@
      the position of the first @('/') in the opening @('//'),
      which is passed to this function,
      and the position of the closing new-line or end-of-file,
-     which is returned by the loop function.")
+     which is returned by the loop function.
+     The span includes the closing new-line or end-of-file.")
    (xdoc::p
     "When encountering the end of file,
      we succeed and return the line comment,
@@ -2727,7 +2728,8 @@
      and a span calculated from
      the position of the @('#'), which is passed to this function,
      and the position of the closing new-line or end-of-file,
-     which is returned by the loop function."))
+     which is returned by the loop function.
+     The span includes the closing new-line or end-of-file."))
   (b* (((reterr) (irr-lexeme) (irr-span) parstate)
        ((erp last-pos parstate) (lex-control-line-loop first-pos parstate)))
     (retok (lexeme-control-line)
