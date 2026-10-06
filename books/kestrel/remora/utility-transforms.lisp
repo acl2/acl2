@@ -12,8 +12,10 @@
 
 (include-book "abstract-syntax-trees")
 (include-book "abstract-syntax-derived-fixtypes")
+(include-book "abstract-syntax-structurals")
 
 (include-book "kestrel/fty/deffold-map" :dir :system)
+(include-book "kestrel/fty/deffold-reduce" :dir :system)
 
 (include-book "portcullis")
 
@@ -245,3 +247,43 @@
        ((unless (endp (decl-entry->params main))) (reserrf :main-has-parameters))
        (binds (decl-list-to-binds (decls-before-main file.decls))))
     (nest-let-binds binds (decl-entry->expr main))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce expr-var-binders
+  :parents (remora)
+  :short "List of the expression variables bound by the binders in ASTs,
+          with repetitions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each occurrence of a binder of an expression variable contributes its
+     variable: the variable bound by a binding (other than of an ispace or
+     type variable), the parameters of lambda abstractions and of
+     function bindings, and the variable of an unboxing expression.  A
+     variable bound by several binders occurs several times."))
+  :types (exprs/atoms/binds)
+  :result string-listp
+  :default nil
+  :combine append
+  :override
+  ((expr :unbox (cons expr.var
+                      (append (expr-expr-var-binders expr.target)
+                              (expr-expr-var-binders expr.body))))
+   (expr :unboxn (cons expr.var
+                       (append (expr-expr-var-binders expr.target)
+                               (expr-expr-var-binders expr.body))))
+   (atom :lambda (cons (var+type?->var atom.param)
+                       (expr-expr-var-binders atom.body)))
+   (atom :lambdan (append (var+type?-list->var atom.params)
+                          (expr-expr-var-binders atom.body)))
+   (bind :val (cons bind.var (expr-expr-var-binders bind.expr)))
+   (bind :fun (cons bind.var
+                    (append (var+type?-list->var bind.params)
+                            (expr-expr-var-binders bind.expr))))
+   (bind :tfun (cons bind.var (expr-expr-var-binders bind.expr)))
+   (bind :ifun (cons bind.var (expr-expr-var-binders bind.expr)))
+   (bind :cfun (cons bind.var
+                     (append (var+type?-list->var bind.params)
+                             (expr-expr-var-binders bind.expr)))))
+  :name ast-expr-var-binders)

@@ -1076,11 +1076,12 @@
     x86isa::vex-opcode-modr/m-p$inline-constant-opener
     x86isa::vex-prefixes-map-p$inline-constant-opener
 
-    x86isa::vex->vvvv$inline-constant-opener
-    x86isa::vex->l$inline-constant-opener
-    x86isa::vex->pp$inline-constant-opener
-    x86isa::vex->r$inline-constant-opener
-    x86isa::vex->w$inline-constant-opener
+    x86isa::vex->vvvv$notinline-constant-opener
+    x86isa::vex->l$notinline-constant-opener
+    x86isa::vex->pp$notinline-constant-opener
+    x86isa::vex->r$notinline-constant-opener
+    x86isa::vex->w$notinline-constant-opener
+
     x86isa::vex->b$inline-constant-opener
     x86isa::vex->x$inline-constant-opener
 
