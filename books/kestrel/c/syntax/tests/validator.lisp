@@ -1375,6 +1375,16 @@ void bar() {
   :dialect (c::make-dialect :std (c::standard-c17) :clang t))
 
 (test-valid
+  "typedef __float128 _Float128;
+"
+  :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-valid-fail
+  "typedef float __float128;
+"
+  :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-valid
   "int f(void) {
    void * foo;
    for (;;) {}

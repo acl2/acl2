@@ -243,7 +243,8 @@
      (xdoc::ahref
        "https://clang.llvm.org/docs/LanguageExtensions.html#half-precision-floating-point"
        "[CLE#half-precision-floating-point]")
-     ".")
+     " and @('__float128'),
+      which Clang treats as a keyword in all language modes and on all targets.")
    (xdoc::p
     "This list is disjoint from the C17 standard keywords.
      This list is disjoint from the C23 standard keywords,
@@ -268,7 +269,6 @@
     (set-difference-equal
       *keywords-gcc*
       '("__float80"
-        "__float128"
         "_Float16x"
         "_Float32"
         "_Float32x"
