@@ -107344,6 +107344,9 @@ Other Bug Fixes
   But unlike before, the body of the [30m[47mdefconst[0m[0m form is translated
   during both passes, not just the first.
 
+  Fixed a bug reported by Eric Smith that resulted in a raw Lisp error,
+  instead of a guard violation, for [30m[47m(unary-df/ (df0))[0m[0m.
+
 
 Changes at the System Level
 

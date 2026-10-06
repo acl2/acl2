@@ -110418,6 +110418,9 @@ it."
  before, the body of the @('defconst') form is translated during both passes,
  not just the first.</p>
 
+ <p>Fixed a bug reported by Eric Smith that resulted in a raw Lisp error,
+ instead of a guard violation, for @('(unary-df/ (df0))').</p>
+
  <h3>Changes at the System Level</h3>
 
  <p>The built-in @(see events) @('Integer-1') and @('cons-equal') are now
