@@ -85,7 +85,49 @@
                               (tree->right (tree->left tree))
                               (tree->right tree)))
       (tree-fix tree))
-    :inline t))
+    :inline t)
+
+  (define tree-node-rotate-left
+    ((head tree-element-p)
+     (left treep)
+     (right treep))
+    :short "Construct a node and perform a left rotation on it."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+       "Logically, this is just @(tsee rotate-left) applied to @(tsee
+        tree-node). In execution, the rotated tree is built directly, without
+        first allocating the unrotated node."))
+    :guard (not (tree-empty-p right))
+    :returns (tree treep)
+    (mbe :logic (rotate-left (tree-node head left right))
+         :exec (tree-node (tree->head right)
+                          (tree-node head left (tree->left right))
+                          (tree->right right)))
+    :enabled t
+    :inline t
+    :guard-hints (("Goal" :in-theory (enable rotate-left))))
+
+  (define tree-node-rotate-right
+    ((head tree-element-p)
+     (left treep)
+     (right treep))
+    :short "Construct a node and perform a right rotation on it."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+       "Logically, this is just @(tsee rotate-right) applied to @(tsee
+        tree-node). In execution, the rotated tree is built directly, without
+        first allocating the unrotated node."))
+    :guard (not (tree-empty-p left))
+    :returns (tree treep)
+    (mbe :logic (rotate-right (tree-node head left right))
+         :exec (tree-node (tree->head left)
+                          (tree->left left)
+                          (tree-node head (tree->right left) right)))
+    :enabled t
+    :inline t
+    :guard-hints (("Goal" :in-theory (enable rotate-right)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
