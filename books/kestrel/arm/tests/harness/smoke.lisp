@@ -136,6 +136,41 @@
                         '(("stmia r1!, {r0, r1}" (:mem #x2004))
                           ("muls r3, r5, r4 on ARMv4" :apsr)))))))
 
+;; Vectors for the GE bits of the APSR, which check-vector compares only from
+;; ARMv6 (they are reserved before ARMv6), whatever the :apsr-mask.  MSR
+;; APSR_g, r0 writes them from r0 on every version in the model.
+
+(defconst *ge-vectors*
+  '(;; Before ARMv6: not compared, so an expected 0 passes.
+    (:id "msr APSR_g, r0 on ARMv4, GE of 0 expected"
+     :arch 4
+     :pc #x1000 :code (#xE124F000)
+     :regs ((0 . #x000F0000))
+     :expect (:pc #x1004 :apsr 0 :apsr-mask #xF80F0000))
+
+    ;; From ARMv6: compared, so only the written value passes.
+    (:id "msr APSR_g, r0 on ARMv6, GE of #xF expected"
+     :arch 6
+     :pc #x1000 :code (#xE124F000)
+     :regs ((0 . #x000F0000))
+     :expect (:pc #x1004 :apsr #x000F0000 :apsr-mask #xF80F0000))
+
+    (:id "msr APSR_g, r0 on ARMv6, GE of 0 expected"
+     :arch 6
+     :pc #x1000 :code (#xE124F000)
+     :regs ((0 . #x000F0000))
+     :expect (:pc #x1004 :apsr 0 :apsr-mask #xF80F0000))))
+
+(assert-event
+  (let ((summary (summarize-vectors "smoke GE" *ge-vectors* nil nil)))
+    (prog2$ (print-summary summary 10 nil)
+            (and (equal (cdr (assoc-eq :pass (report-get :counts summary nil)))
+                        2)
+                 (equal (report-get :mismatches summary nil)
+                        '(("msr APSR_g, r0 on ARMv6, GE of 0 expected"
+                           :msr-register #xE124F000
+                           (:apsr :expected 0 :actual #x000F0000))))))))
+
 ;; Vectors for the outcome classes that the model's errors decide (see
 ;; error-class in harness.lisp), and mismatches that waivers excuse or do not.
 ;; Each expects what another implementation might have done.
