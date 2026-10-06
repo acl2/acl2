@@ -1869,6 +1869,123 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define stsp-expr-binary ((op binopp)
+                          (arg1 exprp)
+                          (arg1-new exprp)
+                          (arg1-thm-name symbolp)
+                          (arg2 exprp)
+                          (arg2-new exprp)
+                          (arg2-thm-name symbolp)
+                          (info1 type-vinfop)
+                          (info2 type-vinfop)
+                          (gin ginp))
+  :guard (and (expr-unambp arg1)
+              (expr-unambp arg1-new)
+              (expr-unambp arg2)
+              (expr-unambp arg2-new)
+              (expr-annop arg1)
+              (expr-annop arg1-new)
+              (expr-annop arg2)
+              (expr-annop arg2-new))
+  :returns (mv (erp maybe-msgp) (gout goutp))
+  :short "STS proof generation for a binary expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee xeq-expr-binary),
+     but for STS proof generation;
+     unlike that function,
+     it does not perform the transformation,
+     but it only generates proofs,
+     so it is given (the components of)
+     both the old and new expression as inputs,
+     which it sanity-checks."))
+  (b* (((reterr) (irr-gout))
+       ((gin gin) gin)
+       (gout-no-thm (gout-no-thm gin))
+       (arg1-thm-name (symbol-lfix arg1-thm-name))
+       (arg2-thm-name (symbol-lfix arg2-thm-name))
+       ((unless (and arg1-thm-name
+                     arg2-thm-name))
+        (retok gout-no-thm)))
+    (cond
+     ((and (c$::binop-purep op)
+           (c$::binop-strictp op))
+      (b* (((unless (and (expr-purep arg1)
+                         (expr-purep arg2)
+                         (expr-purep arg1-new)
+                         (expr-purep arg2-new)))
+            (retok gout-no-thm))
+           (cop (ldm-binop op)) ; ERP must be NIL
+           ((mv & old-arg1) (ldm-expr arg1)) ; ERP must be NIL
+           ((mv & old-arg2) (ldm-expr arg2)) ; ERP must be NIL
+           ((mv & new-arg1) (ldm-expr arg1-new)) ; ERP must be NIL
+           ((mv & new-arg2) (ldm-expr arg2-new)) ; ERP must be NIL
+           (hints
+            `(("Goal"
+               :in-theory '((:e c::binop-kind)
+                            (:e c::binop-purep)
+                            (:e c::binop-strictp)
+                            (:e c::expr-binary)
+                            (:e c::type-nonchar-integerp)
+                            (:e c::promote-type)
+                            (:e c::uaconvert-types)
+                            (:e c::type-sint)
+                            (:e member-equal)
+                            (:e c::expr-purep)
+                            expr-compustate-vars)
+               :use ((:instance ,arg1-thm-name
+                                (limit (1- limit)))
+                     (:instance ,arg2-thm-name
+                                (old-compst (mv-nth 1 (c::exec-expr
+                                                       ',old-arg1
+                                                       old-compst
+                                                       old-fenv
+                                                       (1- limit))))
+                                (new-compst (mv-nth 1 (c::exec-expr
+                                                       ',new-arg1
+                                                       new-compst
+                                                       new-fenv
+                                                       (1- limit))))
+                                (limit (1- limit)))
+                     (:instance
+                      expr-binary-pure-strict-congruence-under-compustate-equivp
+                      (op ',cop)
+                      (old-arg1 ',old-arg1)
+                      (old-arg2 ',old-arg2)
+                      (new-arg1 ',new-arg1)
+                      (new-arg2 ',new-arg2))
+                     (:instance expr-binary-pure-strict-errors
+                                (op ',cop)
+                                (arg1 ',old-arg1)
+                                (arg2 ',old-arg2)
+                                (fenv old-fenv))))))
+           ((mv thm-event thm-name thm-index)
+            (stsp-gen-expr-thm (expr-binary op
+                                            arg1
+                                            arg2
+                                            (type-vinfo-fix info1))
+                               (expr-binary op
+                                            arg1-new
+                                            arg2-new
+                                            (type-vinfo-fix info2))
+                               gin.vartys
+                               gin.const-new
+                               gin.thm-index
+                               hints)))
+        (retok
+         (make-gout :events (cons thm-event gin.events)
+                    :thm-index thm-index
+                    :thm-name thm-name
+                    :vartys gin.vartys))))
+     ((member-eq (binop-kind op) '(:logand :logor))
+      (retok gout-no-thm))
+     ((eq (binop-kind op) :asg)
+      (retok gout-no-thm))
+     (t (retok gout-no-thm)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define stsp-expr ((old-expr exprp)
                    (new-expr exprp)
                    (old-name identp)
@@ -1909,20 +2026,38 @@
      :binary
      (expr-case
       new-expr
-      :binary (b* (((erp gout) (stsp-expr old-expr.arg1
+      :binary (b* (((unless (equal old-expr.op new-expr.op))
+                    (retmsg$ "The operators ~x0 and ~x1 do not match. ~
+                              This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                              was not called on ~
+                              the old and new code of STRUCT-TYPE-SPLIT."
+                             old-expr.op new-expr.op))
+                   ((erp gout) (stsp-expr old-expr.arg1
                                           new-expr.arg1
                                           old-name
                                           newl-name
                                           newr-name
                                           gin))
+                   (arg1-thm-name (gout->thm-name gout))
                    (gin (gin-update gin gout))
                    ((erp gout) (stsp-expr old-expr.arg2
                                           new-expr.arg2
                                           old-name
                                           newl-name
                                           newr-name
-                                          gin)))
-                (retok gout))
+                                          gin))
+                   (arg2-thm-name (gout->thm-name gout))
+                   (gin (gin-update gin gout)))
+                (stsp-expr-binary old-expr.op ; = new-expr.op
+                                  old-expr.arg1
+                                  new-expr.arg1
+                                  arg1-thm-name
+                                  old-expr.arg2
+                                  new-expr.arg2
+                                  arg2-thm-name
+                                  old-expr.info
+                                  new-expr.info
+                                  gin))
       :otherwise (retmsg$ "The expressions ~x0 and ~x1 do not match. ~
                            This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
                            was not called on ~
