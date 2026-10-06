@@ -8669,11 +8669,15 @@
                         mstate.composite-inputs
                         nil
                         mstate.next-uid-num))
-       (new-info (make-valid-ext-info :type type)))
+       (externals (if (equal type prev.type)
+                      mstate.externals
+                    (treemap::update ident
+                                     (make-valid-ext-info :type type)
+                                     mstate.externals))))
     (valid-merge-externals-loop
      (treemap::next iter)
      (make-valid-merge-state
-      :externals (treemap::update ident new-info mstate.externals)
+      :externals externals
       :completions completions
       :compatible-pairs compatible-pairs
       :composite-inputs composite-inputs
