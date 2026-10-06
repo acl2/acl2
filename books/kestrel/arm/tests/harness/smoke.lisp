@@ -68,6 +68,26 @@
               :regs ((13 . #x3FF8))
               :mem ((#x3FF8 4 #x44) (#x3FFC 4 #x99))))
 
+    ;; Swap a word: all 32 bits of r1 are stored, bit 31 included, and the
+    ;; old word is loaded into r0.
+    (:id "swp r0, r1, [r2]"
+     :pc #x1000 :code (#xE1020091)
+     :regs ((1 . #x87654321) (2 . #x2000))
+     :mem ((#x2000 4 #x11223344))
+     :expect (:pc #x1004
+              :regs ((0 . #x11223344))
+              :mem ((#x2000 4 #x87654321))))
+
+    ;; Swap a byte: all 8 bits of the low byte of r1 are stored, and the old
+    ;; byte is loaded into r0, zero-extended.
+    (:id "swpb r0, r1, [r2]"
+     :pc #x1000 :code (#xE1420091)
+     :regs ((1 . #x123456AB) (2 . #x2000))
+     :mem ((#x2000 1 #x5C))
+     :expect (:pc #x1004
+              :regs ((0 . #x5C))
+              :mem ((#x2000 1 #xAB))))
+
     ;; Unconditional branch forward.  The offset is relative to the
     ;; instruction address plus 8, so 0x1008 + 2*4 = 0x1010.
     (:id "b 0x1010"
