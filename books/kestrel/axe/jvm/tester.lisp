@@ -719,6 +719,37 @@
                                        (cons (cons method-id (if failedp "FAILED" "PASSED")) results-acc)
                                        state))))))
 
+;move
+(defthm class-table-alistp-of-acons
+  (equal (class-table-alistp (acons class-name class-info class-alist))
+         (and (jvm::class-namep class-name)
+              (jvm::class-infop class-info class-name)
+              (class-table-alistp class-alist)))
+  :hints (("Goal" :in-theory (enable class-table-alistp))))
+
+;; Returns (mv erp class-alist state).
+(defun extend-class-alist (class-names root-dir class-alist state)
+  (declare (xargs :guard (and (jvm::class-name-listp class-names) ; do better?
+                              (stringp root-dir)
+                              (class-table-alistp class-alist))
+                  :verify-guards nil ; todo
+                  :stobjs state))
+  (if (endp class-names)
+      (mv (erp-nil) class-alist state)
+    (b* ((class-name (first class-names))
+         ((mv erp
+              class-name-from-class-file
+              class-info
+              & ;field-defconsts
+              state)
+          (read-and-parse-class-file (concatenate 'string root-dir "/" (path-of-class-file-within-dir class-name)) t state))
+         ((when erp) (mv erp nil state))
+         ((when (not (equal class-name class-name-from-class-file)))
+          (er hard? 'extend-class-alist "Class name mismatch: ~s0 and ~s1." class-name class-name-from-class-file)
+          (mv :class-name-mismatch nil state))
+         (class-alist (acons class-name class-info class-alist)))
+      (extend-class-alist (rest class-names) root-dir class-alist state))))
+
 ;; Returns (mv erp event state), but the event is always an
 ;; empty progn.  This may need to be called inside a make-event.
 (defun test-file-fn (path-to-java-file ;; we prepend the cbd if this is not an absolute path (TODO: Perhaps instead just take the name of the class and use the classpath to find it?)
@@ -758,50 +789,31 @@
        ;; TODO: Any way to track these dependencies?
 
        (class-alist nil) ; better name than nil?
-       ((mv erp
-            & ;class-name
-            java.lang.object-class-info
-            & ;field-defconsts
-            state)
-        (read-and-parse-class-file (concatenate 'string java-bootstrap-classes-root "/" (path-of-class-file-within-dir "java.lang.Object")) t state))
+       ((mv erp class-alist state)
+        (extend-class-alist '("java.lang.Object"
+                              "java.lang.Class"
+                              "java.lang.Math")
+                            java-bootstrap-classes-root
+                            class-alist state))
        ((when erp) (mv erp nil state))
-       (class-alist (acons "java.lang.Object" java.lang.object-class-info class-alist))
-
-       ((mv erp
-            & ;class-name
-            java.lang.class-class-info
-            & ;field-defconsts
-            state)
-        (read-and-parse-class-file (concatenate 'string java-bootstrap-classes-root "/" (path-of-class-file-within-dir "java.lang.Class")) t state))
-       ((when erp) (mv erp nil state))
-       (class-alist (acons "java.lang.Class" java.lang.class-class-info class-alist))
-
-       ((mv erp
-            & ;class-name
-            java.lang.math-class-info
-            & ;field-defconsts
-            state)
-        (read-and-parse-class-file (concatenate 'string java-bootstrap-classes-root "/" (path-of-class-file-within-dir "java.lang.Math")) t state))
-       ((when erp) (mv erp nil state))
-       (class-alist (acons "java.lang.Math" java.lang.math-class-info class-alist))
 
        (absolute-path-to-java-file
         (if (equal #\/ (char path-to-java-file 0))
             path-to-java-file ; starts with slash so already absolute
           (concatenate 'string (cbd) path-to-java-file)))
        (- (cw "Running tester on:~% ~s0.~%~%" absolute-path-to-java-file)) ;ex: "/home/emily/foo/bar/baz/Search.java"
-       (base-name (substring-before-last-occurrence absolute-path-to-java-file #\.)) ;strip the dot and extension, ex: "/home/emily/foo/bar/baz/Search"
-       ;; (- (cw "Base name: ~s0~%" base-name))
-       ;; (root-of-user-class-hierarchy (substring-before-last-occurrence base-name #\/)) ;; for now, we assume the given class is at the top level of the hierarchy (todo: deduce the root using the fully qualified name stored in the class file) ex: "/home/emily/foo/bar/baz"
+       (absolute-path-no-extension (substring-before-last-occurrence absolute-path-to-java-file #\.)) ;strip the dot and extension, ex: "/home/emily/foo/bar/baz/Search"
+       ;; (- (cw "Base name: ~s0~%" absolute-path-no-extension))
+       ;; (root-of-user-class-hierarchy (substring-before-last-occurrence absolute-path-no-extension #\/)) ;; for now, we assume the given class is at the top level of the hierarchy (todo: deduce the root using the fully qualified name stored in the class file) ex: "/home/emily/foo/bar/baz"
        ;; (- (cw "Directory: ~s0~%" root-of-user-class-hierarchy))
-       (class-name (substring-after-last-occurrence base-name #\/)) ;todo: add support for fully-qualified names
+       (class-name (substring-after-last-occurrence absolute-path-no-extension #\/)) ;todo: add support for fully-qualified names
        ;; (- (cw "Class name: ~s0~%" class-name))
-       (class-file-name (concatenate 'string base-name ".class"))
-       ;; (- (cw "Class file name: ~s0~%" class-file-name))
+       (absolute-path-to-class-file (concatenate 'string absolute-path-no-extension ".class"))
+       ;; (- (cw "Class file name: ~s0~%" absolute-path-to-class-file))
        ;; Read the class file:
        ((mv erp class-name-from-class-file class-info
             & ; field-defconsts
-            state) (read-and-parse-class-file class-file-name t state)) ; todo: pass an absolute path?
+            state) (read-and-parse-class-file absolute-path-to-class-file t state)) ; todo: pass an absolute path?
        ((when erp) (mv erp nil state))
        ((when (not (equal class-name-from-class-file
                           class-name)))
