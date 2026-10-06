@@ -1524,7 +1524,8 @@
     (expr-case
      expr
      :var
-     (b* ((name+type (omap::assoc expr.name (senv->expr-vars senv)))
+     (b* ((name+type (omap::assoc expr.name
+                                  (expr-senv->exprs (senv->eenv senv))))
           ((unless name+type) (reserr nil))
           ((ok type) (senv-expand-type (cdr name+type) senv)))
        (make-type+expr :type type :expr (expr-fix expr)))

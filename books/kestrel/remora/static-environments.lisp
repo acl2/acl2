@@ -87,6 +87,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod expr-senv
+  :short "Fixtype of expression static environments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An expression static environment is
+     a map from the expression variables in scope to their types.
+     This corresponds to @($\\Gamma$)."))
+  ((exprs string-type-map))
+  :pred expr-senvp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod senv
   :short "Fixtype of static environments."
   :long
@@ -99,8 +112,7 @@
     (xdoc::li
      "A type static environment.")
     (xdoc::li
-     "A map from the expression variables in scope to their types.
-      This corresponds to @($\\Gamma$)."))
+     "An expression static environment."))
    (xdoc::p
     "Variables are in five separate name spaces:
      one for dimension variables,
@@ -115,7 +127,7 @@
      in the three components and via fixtype sum tags."))
   ((ienv ispace-senv)
    (tenv type-senv)
-   (expr-vars string-type-map))
+   (eenv expr-senv))
   :pred senvp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -390,7 +402,7 @@
      It only contains the primitive operations in scope."))
   (make-senv :ienv (ispace-senv nil)
              :tenv (type-senv nil)
-             :expr-vars (primop-types)))
+             :eenv (expr-senv (primop-types))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -515,11 +527,13 @@
    (xdoc::p
     "This may override an existing variable,
      which is intended hiding behavior."))
-  (b* ((expr-vars (senv->expr-vars senv))
-       (new-expr-vars (omap::update (str::str-fix var)
-                                    (type-ensure-array type)
-                                    expr-vars)))
-    (change-senv senv :expr-vars new-expr-vars)))
+  (b* ((eenv (senv->eenv senv))
+       (emap (expr-senv->exprs eenv))
+       (new-emap (omap::update (str::str-fix var)
+                               (type-ensure-array type)
+                               emap))
+       (new-eenv (change-expr-senv eenv :exprs new-emap)))
+    (change-senv senv :eenv new-eenv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

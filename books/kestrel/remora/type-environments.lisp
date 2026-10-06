@@ -132,8 +132,8 @@
      operations, with no ispace or type variables."))
   (make-senv :ienv (ispace-senv nil)
              :tenv (type-senv nil)
-             :expr-vars (omap::update* (string-type-map-fix tenv)
-                                       (primop-types))))
+             :eenv (expr-senv (omap::update* (string-type-map-fix tenv)
+                                             (primop-types)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -175,7 +175,8 @@
        (sbs (check-bind-list binds (tenv-to-senv tenv)))
        ((when (reserrp sbs)) tenv)
        (new (restrict-to-keys (bind-list-bound-expr-vars binds)
-                              (senv->expr-vars (senv+binds->senv sbs))))
+                              (expr-senv->exprs
+                               (senv->eenv (senv+binds->senv sbs)))))
        ((unless (type-map-all-wfp new)) tenv))
     (omap::update* new tenv))
   :guard-hints (("Goal" :in-theory (enable senv+binds-p-when-result-not-error))))
