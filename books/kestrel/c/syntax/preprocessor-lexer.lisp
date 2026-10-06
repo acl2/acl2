@@ -1517,9 +1517,10 @@
    (xdoc::p
     "When encountering the end of file,
      we succeed and return the line comment,
-     even though [C17] prohibits a non-empty file to end without a new line.
+     even though [C17] [C23] prohibit a non-empty file
+     to end without a new line.
      However, this condition can be enforced elsewhere,
-     and GCC actually relaxes this condition.
+     and GCC and Clang actually relaxes this condition.
      So it is more flexible for this lexing function
      to handle end of file as successfully ending the line comment."))
   (b* ((ppstate (ppstate-fix ppstate))
