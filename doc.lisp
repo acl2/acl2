@@ -107264,6 +107264,11 @@ Bug Fixes From AI via Eric Smith
   could erase refinements; see [community-book]
   [30m[47msystem/tests/equivalence-coarsenings-reset.lisp[0m[0m.
 
+  Fixed a soundness bug in a check on terms, which allowed illegal use
+  of [type-prescription] rules saved in a book's [certificate].  For
+  an example see [community-book]
+  [30m[47msystem/tests/cert-data-guarded-termp.lisp[0m[0m.
+
 
 Other Bug Fixes
 
@@ -107343,6 +107348,9 @@ Other Bug Fixes
   pass of the [30m[47mencapsulate[0m[0m is used as the value in the second pass.
   But unlike before, the body of the [30m[47mdefconst[0m[0m form is translated
   during both passes, not just the first.
+
+  Fixed a bug reported by Eric Smith that resulted in a raw Lisp error,
+  instead of a guard violation, for [30m[47m(unary-df/ (df0))[0m[0m.
 
 
 Changes at the System Level

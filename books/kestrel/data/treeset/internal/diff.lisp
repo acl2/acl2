@@ -67,7 +67,7 @@
                  (mbe :logic (tree-join-at (tree-element->val (tree->head x))
                                            left right)
                       :exec (tree-join left right))
-               (tree-node (tree->head x) left right))))))
+               (tree-node-with-hint (tree->head x) left right x))))))
   :measure (+ (acl2-count x)
               (acl2-count y))
   :verify-guards :after-returns
@@ -204,7 +204,7 @@
                       (right (acl2-number-tree-diff (tree->right x) right)))
                   (if in
                       (tree-join left right)
-                    (tree-node (tree->head x) left right)))))))
+                    (tree-node-with-hint (tree->head x) left right x)))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-diff
                                            acl2-number-tree-diff
@@ -237,7 +237,7 @@
                       (right (symbol-tree-diff (tree->right x) right)))
                   (if in
                       (tree-join left right)
-                    (tree-node (tree->head x) left right)))))))
+                    (tree-node-with-hint (tree->head x) left right x)))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-diff
                                            symbol-tree-diff
@@ -269,7 +269,7 @@
                       (right (eqlable-tree-diff (tree->right x) right)))
                   (if in
                       (tree-join left right)
-                    (tree-node (tree->head x) left right)))))))
+                    (tree-node-with-hint (tree->head x) left right x)))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-diff
                                            eqlable-tree-diff

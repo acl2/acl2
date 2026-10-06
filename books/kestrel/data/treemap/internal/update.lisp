@@ -18,6 +18,7 @@
 
 (include-book "kestrel/data/utilities/fixed-size-words/u32-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
+(include-book "kestrel/data/utilities/total-order/compare-defs" :dir :system)
 
 (include-book "tree-defs")
 (include-book "rotate-defs")
@@ -76,43 +77,39 @@
       @(tsee tree-update-with-hash) for a variant which accepts a precomputed
       hash."))
   (if (tree-empty-p tree)
-      (tree-node (tree-element (hash key) key val) nil nil)
+      (tree-leaf (tree-element (hash key) key val))
     (let* ((head (tree->head tree))
            (head-key (tree-element->key head)))
       ;; TODO: Should the << check come first? Most of the time, key and
       ;; head-key are not equal. If so, make the same change to treesets.
       ;; - Actually, we probably want a function that returns :lt, :eq, or :gt.
       ;;   Need better tests first though.
-      (cond ((equal key head-key)
-             (tree-node (tree-element (tree-element->hash head) key val)
-                        (tree->left tree)
-                        (tree->right tree)))
-            ((<< key head-key)
-             (let* ((left$ (tree-update key val (tree->left tree)))
-                    (head-left$ (tree->head left$))
-                    (tree$ (tree-node head
-                                      left$
-                                      (tree->right tree))))
-               (if (heap<-with-hashes
-                     head-key
-                     (tree-element->key head-left$)
-                     (tree-element->hash head)
-                     (tree-element->hash head-left$))
-                   (rotate-right tree$)
-                 tree$)))
-            (t
-             (let* ((right$ (tree-update key val (tree->right tree)))
-                    (head-right$ (tree->head right$))
-                    (tree$ (tree-node head
-                                      (tree->left tree)
-                                      right$)))
-               (if (heap<-with-hashes
-                     head-key
-                     (tree-element->key head-right$)
-                     (tree-element->hash head)
-                     (tree-element->hash head-right$))
-                   (rotate-left tree$)
-                 tree$))))))
+      (mv-let (equalp ltp)
+              (data::compare-<< key head-key)
+        (cond (equalp
+               (tree-node (tree-element (tree-element->hash head) key val)
+                          (tree->left tree)
+                          (tree->right tree)))
+              (ltp
+               (let* ((left$ (tree-update key val (tree->left tree)))
+                      (head-left$ (tree->head left$)))
+                 (if (heap<-with-hashes
+                       head-key
+                       (tree-element->key head-left$)
+                       (tree-element->hash head)
+                       (tree-element->hash head-left$))
+                     (tree-node-rotate-right head left$ (tree->right tree))
+                   (tree-node head left$ (tree->right tree)))))
+              (t
+               (let* ((right$ (tree-update key val (tree->right tree)))
+                      (head-right$ (tree->head right$)))
+                 (if (heap<-with-hashes
+                       head-key
+                       (tree-element->key head-right$)
+                       (tree-element->hash head)
+                       (tree-element->hash head-right$))
+                     (tree-node-rotate-left head (tree->left tree) right$)
+                   (tree-node head (tree->left tree) right$))))))))
   ;; Verified below
   :verify-guards nil)
 
@@ -286,7 +283,7 @@
   :guard (mbe :logic (equal (hash key) hash)
               :exec (data::u32-equal (hash key) hash))
   (mbe :logic (tree-update key val nil)
-       :exec (tree-node (tree-element hash key val) nil nil))
+       :exec (tree-leaf (tree-element hash key val)))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable data::u32-equal
@@ -313,45 +310,41 @@
   (mbe :logic (tree-update key val tree)
        :exec
        (if (tree-empty-p tree)
-           (tree-node (tree-element hash key val) nil nil)
+           (tree-leaf (tree-element hash key val))
          (let* ((head (tree->head tree))
                 (head-key (tree-element->key head)))
-           (cond ((equal key head-key)
-                  (tree-node (tree-element hash key val)
-                             (tree->left tree)
-                             (tree->right tree)))
-                 ((<< key head-key)
-                  (let* ((left$ (tree-update-with-hash key
-                                                       hash
-                                                       val
-                                                       (tree->left tree)))
-                         (head-left$ (tree->head left$))
-                         (tree$ (tree-node head
-                                           left$
-                                           (tree->right tree))))
-                    (if (heap<-with-hashes
-                          head-key
-                          (tree-element->key head-left$)
-                          (tree-element->hash head)
-                          (tree-element->hash head-left$))
-                        (rotate-right tree$)
-                      tree$)))
-                 (t
-                  (let* ((right$ (tree-update-with-hash key
-                                                        hash
-                                                        val
-                                                        (tree->right tree)))
-                         (head-right$ (tree->head right$))
-                         (tree$ (tree-node head
-                                           (tree->left tree)
-                                           right$)))
-                    (if (heap<-with-hashes
-                          head-key
-                          (tree-element->key head-right$)
-                          (tree-element->hash head)
-                          (tree-element->hash head-right$))
-                        (rotate-left tree$)
-                      tree$)))))))
+           (mv-let (equalp ltp)
+                   (data::compare-<< key head-key)
+             (cond (equalp
+                    (tree-node (tree-element hash key val)
+                               (tree->left tree)
+                               (tree->right tree)))
+                   (ltp
+                    (let* ((left$ (tree-update-with-hash key
+                                                         hash
+                                                         val
+                                                         (tree->left tree)))
+                           (head-left$ (tree->head left$)))
+                      (if (heap<-with-hashes
+                            head-key
+                            (tree-element->key head-left$)
+                            (tree-element->hash head)
+                            (tree-element->hash head-left$))
+                          (tree-node-rotate-right head left$ (tree->right tree))
+                        (tree-node head left$ (tree->right tree)))))
+                   (t
+                    (let* ((right$ (tree-update-with-hash key
+                                                          hash
+                                                          val
+                                                          (tree->right tree)))
+                           (head-right$ (tree->head right$)))
+                      (if (heap<-with-hashes
+                            head-key
+                            (tree-element->key head-right$)
+                            (tree-element->hash head)
+                            (tree-element->hash head-right$))
+                          (tree-node-rotate-left head (tree->left tree) right$)
+                        (tree-node head (tree->left tree) right$)))))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable data::u32-equal
                                            tree-update-with-hash)
@@ -366,43 +359,39 @@
   (mbe :logic (tree-update key val tree)
        :exec
        (if (tree-empty-p tree)
-           (tree-node (tree-element (acl2-number-hash key) key val) nil nil)
+           (tree-leaf (tree-element (acl2-number-hash key) key val))
          (let* ((head (tree->head tree))
                 (head-key (tree-element->key head)))
-           (cond ((= key head-key)
-                  (tree-node (tree-element (tree-element->hash head) key val)
-                             (tree->left tree)
-                             (tree->right tree)))
-                 ((data::acl2-number-<< key head-key)
-                  (let* ((left$ (acl2-number-tree-update key
-                                                         val
-                                                         (tree->left tree)))
-                         (head-left$ (tree->head left$))
-                         (tree$ (tree-node head
-                                           left$
-                                           (tree->right tree))))
-                    (if (heap<-with-hashes
-                          head-key
-                          (tree-element->key head-left$)
-                          (tree-element->hash head)
-                          (tree-element->hash head-left$))
-                        (rotate-right tree$)
-                      tree$)))
-                 (t
-                  (let* ((right$ (acl2-number-tree-update key
-                                                          val
-                                                          (tree->right tree)))
-                         (head-right$ (tree->head right$))
-                         (tree$ (tree-node head
-                                           (tree->left tree)
-                                           right$)))
-                    (if (heap<-with-hashes
-                          head-key
-                          (tree-element->key head-right$)
-                          (tree-element->hash head)
-                          (tree-element->hash head-right$))
-                        (rotate-left tree$)
-                      tree$)))))))
+           (mv-let (equalp ltp)
+                   (data::acl2-number-compare-<< key head-key)
+             (cond (equalp
+                    (tree-node (tree-element (tree-element->hash head) key val)
+                               (tree->left tree)
+                               (tree->right tree)))
+                   (ltp
+                    (let* ((left$ (acl2-number-tree-update key
+                                                           val
+                                                           (tree->left tree)))
+                           (head-left$ (tree->head left$)))
+                      (if (heap<-with-hashes
+                            head-key
+                            (tree-element->key head-left$)
+                            (tree-element->hash head)
+                            (tree-element->hash head-left$))
+                          (tree-node-rotate-right head left$ (tree->right tree))
+                        (tree-node head left$ (tree->right tree)))))
+                   (t
+                    (let* ((right$ (acl2-number-tree-update key
+                                                            val
+                                                            (tree->right tree)))
+                           (head-right$ (tree->head right$)))
+                      (if (heap<-with-hashes
+                            head-key
+                            (tree-element->key head-right$)
+                            (tree-element->hash head)
+                            (tree-element->hash head-right$))
+                          (tree-node-rotate-left head (tree->left tree) right$)
+                        (tree-node head (tree->left tree) right$)))))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable acl2-number-tree-update
                                            tree-keys-acl2-numberp)
@@ -417,41 +406,39 @@
   (mbe :logic (tree-update key val tree)
        :exec
        (if (tree-empty-p tree)
-           (tree-node (tree-element (symbol-hash key) key val) nil nil)
+           (tree-leaf (tree-element (symbol-hash key) key val))
          (let* ((head (tree->head tree))
                 (head-key (tree-element->key head)))
-           (cond ((eq key head-key)
-                  (tree-node (tree-element (tree-element->hash head) key val)
-                             (tree->left tree)
-                             (tree->right tree)))
-                 ((data::symbol-<< key head-key)
-                  (let* ((left$ (symbol-tree-update key val (tree->left tree)))
-                         (head-left$ (tree->head left$))
-                         (tree$ (tree-node head
-                                           left$
-                                           (tree->right tree))))
-                    (if (heap<-with-hashes
-                          head-key
-                          (tree-element->key head-left$)
-                          (tree-element->hash head)
-                          (tree-element->hash head-left$))
-                        (rotate-right tree$)
-                      tree$)))
-                 (t
-                  (let* ((right$ (symbol-tree-update key
-                                                     val
-                                                     (tree->right tree)))
-                         (head-right$ (tree->head right$))
-                         (tree$ (tree-node head
-                                           (tree->left tree)
-                                           right$)))
-                    (if (heap<-with-hashes
-                          head-key
-                          (tree-element->key head-right$)
-                          (tree-element->hash head)
-                          (tree-element->hash head-right$))
-                        (rotate-left tree$)
-                      tree$)))))))
+           (mv-let (equalp ltp)
+                   (data::symbol-compare-<< key head-key)
+             (cond (equalp
+                    (tree-node (tree-element (tree-element->hash head) key val)
+                               (tree->left tree)
+                               (tree->right tree)))
+                   (ltp
+                    (let* ((left$ (symbol-tree-update key
+                                                      val
+                                                      (tree->left tree)))
+                           (head-left$ (tree->head left$)))
+                      (if (heap<-with-hashes
+                            head-key
+                            (tree-element->key head-left$)
+                            (tree-element->hash head)
+                            (tree-element->hash head-left$))
+                          (tree-node-rotate-right head left$ (tree->right tree))
+                        (tree-node head left$ (tree->right tree)))))
+                   (t
+                    (let* ((right$ (symbol-tree-update key
+                                                       val
+                                                       (tree->right tree)))
+                           (head-right$ (tree->head right$)))
+                      (if (heap<-with-hashes
+                            head-key
+                            (tree-element->key head-right$)
+                            (tree-element->hash head)
+                            (tree-element->hash head-right$))
+                          (tree-node-rotate-left head (tree->left tree) right$)
+                        (tree-node head (tree->left tree) right$)))))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable symbol-tree-update
                                            tree-keys-symbolp)
@@ -466,41 +453,39 @@
   (mbe :logic (tree-update key val tree)
        :exec
        (if (tree-empty-p tree)
-           (tree-node (tree-element (eqlable-hash key) key val) nil nil)
+           (tree-leaf (tree-element (eqlable-hash key) key val))
          (let* ((head (tree->head tree))
                 (head-key (tree-element->key head)))
-           (cond ((eql key head-key)
-                  (tree-node (tree-element (tree-element->hash head) key val)
-                             (tree->left tree)
-                             (tree->right tree)))
-                 ((data::eqlable-<< key head-key)
-                  (let* ((left$ (eqlable-tree-update key val (tree->left tree)))
-                         (head-left$ (tree->head left$))
-                         (tree$ (tree-node head
-                                           left$
-                                           (tree->right tree))))
-                    (if (heap<-with-hashes
-                          head-key
-                          (tree-element->key head-left$)
-                          (tree-element->hash head)
-                          (tree-element->hash head-left$))
-                        (rotate-right tree$)
-                      tree$)))
-                 (t
-                  (let* ((right$ (eqlable-tree-update key
-                                                      val
-                                                      (tree->right tree)))
-                         (head-right$ (tree->head right$))
-                         (tree$ (tree-node head
-                                           (tree->left tree)
-                                           right$)))
-                    (if (heap<-with-hashes
-                          head-key
-                          (tree-element->key head-right$)
-                          (tree-element->hash head)
-                          (tree-element->hash head-right$))
-                        (rotate-left tree$)
-                      tree$)))))))
+           (mv-let (equalp ltp)
+                   (data::eqlable-compare-<< key head-key)
+             (cond (equalp
+                    (tree-node (tree-element (tree-element->hash head) key val)
+                               (tree->left tree)
+                               (tree->right tree)))
+                   (ltp
+                    (let* ((left$ (eqlable-tree-update key
+                                                       val
+                                                       (tree->left tree)))
+                           (head-left$ (tree->head left$)))
+                      (if (heap<-with-hashes
+                            head-key
+                            (tree-element->key head-left$)
+                            (tree-element->hash head)
+                            (tree-element->hash head-left$))
+                          (tree-node-rotate-right head left$ (tree->right tree))
+                        (tree-node head left$ (tree->right tree)))))
+                   (t
+                    (let* ((right$ (eqlable-tree-update key
+                                                        val
+                                                        (tree->right tree)))
+                           (head-right$ (tree->head right$)))
+                      (if (heap<-with-hashes
+                            head-key
+                            (tree-element->key head-right$)
+                            (tree-element->hash head)
+                            (tree-element->hash head-right$))
+                          (tree-node-rotate-left head (tree->left tree) right$)
+                        (tree-node head (tree->left tree) right$)))))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable eqlable-tree-update
                                            tree-keys-eqlablep)
