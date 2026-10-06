@@ -1245,6 +1245,16 @@ struct s arr[] = {1, [0].y = 2, {.x = 3, 4}, 5};
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
+ "__float80 x;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "__float128 x;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
  "void (*f(float x, double y))(int z) {
   return (void (*)(int))0;
 }
