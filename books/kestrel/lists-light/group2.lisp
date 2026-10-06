@@ -1,7 +1,7 @@
 ; A variant of group that drops any incomplete final group.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,11 +15,12 @@
 
 (include-book "kestrel/typed-lists-light/items-have-len" :dir :system)
 (include-book "kestrel/typed-lists-light/all-true-listp" :dir :system)
-(include-book "firstn") ;todo: use take instead?
+(include-book "firstn-def") ;todo: use take instead?
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/ceiling" :dir :system))
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system)) ;todo
+(local (include-book "firstn"))
 (local (include-book "nth"))
 (local (include-book "nthcdr"))
 (local (include-book "len"))
