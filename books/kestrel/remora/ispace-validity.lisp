@@ -24,9 +24,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We formalize the validity of ispaces via inference rules.
-     The sorting rules for ispaces in [thesis] [arxiv] [esop]
-     prove judgements of the form
+    "We formalize the validity of ispaces via inference rules
+     corresponding to the sorting rules in [thesis] [arxiv] [esop],
+     which prove judgements of the form
      @($\\Theta \\vdash \\iota :: \\gamma$),
      where
      @($\\Theta$) is a sort environment that assigns sorts to variables,

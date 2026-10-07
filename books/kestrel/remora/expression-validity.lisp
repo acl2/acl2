@@ -27,9 +27,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We formalize the validity of expressions via inference rules.
-     The typing rules for expressions and atoms in [thesis] [arxiv] [esop]
-     prove judgements of the form
+    "We formalize the validity of expressions via inference rules
+     corresponding to the typing rules in [thesis] [arxiv] [esop],
+     which prove judgements of the form
      @($\\Theta; \\Delta; \\Gamma \\vdash t : \\tau$),
      where
      @($\\Theta$) is a sort environment that assigns sorts to variables,

@@ -23,9 +23,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We formalize the validity of types via inference rules.
-     The kinding rules for types in [thesis] [arxiv]
-     prove judgements of the form
+    "We formalize the validity of types via inference rules
+     corresponding to the kinding rules in [thesis] [arxiv],
+     which prove judgements of the form
      @($\\Theta; \\Delta \\vdash \\tau :: k$),
      where
      @($\\Theta$) is a sort environment that assigns sorts to variables,
