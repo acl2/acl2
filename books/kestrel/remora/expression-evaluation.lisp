@@ -968,16 +968,21 @@
        when present, is matched by the value.")
      (xdoc::p
       "For a function binding,
-       we evaluate the parameter types to type values,
-       and we extend the dynamic environment
-       to bind the variable to the resulting lambda value;
-       this is the value that the binding would yield
+       we extend the dynamic environment
+       to bind the variable to the lambda value
+       that the binding would yield
        after being desugared to a value binding.
+       The value is formed in the same curried way as
+       for a term lambda abstraction in @(tsee eval-atom):
+       it binds the first parameter, whose type is evaluated to a type value,
+       and its body is the lambda abstraction over the remaining parameters
+       (see @(tsee lambda-curried-body)), if there are any,
+       whose types, along with the optional result type,
+       are evaluated only when that inner abstraction is;
+       thus, the restricted environment of the closure must retain
+       the type and ispace variables free in them.
        If the optional result type is present,
-       we evaluate it, ignoring the resulting type value for now.
-       Since the parameter types are already evaluated for the lambda value,
-       the function type value can be assembled from these pieces
-       when we need to check it against the lambda value.
+       we also evaluate it here, ignoring the resulting type value for now.
        A function binding with no parameters
        is treated as a plain value binding,
        consistently with the type checker and with [impl],
@@ -1063,15 +1068,14 @@
                     (expr-denv-add-expr bind.var val denv)))
                  ((ok param) (eval-var+type? (car bind.params)
                                              (expr-denv->tenv denv)))
+                 (body (lambda-curried-body bind.params bind.expr bind.type?))
                  (val (make-expr-value-lambda
                        :param param
-                       :body (lambda-curried-body bind.params
-                                                  bind.expr
-                                                  bind.type?)
+                       :body body
                        :type? nil
                        :denv (expr-denv-restrict
-                              (expr-free-ispace-vars bind.expr)
-                              (expr-free-type-vars bind.expr)
+                              (expr-free-ispace-vars body)
+                              (expr-free-type-vars body)
                               (set::difference
                                (expr-free-expr-vars bind.expr)
                                (set::mergesort
