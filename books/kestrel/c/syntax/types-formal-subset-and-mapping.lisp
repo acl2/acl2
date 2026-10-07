@@ -292,8 +292,8 @@
    :ulong (type-ulong)
    :sllong (type-sllong)
    :ullong (type-ullong)
-   ;; TODO: we can't really create a struct, unless we wanted to invent a UID
-   ;; and tunit. Then, we could perhaps create an incomplete struct type.
+   ;; TODO: we can't really create a struct, unless we wanted to invent a UID.
+   ;; Then, we could perhaps create an incomplete struct type.
    :struct (irr-type)
    :pointer (make-type-pointer :to (ildm-type ctype.to))
    :array (make-type-array
