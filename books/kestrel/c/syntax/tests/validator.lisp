@@ -990,8 +990,8 @@ int main(void) {
                currentp
                (valid-ord-info-case
                  ord-info?
-                 :objfun (uid-equiv ord-info?.uid
-                                    (uid-local 0 (filepath "test0")))
+                 :objfun (equal ord-info?.uid
+                                (uid-local 0 (filepath "test0")))
                  :otherwise nil))))
 
 (test-valid
@@ -1015,8 +1015,8 @@ void foo(void) {
                currentp
                (valid-ord-info-case
                  ord-info?
-                 :objfun (uid-equiv ord-info?.uid
-                                    (uid-local 0 (filepath "test0")))
+                 :objfun (equal ord-info?.uid
+                                (uid-local 0 (filepath "test0")))
                  :otherwise nil))))
 
 (test-valid
@@ -1040,8 +1040,8 @@ static void foo(void) {
                currentp
                (valid-ord-info-case
                  ord-info?
-                 :objfun (uid-equiv ord-info?.uid
-                                    (uid-local 0 (filepath "test0")))
+                 :objfun (equal ord-info?.uid
+                                (uid-local 0 (filepath "test0")))
                  :otherwise nil))))
 
 (test-valid

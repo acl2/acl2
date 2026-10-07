@@ -262,7 +262,7 @@
         (type-case
           y
           :struct
-          (b* (((when (uid-equiv x.uid y.uid)) t)
+          (b* (((when (equal x.uid y.uid)) t)
                (same-tunit? (uid-same-tunit-p x.uid y.uid))
                (c23p? (c::standard-case (ienv->std ienv) :c23)))
             (type-struni-tag/members-case
@@ -316,7 +316,7 @@
         (type-case
           y
           :union
-          (b* (((when (uid-equiv x.uid y.uid)) t)
+          (b* (((when (equal x.uid y.uid)) t)
                (same-tunit? (uid-same-tunit-p x.uid y.uid))
                (c23p? (c::standard-case (ienv->std ienv) :c23)))
             (type-struni-tag/members-case
@@ -1537,7 +1537,7 @@
         (type-case
           y
           :struct
-          (b* (((when (uid-equiv x.uid y.uid)) (mv t visited))
+          (b* (((when (equal x.uid y.uid)) (mv t visited))
                (same-tunit? (uid-same-tunit-p x.uid y.uid))
                (c23p? (c::standard-case (ienv->std ienv) :c23)))
             (type-struni-tag/members-case
@@ -1585,7 +1585,7 @@
         (type-case
           y
           :union
-          (b* (((when (uid-equiv x.uid y.uid)) (mv t visited))
+          (b* (((when (equal x.uid y.uid)) (mv t visited))
                (same-tunit? (uid-same-tunit-p x.uid y.uid))
                (c23p? (c::standard-case (ienv->std ienv) :c23)))
             (type-struni-tag/members-case

@@ -1212,12 +1212,12 @@
                :struct
                (type-case
                  y
-                 :struct (uid-equiv x.uid y.uid)
+                 :struct (equal x.uid y.uid)
                  :otherwise nil)
                :union
                (type-case
                  y
-                 :union (uid-equiv x.uid y.uid)
+                 :union (equal x.uid y.uid)
                  :otherwise nil)
                :enum
                (type-case
