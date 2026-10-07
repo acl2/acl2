@@ -637,7 +637,10 @@
           (type-listp types)
           (atom-ok ivars tvars evars atom type)
           (atoms-ok ivars tvars evars atoms types))
-         (atoms-ok ivars tvars evars (cons atom atoms) (cons type types)))))
+         (atoms-ok ivars tvars evars (cons atom atoms) (cons type types))))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable* expression/atom-validity-definition-validp-defs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
