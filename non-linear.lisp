@@ -656,7 +656,7 @@
                                                 (base-poly (cons-tag-trees
                                                             ttree1
                                                             inv-var-lbd-ttree)
-                                                           var-lbd-rel
+                                                           inv-var-lbd-rel
                                                            t
                                                            nil))
                               bounds-polys1))

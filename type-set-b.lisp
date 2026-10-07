@@ -8630,7 +8630,9 @@
            (type-set-relieve-hyps
             rune target (cdr hyps) (cdr backchain-limit-lst)
             force-flg dwp
-            (cons (cons (fargn hyp 1) (fargn hyp 2)) alist)
+            (acons (fargn hyp 1)
+                   (sublis-var alist (fargn hyp 2))
+                   alist)
             type-alist ancestors ens wrld ttree ttree0
             pot-lst pt backchain-limit (1+ bkptr)))
           (t

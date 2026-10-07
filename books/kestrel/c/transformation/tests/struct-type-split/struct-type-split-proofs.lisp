@@ -40,4 +40,4 @@
                           :right-members ("b"))
 
 ; Ensure expected last generated theorem is present.
-(assert-event (acl2::theorem-symbolp '*new*-thm-1 (w state)))
+(assert-event (acl2::theorem-symbolp '*new*-thm-3 (w state)))

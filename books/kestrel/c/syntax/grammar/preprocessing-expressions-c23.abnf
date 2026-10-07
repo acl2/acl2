@@ -28,14 +28,14 @@ h-pp-tokens = h-preprocessing-token
 header-name-tokens = string-literal
                    / "<" h-pp-tokens ">"
 
-has-include-expression = "__has_include" "(" header-name ")"
-                       / "__has_include" "(" header-name-tokens ")"
+has-include-expression = %s"__has_include" "(" header-name ")"
+                       / %s"__has_include" "(" header-name-tokens ")"
 
 has-embed-expression =
-    "__has_embed" "(" header-name [ embed-parameter-sequence ] ")"
-  / "__has_embed" "(" header-name-tokens [ pp-balanced-token-sequence ] ")"
+    %s"__has_embed" "(" header-name [ embed-parameter-sequence ] ")"
+  / %s"__has_embed" "(" header-name-tokens [ pp-balanced-token-sequence ] ")"
 
-has-c-attribute-express = "__has_c_attribute" "(" pp-tokens ")"
+has-c-attribute-express = %s"__has_c_attribute" "(" pp-tokens ")"
 
 ; The following rule is not in [C23].
 ; We use it connect the above expressions
