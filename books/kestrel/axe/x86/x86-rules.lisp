@@ -359,11 +359,11 @@
 (def-constant-opener x86isa::vex-opcode-modr/m-p$inline)
 (def-constant-opener x86isa::vex-prefixes-map-p$inline)
 
-(def-constant-opener vex->vvvv$inline)
-(def-constant-opener vex->l$inline)
-(def-constant-opener vex->pp$inline)
-(def-constant-opener vex->r$inline)
-(def-constant-opener vex->w$inline)
+(def-constant-opener x86isa::vex->vvvv$notinline)
+(def-constant-opener x86isa::vex->l$notinline)
+(def-constant-opener x86isa::vex->pp$notinline)
+(def-constant-opener x86isa::vex->r$notinline)
+(def-constant-opener x86isa::vex->w$notinline)
 (def-constant-opener vex->b$inline)
 (def-constant-opener vex->x$inline)
 
