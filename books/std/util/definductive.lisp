@@ -4813,6 +4813,7 @@
    (print-events true-listp :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-gen-preds ((pred-infos defind-pred-info-listp)
                           (irule-infos defind-irule-info-listp)
                           (leveled-cliques symbol-set-list-listp)
@@ -5931,6 +5932,7 @@
    (section-events true-listp :rule-classes :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-gen-events ((name symbolp)
                            (pred-infos defind-pred-info-listp)
                            (irule-infos defind-irule-info-listp)
