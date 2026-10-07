@@ -2925,14 +2925,13 @@
      into an equality of the field with itself,
      silently defining the wrong relation.")
    (xdoc::p
-    "We take the names of the premise fields from
-     @(tsee defind-gen-prem-fields),
-     so that this check cannot drift from what is generated.
-     This is why this check is here,
-     among the event generation code,
-     instead of with the rest of the input processing;
-     it also needs the name of the macro call,
-     which is not available in that phase.")
+    "For the premise fields,
+     we reserve the names that @(tsee defind-prem-field-names) returns
+     for the number of premises of the rule.
+     These include the names of all the fields that
+     @(tsee defind-gen-prem-fields) generates,
+     which exist only for the premises of the @(':pred') kind,
+     numbered from 1.")
    (xdoc::p
     "We do not check the proof variable, @(tsee defind-proof-var-name):
      a rule variable with that name may shadow it without harm,
