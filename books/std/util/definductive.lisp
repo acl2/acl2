@@ -2926,6 +2926,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-process-verify-guards (verify-guards)
+  :returns (mv erp (verify-guards booleanp))
+  :short "Process the @(':verify-guards') input."
+  (b* (((reterr) nil)
+       ((unless (booleanp verify-guards))
+        (reterr (msg "The :VERIFY-GUARDS input must be T or NIL, ~
+                      but it is ~x0 instead."
+                     verify-guards))))
+    (retok verify-guards)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-guard-hints (guard-hints
+                                    (guard-hints-suppliedp booleanp)
+                                    (verify-guards booleanp))
+  :returns (mv erp (guard-hints true-listp))
+  :short "Process the @(':guard-hints') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We do not check the hints themselves:
+     ACL2 checks them in the @(tsee verify-guards) events that use them."))
+  (b* (((reterr) nil)
+       ((when (and guard-hints-suppliedp
+                   (not verify-guards)))
+        (reterr (msg "Since the :VERIFY-GUARDS input is NIL, ~
+                      there must be no :GUARD-HINTS input, ~
+                      but instead ~x0 has been provided."
+                     guard-hints)))
+       ((unless (true-listp guard-hints))
+        (reterr (msg "The :GUARD-HINTS input must be a true list, ~
+                      but it is ~x0 instead."
+                     guard-hints))))
+    (retok guard-hints)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-process-parents/short/long (parents
                                            (parents-suppliedp booleanp)
                                            short
