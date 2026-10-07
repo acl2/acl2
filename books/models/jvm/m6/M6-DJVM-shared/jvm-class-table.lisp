@@ -1717,7 +1717,10 @@
 
 
 (defun wff-static-class-table (scl)
-  (declare (xargs :verify-guards t))
+  (declare (xargs :verify-guards t
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                  :well-founded-relation o<))
   (if (not (consp scl)) t
     (and (wff-class-rep-static (car scl))
          (wff-static-class-table (cdr scl)))))

@@ -15,11 +15,28 @@
 (include-book "abstract-syntax-operations")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/basic/fix" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
 (acl2::controlled-configuration
   :no-function nil
   :hooks nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This is used in some proofs about mutually recursive parsing functions,
+; to expand the call of the function that the induction case pertains to,
+; for every possible argument passed to the all except the parser state.
+; The exclusion of the parser state is critical for the expansion to apply
+; only to the call in the conclusion of the subgoal,
+; and not the calls in the premises.
+(local
+ (defun flag-expand-hint (clause world)
+   (declare (xargs :mode :program))
+   (b* ((fn (flag::find-flag-is-hyp clause))
+        ((unless fn) nil)
+        (formals (acl2::formals fn world)))
+     `(:expand ((:free ,(remove-eq 'parstate formals) (,fn ,@formals)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -706,8 +723,7 @@
      or a string literal (which is a token),
      or a parenthesizes expression (which starts with a certain punctuator),
      or a generic selection (which starts a certain keyword),
-     or a call of a GCC built-in special function,
-     or another primary expression preceded by @('__extension__')."))
+     or a call of a GCC built-in special function."))
   (and token?
        (or (token-case token? :ident)
            (token-case token? :const)
@@ -717,7 +733,6 @@
            (token-keywordp token? "__builtin_offsetof")
            (token-keywordp token? "__builtin_types_compatible_p")
            (token-keywordp token? "__builtin_va_arg")
-           (token-keywordp token? "__extension__")
            (token-keywordp token? "true") ; C23
            (token-keywordp token? "false"))) ; C23
   ///
@@ -761,7 +776,7 @@
      would be an identifier token, not a keyword token.")
    (xdoc::p
     "We also include, in the comparison,
-     the @('__real__') and @('__imag__') operators,
+     the @('__real__'), @('__imag__'), and @('__extension__') operators,
      which are keyword tokens only if GCC/Clang extensions are enabled.")
    (xdoc::p
     "If GCC/Clang extensions are enabled,
@@ -781,6 +796,7 @@
       (token-keywordp token? "__alignof__")
       (token-keywordp token? "__real__")
       (token-keywordp token? "__imag__")
+      (token-keywordp token? "__extension__")
       (and gcc/clang (token-punctuatorp token? "&&")))
   ///
 
@@ -3139,7 +3155,11 @@
        we parse an expression or type name via a separate function,
        and based on the result we return
        a @('sizeof') or @('_Alignof') expression with
-       an expression, a type name, or an ambiguous type name or expression."))
+       an expression, a type name, or an ambiguous type name or expression.")
+     (xdoc::p
+      "If the token is the GCC/Clang keyword @('__extension__'),
+       we parse a cast expression as its operand,
+       just as for @('__real__') and @('__imag__')."))
     (b* (((reterr) (irr-expr) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
@@ -3316,6 +3336,15 @@
           (retok (make-expr-unary :op unop :arg expr :info nil)
                  (span-join span last-span)
                  parstate)))
+       ;; If token is '__extension__',
+       ;; which can only happen with GCC/Clang extensions,
+       ;; we recursively parse a cast expression as operand.
+       ((token-keywordp token "__extension__") ; __extension__
+        (b* (((erp expr last-span parstate) ; __extension__ expr
+              (parse-cast-expression parstate)))
+          (retok (expr-extension expr)
+                 (span-join span last-span)
+                 parstate)))
        ;; If token is anything else, it is an error.
        (t ; other
         (reterr-msg :where (span->start span)
@@ -3327,7 +3356,8 @@
                                _Generic, ~
                                sizeof,~
                                __real__,~
-                               __imag__~
+                               __imag__,~
+                               __extension__~
                                } ~
                                or a punctuator in {~
                                \"++\", ~
@@ -3806,9 +3836,6 @@
        we parse a call of this built-in function,
        which has an expression and a type name as arguments.")
      (xdoc::p
-      "If the token is the GCC keyword @('__extension__'),
-       we parse the primary expression after it, recursively.")
-     (xdoc::p
       "If the token is none of the above,
        including the token being absent,
        it is an error.")
@@ -3973,12 +4000,6 @@
               ;; __builtin_va_arg ( list , type )
               (read-punctuator ")" parstate)))
           (retok (make-expr-va-arg :list list :type type)
-                 (span-join span last-span)
-                 parstate)))
-       ((token-keywordp token "__extension__") ; __extension__
-        (b* (((erp expr last-span parstate) ; __extension__ expr
-              (parse-primary-expression parstate)))
-          (retok (expr-extension expr)
                  (span-join span last-span)
                  parstate)))
        (t ; other
@@ -10049,6 +10070,16 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  ;; For speed, disable the functions but expand their conclusion calls.
+  ;; Note that ACL2::RECURSIVEP returns the names of the whole clique.
+  :returns-hints (("Goal"
+                   :in-theory (set-difference-theories
+                               (current-theory :here)
+                               (acl2::recursivep 'parse-expression t world)))
+                  (flag-expand-hint clause world))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   :verify-guards nil ; done below
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -10528,306 +10559,12 @@
           (parsize parstate))
       :rule-classes :linear
       :fn parse-block-item-list)
-    :hints
-    (("Goal" :in-theory (enable fix nfix))
-     (cond
-      ((acl2::occur-lst '(acl2::flag-is 'parse-expression)
-                        clause)
-       '(:expand (parse-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-expression-rest)
-                        clause)
-       '(:expand (parse-expression-rest prev-expr prev-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-assignment-expression)
-                        clause)
-       '(:expand (parse-assignment-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-conditional-expression)
-                        clause)
-       '(:expand (parse-conditional-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-logical-or-expression)
-                        clause)
-       '(:expand (parse-logical-or-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-logical-or-expression-rest)
-                        clause)
-       '(:expand (parse-logical-or-expression-rest prev-expr
-                                                   prev-span
-                                                   parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-logical-and-expression)
-                        clause)
-       '(:expand (parse-logical-and-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-logical-and-expression-rest)
-                        clause)
-       '(:expand (parse-logical-and-expression-rest prev-expr
-                                                    prev-span
-                                                    parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-inclusive-or-expression)
-                        clause)
-       '(:expand (parse-inclusive-or-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-inclusive-or-expression-rest)
-                        clause)
-       '(:expand (parse-inclusive-or-expression-rest prev-expr
-                                                     prev-span
-                                                     parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-exclusive-or-expression)
-                        clause)
-       '(:expand (parse-exclusive-or-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-exclusive-or-expression-rest)
-                        clause)
-       '(:expand (parse-exclusive-or-expression-rest prev-expr
-                                                     prev-span
-                                                     parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-and-expression)
-                        clause)
-       '(:expand (parse-and-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-and-expression-rest)
-                        clause)
-       '(:expand (parse-and-expression-rest prev-expr
-                                            prev-span
-                                            parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-equality-expression)
-                        clause)
-       '(:expand (parse-equality-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-equality-expression-rest)
-                        clause)
-       '(:expand (parse-equality-expression-rest prev-expr
-                                                 prev-span
-                                                 parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-relational-expression)
-                        clause)
-       '(:expand (parse-relational-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-relational-expression-rest)
-                        clause)
-       '(:expand (parse-relational-expression-rest prev-expr
-                                                   prev-span
-                                                   parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-shift-expression)
-                        clause)
-       '(:expand (parse-shift-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-shift-expression-rest)
-                        clause)
-       '(:expand (parse-shift-expression-rest prev-expr
-                                              prev-span
-                                              parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-additive-expression)
-                        clause)
-       '(:expand (parse-additive-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-additive-expression-rest)
-                        clause)
-       '(:expand (parse-additive-expression-rest prev-expr
-                                                 prev-span
-                                                 parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-multiplicative-expression)
-                        clause)
-       '(:expand (parse-multiplicative-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-multiplicative-expression-rest)
-                        clause)
-       '(:expand (parse-multiplicative-expression-rest prev-expr
-                                                       prev-span
-                                                       parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-cast-expression)
-                        clause)
-       '(:expand (parse-cast-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-unary-expression)
-                        clause)
-       '(:expand (parse-unary-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-postfix-expression)
-                        clause)
-       '(:expand (parse-postfix-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-postfix-expression-rest)
-                        clause)
-       '(:expand (parse-postfix-expression-rest prev-expr
-                                                prev-span
-                                                parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-argument-expressions)
-                        clause)
-       '(:expand (parse-argument-expressions parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-argument-expressions-rest)
-                        clause)
-       '(:expand (parse-argument-expressions-rest prev-exprs
-                                                  prev-span
-                                                  parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-primary-expression)
-                        clause)
-       '(:expand (parse-primary-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-compound-literal)
-                        clause)
-       '(:expand (parse-compound-literal tyname first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-generic-association)
-                        clause)
-       '(:expand (parse-generic-association parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-generic-associations-rest)
-                        clause)
-       '(:expand (parse-generic-associations-rest prev-genassocs
-                                                  prev-span
-                                                  parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-constant-expression)
-                        clause)
-       '(:expand (parse-constant-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-static-assert-declaration)
-                        clause)
-       '(:expand (parse-static-assert-declaration first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-designator)
-                        clause)
-       '(:expand (parse-designator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-designator-list)
-                        clause)
-       '(:expand (parse-designator-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-initializer)
-                        clause)
-       '(:expand (parse-initializer parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-designation?-initializer)
-                        clause)
-       '(:expand (parse-designation?-initializer parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-initializer-list)
-                        clause)
-       '(:expand (parse-initializer-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-enumerator)
-                        clause)
-       '(:expand (parse-enumerator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-enumerator-list)
-                        clause)
-       '(:expand (parse-enumerator-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-specifier/qualifier)
-                        clause)
-       '(:expand (parse-specifier/qualifier parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-specifier-qualifier-list)
-                        clause)
-       '(:expand ((parse-specifier-qualifier-list tyspec-seenp parstate)
-                  (parse-specifier-qualifier-list nil parstate))))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifier)
-                        clause)
-       '(:expand (parse-declaration-specifier parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifiers)
-                        clause)
-       '(:expand ((parse-declaration-specifiers tyspec-seenp parstate)
-                  (parse-declaration-specifiers nil parstate))))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-or-union-specifier)
-                        clause)
-       '(:expand (parse-struct-or-union-specifier structp
-                                                  struct/union-span
-                                                  parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-enum-specifier)
-                        clause)
-       '(:expand (parse-enum-specifier first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-alignment-specifier)
-                        clause)
-       '(:expand (parse-alignment-specifier first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-abstract-declarator)
-                        clause)
-       '(:expand (parse-abstract-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-direct-abstract-declarator-rest)
-                        clause)
-       '(:expand (parse-direct-abstract-declarator-rest prev-dirabsdeclor
-                                                        prev-span
-                                                        parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-array/function-abstract-declarator)
-                        clause)
-       '(:expand (parse-array/function-abstract-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-array/function-declarator)
-                        clause)
-       '(:expand (parse-array/function-declarator prev-dirdeclor
-                                                  prev-span
-                                                  parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-direct-abstract-declarator)
-                        clause)
-       '(:expand (parse-direct-abstract-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-direct-declarator)
-                        clause)
-       '(:expand (parse-direct-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-direct-declarator-rest)
-                        clause)
-       '(:expand (parse-direct-declarator-rest prev-dirdeclor
-                                               prev-span
-                                               parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declarator)
-                        clause)
-       '(:expand (parse-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declarator)
-                        clause)
-       '(:expand (parse-struct-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declarator-list)
-                        clause)
-       '(:expand (parse-struct-declarator-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declaration)
-                        clause)
-       '(:expand (parse-struct-declaration parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declaration-list)
-                        clause)
-       '(:expand (parse-struct-declaration-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-parameter-declaration)
-                        clause)
-       '(:expand (parse-parameter-declaration parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-parameter-declaration-list)
-                        clause)
-       '(:expand (parse-parameter-declaration-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-type-name)
-                        clause)
-       '(:expand (parse-type-name parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-expression-or-type-name)
-                        clause)
-       '(:expand (parse-expression-or-type-name add-parens-p parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declarator-or-abstract-declarator)
-                        clause)
-       '(:expand (parse-declarator-or-abstract-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-parameters)
-                        clause)
-       '(:expand (parse-attribute-parameters parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute)
-                        clause)
-       '(:expand (parse-attribute parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-list)
-                        clause)
-       '(:expand (parse-attribute-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-specifier)
-                        clause)
-       '(:expand (parse-attribute-specifier uscores first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-*-attribute-specifier)
-                        clause)
-       '(:expand (parse-*-attribute-specifier parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-init-declarator)
-                        clause)
-       '(:expand (parse-init-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-init-declarator-list)
-                        clause)
-       '(:expand (parse-init-declarator-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration)
-                        clause)
-       '(:expand (parse-declaration parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-list)
-                        clause)
-       '(:expand (parse-declaration-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-or-statement)
-                        clause)
-       '(:expand (parse-declaration-or-statement parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-output-operand)
-                        clause)
-       '(:expand (parse-asm-output-operand parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-output-operands)
-                        clause)
-       '(:expand (parse-asm-output-operands parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-?-asm-output-operands)
-                        clause)
-       '(:expand (parse-?-asm-output-operands parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-input-operand)
-                        clause)
-       '(:expand (parse-asm-input-operand parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-input-operands)
-                        clause)
-       '(:expand (parse-asm-input-operands parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-?-asm-input-operands)
-                        clause)
-       '(:expand (parse-?-asm-input-operands parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-statement)
-                        clause)
-       '(:expand (parse-statement parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-compound-statement)
-                        clause)
-       '(:expand (parse-compound-statement open-curly-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-block-item)
-                        clause)
-       '(:expand (parse-block-item parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-block-item-list)
-                        clause)
-       '(:expand (parse-block-item-list parstate))))))
+    ;; For speed, disable the functions but expand their conclusion calls.
+    ;; Note that ACL2::RECURSIVEP returns the names of the whole clique.
+    :hints (("Goal" :in-theory (set-difference-theories
+                                (current-theory :here)
+                                (acl2::recursivep 'parse-expression t world)))
+            (flag-expand-hint clause world)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -11354,222 +11091,12 @@
                    (1- (parsize parstate))))
       :rule-classes :linear
       :fn parse-block-item-list)
-    :hints
-    (("Goal" :in-theory (enable fix nfix))
-     (cond
-      ((acl2::occur-lst '(acl2::flag-is 'parse-expression)
-                        clause)
-       '(:expand (parse-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-assignment-expression)
-                        clause)
-       '(:expand (parse-assignment-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-conditional-expression)
-                        clause)
-       '(:expand (parse-conditional-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-logical-or-expression)
-                        clause)
-       '(:expand (parse-logical-or-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-logical-and-expression)
-                        clause)
-       '(:expand (parse-logical-and-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-inclusive-or-expression)
-                        clause)
-       '(:expand (parse-inclusive-or-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-exclusive-or-expression)
-                        clause)
-       '(:expand (parse-exclusive-or-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-and-expression)
-                        clause)
-       '(:expand (parse-and-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-equality-expression)
-                        clause)
-       '(:expand (parse-equality-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-relational-expression)
-                        clause)
-       '(:expand (parse-relational-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-shift-expression)
-                        clause)
-       '(:expand (parse-shift-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-additive-expression)
-                        clause)
-       '(:expand (parse-additive-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-multiplicative-expression)
-                        clause)
-       '(:expand (parse-multiplicative-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-cast-expression)
-                        clause)
-       '(:expand (parse-cast-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-postfix-expression)
-                        clause)
-       '(:expand (parse-postfix-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-unary-expression)
-                        clause)
-       '(:expand (parse-unary-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-primary-expression)
-                        clause)
-       '(:expand (parse-primary-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-generic-association)
-                        clause)
-       '(:expand (parse-generic-association parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-member-designor)
-                        clause)
-       '(:expand (parse-member-designor parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-compound-literal)
-                        clause)
-       '(:expand (parse-compound-literal tyname first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-constant-expression)
-                        clause)
-       '(:expand (parse-constant-expression parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-static-assert-declaration)
-                        clause)
-       '(:expand (parse-static-assert-declaration first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-abstract-declarator)
-                        clause)
-       '(:expand (parse-abstract-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-direct-abstract-declarator)
-                        clause)
-       '(:expand (parse-direct-abstract-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-direct-declarator)
-                        clause)
-       '(:expand (parse-direct-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-designator)
-                        clause)
-       '(:expand (parse-designator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-designator-list)
-                        clause)
-       '(:expand (parse-designator-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-initializer)
-                        clause)
-       '(:expand (parse-initializer parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-designation?-initializer)
-                        clause)
-       '(:expand (parse-designation?-initializer parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-initializer-list)
-                        clause)
-       '(:expand (parse-initializer-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-enumerator)
-                        clause)
-       '(:expand (parse-enumerator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-enumerator-list)
-                        clause)
-       '(:expand (parse-enumerator-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-specifier/qualifier)
-                        clause)
-       '(:expand (parse-specifier/qualifier parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-specifier-qualifier-list)
-                        clause)
-       '(:expand ((parse-specifier-qualifier-list tyspec-seenp parstate)
-                  (parse-specifier-qualifier-list nil parstate))))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-statement)
-                        clause)
-       '(:expand (parse-statement parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifier)
-                        clause)
-       '(:expand (parse-declaration-specifier parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-specifiers)
-                        clause)
-       '(:expand ((parse-declaration-specifiers tyspec-seenp parstate)
-                  (parse-declaration-specifiers nil parstate))))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-or-union-specifier)
-                        clause)
-       '(:expand (parse-struct-or-union-specifier structp
-                                                  struct/union-span
-                                                  parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-specifier)
-                        clause)
-       '(:expand (parse-attribute-specifier uscores first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-enum-specifier)
-                        clause)
-       '(:expand (parse-enum-specifier first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-alignment-specifier)
-                        clause)
-       '(:expand (parse-alignment-specifier first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-array/function-abstract-declarator)
-                        clause)
-       '(:expand (parse-array/function-abstract-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-array/function-declarator)
-                        clause)
-       '(:expand (parse-array/function-declarator prev-dirdeclor
-                                                  prev-span
-                                                  parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declarator)
-                        clause)
-       '(:expand (parse-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declarator)
-                        clause)
-       '(:expand (parse-struct-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declarator-list)
-                        clause)
-       '(:expand (parse-struct-declarator-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declaration)
-                        clause)
-       '(:expand (parse-struct-declaration parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-struct-declaration-list)
-                        clause)
-       '(:expand (parse-struct-declaration-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-parameter-declaration)
-                        clause)
-       '(:expand (parse-parameter-declaration parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-parameter-declaration-list)
-                        clause)
-       '(:expand (parse-parameter-declaration-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-type-name)
-                        clause)
-       '(:expand (parse-type-name parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-expression-or-type-name)
-                        clause)
-       '(:expand (parse-expression-or-type-name add-parens-p parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declarator-or-abstract-declarator)
-                        clause)
-       '(:expand (parse-declarator-or-abstract-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-parameters)
-                        clause)
-       '(:expand (parse-attribute-parameters parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute)
-                        clause)
-       '(:expand (parse-attribute parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-list)
-                        clause)
-       '(:expand (parse-attribute-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-attribute-specifier)
-                        clause)
-       '(:expand (parse-attribute-specifier uscores first-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-init-declarator)
-                        clause)
-       '(:expand (parse-init-declarator parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-init-declarator-list)
-                        clause)
-       '(:expand (parse-init-declarator-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration)
-                        clause)
-       '(:expand (parse-declaration parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-list)
-                        clause)
-       '(:expand (parse-declaration-list parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-declaration-or-statement)
-                        clause)
-       '(:expand (parse-declaration-or-statement parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-output-operand)
-                        clause)
-       '(:expand (parse-asm-output-operand parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-output-operands)
-                        clause)
-       '(:expand (parse-asm-output-operands parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-input-operand)
-                        clause)
-       '(:expand (parse-asm-input-operand parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-asm-input-operands)
-                        clause)
-       '(:expand (parse-asm-input-operands parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-compound-statement)
-                        clause)
-       '(:expand (parse-compound-statement open-curly-span parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-block-item)
-                        clause)
-       '(:expand (parse-block-item parstate)))
-      ((acl2::occur-lst '(acl2::flag-is 'parse-block-item-list)
-                        clause)
-       '(:expand (parse-block-item-list parstate))))))
+    ;; For speed, disable the functions but expand their conclusion calls.
+    ;; Note that ACL2::RECURSIVEP returns the names of the whole clique.
+    :hints (("Goal" :in-theory (set-difference-theories
+                                (current-theory :here)
+                                (acl2::recursivep 'parse-expression t world)))
+            (flag-expand-hint clause world)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -11584,9 +11111,8 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (verify-guards parse-expression
-    :hints (("Goal" :in-theory (e/d (acl2::member-of-cons
-                                     token-additive-operator-p)
-                                    ((:e tau-system))))))) ; for speed
+    :hints (("Goal" :in-theory (enable acl2::member-of-cons
+                                       token-additive-operator-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

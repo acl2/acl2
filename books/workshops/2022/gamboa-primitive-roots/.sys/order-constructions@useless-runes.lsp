@@ -2977,6 +2977,7 @@
  (1 1 (:REWRITE |(< (- x) c)|))
  (1 1 (:REWRITE |(< (- x) (- y))|))
  (1 1 (:REWRITE |(* (expt c m) (expt d n))|))
+ (1 1 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  )
 (PFIELD::ORDER-IS-SMALLER-POWER-THEN-LARGEST-POWER-ALSO-1
  (693 3 (:REWRITE PFIELD::POW-<-ORDER))
@@ -3810,6 +3811,7 @@
  (2 2 (:LINEAR EXPT-IS-WEAKLY-INCREASING-FOR-BASE->-1))
  (2 2 (:LINEAR EXPT-IS-WEAKLY-DECREASING-FOR-POS-BASE-<-1))
  (1 1 (:REWRITE |(* (expt c m) (expt d n))|))
+ (1 1 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  (1 1 (:LINEAR EXPT-LINEAR-UPPER-<=))
  (1 1 (:LINEAR EXPT-LINEAR-UPPER-<))
  (1 1 (:LINEAR EXPT-LINEAR-LOWER-<=))
@@ -5470,6 +5472,7 @@
  (2 2 (:TYPE-PRESCRIPTION NOT-INTEGERP-2H-EXPT-A))
  (2 2 (:TYPE-PRESCRIPTION NOT-INTEGERP-2G-EXPT-B))
  (2 2 (:REWRITE |(* (expt c m) (expt d n))|))
+ (2 2 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  (1 1 (:REWRITE |(< (* x y) 0) rationalp (* x y)|))
  )
 (PFIELD::PRIMES-HAVE-PRIMITIVE-ROOTS

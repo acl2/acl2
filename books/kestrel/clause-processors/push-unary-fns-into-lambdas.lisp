@@ -287,8 +287,7 @@
 
 ;; Supports the :well-formedness-guarantee.
 (defthm logic-term-list-listp-of-push-unary-fns-into-lambdas-clause-processor
-  (implies (and (logic-term-listp clause w)
-                )
+  (implies (logic-term-listp clause w)
            (logic-term-list-listp (push-unary-fns-into-lambdas-clause-processor clause) w))
   :hints (("Goal" :in-theory (enable push-unary-fns-into-lambdas-clause-processor))))
 

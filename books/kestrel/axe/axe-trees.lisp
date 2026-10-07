@@ -25,7 +25,6 @@
 ;like pseudo-termp but allows integers (nodenums in some DAG) to also appear
 ;; TODO: Make a more abstract interface to this (e.g., axe-tree-args instead of cdr)
 ;; See also bounded-axe-treep.
-;; TODO: Disable these:
 (mutual-recursion
  (defund axe-treep (tree)
    (declare (xargs :guard t))

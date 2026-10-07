@@ -46,6 +46,10 @@
            (alistp map))
   :hints (("Goal" :in-theory (enable my-library-mapp))))
 
+;; Grant Jurgensen reports that CMUCL rejects the type of the large memory array
+;; (even though that array is not allocated due to the :non-executable option):
+; cert_param: (non-cmucl)
+
 ;; The state of the ARM CPU, including registers, memory, etc.
 (defstobj+
   arm

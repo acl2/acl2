@@ -22,6 +22,7 @@
 (include-book "union-defs")
 (include-book "intersect-defs")
 (include-book "diff-defs")
+(include-book "product-defs")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

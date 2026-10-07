@@ -33,6 +33,16 @@
            (open-output-channel-p1 channel typ (print-object$ object channel2 state)))
   :hints (("Goal" :in-theory (enable print-object$))))
 
+(defthm open-output-channel-any-p1-of-print-object$
+  (implies (open-output-channel-any-p1 channel state)
+           (open-output-channel-any-p1 channel (print-object$ x channel2 state)))
+  :hints (("Goal" :in-theory (enable open-output-channel-any-p1))))
+
+(defthm open-output-channel-any-p-of-print-object$
+  (implies (open-output-channel-any-p channel state)
+           (open-output-channel-any-p channel (print-object$ x channel2 state)))
+  :hints (("Goal" :in-theory (enable open-output-channel-any-p))))
+
 ;; Avoids name clash with std
 (defthm state-p1-of-print-object$-alt
   (implies (and (state-p1 state)

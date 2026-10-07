@@ -283,3 +283,19 @@
 ; End-to-end: parse, type-check, and evaluate a fold expression.
 (test-eval-top-expr
  "(@fold (Int Int) (2 [] []) + 10 [1 2 3])")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; End-to-end with inferred type and ispace applications
+; (see check/infer-app):
+; the type checker adds the applications to the expression,
+; which is then evaluated.
+
+; Universal type over product type, from a combined function binding.
+(test-eval-top-expr
+ "(let ((fun (@f (&t) ($d) (x (A &t (dims $d))) : (A &t (dims $d))) x))
+  (f (array [3] 1 2 3)))")
+
+; Product type over universal type, from explicit abstractions.
+(test-eval-top-expr
+ "((i-fn ($d) (t-fn (&t) (fn ((x (A &t (dims $d)))) x))) (array [3] 1 2 3))")

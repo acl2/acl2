@@ -66,7 +66,10 @@
 (local (in-theory (disable natp
                            ;; for speed:
                            default-+-1
-                           default-+-2)))
+                           default-+-2
+                           acl2::consp-from-len-cheap
+                           default-car
+                           default-cdr)))
 
 (local
  (defthm rationalp-when-natp
@@ -701,6 +704,12 @@
 (defconst *CONSTANT_Module* 19)
 (defconst *CONSTANT_Package* 20)
 
+(defund good-constant-class-infop (entry)
+  (declare (xargs :guard (and (symbol-alistp entry)
+                              (eq :constant_class (lookup-eq 'tag entry)))))
+  (and (equal '(name_index tag) (strip-cars entry))
+       (unsigned-byte-p 16 (lookup-eq 'name_index entry))))
+
 ;; todo: save consing by making this more compact (but note that the constant
 ;; pool doesn't currently appear in the result of parsing a class file).
 (defund constant-pool-entryp (entry)
@@ -709,7 +718,7 @@
        (let ((tag (lookup-eq 'tag entry)))
          (case tag
            ;; some natp checks could be strengthened to unsigned-byte-p 16 checks:
-           (:constant_class (natp (lookup-eq 'name_index entry)))
+           (:constant_class (good-constant-class-infop entry))
            (:constant_fieldref (and (natp (lookup-eq 'class_index entry))
                                     (natp (lookup-eq 'name_and_type_index entry))))
            (:constant_methodref (and (natp (lookup-eq 'class_index entry))
@@ -888,7 +897,7 @@
    (implies (and (equal :constant_class (cp-entry-tag entry))
                  (constant-pool-entryp entry))
             (natp (lookup-equal 'name_index entry)))
-   :hints (("Goal" :in-theory (enable constant-pool-entryp cp-entry-tag)))))
+   :hints (("Goal" :in-theory (enable constant-pool-entryp cp-entry-tag good-constant-class-infop)))))
 
 (local
  (defthm stringp-of-lookup-equal-when-constant_utf8
@@ -1179,7 +1188,8 @@
                  (all-unsigned-byte-p 8 bytes))
             (constant-pool-entryp (mv-nth 1 (parse-constant-pool-entry bytes))))
    :hints (("Goal" :in-theory (enable parse-constant-pool-entry
-                                      constant-pool-entryp)))))
+                                      constant-pool-entryp
+                                      good-constant-class-infop)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1330,10 +1340,11 @@
       (mv (erp-nil)
           (cons res1 res2)))))
 
-(defthm true-listp-of-mv-nth-1-of-get-class-names-from-srcs
-  (true-listp (mv-nth 1 (get-class-names-from-srcs symbolic-reference-to-class-lst constant-pool)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable get-class-names-from-srcs))))
+(local
+  (defthm true-listp-of-mv-nth-1-of-get-class-names-from-srcs
+    (true-listp (mv-nth 1 (get-class-names-from-srcs symbolic-reference-to-class-lst constant-pool)))
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable get-class-names-from-srcs)))))
 
 ;; (defthm class-name-listp-of-mv-nth-1-of-get-class-names-from-srcs
 ;;   (implies (not (mv-nth 0 (get-class-names-from-srcs symbolic-reference-to-class-lst constant-pool)))
@@ -1858,11 +1869,12 @@
           (er hard? 'translate-instruction "Found an unhandled opcode: ~x0." opcode-name)
           0))))
 
-(defthm natp-of-mv-nth-2-of-translate-instruction
-  (implies (integerp byte-number-of-opcode)
-           (natp (mv-nth 2 (translate-instruction opcode-name byte-number-of-opcode bytes constant-pool))))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable translate-instruction natp))))
+(local
+  (defthm natp-of-mv-nth-2-of-translate-instruction
+    (implies (integerp byte-number-of-opcode)
+             (natp (mv-nth 2 (translate-instruction opcode-name byte-number-of-opcode bytes constant-pool))))
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable translate-instruction natp)))))
 
 ;; Sanity checks inst-len vs translate-instruction:
 (thm
@@ -1910,34 +1922,37 @@
                                 (cons (cons byte-number-of-opcode parsed-instruction) ;big change!  programs are now alists from pcs to instructions!
                                       acc)))))
 
-(defthm alistp-of-mv-nth-1-of-translate-code-bytes-aux
-  (implies (and ;(not (mv-nth 0 (translate-code-bytes-aux bytes byte-number-of-opcode constant-pool acc)))
-                (alistp acc))
-           (alistp (mv-nth 1 (translate-code-bytes-aux bytes byte-number-of-opcode constant-pool acc))))
-  :hints (("Goal" :in-theory (enable translate-code-bytes-aux
-                                     jvm::all-pcp))))
+(local
+  (defthm alistp-of-mv-nth-1-of-translate-code-bytes-aux
+    (implies (and ;(not (mv-nth 0 (translate-code-bytes-aux bytes byte-number-of-opcode constant-pool acc)))
+               (alistp acc))
+             (alistp (mv-nth 1 (translate-code-bytes-aux bytes byte-number-of-opcode constant-pool acc))))
+    :hints (("Goal" :in-theory (enable translate-code-bytes-aux
+                                       jvm::all-pcp)))))
 
-(defthm all-pcp-of-strip-cars-of-mv-nth-1-of-translate-code-bytes-aux
-  (implies (and (not (mv-nth 0 (translate-code-bytes-aux bytes byte-number-of-opcode constant-pool acc)))
-                (jvm::all-pcp (strip-cars acc))
-                (true-listp acc)
-                (natp byte-number-of-opcode))
-           (jvm::all-pcp (strip-cars (mv-nth 1 (translate-code-bytes-aux bytes byte-number-of-opcode constant-pool acc)))))
-  :hints (("Goal" :in-theory (enable translate-code-bytes-aux
-                                     jvm::all-pcp))))
+(local
+  (defthm all-pcp-of-strip-cars-of-mv-nth-1-of-translate-code-bytes-aux
+    (implies (and (not (mv-nth 0 (translate-code-bytes-aux bytes byte-number-of-opcode constant-pool acc)))
+                  (jvm::all-pcp (strip-cars acc))
+                  (true-listp acc)
+                  (natp byte-number-of-opcode))
+             (jvm::all-pcp (strip-cars (mv-nth 1 (translate-code-bytes-aux bytes byte-number-of-opcode constant-pool acc)))))
+    :hints (("Goal" :in-theory (enable translate-code-bytes-aux
+                                       jvm::all-pcp)))))
 
-(defthm car-of-car-of-mv-nth-1-of-translate-code-bytes-aux
-  (implies (and (not (mv-nth 0
-                             (translate-code-bytes-aux bytes byte-number-of-opcode constant-pool acc)))
-                (natp byte-number-of-opcode)
-                (consp (mv-nth 1
+(local
+  (defthm car-of-car-of-mv-nth-1-of-translate-code-bytes-aux
+    (implies (and (not (mv-nth 0
                                (translate-code-bytes-aux bytes byte-number-of-opcode constant-pool acc)))
-                (true-listp acc))
-           (equal (car (car (mv-nth 1 (translate-code-bytes-aux bytes byte-number-of-opcode constant-pool acc))))
-                  (if acc
-                      (car (car (last acc)))
-                    byte-number-of-opcode)))
-  :hints (("Goal" :in-theory (e/d (translate-code-bytes-aux) (reverse)))))
+                  (natp byte-number-of-opcode)
+                  (consp (mv-nth 1
+                                 (translate-code-bytes-aux bytes byte-number-of-opcode constant-pool acc)))
+                  (true-listp acc))
+             (equal (car (car (mv-nth 1 (translate-code-bytes-aux bytes byte-number-of-opcode constant-pool acc))))
+                    (if acc
+                        (car (car (last acc)))
+                      byte-number-of-opcode)))
+    :hints (("Goal" :in-theory (e/d (translate-code-bytes-aux) (reverse))))))
 
 ;todo
 ;; (defthm increasing-pcsp-of-strip-cars-of-mv-nth-1-of-translate-code-bytes-aux
@@ -1968,12 +1983,13 @@
             (mv (erp-nil) program)
           (mv `(:instructions-not-all-ok ,program) nil))))))
 
-(defthm method-programp-of-mv-nth-1-of-translate-code-bytes
-  (implies (not (mv-nth 0 (translate-code-bytes bytes constant-pool)))
-           (jvm::method-programp (mv-nth 1 (translate-code-bytes bytes constant-pool))))
-  :hints (("Goal" ;:expand (translate-code-bytes-aux bytes 0 constant-pool nil)
-           :in-theory (enable jvm::method-programp
-                              translate-code-bytes))))
+(local
+  (defthm method-programp-of-mv-nth-1-of-translate-code-bytes
+    (implies (not (mv-nth 0 (translate-code-bytes bytes constant-pool)))
+             (jvm::method-programp (mv-nth 1 (translate-code-bytes bytes constant-pool))))
+    :hints (("Goal" ;:expand (translate-code-bytes-aux bytes 0 constant-pool nil)
+             :in-theory (enable jvm::method-programp
+                                translate-code-bytes)))))
 
 ;this puts the start_pc before the line_number in each pair, to facilitate looking up the line of a given pc
 ;this is the opposite of how javap prints it
@@ -2042,11 +2058,14 @@
               (prog2$ (er hard? 'smaller-local-variable-table-entry "Two local variable table entries found with the same local slot number and start PC.") ;or is this legal if they are identical?
                       entry1)))))))) ;return a valid entry even in this case
 
-(defthm local-variable-table-entryp-of-smaller-local-variable-table-entry
-  (implies (and (jvm::local-variable-table-entryp entry1)
-                (jvm::local-variable-table-entryp entry2))
-           (jvm::local-variable-table-entryp (smaller-local-variable-table-entry entry1 entry2)))
-  :hints (("Goal" :in-theory (enable smaller-local-variable-table-entry))))
+(local
+  (defthm local-variable-table-entryp-of-smaller-local-variable-table-entry
+    (implies (and (jvm::local-variable-table-entryp entry1)
+                  (jvm::local-variable-table-entryp entry2))
+             (jvm::local-variable-table-entryp (smaller-local-variable-table-entry entry1 entry2)))
+    :hints (("Goal" :in-theory (enable smaller-local-variable-table-entry)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund smallest-local-variable-table-entry (smallest-so-far entries)
   (declare (xargs :guard (and (jvm::local-variable-table-entryp smallest-so-far)
@@ -2057,18 +2076,22 @@
     (let ((smallest-so-far (smaller-local-variable-table-entry (first entries) smallest-so-far)))
       (smallest-local-variable-table-entry smallest-so-far (rest entries)))))
 
-(defthm member-equal-of-smallest-local-variable-table-entry
-  (or (equal (smallest-local-variable-table-entry smallest-so-far entries) smallest-so-far)
-      (member-equal (smallest-local-variable-table-entry smallest-so-far entries)
-                    entries))
-  :hints (("Goal" :in-theory (enable smallest-local-variable-table-entry
-                                     smaller-local-variable-table-entry))))
+(local
+  (defthm member-equal-of-smallest-local-variable-table-entry
+    (or (equal (smallest-local-variable-table-entry smallest-so-far entries) smallest-so-far)
+        (member-equal (smallest-local-variable-table-entry smallest-so-far entries)
+                      entries))
+    :hints (("Goal" :in-theory (enable smallest-local-variable-table-entry
+                                       smaller-local-variable-table-entry)))))
 
-(defthm local-variable-table-entryp-of-smallest-local-variable-table-entry
-  (implies (and (jvm::all-local-variable-table-entryp entries)
-                (jvm::local-variable-table-entryp smallest-so-far))
-           (jvm::local-variable-table-entryp (smallest-local-variable-table-entry smallest-so-far entries)))
-  :hints (("Goal" :in-theory (enable smallest-local-variable-table-entry))))
+(local
+  (defthm local-variable-table-entryp-of-smallest-local-variable-table-entry
+    (implies (and (jvm::all-local-variable-table-entryp entries)
+                  (jvm::local-variable-table-entryp smallest-so-far))
+             (jvm::local-variable-table-entryp (smallest-local-variable-table-entry smallest-so-far entries)))
+    :hints (("Goal" :in-theory (enable smallest-local-variable-table-entry)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund sort-local-variable-table-entries (entries)
   (declare (xargs :guard (and (true-listp entries)
@@ -2092,10 +2115,11 @@
               (jvm::local-variable-tablep x)))
   :hints (("Goal" :in-theory (enable jvm::local-variable-tablep))))
 
-(defthm all-local-variable-table-entryp-of-sort-local-variable-table-entries
-  (implies (jvm::all-local-variable-table-entryp entries)
-           (jvm::all-local-variable-table-entryp (sort-local-variable-table-entries entries)))
-  :hints (("Goal" :in-theory (enable sort-local-variable-table-entries jvm::local-variable-tablep))))
+(local
+  (defthm all-local-variable-table-entryp-of-sort-local-variable-table-entries
+    (implies (jvm::all-local-variable-table-entryp entries)
+             (jvm::all-local-variable-table-entryp (sort-local-variable-table-entries entries)))
+    :hints (("Goal" :in-theory (enable sort-local-variable-table-entries jvm::local-variable-tablep)))))
 
 ;; (thm
 ;;  (implies (TRUE-LISTP ENTRIES)
@@ -2197,6 +2221,33 @@
        ((when erp) (mv erp nil nil)))
     (parse-localvariabletable local_variable_table_length bytes constant-pool nil)))
 
+;move
+(defund string-contains-anyp (str index chars)
+  (declare (xargs :guard (and (stringp str)
+                              (integerp index)
+                              (<= -1 index)
+                              (< index (length str))
+                              (character-listp chars))
+                  :measure (nfix (+ 1 index))))
+  (if (not (natp index))
+      nil
+    (or (member-equal (char str index) chars)
+        (string-contains-anyp str (+ -1 index) chars))))
+
+;; Recognizes a class name NOT in internal form
+(defund is-good-class-namep (name)
+  (declare (xargs :guard (jvm::class-namep name)))
+  (not (string-contains-anyp name (+ -1 (length name)) '(#\/ ; todo: add more
+                                                         ))))
+
+;; Recognizes a class name NOT in internal form
+(defund good-class-namep (name)
+  (declare (xargs :guard t))
+  (and (jvm::class-namep name)
+       (is-good-class-namep name)))
+
+(local (in-theory (disable substitute)))
+
 ;; Return (mv erp entry bytes)
 (defund parse-exception-table-entry (bytes constant-pool)
   (declare (xargs :guard (and (true-listp bytes)
@@ -2215,11 +2266,21 @@
             (mv (erp-nil) :any) ; means to handle all exceptions
           (b* (((mv erp catch-type-entry) (lookup-in-constant-pool catch_type constant-pool))
                ((when erp) (mv erp nil))
-               ((mv erp name-entry) (lookup-in-constant-pool (nfix (lookup-eq-safe 'name_index catch-type-entry))
+               (catch-type-entry-tag (lookup-eq 'tag catch-type-entry))
+               ((when (not (eq :constant_class catch-type-entry-tag)))
+                (mv :bad-catch-type-entry nil))
+               ((mv erp name-entry) (lookup-in-constant-pool (nfix (lookup-eq-safe 'name_index catch-type-entry)) ; drop the nfix?
                                                              constant-pool))
                ((when erp) (mv erp nil))
+               (name-entry-tag (lookup-eq 'tag name-entry))
+               ((when (not (eq :constant_utf8 name-entry-tag)))
+                (mv :bad-name-entry nil))
                (exception-class (lookup-eq-safe 'bytes name-entry))
-               ((when (not (jvm::class-namep exception-class)))
+               ((when (not (stringp exception-class))) ;drop
+                (mv :bad-bytes nil))
+               ((mv erp exception-class) (parse-class-name exception-class))
+               ((when erp) (mv erp nil))
+               ((when (not (good-class-namep exception-class))) ; todo: prove away this check
                 (mv `(:bad-exception-class-in-exception-table ,exception-class)
                     nil)))
             (mv (erp-nil)
@@ -2229,20 +2290,23 @@
         (list start_pc end_pc handler_pc catch-type)
         bytes)))
 
-(defthm all-unsigned-byte-p-8-of-mv-nth-2-of-parse-exception-table-entry
-  (implies (all-unsigned-byte-p 8 bytes)
-           (all-unsigned-byte-p 8 (mv-nth 2 (parse-exception-table-entry bytes constant-pool))))
-  :hints (("Goal" :in-theory (enable parse-exception-table-entry))))
+(local
+  (defthm all-unsigned-byte-p-8-of-mv-nth-2-of-parse-exception-table-entry
+    (implies (all-unsigned-byte-p 8 bytes)
+             (all-unsigned-byte-p 8 (mv-nth 2 (parse-exception-table-entry bytes constant-pool))))
+    :hints (("Goal" :in-theory (enable parse-exception-table-entry)))))
 
-(defthm true-listp-of-mv-nth-2-of-parse-exception-table-entry
-  (implies (true-listp bytes)
-           (true-listp (mv-nth 2 (parse-exception-table-entry bytes constant-pool))))
-  :hints (("Goal" :in-theory (enable parse-exception-table-entry))))
+(local
+  (defthm true-listp-of-mv-nth-2-of-parse-exception-table-entry
+    (implies (true-listp bytes)
+             (true-listp (mv-nth 2 (parse-exception-table-entry bytes constant-pool))))
+    :hints (("Goal" :in-theory (enable parse-exception-table-entry)))))
 
-(defthm exception-table-entryp-of-mv-nth-1-of-parse-exception-table-entry
-  (implies (not (mv-nth 0 (parse-exception-table-entry bytes constant-pool)))
-           (jvm::exception-table-entryp (mv-nth 1 (parse-exception-table-entry bytes constant-pool))))
-  :hints (("Goal" :in-theory (enable parse-exception-table-entry))))
+(local
+  (defthm exception-table-entryp-of-mv-nth-1-of-parse-exception-table-entry
+    (implies (not (mv-nth 0 (parse-exception-table-entry bytes constant-pool)))
+             (jvm::exception-table-entryp (mv-nth 1 (parse-exception-table-entry bytes constant-pool))))
+    :hints (("Goal" :in-theory (enable parse-exception-table-entry)))))
 
 ;; Returns (mv erp exception-table).
 ;; the order of the entries matters!
@@ -2265,14 +2329,15 @@
       (mv (erp-nil)
           (cons res1 res2)))))
 
-(defthm exception-tablep-of-mv-nth-1-of-parse-exception-table
-  (implies (and (not (mv-nth 0 (parse-exception-table exception-table-length bytes constant-pool)))
-                ;(natp exception-table-length)
-                ;;(true-listp bytes)
-                ;;(all-unsigned-byte-p 8 bytes)
-                )
-           (jvm::exception-tablep (mv-nth 1 (parse-exception-table exception-table-length bytes constant-pool))))
-  :hints (("Goal" :in-theory (e/d (jvm::exception-tablep parse-exception-table) (natp)))))
+(local
+  (defthm exception-tablep-of-mv-nth-1-of-parse-exception-table
+    (implies (and (not (mv-nth 0 (parse-exception-table exception-table-length bytes constant-pool)))
+                  ;(natp exception-table-length)
+                  ;;(true-listp bytes)
+                  ;;(all-unsigned-byte-p 8 bytes)
+                  )
+             (jvm::exception-tablep (mv-nth 1 (parse-exception-table exception-table-length bytes constant-pool))))
+    :hints (("Goal" :in-theory (e/d (jvm::exception-tablep parse-exception-table) (natp))))))
 
 ;; Returns (mv erp parsed-names bytes).  Assumes we have already parsed the
 ;; attribute_name_index and the attribute_length.
@@ -2567,95 +2632,99 @@
              nil
              nil))))))
 
-(make-flag parse-code-attribute
-           :hints (("Goal"
-                    ;; :expand (PARSE-ATTRIBUTE-INFO-ENTRY BYTES CONSTANT-POOL a b c) ;todo: illegal
-                    )))
+(local
+  (make-flag parse-code-attribute
+             :hints (("Goal"
+                      ;; :expand (PARSE-ATTRIBUTE-INFO-ENTRY BYTES CONSTANT-POOL a b c) ;todo: illegal
+                      ))))
 
-(defthm-flag-parse-code-attribute
-  (defthm all-unsigned-byte-p-8-of-mv-nth-2-of-parse-code-attribute
-    (implies (and ;(true-listp bytes)
-              (all-unsigned-byte-p 8 bytes))
-             (all-unsigned-byte-p 8 (mv-nth 2 (parse-code-attribute bytes constant-pool))))
-    :flag parse-code-attribute)
-  (defthm all-unsigned-byte-p-8-of-mv-nth-3-of-parse-attribute-info-entry
-    (implies (and ;(true-listp bytes)
-              (all-unsigned-byte-p 8 bytes))
-             (all-unsigned-byte-p 8 (mv-nth 3 (parse-attribute-info-entry bytes constant-pool))))
-    :flag parse-attribute-info-entry)
-  (defthm all-unsigned-byte-p-8-of-mv-nth-2-of-parse-attribute-info-entries
-    (implies (and ;(true-listp bytes)
-              (all-unsigned-byte-p 8 bytes))
-             (all-unsigned-byte-p 8 (mv-nth 2 (parse-attribute-info-entries numentries bytes acc constant-pool))))
-    :flag parse-attribute-info-entries)
-  :hints (("Goal" :expand ((parse-code-attribute bytes constant-pool)
-                           (parse-attribute-info-entry bytes constant-pool)
-                           (parse-attribute-info-entries numentries bytes acc constant-pool))
-           :in-theory (enable parse-constantvalue-attribute
-                              parse-enclosingmethod-attribute
-                              parse-nestmembers-attribute
-                              parse-exceptions-attribute
-                              parse-sourcefile-attribute
-                              parse-signature-attribute
-                              parse-nesthost-attribute))))
+(local
+  (defthm-flag-parse-code-attribute
+    (defthm all-unsigned-byte-p-8-of-mv-nth-2-of-parse-code-attribute
+      (implies (and ;(true-listp bytes)
+                 (all-unsigned-byte-p 8 bytes))
+               (all-unsigned-byte-p 8 (mv-nth 2 (parse-code-attribute bytes constant-pool))))
+      :flag parse-code-attribute)
+    (defthm all-unsigned-byte-p-8-of-mv-nth-3-of-parse-attribute-info-entry
+      (implies (and ;(true-listp bytes)
+                 (all-unsigned-byte-p 8 bytes))
+               (all-unsigned-byte-p 8 (mv-nth 3 (parse-attribute-info-entry bytes constant-pool))))
+      :flag parse-attribute-info-entry)
+    (defthm all-unsigned-byte-p-8-of-mv-nth-2-of-parse-attribute-info-entries
+      (implies (and ;(true-listp bytes)
+                 (all-unsigned-byte-p 8 bytes))
+               (all-unsigned-byte-p 8 (mv-nth 2 (parse-attribute-info-entries numentries bytes acc constant-pool))))
+      :flag parse-attribute-info-entries)
+    :hints (("Goal" :expand ((parse-code-attribute bytes constant-pool)
+                             (parse-attribute-info-entry bytes constant-pool)
+                             (parse-attribute-info-entries numentries bytes acc constant-pool))
+             :in-theory (enable parse-constantvalue-attribute
+                                parse-enclosingmethod-attribute
+                                parse-nestmembers-attribute
+                                parse-exceptions-attribute
+                                parse-sourcefile-attribute
+                                parse-signature-attribute
+                                parse-nesthost-attribute)))))
 
-(defthm-flag-parse-code-attribute
-  (defthm true-listp-of-mv-nth-2-of-parse-code-attribute
-    (implies (true-listp bytes)
-             (true-listp (mv-nth 2 (parse-code-attribute bytes constant-pool))))
-    :flag parse-code-attribute)
-  (defthm true-listp-of-mv-nth-3-of-parse-attribute-info-entry
-    (implies (true-listp bytes)
-             (true-listp (mv-nth 3 (parse-attribute-info-entry bytes constant-pool))))
-    :flag parse-attribute-info-entry)
-  (defthm true-listp-of-mv-nth-2-of-parse-attribute-info-entries
-    (implies (true-listp bytes)
-             (true-listp (mv-nth 2 (parse-attribute-info-entries numentries bytes acc constant-pool))))
-    :flag parse-attribute-info-entries)
-  :hints (("Goal" :expand ((parse-code-attribute bytes constant-pool)
-                           (parse-attribute-info-entry bytes constant-pool)
-                           (parse-attribute-info-entries numentries bytes acc constant-pool))
-                  :in-theory (enable parse-constantvalue-attribute
-                                     parse-code-attribute
-                                     parse-attribute-info-entry
-                                     parse-enclosingmethod-attribute
-                                     parse-nestmembers-attribute
-                                     parse-exceptions-attribute
-                                     parse-sourcefile-attribute
-                                     parse-signature-attribute
-                                     parse-nesthost-attribute
-                                     parse-attribute-info-entries))))
+(local
+  (defthm-flag-parse-code-attribute
+    (defthm true-listp-of-mv-nth-2-of-parse-code-attribute
+      (implies (true-listp bytes)
+               (true-listp (mv-nth 2 (parse-code-attribute bytes constant-pool))))
+      :flag parse-code-attribute)
+    (defthm true-listp-of-mv-nth-3-of-parse-attribute-info-entry
+      (implies (true-listp bytes)
+               (true-listp (mv-nth 3 (parse-attribute-info-entry bytes constant-pool))))
+      :flag parse-attribute-info-entry)
+    (defthm true-listp-of-mv-nth-2-of-parse-attribute-info-entries
+      (implies (true-listp bytes)
+               (true-listp (mv-nth 2 (parse-attribute-info-entries numentries bytes acc constant-pool))))
+      :flag parse-attribute-info-entries)
+    :hints (("Goal" :expand ((parse-code-attribute bytes constant-pool)
+                             (parse-attribute-info-entry bytes constant-pool)
+                             (parse-attribute-info-entries numentries bytes acc constant-pool))
+             :in-theory (enable parse-constantvalue-attribute
+                                parse-code-attribute
+                                parse-attribute-info-entry
+                                parse-enclosingmethod-attribute
+                                parse-nestmembers-attribute
+                                parse-exceptions-attribute
+                                parse-sourcefile-attribute
+                                parse-signature-attribute
+                                parse-nesthost-attribute
+                                parse-attribute-info-entries)))))
 
-(defthm-flag-parse-code-attribute
-  (defthm <=-of-len-of-mv-nth-2-of-parse-code-attribute
-    (<= (len (mv-nth 2 (parse-code-attribute bytes constant-pool)))
-        (len bytes))
-    :rule-classes :linear
-    :flag parse-code-attribute)
-  (defthm <=-of-len-of-mv-nth-3-of-parse-attribute-info-entry
-    (<= (len (mv-nth 3 (parse-attribute-info-entry bytes constant-pool)))
-        (len bytes))
-    :rule-classes :linear
-    :flag parse-attribute-info-entry)
-  (defthm all-unsigned-byte-p-8-of-mv-nth-3-of-parse-attribute-info-entry
-    (implies (all-unsigned-byte-p 8 bytes)
-             (all-unsigned-byte-p 8 (mv-nth 3 (parse-attribute-info-entry bytes constant-pool))))
-    :flag parse-attribute-info-entry)
-  (defthm <=-of-len-of-mv-nth-2-of-parse-attribute-info-entries
-    (<= (len (mv-nth 2 (parse-attribute-info-entries numentries bytes acc constant-pool)))
-        (len bytes))
-    :rule-classes :linear
-    :flag parse-attribute-info-entries)
-  :hints (("Goal" :expand ((parse-code-attribute bytes constant-pool)
-                           (parse-attribute-info-entry bytes constant-pool)
-                           (parse-attribute-info-entries numentries bytes acc constant-pool))
-           :in-theory (enable parse-constantvalue-attribute
-                                     parse-enclosingmethod-attribute
-                                     parse-nestmembers-attribute
-                                     parse-exceptions-attribute
-                                     parse-sourcefile-attribute
-                                     parse-signature-attribute
-                                     parse-nesthost-attribute))))
+(local
+  (defthm-flag-parse-code-attribute
+    (defthm <=-of-len-of-mv-nth-2-of-parse-code-attribute
+      (<= (len (mv-nth 2 (parse-code-attribute bytes constant-pool)))
+          (len bytes))
+      :rule-classes :linear
+      :flag parse-code-attribute)
+    (defthm <=-of-len-of-mv-nth-3-of-parse-attribute-info-entry
+      (<= (len (mv-nth 3 (parse-attribute-info-entry bytes constant-pool)))
+          (len bytes))
+      :rule-classes :linear
+      :flag parse-attribute-info-entry)
+    (defthm all-unsigned-byte-p-8-of-mv-nth-3-of-parse-attribute-info-entry
+      (implies (all-unsigned-byte-p 8 bytes)
+               (all-unsigned-byte-p 8 (mv-nth 3 (parse-attribute-info-entry bytes constant-pool))))
+      :flag parse-attribute-info-entry)
+    (defthm <=-of-len-of-mv-nth-2-of-parse-attribute-info-entries
+      (<= (len (mv-nth 2 (parse-attribute-info-entries numentries bytes acc constant-pool)))
+          (len bytes))
+      :rule-classes :linear
+      :flag parse-attribute-info-entries)
+    :hints (("Goal" :expand ((parse-code-attribute bytes constant-pool)
+                             (parse-attribute-info-entry bytes constant-pool)
+                             (parse-attribute-info-entries numentries bytes acc constant-pool))
+             :in-theory (enable parse-constantvalue-attribute
+                                parse-enclosingmethod-attribute
+                                parse-nestmembers-attribute
+                                parse-exceptions-attribute
+                                parse-sourcefile-attribute
+                                parse-signature-attribute
+                                parse-nesthost-attribute)))))
 
 (defthm bound-on-parse-attribute-info-entry
   (implies (not (mv-nth 0 (parse-attribute-info-entry bytes constant-pool)))
@@ -2686,58 +2755,60 @@
                 (lookup-equal "Code" entries)))
   :hints (("Goal" :in-theory (enable attribute-info-entries-okp))))
 
-(defthm-flag-parse-code-attribute
-  (defthm code-attributep-of-mv-nth-1-of-parse-code-attribute
-    (implies (not (mv-nth 0 (parse-code-attribute bytes constant-pool)))
-             (code-attributep (mv-nth 1 (parse-code-attribute bytes constant-pool))))
-    :flag parse-code-attribute)
-  (defthm mv-nth-2-of-parse-attribute-info-entry-correct
-    (implies (not (mv-nth 0 (parse-attribute-info-entry bytes constant-pool)))
-             (and (implies (equal "Code" (mv-nth 1 (parse-attribute-info-entry bytes constant-pool)))
-                           (code-attributep (mv-nth 2 (parse-attribute-info-entry bytes constant-pool))))
-                  (implies (equal "LocalVariableTable" (mv-nth 1 (parse-attribute-info-entry bytes constant-pool)))
-                           (jvm::local-variable-tablep (mv-nth 2 (parse-attribute-info-entry bytes constant-pool))))))
-    :flag parse-attribute-info-entry)
-  (defthm mv-nth-1-of-parse-attribute-info-entries-correct
-    (implies (and (not (mv-nth 0 (parse-attribute-info-entries numentries bytes acc constant-pool)))
-                  (attribute-info-entries-okp acc)
-                  (alistp acc))
-             (and (alistp (mv-nth 1 (parse-attribute-info-entries numentries bytes acc constant-pool)))
-                  (attribute-info-entries-okp (mv-nth 1 (parse-attribute-info-entries numentries bytes acc constant-pool)))))
-    :flag parse-attribute-info-entries)
-  :hints (("Goal" :in-theory (enable ATTRIBUTE-INFO-ENTRIES-OKP parse-code-attribute)
-           :expand ((:free (key val alist)
-                           (CODE-ATTRIBUTEP (acons key val alist)))
-                    (PARSE-CODE-ATTRIBUTE (MV-NTH 2 (READU4 (MV-NTH 2 (READU2 BYTES))))
-                                          CONSTANT-POOL)
-                    (parse-attribute-info-entry bytes constant-pool)
-                    (PARSE-ATTRIBUTE-INFO-ENTRIES NUMENTRIES BYTES ACC CONSTANT-POOL)))))
+(local
+  (defthm-flag-parse-code-attribute
+    (defthm code-attributep-of-mv-nth-1-of-parse-code-attribute
+      (implies (not (mv-nth 0 (parse-code-attribute bytes constant-pool)))
+               (code-attributep (mv-nth 1 (parse-code-attribute bytes constant-pool))))
+      :flag parse-code-attribute)
+    (defthm mv-nth-2-of-parse-attribute-info-entry-correct
+      (implies (not (mv-nth 0 (parse-attribute-info-entry bytes constant-pool)))
+               (and (implies (equal "Code" (mv-nth 1 (parse-attribute-info-entry bytes constant-pool)))
+                             (code-attributep (mv-nth 2 (parse-attribute-info-entry bytes constant-pool))))
+                    (implies (equal "LocalVariableTable" (mv-nth 1 (parse-attribute-info-entry bytes constant-pool)))
+                             (jvm::local-variable-tablep (mv-nth 2 (parse-attribute-info-entry bytes constant-pool))))))
+      :flag parse-attribute-info-entry)
+    (defthm mv-nth-1-of-parse-attribute-info-entries-correct
+      (implies (and (not (mv-nth 0 (parse-attribute-info-entries numentries bytes acc constant-pool)))
+                    (attribute-info-entries-okp acc)
+                    (alistp acc))
+               (and (alistp (mv-nth 1 (parse-attribute-info-entries numentries bytes acc constant-pool)))
+                    (attribute-info-entries-okp (mv-nth 1 (parse-attribute-info-entries numentries bytes acc constant-pool)))))
+      :flag parse-attribute-info-entries)
+    :hints (("Goal" :in-theory (enable ATTRIBUTE-INFO-ENTRIES-OKP parse-code-attribute)
+             :expand ((:free (key val alist)
+                             (CODE-ATTRIBUTEP (acons key val alist)))
+                      (PARSE-CODE-ATTRIBUTE (MV-NTH 2 (READU4 (MV-NTH 2 (READU2 BYTES))))
+                                            CONSTANT-POOL)
+                      (parse-attribute-info-entry bytes constant-pool)
+                      (PARSE-ATTRIBUTE-INFO-ENTRIES NUMENTRIES BYTES ACC CONSTANT-POOL))))))
 
-(defthm-flag-parse-code-attribute
-  (defthm alistp-of-mv-nth-1-of-parse-code-attribute
-    (alistp (mv-nth 1 (parse-code-attribute bytes constant-pool)))
-    :flag parse-code-attribute)
-  (defthm alistp-of-mv-nth-2-of-parse-attribute-info-entry
-    (implies (equal "Code" (mv-nth 1 (parse-attribute-info-entry bytes constant-pool)))
-             (alistp (mv-nth 2 (parse-attribute-info-entry bytes constant-pool))))
-    :flag parse-attribute-info-entry)
-  (defthm alistp-of-lookup-equal-code-of-mv-nth-1-of-parse-attribute-info-entries
-    (implies (and ;(true-listp bytes)
-              (alistp acc)
-              (alistp (LOOKUP-EQUAL "Code" acc)))
-             (and (alistp (mv-nth 1 (parse-attribute-info-entries numentries bytes acc constant-pool)))
-                  (alistp (LOOKUP-EQUAL "Code" (mv-nth 1 (parse-attribute-info-entries numentries bytes acc constant-pool))))))
-    :flag parse-attribute-info-entries)
-  :hints (("Goal" :expand ((parse-code-attribute bytes constant-pool)
-                           (parse-attribute-info-entry bytes constant-pool)
-                           (parse-attribute-info-entries numentries bytes acc constant-pool))
-           :in-theory (enable parse-constantvalue-attribute
-                                     parse-enclosingmethod-attribute
-                                     parse-nestmembers-attribute
-                                     parse-exceptions-attribute
-                                     parse-sourcefile-attribute
-                                     parse-signature-attribute
-                                     parse-nesthost-attribute))))
+(local
+  (defthm-flag-parse-code-attribute
+    (defthm alistp-of-mv-nth-1-of-parse-code-attribute
+      (alistp (mv-nth 1 (parse-code-attribute bytes constant-pool)))
+      :flag parse-code-attribute)
+    (defthm alistp-of-mv-nth-2-of-parse-attribute-info-entry
+      (implies (equal "Code" (mv-nth 1 (parse-attribute-info-entry bytes constant-pool)))
+               (alistp (mv-nth 2 (parse-attribute-info-entry bytes constant-pool))))
+      :flag parse-attribute-info-entry)
+    (defthm alistp-of-lookup-equal-code-of-mv-nth-1-of-parse-attribute-info-entries
+      (implies (and ;(true-listp bytes)
+                 (alistp acc)
+                 (alistp (LOOKUP-EQUAL "Code" acc)))
+               (and (alistp (mv-nth 1 (parse-attribute-info-entries numentries bytes acc constant-pool)))
+                    (alistp (LOOKUP-EQUAL "Code" (mv-nth 1 (parse-attribute-info-entries numentries bytes acc constant-pool))))))
+      :flag parse-attribute-info-entries)
+    :hints (("Goal" :expand ((parse-code-attribute bytes constant-pool)
+                             (parse-attribute-info-entry bytes constant-pool)
+                             (parse-attribute-info-entries numentries bytes acc constant-pool))
+             :in-theory (enable parse-constantvalue-attribute
+                                parse-enclosingmethod-attribute
+                                parse-nestmembers-attribute
+                                parse-exceptions-attribute
+                                parse-sourcefile-attribute
+                                parse-signature-attribute
+                                parse-nesthost-attribute)))))
 
 (verify-guards parse-code-attribute)
 
@@ -3195,11 +3266,12 @@
         (mv (erp-nil)
             (turn-slashes-into-dots superclass-name))))))
 
-(defthm class-namep-of-mv-nth-1-of-parse-super_class
-  (implies (and (not (mv-nth 0 (parse-super_class super_class constant-pool)))
-                (not (equal :none (mv-nth 1 (parse-super_class super_class constant-pool)))))
-           (jvm::class-namep (mv-nth 1 (parse-super_class super_class constant-pool))))
-  :hints (("Goal" :in-theory (enable parse-super_class))))
+(local
+  (defthm class-namep-of-mv-nth-1-of-parse-super_class
+    (implies (and (not (mv-nth 0 (parse-super_class super_class constant-pool)))
+                  (not (equal :none (mv-nth 1 (parse-super_class super_class constant-pool)))))
+             (jvm::class-namep (mv-nth 1 (parse-super_class super_class constant-pool))))
+    :hints (("Goal" :in-theory (enable parse-super_class)))))
 
 (defund superclass-and-interfaceness-okp (class-name superclass interfacep)
   (declare (xargs :guard t))
@@ -3391,15 +3463,17 @@
           ;; can't refer to locally-bound constant-pool past this:
           (mv erp raw-parsed-class)))))
 
-(defthm raw-parsed-classp-of-mv-nth-1-of-parse-bytes-into-raw-parsed-class
-  (implies (and (not (mv-nth 0 (parse-bytes-into-raw-parsed-class bytes)))
-                (all-unsigned-byte-p 8 bytes))
-           (raw-parsed-classp (mv-nth 1 (parse-bytes-into-raw-parsed-class bytes))))
-  :hints (("Goal" :in-theory (enable parse-bytes-into-raw-parsed-class raw-parsed-classp))))
+(local
+  (defthm raw-parsed-classp-of-mv-nth-1-of-parse-bytes-into-raw-parsed-class
+    (implies (and (not (mv-nth 0 (parse-bytes-into-raw-parsed-class bytes)))
+                  (all-unsigned-byte-p 8 bytes))
+             (raw-parsed-classp (mv-nth 1 (parse-bytes-into-raw-parsed-class bytes))))
+    :hints (("Goal" :in-theory (enable parse-bytes-into-raw-parsed-class raw-parsed-classp)))))
 
-(defthm alistp-of-mv-nth-1-of-parse-bytes-into-raw-parsed-class
-  (alistp (mv-nth 1 (parse-bytes-into-raw-parsed-class bytes)))
-  :hints (("Goal" :in-theory (enable parse-bytes-into-raw-parsed-class))))
+(local
+  (defthm alistp-of-mv-nth-1-of-parse-bytes-into-raw-parsed-class
+    (alistp (mv-nth 1 (parse-bytes-into-raw-parsed-class bytes)))
+    :hints (("Goal" :in-theory (enable parse-bytes-into-raw-parsed-class)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3686,16 +3760,17 @@
          )
     (acons method-id method-info acc)))
 
-(defthm method-info-alistp-of-extend-method-info-alist
-  (implies (and (raw-method-infop raw-method-info)
-                (jvm::method-info-alistp acc))
-           (jvm::method-info-alistp (extend-method-info-alist raw-method-info acc)))
-  :hints (("Goal" :in-theory (e/d (extend-method-info-alist raw-method-infop
-                                                            jvm::method-infop
-                                                            CODE-ATTRIBUTEP)
-                                  (acons
-                                   jvm::method-idp
-                                   natp)))))
+(local
+  (defthm method-info-alistp-of-extend-method-info-alist
+    (implies (and (raw-method-infop raw-method-info)
+                  (jvm::method-info-alistp acc))
+             (jvm::method-info-alistp (extend-method-info-alist raw-method-info acc)))
+    :hints (("Goal" :in-theory (e/d (extend-method-info-alist raw-method-infop
+                                                              jvm::method-infop
+                                                              CODE-ATTRIBUTEP)
+                                    (acons
+                                     jvm::method-idp
+                                     natp))))))
 
 ;; raw-method-infos is a list of alists of the form created by parse-method-info-entry
 ;; Returns the method-info-alist
@@ -3709,11 +3784,12 @@
                             (extend-method-info-alist (first raw-method-infos)
                                                       acc))))
 
-(defthm method-info-alistp-of-make-method-info-alist
-  (implies (and (raw-method-infosp raw-method-infos)
-                (jvm::method-info-alistp acc))
-           (jvm::method-info-alistp (make-method-info-alist raw-method-infos acc)))
-  :hints (("Goal" :in-theory (enable make-method-info-alist RAW-METHOD-INFOSP))))
+(local
+  (defthm method-info-alistp-of-make-method-info-alist
+    (implies (and (raw-method-infosp raw-method-infos)
+                  (jvm::method-info-alistp acc))
+             (jvm::method-info-alistp (make-method-info-alist raw-method-infos acc)))
+    :hints (("Goal" :in-theory (enable make-method-info-alist RAW-METHOD-INFOSP)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

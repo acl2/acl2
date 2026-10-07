@@ -225,12 +225,12 @@
        ((unless qual-ident.filepath?)
         (b* ((externals (c$::trans-ensemble-vinfo->externals
                           (c$::trans-ensemble->info ensemble)))
-             (info? (omap::assoc qual-ident.ident externals))
-             ((unless info?)
+             ((mv foundp info) (treemap::lookup? qual-ident.ident externals))
+             ((unless foundp)
               (retmsg$ "~x0 is not an object or function ~
                         with external linkage."
                        qual-ident.ident))
-             ((c$::valid-ext-info info) (cdr info?)))
+             ((c$::valid-ext-info info) info))
           (retok info.uid)))
        ((unless qual-ident.filepath?)
         (retmsg$ "~x0 is not an object or function ~

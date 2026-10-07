@@ -4615,7 +4615,10 @@
        (which perhaps is not encountered when the file
        is instead preprocessed in the context of the including file,
        due to conditionals in the included file),
-       then we do not preserve the @('#include').")
+       then we do not preserve the @('#include').
+       In this case, we retain the preprocessing ensemble and resolved includes
+       accumulated before the stand-alone attempt,
+       including those from preprocessing the included file in context.")
      (xdoc::p
       "However, if the options indicate full expansion,
        we do not re-preprocess the file,
@@ -4663,7 +4666,7 @@
                               (list (ppart-line closing-line))))
                   (pfile->parts pfile))))
             (retok pparts pensemb resolved-includes ppstate state)))
-         ((mv erp standalone-pfile pensemb resolved-includes state)
+         ((mv erp standalone-pfile new-pensemb new-resolved-includes state)
           (b* (((reterr) (irr-pfile) (irr-pensemble) nil state)
                (pfiles (pensemble->pfiles pensemb))
                (path+pfile (omap::assoc resolved-file pfiles)))
@@ -4690,6 +4693,8 @@
                    (pfiles (omap::update resolved-file pfile pfiles))
                    (pensemb (change-pensemble pensemb :pfiles pfiles)))
                 (retok pfile pensemb resolved-includes state)))))
+         (pensemb (if erp pensemb new-pensemb))
+         (resolved-includes (if erp resolved-includes new-resolved-includes))
          (preserve-include-p
           (and (not erp)
                (compare-pfiles pfile

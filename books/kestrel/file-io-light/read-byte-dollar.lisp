@@ -72,6 +72,11 @@
            (open-input-channel-any-p1 channel (mv-nth 1 (read-byte$ channel2 state))))
   :hints (("Goal" :in-theory (enable open-input-channel-any-p1))))
 
+(defthm open-input-channel-any-p-of-mv-nth-1-of-read-byte$
+  (implies (open-input-channel-any-p channel state)
+           (open-input-channel-any-p channel (mv-nth 1 (read-byte$ channel2 state))))
+  :hints (("Goal" :in-theory (enable open-input-channel-any-p))))
+
 (defthm open-input-channels-of-mv-nth-1-of-read-byte$
   (implies (and (open-input-channel-p1 channel :byte state)
                 (state-p1 state)

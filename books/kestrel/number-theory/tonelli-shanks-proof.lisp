@@ -94,7 +94,7 @@
  (encapsulate
    ()
 
-   (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+   (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
    (local (include-book "arithmetic/equalities" :dir :system))
 
    (defthm exponents-add-for-nonneg-exponents

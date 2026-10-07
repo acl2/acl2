@@ -47,10 +47,10 @@
   *ts-one*
   *ts-integer>1*
   *ts-positive-ratio*
-  #+:non-standard-analysis *ts-positive-non-ratio*
+  #+non-standard-analysis *ts-positive-non-ratio*
   *ts-negative-integer*
   *ts-negative-ratio*
-  #+:non-standard-analysis *ts-negative-non-ratio*
+  #+non-standard-analysis *ts-negative-non-ratio*
 
 ; It is tempting to split the complex rationals into the positive and negative
 ; complex rationals (i.e., those with positive real parts and those with
@@ -59,7 +59,7 @@
 ; For now, we'll resist that temptation.
 
   *ts-complex-rational*
-  #+:non-standard-analysis *ts-complex-non-rational*
+  #+non-standard-analysis *ts-complex-non-rational*
   *ts-nil*
   *ts-t*
   *ts-non-t-non-nil-symbol*
@@ -143,7 +143,7 @@
 ;; Historical Comment from Ruben Gamboa:
 ;; I added the *ts-real* type, analogous to *ts-rational*.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defconst *ts-real* (ts-union0 *ts-integer*
                                *ts-positive-ratio*
                                *ts-positive-non-ratio*
@@ -154,7 +154,7 @@
 ;; I added *ts-complex* to include the complex-rationals and
 ;; non-rationals.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defconst *ts-complex* (ts-union0 *ts-complex-rational*
                                   *ts-complex-non-rational*))
 
@@ -166,15 +166,15 @@
 ;; represent the new numbers.
 
 (defconst *ts-acl2-number*
-  #+:non-standard-analysis
+  #+non-standard-analysis
   (ts-union0 *ts-real* *ts-complex*)
-  #-:non-standard-analysis
+  #-non-standard-analysis
   (ts-union0 *ts-rational* *ts-complex-rational*))
 
 (defconst *ts-rational-acl2-number* (ts-union0 *ts-rational*
                                                *ts-complex-rational*))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defconst *ts-non-rational-acl2-number* (ts-union0 *ts-positive-non-ratio*
                                                    *ts-negative-non-ratio*
                                                    *ts-complex-non-rational*))
@@ -202,7 +202,7 @@
 ;; *ts-non-negative-real*, to mimic their *...-rational*
 ;; counterparts.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (progn
 
 (defconst *ts-non-ratio* (ts-union0 *ts-positive-non-ratio*
@@ -261,14 +261,14 @@
       (= (the-type-set ts) *ts-one*)
       (= (the-type-set ts) *ts-integer>1*)
       (= (the-type-set ts) *ts-positive-ratio*)
-      #+:non-standard-analysis
+      #+non-standard-analysis
       (= (the-type-set ts) *ts-positive-non-ratio*)
       (= (the-type-set ts) *ts-negative-integer*)
       (= (the-type-set ts) *ts-negative-ratio*)
-      #+:non-standard-analysis
+      #+non-standard-analysis
       (= (the-type-set ts) *ts-negative-non-ratio*)
       (= (the-type-set ts) *ts-complex-rational*)
-      #+:non-standard-analysis
+      #+non-standard-analysis
       (= (the-type-set ts) *ts-complex-non-rational*)
       (= (the-type-set ts) *ts-nil*)
       (= (the-type-set ts) *ts-t*)
@@ -311,9 +311,9 @@
         (cons '*ts-acl2-number* *ts-acl2-number*)
         (cons '*ts-rational-acl2-number* *ts-rational-acl2-number*)
 
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (cons '*ts-non-rational-acl2-number* *ts-non-rational-acl2-number*)
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (cons '*ts-real* *ts-real*)
 
         (cons '*ts-rational* *ts-rational*)
@@ -321,17 +321,17 @@
         (cons '*ts-symbol* *ts-symbol*)
         (cons '*ts-integer* *ts-integer*)
 
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (cons '*ts-non-positive-real* *ts-non-positive-real*)
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (cons '*ts-non-negative-real* *ts-non-negative-real*)
 
         (cons '*ts-non-positive-rational* *ts-non-positive-rational*)
         (cons '*ts-non-negative-rational* *ts-non-negative-rational*)
 
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (cons '*ts-negative-real* *ts-negative-real*)
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (cons '*ts-positive-real* *ts-positive-real*)
 
         (cons '*ts-negative-rational* *ts-negative-rational*)
@@ -342,9 +342,9 @@
         (cons '*ts-bit* *ts-bit*)
         (cons '*ts-ratio* *ts-ratio*)
 
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (cons '*ts-non-ratio* *ts-non-ratio*)
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (cons '*ts-complex* *ts-complex*)
 
         (cons '*ts-cons* *ts-cons*)
@@ -355,15 +355,15 @@
         (cons '*ts-one* *ts-one*)
         (cons '*ts-positive-ratio* *ts-positive-ratio*)
 
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (cons '*ts-positive-non-ratio* *ts-positive-non-ratio*)
 
         (cons '*ts-negative-integer* *ts-negative-integer*)
         (cons '*ts-negative-ratio* *ts-negative-ratio*)
 
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (cons '*ts-negative-non-ratio* *ts-negative-non-ratio*)
-        #+:non-standard-analysis
+        #+non-standard-analysis
         (cons '*ts-complex-non-rational* *ts-complex-non-rational*)
 
         (cons '*ts-complex-rational* *ts-complex-rational*)
@@ -487,14 +487,14 @@
                            (*ts-positive-ratio* *ts-positive-ratio*)
                            (*ts-negative-ratio* *ts-ratio*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-positive-non-ratio* *ts-positive-non-ratio*)
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-negative-non-ratio* *ts-non-ratio*)
 
                            (*ts-complex-rational* *ts-complex-rational*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-complex-non-rational* *ts-complex-non-rational*)
                            ))
               (*ts-integer>1*
@@ -506,14 +506,14 @@
                            (*ts-positive-ratio* *ts-positive-ratio*)
                            (*ts-negative-ratio* *ts-ratio*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-positive-non-ratio* *ts-positive-non-ratio*)
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-negative-non-ratio* *ts-non-ratio*)
 
                            (*ts-complex-rational* *ts-complex-rational*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-complex-non-rational* *ts-complex-non-rational*)
                            ))
               (*ts-negative-integer*
@@ -525,14 +525,14 @@
                            (*ts-positive-ratio* *ts-ratio*)
                            (*ts-negative-ratio* *ts-negative-ratio*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-positive-non-ratio* *ts-non-ratio*)
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-negative-non-ratio* *ts-negative-non-ratio*)
 
                            (*ts-complex-rational* *ts-complex-rational*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-complex-non-rational* *ts-complex-non-rational*)
                            ))
               (*ts-positive-ratio*
@@ -544,14 +544,14 @@
                            (*ts-positive-ratio* *ts-positive-rational*)
                            (*ts-negative-ratio* *ts-rational*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-positive-non-ratio* *ts-positive-non-ratio*)
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-negative-non-ratio* *ts-non-ratio*)
 
                            (*ts-complex-rational* *ts-complex-rational*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-complex-non-rational* *ts-complex-non-rational*)
                            ))
               (*ts-negative-ratio*
@@ -563,18 +563,18 @@
                            (*ts-positive-ratio* *ts-rational*)
                            (*ts-negative-ratio* *ts-negative-rational*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-positive-non-ratio* *ts-non-ratio*)
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-negative-non-ratio* *ts-negative-non-ratio*)
 
                            (*ts-complex-rational* *ts-complex-rational*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-complex-non-rational* *ts-complex-non-rational*)
                            ))
 
-              #+:non-standard-analysis
+              #+non-standard-analysis
               (*ts-positive-non-ratio*
                (ts-builder ts2
                            (*ts-zero* ts1)
@@ -587,7 +587,7 @@
                            (*ts-negative-non-ratio* *ts-real*)
                            (*ts-complex-rational* *ts-complex-non-rational*)
                            (*ts-complex-non-rational* *ts-complex*)))
-              #+:non-standard-analysis
+              #+non-standard-analysis
               (*ts-negative-non-ratio*
                (ts-builder ts2
                            (*ts-zero* ts1)
@@ -610,17 +610,17 @@
                            (*ts-positive-ratio* *ts-complex-rational*)
                            (*ts-negative-ratio* *ts-complex-rational*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-positive-non-ratio* *ts-complex-non-rational*)
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-negative-non-ratio* *ts-complex-non-rational*)
 
                            (*ts-complex-rational* *ts-rational-acl2-number*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-complex-non-rational* *ts-non-rational-acl2-number*)
                            ))
-              #+:non-standard-analysis
+              #+non-standard-analysis
               (*ts-complex-non-rational*
                (ts-builder ts2
                            (*ts-zero* ts1)
@@ -665,14 +665,14 @@
                            (*ts-positive-ratio* *ts-positive-rational*)
                            (*ts-negative-ratio* *ts-negative-rational*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-positive-non-ratio* *ts-positive-non-ratio*)
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-negative-non-ratio* *ts-negative-non-ratio*)
 
                            (*ts-complex-rational* *ts-complex-rational*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-complex-non-rational* *ts-complex-non-rational*)
                            ))
               (*ts-negative-integer*
@@ -684,14 +684,14 @@
                            (*ts-positive-ratio* *ts-negative-rational*)
                            (*ts-negative-ratio* *ts-positive-rational*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-positive-non-ratio* *ts-negative-non-ratio*)
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-negative-non-ratio* *ts-positive-non-ratio*)
 
                            (*ts-complex-rational* *ts-complex-rational*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-complex-non-rational* *ts-complex-non-rational*)
                            ))
               (*ts-positive-ratio*
@@ -703,14 +703,14 @@
                            (*ts-positive-ratio* *ts-positive-rational*)
                            (*ts-negative-ratio* *ts-negative-rational*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-positive-non-ratio* *ts-positive-non-ratio*)
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-negative-non-ratio* *ts-negative-non-ratio*)
 
                            (*ts-complex-rational* *ts-complex-rational*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-complex-non-rational* *ts-complex-non-rational*)
                            ))
               (*ts-negative-ratio*
@@ -722,17 +722,17 @@
                            (*ts-positive-ratio* *ts-negative-rational*)
                            (*ts-negative-ratio* *ts-positive-rational*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-positive-non-ratio* *ts-negative-non-ratio*)
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-negative-non-ratio* *ts-positive-non-ratio*)
 
                            (*ts-complex-rational* *ts-complex-rational*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-complex-non-rational* *ts-complex-non-rational*)
                            ))
-              #+:non-standard-analysis
+              #+non-standard-analysis
               (*ts-positive-non-ratio*
                (ts-builder ts2
                            (*ts-zero* *ts-zero*)
@@ -745,7 +745,7 @@
                            (*ts-negative-non-ratio* *ts-negative-real*)
                            (*ts-complex-rational* *ts-complex-non-rational*)
                            (*ts-complex-non-rational* *ts-complex*)))
-              #+:non-standard-analysis
+              #+non-standard-analysis
               (*ts-negative-non-ratio*
                (ts-builder ts2
                            (*ts-zero* *ts-zero*)
@@ -767,18 +767,18 @@
                            (*ts-positive-ratio* *ts-complex-rational*)
                            (*ts-negative-ratio* *ts-complex-rational*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-positive-non-ratio* *ts-complex-non-rational*)
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-negative-non-ratio* *ts-complex-non-rational*)
 
                            (*ts-complex-rational*
                             (ts-intersection0 *ts-rational-acl2-number*
                                               (ts-complement0 *ts-zero*)))
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-complex-non-rational* *ts-non-rational-acl2-number*)))
-              #+:non-standard-analysis
+              #+non-standard-analysis
               (*ts-complex-non-rational*
                (ts-builder ts2
                            (*ts-zero* *ts-zero*)
@@ -824,9 +824,9 @@
                            (*ts-positive-ratio* *ts-t*)
                            (*ts-negative-ratio* *ts-nil*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-positive-non-ratio* *ts-t*)
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-negative-non-ratio* *ts-nil*)))
               (*ts-one*
                (ts-builder ts2
@@ -837,9 +837,9 @@
                            (*ts-positive-ratio* *ts-boolean*)
                            (*ts-negative-ratio* *ts-nil*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-positive-non-ratio* *ts-boolean*)
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-negative-non-ratio* *ts-nil*)))
               (*ts-integer>1*
                (ts-builder ts2
@@ -850,9 +850,9 @@
                            (*ts-positive-ratio* *ts-boolean*)
                            (*ts-negative-ratio* *ts-nil*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-positive-non-ratio* *ts-boolean*)
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-negative-non-ratio* *ts-nil*)))
               (*ts-negative-integer*
                (ts-builder ts2
@@ -863,9 +863,9 @@
                            (*ts-positive-ratio* *ts-t*)
                            (*ts-negative-ratio* *ts-boolean*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-positive-non-ratio* *ts-t*)
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-negative-non-ratio* *ts-boolean*)))
               (*ts-positive-ratio*
                (ts-builder ts2
@@ -876,9 +876,9 @@
                            (*ts-positive-ratio* *ts-boolean*)
                            (*ts-negative-ratio* *ts-nil*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-positive-non-ratio* *ts-boolean*)
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-negative-non-ratio* *ts-nil*)))
               (*ts-negative-ratio*
                (ts-builder ts2
@@ -889,12 +889,12 @@
                            (*ts-positive-ratio* *ts-t*)
                            (*ts-negative-ratio* *ts-boolean*)
 
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-positive-non-ratio* *ts-t*)
-                           #+:non-standard-analysis
+                           #+non-standard-analysis
                            (*ts-negative-non-ratio* *ts-boolean*)))
 
-              #+:non-standard-analysis
+              #+non-standard-analysis
               (*ts-positive-non-ratio*
                (ts-builder ts2
                            (*ts-zero* *ts-nil*)
@@ -905,7 +905,7 @@
                            (*ts-negative-ratio* *ts-nil*)
                            (*ts-positive-non-ratio* *ts-boolean*)
                            (*ts-negative-non-ratio* *ts-nil*)))
-              #+:non-standard-analysis
+              #+non-standard-analysis
               (*ts-negative-non-ratio*
                (ts-builder ts2
                            (*ts-zero* *ts-t*)

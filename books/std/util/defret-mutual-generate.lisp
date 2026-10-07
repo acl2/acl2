@@ -124,6 +124,14 @@ affect subsequent conclusions added.</li>
 to the resulting @('defret') form; typical keys to use are @(':hints') and
 @(':rule-classes').</li>
 
+<li>@('(:append-keyword key val ...)') or similarly @('(:prepend-keyword ...)')
+adds the keyword/value pairs as arguments to the resulting @('defret') form,
+but for a given keyword/value pair, if that keyword is already bound, the
+values are appended after/prepended before (respectively) the current binding
+of the keyword. This is useful for hints, in particular, if there are e.g. some
+hints to apply to many functions and other more specific hints to also apply to
+a subset.</li>
+
 <li>@('(:set-thmname template)') sets the theorem name template for the
 @('defret') to the given symbol, which may include the substring @('<FN>')
 which is replaced by the name of the function.</li>
@@ -638,7 +646,7 @@ or per set of rules (in the multiple @('defret-generate') case.</p>
       (:pop-hyp (dmgen-check-pop-hyp-action action))
       ((:each-formal :each-return) (dmgen-check-each-formal/return-action action))
       (:add-bindings (dmgen-check-add-bindings-action action))
-      (:add-keyword (dmgen-check-add-keyword-action action))
+      ((:add-keyword :append-keyword :prepend-keyword) (dmgen-check-add-keyword-action action))
       (:set-thmname (dmgen-check-set-thmname-action action))
       (t (msg "Bad action: ~x0" action)))))
 
@@ -657,6 +665,38 @@ or per set of rules (in the multiple @('defret-generate') case.</p>
       nil
     (or (dmgen-check-rule (car rules))
         (dmgen-check-rules (cdr rules)))))
+
+(defun dmgen-append-keyword (key val keyvals)
+  (if (atom keyvals)
+      (list key val)
+    (if (eq (car keyvals) key)
+        (list* key
+               (append (cadr keyvals) val)
+               (cddr keyvals))
+      (list* (car keyvals) (cadr keyvals)
+             (dmgen-append-keyword key val (cddr keyvals))))))
+
+(defun dmgen-prepend-keyword (key val keyvals)
+  (if (atom keyvals)
+      (list key val)
+    (if (eq (car keyvals) key)
+        (list* key
+               (append val (cadr keyvals))
+               (cddr keyvals))
+      (list* (car keyvals) (cadr keyvals)
+             (dmgen-prepend-keyword key val (cddr keyvals))))))
+
+(defun dmgen-append-keywords (new-keyvals keyvals)
+  (if (atom new-keyvals)
+      keyvals
+    (dmgen-append-keywords (cddr new-keyvals)
+                           (dmgen-append-keyword (car new-keyvals) (cadr new-keyvals) keyvals))))
+
+(defun dmgen-prepend-keywords (new-keyvals keyvals)
+  (if (atom new-keyvals)
+      keyvals
+    (dmgen-prepend-keywords (cddr new-keyvals)
+                            (dmgen-prepend-keyword (car new-keyvals) (cadr new-keyvals) keyvals))))
 
 (defun dmgen-action (action guts form wrld)
   (b* (((dmgen-defret-form form)))
@@ -681,6 +721,8 @@ or per set of rules (in the multiple @('defret-generate') case.</p>
                        form (defguts->returnspecs guts)
                        guts wrld)))
       (:add-keyword (change-dmgen-defret-form form :keywords (append (cdr action) form.keywords)))
+      (:append-keyword (change-dmgen-defret-form form :keywords (dmgen-append-keywords (cdr action) form.keywords)))
+      (:prepend-keyword (change-dmgen-defret-form form :keywords (dmgen-prepend-keywords (cdr action) form.keywords)))
       (:set-thmname (change-dmgen-defret-form form :thmname (cadr action))))))
 
 (defun dmgen-actions (actions guts form wrld)

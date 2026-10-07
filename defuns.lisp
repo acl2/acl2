@@ -2190,7 +2190,7 @@
           (declare (ignore ttree))
           wrld))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun listof-standardp-macro (lst)
 
 ; If the guard for standardp is changed from t, consider changing
@@ -2208,7 +2208,7 @@
 
 (defun putprop-body-lst (names arglists bodies normalizeps
                                clique controller-alist
-                               #+:non-standard-analysis std-p
+                               #+non-standard-analysis std-p
                                ens wrld installed-wrld ttree)
 
 ; Rockwell Addition:  A major change is the handling of PROG2$ and THE
@@ -2447,16 +2447,16 @@
              (let* ((eqterm (fcons-term* 'equal
                                          (fcons-term fn args)
                                          body))
-                    (term #+:non-standard-analysis
+                    (term #+non-standard-analysis
                           (if (and std-p (consp args))
                               (fcons-term*
                                'implies
                                (listof-standardp-macro args)
                                eqterm)
                             eqterm)
-                          #-:non-standard-analysis
+                          #-non-standard-analysis
                           eqterm)
-                    #+:non-standard-analysis
+                    #+non-standard-analysis
                     (wrld (if std-p
                               (putprop fn 'constrainedp t
                                        (putprop
@@ -2481,7 +2481,7 @@
                                   (cdr bodies)
                                   (cdr normalizeps)
                                   clique controller-alist
-                                  #+:non-standard-analysis std-p
+                                  #+non-standard-analysis std-p
                                   ens
                                   wrld installed-wrld ttree)))))))
 
@@ -2534,16 +2534,16 @@
 ; The ttree returned is 'assumption-free (provided the initial ttree
 ; is also).
 
-  (let* ((new-var (genvar 'genvar "EMPTY" nil (all-vars term)))
-         (type-alist (list (list* new-var *ts-empty* nil))))
-    (mv-let (normal-term ttree)
-            (normalize term t nil ens wrld ttree
-                       (backchain-limit wrld :ts))
-            (type-set
-             (type-set-implied-by-term1 normal-term
-                                        (if not-flg new-var var)
-                                        (if not-flg var new-var))
-             nil nil type-alist ens wrld ttree nil nil))))
+  (mv-let (normal-term ttree)
+    (normalize term t nil ens wrld ttree
+               (backchain-limit wrld :ts))
+    (let* ((new-var (genvar 'genvar "EMPTY" nil
+                            (cons var (all-vars normal-term))))
+           (type-alist (list (list* new-var *ts-empty* nil))))
+      (type-set (type-set-implied-by-term1 normal-term
+                                           (if not-flg new-var var)
+                                           (if not-flg var new-var))
+                nil nil type-alist ens wrld ttree nil nil))))
 
 (defun putprop-initial-type-prescriptions (names type-prescription-lst wrld)
 
@@ -3340,10 +3340,10 @@
          t)
         ((not (mbt (true-listp x))) nil)
         ((not (mbt (pseudo-term-listp (cdr x)))) nil)
-        (t (if (symbolp (car x))
-               (not (eq (getpropc (car x) 'formals t w) t))
-             (and (guarded-termp (caddr (car x)) w)
-                  (guarded-term-listp (cdr x) w))))))
+        (t (and (if (symbolp (car x))
+                    (not (eq (getpropc (car x) 'formals t w) t))
+                  (guarded-termp (caddr (car x)) w))
+                (guarded-term-listp (cdr x) w)))))
 
 (defun guarded-term-listp (lst w)
   (declare (xargs :guard (and (pseudo-term-listp lst)
@@ -4213,8 +4213,12 @@
 
 (defun all-fnnames1-exec (flg x acc)
 
-; Keep this in sync with all-fnnames1.  Also see the comment about
-; all-fnnames1-exec in put-invariant-risk before modifying this function.
+; Keep this in sync with all-fnnames1, all-fnnames!, and
+; all-fnnames1-invariant-risk.
+
+; This function collects into acc all function symbols that could be called in
+; raw Lisp, bypassing their *1* functions, in guard-verified code.  In
+; particular, we do not collect foo in (ec-call (foo ...)).
 
   (cond (flg ; x is a list of terms
          (cond ((null x) acc)
@@ -4232,7 +4236,9 @@
                      (nvariablep (fargn x 3))
                      (not (fquotep (fargn x 3)))
                      (not (flambdap (ffn-symb (fargn x 3)))))
-                (all-fnnames1-exec t (fargs (fargn x 3)) acc))
+                (all-fnnames1-exec t
+                                   (fargs (fargn x 3))
+                                   acc))
                (t (all-fnnames1-exec t
                                      (fargs x)
                                      (add-to-set-eq (ffn-symb x) acc)))))
@@ -4241,6 +4247,11 @@
                             (add-to-set-eq (ffn-symb x) acc)))))
 
 (defmacro all-fnnames-exec (term)
+
+; This function returns a list of all function symbols that could be called in
+; raw Lisp, bypassing their *1* functions, in guard-verified code.  In
+; particular, we do not collect foo in (ec-call (foo ...)).
+
   `(all-fnnames1-exec nil ,term nil))
 
 (defun collect-guards-and-bodies (lst)
@@ -6059,6 +6070,70 @@
 
     (aset1-trusted . nil)))
 
+(defun all-fnnames1-invariant-risk (flg x i wrld acc)
+
+; Keep this in sync with all-fnnames1, all-fnnames1-exec, and all-fnnames!.
+; Also see the comment about all-fnnames1-invariant-risk in put-invariant-risk
+; before modifying this function.
+
+; This function collects into acc all function symbols whose calls, during
+; evaluation of x, might lead to invariant-risk sorts of violations.  (Notice
+; that we say "might": We are conservative, perhaps collecting more function
+; symbols than necessary.)  We thus include relevant calls arising from
+; compiled lambdas of loop$ expressions.  But unlike all-fnnames!, we do not
+; collect inside all well-formed lambda objects, since those that are
+; implemented with compiled code are presumably well-guarded.
+
+; When flg is non-nil, then x is a list of terms, and i is a corresponding list
+; of ilks or nil to represent a corresponding list of nils.  Otherwise i is an
+; ilk for x.
+
+  (cond (flg
+         (cond ((null x) acc)
+               (t (all-fnnames1-invariant-risk
+                   nil (car x) (car i) wrld
+                   (all-fnnames1-invariant-risk t (cdr x) (cdr i) wrld acc)))))
+        ((variablep x) acc)
+        ((fquotep x)
+         (if (and (eq i :fn)
+                  (well-formed-lambda-objectp (unquote x) wrld))
+             (all-fnnames1-invariant-risk
+              nil (lambda-object-guard (unquote x))
+              nil wrld
+              (all-fnnames1-invariant-risk nil (lambda-object-body (unquote x))
+                                           nil wrld acc))
+           acc))
+        ((flambda-applicationp x)
+         (all-fnnames1-invariant-risk
+          nil (lambda-body (ffn-symb x)) nil wrld
+          (all-fnnames1-invariant-risk t (fargs x) nil wrld acc)))
+        ((eq (ffn-symb x) 'return-last)
+
+; A loop$ expression won't generate a return- mbe or ec-call wrapper in a :fn position
+; of a call of do$, sum$, or any other loop$ scion.  So we use i = nil below.
+
+         (cond ((equal (fargn x 1) '(quote mbe1-raw))
+                (all-fnnames1-invariant-risk nil (fargn x 2)
+                                             nil ; see comment above
+                                             wrld acc))
+               ((and (equal (fargn x 1) '(quote ec-call1-raw))
+                     (nvariablep (fargn x 3))
+                     (not (fquotep (fargn x 3)))
+                     (not (flambdap (ffn-symb (fargn x 3)))))
+                (all-fnnames1-invariant-risk t (fargs (fargn x 3))
+                                             nil ; see comment above
+                                             wrld acc))
+               (t (all-fnnames1-invariant-risk t (fargs x) nil wrld
+                                               (add-to-set-eq (ffn-symb x) acc)))))
+        (t
+         (all-fnnames1-invariant-risk
+          t
+          (fargs x)
+          (and (special-loop$-scion-callp x wrld)
+               (access apply$-badge (executable-badge (ffn-symb x) wrld) :ilks))
+          wrld
+          (add-to-set-eq (ffn-symb x) acc)))))
+
 (defun put-invariant-risk (names bodies non-executablep symbol-class guards
                                  wrld)
 
@@ -6072,7 +6147,7 @@
 ; present function, put-invariant-risk, propagates these 'invariant-risk
 ; properties up through callers.
 
-; When we call all-fnnames1-exec below, we are ignoring :logic code from mbe
+; When we call all-fnnames1-invariant-risk below, we are ignoring :logic code from mbe
 ; calls.  To see that this is sound, first note that we are determining when
 ; there is a risk of bypassing guard checks that would avoid invariant
 ; violations.  If we are executing :logic code from an mbe call, then we must
@@ -6080,7 +6155,7 @@
 ; always execute the :exec code of an mbe call (see oneify), as does raw Lisp
 ; code.  But invariants are checked (in particular, by checking guards for live
 ; stobj manipulation) when making *1* calls of :logic mode functions.  There is
-; actually one other case that all-fnnames1-exec ignores function symbols in
+; actually one other case that all-fnnames1-invariant-risk ignores function symbols in
 ; the call tree: it does not collect function symbol F from (ec-call (F ...)).
 ; But in this case, *1*F or *1*F$INLINE is called, and if there is a non-nil
 ; 'invariant-risk property for F or F$INLINE (respectively), then we trust that
@@ -6121,14 +6196,45 @@
                                               (car new-fns)
                                               wrld)
                             wrld))
-                    (t (put-invariant-risk1 new-fns
-                                            (all-fnnames1-exec t bodies nil)
-                                            wrld))))))))))
+                    (t (put-invariant-risk1
+                        new-fns
+                        (all-fnnames1-invariant-risk t bodies nil wrld nil)
+                        wrld))))))))))
+
+; The following record collects information related to the use of lambda,
+; lambda$ and loop$ forms in defuns.  We document what the items are below.
+; But here we explain why we pack them together.  These items are extracted and
+; returned (ultimately) by chk-acceptable-defuns as part of its 2nd result, a
+; list of over 20 items.  When lambda objects were added, it would have been
+; natural for us to add these items to the list.  However, the number of
+; lambda-related items keeps growing and some user books call
+; chk-acceptable-defuns expecting the list to be of a certain length (whatever
+; it was when the book was created).  So we added one new item to
+; chk-acceptable-defuns list, this record, and changed the user books to expect
+; that new length.  And now we're free to collect additional information during
+; checking without having to mess with user books (unless they begin to use the
+; lambda information here).
+
+(defrec lambda-info
+  (loop$-recursion            ; T or NIL indicating that recursive calls of the
+                              ; (single) function being defined are allowed
+                              ; inside LOOP$ statements.  The function must
+                              ; be tame and return only one result!
+
+   new-lambda$-alist-pairs    ; Maps the obvious untranslated terms to their
+                              ; respective translations
+
+   new-loop$-alist-pairs      ; Maps untranslated loop$ statements to
+                              ; loop$-alist-entry records containing those
+                              ; translations after converting them from logic
+                              ; to runnable code.
+   )
+  nil)
 
 (defun defuns-fn-short-cut (loop$-recursion-checkedp
                             loop$-recursion
                             names docs pairs guards measures split-types-terms
-                            bodies non-executablep ctx wrld state)
+                            bodies lambda-info non-executablep ctx wrld state)
 
 ; This function is called by defuns-fn when the functions to be defined are
 ; :program.  It short cuts the normal put-induction-info and other such
@@ -6182,8 +6288,8 @@
                              'defuns-fn-short-cut)
    (er-progn
     (cond
-     ((and (null (cdr names))                                ; single function
-           (not (equal (car measures) *no-measure*))         ; explicit measure
+     ((and (null (cdr names))                        ; single function
+           (not (equal (car measures) *no-measure*)) ; explicit measure
            (not loop$-recursion)
            (not (ffnnamep-mod-mbe (car names) (car bodies)))) ; not recursive
 
@@ -6213,8 +6319,44 @@
                     names 'guard guards *t*
                     (putprop-x-lst2-unless
                      names 'split-types-term split-types-terms *t*
-                     wrld1)))))
-      (value (cons wrld2 nil))))))
+                     wrld1))))
+
+; We now store the lambda$-info into the lambda$-alist and the loop$-alist
+; world globals.  We don't store the loop$-recursion info because we know
+; loop$-recursion is nil here.  In order to keep this code as close as possible
+; to the :logic mode counterpart in defuns-fn1, we just copied the relevant
+; code and rename our current wrld2 to be wrld6 so we can proceed with
+; the defuns-fn1 code...
+
+           (wrld6a wrld2)
+           (lambda$-alist-wrld6a
+            (global-val 'lambda$-alist wrld6a))
+           (new-lambda$-alist-pairs (access lambda-info
+                                            lambda-info
+                                            :new-lambda$-alist-pairs))
+           (wrld6b
+            (if (subsetp-equal new-lambda$-alist-pairs
+                               lambda$-alist-wrld6a)
+                wrld6a
+                (global-set 'lambda$-alist
+                            (union-equal new-lambda$-alist-pairs
+                                         lambda$-alist-wrld6a)
+                            wrld6a)))
+           (loop$-alist-wrld6b
+            (global-val 'loop$-alist wrld6b))
+           (new-loop$-alist-pairs (access lambda-info
+                                          lambda-info
+                                          :new-loop$-alist-pairs))
+           (wrld6c
+            (if (subsetp-equal new-loop$-alist-pairs
+                               loop$-alist-wrld6b)
+                wrld6b
+                (global-set 'loop$-alist
+                            (union-equal new-loop$-alist-pairs
+                                         loop$-alist-wrld6b)
+                            wrld6b)))
+           )
+      (value (cons wrld6c nil))))))
 
 ; Now we develop the output for the defun event.
 
@@ -6676,9 +6818,18 @@
        (subsetp-eq lst2 lst1)))
 
 (defun non-identical-defp-chk-measures (name new-measures old-measures
-                                             justification)
+                                             justification wrld)
   (cond
-   ((equal new-measures old-measures)
+   ((and (equal new-measures old-measures)
+         (or (and (consp new-measures)
+                  (car new-measures)) ; :measure supplied explicitly
+             (let ((old-measure
+                    (access justification justification :measure)))
+               (ffn-symb-p old-measure
+                           (default-measure-function wrld)))))
+
+; There is no dependence on the default measure, so the actual measures agree.
+
     nil)
    (t
 
@@ -6704,44 +6855,70 @@
        ((and (consp new-measures)
              (null (cdr new-measures))
              (let ((new-measure (car new-measures)))
-               (or (equal new-measure (car old-measures))
-                   (and (true-listp new-measure)
-                        (eq (car new-measure) :?)
-                        (arglistp (cdr new-measure))
-                        (set-equalp-eq old-measured-subset
-                                       (cdr new-measure))))))
+               (and (true-listp new-measure)
+                    (eq (car new-measure) :?)
+                    (arglistp (cdr new-measure))
+                    (set-equalp-eq old-measured-subset
+                                   (cdr new-measure)))))
         nil)
        (old-measures
         (msg "the proposed and existing definitions for ~x0 differ on their ~
               measures.  The proposed measure is ~x1 but the existing measure ~
-              is ~x2.  The proposed measure needs to be specified explicitly ~
-              in fully translated form with :measure (see :DOC xargs), either ~
-              to be identical to the existing measure or to be a call of :? ~
-              on the measured subset; for example, ~x3 will serve as the ~
-              proposed :measure."
+              is ~x2.  See :DOC redundant-events."
              name
              (car new-measures)
-             (car old-measures)
-             (cons :? old-measured-subset)))
+             (car old-measures)))
        (t
         (msg "the existing definition for ~x0 does not have an explicitly ~
-              specified measure.  Either remove the :measure declaration from ~
-              your proposed definition, or else specify a :measure that ~
-              applies :? to the existing measured subset, for example, ~x1."
+              specified measure ~#1~[but the new measure is supplied as ~
+              ~x2~/and the default measure function has changed (see :DOC ~
+              set-measure-function)~].  See :DOC redundant-events."
              name
-             (cons :? old-measured-subset))))))))
+             (if (car new-measures) 0 1)
+             (car new-measures))))))))
+
+(defun non-identical-defp-chk-well-founded-relation (name new-wfrs old-wfrs
+                                                          justification wrld)
+  (let* ((new-wfr (car new-wfrs))
+         (old-wfr (car old-wfrs))
+         (proposed-actual-wfr (or new-wfr
+                                  (default-well-founded-relation wrld))))
+    (cond
+     ((eq (access justification justification :rel)
+          proposed-actual-wfr)
+      nil)
+     ((or old-wfr new-wfr)
+      (msg "the proposed and existing definitions for ~x0 differ on their ~
+            well-founded relations: ~x1~#2~[ (from the default well-founded ~
+            relation)~/~] for the proposed definition, and ~x3 for the ~
+            existing definition.  See :DOC redundant-events."
+           name
+           proposed-actual-wfr
+           (if new-wfr 1 0)
+           (access justification justification :rel)))
+     (t
+      (msg "the existing and new definitions for ~x0 do not have explicitly ~
+            specified well-founded relations, but the default well-founded ~
+            relation has changed (see :DOC set-well-founded-relation) from ~
+            ~x1 to ~x2.  See :DOC redundant-events."
+           name
+           (access justification justification :rel)
+           (default-well-founded-relation wrld))))))
 
 (defun non-identical-defp (def1 def2 chk-measure-p wrld)
 
-; This predicate is used in recognizing redundant definitions.  In our intended
-; application, def2 will have been successfully processed and def1 is merely
-; proposed, where def1 and def2 are each of the form (fn args ...dcls... body)
-; and everything is untranslated.  Two such tuples are "identical" if their
-; fns, args, bodies, types, stobjs, guards, and (if chk-measure-p is true)
-; measures are equal -- except that the new measure can be (:? v1 ... vk) if
-; (v1 ... vk) is the measured subset for the old definition.  We return nil if
-; def1 is thus redundant with ("identical" to) def2.  Otherwise we return a
-; message suitable for printing using " Note that ~@k.".
+; This predicate is used in recognizing redundant definitions; see :DOC
+; redundant-events.  In our intended application, def2 will have been
+; successfully processed and def1 is merely proposed, where def1 and def2 are
+; each of the form (fn args ...dcls... body) and everything is untranslated.
+; Two such tuples are "identical" if the following are equal: fns, args,
+; bodies, types, stobjs, and guards; and, if def2 is recursive or
+; mutually-recursive and we are not skipping proofs, then also the
+; ruler-extenders, well-founded relations, and measures -- except that the new
+; measure can be (:? v1 ... vk) if (v1 ... vk) is the measured subset for the
+; old definition.  We return nil if def1 is thus redundant with ("identical"
+; to) def2.  Otherwise we return a message suitable for printing using " Note
+; that ~@k.".
 
 ; Note that def1 might actually be syntactically illegal, e.g., it might
 ; specify two different :measures.  But it is possible that we will still
@@ -6788,8 +6965,6 @@
             for ~x0, namely, ~x1."
            (car def1)
            (access justification justification :ruler-extenders)))
-     ((equal def1 def2) ; optimization
-      nil)
      ((not (eq (car def1) (car def2))) ; check same fn (can this fail?)
       (msg "the name of the new event, ~x0, differs from the name of the ~
             corresponding existing event, ~x1."
@@ -6892,6 +7067,11 @@
       (msg "the proposed and existing definitions for ~x0 differ on their ~
             type declarations."
            (car def1)))
+     ((not (equal (fetch-dcl-field :loop$-recursion all-but-body1)
+                  (fetch-dcl-field :loop$-recursion all-but-body2)))
+      (msg "the proposed and existing definitions for ~x0 differ on their ~
+            :loop$-recursion declarations."
+           (car def1)))
      ((let* ((guards1 (fetch-dcl-field :guard all-but-body1))
              (guards1-trivial-p (or (null guards1) (equal guards1 '(t))))
              (guards2 (fetch-dcl-field :guard all-but-body2))
@@ -6957,11 +7137,16 @@
 
       nil)
      (t
-      (non-identical-defp-chk-measures
-       (car def1)
-       (fetch-dcl-field :measure all-but-body1)
-       (fetch-dcl-field :measure all-but-body2)
-       justification)))))
+      (or (non-identical-defp-chk-measures
+           (car def1)
+           (fetch-dcl-field :measure all-but-body1)
+           (fetch-dcl-field :measure all-but-body2)
+           justification wrld)
+          (non-identical-defp-chk-well-founded-relation
+           (car def1)
+           (fetch-dcl-field :well-founded-relation all-but-body1)
+           (fetch-dcl-field :well-founded-relation all-but-body2)
+           justification wrld))))))
 
 (defun identical-defp (def1 def2 chk-measure-p wrld)
 
@@ -7106,7 +7291,7 @@
 ; the definition is installed, it will be in program mode and hence its measure
 ; presents no concern for soundness.
 
-                      (eq (cadr val) :logic)
+                      (not (eq (cadr val) :program)) ; include nil for defun-nx
                       (eq defun-mode :logic))))
 
 ; The 'cltl-command val for a defun is (defuns :defun-mode ignorep . def-lst)
@@ -7244,6 +7429,9 @@
                    ((and (eq (symbol-class name wrld) :program)
                          (eq defun-mode :logic))
                     'reclassifying)
+                   ((and (eq symbol-class :common-lisp-compliant)
+                         (eq (symbol-class name wrld) :ideal))
+                    'verify-guards)
                    (t
 
 ; We allow "redefinition" from :logic to :program mode by treating the latter
@@ -7288,12 +7476,13 @@
 ; for :logic mode functions, where we store t.
 
   (let ((err-str "For technical reasons, we do not attempt to recover the ~
-                  definition of a ~s0 function such as ~x1.  It is surprising ~
-                  actually that you are seeing this message; please contact ~
-                  the ACL2 implementors unless you have called ~x2 yourself.")
+                  definition of a~s0 function symbol such as ~x1.  It is ~
+                  surprising actually that you are seeing this message; ~
+                  please contact the ACL2 implementors unless you have called ~
+                  ~x2 yourself.")
         (ctx 'recover-defs-lst))
     (cond
-     ((getpropc fn 'non-executablep nil wrld)
+     ((getpropc fn "non-executablep" nil wrld)
 
 ; We shouldn't be seeing this message, as something between verify-termination
 ; and this lower-level function should be handling the non-executable case
@@ -7302,7 +7491,7 @@
 
       (er hard ctx
           err-str
-          "non-executable" fn 'recover-defs-lst))
+          " non-executable" fn 'recover-defs-lst))
      (t
       (let ((val
              (scan-to-cltl-command
@@ -7325,13 +7514,17 @@
                (cond ((cadr val) (cdddr val))
                      (t (er hard ctx
                             err-str
-                            "non-executable or :LOGIC mode"
+                            " non-executable or :LOGIC mode"
                             fn
                             'recover-defs-lst))))
               (t (er hard ctx
                      "We failed to find the expected CLTL-COMMAND for the ~
-                      introduction of ~x0."
-                     fn))))))))
+                      introduction of ~x0.  ~@1"
+                     fn
+                     (msg err-str
+                          ""
+                          fn
+                          'recover-defs-lst)))))))))
 
 (defun get-clique (fn wrld)
 
@@ -8331,7 +8524,7 @@
 ;; This function strips out the functions which are
 ;; non-classical in a chk-acceptable-defuns "fives" structure.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun get-non-classical-fns-from-list (names wrld fns-sofar)
   (cond ((null names) fns-sofar)
         (t (let ((fns (if (or (not (symbolp (car names)))
@@ -8344,11 +8537,11 @@
 ;; This function takes in a list of terms and returns any
 ;; non-classical functions referenced in the terms.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defmacro get-non-classical-fns (lst wrld)
   `(get-non-classical-fns-aux ,lst ,wrld nil))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun get-non-classical-fns-aux (lst wrld fns-sofar)
   (cond ((null lst) fns-sofar)
         (t (get-non-classical-fns-aux
@@ -8364,7 +8557,7 @@
 ;; since it's just the acl2-count of some tuple consisting of variables in the
 ;; defun.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun strip-missing-measures (lst accum)
   (if (consp lst)
       (if (equal (car lst) *no-measure*)
@@ -8372,7 +8565,7 @@
         (strip-missing-measures (cdr lst) (cons (car lst) accum)))
     accum))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun chk-classical-measures (measures names ctx wrld state)
   (let ((non-classical-fns (get-non-classical-fns
                             (strip-missing-measures measures nil)
@@ -8394,7 +8587,7 @@
 ;; This function checks that non-classical functions only appear
 ;; on non-recursive functions.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun chk-no-recursive-non-classical (non-classical-fns names mp rel
                                                          measures
                                                          bodies ctx
@@ -9057,8 +9250,9 @@
 ; would give the wrong answer when applying the untranslated (lambda$ (x) (+ 1
 ; x)).
 
+  (declare (ignore symbol-class))
   (cond
-   ((and (not (eq symbol-class :program))
+   ((and ; (not (eq symbol-class :program))
          (not (global-val 'boot-strap-flg wrld)))
     (let ((new-pairs
            (raw-lambda$s-to-lambdas
@@ -9139,7 +9333,7 @@
 
 (mutual-recursion
 
-(defun logic-code-to-runnable-code (already-in-mv-listp term wrld)
+(defun logic-code-to-runnable-code (already-in-mv-listp term rrl wrld)
 
 ; Note: This function used to be called ``twoify''.
 
@@ -9157,6 +9351,8 @@
 ; y z) versus (+ x (+ y z)), so we do not flatten +-nests -- both result in two
 ; calls of the machine's +.
 
+; Argument rrl is non-nil when we are to Remove Return-Last calls.
+
   (declare (xargs :guard (and (pseudo-termp term)
                               (plist-worldp wrld))))
   (cond ((variablep term) term)
@@ -9172,14 +9368,22 @@
          (cons (list 'lambda (lambda-formals (ffn-symb term))
                      (logic-code-to-runnable-code nil
                                                   (lambda-body (ffn-symb term))
+                                                  rrl
                                                   wrld))
-               (logic-code-to-runnable-code-lst (fargs term) wrld)))
+               (logic-code-to-runnable-code-lst (fargs term) rrl wrld)))
         ((eq (ffn-symb term) 'if)
-         `(if ,(logic-code-to-runnable-code nil (fargn term 1) wrld)
-              ,(logic-code-to-runnable-code nil (fargn term 2) wrld)
-            ,(logic-code-to-runnable-code nil (fargn term 3) wrld)))
+         `(if ,(logic-code-to-runnable-code nil (fargn term 1) rrl wrld)
+              ,(logic-code-to-runnable-code nil (fargn term 2) rrl wrld)
+            ,(logic-code-to-runnable-code nil (fargn term 3) rrl wrld)))
         ((eq (ffn-symb term) 'return-last)
-         (logic-code-to-runnable-code nil (fargn term 3) wrld))
+         (let ((arg3
+                (logic-code-to-runnable-code nil (fargn term 3) rrl wrld)))
+           (if rrl
+               arg3
+             (fcons-term* 'return-last
+                          (logic-code-to-runnable-code nil (fargn term 1) rrl wrld)
+                          (logic-code-to-runnable-code nil (fargn term 2) rrl wrld)
+                          arg3))))
         ((eq (ffn-symb term) 'do$)
 
 ; We use ec-call here in case stobjs are involved, following the use of ec-call
@@ -9188,7 +9392,7 @@
          (let* ((do$-stobjs-out (do$-stobjs-out (fargs term)))
                 (call `(ec-call (do$ ,@(logic-code-to-runnable-code-lst
                                         (fargs term)
-                                        wrld)))))
+                                        rrl wrld)))))
            (convert-to-dfs
             (if (cdr (do$-stobjs-out (fargs term)))
                 `(values-list ,call)
@@ -9202,7 +9406,7 @@
 ; have to transform its subterms.
 
          `(mv-list ,(fargn term 1)
-                   ,(logic-code-to-runnable-code t (fargn term 2) wrld)))
+                   ,(logic-code-to-runnable-code t (fargn term 2) rrl wrld)))
         (t (let* ((fn (ffn-symb term))
                   (stobjs-out (stobjs-out fn wrld))
                   (pair (assoc-eq fn *primitive-untranslate-alist*))
@@ -9236,7 +9440,7 @@
 ; the former rules out stobj creators.
                         (not (and (all-nils stobjs-out)
                                   (all-nils (stobjs-in fn wrld))))))
-                  (args (logic-code-to-runnable-code-lst (fargs term) wrld))
+                  (args (logic-code-to-runnable-code-lst (fargs term) rrl wrld))
                   (call (if pair ; hence not ec-call-p
                             (cons (cdr pair) args)
                           (let ((call0 (cons-with-hint fn args term)))
@@ -9249,12 +9453,12 @@
                `(mv-list ',(length stobjs-out) ,call))
               (t call))))))
 
-(defun logic-code-to-runnable-code-lst (terms wrld)
+(defun logic-code-to-runnable-code-lst (terms rrl wrld)
   (declare (xargs :guard (and (pseudo-term-listp terms)
                               (plist-worldp wrld))))
   (cond ((endp terms) nil)
-        (t (cons-with-hint (logic-code-to-runnable-code nil (car terms) wrld)
-                           (logic-code-to-runnable-code-lst (cdr terms) wrld)
+        (t (cons-with-hint (logic-code-to-runnable-code nil (car terms) rrl wrld)
+                           (logic-code-to-runnable-code-lst (cdr terms) rrl wrld)
                            terms)))))
 
 (defun authenticate-tagged-lambda$ (x state)
@@ -9402,24 +9606,19 @@
 ; anyway because quoted LAMBDA objects are not translated.
 
       (mv `(LAMBDA ,formals
-                   (DECLARE (IGNORABLE ,@formals)
-                            ,@(remove-double-float-types (cdr dcl)))
+                   (DECLARE (IGNORABLE ,@formals))
                    ,(logic-code-to-runnable-code
                      nil
-                     (remove-guard-holders
-                      (or (cadr (assoc-keyword :guard
-                                               (cdr (assoc-eq 'xargs
-                                                              (cdr dcl)))))
-                          *t*)
-                      wrld)
+                     (or (cadr (assoc-keyword :guard
+                                              (cdr (assoc-eq 'xargs
+                                                             (cdr dcl)))))
+                         *t*)
+                     nil
                      wrld))
           `(LAMBDA ,formals
                    ,@(let ((d (remove-double-float-types (cdr dcl))))
                        (and d `((declare ,@d))))
-                   ,(logic-code-to-runnable-code
-                     nil
-                     (remove-guard-holders body wrld)
-                     wrld)))))))
+                   ,(logic-code-to-runnable-code nil body nil wrld)))))))
 
 (defun convert-tagged-loop$s-to-pairs (lst flg wrld)
 
@@ -9433,6 +9632,7 @@
                              :term (logic-code-to-runnable-code
                                     nil
                                     (fargn (car lst) 3)
+                                    t
                                     wrld)
                              :flg flg))
                  (convert-tagged-loop$s-to-pairs (cdr lst) flg wrld)))))
@@ -9474,6 +9674,7 @@
                  (equal (logic-code-to-runnable-code
                          nil
                          (fargn tkey 3)
+                         t
                          wrld)
                         val-term))
 
@@ -9508,6 +9709,7 @@
                   (logic-code-to-runnable-code
                    nil
                    (fargn tkey 3)
+                   t
                    wrld)
                   val-term))))))))
 
@@ -9585,8 +9787,9 @@
 ; possibility that the user has incorrectly counterfeited a translated loop$,
 ; we must check that the alleged translations are actually correct!
 
+  (declare (ignore symbol-class))
   (cond
-   ((and (not (eq symbol-class :program))
+   ((and ; (not (eq symbol-class :program))
          (not (global-val 'boot-strap-flg wrld)))
     (let* ((certify-book-info (f-get-global 'certify-book-info state))
            (new-pairs
@@ -9945,36 +10148,6 @@
 ;   (declare (xargs :loop$-recursion t))
 ;   (cond ((atom x) (my-scion '(lambda (x) (bar x)) x))
 ;         (t (loop$ for e in x collect (bar e)))))
-
-; The following record collects information related to the use of lambda,
-; lambda$ and loop$ forms in defuns.  We document what the items are below.
-; But here we explain why we pack them together.  These items are extracted and
-; returned (ultimately) by chk-acceptable-defuns as part of its 2nd result, a
-; list of over 20 items.  When lambda objects were added, it would have been
-; natural for us to add these items to the list.  However, the number of
-; lambda-related items keeps growing and some user books call
-; chk-acceptable-defuns expecting the list to be of a certain length (whatever
-; it was when the book was created).  So we added one new item to
-; chk-acceptable-defuns list, this record, and changed the user books to expect
-; that new length.  And now we're free to collect additional information during
-; checking without having to mess with user books (unless they begin to use the
-; lambda information here).
-
-(defrec lambda-info
-  (loop$-recursion            ; T or NIL indicating that recursive calls of the
-                              ; (single) function being defined are allowed
-                              ; inside LOOP$ statements.  The function must
-                              ; be tame and return only one result!
-
-   new-lambda$-alist-pairs    ; Maps the obvious untranslated terms to their
-                              ; respective translations
-
-   new-loop$-alist-pairs      ; Maps untranslated loop$ statements to
-                              ; loop$-alist-entry records containing those
-                              ; translations after converting them from logic
-                              ; to runnable code.
-   )
-  nil)
 
 ; We need some machinery about type-prescriptions, which was in defthm.lisp
 ; before April 2021, in support of xargs :type-prescription for defun.
@@ -10549,7 +10722,7 @@
 (defun chk-acceptable-defuns1 (names fives stobjs-in-lst defun-mode
                                      symbol-class rc non-executablep ctx wrld
                                      state
-                                     #+:non-standard-analysis std-p)
+                                     #+non-standard-analysis std-p)
 
 ; WARNING: This function installs a world, hence should only be called when
 ; protected by a revert-world-on-error (a condition that should be inherited
@@ -10627,7 +10800,7 @@
 
                         (value (append (get-guard-hints fives)
                                        default-hints))))
-         (std-hints #+:non-standard-analysis
+         (std-hints #+non-standard-analysis
                     (cond
                      ((and std-p (not assumep))
                       (translate-hints+
@@ -10636,7 +10809,7 @@
                        default-hints
                        ctx wrld2 state))
                      (t (value nil)))
-                    #-:non-standard-analysis
+                    #-non-standard-analysis
                     (value nil))
          (otf-flg (if do-not-translate-hints
                       (value nil)
@@ -10775,9 +10948,14 @@
                                    wrld2a))))
             (er soft ctx
                 "The :WELL-FOUNDED-RELATION specified by XARGS must be a ~
-                symbol which has previously been shown to be a well-founded ~
-                relation.  ~x0 has not been. See :DOC well-founded-relation."
-                rel))
+                 symbol which has previously been shown to be a well-founded ~
+                 relation.  ~x0 has not been (~#1~[although it is~/and it ~
+                 is not even~] a known function symbol).  See :DOC ~
+                 well-founded-relation."
+                rel
+                (if (and (symbolp rel) (function-symbolp rel wrld))
+                    0
+                  1)))
            (t (value nil)))
           (let ((mp (cadr (assoc-eq
                            rel
@@ -10804,7 +10982,7 @@
                      (bindings
                       (super-defun-wart-bindings
                        (cdr bodies-and-bindings)))
-                     #+:non-standard-analysis
+                     #+non-standard-analysis
                      (non-classical-fns
                       (get-non-classical-fns bodies wrld2a)))
                 (er-progn
@@ -10812,7 +10990,7 @@
                      (value nil)
                    (er-progn
                     (chk-stobjs-out-bound names bindings ctx state)
-                    #+:non-standard-analysis
+                    #+non-standard-analysis
                     (chk-no-recursive-non-classical
                      non-classical-fns
                      names mp rel measures bodies ctx wrld2a state)))
@@ -10832,13 +11010,13 @@
                  (let* ((wrld30 (store-super-defun-warts-stobjs-in
                                  names wrld2a))
                         (wrld31 (store-stobjs-out names bindings wrld30))
-                        (wrld3 #+:non-standard-analysis
+                        (wrld3 #+non-standard-analysis
                                (if (or std-p
                                        (null non-classical-fns))
                                    wrld31
                                  (putprop-x-lst1 names 'classicalp
                                                  nil wrld31))
-                               #-:non-standard-analysis
+                               #-non-standard-analysis
                                wrld31)
                         (wrld4 (if (store-cert-data t bodies wrld state)
                                    (update-translate-cert-data
@@ -11107,7 +11285,7 @@
 ;; definitions using non-classical predicates.
 
 (defun chk-acceptable-defuns (lst ctx wrld state
-                                  #+:non-standard-analysis std-p)
+                                  #+non-standard-analysis std-p)
 
 ; WARNING: This function installs a world, hence should only be called when
 ; protected by a revert-world-on-error.
@@ -11139,7 +11317,7 @@
 ;              - like hints but to be used for the guard conjectures and
 ;                untranslated
 ;    std-hints (always returned, but only of interest when
-;               #+:non-standard-analysis)
+;               #+non-standard-analysis)
 ;              - like hints but to be used for the std-p conjectures
 ;    otf-flg   - t or nil, used as "Onward Thru the Fog" arg for prove
 ;    bodies    - their translated bodies
@@ -11249,9 +11427,9 @@
          (chk-acceptable-defuns1 names fives
                                  stobjs-in-lst defun-mode symbol-class rc
                                  non-executablep ctx wrld state
-                                 #+:non-standard-analysis std-p))))))))
+                                 #+non-standard-analysis std-p))))))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun build-valid-std-usage-clause (arglist body)
   (cond ((null arglist)
          (list (mcons-term* 'standardp body)))
@@ -11259,7 +11437,7 @@
                               (mcons-term* 'standardp (car arglist)))
                  (build-valid-std-usage-clause (cdr arglist) body)))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun verify-valid-std-usage (names arglists bodies hints otf-flg
                                      ttree0 ctx ens wrld state)
   (cond
@@ -11473,7 +11651,7 @@
                          guard-simplify bodies symbol-class normalizeps
                          split-types-terms lambda-info non-executablep
                          type-prescription-lst
-                         #+:non-standard-analysis std-p
+                         #+non-standard-analysis std-p
                          ctx state)
 
 ; See defuns-fn0.
@@ -11482,7 +11660,7 @@
 ; writing because this function is only called by defuns-fn0, which is only
 ; called by defuns-fn, where that call is protected by a revert-world-on-error.
 
-  #-:non-standard-analysis
+  #-non-standard-analysis
   (declare (ignore std-hints))
   (declare (ignore docs pairs))
   (let* ((col (car tuple))
@@ -11500,30 +11678,30 @@
       (wrld4 (update-w big-mutrec
                        (putprop-x-lst2-unless names 'split-types-term
                                               split-types-terms *t* wrld3)))
-      #+:non-standard-analysis
+      #+non-standard-analysis
       (assumep
        (value (or (eq (ld-skip-proofsp state) 'include-book)
                   (eq (ld-skip-proofsp state)
                       'include-book-with-locals))))
-      #+:non-standard-analysis
+      #+non-standard-analysis
       (col/ttree1 (if (and std-p (not assumep))
                       (verify-valid-std-usage names arglists bodies
                                               std-hints otf-flg
                                               (caddr tuple)
                                               ctx ens wrld4 state)
                     (value (cons col (caddr tuple)))))
-      #+:non-standard-analysis
+      #+non-standard-analysis
       (col (value (car col/ttree1)))
-      (ttree1 #+:non-standard-analysis
+      (ttree1 #+non-standard-analysis
               (value (cdr col/ttree1))
-              #-:non-standard-analysis
+              #-non-standard-analysis
               (value (caddr tuple))))
      (mv-let
       (wrld5 ttree2)
       (putprop-body-lst names arglists bodies normalizeps
                         (getpropc (car names) 'recursivep nil wrld4)
                         (make-controller-alist names wrld4)
-                        #+:non-standard-analysis std-p
+                        #+non-standard-analysis std-p
                         ens wrld4 wrld4 nil)
       (er-progn
        (update-w big-mutrec wrld5)
@@ -11621,13 +11799,13 @@
                                     names fnnames-bodies guards wrld13))))
 
               (let ((wrld15
-                     #+:non-standard-analysis
+                     #+non-standard-analysis
                      (if std-p
                          (putprop-x-lst1
                           names 'unnormalized-body nil
                           (putprop-x-lst1 names 'def-bodies nil wrld14))
                        wrld14)
-                     #-:non-standard-analysis
+                     #-non-standard-analysis
                      wrld14))
                 (pprogn
                  (print-defun-msg names ttree2 wrld15 col state)
@@ -11671,7 +11849,7 @@
                          lambda-info
                          non-executablep
                          type-prescription-lst
-                         #+:non-standard-analysis std-p
+                         #+non-standard-analysis std-p
                          ctx wrld state)
 
 ; WARNING: This function installs a world.  That is safe at the time of this
@@ -11684,7 +11862,7 @@
       t ; loop$-recursion-checkp, because chk-acceptable-defuns has approved.
       (access lambda-info lambda-info :loop$-recursion)
       names docs pairs guards measures split-types-terms
-      bodies non-executablep ctx wrld state))
+      bodies lambda-info non-executablep ctx wrld state))
    (t
     (let ((ens (ens state))
           (big-mutrec (big-mutrec names)))
@@ -11723,7 +11901,7 @@
          lambda-info
          non-executablep
          type-prescription-lst
-         #+:non-standard-analysis std-p
+         #+non-standard-analysis std-p
          ctx
          state))))))
 
@@ -11833,7 +12011,7 @@
 
 ; The following definition only supports non-standard analysis, but it seems
 ; reasonable to allow it in the standard version too.
-; #+:non-standard-analysis
+; #+non-standard-analysis
 (defun index-of-non-number (lst)
   (cond
    ((endp lst) nil)
@@ -11842,7 +12020,7 @@
       (and temp (1+ temp))))
    (t 0)))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun non-std-error (fn index formals actuals)
   (er hard fn
    "Function ~x0 was called with the ~n1 formal parameter, ~x2, bound to ~
@@ -11851,7 +12029,7 @@
     (standard) numbers."
    fn (list index) (nth index formals) (nth index actuals)))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun non-std-body (name formals body)
 
 ; The body below is a bit inefficient in the case that we get an error.
@@ -11865,7 +12043,7 @@
                       (list ,@formals))
      ,body))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun non-std-def-lst (def-lst)
   (if (and (consp def-lst) (null (cdr def-lst)))
       (let* ((def (car def-lst))
@@ -11999,18 +12177,18 @@
                       wrld
                       state)))
 
-(defun defun-ctx (def-lst #+:non-standard-analysis std-p)
+(defun defun-ctx (def-lst #+non-standard-analysis std-p)
   (cond ((atom def-lst)
          (msg "( DEFUNS ~x0)"
               def-lst))
         ((atom (car def-lst))
          (cons 'defuns (car def-lst)))
         ((null (cdr def-lst))
-         #+:non-standard-analysis
+         #+non-standard-analysis
          (if std-p
              (cons 'defun-std (caar def-lst))
            (cons 'defun (caar def-lst)))
-         #-:non-standard-analysis
+         #-non-standard-analysis
          (cons 'defun (caar def-lst)))
         (t (msg *mutual-recursion-ctx-string*
                 (caar def-lst)))))
@@ -12070,7 +12248,7 @@
                  (car pair)
                  state))
 
-(defun defuns-fn (def-lst state event-form #+:non-standard-analysis std-p)
+(defun defuns-fn (def-lst state event-form #+non-standard-analysis std-p)
 
 ; Important Note:  Don't change the formals of this function without
 ; reading the *initial-event-defmacros* discussion in axioms.lisp.
@@ -12133,20 +12311,20 @@
 ; be a waste of time.
 
   (with-ctx-summarized
-   (defun-ctx def-lst #+:non-standard-analysis std-p)
+   (defun-ctx def-lst #+non-standard-analysis std-p)
    (let ((wrld (w state))
          (def-lst0
-           #+:non-standard-analysis
+           #+non-standard-analysis
            (if std-p
                (non-std-def-lst def-lst)
              def-lst)
-           #-:non-standard-analysis
+           #-non-standard-analysis
            def-lst)
          (event-form (or event-form (list 'defuns def-lst))))
      (revert-world-on-error
       (er-let*
        ((tuple (chk-acceptable-defuns def-lst ctx wrld state
-                                      #+:non-standard-analysis std-p)))
+                                      #+non-standard-analysis std-p)))
 
 ; Chk-acceptable-defuns puts the 'formals, 'stobjs-in and 'stobjs-out
 ; properties (which are necessary for the translation of the bodies).
@@ -12214,7 +12392,7 @@
                           lambda-info
                           non-executablep
                           type-prescription-lst
-                          #+:non-standard-analysis std-p
+                          #+non-standard-analysis std-p
                           ctx
                           wrld
                           state)))
@@ -12289,7 +12467,7 @@
    :event-type 'defun
    :event event-form))
 
-(defun defun-fn (def state event-form #+:non-standard-analysis std-p)
+(defun defun-fn (def state event-form #+non-standard-analysis std-p)
 
 ; Important Note:  Don't change the formals of this function without
 ; reading the *initial-event-defmacros* discussion in axioms.lisp.
@@ -12299,7 +12477,7 @@
 
   (defuns-fn (list def) state
     (or event-form (cons 'defun def))
-    #+:non-standard-analysis std-p))
+    #+non-standard-analysis std-p))
 
 ; Here we develop the :args keyword command that will print all that
 ; we know about a function.
@@ -12558,15 +12736,26 @@
 ; except: as a courtesy to the user, we may cause an error here if the function
 ; could not have been upgraded from :program mode.
 
-           (getpropc (caar lst) 'constrainedp nil wrld))
+           (or (getpropc (caar lst) 'constrainedp nil wrld)
+               (getpropc (caar lst) 'stobj-function nil wrld)
+               (assoc-eq (caar lst) *primitive-formals-and-guards*)))
       (er soft ctx
           "The :LOGIC mode function symbol ~x0 was originally introduced not ~
-           with DEFUN, but ~#1~[as a constrained function~/with DEFCHOOSE~].  ~
-           So VERIFY-TERMINATION does not make sense for this function symbol."
+           with DEFUN, but ~#1~[as a constrained function~/with DEFCHOOSE~/as ~
+           a primitive, built into ACL2 without a defining event~/with a ~
+           ~#2~[DEFSTOBJ~/DEFABSSTOBJ~] event~].  So VERIFY-TERMINATION does ~
+           not make sense for this function symbol.  See :DOC ~
+           verify-termination."
           (caar lst)
-          (cond ((getpropc (caar lst) 'defchoose-axiom nil wrld)
+          (cond ((getpropc (caar lst) 'stobj-function nil wrld)
+                 3)
+                ((assoc-eq (caar lst) *primitive-formals-and-guards*)
+                 2)
+                ((getpropc (caar lst) 'defchoose-axiom nil wrld)
                  1)
-                (t 0))))
+                (t 0))
+          (let ((st (getpropc (caar lst) 'stobj-function nil wrld)))
+            (if (and st (getpropc st 'absstobj-info nil wrld)) 1 0))))
      ((getpropc (caar lst) 'non-executablep nil wrld)
       (er soft ctx
           "The :PROGRAM mode function symbol ~x0 is declared non-executable, ~
@@ -12718,7 +12907,7 @@
         defs-lst
         state
         event-form
-        #+:non-standard-analysis
+        #+non-standard-analysis
         nil))))
 
 (defun verify-termination-boot-strap-fn (lst state event-form)
@@ -12860,12 +13049,12 @@
     certify-book-fn
 ; Keep the following in sync with primitive-event-macros.
     defun-fn
-    ;; #+:non-standard-analysis
+    ;; #+non-standard-analysis
     ;; defun-std ; defun-fn
     defuns-fn ; mutual-recursion
     ;; defuns ; calls defuns-fn, above
     defthm-fn
-    ;; #+:non-standard-analysis
+    ;; #+non-standard-analysis
     ;; defthm-std ; calls defthm-fn, above
     defaxiom-fn
     defconst-fn

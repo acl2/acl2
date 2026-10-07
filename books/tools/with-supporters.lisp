@@ -80,9 +80,11 @@
 
 ; See ACL2 source function instantiable-ancestors, from which this is derived.
 ; However, in this case we also include function symbols from guards and
-; measures in the result.  Fns-fal is a fast-alist whose values are irrelevant
-; and whose keys are not to be collected into the result, into which function
-; symbols are accumulated that have already been processed as we recur.
+; measures in the result, as well as well-founded relations and their
+; corresponding well-founded-relation rules.  Fns-fal is a fast-alist whose
+; values are irrelevant and whose keys are not to be collected into the result,
+; into which names are accumulated that have already been processed as we
+; recur.
 
   (cond
    ((null fns) (mv ans fns-fal))
@@ -95,15 +97,26 @@
            (guard (getpropc (car fns) 'guard nil wrld))
            (just (getpropc (car fns) 'justification nil wrld))
            (measure (and just (access justification just :measure)))
+           (wf-rel (and just (access justification just :rel)))
            (imm1 (if guard
                      (all-fnnames1 nil guard imm)
                    imm))
            (imm2 (if (and (consp measure)
                           (not (eq (car measure) :?)))
                      (all-fnnames1 nil measure imm1)
-                   imm1)))
+                   imm1))
+           (imm3 (if wf-rel
+                     (let* ((entry
+                             (assoc-eq wf-rel
+                                       (global-val 'well-founded-relation-alist
+                                                   wrld)))
+                            (rune (cddr entry)) ; could be (cddr nil) = nil
+                            (name (and rune (base-symbol rune))))
+                       (add-to-set-eq wf-rel
+                                      (if name (add-to-set name imm2) imm2)))
+                   imm2)))
       (mv-let (ans2 fns-fal)
-        (instantiable-ancestors-with-guards/measures imm2 wrld ans1 fns-fal)
+        (instantiable-ancestors-with-guards/measures imm3 wrld ans1 fns-fal)
         (instantiable-ancestors-with-guards/measures (cdr fns) wrld ans2
                                                      fns-fal))))))
 

@@ -332,8 +332,8 @@
     (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
       (type-struni-tag/members-case
        tystr-tag/mems
-       :tagged (b* (((when (set::in tystr-tag/mems.tag
-                                    (ident-set-fix tags)))
+       :tagged (b* (((when (treeset::in tystr-tag/mems.tag
+                                        (ident-set-fix tags)))
                      nil)
                     ((mv info &)
                      (c$::valid-lookup-tag tystr-tag/mems.tag vtable))
@@ -342,12 +342,12 @@
                              no information for ~x0 in ~x1."
                             tystr-tag/mems.tag vtable))
                     (uid (c$::valid-tag-info->uid info))
-                    (members?
-                     (hons-get uid (c$::type-completions-fix completions)))
-                    ((unless members?) nil)
-                    (members (cdr members?))
-                    (tags (set::insert tystr-tag/mems.tag
-                                       (ident-set-fix tags))))
+                    ((mv foundp members)
+                     (treemap::lookup? uid
+                                       (c$::type-completions-fix completions)))
+                    ((unless foundp) nil)
+                    (tags (treeset::insert tystr-tag/mems.tag
+                                           (ident-set-fix tags))))
                  (type-struni-member-list-may-refer-to-struct-spec-p
                   members spec vtable completions tags (1- limit)))
        :untagged (type-struni-member-list-may-refer-to-struct-spec-p
@@ -673,8 +673,8 @@
     (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
       (type-struni-tag/members-case
        tystr-tag/mems
-       :tagged (b* (((when (set::in tystr-tag/mems.tag
-                                    (ident-set-fix tags)))
+       :tagged (b* (((when (treeset::in tystr-tag/mems.tag
+                                        (ident-set-fix tags)))
                      t)
                     ((mv info &)
                      (c$::valid-lookup-tag tystr-tag/mems.tag vtable))
@@ -683,12 +683,12 @@
                              no information for ~x0 in ~x1."
                             tystr-tag/mems.tag vtable))
                     (uid (c$::valid-tag-info->uid info))
-                    (members?
-                     (hons-get uid (c$::type-completions-fix completions)))
-                    ((unless members?) t)
-                    (members (cdr members?))
-                    (tags (set::insert tystr-tag/mems.tag
-                                       (ident-set-fix tags))))
+                    ((mv foundp members)
+                     (treemap::lookup? uid
+                                       (c$::type-completions-fix completions)))
+                    ((unless foundp) t)
+                    (tags (treeset::insert tystr-tag/mems.tag
+                                           (ident-set-fix tags))))
                  (type-struni-member-list-sts-safep members
                                                     nested
                                                     spec

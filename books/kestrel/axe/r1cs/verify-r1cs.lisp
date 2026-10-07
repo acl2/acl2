@@ -1,6 +1,6 @@
 ; A tool to verify an R1CS
 ;
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,7 @@
 (include-book "kestrel/prime-fields/fe-listp-fast" :dir :system)
 (include-book "kestrel/crypto/r1cs/proof-support" :dir :system) ;for make-bitp-claims
 (include-book "kestrel/axe/known-booleans" :dir :system)
+(include-book "kestrel/terms-light/make-conjunction-from-list" :dir :system)
 
 ;todo: not sure where these should go:
 (acl2::add-known-boolean primep)

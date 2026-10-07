@@ -381,6 +381,7 @@
  (2 2 (:REWRITE |(< (/ x) 0)|))
  (2 2 (:REWRITE |(< (* x y) 0)|))
  (2 2 (:REWRITE |(* (expt c m) (expt d n))|))
+ (2 2 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  (2 1 (:INDUCTION ACL2S::NAT-IND-INDUCTION-SCHEME))
  (1 1 (:TYPE-PRESCRIPTION NATP))
  (1 1 (:REWRITE NORMALIZE-TERMS-SUCH-AS-1/AX+BX))

@@ -1760,7 +1760,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
      (str sysout-name :direction :output)
      (let* ((prog1 (car extensions::*command-line-strings*))
             (len (length prog1))
-            (prog2 (cond ((< len 4)
+            (prog2 (cond ((<= len 4)
 
 ; If cmucl is installed by extracting to /usr/local/ then the cmucl command is
 ; simply "lisp" (thanks to Bill Pase for pointing this out).
@@ -1799,13 +1799,15 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 
 ; Starting with CMUCL snapshot-2016-01, -dynamic-space-size can be 0, meaning
 ; that the maximum heap allocation will be used (thanks to Raymond Toy for this
-; option).
+; option).  At one time we tested (string>= (subseq
+; (lisp-implementation-version) 0 16) "snapshot-2016-01") to see if we can use
+; 0 for -dynamic-space-size, but "snapshot-" prefix disappeared sometime before
+; 2025-09 .  At this point, 2016 is quite old; so we'll just use 0 and assume
+; that people have CMUCL versions after snapshot-2016-01, rather than our
+; trying to figure out a maximum -dynamic-space-size based on the platform (as
+; we did formerly).
 
-                        (if (string>=
-                             (subseq (lisp-implementation-version) 0 16)
-                             "snapshot-2016-01")
-                            0
-                          #+darwin 1150 #-darwin 1632)
+                        0
                         (insert-string host-lisp-args)
                         (user-args-string inert-args))))
     (chmod-executable sysout-name)

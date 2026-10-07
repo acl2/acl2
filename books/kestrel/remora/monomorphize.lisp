@@ -452,14 +452,14 @@
 ; The only non-structural recursion in the traversal is the instantiation of a
 ; cfun/ifun body, performed at the definition's :let when its scope is exited:
 ; the body comes from the definition bind, not from the expression being
-; traversed.  Remora :let is non-recursive (see EVAL-BIND in evaluation.lisp:
-; a bind's closure captures the environment before the bind itself is added),
-; so a cfun/ifun body can only call cfuns/ifuns bound strictly before it, and
-; instantiation depth is bounded by the scope chain.  The traversal passes the
-; definitions in scope downward in an environment DEFS (a BIND-MAP from names
-; to :cfun/:ifun binds, most recently bound first); the DEFS at a definition's
-; :let is exactly the scope of the definition's body, so instance bodies are
-; processed with the :let's own DEFS.
+; traversed.  Remora :let is non-recursive (see EVAL-BIND in
+; expression-evaluation.lisp: a bind's closure captures the environment before
+; the bind itself is added), so a cfun/ifun body can only call cfuns/ifuns
+; bound strictly before it, and instantiation depth is bounded by the scope
+; chain.  The traversal passes the definitions in scope downward in an
+; environment DEFS (a BIND-MAP from names to :cfun/:ifun binds, most recently
+; bound first); the DEFS at a definition's :let is exactly the scope of the
+; definition's body, so instance bodies are processed with the :let's own DEFS.
 ;
 ; The measure of a traversal function is
 ;   (two-nats-measure (+ (defs-weight defs) (<type>-cfun-count x))
@@ -1000,7 +1000,7 @@
                  (mv err fn-info-map (atom-box x.ispace new-array x.type?)))
       :boxn    (b* (((mv err fn-info-map new-array)
                      (mono-expr x.array defs fn-info-map denv type-map)))
-                 (mv err fn-info-map (atom-boxn x.ispaces new-array x.type)))))
+                 (mv err fn-info-map (atom-boxn x.ispaces new-array x.type?)))))
 
   (define mono-atom-list ((x atom-listp) (defs bind-mapp)
                           (fn-info-map fn-info-mapp) (denv ispace-denvp) (type-map string-type-mapp))

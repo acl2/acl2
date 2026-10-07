@@ -1,7 +1,7 @@
 ; Rules about ash and the BV functions
 ;
 ; Copyright (C) 2017-2021 Kestrel Technology, LLC
-; Copyright (C) 2022-2025 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,6 +18,7 @@
 (include-book "slice-def")
 (include-book "bvcat-def")
 (include-book "bvshr-def")
+(include-book "unsigned-byte-p-forced")
 (local (include-book "bvcat"))
 (local (include-book "slice"))
 (local (include-book "unsigned-byte-p"))
@@ -153,7 +154,7 @@
 (defthmd ash-negative-becomes-slice
   (implies (and (< n 0)
                 (bind-free (bind-var-to-bv-term-size 'xsize x))
-                (unsigned-byte-p xsize x)
+                (force (unsigned-byte-p-forced xsize x))
                 (integerp n))
            (equal (ash x n)
                   (slice (+ -1 xsize) (- n) x)))
@@ -164,17 +165,11 @@
 
 (defthm ash-becomes-bvcat
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x)) ;only works for constant size?
-                (force (unsigned-byte-p xsize x))
+                (force (unsigned-byte-p-forced xsize x))
                 (natp amt))
            (equal (ash x amt)
-                  (bvcat (+ xsize amt) x amt 0)))
+                  (bvcat xsize x amt 0)))
   :hints (("Goal" :in-theory (enable bvcat ash))))
-
-
-
-
-
-
 
 (defthm ash-of-if
   (equal (ash (if test i1 i2) c)

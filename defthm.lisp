@@ -2263,14 +2263,28 @@
 ; maximal terms.  If provided, we know that each element of trigger-terms is a
 ; term that is a legal (if possibly silly) trigger for each rule.
 
+; We linearize the conclusion whether or not trigger-terms were supplied.
+; Before this check was made in both cases, a conclusion that produces no
+; polynomial, such as (integerp (f x)), was accepted when :trigger-terms was
+; supplied, and the first attempt to use the resulting rule in linear
+; arithmetic (see add-linear-lemma) walked an empty linearization; see GitHub
+; issue #2055.  The computations that are skipped below when trigger-terms is
+; non-nil are those that only serve to choose the trigger terms.
+
   (let* ((xconcl (expand-inequality-fncall concl))
-         (lst (and (null trigger-terms) ; optimization
-                   (external-linearize xconcl ens wrld state))))
-    (cond ((and (null trigger-terms)
-                (null lst))
+         (lst (external-linearize xconcl ens wrld state)))
+    (cond ((null lst)
            (er soft ctx
                "~@0"
-               (no-linear-msg name concl "" ens wrld state)))
+               (no-linear-msg name concl
+                              (if trigger-terms
+                                  "  Note that this check is made even though ~
+                                   :TRIGGER-TERMS was supplied: the ~
+                                   conclusion of a :LINEAR rule must produce ~
+                                   at least one polynomial, whatever its ~
+                                   trigger terms."
+                                "")
+                              ens wrld state)))
           ((not (null (cdr lst)))
            (er soft ctx
                "No :LINEAR rule can be generated from ~x0 because the ~
@@ -3274,15 +3288,28 @@
 ; symbol in place.
 
   (mv-let (parity fn var term1)
-          (destructure-compound-recognizer term)
-          (mv-let (recog-tuple ttree)
-                  (make-recognizer-tuple rune nume parity fn var term1 ens
-                                         wrld)
-                  (declare (ignore ttree))
-                  (putprop fn 'recognizer-alist
-                           (cons recog-tuple
-                                 (getpropc fn 'recognizer-alist nil wrld))
-                           wrld))))
+    (destructure-compound-recognizer term)
+    (mv-let
+      (ts ttree1)
+      (type-set (mcons-term* fn var) nil nil nil ens wrld nil nil nil)
+      (declare (ignore ttree1))
+      (cond ((not (ts-subsetp ts *ts-boolean*))
+             (er hard 'add-compound-recognizer-rule
+                 "A function can be treated as a :COMPOUND-RECOGNIZER only if ~
+                  it is Boolean valued.  ~x0 is not known to be Boolean.  ~
+                  That was known when this rule was originally processed, but ~
+                  it is no longer known.  Perhaps you can fix this problem by ~
+                  making appropriate :TYPE-PRESCRIPTION rules non-local."
+                 fn))
+            (t
+             (mv-let (recog-tuple ttree)
+               (make-recognizer-tuple rune nume parity fn var term1 ens
+                                      wrld)
+               (declare (ignore ttree))
+               (putprop fn 'recognizer-alist
+                        (cons recog-tuple
+                              (getpropc fn 'recognizer-alist nil wrld))
+                        wrld)))))))
 
 ;---------------------------------------------------------------------------
 ; Section:  :FORWARD-CHAINING Rules
@@ -3435,7 +3462,7 @@
                          (hide-lambdas non-rec-fns-inst-hyps)
                          (non-rec-def-rules-msg non-rec-fns-inst-hyps-alist)))
               (t state))
-             (chk-triggers match-free name hyps (cdr terms)
+             (chk-triggers name match-free hyps (cdr terms)
                            hyps-vars concls-vars ctx ens wrld state)))))))
 
 (defun destructure-forward-chaining-term (term wrld)
@@ -5605,10 +5632,18 @@
      (chk-acceptable-elim-rule1 name vars (cdr dests) ctx wrld state)))))
 
 (defun chk-acceptable-elim-rule (name term ctx wrld state)
+
+; Warning: If you change this, see the discussion in add-elim-rule and consider
+; making whether a corresponding change is needed there.
+
   (let ((lst (unprettyify term)))
     (case-match
      lst
-     (((& . (equiv lhs rhs)))
+     (((hyps-list . (equiv lhs rhs)))
+
+; Hyps-list is a list of terms that when conjoined are equivalent to the hypotheses
+; governing the concluding (equiv lhs rhs).
+
       (cond
        ((not (equivalence-relationp equiv wrld))
         (er soft ctx
@@ -5622,6 +5657,25 @@
              because the right-hand side of its conclusion, ~x1, is ~
              not a variable symbol.  See :DOC elim."
             name rhs))
+       ((not (every-occurrence-equiv-hittablep-in-clausep equiv rhs hyps-list
+                                                          nil wrld))
+
+; Here we're treating hyps-list as a clause.  It's actually a list of terms
+; whose conjunction governs the concluding equiv.  It corresponds to the clause
+; segment obtaining by negating each term in hyps-list.  But since the
+; every-occurrence-equiv-hittablep-in-clause just checks that every occurrence
+; of rhs in hyps-list is equiv hittable while maintaining 'iff, it doesn't
+; matter whether the terms are negated or not.
+
+; Note also that we're passing in nil as the ens.  This means we check hittable
+; assuming nothing is disabled.  See filter-geneqv-lst.
+
+        (er soft ctx
+            "~x0 is an unacceptable destructor elimination rule because one ~
+             or more occurrences of ~x1 in the hypothesis are not ~
+             ~x2-hittable while maintaining IFF.  See :DOC elim."
+            name rhs equiv))
+
        (t
         (let ((dests (destructors lhs nil)))
           (cond
@@ -5691,13 +5745,48 @@
                                  wrld))))))
 
 (defun add-elim-rule (rune nume term wrld)
-  (let* ((lst (unprettyify term))
-         (hyps (caar lst))
-         (equiv (ffn-symb (cdar lst)))
-         (lhs (fargn (cdar lst) 1))
-         (rhs (fargn (cdar lst) 2))
-         (dests (reverse (destructors lhs nil))))
-    (add-elim-rule1 rune nume hyps equiv lhs rhs dests dests wrld)))
+
+; Warning: If you change this, consider changing chk-acceptable-elim-rule.  See
+; comment below.
+
+; Before we add this elim rule we must (re-)check the conditions that depend on
+; the world, since they might have changed between pass 1 and pass 2 of an
+; encapsulate.  See similar code in add-rewrite-rule2.  Also see the
+; Claude-generated test in books/system/tests/elim-iff-hyp-2.lisp.  The case
+; structure below is taken from chk-acceptable-elim-rule, where the only
+; conditions checked here are those that depend on wrld.
+
+  (let ((lst (unprettyify term))
+        (name (base-symbol rune)))
+    (case-match
+      lst
+      (((hyps-list . (equiv lhs rhs)))
+       (cond
+        ((not (equivalence-relationp equiv wrld))
+         (er hard 'add-elim-rule
+             "~x0 is an unacceptable :ELIM rule.  The conclusion of the ~
+              proposed rule uses ~x1 as an equivalence relation. That symbol ~
+              was a known equivalence relation when this rule was originally ~
+              processed, but that is no longer the case.  Perhaps you can fix ~
+              this problem by making ~x1 an equivalence relation non-locally."
+             name equiv))
+        ((not (every-occurrence-equiv-hittablep-in-clausep equiv rhs hyps-list
+                                                           nil wrld))
+         (er hard 'add-elim-rule
+             "~x0 is an unacceptable :ELIM rule.  Every occurrence of ~x1 in ~
+              the hypotheses of the rule must be ~x2-hittable while ~
+              maintaining IFF.  That was known when this rule was originally ~
+              processed, but it is no longer known.  Perhaps you can fix this ~
+              problem by making the appropriate :CONGRUENCE rules non-local."
+             name rhs equiv))
+        (t
+         (let ((dests (reverse (destructors lhs nil))))
+           (add-elim-rule1 rune nume hyps-list equiv lhs rhs dests dests wrld)))))
+      (& (er hard 'add-elim-rule
+             "~x0 is an unacceptable :ELIM rule.  This error cannot happen ~
+              because the syntactic form of a term ~ cannot change between ~
+              pass 1 and pass 2 of encapsulate!"
+             name)))))
 
 ;---------------------------------------------------------------------------
 ; Section:  :GENERALIZE Rules
@@ -6212,9 +6301,15 @@
 ; during initialization.
 
            (cond
-            ((or (eq fn 'equal)
-                 (and (not (flambdap fn))
-                      (getpropc fn 'coarsenings nil wrld)))
+            ((eq fn 'equal)
+
+; Through ACL2 Version_8.7 we caused an error here when fn, even if fn is not
+; equal, is already known to be an equivalence relation.  But Anthropic's
+; Claude pointed out that this error is avoided when including a book.  We see
+; no reason to cause an error in this case, but we do make an observation -- in
+; add-equivalence-rule, not here, so that the observation is made even during
+; include-book.
+
              (er soft ctx
                  "~x0 is already known to be an equivalence relation."
                  fn))
@@ -6376,54 +6471,69 @@
 ;           ("Subgoal 2.1" :use ((:instance fn-symm (x y1) (y y2)))
 ;                          :in-theory (disable fn-symm))))
 
-; We do not store with the equivalence relation the name of the event
-; that established that it is an equivalence relation.  That means we
-; can't report it in our dependencies or disable it.
+; We do not store with the equivalence relation the name of the event that
+; established that it is an equivalence relation.  That means we can't report
+; it in our dependencies or disable it.  It's just as well that we can't
+; disable it, since (below) we ignore duplicate equivalence rules.
 
   (let* ((act-clauses (shallow-clausify term))
-         (fn (find-candidate-equivalence-relation act-clauses)))
-    (putprop
-     fn
-     'coarsenings
-     (list fn)
-     (putprop 'equal
-              'coarsenings
-              (append (getpropc 'equal 'coarsenings nil wrld)
-                      (list fn))
-              (putprop fn
-                       'congruences
-                       (cons (list 'equal
-                                   (list (make congruence-rule
-                                               :rune rune
-                                               :nume nume
-                                               :equiv fn))
-                                   (list (make congruence-rule
-                                               :rune rune
-                                               :nume nume
-                                               :equiv fn)))
-                             (getpropc fn 'congruences nil wrld))
-                       (cond
-                        ((mv-let
-                          (ts ttree)
-                          (type-set (fcons-term* fn 'x 'y) nil nil nil ens wrld
-                                    nil nil nil)
-                          (declare (ignore ttree))
-                          (ts-subsetp ts *ts-boolean*))
-                         wrld)
-                        (t
-                         (add-type-prescription-rule
-                          rune nume
-                          (fcons-term* fn 'x 'y)
-                          (fcons-term* 'booleanp
-                                       (fcons-term* fn 'x 'y))
-                          nil ; backchain-limit-lst
-                          ens wrld
-                          t))))))))
+         (fn (find-candidate-equivalence-relation act-clauses))
+         (equal-coarsenings (getpropc 'equal 'coarsenings nil wrld)))
+    (cond
+     ((member-eq fn equal-coarsenings)
+      (prog2$ (observation-cw 'add-equivalence-rule
+                              "A rule of class :equivalence with name ~x0 is ~
+                               being ignored, because ~x1 is already a known ~
+                               equivalence relation."
+                              (base-symbol rune)
+                              fn)
+              wrld))
+     (t
+      (putprop
+       fn
+       'coarsenings
+       (list fn)
+       (putprop 'equal
+                'coarsenings
+                (append equal-coarsenings (list fn))
+                (putprop fn
+                         'congruences
+                         (cons (list 'equal
+                                     (list (make congruence-rule
+                                                 :rune rune
+                                                 :nume nume
+                                                 :equiv fn))
+                                     (list (make congruence-rule
+                                                 :rune rune
+                                                 :nume nume
+                                                 :equiv fn)))
+                               (getpropc fn 'congruences nil wrld))
+                         (cond
+                          ((mv-let
+                             (ts ttree)
+                             (type-set (fcons-term* fn 'x 'y) nil nil nil ens wrld
+                                       nil nil nil)
+                             (declare (ignore ttree))
+                             (ts-subsetp ts *ts-boolean*))
+                           wrld)
+                          (t
+                           (add-type-prescription-rule
+                            rune nume
+                            (fcons-term* fn 'x 'y)
+                            (fcons-term* 'booleanp
+                                         (fcons-term* fn 'x 'y))
+                            nil ; backchain-limit-lst
+                            ens wrld
+                            t))))))))))
 
 ;---------------------------------------------------------------------------
 ; Section:  :REFINEMENT Rules
 
 (defun chk-acceptable-refinement-rule (name term ctx wrld state)
+
+; Warning: If you change this, see the discussion in add-refinement-rule and
+; consider making whether a corresponding change is needed there.
+
   (let ((str "~x0 does not have the form of a :REFINEMENT rule.  See :DOC refinement."))
     (case-match term
                 (('implies (equiv1 x y) (equiv2 x y))
@@ -6544,22 +6654,84 @@
     (cond ((equal new-alist alist) alist)
           (t (close-value-sets new-alist)))))
 
-(defun add-refinement-rule (name nume term wrld)
-  (declare (ignore name nume))
-  (let ((equiv1 (ffn-symb (fargn term 1)))
-        (equiv2 (ffn-symb (fargn term 2))))
+(defun add-refinement-rule (rune nume term wrld)
 
-; We collect all the 'coarsenings properties into an alist, add equiv2
-; to the end of the pot for equiv1, close that as discussed above, and
-; then put the resulting 'coarsenings properties back into the world.
+; Warning: If you change this, consider changing
+; chk-acceptable-refinement-rule.  See comment below.
 
-    (putprop-coarsenings
-     (close-value-sets
-      (put-assoc-eq equiv1
-                    (append (getpropc equiv1 'coarsenings nil wrld)
-                            (list equiv2))
-                    (collect-coarsenings wrld)))
-     wrld)))
+; The case analysis is taken from chk-acceptable-refinement-rule but here we
+; only check world-sensitive properties.  We know term is of the form
+; below so the &-clause of the case-match is never taken.
+
+  (case-match term
+    (('implies (equiv1 x y) (equiv2 x y))
+     (cond
+      ((and (equivalence-relationp equiv1 wrld)
+            (equivalence-relationp equiv2 wrld))
+       (cond
+        ((refinementp equiv1 equiv2 wrld)
+
+; We have already checked that the underlying defthm is not redundant as an
+; event.  But we cannot add a new refinement rule, because the indicated
+; refinement already exists (perhaps by transitivity).  This is probably
+; happening during include-book, so an observation would likely be distracting.
+; In case it seems like a good idea after all to print an observation, we
+; include the code for that below as a comment.  If any such code is restored,
+; see the comment in (defxdoc refinement ...) in
+; books/system/doc/acl2-doc.lisp.
+
+;        (let* ((active-book-name ; essentially (active-book-name wrld <any-state>)
+;                (car (global-val 'include-book-path wrld)))
+;               (active-book-string
+;                (if (sysfile-p active-book-name)
+;                    (book-name-to-filename active-book-name wrld nil)
+;                  active-book-name)))
+;          (prog2$ (observation-cw
+;                   'add-refinement-rule
+;                   "The proposed refinement rule with name ~x0 is a no-op, ~
+;                    because ~x1 is already known to be a refinement of ~x2.  ~
+;                    This was not the case when the proposed rule was ~
+;                    admitted ~#3~[during certification of the ~
+;                    book~|~x4~|~/during certification of the ~
+;                    book~|~x5~|(which surprisingly cannot be converted to a ~
+;                    full pathname, which is an implementation error; please ~
+;                    contact the ACL2 implementors) ~/previously (presumably ~
+;                    when certifying a book now being included, which however ~
+;                    cannot be determined, which is an implementation error; ~
+;                    please contact the ACL2 implementors) ~]but it is the ~
+;                    case now, during an attempt to include that book.  See ~
+;                    :DOC refinement."
+;                   (base-symbol rune)
+;                   equiv1
+;                   equiv2
+;                   (cond (active-book-string 0)
+;                         (active-book-name 1)
+;                         (t 2))
+;                   active-book-string
+;                   (and (sysfile-p active-book-name)
+;                        (sysfile-filename active-book-name)))
+;                  wrld))
+
+         wrld)
+        (t (putprop-coarsenings
+            (close-value-sets
+             (put-assoc-eq equiv1
+                           (append (getpropc equiv1 'coarsenings nil wrld)
+                                   (list equiv2))
+                           (collect-coarsenings wrld)))
+            wrld))))
+      (t (er hard 'add-refinement-rule
+             "~x0 does not have the form of a :REFINEMENT rule.  This ~
+              probably happened because at least one of the two equivalence ~
+              relations, ~x1 and ~x2, was proved to be an equivalence ~
+              relation only locally."
+             (base-symbol rune) equiv1 equiv2))))
+    (& (er hard 'add-refinement-rule
+           "This error is thought to be impossible.  Here we see rune = ~x0, ~
+            nume = ~x1, and term = ~x2, and term is not of the form ~
+            previously checked by chk-acceptable-refinement-rule.  Please ~
+            show the ACL2 implementors how to reproduce this error!"
+           rune nume term))))
 
 ;---------------------------------------------------------------------------
 ; Section:  :CONGRUENCE Rules
@@ -6771,6 +6943,7 @@
           (cond
            ((and (variablep xk)
                  (variablep yk)
+                 (not (eq xk yk))
                  (equivalence-relationp equiv1 wrld))
             (case-match
              concl
@@ -7434,7 +7607,7 @@
                        (all-vars (fargn term 2)))))
       (er soft ctx
           "The :COROLLARY of a :TYPE-SET-INVERTER rule must be of the form ~
-           (equal old-expr new-expr), where new-expr and old-expr are each ~
+           (equal new-expr old-expr), where new-expr and old-expr are each ~
            terms containing the single free variable X.  ~p0 is not of this ~
            form, so ~x1 is an illegal :TYPE-SET-INVERTER rule.  See :DOC ~
            type-set-inverter."
@@ -7481,14 +7654,18 @@
              (tautologyp (fcons-term* 'iff (fargn term 2) required-old-expr)
                          wrld))
             (er soft ctx
-                "The right-hand side of the :COROLLARY of a :TYPE-SET-INVERTER ~
-                 rule with :TYPE-SET ~x0 must be propositionally equivalent to ~
-                 ~p1 but you have specified ~p2.  Thus, ~x3 is an illegal ~
-                 :TYPE-SET-INVERTER rule.  See :doc type-set-inverter."
-                ts2
-                (untranslate required-old-expr t wrld)
-                (untranslate (fargn term 2) t wrld)
-                name))
+                "~x0 is an illegal :TYPE-SET-INVERTER rule because the ~
+                 right-hand side,~|~%[right-hand side]:~%~Y12~%is not ~
+                 propositionally equivalent to the primitive recognizer term ~
+                 of type-set ~x3.~|~%[prim recog for ts ~
+                 ~x3]:~%~Y42.~%``Propositional equivalence'' here means we ~
+                 don't expand definitions, just rearrange and simplify IFs ~
+                 and primitive type-set recognizers."
+                name           ; 0
+                (fargn term 2) ; 1
+                nil            ; 2
+                ts2            ; 3
+                required-old-expr)) ; 4
            (t (value ttree)))))))))))
 
 (defun add-type-set-inverter-rule (rune nume ts term ens wrld)
@@ -10026,7 +10203,11 @@
 ; (implementation) error after a failed call of
 ; interpret-term-as-congruence-rule in add-congruence-rule.
 
-                (collect-keys-eq '(:meta :clause-processor :congruence)
+; Finally, we also check :type-set-inverter rules.  Community book
+; system/tests/tsi-pass2.lisp proves nil but has certified without that check.
+
+                (collect-keys-eq '(:meta :clause-processor :congruence
+                                         :type-set-inverter)
                                  classes))
                (t classes))))
     (cond
@@ -10532,13 +10713,13 @@
           (cons `((:rune            ,rune :rewrite ,nume)
                   (:enabled         ,(and (enabled-runep rune ens wrld) t))
                   ,@(if (eq subclass 'meta)
-                        `((:hyp-fn  ,(or hyps :none) hyps)
+                        `((:hyp-fn  ,(or hyps :none) ,hyps)
                           (:equiv   ,equiv)
                           (:meta-fn ,lhs))
-                      `((:hyps  ,(untranslate-hyps hyps wrld) hyps)
+                      `((:hyps  ,(untranslate-hyps hyps wrld) ,hyps)
                         (:equiv ,equiv)
-                        (:lhs   ,(untranslate lhs nil wrld) lhs)
-                        (:rhs   ,(untranslate rhs nil wrld) rhs)))
+                        (:lhs   ,(untranslate lhs nil wrld) ,lhs)
+                        (:rhs   ,(untranslate rhs nil wrld) ,rhs)))
                   (:backchain-limit-lst ,backchain-limit-lst)
                   (:subclass            ,subclass)
                   ,@(cond ((eq subclass 'backchain)
@@ -11989,14 +12170,14 @@
 ;; this trio of functions adds the hypothesis "(standardp x)"
 ;; for each variable x in the theorem.
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun add-hyp-standardp-var-lst (vars)
   (if (consp vars)
       (cons (list 'standardp (car vars))
             (add-hyp-standardp-var-lst (cdr vars)))
     nil))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun strengthen-hyps-using-transfer-principle (hyps vars)
 
 ; Hyps is an untranslated expression.
@@ -12008,7 +12189,7 @@
                     (cdr hyps)
                     (list hyps)))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun weaken-using-transfer-principle (term)
 
 ; Term is an untranslated expression.
@@ -12032,7 +12213,7 @@
                        (cons 'and (add-hyp-standardp-var-lst vars))
                        term)))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun remove-standardp-hyp (tterm)
   (if (and (consp tterm)
            (eq (car tterm) 'standardp)
@@ -12040,7 +12221,7 @@
       (list 'eq (car (cdr tterm)) (car (cdr tterm)))
       tterm))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun remove-standardp-hyps (tterm)
   (if (and (consp tterm)
            (eq (car tterm) 'if)
@@ -12052,7 +12233,7 @@
             (list 'quote nil))
       (remove-standardp-hyp tterm)))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun remove-standardp-hyps-and-standardp-conclusion (tterm)
   (case-match tterm
               (('implies hyps ('standardp subterm))
@@ -12063,7 +12244,7 @@
                subterm)
               (& tterm)))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun chk-classical-term-or-standardp-of-classical-term (tterm term ctx wrld state)
 
 ; Tterm is the translation of term.
@@ -12117,7 +12298,7 @@
                         hints
                         otf-flg
                         event-form
-                        #+:non-standard-analysis std-p)
+                        #+non-standard-analysis std-p)
   (with-ctx-summarized
    (cons 'defthm name)
 
@@ -12158,7 +12339,7 @@
              (cert-data-flg (value (car cert-data-flg/tterm0)))
              (tterm0 (value (cdr cert-data-flg/tterm0)))
              (tterm
-              #+:non-standard-analysis
+              #+non-standard-analysis
               (if std-p
                   (er-progn
                    (chk-classical-term-or-standardp-of-classical-term
@@ -12166,11 +12347,11 @@
                    (translate (weaken-using-transfer-principle term)
                               t t t ctx wrld state))
                 (value tterm0))
-              #-:non-standard-analysis
+              #-non-standard-analysis
               (value tterm0))
              (classes
 
-; (#+:non-standard-analysis) We compute rule classes with respect to the
+; (#+non-standard-analysis) We compute rule classes with respect to the
 ; original (translated) term.  The modified term is only relevant for proof.
 
               (translate-rule-classes name rule-classes tterm0 ctx (ens state)
@@ -12227,7 +12408,7 @@
                                                       :INSTRUCTIONS and ~
                                                       :HINTS to DEFTHM."))
                                          (t (value nil)))
-                                   #+:non-standard-analysis
+                                   #+non-standard-analysis
                                    (if std-p
 
 ; How could this happen?  Presumably the user created a defthm event using the
@@ -12284,7 +12465,7 @@
                        hints
                        otf-flg
                        event-form
-                       #+:non-standard-analysis std-p)
+                       #+non-standard-analysis std-p)
 
 ; Important Note:  Don't change the formals of this function without
 ; reading the *initial-event-defmacros* discussion in axioms.lisp.
@@ -12297,7 +12478,7 @@
      hints
      otf-flg
      event-form
-     #+:non-standard-analysis std-p)))
+     #+non-standard-analysis std-p)))
 
 (defun thm-fn (term state instructions hints otf-flg event-form)
   (let ((event-form (or event-form

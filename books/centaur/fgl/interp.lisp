@@ -4611,8 +4611,18 @@
                (fgl-interp-fncall-casesplit fn args interp-st state)))
              (interp-st (interp-st-pathcond-rewind interp-st))
              ((when (eq (interp-st->errmsg interp-st) :unreachable))
-                (b* ((interp-st (update-interp-st->errmsg nil interp-st)))
-                  (fgl-interp-value t nil))))
+              (b* ((interp-st (update-interp-st->errmsg nil interp-st))
+                   ((mv status interp-st state)
+                    ;; Check whether we're still in an unreachable state without the new assumption.
+                    (interp-st-sat-check
+                     (fgl-reachability-sat-check-config-wrapper
+                      (fgl-config->sat-config-reachability (interp-st->config interp-st)))
+                     t interp-st state))
+                     ((when (eq status :unsat))
+                      ;; unreachable outside the new assumption as well
+                      (b* ((interp-st (interp-st-set-error :unreachable interp-st)))
+                        (fgl-interp-value nil nil))))
+                (fgl-interp-value t nil))))
           (fgl-interp-value nil ans)))
 
 
@@ -5653,7 +5663,17 @@
                 (fgl-interp-term-top x interp-st state))
                (interp-st (interp-st-pathcond-rewind interp-st))
                ((when (eq (interp-st->errmsg interp-st) :unreachable))
-                (b* ((interp-st (update-interp-st->errmsg nil interp-st)))
+                (b* ((interp-st (update-interp-st->errmsg nil interp-st))
+                     ((mv status interp-st state)
+                      ;; Check whether we're still in an unreachable state without the new assumption.
+                      (interp-st-sat-check
+                       (fgl-reachability-sat-check-config-wrapper
+                        (fgl-config->sat-config-reachability (interp-st->config interp-st)))
+                       t interp-st state))
+                     ((when (eq status :unsat))
+                      ;; unreachable outside the new assumption as well
+                      (b* ((interp-st (interp-st-set-error :unreachable interp-st)))
+                        (fgl-interp-value nil nil))))
                   (fgl-interp-value t nil))))
             (fgl-interp-value nil ans)))
 
@@ -9648,6 +9668,17 @@
   ;;                (let* ((lit (assoc 'interp-st-bvar-db-ok clause)))
   ;;                  `(:expand (,lit) )))))
 
+  (local (defthm interp-st-sat-check-doesnt-fix-bvar-db
+           (implies (and (interp-st-bfrs-ok interp-st)
+                         (not (interp-st-bvar-db-ok interp-st env)))
+                    (not (interp-st-bvar-db-ok
+                          (mv-nth 1 (interp-st-sat-check params bfr interp-st state))
+                          env)))
+           :hints(("Goal" :expand ((interp-st-bvar-db-ok interp-st env))
+                   :use ((:instance interp-st-bvar-db-ok-necc
+                          (n (interp-st-bvar-db-ok-witness interp-st env))
+                          (interp-st (mv-nth 1 (interp-st-sat-check params bfr interp-st state)))))
+                   :in-theory (disable interp-st-bvar-db-ok-necc)))))
 
   (local (in-theory (disable not)))
 
@@ -9684,6 +9715,7 @@
 
        :hints ((fgl-interp-default-hint 'fgl-interp-term id nil world))
        :mutual-recursion fgl-interp)))
+  
 
 
   (define interp-st-bvar-db-ok* (interp-st env)
@@ -9692,6 +9724,17 @@
 
   (local (in-theory (enable interp-st-bvar-db-ok*)))
 
+  
+
+  (defthm interp-st-sat-check-bvar-db-ok-implies-previous-ok
+    (implies (interp-st-bfrs-ok interp-st)
+             (iff* (interp-st-bvar-db-ok
+                    (mv-nth 1 (interp-st-sat-check params bfr interp-st state)) env)
+                   (and* (interp-st-bvar-db-ok*
+                          (mv-nth 1 (interp-st-sat-check params bfr interp-st state)) env)
+                         (interp-st-bvar-db-ok interp-st env))))
+    :hints(("Goal" :in-theory (enable and*))))
+  
   (with-output
     :off (event)
     :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
@@ -10602,6 +10645,56 @@
    :hints(("Goal" :in-theory (e/d (eval-alist-extension-p-transitive-append-2)
                                   (sub-alistp-by-witness)))
           (acl2::witness :ruleset context-equiv-forall))))
+
+(local
+ (defthm interp-st-sat-check-not-unsat-when-eval
+   (b* (((mv status & &)
+         (interp-st-sat-check params bfr interp-st state)))
+     (implies (and (bind-free '((env . env)) (env))
+                   (interp-st-bfrs-ok interp-st)
+                   (interp-st-bfr-p bfr)
+                   (gobj-bfr-eval bfr env (interp-st->logicman interp-st))
+                   (logicman-pathcond-eval (fgl-env->bfr-vals env)
+                                           (interp-st->pathcond interp-st)
+                                           (interp-st->logicman interp-st))
+                   (logicman-pathcond-eval (fgl-env->bfr-vals env)
+                                           (interp-st->constraint interp-st)
+                                           (interp-st->logicman interp-st)))
+              (not (equal status :unsat))))))
+
+
+(local
+ (encapsulate nil
+   (local (defthm pathcond-rewind-when-not-enabled
+            (implies (not (pathcond-enabledp pathcond))
+                     (equal (pathcond-rewind bfr-mode pathcond)
+                            (pathcond-fix pathcond)))
+            :hints(("Goal" :in-theory (enable pathcond-rewind)))))
+   (def-updater-independence-thm pathcond-eval-of-rewind-when-pathcond-eval-checkpoints-equiv
+     (implies (and (equal (logicman-pathcond-eval-checkpoints!
+                           env (interp-st->pathcond new)
+                           (interp-st->logicman new))
+                          (logicman-pathcond-eval-checkpoints!
+                           env (interp-st->pathcond old)
+                           (interp-st->logicman old)))
+                   (iff (pathcond-enabledp (interp-st->pathcond old))
+                        (pathcond-enabledp (interp-st->pathcond new)))
+                   (equal bfr-mode (logicman->mode (interp-st->logicman old)))
+                   (equal bfr-mode (logicman->mode (interp-st->logicman new)))
+                   (pathcond-rewind-ok bfr-mode (interp-st->pathcond old)))
+              (equal (logicman-pathcond-eval
+                      env (pathcond-rewind bfr-mode (interp-st->pathcond new))
+                      (interp-st->logicman new))
+                     (logicman-pathcond-eval
+                      env (pathcond-rewind bfr-mode (interp-st->pathcond old))
+                      (interp-st->logicman old))))
+     :hints(("Goal" :in-theory (e/d (pathcond-rewind-ok
+                                     logicman-pathcond-eval-checkpoints!)
+                                    (logicman-pathcond-eval-checkpoints-of-pathcond-rewind))
+             :expand ((:free (ist)
+                       (logicman-pathcond-eval-checkpoints
+                        env (update-nth *pathcond-enabledp* t (interp-st->pathcond ist))
+                        (interp-st->logicman ist)))))))))
 
 (local
  (defsection-unique fgl-interp-correct

@@ -640,7 +640,7 @@
                 acl2::bvcat-associative-helper ;; not the usual rule, since we want to expose the low zeros
                 acl2::bvcat-combine-constants-old ;; not the usual rule
                 pfield::add-of-add-combine-constants
-                pfield::add-of-neg-of-when-bitp
+                pfield::add-of-neg-when-bitp
                 pfield::add-of-0-arg1
                 ;; acl2::bitp-when-bit-listp-and-memberp ;; maybe drop
                 acl2::if-of-nil-becomes-booland

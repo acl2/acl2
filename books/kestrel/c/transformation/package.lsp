@@ -27,7 +27,9 @@
                                     type
                                     typep))
                c$::*exported-symbols*
-               '(bool
+               '(3definitely
+                 3possibly
+                 bool
                  constant-symbolp
                  constant-value
                  defirrelevant
@@ -40,6 +42,7 @@
                  impossible
                  index-of
                  lnfix
+                 lposfix
                  packn-pos
                  maybe-msgp
                  maybe-pseudo-event-formp

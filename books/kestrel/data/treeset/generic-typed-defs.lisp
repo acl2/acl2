@@ -19,6 +19,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Matt K. mod: Necessary additions because of verify-guards fix, 9/19/2026.
+; Perhaps these could std::defredundant could be improved to make these
+; unnecessary.
+
+(ENCAPSULATE (((GENERICP *) => *))
+  (WITH-OUTPUT :OFF SUMMARY (LOGIC))
+  (WITH-OUTPUT :SUMMARY-OFF
+    (:OTHER-THAN ACL2::REDUNDANT)
+    (LOCAL (DEFUN GENERICP (ACL2::X1)
+             (DECLARE (IGNORE ACL2::X1))
+             NIL))))
+
+(DEFUN-SK SET-ALL-GENERICP-SK (SET)
+  (DECLARE (XARGS :VERIFY-GUARDS NIL))
+  (DECLARE (XARGS :GUARD T))
+  (FORALL (ELEM)
+          (NON-EXEC (IMPLIES (IN ELEM SET)
+                             (GENERICP ELEM))))
+  :REWRITE (IMPLIES (SET-ALL-GENERICP-SK SET)
+                    (NON-EXEC (IMPLIES (IN ELEM SET)
+                                       (GENERICP ELEM))))
+  :SKOLEM-NAME SET-ALL-GENERICP-SK-WITNESS
+  :THM-NAME SET-ALL-GENERICP-SK-NECC)
+
+(verify-guards SET-ALL-GENERICP-SK)
+
 (std::defredundant
   :names (genericp
           set-all-genericp

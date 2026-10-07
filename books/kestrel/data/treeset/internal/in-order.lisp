@@ -232,10 +232,10 @@
 
 (defrule tree-in-order-of-tree-insert
   (implies (bstp tree)
-           (equal (tree-in-order (mv-nth 1 (tree-insert x hash tree)))
+           (equal (tree-in-order (mv-nth 1 (tree-insert x tree)))
                   (set::insert x (tree-in-order tree))))
   :use (:instance osetp-of-tree-in-order-when-bstp
-                  (tree (mv-nth 1 (tree-insert x hash tree))))
+                  (tree (mv-nth 1 (tree-insert x tree))))
   :enable set::expensive-rules
   :disable osetp-of-tree-in-order-when-bstp)
 

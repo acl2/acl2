@@ -23,6 +23,7 @@
 (include-book "kestrel/utilities/erp" :dir :system)
 (local (include-book "rational-lists"))
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
+(local (include-book "kestrel/acl2-arrays/bounded-integer-alistp" :dir :system))
 ;(include-book "kestrel/utilities/polarity" :dir :system) ;drop?
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))

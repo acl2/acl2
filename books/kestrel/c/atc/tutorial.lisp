@@ -1058,7 +1058,7 @@
    (xdoc::seetopic "abstract-syntax" "the abstract syntax of C")
    ". More precisely, it is the content of the generated file on disk:
     the AST is "
-   (xdoc::seetopic "atc-pretty-printer" "pretty-printed")
+   (xdoc::seetopic "c$::printer" "pretty-printed")
    " to the @('.c') file.
     Currently ATC generates C programs that consist of
     single translation units in single C files.")

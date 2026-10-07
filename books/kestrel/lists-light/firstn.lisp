@@ -26,7 +26,8 @@
 
 (defthm firstn-of-nil
   (equal (firstn n nil)
-         nil))
+         nil)
+  :hints (("Goal" :in-theory (enable firstn))))
 
 (defthm firstn-when-zp-cheap
   (implies (and (syntaxp (quotep n))
@@ -48,19 +49,22 @@
 
 (defthm len-of-firstn
   (equal (len (firstn n l))
-         (min (nfix n) (len l))))
+         (min (nfix n) (len l)))
+  :hints (("Goal" :in-theory (enable firstn))))
 
 (defthm car-of-firstn
   (equal (car (firstn n l))
          (if (posp n)
              (car l)
-           nil)))
+           nil))
+  :hints (("Goal" :in-theory (enable firstn))))
 
 (defthm firstn-of-singleton
   (implies (and (syntaxp (quotep n))
                 (posp n))
            (equal (firstn n (cons x nil))
-                  (cons x nil))))
+                  (cons x nil)))
+  :hints (("Goal" :in-theory (enable firstn))))
 
 ;try disabled..
 (defthm firstn-of-one-more
@@ -78,7 +82,8 @@
   (equal (nth n1 (firstn n2 x))
          (if (< (nfix n1) (nfix n2))
              (nth n1 x)
-           nil)))
+           nil))
+  :hints (("Goal" :in-theory (enable firstn))))
 
 (defthm nthcdr-of-firstn-same
   (equal (nthcdr n (firstn n x))
@@ -86,7 +91,8 @@
 
 (defthm firstn-of-true-list-fix
   (equal (firstn n (true-list-fix l))
-         (firstn n l)))
+         (firstn n l))
+  :hints (("Goal" :in-theory (enable firstn))))
 
 (defthm firstn-becomes-take
   (implies (and (<= m (len lst))

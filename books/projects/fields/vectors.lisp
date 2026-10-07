@@ -359,7 +359,10 @@
 (mutual-recursion
 
   (defun ecoords0 (x e f)
-    (declare (xargs :measure (list (len e) (acl2-count x))))
+    (declare (xargs :measure (list (len e) (acl2-count x))
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                    :well-founded-relation l<))
     (if (equal e f)
         (list x)
       (and (consp e)
@@ -368,7 +371,10 @@
 			  f))))
 
   (defun ecoords0-list (x e f)
-    (declare (xargs :measure (list (len e) (acl2-count x))))
+    (declare (xargs :measure (list (len e) (acl2-count x))
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                    :well-founded-relation l<))
     (if (consp x)
         (append (ecoords0 (car x) e f)
 	        (ecoords0-list (cdr x) e f))
@@ -884,7 +890,10 @@
 ;; For the general case, we use the following induction scheme:
 
 (defun elistnp-ecoords0-induct (flg x e f)
-  (declare (xargs :measure (list (len e) (if flg 1 0) (len x))))
+  (declare (xargs :measure (list (len e) (if flg 1 0) (len x))
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                  :well-founded-relation l<))
   (if flg
       (if (consp x)
           (list (elistnp-ecoords0-induct () (car x) e f)

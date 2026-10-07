@@ -42,12 +42,12 @@
          (bvchop size a))
   :hints (("Goal" :in-theory (enable bvif))))
 
-(defthm bvif-when-true
+(defthm bvif-of-t
   (equal (bvif size t a b)
          (bvchop size a))
   :hints (("Goal" :in-theory (enable bvif))))
 
-(defthm bvif-when-false
+(defthm bvif-of-nil
   (equal (bvif size nil a b)
          (bvchop size b))
   :hints (("Goal" :in-theory (enable bvif))))
@@ -75,11 +75,31 @@
                            nil)))))
   :hints (("Goal" :in-theory (enable bvif))))
 
+;; todo: standardize param names (throughout this file)
+(defthm bvif-when-true
+  (implies test
+           (equal (bvif size test a b)
+                  (bvchop size a)))
+  :hints (("Goal" :in-theory (enable bvif))))
+
 (defthm bvif-when-true-cheap
   (implies test
            (equal (bvif size test a b)
                   (bvchop size a)))
-  :rule-classes ((:rewrite :backchain-limit-lst (nil)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable bvif))))
+
+(defthm bvif-when-false
+  (implies (not test)
+           (equal (bvif size test a b)
+                  (bvchop size b)))
+  :hints (("Goal" :in-theory (enable bvif))))
+
+(defthm bvif-when-false-cheap
+  (implies (not test)
+           (equal (bvif size test a b)
+                  (bvchop size b)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable bvif))))
 
 
@@ -250,26 +270,28 @@
                   (bvif size test y (bvif size test2 tp ep))))
     :hints (("Goal" :in-theory (enable bvif myif))))
 
+;drop?
+(defthm unsigned-byte-p-of-bvif
+  (implies (natp n)
+           (unsigned-byte-p n (bvif n test x y)))
+  :hints (("Goal" :in-theory (enable bvif myif))))
 
-
-;dup
-(defthm unsigned-byte-p-of-bvif-gen2
+;drop?
+(defthm unsigned-byte-p-of-bvif-gen
   (implies (and (<= n m)
                 (natp n)
                 (natp m))
            (unsigned-byte-p m (bvif n test x y)))
   :hints (("Goal" :in-theory (enable bvif myif))))
 
-
-
 (defthm bvif-numeric-bound
   (implies (and (<= (expt 2 size) k)
                 (natp size))
            (< (bvif size test x y) k))
-  :hints (("Goal" :use (:instance UNSIGNED-BYTE-P-OF-Bvif-gen2
-                                  (Y Y) (X X) (n size) (m size))
-           ;bbozo how many of these rules do we freakin have?
-           :in-theory (disable UNSIGNED-BYTE-P-OF-BVIF-GEN2))))
+  :hints (("Goal" :use (:instance unsigned-byte-p-of-bvif-gen
+                                  (y y) (x x) (n size) (m size))
+                  :in-theory (disable unsigned-byte-p-of-bvif-gen
+                                      unsigned-byte-p-of-bvif))))
 
 (defthm bvif-of-bvif-tighten-arg1
   (implies (and (< size1 size2)
@@ -400,19 +422,6 @@
          (bvif size (or test1 (not test2)) x y))
   :hints (("Goal" :in-theory (enable bvif))))
 
-;drop?
-(defthm unsigned-byte-p-of-bvif
-  (implies (natp n)
-           (unsigned-byte-p n (bvif n test x y)))
-  :hints (("Goal" :in-theory (enable bvif myif))))
-
-;drop?
-(defthm unsigned-byte-p-of-bvif-gen
-  (implies (and (<= n m)
-                (natp n)
-                (natp m))
-           (unsigned-byte-p m (bvif n test x y)))
-  :hints (("Goal" :in-theory (enable bvif myif))))
 
 (defthm BVIF-equal-bvif-same-test-and-else-part
   (equal (EQUAL (BVIF 32 test a b) (BVIF 32 test c b))
@@ -425,20 +434,6 @@
          (implies (not test)
                   (equal (bvchop 32 a) (bvchop 32 c))))
   :hints (("Goal" :in-theory (enable BVIF myif))))
-
-;drop?
-(defthm usbp-of-bvif
-  (implies (natp size)
-           (unsigned-byte-p size (bvif size test x y)))
-  :hints (("Goal" :in-theory (enable bvif myif))))
-
-;drop?
-(defthm usbp-of-bvif-gen
-  (implies (and (<= size n)
-                (natp n)
-                (natp size))
-           (unsigned-byte-p n (bvif size test x y)))
-  :hints (("Goal" :in-theory (enable bvif myif))))
 
 (defthm bvif-of-myif-arg3
   (equal (bvif size test (myif test2 x1 x2) y)
@@ -507,8 +502,8 @@
 
 ;weird but showed up in the sha1 loop proof (during backchaining)
 (defthm bvif-of-equal-of-bvchop-same
-  (implies (and (syntaxp (and (quotep k)
-                              (not (quotep x)))))
+  (implies (syntaxp (and (quotep k)
+                         (not (quotep x))))
            (equal (bvif size (equal k (bvchop size x)) x y)
                   (bvif size (equal k (bvchop size x)) k y)))
   :hints (("Goal" :in-theory (enable bvif))))

@@ -119,8 +119,8 @@
 
 ;; The phrasing here is to avoid loops.
 (defthm len-when-equal-of-true-list-fix-and-true-list-fix
-  (implies (and (equal (true-list-fix x)
-                       (true-list-fix y)))
+  (implies (equal (true-list-fix x)
+                  (true-list-fix y))
            (equal (equal (len x) (len y))
                   t))
   :hints (("Goal" :induct (double-cdr-induct x y)
@@ -143,8 +143,7 @@
   :hints (("Goal" :in-theory (enable prefixp nth))))
 
 (defthm prefixp-of-take-arg1-same
-  (implies (and (<= n (len x))
-                (natp n))
+  (implies (<= n (len x))
            (prefixp (take n x) x))
   :hints (("Goal" :in-theory (enable prefixp take))))
 

@@ -13,12 +13,15 @@
 (include-book "static-environments")
 (include-book "ispace-equivalence-checker")
 (include-book "type-equivalence-checker")
+(include-book "ispace-matcher")
+(include-book "type-matcher")
 (include-book "type-checker")
 (include-book "ispace-validity")
 (include-book "type-validity")
 (include-book "ispace-equivalence")
 (include-book "ispace-equivalence-derived-rules")
 (include-book "ispace-equivalence-normalizations")
+(include-book "shape-ordering")
 (include-book "type-equivalence")
 (include-book "type-equivalence-derived-rules")
 (include-book "type-equivalence-normalizations")
@@ -41,12 +44,15 @@
   :order-subtopics (static-environments
                     ispace-equivalence-checker
                     type-equivalence-checker
+                    ispace-matcher
+                    type-matcher
                     type-checker
                     ispace-validity
                     type-validity
                     ispace-equivalence
                     ispace-equivalence-derived-rules
                     ispace-equivalence-normalizations
+                    shape-ordering
                     type-equivalence
                     type-equivalence-derived-rules
                     type-equivalence-normalizations

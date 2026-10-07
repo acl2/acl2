@@ -584,7 +584,7 @@
                        (type-struct (value-struct->tag struct))))
         (error (list :mistype-struct-read
                      :pointer reftype
-                     :array (type-struct (value-struct->tag struct)))))
+                     :struct (type-struct (value-struct->tag struct)))))
        (val (value-struct-read mem struct))
        ((when (errorp val)) val)
        (objdes-mem (make-objdesign-member :super objdes :name mem)))
@@ -857,7 +857,16 @@
        They are not supported for now.")
      (xdoc::p
       "Ternary expressions do not need to be pure,
-       because the order of evaluation is always determined."))
+       because the order of evaluation is always determined.
+       As noted in @(tsee check-cond) in our static semantics,
+       currently we do not transform the ASTs to add information about
+       the type resulting from the usual arithmetic conversions
+       applied to the types of the two branches,
+       which the dynamic semantics would need to use
+       to perform the conversion on the branch chosen at run time.
+       So for now we just return the value unchanged;
+       this is correct under the assumption that the code
+       satisfies our static semantics, in particular @(tsee check-cond)."))
     (b* (((when (zp limit)) (mv (error :limit) (compustate-fix compst))))
       (expr-case
        e

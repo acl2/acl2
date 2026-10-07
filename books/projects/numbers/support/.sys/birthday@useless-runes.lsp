@@ -2271,6 +2271,7 @@
  (1 1 (:REWRITE |(< (/ x) 0)|))
  (1 1 (:REWRITE |(< (* x y) 0)|))
  (1 1 (:REWRITE |(* (expt c m) (expt d n))|))
+ (1 1 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  (1 1 (:META META-INTEGERP-CORRECT))
  )
 (DM::PROBABILITY-OF-REPETITION-22)

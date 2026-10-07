@@ -33,7 +33,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This is gross in order to match what deflist generates.
-(defun symbol-term-alist-listp (x)
+(defund symbol-term-alist-listp (x)
   (declare (xargs :normalize nil :guard t))
   (let ((__function__ 'symbol-term-alist-listp))
     (declare (ignorable __function__))

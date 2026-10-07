@@ -80,8 +80,7 @@
            (equal (bv-array-write size len index val array)
                   (bv-array-write size len index (trim size val)
                                   array)))
-  :hints (("Goal" :in-theory (e/d (bv-array-write trim update-nth2)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bv-array-write trim update-nth2))))
 
 (defthmd bv-array-write-trim-value
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size val :non-arithmetic dag-array))
@@ -105,8 +104,7 @@
                   (bv-array-write newsize (+ 1 (len data))
                                   0 a (cons 0 data))))
   :hints
-  (("Goal" :in-theory (e/d (bv-array-write update-nth2 unsigned-byte-p-forced)
-                           ()))))
+  (("Goal" :in-theory (enable bv-array-write update-nth2 unsigned-byte-p-forced))))
 
 (defthmd bv-array-write-of-bv-array-write-tighten2
   (implies (and (< element-size2 element-size1)
@@ -124,8 +122,7 @@
                 (unsigned-byte-p-forced val-size val1))
            (equal (bv-array-write element-size1 len index1 val1 (bv-array-write element-size2 len index2 val2 lst))
                   (bv-array-write element-size2 len index1 val1 (bv-array-write element-size2 len index2 val2 lst))))
-  :hints (("Goal" :in-theory (e/d (update-nth2 len-update-nth BV-ARRAY-WRITE unsigned-byte-p-forced BVCHOP-LIST-OF-TAKE-OF-BVCHOP-LIST-GEN)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable update-nth2 len-update-nth BV-ARRAY-WRITE unsigned-byte-p-forced BVCHOP-LIST-OF-TAKE-OF-BVCHOP-LIST-GEN))))
 
 
 (defthmd cons-of-bv-array-write-gen
@@ -247,8 +244,7 @@
                 )
            (equal (bv-array-write size length index val array)
                   (bv-array-write valsize length index val array)))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2 unsigned-byte-p-forced)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bv-array-write update-nth2 unsigned-byte-p-forced))))
 
 (defthmd bv-array-write-does-nothing-cheap
   (implies (and (axe-syntaxp (bv-array-write-nest-with-val-at-indexp-axe lst val key dag-array)) ;this seemed very expensive in one situation (but it was because of huge bv-array-write nests due to some problem -- not this rule's fault)

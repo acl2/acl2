@@ -262,6 +262,24 @@
                    (delete key map1)))
   :enable pick-a-point-polar)
 
+(defrule submap-of-update
+  (equal (submap (update key val map) map2)
+         (and (submap (delete key map) map2)
+              (treeset::in key (keys map2))
+              (equal (lookup key map2) val)))
+  :cases ((submap (delete key map) map2))
+  :use ((:instance update-of-delete-same)
+        (:instance submap-of-update-when-submap
+                   (x (delete key map))
+                   (y map2))
+        (:instance submap-transitivity
+                   (x (delete key map))
+                   (y (update key val (delete key map)))
+                   (z map2)))
+  :disable (update-of-delete-same
+            submap-of-update-when-submap
+            submap-transitivity))
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule to-omap-of-delete

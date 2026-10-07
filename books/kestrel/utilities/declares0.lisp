@@ -791,7 +791,7 @@
 ;;; Remove entire :measure (if any)
 
 (defun remove-measure-from-xargs (xargs)
-  (declare (xargs :guard (and (xargsp xargs))))
+  (declare (xargs :guard (xargsp xargs)))
   (if (endp xargs)
       nil
     (if (eq :measure (first xargs))
@@ -819,7 +819,7 @@
 ;;; Remove entire :hints (if any) -- TODO: Generalize this to remove any given xarg... (might occur more than once?)
 
 (defun remove-termination-hints-from-xargs (xargs)
-  (declare (xargs :guard (and (xargsp xargs))))
+  (declare (xargs :guard (xargsp xargs)))
   (if (endp xargs)
       nil
     (if (eq :hints (first xargs))

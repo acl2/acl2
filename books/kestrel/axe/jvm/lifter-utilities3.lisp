@@ -20,6 +20,7 @@
 (include-book "lifter-utilities") ;for standard-hyps-basic0
 (include-book "kestrel/utilities/unify" :dir :system)
 (include-book "kestrel/jvm/global-class-alist" :dir :system)
+(include-book "kestrel/terms-light/make-conjunction-from-list" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 
@@ -184,8 +185,7 @@
                                        state)
   (declare (xargs :mode :program
                   :stobjs state
-                  :guard (and (symbol-listp extra-rules)
-                              (jvm::class-name-listp class-names)
+                  :guard (and (jvm::class-name-listp class-names)
                               ;; what about th?
                               (weak-dag-or-quotep s-dag)
                               (pseudo-term-listp hyps)

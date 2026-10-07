@@ -47,7 +47,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ expression-values-and-environments
-  :parents (dynamic-semantics)
+  :parents (values-and-environments)
   :short "Expression values and expression dynamic environments."
   :long
   (xdoc::topstring
@@ -3768,7 +3768,7 @@
    (xdoc::p
     "This is the initial, i.e. top-level, expression dynamic environment.
      It only contains the primitive operations in scope.
-     It is the dynamic counterpart of @(tsee init-senv)."))
+     It is the dynamic counterpart of @(tsee init-expr-senv)."))
   (make-expr-denv :tenv (make-type-denv :ienv (make-ispace-denv :ispaces nil)
                                         :types nil)
                   :exprs (primop-values))

@@ -1648,7 +1648,7 @@
      These include preprocessing numbers,
      defined by <i>pp-number</i> in [C17:6.4.8] [C17:A.1.9],
      which start with a digit, optionally preceded by a dot,
-     and are followed by identifier characters (including digits and letter),
+     and are followed by identifier characters (including digits and letters),
      as well as plus and minus signs immediately preceded by exponent letters,
      as well as periods
      [C17:6.4.8/2].
@@ -1730,7 +1730,7 @@
        ((when (or (and (utf8-<= (char-code #\A) char)
                        (utf8-<= char (char-code #\Z)))
                   (and (utf8-<= (char-code #\a) char)
-                       (utf8-<= char (char-code #\a)))
+                       (utf8-<= char (char-code #\z)))
                   (and (utf8-<= (char-code #\0) char)
                        (utf8-<= char (char-code #\9)))
                   (utf8-= char (char-code #\_))
@@ -1931,11 +1931,10 @@
                ((erp isuffix? suffix-last/next-pos parstate)
                 (lex-?-integer-suffix parstate))
                ;; 0 x/X hexdigs [suffix]
-               ((erp parstate) (check-full-ppnumber (and
-                                                     (member (car (last hexdigs))
-                                                             '(#\e #\E))
-                                                     t)
-                                                    parstate)))
+               (ends-in-e (and (not isuffix?)
+                               (member (car (last hexdigs)) '(#\e #\E))
+                               t))
+               ((erp parstate) (check-full-ppnumber ends-in-e parstate)))
             (retok (const-int
                     (make-iconst
                      :core (make-dec/oct/hex-const-hex
@@ -2414,7 +2413,7 @@
                        (t (position-fix zero-pos)))
                  parstate)))
        (t ; 0 not-all-octal-digits
-        (b* ((parstate (unread-chars (len digits) parstate)) ; 0
+        (b* ((parstate (unread-chars (1+ (len digits)) parstate)) ; 0
              ((erp nonoctdig pos parstate) (lex-non-octal-digit parstate)))
           (reterr-msg :where pos
                       :expected "octal digit"
@@ -2644,16 +2643,25 @@
      after reading the initial @('//').")
    (xdoc::p
     "We read characters in a loop until
-     either we find a new-line character (success)
-     or we find end of file (failure).
+     either we find a new-line character or the end of file.
      In case of success, we return
      a lexeme that currently contains no information
      (but that may change in the future),
      and a span calculated from
      the position of the first @('/') in the opening @('//'),
      which is passed to this function,
-     and the position of the closing new-line,
-     which is returned by the loop function."))
+     and the position of the closing new-line or end-of-file,
+     which is returned by the loop function.
+     The span includes the closing new-line or end-of-file.")
+   (xdoc::p
+    "When encountering the end of file,
+     we succeed and return the line comment,
+     even though [C17] [C23] prohibit a non-empty file
+     to end without a new line.
+     However, this condition can be enforced elsewhere,
+     and GCC and Clang actually relaxes this condition.
+     So it is more flexible for this lexing function
+     to handle end of file as successfully ending the line comment."))
   (b* (((reterr) (irr-lexeme) (irr-span) parstate)
        ((erp last-pos parstate) (lex-line-comment-loop first-pos parstate)))
     (retok (lexeme-comment)
@@ -2671,14 +2679,10 @@
           ((erp char pos parstate) (read-char parstate)))
        (cond
         ((not char) ; EOF
-         (reterr-msg :where pos
-                     :expected "a character"
-                     :found (char-to-msg char)
-                     :extra (msg "The line comment starting at (~@0) ~
-                                  never ends."
-                                 (position-to-msg first-pos))))
-        ((utf8-= char 10) ; new-line
          (retok pos parstate))
+        ((utf8-= char 10) ; new-line
+         (b* ((parstate (unread-char parstate)))
+           (retok pos parstate)))
         (t ; other
          (lex-line-comment-loop first-pos parstate))))
      :measure (parsize parstate)
@@ -2690,13 +2694,6 @@
        (<= (parsize new-parstate)
            (parsize parstate))
        :rule-classes :linear
-       :hints (("Goal" :induct t)))
-
-     (defret parsize-of-lex-line-comment-loop-cond
-       (implies (not erp)
-                (<= (parsize new-parstate)
-                    (1- (parsize parstate))))
-       :rule-classes :linear
        :hints (("Goal" :induct t)))))
 
   ///
@@ -2704,12 +2701,6 @@
   (defret parsize-of-lex-line-comment-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
-    :rule-classes :linear)
-
-  (defret parsize-of-lex-line-comment-cond
-    (implies (not erp)
-             (<= (parsize new-parstate)
-                 (1- (parsize parstate))))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2730,15 +2721,15 @@
      see the documentation in @(tsee parstate).")
    (xdoc::p
     "We read characters in a loop until
-     either we find a new-line character (success)
-     or we find end of file (failure).
+     either we find a new-line character or the end of file.
      In case of success, we return
      a lexeme that currently contains no information
      (but that may change in the future),
      and a span calculated from
      the position of the @('#'), which is passed to this function,
-     and the position of the closing new-line,
-     which is returned by the loop function."))
+     and the position of the closing new-line or end-of-file,
+     which is returned by the loop function.
+     The span includes the closing new-line or end-of-file."))
   (b* (((reterr) (irr-lexeme) (irr-span) parstate)
        ((erp last-pos parstate) (lex-control-line-loop first-pos parstate)))
     (retok (lexeme-control-line)
@@ -2756,14 +2747,10 @@
           ((erp char pos parstate) (read-char parstate)))
        (cond
         ((not char) ; EOF
-         (reterr-msg :where pos
-                     :expected "a character"
-                     :found (char-to-msg char)
-                     :extra (msg "The preprocessing directive starting at (~@0) ~
-                                  never ends."
-                                 (position-to-msg first-pos))))
-        ((utf8-= char 10) ; new-line
          (retok pos parstate))
+        ((utf8-= char 10) ; new-line
+         (b* ((parstate (unread-char parstate)))
+           (retok pos parstate)))
         (t ; other
          (lex-control-line-loop first-pos parstate))))
      :measure (parsize parstate)
@@ -2775,13 +2762,6 @@
        (<= (parsize new-parstate)
            (parsize parstate))
        :rule-classes :linear
-       :hints (("Goal" :induct t)))
-
-     (defret parsize-of-lex-control-line-loop-cond
-       (implies (not erp)
-                (<= (parsize new-parstate)
-                    (1- (parsize parstate))))
-       :rule-classes :linear
        :hints (("Goal" :induct t)))))
 
   ///
@@ -2789,12 +2769,6 @@
   (defret parsize-of-lex-control-line-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
-    :rule-classes :linear)
-
-  (defret parsize-of-lex-control-line-cond
-    (implies (not erp)
-             (<= (parsize new-parstate)
-                 (1- (parsize parstate))))
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3394,7 +3368,7 @@
                        parstate))))))
          ((utf8-= char2 (char-code #\=)) ; > =
           (retok (lexeme-token (token-punctuator ">="))
-                 (make-span :start first-pos :end first-pos)
+                 (make-span :start first-pos :end pos2)
                  parstate))
          (t ; > other
           (b* ((parstate (unread-char parstate))) ; >

@@ -467,7 +467,7 @@
            :in-theory (e/d (logand
                             mod-of-floor-of-2-and-expt-of-one-less-alt)
                            (expt-hack
-                            <-of-1-and-expt
+                            ;<-of-1-and-expt
                             mod-floor-2-expt-2
                             my-floor-lower-bound-linear)))))
 

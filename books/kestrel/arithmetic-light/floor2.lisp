@@ -264,13 +264,11 @@
     :hints (("Goal" :in-theory (disable  /r-when-abs-numerator=1
                                          x*y>1-positive
                                          integerp-of-*-of-/-when-<-and-negative
-                                         x*y>1-positive
                                          ;; for speed:
                                          distributivity
                                          <=-of-*-and-*-same-linear
                                          ;commutativity-2-of-*
-                                         )))
-    ))
+                                         )))))
 
 (encapsulate ()
 ; (local (include-book "ihs/ihs-lemmas" :dir :system)) ;todo

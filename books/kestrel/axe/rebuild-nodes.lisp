@@ -19,6 +19,7 @@
 (include-book "kestrel/typed-lists-light/sortedp-less-than-or-equal" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less-than-or-equal-all" :dir :system)
 (include-book "kestrel/typed-lists-light/less-than-or-equal-all" :dir :system)
+(local (include-book "kestrel/typed-lists-light/all-less-than-or-equal" :dir :system))
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
@@ -101,8 +102,7 @@
            :in-theory (disable all-<=-of-keep-nodenum-dargs))))
 
 (defthm ALL-<=-ALL-when-ALL-<=-ALL-of-cdr-arg2
-  (implies (and (ALL-<=-ALL x (cdr y))
-                )
+  (implies (ALL-<=-ALL x (cdr y))
            (equal (ALL-<=-ALL x y)
                   (or (not (consp y))
                       (all-<= x (car y)))))

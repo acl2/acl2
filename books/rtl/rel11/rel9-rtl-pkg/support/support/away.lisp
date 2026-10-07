@@ -38,9 +38,15 @@
 	((< x 1) (cons 1 (fl (/ x))))
 	(t (fl x))))
 
+; Matt K. addition: needed for e0-ord-< just below
+(include-book "ordinals/e0-ordinal" :dir :system)
+
 (defund power2p (x)
   (declare (xargs :guard t
                   :measure (power2p-measure x)
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                  :well-founded-relation e0-ord-<
                   :hints (("goal" :in-theory (enable power2p-measure)))))
   (cond ((or (not (rationalp x))
              (<= x 0))
@@ -64,6 +70,9 @@
 
 (defnd expo (x)
   (declare (xargs :measure (expo-measure x)
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                  :well-founded-relation e0-ord-<
                   :verify-guards nil))
   (mbe
    :logic
