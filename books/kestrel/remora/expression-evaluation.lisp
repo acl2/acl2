@@ -805,7 +805,15 @@
        with the bindings for the free variables of their bodies
        (excluding the variables bound by their parameters),
        obtained by restricting the current dynamic environment
-       to those variables.")
+       to those variables.
+       For the n-ary term lambda abstraction,
+       the body of the value is the inner abstraction,
+       whose parameter types and optional body type
+       are evaluated only when that inner abstraction is:
+       thus, the environment must retain
+       the type and ispace variables free in those types,
+       which the free variables of the inner abstraction include,
+       and not just the ones free in the body of the atom.")
      (xdoc::p
       "A box evaluates to a box value:
        the ispaces are evaluated to ispace values,
@@ -832,14 +840,17 @@
                          (atom-free-expr-vars atom)
                          denv)))
        :lambdan (b* (((ok param) (eval-var+type? (car atom.params)
-                                                 (expr-denv->tenv denv))))
+                                                 (expr-denv->tenv denv)))
+                     (body (lambda-curried-body atom.params
+                                                atom.body
+                                                atom.type?)))
                   (make-expr-value-lambda
                    :param param
-                   :body (lambda-curried-body atom.params atom.body atom.type?)
+                   :body body
                    :type? nil
                    :denv (expr-denv-restrict
-                          (expr-free-ispace-vars atom.body)
-                          (expr-free-type-vars atom.body)
+                          (expr-free-ispace-vars body)
+                          (expr-free-type-vars body)
                           (atom-free-expr-vars atom)
                           denv)))
        :tlambda (make-expr-value-tlambda
