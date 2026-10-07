@@ -62,7 +62,12 @@
      and
      from -32768 to +32767 (both inclusive) for C23 [C23:5.3.5.3.2].
      The possible unsigned values must cover at least the range
-     from 0 to 65535 (both inclusive) [C17:5.2.4.2.1/1] [C23:5.3.5.3.2].")
+     from 0 to 65535 (both inclusive) [C17:5.2.4.2.1/1] [C23:5.3.5.3.2].
+     Our definition uses -32767 for both C17 and c23,
+     but we prove that it is in fact -32768 for C23,
+     which mandates two's complement and that
+     the pattern with sign bit 1 and all value bit 0
+     is not a trap representation.")
    (xdoc::p
     "The possible signed values must at least include
      those of @('signed char'),
@@ -130,7 +135,12 @@
      and
      from -32768 to +32767 (both inclusive) for C23 [C23:5.3.5.3.2].
      The possible unsigned values must cover at least the range
-     from 0 to 65535 (both inclusive) [C17:5.2.4.2.1/1] [C23:5.3.5.3.2].")
+     from 0 to 65535 (both inclusive) [C17:5.2.4.2.1/1] [C23:5.3.5.3.2].
+     Our definition uses -32767 for both C17 and c23,
+     but we prove that it is in fact -32768 for C23,
+     which mandates two's complement and that
+     the pattern with sign bit 1 and all value bit 0
+     is not a trap representation.")
    (xdoc::p
     "The possible signed values must at least include
      those of @('signed short'),
@@ -197,7 +207,12 @@
      and
      from -2147483648 to +2147483647 (both inclusive) for C23 [C23:5.3.5.3.2].
      The possible unsigned values must cover at least the range
-     from 0 to 4294967295 (both inclusive) [C17:5.2.4.2.1/1] [C23:5.3.5.3.2].")
+     from 0 to 4294967295 (both inclusive) [C17:5.2.4.2.1/1] [C23:5.3.5.3.2].
+     Our definition uses -2147483647 for both C17 and c23,
+     but we prove that it is in fact -2147483648 for C23,
+     which mandates two's complement and that
+     the pattern with sign bit 1 and all value bit 0
+     is not a trap representation.")
    (xdoc::p
     "The possible signed values must at least include
      those of @('signed int'),
@@ -267,7 +282,12 @@
      for C23 [C23:5.3.5.3.2].
      The possible unsigned values must cover at least
      the range from 0 to 18446744073709551615 (both inclusive)
-     [C17:5.2.4.2.1/1] [C23:5.3.5.3.2].")
+     [C17:5.2.4.2.1/1] [C23:5.3.5.3.2].
+     Our definition uses -9223372036854775807 for both C17 and c23,
+     but we prove that it is in fact -9223372036854775808 for C23,
+     which mandates two's complement and that
+     the pattern with sign bit 1 and all value bit 0
+     is not a trap representation.")
    (xdoc::p
     "The possible signed values must at least include
      those of @('signed long'),
