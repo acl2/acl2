@@ -1,6 +1,6 @@
 ; Documentation for BV library
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -59,7 +59,7 @@ unsigned-byte-p.
 Bit vectors can also be interpreted as signed numbers using a standard
 twos-complement representation.  A bit vector of size M is taken to
 represent numbers in the range [-2^(M-1), 2^(M-1)-1].  This matches
-the behavior of the ACL2 predicate signed-byte-p.)"))
+the behavior of the ACL2 predicate signed-byte-p."))
 
 ;; (depends-on "bvchop-def.lisp")
 (gen-xdoc-for-file
@@ -73,7 +73,7 @@ the behavior of the ACL2 predicate signed-byte-p.)"))
  ((bvplus "Bit-vector sum."))
  (bv))
 
-;; (depends-on "bvminus.lisp")
+;; (depends-on "bvminus-def.lisp")
 (gen-xdoc-for-file
  "bvminus-def.lisp"
  ((bvminus "Bit-vector difference."))

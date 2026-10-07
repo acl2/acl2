@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function iprint-oracle-updates.
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,7 @@
 (local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "kestrel/utilities/read-acl2-oracle" :dir :system))
 (local (include-book "channels"))
+(local (include-book "kestrel/utilities/w" :dir :system))
 
 ;(local (in-theory (disable mv-nth open-input-channels)))
 
@@ -40,6 +41,16 @@
            (state-p (iprint-oracle-updates state)))
   :hints (("Goal" :in-theory (e/d (iprint-oracle-updates)
                                   (;; for speed:
+                                   array1p
+                                   iprint-last-index*
+                                   nfix)))))
+
+(defthm w-of-iprint-oracle-updates
+  (equal (w (iprint-oracle-updates state))
+         (w state))
+  :hints (("Goal" :in-theory (e/d (iprint-oracle-updates)
+                                  (put-global ; so that w-of-put-global fires
+                                   ;; for speed:
                                    array1p
                                    iprint-last-index*
                                    nfix)))))

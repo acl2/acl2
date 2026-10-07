@@ -1,6 +1,6 @@
 ; Top level book for JVM model
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,6 +20,7 @@
 (include-book "instructions")
 (include-book "methods")
 (include-book "classes")
+(include-book "mentioned-classes")
 (include-book "operand-stacks")
 (include-book "bindings")
 (include-book "th")
@@ -56,6 +57,7 @@
 (include-book "jvm-rules")
 (include-book "jvm-facts")
 (include-book "jvm-facts0")
+(include-book "syntax")
 (include-book "jvm-rules2")
 (include-book "execution-common")
 (include-book "execution")

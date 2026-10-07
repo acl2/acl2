@@ -20,6 +20,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Matt K. mod: Two necessary additions because of verify-guards fix, 9/19/2026.
+; Perhaps these could std::defredundant could be improved to make these
+; unnecessary.
+
+(DEFUN-SK SUBMAP-SK (X Y)
+  (DECLARE (XARGS :VERIFY-GUARDS NIL))
+  (DECLARE (XARGS :GUARD T))
+  (FORALL
+   (KEY DEFAULT)
+   (NON-EXEC
+    (IMPLIES (TREESET::IN KEY (KEYS X))
+             (EQUAL (LOOKUP KEY X :DEFAULT DEFAULT)
+                    (LOOKUP KEY Y :DEFAULT DEFAULT)))))
+  :REWRITE
+  (IMPLIES
+   (SUBMAP-SK X Y)
+   (NON-EXEC
+    (IMPLIES (TREESET::IN KEY (KEYS X))
+             (EQUAL (LOOKUP KEY X :DEFAULT DEFAULT)
+                    (LOOKUP KEY Y :DEFAULT DEFAULT)))))
+  :SKOLEM-NAME SUBMAP-SK-WITNESS
+  :THM-NAME SUBMAP-SK-NECC)
+
+(verify-guards SUBMAP-SK)
+
 (std::defredundant
   :names (submap
           submap$inline

@@ -81,7 +81,7 @@
 
 ;;returns (mv first-atom rest)
 (defund first-atom (items)
-  (declare (xargs :guard (and (true-listp items))))
+  (declare (xargs :guard (true-listp items)))
   (if (endp items)
       (mv (hard-error 'first-atom "We expected to find an atom" nil) nil)
     (let ((item (car items))

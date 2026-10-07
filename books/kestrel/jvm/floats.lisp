@@ -20,6 +20,9 @@
 (local (include-book "kestrel/bv/bvshr" :dir :system))
 (local (include-book "kestrel/bv/bvor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
+
+(local (in-theory (disable acl2::logext mod)))
 
 ;; NOTE: This formalization does not handle rounding and models most floats as
 ;; infinite-precition rational numbers.
@@ -98,6 +101,13 @@
                               (rationalp val)
                               (<= 0 val))))
   `(:float ,sign ,val))
+
+(defthm java-floatp-of-make-regular-float
+  (equal (java-floatp (make-regular-float sign val))
+         (and (float-signp sign)
+              (rationalp val)
+              (<= 0 val)))
+  :hints (("Goal" :in-theory (enable make-regular-float java-floatp))))
 
 ;; Extract the sign (:pos or :neg)
 (defun regular-float-sign (float)
@@ -327,19 +337,20 @@
 
 
 (defconst *max-signed-int32* (+ -1 (expt 2 31)))
-(defconst *min-signed-int32* (bvchop 32 (- (expt 2 31))))
+(defconst *min-signed-int32* (- (expt 2 31)))
 
 (defconst *max-signed-int64* (+ -1 (expt 2 63)))
-(defconst *min-signed-int64* (bvchop 64 (- (expt 2 63))))
+(defconst *min-signed-int64* (- (expt 2 63)))
 
 
 ;convert double to int
 ;;TODO: Do this right
-(defun d2i (d)
+;; Returns a signed value.
+(defund d2i (d)
   (declare (xargs :guard (java-doublep d)
                   :guard-hints (("Goal" :in-theory (enable java-doublep regular-doublep)))))
   (if (eq *double-nan* d)
-      0 ;(encode-signed 0) ;as prescribed by the JVM spec
+      0 ; as prescribed by the JVM spec
     (if (eq *double-infinity* d)
         *max-signed-int32*
       (if (eq *double-negative-infinity* d)
@@ -352,13 +363,18 @@
                 *min-signed-int32*
               int-val)))))))
 
+(defthm signed-byte-p-of-d2i
+  (signed-byte-p 32 (d2i d))
+  :hints (("Goal" :in-theory (enable d2i))))
+
 ;convert double to long
 ;;TODO: Do this right
-(defun d2l (d)
+;; Returns a signed value.
+(defund d2l (d)
   (declare (xargs :guard (java-doublep d)
                   :guard-hints (("Goal" :in-theory (enable java-doublep regular-doublep)))))
   (if (eq *double-nan* d)
-      0 ;(encode-signed 0) ;as prescribed by the JVM spec
+      0 ;;as prescribed by the JVM spec
     (if (eq *double-infinity* d)
         *max-signed-int64*
       (if (eq *double-negative-infinity* d)
@@ -371,10 +387,19 @@
                 *min-signed-int64*
               int-val)))))))
 
+(defthm signed-byte-p-of-d2l
+  (signed-byte-p 64 (d2l d))
+  :hints (("Goal" :in-theory (enable d2l))))
+
 ;; TODO: This should perform rounding (and perhaps range checking)
 (defun i2f (int)
   (declare (xargs :guard (unsigned-byte-p 32 int)))
-  (make-regular-float (if (< (decode-signed int) 0) :neg :pos) int))
+  (let ((val (decode-signed int)))
+    (make-regular-float (if (< val 0) :neg :pos) (abs val))))
+
+(defthm java-floatp-of-i2f
+  (java-floatp (i2f int))
+  :hints (("Goal" :in-theory (enable i2f))))
 
 ;; (can't call this float-sign because that symbol is already in the main LISP package)
 (defun sign-of-float (f)
@@ -495,10 +520,3 @@
 
 (defthm not-equal-of-float-nan-and-make-regular-float
   (not (equal :float-nan (make-regular-float sign val))))
-
-(defthm java-floatp-of-make-regular-float
-  (equal (java-floatp (make-regular-float sign val))
-         (and (float-signp sign)
-              (rationalp val)
-              (<= 0 val)))
-  :hints (("Goal" :in-theory (enable make-regular-float java-floatp))))

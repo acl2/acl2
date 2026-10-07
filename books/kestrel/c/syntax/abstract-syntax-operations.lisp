@@ -115,8 +115,7 @@
                     :stmt
                     :tycompat
                     :offsetof
-                    :va-arg
-                    :extension))
+                    :va-arg))
        t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -279,7 +278,7 @@
    :tycompat (expr-priority-primary)
    :offsetof (expr-priority-primary)
    :va-arg (expr-priority-primary)
-   :extension (expr-priority-primary)))
+   :extension (expr-priority-unary)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1198,6 +1197,103 @@
         (cons (decl-spec-stoclass->spec declspec)
               (decl-spec-list-to-stor-spec-list (cdr declspecs)))
       (decl-spec-list-to-stor-spec-list (cdr declspecs)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define decl-spec-list-standalone-tag-gcc-okp ((declspecs decl-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of declaration specifiers
+          is allowed by GCC in a standalone tag declaration."
+  :long
+  (xdoc::topstring-p
+   "See @(tsee check-declon-standalone-tag).
+    GCC does not treat a declaration as a standalone tag declaration
+    if it has storage class specifiers
+    (other than @('_Thread_local') and @('__thread')),
+    type qualifiers,
+    or alignment specifiers.")
+  (b* (((when (endp declspecs)) t)
+       (declspec (car declspecs))
+       ((when (decl-spec-case declspec '(:typequal :align))) nil)
+       ((when (and (decl-spec-case declspec :stoclass)
+                   (not (stor-spec-case (decl-spec-stoclass->spec declspec)
+                                        :thread))))
+        nil))
+    (decl-spec-list-standalone-tag-gcc-okp (cdr declspecs))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-declon-standalone-tag ((declon declonp) (dialect c::dialectp))
+  :returns (mv (ident? ident-optionp) (unionp booleanp))
+  :short "Check if a declaration is a standalone tag declaration,
+          returning the tag and whether it is a union tag
+          if the check succeeds."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A declaration of the form @('struct-or-union identifier ;')
+     declares the identifier as the tag of a new type in the current scope,
+     even if a tag with the same name is visible from an outer scope
+     [C17:6.7.2.3/7] [C23:6.7.3.4/11].
+     In other contexts, a structure or union type specifier without members
+     refers to the visible tag, if any [C17:6.7.2.3/9] [C23:6.7.3.4/13].
+     The standard does not name this form of declaration;
+     we introduce the term `standalone tag declaration' for it,
+     generalized to the GCC and Clang extensions as described below.")
+   (xdoc::p
+    "In all dialects,
+     the declaration must have no declarators
+     and exactly one type specifier,
+     which must be a structure or union type specifier
+     with a tag and no members.
+     Attributes between the @('struct') or @('union') keyword and the tag
+     are allowed.
+     The other declaration specifiers, if any, depend on the dialect:")
+   (xdoc::ul
+    (xdoc::li
+     "Without GCC or Clang extensions,
+      there must be no other declaration specifiers,
+      as in the standard.")
+    (xdoc::li
+     "With GCC extensions,
+      the other declaration specifiers
+      must satisfy @(tsee decl-spec-list-standalone-tag-gcc-okp).
+      This is not documented in the GCC manual,
+      but it is the observed behavior,
+      and it is described in the comments of the GCC test
+      @('gcc.dg/c99-tag-3.c').")
+    (xdoc::li
+     "With Clang extensions,
+      the type specifier must be the last declaration specifier,
+      i.e. any other declaration specifiers must precede it.
+      This is not documented in the Clang manual,
+      but it is the observed behavior."))
+   (xdoc::p
+    "If the check fails, we return @('nil') as the tag."))
+  (b* (((unless (declon-case declon :declon)) (mv nil nil))
+       (specs (declon-declon->specs declon))
+       ((when (consp (declon-declon->declors declon))) (mv nil nil))
+       (tyspecs (decl-spec-list-to-type-spec-list specs))
+       ((unless (and (consp tyspecs)
+                     (endp (cdr tyspecs))))
+        (mv nil nil))
+       (tyspec (car tyspecs))
+       ((unless (type-spec-case tyspec '(:struct :union))) (mv nil nil))
+       (unionp (type-spec-case tyspec :union))
+       ((struni-spec struni-spec) (if unionp
+                                      (type-spec-union->spec tyspec)
+                                    (type-spec-struct->spec tyspec)))
+       ((unless (and struni-spec.name?
+                     (endp struni-spec.members)))
+        (mv nil nil))
+       ((unless (cond ((c::dialect->gcc dialect)
+                       (decl-spec-list-standalone-tag-gcc-okp specs))
+                      ((c::dialect->clang dialect)
+                       (equal (car (last specs))
+                              (decl-spec-typespec tyspec)))
+                      (t (endp (cdr specs)))))
+        (mv nil nil)))
+    (mv struni-spec.name? unionp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

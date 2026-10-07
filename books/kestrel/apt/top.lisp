@@ -61,6 +61,7 @@
 (include-book "simplify")
 
 (include-book "simplify-conjunctions")
+;; (include-book "simplify-conjunctions2") ; commented out since this has ttags and skip-proofs
 
 (include-book "solve")
 (include-book "solve-method-acl2-rewriter")

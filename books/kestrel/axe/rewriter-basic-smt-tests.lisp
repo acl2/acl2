@@ -29,6 +29,7 @@
                                                     (known-booleans '(known-booleans (w state)))
                                                     (normalize-xors 'nil)
                                                     (limits 'nil)
+                                                    (rewrite-objective ':?)
                                                     (memoizep 't)
                                                     (count-hits 'nil)
                                                     (print 't)
@@ -43,6 +44,7 @@
                                     ,known-booleans
                                     ,normalize-xors
                                     ,limits
+                                    ,rewrite-objective
                                     ,memoizep
                                     ,count-hits
                                     ,print

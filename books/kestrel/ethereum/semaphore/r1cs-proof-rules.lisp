@@ -575,7 +575,7 @@
                                   (z z)
                                   (x x)
                                   (p p))
-           :in-theory (disable PFIELD::ADD-OF-NEG-OF-WHEN-BITP)
+           :in-theory (disable PFIELD::ADD-OF-NEG-WHEN-BITP)
            )))
 
 (defthm xor-idiom-special-2
@@ -593,7 +593,7 @@
                                   (z z)
                                   (x x)
                                   (p p))
-           :in-theory (disable pfield::add-of-neg-of-when-bitp
+           :in-theory (disable pfield::add-of-neg-when-bitp
                                pfield::equal-of-add-move-negations-bind-free
                                pfield::add-subst-constant-arg1
                                PFIELD::MUL-OF-ADD-ARG2
@@ -618,7 +618,7 @@
                                   (z z)
                                   (x x)
                                   (p p))
-           :in-theory (disable PFIELD::ADD-OF-NEG-OF-WHEN-BITP
+           :in-theory (disable PFIELD::ADD-OF-NEG-WHEN-BITP
                                PFIELD::MUL-OF-ADD-ARG2
                                pfield::add-subst-constant-arg1
                                PFIELD::NEG-WHEN-CONSTANT-ARG1))))

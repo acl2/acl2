@@ -189,7 +189,7 @@
             :typedef (init-declor-list-find-gso-candidate declon.declors)
             :otherwise nil)))
      (if (and ident?
-              (in ident? blacklist))
+              (treeset::in ident? blacklist))
          nil
        ident?))
    :statassert nil))
@@ -265,7 +265,7 @@
              (c$::trans-unit-vinfo->table-end (c$::trans-unit->info tunit))))
           ((when erp)
            (trans-unit-find-gso-candidate0 tunit
-                                          (insert gso blacklist)
+                                          (treeset::insert gso blacklist)
                                           (- steps 1)))
           ((unless tag?)
            (reterr t))
@@ -352,7 +352,7 @@
                                          tunits))
           ((when erp)
            (trans-ensemble-split-any-gso0 tunits
-                                              (insert gso blacklist)
+                                              (treeset::insert gso blacklist)
                                               (- steps 1))))
        (retok blacklist tunits$))
      :measure (nfix steps)

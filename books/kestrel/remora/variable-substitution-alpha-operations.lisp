@@ -65,7 +65,9 @@
      each bound variable to a fresh dimension or shape variable.
      The fresh variables avoid
      the free ispace variables of the restricted substitution maps
-     and the ispace variables @('body-vars') of the body of the binder,
+     and the ispace variables @('body-vars') supplied by the caller,
+     normally the ones of the body of the binder
+     plus any others that the caller wants avoided,
      so that no capture occurs and binding structure is preserved.
      We return the fresh variables (to rebuild the binder)
      and the extended substitution maps (to recurse into the body)."))
@@ -488,8 +490,9 @@
      extending the substitution with the renamings,
      and rebuild the binder with the fresh variables.
      The fresh variables are chosen to avoid
-     the free ispace variables of the (restricted) substitution
-     and the ispace variables of the body of the binder,
+     the free ispace variables of the (restricted) substitution,
+     the ispace variables of the body of the binder,
+     and the ispace variables in the @('avoid') extra argument,
      so that no capture occurs and binding structure is preserved.")
    (xdoc::p
     "Since @('let') bindings are sequential,
@@ -502,9 +505,14 @@
      we substitute with the substitution extended with
      all the renamings of the bindings,
      recomputed via @(tsee bind-list-ispace-subst-alpha-extend).
-     The @('avoid') extra argument conveys, into the bindings traversal,
-     the ispace variables of the @('let') (its bindings and body),
-     which the fresh variables generated for the bound variables must avoid;
+     The @('avoid') extra argument is a set of ispace variables
+     that the fresh variables must avoid at every binder,
+     in addition to the ones described above.
+     Callers may use it to protect ispace variables
+     that no binder in the result may use.
+     The @('let') case augments it, for the bindings traversal,
+     with the ispace variables of the @('let') (its bindings and body),
+     which the bindings cannot see;
      it is otherwise threaded unchanged.")
    (xdoc::p
     "The @('avoid') set is threaded through the bindings unchanged:
@@ -560,10 +568,12 @@
    (ispace :dim (ispace-dim (dim-subst-dim-vars ispace.dim dim-subst)))
    (type :pi
          (b* (((mv fresh-params dim-subst shape-subst)
-               (dim/shape-subst-alpha-bound (list type.param)
-                                            dim-subst
-                                            shape-subst
-                                            (type-free-ispace-vars type.body))))
+               (dim/shape-subst-alpha-bound
+                (list type.param)
+                dim-subst
+                shape-subst
+                (set::union (ispace-var-set-fix avoid)
+                            (type-free-ispace-vars type.body)))))
            (make-type-pi
             :param (car fresh-params)
             :body (type-subst-ispace-vars-alpha-aux type.body
@@ -572,10 +582,12 @@
                                                     avoid))))
    (type :pin
          (b* (((mv fresh-params dim-subst shape-subst)
-               (dim/shape-subst-alpha-bound type.params
-                                            dim-subst
-                                            shape-subst
-                                            (type-free-ispace-vars type.body))))
+               (dim/shape-subst-alpha-bound
+                type.params
+                dim-subst
+                shape-subst
+                (set::union (ispace-var-set-fix avoid)
+                            (type-free-ispace-vars type.body)))))
            (make-type-pin
             :params fresh-params
             :body (type-subst-ispace-vars-alpha-aux type.body
@@ -584,10 +596,12 @@
                                                     avoid))))
    (type :sigma
          (b* (((mv fresh-params dim-subst shape-subst)
-               (dim/shape-subst-alpha-bound (list type.param)
-                                            dim-subst
-                                            shape-subst
-                                            (type-free-ispace-vars type.body))))
+               (dim/shape-subst-alpha-bound
+                (list type.param)
+                dim-subst
+                shape-subst
+                (set::union (ispace-var-set-fix avoid)
+                            (type-free-ispace-vars type.body)))))
            (make-type-sigma
             :param (car fresh-params)
             :body (type-subst-ispace-vars-alpha-aux type.body
@@ -596,10 +610,12 @@
                                                     avoid))))
    (type :sigman
          (b* (((mv fresh-params dim-subst shape-subst)
-               (dim/shape-subst-alpha-bound type.params
-                                            dim-subst
-                                            shape-subst
-                                            (type-free-ispace-vars type.body))))
+               (dim/shape-subst-alpha-bound
+                type.params
+                dim-subst
+                shape-subst
+                (set::union (ispace-var-set-fix avoid)
+                            (type-free-ispace-vars type.body)))))
            (make-type-sigman
             :params fresh-params
             :body (type-subst-ispace-vars-alpha-aux type.body
@@ -611,11 +627,17 @@
                                                         dim-subst
                                                         shape-subst
                                                         avoid))
+              (type? (type-option-subst-ispace-vars-alpha-aux expr.type?
+                                                              dim-subst
+                                                              shape-subst
+                                                              avoid))
               ((mv fresh-ispaces dim-subst shape-subst)
-               (dim/shape-subst-alpha-bound (list expr.ispace)
-                                            dim-subst
-                                            shape-subst
-                                            (expr-free-ispace-vars expr.body))))
+               (dim/shape-subst-alpha-bound
+                (list expr.ispace)
+                dim-subst
+                shape-subst
+                (set::union (ispace-var-set-fix avoid)
+                            (expr-free-ispace-vars expr.body)))))
            (make-expr-unbox
             :ispace (car fresh-ispaces)
             :var expr.var
@@ -623,17 +645,24 @@
             :body (expr-subst-ispace-vars-alpha-aux expr.body
                                                     dim-subst
                                                     shape-subst
-                                                    avoid))))
+                                                    avoid)
+            :type? type?)))
    (expr :unboxn
          (b* ((target (expr-subst-ispace-vars-alpha-aux expr.target
                                                         dim-subst
                                                         shape-subst
                                                         avoid))
+              (type? (type-option-subst-ispace-vars-alpha-aux expr.type?
+                                                              dim-subst
+                                                              shape-subst
+                                                              avoid))
               ((mv fresh-ispaces dim-subst shape-subst)
-               (dim/shape-subst-alpha-bound expr.ispaces
-                                            dim-subst
-                                            shape-subst
-                                            (expr-free-ispace-vars expr.body))))
+               (dim/shape-subst-alpha-bound
+                expr.ispaces
+                dim-subst
+                shape-subst
+                (set::union (ispace-var-set-fix avoid)
+                            (expr-free-ispace-vars expr.body)))))
            (make-expr-unboxn
             :ispaces fresh-ispaces
             :var expr.var
@@ -641,7 +670,8 @@
             :body (expr-subst-ispace-vars-alpha-aux expr.body
                                                     dim-subst
                                                     shape-subst
-                                                    avoid))))
+                                                    avoid)
+            :type? type?)))
    (expr :let
          (b* ((avoid2 (set::union
                        (ispace-var-set-fix avoid)
@@ -664,10 +694,12 @@
                                                     avoid))))
    (atom :ilambda
          (b* (((mv fresh-params dim-subst shape-subst)
-               (dim/shape-subst-alpha-bound (list atom.param)
-                                            dim-subst
-                                            shape-subst
-                                            (expr-free-ispace-vars atom.body)))
+               (dim/shape-subst-alpha-bound
+                (list atom.param)
+                dim-subst
+                shape-subst
+                (set::union (ispace-var-set-fix avoid)
+                            (expr-free-ispace-vars atom.body))))
               (fresh-param (if (consp fresh-params)
                                (car fresh-params)
                              atom.param)))
@@ -679,10 +711,12 @@
                                                     avoid))))
    (atom :ilambdan
          (b* (((mv fresh-params dim-subst shape-subst)
-               (dim/shape-subst-alpha-bound atom.params
-                                            dim-subst
-                                            shape-subst
-                                            (expr-free-ispace-vars atom.body))))
+               (dim/shape-subst-alpha-bound
+                atom.params
+                dim-subst
+                shape-subst
+                (set::union (ispace-var-set-fix avoid)
+                            (expr-free-ispace-vars atom.body)))))
            (make-atom-ilambdan
             :params fresh-params
             :body (expr-subst-ispace-vars-alpha-aux atom.body
@@ -695,8 +729,10 @@
                 bind.params
                 dim-subst
                 shape-subst
-                (set::union (type-option-free-ispace-vars bind.type?)
-                            (expr-free-ispace-vars bind.expr)))))
+                (set::union (ispace-var-set-fix avoid)
+                            (set::union
+                             (type-option-free-ispace-vars bind.type?)
+                             (expr-free-ispace-vars bind.expr))))))
            (make-bind-ifun
             :var bind.var
             :params fresh-params
@@ -717,9 +753,11 @@
                        dim-subst
                        shape-subst
                        (set::union
-                        (var+type?-list-free-ispace-vars bind.params)
-                        (set::union (type-free-ispace-vars bind.type)
-                                    (expr-free-ispace-vars bind.expr))))))
+                        (ispace-var-set-fix avoid)
+                        (set::union
+                         (var+type?-list-free-ispace-vars bind.params)
+                         (set::union (type-free-ispace-vars bind.type)
+                                     (expr-free-ispace-vars bind.expr)))))))
                   (make-bind-cfun
                    :var bind.var
                    :tparams? bind.tparams?
@@ -801,20 +839,19 @@
    (xdoc::p
     "This is the top-level entry point for types.
      It calls @(tsee type-subst-ispace-vars-alpha-aux)
-     with an empty set of additional ispace variables to avoid.")
+     with an empty set of ispace variables to avoid.")
    (xdoc::p
     "As explained in @(see ast-subst-ispace-vars-alpha-aux),
-     the @('avoid') set is needed only to thread,
-     into the bindings of a @('let'),
-     the ispace variables of the @('let') that the bindings cannot see;
-     it is internal plumbing, not a channel for surrounding-scope variables.
-     So it is correct to start with an empty @('avoid') set here,
+     the @('avoid') set lets a caller protect ispace variables
+     that no binder in the result may use.
+     Substitution by itself needs no such protection,
      even when substituting in a subterm of a larger construct:
      the renaming is correct regardless of the surrounding context,
      because at each binder the fresh variables avoid
      the free variables of the binder's body
      (which already include any surrounding variables that occur free in it)
-     and the free variables of the substitution's range."))
+     and the free variables of the substitution's range.
+     So we start with an empty @('avoid') set here."))
   (type-subst-ispace-vars-alpha-aux type dim-subst shape-subst nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -849,6 +886,51 @@
      can be started empty here."))
   (atom-subst-ispace-vars-alpha-aux atom dim-subst shape-subst nil))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-alpha-rename-ispace-binders ((type typep) (avoid ispace-var-setp))
+  :returns (new-type typep)
+  :short "Alpha-rename the ispace binders of a type
+          away from a set of ispace variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is @(tsee type-subst-ispace-vars-alpha-aux)
+     with an empty substitution:
+     the only effect is to alpha-rename the ispace binders
+     to fresh variables that avoid, among others, the ones in @('avoid').
+     This prepares a type for the substitution of type variables,
+     whose values are types that contain ispaces:
+     by renaming the ispace binders away from
+     the free ispace variables of those values,
+     no capture can occur when the values are substituted
+     (see @(tsee type-subst-type-vars-alpha))."))
+  (type-subst-ispace-vars-alpha-aux type nil nil avoid))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-alpha-rename-ispace-binders ((expr exprp) (avoid ispace-var-setp))
+  :returns (new-expr exprp)
+  :short "Alpha-rename the ispace binders of an expression
+          away from a set of ispace variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee type-alpha-rename-ispace-binders)."))
+  (expr-subst-ispace-vars-alpha-aux expr nil nil avoid))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atom-alpha-rename-ispace-binders ((atom atomp) (avoid ispace-var-setp))
+  :returns (new-atom atomp)
+  :short "Alpha-rename the ispace binders of an atom
+          away from a set of ispace variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee type-alpha-rename-ispace-binders)."))
+  (atom-subst-ispace-vars-alpha-aux atom nil nil avoid))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -877,9 +959,17 @@
      extending the substitution with the renamings,
      and rebuild the binder with the fresh variables.
      The fresh variables are chosen to avoid
-     the free type variables of the (restricted) substitution
-     and the type variables of the body of the binder,
+     the free type variables of the (restricted) substitution,
+     the type variables of the body of the binder,
+     and the type variables in the @('avoid') extra argument,
      so that no capture occurs and binding structure is preserved.")
+   (xdoc::p
+    "The ispace-binding constructs are not handled here,
+     although they could capture the free ispace variables
+     of the substituted types, which contain ispaces.
+     The wrappers below alpha-rename those binders away from those variables
+     before calling these functions;
+     see @(tsee type-subst-type-vars-alpha).")
    (xdoc::p
     "Since @('let') bindings are sequential,
      we override the function for @(tsee bind-list)
@@ -891,9 +981,14 @@
      we substitute with the substitution extended with
      all the renamings of the bindings,
      recomputed via @(tsee bind-list-type-subst-alpha-extend).
-     The @('avoid') extra argument conveys, into the bindings traversal,
-     the type variables of the @('let') (its bindings and body),
-     which the fresh variables generated for the bound variables must avoid;
+     The @('avoid') extra argument is a set of type variables
+     that the fresh variables must avoid at every binder,
+     in addition to the ones described above.
+     Callers may use it to protect type variables
+     that no binder in the result may use.
+     The @('let') case augments it, for the bindings traversal,
+     with the type variables of the @('let') (its bindings and body),
+     which the bindings cannot see;
      it is otherwise threaded unchanged.")
    (xdoc::p
     "The @('avoid') set is threaded through a list of bindings unchanged:
@@ -953,10 +1048,12 @@
                      (type-var (type-var-array type.var.name))))))
    (type :forall
          (b* (((mv fresh-params atom-subst array-subst)
-               (atom/array-subst-alpha-bound (list type.param)
-                                             atom-subst
-                                             array-subst
-                                             (type-free-type-vars type.body))))
+               (atom/array-subst-alpha-bound
+                (list type.param)
+                atom-subst
+                array-subst
+                (set::union (type-var-set-fix avoid)
+                            (type-free-type-vars type.body)))))
            (make-type-forall
             :param (car fresh-params)
             :body (type-subst-type-vars-alpha-aux type.body
@@ -965,10 +1062,12 @@
                                                   avoid))))
    (type :foralln
          (b* (((mv fresh-params atom-subst array-subst)
-               (atom/array-subst-alpha-bound type.params
-                                             atom-subst
-                                             array-subst
-                                             (type-free-type-vars type.body))))
+               (atom/array-subst-alpha-bound
+                type.params
+                atom-subst
+                array-subst
+                (set::union (type-var-set-fix avoid)
+                            (type-free-type-vars type.body)))))
            (make-type-foralln
             :params fresh-params
             :body (type-subst-type-vars-alpha-aux type.body
@@ -997,10 +1096,12 @@
                                                   avoid))))
    (atom :tlambda
          (b* (((mv fresh-params atom-subst array-subst)
-               (atom/array-subst-alpha-bound (list atom.param)
-                                             atom-subst
-                                             array-subst
-                                             (expr-free-type-vars atom.body))))
+               (atom/array-subst-alpha-bound
+                (list atom.param)
+                atom-subst
+                array-subst
+                (set::union (type-var-set-fix avoid)
+                            (expr-free-type-vars atom.body)))))
            (make-atom-tlambda
             :param (car fresh-params)
             :body (expr-subst-type-vars-alpha-aux atom.body
@@ -1009,10 +1110,12 @@
                                                   avoid))))
    (atom :tlambdan
          (b* (((mv fresh-params atom-subst array-subst)
-               (atom/array-subst-alpha-bound atom.params
-                                             atom-subst
-                                             array-subst
-                                             (expr-free-type-vars atom.body))))
+               (atom/array-subst-alpha-bound
+                atom.params
+                atom-subst
+                array-subst
+                (set::union (type-var-set-fix avoid)
+                            (expr-free-type-vars atom.body)))))
            (make-atom-tlambdan
             :params fresh-params
             :body (expr-subst-type-vars-alpha-aux atom.body
@@ -1025,8 +1128,10 @@
                 bind.params
                 atom-subst
                 array-subst
-                (set::union (type-option-free-type-vars bind.type?)
-                            (expr-free-type-vars bind.expr)))))
+                (set::union (type-var-set-fix avoid)
+                            (set::union
+                             (type-option-free-type-vars bind.type?)
+                             (expr-free-type-vars bind.expr))))))
            (make-bind-tfun
             :var bind.var
             :params fresh-params
@@ -1047,9 +1152,11 @@
                        atom-subst
                        array-subst
                        (set::union
-                        (var+type?-list-free-type-vars bind.params)
-                        (set::union (type-free-type-vars bind.type)
-                                    (expr-free-type-vars bind.expr))))))
+                        (type-var-set-fix avoid)
+                        (set::union
+                         (var+type?-list-free-type-vars bind.params)
+                         (set::union (type-free-type-vars bind.type)
+                                     (expr-free-type-vars bind.expr)))))))
                   (make-bind-cfun
                    :var bind.var
                    :tparams? (type-var-list-option-some fresh-tparams)
@@ -1133,23 +1240,33 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the top-level entry point for types.
-     It calls @(tsee type-subst-type-vars-alpha-aux)
+    "This is the top-level entry point for types.")
+   (xdoc::p
+    "The values of the substitution are types, which contain ispaces,
+     so the ispace binders of the type could capture
+     the free ispace variables of those values,
+     but @(see ast-subst-type-vars-alpha-aux) renames only type binders.
+     Thus, we first alpha-rename the ispace binders of the type
+     away from the free ispace variables of the substitution,
+     via @(tsee type-alpha-rename-ispace-binders),
+     and then we call @(tsee type-subst-type-vars-alpha-aux)
      with an empty set of additional type variables to avoid.")
    (xdoc::p
     "As explained in @(see ast-subst-type-vars-alpha-aux),
-     the @('avoid') set is needed only to thread,
-     into the bindings of a @('let'),
-     the type variables of the @('let') that the bindings cannot see;
-     it is internal plumbing, not a channel for surrounding-scope variables.
-     So it is correct to start with an empty @('avoid') set here,
+     the @('avoid') set lets a caller protect type variables
+     that no binder in the result may use.
+     Substitution by itself needs no such protection,
      even when substituting in a subterm of a larger construct:
      the renaming is correct regardless of the surrounding context,
      because at each binder the fresh variables avoid
      the free variables of the binder's body
      (which already include any surrounding variables that occur free in it)
-     and the free variables of the substitution's range."))
-  (type-subst-type-vars-alpha-aux type atom-subst array-subst nil))
+     and the free variables of the substitution's range.
+     So we start with an empty @('avoid') set here."))
+  (b* ((avoid (set::union (string-type-map-free-ispace-vars atom-subst)
+                          (string-type-map-free-ispace-vars array-subst)))
+       (type (type-alpha-rename-ispace-binders type avoid)))
+    (type-subst-type-vars-alpha-aux type atom-subst array-subst nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1163,9 +1280,13 @@
   (xdoc::topstring
    (xdoc::p
     "This is the top-level entry point for expressions;
-     see @(tsee type-subst-type-vars-alpha) for why the @('avoid') set
-     can be started empty here."))
-  (expr-subst-type-vars-alpha-aux expr atom-subst array-subst nil))
+     see @(tsee type-subst-type-vars-alpha)
+     for the preliminary renaming of the ispace binders
+     and for why the @('avoid') set can be started empty here."))
+  (b* ((avoid (set::union (string-type-map-free-ispace-vars atom-subst)
+                          (string-type-map-free-ispace-vars array-subst)))
+       (expr (expr-alpha-rename-ispace-binders expr avoid)))
+    (expr-subst-type-vars-alpha-aux expr atom-subst array-subst nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1179,9 +1300,45 @@
   (xdoc::topstring
    (xdoc::p
     "This is the top-level entry point for atoms;
-     see @(tsee type-subst-type-vars-alpha) for why the @('avoid') set
-     can be started empty here."))
-  (atom-subst-type-vars-alpha-aux atom atom-subst array-subst nil))
+     see @(tsee type-subst-type-vars-alpha)
+     for the preliminary renaming of the ispace binders
+     and for why the @('avoid') set can be started empty here."))
+  (b* ((avoid (set::union (string-type-map-free-ispace-vars atom-subst)
+                          (string-type-map-free-ispace-vars array-subst)))
+       (atom (atom-alpha-rename-ispace-binders atom avoid)))
+    (atom-subst-type-vars-alpha-aux atom atom-subst array-subst nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-alpha-rename-type-binders ((expr exprp) (avoid type-var-setp))
+  :returns (new-expr exprp)
+  :short "Alpha-rename the type binders of an expression
+          away from a set of type variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is @(tsee expr-subst-type-vars-alpha-aux)
+     with an empty substitution:
+     the only effect is to alpha-rename the type binders
+     to fresh variables that avoid, among others, the ones in @('avoid').
+     This is the type-variable analogue of
+     @(tsee expr-alpha-rename-ispace-binders);
+     it prepares an expression for the substitution of expression variables,
+     whose values are expressions that contain types
+     (see @(tsee expr-subst-expr-vars-alpha))."))
+  (expr-subst-type-vars-alpha-aux expr nil nil avoid))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define atom-alpha-rename-type-binders ((atom atomp) (avoid type-var-setp))
+  :returns (new-atom atomp)
+  :short "Alpha-rename the type binders of an atom
+          away from a set of type variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee expr-alpha-rename-type-binders)."))
+  (atom-subst-type-vars-alpha-aux atom nil nil avoid))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1193,7 +1350,7 @@
   (xdoc::topstring
    (xdoc::p
     "These are auxiliary functions because they all take
-     a set of type variables to avoid.
+     a set of expression variables to avoid.
      After these, we provide wrappers for some AST types,
      which are meant to be used to apply substitutions in ASTs
      (whether they are sub-ASTs of others or not).")
@@ -1213,6 +1370,13 @@
      the free expression variables of the (restricted) substitution
      and the expression variables of the body of the binder,
      so that no capture occurs and binding structure is preserved.")
+   (xdoc::p
+    "The type-binding and ispace-binding constructs are not handled here,
+     although they could capture the free type and ispace variables
+     of the substituted expressions, which contain types and ispaces.
+     The wrappers below alpha-rename those binders away from those variables
+     before calling these functions;
+     see @(tsee expr-subst-expr-vars-alpha).")
    (xdoc::p
     "The parameters of a lambda abstraction and of a function binding
      are variables with types;
@@ -1287,7 +1451,8 @@
             :ispace expr.ispace
             :var (car fresh)
             :target target
-            :body (expr-subst-expr-vars-alpha-aux expr.body subst avoid))))
+            :body (expr-subst-expr-vars-alpha-aux expr.body subst avoid)
+            :type? expr.type?)))
    (expr :unboxn
          (b* ((target (expr-subst-expr-vars-alpha-aux expr.target subst avoid))
               ((mv fresh subst)
@@ -1298,7 +1463,8 @@
             :ispaces expr.ispaces
             :var (car fresh)
             :target target
-            :body (expr-subst-expr-vars-alpha-aux expr.body subst avoid))))
+            :body (expr-subst-expr-vars-alpha-aux expr.body subst avoid)
+            :type? expr.type?)))
    (expr :let
          (b* ((avoid2 (set::union
                        (string-sfix avoid)
@@ -1404,8 +1570,20 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the top-level entry point for expressions.
-     It calls @(tsee expr-subst-expr-vars-alpha-aux)
+    "This is the top-level entry point for expressions.")
+   (xdoc::p
+    "The values of the substitution are expressions,
+     which contain types and ispaces,
+     so the type and ispace binders of the expression could capture
+     the free type and ispace variables of those values,
+     but @(see ast-subst-expr-vars-alpha-aux) renames only expression binders.
+     Thus, we first alpha-rename the ispace binders and the type binders
+     of the expression away from
+     the free ispace variables and the free type variables
+     of the substitution,
+     via @(tsee expr-alpha-rename-ispace-binders)
+     and @(tsee expr-alpha-rename-type-binders),
+     and then we call @(tsee expr-subst-expr-vars-alpha-aux)
      with an empty set of additional expression variables to avoid.")
    (xdoc::p
     "As explained in @(see ast-subst-expr-vars-alpha-aux),
@@ -1420,7 +1598,13 @@
      the free variables of the binder's body
      (which already include any surrounding variables that occur free in it)
      and the free variables of the substitution's range."))
-  (expr-subst-expr-vars-alpha-aux expr subst nil))
+  (b* ((expr (expr-alpha-rename-ispace-binders
+              expr
+              (string-expr-map-free-ispace-vars subst)))
+       (expr (expr-alpha-rename-type-binders
+              expr
+              (string-expr-map-free-type-vars subst))))
+    (expr-subst-expr-vars-alpha-aux expr subst nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1432,6 +1616,13 @@
   (xdoc::topstring
    (xdoc::p
     "This is the top-level entry point for atoms;
-     see @(tsee expr-subst-expr-vars-alpha) for why the @('avoid') set
-     can be started empty here."))
-  (atom-subst-expr-vars-alpha-aux atom subst nil))
+     see @(tsee expr-subst-expr-vars-alpha)
+     for the preliminary renaming of the ispace and type binders
+     and for why the @('avoid') set can be started empty here."))
+  (b* ((atom (atom-alpha-rename-ispace-binders
+              atom
+              (string-expr-map-free-ispace-vars subst)))
+       (atom (atom-alpha-rename-type-binders
+              atom
+              (string-expr-map-free-type-vars subst))))
+    (atom-subst-expr-vars-alpha-aux atom subst nil)))

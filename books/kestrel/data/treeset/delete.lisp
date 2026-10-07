@@ -14,6 +14,8 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
+(include-book "kestrel/utilities/arith-fix-and-equiv-defs" :dir :system)
+
 (include-book "internal/join-defs")
 (include-book "internal/delete-defs")
 (include-book "set-defs")
@@ -31,6 +33,7 @@
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 
+(local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
@@ -246,17 +249,36 @@
                   (- (cardinality set) 1)))
   :use cardinality-of-delete)
 
+(defrule cardinality-of-delete-when-in-linear
+  (implies (in x set)
+           (< (cardinality (delete x set))
+              (cardinality set)))
+  :rule-classes :linear)
+
 (defrule cardinality-of-delete-when-not-in
   (implies (not (in x set))
            (equal (cardinality (delete x set))
                   (cardinality set)))
   :use cardinality-of-delete)
 
+(defrule cardinality-of-delete-lower-bound-linear
+  (<= (cardinality set)
+      (+ 1 (cardinality (delete x set))))
+  :rule-classes :linear
+  :use cardinality-of-delete)
+
+(defrule cardinality-of-delete-upper-bound-linear
+  (<= (cardinality (delete x set))
+      (cardinality set))
+  :rule-classes :linear
+  :use cardinality-of-delete)
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule subset-of-delete
-  (subset (delete x set) set)
-  :enable pick-a-point)
+  (implies (subset set y)
+           (subset (delete x set) y))
+  :enable pick-a-point-polar)
 
 (defrule subset-of-arg1-and-delete
   (equal (subset set (delete x set))

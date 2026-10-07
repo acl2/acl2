@@ -417,8 +417,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Record the fact that the TREE rewrote to RESULT.
-;; RESULT should be a nodenum/quotep.
+;; Records the fact that the TREE rewrote to RESULT.
 ;; TODO: Consider not adding certain pairs (see *fns-not-to-memoize*).
 (defund add-pair-to-memoization (tree result memoization)
   (declare (xargs :guard (and (tree-to-memoizep tree)
@@ -451,8 +450,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Record the fact that all of the TREES rewrote to RESULT.
-;; RESULT should be a nodenum/quotep.
+;; Records the fact that all of the TREES rewrote to RESULT.
 (defund add-pairs-to-memoization (trees result memoization)
   (declare (xargs :guard (and (trees-to-memoizep trees)
                               (dargp result)
@@ -525,7 +523,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Recognizes an object that is a memoization or nil (meaning no memoization).
+;; Recognizes an object that is either a memoization or nil (meaning no memoization).
 (defund maybe-memoizationp (memoization)
   (declare (xargs :guard t))
   (or (eq nil memoization)
@@ -551,6 +549,30 @@
                 memoization)
            (memoizationp memoization))
   :hints (("Goal" :in-theory (enable maybe-memoizationp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; If maybe-memoization is a memoization, this extends it.  Otherwise, this returns nil.
+(defun-inline maybe-add-pairs-to-memoization (trees result maybe-memoization)
+  (declare (xargs :guard (and (trees-to-memoizep trees)
+                              (dargp result)
+                              (maybe-memoizationp maybe-memoization))))
+  (and maybe-memoization
+       (add-pairs-to-memoization trees result maybe-memoization)))
+
+(defthm maybe-memoizationp-of-maybe-add-pairs-to-memoization
+  (implies (and (maybe-memoizationp maybe-memoization)
+                (dargp result)
+                (trees-to-memoizep trees))
+           (maybe-memoizationp (maybe-add-pairs-to-memoization trees result maybe-memoization)))
+  :hints (("Goal" :in-theory (enable maybe-memoizationp))))
+
+;; Key property: If we are not memoizing (maybe-memoization=nil), this does not
+;; turn it on:
+(defthm maybe-add-pairs-to-memoization-iff
+  (iff (maybe-add-pairs-to-memoization trees result maybe-memoization)
+       maybe-memoization)
+  :hints (("Goal" :in-theory (enable maybe-add-pairs-to-memoization))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -747,6 +769,13 @@
                 memoization)
            (maybe-bounded-memoizationp (add-pair-and-pairs-to-memoization tree trees result memoization) bound))
   :hints (("Goal" :in-theory (enable add-pair-and-pairs-to-memoization))))
+
+(defthm maybe-bounded-memoizationp-of-maybe-add-pairs-to-memoization
+  (implies (and (dargp-less-than result bound)
+                (trees-to-memoizep trees)
+                (maybe-bounded-memoizationp memoization bound))
+           (maybe-bounded-memoizationp (maybe-add-pairs-to-memoization trees result memoization) bound))
+  :hints (("Goal" :in-theory (enable maybe-bounded-memoizationp))))
 
 (defthm maybe-memoizationp-when-maybe-bounded-memoizationp
   (implies (maybe-bounded-memoizationp memoization bound)

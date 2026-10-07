@@ -48,6 +48,7 @@
 (include-book "arithmetic-rules-axe")
 ;(include-book "kestrel/bv-arrays/bv-array-read-rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BV-ARRAY-READ
 ;(include-book "kestrel/bv/rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BVCHOP, etc?
+(include-book "kestrel/terms-light/make-conjunction-from-list" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
@@ -95,7 +96,7 @@
 ;; todo: extract assumptions from dags?
 (defund dag-or-term-to-dag-and-assumptions (item state)
   (declare (xargs :stobjs state))
-  (if (eq nil item) ;we interpret nil as a term (not an empty dag)
+  (if (eq nil item) ; we interpret nil as a term (not an empty dag)
       (mv (erp-nil) *nil* nil state)
     (if (weak-dagp item)
         ;; TODO: Add support for getting assumptions out of a DAG that is an
@@ -106,11 +107,27 @@
            ((when erp) (mv erp *nil* nil state))
            ;; TODO: Consider extracting hyps from bit-valued terms:
            ((mv assumptions term)
-            (term-hyps-and-conc term))
+            (get-hyps-and-conc term))
            ;; Create the DAG for the conclusion:
            ((mv erp dag) (dagify-term term))
            ((when erp) (mv erp nil nil state)))
         (mv (erp-nil) dag assumptions state)))))
+
+;; Returns a term (untranslated).
+;; todo: see also dag-or-term-to-term
+(defund dag-or-term-to-term2 (item ; a pseudo-dag or an untranslated term
+                              wrld)
+  (declare (xargs :guard (plist-worldp wrld)))
+  (if (eq nil item) ; we interpret nil as a term (not an empty dag)
+      item
+    (if (weak-dagp item)
+        ;; it's a dag:
+        (if (< (dag-size-unguarded item) 1000)
+            ;; it's a small dag, so convert to a term:
+            (dag2term item)
+          (embed-dag-in-term item wrld))
+      ;; it's a term:
+      item)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -337,6 +354,7 @@
                              (known-booleans (w state))
                              normalize-xors
                              nil ; limits
+                             (rewrite-objective-?) ; todo: do better?
                              nil ; memoizep
                              t ; count-hits ; todo: pass in
                              print
@@ -486,11 +504,12 @@
                   ))
   (b* ((dag (first problem))
        (assumptions (second problem))
-       (term (dag-or-constant-to-term dag))
-       (- (and print (cw "(Calling ACL2 on term ~x0.~%" term)))
+       (conclusion-term (dag-or-constant-to-term dag))
+       (acl2-goal `(implies (and ,@assumptions) ,conclusion-term))
+       (- (and print (cw "(Calling ACL2 on term ~x0.~%" acl2-goal)))
        ((mv & provedp state)
         (prove$ ;TODO: Add support for hints
-         `(implies (and ,@assumptions) ,term)
+         acl2-goal
          :with-output nil ;confusingly, this turns on output
          )))
     ;; this tactic has to prove the whole term (it can't return a residual DAG)
@@ -541,14 +560,12 @@
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
 ;; A true counterexample returned in the info is fixed up to bind vars, not nodenums
 (defun apply-tactic-stp (problem
-                         rule-alist ; do we want this?  it may apply unrelated rules
                          interpreted-function-alist ; do we want this?  maybe it can't hurt
                          monitor normalize-xors print max-conflicts
                          counterexamplep
                          print-cex-as-signedp
                          state)
   (declare (xargs :guard (and (proof-problemp problem)
-                              (rule-alistp rule-alist)
                               (interpreted-function-alistp interpreted-function-alist)
                               (symbol-listp monitor)
                               (booleanp normalize-xors)
@@ -585,7 +602,7 @@
        ;;  (er hard? 'apply-tactic-stp "DAG too big.")
        ;;  (mv *error* nil state))
        ;; Replace stuff that STP can't handle (todo: push this into the STP translation)?:
-       ((mv erp rule-alist) (add-to-rule-alist (pre-stp-rules) rule-alist (w state)))
+       ((mv erp rule-alist) (make-rule-alist (pre-stp-rules) (w state)))
        ((when erp)
         (er hard? 'apply-tactic-stp "ERROR making pre-stp rule-alist.~%")
         (mv *error* nil state))
@@ -827,7 +844,7 @@
           (if (eq :acl2 tactic)
               (apply-tactic-acl2 problem print state)
             (if (eq :stp tactic)
-                (apply-tactic-stp problem rule-alist interpreted-function-alist monitor normalize-xors print max-conflicts counterexamplep print-cex-as-signedp state)
+                (apply-tactic-stp problem interpreted-function-alist monitor normalize-xors print max-conflicts counterexamplep print-cex-as-signedp state)
               (if (and (consp tactic)
                        (eq :cases (car tactic)))
                   (apply-tactic-cases problem (fargs tactic) print state)
@@ -870,8 +887,10 @@
                    nil)
                  (mv *unknown* info-acc state)))
      (b* ((tactic (first tactics))
+          (- (cw "(Applying tactic ~x0.~%" tactic))
           ((mv result info state)
            (apply-proof-tactic problem tactic rule-alist interpreted-function-alist monitor normalize-xors print max-conflicts call-stp-when-pruning counterexamplep print-cex-as-signedp state))
+          (- (cw ")~%"))
           (info-acc (add-to-end info info-acc)))
        (if (eq *valid* result)
            (prog2$ (and (rest tactics) (cw "(Tactics not used: ~x0)~%" (rest tactics)))
@@ -1093,7 +1112,7 @@
        ((when (not (tacticsp tactics)))
         (er hard 'prove-with-tactics-fn "Illegal tactics: ~x0. See TACTICP." tactics)
         (mv :bad-input nil state))
-       ;; Form the dag to prove:
+       ;; Form the dag to prove: ; todo: move assumption splitting into the tactic prover?
        ((mv erp dag-or-constant assumptions2 state)
         ;; Also translates the term:
         (dag-or-term-to-dag-and-assumptions dag-or-term state))
@@ -1123,9 +1142,7 @@
              (table-event (redundancy-table-event whole-form name)) ; just using the name here, since there may be no theorem ; just use :fake or :result-not-stored?
              (maybe-theorem
                (and produce-theoremp
-                    (b* ((theorem-conclusion (if (< (dag-or-quotep-size dag-or-constant) 1000)
-                                                 (if (quotep dag-or-constant) dag-or-constant (dag-or-constant-to-term dag-or-constant))
-                                               (embed-dag-in-term dag-or-constant (w state))))
+                    (b* ((theorem-conclusion (dag-or-term-to-term2 dag-or-term (w state))) ; the original dag-or-term supplied, no assumptions split off
                          (defthm-name (or name (fresh-name-in-world-with-$s 'prove-with-tactics nil (w state))))
                          (disablep (if rule-classes t nil)) ;can't disable if :rule-classes nil ;todo: make this an option
                          (defthm-variant (if disablep 'defthmd 'defthm)))

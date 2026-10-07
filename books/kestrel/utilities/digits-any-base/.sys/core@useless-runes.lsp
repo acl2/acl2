@@ -6519,6 +6519,7 @@
  (22 22 (:REWRITE-QUOTED-CONSTANT NFIX-UNDER-NAT-EQUIV))
  (14 14 (:REWRITE |(* 0 x)|))
  (12 12 (:REWRITE |(* (expt c m) (expt d n))|))
+ (12 12 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  (5 5 (:REWRITE |(< y (+ (- c) x))|))
  (5 5 (:REWRITE |(< x (+ c/d y))|))
  (4 4 (:REWRITE NATP-WHEN-MEMBER-EQUAL-OF-NAT-LISTP))

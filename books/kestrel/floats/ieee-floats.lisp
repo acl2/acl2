@@ -16,8 +16,9 @@
 
 ;; Reference: IEEE Std 754-2019: IEEE Standard for Floating-Point Arithmetic
 
-(include-book "kestrel/arithmetic-light/log2" :dir :system)
+(include-book "kestrel/arithmetic-light/log2-def" :dir :system)
 (local (include-book "ieee-floats-helpers"))
+(local (include-book "kestrel/arithmetic-light/log2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
@@ -30,7 +31,10 @@
 
 (in-theory (disable mv-nth))
 
-(local (in-theory (disable bitp bitp-becomes-unsigned-byte-p)))
+(local (in-theory (disable bitp bitp-becomes-unsigned-byte-p
+                           ;; for speed:
+                           <-of-expt-and-expt-same-exponents-linear
+                           integerp-of-*-of-/-when-<-and-negative)))
 
 ;; These are constants so that we don't mistype the keyword by accident.
 ;; These are the same for all formats.

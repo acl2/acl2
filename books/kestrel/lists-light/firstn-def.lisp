@@ -2,7 +2,7 @@
 
 ;; This function is taken from the coi library.  See the copyright there.
 
-(DEFUN FIRSTN (N L)
+(DEFUND FIRSTN (N L)
   "The sublist of L consisting of its first N elements."
   (DECLARE (XARGS :GUARD (AND (TRUE-LISTP L)
                               (INTEGERP N)

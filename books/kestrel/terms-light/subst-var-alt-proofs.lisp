@@ -31,7 +31,7 @@
 (local (include-book "empty-eval-helpers"))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
-(local (include-book "make-lambda-application-simple-proof"))
+(local (include-book "make-lambda-application-simple-proofs"))
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))

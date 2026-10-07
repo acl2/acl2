@@ -858,3 +858,18 @@
          (subrange start end lst))
   :hints (("Goal" :in-theory (enable subrange-unguarded
                                      subrange))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund union-equal-unguarded (l1 l2)
+  (declare (xargs :guard t))
+  (cond ((endp-unguarded l1) l2)
+        ((member-equal-unguarded (car l1) l2)
+         (union-equal-unguarded (cdr l1) l2))
+        (t (cons (car l1)
+                 (union-equal-unguarded (cdr l1) l2)))))
+
+(defthm union-equal-unguarded-correct
+  (equal (union-equal-unguarded l1 l2)
+         (union-equal l1 l2))
+  :hints (("Goal" :in-theory (enable union-equal-unguarded))))

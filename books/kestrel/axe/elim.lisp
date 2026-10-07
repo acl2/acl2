@@ -433,7 +433,7 @@
              (implies (and (not erp)
                            (<= bound new-dag-len)
                            (natp bound))
-                      (and (pseudo-dag-arrayp 'dag-array new-dag-array bound)))))
+                      (pseudo-dag-arrayp 'dag-array new-dag-array bound))))
   :hints (("Goal" :use (eliminate-a-tuple-return-type)
            :in-theory (disable eliminate-a-tuple-return-type))))
 

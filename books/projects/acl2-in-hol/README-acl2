@@ -4,6 +4,11 @@ describes how to use the script tests/doit to run tests, as this was
 originally not included in regression testing (though it was added on
 3/4/2026).
 
+Note that files lisp/workxxx* will be left over after a run and not
+cleaned until the next build of tests/success.txt -- that's OK, since
+lisp/Makefile will remove those lisp/workxxx* before certifying books
+in that directory.
+
 .....
 
 This directory contains replacements for portions of the

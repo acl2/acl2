@@ -124,8 +124,8 @@
                                            t
                                            nil))))
             ((ts-subsetp ts
-                         #-:non-standard-analysis *ts-positive-rational*
-                         #+:non-standard-analysis *ts-positive-real*)
+                         #-non-standard-analysis *ts-positive-rational*
+                         #+non-standard-analysis *ts-positive-real*)
              (list
               ;; 0 < term
               (add-linear-terms :rhs term
@@ -134,8 +134,8 @@
                                            t
                                            nil))))
             ((ts-subsetp ts
-                         #-:non-standard-analysis *ts-negative-rational*
-                         #+:non-standard-analysis *ts-negative-real*)
+                         #-non-standard-analysis *ts-negative-rational*
+                         #+non-standard-analysis *ts-negative-real*)
              (list
               ;; term < 0
               (add-linear-terms :lhs term
@@ -144,8 +144,8 @@
                                            t
                                            nil))))
             ((ts-subsetp ts
-                         #-:non-standard-analysis *ts-non-negative-rational*
-                         #+:non-standard-analysis *ts-non-negative-real*)
+                         #-non-standard-analysis *ts-non-negative-rational*
+                         #+non-standard-analysis *ts-non-negative-real*)
              (list
               ;; 0 <= term
               (add-linear-terms :rhs term
@@ -154,8 +154,8 @@
                                            t
                                            nil))))
             ((ts-subsetp ts
-                         #-:non-standard-analysis *ts-non-positive-rational*
-                         #+:non-standard-analysis *ts-non-positive-real*)
+                         #-non-standard-analysis *ts-non-positive-rational*
+                         #+non-standard-analysis *ts-non-positive-real*)
              (list
               ;; term <= 0
               (add-linear-terms :lhs term

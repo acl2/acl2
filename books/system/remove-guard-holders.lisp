@@ -39,6 +39,7 @@
 (verify-termination subst-each-for-var) ; and guards
 (verify-termination possibly-dirty-lambda-objectp1) ; and guards
 (verify-termination translate-declaration-to-guard1-gen) ; and guards
+(verify-termination translate-declaration-to-guard-gen-rec) ; and guards
 (verify-termination translate-declaration-to-guard-gen) ; and guards
 (verify-termination subst-each-for-var) ; and guards
 
@@ -174,28 +175,24 @@
 ; Now working towards verify-termination for
 ; syntactically-plausible-lambda-objectp.
 
-(verify-termination translate-declaration-to-guard1-gen)
-
-(verify-termination translate-declaration-to-guard-gen)
-
 (local
  (defthm symbol-listp-implies-pseudo-term-listp
    (implies (symbol-listp x)
             (pseudo-term-listp x))))
 
 (local
- (make-flag flag-translate-declaration-to-guard-gen
-            translate-declaration-to-guard-gen))
+ (make-flag flag-translate-declaration-to-guard-gen-rec
+            translate-declaration-to-guard-gen-rec))
 
 (local
- (defthm-flag-translate-declaration-to-guard-gen
-   (defthm pseudo-termp-translate-declaration-to-guard-gen
+ (defthm-flag-translate-declaration-to-guard-gen-rec
+   (defthm pseudo-termp-translate-declaration-to-guard-gen-rec
      (implies (and (pseudo-termp var)
                    (equal tflg t))
               (pseudo-termp
-               (translate-declaration-to-guard-gen x var tflg wrld)))
-     :flag translate-declaration-to-guard-gen)
-   (defthm pseudo-term-listp-translate-declaration-to-guard-gen
+               (translate-declaration-to-guard-gen-rec x var tflg wrld)))
+     :flag translate-declaration-to-guard-gen-rec)
+   (defthm pseudo-term-listp-translate-declaration-to-guard-gen-rec
      (implies (and (pseudo-termp var)
                    (equal tflg t))
               (pseudo-term-listp

@@ -14,6 +14,8 @@
 (include-book "values")
 (include-book "flexible-array-member-removal")
 
+(local (include-book "std/lists/nthcdr" :dir :system))
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -73,7 +75,31 @@
           :enable (value-struct-read-aux
                    member-type-lookup
                    member-types-of-member-values
-                   member-type-of-member-value)))))))
+                   member-type-of-member-value))))
+
+     (defruled valuep-of-value-struct-read-aux-when-nth
+       (implies (and (equal (c::member-value->name (nth index members))
+                            name)
+                     (natp index)
+                     (< index (len members)))
+                (c::valuep (c::value-struct-read-aux name members)))
+       :induct t
+       :enable (nth
+                len))
+
+     (defruled value-struct-read-aux-of-nthcdr
+       (implies (and (natp index)
+                     (< index (len members)))
+                (equal (value-struct-read-aux name (nthcdr index members))
+                       (if (equal (member-value->name (nth index members))
+                                  (ident-fix name))
+                           (member-value->value (nth index members))
+                         (value-struct-read-aux
+                          name (nthcdr (1+ index) members)))))
+       :induct t
+       :enable (nth
+                nthcdr
+                len)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

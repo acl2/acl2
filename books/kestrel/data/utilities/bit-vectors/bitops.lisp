@@ -82,13 +82,7 @@
   (implies (and (posp size))
            (equal (unsigned-byte-p size (acl2::logcons b i))
                   (unsigned-byte-p (- size 1) (ifix i))))
-  :enable (unsigned-byte-p
-           integer-range-p
-           acl2::logcons)
-  ;; TODO: It would be nice to avoid mixing and matching libraries, but neither
-  ;; seemed to be able to get this on its own.
-  :prep-books ((include-book "arithmetic-5/top" :dir :system)
-               (include-book "kestrel/arithmetic-light/expt" :dir :system)))
+  :enable acl2::unsigned-byte-p**)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

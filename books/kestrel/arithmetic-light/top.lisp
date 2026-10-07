@@ -54,6 +54,7 @@
 (include-book "even-and-odd")
 (include-book "lg-def")
 (include-book "lg")
+(include-book "log2-def")
 (include-book "log2")
 (include-book "power-of-2p-def")
 (include-book "power-of-2p")

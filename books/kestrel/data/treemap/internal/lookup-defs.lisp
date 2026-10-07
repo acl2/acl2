@@ -8,6 +8,7 @@
 
 (in-package "TREEMAP")
 
+(include-book "kestrel/data/utilities/total-order/compare-defs" :dir :system)
 (include-book "kestrel/data/treeset/in-defs" :dir :system)
 
 (include-book "tree-defs")

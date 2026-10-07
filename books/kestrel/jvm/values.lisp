@@ -16,6 +16,7 @@
 
 (include-book "portcullis")
 (include-book "kestrel/bv/logext-def" :dir :system)
+(include-book "kestrel/bv/bvchop-def" :dir :system)
 
 ;; I am now changing this over to store bit vectors as unsigned values (Mostly done now..).  So
 ;; the byte representing -1 (previously stored as -1) is now stored as 255.
@@ -41,9 +42,10 @@
   )
 
 ;; ;eventually this will call bvchop, but for now signed values are stored directly - i guess we switched it over...
-;; (defmacro encode-signed-long (val)
-;;   ;;val
-;;   `(bvchop 64 ,val))
+(acl2::defun-inline encode-signed-long (val) ; todo: make the others also defun-inlines
+  (declare (xargs :guard (signed-byte-p 64 val)))
+  ;; val
+  (acl2::bvchop 64 val))
 
 ;TODO: this should have 32 in the name
 ;the value stored is unsigned, so we must convert it before using is as a number

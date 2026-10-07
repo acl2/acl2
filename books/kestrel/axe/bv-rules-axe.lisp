@@ -468,6 +468,7 @@
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
 ;ex: strengthen x<4 to x<=3
+;todo: dup?
 (defthmd bvlt-of-constant-arg3
   (implies (and (axe-rewrite-objective 'nil)
                 (not (equal 0 (bvchop size k)))
@@ -480,6 +481,7 @@
            :in-theory (enable bvlt bvchop-of-sum-cases))))
 
 ;ex: strengthen 10<x to 11<=x
+;todo: dup?
 (defthmd bvlt-of-constant-arg2
   (implies (and (axe-rewrite-objective 'nil)
                 (not (equal (+ -1 (expt 2 size)) (bvchop size k)))
@@ -1469,7 +1471,7 @@
 ;;            :in-theory (enable BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT))))
 
 ;todo: make rules like this for other ops!
-(defthmd bvsx-too-high-axe
+(defthmd bvsx-when-unsigned-byte-p-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (< xsize old-size)
                 (<= old-size new-size)
@@ -1881,9 +1883,7 @@
 ;;                   (if (bvle xsize 4 x)
 ;;                       (bvchop-list 8 (take 4 data))
 ;;                     (bv-array-write '8 '4 (bvchop 2 x) val data))))
-;;   :hints (("Goal" :in-theory (e/d (unsigned-byte-p-forced bv-array-write update-nth2 bvlt)
-;;                                   ()))))
-
+;;   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced bv-array-write update-nth2 bvlt))))
 
 ;rename
 (defthmd bvdiv-tighten-dag

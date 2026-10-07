@@ -3254,6 +3254,7 @@
  (3 3 (:REWRITE |(+ x (- x))|))
  (3 3 (:META META-INTEGERP-CORRECT))
  (2 2 (:REWRITE |(* (expt c m) (expt d n))|))
+ (2 2 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  (1 1 (:REWRITE |(- (* c x))|))
  (1 1 (:LINEAR RTL::MOD-BND-3))
  )

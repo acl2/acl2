@@ -105,7 +105,7 @@
 
 ;todo: put back
 ;; (include-book "../bv/floor")
-;; (defthm ceiling-of-+-of-when-multiple-arg1
+;; (defthm ceiling-of-+-when-multiple-arg1
 ;;   (implies (and (integerp (/ i1 j))
 ;;                 (rationalp i2)
 ;;                 (rationalp j)

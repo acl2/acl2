@@ -1076,11 +1076,12 @@
     x86isa::vex-opcode-modr/m-p$inline-constant-opener
     x86isa::vex-prefixes-map-p$inline-constant-opener
 
-    x86isa::vex->vvvv$inline-constant-opener
-    x86isa::vex->l$inline-constant-opener
-    x86isa::vex->pp$inline-constant-opener
-    x86isa::vex->r$inline-constant-opener
-    x86isa::vex->w$inline-constant-opener
+    x86isa::vex->vvvv$notinline-constant-opener
+    x86isa::vex->l$notinline-constant-opener
+    x86isa::vex->pp$notinline-constant-opener
+    x86isa::vex->r$notinline-constant-opener
+    x86isa::vex->w$notinline-constant-opener
+
     x86isa::vex->b$inline-constant-opener
     x86isa::vex->x$inline-constant-opener
 
@@ -1354,6 +1355,7 @@
     acl2::bvlt-of-bvmult-of-expt-arg3-constant-version
 
     acl2::bvplus-of-bvplus-tighten-arg3 ; new
+    acl2::logext-of-+-of-logext-arg1
     acl2::logext-of-+-of-logext-arg2
 
     acl2::bvminus-becomes-bvplus-of-bvuminus-constant-version
@@ -2484,8 +2486,6 @@
 ;            combine-bytes-and-byte-ify
             acl2::logext-of-bvchop-same
             acl2::logext-identity
-            acl2::logext-of-+-of-logext-arg1
-            acl2::logext-of-+-of-logext-arg2
 ;            x86isa::xw-xr-same
             ;; acl2::bvplus-commutative-axe ;is this based on nodenum or term weight?
 

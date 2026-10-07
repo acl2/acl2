@@ -34,6 +34,7 @@
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/all-less-rules" :dir :system))
+(local (include-book "kestrel/typed-lists-light/all-less-than-or-equal" :dir :system))
 
 ;; Utilities to rebuild nodes (e.g., for substitution) that starts at the
 ;; target node and moves upward, handling its parents, their parents, etc.

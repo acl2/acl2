@@ -1010,7 +1010,7 @@
                                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                      node-replacement-array node-replacement-count)
              (declare (ignore dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist new-node-replacement-count))
-             (implies (and (not erp))
+             (implies (not erp)
                       (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))))
   :hints (("Goal" :use update-node-replacement-array-and-extend-dag-for-alist-return-type
            :in-theory (disable update-node-replacement-array-and-extend-dag-for-alist-return-type))))

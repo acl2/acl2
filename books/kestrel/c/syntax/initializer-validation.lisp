@@ -168,8 +168,7 @@
      "               :type (type-sint))))"
      "       (make-initer-subobjects-array-index"
      "        :of (make-type-struct"
-     "             :uid (uid 0)"
-     "             :tunit? (filepath \"foo.c\")"
+     "             :uid (uid-local 0 (filepath \"foo.c\"))"
      "             :tag/members (type-struni-tag/members-tagged (ident \"foo_s\")))"
      "        :index 5)))"))
   (:unknown ())
@@ -421,7 +420,7 @@
 
 (define subobjects-from-type ((type typep)
                               (completions type-completions-p))
-  :guard (or (type-aggregatep type)
+  :guard (or (3definitely (type-aggregate-3p type))
              (type-case type '(:union :unknown)))
   :returns (mv (erp maybe-msgp)
                (unknownp booleanp)
@@ -467,14 +466,15 @@
                       :index 0))
       :unknown (retok t nil)
       :otherwise (prog2$ (impossible) (retmsg$ "Internal error."))))
-  :guard-hints (("Goal" :in-theory (enable type-aggregatep))))
+  :guard-hints (("Goal" :in-theory (enable type-aggregate-3p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define subobjects-stack-enter ((stack initer-subobjects-stack-p)
                                 (completions type-completions-p))
   :guard (and (not (subobjects-stack-end-p stack))
-              (or (type-aggregatep (subobjects-stack-peek-type stack))
+              (or (3definitely
+                    (type-aggregate-3p (subobjects-stack-peek-type stack)))
                   (type-case (subobjects-stack-peek-type stack) :union)))
   :returns (mv (erp maybe-msgp)
                (new-stack initer-subobjects-stack-p))
@@ -500,7 +500,7 @@
 (define initer-context-enter ((ctx initer-context-p)
                               (completions type-completions-p))
   :guard (and (not (initer-context-end-p ctx))
-              (or (type-aggregatep (initer-context->type ctx))
+              (or (3definitely (type-aggregate-3p (initer-context->type ctx)))
                   (type-case (initer-context->type ctx) :union)))
   :returns (mv (erp maybe-msgp)
                (stack initer-subobjects-stack-p))

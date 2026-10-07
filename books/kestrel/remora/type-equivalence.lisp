@@ -507,20 +507,20 @@
           holds only on types and lists of types."
 
   (defruled typep-when-type-eq-proof-validp
-    (implies (type-eq-proof-validp proof concl.type1 concl.type2)
-             (and (typep concl.type1)
-                  (typep concl.type2)))
+    (implies (type-eq-proof-validp proof _type1 _type2)
+             (and (typep _type1)
+                  (typep _type2)))
     :hints (("Goal"
-             :induct (type-eq-proof-validp proof concl.type1 concl.type2)
+             :induct (type-eq-proof-validp proof _type1 _type2)
              :in-theory (enable* type-equivalence-definition-validp-defs
                                  (:induction type-eq-proof-validp)))))
 
   (defruled type-listp-when-types-eq-proof-validp
-    (implies (types-eq-proof-validp proof concl.types1 concl.types2)
-             (and (type-listp concl.types1)
-                  (type-listp concl.types2)))
+    (implies (types-eq-proof-validp proof _types1 _types2)
+             (and (type-listp _types1)
+                  (type-listp _types2)))
     :hints (("Goal"
-             :induct (types-eq-proof-validp proof concl.types1 concl.types2)
+             :induct (types-eq-proof-validp proof _types1 _types2)
              :in-theory (enable* type-equivalence-definition-validp-defs
                                  (:induction types-eq-proof-validp)))))
 
@@ -543,11 +543,11 @@
           holds only on lists of the same length."
 
   (defruled same-len-when-types-eq-proof-validp
-    (implies (types-eq-proof-validp proof concl.types1 concl.types2)
-             (equal (len concl.types1)
-                    (len concl.types2)))
+    (implies (types-eq-proof-validp proof _types1 _types2)
+             (equal (len _types1)
+                    (len _types2)))
     :hints (("Goal"
-             :induct (types-eq-proof-validp proof concl.types1 concl.types2)
+             :induct (types-eq-proof-validp proof _types1 _types2)
              :in-theory (enable* type-equivalence-definition-validp-defs
                                  (:induction types-eq-proof-validp)))))
 
@@ -558,12 +558,12 @@
     :enable (types-eq same-len-when-types-eq-proof-validp))
 
   (defruled consp-when-types-eq-proof-validp
-    (implies (types-eq-proof-validp proof concl.types1 concl.types2)
-             (equal (consp concl.types2)
-                    (consp concl.types1)))
+    (implies (types-eq-proof-validp proof _types1 _types2)
+             (equal (consp _types2)
+                    (consp _types1)))
     :use same-len-when-types-eq-proof-validp
-    :expand ((len concl.types1)
-             (len concl.types2))))
+    :expand ((len _types1)
+             (len _types2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

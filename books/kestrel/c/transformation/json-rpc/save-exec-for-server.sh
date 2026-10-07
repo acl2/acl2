@@ -27,14 +27,14 @@ export ACL2_CUSTOMIZATION=NONE
 BASE_NAME="acl2-with-c-transformation-jsonrpc" # Also the wrapper script name
 
 echo "Checking whether we need to save an image for the C transformation JSON-RPC server."
-if [[ ( ! -f ${BASE_NAME} ) || ( ${BASE_NAME} -ot top.cert ) || ( ${BASE_NAME} -ot struct-type-split.lisp ) || ( ${BASE_NAME} -ot top.lisp ) ]] ;then
+if [[ ( ! -f ${BASE_NAME} ) || ( ${BASE_NAME} -ot top.cert ) || ( ${BASE_NAME} -ot top.lisp ) ]] ;then
     rm -f "${BASE_NAME}"
     rm -f "${BASE_NAME}.lx86cl64"
     rm -f "${BASE_NAME}.dx86cl64"
     rm -f "${BASE_NAME}.core"
 
     echo "(Saving an image for the C transformation JSON-RPC server:"
-    # top.lisp provides the methods (struct-type-split) and, via
+    # top.lisp provides the methods (input-files, struct-type-split, etc.) and, via
     # kestrel/jsonrpc/top, the socket server entry points (run-jsonrpc-server).
     (echo '(include-book "kestrel/utilities/exit-if-function-not-defined" :dir :system) (include-book "kestrel/jsonrpc/portcullis" :dir :system) (include-book "kestrel/c/syntax/portcullis" :dir :system) (include-book "kestrel/c/transformation/portcullis" :dir :system) (include-book "top" :ttags :all) (exit-if-function-not-defined jsonrpc::run-jsonrpc-server) (exit-if-function-not-defined jsonrpc::struct-type-split) :q (save-exec "'${BASE_NAME}'" "ACL2 after including the JSON-RPC interface to the C transformations.")' | ${ACL2})
     ls -l ${BASE_NAME}*

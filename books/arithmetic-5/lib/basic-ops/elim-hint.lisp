@@ -294,30 +294,32 @@
       (let ((rule (select-instantiated-elim-rule-hint cl type-alist eliminables
 						      fns-to-elim ens wrld)))
         (cond ((null rule) (mv (list cl) nil nil))
-              (t (mv-let (new-clause elim-vars1 ele)
+              (t (mv-let (unhittablep new-clause elim-vars1 ele)
                    (apply-instantiated-elim-rule rule cl type-alist
                                                  avoid-vars ens wrld)
-                   (let ((clauses1 (split-on-assumptions
-                                    (access elim-rule rule :hyps)
-                                    cl nil)))
-                     (cond
-                      ((equal new-clause *true-clause*)
-                       (mv clauses1 elim-vars1 (list ele)))
-                      (t
-                       (mv-let (clauses2 elim-vars2 elim-seq)
-                         (eliminate-destructors-hint2
-                          new-clause
-			  (union-eq elim-vars1
-				    (remove1-eq
-				     (access elim-rule rule :rhs)
-				     eliminables))
-                          avoid-vars
-			  fns-to-elim
-                          ens
-                          wrld)
-                         (mv (conjoin-clause-sets clauses1 clauses2)
-                             (union-eq elim-vars1 elim-vars2)
-                             (cons ele elim-seq))))))))))))))
+                   (cond
+                    (unhittablep (mv (list cl) nil nil))
+                    (t (let ((clauses1 (split-on-assumptions
+                                        (access elim-rule rule :hyps)
+                                        cl nil)))
+                         (cond
+                          ((equal new-clause *true-clause*)
+                           (mv clauses1 elim-vars1 (list ele)))
+                          (t
+                           (mv-let (clauses2 elim-vars2 elim-seq)
+                             (eliminate-destructors-hint2
+                              new-clause
+			      (union-eq elim-vars1
+				        (remove1-eq
+				         (access elim-rule rule :rhs)
+				         eliminables))
+                              avoid-vars
+			      fns-to-elim
+                              ens
+                              wrld)
+                             (mv (conjoin-clause-sets clauses1 clauses2)
+                                 (union-eq elim-vars1 elim-vars2)
+                                 (cons ele elim-seq))))))))))))))))
 
 (defun eliminate-destructors-hint11 (cl avoid-vars rules type-alist fns-to-elim ens wrld)
   (declare (xargs :mode :program))
@@ -335,27 +337,30 @@
 		     ;; On with the original show.
 		     ;; We are assuming that any choices to be made occur
 		     ;; at the very beginning.
-		     (mv-let (new-clause elim-vars1 ele)
+		     (mv-let (unhittablep new-clause elim-vars1 ele)
 		       (apply-instantiated-elim-rule rule cl type-alist
 						     avoid-vars ens wrld)
-		       (let ((clauses1 (split-on-assumptions
-                                        (access elim-rule rule :hyps)
-                                        cl nil)))
-			 (cond
-			  ((equal new-clause *true-clause*)
-			   (mv clauses1 elim-vars1 (list ele)))
-			  (t
-			   (mv-let (clauses2 elim-vars2 elim-seq)
-			      (eliminate-destructors-hint2
-			       new-clause
-			       elim-vars1
-			       avoid-vars
-			       fns-to-elim
-			       ens
-			       wrld)
-			      (mv (conjoin-clause-sets clauses1 clauses2)
-				  (union-eq elim-vars1 elim-vars2)
-				  (cons ele elim-seq)))))))
+                       (cond
+                        (unhittablep (mv (list cl) nil nil))
+                        (t 
+                         (let ((clauses1 (split-on-assumptions
+                                          (access elim-rule rule :hyps)
+                                          cl nil)))
+                           (cond
+                            ((equal new-clause *true-clause*)
+                             (mv clauses1 elim-vars1 (list ele)))
+                            (t
+                             (mv-let (clauses2 elim-vars2 elim-seq)
+                               (eliminate-destructors-hint2
+                                new-clause
+                                elim-vars1
+                                avoid-vars
+                                fns-to-elim
+                                ens
+                                wrld)
+                               (mv (conjoin-clause-sets clauses1 clauses2)
+                                   (union-eq elim-vars1 elim-vars2)
+                                   (cons ele elim-seq)))))))))
 		     ;; And we shove the whole mess together into one package.
 		     (mv (cons clauses0 clauses-list)
 			 (cons elim-vars0 elim-vars-list)

@@ -3450,12 +3450,12 @@
            :in-theory (disable bvuminus-when-smaller))))
 
 (defthm slice-equal-0-polarity2
-  (implies (and (syntaxp (want-to-weaken (equal (slice n n x) 0))))
+  (implies (syntaxp (want-to-weaken (equal (slice n n x) 0)))
            (equal (equal 0 (slice n n x))
                   (not (equal 1 (slice n n x))))))
 
 (defthm slice-equal-0-polarity
-  (implies (and (syntaxp (want-to-weaken (equal 0 (slice n n x)))))
+  (implies (syntaxp (want-to-weaken (equal 0 (slice n n x))))
            (equal (equal 0 (slice n n x))
                   (not (equal 1 (slice n n x))))))
 
@@ -3590,7 +3590,7 @@
 
 ;gen
 (defthm equal-0-and-slice-polarity
-  (implies (and (syntaxp (want-to-weaken (equal 0 (slice 4 2 x)))))
+  (implies (syntaxp (want-to-weaken (equal 0 (slice 4 2 x))))
            (equal (equal 0 (slice 4 2 x))
                   (not (bvlt 3 0 (slice 4 2 x)))))
   :hints (("Goal" :in-theory (e/d (BVLT-OF-0-ARG2) (SLICE-BOUND-LEMMA-GEN2)))))
@@ -3679,7 +3679,7 @@
 
 ;gen!
 (defthm slice-equal-0-when-top-bit-known
-  (implies (and (and (syntaxp (want-to-weaken (equal (slice 4 3 x) 0))))
+  (implies (and (syntaxp (want-to-weaken (equal (slice 4 3 x) 0)))
                 (equal (getbit 3 x) 0))
            (equal (equal (slice 4 3 x) 0)
                   (equal (slice 4 4 x) 0)))
@@ -4413,8 +4413,7 @@
 
 ;fixme gen!
 (defthm UNSIGNED-BYTE-P-of-bvplus-8-9-1
-  (implies (and (UNSIGNED-BYTE-P 8 x)
-                )
+  (implies (UNSIGNED-BYTE-P 8 x)
            (equal (UNSIGNED-BYTE-P 8 (BVPLUS 9 1 x))
                   (not (equal x 255))))
   :hints (("Goal" :in-theory (e/d (bvlt bvplus
@@ -4521,8 +4520,7 @@
 ;;                 (integerp len))
 ;;            (equal (list::clear-nth n (bv-array-write size len n val data))
 ;;                   (list::clear-nth n (bvchop-list size (take len data)))))
-;;   :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2 ceiling-of-lg)
-;;                                   ()))))
+;;   :hints (("Goal" :in-theory (enable bv-array-write update-nth2 ceiling-of-lg))))
 
 ;; (defthm <-becomes-bvlt-table
 ;;   (implies (and (bind-free (bind-var-to-size-from-table 'free x mfc state))
@@ -5251,7 +5249,7 @@
                 (< xsize size2)
                 (equal k (+ -1 (expt 2 size2)))
                 (posp size2)
-                (unsigned-byte-p-forced xsize x))
+                (force (unsigned-byte-p-forced xsize x)))
            (equal (bvplus size2 k x)
                   (if (equal 0 x)
                       k
@@ -5721,9 +5719,9 @@
   :hints (("Goal" :in-theory (enable myif bvif))))
 
 (defthm sbvlt-of-myif-arg2-safe
-  (implies (and (syntaxp (and (quotep x) ;prevents explosion if x is a large term
-                              ;;(or (quotep a) (quotep b))
-                              (quotep size))))
+  (implies (syntaxp (and (quotep x) ;prevents explosion if x is a large term
+                         ;;(or (quotep a) (quotep b))
+                         (quotep size)))
            (equal (sbvlt size (myif test a b) x)
                   (boolif test
                           (sbvlt size a x)
@@ -5731,9 +5729,9 @@
   :hints (("Goal" :in-theory (enable myif))))
 
 (defthm sbvlt-of-myif-arg3-safe
-  (implies (and (syntaxp (and (quotep x) ;prevents explosion if x is a large term
-                              ;;(or (quotep a) (quotep b))
-                              (quotep size))))
+  (implies (syntaxp (and (quotep x) ;prevents explosion if x is a large term
+                         ;;(or (quotep a) (quotep b))
+                         (quotep size)))
            (equal (sbvlt size x (myif test a b))
                   (boolif test
                           (sbvlt size x a)
@@ -5835,7 +5833,7 @@
                       (bvle 32 (+ (expt 2 32) (- k)) x)))))
 
 (defthm equal-of-bvplus-move-bvminus-2
-  (IMPLIES (AND (NATP SIZE))
+  (IMPLIES (NATP SIZE)
            (equal (EQUAL (BVPLUS SIZE K2 (BVPLUS SIZE X (BVUMINUS SIZE K1)))
                          (BVCHOP SIZE Y))
                   (EQUAL (BVPLUS SIZE K2 X)
@@ -5924,8 +5922,7 @@
 
 (defthm sha1-loop-hack2
   (implies (and (not (bvlt 31 y x))
-                (bvlt 31 4 x)
-                (not (bvlt 31 y x)))
+                (bvlt 31 4 x))
            (bvlt 31 (bvplus 31 y (bvuminus 31 x)) 2147483644))
   :hints (("Goal" :in-theory (e/d (bvplus bvmod bvchop-of-sum-cases
                                           bvuminus
@@ -8754,8 +8751,7 @@
                 (natp n))
            (equal (take m (bv-array-write 32 80 n val lst))
                   (bvchop-list 32 (take m lst))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bv-array-write update-nth2))))
 
 (defthm +-of-minus1-and-bvplus-of-1
   (equal (+ -1 (BVPLUS 32 1 x))
@@ -8774,7 +8770,7 @@
 ;; (defthm bv-array-write-with-index-and-len-same
 ;;   (equal (bv-array-write elem-width len len val lst)
 ;;          (bvchop-list elem-width (take len lst)))
-;;   :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) ()))))
+;;   :hints (("Goal" :in-theory (enable bv-array-write update-nth2))))
 
 (defthmd bvchop-tighten
   (implies (and (< YSIZE SIZE)
@@ -8828,9 +8824,8 @@
            (equal (bv-array-write element-size1 len1 index1 val1 (bv-array-write element-size2 len2 index2 val2 lst))
                   (bv-array-write element-size1 len1 index1 val1 (bv-array-write element-size2 len1 index2 val2 lst))))
   :hints
-  (("Goal" :in-theory (e/d (bv-array-write-opener
-                            update-nth2 len-update-nth)
-                           ()))))
+  (("Goal" :in-theory (enable bv-array-write-opener
+                              update-nth2 len-update-nth))))
 
 ;gen the 4
 (defthm floor-becomes-slice-when-unsigned-byte-p
@@ -11103,7 +11098,7 @@
                 (all-unsigned-byte-p 32 data))
            (equal (equal (bv-array-write 32 (bvplus 5 1 n) n 0 data) (repeat (bvplus 5 1 n) 0))
                   (equal (firstn n data) (repeat n 0))))
-  :hints (("Goal" :in-theory (e/d (BV-ARRAY-WRITE update-nth2 bvplus ceiling-of-lg equal-of-append repeat unsigned-byte-p-of-+-of-constant-strong)
+  :hints (("Goal" :in-theory (e/d (BV-ARRAY-WRITE update-nth2 bvplus ceiling-of-lg equal-of-append repeat unsigned-byte-p-of-+-of-constant-strong firstn)
                                   (equal-of-cons)))))
 
 ;gen
@@ -11391,7 +11386,7 @@
 ;; (defthm bv-array-clear-of-update-nth2-same
 ;;   (equal (bv-array-clear size len index (update-nth2 len index val lst))
 ;;          (bv-array-clear size len index lst))
-;;   :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2) ()))))
+;;   :hints (("Goal" :in-theory (enable bv-array-clear bv-array-write update-nth2))))
 
 (defthm bv-array-read-of-update-nth2-same
   (implies (and (natp len)
@@ -11399,8 +11394,7 @@
                 (natp index))
            (equal (bv-array-read size len index (update-nth2 len index val lst))
                   (bvchop size val)))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-read-opener update-nth2)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bv-array-clear bv-array-read-opener update-nth2))))
 
 ;gen the 0!
 (defthm sbvlt-of-bvplus-of-constant
@@ -12097,7 +12091,7 @@
   (implies (natp index)
            (equal (bv-array-write width 1 index val data)
                   (list (bvchop width val))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-write update-nth2))))
 
 ;gen
 (defthm unsigned-byte-p-of-2-when-bvlt
@@ -12160,7 +12154,7 @@
                 (natp numelems))
            (equal (bv-array-write width numelems index val data)
                   (bv-array-write width numelems index val (firstn numelems data))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-write update-nth2))))
 
 (defthm unsigned-byte-p-of-+-of-minus-better-helper
   (implies (and (unsigned-byte-p size x)
@@ -12816,11 +12810,10 @@
                               (bvchop 8 val2))
                        (equal (bvchop-list 8 (take index data1))
                               (bvchop-list 8 (take index data2))))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write-opener
-                                   update-nth2
-                                   equal-of-update-nth-new
-                                   bvplus)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bv-array-write-opener
+                                     update-nth2
+                                     equal-of-update-nth-new
+                                     bvplus))))
 
 (defthm <-of-bvchop-when-<-of-bvchop-smaller
   (implies (and (< k (bvchop freesize x))
@@ -13138,7 +13131,6 @@
                           (and (equal (bvchop (+ -1 size) x) 0) (equal (bvchop size y) 1)))
            :in-theory (enable sbvdiv-rewrite
                               ;bvuminus
-                              ;;bvlt-of-constant-arg2-strengthen
                               sbvlt-rewrite))))
 
 (local (include-book "kestrel/bv/bvdiv-rules" :dir :system))

@@ -54,6 +54,8 @@
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
 
+(set-case-split-limitations '(0 100)) ; for speed
+
 ;; ======================================================================
 
 (defsection linear-memory

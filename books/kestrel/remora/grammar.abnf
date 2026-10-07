@@ -484,7 +484,7 @@ num-escape      = 1*DIGIT             ; decimal (0-1114111)
 ; but accepts "a\&", "\SOH\&", and "a\&\&b\&\&".  We accept all of
 ; these.  Our printer emits \& only between adjacent char-lits that
 ; would otherwise merge on re-parse (see needs-empty-escape-between in
-; printer.lisp), so output produced from our printer is parseable by
+; printer-tokens.lisp), so output produced from our printer is parseable by
 ; either implementation.
 empty-escape = "\&"
 

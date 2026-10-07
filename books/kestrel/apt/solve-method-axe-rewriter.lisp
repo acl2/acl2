@@ -78,6 +78,7 @@
                         (acl2::known-booleans wrld)
                         nil ; normalize-xors
                         nil ; limits
+                        :? ; rewrite-objective ; todo: consider t here
                         nil ; memoizep
                         nil ; count-hits
                         nil ; print

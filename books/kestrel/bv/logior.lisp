@@ -67,7 +67,7 @@
          (logior (lognot i) (lognot j)))
   :hints (("Goal" :in-theory (enable logior))))
 
-(theory-invariant (incompatible (:definition logior) (:rewrite lognot-of-logand)))
+(theory-invariant (incompatible (:definition binary-logior) (:rewrite lognot-of-logand)))
 
 (defthm lognot-of-logior
   (equal (lognot (logior i j))

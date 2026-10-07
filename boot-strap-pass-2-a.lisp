@@ -240,6 +240,9 @@
 ; So clear-brr-data-lst has been put into *system-verify-guards-alist*.
 ; (verify-termination-boot-strap clear-brr-data-lst) ; and guards
 
+(verify-termination-boot-strap untranslated-constant-p)
+(verify-termination-boot-strap untranslated-duplicate-free-constant-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

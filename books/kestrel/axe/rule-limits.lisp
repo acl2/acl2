@@ -63,14 +63,6 @@
    :rule-classes :type-prescription
    :hints (("Goal" :in-theory (enable rule-limitsp assoc-equal)))))
 
-;move
-(local
- (defthm member-equal-of-strip-cars-of-acons-unique
-   (iff (member-equal key (strip-cars (acons-unique key2 val alist)))
-        (or (member-equal key (strip-cars alist))
-            (equal key key2)))
-   :hints (("Goal" :in-theory (enable acons-unique)))))
-
 (local
  (defthm rule-limitsp-of-acons-unique
    (implies (and (rule-limitsp alist)

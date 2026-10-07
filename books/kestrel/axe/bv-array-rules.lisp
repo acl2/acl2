@@ -26,6 +26,7 @@
 ;; (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/repeat" :dir :system))
+(local (include-book "kestrel/lists-light/firstn" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
@@ -163,7 +164,7 @@
   (implies (unsigned-byte-p 8 a)
            (equal (cons a nil)
                   (bv-array-write 8 1 0 a (list 0))))
-  :hints (("Goal" :in-theory (e/d (update-nth2 bv-array-write) ()))))
+  :hints (("Goal" :in-theory (enable update-nth2 bv-array-write))))
 
 ;gen and use this more
 ;yikes! this lets data be a quotep
@@ -174,7 +175,7 @@
            (equal (cons a data)
                   (bv-array-write 8 (+ 1 (len data)) 0 a (cons 0 data ))))
   :hints
-  (("Goal" :in-theory (e/d (update-nth2 bv-array-write) ()))))
+  (("Goal" :in-theory (enable update-nth2 bv-array-write))))
 
 ;; ;move
 ;; (defthmd bvchop-of-nth2-becomes-bv-array-read

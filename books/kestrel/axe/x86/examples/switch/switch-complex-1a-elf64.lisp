@@ -1,7 +1,7 @@
 ; A proof of a more complex x86 binary function with a switch statement
 ; Version 1a: Lifts from main entry point instead of process_command
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -90,8 +90,7 @@
                       (bvchop (+ 1 high (- low))
                               (+ (slice high low x)
                                  (slice high low y)))))))
-  :hints (("Goal" :in-theory (e/d (bvplus acl2::slice-of-sum-cases)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvplus acl2::slice-of-sum-cases))))
 
 #|
 ; This doesn't work yet.

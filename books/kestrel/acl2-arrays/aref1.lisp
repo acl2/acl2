@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 (include-book "alen1")
-(include-book "bounded-integer-alistp")
+(local (include-book "bounded-integer-alistp"))
 (local (include-book "default"))
 (local (include-book "dimensions"))
 (local (include-book "array1p"))

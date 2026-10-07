@@ -103,9 +103,23 @@
            (all-pair-with-rational-cdrp (tabulate-dag-array-fns-aux dag-array-name dag-array dag-len n alist)))
   :hints (("Goal" :in-theory (enable tabulate-dag-array-fns-aux))))
 
+(local
+ (defthm nat-listp-of-strip-cdrs-of-tabulate-dag-array-fns-aux
+   (implies (nat-listp (strip-cdrs alist))
+            (nat-listp (strip-cdrs (tabulate-dag-array-fns-aux dag-array-name dag-array dag-len n alist))))
+   :hints (("Goal" :in-theory (enable tabulate-dag-array-fns-aux)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: disable
 (defun tabulate-dag-array-fns (dag-array-name dag-array dag-len)
   (declare (xargs :guard (pseudo-dag-arrayp dag-array-name dag-array dag-len)))
   (tabulate-dag-array-fns-aux dag-array-name dag-array dag-len (+ -1 dag-len) nil))
+
+(local
+ (defthm nat-listp-of-strip-cdrs-of-tabulate-dag-array-fns
+   (nat-listp (strip-cdrs (tabulate-dag-array-fns dag-array-name dag-array dag-len)))
+   :hints (("Goal" :in-theory (enable tabulate-dag-array-fns)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

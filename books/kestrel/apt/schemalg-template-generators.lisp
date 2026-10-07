@@ -214,7 +214,7 @@
        (forall (,@x-x1...xn ,y)
                (impliez (and (consp ,x)
                              (,iorel ,@x1... (cdr ,x) ,@...xn ,y))
-                        (iorel ,@x-x1...xn
+                        (,iorel ,@x-x1...xn
                                (,?h ,@a1... (car ,x) ,@...am ,y)))))))
 
 (defmacro gen-spec-1-divconq-list-0-1-2 (&key (name 'spec-1[?g1])
@@ -257,7 +257,7 @@
                (impliez (and (set::setp ,x)
                              (not (set::emptyp ,x))
                              (,iorel ,@x1... (set::tail ,x) ,@...xn ,y))
-                        (iorel ,@x-x1...xn
+                        (,iorel ,@x-x1...xn
                                (,?h ,@a1... (set::head ,x) ,@...am ,y)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -283,7 +283,7 @@
                (impliez (and (consp ,x)
                              (consp (cdr ,x))
                              (,iorel ,@x1... (cddr ,x) ,@...xn ,y))
-                        (iorel ,@x-x1...xn
+                        (,iorel ,@x-x1...xn
                                (,?h ,@a1... (car ,x) ,@...am ,y)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

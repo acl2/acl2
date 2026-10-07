@@ -1,6 +1,6 @@
 ; Recognize a true list of string-lists
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -29,7 +29,7 @@
   :hints (("Goal" :in-theory (enable string-list-listp))))
 
 ;; maybe disable or add a cheap version
-(defthm string-listp-of-car-when-string-listp
+(defthm string-listp-of-car-when-string-list-listp
   (implies (string-list-listp x)
            (string-listp (car x)))
   :hints (("Goal" :in-theory (enable string-list-listp))))

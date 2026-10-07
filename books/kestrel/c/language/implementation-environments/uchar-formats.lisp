@@ -69,7 +69,14 @@
   (defret uchar-format->size-lower-bound
     (>= size 8)
     :fn uchar-format->size
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defruled expt-of-one-less-than-uchar-format->size-lower-bound
+    (>= (expt 2 (1- (uchar-format->size format))) 128)
+    :rule-classes :linear
+    :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                    (x 2) (m 7) (n (1- (uchar-format->size format))))
+    :disable acl2::expt-is-weakly-increasing-for-base->-1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

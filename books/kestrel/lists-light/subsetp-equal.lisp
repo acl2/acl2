@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function subsetp-equal.
 ;
-; Copyright (C) 2016-2025 Kestrel Institute
+; Copyright (C) 2016-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -276,13 +276,13 @@
 
 (defthm subsetp-equal-of-take-same
   (implies (and (natp n)
-                (< n (len x)))
+                (<= n (len x)))
            (subsetp-equal (take n x) x)))
 
 (defthm subsetp-equal-of-take
   (implies (and (subsetp-equal x y)
                 (natp n)
-                (< n (len x)))
+                (<= n (len x)))
            (subsetp-equal (take n x) y)))
 
 (defthm subsetp-equal-of-nthcdr-same

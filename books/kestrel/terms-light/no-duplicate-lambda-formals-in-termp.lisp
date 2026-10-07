@@ -90,7 +90,7 @@
                                      no-duplicate-lambda-formals-in-termp ; todo
                                      ))))
 
-(defthm no-duplicate-lambda-formals-in-termsp-of-when-no-duplicate-lambda-formals-in-termp
+(defthm no-duplicate-lambda-formals-in-termsp-when-no-duplicate-lambda-formals-in-termp
    (implies (and (no-duplicate-lambda-formals-in-termp term)
                  (not (equal 'quote (car term))))
            (no-duplicate-lambda-formals-in-termsp (cdr term)))

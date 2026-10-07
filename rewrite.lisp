@@ -8381,11 +8381,11 @@ its attachment is ignored during proofs"))))
                (cons #\1 (f-get-global 'current-package state))
                (cons #\2 (defun-mode-prompt-string state))
                (cons #\r
-                     #+:non-standard-analysis
+                     #+non-standard-analysis
                      (if (f-get-global 'script-mode state)
                          ""
                        "(r)")
-                     #-:non-standard-analysis ""))
+                     #-non-standard-analysis ""))
          0 channel state nil)))
 
 ; We now develop code to display type-alists nicely.
@@ -16715,9 +16715,31 @@ its attachment is ignored during proofs"))))
                                  :pequiv-info nil)
                   (cond
                    ((equal rewritten-concl *nil*)
-                    (mv step-limit
-                        (dumb-negate-lit rewritten-test)
-                        ttree))
+
+; (Implies test nil) is (not test), which is Boolean.  But dumb-negate-lit may
+; return a non-Boolean term, for example p for (not p), which is only
+; iff-equivalent to (not rewritten-test).  So we use it only when iff refines
+; geneqv or it is known to be Boolean.
+
+                    (let ((neg (dumb-negate-lit rewritten-test))
+                          (rune (geneqv-refinementp 'iff geneqv wrld)))
+                      (cond
+                       (rune (mv step-limit
+                                 neg
+                                 (push-lemma rune ttree)))
+                       (t (mv-let
+                            (ts ts-ttree)
+                            (type-set neg (ok-to-force rcnst) nil type-alist
+                                      (access rewrite-constant rcnst
+                                              :current-enabled-structure)
+                                      wrld ttree
+                                      simplify-clause-pot-lst
+                                      (access rewrite-constant rcnst :pt))
+                            (cond ((ts-subsetp ts *ts-boolean*)
+                                   (mv step-limit neg ts-ttree))
+                                  (t (mv step-limit
+                                         (fcons-term* 'not rewritten-test)
+                                         ttree))))))))
                    ((or (quotep rewritten-concl) ; not *nil*
                         (equal rewritten-test rewritten-concl))
                     (mv step-limit *t* ttree))
@@ -19673,7 +19695,7 @@ its attachment is ignored during proofs"))))
 ; whose rune is of the form (:DEFINITION fn); its hyps is nil, at least in the
 ; standard case; but:
 
-                            #+:non-standard-analysis
+                            #+non-standard-analysis
 
 ; In the non-standard case, we may be attempting to open up a call of a
 ; function defined by defun-std.  Hence, there may be one or more hypotheses.
@@ -20517,6 +20539,17 @@ its attachment is ignored during proofs"))))
                            (accumulate-rw-cache t
                                                 ttree2
                                                 ttree1))))
+                        ((eq new-pot-lst :null-lst)
+
+; The rewritten conclusion linearized to nil and there is no different
+; unrewritten conclusion to try.  The value :null-lst is a marker returned by
+; add-linear-lemma-finish (meaning "another try is coming"); it must not escape
+; as the pot-lst.  So we report an unchanged pot-lst, exactly as
+; add-linear-lemma-finish does when an unrewritten conclusion linearizes to
+; nil.  Before this case was added, :null-lst was returned as the new pot-lst,
+; and the next function to traverse it faulted (see GitHub issue #2055).
+
+                         (mv nil simplify-clause-pot-lst nil nil))
                         (t (mv nil new-pot-lst failure-reason brr-result))))
                      (cond (contradictionp
                             (prog2$ (brkpt2 t nil unify-subst gstack

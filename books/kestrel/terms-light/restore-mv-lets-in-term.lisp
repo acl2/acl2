@@ -155,7 +155,7 @@
                      ,returned-val-name))))))))))
 
 (defun mv-nth-of-mv-list-termp (term)
-  (declare (xargs :guard (and (pseudo-termp term))))
+  (declare (xargs :guard (pseudo-termp term)))
   (and (call-of 'mv-nth term) ; example: (mv-nth '0 (mv-list '2 <multi-valued-term>))
        (quotep (farg1 term))
        (natp (unquote (farg1 term)))

@@ -1053,14 +1053,20 @@
 (mutual-recursion
 
   (defun perms-aux (l m)
-    (declare (xargs :measure (list (acl2-count m) (acl2-count l) 0)))
+    (declare (xargs :measure (list (acl2-count m) (acl2-count l) 0)
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                    :well-founded-relation acl2::l<))
     (if (and (consp l) (member (car l) m))
         (append (conses (car l) (perms (remove-equal (car l) m)))
                 (perms-aux (cdr l) m))
       ()))
 
   (defun perms (m)
-    (declare (xargs :measure (list (acl2-count m) (acl2-count m) 1)))
+    (declare (xargs :measure (list (acl2-count m) (acl2-count m) 1)
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                    :well-founded-relation acl2::l<))
     (if (consp m)
         (perms-aux m m)
       (list ())))

@@ -367,7 +367,7 @@
              mv-nth-1-ldm-dirdeclor-obj-of-declor-to-dirdeclor))
 
   (defrule ldm-declor-fun-of-ildm-obj-declor-error
-    (mv-nth 0 (ldm-declor-fun (ildm-obj-declor declor)))
+    (mv-nth 0 (ldm-declor-fun (ildm-obj-declor declor) fundefp))
     :induct t
     :enable (ldm-declor-fun
              ldm-declor-fun-loop
@@ -424,10 +424,20 @@
   :returns (tyname1 tynamep)
   :short "Map a type name in the language definition
           to a type name in the syntax for tools."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An absent abstract declarator in the language definition
+     is mapped to an absent abstract declarator in the syntax for tools.
+     In particular, we do not map it to an empty abstract declarator,
+     which is not allowed by the C grammar."))
   (b* (((c::tyname tyname) tyname)
        (tyspecs (ildm-tyspecseq tyname.tyspec))
        (specquals (spec/qual-typespec-list tyspecs))
-       (declor? (ildm-obj-adeclor tyname.declor)))
+       (declor? (c::obj-adeclor-case
+                 tyname.declor
+                 :none nil
+                 :otherwise (ildm-obj-adeclor tyname.declor))))
     (make-tyname :specquals specquals
                  :declor? declor?
                  :info nil))
@@ -437,6 +447,7 @@
   (defrule ldm-tyname-of-ildm-tyname
     (equal (ldm-tyname (ildm-tyname tyname))
            (mv nil (c::tyname-dec0-to-oct0 tyname)))
+    :expand (c::obj-adeclor-dec0-to-oct0 (c::tyname->declor tyname))
     :enable (ldm-tyname
              c::tyname-dec0-to-oct0)))
 
@@ -750,7 +761,11 @@
            (mv nil (c::param-declon-dec0-to-oct0 pdeclon)))
     :enable (ldm-param-declon
              ldm-param-declor
-             c::param-declon-dec0-to-oct0)))
+             c::param-declon-dec0-to-oct0))
+
+  (defrule not-param-declon-voidp-of-ildm-param-declon
+    (not (param-declon-voidp (ildm-param-declon pdeclon)))
+    :enable (param-declon-voidp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -769,7 +784,65 @@
            (mv nil (c::param-declon-list-dec0-to-oct0 pdeclons)))
     :induct t
     :enable (ldm-param-declon-list
-             c::param-declon-list-dec0-to-oct0)))
+             c::param-declon-list-dec0-to-oct0))
+
+  (defrule consp-of-ildm-param-declon-list
+    (equal (consp (ildm-param-declon-list pdeclons))
+           (consp pdeclons))
+    :hints (("Goal" :expand ((ildm-param-declon-list pdeclons)))))
+
+  (defrule car-of-ildm-param-declon-list
+    (implies (consp pdeclons)
+             (equal (car (ildm-param-declon-list pdeclons))
+                    (ildm-param-declon (car pdeclons))))
+    :hints (("Goal" :expand ((ildm-param-declon-list pdeclons))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ildm-fun-param-declon-list ((pdeclons c::param-declon-listp))
+  :returns (pdeclons1 param-declon-listp)
+  :short "Map a function parameter list in the language definition
+          to one in the syntax for tools."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An empty parameter list in the language definition
+     means that the function has no parameters.
+     We map it to the special singleton @('(void)') parameter list,
+     instead of to @('()'), which would mean unspecified parameters.
+     See [C17:6.7.6.3/10]."))
+  (if (endp pdeclons)
+      (list (make-param-declon
+             :specs (list (decl-spec-typespec (type-spec-void)))
+             :declor (param-declor-none nil)
+             :attribs nil
+             :info nil))
+    (ildm-param-declon-list pdeclons))
+
+  ///
+
+  (defrule consp-of-ildm-fun-param-declon-list
+    (consp (ildm-fun-param-declon-list pdeclons))
+    :enable (ildm-fun-param-declon-list
+             ildm-param-declon-list))
+
+  (defrule param-declon-list-voidp-of-ildm-fun-param-declon-list
+    (equal (param-declon-list-voidp
+            (ildm-fun-param-declon-list pdeclons))
+           (endp pdeclons))
+    :enable (ildm-fun-param-declon-list
+             param-declon-list-voidp
+             param-declon-voidp
+             ildm-param-declon-list
+             ildm-param-declon))
+
+  (defrule ldm-param-declon-list-of-ildm-fun-param-declon-list
+    (implies
+     (consp pdeclons)
+     (equal (ldm-param-declon-list
+             (ildm-fun-param-declon-list pdeclons))
+            (mv nil (c::param-declon-list-dec0-to-oct0 pdeclons))))
+    :enable ildm-fun-param-declon-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -781,14 +854,10 @@
    declor
    :base (make-declor
           :pointers nil
-          :direct (if declor.params
-                      (make-dirdeclor-function-params
-                       :declor (dirdeclor-ident (ildm-ident declor.name))
-                       :params (ildm-param-declon-list declor.params)
-                       :ellipsis nil)
-                    (make-dirdeclor-function-names
-                     :declor (dirdeclor-ident (ildm-ident declor.name))
-                     :names nil)))
+          :direct (make-dirdeclor-function-params
+                   :declor (dirdeclor-ident (ildm-ident declor.name))
+                   :params (ildm-fun-param-declon-list declor.params)
+                   :ellipsis nil))
    :pointer (b* (((declor declor1) (ildm-fun-declor declor.decl)))
               (make-declor :pointers (cons nil declor1.pointers)
                            :direct declor1.direct)))
@@ -798,7 +867,7 @@
   ///
 
   (defrule ldm-declor-fun-of-ildm-fun-declor
-    (equal (ldm-declor-fun (ildm-fun-declor declor))
+    (equal (ldm-declor-fun (ildm-fun-declor declor) fundefp)
            (mv nil (c::fun-declor-dec0-to-oct0 declor)))
     :induct t
     :enable (ldm-declor-fun
@@ -818,7 +887,7 @@
           :pointers nil
           :direct? (make-dirabsdeclor-function
                     :declor? nil
-                    :params (ildm-param-declon-list adeclor.params)
+                    :params (ildm-fun-param-declon-list adeclor.params)
                     :ellipsis nil))
    :pointer (b* (((absdeclor adeclor1) (ildm-fun-adeclor adeclor.decl)))
               (make-absdeclor :pointers (cons nil adeclor1.pointers)

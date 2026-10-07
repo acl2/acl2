@@ -333,7 +333,7 @@
 
 (defrule tree-in-order-of-tree-update
   (implies (bstp tree)
-           (equal (tree-in-order (tree-update key hash val tree))
+           (equal (tree-in-order (tree-update key val tree))
                   (omap::update key val (tree-in-order tree))))
   :enable (omap::equal-becomes-ext-equal-when-mapp
            omap::ext-equal))

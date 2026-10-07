@@ -284,10 +284,10 @@
   (setp (scdr a))
   :rule-classes (:type-prescription :generalize))
 
-(defthm scons-scar-scdr
+(defthm scons-scar-scdr-lemma
   (implies (not (ur-elementp a))
            (= (scons (scar a) (scdr a)) a))
-  :rule-classes :elim)
+  :rule-classes nil)
 
 (defthm acl2-count-scdr
   (implies (not (ur-elementp a))
@@ -1128,6 +1128,12 @@
 (defx :strategy :congruence (union a b) 1 :method :subsetp)
 
 (defx :strategy :congruence (union a b) 2)
+
+(defthm scons-scar-scdr
+  (implies (not (ur-elementp a))
+           (= (scons (scar a) (scdr a)) a))
+  :hints (("Goal" :use scons-scar-scdr-lemma))
+  :rule-classes :elim)
 
 (defthm union-right-id
   (implies (ur-elementp b)

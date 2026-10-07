@@ -216,6 +216,7 @@
                              (known-booleans (w state))
                              nil ; normalize-xors
                              nil ; limits
+                             (rewrite-objective-?) ; todo: do better?
                              nil ; memoizep
                              nil ; count-hits
                              nil ; print

@@ -21,4 +21,4 @@
 (fty::deffixtype 3vl
   :pred 3p
   :fix 3fix
-  :equiv 3=)
+  :equiv 3equiv)

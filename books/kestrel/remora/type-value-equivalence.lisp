@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ type-value-equivalence
-  :parents (dynamic-semantics)
+  :parents (values-and-environments)
   :short "Equivalence of type values."
   :long
   (xdoc::topstring

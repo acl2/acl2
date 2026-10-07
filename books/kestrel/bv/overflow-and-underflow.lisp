@@ -94,11 +94,36 @@
            (equal (signed-addition-overflowsp 32 x y)
                   (signed-addition-overflowsp 32 free y))))
 
+(defthm not-signed-addition-overflowsp-when-non-positive-arg1
+  (implies (sbvle 32 x 0)
+           (not (signed-addition-overflowsp 32 x y)))
+  :hints (("Goal" :in-theory (enable bvminus bvplus sbvlt-rewrite bvlt
+                                     bvchop-of-sum-cases
+                                     getbit-of-+))))
+
 ;todo: dual for underflow?
-(defthm not-signed-addition-overflowsp-when-negative-constant-version
+(defthm not-signed-addition-overflowsp-when-non-positive-arg2
+  (implies (sbvle 32 y 0)
+           (not (signed-addition-overflowsp 32 x y)))
+  :hints (("Goal" :in-theory (enable bvminus bvplus sbvlt-rewrite bvlt
+                                     bvchop-of-sum-cases
+                                     getbit-of-+))))
+
+(defthm not-signed-addition-overflowsp-when-non-positive-arg1-constant-version
   (implies (and (syntaxp (quotep k))
                 (sbvle 32 k 0))
-           (not (signed-addition-overflowsp 32 k k))))
+           (not (signed-addition-overflowsp 32 k x)))
+  :hints (("Goal" :in-theory (enable bvminus bvplus sbvlt-rewrite bvlt
+                                     bvchop-of-sum-cases
+                                     getbit-of-+))))
+
+(defthm not-signed-addition-overflowsp-when-non-positive-arg2-constant-version
+  (implies (and (syntaxp (quotep k))
+                (sbvle 32 k 0))
+           (not (signed-addition-overflowsp 32 x k)))
+  :hints (("Goal" :in-theory (enable bvminus bvplus sbvlt-rewrite bvlt
+                                     bvchop-of-sum-cases
+                                     getbit-of-+))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

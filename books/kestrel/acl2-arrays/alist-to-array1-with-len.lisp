@@ -75,13 +75,9 @@
 (defthm aref1-of-alist-to-array1-with-len
   (implies (and (bounded-natp-alistp alist len)
                 (true-listp alist)
-                alist
-                (symbolp name1)
                 (natp index)
                 (< index len)
-                (integerp len)
-                (<= len *max-1d-array-length*) ; todo: drop?
-                )
+                (integerp len))
            (equal (aref1 name1 (alist-to-array1-with-len name2 alist len) index)
                   (cdr (assoc-equal index alist))))
   :hints (("Goal" :in-theory (enable alist-to-array1-with-len aref1))))

@@ -38,6 +38,7 @@
 (include-book "all-rationalp")
 (include-book "all-all-integerp")
 (include-book "all-consp")
+(include-book "all-digit-charsp")
 
 (include-book "integer-lists")
 
@@ -54,6 +55,7 @@
 
 (include-book "all-less")
 (include-book "all-less-rules")
+(include-book "all-less-than-or-equal-def")
 (include-book "all-less-than-or-equal")
 (include-book "less-than-all")
 (include-book "less-than-or-equal-all")

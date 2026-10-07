@@ -13,7 +13,7 @@
 (include-book "prime-fields")
 (include-book "kestrel/utilities/nat-to-string" :dir :system)
 (local (include-book "prime-fields-rules"))
-(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 
 ;; These tools generate symbols in the supplied package, and the printing is
 ;; done with no package qualifier, so the package supplied should be the

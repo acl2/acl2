@@ -179,6 +179,7 @@
 (defund hit-count-alistp (alist)
   (declare (xargs :guard t))
   (and (symbol-alistp alist)
+       ;; todo: there should be no duplicates among the keys
        (nat-listp (strip-cdrs alist))))
 
 (local

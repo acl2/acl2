@@ -84,8 +84,7 @@
                       (bvchop (+ 1 high (- low))
                               (+ (slice high low x)
                                  (slice high low y)))))))
-  :hints (("Goal" :in-theory (e/d (bvplus acl2::slice-of-sum-cases)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvplus acl2::slice-of-sum-cases))))
 
 #|
 ;; EM: This failed, don't know why yet.  Might not be needed.
@@ -99,11 +98,10 @@
                   (bvchop (+ 1 high (- low))
                           (+ (slice high low x)
                              (slice high low y)))))
-  :hints (("Goal" :in-theory (e/d (slice
-                                   bvplus
-                                   bvchop
-                                   acl2::logtail-of-bvchop)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable slice
+                                     bvplus
+                                     bvchop
+                                     acl2::logtail-of-bvchop))))
 |#
 
 

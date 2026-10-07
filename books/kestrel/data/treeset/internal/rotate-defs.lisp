@@ -17,4 +17,6 @@
 
 (std::defredundant
   :names (rotate-left
-          rotate-right))
+          rotate-right
+          tree-node-rotate-left
+          tree-node-rotate-right))

@@ -14,6 +14,7 @@
 (include-book "unicode-characters")
 
 (include-book "kestrel/fty/dec-digit-char-list" :dir :system)
+(include-book "kestrel/fty/deftreeset" :dir :system)
 (include-book "kestrel/fty/hex-digit-char-list" :dir :system)
 (include-book "kestrel/fty/oct-digit-char-list" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
@@ -210,19 +211,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defset ident-set
+(fty::deftreeset ident-set
   :short "Fixtype of sets of identifiers."
   :elt-type ident
-  :elementp-of-nil nil
   :pred ident-setp
 
   ///
 
-  (defrule ident-setp-of-mergesort
-    (equal (ident-setp (set::mergesort idents))
-           (ident-listp (true-list-fix idents)))
+  (defrulel ident-setp-of-insert-all
+    (implies (and (ident-listp idents)
+                  (ident-setp set))
+             (ident-setp (treeset::insert-all idents set)))
     :induct t
-    :enable set::mergesort))
+    :enable treeset::insert-all)
+
+  (defrule ident-setp-of-from-list
+    (implies (ident-listp idents)
+             (ident-setp (treeset::from-list idents)))
+    :enable treeset::from-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3292,7 +3298,10 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :prepwork ((local (in-theory (enable nfix fix))))
+  :enable-rules (;; for speed:
+                 acl2::o-p-of-two-nats-measure
+                 acl2::o<-of-two-nats-measure
+                 acl2::zp-compound-recognizer)
 
   ///
 
@@ -3784,7 +3793,11 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :prepwork ((local (in-theory (enable nfix fix)))))
+  :enable-rules (nfix
+                 ;; for speed:
+                 acl2::o-p-of-two-nats-measure
+                 acl2::o<-of-two-nats-measure
+                 acl2::zp-compound-recognizer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1850,6 +1850,7 @@
  (10 10 (:REWRITE |(integerp (* 1/2 (logand x y)))| . 4))
  (10 10 (:REWRITE |(integerp (* 1/2 (logand x y)))| . 3))
  (10 10 (:REWRITE |(integerp (* 1/2 (logand x y)))| . 2))
+ (9 9 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  (8 2 (:REWRITE |(< x (/ y)) with (< y 0)|))
  (5 5 (:REWRITE |(logand c d x)|))
  (5 5 (:REWRITE |(equal (logand x y) -1)|))

@@ -49,8 +49,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Each bit in the object representation of unsigned integers [C17:6.2.6.2/1]
-     is either a value bit (representing a power of 2) or a padding bit.
+    "Each bit in the object representation of unsigned integers
+     is either a value bit (representing a power of 2) or a padding bit
+     [C17:6.2.6.2/1] [C23:6.2.6.2].
      This fixtype represents these choices,
      where the natural number in the @(':value') case
      is the exponent @($i$) of the power @($2^i$).")
@@ -77,10 +78,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Each bit in the object representation of signed integers [C17:6.2.6.2/2]
+    "Each bit in the object representation of signed integers
      is either a value bit (representing a power of 2)
      or a padding bit
-     or a sign bit.
+     or a sign bit
+     [C17:6.2.6.2/2] [C23:6.2.6.2].
      This fixtype represents these choices,
      where the natural number in the @(':value') case
      is the exponent @($i$) of the power @($2^i$).")
@@ -187,7 +189,7 @@
    (xdoc::p
     "If the list of bit roles is well-formed
      (see @(tsee uinteger-bit-roles-wfp)),
-     this is the number @('N') of value bits [C17:6.2.6.2/1],
+     this is the number @('N') of value bits [C17:6.2.6.2/1] [C23:6.2.6.2],
      whose associated exponents go from @('0') to @('N-1')."))
   (cond ((endp roles) 0)
         ((uinteger-bit-role-case (car roles) :value)
@@ -225,7 +227,11 @@
    (xdoc::p
     "If the list of bit roles is well-formed
      (see @(tsee sinteger-bit-roles-wfp)),
-     this is the number @('M') of value bits [C17:6.2.6.2/2],
+     this is the number of value bits,
+     i.e. @('M') in [C17:6.2.6.2/2],
+     which is @('N-1') in [C23:6.2.6.2]
+     (where @('N') is the number of value bits
+     of the corresponding unsigned integer type),
      whose associated exponents go from @('0') to @('M-1')."))
   (cond ((endp roles) 0)
         ((sinteger-bit-role-case (car roles) :value)
@@ -268,7 +274,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "According to [C17:6.2.6.2/1],
+    "According to [C17:6.2.6.2/1] [C23:6.2.6.2],
      there must be exactly one value bit for each exponent
      in a range from 0 to @('N-1') for some @('N').
      We express that by saying that,
@@ -277,7 +283,7 @@
      where @('N') is the number of collected exponents.
      Note that this prohibits duplicates.
      We also require @('N') to be non-zero,
-     although this is not explicated in [C17]."))
+     although this is not explicated in [C17] [C23]."))
   (b* ((exponents (uinteger-bit-roles-exponents roles))
        (n (len exponents))
        ((when (= n 0)) nil)
@@ -293,14 +299,12 @@
     (implies (uinteger-bit-roles-wfp roles)
              (posp (uinteger-bit-roles-value-count roles)))
     :rule-classes (:rewrite :type-prescription)
-    :enable (uinteger-bit-roles-wfp
-             uinteger-bit-roles-value-count-alt-def))
+    :enable uinteger-bit-roles-value-count-alt-def)
 
   (defruled len-gt-0-when-uinteger-bit-roles-wfp
     (implies (uinteger-bit-roles-wfp roles)
              (> (len roles) 0))
-    :enable (uinteger-bit-roles-wfp
-             uinteger-bit-roles-value-count-alt-def
+    :enable (uinteger-bit-roles-value-count-alt-def
              uinteger-bit-roles-value-count-upper-bound)
     :disable (acl2::|(< 0 (len x))|)))
 
@@ -312,18 +316,22 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "According to [C17:6.2.6.2/2],
+    "According to [C17:6.2.6.2/2] [C23:6.2.6.2],
      there must be exactly one value bit for each exponent
-     in a range from 0 to @('M-1') for some @('M').
+     in a range from 0 to @('M-1') for some @('M'),
+     where @('M') is actually @('N-1') in [C23]
+     (where @('N') is the number of value bits
+     of the corresponding unsigned integer type).
      We express that by saying that,
      after collecting the exponents and sorting them,
      we must have the list @('(0 1 ... M-1)'),
      where @('M') is the number of collected exponents.
      Note that this prohibits duplicates.
      We also require @('M') to be non-zero,
-     although this is not explicated in [C17].")
+     although this is not explicated in [C17] [C23].")
    (xdoc::p
-    "[C17:6.2.6.2/2] also says that there must be exactly one sign bit,
+    "[C17:6.2.6.2/2] [C23:6.2.6.2] also say that
+     there must be exactly one sign bit,
      i.e. the number of sign bits must be 1."))
   (b* ((exponents (sinteger-bit-roles-exponents roles))
        (m (len exponents))
@@ -341,15 +349,25 @@
     (implies (sinteger-bit-roles-wfp roles)
              (posp (sinteger-bit-roles-value-count roles)))
     :rule-classes (:rewrite :type-prescription)
-    :enable (sinteger-bit-roles-wfp
-             sinteger-bit-roles-value-count-alt-def))
+    :enable sinteger-bit-roles-value-count-alt-def)
 
   (defruled len-gt-1-when-sinteger-bit-roles-wfp
     (implies (sinteger-bit-roles-wfp roles)
              (> (len roles) 1))
-    :enable (sinteger-bit-roles-wfp
-             sinteger-bit-roles-value-count-alt-def
-             sinteger-bit-roles-value/sign-count-upper-bound)))
+    :enable (sinteger-bit-roles-value-count-alt-def
+             sinteger-bit-roles-value/sign-count-upper-bound))
+
+  (defruled expt-of-sinteger-bit-roles-value-count-upper-bound
+    (implies (sinteger-bit-roles-wfp roles)
+             (<= (expt 2 (sinteger-bit-roles-value-count roles))
+                 (expt 2 (1- (len roles)))))
+    :rule-classes :linear
+    :use (sinteger-bit-roles-value-count-upper-bound
+          (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                     (x 2)
+                     (m (sinteger-bit-roles-value-count roles))
+                     (n (1- (len roles)))))
+    :disable acl2::expt-is-weakly-increasing-for-base->-1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -362,21 +380,25 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "[C17:6.2.6.2/2] says each signed integer value bit
+    "[C17:6.2.6.2/2] [C23:6.2.6.2] say each signed integer value bit
      must be the same as the corresponding unsigned integer value bit;
      but the unsigned integer type may have more value bits.
      We check this by going through the two lists of bits,
      and making sure that, every time we encounter a signed value bit,
      the corresponding unsigned value bit is for the same exponent.")
    (xdoc::p
-    "[C17:6.2.5/6] says that corresponding signed and unsigned integer types
+    "[C17:6.2.5/6] [C23:6.2.5] say that
+     corresponding signed and unsigned integer types
      take the same amount of storage.
      In our model, it means that they must have the same number of bits.
      We check this requirement in this recursive predicate,
      by ensuring that the two lists end at the same time.")
    (xdoc::p
     "We show that this predicate guarantees
-     the inequality @('M <= N') mentioned in [C17:6.2.6.2/2]."))
+     the inequality @('M <= N') mentioned in [C17:6.2.6.2/2].
+     This is strengthened to @('M = N-1') in [C23:6.2.6.2],
+     but this latter requirement is captured in a separate predicate,
+     which also takes the C standard as input."))
   (b* (((when (endp uroles)) (endp sroles))
        ((when (endp sroles)) nil)
        (srole (car sroles))
@@ -425,12 +447,21 @@
     "This is for unsigned integer objects
      other than those of type @('unsigned char'),
      which are covered by @(tsee uchar-format).
-     See [C17:6.2.6.2/1].")
+     See [C17:6.2.6.2/1] [C23:6.2.6.2].")
    (xdoc::p
     "The format definition includes a list of bit roles,
-     which should be thought as the juxtaposition of
+     which should be thought of as the juxtaposition of
      the bytes that form the unsigned integer object,
-     in little endian order, i.e. from lower to higher address.
+     in order of increasing address.
+     Within each byte, we order the bits from least to most significant,
+     according to the pure binary representation of @('unsigned char').
+     All indices start at 0.
+     Thus, for @('i = q * CHAR_BIT + r'), where @('0 <= r < CHAR_BIT'),
+     list index @('i') denotes bit @('r') of byte @('q').")
+   (xdoc::p
+    "The roles specify the significance of the value bits
+     in the unsigned integer value,
+     allowing different choices of byte order.
      The length of the list of bit roles
      must be a multiple of @('CHAR_BIT'),
      which we capture in @(tsee uchar-format):
@@ -439,7 +470,7 @@
      The list of bit roles must be well-formed.")
    (xdoc::p
     "We also include a placeholder component meant to define
-     which bit values are trap representations [C17:6.2.6.2/5].
+     which bit values are trap representations [C17:6.2.6.2/5] [C23:6.2.6.2].
      We plan to flesh this out in the future."))
   ((bits uinteger-bit-role-listp
          :reqfix (if (uinteger-bit-roles-wfp bits)
@@ -459,12 +490,13 @@
     "This is for signed integer objects
      other than those of type @('signed char'),
      which are covered by @(tsee schar-format).
-     See [C17:6.2.6.2/2].")
+     See [C17:6.2.6.2/2] [C23:6.2.6.2].")
    (xdoc::p
     "The format definition includes a list of bit roles,
-     which should be thought as the juxtaposition of
-     the bytes that form the signed integer object,
-     in little endian order, i.e. from lower to higher address.
+     with the same ordering and indexing convention
+     as in @(tsee uinteger-format).
+     The roles specify the significance of the value bits,
+     allowing different choices of byte order.
      The length of the list of bit roles
      must be a multiple of @('CHAR_BIT'),
      which we capture in @(tsee uchar-format):
@@ -473,12 +505,32 @@
      The list of bit roles must be well-formed.")
    (xdoc::p
     "The format description also identifies one of the three signed formats.
-     It is not clear from [C17] whether all the signed integer type,
+     It is not clear from [C17] whether all the signed integer types,
      within an implementation, use that same signed format,
-     but our model allows them to differ.")
+     but our model allows them to differ.
+     [C23] requires two's complement:
+     we capture that requirement in a separate predicate
+     that takes the C standard as additional input.")
    (xdoc::p
-    "We also include a placeholder component meant to define
-     which bit values are trap representations [C17:6.2.6.2/5].
+    "The @('special-trap') component is a boolean flag saying whether
+     the special pattern of sign and value bits described in [C17:6.2.6.2/2]
+     is a trap representation.
+     The sign bit is 1 in this pattern;
+     the value bits are all 0 for sign and magnitude and two's complement,
+     and all 1 for ones' complement.
+     When not reserved as a trap,
+     this pattern represents the most negative value for two's complement,
+     and negative zero for the other signed formats.
+     This component corresponds to the @('trap') component
+     of @(tsee schar-format).
+     This only applies to C17:
+     [C23] does not allow this trap representation;
+     in a separate predicate that takes the C standard as additional input,
+     we require @('special-trap') to be @('nil').")
+   (xdoc::p
+    "The @('other-traps') component is a placeholder for
+     trap representations caused by combinations of padding bits
+     [C17:6.2.6.2/5] [C23:6.2.6.2].
      We plan to flesh this out in the future."))
   ((bits sinteger-bit-role-listp
          :reqfix (if (sinteger-bit-roles-wfp bits)
@@ -486,9 +538,40 @@
                    (list (sinteger-bit-role-sign)
                          (sinteger-bit-role-value 0))))
    (signed signed-format)
-   traps)
+   (special-trap bool)
+   other-traps)
   :require (sinteger-bit-roles-wfp bits)
   :pred sinteger-formatp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sinteger-format-wfp ((format sinteger-formatp)
+                             (std standardp))
+  :returns (yes/no booleanp)
+  :short "Check if a signed integer format is well-formed for a C standard."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The signed format must be well-formed for the standard,
+     as checked by @(tsee signed-format-wfp).")
+   (xdoc::p
+    "C17 allows either choice of the @('special-trap') flag [C17:6.2.6.2/2],
+     while C23 requires it to be false [C23:6.2.6.2].
+     See @(tsee sinteger-format).")
+   (xdoc::p
+    "The @('other-traps') component remains unconstrained,
+     pending a model of padding-related trap representations."))
+  (and (signed-format-wfp (sinteger-format->signed format) std)
+       (standard-case std
+                      :c17 t
+                      :c23 (not (sinteger-format->special-trap format))))
+
+  ///
+
+  (defrule sinteger-format-wfp-of-standard-c17
+    (sinteger-format-wfp format (standard-c17))
+    :use (:instance signed-format-wfp-of-standard-c17
+                    (format (sinteger-format->signed format)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -546,24 +629,8 @@
     :rule-classes :linear
     :hints
     (("Goal"
-      :in-theory (e/d (sinteger-bit-roles-wfp)
-                      (sinteger-format-requirements
-                       acl2::expt-is-weakly-increasing-for-base->-1
-                       acl2::|(* (expt x m) (/ (expt x n)))|
-                       acl2::|(* a (/ a))|
-                       acl2::bubble-down-*-match-1
-                       acl2::bubble-down-*-match-2
-                       acl2::simplify-products-gather-exponents-<
-                       acl2::expt-is-weakly-increasing-for-base->-1
-                       acl2::expt-is-increasing-for-base->-1))
-      :use ((:instance sinteger-format-requirements (x format))
-            (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                       (x 2)
-                       (m (sinteger-bit-roles-value-count
-                           (sinteger-format->bits format)))
-                       (n (1- (len (sinteger-format->bits format)))))
-            (:instance sinteger-bit-roles-value-count-upper-bound
-                       (roles (sinteger-format->bits format))))))))
+      :use (:instance expt-of-sinteger-bit-roles-value-count-upper-bound
+                      (roles (sinteger-format->bits format)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -576,7 +643,10 @@
    (xdoc::p
     "This is determined by the number @('M') of value bits,
      the signed format, and possibly the trap representations
-     [C17:6.2.6.2/2].
+     [C17:6.2.6.2/2] [C23:6.2.6.2],
+     where @('M') is @('N-1') in C23,
+     where @('N') is the number of value bits
+     of the corresponding unsigned integer type.
      If the signed format is either sign and magnitude or ones' complement,
      the minimum value is the negation of the maximum value,
      i.e. @('- (2^M - 1)').
@@ -586,17 +656,20 @@
      is a trap representation,
      the minimum value is @('- (2^M - 1)');
      otherwise, it is @('- 2^M').
-     As explained in @(tsee sinteger-format),
-     currently we do not have a detailed model of trap representations;
-     as a placeholder, for now we regard that representation to be a trap one
-     iff the @('traps') component of @(tsee sinteger-format) is not @('nil').")
+     The @('special-trap') component of @(tsee sinteger-format)
+     determines which case applies.")
+   (xdoc::p
+    "When @(tsee sinteger-format-wfp) holds for C23,
+     the minimum is always @('- 2^M'),
+     i.e. one less than the negation of @(tsee sinteger-format->max).
+     This relation is proved below.")
    (xdoc::p
     "Since @('M <= T - 1'), where @('T') is the total number of bits,
      and where the 1 accounts for the sign bit,
      the minimum value cannot be below @('- 2^(T-1)')."))
   (if (and (equal (signed-format-kind (sinteger-format->signed format))
                   :twos-complement)
-           (not (sinteger-format->traps format)))
+           (not (sinteger-format->special-trap format)))
       (- (expt 2 (sinteger-bit-roles-value-count
                   (sinteger-format->bits format))))
     (- (1- (expt 2 (sinteger-bit-roles-value-count
@@ -616,24 +689,18 @@
     :rule-classes :linear
     :hints
     (("Goal"
-      :in-theory (e/d (sinteger-bit-roles-wfp)
-                      (sinteger-format-requirements
-                       acl2::expt-is-weakly-increasing-for-base->-1
-                       acl2::|(* (expt x m) (/ (expt x n)))|
-                       acl2::|(* a (/ a))|
-                       acl2::bubble-down-*-match-1
-                       acl2::bubble-down-*-match-2
-                       acl2::simplify-products-gather-exponents-<
-                       acl2::expt-is-weakly-increasing-for-base->-1
-                       acl2::expt-is-increasing-for-base->-1))
-      :use ((:instance sinteger-format-requirements (x format))
-            (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                       (x 2)
-                       (m (sinteger-bit-roles-value-count
-                           (sinteger-format->bits format)))
-                       (n (1- (len (sinteger-format->bits format)))))
-            (:instance sinteger-bit-roles-value-count-upper-bound
-                       (roles (sinteger-format->bits format))))))))
+      :in-theory (disable acl2::simplify-products-gather-exponents-<)
+      :use (:instance expt-of-sinteger-bit-roles-value-count-upper-bound
+                      (roles (sinteger-format->bits format))))))
+
+  (defretd sinteger-format->min-as-max-when-c23
+    (implies (sinteger-format-wfp format (standard-c23))
+             (equal min
+                    (- (1+ (sinteger-format->max format)))))
+    :hints (("Goal"
+             :in-theory (enable sinteger-format-wfp
+                                signed-format-wfp
+                                sinteger-format->max)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -643,10 +710,10 @@
   (xdoc::topstring
    (xdoc::p
     "Each signed integer type has a corresponding unsigned integer type
-     [C17:6.2.5/6].
+     [C17:6.2.5/6] [C23:6.2.5].
      There are constraints between the representations of
      two corresponding signed and unsigned integer types
-     [C17:6.2.6.2/2].
+     [C17:6.2.6.2/2] [C23:6.2.6.2].
      Thus, we introduce a notion for the format of
      corresponding unsigned and signed integer types.
      This is for @('signed short') and @('unsigned short'),
@@ -672,13 +739,51 @@
                       :bits (list (sinteger-bit-role-value 0)
                                   (sinteger-bit-role-sign))
                       :signed (signed-format-twos-complement)
-                      :traps nil))))
+                      :special-trap nil
+                      :other-traps nil))))
   :require (uinteger-sinteger-bit-roles-wfp
             (uinteger-format->bits unsigned)
             (sinteger-format->bits signed))
   :pred integer-formatp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-format-wfp ((format integer-formatp)
+                            (std standardp))
+  :returns (yes/no booleanp)
+  :short "Check if an integer format is well-formed for a C standard."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The signed component must be well-formed for the standard,
+     as checked by @(tsee sinteger-format-wfp).")
+   (xdoc::p
+    "The number of signed value bits must be at most
+     the number of unsigned value bits in C17 [C17:6.2.6.2/2].
+     This is already ensured by the @(tsee integer-format) fixtype.
+     C23 requires exactly one more unsigned value bit,
+     so that the signed and unsigned widths are equal [C23:6.2.6.2].
+     Here width counts the value bits and, for a signed type, the sign bit;
+     it excludes padding bits."))
+  (b* ((unsigned (integer-format->unsigned format))
+       (signed (integer-format->signed format)))
+    (and (sinteger-format-wfp signed std)
+         (standard-case
+          std
+          :c17 t
+          :c23 (equal (uinteger-bit-roles-value-count
+                       (uinteger-format->bits unsigned))
+                      (1+ (sinteger-bit-roles-value-count
+                           (sinteger-format->bits signed)))))))
+
+  ///
+
+  (defrule integer-format-wfp-of-standard-c17
+    (integer-format-wfp format (standard-c17))
+    :use (:instance sinteger-format-wfp-of-standard-c17
+                    (format (integer-format->signed format)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define integer-format->bit-size ((format integer-formatp))
   :returns (size posp
@@ -717,6 +822,13 @@
   :returns (max posp :rule-classes (:rewrite :type-prescription))
   :short "The ACL2 integer value of
           the maximum unsigned value representable in an integer format."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When @(tsee integer-format-wfp) holds for C23,
+     this is one plus twice @(tsee integer-format->signed-max).
+     This follows from the relation between the signed and unsigned
+     value-bit counts, and is proved below."))
   (uinteger-format->max (integer-format->unsigned format))
 
   ///
@@ -745,10 +857,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection integer-format->unsigned-max-ext
+  :extension integer-format->unsigned-max
+  (defruled integer-format->unsigned-max-as-signed-max-when-c23
+    (implies (integer-format-wfp format (standard-c23))
+             (equal (integer-format->unsigned-max format)
+                    (1+ (* 2 (integer-format->signed-max format)))))
+    :enable (integer-format-wfp
+             integer-format->unsigned-max
+             integer-format->signed-max
+             uinteger-format->max
+             sinteger-format->max)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define integer-format->signed-min ((format integer-formatp))
   :returns (min integerp)
   :short "The ACL2 integer value of
           the minimum signed value representable in an integer format."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee sinteger-format->min) for the representation-dependent cases.
+     When @(tsee integer-format-wfp) holds for C23,
+     this is one less than the negation of @(tsee integer-format->signed-max).
+     This relation is proved below."))
   (sinteger-format->min (integer-format->signed format))
 
   ///
@@ -761,7 +894,17 @@
   (defret integer-format->signed-min-lower-bound
     (>= min
         (- (expt 2 (1- (integer-format->bit-size format)))))
-    :hints (("Goal" :in-theory (enable integer-format->bit-size-alt-def)))))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable integer-format->bit-size-alt-def))))
+
+  (defretd integer-format->signed-min-as-signed-max-when-c23
+    (implies (integer-format-wfp format (standard-c23))
+             (equal min
+                    (- (1+ (integer-format->signed-max format)))))
+    :hints (("Goal"
+             :in-theory (enable integer-format-wfp
+                                integer-format->signed-max
+                                sinteger-format->min-as-max-when-c23)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -972,10 +1115,16 @@
   (make-sinteger-format
    :bits (sinteger-bit-roles-inc-n-and-sign (pos-fix n))
    :signed (signed-format-twos-complement)
-   :traps nil)
+   :special-trap nil
+   :other-traps nil)
   :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
 
   ///
+
+  (defrule sinteger-format-wfp-of-sinteger-format-inc-sign-tcnpnt
+    (sinteger-format-wfp (sinteger-format-inc-sign-tcnpnt n) std)
+    :enable sinteger-format-wfp
+    :use signed-format-wfp-of-signed-format-twos-complement)
 
   (defruled sinteger-format->max-of-sinteger-format-inc-sign-tcnpnt
     (equal (sinteger-format->max (sinteger-format-inc-sign-tcnpnt n))
@@ -1034,6 +1183,22 @@
       (enable
        uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
        posp))))
+
+  (defrule integer-format-wfp-of-integer-format-inc-sign-tcnpnt
+    (implies (and (posp size)
+                  (not (equal size 1)))
+             (integer-format-wfp (integer-format-inc-sign-tcnpnt size) std))
+    :enable (integer-format-wfp
+             uinteger-format-inc-npnt
+             sinteger-format-inc-sign-tcnpnt
+             uinteger-sinteger-bit-roles-wfp-of-inc-n-and-sign
+             sinteger-bit-roles-wfp-of-sinteger-bit-roles-inc-n-and-sign
+             uinteger-bit-roles-value-count-of-uinteger-bit-roles-inc-n
+             sinteger-bit-roles-value-count-of-sinteger-bit-roles-inc-n-and-sign
+             posp
+             (:e tau-system))
+    :use (:instance sinteger-format-wfp-of-sinteger-format-inc-sign-tcnpnt
+                    (n (1- (pos-fix size)))))
 
   (defruled integer-format->bit-size-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)

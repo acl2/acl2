@@ -13,6 +13,7 @@
 
 ;; See also lg.lisp and ceiling-of-lg.lisp.
 
+(include-book "log2-def")
 (local (include-book "expt2"))
 (local (include-book "plus"))
 (local (include-book "floor"))
@@ -29,30 +30,6 @@
                            <-of-*-same-linear-special
                            <=-of-*-and-*-same-alt-linear
                            <=-of-*-and-*-same-linear)))
-
-;; Returns the floor of the base 2 logarithm of the positive rational x.  Not meaningful for 0.
-;; TODO: Rename log2 to floor-of-log2 ?
-;; TODO: Generalize the base?
-(defund log2 (x)
-  (declare (xargs :guard (and (rationalp x)
-                              (< 0 x))
-                  :measure (if (and (rationalp x)
-                                    (< 0 x))
-                               (if (<= 2 x)
-                                   (floor x 1)
-                                 (if (< x 1)
-                                     (floor (/ x) 1)
-                                   0))
-                             0)))
-  (if (not (mbt (and (rationalp x)
-                     (< 0 x))))
-      0 ; todo: what value should we use here (negative infinity)?
-    (if (<= 2 x)
-        (+ 1 (log2 (/ x 2)))
-      (if (< x 1)
-          (+ -1 (log2 (* x 2)))
-        ;; x is in [1,2), so its log2 is 0:
-        0))))
 
 (defthm natp-of-log2-type
   (implies (and (<= 1 x)

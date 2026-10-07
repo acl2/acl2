@@ -1,7 +1,7 @@
 ; BV Library: theorems about logtail
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -297,7 +297,7 @@
 ;;            (equal (floor x 4)
 ;;                   (logtail 2 x)))
 ;;   :hints (("Goal" :in-theory (enable logtail))))
-;; (theory-invariant (incompatible (:rewrite FLOOR-BY-4) (:DEFINITION LOGTAIL)))
+;; (theory-invariant (incompatible (:rewrite FLOOR-BY-4) (:DEFINITION LOGTAIL$inline)))
 
 (defthm logtail-of-1-and-+-of-1-and-*-of-2
   (implies (integerp x)
@@ -346,7 +346,7 @@
                   (logtail 1 x)))
   :hints (("Goal" :in-theory (enable logtail ifix))))
 
-(theory-invariant (incompatible (:rewrite floor-of-2) (:definition logtail)))
+(theory-invariant (incompatible (:rewrite floor-of-2-becomes-logtail-of-1) (:definition logtail$inline)))
 
 ;Disabled since logtail is more complex than floor
 (defthmd floor-of-expt-becomes-logtail
@@ -356,7 +356,7 @@
                   (logtail n x)))
   :hints (("Goal" :in-theory (enable logtail ifix))))
 
-(theory-invariant (incompatible (:rewrite floor-of-expt-becomes-logtail) (:definition logtail)))
+(theory-invariant (incompatible (:rewrite floor-of-expt-becomes-logtail) (:definition logtail$inline)))
 
 (defthmd floor-of-power-of-2-becomes-logtail
   (implies (and (syntaxp (quotep k))
@@ -366,7 +366,7 @@
                   (logtail (lg k) x)))
   :hints (("Goal" :in-theory (enable logtail ifix))))
 
-(theory-invariant (incompatible (:rewrite floor-of-power-of-2-becomes-logtail) (:definition logtail)))
+(theory-invariant (incompatible (:rewrite floor-of-power-of-2-becomes-logtail) (:definition logtail$inline)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

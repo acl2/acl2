@@ -24,7 +24,6 @@
 ;; (local (include-book "header"))
 
 ;; Makes a new 1-dimensional array where every element is the default.
-;; TODO: Rename this, since "empty" here doesn't mean an array of length 0 but rather that the alist is empty.
 ;according to array1p, the maximum-length field of an array can be at most (array-maximum-length-bound)
 ;and the length (first dimension) must be strictly smaller than the :maximum-length (why strictly?)
 ;; Note that array1p disallows arrays of len 0 (why?), so this function does also.

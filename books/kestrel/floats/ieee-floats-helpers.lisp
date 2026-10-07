@@ -10,7 +10,8 @@
 
 (in-package "ACL2") ; todo: use an IEEE package?
 
-(include-book "kestrel/arithmetic-light/log2" :dir :system)
+(include-book "kestrel/arithmetic-light/log2-def" :dir :system)
+(local (include-book "kestrel/arithmetic-light/log2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))

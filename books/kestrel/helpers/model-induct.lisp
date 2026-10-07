@@ -41,7 +41,8 @@
              (acl2::cons-listp$ (acl2::find-all-fn-call-subterms-lst acl2::terms acl2::dead-vars)))
     :flag acl2::find-all-fn-call-subterms-lst)
   :hints (("Goal" :in-theory (enable acl2::find-all-fn-call-subterms
-                                     acl2::find-all-fn-call-subterms-lst))))
+                                     acl2::find-all-fn-call-subterms-lst
+                                     acl2::cons-listp$))))
 
 (defthm cons-listp$-of-find-all-fn-call-subterms
   (implies (pseudo-termp term)
@@ -66,7 +67,8 @@
 (defund filter-good-induct-calls (calls wrld)
   (declare (xargs :guard (and (pseudo-term-listp calls)
                               (acl2::cons-listp$ calls)
-                              (plist-worldp wrld))))
+                              (plist-worldp wrld))
+                  :guard-hints (("Goal" :in-theory (enable acl2::cons-listp$)))))
   (if (endp calls)
       nil
     (let* ((call (first calls))

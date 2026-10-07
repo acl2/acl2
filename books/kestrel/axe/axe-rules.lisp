@@ -19,6 +19,7 @@
 ;; See also stored-rules.lisp.
 
 (include-book "dargp")
+(include-book "rewrite-objectives")
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/terms-light/lambda-free-termp" :dir :system)
@@ -187,12 +188,18 @@
                      (and (consp rest)
                           (symbolp (car rest))
                           (pseudo-termp (cdr rest))))
-                 ;; regular hyp with no free vars (checked by bound-vars-suitable-for-hypp):
-                 (and (pseudo-termp hyp)
-                      (not (eq 'quote fn)) ; can't be a quoted constant
-                      ;; consider relaxing this for efficiency of rewriting:
-                      ;; (lambda-free-termp hyp)
-                      ))))))))
+                 (if (eq :axe-rewrite-objective fn) ; (:axe-rewrite-objective . obj)
+                     (booleanp (cdr hyp)) ; can't be :? (just have no hyp at all in that case)
+                   ;; regular hyp with no free vars (checked by bound-vars-suitable-for-hypp):
+                   (and (pseudo-termp hyp)
+                        (not (eq 'quote fn)) ; can't be a quoted constant
+                        ;; consider relaxing this for efficiency of rewriting:
+                        ;; (lambda-free-termp hyp)
+                        )))))))))
+
+;; Sanity check (since we call booleanp above):
+(thm
+ (implies (booleanp obj) (rewrite-objectivep obj)))
 
 ;drop (see below)?
 ;; (defthm axe-rule-hypp-when-not-special
@@ -221,7 +228,8 @@
   (implies (and (not (equal :axe-syntaxp (car hyp)))
                 (not (equal :axe-bind-free (car hyp)))
                 (not (equal :free-vars (car hyp)))
-                (not (equal :axe-binding-hyp (car hyp))))
+                (not (equal :axe-binding-hyp (car hyp)))
+                (not (equal :axe-rewrite-objective (car hyp))))
            (equal (axe-rule-hypp hyp)
                   (and (consp hyp)
                        (not (equal 'quote (car hyp)))
@@ -266,6 +274,11 @@
                          (symbolp (car rest))
                          (pseudo-termp (cdr rest))))))
 ;  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable axe-rule-hypp))))
+
+(defthm axe-rule-hypp-of-cons-of-axe-rewrite-objective
+  (equal (axe-rule-hypp (cons :axe-rewrite-objective obj))
+         (booleanp obj))
   :hints (("Goal" :in-theory (enable axe-rule-hypp))))
 
 ;; Shows that an axe-rule-hyp must be a cons (and so can't be a symbol):
@@ -352,6 +365,7 @@
                           (expr (cddr hyp)))
                       (and (not (member-equal var bound-vars))
                            (subsetp-equal (free-vars-in-term expr) bound-vars))))
+      (:axe-rewrite-objective t) ; no vars are involved
       ;; a hyp not marked with :free-vars must have no free vars:
       (otherwise (let* ((hyp-vars (free-vars-in-term hyp)))
                    (subsetp-equal hyp-vars bound-vars))))))
@@ -378,7 +392,9 @@
                   (append free-vars bound-vars)))
     ;; The var of the hyp becomes bound:
     (:axe-binding-hyp (let ((var (cadr hyp)))
-                    (cons var bound-vars)))
+                        (cons var bound-vars)))
+    ;; No vars become bound:
+    (:axe-rewrite-objective bound-vars)
     ;; no vars get bound:
     (otherwise bound-vars)))
 

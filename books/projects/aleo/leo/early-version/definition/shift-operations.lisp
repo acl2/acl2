@@ -11,6 +11,13 @@
 
 (in-package "LEO-EARLY")
 
+; CMUCL currently fails to certify this book due to a bug. A malformed type is
+; inferred for the expression `(expt 2 right-operand-int)` in `op-shl-wrapped`
+; and compilation fails with the message:
+;   Bound is not *, a SINGLE-FLOAT or a list of a SINGLE-FLOAT: NIL
+; This cert param may be removed once this compiler bug is resolved.
+; cert_param: (non-cmucl)
+
 (include-book "values")
 
 (include-book "ihs/basic-definitions" :dir :system)

@@ -372,6 +372,9 @@
        (fix-when-pred (acl2::packn-pos (list x.fix '-when- x.pred) x.name))
        (emptyp-fix (acl2::packn-pos (list 'treemap::emptyp- x.fix) x.name))
        (emptyp-of-fix (acl2::packn-pos (list 'treemap::emptyp-of- x.fix) x.name))
+       (submap-of-fix
+        (acl2::packn-pos (list 'treemap::submap-of- x.fix) x.name))
+       (yv (intern-in-package-of-symbol "Y" x.name))
        (acl2-count-of-fix (acl2::packn-pos (list 'acl2-count-of- x.fix '-linear)
                                            x.name)))
     (if x.fix-already-definedp
@@ -399,6 +402,16 @@
                   (or (not (,x.pred ,x.xvar))
                       (treemap::emptyp ,x.xvar)))
            :enable treemap::emptyp-of-empty)
+         (defrule ,submap-of-fix
+           (implies (treemap::submap ,x.xvar ,yv)
+                    (treemap::submap (,x.fix ,x.xvar) ,yv))
+           :use ((:instance
+                  (:functional-instance treemap::submap-of-generic-fix
+                                        (treeset::genericp ,x.pred)
+                                        (treemap::generic-fix ,x.fix))
+                  (treemap::map ,x.xvar)
+                  (treemap::y ,yv)))
+           :enable ,x.fix)
          ;; Lets count measures close by linear arithmetic alone.
          (defrule ,acl2-count-of-fix
            (<= (acl2-count (,x.fix ,x.xvar))
@@ -448,6 +461,7 @@
        (vv (intern-in-package-of-symbol "V" x.name))
        (yv (intern-in-package-of-symbol "Y" x.name))
        (sv (intern-in-package-of-symbol "S" x.name))
+       (iterv (intern-in-package-of-symbol "ITER" x.name))
        (np (symbol-name x.pred))
        (nk (symbol-name x.key-type))
        (nv (symbol-name x.val-type))
@@ -508,6 +522,16 @@
        (val-of-head-when-pred (intern-in-package-of-symbol
                                (concatenate 'string nv "-OF-HEAD-VAL-WHEN-" np)
                                x.pred))
+       (key-of-entry-key-when-pred (intern-in-package-of-symbol
+                                    (concatenate 'string
+                                                 nk "-OF-ENTRY-KEY-WHEN-"
+                                                 np "-OF-FROM-ITER")
+                                    x.pred))
+       (val-of-entry-val-when-pred (intern-in-package-of-symbol
+                                    (concatenate 'string
+                                                 nv "-OF-ENTRY-VAL-WHEN-"
+                                                 np "-OF-FROM-ITER")
+                                    x.pred))
        (alt-definition (intern-in-package-of-symbol
                         (concatenate 'string np "-ALT-DEFINITION") x.pred)))
     ;; The compound recognizers must be enabled not just in proofs but when
@@ -853,6 +877,41 @@
                                     ,alt-vals
                                     treemap::fix-when-mapp
                                     treemap::head-val$inline)
+                 :do-not-induct t)))
+      ;; An iterator carries no key or value type, so a typed loop's guards at
+      ;; (treemap::entry-key iter) and (treemap::entry-val iter) are discharged
+      ;; from the type of the map walked.
+      (defthm ,key-of-entry-key-when-pred
+        (implies (and (,x.pred (treemap::from-iter ,iterv))
+                      (treemap::has-valuep ,iterv))
+                 (,x.key-type (treemap::entry-key ,iterv)))
+        :hints (("Goal"
+                 :use ((:instance
+                        (:functional-instance
+                         treemap::genericp-of-entry-key-when-set-all-genericp-of-keys
+                         (treeset::genericp ,x.key-type)
+                         (treeset::set-all-genericp ,alt-keys))
+                        (treemap::iter ,iterv)))
+                 :in-theory (enable ,pred-def
+                                    ,keys-bridge
+                                    ,alt-keys
+                                    treemap::fix-when-mapp)
+                 :do-not-induct t)))
+      (defthm ,val-of-entry-val-when-pred
+        (implies (and (,x.pred (treemap::from-iter ,iterv))
+                      (treemap::has-valuep ,iterv))
+                 (,x.val-type (treemap::entry-val ,iterv)))
+        :hints (("Goal"
+                 :use ((:instance
+                        (:functional-instance
+                         treemap::genericp-of-entry-val-when-set-all-genericp-of-values
+                         (treeset::genericp ,x.val-type)
+                         (treeset::set-all-genericp ,alt-vals))
+                        (treemap::iter ,iterv)))
+                 :in-theory (enable ,pred-def
+                                    ,vals-bridge
+                                    ,alt-vals
+                                    treemap::fix-when-mapp)
                  :do-not-induct t)))
       (defthmd ,alt-definition
         (equal (,x.pred ,x.xvar)

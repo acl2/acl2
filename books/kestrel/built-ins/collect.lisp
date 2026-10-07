@@ -518,15 +518,15 @@
     rationalp-to-df constrained-to-df-0
     constrained-to-df-default
     constrained-to-df-idempotent
-    constrained-to-df-monotonicity
+    #+to-df-monotonicity constrained-to-df-monotonicity
     rationalp-constrained-to-df
     df-round-idempotent
-    df-round-monotonicity
+    #+to-df-monotonicity df-round-monotonicity
     df-round-is-identity-for-dfp
     dfp-df-round
     rationalp-df-round
     to-df-minus
-    to-df-monotonicity))
+    #+to-df-monotonicity to-df-monotonicity))
 
 (defconst *builtin-defaxiom/defthm-characters*
   '(booleanp-characterp
@@ -961,7 +961,11 @@
     apply$-warrant-loop$-default-values-definition
     apply$-loop$-default-values1
     apply$-warrant-loop$-default-values1-necc
-    apply$-warrant-loop$-default-values1-definition))
+    apply$-warrant-loop$-default-values1-definition
+    fn-equal-implies-equal-do$-hard-er-1
+    apply$-do$-hard-er
+    apply$-warrant-do$-hard-er-necc
+    apply$-warrant-do$-hard-er-definition))
 
 ; Put all the above names together, and check that
 ; (1) they are all built-in axiom and theorem names and

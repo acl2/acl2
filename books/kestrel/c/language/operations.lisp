@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -216,7 +216,8 @@
 
 (define add-values ((val1 valuep) (val2 valuep))
   :returns (resval value-resultp)
-  :short "Apply binary @('+') to values [C17:6.5.5/2] [C17:6.5.5/5]."
+  :short "Apply binary @('+') to values
+          [C17:6.5.6/2] [C17:6.5.6/4] [C17:6.5.6/5]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -240,7 +241,8 @@
 
 (define sub-values ((val1 valuep) (val2 valuep))
   :returns (resval value-resultp)
-  :short "Apply binary @('-') to values [C17:6.5.5/3] [C17:6.5.5/6]."
+  :short "Apply binary @('-') to values
+          [C17:6.5.6/3] [C17:6.5.6/4] [C17:6.5.6/6]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -508,7 +510,7 @@
            (value-integerp val2))
       (b* (((mv val1 val2) (uaconvert-values val1 val2)))
         (bitxor-integer-values val1 val2))
-    (error (list :bitand-mistype
+    (error (list :bitxor-mistype
                  :required :integer :integer
                  :supplied (value-fix val1) (value-fix val2))))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
@@ -541,7 +543,7 @@
            (value-integerp val2))
       (b* (((mv val1 val2) (uaconvert-values val1 val2)))
         (bitior-integer-values val1 val2))
-    (error (list :bitand-mistype
+    (error (list :bitior-mistype
                  :required :integer :integer
                  :supplied (value-fix val1) (value-fix val2))))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp

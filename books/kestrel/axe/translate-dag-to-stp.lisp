@@ -1652,7 +1652,7 @@
               (no-nodes-are-variablesp nodes dag-array-name dag-array dag-len)))
   :hints (("Goal" :in-theory (enable no-nodes-are-variablesp))))
 
-(defthm no-nodes-are-variablesp-of-when-not-consp
+(defthm no-nodes-are-variablesp-when-not-consp
   (implies (not (consp list))
            (no-nodes-are-variablesp list dag-array-name dag-array dag-len))
   :hints (("Goal" :in-theory (enable no-nodes-are-variablesp reverse-list))))
@@ -2000,6 +2000,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defconst *valid-string* (concatenate 'string "Valid." (newline-string)))
+;; (defconst *invalid-string* (concatenate 'string "Invalid." (newline-string)))
+;; OLD: (defconst *timed-out-string* "Timed Out, exiting.") ; add newline?
+(defconst *timed-out-string* (concatenate 'string "Timed Out." (newline-string)))
+(defconst *unknown-string* (concatenate 'string "Unknown." (newline-string)))
+
 ;INPUT-FILENAME is the STP input (.cvc) file name
 ;OUTPUT-FILENAME is the STP output (.out) file name
 ;Runs an external script to call STP, using tshell-call.
@@ -2040,12 +2046,12 @@
             (progn$ (er hard? 'call-stp-on-file "!! ERROR: STP experienced an unknown error.  Exit status ~x0.  Input:~%~s1~%Output:~%~s2~% !!"
                         status input-filename output-filename)
                     (mv *error* state))))
-      (let ((chars (read-file-into-character-list output-filename state)))
+      (let* ((chars (read-file-into-character-list output-filename state))
+             (string (coerce chars 'string)))
         (if (null chars)
             (prog2$ (er hard? 'call-stp-on-file "Unable to read STP output from file ~x0.~%" output-filename)
                     (mv *error* state))
-          ;; Check whether the output file contains "Valid."
-          (if (equal chars '(#\V #\a #\l #\i #\d #\. #\Newline)) ;;Look for "Valid."
+          (if (equal string *valid-string*)
               (prog2$ (and (print-level-at-least-tp print) (progn$ (cw "  STP said Valid in ")
                                                                    (print-to-hundredths elapsed-time)
                                                                    (cw "s.~%" )))
@@ -2059,9 +2065,9 @@
                                                                      (cw "s.~%" ))))
                      ;; Print the counterexample (TODO: What if it is huge?):
                      (counterexamplep-chars (butlast chars 9))
-;(- (and print counterexamplep (cw "~%Counterexample:~%~S0" (coerce counterexamplep-chars 'string))))
+                     ;; (- (and print counterexamplep (cw "~%Counterexample:~%~S0" (coerce counterexamplep-chars 'string))))
                      (parsed-counterexample (parse-counterexample counterexamplep-chars nil))
-;(- (and print counterexamplep (cw "~%Parsed counterexample:~%~x0~%" parsed-counterexample)))
+                     ;; (- (and print counterexamplep (cw "~%Parsed counterexample:~%~x0~%" parsed-counterexample)))
                      ((when (eq :error parsed-counterexample))
                       (er hard? 'call-stp-on-file "!! ERROR parsing counterexample.")
                       (mv *error* state)))
@@ -2069,13 +2075,15 @@
                           `(,*counterexample* ,parsed-counterexample)
                         *invalid*)
                       state))
-              (if (or ;(equal chars '(#\T #\i #\m #\e #\d #\Space #\O #\u #\t #\, #\Space  #\e #\x #\i #\t #\i #\n #\g #\.)) ;add newline??
-                   (equal chars '(#\T #\i #\m #\e #\d #\Space #\O #\u #\t #\. #\Newline))) ;;Look for "Timed Out."
+              (if (or (equal string *timed-out-string*)
+                      ;; This has been reported using a recent STP:
+                      (equal string *unknown-string*)
+                      )
                   (prog2$ (and print (progn$ (cw "  STP timed out (max conflicts) in ")
                                              (print-to-hundredths elapsed-time)
                                              (cw "s.~%")))
                           (mv *timedout* state))
-                (prog2$ (er hard? 'call-stp-on-file "STP returned an unexpected result (~x0).  Check the .out file: ~x1.~%" chars output-filename)
+                (prog2$ (er hard? 'call-stp-on-file "STP returned an unexpected result (~X01).  Check the .out file: ~x2.~%" string nil output-filename)
                         (mv *error* state))))))))))
 
 (local

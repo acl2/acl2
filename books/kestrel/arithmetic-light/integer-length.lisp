@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function integer-length
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,8 +18,7 @@
 
 (include-book "power-of-2p-def") ; only the def, to avoid circular includes
 (local (include-book "floor")) ; reduce?
-(local (include-book "expt"))
-;(local (include-book "expt2"))
+(local (include-book "expt2"))
 (local (include-book "plus"))
 (local (include-book "times"))
 (local (include-book "divide"))

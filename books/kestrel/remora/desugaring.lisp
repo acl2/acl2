@@ -174,7 +174,7 @@
      the outermost boxing atom is built here,
      over the first ispace,
      with the remaining ispaces nested inside it;
-     only the outermost boxing atom has the type
+     only the outermost boxing atom has the type, if present
      (see @(tsee nest-box-exprs)).
      An n-ary boxing atom always has at least one ispace,
      but this is not captured in the abstract syntax,
@@ -302,14 +302,14 @@
                       :body (nest-ilambda-exprs (cdr atom.params) body))))
    (atom :boxn (b* ((ispaces (ispace-list-desugar atom.ispaces))
                     (array (expr-desugar atom.array))
-                    (type (type-desugar atom.type))
+                    (type? (type-option-desugar atom.type?))
                     (ispace (if (consp ispaces) ; always true
                                 (car ispaces)
                               (ispace-dim (dim-const 0)))))
                  (make-atom-box
                   :ispace ispace
                   :array (nest-box-exprs (cdr ispaces) array)
-                  :type? type)))
+                  :type? type?)))
    (bind :fun (b* ((params (var+type?-list-desugar bind.params))
                    (type? (type-option-desugar bind.type?))
                    (expr (expr-desugar bind.expr))

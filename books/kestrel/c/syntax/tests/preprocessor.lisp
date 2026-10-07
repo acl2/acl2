@@ -863,3 +863,64 @@ x
 
 (test-preproc-fullexp '("g.c")
                       :base-dir "preproc-example7")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A stand-alone header error must not discard files or resolved includes
+; accumulated before the error,
+; including those from preprocessing the header in the context of its includer.
+
+; (depends-on "preproc-example8/before.h")
+; (depends-on "preproc-example8/nested.h")
+; (depends-on "preproc-example8/context.h")
+; (depends-on "preproc-example8/after.h")
+; (depends-on "preproc-example8/main.c")
+
+(test-preproc '("main.c")
+              :expected (fileset-of "before.h"
+                                    "int before;
+"
+                                    "nested.h"
+                                    "int nested;
+"
+                                    "after.h"
+                                    "int after;
+"
+                                    "main.c"
+                                    "#include \"before.h\"
+#define CONTEXT CONTEXT
+#ifndef CONTEXT
+#endif
+#include \"nested.h\"
+int context;
+#include \"after.h\"
+")
+              :base-dir "preproc-example8"
+              :trace-expansion nil)
+
+; Check that the resolved include mappings are retained as well.
+
+(assert!-stobj
+ (b* (((mv erp & resolved-includes state)
+       (preprocess '("main.c")
+                   "preproc-example8"
+                   nil
+                   (make-ppoptions :trace-expansion nil)
+                   (ienv-default)
+                   state))
+      (main-includes (cdr (omap::assoc (filepath "main.c")
+                                       resolved-includes)))
+      (context-includes (cdr (omap::assoc (filepath "context.h")
+                                          resolved-includes))))
+   (mv (and (not erp)
+            (equal (strip-cdrs main-includes)
+                   (list (filepath "after.h") (filepath "before.h")))
+            (equal (strip-cdrs context-includes)
+                   (list (filepath "nested.h"))))
+       state))
+ state)
+
+; Check against full expansion.
+
+(test-preproc-fullexp '("main.c")
+                      :base-dir "preproc-example8")

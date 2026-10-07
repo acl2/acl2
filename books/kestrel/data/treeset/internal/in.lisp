@@ -13,6 +13,7 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
+(include-book "kestrel/data/utilities/total-order/compare-defs" :dir :system)
 
 (include-book "tree-defs")
 (include-book "bst-defs")
@@ -389,11 +390,11 @@
   :short "A performant variant of @(tsee tree-in) which uses a BST assumption."
   (if (tree-empty-p tree)
       nil
-    (let ((head-elem (tree-element->val (tree->head tree))))
-      (or (equal x head-elem)
-          (if (<< x head-elem)
-              (tree-search-in x (tree->left tree))
-            (tree-search-in x (tree->right tree)))))))
+    (mv-let (equalp ltp)
+            (data::compare-<< x (tree-element->val (tree->head tree)))
+      (cond (equalp t)
+            (ltp (tree-search-in x (tree->left tree)))
+            (t (tree-search-in x (tree->right tree)))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -434,11 +435,13 @@
   (mbe :logic (tree-search-in x tree)
        :exec (if (tree-empty-p tree)
                  nil
-               (let ((head-elem (tree-element->val (tree->head tree))))
-                 (or (= x head-elem)
-                     (if (data::acl2-number-<< x head-elem)
-                         (acl2-number-tree-search-in x (tree->left tree))
-                       (acl2-number-tree-search-in x (tree->right tree)))))))
+               (mv-let (equalp ltp)
+                       (data::acl2-number-compare-<<
+                         x
+                         (tree-element->val (tree->head tree)))
+                 (cond (equalp t)
+                       (ltp (acl2-number-tree-search-in x (tree->left tree)))
+                       (t (acl2-number-tree-search-in x (tree->right tree)))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-search-in
                                            acl2-number-tree-search-in
@@ -452,11 +455,13 @@
   (mbe :logic (tree-search-in x tree)
        :exec (if (tree-empty-p tree)
                  nil
-               (let ((head-elem (tree-element->val (tree->head tree))))
-                 (or (eq x head-elem)
-                     (if (data::symbol-<< x head-elem)
-                         (symbol-tree-search-in x (tree->left tree))
-                       (symbol-tree-search-in x (tree->right tree)))))))
+               (mv-let (equalp ltp)
+                       (data::symbol-compare-<<
+                         x
+                         (tree-element->val (tree->head tree)))
+                 (cond (equalp t)
+                       (ltp (symbol-tree-search-in x (tree->left tree)))
+                       (t (symbol-tree-search-in x (tree->right tree)))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-search-in
                                            symbol-tree-search-in
@@ -470,11 +475,13 @@
   (mbe :logic (tree-search-in x tree)
        :exec (if (tree-empty-p tree)
                  nil
-               (let ((head-elem (tree-element->val (tree->head tree))))
-                 (or (eql x head-elem)
-                     (if (data::eqlable-<< x head-elem)
-                         (eqlable-tree-search-in x (tree->left tree))
-                       (eqlable-tree-search-in x (tree->right tree)))))))
+               (mv-let (equalp ltp)
+                       (data::eqlable-compare-<<
+                         x
+                         (tree-element->val (tree->head tree)))
+                 (cond (equalp t)
+                       (ltp (eqlable-tree-search-in x (tree->left tree)))
+                       (t (eqlable-tree-search-in x (tree->right tree)))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-search-in
                                            eqlable-tree-search-in

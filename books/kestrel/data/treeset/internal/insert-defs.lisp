@@ -10,6 +10,7 @@
 
 (include-book "kestrel/data/utilities/fixed-size-words/u32-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
+(include-book "kestrel/data/utilities/total-order/compare-defs" :dir :system)
 
 (include-book "../hash-defs")
 (include-book "heap-order-defs")
@@ -23,6 +24,7 @@
 (std::defredundant
   :names (tree-insert
           tree-singleton
+          tree-insert-with-hash
           acl2-number-tree-insert
           symbol-tree-insert
           eqlable-tree-insert))

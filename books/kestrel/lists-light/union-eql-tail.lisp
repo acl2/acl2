@@ -19,10 +19,10 @@
 ;; Add items from LST1 to ACC if they are not in LST2.
 ;this keeps acc separate (instead of extending lst2) so it will be fast if lst2 is small
 (defund union-eql-tail-aux (lst1 lst2 acc)
-  (declare (xargs :guard (and (if (eqlable-listp lst1)
-                                  (true-listp lst2)
-                                (and (true-listp lst1)
-                                     (eqlable-listp lst2))))))
+  (declare (xargs :guard (if (eqlable-listp lst1)
+                             (true-listp lst2)
+                           (and (true-listp lst1)
+                                (eqlable-listp lst2)))))
   (cond ((endp lst1) acc)
         ((member (car lst1) lst2)
          (union-eql-tail-aux (cdr lst1) lst2 acc))
@@ -47,10 +47,10 @@
 ;; Union together LST1 and LST2, using EQL as the comparison.
 ;doesn't remove dups within either argument
 (defund union-eql-tail (lst1 lst2)
-  (declare (xargs :guard (and (if (eqlable-listp lst1)
-                                  (true-listp lst2)
-                                (and (true-listp lst1)
-                                     (eqlable-listp lst2))))))
+  (declare (xargs :guard (if (eqlable-listp lst1)
+                             (true-listp lst2)
+                           (and (true-listp lst1)
+                                (eqlable-listp lst2)))))
   (union-eql-tail-aux lst1 lst2 lst2))
 
 (defthm union-eql-tail-iff

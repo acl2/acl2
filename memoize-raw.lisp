@@ -5128,7 +5128,9 @@
                (with-lower-overhead
                 (apply 'memoize-fn *bad-lisp-consp-memoization*))))
         (t (when (memoizedp-raw 'bad-lisp-consp)
-             (unmemoize-fn 'bad-lisp-consp)))))
+             (unmemoize-fn 'bad-lisp-consp))))
+; Finally, return nil for consistency with the logic:
+  nil)
 
 (defun-one-output acl2h-init ()
 

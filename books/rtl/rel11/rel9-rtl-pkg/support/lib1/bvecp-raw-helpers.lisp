@@ -53,8 +53,14 @@
 	((< x 1) (cons 1 (fl (/ x))))
 	(t (fl x))))
 
+; Matt K. addition: needed for e0-ord-< just below
+(include-book "ordinals/e0-ordinal" :dir :system)
+
 (defnd expo (x)
   (declare (xargs :measure (:? x)
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                  :well-founded-relation e0-ord-<
                   :verify-guards nil))
   (mbe
    :logic
@@ -660,6 +666,11 @@
 ; arbitrary, chosen in the hope that it suffices for relieving of hyps related
 ; to widths of bit vectors
 
+; Also, the following in-theory was added by Matt K. on 9/19/2026 to avoid an
+; error from the include-book, due to an ACL2 fix for compound-recognizer
+; rules.
+
+(local (in-theory (enable (:t natp))))
 (local (include-book "../../arithmetic/basic"))
 
 (defun expt-exec (r i)

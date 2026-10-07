@@ -440,6 +440,9 @@
    (built-in-fun "__builtin_return_address"
                  (type-pointer (type-void))
                  (type-params-unspecified))
+   (built-in-fun "__builtin_frame_address"
+                 (type-pointer (type-void))
+                 (type-params-unspecified))
    (built-in-fun "__builtin_extract_return_addr"
                  (type-pointer (type-void))
                  (type-params-unspecified))
@@ -660,6 +663,11 @@
    (built-in-fun "__builtin_ia32_rdtsc"
                  (type-ullong)
                  (type-params-unspecified))
+   ;; Not found in [GCCM], but accepted by GCC and Clang,
+   ;; corresponding to the isinf macro [C17:7.12.3.3] [C23:7.12.3.4]:
+   (built-in-fun "__builtin_isinf"
+                 (type-sint)
+                 (type-params-unspecified))
    ;; Not found in [GCCM], but corresponding to [C23:7.16.1] [C23:7.16.2]:
    (built-in-fun "__builtin_va_copy"
                  (type-void)
@@ -747,7 +755,14 @@
   :short "The list of functions built-in to CHERI."
   :long
   (xdoc::topstring-p
-   "This list contains all functions listed in [CHERI:Table 4.2].")
+   "This list contains all functions listed in [CHERI:Table 4.2],
+    correcting two apparent typos in that table:
+    the cause register functions are listed as
+    @('__builtin_cheri_cause.get') and @('__builtin_cheri_cause.set'),
+    which are not identifiers,
+    and @('__builtin_cheri_kernel_cap1_get') is listed twice,
+    where the second entry, for register @('$c28'),
+    must be @('__builtin_cheri_kernel_cap2_get').")
   (list (built-in-fun "__builtin_memcap_length_set"
                       (type-unknown)
                       (type-params-unspecified))
@@ -814,17 +829,22 @@
         (built-in-fun "__builtin_memcap_stack_get"
                       (type-unknown)
                       (type-params-unspecified))
-        (built-in-fun "__builtin_cheri_cause.get"
+        ;; Listed as __builtin_cheri_cause.get in [CHERI:Table 4.2].
+        (built-in-fun "__builtin_cheri_cause_get"
                       (type-unknown)
                       (type-params-unspecified))
-        (built-in-fun "__builtin_cheri_cause.set"
+        ;; Listed as __builtin_cheri_cause.set in [CHERI:Table 4.2].
+        (built-in-fun "__builtin_cheri_cause_set"
                       (type-unknown)
                       (type-params-unspecified))
         (built-in-fun "__builtin_cheri_invoke_data_cap_get"
                       (type-unknown)
                       (type-params-unspecified))
-        ;; Note: this is listed twice in Table 4.2. Typo?
         (built-in-fun "__builtin_cheri_kernel_cap1_get"
+                      (type-unknown)
+                      (type-params-unspecified))
+        ;; Listed as __builtin_cheri_kernel_cap1_get in [CHERI:Table 4.2].
+        (built-in-fun "__builtin_cheri_kernel_cap2_get"
                       (type-unknown)
                       (type-params-unspecified))
         (built-in-fun "__builtin_cheri_kernel_code_cap_get"

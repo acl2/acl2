@@ -14,6 +14,7 @@
 (include-book "chars-codes")
 (include-book "chars-codes-fty")
 (include-book "char-code-set")
+(include-book "char-code-map")
 (include-book "hexchars")
 (include-book "hex-digit-char-theorems")
 (include-book "hexstrings")

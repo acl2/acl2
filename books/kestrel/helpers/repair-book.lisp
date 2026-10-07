@@ -1,6 +1,6 @@
 ; A tool to suggest repairs for broken proofs
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -236,7 +236,7 @@
                 (cw "Error: No more event data.~%") ; todo: throw an error? ;todo: can still attempt some repairs (e.g., using advice)
                 (mv nil nil))
                (event-data-form (first event-data-forms)) ; we assume they are in sync and also that this is not a compound event (todo)
-               ((when (not (and (eq name (car event-data-form)))))
+               ((when (not (eq name (car event-data-form))))
                 (cw "Error: No event data for ~x0." name) ; todo: throw an error?
                 ;; todo: do better: try to skip some forms while looking for name?
                 (mv nil event-data-forms) ; maybe the theorem is brand new and there just is no event-data for it yet
@@ -352,7 +352,7 @@
                                              state)
   (declare (xargs :guard (and (true-listp events)
                               (or (true-listp event-data-forms)
-                                  (or (eq :none event-data-forms)))
+                                  (eq :none event-data-forms))
                               (stringp book-path))
                   :stobjs state
                   :mode :program))
@@ -479,7 +479,7 @@
 ;; Tries to repairs each of the books indicated by the BOOK-PATHS.
 ;; Returns (mv erp state).
 (defun repair-books-fn-aux (book-paths state)
-  (declare (xargs :guard (and (string-listp book-paths))
+  (declare (xargs :guard (string-listp book-paths)
                   :mode :program
                   :stobjs state))
   (if (endp book-paths)

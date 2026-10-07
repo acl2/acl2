@@ -428,15 +428,29 @@
                   :guard-hints (("Goal" :in-theory (enable field-info-alistp)))))
   (strip-cars field-info-alist))
 
+;drop?
 (defthm true-listp-of-class-decl-interfaces
   (implies (class-infop class-info class-name) ;darn class-name is a free var
            (true-listp (class-decl-interfaces class-info)))
   :hints (("Goal" :in-theory (enable class-infop class-infop0 class-decl-interfaces))))
 
+(defthm class-name-listp-of-class-decl-interfaces-simple
+  (implies (class-infop0 class-info)
+           (class-name-listp (class-decl-interfaces class-info)))
+  :hints (("Goal" :in-theory (enable class-infop0 class-decl-interfaces))))
+
 (defthm class-name-listp-of-class-decl-interfaces
   (implies (class-infop class-info class-name) ;darn class-name is a free var
            (class-name-listp (class-decl-interfaces class-info)))
   :hints (("Goal" :in-theory (enable class-infop class-infop0 class-decl-interfaces))))
+
+(defthm class-namep-of-class-decl-superclass-simple
+  (implies (and (class-infop0 class-info)
+                (not (equal (class-decl-superclass class-info) :none))
+                ;; (not (class-decl-interfacep class-info))
+                )
+           (class-namep (class-decl-superclass class-info)))
+  :hints (("Goal" :in-theory (enable class-infop0 class-decl-superclass))))
 
 (defthm class-namep-of-class-decl-superclass
   (implies (and (class-infop class-info class-name) ; free var

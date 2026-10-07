@@ -571,7 +571,7 @@
        ((mv channel state)
         (open-output-channel filename :character state))
        ((unless channel)
-        (raise "Can't open file ~s0 for output.")
+        (raise "Can't open file ~s0 for output." filename)
         state)
        (state (princ$ contents channel state))
        (state (close-output-channel channel state)))

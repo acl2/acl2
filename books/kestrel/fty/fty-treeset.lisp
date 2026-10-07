@@ -330,7 +330,10 @@
        (pred-of-fix (acl2::packn-pos (list x.pred '-of- x.fix) x.name))
        (fix-when-pred (acl2::packn-pos (list x.fix '-when- x.pred) x.name))
        (emptyp-fix (acl2::packn-pos (list 'treeset::emptyp- x.fix) x.name))
-       (emptyp-of-fix (acl2::packn-pos (list 'treeset::emptyp-of- x.fix) x.name)))
+       (emptyp-of-fix (acl2::packn-pos (list 'treeset::emptyp-of- x.fix) x.name))
+       (subset-of-fix
+        (acl2::packn-pos (list 'treeset::subset-of- x.fix) x.name))
+       (yv (intern-in-package-of-symbol "Y" x.name)))
     (if x.fix-already-definedp
         '(progn)
       `(define ,x.fix ((,x.xvar ,x.pred))
@@ -355,7 +358,17 @@
            (equal (treeset::emptyp (,x.fix ,x.xvar))
                   (or (not (,x.pred ,x.xvar))
                       (treeset::emptyp ,x.xvar)))
-           :enable treeset::emptyp-of-empty)))))
+           :enable treeset::emptyp-of-empty)
+         (defrule ,subset-of-fix
+           (implies (treeset::subset ,x.xvar ,yv)
+                    (treeset::subset (,x.fix ,x.xvar) ,yv))
+           :use ((:instance
+                  (:functional-instance treeset::subset-of-generic-fix
+                                        (treeset::genericp ,x.pred)
+                                        (treeset::generic-fix ,x.fix))
+                  (treeset::set ,x.xvar)
+                  (treeset::y ,yv)))
+           :enable ,x.fix)))))
 
 (define flextreeset-fix-when-pred-thm (x flagp)
   :mode :program
@@ -385,6 +398,7 @@
                 x.pred))
        (av (intern-in-package-of-symbol "A" x.name))
        (yv (intern-in-package-of-symbol "Y" x.name))
+       (iterv (intern-in-package-of-symbol "ITER" x.name))
        (np (symbol-name x.pred))
        (ne (symbol-name x.elt-type))
        (pred-of-delete (intern-in-package-of-symbol
@@ -392,6 +406,10 @@
        (elt-of-min-when-pred (intern-in-package-of-symbol
                               (concatenate 'string ne "-OF-MIN-WHEN-" np)
                               x.pred))
+       (elt-of-value-when-pred (intern-in-package-of-symbol
+                                (concatenate 'string ne "-OF-VALUE-WHEN-" np
+                                             "-OF-FROM-ITER")
+                                x.pred))
        (alt-definition (intern-in-package-of-symbol
                         (concatenate 'string np "-ALT-DEFINITION") x.pred))
        (booleanp-of-pred (intern-in-package-of-symbol
@@ -470,6 +488,22 @@
                          (treeset::genericp ,x.elt-type)
                          (treeset::set-all-genericp ,alt))
                         (treeset::set ,x.xvar)))
+                 :in-theory (enable ,pred-def ,bridge ,alt
+                                    treeset::fix-when-setp)
+                 :do-not-induct t)))
+      ;; An iterator carries no element type, so a typed loop's guard at
+      ;; (treeset::value iter) is discharged from the type of the set walked.
+      (defthm ,elt-of-value-when-pred
+        (implies (and (,x.pred (treeset::from-iter ,iterv))
+                      (treeset::has-valuep ,iterv))
+                 (,x.elt-type (treeset::value ,iterv)))
+        :hints (("Goal"
+                 :use ((:instance
+                        (:functional-instance
+                         treeset::genericp-of-value-when-set-all-genericp
+                         (treeset::genericp ,x.elt-type)
+                         (treeset::set-all-genericp ,alt))
+                        (treeset::iter ,iterv)))
                  :in-theory (enable ,pred-def ,bridge ,alt
                                     treeset::fix-when-setp)
                  :do-not-induct t)))

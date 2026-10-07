@@ -838,8 +838,9 @@
     (THROW-NONEXEC-ERROR-P)
     (THROW-NONEXEC-ERROR-P1)
     (TRANSLATE-ABBREV-RUNE)
-    (TRANSLATE-DECLARATION-TO-GUARD-GEN ACL2-COUNT X)
+    (TRANSLATE-DECLARATION-TO-GUARD-GEN)
     (TRANSLATE-DECLARATION-TO-GUARD-GEN-LST ACL2-COUNT L)
+    (TRANSLATE-DECLARATION-TO-GUARD-GEN-REC ACL2-COUNT X)
     (TRANSLATE-DECLARATION-TO-GUARD/INTEGER-GEN)
     (TRANSLATE-DECLARATION-TO-GUARD1-GEN)
     (TTAG-ALISTP ACL2-COUNT X)
@@ -909,7 +910,7 @@
 ; functions in a body would not notice the first argument of a call, (apply
 ; 'non-classical-function ...).
 
-               #+:non-standard-analysis
+               #+non-standard-analysis
                (classicalp fn wrld)
 
                (not (member-eq fn avoid-fns))

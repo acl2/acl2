@@ -530,6 +530,8 @@
   :hints (("Goal" :use bvchop-times-cancel-better
            :in-theory (disable bvchop-times-cancel-better))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm bvchop-of-+-of-expt
   (implies (integerp x)
            (equal (bvchop size (+ x (expt 2 size)))
@@ -550,6 +552,59 @@
            (equal (bvchop size (+ (expt 2 size) x))
                   (bvchop size x)))
   :hints (("Goal" :cases ((natp size)))))
+
+(defthm bvchop-of-+-of-*-of-expt
+  (implies (and (<= size size2)
+                (integerp x)
+                (natp size)
+                (natp size2))
+           (equal (bvchop size (+ (* x (expt 2 size2)) y))
+                  (bvchop size y)))
+  :hints (("Goal" :in-theory (enable bvchop equal-of-0-and-mod
+                                     mod-sum-cases))))
+
+(defthm bvchop-of-+-of-*-of-expt-alt
+  (implies (and (<= size size2)
+                (integerp x)
+                (natp size)
+                (natp size2))
+           (equal (bvchop size (+ y (* x (expt 2 size2))))
+                  (bvchop size y)))
+  :hints (("Goal" :use (:instance bvchop-of-+-of-*-of-expt)
+           :in-theory (disable bvchop-of-+-of-*-of-expt))))
+
+(defthm bvchop-of-+-of-minus-of-expt
+  (implies (and (integerp x)
+                (natp size))
+           (equal (bvchop size (+ x (- (expt 2 size))))
+                  (bvchop size x)))
+  :hints (("Goal" :in-theory (enable bvchop
+                                     mod-sum-cases))))
+
+(defthm bvchop-of-sum-expt
+  (implies (and (natp size)
+                (integerp y)
+                (integerp x))
+           (equal (bvchop size (+ x (expt 2 size) y))
+                  (bvchop size (+ x y))))
+  :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
+
+(defthm bvchop-of-sum-minus-expt-alt
+  (implies (and (natp size)
+                (integerp x)
+                (integerp y))
+           (equal (bvchop size (+ x (- (expt 2 size)) y))
+                  (bvchop size (+ x y))))
+  :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
+
+(defthm bvchop-of-plus-of-times-expt
+  (implies (and (natp size)
+                (integerp x)
+                (integerp y))
+           (equal (bvchop size (+ x (* (expt 2 size) y)))
+                  (bvchop size x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;rename?
 ;see also <-lemma-for-known-operators-axe2 but that one probably requires a constant for the width
@@ -647,34 +702,6 @@
                   (bvchop size i)))
   :hints (("Goal" :cases ((rationalp i))
            :in-theory (enable bvchop))))
-
-(defthm bvchop-of-+-of-*-of-expt
-  (implies (and (<= size size2)
-                (integerp x)
-                (natp size)
-                (natp size2))
-           (equal (bvchop size (+ (* x (expt 2 size2)) y))
-                  (bvchop size y)))
-  :hints (("Goal" :in-theory (enable bvchop equal-of-0-and-mod
-                                     mod-sum-cases))))
-
-(defthm bvchop-of-+-of-*-of-expt-alt
-  (implies (and (<= size size2)
-                (integerp x)
-                (natp size)
-                (natp size2))
-           (equal (bvchop size (+ y (* x (expt 2 size2))))
-                  (bvchop size y)))
-  :hints (("Goal" :use (:instance bvchop-of-+-of-*-of-expt)
-           :in-theory (disable bvchop-of-+-of-*-of-expt))))
-
-(defthm bvchop-of-+-of-minus-of-expt
-  (implies (and (integerp x)
-                (natp size))
-           (equal (bvchop size (+ x (- (expt 2 size))))
-                  (bvchop size x)))
-  :hints (("Goal" :in-theory (enable bvchop
-                                     mod-sum-cases))))
 
 (defthm bvchop-of-mod-of-expt-2
   (implies (and (< j size)
@@ -900,36 +927,6 @@
                     (evenp x))))
   :hints (("Goal" :in-theory (enable bvchop))))
 
-(defthm bvchop-of-sum-expt
-  (implies (and (natp size)
-                (integerp y)
-                (integerp x))
-           (equal (bvchop size (+ x (expt 2 size) y))
-                  (bvchop size (+ x y))))
-  :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
-
-(defthm bvchop-of-sum-minus-expt
-  (implies (and (natp size)
-                (integerp x))
-           (equal (bvchop size (+ x (- (expt 2 size))))
-                  (bvchop size x)))
-  :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
-
-(defthm bvchop-of-sum-minus-expt-alt
-  (implies (and (natp size)
-                (integerp x)
-                (integerp y))
-           (equal (bvchop size (+ x (- (expt 2 size)) y))
-                  (bvchop size (+ x y))))
-  :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
-
-(defthm bvchop-of-plus-of-times-expt
-  (implies (and (natp size)
-                (integerp x)
-                (integerp y))
-           (equal (bvchop size (+ x (* (expt 2 size) y)))
-                  (bvchop size x))))
-
 ;rename
 (defthmd bvchop-when-negative-lemma
   (implies (and (< x 0)
@@ -951,6 +948,7 @@
                     x)))
   :hints (("Goal" :in-theory (enable signed-byte-p bvchop))))
 
+;move up
 (defthm bvchop-of-+-of-expt-same-arg3
   (implies (and (natp size)
                 (integerp x)
@@ -996,9 +994,19 @@
                   (bvchop size (+ x (- y)))))
   :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
 
+;no hyps about size
 (defthm bvchop-of-+-of-unary---of-bvchop-arg2
   (implies (and (integerp x)
                 (integerp y))
            (equal (bvchop size (+ x (- (bvchop size y))))
                   (bvchop size (+ x (- y)))))
   :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
+
+;no hyps on size
+(defthm bvchop-of-+-of-unary---of-bvchop-arg3
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp w))
+           (equal (bvchop size (+ w x (- (bvchop size y))))
+                  (bvchop size (+ w x (- y)))))
+  :hints (("Goal" :use (:instance bvchop-of-+-of-unary---of-bvchop-arg2 (x (+ w x))))))

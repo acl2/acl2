@@ -46,6 +46,20 @@
                            x86isa::unsigned-byte-p-when-evex-byte1-p
                            x86isa::unsigned-byte-p-when-8bits-p
                            acl2::acl2-numberp-of-car-when-acl2-number-listp
+                           ;; These come from books in the x86 world (not
+                           ;; included by the basic rewriter) and were tried
+                           ;; many times in the proofs below, almost always
+                           ;; uselessly:
+                           acl2::natp-when-integerp ; from std/basic/arith-equivs
+                           acl2::integerp-of-car-when-integer-listp ; from centaur/fty/baselists
+                           acl2::integer-listp-when-not-consp
+                           acl2::symbolp-of-car-when-symbol-listp
+                           acl2::symbol-listp-of-cdr-when-symbol-listp
+                           acl2::symbol-listp-when-not-consp
+                           acl2::pseudo-termp-opener ; from meta/pseudo-termp-lemmas
+                           acl2::pseudo-termp-car
+                           acl2::pseudo-termp-cadr-from-pseudo-term-listp
+                           acl2::pseudo-term-listp-cdr
                            ;; (:executable-counterpart tau-system) ; todo
                            )))
 

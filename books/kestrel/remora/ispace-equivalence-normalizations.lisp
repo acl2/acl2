@@ -2471,8 +2471,8 @@
                    (dim1 (mv-nth 0 (binarize-add-in-dim dim))))
         (:instance dim-eq-when-proof-validp
                    (proof (mv-nth 1 (binarize-add-in-dim dim)))
-                   (concl.dim1 dim)
-                   (concl.dim2 (mv-nth 0 (binarize-add-in-dim dim))))))
+                   (_dim1 dim)
+                   (_dim2 (mv-nth 0 (binarize-add-in-dim dim))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2491,8 +2491,8 @@
                    (dim1 (mv-nth 0 (binarize-mul-in-dim dim))))
         (:instance dim-eq-when-proof-validp
                    (proof (mv-nth 1 (binarize-mul-in-dim dim)))
-                   (concl.dim1 dim)
-                   (concl.dim2 (mv-nth 0 (binarize-mul-in-dim dim))))))
+                   (_dim1 dim)
+                   (_dim2 (mv-nth 0 (binarize-mul-in-dim dim))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2515,8 +2515,8 @@
                    (dim1 (mv-nth 0 (unarize-sub-in-dim dim))))
         (:instance dim-eq-when-proof-validp
                    (proof (mv-nth 1 (unarize-sub-in-dim dim)))
-                   (concl.dim1 dim)
-                   (concl.dim2 (mv-nth 0 (unarize-sub-in-dim dim))))))
+                   (_dim1 dim)
+                   (_dim2 (mv-nth 0 (unarize-sub-in-dim dim))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2558,13 +2558,13 @@
                                                           dim))))))))
         (:instance dim-eq-when-proof-validp
                    (proof (mv-nth 1 (unarize-sub-in-dim dim)))
-                   (concl.dim1 dim)
-                   (concl.dim2 (mv-nth 0 (unarize-sub-in-dim dim))))
+                   (_dim1 dim)
+                   (_dim2 (mv-nth 0 (unarize-sub-in-dim dim))))
         (:instance dim-eq-when-proof-validp
                    (proof (mv-nth 1 (binarize-add-in-dim
                                      (mv-nth 0 (unarize-sub-in-dim dim)))))
-                   (concl.dim1 (mv-nth 0 (unarize-sub-in-dim dim)))
-                   (concl.dim2 (mv-nth 0 (binarize-add-in-dim
+                   (_dim1 (mv-nth 0 (unarize-sub-in-dim dim)))
+                   (_dim2 (mv-nth 0 (binarize-add-in-dim
                                           (mv-nth 0 (unarize-sub-in-dim
                                                      dim))))))
         (:instance dim-eq-when-proof-validp
@@ -2572,10 +2572,10 @@
                                      (mv-nth 0 (binarize-add-in-dim
                                                 (mv-nth 0 (unarize-sub-in-dim
                                                            dim)))))))
-                   (concl.dim1 (mv-nth 0 (binarize-add-in-dim
+                   (_dim1 (mv-nth 0 (binarize-add-in-dim
                                           (mv-nth 0 (unarize-sub-in-dim
                                                      dim)))))
-                   (concl.dim2 (mv-nth 0 (binarize-mul-in-dim
+                   (_dim2 (mv-nth 0 (binarize-mul-in-dim
                                           (mv-nth 0 (binarize-add-in-dim
                                                      (mv-nth 0
                                                              (unarize-sub-in-dim
@@ -2599,8 +2599,8 @@
                    (shape1 (mv-nth 0 (unarize-dims-in-shape shape))))
         (:instance shape-eq-when-proof-validp
                    (proof (mv-nth 1 (unarize-dims-in-shape shape)))
-                   (concl.shape1 shape)
-                   (concl.shape2 (mv-nth 0 (unarize-dims-in-shape shape))))))
+                   (_shape1 shape)
+                   (_shape2 (mv-nth 0 (unarize-dims-in-shape shape))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2619,8 +2619,8 @@
                    (shape1 (mv-nth 0 (nullbinarize-append-in-shape shape))))
         (:instance shape-eq-when-proof-validp
                    (proof (mv-nth 1 (nullbinarize-append-in-shape shape)))
-                   (concl.shape1 shape)
-                   (concl.shape2 (mv-nth 0 (nullbinarize-append-in-shape
+                   (_shape1 shape)
+                   (_shape2 (mv-nth 0 (nullbinarize-append-in-shape
                                             shape))))))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -2639,8 +2639,8 @@
                    (shape1 (mv-nth 0 (unsplice-in-shape shape))))
         (:instance shape-eq-when-proof-validp
                    (proof (mv-nth 1 (unsplice-in-shape shape)))
-                   (concl.shape1 shape)
-                   (concl.shape2 (mv-nth 0 (unsplice-in-shape shape))))))
+                   (_shape1 shape)
+                   (_shape2 (mv-nth 0 (unsplice-in-shape shape))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2658,8 +2658,8 @@
                    (shape1 (mv-nth 0 (undim-in-shape shape))))
         (:instance shape-eq-when-proof-validp
                    (proof (mv-nth 1 (undim-in-shape shape)))
-                   (concl.shape1 shape)
-                   (concl.shape2 (mv-nth 0 (undim-in-shape shape))))))
+                   (_shape1 shape)
+                   (_shape2 (mv-nth 0 (undim-in-shape shape))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2699,15 +2699,15 @@
         (:instance
          shape-eq-when-proof-validp
          (proof (mv-nth 1 (unarize-dims-in-shape shape)))
-         (concl.shape1 shape)
-         (concl.shape2 (mv-nth 0 (unarize-dims-in-shape shape))))
+         (_shape1 shape)
+         (_shape2 (mv-nth 0 (unarize-dims-in-shape shape))))
         (:instance
          shape-eq-when-proof-validp
          (proof
           (mv-nth 1 (nullbinarize-append-in-shape
                      (mv-nth 0 (unarize-dims-in-shape shape)))))
-         (concl.shape1 (mv-nth 0 (unarize-dims-in-shape shape)))
-         (concl.shape2
+         (_shape1 (mv-nth 0 (unarize-dims-in-shape shape)))
+         (_shape2
           (mv-nth 0 (nullbinarize-append-in-shape
                      (mv-nth 0 (unarize-dims-in-shape shape))))))
         (:instance
@@ -2716,10 +2716,10 @@
           (mv-nth 1 (unsplice-in-shape
                      (mv-nth 0 (nullbinarize-append-in-shape
                                 (mv-nth 0 (unarize-dims-in-shape shape)))))))
-         (concl.shape1
+         (_shape1
           (mv-nth 0 (nullbinarize-append-in-shape
                      (mv-nth 0 (unarize-dims-in-shape shape)))))
-         (concl.shape2
+         (_shape2
           (mv-nth 0 (unsplice-in-shape
                      (mv-nth 0 (nullbinarize-append-in-shape
                                 (mv-nth 0 (unarize-dims-in-shape shape))))))))
@@ -2731,11 +2731,11 @@
                                 (mv-nth 0 (nullbinarize-append-in-shape
                                            (mv-nth 0 (unarize-dims-in-shape
                                                       shape)))))))))
-         (concl.shape1
+         (_shape1
           (mv-nth 0 (unsplice-in-shape
                      (mv-nth 0 (nullbinarize-append-in-shape
                                 (mv-nth 0 (unarize-dims-in-shape shape)))))))
-         (concl.shape2
+         (_shape2
           (mv-nth 0 (undim-in-shape
                      (mv-nth 0 (unsplice-in-shape
                                 (mv-nth 0 (nullbinarize-append-in-shape

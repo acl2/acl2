@@ -15,12 +15,12 @@
 (include-book "unambiguity")
 (include-book "translation-unit-comparison")
 
+(include-book "kestrel/fty/deftreemap" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
-(local (include-book "std/alists/top" :dir :system))
 
 (local (in-theory (enable* abstract-syntax-unambp-rules)))
 
@@ -221,30 +221,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defalist dimb-scope
+(fty::deftreemap dimb-scope
   :short "Fixtype of scopes in disambiguation tables."
   :long
   (xdoc::topstring
    (xdoc::p
     "An identifier may have different meanings in different scopes,
      but it must have one meaning within the same scope.
-     Thus, we represent scopes as alists from identifiers to their kinds."))
+     Thus, we represent scopes as maps from identifiers to their kinds."))
   :key-type ident
   :val-type dimb-kind
-  :true-listp t
-  :keyp-of-nil nil
-  :valp-of-nil nil
   :pred dimb-scopep
-  :prepwork ((set-induction-depth-limit 1))
 
   ///
 
-  (defrule dimb-kindp-of-cdr-of-assoc-equal-when-dimb-scopep
+  (defrule dimb-kind-optionp-of-lookup-when-dimb-scopep
     (implies (dimb-scopep scope)
-             (iff (dimb-kindp (cdr (assoc-equal ident scope)))
-                  (assoc-equal ident scope)))
-    :induct t
-    :enable (assoc-equal)))
+             (dimb-kind-optionp (treemap::lookup ident scope)))
+    :cases ((treeset::in ident (treemap::keys scope)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -350,7 +344,7 @@
      so we push via @(tsee cons).
      Also see @(tsee dimb-pop-scope)."))
   (b* ((table (dstate->table dstate))
-       (new-table (cons nil table)))
+       (new-table (cons (treemap::empty) table)))
     (change-dstate dstate :table new-table)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -396,11 +390,9 @@
      :parents nil
      (b* (((when (endp table)) nil)
           (scope (dimb-scope-fix (car table)))
-          (ident+kind (assoc-equal (ident-fix ident) scope))
-          ((when ident+kind) (dimb-kind-fix (cdr ident+kind))))
-       (dimb-lookup-ident-loop ident (cdr table)))
-     :guard-hints
-     (("Goal" :in-theory (enable alistp-when-dimb-scopep-rewrite))))))
+          (kind? (treemap::lookup (ident-fix ident) scope))
+          ((when kind?) kind?))
+       (dimb-lookup-ident-loop ident (cdr table))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -429,12 +421,12 @@
         (raise "Internal error: empty disambiguation table.")
         (irr-dstate))
        (scope (dimb-scope-fix (car table)))
-       (new-scope (acons (ident-fix ident) (dimb-kind-fix kind) scope))
+       (new-scope (treemap::update (ident-fix ident)
+                                   (dimb-kind-fix kind)
+                                   scope))
        (new-table (cons new-scope (cdr table))))
     (change-dstate dstate :table new-table))
-  :no-function nil
-  :guard-hints
-  (("Goal" :in-theory (enable acons alistp-when-dimb-scopep-rewrite))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -458,7 +450,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-add-ident-objfun-file-scope ((ident identp) (dstate dstatep))
-  :returns (new-dstate dstatep :hints (("Goal" :in-theory (enable acons))))
+  :returns (new-dstate dstatep)
   :short "Add an identifier to the file scope of a disambiguation table,
           with object or function kind."
   :long
@@ -472,12 +464,12 @@
         (irr-dstate))
        (table (dimb-table-fix table))
        (scope (car (last table)))
-       (new-scope (acons (ident-fix ident) (dimb-kind-objfun) scope))
+       (new-scope (treemap::update (ident-fix ident)
+                                   (dimb-kind-objfun)
+                                   scope))
        (new-table (append (butlast table 1) (list new-scope))))
     (change-dstate dstate :table new-table))
-  :no-function nil
-  :guard-hints
-  (("Goal" :in-theory (enable acons alistp-when-dimb-scopep-rewrite))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -485,7 +477,7 @@
   :returns (new-dstate dstatep)
   :short "Add an identifier to the set for which @('goto')s we re-classified."
   (b* ((idents (dstate->goto-reclass dstate))
-       (new-idents (set::insert (ident-fix ident) idents)))
+       (new-idents (treeset::insert (ident-fix ident) idents)))
     (change-dstate dstate :goto-reclass new-idents)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -510,11 +502,11 @@
      is initially empty, since no re-classification has occurred yet.")
    (xdoc::p
     "The macro table is the initial one for the given dialect."))
-  (b* ((table (list nil))
+  (b* ((table (list (treemap::empty)))
        (dialect (ienv->dialect ienv))
        (macros (macro-init dialect))
        (dstate (make-dstate :table table
-                            :goto-reclass nil
+                            :goto-reclass (treeset::empty)
                             :macros macros
                             :file file
                             :ienv ienv)))
@@ -913,6 +905,48 @@
   ///
 
   (defret expr-unambp-of-dimb-make/adjust-expr-label-addr
+    (expr-unambp expr)
+    :hyp (expr-unambp arg)
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-make/adjust-expr-extension ((arg exprp))
+  :guard (expr-unambp arg)
+  :returns (expr exprp)
+  :short "Build, and adjust if needed, an extension expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee dimb-make/adjust-expr-unary).
+     The @('__extension__') keyword expects a cast expression as operand,
+     but an ambiguous cast may be disambiguated to a binary expression.
+     For instance, if @('x') is an object,
+     @('__extension__ (x) + y') must become
+     @('[ __extension__ (x) ] + y'),
+     where square brackets indicate grouping.
+     We recursively move the keyword into the left operand
+     until the operand has at least cast priority."))
+  (b* (((when (expr-priority->= (expr->priority arg) (expr-priority-cast)))
+        (expr-extension arg))
+       ((unless (expr-case arg :binary))
+        (raise "Internal error: ~
+                non-binary expression ~x0 ~
+                used as argument of __extension__."
+               (expr-fix arg))
+        (expr-extension arg)))
+    (make-expr-binary :op (expr-binary->op arg)
+                      :arg1 (dimb-make/adjust-expr-extension
+                             (expr-binary->arg1 arg))
+                      :arg2 (expr-binary->arg2 arg)
+                      :info nil))
+  :no-function nil
+  :measure (expr-count arg)
+  :verify-guards :after-returns
+
+  ///
+
+  (defret expr-unambp-of-dimb-make/adjust-expr-extension
     (expr-unambp expr)
     :hyp (expr-unambp arg)
     :hints (("Goal" :induct t))))
@@ -1662,7 +1696,7 @@
          (retok (make-expr-va-arg :list list :type type) dstate))
        :extension
        (b* (((erp expr dstate) (dimb-expr expr.expr dstate)))
-         (retok (expr-extension expr) dstate))))
+         (retok (dimb-make/adjust-expr-extension expr) dstate))))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4629,13 +4663,15 @@
           (path (set::head paths))
           (tunit (omap::lookup path tumap))
           (dstate (init-dstate path ienv))
-          ((mv erp new-tunit & tumap-dimb)
+          ((mv erp new-tunit & new-tumap-dimb)
            (dimb-trans-unit tunit
                             dstate
                             tumap
                             resolved-includes
                             tumap-dimb
                             1000000000))
+          ;; On error, continue with the accumulator as it was before the
+          ;; call, not with the irrelevant value returned on failure.
           ((when erp)
            (if keep-going
                (prog2$ (cw "Error in translation unit ~x0: ~@1~%" path erp)
@@ -4646,7 +4682,7 @@
                                                           keep-going
                                                           tumap-dimb))
              (retmsg$ "Error in translation unit ~x0: ~@1" path erp)))
-          (tumap-dimb (omap::update path new-tunit tumap-dimb)))
+          (tumap-dimb (omap::update path new-tunit new-tumap-dimb)))
        (dimb-filepath-trans-unit-map-loop (set::tail paths)
                                           tumap
                                           resolved-includes

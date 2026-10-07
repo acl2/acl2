@@ -20,11 +20,37 @@
 (include-book "dag-arrays")
 (include-book "kestrel/bv/bv-syntax" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
+;; Since this book knows about the BV functions:
+(include-book "kestrel/bv/defs" :dir :system)
+(include-book "kestrel/bv/bool-to-bit" :dir :system)
+(include-book "kestrel/bv-arrays/bv-array-read" :dir :system) ; reduce?
+(include-book "kestrel/bv/leftrotate" :dir :system) ; reduce?
+(include-book "kestrel/bv/leftrotate32" :dir :system) ; reduce?
+(include-book "kestrel/bv/rightrotate32" :dir :system) ; reduce?
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
+(local (include-book "kestrel/bv/bvchop" :dir :system))
+(local (include-book "kestrel/bv/bvand" :dir :system))
+(local (include-book "kestrel/bv/bvor" :dir :system))
+(local (include-book "kestrel/bv/bvxor" :dir :system))
+(local (include-book "kestrel/bv/bvplus" :dir :system))
+(local (include-book "kestrel/bv/bvminus" :dir :system))
+(local (include-book "kestrel/bv/bvuminus" :dir :system))
+(local (include-book "kestrel/bv/bvmult" :dir :system))
+(local (include-book "kestrel/bv/bvsx" :dir :system))
+(local (include-book "kestrel/bv/repeatbit" :dir :system))
+(local (include-book "kestrel/bv/bvdiv" :dir :system))
+(local (include-book "kestrel/bv/bvmod" :dir :system))
+(local (include-book "kestrel/bv/sbvdiv" :dir :system))
+(local (include-book "kestrel/bv/sbvrem" :dir :system))
+(local (include-book "kestrel/bv/bvif" :dir :system))
+(local (include-book "kestrel/bv/bvshl" :dir :system))
+(local (include-book "kestrel/bv/bvshr" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/bvcat" :dir :system))
 
 (local (in-theory (enable car-becomes-nth-of-0
                           integerp-of-nth-when-darg-listp
@@ -34,10 +60,47 @@
                           symbolp-of-nth-0-when-dag-exprp
                           dargp-of-nth-when-darg-listp)))
 
+(thm (unsigned-byte-p 1 (getbit n x)))
+(thm (unsigned-byte-p 1 (bitxor x y)))
+(thm (unsigned-byte-p 1 (bitand x y)))
+(thm (unsigned-byte-p 1 (bitor x y)))
+(thm (unsigned-byte-p 1 (bitnot x)))
+(thm (unsigned-byte-p 1 (bool-to-bit x)))
+
+;; For each of these, the size is the first argument:
+(thm (implies (natp size) (unsigned-byte-p size (bvchop size x))))
+(thm (implies (natp size) (unsigned-byte-p size (bvxor size x y))))
+(thm (implies (natp size) (unsigned-byte-p size (bvand size x y))))
+(thm (implies (natp size) (unsigned-byte-p size (bvor size x y))))
+(thm (implies (natp size) (unsigned-byte-p size (bvnot size x))))
+(thm (implies (natp size) (unsigned-byte-p size (bvplus size x y))))
+(thm (implies (natp size) (unsigned-byte-p size (bvminus size x y))))
+(thm (implies (natp size) (unsigned-byte-p size (bvuminus size x))))
+(thm (implies (natp size) (unsigned-byte-p size (bvmult size x y))))
+(thm (implies (natp size) (unsigned-byte-p size (bvsx size oldsize x))))
+(thm (implies (natp size) (unsigned-byte-p size (bv-array-read size len index data))))
+(thm (implies (natp size) (unsigned-byte-p size (repeatbit size bit))))
+(thm (implies (natp size) (unsigned-byte-p size (bvdiv size x y))))
+(thm (implies (natp size) (unsigned-byte-p size (bvmod size x y))))
+(thm (implies (natp size) (unsigned-byte-p size (sbvdiv size x y))))
+(thm (implies (natp size) (unsigned-byte-p size (sbvrem size x y))))
+(thm (implies (natp size) (unsigned-byte-p size (leftrotate size amt val))))
+(thm (implies (natp size) (unsigned-byte-p size (rightrotate size amt val))))
+(thm (implies (natp size) (unsigned-byte-p size (bvif size test x y))))
+(thm (implies (natp size) (unsigned-byte-p size (bvshl size x amt))))
+(thm (implies (natp size) (unsigned-byte-p size (bvshr size x amt))))
+
+(thm (unsigned-byte-p 32 (leftrotate32 amt val)))
+(thm (unsigned-byte-p 32 (rightrotate32 amt val)))
+
+(thm (implies (and (<= low high) (natp low) (natp high)) (unsigned-byte-p (+ 1 (- high low)) (slice high low x))))
+(thm (implies (and (natp lowsize) (natp highsize)) (unsigned-byte-p (+ highsize lowsize) (bvcat highsize high lowsize low))))
+
 ;; Returns a bv-typep, or nil (if we could not determine a type).
 ;the args are nodenums or quoteps - we don't deref nodenums that may point to quoteps
 ;what if the number of arguments is wrong?
 ;; NOTE: Soundness depends on this since it is used in the STP translation.
+;; See the justification theorems above.
 (defund maybe-get-type-of-bv-function-call (fn dargs)
   (declare (xargs :guard (and (symbolp fn)
                               (darg-listp dargs))))

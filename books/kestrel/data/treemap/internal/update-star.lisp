@@ -78,16 +78,18 @@
                             :exec (cons (tree-element->hash (tree->head y))
                                         assoc))
                      (tree->head y))))
-             (tree-node head
-                        (tree-update* left (tree->left y))
-                        (tree-update* right (tree->right y))))))
+             (tree-node-with-hint head
+                                  (tree-update* left (tree->left y))
+                                  (tree-update* right (tree->right y))
+                                  y))))
         (t
          (mv-let (assoc left right)
                  (tree-split (tree-element->key (tree->head x)) y)
            (declare (ignore assoc))
-           (tree-node (tree->head x)
-                      (tree-update* (tree->left x) left)
-                      (tree-update* (tree->right x) right)))))
+           (tree-node-with-hint (tree->head x)
+                                (tree-update* (tree->left x) left)
+                                (tree-update* (tree->right x) right)
+                                x))))
   :measure (+ (acl2-count x)
               (acl2-count y))
   :verify-guards :after-returns
@@ -239,17 +241,21 @@
                                  :exec (cons (tree-element->hash (tree->head y))
                                              assoc))
                           (tree->head y))))
-                  (tree-node head
-                             (acl2-number-tree-update* left (tree->left y))
-                             (acl2-number-tree-update* right (tree->right y))))))
+                  (tree-node-with-hint
+                    head
+                    (acl2-number-tree-update* left (tree->left y))
+                    (acl2-number-tree-update* right (tree->right y))
+                    y))))
              (t
               (mv-let (assoc left right)
                       (acl2-number-tree-split
                         (tree-element->key (tree->head x)) y)
                 (declare (ignore assoc))
-                (tree-node (tree->head x)
-                           (acl2-number-tree-update* (tree->left x) left)
-                           (acl2-number-tree-update* (tree->right x) right))))))
+                (tree-node-with-hint
+                  (tree->head x)
+                  (acl2-number-tree-update* (tree->left x) left)
+                  (acl2-number-tree-update* (tree->right x) right)
+                  x)))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-update*
                                            acl2-number-tree-update*
@@ -280,16 +286,19 @@
                                  :exec (cons (tree-element->hash (tree->head y))
                                              assoc))
                           (tree->head y))))
-                  (tree-node head
-                             (symbol-tree-update* left (tree->left y))
-                             (symbol-tree-update* right (tree->right y))))))
+                  (tree-node-with-hint
+                    head
+                    (symbol-tree-update* left (tree->left y))
+                    (symbol-tree-update* right (tree->right y))
+                    y))))
              (t
               (mv-let (assoc left right)
                       (symbol-tree-split (tree-element->key (tree->head x)) y)
                 (declare (ignore assoc))
-                (tree-node (tree->head x)
-                           (symbol-tree-update* (tree->left x) left)
-                           (symbol-tree-update* (tree->right x) right))))))
+                (tree-node-with-hint (tree->head x)
+                                     (symbol-tree-update* (tree->left x) left)
+                                     (symbol-tree-update* (tree->right x) right)
+                                     x)))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-update*
                                            symbol-tree-update*
@@ -320,16 +329,20 @@
                                  :exec (cons (tree-element->hash (tree->head y))
                                              assoc))
                           (tree->head y))))
-                  (tree-node head
-                             (eqlable-tree-update* left (tree->left y))
-                             (eqlable-tree-update* right (tree->right y))))))
+                  (tree-node-with-hint
+                    head
+                    (eqlable-tree-update* left (tree->left y))
+                    (eqlable-tree-update* right (tree->right y))
+                    y))))
              (t
               (mv-let (assoc left right)
                       (eqlable-tree-split (tree-element->key (tree->head x)) y)
                 (declare (ignore assoc))
-                (tree-node (tree->head x)
-                           (eqlable-tree-update* (tree->left x) left)
-                           (eqlable-tree-update* (tree->right x) right))))))
+                (tree-node-with-hint
+                  (tree->head x)
+                  (eqlable-tree-update* (tree->left x) left)
+                  (eqlable-tree-update* (tree->right x) right)
+                  x)))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-update*
                                            eqlable-tree-update*

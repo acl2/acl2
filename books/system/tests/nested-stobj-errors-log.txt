@@ -127,6 +127,132 @@ Summary
 Form:  ( DEFUN F1 ...)
 Rules: NIL
  F1
+ACL2 !>>(ENCAPSULATE NIL
+          (DEFSTOBJ SLSUB
+            (SLSUB-FLD :TYPE (INTEGER 0 10)
+                       :INITIALLY 0))
+          (DEFSTOBJ SLST (SLFLD :TYPE SLSUB))
+          (DEFUN SLUPD (SLST)
+            (DECLARE (XARGS :STOBJS SLST))
+            (STOBJ-LET ((SLSUB (SLFLD SLST)))
+                       (SLSUB)
+                       (UPDATE-SLSUB-FLD 1 SLSUB)
+                       SLST))
+          (DEFUN SLBAD (SLST)
+            (DECLARE (XARGS :STOBJS SLST))
+            (STOBJ-LET ((SLSUB (SLFLD SLST)))
+                       (V SLST)
+                       (LET* ((V1 (SLSUB-FLD SLSUB))
+                              (SLST (SLUPD SLST))
+                              (V2 (SLSUB-FLD SLSUB)))
+                         (MV (EQUAL V1 V2) SLST))
+                       (MV V SLST)))
+          (DEFUN SLTEST NIL
+            (DECLARE (XARGS :GUARD T))
+            (WITH-LOCAL-STOBJ SLST (MV-LET (V SLST) (SLBAD SLST) V)))
+          (DEFTHM SLTEST-IS-TRUE
+            (SLTEST)
+            :HINTS (("Goal" :IN-THEORY (DISABLE (SLTEST) (SLBAD) (SLUPD)))))
+          (DEFTHM SL-NIL
+            NIL
+            :RULE-CLASSES NIL
+            :HINTS (("Goal" :USE SLTEST-IS-TRUE
+                            :IN-THEORY (DISABLE SLTEST-IS-TRUE)))))
+
+To verify that the seven encapsulated events correctly extend the current
+theory we will evaluate them.  The theory thus constructed is only
+ephemeral.
+
+Encapsulated Events:
+
+
+ACL2 !>>>(DEFSTOBJ SLSUB
+           (SLSUB-FLD :TYPE (INTEGER 0 10)
+                      :INITIALLY 0))
+
+Summary
+Form:  ( DEFSTOBJ SLSUB ...)
+Rules: NIL
+SLSUB
+
+
+ACL2 !>>>(DEFSTOBJ SLST (SLFLD :TYPE SLSUB))
+
+Summary
+Form:  ( DEFSTOBJ SLST ...)
+Rules: NIL
+SLST
+
+
+ACL2 !>>>(DEFUN SLUPD (SLST)
+           (DECLARE (XARGS :STOBJS SLST))
+           (STOBJ-LET ((SLSUB (SLFLD SLST)))
+                      (SLSUB)
+                      (UPDATE-SLSUB-FLD 1 SLSUB)
+                      SLST))
+
+Since SLUPD is non-recursive, its admission is trivial.  We observe
+that the type of SLUPD is described by the theorem (CONSP (SLUPD SLST)).
+We used the :type-prescription rule UPDATE-SLFLD.
+
+(SLUPD SLST) => SLST.
+
+Computing the guard conjecture for SLUPD....
+
+The guard conjecture for SLUPD is trivial to prove.  SLUPD is compliant
+with Common Lisp.
+
+Summary
+Form:  ( DEFUN SLUPD ...)
+Rules: ((:TYPE-PRESCRIPTION UPDATE-SLFLD))
+SLUPD
+
+
+ACL2 !>>>(DEFUN SLBAD (SLST)
+           (DECLARE (XARGS :STOBJS SLST))
+           (STOBJ-LET ((SLSUB (SLFLD SLST)))
+                      (V SLST)
+                      (LET* ((V1 (SLSUB-FLD SLSUB))
+                             (SLST (SLUPD SLST))
+                             (V2 (SLSUB-FLD SLSUB)))
+                        (MV (EQUAL V1 V2) SLST))
+                      (MV V SLST)))
+
+
+ACL2 Error [Translate] in ( DEFUN SLBAD ...):  The parent stobj must
+not be among the producer-vars of a stobj-let form, but SLST is a member
+of (V SLST).  The form 
+(STOBJ-LET ((SLSUB (SLFLD SLST)))
+           (V SLST)
+           (LET* ((V1 (SLSUB-FLD SLSUB))
+                  (SLST (SLUPD SLST))
+                  (V2 (SLSUB-FLD SLSUB)))
+             (MV (EQUAL V1 V2) SLST))
+           (MV V SLST))
+is thus illegal.  See :DOC stobj-let.
+
+
+Summary
+Form:  ( DEFUN SLBAD ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( DEFUN SLBAD ...):  See :DOC failure.
+
+******** FAILED ********
+
+ACL2 Warning in ( ENCAPSULATE NIL (DEFSTOBJ SLSUB ...) ...):  The attempted
+ENCAPSULATE has failed while trying to establish the admissibility
+of one of the (local or non-local) forms in the body of the ENCAPSULATE.
+
+
+Summary
+Form:  ( ENCAPSULATE NIL (DEFSTOBJ SLSUB ...) ...)
+Rules: NIL
+
+ACL2 Error [Failure] in ( ENCAPSULATE NIL (DEFSTOBJ SLSUB ...) ...):
+See :DOC failure.
+
+******** FAILED ********
 ACL2 !>>(DEFSTOBJ ST1
           (HT1 :TYPE (HASH-TABLE EQ 70 T)))
 

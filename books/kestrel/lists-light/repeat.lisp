@@ -1,6 +1,6 @@
 ; A lightweight book about repeat.
 ;
-; Copyright (C) 2018-2022 Kestrel Institute
+; Copyright (C) 2018-2026 Kestrel Institute
 ; See books/std/lists/list-defuns.lisp for the copyright on repeat itself.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -46,7 +46,7 @@
   :hints (("Goal" :in-theory (enable repeat))))
 
 (theory-invariant (incompatible (:rewrite cons-onto-repeat) (:definition repeat)))
-(theory-invariant (incompatible (:rewrite cons-onto-repeat) (:definition repeat-of-+-of-1)))
+(theory-invariant (incompatible (:rewrite cons-onto-repeat) (:rewrite repeat-of-+-of-1)))
 
 ;; This can be viewed as an alternate definition of repeat that adds values at
 ;; the end.

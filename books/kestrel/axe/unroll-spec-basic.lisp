@@ -232,6 +232,7 @@
                              (known-booleans (w state))
                              normalize-xors
                              nil
+                             (rewrite-objective-?)
                              memoizep
                              count-hits
                              print

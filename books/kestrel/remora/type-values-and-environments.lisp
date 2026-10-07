@@ -24,7 +24,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ type-values-and-environments
-  :parents (dynamic-semantics)
+  :parents (values-and-environments)
   :short "Type values and type dynamic environments."
   :long
   (xdoc::topstring

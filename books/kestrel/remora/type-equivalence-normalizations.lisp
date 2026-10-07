@@ -1914,8 +1914,8 @@
                    (type1 (mv-nth 0 (decompose-array-vars-in-type type))))
         (:instance type-eq-when-proof-validp
                    (proof (mv-nth 1 (decompose-array-vars-in-type type)))
-                   (concl.type1 type)
-                   (concl.type2
+                   (_type1 type)
+                   (_type2
                     (mv-nth 0 (decompose-array-vars-in-type type))))))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -1934,8 +1934,8 @@
                    (type1 (mv-nth 0 (unbracket-in-type type))))
         (:instance type-eq-when-proof-validp
                    (proof (mv-nth 1 (unbracket-in-type type)))
-                   (concl.type1 type)
-                   (concl.type2 (mv-nth 0 (unbracket-in-type type))))))
+                   (_type1 type)
+                   (_type2 (mv-nth 0 (unbracket-in-type type))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1954,8 +1954,8 @@
                    (type1 (mv-nth 0 (unarize-funs-in-type type))))
         (:instance type-eq-when-proof-validp
                    (proof (mv-nth 1 (unarize-funs-in-type type)))
-                   (concl.type1 type)
-                   (concl.type2 (mv-nth 0 (unarize-funs-in-type type))))))
+                   (_type1 type)
+                   (_type2 (mv-nth 0 (unarize-funs-in-type type))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1974,8 +1974,8 @@
                    (type1 (mv-nth 0 (unarize-foralls-in-type type))))
         (:instance type-eq-when-proof-validp
                    (proof (mv-nth 1 (unarize-foralls-in-type type)))
-                   (concl.type1 type)
-                   (concl.type2
+                   (_type1 type)
+                   (_type2
                     (mv-nth 0 (unarize-foralls-in-type type))))))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -1994,8 +1994,8 @@
                    (type1 (mv-nth 0 (unarize-pis-in-type type))))
         (:instance type-eq-when-proof-validp
                    (proof (mv-nth 1 (unarize-pis-in-type type)))
-                   (concl.type1 type)
-                   (concl.type2 (mv-nth 0 (unarize-pis-in-type type))))))
+                   (_type1 type)
+                   (_type2 (mv-nth 0 (unarize-pis-in-type type))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2014,8 +2014,8 @@
                    (type1 (mv-nth 0 (unarize-sigmas-in-type type))))
         (:instance type-eq-when-proof-validp
                    (proof (mv-nth 1 (unarize-sigmas-in-type type)))
-                   (concl.type1 type)
-                   (concl.type2
+                   (_type1 type)
+                   (_type2
                     (mv-nth 0 (unarize-sigmas-in-type type))))))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -2066,26 +2066,26 @@
                       (type1 type6))
            (:instance type-eq-when-proof-validp
                       (proof (mv-nth 1 (decompose-array-vars-in-type type)))
-                      (concl.type1 type)
-                      (concl.type2 type1))
+                      (_type1 type)
+                      (_type2 type1))
            (:instance type-eq-when-proof-validp
                       (proof (mv-nth 1 (unbracket-in-type type1)))
-                      (concl.type1 type1)
-                      (concl.type2 type2))
+                      (_type1 type1)
+                      (_type2 type2))
            (:instance type-eq-when-proof-validp
                       (proof (mv-nth 1 (unarize-funs-in-type type2)))
-                      (concl.type1 type2)
-                      (concl.type2 type3))
+                      (_type1 type2)
+                      (_type2 type3))
            (:instance type-eq-when-proof-validp
                       (proof (mv-nth 1 (unarize-foralls-in-type type3)))
-                      (concl.type1 type3)
-                      (concl.type2 type4))
+                      (_type1 type3)
+                      (_type2 type4))
            (:instance type-eq-when-proof-validp
                       (proof (mv-nth 1 (unarize-pis-in-type type4)))
-                      (concl.type1 type4)
-                      (concl.type2 type5))
+                      (_type1 type4)
+                      (_type2 type5))
            (:instance type-eq-when-proof-validp
                       (proof (mv-nth 1 (unarize-sigmas-in-type type5)))
-                      (concl.type1 type5)
-                      (concl.type2 type6)))
+                      (_type1 type5)
+                      (_type2 type6)))
      :enable type-eq-trans-swapped)))

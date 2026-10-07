@@ -483,6 +483,7 @@
     jvm::do-inst-of-astore_1
     jvm::do-inst-of-astore_2
     jvm::do-inst-of-astore_3
+    jvm::do-inst-of-athrow
     jvm::do-inst-of-baload
     jvm::do-inst-of-bastore
     jvm::do-inst-of-bipush
@@ -678,11 +679,13 @@
     jvm::execute-java.lang.system.arraycopy
     jvm::execute-java.lang.object.getclass
     jvm::execute-java.lang.class.getprimitiveclass
+    jvm::execute-java.lang.Class.desiredAssertionStatus
 
     jvm::is-java.lang.system.arraycopy
     jvm::is-java.lang.object.getclass
     jvm::is-java.lang.float.floattorawintbits
-    jvm::is-java.lang.float.intbitstofloat))
+    jvm::is-java.lang.float.intbitstofloat
+    jvm::is-java.lang.Class.desiredAssertionStatus))
 
 ;; jvm-specific rules used to simplify expressions (but not to actually do symbolic execution)
 ;; todo: factor out some map rules, etc
@@ -743,7 +746,10 @@
             jvm::field-is-staticp
             jvm::resolve-class-base-1 jvm::resolve-class-base-2 jvm::resolve-class-unroll
             jvm::resolve-non-array-class
-            jvm::get-class-object
+            ;; jvm::get-class-object
+            jvm::addressp-of-get-class-object
+            jvm::not-null-refp-of-get-class-object
+            jvm::get-class-object-of-acons
             equal-of-minus-1-and-null-ref
             jvm::is-array-typep
             ;;very new:
@@ -1245,6 +1251,8 @@
 (defun jvm-simplification-rules ()
   (declare (xargs :guard t))
   (append (list-rules) ;; for array dimensions (e.g., consp-of-cons)
+          '(myif-becomes-bvif-when-unsigned-byte-p-arg1
+            myif-becomes-bvif-when-unsigned-byte-p-arg2)
           (jvm-simplification-rules-jvm)))
 
 ;; ;; Core JVM rules, for symbolic execution, etc.

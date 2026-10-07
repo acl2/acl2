@@ -321,22 +321,23 @@
        (rewrite-stobj2 (put-dag-constant-alist dag-constant-alist rewrite-stobj2)))
     (mv (erp-nil) nodenum rewrite-stobj2)))
 
-(defthm add-function-call-expr-to-rewrite-array-stobj-return-type
-  (implies (and (symbolp fn)
-                (not (eq 'quote fn))
-                (wf-rewrite-stobj2p rewrite-stobj2)
-                (bounded-darg-listp dargs (get-dag-len rewrite-stobj2))
-                (rewrite-stobj2p rewrite-stobj2))
-           (mv-let (erp nodenum new-rewrite-stobj2)
-             (add-function-call-expr-to-rewrite-array-stobj fn dargs rewrite-stobj2)
-             (implies (not erp)
-                      (and (natp nodenum)
-                           (< nodenum (get-dag-len new-rewrite-stobj2))
-                           (rewrite-stobj2p new-rewrite-stobj2)
-                           (wf-rewrite-stobj2p new-rewrite-stobj2)))))
-  :hints (("Goal" :in-theory (e/d (add-function-call-expr-to-rewrite-array-stobj
-                                   wf-rewrite-stobj2p)
-                                  (wf-rewrite-stobj2p-conjuncts)))))
+(local
+ (defthm add-function-call-expr-to-rewrite-array-stobj-return-type
+   (implies (and (symbolp fn)
+                 (not (eq 'quote fn))
+                 (wf-rewrite-stobj2p rewrite-stobj2)
+                 (bounded-darg-listp dargs (get-dag-len rewrite-stobj2))
+                 (rewrite-stobj2p rewrite-stobj2))
+            (mv-let (erp nodenum new-rewrite-stobj2)
+                (add-function-call-expr-to-rewrite-array-stobj fn dargs rewrite-stobj2)
+              (implies (not erp)
+                       (and (natp nodenum)
+                            (< nodenum (get-dag-len new-rewrite-stobj2))
+                            (rewrite-stobj2p new-rewrite-stobj2)
+                            (wf-rewrite-stobj2p new-rewrite-stobj2)))))
+   :hints (("Goal" :in-theory (e/d (add-function-call-expr-to-rewrite-array-stobj
+                                    wf-rewrite-stobj2p)
+                                   (wf-rewrite-stobj2p-conjuncts))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -407,17 +408,19 @@
         (prog2$ (cw "XOR miss.~%")
                 (find-bitxor-node-with-same-leaves (rest candidates) target-bitxor-leaves dag-array dag-len))))))
 
-(defthm natp-of-find-bitxor-node-with-same-leaves
-  (implies (and (find-bitxor-node-with-same-leaves candidates target-bvxor-leaves dag-array dag-len) ; no error
-                (nat-listp candidates))
-           (natp (find-bitxor-node-with-same-leaves candidates target-bvxor-leaves dag-array dag-len)))
-  :hints (("Goal" :in-theory (enable find-bitxor-node-with-same-leaves))))
+(local
+ (defthm natp-of-find-bitxor-node-with-same-leaves
+   (implies (and (find-bitxor-node-with-same-leaves candidates target-bvxor-leaves dag-array dag-len) ; no error
+                 (nat-listp candidates))
+            (natp (find-bitxor-node-with-same-leaves candidates target-bvxor-leaves dag-array dag-len)))
+   :hints (("Goal" :in-theory (enable find-bitxor-node-with-same-leaves)))))
 
-(defthm not-consp-of-find-bitxor-node-with-same-leaves
-  (implies (and (find-bitxor-node-with-same-leaves candidates target-bvxor-leaves dag-array dag-len) ; no error
-                (nat-listp candidates))
-           (not (consp (find-bitxor-node-with-same-leaves candidates target-bvxor-leaves dag-array dag-len))))
-  :hints (("Goal" :in-theory (enable find-bitxor-node-with-same-leaves))))
+(local
+ (defthm not-consp-of-find-bitxor-node-with-same-leaves
+   (implies (and (find-bitxor-node-with-same-leaves candidates target-bvxor-leaves dag-array dag-len) ; no error
+                 (nat-listp candidates))
+            (not (consp (find-bitxor-node-with-same-leaves candidates target-bvxor-leaves dag-array dag-len))))
+   :hints (("Goal" :in-theory (enable find-bitxor-node-with-same-leaves)))))
 
 ;; Returns a nodenum, or nil
 (defun find-bvxor-node-with-same-leaves (candidates size target-bvxor-leaves dag-array dag-len)
@@ -439,17 +442,19 @@
         (prog2$ (cw "XOR miss.~%")
                 (find-bvxor-node-with-same-leaves (rest candidates) size target-bvxor-leaves dag-array dag-len))))))
 
-(defthm natp-of-find-bvxor-node-with-same-leaves
-  (implies (and (find-bvxor-node-with-same-leaves candidates size target-bvxor-leaves dag-array dag-len) ; no error
-                (nat-listp candidates))
-           (natp (find-bvxor-node-with-same-leaves candidates size target-bvxor-leaves dag-array dag-len)))
-  :hints (("Goal" :in-theory (enable find-bvxor-node-with-same-leaves))))
+(local
+ (defthm natp-of-find-bvxor-node-with-same-leaves
+   (implies (and (find-bvxor-node-with-same-leaves candidates size target-bvxor-leaves dag-array dag-len) ; no error
+                 (nat-listp candidates))
+            (natp (find-bvxor-node-with-same-leaves candidates size target-bvxor-leaves dag-array dag-len)))
+   :hints (("Goal" :in-theory (enable find-bvxor-node-with-same-leaves)))))
 
-(defthm not-consp-of-find-bvxor-node-with-same-leaves
-  (implies (and (find-bvxor-node-with-same-leaves candidates size target-bvxor-leaves dag-array dag-len) ; no error
-                (nat-listp candidates))
-           (not (consp (find-bvxor-node-with-same-leaves candidates size target-bvxor-leaves dag-array dag-len))))
-  :hints (("Goal" :in-theory (enable find-bvxor-node-with-same-leaves))))
+(local
+ (defthm not-consp-of-find-bvxor-node-with-same-leaves
+   (implies (and (find-bvxor-node-with-same-leaves candidates size target-bvxor-leaves dag-array dag-len) ; no error
+                 (nat-listp candidates))
+            (not (consp (find-bvxor-node-with-same-leaves candidates size target-bvxor-leaves dag-array dag-len))))
+   :hints (("Goal" :in-theory (enable find-bvxor-node-with-same-leaves)))))
 
 (local
   (defthm eqlablep-when-natp
@@ -544,19 +549,20 @@
       ;; not an xor:
       (add-function-call-expr-to-rewrite-array-stobj fn dargs rewrite-stobj2))))
 
-(defthm add-function-call-expr-to-dag-array-compact-return-type
-  (implies (and (symbolp fn)
-                (not (eq 'quote fn))
-                (wf-rewrite-stobj2p rewrite-stobj2)
-                (rewrite-stobj2p rewrite-stobj2)
-                (bounded-darg-listp dargs (get-dag-len rewrite-stobj2)))
-           (mv-let (erp nodenum rewrite-stobj2)
-             (add-function-call-expr-to-dag-array-compact fn dargs rewrite-stobj2)
-             (implies (not erp)
-                      (and (natp nodenum)
-                           (rewrite-stobj2p rewrite-stobj2)
-                           (wf-rewrite-stobj2p rewrite-stobj2)))))
-  :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array-compact))))
+(local
+ (defthm add-function-call-expr-to-dag-array-compact-return-type
+   (implies (and (symbolp fn)
+                 (not (eq 'quote fn))
+                 (wf-rewrite-stobj2p rewrite-stobj2)
+                 (rewrite-stobj2p rewrite-stobj2)
+                 (bounded-darg-listp dargs (get-dag-len rewrite-stobj2)))
+            (mv-let (erp nodenum rewrite-stobj2)
+                (add-function-call-expr-to-dag-array-compact fn dargs rewrite-stobj2)
+              (implies (not erp)
+                       (and (natp nodenum)
+                            (rewrite-stobj2p rewrite-stobj2)
+                            (wf-rewrite-stobj2p rewrite-stobj2)))))
+   :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array-compact)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

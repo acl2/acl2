@@ -17,7 +17,7 @@
 (local (include-book "../library-extensions/bit-lists"))
 (local (include-book "../library-extensions/r1cses"))
 
-(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))

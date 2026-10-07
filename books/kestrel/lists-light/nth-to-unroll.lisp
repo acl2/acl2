@@ -1,6 +1,6 @@
 ; An approach to unrolling calls to NTH
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -48,7 +48,6 @@
                 (integerp n)
                 (natp low)
                 (natp high)
-                (<= low high)
                 (<= low n)
                 (<= n high))
            (equal (nth n l)

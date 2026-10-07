@@ -59,12 +59,13 @@
        parstate))
     parstate))
 
-(defmacro test-lex-fail (fn input &key pos more-inputs dialect)
+(defmacro test-lex-fail (fn input &key pos more-inputs dialect cond)
   ;; INPUT is an ACL2 term with the text to lex,
   ;; where the term evaluates to a string or a list of bytes.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
   ;; DIALECT indicates the C dialect.
+  ;; Optional COND may be over variables ERP and PARSTATE.
   `(assert!-stobj
     (b* ((dialect (or ,dialect (c::make-dialect :std (c::standard-c17))))
          (parstate (init-parstate ""
@@ -81,7 +82,7 @@
                '(mv erp & & & parstate)
              '(mv erp & & parstate))
           (,fn ,@more-inputs parstate)))
-      (mv erp parstate))
+      (mv (and erp ,(or cond t)) parstate))
     parstate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1167,3 +1168,123 @@
 (test-lex-fail
  lex-binary-exponent-part
  "p*10")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-lexeme
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "123b"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "123z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "077z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "0x1g"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "1.0z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ ".1z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "1e1z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "0x1p0z"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "123ullz"
+ :more-inputs (nil))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "1.0fz"
+ :more-inputs (nil))
+
+(test-lex ; the suffix makes + a separate token
+ lex-lexeme
+ "0xeu+1"
+ :more-inputs (nil)
+ :cond (and (equal ast
+                   (lexeme-token
+                    (token-const
+                     (const-int
+                      (make-iconst
+                       :core (make-dec/oct/hex-const-hex
+                              :prefix (hprefix-locase-0x)
+                              :digits (list #\e))
+                       :suffix? (isuffix-u (usuffix-locase-u))
+                       :info nil)))))
+            (equal pos/span (span (position "" 1 0) (position "" 1 3)))
+            (equal (parstate$->chars-unread (to-parstate$ parstate))
+                   (list (char+position (char-code #\+) (position "" 1 4))))
+            (equal (parstate->bytes parstate) (acl2::string=>nats "1"))))
+
+(test-lex ; the suffix makes - a separate token
+ lex-lexeme
+ "0xELL-1"
+ :more-inputs (nil)
+ :cond (and (equal ast
+                   (lexeme-token
+                    (token-const
+                     (const-int
+                      (make-iconst
+                       :core (make-dec/oct/hex-const-hex
+                              :prefix (hprefix-locase-0x)
+                              :digits (list #\E))
+                       :suffix? (isuffix-l (lsuffix-upcase-ll))
+                       :info nil)))))
+            (equal pos/span (span (position "" 1 0) (position "" 1 4)))
+            (equal (parstate$->chars-unread (to-parstate$ parstate))
+                   (list (char+position (char-code #\-) (position "" 1 5))))
+            (equal (parstate->bytes parstate) (acl2::string=>nats "1"))))
+
+(test-lex-fail ; because check-full-ppnumber fails
+ lex-lexeme
+ "0xe+1"
+ :more-inputs (nil))
+
+(test-lex-fail ; report the first non-octal digit
+ lex-lexeme
+ "08;"
+ :more-inputs (nil)
+ :cond (and (consp erp)
+            (equal (cdr (assoc-equal #\0 (cdr erp)))
+                   (position-to-msg (position "" 1 1)))
+            (equal (cdr (assoc-equal #\1 (cdr erp))) "octal digit")
+            (equal (cdr (assoc-equal #\2 (cdr erp)))
+                   (char-to-msg (char-code #\8)))))
+
+(test-lex-fail ; report the first non-octal digit
+ lex-lexeme
+ "089;"
+ :pos (position "" 8 4)
+ :more-inputs (nil)
+ :cond (and (consp erp)
+            (equal (cdr (assoc-equal #\0 (cdr erp)))
+                   (position-to-msg (position "" 8 5)))
+            (equal (cdr (assoc-equal #\1 (cdr erp))) "octal digit")
+            (equal (cdr (assoc-equal #\2 (cdr erp)))
+                   (char-to-msg (char-code #\8)))))

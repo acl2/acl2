@@ -500,11 +500,11 @@
                       (cons #\4 (car ev-lst))
                       (cons #\5 (term-evisc-tuple nil state))
                       (cons #\r
-                            #+:non-standard-analysis
+                            #+non-standard-analysis
                             (if (f-get-global 'script-mode state)
                                 ""
                               "(r)")
-                            #-:non-standard-analysis ""))
+                            #-non-standard-analysis ""))
                      channel state nil))))
          (let (tmp-expansion-stack) ; patch file: added let-binding ;patch;
            (mv-let

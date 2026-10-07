@@ -122,6 +122,11 @@
 ; *** NO CHANGE *** -- There are no top-level hypotheses.
 ; <1 (:ER NIL :VAL NIL)
 
+; Matt K. mod due to new untouchability, 9/24/2026:
+(defttag :sidekick)
+(remove-untouchable acl2::pc-single-step-primitive t)
+(remove-untouchable acl2::pc-single-step t)
+
 (define sk-explore-contrapose ((num maybe-stringp) state)
   :returns (mv json-info state)
   :mode :program
@@ -407,3 +412,8 @@ exit
 ;;                                 (mv erp val state))
 ;;                       (mv erp val state)))))
 ;;       (pc-single-step-1 raw-instr state))))
+
+; Matt K. mod due to new untouchability, 9/24/2026 -- restore untouchability
+; removed above.
+(push-untouchable acl2::pc-single-step-primitive t)
+(push-untouchable acl2::pc-single-step t)

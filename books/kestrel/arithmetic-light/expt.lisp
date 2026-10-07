@@ -37,23 +37,29 @@
            (integerp (expt r i)))
   :hints (("Goal" :in-theory (enable expt))))
 
+(defthm integerp-of-expt-type
+  (implies (and (integerp r)
+                (<= 0 i))
+           (integerp (expt r i)))
+  :rule-classes :type-prescription)
+
 (defthm natp-of-expt
   (implies (and (natp r)
                 (<= 0 i))
            (natp (expt r i)))
   :hints (("Goal" :in-theory (enable expt))))
 
-(defthm <-of-0-and-expt
-  (implies (and (< 0 r)
-                (rationalp r))
-           (< 0 (expt r i)))
-  :hints (("Goal" :in-theory (enable zip expt))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm <=-of-0-and-expt
-  (implies (and (<= 0 r)
-                (rationalp r))
-           (<= 0 (expt r i)))
-  :hints (("Goal" :in-theory (enable zip expt))))
+(defthm expt-when-not-integerp
+  (implies (not (integerp i))
+           (equal (expt r i)
+                  1))
+  :hints (("Goal" :in-theory (enable expt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Comparing EXPT to 0
 
 (local
  ;; induction function that subtracts 2 each time
@@ -66,11 +72,23 @@
          (ind-sub2 (+ 2 i))
        (ind-sub2 (+ -2 i))))))
 
+(defthm <-of-0-and-expt
+  (implies (rationalp r)
+           (equal (< 0 (expt r i))
+                  (or (< 0 r)
+                      (not (integerp i)) ; expt gives 1
+                      (equal 0 i) ; since r^0 = 1
+                      (and (< r 0)
+                           (evenp i)))))
+  :hints (("Goal" :induct (ind-sub2 i)
+           :expand (expt r i)
+           :in-theory (enable expt zip))))
+
 (defthm <-of-expt-and-0
-  (implies (and (rationalp r)
-                (integerp i))
+  (implies (rationalp r)
            (equal (< (expt r i) 0)
                   (and (< r 0)
+                       (integerp i)
                        (not (evenp i)))))
   :hints (("Goal" :induct (ind-sub2 i)
            :expand (expt r i)
@@ -80,17 +98,11 @@
   (equal (equal 0 (expt r i))
          (and (equal 0 (fix r))
               (integerp i)
-              (not (equal 0 i)) ;since r^0 = 1
+              (not (equal 0 i)) ; since r^0 = 1
               ))
   :hints (("Goal" :in-theory (enable zip expt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm integerp-of-expt-type
-  (implies (and (integerp r)
-                (<= 0 i))
-           (integerp (expt r i)))
-  :rule-classes :type-prescription)
 
 (defthm <-of-0-and-expt-type
   (implies (and (< 0 r)
@@ -124,12 +136,12 @@
            :expand (expt r i)
            :in-theory (enable expt))))
 
-;; The cases of positive r and non-negative r are covered elsewhere.
+;; The cases of positive r and non-negative r are covered above
 (defthm expt-type-odd-exponent-negative-base
-  (implies (and (not (evenp i))
-                (< r 0)
-                (rationalp r)
-                (integerp i))
+  (implies (and (< r 0) ; unusual
+                (not (evenp i))
+                (integerp i)
+                (rationalp r))
            (< (expt r i) 0))
   :rule-classes :type-prescription)
 
@@ -156,6 +168,8 @@
   (equal (expt r 1)
          (fix r))
   :hints (("Goal" :in-theory (enable expt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd expt-of-+-of--1-arg2
   (implies (and (integerp i)
@@ -267,23 +281,7 @@
 
 (theory-invariant (incompatible (:rewrite expt-of-unary--) (:rewrite /-of-expt)))
 
-;seems helpful (e.g., in proving that 2^(i-1) + x < 2^i when x < 2^(i-1)).
-(defthm expt-half-linear
-  (implies (integerp i)
-           (equal (expt 2 i)
-                  (+ (expt 2 (+ -1 i))
-                     (expt 2 (+ -1 i)))))
-  :rule-classes :linear
-  :hints (("Goal" :in-theory (enable expt-of-+))))
-
-;gen the 1
 (defthm <-of-1-and-expt
-  (implies (integerp n)
-           (equal (< 1 (expt 2 n))
-                  (< 0 n)))
-  :hints (("Goal" :in-theory (enable expt))))
-
-(defthm <-of-1-and-expt-gen
   (implies (and (< 1 r)
                 (integerp i)
                 (rationalp r)
@@ -387,7 +385,7 @@
                                    (i 0)
                                    (j (+ (- i) j)))
             :in-theory (e/d (expt-monotone-strong expt-of-+)
-                            (<-of-1-and-expt-gen))))))
+                            (<-of-1-and-expt))))))
 
 ;todo: rename vars
 (defthm <-of-expt-and-expt-same-base
@@ -450,34 +448,39 @@
   :hints (("Goal" :in-theory (enable expt))))
 
 (defthm integerp-of-*-of-expt-and-expt
-  (implies (and (integerp i)
+  (implies (and (< 1 r)
+                (integerp r)
+                (integerp i)
                 (integerp j))
-           (equal (integerp (* (expt 2 i) (expt 2 j)))
+           (equal (integerp (* (expt r i) (expt r j)))
                   (<= 0 (+ i j))))
   :hints (("Goal" :in-theory (e/d (expt-of-+)
                                   (;integerp-of-expt
                                    ;;<-OF-0-AND-EXPT
                                    integerp-of-expt-when-natp
                                    INTEGERP-OF-EXPT-HELPER))
-           :use (:instance integerp-of-expt-when-natp (r 2) (i (+ i j))))))
+           :use (:instance integerp-of-expt-when-natp (i (+ i j))))))
 
 (defthm integerp-of-*-of-expt-and-/-of-expt
-  (implies (and (integerp i)
+  (implies (and (< 1 r)
+                (integerp r)
+                (integerp i)
                 (integerp j))
-           (equal (integerp (* (expt 2 i) (/ (expt 2 j))))
+           (equal (integerp (* (expt r i) (/ (expt r j))))
                   (<= j i)))
   :hints (("Goal" :in-theory (e/d (expt-of-+)
                                   (;integerp-of-expt
                                    ;;<-OF-0-AND-EXPT
                                    integerp-of-expt-when-natp
                                    INTEGERP-OF-EXPT-HELPER))
-           :use (:instance integerp-of-expt-when-natp (r 2) (i (+ i (- j)))))))
+           :use (:instance integerp-of-expt-when-natp (i (+ i (- j)))))))
 
 ;gen the 1
 (defthm *-of-expt-and-expt-of-1minus
-  (implies (integerp size)
-           (equal (* (expt 2 size) (expt 2 (+ 1 (- size))))
-                  2))
+  (implies (and (integerp size)
+                (rationalp r))
+           (equal (* (expt r size) (expt r (+ 1 (- size))))
+                  r))
   :hints (("Goal" :in-theory (enable expt-of-+))))
 
 (defthm expt-of---arg1
@@ -957,3 +960,44 @@
            (equal (* (expt r i) (expt r (+ j (- i))))
                   (expt r j)))
   :hints (("Goal" :in-theory (enable expt-of-+))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+  (defthm <-of-expt-and-1-when-<-of-0
+    (implies (and (< 0 r)
+                  (rationalp r))
+             (equal (< (expt r i) 1)
+                    (and (integerp i)
+                         (not (equal 0 i))
+                         (if (< 0 i)
+                             (< r 1)
+                           (< 1 r)))))
+    :hints (("Goal" :cases ((not (integerp i)) (< 1 r))
+             :in-theory (enable <-of-expt-and-1-linear)))))
+
+;; Exact characterization of when (expt r i) < 1, for a rational base.  The
+;; exponent must be a nonzero integer (otherwise expt returns 1).  Then the
+;; result is less than 1 when the base is 0 (giving 0), when the base is
+;; negative and the exponent is odd (giving a negative result), and otherwise
+;; exactly when the magnitude of the base is less than 1 and the exponent is
+;; positive, or the magnitude of the base is greater than 1 and the exponent is
+;; negative.
+; todo: gen the 1
+(defthm <-of-expt-and-1
+  (implies (rationalp r)
+           (equal (< (expt r i) 1)
+                  (and (integerp i)
+                       (not (equal 0 i))
+                       (or (equal 0 r)
+                           (and (< r 0)
+                                (not (evenp i)))
+                           (if (< 0 i)
+                               (and (< -1 r)
+                                    (< r 1))
+                             (or (< r -1)
+                                 (< 1 r)))))))
+  :hints (("Goal" :cases ((< r 0))
+           :use (<-of-expt-and-1-when-<-of-0
+                  (:instance <-of-expt-and-1-when-<-of-0 (r (- r))))
+           :in-theory (disable <-of-expt-and-1-when-<-of-0))))

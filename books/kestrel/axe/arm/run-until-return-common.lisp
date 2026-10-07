@@ -27,16 +27,27 @@
 ;; (defstub stub2 (x y) t)
 (local (in-theory (disable alistp)))
 
-;; (thm
-;;   (integerp (lookup-equal 'arm::register_list (mv-nth 2 (arm32-decode instr))))
-;;   :hints (("Goal" :in-theory (enable arm32-decode))))
+;; These next 2 speed up stack-height-adjustment (by avoiding opening arm32-decode).
+(local
+  (defthm integerp-of-lookup-equal-register_list-of-mv-nth-2-of-arm32-decode-when-ldm
+    (implies (equal (mv-nth 1 (arm32-decode instr))
+                    :pop-encoding-a1)
+             (integerp (lookup-equal 'arm::register_list (mv-nth 2 (arm32-decode instr)))))
+    :hints (("Goal" :in-theory (enable arm32-decode)))))
+
+(local
+  (defthm integerp-of-lookup-equal-register_list-of-mv-nth-2-of-arm32-decode-when-ldm/ldmia/ldmfd
+    (implies (equal (mv-nth 1 (arm32-decode instr))
+                    :ldm/ldmia/ldmfd)
+             (integerp (lookup-equal 'arm::register_list (mv-nth 2 (arm32-decode instr)))))
+    :hints (("Goal" :in-theory (enable arm32-decode)))))
 
 ;; Adjustmust to the stack height for instr (+ 1 for call, -1 for return)
 ;; todo: speed this up
 (defund stack-height-adjustment (instr)
   (declare (xargs :guard (and (unsigned-byte-p 32 instr) ; todo: use a recognizer
                               )
-                  :guard-hints (("Goal" :in-theory (enable arm32-decode)))))
+                  :guard-hints (("Goal" :in-theory (enable)))))
   (mv-let (erp mnemonic args) ;; where ARGS is an alist from field names
     (arm::arm32-decode instr)
     (if erp

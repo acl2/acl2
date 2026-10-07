@@ -80,12 +80,11 @@
   :hints (("Goal" :in-theory (enable sbvdiv unsigned-byte-p))))
 
 (defthm sbvdiv-of-1-arg3
-  (implies (and (<= 1 size) ; doesn't work for size=1
-                (integerp size))
+  (implies (natp size)
            (equal (sbvdiv size x 1)
                   (bvchop size x)))
-  :hints (("Goal" :cases ((equal 1 size))
-           :in-theory (e/d (sbvdiv) (truncate)))))
+  :hints (("Goal" :cases ((equal 0 size))
+                  :in-theory (e/d (sbvdiv) (truncate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

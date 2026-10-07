@@ -59,8 +59,8 @@
 ;; have the same length.
 (std::defaggregate r1cs-constraint
  ((a (integer-listp a))
-  (b (integer-listp a))
-  (c (integer-listp a)))
+  (b (integer-listp b))
+  (c (integer-listp c)))
  :require ((constraint-lengths-match
             (and (equal (len a)
                         (len b))

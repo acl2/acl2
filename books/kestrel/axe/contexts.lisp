@@ -384,17 +384,21 @@
             (false-context)
           (conjoin-contexts-aux (rest context1) (add-to-set-equal item context2)))))))
 
-(defthm contextp-of-conjoin-contexts-aux
-  (implies (and (possibly-negated-nodenumsp context1)
-                (possibly-negated-nodenumsp context2))
-           (contextp (conjoin-contexts-aux context1 context2)))
-  :hints (("Goal" :in-theory (enable conjoin-contexts-aux))))
+(local
+ (defthm contextp-of-conjoin-contexts-aux
+   (implies (and (possibly-negated-nodenumsp context1)
+                 (possibly-negated-nodenumsp context2))
+            (contextp (conjoin-contexts-aux context1 context2)))
+   :hints (("Goal" :in-theory (enable conjoin-contexts-aux)))))
 
-(defthm bounded-contextp-of-conjoin-contexts-aux
-  (implies (and (bounded-possibly-negated-nodenumsp context1 bound)
-                (bounded-possibly-negated-nodenumsp context2 bound))
-           (bounded-contextp (conjoin-contexts-aux context1 context2) bound))
-  :hints (("Goal" :in-theory (enable bounded-contextp conjoin-contexts-aux))))
+(local
+ (defthm bounded-contextp-of-conjoin-contexts-aux
+   (implies (and (bounded-possibly-negated-nodenumsp context1 bound)
+                 (bounded-possibly-negated-nodenumsp context2 bound))
+            (bounded-contextp (conjoin-contexts-aux context1 context2) bound))
+   :hints (("Goal" :in-theory (enable bounded-contextp conjoin-contexts-aux)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Computes a context equivalent to the conjunction of CONTEXT1 and CONTEXT2.
 ;; This doesn't look up the nodenums in the contexts and so may miss some

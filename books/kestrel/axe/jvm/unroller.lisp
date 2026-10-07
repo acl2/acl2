@@ -484,16 +484,28 @@
 ;; This is separate to avoid causing case splits in the slow guard proof for unroll-java-code-core.
 (defund classes-to-assume-initialized-optionp (classes-to-assume-initialized)
   (declare (xargs :guard t))
-  (or (eq :all classes-to-assume-initialized)
+  (or (eq :basic classes-to-assume-initialized)
+      (eq :all classes-to-assume-initialized)
       (jvm::class-name-listp classes-to-assume-initialized)))
 
 ;; This is separate to avoid causing case splits in the slow guard proof for unroll-java-code-core.
 (defund choose-classes-to-assume-initialized (classes-to-assume-initialized class-alist)
   (declare (xargs :guard (and (classes-to-assume-initialized-optionp classes-to-assume-initialized)
                               (class-table-alistp class-alist))))
-  (if (eq :all classes-to-assume-initialized)
-      (strip-cars class-alist)
-    classes-to-assume-initialized))
+  (if (eq :basic classes-to-assume-initialized)
+      '("java.lang.Object" "java.lang.System"  "java.lang.Math" "java.lang.Float") ; might need to expand this later
+    (if (eq :all classes-to-assume-initialized)
+        (strip-cars class-alist)
+      ;; must be an explicit list of class names:
+      classes-to-assume-initialized)))
+
+(defthm class-name-listp-of-choose-classes-to-assume-initialized
+  (implies (and (classes-to-assume-initialized-optionp classes-to-assume-initialized)
+                (class-table-alistp class-alist))
+           (jvm::class-name-listp (choose-classes-to-assume-initialized classes-to-assume-initialized class-alist)))
+  :hints (("Goal" :in-theory (enable choose-classes-to-assume-initialized))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; is this defined elsewhere too?
 (defund steps-optionp (steps)
@@ -551,7 +563,6 @@
                                    )))))
 
 ;; Returns (mv erp dag all-assumptions term-to-run-with-output-extractor parameter-names state).
-;; This uses all classes currently in the global-class-alist.
 ;; Consider
 ;; (set-inhibit-output-lst '(proof-tree event))
 ;;when working with this function.
@@ -584,6 +595,7 @@
                                 param-names ; may be :auto
                                 chunkedp ;whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code?)
                                 error-on-incomplete-runsp ;whether to throw a hard error (may be nil if further pruning can be done in the caller)
+                                class-alist
                                 state)
   (declare (xargs :guard (and (method-designator-stringp method-designator-string)
                               (nice-output-indicatorp nice-output-indicator)
@@ -611,7 +623,9 @@
                               (or (eq :auto param-names)
                                   (symbol-listp param-names)) ;todo: check for dups and keywords and case clashes
                               (booleanp chunkedp)
-                              (booleanp error-on-incomplete-runsp))
+                              (booleanp error-on-incomplete-runsp)
+                              (class-table-alistp class-alist) ; rename
+                              )
                   :stobjs state
                   :guard-hints (("Goal" :in-theory (e/d (symbol-listp-of-unroll-java-code-rules
                                                          steps-optionp ; todo
@@ -630,9 +644,6 @@
             (er hard? 'unroll-java-code-fn "Method descriptor is missing in ~x0." method-designator-string)
             nil nil nil
             state))
-       (class-alist (jvm::global-class-alist state))
-       ((when (not (class-table-alistp class-alist)))
-        (mv :bad-global-class-alist nil nil nil nil state))
        ((when (not (assoc-equal method-class class-alist)))
         (mv t
             (er hard? 'unroll-java-code-fn "Class ~x0 not found." method-class)
@@ -766,6 +777,7 @@
           all-assumptions
           assumption-rule-alists
           (acl2::known-booleans (w state))
+          (rewrite-objective-strengthen)
           nil ; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
           nil ; no-warn-ground-functions
           nil ; don't memoize (avoids time spent making empty-memoizations)
@@ -833,6 +845,7 @@
         dag all-assumptions term-to-run-with-output-extractor parameter-names state)))
 
 ;; Returns (mv erp event state).
+;; This uses all classes currently in the global-class-alist.
 (defun unroll-java-code-fn (defconst-name
                              method-indicator
                              nice-output-indicator
@@ -865,8 +878,7 @@
                              state)
   (declare (xargs :guard (and (nice-output-indicatorp nice-output-indicator)
                               (jvm::method-indicatorp method-indicator)
-                              (or (eq :all classes-to-assume-initialized)
-                                  (jvm::class-name-listp classes-to-assume-initialized))
+                              (classes-to-assume-initialized-optionp classes-to-assume-initialized)
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
                               (symbol-listp extra-assumption-rules)
@@ -906,6 +918,9 @@
        ((when erp) (mv erp nil state))
        ;; Adds the descriptor if omitted and unambiguous:
        (method-designator-string (jvm::elaborate-method-indicator method-indicator (jvm::global-class-alist state)))
+       (class-alist (jvm::global-class-alist state))
+       ((when (not (class-table-alistp class-alist)))
+        (mv :bad-global-class-alist nil state))
        ;; Printed even if print is nil (seems ok):
        (- (cw "(Unrolling ~x0.~%"  method-designator-string))
        ((mv erp dag-or-quotep all-assumptions term-to-run-with-output-extractor parameter-names state)
@@ -935,6 +950,7 @@
                                param-names
                                chunkedp ;whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code?)
                                t ;error on incomplete runs
+                               class-alist
                                state))
        ((when erp) (mv erp nil state))
        (- (and (quotep dag-or-quotep)
@@ -1029,7 +1045,7 @@
                                       ;; Options affecting what is proved:
                                       (assumptions 'nil) ;TODO: What variables are these over? 'locals'?  well, at least the params of the function ; todo: rename extra-assumptions
                                       (array-length-alist 'nil)
-                                      (classes-to-assume-initialized ''("java.lang.Object" "java.lang.System")) ;TODO; Try making :all the default
+                                      (classes-to-assume-initialized ':basic) ;TODO; Try making :all the default
                                       (ignore-exceptions 'nil)
                                       (ignore-errors 'nil)
                                       (count-hits 'nil)
@@ -1108,7 +1124,7 @@
           "The Java method to unroll (a string like \"java.lang.Object.foo(IB)V\").  The descriptor (input and output type) can be omitted if only one method in the given class has the given name.")
          (assumptions             "Terms to assume true when unrolling.  These assumptions can mention the method's parameter names (symbols), the byte-variables and/or bit-variables in the contents of array parameters, and the special variables @('locals'), @('initial-heap'), @('initial-static-field-map'), and @('initial-intern-table').")
          (array-length-alist      "An alist pairing array parameter names (symbols) with their lengths.")
-         (classes-to-assume-initialized "Classes to assume the JVM has already initialized (or @(':all'))")
+         (classes-to-assume-initialized "The set of classes to assume that the JVM has already initialized.  A list of class names (strings), or @(':basic'), or @(':all').  The value @(':basic') means to assume that the inititialzed classes are exactly the set containing java.lang.Object and java.lang.System (we may in the future extend this set with other fundamental classes).")
          (ignore-exceptions       "Whether to assume exceptions do not happen (e.g., out-of-bounds array accesses)")
          (ignore-errors           "Whether to assume JVM errors do not happen")
          (count-hits "Whether to count rule hits.")

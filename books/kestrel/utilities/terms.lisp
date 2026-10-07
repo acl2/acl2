@@ -1,7 +1,7 @@
 ; Utilities for manipulating terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -290,7 +290,7 @@
 ;; (RENAME-FN 'foo 'bar '(foo '1 (baz (foo x y))))
 (mutual-recursion
  (defun rename-fn (old-name new-name term)
-   (declare (xargs :guard (and (pseudo-termp term))))
+   (declare (xargs :guard (pseudo-termp term)))
    (if (variablep term)
        term
      (if (fquotep term)
@@ -311,7 +311,7 @@
          (cons fn (rename-fn-lst old-name new-name (fargs term)))))))
 
  (defun rename-fn-lst (old-name new-name term-lst)
-   (declare (xargs :guard (and (pseudo-term-listp term-lst))))
+   (declare (xargs :guard (pseudo-term-listp term-lst)))
    (if (endp term-lst)
        nil
      (cons (rename-fn old-name new-name (car term-lst))

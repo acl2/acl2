@@ -873,6 +873,41 @@
    (DEFTHM MY-STOBJ0P-OF-CREATE-MY-STOBJ0
      (MY-STOBJ0P (CREATE-MY-STOBJ0)))
 
+   (defthm array-field-1-length-linear
+     (implies (my-stobj0p my-stobj0)
+              (equal (array-field-1-length my-stobj0)
+                     100))
+     :rule-classes :linear
+     :hints (("Goal" :in-theory (enable array-field-1-length))))
+
+   (defthm array-field-1-length-becomes-constant
+     (implies (my-stobj0p my-stobj0)
+              (equal (array-field-1-length my-stobj0)
+                     100)))
+
+   (defthm array-field-2-length-linear
+     (implies (my-stobj0p my-stobj0)
+              (equal (array-field-2-length my-stobj0)
+                     200))
+     :rule-classes :linear
+     :hints (("Goal" :in-theory (enable array-field-2-length))))
+
+   (defthm array-field-2-length-becomes-constant
+     (implies (my-stobj0p my-stobj0)
+              (equal (array-field-2-length my-stobj0)
+                     200)))
+
+   (defthm array-field-3-length-linear
+     (implies (my-stobj0p my-stobj0)
+              (equal (array-field-3-length my-stobj0)
+                     300))
+     :rule-classes :linear
+     :hints (("Goal" :in-theory (enable array-field-3-length))))
+
+   (defthm array-field-3-length-becomes-constant
+     (implies (my-stobj0p my-stobj0)
+              (equal (array-field-3-length my-stobj0)
+                     300)))
    ))
 
 ; Matt K. mod 6/25/2024:

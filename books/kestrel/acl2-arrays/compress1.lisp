@@ -86,17 +86,10 @@
          (dimensions array-name array))
   :hints (("Goal" :in-theory (enable compress1 dimensions-intro header-intro))))
 
-;odd rhs
 (defthm default-of-compress1
   (equal (default name (compress1 name2 l))
-         (if (or (equal (array-order (header name2 l)) '<)
-                 (equal (array-order (header name2 l)) '>))
-             (default name2 l)
-           (default name l)))
-  :hints (("Goal" :in-theory (e/d (compress1 default
-                                             ;compress11 ;todo
-
-                                             )
+         (default name l))
+  :hints (("Goal" :in-theory (e/d (compress1 default)
                                   (array-order default-intro)))))
 
 (defthm alistp-of-compress1

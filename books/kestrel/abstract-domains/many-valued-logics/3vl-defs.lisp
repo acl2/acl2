@@ -16,9 +16,9 @@
 (std::defredundant
   :names (3p
           3fix
-          3=
-          3<
-          3<=
+          3equiv
+          3info<
+          3info<=
           binary-3join$inline
           3join
           3not
@@ -33,6 +33,13 @@
           3iff
           3possibly
           3definitely
+          3truth<
+          3truth<=
+          binary-3and$
+          3and$
+          binary-3or$
+          3or$
+          3implies$
           ))
 
-(defequiv 3=)
+(defequiv 3equiv)

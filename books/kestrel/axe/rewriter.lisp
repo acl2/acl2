@@ -323,141 +323,145 @@
                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                       print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print
                                       memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
-             ;; HYP is normal:
+               (if (eq :axe-rewrite-objective fn) ; (:axe-rewrite-objective . <obj>)
+                   ;; For now, we always fail on a hyp with :axe-rewrite-objective:
+                   ;; Could print a warning.
+                   (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state)
+                 ;; HYP is normal:
              ;;Set the work-hard flag and strip-off work-hard if present:
-             (mv-let
-               (work-hardp hyp)
-               (if (eq 'work-hard fn)
-                   (mv t (farg1 hyp)) ;strip off the call of work-hard
-                 (mv nil hyp))
-               ;; First, we substitute in for all the vars in HYP:
-               (mv-let
-                 (instantiated-hyp free-vars-flg)
-                 (instantiate-hyp hyp alist nil interpreted-function-alist) ; todo: could call a instantiate-hyp-no-free-vars function here, but with which evaluator?
-                 (declare (ignore free-vars-flg))
-                 ;; Now instantiated-hyp is an axe-tree with leaves that are quoteps and nodenums (from vars already bound).
-                 ;; TODO: Consider adding a special case here to check whether the hyp is a constant (can happen during instantiation and may be very common).
-                 ;; Since no free vars are in the hyp, we try to relieve the fully instantiated hyp:
-                 (b* ((old-try-count tries)
-                      ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
-                       ;;try to relieve through rewriting (this tests atom hyps for symbolp even though i think that's impossible (why??? did i mean atom hyps must be symbolps?)- but should be rare:
-                       ;;bozo do we really want to add stupid natp hyps, etc. to the memoization? what about ground terms?
-                       (simplify-tree-and-add-to-dag instantiated-hyp
-                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                     rewriter-rule-alist
-                                                     nil ;nothing is yet known to be equal to instantiated-HYP - fixme name this use of nil
-                                                     refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print
-                                                     memoization
-                                                     hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
-                      ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state))
-                      (try-diff (and old-try-count (- tries old-try-count))))
-                   (if (consp new-nodenum-or-quotep) ;tests for quotep
-                       (if (unquote new-nodenum-or-quotep) ;the unquoted value is non-nil:
-                           (prog2$ (and old-try-count (< 100 try-diff) (cw " (~x0 tries used ~x1:~x2 (rewrote to true).)~%" try-diff rule-symbol hyp-num))
-                                   ;;hyp rewrote to a non-nil constant and so counts as relieved:
-                                   (relieve-rule-hyps (rest hyps)
-                                                      (+ 1 hyp-num)
-                                                      alist
-                                                      rule-symbol
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                      print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print
-                                                      memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
-                         ;;hyp rewrote to *nil*:
-                         (progn$ (and old-try-count (< 100 try-diff) (cw "(~x0 tries wasted ~x1:~x2 (rewrote to NIL))~%" try-diff rule-symbol hyp-num))
-                                 (and (member-eq rule-symbol monitored-symbols)
-                                      (progn$ (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.)~%" hyp rule-symbol)
-                                              ;; (cw "Alist: ~x0.~%Assumptions:~%~x1~%DAG:~x2~%" ;;ffixme improve this printing
-                                              ;;     alist
-                                              ;;     refined-assumption-alist
-                                              ;;     :elided ;;fffixmedag-array ;could print only the part of the dag below the maxnodenum in alist? can this stack overflow?
-                                              ;;     )
-                                              ;; (cw "equality assumptions: ~x0~%" equality-assumption-alist)
-                                              ;;print these better?:
-                                              ;; (cw "node equality assumptions: ~x0~%)" node-replacement-alist)
-                                              ))
-                                 (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state)))
-                     ;;hyp didn't rewrite to a constant (new-nodenum-or-quotep is a node number):
-                     ;; Check whether the rewritten hyp is one of the known assumptions (todo: would be better to rewrite it using IFF).  TODO: Do the other versions of the rewriter/prover do something like this?
-                     (if (nodenum-equal-to-refined-assumptionp new-nodenum-or-quotep refined-assumption-alist dag-array)
-                         (prog2$ (and old-try-count (< 100 try-diff) (cw " (~x0 tries used ~x1:~x2 (rewrote to true).)~%" try-diff rule-symbol hyp-num))
-                                 ;;hyp rewrote to a known assumption and so counts as relieved:
-                                 (relieve-rule-hyps (rest hyps)
-                                                    (+ 1 hyp-num)
-                                                    alist
-                                                    rule-symbol
-                                                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                    print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print
-                                                    memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
-                       (prog2$
-                        (and old-try-count (< 100 try-diff) (cw "(~x0 tries wasted: ~x1:~x2 (non-constant result))~%" try-diff rule-symbol hyp-num))
-                        (if (and work-hardp work-hard-when-instructedp)
-                            ;;If we have been instructed to work hard:
-                            (b* ((- (cw "(Rewriter is working hard on a hyp of ~x0, namely: ~x1~%" rule-symbol hyp)) ;print the instantiated-hyp and hyp num too?
-                                 (- (cw "(Rewrote to:~%"))
-                                 (- (if (member-eq print '(t :verbose :verbose!))
-                                        (print-dag-array-node-and-supporters 'dag-array dag-array new-nodenum-or-quotep) ;fixme print the assumptions (of all kinds)?
-                                      (cw ":elided")))
-                                 (- (cw ")~%"))
-                                 ;; we used to have to save and restore the dag, but now the prover doesn't change any nodes, so that isn't necessary
-                                 ;;add the negated assumptions to the dag (fixme what about other equality-assumptions? anything else?):
-                                 ((mv erp negated-assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                                  (merge-trees-into-dag-array ;inefficient?
-                                   (let ((assumption-terms
-                                          (append (decode-refined-assumption-alist refined-assumption-alist)
-                                                  (make-equalities-from-dotted-pairs node-replacement-alist) ;fffixme is all this info already in the refined-assumption-alist?
-                                                  )))
-                                     (prog2$ (and (member-eq print '(t :verbose :verbose!)) (cw "(assumption terms: ~x0)" assumption-terms))
-                                             (negate-terms assumption-terms)))
-                                   nil
-                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'dag-array 'dag-parent-array
-                                   nil ;fixme ifns
-                                   ))
-                                 ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state))
-                                 ;;call the full prover:
-                                 ((mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
-                                  ;;fixme should this do mitering and merging (which would then call the prover on individual node pairs)?
-                                  (prove-disjunction-with-axe-prover (cons new-nodenum-or-quotep negated-assumptions) ;these are the literals
-                                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                     (list rewriter-rule-alist) ;fixme this should be prover-rule-alist
-                                                                     interpreted-function-alist
-                                                                     nil ;Sun Jan  2 19:08:59 2011 monitored-symbols (was printing too much)
-                                                                     print ;:brief ;;print more for work-hard hyps (seemed to print too much? but i would like to see the failures) was :brief until Mon Nov  1 04:23:45 2010 but that may have caused errors with increment-hit-count
-                                                                     (symbol-name (pack$ rule-symbol "-HYP-" hyp-num "-WORK-HARD-FOR-" tag))
-                                                                     *default-stp-max-conflicts* ;max-conflicts ;fixme pass this around
-                                                                     t ;nil ;print-max-conflicts-goalp
-                                                                     nil ;don't work hard on another work-hard hyp fffixme think about this
-                                                                     hit-counts tries
-                                                                     1 ;prover-depth > 1 disallows changing existing nodes
-                                                                     nil ;options
-                                                                     (+ -1 (expt 2 59)) ;max fixnum?
-                                                                     state))
-                                 ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state)))
-                              (if (eq :proved result)
-                                  (progn$ ;(maybe-print-hit-counts hit-counts) ;ffffixme these are cumulative counts
-                                   (cw "Proved the work-hard hyp)~%")
-                                   ;;the hyp counts as relieved:
-                                   (relieve-rule-hyps (rest hyps)
-                                                      (+ 1 hyp-num)
-                                                      alist rule-symbol
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                      print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print
-                                                      memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp
-                                                      tag limits state))
-                                (prog2$ (cw "Failed to prove the work-hard hyp for ~x0)~%" rule-symbol)
-                                        (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state))))
-                          (prog2$ (and (member-eq rule-symbol monitored-symbols)
-                                       (progn$ (cw "(Failed to relieve hyp ~x0 of rule ~x1 (work-hardp: ~x2, work-hard-when-instructedp: ~x3).~%" hyp rule-symbol work-hardp work-hard-when-instructedp)
-                                               (cw "Reason: Rewrote to:~%")
-                                               (print-dag-node-nicely new-nodenum-or-quotep 'dag-array dag-array dag-len 200)
-                                               ;; These can be very big (elide big ones?):
-                                               ;; (cw "(Alist: ~x0)~%(Refined assumption alist: ~x1)~%(Equality assumption alist: ~x2)~%" alist refined-assumption-alist equality-assumption-alist)
-                                               ;;print these better?:
-                                               ;; (cw "(node equality assumptions: ~x0)~%" node-replacement-alist)
-                                               ;; (cw "(DAG:~%")
-                                               ;; (print-array 'dag-array dag-array dag-len)
-                                               ;; (cw ")")
-                                               (cw ")~%")))
-                                  (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state))))))))))))))))
+                 (mv-let
+                     (work-hardp hyp)
+                     (if (eq 'work-hard fn)
+                         (mv t (farg1 hyp)) ;strip off the call of work-hard
+                       (mv nil hyp))
+                   ;; First, we substitute in for all the vars in HYP:
+                   (mv-let
+                       (instantiated-hyp free-vars-flg)
+                       (instantiate-hyp hyp alist nil interpreted-function-alist) ; todo: could call a instantiate-hyp-no-free-vars function here, but with which evaluator?
+                     (declare (ignore free-vars-flg))
+                     ;; Now instantiated-hyp is an axe-tree with leaves that are quoteps and nodenums (from vars already bound).
+                     ;; TODO: Consider adding a special case here to check whether the hyp is a constant (can happen during instantiation and may be very common).
+                     ;; Since no free vars are in the hyp, we try to relieve the fully instantiated hyp:
+                     (b* ((old-try-count tries)
+                          ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
+                           ;;try to relieve through rewriting (this tests atom hyps for symbolp even though i think that's impossible (why??? did i mean atom hyps must be symbolps?)- but should be rare:
+                           ;;bozo do we really want to add stupid natp hyps, etc. to the memoization? what about ground terms?
+                           (simplify-tree-and-add-to-dag instantiated-hyp
+                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                         rewriter-rule-alist
+                                                         nil ;nothing is yet known to be equal to instantiated-HYP - fixme name this use of nil
+                                                         refined-assumption-alist equality-assumption-alist node-replacement-alist print-interval print
+                                                         memoization
+                                                         hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
+                          ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state))
+                          (try-diff (and old-try-count (- tries old-try-count))))
+                       (if (consp new-nodenum-or-quotep) ;tests for quotep
+                           (if (unquote new-nodenum-or-quotep) ;the unquoted value is non-nil:
+                               (prog2$ (and old-try-count (< 100 try-diff) (cw " (~x0 tries used ~x1:~x2 (rewrote to true).)~%" try-diff rule-symbol hyp-num))
+                                       ;;hyp rewrote to a non-nil constant and so counts as relieved:
+                                       (relieve-rule-hyps (rest hyps)
+                                                          (+ 1 hyp-num)
+                                                          alist
+                                                          rule-symbol
+                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                          print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print
+                                                          memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
+                             ;;hyp rewrote to *nil*:
+                             (progn$ (and old-try-count (< 100 try-diff) (cw "(~x0 tries wasted ~x1:~x2 (rewrote to NIL))~%" try-diff rule-symbol hyp-num))
+                                     (and (member-eq rule-symbol monitored-symbols)
+                                          (progn$ (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.)~%" hyp rule-symbol)
+                                                  ;; (cw "Alist: ~x0.~%Assumptions:~%~x1~%DAG:~x2~%" ;;ffixme improve this printing
+                                                  ;;     alist
+                                                  ;;     refined-assumption-alist
+                                                  ;;     :elided ;;fffixmedag-array ;could print only the part of the dag below the maxnodenum in alist? can this stack overflow?
+                                                  ;;     )
+                                                  ;; (cw "equality assumptions: ~x0~%" equality-assumption-alist)
+                                                  ;;print these better?:
+                                                  ;; (cw "node equality assumptions: ~x0~%)" node-replacement-alist)
+                                                  ))
+                                     (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state)))
+                         ;;hyp didn't rewrite to a constant (new-nodenum-or-quotep is a node number):
+                         ;; Check whether the rewritten hyp is one of the known assumptions (todo: would be better to rewrite it using IFF).  TODO: Do the other versions of the rewriter/prover do something like this?
+                         (if (nodenum-equal-to-refined-assumptionp new-nodenum-or-quotep refined-assumption-alist dag-array)
+                             (prog2$ (and old-try-count (< 100 try-diff) (cw " (~x0 tries used ~x1:~x2 (rewrote to true).)~%" try-diff rule-symbol hyp-num))
+                                     ;;hyp rewrote to a known assumption and so counts as relieved:
+                                     (relieve-rule-hyps (rest hyps)
+                                                        (+ 1 hyp-num)
+                                                        alist
+                                                        rule-symbol
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                        print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print
+                                                        memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state))
+                           (prog2$
+                            (and old-try-count (< 100 try-diff) (cw "(~x0 tries wasted: ~x1:~x2 (non-constant result))~%" try-diff rule-symbol hyp-num))
+                            (if (and work-hardp work-hard-when-instructedp)
+                                ;;If we have been instructed to work hard:
+                                (b* ((- (cw "(Rewriter is working hard on a hyp of ~x0, namely: ~x1~%" rule-symbol hyp)) ;print the instantiated-hyp and hyp num too?
+                                     (- (cw "(Rewrote to:~%"))
+                                     (- (if (member-eq print '(t :verbose :verbose!))
+                                            (print-dag-array-node-and-supporters 'dag-array dag-array new-nodenum-or-quotep) ;fixme print the assumptions (of all kinds)?
+                                          (cw ":elided")))
+                                     (- (cw ")~%"))
+                                     ;; we used to have to save and restore the dag, but now the prover doesn't change any nodes, so that isn't necessary
+                                     ;;add the negated assumptions to the dag (fixme what about other equality-assumptions? anything else?):
+                                     ((mv erp negated-assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+                                      (merge-trees-into-dag-array ;inefficient?
+                                       (let ((assumption-terms
+                                              (append (decode-refined-assumption-alist refined-assumption-alist)
+                                                      (make-equalities-from-dotted-pairs node-replacement-alist) ;fffixme is all this info already in the refined-assumption-alist?
+                                                      )))
+                                         (prog2$ (and (member-eq print '(t :verbose :verbose!)) (cw "(assumption terms: ~x0)" assumption-terms))
+                                                 (negate-terms assumption-terms)))
+                                       nil
+                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist 'dag-array 'dag-parent-array
+                                       nil ;fixme ifns
+                                       ))
+                                     ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state))
+                                     ;;call the full prover:
+                                     ((mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state)
+                                      ;;fixme should this do mitering and merging (which would then call the prover on individual node pairs)?
+                                      (prove-disjunction-with-axe-prover (cons new-nodenum-or-quotep negated-assumptions) ;these are the literals
+                                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                                         (list rewriter-rule-alist) ;fixme this should be prover-rule-alist
+                                                                         interpreted-function-alist
+                                                                         nil ;Sun Jan  2 19:08:59 2011 monitored-symbols (was printing too much)
+                                                                         print ;:brief ;;print more for work-hard hyps (seemed to print too much? but i would like to see the failures) was :brief until Mon Nov  1 04:23:45 2010 but that may have caused errors with increment-hit-count
+                                                                         (symbol-name (pack$ rule-symbol "-HYP-" hyp-num "-WORK-HARD-FOR-" tag))
+                                                                         *default-stp-max-conflicts* ;max-conflicts ;fixme pass this around
+                                                                         t ;nil ;print-max-conflicts-goalp
+                                                                         nil ;don't work hard on another work-hard hyp fffixme think about this
+                                                                         hit-counts tries
+                                                                         1 ;prover-depth > 1 disallows changing existing nodes
+                                                                         nil ;options
+                                                                         (+ -1 (expt 2 59)) ;max fixnum?
+                                                                         state))
+                                     ((when erp) (mv erp nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state)))
+                                  (if (eq :proved result)
+                                      (progn$ ;(maybe-print-hit-counts hit-counts) ;ffffixme these are cumulative counts
+                                       (cw "Proved the work-hard hyp)~%")
+                                       ;;the hyp counts as relieved:
+                                       (relieve-rule-hyps (rest hyps)
+                                                          (+ 1 hyp-num)
+                                                          alist rule-symbol
+                                                          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                          print-interval rewriter-rule-alist refined-assumption-alist equality-assumption-alist node-replacement-alist print
+                                                          memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp
+                                                          tag limits state))
+                                    (prog2$ (cw "Failed to prove the work-hard hyp for ~x0)~%" rule-symbol)
+                                            (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state))))
+                              (prog2$ (and (member-eq rule-symbol monitored-symbols)
+                                           (progn$ (cw "(Failed to relieve hyp ~x0 of rule ~x1 (work-hardp: ~x2, work-hard-when-instructedp: ~x3).~%" hyp rule-symbol work-hardp work-hard-when-instructedp)
+                                                   (cw "Reason: Rewrote to:~%")
+                                                   (print-dag-node-nicely new-nodenum-or-quotep 'dag-array dag-array dag-len 200)
+                                                   ;; These can be very big (elide big ones?):
+                                                   ;; (cw "(Alist: ~x0)~%(Refined assumption alist: ~x1)~%(Equality assumption alist: ~x2)~%" alist refined-assumption-alist equality-assumption-alist)
+                                                   ;;print these better?:
+                                                   ;; (cw "(node equality assumptions: ~x0)~%" node-replacement-alist)
+                                                   ;; (cw "(DAG:~%")
+                                                   ;; (print-array 'dag-array dag-array dag-len)
+                                                   ;; (cw ")")
+                                                   (cw ")~%")))
+                                      (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state)))))))))))))))))
 
  ;; Returns (mv erp new-rhs-or-nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits state)
  (defund try-to-apply-rules (stored-rules ;the list of rules for the fn in question
@@ -1158,7 +1162,7 @@
                                         work-hard-when-instructedp
                                         tag limits state)
   (declare (xargs :mode :program
-                  :guard (and (rule-limitsp limits) ;todo: add more guard conjuncts
+                  :guard (and ;;todo: add more guard conjuncts
                               (maybe-bounded-memoizationp memoization dag-len)
                               ;; For soundness, we should not have both memoization and a non-nil internal-context-array!
                               ;; We could consider memoizing per node, or using a memoization for nodes that have no context.

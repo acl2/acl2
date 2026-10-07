@@ -890,7 +890,10 @@
 (mutual-recursion
 
   (defund rdet-rec-cofactor (j a n)
-    (declare (xargs :measure (list (nfix n) 0 0)))
+    (declare (xargs :measure (list (nfix n) 0 0)
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                    :well-founded-relation l<))
     (if (zp n)
         ()
       (if (evenp j)
@@ -898,7 +901,10 @@
         (r- (rdet-rec (minor 0 j a) (1- n))))))
 
   (defun expand-rdet-rec-aux (a j n)
-    (declare (xargs :measure (list (nfix n) 1 (nfix j))))
+    (declare (xargs :measure (list (nfix n) 1 (nfix j))
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                    :well-founded-relation l<))
     (if (zp j)
         (r0)
       (r+ (r* (entry 0 (1- j) a)
@@ -906,11 +912,17 @@
 	  (expand-rdet-rec-aux a (1- j) n))))
 
   (defund expand-rdet-rec (a n)
-    (declare (xargs :measure (list (nfix n) 2 0)))
+    (declare (xargs :measure (list (nfix n) 2 0)
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                    :well-founded-relation l<))
     (expand-rdet-rec-aux a n n))
 
   (defun rdet-rec (a n)
-    (declare (xargs :measure (list (nfix n) 3 0)))
+    (declare (xargs :measure (list (nfix n) 3 0)
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                    :well-founded-relation l<))
     (if (zp n)
         (r0)
       (if (= n 1)

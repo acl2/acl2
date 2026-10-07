@@ -1010,7 +1010,7 @@
                               (class-tablep class-table)
                               (bound-in-class-tablep class-name class-table))))
   (let* ((superclass-names (get-superclasses class-name class-table))
-         (implemented-interfaces (get-superinterfaces superclass-names class-table)))
+         (implemented-interfaces (get-superinterfaces (cons class-name superclass-names) class-table)))
     (if (member-equal interface-name implemented-interfaces)
         t
       nil)))

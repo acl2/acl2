@@ -13,6 +13,7 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
+(include-book "kestrel/data/utilities/total-order/compare-defs" :dir :system)
 
 (include-book "kestrel/data/treeset/set-defs" :dir :system)
 (include-book "kestrel/data/treeset/in-defs" :dir :system)
@@ -199,13 +200,15 @@
   (if (tree-empty-p tree)
       nil
     (let ((head-key (tree-element->key (tree->head tree))))
-      (cond ((equal key head-key)
-             (mbe :logic (cons key (tree-element->val (tree->head tree)))
-                  :exec (cdr (the cons (tree->head tree)))))
-            ((<< key head-key)
-             (tree-search-assoc key (tree->left tree)))
-            (t
-             (tree-search-assoc key (tree->right tree))))))
+      (mv-let (equalp ltp)
+              (data::compare-<< key head-key)
+        (cond (equalp
+               (mbe :logic (cons key (tree-element->val (tree->head tree)))
+                    :exec (cdr (the cons (tree->head tree)))))
+              (ltp
+               (tree-search-assoc key (tree->left tree)))
+              (t
+               (tree-search-assoc key (tree->right tree)))))))
   :guard-hints (("Goal" :in-theory (enable tree-element->key
                                            tree-element->val
                                            tree-empty-p
@@ -276,12 +279,14 @@
      "Only the value is returned."))
   (mbe :logic (cdr (tree-search-assoc key tree))
        :exec (let ((head-key (tree-element->key (tree->head tree))))
-               (cond ((equal key head-key)
-                      (tree-element->val (tree->head tree)))
-                     ((<< key head-key)
-                      (tree-search-lookup! key (tree->left tree)))
-                     (t
-                      (tree-search-lookup! key (tree->right tree))))))
+               (mv-let (equalp ltp)
+                       (data::compare-<< key head-key)
+                 (cond (equalp
+                        (tree-element->val (tree->head tree)))
+                       (ltp
+                        (tree-search-lookup! key (tree->left tree)))
+                       (t
+                        (tree-search-lookup! key (tree->right tree)))))))
   :guard-hints (("Goal" :in-theory (enable tree-search-assoc
                                            tree-search-lookup!))))
 
@@ -304,12 +309,14 @@
        (if (tree-empty-p tree)
            nil
          (let ((head-key (tree-element->key (tree->head tree))))
-           (cond ((= key head-key)
-                  (cdr (the cons (tree->head tree))))
-                 ((data::acl2-number-<< key head-key)
-                  (acl2-number-tree-search-assoc key (tree->left tree)))
-                 (t
-                  (acl2-number-tree-search-assoc key (tree->right tree)))))))
+           (mv-let (equalp ltp)
+                   (data::acl2-number-compare-<< key head-key)
+             (cond (equalp
+                    (cdr (the cons (tree->head tree))))
+                   (ltp
+                    (acl2-number-tree-search-assoc key (tree->left tree)))
+                   (t
+                    (acl2-number-tree-search-assoc key (tree->right tree))))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-search-assoc
                                            acl2-number-tree-search-assoc
@@ -326,12 +333,14 @@
        (if (tree-empty-p tree)
            nil
          (let ((head-key (tree-element->key (tree->head tree))))
-           (cond ((eq key head-key)
-                  (cdr (the cons (tree->head tree))))
-                 ((data::symbol-<< key head-key)
-                  (symbol-tree-search-assoc key (tree->left tree)))
-                 (t
-                  (symbol-tree-search-assoc key (tree->right tree)))))))
+           (mv-let (equalp ltp)
+                   (data::symbol-compare-<< key head-key)
+             (cond (equalp
+                    (cdr (the cons (tree->head tree))))
+                   (ltp
+                    (symbol-tree-search-assoc key (tree->left tree)))
+                   (t
+                    (symbol-tree-search-assoc key (tree->right tree))))))))
   :enabled t
   ;; TODO: Why is the proof more complicated than that for
   ;;   acl2-number-tree-search-assoc?
@@ -356,12 +365,14 @@
        (if (tree-empty-p tree)
            nil
          (let ((head-key (tree-element->key (tree->head tree))))
-           (cond ((eql key head-key)
-                  (cdr (the cons (tree->head tree))))
-                 ((data::eqlable-<< key head-key)
-                  (eqlable-tree-search-assoc key (tree->left tree)))
-                 (t
-                  (eqlable-tree-search-assoc key (tree->right tree)))))))
+           (mv-let (equalp ltp)
+                   (data::eqlable-compare-<< key head-key)
+             (cond (equalp
+                    (cdr (the cons (tree->head tree))))
+                   (ltp
+                    (eqlable-tree-search-assoc key (tree->left tree)))
+                   (t
+                    (eqlable-tree-search-assoc key (tree->right tree))))))))
   :enabled t
   ;; TODO: Why is the proof more complicated than that for
   ;;   acl2-number-tree-search-assoc?
@@ -385,12 +396,14 @@
   (mbe :logic (tree-search-lookup! key tree)
        :exec
        (let ((head-key (tree-element->key (tree->head tree))))
-         (cond ((= key head-key)
-                (tree-element->val (tree->head tree)))
-               ((data::acl2-number-<< key head-key)
-                (acl2-number-tree-search-lookup! key (tree->left tree)))
-               (t
-                (acl2-number-tree-search-lookup! key (tree->right tree))))))
+         (mv-let (equalp ltp)
+                 (data::acl2-number-compare-<< key head-key)
+           (cond (equalp
+                  (tree-element->val (tree->head tree)))
+                 (ltp
+                  (acl2-number-tree-search-lookup! key (tree->left tree)))
+                 (t
+                  (acl2-number-tree-search-lookup! key (tree->right tree)))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-search-lookup!
                                            tree-search-assoc
@@ -406,12 +419,14 @@
   (mbe :logic (tree-search-lookup! key tree)
        :exec
        (let ((head-key (tree-element->key (tree->head tree))))
-         (cond ((eq key head-key)
-                (tree-element->val (tree->head tree)))
-               ((data::symbol-<< key head-key)
-                (symbol-tree-search-lookup! key (tree->left tree)))
-               (t
-                (symbol-tree-search-lookup! key (tree->right tree))))))
+         (mv-let (equalp ltp)
+                 (data::symbol-compare-<< key head-key)
+           (cond (equalp
+                  (tree-element->val (tree->head tree)))
+                 (ltp
+                  (symbol-tree-search-lookup! key (tree->left tree)))
+                 (t
+                  (symbol-tree-search-lookup! key (tree->right tree)))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-search-lookup!
                                            tree-search-assoc
@@ -427,12 +442,14 @@
   (mbe :logic (tree-search-lookup! key tree)
        :exec
        (let ((head-key (tree-element->key (tree->head tree))))
-         (cond ((eql key head-key)
-                (tree-element->val (tree->head tree)))
-               ((data::eqlable-<< key head-key)
-                (eqlable-tree-search-lookup! key (tree->left tree)))
-               (t
-                (eqlable-tree-search-lookup! key (tree->right tree))))))
+         (mv-let (equalp ltp)
+                 (data::eqlable-compare-<< key head-key)
+           (cond (equalp
+                  (tree-element->val (tree->head tree)))
+                 (ltp
+                  (eqlable-tree-search-lookup! key (tree->left tree)))
+                 (t
+                  (eqlable-tree-search-lookup! key (tree->right tree)))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-search-lookup!
                                            tree-search-assoc

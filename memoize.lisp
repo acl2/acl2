@@ -129,11 +129,13 @@
   (declare (xargs :guard t))
   (let ((condition (cond ((equal condition ''t) t)
                          ((equal condition ''nil) nil)
-                         (t condition))))
+                         (t condition)))
+        (key-expr1 `(deref-macro-name ,fn (macro-aliases world)))
+        (key-expr2 `(deref-macro-name ,fn (macro-aliases (w state)))))
     (cond
      ((and condition-fn (null condition-p))
       `(progn (table memoize-table
-                     (deref-macro-name ,fn (macro-aliases world))
+                     ,key-expr1
                      (list* (cons :condition-fn ,condition-fn)
                             (cons :inline ,inline)
                             (cons :commutative ,commutative)
@@ -147,20 +149,18 @@
                             (cons :invoke ,invoke)
                             (and (not (eq ,ideal-okp :default))
                                  (list (cons :ideal-okp ,ideal-okp)))))
-              (value-triple (deref-macro-name
-                             ,fn
-                             (macro-aliases (w state))))))
+              (value-triple ,key-expr2)))
      ((and condition-p
            (not (eq condition t))
            (not (eq condition nil)))
       `(make-event
-        (let* ((wrld (w state))
-               (fn (deref-macro-name ,fn (macro-aliases wrld)))
+        (let* ((world (w state)) ; key-expr1 (below) expects world, not wrld
+               (fn ,key-expr1)
                (condition ,condition)
                (formals
                 (and (symbolp fn) ; guard for getprop
-                     (getpropc fn 'formals t wrld)))
-               (stobjs-in (getpropc fn 'stobjs-in t wrld))
+                     (getpropc fn 'formals t world)))
+               (stobjs-in (getpropc fn 'stobjs-in t world))
                (condition-fn (or ,condition-fn
                                  (add-suffix fn "-MEMOIZE-CONDITION")))
                (hints ,hints)
@@ -184,8 +184,8 @@
 ; return-last will eventually be rejected for memoization anyhow (by
 ; memoize-table-chk).
 
-                                            wrld)))
-                       (cltl-def-from-name fn wrld)))
+                                            world)))
+                       (cltl-def-from-name fn world)))
                  (er hard 'memoize
                      "The symbol ~x0 is not a known function symbol, and thus ~
                       it cannot be memoized."
@@ -196,7 +196,7 @@
 ; the following is commented out.  That doesn't seem to cause a problem;
 ; redundancy of memoize forms seems to be handled well.
 
-;               ((cdr (assoc-eq fn (table-alist 'memoize-table wrld)))
+;               ((cdr (assoc-eq fn (table-alist 'memoize-table world)))
 ;                (er hard 'memoize "~x0 is already memoized." fn))
 
                 ((not (member-eq inline '(t nil)))
@@ -210,7 +210,7 @@
                       (declare
                        (ignorable ,@formals)
                        (xargs :guard
-                              ,(getpropc fn 'guard *t* wrld)
+                              ,(getpropc fn 'guard *t* world)
                               :verify-guards nil
                               ,@(let ((stobjs (collect-non-nil-df stobjs-in)))
                                   (and stobjs
@@ -242,7 +242,7 @@
                                        (list (cons :ideal-okp ',ideal-okp)))))
                     (value-triple ',fn)))))))
      (t `(progn (table memoize-table
-                       (deref-macro-name ,fn (macro-aliases world))
+                       ,key-expr1
                        (list* (cons :condition-fn ,condition) ; t or nil
                               (cons :inline ,inline)
                               (cons :commutative ,commutative)
@@ -256,9 +256,7 @@
                               (cons :invoke ,invoke)
                               (and (not (eq ',ideal-okp :default))
                                    (list (cons :ideal-okp ',ideal-okp)))))
-                (value-triple (deref-macro-name
-                               ,fn
-                               (macro-aliases (w state)))))))))
+                (value-triple ,key-expr2))))))
 
 (defmacro memoize (fn &key
                       (condition 't condition-p)

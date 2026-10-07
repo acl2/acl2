@@ -84,11 +84,10 @@
                  scopes))
        (scope (first scopes))
        (ord (c$::valid-scope->ord scope))
-       (lookup (assoc-equal ident ord))
-       ((unless lookup)
+       ((mv foundp ord-info) (treemap::lookup? (c$::ident-fix ident) ord))
+       ((unless foundp)
         (retmsg$ "Global struct object ~x0 not in the validation table."
-                 ident))
-       (ord-info (cdr lookup)))
+                 ident)))
     (c$::valid-ord-info-case
       ord-info
       ;; TODO: also return struct tag?
@@ -1212,7 +1211,7 @@
               ;; the validation table.
               (retmsg$ "Could not find struct type."))
              (ident-blacklist
-               (insert new-struct-tag1 (insert new-struct-tag2 ident-blacklist)))
+               (treeset::insert new-struct-tag1 (treeset::insert new-struct-tag2 ident-blacklist)))
              ((list new-struct1 new-struct2)
               (fresh-idents (list new-struct1
                                   new-struct2)
@@ -1251,7 +1250,7 @@
         ;; the validation table.
         (retmsg$ "Could not find struct type."))
        (ident-blacklist
-         (insert new-struct-tag1 (insert new-struct-tag2 ident-blacklist)))
+         (treeset::insert new-struct-tag1 (treeset::insert new-struct-tag2 ident-blacklist)))
        ((list new-struct1 new-struct2)
         (fresh-idents (list new-struct1
                             new-struct2)

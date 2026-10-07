@@ -38,6 +38,10 @@
 	((< x 1) (cons 1 (fl (/ x))))
 	(t (fl x))))
 
+; Matt K. addition from expo-proofs after bug fix to require well-founded
+; relations to match for a redundant definition:
+(set-well-founded-relation e0-ord-<)
+
 (defnd expo (x)
   (declare (xargs :measure (expo-measure x)
                   :verify-guards nil))

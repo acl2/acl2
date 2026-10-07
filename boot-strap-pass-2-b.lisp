@@ -457,6 +457,8 @@
   ()
   (verify-termination-boot-strap stobj-print-name)
   (verify-termination-boot-strap eviscerate-do$-alist)
+  (verify-termination-boot-strap collect-non-x)
+  (verify-termination-boot-strap do$-hard-er)
   (local (defthm nfix-list-preserves-consp
            (implies (consp x)
                     (consp (nfix-list x)))))
@@ -529,6 +531,8 @@
  (defwarrant eviscerate-do$-alist)
  (defwarrant loop$-default-values1)
  (defwarrant loop$-default-values)
+ (defwarrant collect-non-x)
+ (defwarrant do$-hard-er)
  (defwarrant do$)
 
  )

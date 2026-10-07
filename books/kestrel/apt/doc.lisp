@@ -38,6 +38,8 @@
 
 (include-book "remove-nesting")
 
+(include-book "rename-calls")
+
 (include-book "restrict")
 (include-book "restrict-doc")
 

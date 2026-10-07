@@ -15,6 +15,7 @@
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
+(include-book "std/strings/ascii-chars" :dir :system)
 (include-book "std/strings/cat-base" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 (include-book "std/typed-lists/nat-listp" :dir :system)
@@ -84,14 +85,6 @@
     :elementp-of-nil nil
     :pred pdoc-listp))
 
-(define char-list-all-ascii-p ((chars character-listp))
-  :returns (yes booleanp)
-  :short "True iff every character has @(tsee char-code) less than 128."
-  (cond ((endp chars) t)
-        ((< (char-code (car chars)) 128)
-         (char-list-all-ascii-p (cdr chars)))
-        (t nil)))
-
 (define ascii-string=>codepoints ((str stringp))
   :returns (cps nat-listp)
   :short "Map an ASCII string to its Unicode code points."
@@ -101,7 +94,7 @@
   (cond ((not (stringp str))
          (er hard 'pdoc-ascii
              "Expected a string literal, got ~x0." str))
-        ((not (char-list-all-ascii-p (acl2::explode str)))
+        ((not (str::ascii-charlist-p (acl2::explode str)))
          (er hard 'pdoc-ascii
              "String ~x0 contains a non-ASCII character." str))
         (t `(pdoc-text (quote ,(ascii-string=>codepoints str))))))

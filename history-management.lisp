@@ -1608,7 +1608,7 @@
                  PRIMITIVE-RECURSIVE-DEFUNP
                  CONSTRAINEDP
                  HEREDITARILY-CONSTRAINED-FNNAMES
-                 #+:non-standard-analysis CLASSICALP
+                 #+non-standard-analysis CLASSICALP
                  DEF-BODIES
                  INDUCTION-MACHINE
                  JUSTIFICATION
@@ -3065,7 +3065,7 @@
      ((eq event-type 'defun)
       (cond
        ((member-eq (car event) '(defuns mutual-recursion
-                                  #+:non-standard-analysis
+                                  #+non-standard-analysis
                                   defuns-std))
         (let ((def ; first definition, without leading defun
                (if (eq (car event) 'mutual-recursion)
@@ -3076,7 +3076,7 @@
               (car def)
             :no-event-data-name)))
        ((or (eq (car event) 'defun)
-            #+:non-standard-analysis
+            #+non-standard-analysis
             (eq (car event) 'defun-std))
         (cadr event))
        (t (er hard 'event-data-name
@@ -9191,7 +9191,7 @@
         (t (append (get-guard-hints1 (fourth (car lst)))
                    (get-guard-hints (cdr lst))))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun get-std-hints1 (edcls)
 
 ; A typical edcls might be
@@ -9220,7 +9220,7 @@
                         (cadr temp))))))
         (t (get-std-hints1 (cdr edcls)))))
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun get-std-hints (lst)
 
 ; Lst is a list of tuples of the form (name args doc edcls body).  We
@@ -10865,12 +10865,12 @@
 
 ; We do not want vestiges of the non-standard version in the standard version.
 
-        #+:non-standard-analysis STANDARDP
-        #+:non-standard-analysis STANDARD-PART
-        #+:non-standard-analysis I-LARGE-INTEGER
-        #+:non-standard-analysis REALFIX
-        #+:non-standard-analysis I-LARGE
-        #+:non-standard-analysis I-SMALL
+        #+non-standard-analysis STANDARDP
+        #+non-standard-analysis STANDARD-PART
+        #+non-standard-analysis I-LARGE-INTEGER
+        #+non-standard-analysis REALFIX
+        #+non-standard-analysis I-LARGE
+        #+non-standard-analysis I-SMALL
 
         ))
 
@@ -11216,7 +11216,7 @@
 ;; This checks to see whether two function symbols are both
 ;; classical or both non-classical
 
-#+:non-standard-analysis
+#+non-standard-analysis
 (defun@par chk-equiv-classicalp (fn1 fn2 termp ctx wrld state)
   (let ((cp1 (classicalp fn1 wrld))
         (cp2 (if termp ; fn2 is a term, not a function symbol
@@ -11308,7 +11308,7 @@
                     (chk-equal-arities@par fn1 (arity fn1 wrld)
                                            fn2 (arity fn2 wrld)
                                            ctx state)
-                    #+:non-standard-analysis
+                    #+non-standard-analysis
                     (chk-equiv-classicalp@par fn1 fn2 nil ctx wrld state)
                     (value@par (cons fn1 fn2))))
                   (t (er@par soft ctx str (car substn) fn2)))))
@@ -11324,7 +11324,7 @@
                  (chk-equal-arities@par fn1 (arity fn1 wrld)
                                         fn2 (length (cadr fn2))
                                         ctx state)
-                 #+:non-standard-analysis
+                 #+non-standard-analysis
                  (chk-equiv-classicalp@par fn1 body t ctx wrld state)
                  (value@par (cons fn1 (make-lambda (cadr fn2) body))))))
               (t (er@par soft ctx str (car substn) fn2))))
@@ -11344,7 +11344,7 @@
 ; After Version_3.4, Ruben Gamboa added the variable allow-freevars-p, with the
 ; following explanation:
 
-; Allow-freevars-p should be set to t in the #-:non-standard-analysis case, but
+; Allow-freevars-p should be set to t in the #-non-standard-analysis case, but
 ; otherwise set to nil when we are trying to apply the substitution to a
 ; non-classical formula.  In those cases, free variables in the body can
 ; capture non-standard objects, resulting in invalid theorems.  For example,
@@ -12215,10 +12215,110 @@
 ; the indicated lambda for f into the formula (forall (n) (equal (f n) 3)), and
 ; the free variable n of the lambda is captured by the universal quantifier!
 
-; Our solution here is to rename every variable in new-constraints that occurs
-; free in some lambda.  We return (mv bad-vars-alist C'), where bad-vars-alist
-; is a substitution that contain all pairs (v . v') for which v is renamed to
-; v', and C' is the result of applying that substitution to new-constraints.
+; When this problem was originally discovered (Version_7.3) our
+; solution was to rename every variable in new-constraints that occurs
+; free in some lambda.
+
+; Unfortunately, Eric Smith and Claude discovered a remaining unsoundness,
+; illustrated by the following proof of nil by Version_8.7+ obtained 14
+; September, 2026.  The original script produced by Claude was:
+
+; [Claude's example, which was proved in Version_8.7+ on 14 September, 2026.]
+; (defun f (a a-renamed0)
+;   (declare (ignore a a-renamed0))
+;   3)
+
+; (defthm good
+;   (equal (f x y) 3)
+;   :rule-classes nil)
+
+; (defthm nil-proved
+;   nil
+;   :rule-classes nil
+;   :hints (("Goal"
+;            :use ((:instance
+;                   (:functional-instance good
+;                     (f (lambda (p q) (if (equal p q) 3 a))))
+;                   (x 0) (y 1) (a 4))))))
+
+; Q.E.D.
+
+; But we have altered it in a couple of ways for debugging purposes.  First, we
+; added an additional formal to f, so that one formal, a, must be renamed
+; because it will be used freely in the lambda of the fn'l substitution, one
+; formal, b, need not be renamed because it is not used freely, and one formal,
+; a-renamed0, is named in a way designed to confuse our new name generator.  In
+; addition, we modified Claude's script to turn off gag mode, trace this
+; function, and use hidden-equal instead of equal so we could disable
+; hidden-equal and see the subgoals before they simplify to T.
+
+; [Our modification of Claude's script]
+
+; (defun f (a b a-renamed0)
+;   (declare (ignore a b a-renamed0))
+;   3)
+
+; (defthm good
+;   (equal (f x y z) 3)
+;   :rule-classes nil)
+
+; (set-gag-mode nil)
+
+; (trace$ remove-capture-in-constraint-lst)
+
+; (defun hidden-equal (x y) (equal x y))
+; (in-theory (disable hidden-equal))
+
+; (defthm nil-proved
+;   nil
+;   :rule-classes nil
+;   :hints (("Goal"
+;            :use ((:instance
+;                   (:functional-instance good
+;                    (f (lambda (p q r) (if (hidden-equal p r) 3 a))))
+;                   (x 0) (z 1) (a 4))))
+;           ("Subgoal 1'" :in-theory (enable hidden-equal))))
+
+; Again, we have a capture problem because the constraint on F is (equal (f A B
+; A-RENAMED0) 3) and if we were to naively replace f by the lambda we'd get
+
+; (equal ((lambda (p q r) (if (hidden-equal p r) 3 a)) a b a-renamed0) 3)
+;                                                  ^   ^
+;                                                  1   2
+
+; Note the two indicated variable occurrences of a.  Recall that we're really
+; substituting into a universal closure, i.e.,
+
+; (forall (a b a-renamed0) (equal (f a b a-renamed0) 3))
+
+; and, in the naive substitution, the free a inside the lambda is being
+; captured by the quantifier.  We need to think in terms of
+
+; (forall (a' b a-renamed) (equal (f a' b a-renamed0) 3))
+
+; where a' is a renaming of a.  We don't have to rename b since it doesn't
+; occur freely in the lambda.  And the third variable a-renamed0 is a trap
+; exploiting our name generator.  So far, so good.  The Version_8.7+ problem,
+; however, is that when we choose the new name for a we choose a name already
+; in use!  We need to avoid the name a-renamed0 when choosing a new name for a.
+; Summary: the selection of what variables to rename remains as it has been,
+; but the selection of ``new'' names must change.  This is accomplished by
+; specifying an appropriate list of variable names to avoid in the call of
+; fn-subst-renaming-alist.
+
+; Question: What variables are to be avoided?
+
+; Answer: every variable occurring freely in the functional substitution (as
+; 8.7+ already did) together with every variable occurring in the constraint on
+; f (our new fix).
+
+; We return (mv bad-vars-alist C'), where bad-vars-alist is a substitution that
+; contains all pairs (v . v') for which v is renamed to v', and C' is the result
+; of applying that substitution to new-constraints.  In particular, the
+; result generated by this function for the new attempt to prove nil-proved
+; above is:
+; (mv '((A . A-RENAMED1))
+;     '((EQUAL (F A-RENAMED1 B A-RENAMED0) '3)))
 
 ; We can view this function as providing a modified new-constraints that is
 ; just an alpha-variant of the original, to which alist can safely be applied
@@ -12237,7 +12337,8 @@
      (bad-vars
       (let* ((bad-vars-alist ; rename bad vars to fresh vars
               (fn-subst-renaming-alist bad-vars
-                                       fn-subst-free-vars))
+                                       (union-equal fn-subst-free-vars
+                                                    new-constraints-vars)))
              (new-constraints-renamed
               (sublis-var-lst bad-vars-alist new-constraints)))
         (mv bad-vars-alist new-constraints-renamed)))
@@ -12308,9 +12409,9 @@
                                     bad-vars-alist))
                   (t (state-mac@par)))
             (let ((allow-freevars-p
-                   #-:non-standard-analysis
+                   #-non-standard-analysis
                    t
-                   #+:non-standard-analysis
+                   #+non-standard-analysis
                    (classical-fn-list-p (all-fnnames formula) wrld)))
               (mv-let
                 (erp0 formula0)
@@ -13075,7 +13176,7 @@
                          wrld
                          (all-vars!1 (lambda-object-guard obj)
                                      wrld
-                                     (union-eq (lambda-object-formals (ffn-symb term))
+                                     (union-eq (lambda-object-formals obj)
                                                ans)))))
           (t ans)))
         ((flambdap (ffn-symb term))
@@ -15174,16 +15275,16 @@
     binary-* binary-+ unary-- unary-/ < car cdr
     char-code characterp code-char complex
     complex-rationalp
-    #+:non-standard-analysis complexp
+    #+non-standard-analysis complexp
     coerce cons consp denominator equal
-    #+:non-standard-analysis floor1
+    #+non-standard-analysis floor1
     if imagpart integerp
     intern-in-package-of-symbol numerator pkg-witness pkg-imports rationalp
-    #+:non-standard-analysis realp
+    #+non-standard-analysis realp
     realpart stringp symbol-name symbol-package-name symbolp
-    #+:non-standard-analysis standardp
-    #+:non-standard-analysis standard-part
-    ;; #+:non-standard-analysis i-large-integer
+    #+non-standard-analysis standardp
+    #+non-standard-analysis standard-part
+    ;; #+non-standard-analysis i-large-integer
     not))
 
 (defconst *s-prop-theory*

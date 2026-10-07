@@ -222,8 +222,7 @@
   (implies (syntaxp (not (quotep a)))
            (equal (bv-array-clear size len 0 (cons a b))
                   (bv-array-clear size len 0 (cons 0 b))))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bv-array-clear bv-array-write update-nth2))))
 
 (defthmd bv-array-write-of-0-becomes-bv-array-clear
   (equal (bv-array-write elem-size len index1 0 lst)
@@ -304,12 +303,12 @@
                  0
                (bvchop width (car data)))
            nil))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-clear bv-array-write update-nth2))))
 
 (defthm bv-array-clear-length-1-of-list-zero
   (equal (bv-array-clear width 1 index '(0))
          '(0))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-clear bv-array-write update-nth2))))
 
 (defthm cdr-of-bv-array-clear
   (implies (and (posp len)

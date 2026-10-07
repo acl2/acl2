@@ -13,15 +13,20 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
 (include-book "kestrel/json/top" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ types
   :parents (jsonrpc)
   :short "Types for the JSON-RPC 2.0 interface."
-  :long "<p>This section defines the ACL2 types used to represent JSON-RPC 2.0
-  data structures, including request identifiers, parameter structures, requests,
-  errors, and the alist mapping ids to parsed results.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This section defines the ACL2 types used to represent
+     JSON-RPC 2.0 data structures, including request identifiers,
+     parameter structures, requests, errors,
+     and the alist mapping ids to parsed results."))
   :order-subtopics t
   :default-parent t)
 
@@ -30,10 +35,14 @@
 ; id: MUST contain either a string, a number, or a null value
 (fty::deftagsum id
   :short "A JSON-RPC request/response identifier."
-  :long "<p>Per the JSON-RPC 2.0 specification, an @('id') MUST contain a
-  String, Number, or Null value if included in a request. The @(':null') case
-  is also used in error responses when the request @('id') could not be
-  determined (e.g. due to a parse error or invalid request).</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Per the JSON-RPC 2.0 specification, an @('id') MUST contain
+     a String, Number, or Null value if included in a request.
+     The @(':null') case is also used in error responses
+     when the request @('id') could not be determined
+     (e.g. due to a parse error or invalid request)."))
   (:string ((get string)))
   (:number ((get rational)))
   (:null ())
@@ -48,10 +57,13 @@
 
 (fty::deftagsum structured
   :short "A structured JSON value (Array or Object)."
-  :long "<p>Per the JSON-RPC 2.0 specification, the @('params') field of a
-  request, if present, MUST be a Structured value &mdash; either a JSON Array
-  (for by-position parameter passing) or a JSON Object (for by-name parameter
-  passing).</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Per the JSON-RPC 2.0 specification, the @('params') field of a request,
+     if present, MUST be a Structured value &mdash;
+     either a JSON Array (for by-position parameter passing)
+     or a JSON Object (for by-name parameter passing)."))
   (:array ((elements value-list)))
   (:object ((members member-list)))
   :pred structuredp)
@@ -71,20 +83,27 @@
 ;  - id: the request id
 (fty::defprod request
   :short "A parsed JSON-RPC 2.0 request object."
-  :long "<p>Represents a successfully parsed JSON-RPC 2.0 Request object with
-  the following fields:</p>
-  <ul>
-    <li>@('method'): the name of the method to be invoked.</li>
-    <li>@('params-presentp'): whether the @('params') field was present in the
-    request.</li>
-    <li>@('params'): the parameter values, either a JSON Array (by-position)
-    or JSON Object (by-name). Only meaningful when @('params-presentp') is
-    true.</li>
-    <li>@('notificationp'): true when no @('id') field was present, meaning
-    this is a notification and no response should be sent.</li>
-    <li>@('id'): the request identifier. Only meaningful when
-    @('notificationp') is false.</li>
-  </ul>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Represents a successfully parsed JSON-RPC 2.0 Request object
+     with the following fields:")
+   (xdoc::ul
+    (xdoc::li
+     "@('method'): the name of the method to be invoked.")
+    (xdoc::li
+     "@('params-presentp'): whether the @('params') field
+      was present in the request.")
+    (xdoc::li
+     "@('params'): the parameter values,
+      either a JSON Array (by-position) or JSON Object (by-name).
+      Only meaningful when @('params-presentp') is true.")
+    (xdoc::li
+     "@('notificationp'): true when no @('id') field was present,
+      meaning this is a notification and no response should be sent.")
+    (xdoc::li
+     "@('id'): the request identifier.
+      Only meaningful when @('notificationp') is false.")))
   ((method string)
    (params-presentp bool)
    (params structured)
@@ -115,21 +134,35 @@
 ;  - data: additional info, MAY be ommitted
 (fty::defprod error
   :short "A JSON-RPC 2.0 error object."
-  :long "<p>Represents a JSON-RPC 2.0 error with the following fields:</p>
-  <ul>
-    <li>@('code'): an integer error code. The following codes are predefined:
-    @('-32700') (Parse error), @('-32600') (Invalid Request), @('-32601')
-    (Method not found), @('-32602') (Invalid params), @('-32603') (Internal
-    error). Codes from @('-32000') to @('-32099') are reserved for
-    server-defined errors.</li>
-    <li>@('message'): a short string description of the error.</li>
-    <li>@('data'): an optional JSON value containing additional error
-    information. May be @('nil') if absent.</li>
-  </ul>
-  <p>Use the constructors @(see make-parse-error), @(see make-invalid-request-error),
-  @(see make-method-not-found-error), @(see make-invalid-params-error), and
-  @(see make-internal-error) to build errors with the correct standard
-  codes.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Represents a JSON-RPC 2.0 error with the following fields:")
+   (xdoc::ul
+    (xdoc::li
+     "@('code'): an integer error code.
+      The following codes are predefined:
+      @('-32700') (Parse error),
+      @('-32600') (Invalid Request),
+      @('-32601') (Method not found),
+      @('-32602') (Invalid params),
+      @('-32603') (Internal error).
+      Codes from @('-32000') to @('-32099')
+      are reserved for server-defined errors.")
+    (xdoc::li
+     "@('message'): a short string description of the error.")
+    (xdoc::li
+     "@('data'): an optional JSON value
+      containing additional error information.
+      May be @('nil') if absent."))
+   (xdoc::p
+    "Use the constructors
+     @(see make-parse-error),
+     @(see make-invalid-request-error),
+     @(see make-method-not-found-error),
+     @(see make-invalid-params-error), and
+     @(see make-internal-error)
+     to build errors with the correct standard codes."))
   ((code int)
    (message string)
    (data value-option))
@@ -165,11 +198,15 @@
 ; request+error: contains a request and an error
 (fty::deftagsum request+error
   :short "The result of parsing a single JSON-RPC request element."
-  :long "<p>Represents either a successfully parsed @(see request) or a
-  parse-time @(see error). This is the per-element result of @(see
-  parse-rpc-request): if the element is a valid request it yields a
-  @(':request'), otherwise it yields an @(':error') with the appropriate
-  error code and message.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Represents either a successfully parsed @(see request)
+     or a parse-time @(see error).
+     This is the per-element result of @(see parse-rpc-request):
+     if the element is a valid request it yields a @(':request'),
+     otherwise it yields an @(':error')
+     with the appropriate error code and message."))
   (:request ((get request)))
   (:error ((get error)))
   :pred request+errorp)
@@ -177,12 +214,16 @@
 ; id-request+error-alist: mapping ids to request-errors
 (fty::defalist id-request+error-alist
   :short "An alist mapping request ids to their parsed results."
-  :long "<p>Maps each request @(see id) to the corresponding @(see
-  request+error) &mdash; either a successfully parsed @(see request) or a
-  parse-time @(see error). This is the output of @(see parse-json-rpc) and
-  the input to @(see process-all). For batch requests, there is one entry per
-  element of the input array. For single requests, there is exactly one
-  entry.</p>"
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Maps each request @(see id) to the corresponding @(see request+error)
+     &mdash; either a successfully parsed @(see request)
+     or a parse-time @(see error).
+     This is the output of @(see parse-json-rpc)
+     and the input to @(see process-all).
+     For batch requests, there is one entry per element of the input array.
+     For single requests, there is exactly one entry."))
   :key-type id
   :val-type request+error
   :true-listp t

@@ -1156,7 +1156,7 @@
              :sint (try-value-sint (* val1.get (value-sint->get val2)) ienv)
              :ulong (value-ulong-mod (* val1.get (value-ulong->get val2)) ienv)
              :slong (try-value-slong (* val1.get (value-slong->get val2)) ienv)
-             :ullong (value-ulong-mod (* val1.get (value-ullong->get val2)) ienv)
+             :ullong (value-ullong-mod (* val1.get (value-ullong->get val2)) ienv)
              :sllong (try-value-sllong (* val1.get (value-sllong->get val2)) ienv)
              ;; TODO: prove that uaconverted, arithmetic, and non-unknown gives
              ;;   us one of the above cases.
@@ -1186,7 +1186,7 @@
              :ullong (b* ((val2.get (value-ullong->get val2))
                           ((when (= 0 (the unsigned-byte val2.get)))
                            (value-unknown)))
-                       (value-ulong-mod (truncate val1.get val2.get) ienv))
+                       (value-ullong-mod (truncate val1.get val2.get) ienv))
              :sllong (b* ((val2.get (value-sllong->get val2))
                           ((when (= 0 (the integer val2.get)))
                            (value-unknown)))
@@ -1201,7 +1201,7 @@
              :sint (try-value-sint (+ val1.get (value-sint->get val2)) ienv)
              :ulong (value-ulong-mod (+ val1.get (value-ulong->get val2)) ienv)
              :slong (try-value-slong (+ val1.get (value-slong->get val2)) ienv)
-             :ullong (value-ulong-mod (+ val1.get (value-ullong->get val2)) ienv)
+             :ullong (value-ullong-mod (+ val1.get (value-ullong->get val2)) ienv)
              :sllong (try-value-sllong (+ val1.get (value-sllong->get val2)) ienv)
              :otherwise (value-unknown))
       ;; 6.5.6/6
@@ -1211,7 +1211,7 @@
              :sint (try-value-sint (- val1.get (value-sint->get val2)) ienv)
              :ulong (value-ulong-mod (- val1.get (value-ulong->get val2)) ienv)
              :slong (try-value-slong (- val1.get (value-slong->get val2)) ienv)
-             :ullong (value-ulong-mod (- val1.get (value-ullong->get val2)) ienv)
+             :ullong (value-ullong-mod (- val1.get (value-ullong->get val2)) ienv)
              :sllong (try-value-sllong (- val1.get (value-sllong->get val2)) ienv)
              :otherwise (value-unknown))
       ;; TODO
@@ -1243,8 +1243,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule well-formed-value-p-of-eval-binop
-  (implies (well-formed-value-p val ienv)
-           (well-formed-value-p (eval-binop op val1 val2 ienv) ienv))
+  (well-formed-value-p (eval-binop op val1 val2 ienv) ienv)
   :enable (eval-binop
            well-formed-value-p))
 

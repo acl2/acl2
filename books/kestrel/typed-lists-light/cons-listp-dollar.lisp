@@ -1,6 +1,6 @@
 ; A recognizer for a true list of conses
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,8 +12,7 @@
 
 ;; Note that the cons-listp function from STD does not check that its argument
 ;; is a true-list, contrary to the convention that FOO-listp functions do so.
-;; todo: disable
-(defun cons-listp$ (x)
+(defund cons-listp$ (x)
   (declare (xargs :guard t))
   (if (consp x)
       (and (consp (car x))

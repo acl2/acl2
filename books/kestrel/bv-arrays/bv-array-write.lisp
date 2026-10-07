@@ -154,8 +154,7 @@
   (implies (syntaxp (not (equal index ''0))) ;prevents loops
            (equal (bv-array-write size 1 index val data)
                   (bv-array-write size 1 0 val '(0))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2 UPDATE-NTH)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bv-array-write update-nth2 UPDATE-NTH))))
 
 (defthm bv-array-write-when-len-is-not-natp
   (implies (not (natp len))
@@ -170,8 +169,7 @@
               (equal 1 (len k))
               (equal (car k) (bvchop size val))))
   :hints (("Goal"
-           :in-theory (e/d (bv-array-write update-nth2 UPDATE-NTH)
-                           ()))))
+           :in-theory (enable bv-array-write update-nth2 UPDATE-NTH))))
 
 ;move
 (defthm equal-of-bv-array-write-of-1-constant-version
@@ -181,8 +179,7 @@
                        (equal 1 (len k))
                        (equal (car k) (bvchop size val)))))
   :hints (("Goal"
-           :in-theory (e/d (bv-array-write update-nth2 UPDATE-NTH)
-                           ()))))
+           :in-theory (enable bv-array-write update-nth2 UPDATE-NTH))))
 
 ;; width is a free var
 (defthmd update-nth2-becomes-bv-array-write
@@ -226,7 +223,7 @@
                 (integerp size))
            (equal (bv-array-write element-size len index (bvchop size val) data)
                   (bv-array-write element-size len index val data)))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-write update-nth2))))
 
 (defthm nthcdr-of-bv-array-write-is-nil
   (implies (and (<= len n)

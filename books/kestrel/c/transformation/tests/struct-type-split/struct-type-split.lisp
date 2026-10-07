@@ -145,12 +145,68 @@ int main(void) {
                        :typedef-name "nonexistent"
                        :right-members ("z")))
 
+  ;; Every right member name must exist, even when another name is valid.
+  (must-fail
+    (struct-type-split *old* *new*
+                       :struct-tag "point"
+                       :right-members ("nonexistent")))
+
+  (must-fail
+    (struct-type-split *old* *new*
+                       :struct-tag "point"
+                       :right-members ("z" "nonexistent")))
+
   ;; No right members are specified.
   (must-fail
     (struct-type-split *old*
                        *new*
                        :struct-tag "point"
                        :right-members ()))
+
+  ;; Moving every member would turn the original definition into an
+  ;; incomplete declaration, leaving the static object p with incomplete
+  ;; type.  The validator accepts this case, but a C compiler rejects it.
+  (must-fail
+    (struct-type-split *old*
+                       *new*
+                       :struct-tag "point"
+                       :right-members ("x" "y" "z")
+                       :new-tag "point_right"))
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Unnamed members stay on the left, even when every named member
+;; (including promoted names) is selected for the right.
+
+(acl2::must-succeed*
+  (c$::input-files :files '("unnamed-left.c")
+                   :const *old*)
+
+  (struct-type-split *old* *new-bitfield*
+                     :struct-tag "bitfield"
+                     :right-members ("z"))
+
+  (struct-type-split *old* *new-struct*
+                     :struct-tag "anonymous_struct"
+                     :right-members ("x" "z"))
+
+  (struct-type-split *old* *new-union*
+                     :struct-tag "anonymous_union"
+                     :right-members ("x" "y" "z"))
+
+  ;; Promoted names exist, but selecting only these names leaves the
+  ;; right partition empty because the anonymous member stays left.
+  (must-fail
+    (struct-type-split *old* *new*
+                       :struct-tag "anonymous_struct"
+                       :right-members ("x")))
+
+  (must-fail
+    (struct-type-split *old* *new*
+                       :struct-tag "anonymous_union"
+                       :right-members ("x" "y")))
 
   :with-output-off nil)
 
@@ -1283,6 +1339,14 @@ int main(void) {
                      :right-members ("next")
                      :new-tag "point_right_only")
 
+  ;; Selecting every name still leaves the directly splittable members
+  ;; on both sides, so the original struct does not become empty.
+  (struct-type-split *old*
+                     *new-all-names*
+                     :struct-tag "point"
+                     :right-members ("x" "z" "next" "indirect" "children")
+                     :new-tag "point_right_all")
+
   :with-output-off nil)
 
 (acl2::must-succeed*
@@ -1311,6 +1375,90 @@ int main(void) {
                      :struct-tag "node"
                      :right-members ("z")
                      :new-tag "node_right")
+
+  :with-output-off nil)
+
+(acl2::must-succeed*
+  ;; A nonsplittable self-referential member: a function pointer whose
+  ;; parameter type is the target struct type.  The member is routed by name
+  ;; and stays on the left, but its parameter list splits, so the definition
+  ;; of the left struct type mentions the tag of the right struct type.
+  ;; A tag first declared inside a function prototype has prototype scope
+  ;; [C17:6.2.1/7], so without a forward declaration it would denote a type
+  ;; distinct from the right struct type.
+  (c$::input-files :files '("self-ref-callback.c")
+                   :const *old*)
+
+  (struct-type-split *old*
+                     *new*
+                     :struct-tag "point"
+                     :right-members ("z")
+                     :new-tag "point_right")
+
+  (c$::output-files :const *new*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/self-ref-callback.c"
+    :content "struct point_right;
+
+struct point {
+  int x;
+  void (*setz)(struct point *p, struct point_right *p_0);
+};
+
+struct point_right {
+  int z;
+};
+
+void setz(struct point *p, struct point_right *p_1) {
+  p_1->z = 2;
+}
+
+int main(void) {
+  struct point p;
+  struct point_right p_2;
+  p.setz = setz;
+  p.setz(&p, &p_2);
+  return p_2.z;
+}
+")
+
+  ;; When the callback goes right, the definition of the right struct type
+  ;; declares its own tag before the callback prototype that mentions it,
+  ;; so no forward declaration is requested.
+  (struct-type-split *old*
+                     *new-right*
+                     :struct-tag "point"
+                     :right-members ("z" "setz")
+                     :new-tag "point_right")
+
+  (c$::output-files :const *new-right*
+                    :base-dir "new")
+
+  (assert-file-contents
+    :file "new/self-ref-callback.c"
+    :content "struct point {
+  int x;
+};
+
+struct point_right {
+  int z;
+  void (*setz)(struct point *p, struct point_right *p_0);
+};
+
+void setz(struct point *p, struct point_right *p_1) {
+  p_1->z = 2;
+}
+
+int main(void) {
+  struct point p;
+  struct point_right p_2;
+  p_2.setz = setz;
+  p_2.setz(&p, &p_2);
+  return p_2.z;
+}
+")
 
   :with-output-off nil)
 
@@ -1663,6 +1811,14 @@ int main(void) {
 
  (c$::input-files :files '("opaque.c")
                   :const *old*)
+
+ ;; An incomplete selected type has no member list against which to
+ ;; validate the requested names.  Splitting its declaration is allowed.
+ (struct-type-split *old*
+                    *new-opaque*
+                    :struct-tag "opaque"
+                    :right-members ("right")
+                    :new-tag "opaque_right")
 
  (struct-type-split *old*
                     *new*

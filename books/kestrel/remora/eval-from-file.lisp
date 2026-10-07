@@ -12,6 +12,7 @@
 
 (include-book "evaluation")
 (include-book "parser-interface")
+(include-book "parse-error-printing")
 (include-book "type-checker")
 (include-book "utility-transforms")
 (include-book "value-printing")
@@ -24,7 +25,7 @@
 
 (define eval-from-file ((filename stringp) state &key ((limit natp) '1000000))
   :parents (evaluation)
-  :returns (mv result state)
+  :returns (mv (successp booleanp) state)
   :guard-hints (("Goal" :in-theory (enable filep-when-result-not-error
                                            exprp-when-result-not-error
                                            type+expr-p-when-result-not-error)))
@@ -40,9 +41,9 @@
      type-checks that (via @(tsee check-top-expr)),
      and evaluates it with @(tsee eval-top-expr), printing the resulting
      expression value in Remora concrete syntax via @(tsee print-expr-value).
-     Returns @('(mv result state)'), where @('result') is the @(tsee expr-value)
-     of the expression, or a @(tsee reserrp) when parsing, reduction,
-     type checking, or evaluation fails.
+     Returns @('(mv successp state)'), where @('successp') is @('t')
+     if the value was computed and printed, and @('nil') if parsing,
+     reduction, type checking, evaluation, or printing the value fails.
      The expression that is evaluated is the one returned by the type checker
      (currently identical to the one reduced from the file;
      see @(tsee check-top-expr)).")
@@ -62,25 +63,26 @@
      fails with @('(reserr :limit)') if it is exhausted."))
   (b* (((mv ast state) (parse-from-file filename state))
        ((when (reserrp ast))
-        (b* ((- (cw "Parse error in ~s0: ~x1~%" filename ast)))
-          (mv ast state)))
+        (b* ((- (cw "Parse error in ~s0:~%" filename))
+             (- (print-parse-error ast)))
+          (mv nil state)))
        (expr (file-to-expr ast))
        ((when (reserrp expr))
         (b* ((- (cw "Cannot run ~s0: ~x1~%" filename expr)))
-          (mv expr state)))
+          (mv nil state)))
        (type+expr (check-top-expr expr))
        ((when (reserrp type+expr))
         (b* ((- (cw "Type checking ~s0 failed: ~x1~%" filename type+expr)))
-          (mv type+expr state)))
+          (mv nil state)))
        ((type+expr te) type+expr)
        (val (eval-top-expr te.expr limit))
        ((when (reserrp val))
         (b* ((- (cw "Evaluating ~s0 failed: ~x1~%" filename val)))
-          (mv val state)))
+          (mv nil state)))
        ((mv err str) (print-expr-value val))
        ((when err)
         (b* ((- (cw "Evaluating ~s0 produced an unprintable value: ~x1~%"
                    filename val)))
-          (mv val state)))
+          (mv nil state)))
        (- (cw "~s0~%" str)))
-    (mv val state)))
+    (mv t state)))

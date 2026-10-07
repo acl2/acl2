@@ -9,7 +9,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
  ; load the user's ACL2 customization file, if any:
-(ld "~/acl2-customization.lsp")
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 (ld "package.lsp")
 (in-package "WASM")
 (reset-prehistory)

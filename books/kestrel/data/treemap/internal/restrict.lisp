@@ -80,7 +80,7 @@
            (let ((left (tree-restrict left (tree->left tree)))
                  (right (tree-restrict right (tree->right tree))))
              (if in
-                 (tree-node (tree->head tree) left right)
+                 (tree-node-with-hint (tree->head tree) left right tree)
                (mbe :logic (tree-join-at (tree-element->key (tree->head tree))
                                          left right)
                     :exec (tree-join left right))))))
@@ -276,7 +276,7 @@
                       (right (acl2-number-tree-restrict right
                                                         (tree->right tree))))
                   (if in
-                      (tree-node (tree->head tree) left right)
+                      (tree-node-with-hint (tree->head tree) left right tree)
                     (tree-join left right)))))
              (t
               (mv-let (assoc left right)
@@ -334,7 +334,7 @@
                       (right (symbol-tree-restrict right
                                                         (tree->right tree))))
                   (if in
-                      (tree-node (tree->head tree) left right)
+                      (tree-node-with-hint (tree->head tree) left right tree)
                     (tree-join left right)))))
              (t
               (mv-let (assoc left right)
@@ -392,7 +392,7 @@
                       (right (eqlable-tree-restrict right
                                                         (tree->right tree))))
                   (if in
-                      (tree-node (tree->head tree) left right)
+                      (tree-node-with-hint (tree->head tree) left right tree)
                     (tree-join left right)))))
              (t
               (mv-let (assoc left right)

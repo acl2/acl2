@@ -269,7 +269,7 @@
 (df+ (identity-macro (to-df 1/4)) 1/2)
 
 ; Our next goal is to assert a failure of associativity discussed
-; above, but this time using LET-bindings.  However, first we'll shown
+; above, but this time using LET-bindings.  However, first we'll show
 ; two ill-formed attempts to do that, as a means to explain why the
 ; successful example is written the way it is.
 

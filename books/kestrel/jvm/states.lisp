@@ -12,35 +12,13 @@
 (in-package "JVM")
 
 (include-book "bindings")
-(include-book "values")
 (include-book "classes")
 (include-book "call-stacks")
 (include-book "intern-table")
-(include-book "strings")
-(include-book "kestrel/utilities/myif" :dir :system)
-(include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/alists-light/acons" :dir :system)
-(include-book "locals")
-(include-book "float-to-bits")
 (include-book "array-building")
-(include-book "kestrel/booleans/bool-fix-def" :dir :system)
-(include-book "kestrel/bv/defs-arith" :dir :system)
-(include-book "kestrel/bv/bvsx-def" :dir :system)
-(include-book "kestrel/bv/defs" :dir :system) ;overkill
-(include-book "kestrel/bv/sbvlt-def" :dir :system)
-(include-book "kestrel/bv-arrays/bv-arrayp" :dir :system)
-(include-book "kestrel/bv-arrays/bv-array-read" :dir :system)
-(include-book "kestrel/bv-arrays/bv-array-write" :dir :system)
-(include-book "kestrel/utilities/defopeners" :dir :system)
-(include-book "tools/flag" :dir :system)
-(include-book "kestrel/lists-light/subrange-def" :dir :system)
-(include-book "kestrel/lists-light/update-subrange2" :dir :system)
 (local (include-book "kestrel/sequences/defforall" :dir :system))
-(local (include-book "kestrel/lists-light/nth" :dir :system))
-(local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
-(local (include-book "kestrel/lists-light/cdr" :dir :system))
-(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 
 (defthm intern-table-okp-of-initialize-one-dim-array
   (implies (not (set::in ad (acl2::rkeys heap)))
@@ -72,8 +50,6 @@
 ;; the monitor associated with the resolved Class object is entered or
 ;; reentered as if by execution of a monitorenter instruction
 ;; (monitorenter) in the current thread."
-
-;fixme: make this an alist instead of a map?
 
 ;fixme check that the heap object is in fact right?
 (defforall all-heapref-table-entryp (x)
@@ -118,11 +94,24 @@
             (addressp (lookup-equal class-name heapref-table)))
    :hints (("Goal" :in-theory (enable heapref-tablep)))))
 
-(defthm addressp-of-get-classs-object
+(defthm addressp-of-get-class-object
   (implies (and (heapref-tablep heapref-table)
                 (get-class-object class-name heapref-table) ; the class is present
                 )
            (addressp (get-class-object class-name heapref-table)))
+  :hints (("Goal" :in-theory (enable get-class-object))))
+
+(defthm not-null-refp-of-get-class-object
+  (implies (heapref-tablep heapref-table)
+           (not (null-refp (get-class-object class-name heapref-table))))
+  :hints (("Goal" :in-theory (enable get-class-object heapref-tablep))))
+
+;; todo: use something better than acons
+(defthm get-class-object-of-acons
+  (equal (get-class-object class-name (acons class-name2 ad heapref-table))
+         (if (equal class-name class-name2)
+             ad
+           (get-class-object class-name heapref-table)))
   :hints (("Goal" :in-theory (enable get-class-object))))
 
 ;;

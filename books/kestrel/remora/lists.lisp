@@ -404,7 +404,6 @@
                     (repeat m (repeat n x))))
     :induct (repeat m x)
     :enable repeat))
-           
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -491,7 +490,7 @@
     (equal (len (car (cdr-list lists)))
            (nfix (+ -1 (len (car lists)))))
     :induct t)
-  
+
   (defruled all-of-len-p-of-cdr-list
     (implies (and (all-of-len-p lists len)
                   (equal (nfix n) (nfix (+ -1 len))))
@@ -552,12 +551,12 @@
                (len lists)
              0))
     :expand ((transpose-list-list lists)))
-  
+
   (defrule transpose-list-list-of-repeat-of-nil
     (implies (posp n)
              (not (transpose-list-list (repeat n nil))))
     :induct t
-    :enable repeat) 
+    :enable repeat)
 
   (defruled transpose-list-list-of-repeat-of-repeat
     (implies (and (posp m)

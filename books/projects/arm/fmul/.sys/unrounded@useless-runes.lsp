@@ -6122,6 +6122,7 @@
  (68 2 (:REWRITE |(< (if a b c) x)|))
  (36 36 (:TYPE-PRESCRIPTION FMT-TO-COMMENT-WINDOW))
  (36 36 (:REWRITE |(* (expt x m) (expt x n))|))
+ (36 36 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  (35 35 (:REWRITE |(< 0 (/ x))|))
  (35 35 (:REWRITE |(< 0 (* x y))|))
  (30 30 (:REWRITE SIMPLIFY-TERMS-SUCH-AS-0-<-AX+BX-RATIONAL-REMAINDER))

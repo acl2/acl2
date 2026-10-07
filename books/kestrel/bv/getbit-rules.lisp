@@ -179,3 +179,10 @@
                   (bitnot (getbit n x))))
   :hints (("Goal" :use (getbit-of-+-of-expt-same-arg1)
            :in-theory (disable getbit-of-+-of-expt-same-arg1))))
+
+(defthm getbit-of-+-of---of-expt-same-arg2
+  (implies (and (natp n)
+                (integerp x))
+           (equal (getbit n (+ x (- (expt 2 n))))
+                  (bitnot (getbit n x))))
+  :hints (("Goal" :in-theory (enable getbit-of-+ bitxor-split))))

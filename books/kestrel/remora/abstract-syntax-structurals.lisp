@@ -133,6 +133,20 @@
     (atom-list-wfp atoms)
     :hints (("Goal" :induct t))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection type/ispace-var-type-list ((x type-var-listp))
+  :returns (vars type/ispace-var-listp)
+  :short "Lift @(tsee type/ispace-var-type) to lists."
+  (type/ispace-var-type x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection type/ispace-var-ispace-list ((x ispace-var-listp))
+  :returns (vars type/ispace-var-listp)
+  :short "Lift @(tsee type/ispace-var-ispace) to lists."
+  (type/ispace-var-ispace x))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defprojection dim-const-list->val ((x dim-listp))
@@ -215,6 +229,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::defprojection var+type?-list->type? ((x var+type?-listp))
+  :returns (type?s type-option-listp)
+  :short "Lift @(tsee var+type?->type?) to lists."
+  (var+type?->type? x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define var+type?->type-or-err ((vt var+type?-p))
   :returns (type type-resultp)
   :short "Extract the type from a variable with an optional type,
@@ -252,9 +273,7 @@
     (implies (not (reserrp types))
              (type-list-wfp types))
     :hyp (var+type?-list-wfp x)
-    :hints (("Goal"
-             :induct t
-            ))))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -531,7 +550,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var+type?-list-set-vars ((vars string-listp) (var+types var+type?-listp))
+(define var+type?-list-set-vars ((vars string-listp)
+                                 (var+types var+type?-listp))
   :returns (new-var+types var+type?-listp)
   :short "Replace, in a list of variables with optional types,
           the variables with given ones, keeping the optional types."
@@ -551,7 +571,42 @@
   (defret len-of-var+type?-list-set-vars
     (equal (len new-var+types)
            (len var+types))
-    :hints (("Goal" :induct t :in-theory (enable len)))))
+    :hints (("Goal" :induct t :in-theory (enable len))))
+
+  (defret var+type?-list->type?-of-var+type?-list-set-vars
+    (equal (var+type?-list->type? new-var+types)
+           (var+type?-list->type? var+types))
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define var+type?-list-set-types ((types type-option-listp)
+                                  (var+types var+type?-listp))
+  :returns (new-var+types var+type?-listp)
+  :short "Replace, in a list of variables with optional types,
+          the optional types with given ones, keeping the variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two lists are expected to have the same length.
+     We should make this a guard."))
+  (b* (((when (endp var+types)) nil)
+       ((when (endp types)) (var+type?-list-fix var+types))
+       (vt (car var+types)))
+    (cons (make-var+type? :var (var+type?->var vt) :type? (car types))
+          (var+type?-list-set-types (cdr types) (cdr var+types))))
+
+  ///
+
+  (defret len-of-var+type?-list-set-types
+    (equal (len new-var+types)
+           (len var+types))
+    :hints (("Goal" :induct t :in-theory (enable len))))
+
+  (defret var+type?-list->var-of-var+type?-list-set-types
+    (equal (var+type?-list->var new-var+types)
+           (var+type?-list->var var+types))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1122,6 +1177,59 @@
              :pin (len type.params)
              :sigma 1
              :sigman (len type.params)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-peel-binders ((type typep))
+  :returns (mv (vars type/ispace-var-listp)
+               (rest typep))
+  :short "Peel off the leading universal and product binders of a type,
+          through array types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We peel off universal and product types,
+     collecting their bound variables in order, outermost first,
+     and we traverse array and bracket types to their element types,
+     disregarding their ispaces.
+     Any other type stops the peeling,
+     and is returned along with the collected variables."))
+  (type-case
+   type
+   :var (mv nil (type-fix type))
+   :base (mv nil (type-fix type))
+   :array (type-peel-binders type.elem)
+   :bracket (type-peel-binders type.elem)
+   :fun (mv nil (type-fix type))
+   :funn (mv nil (type-fix type))
+   :forall (b* (((mv vars rest) (type-peel-binders type.body)))
+             (mv (cons (type/ispace-var-type type.param) vars) rest))
+   :foralln (b* (((mv vars rest) (type-peel-binders type.body)))
+              (mv (append (type/ispace-var-type-list type.params) vars) rest))
+   :pi (b* (((mv vars rest) (type-peel-binders type.body)))
+         (mv (cons (type/ispace-var-ispace type.param) vars) rest))
+   :pin (b* (((mv vars rest) (type-peel-binders type.body)))
+          (mv (append (type/ispace-var-ispace-list type.params) vars) rest))
+   :sigma (mv nil (type-fix type))
+   :sigman (mv nil (type-fix type)))
+  :measure (type-count type)
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type/ispace-var-list-to-sets ((vars type/ispace-var-listp))
+  :returns (mv (ivars ispace-var-setp)
+               (tvars type-var-setp))
+  :short "Split a list of type and ispace variables
+          into a set of ispace variables and a set of type variables."
+  (b* (((when (endp vars)) (mv nil nil))
+       ((mv ivars tvars) (type/ispace-var-list-to-sets (cdr vars)))
+       (var (car vars)))
+    (type/ispace-var-case
+     var
+     :type (mv ivars (set::insert var.var tvars))
+     :ispace (mv (set::insert var.var ivars) tvars)))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

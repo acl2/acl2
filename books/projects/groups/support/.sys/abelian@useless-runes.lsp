@@ -1000,6 +1000,7 @@
  (1 1 (:REWRITE |(< (+ (- c) x) y)|))
  (1 1 (:REWRITE |(< (* x y) 0)|))
  (1 1 (:REWRITE |(* (expt c m) (expt d n))|))
+ (1 1 (:REWRITE |(* (expt c m) (expt d (- m)))|))
  )
 (DM::P-GROUP-ORD-DIVIDES-MAX-ORD
  (77 7 (:DEFINITION LEN))

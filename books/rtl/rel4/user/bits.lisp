@@ -47,6 +47,9 @@
 
 (defund expo (x)
   (declare (xargs :guard t
+; Matt K. addition after bug fix to require well-founded relations to match for
+; a redundant definition:
+                  :well-founded-relation e0-ord-<
                   :measure (expo-measure x)))
   (cond ((or (not (rationalp x)) (equal x 0)) 0)
 	((< x 0) (expo (- x)))

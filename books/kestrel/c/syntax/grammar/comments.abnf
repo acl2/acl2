@@ -15,11 +15,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Although [C17:6.4.9/2] and [C23:6.4.9] say that
-; the ending new line is not part of the line comment,
-; grammatically it is convenient to make it part of the comment,
-; so we can enforce that the line comment ends with new line.
-
 comment = block-comment
         / line-comment
 
@@ -33,4 +28,4 @@ rest-of-block-comment-after-star =
     / "*" rest-of-block-comment-after-star
     / character-not-star-or-slash rest-of-block-comment
 
-line-comment = "//" *character-not-new-line new-line
+line-comment = "//" *character-not-new-line

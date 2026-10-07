@@ -89,6 +89,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; See also myif-becomes-bvif-when-unsigned-byte-p-arg1 and
+;; myif-becomes-bvif-when-unsigned-byte-p-arg2
+
 (defthmd myif-becomes-bvif-1-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
