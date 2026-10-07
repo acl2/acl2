@@ -1984,11 +1984,7 @@
                             (:e c::type-sint)
                             (:e member-equal)
                             (:e c::expr-purep)
-                            expr-compustate-vars
-                            ;; TODO: remove the following two rules
-                            ;; after exec-member-... has been rephrased:
-                            (:e c::expr-ident)
-                            (:e c::expr-member))
+                            expr-compustate-vars)
                :use ((:instance ,arg1-thm-name
                                 (limit (1- limit)))
                      (:instance ,arg2-thm-name
