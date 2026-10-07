@@ -420,6 +420,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define init-ispace-senv ()
+  :returns (ienv ispace-senvp)
+  :short "Initial ispace static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the initial, i.e. top-level, ispace static environment.
+     It is empty."))
+  (ispace-senv nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define init-type-senv ()
+  :returns (tenv type-senvp)
+  :short "Initial type static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the initial, i.e. top-level, type static environment.
+     It is empty."))
+  (type-senv nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define init-expr-senv ()
   :returns (eenv expr-senvp)
   :short "Initial expression static environment."
@@ -427,8 +451,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is the initial, i.e. top-level, expression static environment.
-     It only contains the primitive operations in scope.
-     The initial ispace and type static environments are empty."))
+     It contains the primitive operations."))
   (expr-senv (primop-types)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
