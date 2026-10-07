@@ -1297,8 +1297,8 @@
         (packn-pos (list 'type-of-value-of- new-acc) 'struct-value-))
        (event
         `(defruled ,thm-name
-           (b* ((old-expr (c::expr-member (c::expr-ident ',old-cname) ',cmem))
-                (new-expr (c::expr-member (c::expr-ident ',new-cname) ',cmem))
+           (b* ((old-expr ',(c::expr-member (c::expr-ident old-cname) cmem))
+                (new-expr ',(c::expr-member (c::expr-ident new-cname) cmem))
                 ((mv old-eval old-compst1)
                  (c::exec-expr old-expr old-compst old-fenv limit))
                 ((mv new-eval new-compst1)
