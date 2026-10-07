@@ -160,7 +160,8 @@
         (see @(tsee type-struni-tag/members)).
         The UID allows disambiguation of otherwise identical structs
         which occur in different scopes.
-        The UID also identifies the translation unit in which
+        The UID is always local, since types have no linkage,
+        and so it also identifies the translation unit in which
         the struct type was declared, if any.
         This is necessary to weaken the compatibility rules
         when comparing structs across translation units.")
