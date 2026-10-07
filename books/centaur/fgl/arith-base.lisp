@@ -362,6 +362,10 @@ sign bit, which we must implicitly extend out to infinity.</p>"
   (((fgl-toplevel-vacuity-check-config) => *))
   (local (defun fgl-toplevel-vacuity-check-config () nil)))
 
+(encapsulate
+  (((fgl-reachability-sat-check-config) => *))
+  (local (defun fgl-reachability-sat-check-config () nil)))
+
 
 (define fgl-sat-check ((params "Parameters for the SAT check -- typically of type @(see fgl-sat-config).")
                        (x "Object to check for satisfiability."))
