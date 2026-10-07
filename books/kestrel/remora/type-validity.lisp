@@ -23,7 +23,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The kinding rules for types in [thesis] [arxiv]
+    "We formalize the validity of types via inference rules.
+     The kinding rules for types in [thesis] [arxiv]
      prove judgements of the form
      @($\\Theta; \\Delta \\vdash \\tau :: k$),
      where
@@ -42,14 +43,14 @@
      they say that the type satisfies all the static validity conditions
      in the sort and kind environments;
      but we call those environments
-     `ispace context' (see also @(see ispace-validity))
+     `ispace context' (see @(see ispace-validity))
      and `type context',
      to emphasize that they provide information about ispace and type variables,
-     and to distinguish them from environments.
+     and to distinguish them from the aforementioned environments.
      In some literature, `type context' may refer to
      an association of types to variables,
-     but we call these `expression contexts':
-     see @(see expression-validity).")
+     but we call these `expression contexts'
+     (see @(see expression-validity)).")
    (xdoc::p
     "We model ispace contexts as in @(see ispace-validity),
      and we similarly model type contexts as sets of type variables,

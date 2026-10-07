@@ -24,7 +24,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The sorting rules for ispaces in [thesis] [arxiv] [esop]
+    "We formalize the validity of ispaces via inference rules.
+     The sorting rules for ispaces in [thesis] [arxiv] [esop]
      prove judgements of the form
      @($\\Theta \\vdash \\iota :: \\gamma$),
      where
@@ -41,7 +42,7 @@
      in the sort environment;
      but we call that environment `ispace context',
      to emphasize that it provides information about ispace variables,
-     and to distinguish it from environments.")
+     and to distinguish them it the aforementioned environments.")
    (xdoc::p
     "Since ispace variables carry their own sorts,
      our ispace context is just a set of ispace variables in scope.")

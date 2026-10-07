@@ -27,7 +27,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The typing rules for expressions and atoms in [thesis] [arxiv] [esop]
+    "We formalize the validity of expressions via inference rules.
+     The typing rules for expressions and atoms in [thesis] [arxiv] [esop]
      prove judgements of the form
      @($\\Theta; \\Delta; \\Gamma \\vdash t : \\tau$),
      where
@@ -42,21 +43,17 @@
      satisfies all the static validity conditions and has a certain type,
      in the sort, kind, and type environments;
      but we call those environments
-     `ispace context' (see also @(see ispace-validity)),
-     `type context' (see also @(see type-validity)),
+     `ispace context' (see @(see ispace-validity)),
+     `type context' (see @(see type-validity)),
      and `expression context',
      to emphasize that they provide information about
      ispace, type, and expression variables,
-     and to distinguish them from environments.
+     and to distinguish them from the aforementioned environments.
      In some literature, `type context' may refer to
      an association of types to variables,
      but we call these `expression contexts' instead,
-     while we call `type context' a set of type variables.
-     This is part of the reason why
-     we use `context' instead of `environment' here:
-     to avoid confusion with `type environment' in [thesis] [arxiv] [esop],
-     which is an expression context for us,
-     and different from a type context.")
+     while we call `type context' a set of type variables
+     (see @(see type-validity)).")
    (xdoc::p
     "We have separate predicates for expressions and atoms.
      So we really formalize expression and atom validity,
