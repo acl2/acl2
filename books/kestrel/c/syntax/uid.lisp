@@ -48,8 +48,10 @@
      is identified by its name,
      since all declarations of that name with external linkage,
      in any translation unit, refer to the same entity [C17:6.2.2/2].
-     All other entities are identified by
-     a number and an optional translation unit.
+     All other entities,
+     namely objects and functions with internal or no linkage,
+     typedef names, and structure and union types,
+     are identified by a number and an optional translation unit.
      The translation unit is the one in which the entity was declared;
      it is absent for entities which belong to no translation unit,
      such as composite types constructed across translation units.
