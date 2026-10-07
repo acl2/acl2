@@ -560,7 +560,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-senv-add-var+type ((var stringp) (type typep) (eenv expr-senvp))
+(define expr-senv-add-var ((var stringp) (type typep) (eenv expr-senvp))
   :returns (new-eenv expr-senvp)
   :short "Add a variable with a type to the expression static environment."
   :long
@@ -578,8 +578,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-senv-add-vars+types ((vars+types var+type?-listp)
-                                  (eenv expr-senvp))
+(define expr-senv-add-vars ((vars+types var+type?-listp) (eenv expr-senvp))
   :guard (no-duplicatesp-equal (var+type?-list->var vars+types))
   :returns (new-eenv expr-senv-resultp)
   :short "Add zero or more variables with types
@@ -590,7 +589,7 @@
     "This function actually takes a list of variables with optional types,
      but it fails if some type is missing.")
    (xdoc::p
-    "This repeatedly calls @(tsee expr-senv-add-var+type).
+    "This repeatedly calls @(tsee expr-senv-add-var).
      The guard ensures that the order of the list does not matter.")
    (xdoc::p
     "Since we do not perform type inference yet,
@@ -598,5 +597,5 @@
   (b* (((when (endp vars+types)) (expr-senv-fix eenv))
        (vt (car vars+types))
        ((ok type) (var+type?->type-or-err vt))
-       (eenv (expr-senv-add-var+type (var+type?->var vt) type eenv)))
-    (expr-senv-add-vars+types (cdr vars+types) eenv)))
+       (eenv (expr-senv-add-var (var+type?->var vt) type eenv)))
+    (expr-senv-add-vars (cdr vars+types) eenv)))

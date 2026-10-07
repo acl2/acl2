@@ -1690,7 +1690,7 @@
                                           renaming.1st
                                           renaming.2nd))
           (ienv (ispace-senv-add-var expr.ispace ienv))
-          (eenv (expr-senv-add-var+type expr.var sum-body-type-renam eenv))
+          (eenv (expr-senv-add-var expr.var sum-body-type-renam eenv))
           ((ok (type+expr be)) (check-expr expr.body ienv tenv eenv))
           ((unless (set::emptyp
                     (set::intersect (set::insert expr.ispace nil)
@@ -1729,7 +1729,7 @@
                                           renaming.1st
                                           renaming.2nd))
           (ienv (ispace-senv-add-vars expr.ispaces ienv))
-          (eenv (expr-senv-add-var+type expr.var sum-body-type-renam eenv))
+          (eenv (expr-senv-add-var expr.var sum-body-type-renam eenv))
           ((ok (type+expr be)) (check-expr expr.body ienv tenv eenv))
           ((unless (set::emptyp
                     (set::intersect (set::mergesort expr.ispaces)
@@ -1921,7 +1921,7 @@
           ((unless (check-type type ienv tenv)) (reserr nil))
           ((ok type) (senv-expand-type type ienv tenv))
           ((ok eenv)
-           (expr-senv-add-var+type (var+type?->var atom.param) type eenv))
+           (expr-senv-add-var (var+type?->var atom.param) type eenv))
           ((ok (type+expr be)) (check-expr atom.body ienv tenv eenv)))
        (make-type+atom
         :type (make-type-fun :in type :out be.type)
@@ -1935,7 +1935,7 @@
           ((unless (check-type-list types ienv tenv)) (reserr nil))
           ((ok types) (senv-expand-type-list types ienv tenv))
           ((ok eenv)
-           (expr-senv-add-vars+types
+           (expr-senv-add-vars
             (var+type?-list-set-types types atom.params)
             eenv))
           ((ok (type+expr be)) (check-expr atom.body ienv tenv eenv)))
@@ -2260,7 +2260,7 @@
        (make-senvs+bind
         :ienv (ispace-senv-fix ienv)
         :tenv (type-senv-fix tenv)
-        :eenv (expr-senv-add-var+type bind.var ee.type eenv)
+        :eenv (expr-senv-add-var bind.var ee.type eenv)
         :bind (make-bind-val :var bind.var
                              :type? bind.type?
                              :expr ee.expr)))
@@ -2271,7 +2271,7 @@
           ((unless (check-type-list types ienv tenv)) (reserr nil))
           ((ok types) (senv-expand-type-list types ienv tenv))
           ((ok eenv-body)
-           (expr-senv-add-vars+types
+           (expr-senv-add-vars
             (var+type?-list-set-types types bind.params)
             eenv))
           ((ok (type+expr ee)) (check-expr bind.expr ienv tenv eenv-body))
@@ -2287,7 +2287,7 @@
        (make-senvs+bind
         :ienv (ispace-senv-fix ienv)
         :tenv (type-senv-fix tenv)
-        :eenv (expr-senv-add-var+type bind.var type eenv)
+        :eenv (expr-senv-add-var bind.var type eenv)
         :bind (make-bind-fun :var bind.var
                              :params bind.params
                              :type? bind.type?
@@ -2309,7 +2309,7 @@
        (make-senvs+bind
         :ienv (ispace-senv-fix ienv)
         :tenv (type-senv-fix tenv)
-        :eenv (expr-senv-add-var+type bind.var type eenv)
+        :eenv (expr-senv-add-var bind.var type eenv)
         :bind (make-bind-tfun :var bind.var
                               :params bind.params
                               :type? bind.type?
@@ -2331,7 +2331,7 @@
        (make-senvs+bind
         :ienv (ispace-senv-fix ienv)
         :tenv (type-senv-fix tenv)
-        :eenv (expr-senv-add-var+type bind.var type eenv)
+        :eenv (expr-senv-add-var bind.var type eenv)
         :bind (make-bind-ifun :var bind.var
                               :params bind.params
                               :type? bind.type?
@@ -2355,7 +2355,7 @@
           ((ok btype) (senv-expand-type bind.type ienv-params tenv-params))
           ((ok types) (senv-expand-type-list types ienv-params tenv-params))
           ((ok eenv-body)
-           (expr-senv-add-vars+types
+           (expr-senv-add-vars
             (var+type?-list-set-types types bind.params)
             eenv))
           ((ok (type+expr ee))
@@ -2380,7 +2380,7 @@
        (make-senvs+bind
         :ienv (ispace-senv-fix ienv)
         :tenv (type-senv-fix tenv)
-        :eenv (expr-senv-add-var+type bind.var type eenv)
+        :eenv (expr-senv-add-var bind.var type eenv)
         :bind (make-bind-cfun :var bind.var
                               :tparams? bind.tparams?
                               :iparams? bind.iparams?
