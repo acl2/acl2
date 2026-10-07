@@ -40,10 +40,12 @@
    (xdoc::p
     "Parses the Remora source file @('filename')
      (via @(tsee parse-from-file)),
+     makes its binder names distinct with @(tsee file-uniquify-names),
+     as the guard of @(tsee lambda-lift-file) requires,
      lambda-lifts it with @(tsee lambda-lift-file), and prints the
      resulting file with @(tsee pretty-print-file)
      (at 100 columns) --- unless
-     lambda lifting left the
+     uniquification and lambda lifting together left the
      file unchanged, in which case nothing is printed.  Returns
      @('(mv successp state)'), where @('successp') is @('t') unless
      parsing fails, in which case it is @('nil')."))
@@ -52,7 +54,7 @@
         (b* ((- (cw "Parse error in ~s0:~%" filename))
              (- (print-parse-error ast)))
           (mv nil state)))
-       (new-file (lambda-lift-file ast))
+       (new-file (lambda-lift-file (file-uniquify-names ast)))
        ((when (equal new-file ast))
         (b* ((- (cw "No change after lambda lifting ~s0.~%" filename)))
           (mv t state)))

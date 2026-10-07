@@ -54,23 +54,26 @@
     "The format must be well-formed for the standard,
      as checked by @(tsee integer-format-wfp).")
    (xdoc::p
-    "The number of bits must be a multiple of @('CHAR_BIT') [C17:6.2.6.1/4].")
+    "The number of bits must be a multiple of @('CHAR_BIT')
+     [C17:6.2.6.1/4] [C23:6.2.6.1].")
    (xdoc::p
-    "The possible signed values must cover at least
-     the range from -32767 to +32767 (both inclusive) [C17:5.2.4.2.1/1].
-     The possible unsigned values must cover at least
-     the range from 0 to 65535 (both inclusive) [C17:5.2.4.2.1/1].")
-   (xdoc::p
-    "For C23, the signed range must also include -32768 [C23:5.3.5.3.2].
-     This follows from the lower bound on the signed maximum
-     and the C23 minimum/maximum relation documented with
-     @(tsee integer-format->signed-min), as proved below.")
+    "The possible signed values must cover at least the range
+     from -32767 to +32767 (both inclusive) for C17 [C17:5.2.4.2.1/1],
+     and
+     from -32768 to +32767 (both inclusive) for C23 [C23:5.3.5.3.2].
+     The possible unsigned values must cover at least the range
+     from 0 to 65535 (both inclusive) [C17:5.2.4.2.1/1] [C23:5.3.5.3.2].
+     Our definition uses -32767 for both C17 and C23,
+     but for C23 we prove below that the minimum is at most -32768,
+     because C23 mandates two's complement and that
+     the pattern with sign bit 1 and all value bits 0
+     is not a trap representation.")
    (xdoc::p
     "The possible signed values must at least include
      those of @('signed char'),
      and the possible unsigned values must at least include
      those of @('unsigned char')
-     [C17:6.2.5/8]."))
+     [C17:6.2.5/8] [C23:6.2.5]."))
   (b* ((bit-size (integer-format->bit-size short-format))
        (signed-short-min (integer-format->signed-min short-format))
        (signed-short-max (integer-format->signed-max short-format))
@@ -124,23 +127,26 @@
     "The format must be well-formed for the standard,
      as checked by @(tsee integer-format-wfp).")
    (xdoc::p
-    "The number of bits must be a multiple of @('CHAR_BIT') [C17:6.2.6.1/4].")
+    "The number of bits must be a multiple of @('CHAR_BIT')
+     [C17:6.2.6.1/4] [C23:6.2.6.1].")
    (xdoc::p
-    "The possible signed values must cover at least
-     the range from -32767 to +32767 (both inclusive) [C17:5.2.4.2.1/1].
-     The possible unsigned values must cover at least
-     the range from 0 to 65535 (both inclusive) [C17:5.2.4.2.1/1].")
-   (xdoc::p
-    "For C23, the signed range must also include -32768 [C23:5.3.5.3.2].
-     This follows from the lower bound on the signed maximum
-     and the C23 minimum/maximum relation documented with
-     @(tsee integer-format->signed-min), as proved below.")
+    "The possible signed values must cover at least the range
+     from -32767 to +32767 (both inclusive) for C17 [C17:5.2.4.2.1/1],
+     and
+     from -32768 to +32767 (both inclusive) for C23 [C23:5.3.5.3.2].
+     The possible unsigned values must cover at least the range
+     from 0 to 65535 (both inclusive) [C17:5.2.4.2.1/1] [C23:5.3.5.3.2].
+     Our definition uses -32767 for both C17 and C23,
+     but for C23 we prove below that the minimum is at most -32768,
+     because C23 mandates two's complement and that
+     the pattern with sign bit 1 and all value bits 0
+     is not a trap representation.")
    (xdoc::p
     "The possible signed values must at least include
      those of @('signed short'),
      and the possible unsigned values must at least include
      those of @('unsigned short')
-     [C17:6.2.5/8]."))
+     [C17:6.2.5/8] [C23:6.2.5]."))
   (b* ((bit-size (integer-format->bit-size int-format))
        (signed-int-min (integer-format->signed-min int-format))
        (signed-int-max (integer-format->signed-max int-format))
@@ -193,24 +199,26 @@
     "The format must be well-formed for the standard,
      as checked by @(tsee integer-format-wfp).")
    (xdoc::p
-    "The number of bits must be a multiple of @('CHAR_BIT') [C17:6.2.6.1/4].")
+    "The number of bits must be a multiple of @('CHAR_BIT')
+     [C17:6.2.6.1/4] [C23:6.2.6.1].")
    (xdoc::p
-    "The possible signed values must cover at least
-     the range from -2147483647 to +2147483647 (both inclusive)
-     [C17:5.2.4.2.1/1].
-     The possible unsigned values must cover at least
-     the range from 0 to 4294967295 (both inclusive) [C17:5.2.4.2.1/1].")
-   (xdoc::p
-    "For C23, the signed range must also include -2147483648 [C23:5.3.5.3.2].
-     This follows from the lower bound on the signed maximum
-     and the C23 minimum/maximum relation documented with
-     @(tsee integer-format->signed-min), as proved below.")
+    "The possible signed values must cover at least the range
+     from -2147483647 to +2147483647 (both inclusive) for C17 [C17:5.2.4.2.1/1],
+     and
+     from -2147483648 to +2147483647 (both inclusive) for C23 [C23:5.3.5.3.2].
+     The possible unsigned values must cover at least the range
+     from 0 to 4294967295 (both inclusive) [C17:5.2.4.2.1/1] [C23:5.3.5.3.2].
+     Our definition uses -2147483647 for both C17 and C23,
+     but for C23 we prove below that the minimum is at most -2147483648,
+     because C23 mandates two's complement and that
+     the pattern with sign bit 1 and all value bits 0
+     is not a trap representation.")
    (xdoc::p
     "The possible signed values must at least include
      those of @('signed int'),
      and the possible unsigned values must at least include
      those of @('unsigned int')
-     [C17:6.2.5/8]."))
+     [C17:6.2.5/8] [C23:6.2.5]."))
   (b* ((bit-size (integer-format->bit-size long-format))
        (signed-long-min (integer-format->signed-min long-format))
        (signed-long-max (integer-format->signed-max long-format))
@@ -263,26 +271,30 @@
     "The format must be well-formed for the standard,
      as checked by @(tsee integer-format-wfp).")
    (xdoc::p
-    "The number of bits must be a multiple of @('CHAR_BIT') [C17:6.2.6.1/4].")
+    "The number of bits must be a multiple of @('CHAR_BIT')
+     [C17:6.2.6.1/4] [C23:6.2.6.1].")
    (xdoc::p
-    "The possible signed values must cover at least
-     the range from -9223372036854775807 to +9223372036854775807
-     (both inclusive) [C17:5.2.4.2.1/1].
+    "The possible signed values must cover at least the range
+     from -9223372036854775807 to +9223372036854775807 (both inclusive)
+     for C17 [C17:5.2.4.2.1/1],
+     and
+     from -9223372036854775808 to +9223372036854775807 (both inclusive)
+     for C23 [C23:5.3.5.3.2].
      The possible unsigned values must cover at least
      the range from 0 to 18446744073709551615 (both inclusive)
-     [C17:5.2.4.2.1/1].")
-   (xdoc::p
-    "For C23, the signed range must also include -9223372036854775808
-     [C23:5.3.5.3.2].
-     This follows from the lower bound on the signed maximum
-     and the C23 minimum/maximum relation documented with
-     @(tsee integer-format->signed-min), as proved below.")
+     [C17:5.2.4.2.1/1] [C23:5.3.5.3.2].
+     Our definition uses -9223372036854775807 for both C17 and C23,
+     but for C23 we prove below that
+     the minimum is at most -9223372036854775808,
+     because C23 mandates two's complement and that
+     the pattern with sign bit 1 and all value bits 0
+     is not a trap representation.")
    (xdoc::p
     "The possible signed values must at least include
      those of @('signed long'),
      and the possible unsigned values must at least include
      those of @('unsigned long')
-     [C17:6.2.5/8]."))
+     [C17:6.2.5/8] [C23:6.2.5]."))
   (b* ((bit-size (integer-format->bit-size llong-format))
        (signed-llong-min (integer-format->signed-min llong-format))
        (signed-llong-max (integer-format->signed-max llong-format))

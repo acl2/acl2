@@ -8,6 +8,8 @@
 
 (in-package "TREESET")
 
+(include-book "kestrel/data/utilities/total-order/compare-defs" :dir :system)
+
 (include-book "tree-defs")
 (include-book "bst-defs")
 (include-book "heap-defs")

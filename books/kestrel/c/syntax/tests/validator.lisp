@@ -66,7 +66,7 @@
 (define make-dummy-fileset (input)
   :returns (fileset fileset)
   (fileset (make-dummy-filepath-filedata-map
-             '("test0" "test1" "test2" "test2" "test3" "test4" "test5" "test6")
+             '("test0" "test1" "test2" "test3" "test4" "test5" "test6" "test7")
              input)))
 
 (defmacro test-valid (&rest args)
@@ -976,7 +976,7 @@ int main(void) {
 }
 "
   ;; Looking up "foo" in the first translation unit validation table should
-  ;; show a UID value of "0".
+  ;; show the first local UID of that translation unit.
   :cond (b* ((tunit-test0
                (cdr (omap::assoc (filepath "test0")
                                  (trans-ensemble->units ast))))
@@ -990,7 +990,8 @@ int main(void) {
                currentp
                (valid-ord-info-case
                  ord-info?
-                 :objfun (uid-equal ord-info?.uid (uid 0))
+                 :objfun (equal ord-info?.uid
+                                (uid-local 0 (filepath "test0")))
                  :otherwise nil))))
 
 (test-valid
@@ -1000,7 +1001,7 @@ void foo(void) {
 }
 "
   ;; Looking up "foo" in the first translation unit validation table should
-  ;; show a UID value of "0".
+  ;; show the first local UID of that translation unit.
   :cond (b* ((tunit-test0
                (cdr (omap::assoc (filepath "test0")
                                  (trans-ensemble->units ast))))
@@ -1014,7 +1015,8 @@ void foo(void) {
                currentp
                (valid-ord-info-case
                  ord-info?
-                 :objfun (uid-equal ord-info?.uid (uid 0))
+                 :objfun (equal ord-info?.uid
+                                (uid-local 0 (filepath "test0")))
                  :otherwise nil))))
 
 (test-valid
@@ -1024,7 +1026,7 @@ static void foo(void) {
 }
 "
   ;; Looking up "foo" in the first translation unit validation table should
-  ;; show a UID value of "0".
+  ;; show the first local UID of that translation unit.
   :cond (b* ((tunit-test0
                (cdr (omap::assoc (filepath "test0")
                                  (trans-ensemble->units ast))))
@@ -1038,7 +1040,8 @@ static void foo(void) {
                currentp
                (valid-ord-info-case
                  ord-info?
-                 :objfun (uid-equal ord-info?.uid (uid 0))
+                 :objfun (equal ord-info?.uid
+                                (uid-local 0 (filepath "test0")))
                  :otherwise nil))))
 
 (test-valid
@@ -1245,6 +1248,16 @@ struct s arr[] = {1, [0].y = 2, {.x = 3, 4}, 5};
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
+ "__float80 x;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "__float128 x;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
  "void (*f(float x, double y))(int z) {
   return (void (*)(int))0;
 }
@@ -1365,12 +1378,27 @@ void bar() {
   :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
+  "typedef float _Float16x;
+"
+  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
   "typedef float _Float32;
 "
   :dialect (c::make-dialect :std (c::standard-c17) :clang t))
 
 (test-valid-fail
   "typedef float _Float16;
+"
+  :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-valid
+  "typedef __float128 _Float128;
+"
+  :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-valid-fail
+  "typedef float __float128;
 "
   :dialect (c::make-dialect :std (c::standard-c17) :clang t))
 
@@ -2513,3 +2541,83 @@ void f(void) {
 }
 "
  :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Multiple translation units.
+
+;; Identifiers with internal linkage in different translation units
+;; denote different entities [C17:6.2.2/3].
+(test-valid
+ "static int x;
+"
+ "static int x;
+")
+
+;; Structure types in different translation units are incompatible
+;; if they differ in tag or members [C17:6.2.7/1].
+(test-valid-fail
+ "struct s { int a; };
+extern struct s x;
+"
+ "struct t { int a; };
+extern struct t x;
+")
+
+(test-valid-fail
+ "struct s { int a; };
+extern struct s x;
+"
+ "struct s { int b; };
+extern struct s x;
+")
+
+(test-valid-fail
+ "struct s { int a; };
+extern struct s x;
+"
+ "struct s { long a; };
+extern struct s x;
+")
+
+;; The composite type retained across translation units
+;; may be a composite structure type.
+(test-valid
+ "struct s { int (*p)[]; };
+extern struct s x;
+"
+ "struct s { int (*p)[10]; };
+extern struct s x;
+")
+
+(test-valid-fail
+ "struct s { int (*p)[]; };
+extern struct s x;
+"
+ "struct s { int (*p)[10]; };
+extern struct s x;
+"
+ "struct s { int (*p)[20]; };
+extern struct s x;
+")
+
+;; The composite type is retained
+;; whatever the order of the translation units.
+(test-valid-fail
+ "extern int a[10];
+"
+ "extern int a[];
+"
+ "extern int a[20];
+")
+
+(test-valid-fail
+ "struct s { int (*p)[10]; };
+extern struct s x;
+"
+ "struct s { int (*p)[]; };
+extern struct s x;
+"
+ "struct s { int (*p)[20]; };
+extern struct s x;
+")

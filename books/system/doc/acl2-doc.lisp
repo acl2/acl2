@@ -109916,6 +109916,15 @@ it."
 ; Improved error messages from attempts to add :type-set-inverter rules, in
 ; particular when the user has swapped the orientation of the equality.
 
+; Bugs in source functions symbol-in-current-package-p and increment-file-clock
+; were due to inappropriate use of raw Lisp code on non-live states.  This has
+; been fixed, as evidenced by community book
+; system/tests/raw-state-live-state-p.lisp.  We have been unable to induce
+; visible effects of these bugs using ACL2 Version_8.7, so they may not have
+; been bugs at that point; but we induced their visible effects (as illustrated
+; in the above book) as recently as 10/5/2026.  Thanks to Eric Smith for
+; passing along this issue from Anthropic's Claude.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -110194,9 +110203,10 @@ it."
  respect to their @(tsee type) @(see declaration)s.  See
  @('system/tests/exploit-lambda-guard-typedecl.lisp').</p>
 
- <p>Fixed a soundness bug in non-linear arithmetic, specifically in function
- @('inverse-polys').  See @('system/tests/linear-inverse-polys.lisp').  Thanks
- to Eric Smith for supplying the fix.</p>
+ <p>Fixed two soundness bugs in @(see non-linear-arithmetic), both in function
+ @('inverse-polys').  See @('system/tests/linear-inverse-polys.lisp') and
+ @('system/tests/nonlinear-relation-variable.lisp').  Thanks to Eric Smith for
+ supplying the fix for the first of these bugs..</p>
 
  <p>Fixed a soundness bug where the @('keys') function for a @(see stobj-table)
  field returned internal stand-in symbols instead of the real stobj names.  For
@@ -110344,6 +110354,20 @@ it."
  @(see type-prescription) rules saved in a book's @(see certificate).  For an
  example see @(see community-book)
  @('system/tests/cert-data-guarded-termp.lisp').</p>
+
+ <p>Fixed a soundness bug caused by incomplete checking of the legality of
+ @(tsee defpkg) events.  See @(see community-book)
+ @('system/tests/empty-pkg-nil.lisp') for a proof of @('nil') that expoited
+ this bug and no longer succeeds.</p>
+
+ <p>Fixed a soundness bug due to a check that was too weak for @(':')@(tsee
+ clause-processor) rules.  This bug is illustrated in @(see community-book)
+ @('system/tests/clause-processor-evaluator-shadow.lisp').</p>
+
+ <p>Fixed a bug caused by failure to check, when including a book, that only
+ one domain may be associated with a well-founded relation by a @(see
+ well-founded-relation) rule.  See @(see community-book)
+ @('system/tests/wfr-two-domains.lisp').</p>
 
  <h3>Other Bug Fixes</h3>
 

@@ -274,6 +274,9 @@
                    :hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
     :short "Get the @('vvvv') field of @('vex-prefixes');
             cognizant of the two- or three-byte VEX prefixes form."
+    ;; We inline these to avoid slow compilation in the
+    ;; vex-opcodes-dispatch book:
+    :inline nil
     (case (vex-prefixes->byte0 vex-prefixes)
       (#.*vex2-byte0*
        (vex2-byte1->vvvv (vex-prefixes->byte1 vex-prefixes)))
@@ -289,6 +292,7 @@
                 :hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
     :short "Get the @('L') field of @('vex-prefixes');
             cognizant of the two- or three-byte VEX prefixes form."
+    :inline nil
     (case (vex-prefixes->byte0 vex-prefixes)
       (#.*vex2-byte0*
        (vex2-byte1->l (vex-prefixes->byte1 vex-prefixes)))
@@ -304,6 +308,7 @@
                  :hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
     :short "Get the @('pp') field of @('vex-prefixes');
             cognizant of the two- or three-byte VEX prefixes form."
+    :inline nil
     (case (vex-prefixes->byte0 vex-prefixes)
       (#.*vex2-byte0*
        (vex2-byte1->pp (vex-prefixes->byte1 vex-prefixes)))
@@ -319,6 +324,7 @@
                 :hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
     :short "Get the @('R') field of @('vex-prefixes');
             cognizant of the two- or three-byte VEX prefixes form."
+    :inline nil
     (case (vex-prefixes->byte0 vex-prefixes)
       (#.*vex2-byte0*
        (vex2-byte1->r (vex-prefixes->byte1 vex-prefixes)))
@@ -334,6 +340,7 @@
                 :hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
     :short "Get the @('W') field of @('vex-prefixes');
             cognizant of the two- or three-byte VEX prefixes form."
+    :inline nil
     (case (vex-prefixes->byte0 vex-prefixes)
       (#.*vex3-byte0*
        (vex3-byte2->w (vex-prefixes->byte2 vex-prefixes)))

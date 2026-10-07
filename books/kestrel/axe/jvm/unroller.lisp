@@ -563,7 +563,6 @@
                                    )))))
 
 ;; Returns (mv erp dag all-assumptions term-to-run-with-output-extractor parameter-names state).
-;; This uses all classes currently in the global-class-alist.
 ;; Consider
 ;; (set-inhibit-output-lst '(proof-tree event))
 ;;when working with this function.
@@ -596,6 +595,7 @@
                                 param-names ; may be :auto
                                 chunkedp ;whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code?)
                                 error-on-incomplete-runsp ;whether to throw a hard error (may be nil if further pruning can be done in the caller)
+                                class-alist
                                 state)
   (declare (xargs :guard (and (method-designator-stringp method-designator-string)
                               (nice-output-indicatorp nice-output-indicator)
@@ -623,7 +623,9 @@
                               (or (eq :auto param-names)
                                   (symbol-listp param-names)) ;todo: check for dups and keywords and case clashes
                               (booleanp chunkedp)
-                              (booleanp error-on-incomplete-runsp))
+                              (booleanp error-on-incomplete-runsp)
+                              (class-table-alistp class-alist) ; rename
+                              )
                   :stobjs state
                   :guard-hints (("Goal" :in-theory (e/d (symbol-listp-of-unroll-java-code-rules
                                                          steps-optionp ; todo
@@ -642,9 +644,6 @@
             (er hard? 'unroll-java-code-fn "Method descriptor is missing in ~x0." method-designator-string)
             nil nil nil
             state))
-       (class-alist (jvm::global-class-alist state))
-       ((when (not (class-table-alistp class-alist)))
-        (mv :bad-global-class-alist nil nil nil nil state))
        ((when (not (assoc-equal method-class class-alist)))
         (mv t
             (er hard? 'unroll-java-code-fn "Class ~x0 not found." method-class)
@@ -846,6 +845,7 @@
         dag all-assumptions term-to-run-with-output-extractor parameter-names state)))
 
 ;; Returns (mv erp event state).
+;; This uses all classes currently in the global-class-alist.
 (defun unroll-java-code-fn (defconst-name
                              method-indicator
                              nice-output-indicator
@@ -918,6 +918,9 @@
        ((when erp) (mv erp nil state))
        ;; Adds the descriptor if omitted and unambiguous:
        (method-designator-string (jvm::elaborate-method-indicator method-indicator (jvm::global-class-alist state)))
+       (class-alist (jvm::global-class-alist state))
+       ((when (not (class-table-alistp class-alist)))
+        (mv :bad-global-class-alist nil state))
        ;; Printed even if print is nil (seems ok):
        (- (cw "(Unrolling ~x0.~%"  method-designator-string))
        ((mv erp dag-or-quotep all-assumptions term-to-run-with-output-extractor parameter-names state)
@@ -947,6 +950,7 @@
                                param-names
                                chunkedp ;whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code?)
                                t ;error on incomplete runs
+                               class-alist
                                state))
        ((when erp) (mv erp nil state))
        (- (and (quotep dag-or-quotep)
