@@ -107120,10 +107120,10 @@ Bug Fixes From AI via Eric Smith
   with respect to their [30m[47m[type][0m[0m [declaration]s.  See
   [30m[47msystem/tests/exploit-lambda-guard-typedecl.lisp[0m[0m.
 
-  Fixed a soundness bug in non-linear arithmetic, specifically in
-  function [30m[47minverse-polys[0m[0m.  See
-  [30m[47msystem/tests/linear-inverse-polys.lisp[0m[0m.  Thanks to Eric Smith for
-  supplying the fix.
+  Fixed two soundness bugs in [non-linear-arithmetic], both in function
+  [30m[47minverse-polys[0m[0m.  See [30m[47msystem/tests/linear-inverse-polys.lisp[0m[0m and
+  [30m[47msystem/tests/nonlinear-relation-variable.lisp[0m[0m.  Thanks to Eric
+  Smith for supplying the fix for the first of these bugs..
 
   Fixed a soundness bug where the [30m[47mkeys[0m[0m function for a [stobj-table]
   field returned internal stand-in symbols instead of the real stobj

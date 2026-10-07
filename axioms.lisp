@@ -22576,7 +22576,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun symbol-in-current-package-p (x state)
   (declare (xargs :guard (symbolp x)))
-  #+acl2-loop-only
+  #-acl2-loop-only
+  (when (live-state-p state)
+    (return-from symbol-in-current-package-p
+                 (multiple-value-bind
+                  (sym foundp)
+                  (find-symbol (symbol-name x)
+                               (f-get-global 'current-package state))
+                  (and foundp ; return nil when x is nil but is not in the current package
+                       (eq sym x)))))
   (or (equal (symbol-package-name x)
              (f-get-global 'current-package state))
       (and (ec-call ; avoid guard proof; this is just logic anyhow
@@ -22586,14 +22594,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
               (find-package-entry
                (f-get-global 'current-package state)
                (known-package-alist state)))))
-           t))
-  #-acl2-loop-only
-  (multiple-value-bind
-   (sym foundp)
-   (find-symbol (symbol-name x)
-                (f-get-global 'current-package state))
-   (and foundp ; return nil when x is nil but is not in the current package
-        (eq sym x))))
+           t)))
 
 (defun prin1$ (x channel state)
 
@@ -30319,9 +30320,10 @@ Lisp definition."
 (defun increment-file-clock (state)
   (declare (xargs :stobjs state))
   #-acl2-loop-only
-  (progn (increment-file-clock-raw)
-         state)
-  #+acl2-loop-only
+  (when (live-state-p state)
+    (return-from increment-file-clock
+                 (progn (increment-file-clock-raw)
+                        state)))
   (let ((state
 
 ; We use this rather goofy LET binding so that ACL2
