@@ -445,7 +445,15 @@
 
   (defrule expr-map-wfp-of-nil
     (expr-map-wfp nil)
-    :expand ((expr-map-wfp nil))))
+    :expand ((expr-map-wfp nil)))
+
+  (defrule expr-map-wfp-of-string-expr-map-remove-keys
+    (implies (expr-map-wfp emap)
+             (expr-map-wfp (string-expr-map-remove-keys keys emap)))
+    :expand ((expr-map-wfp (string-expr-map-remove-keys keys emap)))
+    :use ((:instance expr-map-wfp-necc
+                     (key (expr-map-wfp-witness
+                           (string-expr-map-remove-keys keys emap)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -459,7 +467,7 @@
   (implies (and (bind-wfp b)
                 (type-map-wfp tenv))
            (b* (((mv hoistedp & hoisted replacement &)
-                 (hoist-local-fun b tenv locals used)))
+                 (hoist-local-fun b rebound tenv locals used)))
              (and (bind-wfp hoisted)
                   (implies hoistedp (expr-wfp replacement)))))
   :enable (hoist-local-fun
@@ -524,12 +532,6 @@
                   (expr-map-wfp lmap))
              (and (bind-wfp new-x) (bind-list-wfp lifted)))
     :fn ll-bind)
-  (defret bind-list-wfp-of-ll-bind-list
-    (implies (and (bind-list-wfp x)
-                  (type-map-wfp tenv)
-                  (expr-map-wfp lmap))
-             (and (bind-list-wfp new-x) (bind-list-wfp lifted)))
-    :fn ll-bind-list)
   :mutual-recursion lambda-lift-exprs/atoms/binds
   :hints (("Goal" :in-theory (enable type-map-wfp-of-extend-tenv-with-var
                                      type-map-wfp-of-extend-tenv-with-params
@@ -543,7 +545,6 @@
                                      ll-atom
                                      ll-atom-list
                                      ll-bind
-                                     ll-bind-list
                                      expr-wfp expr-list-wfp
                                      atom-wfp atom-list-wfp
                                      bind-wfp bind-list-wfp
@@ -626,11 +627,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule bind-list-wfp-of-lambda-lift-top-binds
+  :short "Lambda-lifting well-formed top-level bindings
+          yields well-formed bindings."
+  (implies (bind-list-wfp binds)
+           (bind-list-wfp (lambda-lift-top-binds binds used)))
+  :induct (lambda-lift-top-binds binds used)
+  :enable (lambda-lift-top-binds
+           bind-list-wfp
+           bind-list-wfp-of-append))
+
 (defrule file-wfp-of-lambda-lift-file
   :short "Lambda-lifting a well-formed file yields a well-formed file."
   (implies (file-wfp f)
            (file-wfp (lambda-lift-file f)))
-  :enable (lambda-lift-file
-           bind-list-wfp-of-append)
+  :enable lambda-lift-file
   :expand ((file-wfp f)
            (:free (i d) (file-wfp (file i d)))))
