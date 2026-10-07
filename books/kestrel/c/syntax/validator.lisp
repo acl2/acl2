@@ -571,7 +571,9 @@
      It consists of the merged information
      about identifiers with external linkage,
      the merged type completions,
-     two sets of pairs of @(see UID)s of structure types described below,
+     two sets of pairs of @(see UID)s of structure types
+     and a map from pairs of @(see UID)s of structure types
+     to @(see UID)s of their composites, described below,
      and the number of the next unused local @(see UID)
      without translation unit.")
    (xdoc::p
@@ -579,13 +581,20 @@
      and construct composites many times
      for the same pairs of structs and unions.
      To avoid repeated work,
-     we carry caches of known compatible pairs (@('compatible-pairs'))
-     and a set of pairs where the first type is a composite of the two
-     (@('composite-inputs'))."))
+     we carry caches of known compatible pairs (@('compatible-pairs')),
+     a set of pairs where the first type is a composite of the two
+     (@('composite-inputs')),
+     and a map from pairs to the composites constructed for them
+     (@('composites')).
+     The latter ensures that the composites of the same pair
+     reached from different identifiers or translation units
+     are the same type, instead of distinct copies with distinct @(see UID)s,
+     which would defeat the other caches."))
   ((externals valid-externals)
    (completions type-completions)
    (compatible-pairs uid-pair-set)
    (composite-inputs uid-pair-set)
+   (composites uid-pair-uid-map)
    (next-uid-num nat))
   :pred valid-merge-statep)
 
@@ -598,6 +607,7 @@
                            (treemap::empty)
                            (treeset::empty)
                            (treeset::empty)
+                           (treemap::empty)
                            0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -616,6 +626,7 @@
                           :completions (treemap::empty)
                           :compatible-pairs (treeset::empty)
                           :composite-inputs (treeset::empty)
+                          :composites (treemap::empty)
                           :next-uid-num 0)
   :inline t)
 
@@ -8650,22 +8661,27 @@
                   which is incompatible with its type ~x2 ~
                   in the translation units validated before."
                  ident info.type prev.type))
-       ((mv type completions & composite-inputs next-uid-num)
+       ((mv type completions composites composite-inputs next-uid-num)
         (type-composite prev.type
                         info.type
                         mstate.completions
-                        (treemap::empty)
+                        mstate.composites
                         mstate.composite-inputs
                         nil
                         mstate.next-uid-num))
-       (new-info (make-valid-ext-info :type type)))
+       (externals (if (equal type prev.type)
+                      mstate.externals
+                    (treemap::update ident
+                                     (make-valid-ext-info :type type)
+                                     mstate.externals))))
     (valid-merge-externals-loop
      (treemap::next iter)
      (make-valid-merge-state
-      :externals (treemap::update ident new-info mstate.externals)
+      :externals externals
       :completions completions
       :compatible-pairs compatible-pairs
       :composite-inputs composite-inputs
+      :composites composites
       :next-uid-num next-uid-num)
      ienv))
   :measure (treemap::nexts iter))
