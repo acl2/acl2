@@ -171,6 +171,10 @@
    one of the inference rules specified in the @(':irules') input,
    i.e. a @('rule[k]') in the user documentation."
 
+  (xdoc::evmac-topic-implementation-item-input "verify-guards")
+
+  (xdoc::evmac-topic-implementation-item-input "guard-hints")
+
   (xdoc::evmac-topic-implementation-item-input "parents")
 
   (xdoc::evmac-topic-implementation-item-input "short")
@@ -3074,6 +3078,9 @@
                                (preds-suppliedp booleanp)
                                irules
                                (irules-suppliedp booleanp)
+                               verify-guards
+                               guard-hints
+                               (guard-hints-suppliedp booleanp)
                                parents
                                (parents-suppliedp booleanp)
                                short
@@ -3087,6 +3094,8 @@
                (pred-infos defind-pred-info-listp)
                (irule-infos defind-irule-info-listp)
                (leveled-cliques symbol-set-list-listp)
+               (verify-guards booleanp)
+               (guard-hints true-listp)
                (parents symbol-listp)
                short
                long
@@ -3094,7 +3103,7 @@
                (print evmac-input-print-p)
                state)
   :short "Process all the inputs."
-  (b* (((reterr) nil nil nil nil nil nil nil nil :error state)
+  (b* (((reterr) nil nil nil nil nil nil nil nil nil nil :error state)
        (wrld (w state))
        ((erp name) (defind-process-name name wrld))
        ((erp pred-infos)
@@ -3102,6 +3111,10 @@
        ((erp irule-infos leveled-cliques state)
         (defind-process-irules irules irules-suppliedp pred-infos state))
        ((erp) (defind-check-proof-names irule-infos pred-infos name))
+       ((erp verify-guards) (defind-process-verify-guards verify-guards))
+       ((erp guard-hints)
+        (defind-process-guard-hints
+          guard-hints guard-hints-suppliedp verify-guards))
        ((erp parents short long xdocp)
         (defind-process-parents/short/long
           parents parents-suppliedp
@@ -3109,7 +3122,7 @@
           long long-suppliedp))
        ((erp print) (defind-process-print print)))
     (retok name pred-infos irule-infos leveled-cliques
-           parents short long xdocp print state))
+           verify-guards guard-hints parents short long xdocp print state))
 
   ///
 
@@ -3794,8 +3807,8 @@
     "The conjuncts for the proofs of the premises
      are preceded by a call of the @('p[l[k]]-rule[k]-validp') function
      on the arguments of the conclusion and on the variables of the rule.
-     The reason for that ordering is to facilitate guard verification,
-     even though we currently do not generate guard verification.
+     The reason for that ordering is to facilitate guard verification
+     (see @(tsee defind-gen-verify-guards)).
      If the rule has premises that are calls of the predicates being defined,
      the variables of the rule are bound around the whole conjunction
      and passed as such to that call;
@@ -5317,8 +5330,7 @@
     "The witness of each @('p[i]-alt') is @('p[i]') itself,
      i.e. the minimal predicate,
      which satisfies the constraints by the rule theorems.
-     The witnesses are not guard-verified,
-     because the @('p[i]') are not."))
+     The witnesses are not guard-verified."))
   (b* (((when (endp infos)) (mv nil nil nil))
        ((defind-pred-info info) (car infos))
        (fn-name (defind-pred-alt-fn-name info.name name))
@@ -6070,6 +6082,8 @@
                            (pred-infos defind-pred-info-listp)
                            (irule-infos defind-irule-info-listp)
                            (leveled-cliques symbol-set-list-listp)
+                           (verify-guards booleanp)
+                           (guard-hints true-listp)
                            (parents symbol-listp)
                            short
                            long
@@ -6103,6 +6117,14 @@
        ((mv pred-events pred-thm-events pred-print-events)
         (defind-gen-preds
           pred-infos irule-infos leveled-cliques name xdocp print))
+       (guard-verification-events
+        (defind-gen-defsection
+          (defind-guard-verification-section-name name)
+          "Guard verification of the predicates."
+          (defind-gen-verify-guards
+            pred-infos irule-infos leveled-cliques
+            verify-guards guard-hints name)
+          xdocp))
        (pred-thms-events
         (defind-gen-defsection
           (defind-valid-proof-thm-section-name name)
@@ -6130,6 +6152,7 @@
                            proof-valid-events
                            validp-ruleset-events
                            pred-events
+                           guard-verification-events
                            pred-thms-events
                            pred-print-events
                            ind-events
@@ -6157,6 +6180,9 @@
                                               (preds-suppliedp booleanp)
                                               irules
                                               (irules-suppliedp booleanp)
+                                              verify-guards
+                                              guard-hints
+                                              (guard-hints-suppliedp booleanp)
                                               parents
                                               (parents-suppliedp booleanp)
                                               short
@@ -6170,11 +6196,14 @@
   :short "Process the inputs and generate all the events."
   (b* (((reterr) '(_) state)
        ((erp name pred-infos irule-infos leveled-cliques
+             verify-guards guard-hints
              parents short long xdocp print state)
         (defind-process-inputs
           name
           preds preds-suppliedp
           irules irules-suppliedp
+          verify-guards
+          guard-hints guard-hints-suppliedp
           parents parents-suppliedp
           short short-suppliedp
           long long-suppliedp
@@ -6182,6 +6211,7 @@
           state))
        (event (defind-gen-events
                 name pred-infos irule-infos leveled-cliques
+                verify-guards guard-hints
                 parents short long xdocp print)))
     (retok event state)))
 
@@ -6192,6 +6222,9 @@
                          (preds-suppliedp booleanp)
                          irules
                          (irules-suppliedp booleanp)
+                         verify-guards
+                         guard-hints
+                         (guard-hints-suppliedp booleanp)
                          parents
                          (parents-suppliedp booleanp)
                          short
@@ -6211,6 +6244,8 @@
           name
           preds preds-suppliedp
           irules irules-suppliedp
+          verify-guards
+          guard-hints guard-hints-suppliedp
           parents parents-suppliedp
           short short-suppliedp
           long long-suppliedp
@@ -6228,6 +6263,8 @@
                           &key
                           (preds 'nil preds-suppliedp)
                           (irules 'nil irules-suppliedp)
+                          (verify-guards 't)
+                          (guard-hints 'nil guard-hints-suppliedp)
                           (parents 'nil parents-suppliedp)
                           (short 'nil short-suppliedp)
                           (long 'nil long-suppliedp)
@@ -6239,6 +6276,9 @@
         ',preds-suppliedp
         ',irules
         ',irules-suppliedp
+        ',verify-guards
+        ',guard-hints
+        ',guard-hints-suppliedp
         ',parents
         ',parents-suppliedp
         ',short
