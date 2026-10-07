@@ -64,7 +64,8 @@
 
 (assert-event (function-symbolp 'nodup-cst-a-conc? (w state)))
 
-; The -match theorems are recorded in the table, under their names.
+; The -match and -iff-match-conc theorems are recorded in the table,
+; under their names.
 
 (assert-event
  (b* ((info (deftreeops-table-lookup '*grammar-nodup* (w state)))
@@ -75,4 +76,6 @@
         (assoc-eq 'nodup-cst-b-conc-match event-alist)
         (assoc-eq 'nodup-cst-b-conc-rep-match event-alist)
         (assoc-eq 'nodup-cst-b-conc-rep-elem-match event-alist)
+        (assoc-eq 'nodup-cst-a-conc?-1-iff-match-conc event-alist)
+        (assoc-eq 'nodup-cst-a-conc?-2-iff-match-conc event-alist)
         t)))
