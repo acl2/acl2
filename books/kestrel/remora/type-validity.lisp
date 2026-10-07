@@ -225,7 +225,9 @@
           (type-listp types)
           (type-ok ivars tvars type)
           (types-ok ivars tvars types))
-         (types-ok ivars tvars (cons type types)))))
+         (types-ok ivars tvars (cons type types))))
+  :guard-hints
+  (("Goal" :in-theory (enable* type-validity-definition-validp-defs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

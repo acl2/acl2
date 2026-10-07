@@ -446,7 +446,9 @@
             (type-eq (type-sigman (list* param1 param2 params) type)
                      (type-sigma param1
                                  (type-scalar
-                                  (type-sigman (cons param2 params) type)))))))
+                                  (type-sigman (cons param2 params) type))))))
+  :guard-hints
+  (("Goal" :in-theory (enable* type-equivalence-definition-validp-defs))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
