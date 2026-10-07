@@ -1782,6 +1782,69 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define stsp-gen-stmt-thm ((old stmtp)
+                           (new stmtp)
+                           (vartys c::ident-type-mapp)
+                           (const-new symbolp)
+                           (thm-index posp)
+                           (hints true-listp))
+  :guard (and (stmt-unambp old)
+              (stmt-unambp new)
+              (stmt-annop old)
+              (stmt-annop new))
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (updated-thm-index posp))
+  :short "Generate a theorem for the STS transformation of a statement."
+  (b* ((old (stmt-fix old))
+       (new (stmt-fix new))
+       ((unless (stmt-formalp old))
+        (raise "Internal error: ~x0 is not in the formalized subset." old)
+        (mv '(_) nil 1))
+       ((unless (stmt-formalp new))
+        (raise "Internal error: ~x0 is not in the formalized subset." new)
+        (mv '(_) nil 1))
+       (types (stmt-types old))
+       ((unless (equal (stmt-types new)
+                       types))
+        (raise "Internal error: ~
+                the types ~x0 of the new statement ~x1 differ from ~
+                the types ~x2 of the old statement ~x3."
+               (stmt-types new) new types old)
+        (mv '(_) nil 1))
+       ((mv & old-stmt) (ldm-stmt old)) ; ERP is NIL because FORMALP
+       ((mv & new-stmt) (ldm-stmt new)) ; ERP is NIL because FORMALP
+       ((mv & ctypes) (ldm-type-option-set types)) ; ERP must be NIL
+       (vars-pre (gen-var-assertions vartys 'old-compst))
+       (vars-post (gen-var-assertions vartys 'old-compst1))
+       (formula
+        `(b* ((old-stmt ',old-stmt)
+              (new-stmt ',new-stmt)
+              ((mv old-sval old-compst1)
+               (c::exec-stmt old-stmt old-compst old-fenv limit))
+              ((mv new-sval new-compst1)
+               (c::exec-stmt new-stmt new-compst new-fenv limit)))
+           (implies (and (compustate-equivp old-compst new-compst)
+                         (> (c::compustate-frames-number compst) 0)
+                         ,@vars-pre
+                         (not (c::errorp old-sval)))
+                    (and (not (c::errorp new-sval))
+                         (equal old-sval new-sval)
+                         (equal old-compst new-compst)
+                         (set::in (c::type-option-of-stmt-value old-sval)
+                                  ',ctypes)
+                         (compustate-equivp old-compst1 new-compst1)
+                         ,@vars-post))))
+       ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
+       (thm-event `(defrule ,thm-name
+                     ,formula
+                     :rule-classes nil
+                     :hints ,(true-list-fix hints))))
+    (mv thm-event thm-name thm-index))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define stsp-expr-ident ((old-ident identp)
                          (new-ident identp)
                          (info var-vinfop)
