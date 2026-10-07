@@ -1696,6 +1696,17 @@
 
 ;;;;;;;;;;
 
+(define defind-proof-minimal-fn-names ((pred-names symbol-listp)
+                                       (name symbolp))
+  :returns (fn-names symbol-listp)
+  :short "Names of the @('p[i]-proof-minimalp') predicates
+          for a list of predicates."
+  (cond ((endp pred-names) nil)
+        (t (cons (defind-proof-minimal-fn-name (car pred-names) name)
+                 (defind-proof-minimal-fn-names (cdr pred-names) name)))))
+
+;;;;;;;;;;
+
 (define defind-proof-minimal-return-thm-name ((pred-name symbolp)
                                               (name symbolp))
   :returns (thm-name symbolp)
@@ -2314,6 +2325,15 @@
           for the minimality of the predicates."
   (packn-pos (list (symbol-lfix name) '-minimal) (symbol-lfix name)))
 
+;;;;;;;;;;
+
+(define defind-guard-verification-section-name ((name symbolp))
+  :returns (topic symbolp)
+  :short "Name of the @(tsee defsection) containing
+          the @(tsee verify-guards) events."
+  (packn-pos (list (symbol-lfix name) '-guard-verification)
+             (symbol-lfix name)))
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (define defind-validp-ruleset-name ((name symbolp))
@@ -2321,6 +2341,54 @@
   :short "Name of the ruleset with the @('p[l[k]]-rule[k]-validp')
           and @('p[i]-proof-validp') functions."
   (packn-pos (list (symbol-lfix name) '-validp-defs) (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-clique-first-pred-names ((leveled-cliques symbol-set-list-listp)
+                                        (pred-infos defind-pred-info-listp))
+  :returns (pred-names symbol-listp)
+  :short "Names of the first predicates of the cliques."
+  (b* (((when (endp leveled-cliques)) nil)
+       (levels (symbol-set-list-fix (car leveled-cliques)))
+       (clique-preds (set::set-list-union levels))
+       (clique-pred-infos (defind-lookup-pred-set clique-preds pred-infos))
+       (pred-names-rest
+        (defind-clique-first-pred-names (cdr leveled-cliques) pred-infos))
+       ((unless (consp clique-pred-infos))
+        (raise "Internal error: no predicates in clique with levels ~x0."
+               levels)
+        nil))
+    (cons (defind-pred-info->name (car clique-pred-infos))
+          pred-names-rest))
+  :no-function nil
+  :guard-hints
+  (("Goal" :in-theory (enable set-listp-when-symbol-set-listp))))
+
+;;;;;;;;;;
+
+(define defind-guard-verified-fn-names ((pred-infos defind-pred-info-listp)
+                                        (irule-infos defind-irule-info-listp)
+                                        (leveled-cliques symbol-set-list-listp)
+                                        (name symbolp))
+  :returns (fn-names symbol-listp)
+  :short "Names of the functions whose guards are verified,
+          in the order in which they are verified."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each function follows the generated functions that it calls.
+     For the @('p[i]-proof-validp') functions,
+     there is one name per clique, the one of its first predicate:
+     for a clique of two or more predicates,
+     verifying the guards of one function of the @(tsee defines)
+     verifies the ones of all its functions."))
+  (b* ((pred-names (defind-pred-info-list->name pred-infos)))
+    (append (defind-irule-valid-fn-names irule-infos name)
+            (defind-proof-valid-fn-names
+              (defind-clique-first-pred-names leveled-cliques pred-infos)
+              name)
+            (defind-proof-minimal-fn-names pred-names name)
+            pred-names)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
