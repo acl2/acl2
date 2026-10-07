@@ -5003,6 +5003,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-gen-verify-guards ((pred-infos defind-pred-info-listp)
+                                  (irule-infos defind-irule-info-listp)
+                                  (leveled-cliques symbol-set-list-listp)
+                                  (verify-guards booleanp)
+                                  (guard-hints true-listp)
+                                  (name symbolp))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate the @(tsee verify-guards) events."
+  (b* (((unless verify-guards) nil))
+    (defind-gen-verify-guards-loop
+      (defind-guard-verified-fn-names
+        pred-infos irule-infos leveled-cliques name)
+      guard-hints))
+
+  :prepwork
+  ((define defind-gen-verify-guards-loop ((fn-names symbol-listp)
+                                          (guard-hints true-listp))
+     :returns (events pseudo-event-form-listp)
+     :parents nil
+     (b* (((when (endp fn-names)) nil)
+          (guard-hints (true-list-fix guard-hints))
+          (event `(verify-guards ,(symbol-lfix (car fn-names))
+                    ,@(and guard-hints (list :hints guard-hints))))
+          (events (defind-gen-verify-guards-loop (cdr fn-names) guard-hints)))
+       (cons event events)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-gen-irule-thm-hyps ((infos defind-premise-info-listp))
   :returns (mv (pred-hyps true-listp)
                (other-hyps true-listp))
