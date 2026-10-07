@@ -29,6 +29,7 @@
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
+(local (include-book "kestrel/data/treemap/iter" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
@@ -81,6 +82,14 @@
      an extension of the disambiguation tables used by the disambiguator.
      See @(tsee valid-table).")
    (xdoc::p
+    "Each translation unit of a translation ensemble
+     is validated independently, starting from an initial validation table.
+     The information about identifiers with external linkage
+     and the type completions of the translation units
+     are then merged,
+     checking that they are consistent across translation units.
+     See @(tsee valid-trans-ensemble).")
+   (xdoc::p
     "We use "
     (xdoc::seetopic "acl2::error-value-tuples" "error-value tuples")
     " to handle errors in the validator.")
@@ -109,25 +118,15 @@
    (xdoc::p
     "This consists of
      a validation table,
-     an information map for identifiers with external linkage,
-     a type completion map,
-     the next unused"
+     the number of the next unused local"
     (xdoc::seetopic "uid" "unique identifier")
     ", and an implementation environment.
      It is analogous to @(tsee dstate).")
    (xdoc::p
     "The implementation environment is constant &mdash;
-     i.e. it is never updated once set.
-     The validation table is reset for each translation unit,
-     and only contains information for the current translation unit.
-     The remaining fields,
-     @('externals'), @('completions'), and @('next-uid'),
-     accumulate over the entire validation process,
-     and their contents apply to all translation units in the ensemble."))
+     i.e. it is never updated once set."))
   ((table valid-table)
-   (externals valid-externals)
-   (completions type-completions)
-   (next-uid uidp)
+   (next-uid-num nat)
    (ienv ienv))
   :pred vstatep)
 
@@ -137,29 +136,22 @@
   :short "An irrelevant validator state."
   :type vstatep
   :body (vstate (irr-valid-table)
-                (treemap::empty)
-                nil
-                (irr-uid)
+                0
                 (irr-ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define init-vstate ((ienv ienvp)
-                     (filepath filepathp)
-                     &optional
-                     ((externals valid-externalsp) '(treemap::empty))
-                     ((completions type-completions-p) 'nil)
-                     ((next-uid uidp) '(uid 0)))
+                     (filepath filepathp))
   :returns (vstate vstatep)
   :short "Initial validator state."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This contains one empty scope (the initial file scope)."))
+    "This contains the initial validation table,
+     and no local unique identifiers have been used yet."))
   (make-vstate :table (init-valid-table filepath (ienv->dialect ienv))
-               :externals externals
-               :completions completions
-               :next-uid next-uid
+               :next-uid-num 0
                :ienv ienv)
   :inline t)
 
@@ -170,6 +162,36 @@
   :short "Wrapper of @(tsee valid-table->filepath)."
   (valid-table->filepath (vstate->table vstate))
   :inline t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define vstate->completions ((vstate vstatep))
+  :returns (completions type-completions-p)
+  :short "Wrapper of @(tsee valid-table->completions)."
+  (valid-table->completions (vstate->table vstate))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define vstate-update-completion ((uid uidp)
+                                  (members type-struni-member-listp)
+                                  (vstate vstatep))
+  :returns (new-vstate vstatep)
+  :short "Update the type completions with a unique identifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We associate the supplied members to the unique identifier,
+     replacing the existing entry if any."))
+  (b* (((vstate vstate) vstate)
+       ((valid-table table) vstate.table)
+       (new-completions
+        (treemap::update (uid-fix uid)
+                         (type-struni-member-list-fix members)
+                         table.completions)))
+    (change-vstate vstate
+                   :table (change-valid-table table
+                                              :completions new-completions))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -265,12 +287,33 @@
    (xdoc::p
     "This holds the validation information
      for an identifier with external linkage
-     which has been declared in any scope or translation unit.
+     which has been declared in any scope of the translation unit.
      See @(see valid-table)."))
-  (b* (((vstate vstate) vstate))
-    (treemap::lookup (ident-fix ident) vstate.externals)))
+  (treemap::lookup (ident-fix ident)
+                   (valid-table->externals (vstate->table vstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define vstate-get-fresh-local-uid ((vstate vstatep))
+  :returns (mv (uid uidp)
+               (new-vstate vstatep))
+  :short "Get a fresh local @(tsee UID) and update the vstate accordingly."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @(tsee UID) is for the current translation unit,
+     and its number is the @('next-uid-num') field of the @(see vstate),
+     which is incremented to record that the @(tsee UID) is now taken."))
+  (b* (((vstate vstate) vstate))
+    (mv (uid-local vstate.next-uid-num (vstate->filepath vstate))
+        (change-vstate vstate :next-uid-num (1+ vstate.next-uid-num))))
+
+  ///
+
+  (defret vstate-get-fresh-local-uid.uid-under-iff
+    uid))
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define vstate-get-fresh-uid ((ident identp)
                               (linkage linkagep)
@@ -281,24 +324,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @('next-uid') field of the @(see vstate) is incremented to record
-     that the returned @(tsee UID) is now taken."))
-  (b* (((vstate vstate) vstate))
-    (linkage-case
-     linkage
-     :external (b* ((info? (vstate-lookup-ext ident vstate)))
-                 (valid-ext-info-option-case
-                  info?
-                  :some (mv (valid-ext-info->uid info?.val)
-                            (vstate-fix vstate))
-                  :none (mv vstate.next-uid
-                            (change-vstate
-                             vstate
-                             :next-uid (uid-increment vstate.next-uid)))))
-     :otherwise (mv vstate.next-uid
-                    (change-vstate
-                     vstate
-                     :next-uid (uid-increment vstate.next-uid)))))
+    "If the linkage is external,
+     the @(tsee UID) is determined by the identifier,
+     and the @(see vstate) is unchanged.
+     Otherwise, we get a fresh local one
+     via @(tsee vstate-get-fresh-local-uid)."))
+  (linkage-case
+   linkage
+   :external (mv (uid-external ident) (vstate-fix vstate))
+   :otherwise (vstate-get-fresh-local-uid vstate))
 
   ///
 
@@ -309,43 +343,27 @@
 
 (define vstate-update-ext ((ident identp)
                            (type typep)
-                           (uid uidp)
                            (vstate vstatep))
   :returns (new-vstate vstatep)
   :short "Update the @('externals') map with an identifier."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If no entry exists for the identifier,
-     add a new @(tsee valid-ext-info).
-     If an entry does exist, replace its type with the supplied type
-     and update the @('declared-in') field to include
-     the name of the current translation unit,
-     while preserving its UID.")
+    "We associate the supplied type to the identifier,
+     replacing the existing entry if any.")
    (xdoc::p
-    "When an existing entry already exists,
-     type compatibility is not checked, nor is the UID.
-     Instead, the caller should check compatibility and ensure a proper UID
-     before updating."))
+    "When an entry already exists,
+     type compatibility is not checked.
+     Instead, the caller should check compatibility before updating,
+     and supply the composite type."))
   (b* (((vstate vstate) vstate)
        ((valid-table table) vstate.table)
-       (info? (vstate-lookup-ext ident vstate))
-       (new-info
-        (valid-ext-info-option-case
-         info?
-         :some (change-valid-ext-info
-                info?
-                :type type
-                :declared-in (insert table.filepath
-                                     (valid-ext-info->declared-in
-                                      info?.val)))
-         :none (make-valid-ext-info
-                :type type
-                :declared-in (insert table.filepath nil)
-                :uid uid)))
+       (new-info (make-valid-ext-info :type type))
        (new-externals
-        (treemap::update (ident-fix ident) new-info vstate.externals)))
-    (change-vstate vstate :externals new-externals)))
+        (treemap::update (ident-fix ident) new-info table.externals)))
+    (change-vstate vstate
+                   :table (change-valid-table table
+                                              :externals new-externals))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -398,7 +416,7 @@
              :objfun (linkage-case
                       info.linkage
                       :external
-                      (vstate-update-ext ident info.type info.uid vstate)
+                      (vstate-update-ext ident info.type vstate)
                       :otherwise vstate)
              :otherwise vstate)
           vstate)))
@@ -447,7 +465,7 @@
              :objfun (linkage-case
                       info.linkage
                       :external
-                      (vstate-update-ext ident info.type info.uid vstate)
+                      (vstate-update-ext ident info.type vstate)
                       :otherwise vstate)
              :otherwise vstate)
           vstate)))
@@ -523,19 +541,83 @@
   (xdoc::topstring
    (xdoc::p
     "This wraps @(tsee type-composite),
-     extracting the @('completions') @('next-uid') from the validation state,
-     and updating the values accordingly."))
+     passing the @('completions') and @('next-uid-num')
+     from the validation state,
+     so that new structure types get local @(see UID)s
+     for the current translation unit,
+     and updating those values accordingly."))
   (b* (((vstate vstate) vstate)
-       ((mv composite completions & next-uid)
+       ((mv composite completions & & next-uid-num)
         (type-composite x y
-                        vstate.completions
+                        (vstate->completions vstate)
                         (treemap::empty)
-                        vstate.next-uid)))
+                        (treeset::empty)
+                        (vstate->filepath vstate)
+                        vstate.next-uid-num))
+       (table (change-valid-table vstate.table :completions completions)))
     (mv composite
-        (change-vstate
-         vstate
-         :completions completions
-         :next-uid next-uid))))
+        (change-vstate vstate :table table :next-uid-num next-uid-num))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod valid-merge-state
+  :short "Fixtype of validator merge states."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the state of the merging phase of the validator,
+     in which the information from each translation unit is merged
+     and cross-checked.
+     It consists of the merged information
+     about identifiers with external linkage,
+     the merged type completions,
+     two sets of pairs of @(see UID)s of structure types described below,
+     and the number of the next unused local @(see UID)
+     without translation unit.")
+   (xdoc::p
+    "Merging and cross-checking often needs to check compatibility
+     and construct composites many times
+     for the same pairs of structs and unions.
+     To avoid repeated work,
+     we carry caches of known compatible pairs (@('compatible-pairs'))
+     and a set of pairs where the first type is a composite of the two
+     (@('composite-inputs'))."))
+  ((externals valid-externals)
+   (completions type-completions)
+   (compatible-pairs uid-pair-set)
+   (composite-inputs uid-pair-set)
+   (next-uid-num nat))
+  :pred valid-merge-statep)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-valid-merge-state
+  :short "An irrelevant validator merge state."
+  :type valid-merge-statep
+  :body (valid-merge-state (treemap::empty)
+                           (treemap::empty)
+                           (treeset::empty)
+                           (treeset::empty)
+                           0))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define init-valid-merge-state ()
+  :returns (mstate valid-merge-statep)
+  :short "Initial validator merge state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Nothing has been merged yet,
+     and the local @(see UID)s without translation unit
+     allocated during the merging
+     are numbered starting from 0."))
+  (make-valid-merge-state :externals (treemap::empty)
+                          :completions (treemap::empty)
+                          :compatible-pairs (treeset::empty)
+                          :composite-inputs (treeset::empty)
+                          :next-uid-num 0)
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3832,7 +3914,6 @@
                                           (type-spec-fix tyspec)))
                                 (type (make-type-struct
                                        :uid (valid-tag-info->uid info?)
-                                       :tunit? (vstate->filepath vstate)
                                        :tag/members
                                        (type-struni-tag/members-tagged
                                         tyspec.spec.name?)))
@@ -3843,10 +3924,7 @@
                                     nil
                                     types
                                     vstate)))
-                          (uid (vstate->next-uid vstate))
-                          (vstate (change-vstate
-                                   vstate
-                                   :next-uid (uid-increment uid)))
+                          ((mv uid vstate) (vstate-get-fresh-local-uid vstate))
                           (vstate (vstate-add-tag tyspec.spec.name?
                                                   (make-valid-tag-info
                                                    :kind (tag-kind-struct)
@@ -3854,7 +3932,6 @@
                                                   vstate))
                           (type (make-type-struct
                                  :uid uid
-                                 :tunit? (vstate->filepath vstate)
                                  :tag/members (type-struni-tag/members-tagged
                                                tyspec.spec.name?)))
                           (info (type-spec-struct-vinfo type)))
@@ -3895,10 +3972,7 @@
                     ((mv uid vstate)
                      (b* (((when current-uid?)
                            (mv current-uid? vstate))
-                          (uid (vstate->next-uid vstate))
-                          (vstate (change-vstate
-                                   vstate
-                                   :next-uid (uid-increment uid))))
+                          ((mv uid vstate) (vstate-get-fresh-local-uid vstate)))
                        (mv uid
                            (if tyspec.spec.name?
                                (vstate-add-tag tyspec.spec.name?
@@ -3911,18 +3985,14 @@
                      (valid-struni-spec tyspec.spec vstate))
                     (type (make-type-struct
                            :uid uid
-                           :tunit? (vstate->filepath vstate)
                            :tag/members (if tyspec.spec.name?
                                             (type-struni-tag/members-tagged
                                              tyspec.spec.name?)
                                           (type-struni-tag/members-untagged
                                            type-struni-members))))
-                    (vstate (change-vstate
-                             vstate
-                             :completions (treemap::update
-                                           uid
-                                           type-struni-members
-                                           (vstate->completions vstate))))
+                    (vstate (vstate-update-completion uid
+                                                     type-struni-members
+                                                     vstate))
                     (info (type-spec-struct-vinfo type)))
                  (retok (make-type-spec-struct :spec new-spec
                                                :info info)
@@ -3946,7 +4016,6 @@
                                      (tag-kind-union))
                               (b* ((type (make-type-union
                                           :uid (valid-tag-info->uid info?)
-                                          :tunit? (vstate->filepath vstate)
                                           :tag/members
                                           (type-struni-tag/members-tagged
                                            tyspec.spec.name?)))
@@ -3963,10 +4032,7 @@
                                       This occurred in the type specifier ~x1."
                                      tyspec.spec.name?
                                      (type-spec-fix tyspec))))
-                         (uid (vstate->next-uid vstate))
-                         (vstate (change-vstate
-                                  vstate
-                                  :next-uid (uid-increment uid)))
+                         ((mv uid vstate) (vstate-get-fresh-local-uid vstate))
                          (vstate (vstate-add-tag tyspec.spec.name?
                                                  (make-valid-tag-info
                                                   :kind (tag-kind-union)
@@ -3974,7 +4040,6 @@
                                                  vstate))
                          (type (make-type-union
                                 :uid uid
-                                :tunit? (vstate->filepath vstate)
                                 :tag/members (type-struni-tag/members-tagged
                                               tyspec.spec.name?)))
                          (info (type-spec-union-vinfo type)))
@@ -4015,10 +4080,7 @@
                    ((mv uid vstate)
                     (b* (((when current-uid?)
                           (mv current-uid? vstate))
-                         (uid (vstate->next-uid vstate))
-                         (vstate (change-vstate
-                                  vstate
-                                  :next-uid (uid-increment uid))))
+                         ((mv uid vstate) (vstate-get-fresh-local-uid vstate)))
                       (mv uid
                           (if tyspec.spec.name?
                               (vstate-add-tag tyspec.spec.name?
@@ -4031,18 +4093,14 @@
                     (valid-struni-spec tyspec.spec vstate))
                    (type (make-type-union
                           :uid uid
-                          :tunit? (vstate->filepath vstate)
                           :tag/members (if tyspec.spec.name?
                                            (type-struni-tag/members-tagged
                                             tyspec.spec.name?)
                                          (type-struni-tag/members-untagged
                                           type-struni-members))))
-                   (vstate (change-vstate
-                            vstate
-                            :completions (treemap::update
-                                          uid
-                                          type-struni-members
-                                          (vstate->completions vstate))))
+                   (vstate (vstate-update-completion uid
+                                                    type-struni-members
+                                                    vstate))
                    (info (type-spec-union-vinfo type)))
                 (retok (make-type-spec-union :spec new-spec
                                              :info info)
@@ -4134,10 +4192,8 @@
                           ((mv uid vstate)
                            (b* (((when current-uid?)
                                  (mv current-uid? vstate))
-                                (uid (vstate->next-uid vstate))
-                                (vstate (change-vstate
-                                         vstate
-                                         :next-uid (uid-increment uid))))
+                                ((mv uid vstate)
+                                 (vstate-get-fresh-local-uid vstate)))
                              (mv uid
                                  (if tyspec.name?
                                      (vstate-add-tag tyspec.name?
@@ -4148,7 +4204,6 @@
                                    vstate))))
                           (type (make-type-struct
                                  :uid uid
-                                 :tunit? (vstate->filepath vstate)
                                  :tag/members
                                  (if tyspec.name?
                                      (type-struni-tag/members-tagged
@@ -4156,12 +4211,7 @@
                                    (type-struni-tag/members-untagged
                                     nil))))
                           (vstate
-                           (change-vstate
-                            vstate
-                            :completions (treemap::update
-                                          uid
-                                          nil
-                                          (vstate->completions vstate))))
+                           (vstate-update-completion uid nil vstate))
                           (info (type-spec-struct-vinfo type)))
                        (retok (make-type-spec-struct-empty
                                :attribs tyspec.attribs
@@ -6857,9 +6907,13 @@
      (xdoc::p
       "If the declaration being validated has external linkage,
        we look up the identifier in the @('externals') map.
-       If we find the identifier has already been declared elsewhere
-       with external linkage,
+       If we find the identifier has already been declared
+       with external linkage in this translation unit,
+       possibly in an unrelated scope,
        we check that the types are compatible [C17:6.2.2/2] [C17:6.2.7/2].
+       Declarations in different translation units are checked
+       when merging the information from the translation units
+       (see @(tsee valid-trans-ensemble)).
        We also check that the identifier has not been previously declared
        in this translation unit with internal linkage [C17:6.2.2/7].
        If the declaration being validated has internal linkage,
@@ -6972,9 +7026,7 @@
                     in the same translation unit."
                    ident))
          ((when (and (linkage-case linkage :internal)
-                     ext-info?
-                     (in (vstate->filepath vstate)
-                         (valid-ext-info->declared-in ext-info?))))
+                     ext-info?))
           (retmsg$ "The identifier ~x0 with internal linkage ~
                     was previously declared with external linkage ~
                     in the same translation unit."
@@ -7077,7 +7129,7 @@
             (mv (irr-type) vstate)))
          (vstate
           (if update-ext-p
-              (vstate-update-ext ident ext-type uid vstate)
+              (vstate-update-ext ident ext-type vstate)
             vstate))
          ((erp new-initer? more-types vstate)
           (valid-initer-option initdeclor.initer? type lifetime? vstate))
@@ -7106,7 +7158,7 @@
                       (mv (irr-type) vstate)))
                    (vstate
                     (if update-ext-p
-                        (vstate-update-ext ident ext-type uid vstate)
+                        (vstate-update-ext ident ext-type vstate)
                       vstate)))
                 (mv type vstate))
             (mv type vstate)))
@@ -7199,9 +7251,7 @@
              (b* (((unless tag?) vstate)
                   ((mv info? currentp) (vstate-lookup-tag tag? vstate))
                   ((when (and info? currentp)) vstate)
-                  (uid (vstate->next-uid vstate))
-                  (vstate (change-vstate vstate
-                                         :next-uid (uid-increment uid))))
+                  ((mv uid vstate) (vstate-get-fresh-local-uid vstate)))
                (vstate-add-tag tag?
                                (make-valid-tag-info
                                 :kind (if unionp
@@ -8178,9 +8228,7 @@
                   in the same translation unit."
                  ident))
        ((when (and (linkage-case linkage :internal)
-                   ext-info?
-                   (in (vstate->filepath vstate)
-                       (valid-ext-info->declared-in ext-info?))))
+                   ext-info?))
         (retmsg$ "The function definition ~x0 with internal linkage ~
                   was previously declared with external linkage ~
                   in the same translation unit."
@@ -8258,7 +8306,7 @@
           (mv (irr-type) vstate)))
        (vstate
         (if update-ext-p
-            (vstate-update-ext ident ext-type fundef-uid vstate)
+            (vstate-update-ext ident ext-type vstate)
           vstate))
        ((erp new-declons types vstate)
         (valid-declon-list fundef.declons vstate))
@@ -8483,9 +8531,12 @@
 
 (define valid-trans-unit ((filepath filepathp)
                           (tunit trans-unitp)
-                          (vstate vstatep))
+                          (ienv ienvp))
   :guard (trans-unit-unambp tunit)
-  :returns (mv (erp maybe-msgp) (new-tunit trans-unitp) (new-vstate vstatep))
+  :returns (mv (erp maybe-msgp)
+               (new-tunit trans-unitp)
+               (externals valid-externalsp)
+               (completions type-completions-p))
   :short "Validate a translation unit."
   :long
   (xdoc::topstring
@@ -8501,24 +8552,32 @@
      we validate all the external declarations in the translation unit.
      Since these are translation units after preprocesing,
      all the referenced names must be declared in the translation unit,
-     so it is appropriate to start with the initial validation table.")
+     so it is appropriate to start with the initial validation table.
+     The translation unit is validated independently from
+     any other translation unit,
+     starting from the initial validator state
+     returned by @(tsee init-vstate).")
    (xdoc::p
     "If validation is successful,
-     we add the final validation table to
-     the information slot of the translation unit,
-     i.e. we annotate the translation unit with its final validation table."))
-  (b* (((reterr) (irr-trans-unit) (irr-vstate))
-       ((vstate vstate) vstate)
-       (dialect (ienv->dialect vstate.ienv))
-       (vstate (change-vstate vstate :table (init-valid-table filepath dialect)))
+     we add the final validation table
+     to the information slot of the translation unit.
+     We also return the information about identifiers with external linkage
+     and the type completions from the table,
+     for merging with those of other translation units
+     (see @(tsee valid-merge-trans-unit))."))
+  (b* (((reterr) (irr-trans-unit) (treemap::empty) (treemap::empty))
+       (dialect (ienv->dialect ienv))
+       (vstate (init-vstate ienv filepath))
        (vstate (vstate-add-built-in-funs (built-in-functions-for dialect) vstate))
        (vstate (vstate-add-built-in-vars (built-in-vars-for dialect) vstate))
        ((erp new-items vstate)
         (valid-trans-item-list (trans-unit->items tunit) vstate))
-       (info (make-trans-unit-vinfo :table-end (vstate->table vstate))))
+       ((valid-table table) (vstate->table vstate))
+       (info (make-trans-unit-vinfo :table-end table)))
     (retok (make-trans-unit :items new-items
                             :info info)
-           vstate))
+           table.externals
+           table.completions))
 
   ///
 
@@ -8529,41 +8588,177 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-merge-externals-loop ((iter treemap::iterp)
+                                    (mstate valid-merge-statep)
+                                    (ienv ienvp))
+  :guard (and (not (treemap::before-firstp iter))
+              (valid-externalsp (treemap::from-iter iter)))
+  :returns (mv (erp maybe-msgp)
+               (new-mstate valid-merge-statep))
+  :short "Merge the information about identifiers with external linkage
+          of a translation unit
+          into the one of the translation units merged so far."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The iterator goes through the information of the translation unit.
+     An identifier not in the merged information so far is just added.
+     Otherwise, the identifier has been declared
+     in some previous translation unit,
+     and all the declarations of an identifier with external linkage
+     must have compatible types [C17:6.2.2/2] [C17:6.2.7/2].
+     The merged information so far has the composite of
+     the types of the declarations so far,
+     so we check that the type in the translation unit is compatible with it,
+     and we update it to the composite with the type in the translation unit.
+     Checking compatibility with the composite,
+     instead of with each previous declaration,
+     avoids a number of checks quadratic in
+     the number of translation units that declare the identifier.")
+   (xdoc::p
+    "The composite types do not belong to any translation unit,
+     so the structure types that they may need
+     are allocated local @(see UID)s without translation unit,
+     whose numbers start from the one in the merge state.
+     The type completions include those of all the translation units,
+     so that structure types from different translation units
+     can be compared and composed."))
+  (b* (((reterr) (irr-valid-merge-state))
+       ((valid-merge-state mstate) mstate)
+       ((when (mbe :logic (not (treemap::has-valuep iter))
+                   :exec (treemap::after-lastp iter)))
+        (retok (valid-merge-state-fix mstate)))
+       (ident (treemap::entry-key iter))
+       ((valid-ext-info info) (treemap::entry-val iter))
+       (prev? (treemap::lookup ident mstate.externals))
+       ((unless prev?)
+        (valid-merge-externals-loop
+         (treemap::next iter)
+         (change-valid-merge-state
+          mstate
+          :externals (treemap::update ident info mstate.externals))
+         ienv))
+       ((valid-ext-info prev) prev?)
+       ((mv compatible compatible-pairs)
+        (type-compatible-3p-exec prev.type
+                                 info.type
+                                 mstate.completions
+                                 mstate.compatible-pairs
+                                 ienv))
+       ((unless (3possibly compatible))
+        (retmsg$ "The identifier ~x0 with external linkage has type ~x1, ~
+                  which is incompatible with its type ~x2 ~
+                  in the translation units validated before."
+                 ident info.type prev.type))
+       ((mv type completions & composite-inputs next-uid-num)
+        (type-composite prev.type
+                        info.type
+                        mstate.completions
+                        (treemap::empty)
+                        mstate.composite-inputs
+                        nil
+                        mstate.next-uid-num))
+       (new-info (make-valid-ext-info :type type)))
+    (valid-merge-externals-loop
+     (treemap::next iter)
+     (make-valid-merge-state
+      :externals (treemap::update ident new-info mstate.externals)
+      :completions completions
+      :compatible-pairs compatible-pairs
+      :composite-inputs composite-inputs
+      :next-uid-num next-uid-num)
+     ienv))
+  :measure (treemap::nexts iter))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define valid-merge-trans-unit ((tu-externals valid-externalsp)
+                                (tu-completions type-completions-p)
+                                (mstate valid-merge-statep)
+                                (ienv ienvp))
+  :returns (mv (erp maybe-msgp)
+               (new-mstate valid-merge-statep))
+  :short "Merge the information about identifiers with external linkage
+          and the type completions of a translation unit
+          into the ones of the translation units merged so far."
+  :long
+  (xdoc::topstring-p
+   "The type completions of different translation units
+    have disjoint keys,
+    because they are local @(see UID)s of different translation units,
+    or local @(see UID)s without translation unit
+    allocated during the merging.
+    So we just take their union.
+    We do that first, because the merging of the information
+    about identifiers with external linkage
+    needs the type completions of the translation unit;
+    see @(tsee valid-merge-externals-loop).")
+  (b* ((completions (treemap::update* (type-completions-fix tu-completions)
+                                      (valid-merge-state->completions mstate)))
+       (mstate (change-valid-merge-state mstate :completions completions)))
+    (valid-merge-externals-loop
+     (treemap::iter-min (valid-externals-fix tu-externals))
+     mstate
+     ienv)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define valid-filepath-trans-unit-map ((tumap filepath-trans-unit-mapp)
-                                       (keep-going booleanp)
-                                       (vstate vstatep))
+                                       (ienv ienvp)
+                                       (keep-going booleanp))
   :guard (filepath-trans-unit-map-unambp tumap)
   :returns (mv (erp maybe-msgp)
                (new-tumap filepath-trans-unit-mapp)
-               (final-vstate vstatep))
+               (externals valid-externalsp)
+               (completions type-completions-p))
   :short "Validate a map from file paths to translation units."
-  (valid-filepath-trans-unit-map-loop (omap::keys
-                                       (filepath-trans-unit-map-fix tumap))
-                                      tumap
-                                      keep-going
-                                      vstate)
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We validate each translation unit independently,
+     and we merge its information about identifiers with external linkage
+     and its type completions
+     into those of the translation units validated so far,
+     in the order of their file paths,
+     starting from the initial merge state.
+     We return the merged information."))
+  (b* (((mv erp new-tumap mstate)
+        (valid-filepath-trans-unit-map-loop
+         (omap::keys (filepath-trans-unit-map-fix tumap))
+         tumap
+         ienv
+         keep-going
+         (init-valid-merge-state)))
+       ((valid-merge-state mstate) mstate))
+    (mv erp new-tumap mstate.externals mstate.completions))
 
   :prepwork
-  ((define valid-filepath-trans-unit-map-loop ((paths filepath-setp)
-                                               (tumap filepath-trans-unit-mapp)
-                                               (keep-going booleanp)
-                                               (vstate vstatep))
+  ((define valid-filepath-trans-unit-map-loop
+     ((paths filepath-setp)
+      (tumap filepath-trans-unit-mapp)
+      (ienv ienvp)
+      (keep-going booleanp)
+      (mstate valid-merge-statep))
      :guard (and (set::subset paths (omap::keys tumap))
                  (filepath-trans-unit-map-unambp tumap))
      :returns (mv (erp maybe-msgp)
                   (new-tumap filepath-trans-unit-mapp)
-                  (final-vstate vstatep))
+                  (new-mstate valid-merge-statep))
      :parents nil
-     (b* (((reterr) nil (irr-vstate))
+     (b* (((reterr) nil (irr-valid-merge-state))
           ((when (set::emptyp (filepath-set-fix paths)))
-           (retok nil (vstate-fix vstate)))
+           (retok nil (valid-merge-state-fix mstate)))
           (tumap (filepath-trans-unit-map-fix tumap))
           (path (set::head paths))
           (tunit (omap::lookup path tumap))
-          ((mv erp new-tunit new-vstate)
-           (valid-trans-unit path tunit vstate))
-          ;; On error, continue with the validation state as it was before
-          ;; the call, not with the irrelevant value returned on failure.
+          ((mv erp new-tunit tu-externals tu-completions)
+           (valid-trans-unit path tunit ienv))
+          ((mv erp new-mstate)
+           (if erp
+               (mv erp (irr-valid-merge-state))
+             (valid-merge-trans-unit tu-externals tu-completions mstate ienv)))
+          ;; On error, continue with the merge state as it was
+          ;; before the translation unit.
           ((when erp)
            (if keep-going
                (prog2$ (cw "Error in translation unit ~x0: ~@1~%"
@@ -8571,19 +8766,19 @@
                            erp)
                        (valid-filepath-trans-unit-map-loop (set::tail paths)
                                                            tumap
+                                                           ienv
                                                            keep-going
-                                                           vstate))
+                                                           mstate))
              (retmsg$ "Error in translation unit ~x0: ~@1"
                       (filepath->string path)
                       erp)))
-          ((erp new-tumap final-vstate)
+          ((erp new-tumap mstate)
            (valid-filepath-trans-unit-map-loop (set::tail paths)
-                                                tumap
-                                                keep-going
-                                                new-vstate)))
-       (retok (omap::update path new-tunit new-tumap)
-              final-vstate))
-     :no-function nil
+                                               tumap
+                                               ienv
+                                               keep-going
+                                               new-mstate)))
+       (retok (omap::update path new-tunit new-tumap) mstate))
      :prepwork ((local (in-theory (enable emptyp-of-filepath-set-fix))))
      :verify-guards :after-returns
      :guard-hints (("Goal" :in-theory (enable* omap::assoc-to-in-of-keys
@@ -8621,18 +8816,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We validate each translation unit,
-     annotating each one with its final validation table.
-     Information that accumulates across translation units
-     (external linkage identifiers, type completions, and the UID counter)
-     is threaded through the validation of each unit
-     and collected into the @(tsee trans-ensemble-vinfo) annotation
+    "We validate each translation unit independently,
+     annotating each one with its validation information,
+     and we merge the information that concerns
+     multiple translation units
+     (identifiers with external linkage and type completions),
+     checking that it is consistent across translation units.
+     The merged information is
+     the @(tsee trans-ensemble-vinfo) annotation
      on the resulting ensemble."))
   (b* (((reterr) (irr-trans-ensemble))
        (tumap (trans-ensemble->units tuens))
-       (vstate (init-vstate ienv (irr-filepath)))
-       ((erp new-tumap vstate)
-        (valid-filepath-trans-unit-map tumap keep-going vstate))
+       ((erp new-tumap externals completions)
+        (valid-filepath-trans-unit-map tumap ienv keep-going))
        (- (if keep-going
               (b* ((len-tumap (omap::size tumap))
                    (len-new-tumap (omap::size new-tumap))
@@ -8643,9 +8839,8 @@
                       len-new-tumap len-tumap)))
             nil))
        (info (make-trans-ensemble-vinfo
-              :externals (vstate->externals vstate)
-              :completions (vstate->completions vstate)
-              :next-uid (vstate->next-uid vstate))))
+              :externals externals
+              :completions completions)))
     (retok (make-trans-ensemble
             :units new-tumap
             :resolved-includes nil
