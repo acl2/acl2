@@ -542,3 +542,20 @@
     :enable (ispace-var-setp-when-ispace-ok
              ispacep-when-ispace-ok
              ispace-listp-when-ispaces-ok)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled dim-sub-nullary-is-invalid
+  :short "A dimension subtraction with no arguments is invalid."
+  (not (dim-ok ivars (dim-sub nil)))
+  :use (:instance lemma (dim (dim-sub nil)))
+  :prep-lemmas
+  ((defthm-dim-ok-induction
+     (defthmd lemma
+       (implies (dim-ok ivars dim)
+                (not (equal dim (dim-sub nil))))
+       :flag dim-ok-induct)
+     :skip-others t
+     :hints (("Goal"
+              :in-theory (enable* dim-ok
+                                  dim-validity-definition-validp-defs))))))
