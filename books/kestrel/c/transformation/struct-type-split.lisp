@@ -978,9 +978,8 @@
                          split-point-type))
                  ((unless (and
                             (c$::type-case split-point-type :struct)
-                            (c$::uid-equiv
-                              (c$::type-struct->uid split-point-type)
-                              target-uid)))
+                            (equal (c$::type-struct->uid split-point-type)
+                                   target-uid)))
                   (retmsg$ "INTERNAL ERROR. ~
                             Designators were scanned within a nonsplittable ~
                             type."))
@@ -2297,7 +2296,7 @@
         :struct
         (b* (((c$::type-spec-struct-vinfo info) type-spec.info)
              (uid (c$::type-struct->uid info.type))
-             (splitp (c$::uid-equiv uid (sts-split-state->target-struct-uid st)))
+             (splitp (equal uid (sts-split-state->target-struct-uid st)))
              ;; The validation information for this type specifier is only
              ;; available here, so this is where we decide whether defining
              ;; the right struct type needs its tag declared beforehand.
@@ -2373,7 +2372,7 @@
         :struct-empty
         (b* (((c$::type-spec-struct-vinfo info) type-spec.info)
              (uid (c$::type-struct->uid info.type))
-             (splitp (c$::uid-equiv uid (sts-split-state->target-struct-uid st)))
+             (splitp (equal uid (sts-split-state->target-struct-uid st)))
              ((erp attribs st)
               (attrib-spec-list-sts-split type-spec.attribs st)))
           (retok (c$::make-type-spec-struct-empty :attribs attribs
