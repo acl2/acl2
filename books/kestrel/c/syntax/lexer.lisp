@@ -149,37 +149,30 @@
      or the next character is something else;
      in the latter case, the character is unread,
      because it could be part of the next lexeme.
-     If successful, the loop returns a list of characters (natural numbers),
+     If successful, the loop returns a list of ACL2 characters,
      which the caller combines with the first character to form a string.
-     This is an ASCII string by construction,
-     so the characters all satisfy @('(unsigned-byte-p 7)'),
-     but we use @('(unsigned-byte-p 8)')
-     in the guard of this function and in the return type of the loop,
-     because @(tsee nats=>string) has that as guard
-     (more precisely, lists of that).
+     This is an ASCII string by construction.
      If the ASCII string is a keyword, we return a keyword token.
      Otherwise, we return an identifier token."))
   (b* (((reterr) (irr-lexeme) (irr-span) parstate)
        ((erp rest-chars last-pos parstate)
         (lex-identifier/keyword-loop first-pos parstate))
        (span (make-span :start first-pos :end last-pos))
-       (chars (cons first-char rest-chars))
-       (string (acl2::nats=>string chars)))
+       (string (str::implode (cons (code-char first-char) rest-chars))))
     (if (parstate->keywordp string parstate)
         (retok (lexeme-token (token-keyword string)) span parstate)
       (retok (lexeme-token (token-ident (ident string))) span parstate)))
+  :guard-hints (("Goal" :in-theory (enable character-listp)))
 
   :prepwork
 
   ((define lex-identifier/keyword-loop ((pos-so-far positionp)
                                         (parstate parstatep))
      :returns (mv erp
-                  (chars (unsigned-byte-listp 8 chars)
+                  (chars character-listp
                          :hints (("Goal"
                                   :induct t
-                                  :in-theory (enable unsigned-byte-p
-                                                     integer-range-p
-                                                     integerp-when-natp))))
+                                  :in-theory (enable character-listp))))
                   (last-pos positionp)
                   (new-parstate parstatep :hyp (parstatep parstate)))
      :parents nil
@@ -199,7 +192,7 @@
              (retok nil (position-fix pos-so-far) parstate)))
           ((erp chars last-pos parstate)
            (lex-identifier/keyword-loop pos parstate)))
-       (retok (cons char chars) last-pos parstate))
+       (retok (cons (code-char char) chars) last-pos parstate))
      :measure (parsize parstate)
      :verify-guards nil ; done below
 
