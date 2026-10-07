@@ -42,7 +42,7 @@
      which say that an expression or atom
      satisfies all the static validity conditions and has a certain type,
      in the sort, kind, and type environments;
-     but we call those environments
+     but we call our counterparts of those environments
      `ispace context' (see @(see ispace-validity)),
      `type context' (see @(see type-validity)),
      and `expression context',

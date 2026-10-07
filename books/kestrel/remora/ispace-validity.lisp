@@ -40,9 +40,9 @@
      but not @($\\gamma$):
      they say that the ispace satisfies all the static validity conditions
      in the sort environment;
-     but we call that environment `ispace context',
+     but we call our counterpart of that environment `ispace context',
      to emphasize that it provides information about ispace variables,
-     and to distinguish them it the aforementioned environments.")
+     and to distinguish it from the aforementioned environment.")
    (xdoc::p
     "Since ispace variables carry their own sorts,
      our ispace context is just a set of ispace variables in scope.")

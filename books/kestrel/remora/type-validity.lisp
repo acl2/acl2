@@ -42,7 +42,7 @@
      but not @($k$):
      they say that the type satisfies all the static validity conditions
      in the sort and kind environments;
-     but we call those environments
+     but we call our counterparts of those environments
      `ispace context' (see @(see ispace-validity))
      and `type context',
      to emphasize that they provide information about ispace and type variables,
