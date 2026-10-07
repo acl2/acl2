@@ -418,6 +418,9 @@
      but that transformation currently does not quite handle
      all of the parser's functions.")
    (xdoc::p
+    "Also for speed, we store the keywords of the C dialect
+     as the keys of a hash table.")
+   (xdoc::p
     "The @('skip-control-lines') says whether control lines,
      i.e. a subset of the preprocessing directives [C17:6.10],
      should be skipped by the lexer like comments and white space.
@@ -524,10 +527,9 @@
             :initially 0)
       (skip-control-lines :type (satisfies booleanp)
                           :initially nil)
-      ;; Expected invariant: (equal keywords (c::keywords-for dialect))
-      (keywords :type (satisfies string-listp)
-                :initially ,(c::keywords-for
-                              (c::make-dialect :std (c::standard-c23))))
+      ;; Expected invariant:
+      ;; the keys of keywords are the elements of (c::keywords-for dialect)
+      (keywords :type (hash-table equal))
       :renaming (;; field recognizers:
                  (bytesp raw-parstate->bytes-p)
                  (positionp raw-parstate->position-p)
@@ -540,7 +542,6 @@
                  (dialectp raw-parstate->dialect-p)
                  (sizep raw-parstate->size-p)
                  (skip-control-linesp raw-parstate->skip-control-lines-p)
-                 (keywordsp raw-parstate->keywords-p)
                  ;; field readers:
                  (bytes raw-parstate->bytes)
                  (position raw-parstate->position)
@@ -555,7 +556,9 @@
                  (dialect raw-parstate->dialect)
                  (size raw-parstate->size)
                  (skip-control-lines raw-parstate->skip-control-lines)
-                 (keywords raw-parstate->keywords)
+                 (keywords-get raw-parstate->keywords-get)
+                 (keywords-boundp raw-parstate->keywords-boundp)
+                 (keywords-count raw-parstate->keywords-count)
                  ;; field writers:
                  (update-bytes raw-update-parstate->bytes)
                  (update-position raw-update-parstate->position)
@@ -571,7 +574,10 @@
                  (update-size raw-update-parstate->size)
                  (update-skip-control-lines
                   raw-update-parstate->skip-control-lines)
-                 (update-keywords raw-update-parstate->keywords))
+                 (keywords-put raw-parstate->keywords-put)
+                 (keywords-rem raw-parstate->keywords-rem)
+                 (keywords-clear raw-parstate->keywords-clear)
+                 (keywords-init raw-parstate->keywords-init))
       :inline t
       :non-executable t))
 
@@ -615,16 +621,9 @@
     :enable (raw-parstate->tokens-p
              token+span-listp))
 
-  (defrule raw-parstate->keywords-p-becomes-string-listp
-    (equal (raw-parstate->keywords-p x)
-           (string-listp x))
-    :induct t
-    :enable (raw-parstate->keywords-p
-             string-listp))
-
   ;; needed for reader/writer proofs:
 
-  (local (in-theory (enable parstate-fix)))
+  (local (in-theory (enable parstate-fix hons-assoc-equal)))
 
   ;; readers:
 
@@ -758,16 +757,13 @@
     :inline t
     :hooks nil)
 
-  (define parstate->keywords (parstate)
-    :returns (keywords string-listp)
+  (define parstate->keywordp ((string stringp) parstate)
+    :returns (yes/no booleanp)
     (mbe :logic (if (parstatep parstate)
-                    (raw-parstate->keywords parstate)
-                  (c::keywords-for (c::make-dialect :std (c::standard-c23))))
-         :exec (raw-parstate->keywords parstate))
-    :inline t
-    ///
-    (more-returns
-     (keywords true-listp :rule-classes :type-prescription)))
+                    (raw-parstate->keywords-boundp (str-fix string) parstate)
+                  nil)
+         :exec (raw-parstate->keywords-boundp string parstate))
+    :inline t)
 
   ;; writers:
 
@@ -907,10 +903,17 @@
     :inline t
     :hooks nil)
 
-  (define update-parstate->keywords ((keywords string-listp) parstate)
+  (define put-parstate->keywords ((keyword stringp) parstate)
     :returns (parstate parstatep)
     (b* ((parstate (parstate-fix parstate)))
-      (raw-update-parstate->keywords (string-list-fix keywords) parstate))
+      (raw-parstate->keywords-put (str-fix keyword) t parstate))
+    :inline t
+    :hooks nil)
+
+  (define clear-parstate->keywords (parstate)
+    :returns (parstate parstatep)
+    (b* ((parstate (parstate-fix parstate)))
+      (raw-parstate->keywords-clear parstate))
     :inline t
     :hooks nil)
 
@@ -994,11 +997,21 @@
              length
              nfix))
 
-  (defrule parstate->size-of-update-parstate->keywords
-    (equal (parstate->size (update-parstate->keywords keywords parstate))
+  (defrule parstate->size-of-put-parstate->keywords
+    (equal (parstate->size (put-parstate->keywords keyword parstate))
            (parstate->size parstate))
     :enable (parstate->size
-             update-parstate->keywords
+             put-parstate->keywords
+             parstatep
+             parstate-fix
+             length
+             nfix))
+
+  (defrule parstate->size-of-clear-parstate->keywords
+    (equal (parstate->size (clear-parstate->keywords parstate))
+           (parstate->size parstate))
+    :enable (parstate->size
+             clear-parstate->keywords
              parstatep
              parstate-fix
              length
@@ -1050,6 +1063,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define put-list-parstate->keywords ((keywords string-listp) parstate)
+  :returns (parstate parstatep)
+  :short "Add a list of keywords to the parser state."
+  (b* (((when (endp keywords)) (parstate-fix parstate))
+       (parstate (put-parstate->keywords (car keywords) parstate)))
+    (put-list-parstate->keywords (cdr keywords) parstate))
+  :hooks nil
+
+  ///
+
+  (defrule parstate->size-of-put-list-parstate->keywords
+    (equal (parstate->size (put-list-parstate->keywords keywords parstate))
+           (parstate->size parstate))
+    :induct t
+    :enable (parstate->size parstate-fix)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define init-parstate ((file stringp)
                        (data byte-listp)
                        (dialect c::dialectp)
@@ -1089,8 +1120,9 @@
        (parstate (update-parstate->size (len data) parstate))
        (parstate
         (update-parstate->skip-control-lines skip-control-lines parstate))
+       (parstate (clear-parstate->keywords parstate))
        (parstate
-        (update-parstate->keywords (c::keywords-for dialect) parstate)))
+        (put-list-parstate->keywords (c::keywords-for dialect) parstate)))
     parstate)
   :hooks nil)
 
