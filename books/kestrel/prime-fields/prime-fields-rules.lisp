@@ -1,6 +1,6 @@
 ; Prime fields library: additional rules
 ;
-; Copyright (C) 2019-2025 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -916,9 +916,7 @@
 (defthm div-of-div-same-arg1
   (implies (and (fep x p)
                 (fep y p)
-                (primep p)
-                (< 2 p) ;gen?
-                )
+                (primep p))
            (equal (div x (div x y p) p)
                   (if (equal x 0)
                       0
