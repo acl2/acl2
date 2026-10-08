@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-structurals")
+(include-book "dimension-polynomials")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -24,52 +25,23 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We partially implement the ispace equivalence
+    "We implement the ispace equivalence
      defined in @(see ispace-equivalence),
      by normalizing ispaces and then comparing them syntactically.
-     The implementation is partial because currently
-     it treats dimension multiplication and subtraction
-     as uninterpreted operations:
-     no rule about them is applied, except the congruence rules.
-     Thus, the equivalence checks are intended to be sound in general,
-     since each normalization step is an instance of a rule,
-     and complete when there are no multiplications and subtractions,
-     which is the case covered by [thesis];
-     we have not proved either yet.")
-   (xdoc::p
-    "The normalization code is defined on all ispaces.
-     The additions in the operands of a multiplication or subtraction
-     are normalized,
-     but the multiplication or subtraction is otherwise
-     treated like a variable,
-     e.g. as an addend of an addition."))
+     Dimensions are normalized via polynomials
+     (see @(see dimension-polynomials)),
+     which interpret addition, multiplication, and subtraction;
+     shapes and ispaces are normalized to concatenations of
+     shape variables and single-dimension shapes
+     with normalized dimensions.
+     The equivalence checks are intended to be sound and complete,
+     since each normalization step is an instance of an inference rule
+     and equivalent ispaces have the same normal form;
+     we have not proved either yet."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define sort-dims ((dims dim-listp))
-  :returns (sorted-dims dim-listp)
-  :short "Sort a list of dimensions, using ACL2's total order of values."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is a simple insertion sort.
-     We do not expect long lists."))
-  (cond ((endp dims) nil)
-        (t (sort-dims-aux (car dims) (sort-dims (cdr dims)))))
-  :verify-guards :after-returns
-  :prepwork
-  ((define sort-dims-aux ((dim dimp) (dims dim-listp))
-     :returns (dims-with-dim dim-listp)
-     :parents nil
-     (cond ((endp dims) (list (dim-fix dim)))
-           ((<< (dim-fix dim) (dim-fix (car dims)))
-            (cons (dim-fix dim) (dim-list-fix dims)))
-           (t (cons (dim-fix (car dims))
-                    (sort-dims-aux dim (cdr dims))))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define sort-shapes ((shapes shape-listp))
   :returns (sorted-shapes shape-listp)
@@ -94,88 +66,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines flatten-add-in-dims
-  :short "Flatten all the nested additions
-          in a dimension or list of dimensions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For instance, @('(+ i (+ j k) (+ l) m (+ n (+ o p) q))')
-     is turned into @('(+ i j k l m n o p q)')."))
-
-  ;;;;;;;;;;;;;;;;;;;;
-
-  (define flatten-add-in-dim ((dim dimp))
-    :returns (new-dim dimp)
-    :parents (ispace-equivalence-checker flatten-add-in-dims)
-    :short "Flatten all the nested additions in a dimension."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Variables and constants are left alone.")
-     (xdoc::p
-      "For an addition, we recursively flatten the additions in the addends,
-       and we also splice any resulting flattened sub-additions
-       into the super-addition.
-       For instance, given @('(+ i (+ (+ j k) l) 3)'),
-       if we just flatten its components we get @('(+ i (+ j k l) 3)'),
-       but then we also need to splice the sub-addition,
-       obtaining @('(+ i j k l 3)').
-       The splicing is done by @(tsee flatten-add-in-dim-list),
-       based on whether the @('addp') flag is @('t') or @('nil').")
-     (xdoc::p
-      "For a multiplication or subtraction,
-       we recursively flatten the additions in the operands,
-       but we do not splice any resulting flattened additions
-       into the multiplication or subtraction,
-       whose operands are left separate."))
-    (dim-case
-     dim
-     :var (dim-var dim.name)
-     :const (dim-const dim.val)
-     :add (dim-add (flatten-add-in-dim-list dim.dims t))
-     :mul (dim-mul (flatten-add-in-dim-list dim.dims nil))
-     :sub (dim-sub (flatten-add-in-dim-list dim.dims nil)))
-    :measure (dim-count dim))
-
-  ;;;;;;;;;;;;;;;;;;;;
-
-  (define flatten-add-in-dim-list ((dims dim-listp) (addp booleanp))
-    :returns (new-dims dim-listp)
-    :parents (ispace-equivalence-checker flatten-add-in-dims)
-    :short "Flatten all the nested additions in a list of dimensions,
-            further flattening the resulting list if part of an addition."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "We go through each dimension and flatten it.
-       However, as explained in @(tsee flatten-add-in-dim),
-       if the @('addp') flag is @('t'),
-       we splice any obtained sub-addition into the current list,
-       which is put into the super-addition by @(tsee flatten-add-in-dim).
-       The @('addp') flag is @('t') exactly when
-       the dimensions passed to this function are addends of an addition,
-       and @('nil') when they are the operands of
-       a multiplication or subtraction."))
-    (b* (((when (endp dims)) nil)
-         (new-dim (flatten-add-in-dim (car dims)))
-         (new-dims (flatten-add-in-dim-list (cdr dims) addp)))
-      (if (and addp
-               (dim-case new-dim :add))
-          (append (dim-add->dims new-dim) new-dims)
-        (cons new-dim new-dims)))
-    :measure (dim-list-count dims))
-
-  ;;;;;;;;;;;;;;;;;;;;
-
-  :verify-guards :after-returns
-
-  ///
-
-  (fty::deffixequiv-mutual flatten-add-in-dims))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define factor-consts-in-add-dims ((dims dim-listp))
   :returns (mv (sum natp :rule-classes (:rewrite :type-prescription))
                (new-dims dim-listp))
@@ -183,9 +73,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used on the dimensions of an addition dimension.
-     It is intended for use after flattening additions
-     via @(tsee flatten-add-in-dims).")
+    "This is used on the addends of a normalized addition
+     (see @(tsee normalize-dim)) by @(tsee dim-addends).")
    (xdoc::p
     "We go through the dimensions,
      removing the constant ones and adding them to the running sum,
@@ -202,111 +91,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define normalize-add-dims ((dims dim-listp))
-  :returns (new-dims dim-listp)
-  :short "Normalize the dimensions of an addition dimension."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is defined on arbitrary lists of dimensions,
-     but it is intended for use
-     after all additions have been flattened via @(tsee flatten-add-in-dims).
-     Under these conditions,
-     the dimensions passed to this function
-     consist of only constants and variables,
-     without nested additions because of the flattening.
-     We factor the constants, we sort the variables,
-     and we add a constant for the sum if it is not 0."))
-  (b* (((mv sum dims) (factor-consts-in-add-dims dims))
-       (dims (sort-dims dims)))
-    (if (> sum 0)
-        (cons (dim-const sum) dims)
-      dims)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defines normalize-add-in-dims
-  :short "Normalize additions in dimensions and lists of dimensions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is intended for use
-     after all additions have been flattened via @(tsee flatten-add-in-dims)."))
-
-  ;;;;;;;;;;;;;;;;;;;;
-
-  (define normalize-add-in-dim ((dim dimp))
-    :returns (new-dim dimp)
-    :parents (ispace-equivalence-checker normalize-add-in-dims)
-    :short "Normalize additions in a dimension."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Variables and constants are left alone.")
-     (xdoc::p
-      "For an addition,
-       we first normalize the additions in the addends,
-       and then we use @(tsee normalize-add-dims) on the resulting addends.
-       We also replace empty additions with 0,
-       and singleton additions with their only element.")
-     (xdoc::p
-      "For a multiplication or subtraction,
-       we normalize the additions in the operands,
-       but we do not apply any law of multiplication or subtraction.
-       A multiplication or subtraction that is an addend of an addition
-       is treated like a variable by @(tsee normalize-add-dims):
-       it is not a constant, and it is sorted with the variables.")
-     (xdoc::p
-      "Normalizing the addends of a flattened addition
-       does not introduce nested additions,
-       because variables and constants are unchanged,
-       and multiplications and subtractions remain such.
-       Thus, the flattening is preserved."))
-    (dim-case
-     dim
-     :var (dim-var dim.name)
-     :const (dim-const dim.val)
-     :add (b* ((dims (normalize-add-in-dim-list dim.dims))
-               (dims (normalize-add-dims dims))
-               ((when (endp dims)) (dim-const 0)) ; no dimensions
-               ((when (endp (cdr dims))) (car dims))) ; one dimension
-            (dim-add dims)) ; two or more dimensions
-     :mul (dim-mul (normalize-add-in-dim-list dim.dims))
-     :sub (dim-sub (normalize-add-in-dim-list dim.dims)))
-    :measure (dim-count dim))
-
-  ;;;;;;;;;;;;;;;;;;;;
-
-  (define normalize-add-in-dim-list ((dims dim-listp))
-    :returns (new-dims dim-listp)
-    :parents (ispace-equivalence-checker normalize-add-in-dims)
-    :short "Normalize additions in a list of dimensions."
-    (cond ((endp dims) nil)
-          (t (cons (normalize-add-in-dim (car dims))
-                   (normalize-add-in-dim-list (cdr dims)))))
-    :measure (dim-list-count dims))
-
-  ;;;;;;;;;;;;;;;;;;;;
-
-  :verify-guards :after-returns
-
-  ///
-
-  (fty::deffixequiv-mutual normalize-add-in-dims))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define normalize-dim ((dim dimp))
   :returns (new-dim dimp)
   :short "Normalize a dimension."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We flatten and normalize all the additions,
-     including the ones in the operands of
-     multiplications and subtractions,
-     which are otherwise left as they are."))
-  (normalize-add-in-dim (flatten-add-in-dim dim)))
+    "We turn the dimension into the polynomial it denotes,
+     and the polynomial back into a dimension in canonical form
+     (see @(see dimension-polynomials)).
+     Equivalent dimensions have the same normal form."))
+  (poly-to-dim (dim-to-poly dim)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -517,11 +312,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is partly analogous to @(tsee flatten-add-in-dims),
-     but for shape concatenations instead of dimension additions;
-     see the documentation of those functions.
-     But while we flatten the concatenations,
-     we also turn variables and shapes with dimensions
+    "We flatten the nested concatenations,
+     splicing the components of a sub-concatenation
+     into the super-concatenation.
+     We also turn variables and shapes with dimensions
      into singleton concatenations,
      and we also turn splices into concatenations
      (as noted in @(tsee shape), splices and concatenations are equivalent).")
@@ -572,10 +366,12 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "The flag @('appendp') is analogous to
-       @('addp') in @(tsee flatten-add-in-dim-list).
-       It is @('t') exactly when the shapes are
-       the components of a concatenation (or splice)."))
+      "The flag @('appendp') is @('t') exactly when the shapes are
+       the components of a concatenation (or splice):
+       in that case, the components of a flattened sub-concatenation
+       are spliced into the current list,
+       which is put into the super-concatenation
+       by @(tsee flatten-append-in-shape)."))
     (b* (((when (endp shapes)) nil)
          (new-shape (flatten-append-in-shape (car shapes)))
          (new-shapes (flatten-append-in-shape-list (cdr shapes) appendp)))

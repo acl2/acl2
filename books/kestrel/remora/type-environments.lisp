@@ -171,8 +171,8 @@
      well-formed types provable without a theorem about the checker."))
   (b* ((tenv (string-type-map-fix tenv))
        (sbs (check-bind-list binds
-                             (ispace-senv nil)
-                             (type-senv nil)
+                             (init-ispace-senv)
+                             (init-type-senv)
                              (tenv-to-expr-senv tenv)))
        ((when (reserrp sbs)) tenv)
        (new (restrict-to-keys (bind-list-bound-expr-vars binds)

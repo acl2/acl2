@@ -62,35 +62,38 @@
 
 ; Multiplications and subtractions.
 
-; A multiplication or subtraction is left as it is,
-; even when it could be simplified:
-; no law of multiplication or subtraction is applied.
+; The normalization goes through polynomials
+; (see DIMENSION-POLYNOMIALS and its tests);
+; here we test a few representative cases.
+
+; A multiplication of variables and a subtraction of a variable and a constant
+; are unchanged, while a multiplication of constants is calculated.
 
 (assert-equal (normalize-dim (dim* "$m" "$n"))
               (dim* "$m" "$n"))
 
 (assert-equal (normalize-dim (dim* 2 3))
-              (dim* 2 3))
+              (dim-const 6))
 
 (assert-equal (normalize-dim (dim- "$m" 1))
               (dim- "$m" 1))
 
-; The additions in the operands of a multiplication or subtraction
-; are normalized, but they are not spliced into it.
+; A multiplication is distributed over the additions in its operands,
+; and the additions in the operands of a subtraction are normalized.
 
 (assert-equal (normalize-dim (dim* "$m" (dim+ 2 (dim+ 1 "$n"))))
-              (dim* "$m" (dim+ 3 "$n")))
+              (dim+ (dim* 3 "$m") (dim* "$m" "$n")))
 
 (assert-equal (normalize-dim (dim- (dim+ "$n" "$m") (dim+ 1 1)))
               (dim- (dim+ "$m" "$n") 2))
 
-; A multiplication or subtraction that is an addend
-; is treated like a variable:
-; it is not added to the constants, and it is sorted with the variables
-; (before them, according to ACL2's total order).
+; A multiplication of constants that is an addend
+; is added to the other constants,
+; a singleton addition is its addend,
+; and a zero addend is dropped.
 
 (assert-equal (normalize-dim (dim+ "$i" 1 (dim* 2 3)))
-              (dim+ 1 (dim* 2 3) "$i"))
+              (dim+ 7 "$i"))
 
 (assert-equal (normalize-dim (dim+ (dim* "$m" "$n")))
               (dim* "$m" "$n"))
@@ -150,7 +153,7 @@
               (shp++ "@s"))
 
 ; A splice is turned into a concatenation.
-; A multiplication is left as it is.
+; A multiplication of variables is unchanged.
 
 (assert-equal (normalize-shape (shp[] (dim* "$m" "$n") "@s"))
               (shp++ (shp (dim* "$m" "$n")) "@s"))
@@ -166,7 +169,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Dimensions, shapes, and ispaces that only use addition are equivalent
+; Dimensions, shapes, and ispaces are equivalent
 ; iff they normalize to the same dimension, shape, or ispace.
 
 (assert-equal (dim-equivp (dim+ "$n" 1)
@@ -197,10 +200,11 @@
                              (ispace-shape (shp 3)))
               t)
 
-; Multiplications and subtractions are uninterpreted:
-; a dimension or shape with a multiplication is equivalent to itself,
-; and to the same one with the operands of the multiplication normalized,
-; but a multiplication of constants is not equivalent to their product.
+; Multiplication and subtraction are interpreted as well:
+; a multiplication of constants is equivalent to their product,
+; a multiplication is equivalent to its distribution over additions,
+; and a subtraction cancels an addition;
+; but a variable is not equivalent to its predecessor.
 
 (assert-equal (dim-equivp (dim* "$m" (dim+ 1 2))
                           (dim* "$m" 3))
@@ -208,6 +212,18 @@
 
 (assert-equal (dim-equivp (dim* 2 3)
                           (dim-const 6))
+              t)
+
+(assert-equal (dim-equivp (dim* (dim+ 1 "$m") (dim+ 1 "$n"))
+                          (dim+ 1 "$m" "$n" (dim* "$m" "$n")))
+              t)
+
+(assert-equal (dim-equivp (dim+ (dim- "$n" 1) 1)
+                          (dim-var "n"))
+              t)
+
+(assert-equal (dim-equivp (dim- "$n" 1)
+                          (dim-var "n"))
               nil)
 
 (assert-equal (shape-equivp (shp (dim* "$m" "$n"))
@@ -220,4 +236,4 @@
 
 (assert-equal (shape-equivp (shp (dim* 2 3))
                             (shp 6))
-              nil)
+              t)
