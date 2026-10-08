@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "static-environments")
+(include-book "dimension-polynomials")
 (include-book "ispace-equivalence-checker")
 (include-book "type-equivalence-checker")
 (include-book "ispace-matcher")
@@ -42,6 +43,7 @@
      that is meant to be equivalent to those inference rules;
      we plan to prove this equivalence."))
   :order-subtopics (static-environments
+                    dimension-polynomials
                     ispace-equivalence-checker
                     type-equivalence-checker
                     ispace-matcher

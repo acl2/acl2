@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-structurals")
+(include-book "dimension-polynomials")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -47,29 +48,6 @@
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define sort-dims ((dims dim-listp))
-  :returns (sorted-dims dim-listp)
-  :short "Sort a list of dimensions, using ACL2's total order of values."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is a simple insertion sort.
-     We do not expect long lists."))
-  (cond ((endp dims) nil)
-        (t (sort-dims-aux (car dims) (sort-dims (cdr dims)))))
-  :verify-guards :after-returns
-  :prepwork
-  ((define sort-dims-aux ((dim dimp) (dims dim-listp))
-     :returns (dims-with-dim dim-listp)
-     :parents nil
-     (cond ((endp dims) (list (dim-fix dim)))
-           ((<< (dim-fix dim) (dim-fix (car dims)))
-            (cons (dim-fix dim) (dim-list-fix dims)))
-           (t (cons (dim-fix (car dims))
-                    (sort-dims-aux dim (cdr dims))))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define sort-shapes ((shapes shape-listp))
   :returns (sorted-shapes shape-listp)
