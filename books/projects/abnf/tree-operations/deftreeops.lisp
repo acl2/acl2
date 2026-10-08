@@ -1608,10 +1608,7 @@
    (rulename rulenamep)
    (prefix acl2::symbolp)
    (print evmac-input-print-p))
-  :returns (mv (matching-thm-events pseudo-event-form-listp)
-               (get-tree-list-fn-events pseudo-event-form-listp)
-               (get-tree-fn-events pseudo-event-form-listp)
-               (event-alist symbol-pseudoeventform-alistp))
+  :returns (events deftreeops-eventsp)
   :short "Generate the functions and theorems for
           a repetition in a concatenation in
           the alternation that defines a rule name."
@@ -1772,24 +1769,26 @@
                      (and (evmac-input-print->= print :result)
                           `((cw-event "Function ~x0.~%"
                                       ',info.get-tree-fn)))))))
-    (mv matching-thm-events
-        get-tree-list-fn-events
-        get-tree-fn-events
-        (append (and matching-thm-event?
-                     (list (cons info.matching-thm
-                                 (car matching-thm-event?))))
-                (and get-tree-list-fn-event?
-                     (list (cons info.get-tree-list-fn
-                                 (car get-tree-list-fn-event?))))
-                (and get-tree-list-fn-match-thm-event
-                     (list (cons info.get-tree-list-fn-match-thm
-                                 get-tree-list-fn-match-thm-event)))
-                (and get-tree-fn-event?
-                     (list (cons info.get-tree-fn
-                                 (car get-tree-fn-event?))))
-                (and get-tree-fn-match-thm-event
-                     (list (cons info.get-tree-fn-match-thm
-                                 get-tree-fn-match-thm-event)))))))
+    (make-deftreeops-events
+     :rep-matching-thms matching-thm-events
+     :get-tree-list-fns get-tree-list-fn-events
+     :get-tree-fns get-tree-fn-events
+     :event-alist
+     (append (and matching-thm-event?
+                  (list (cons info.matching-thm
+                              (car matching-thm-event?))))
+             (and get-tree-list-fn-event?
+                  (list (cons info.get-tree-list-fn
+                              (car get-tree-list-fn-event?))))
+             (and get-tree-list-fn-match-thm-event
+                  (list (cons info.get-tree-list-fn-match-thm
+                              get-tree-list-fn-match-thm-event)))
+             (and get-tree-fn-event?
+                  (list (cons info.get-tree-fn
+                              (car get-tree-fn-event?))))
+             (and get-tree-fn-match-thm-event
+                  (list (cons info.get-tree-fn-match-thm
+                              get-tree-fn-match-thm-event)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1811,16 +1810,10 @@
    (prefix acl2::symbolp)
    (print evmac-input-print-p))
   :guard (equal (len infos) (len conc))
-  :returns (mv (matching-thm-events pseudo-event-form-listp)
-               (get-tree-list-fn-events pseudo-event-form-listp)
-               (get-tree-fn-events pseudo-event-form-listp)
-               (event-alist symbol-pseudoeventform-alistp))
+  :returns (events deftreeops-eventsp)
   :short "Lift @(tsee deftreeops-gen-rep-events) to lists."
-  (b* (((when (endp conc)) (mv nil nil nil nil))
-       ((mv matching-thm-events
-            get-tree-list-fn-events
-            get-tree-fn-events
-            event-alist)
+  (b* (((when (endp conc)) (make-deftreeops-events))
+       (events
         (deftreeops-gen-rep-events
           (car conc)
           (car infos)
@@ -1832,10 +1825,7 @@
           rulename
           prefix
           print))
-       ((mv more-matching-thm-events
-            more-get-tree-list-fn-events
-            more-get-tree-fn-events
-            more-event-alist)
+       (more-events
         (deftreeops-gen-rep-list-events
           (cdr conc)
           (cdr infos)
@@ -1847,10 +1837,8 @@
           rulename
           prefix
           print)))
-    (mv (append matching-thm-events more-matching-thm-events)
-        (append get-tree-list-fn-events more-get-tree-list-fn-events)
-        (append get-tree-fn-events more-get-tree-fn-events)
-        (append event-alist more-event-alist))))
+    (deftreeops-events-append events more-events))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2004,10 +1992,7 @@
         (raise "Internal error: length of ~x0 differs from length of ~x1."
                info.rep-infos conc)
         (make-deftreeops-events))
-       ((mv rep-matching-thm-events
-            get-tree-list-fn-events
-            get-tree-fn-events
-            event-alist)
+       (rep-events
         (if conc-singletonp
             (deftreeops-gen-rep-list-events
               conc
@@ -2020,28 +2005,26 @@
               rulename
               prefix
               print)
-          (mv nil nil nil nil))))
-    (make-deftreeops-events
-     :conc-matching-thms matching-thm-events
-     :rep-matching-thms rep-matching-thm-events
-     :get-tree-list-list-fns get-tree-list-list-fn-events
-     :get-tree-list-fns get-tree-list-fn-events
-     :get-tree-fns get-tree-fn-events
-     :check-conc-fn-equiv-thms check-conc-fn-equiv-thm-events
-     :event-alist
-     (append event-alist
-             (and matching-thm-event?
-                  (list (cons info.matching-thm
-                              (car matching-thm-event?))))
-             (and check-conc-fn-equiv-thm-event?
-                  (list (cons info.check-conc-fn-equiv-thm
-                              (car check-conc-fn-equiv-thm-event?))))
-             (and get-tree-list-list-fn-event?
-                  (list (cons info.get-tree-list-list-fn
-                              (car get-tree-list-list-fn-event?))))
-             (and get-tree-list-list-fn-match-thm-event
-                  (list (cons info.get-tree-list-list-fn-match-thm
-                              get-tree-list-list-fn-match-thm-event)))))))
+          (make-deftreeops-events))))
+    (deftreeops-events-append
+     rep-events
+     (make-deftreeops-events
+      :conc-matching-thms matching-thm-events
+      :get-tree-list-list-fns get-tree-list-list-fn-events
+      :check-conc-fn-equiv-thms check-conc-fn-equiv-thm-events
+      :event-alist
+      (append (and matching-thm-event?
+                   (list (cons info.matching-thm
+                               (car matching-thm-event?))))
+              (and check-conc-fn-equiv-thm-event?
+                   (list (cons info.check-conc-fn-equiv-thm
+                               (car check-conc-fn-equiv-thm-event?))))
+              (and get-tree-list-list-fn-event?
+                   (list (cons info.get-tree-list-list-fn
+                               (car get-tree-list-list-fn-event?))))
+              (and get-tree-list-list-fn-match-thm-event
+                   (list (cons info.get-tree-list-list-fn-match-thm
+                               get-tree-list-list-fn-match-thm-event))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
