@@ -37,6 +37,8 @@
   (and (eq (scratchobj-kind x) (scratchobj-kind y))
        (scratchobj-case x
          :fgl-objlist (eql (len x.val) (len (scratchobj-fgl-objlist->val y)))
+         :fgl-arglist (eql (len x.val) (len (scratchobj-fgl-arglist->val y)))
+         :fgl-bindings (equal (alist-keys x.val) (alist-keys (scratchobj-fgl-bindings->val y)))
          :bfrlist (eql (len x.val) (len (scratchobj-bfrlist->val y)))
          :cinstlist (eql (len x.val) (len (scratchobj-cinstlist->val y)))
          :otherwise t))
@@ -52,6 +54,13 @@
                 (len (scratchobj-fgl-objlist->val y))))
     :rule-classes :linear)
 
+  (defthm len-fgl-arglist-when-scratchobj-isomorphic
+    (implies (and (scratchobj-isomorphic x y)
+                  (scratchobj-case x :fgl-arglist))
+             (= (len (scratchobj-fgl-arglist->val x))
+                (len (scratchobj-fgl-arglist->val y))))
+    :rule-classes :linear)
+
   (defthm len-bfrlist-when-scratchobj-isomorphic
     (implies (and (scratchobj-isomorphic x y)
                   (scratchobj-case x :bfrlist))
@@ -64,7 +73,15 @@
                   (scratchobj-case x :cinstlist))
              (= (len (scratchobj-cinstlist->val x))
                 (len (scratchobj-cinstlist->val y))))
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defthm alist-keys-fgl-bindings-when-scratchobj-isomorphic
+    (implies (and (scratchobj-case x :fgl-bindings)
+                  (scratchobj-isomorphic y (double-rewrite x))
+                  (syntaxp (not (equal x y))))
+             (equal (alist-keys (scratchobj-fgl-bindings->val x))
+                    (alist-keys (scratchobj-fgl-bindings->val y)))))
+  )
 
 (define scratchlist-isomorphic ((x scratchlist-p) (y scratchlist-p))
   (if (atom x)

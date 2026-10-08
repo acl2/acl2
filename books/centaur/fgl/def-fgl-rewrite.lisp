@@ -140,6 +140,24 @@
                "The name of a rewrite rule must either be a bare symbol or a ~
                 :rewrite, :definition, or :formula FGL rune -- ~x0 is not." name))))
 
+(defun fgl-rewrite-rune-with-arg-modes (rune arg-modes)
+  ;; FGL name syntax is a two-element ACL2 rune; add registration metadata
+  ;; only after collecting its ACL2 lemmas and LHSes.
+  (case (car rune)
+    (:rewrite (fgl-rune-rewrite (cadr rune) arg-modes))
+    (:definition (fgl-rune-definition (cadr rune) arg-modes))
+    (:formula (fgl-rune-formula (cadr rune) arg-modes))
+    (otherwise rune)))
+
+(defun fgl-rewrite-arg-modes-fit-lhses-p (arg-modes lhses)
+  (if (atom lhses)
+      t
+    (and (or (not (and (consp (car lhses))
+                       (symbolp (caar lhses))
+                       (not (eq (caar lhses) 'quote))))
+             (<= (len arg-modes) (len (cdar lhses))))
+         (fgl-rewrite-arg-modes-fit-lhses-p arg-modes (cdr lhses)))))
+
 (defun fgl-binder-rune-lhses (rune world)
   (declare (xargs :mode :program))
   (cond ((eq (car rune) :bformula)
@@ -236,8 +254,11 @@
   :returns (tail fgl-generic-rune-priolist-p)
   (if (atom runes)
       nil
-    (if (equal (fgl-generic-rune-fix x)
-               (fgl-generic-rune-prio->rune (car runes)))
+    (if (and (eq (tag (fgl-generic-rune-fix x))
+                 (tag (fgl-generic-rune-prio->rune (car runes))))
+             (equal (fgl-generic-rune->name x)
+                    (fgl-generic-rune->name
+                     (fgl-generic-rune-prio->rune (car runes)))))
         (fgl-generic-rune-priolist-fix runes)
       (member-rune-in-prio-list x (cdr runes))))
   ///
@@ -250,8 +271,11 @@
   :returns (rest fgl-generic-rune-priolist-p)
   (if (atom runes)
       nil
-    (if (equal (fgl-generic-rune-fix x)
-               (fgl-generic-rune-prio->rune (car runes)))
+    (if (and (eq (tag (fgl-generic-rune-fix x))
+                 (tag (fgl-generic-rune-prio->rune (car runes))))
+             (equal (fgl-generic-rune->name x)
+                    (fgl-generic-rune->name
+                     (fgl-generic-rune-prio->rune (car runes)))))
         (fgl-generic-rune-priolist-fix (cdr runes))
       (cons-with-hint (fgl-generic-rune-prio-fix (car runes))
                       (remove-rune-from-prio-list x (cdr runes))
@@ -345,10 +369,17 @@
     (alist-remove-rune-entries (cdr fns) rune alist)))
 
 
-(defun add-fgl-rewrite-fn (name order alist world)
+(defun add-fgl-rewrite-fn (name order arg-modes alist world)
   (declare (xargs :mode :program))
   (b* ((rune (fgl-name-to-rewrite-rune name world))
        (lhses (fgl-rune-lhses rune world))
+       ((unless (and (fgl-rule-arg-mode-list-p arg-modes)
+                     (fgl-rewrite-arg-modes-fit-lhses-p arg-modes lhses)))
+        (er hard? 'add-fgl-rewrite-fn
+            "Invalid argument modes ~x0 for ~x1.  Use :bound, :either, or ~
+             :unbound in positional order, with no more entries than LHS arguments."
+            arg-modes name))
+       (rune (fgl-rewrite-rune-with-arg-modes rune arg-modes))
        (fns (lhses->leading-function-syms lhses))
        ((when (atom fns))
         (er hard? 'add-fgl-rewrite-fn
@@ -364,6 +395,7 @@ exist or is not associated with any of the leading function symbols." name order
   (declare (xargs :mode :program))
   (b* ((rune (fgl-name-to-rewrite-rune name world))
        (lhses (fgl-rune-lhses rune world))
+       (rune (fgl-rewrite-rune-with-arg-modes rune nil))
        (fns (lhses->leading-function-syms lhses))
        ((when (atom fns))
         (er hard? 'remove-fgl-rewrite-fn
@@ -374,6 +406,7 @@ exist or is not associated with any of the leading function symbols." name order
   (declare (xargs :mode :program))
   (b* ((rune (fgl-name-to-rewrite-rune name world))
        (lhses (fgl-rune-lhses rune world))
+       (rune (fgl-rewrite-rune-with-arg-modes rune nil))
        (fns (lhses->branch-function-syms lhses))
        ((when (atom fns))
         (er hard? 'add-fgl-branch-merge-fn
@@ -393,6 +426,7 @@ exist or is not associated with any of the leading function symbols." name order
   (declare (xargs :mode :program))
   (b* ((rune (fgl-name-to-rewrite-rune name world))
        (lhses (fgl-rune-lhses rune world))
+       (rune (fgl-rewrite-rune-with-arg-modes rune nil))
        (fns (lhses->branch-function-syms lhses))
        ((when (atom fns))
         (er hard? 'remove-fgl-branch-merge-fn
@@ -426,13 +460,14 @@ exist or is not associated with any of the leading function symbols." name order
     (alist-remove-rune-entries fns rune alist)))
 
 
-(defun add-fgl-rewrites-fn (names order alist world)
+(defun add-fgl-rewrites-fn (names order arg-modes alist world)
   (declare (xargs :mode :program))
   (if (atom names)
       alist
     (add-fgl-rewrites-fn (cdr names)
                          order
-                         (add-fgl-rewrite-fn (car names) order alist world)
+                         arg-modes
+                         (add-fgl-rewrite-fn (car names) order arg-modes alist world)
                          world)))
 
 (defun remove-fgl-rewrites-fn (names alist world)
@@ -440,8 +475,8 @@ exist or is not associated with any of the leading function symbols." name order
   (if (atom names)
       alist
     (remove-fgl-rewrites-fn (cdr names)
-                           (remove-fgl-rewrite-fn (car names) alist world)
-                           world)))
+                            (remove-fgl-rewrite-fn (car names) alist world)
+                            world)))
 
 (defun add-fgl-branch-merges-fn (names order alist world)
   (declare (xargs :mode :program))
@@ -474,8 +509,8 @@ exist or is not associated with any of the leading function symbols." name order
   (if (atom names)
       alist
     (remove-fgl-brewrites-fn (cdr names)
-                           (remove-fgl-brewrite-fn (car names) alist world)
-                           world)))
+                             (remove-fgl-brewrite-fn (car names) alist world)
+                             world)))
 
 
 (defxdoc add-fgl-rewrites
@@ -511,9 +546,14 @@ lowest priority rule for the given function; for order @('(:after)') the
 priority is set to one greater than the priority of the argument rule
 @('<other>').</p>
 
+<p>The optional @(':arg-modes') list controls which direct LHS arguments may
+be unbound when the rule is tried.  Its entries are @(':bound'), @(':either'),
+and @(':unbound').  Omitted entries default to @(':bound'); an omitted list
+requires every argument to be bound.</p>
+
 ")
 
-                                 
+
 (defun split-rule-names-and-order (names-order)
   (b* (((mv kwd-alist names) (std::extract-keywords
                               'add-fgl-rules
@@ -524,25 +564,41 @@ priority is set to one greater than the priority of the argument rule
                   (kwote order)
                 order)))
     (mv names order)))
-  
+
+(defun split-rewrite-rule-names-and-options (names-options)
+  (b* (((mv kwd-alist names) (std::extract-keywords
+                              'add-fgl-rewrites
+                              '(:order :arg-modes) names-options nil))
+       (order (std::getarg :order '(:default) kwd-alist))
+       (modes (std::getarg :arg-modes nil kwd-alist))
+       (order (if (and (consp order) (keywordp (car order)))
+                  (kwote order)
+                order))
+       (modes (if (and (consp modes) (keywordp (car modes)))
+                  (kwote modes)
+                modes)))
+    (mv names order modes)))
+
 
 
 (defmacro add-fgl-rewrites (&rest names-order)
-  (b* (((mv names order) (split-rule-names-and-order names-order)))
+  (b* (((mv names order modes)
+        (split-rewrite-rule-names-and-options names-order)))
     `(table fgl-rewrite-rules
-          nil
-          (add-fgl-rewrites-fn ',names
-                               ,order
-                               (make-fast-alist (table-alist 'fgl-rewrite-rules world))
-                               world)
-          :clear)))
+            nil
+            (add-fgl-rewrites-fn ',names
+                                 ,order
+                                 ,modes
+                                 (make-fast-alist (table-alist 'fgl-rewrite-rules world))
+                                 world)
+            :clear)))
 
 (defxdoc add-fgl-rewrite
   :parents (add-fgl-rewrites)
   :short "Alias for @(see add-fgl-rewrites) that just takes one name.")
 
-(defmacro add-fgl-rewrite (name &key (order '(:default)))
-  `(add-fgl-rewrites ,name :order ,order))
+(defmacro add-fgl-rewrite (name &key (order '(:default)) arg-modes)
+  `(add-fgl-rewrites ,name :order ,order :arg-modes ,arg-modes))
 
 (defxdoc remove-fgl-rewrites
   :short "Disable some rewrite rules' use in FGL."
@@ -645,14 +701,31 @@ keyword argument.</p>")
 (defmacro add-fgl-brewrite (name &key (order '(:default)))
   `(add-fgl-brewrites ,name :order ,order))
 
+(defun extract-fgl-rule-arg-modes (args)
+  ;; Leave DEFTHMD's other keyword arguments in their original order.
+  (b* (((when (atom args)) (mv nil nil nil))
+       ((when (eq (car args) :arg-modes))
+        (if (consp (cdr args))
+            (mv t (cadr args) (cddr args))
+          (mv t :missing nil)))
+       ((mv found modes rest) (extract-fgl-rule-arg-modes (cdr args))))
+    (mv found modes (cons (car args) rest))))
+
 (defsection def-fgl-brewrite
   :parents (fgl-rewrite-rules)
   :short "Define a binder rewrite rule for FGL to use on term-level objects"
-  :long "<p>Just expands to a DEFTHMD followed by an @(see add-fgl-brewrite) event.</p>"
+  :long "<p>Defines a disabled theorem and registers it as both a binder rule
+and an ordinary rewrite rule.  The ordinary rule defaults to
+@(':arg-modes (:unbound)'), requiring its first argument to be unbound and
+all remaining arguments to be bound.  An explicit @(':arg-modes') list
+overrides that setting.</p>"
 
   (defmacro def-fgl-brewrite (name &rest args)
-    `(progn (defthmd ,name . ,args)
-            (add-fgl-brewrite ,name))))
+    (b* (((mv found modes theorem-args) (extract-fgl-rule-arg-modes args))
+         (modes (if found modes '(:unbound))))
+      `(progn (defthmd ,name . ,theorem-args)
+              (add-fgl-brewrite ,name)
+              (add-fgl-rewrite ,name :arg-modes ,modes)))))
 
 (defxdoc remove-fgl-brewrites
   :short "Disable some binder rewrite rules' use in FGL."
@@ -953,14 +1026,20 @@ rewrite rule that is only used inside FGL:</p>
 my-rewrite-rule to the table of rules FGL is allowed to use. (FGL will still use
 it even though it is disabled, as long as it is in that table.)</p>
 
+<p>The optional @(':arg-modes') list specifies whether each direct LHS
+argument must be bound (@(':bound')), may be either form (@(':either')), or
+must be an unbound variable (@(':unbound')).  Omitted positions are
+@(':bound'), so the default preserves the existing all-bound behavior.</p>
+
 <p>Def-fgl-rewrite supports syntaxp hypotheses, but the term representation used
 is different from ACL2's.  Instead of being bound to TERMPs, the variables are
 bound to symbolic objects.  See @(see fgl::fgl-object) for
 reference.</p>"
 
   (defmacro def-fgl-rewrite (name &rest args)
-    `(progn (defthmd ,name . ,args)
-            (add-fgl-rewrite ,name))))
+    (b* (((mv & modes theorem-args) (extract-fgl-rule-arg-modes args)))
+      `(progn (defthmd ,name . ,theorem-args)
+              (add-fgl-rewrite ,name :arg-modes ,modes)))))
 
 
 
@@ -1063,8 +1142,8 @@ them with their second arguments; otherwise, it just provides a body of @('nil')
                                 `((disable-definition ,guts.name-fn)
                                   (disable-execution ,guts.name-fn)
                                   (def-fgl-rewrite ,(intern-in-package-of-symbol
-                                                         (concatenate 'string (symbol-name name) "-FGL")
-                                                         name)
+                                                     (concatenate 'string (symbol-name name) "-FGL")
+                                                     name)
                                     (,(std::getarg :equiv 'unequiv guts.kwd-alist)
                                      (,guts.name-fn . ,(std::formallist->names guts.formals))
                                      ,body)

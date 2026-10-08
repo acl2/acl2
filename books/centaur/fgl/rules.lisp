@@ -199,6 +199,7 @@
        ((when (eq x.subclass 'acl2::meta))
         (mv (msg "Rule ~x0 is a :meta rule~%" x.rune) nil)))
     (mv nil (make-fgl-rule-rewrite :rune fgl-rune
+                                   :arg-modes (fgl-rune-arg-modes fgl-rune)
                                    :rule (cmr::make-rewrite
                                           :hyps x.hyps
                                           :equiv x.equiv
@@ -255,7 +256,8 @@
 (define fgl-rule-from-cmr-rewrite ((rune fgl-rune-p) (x cmr::rewrite-p))
   :returns (rule fgl-rule-p)
   (b* (((cmr::rewrite x)))
-    (make-fgl-rule-rewrite :rule (cmr::make-rewrite :hyps x.hyps
+    (make-fgl-rule-rewrite :arg-modes (fgl-rune-arg-modes rune)
+                           :rule (cmr::make-rewrite :hyps x.hyps
                                                     :lhs x.lhs
                                                     :rhs x.rhs
                                                     :equiv x.equiv)
@@ -395,12 +397,12 @@
       (cdr look)
     (if (eq (fgetprop (pseudo-fnsym-fix fn) 'acl2::unnormalized-body :none world) :none)
         nil
-      (list (fgl-rune-prio (fgl-rune-formula fn)
+      (list (fgl-rune-prio (fgl-rune-formula fn nil)
                            *fgl-default-definition-rewrite-priority*)))))
 
 (define fgl-rewrite-runes-lookup ((fn pseudo-fnsym-p) (alist) (world plist-worldp))
   (fgl-rewrite-runes-from-lookup fn (hons-get (pseudo-fnsym-fix fn) alist) world))
-       
+
 
 (define fgl-function-rules-from-lookup ((fn pseudo-fnsym-p)
                                         (look) ;; pair resulting from looking up the function in the table
@@ -424,7 +426,7 @@
              (rules-ev-good-fgl-rules-p rules)))
 
   (memoize 'fgl-function-rules-from-lookup))
-  
+
 (define fgl-function-rules ((fn pseudo-fnsym-p)
                             (table)
                             (world plist-worldp))
@@ -513,8 +515,6 @@
              (rules-ev-good-fgl-rules-p rules)))
 
   (memoize 'fgl-branch-merge-rules))
-
-
 
 
 

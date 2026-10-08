@@ -31,6 +31,7 @@
 (in-package "FGL")
 
 (include-book "centaur/meta/parse-rewrite" :dir :system)
+(include-book "std/util/defenum" :dir :system)
 (local (std::add-default-post-define-hook :fix))
 
 (local (in-theory (disable pseudo-termp
@@ -39,10 +40,15 @@
 
 
 
+(std::defenum fgl-rule-arg-mode-p (:bound :either :unbound))
+
+(fty::deflist fgl-rule-arg-mode-list :elt-type fgl-rule-arg-mode-p
+  :true-listp t)
+
 (fty::deftagsum fgl-rune
-  (:rewrite (name))
-  (:definition (name))
-  (:formula ((name pseudo-fnsym-p)))
+  (:rewrite (name (arg-modes fgl-rule-arg-mode-list-p)))
+  (:definition (name (arg-modes fgl-rule-arg-mode-list-p)))
+  (:formula ((name pseudo-fnsym-p) (arg-modes fgl-rule-arg-mode-list-p)))
   (:primitive ((name pseudo-fnsym-p)))
   (:meta    ((name pseudo-fnsym-p)))
   :layout :list)
@@ -54,10 +60,22 @@
 
 (fty::deflist fgl-rune-priolist :elt-type fgl-rune-prio :true-listp t)
 
+;; A rule can require a call argument to be bound, permit either form, or
+;; require an unbound variable.  The empty list is the legacy all-bound
+;; setting; explicit lists are interpreted positionally.
+(define fgl-rune-arg-modes ((x fgl-rune-p))
+  :returns (modes fgl-rule-arg-mode-list-p)
+  (fgl-rune-case x
+    :rewrite x.arg-modes
+    :definition x.arg-modes
+    :formula x.arg-modes
+    :otherwise nil))
+
 
 (fty::deftagsum fgl-rule
   (:rewrite ((rune fgl-rune-p)
-             (rule cmr::rewrite-p))
+             (rule cmr::rewrite-p)
+             (arg-modes fgl-rule-arg-mode-list-p))
    :extra-binder-names (hyps lhs rhs equiv)
    :layout :fulltree)
   (:primitive ((name pseudo-fnsym-p)) :layout :list)

@@ -54,7 +54,10 @@
      :g-ite
      :g-apply
      :g-var
-     :g-map))
+     :g-map
+     ;; this isn't a keyword for actual FGL objects, but a special one used for
+     ;; unbound variables in an argument list.
+     :unbound))
 
 (fty::deftypes fgl-object
   (fty::defflexsum fgl-object
@@ -521,3 +524,56 @@ case you misspell @(':g-concrete').</p>
   (verify-guards summarize-fgl-object)
 
   (memoize 'summarize-fgl-object))
+
+
+(fty::defflexsum fgl-arg
+  :parents (fgl)
+  :short "Type of FGL rewritten arguments"
+  :long "<p>This is a special type used during rewriting which is either a ragular FGL
+object, or else an unbound variable awaiting an assignment.</p>
+"
+  (:unbound
+   :short "FGL argument constructor for unbound variable objects."
+   :cond (and (consp x) (eq (car x) :unbound))
+   :fields ((var :acc-body (cdr x) :type pseudo-var-p))
+   :ctor-body (cons :unbound var))
+  (:obj
+   :short "FGL object constructor for symbolic Boolean objects."
+   :cond t
+   :fields ((obj :acc-body x :type fgl-object))
+   :ctor-body obj)
+
+  :post-pred-events
+  ((local (defthm car-unbound-when-fgl-object-p
+            (implies (fgl-object-p x)
+                     (not (equal (car x) :unbound)))
+            :hints (("goal" :expand ((fgl-object-p x)
+                                     (fgl-object-p (car x))))))))
+  ///
+  (defthmd fgl-object-p-when-not-unbound
+    (implies (and (fgl-arg-p x)
+                  (not (fgl-arg-case x :unbound)))
+             (fgl-object-p x))
+    :hints(("Goal" :in-theory (enable fgl-arg-p
+                                      fgl-arg-kind))))
+  (defthmd fgl-arg->obj-when-not-unbound
+    (implies ;;(and (fgl-arg-p x)
+     (not (fgl-arg-case x :unbound))
+     (equal (fgl-arg-obj->obj x) (fgl-object-fix x)))
+    :hints(("Goal" :in-theory (enable fgl-arg-p fgl-arg-kind
+                                      fgl-arg-obj->obj))))
+
+  (defthmd fgl-arg-fix-when-not-unbound
+    (implies ;;(and (fgl-arg-p x)
+     (not (fgl-arg-case x :unbound))
+     (equal (fgl-arg-fix x) (fgl-object-fix x)))
+    :hints(("Goal" :in-theory (enable fgl-arg-p fgl-arg-kind
+                                      fgl-arg-fix))))
+
+  (defthmd fgl-arg-kind-not-unbound-of-fgl-object-fix
+    (implies (not (Fgl-arg-case x :unbound))
+             (not (equal (fgl-arg-kind (fgl-object-fix x)) :unbound)))
+    :hints(("Goal" :in-theory (enable fgl-arg-kind)))))
+
+(fty::deflist fgl-arglist :elt-type fgl-arg :true-listp t)
+

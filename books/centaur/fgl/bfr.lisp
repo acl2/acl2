@@ -170,7 +170,7 @@ Like @(see bfr-mode-case), the bfr-mode argument is optional.  Usage:</p>
              (natp x))
     :rule-classes :compound-recognizer))
 
-  
+
 (local (defthm unsigned-byte-p-when-bfr-mode-p
          (implies (bfr-mode-p x)
                   (unsigned-byte-p 2 x))
@@ -338,8 +338,8 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
 ;;     (declare (ignore old mfc state))
 ;;     '((some-unused-variable . 'nil))))
 
-             
-     
+
+
 
 
 (define bfrstate>= ((x bfrstate-p) (y bfrstate-p))
@@ -576,7 +576,7 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
 
 (defines fgl-object-bfrs-ok
   (define fgl-object-bfrs-ok ((x fgl-object-p)
-                               &optional ((bfrstate bfrstate-p) 'bfrstate))
+                              &optional ((bfrstate bfrstate-p) 'bfrstate))
     :measure (acl2::two-nats-measure (fgl-object-count x) 0)
     (fgl-object-case x
       :g-concrete t
@@ -591,7 +591,7 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
                    (fgl-object-bfrs-ok x.cdr))
       :g-map (fgl-object-alist-bfrs-ok x.alist)))
   (define fgl-objectlist-bfrs-ok ((x fgl-objectlist-p)
-                                   &optional ((bfrstate bfrstate-p) 'bfrstate))
+                                  &optional ((bfrstate bfrstate-p) 'bfrstate))
     :measure (acl2::two-nats-measure (fgl-objectlist-count x) 0)
     (if (atom x)
         t
@@ -599,14 +599,14 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
            (fgl-objectlist-bfrs-ok (cdr x)))))
 
   (define fgl-object-alist-bfrs-ok ((x fgl-object-alist-p)
-                                     &optional ((bfrstate bfrstate-p) 'bfrstate))
+                                    &optional ((bfrstate bfrstate-p) 'bfrstate))
     :measure (acl2::two-nats-measure (fgl-object-alist-count x) (len x))
-      (if (atom x)
-          t
-        (if (mbt (consp (car x)))
-            (and (fgl-object-bfrs-ok (cdar x))
-                 (fgl-object-alist-bfrs-ok (cdr x)))
-          (fgl-object-alist-bfrs-ok (cdr x)))))
+    (if (atom x)
+        t
+      (if (mbt (consp (car x)))
+          (and (fgl-object-bfrs-ok (cdar x))
+               (fgl-object-alist-bfrs-ok (cdr x)))
+        (fgl-object-alist-bfrs-ok (cdr x)))))
   ///
   (local (in-theory (disable (:d fgl-object-bfrs-ok)
                              (:d fgl-objectlist-bfrs-ok)
@@ -658,7 +658,7 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
          :exec (and (fgl-object-p x)
                     (fgl-object-bfrs-ok x))))
   (define fgl-bfr-objectlist-p (x
-                               &optional ((bfrstate bfrstate-p) 'bfrstate))
+                                &optional ((bfrstate bfrstate-p) 'bfrstate))
     :measure (fgl-objectlist-count x)
     (mbe :logic (and (fgl-objectlist-p x)
                      (if (atom x)
@@ -668,7 +668,7 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
          :exec (and (fgl-objectlist-p x)
                     (fgl-objectlist-bfrs-ok x))))
   (define fgl-bfr-object-alist-p (x
-                               &optional ((bfrstate bfrstate-p) 'bfrstate))
+                                  &optional ((bfrstate bfrstate-p) 'bfrstate))
     :measure (fgl-object-alist-count x)
     (mbe :logic (and (fgl-object-alist-p x)
                      (if (atom x)
@@ -875,7 +875,7 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
 (defines fgl-bfr-object-fix
   :flag-local nil
   (define fgl-bfr-object-fix ((x fgl-bfr-object-p)
-                             &optional ((bfrstate bfrstate-p) 'bfrstate))
+                              &optional ((bfrstate bfrstate-p) 'bfrstate))
     :measure (acl2::two-nats-measure (fgl-object-count x) 0)
     :returns (new-x fgl-bfr-object-p
                     :hints ('(:in-theory (enable fgl-bfr-object-p))))
@@ -895,7 +895,7 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
            :g-map (g-map x.tag (fgl-bfr-object-alist-fix x.alist)))
          :exec x))
   (define fgl-bfr-objectlist-fix ((x fgl-bfr-objectlist-p)
-                               &optional ((bfrstate bfrstate-p) 'bfrstate))
+                                  &optional ((bfrstate bfrstate-p) 'bfrstate))
     :measure (acl2::two-nats-measure (fgl-objectlist-count x) 0)
     :returns (new-x fgl-bfr-objectlist-p
                     :hints ('(:in-theory (enable fgl-bfr-objectlist-p))))
@@ -906,7 +906,7 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
          :exec x))
   
   (define fgl-bfr-object-alist-fix ((x fgl-bfr-object-alist-p)
-                               &optional ((bfrstate bfrstate-p) 'bfrstate))
+                                    &optional ((bfrstate bfrstate-p) 'bfrstate))
     :measure (acl2::two-nats-measure (fgl-object-alist-count x) (len x))
     :returns (new-x fgl-bfr-object-alist-p
                     :hints ('(:in-theory (enable fgl-bfr-object-alist-p))))
@@ -1284,9 +1284,9 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
     :hints(("Goal" :in-theory (e/d (mk-g-cons)))))
 
   (defthm bfr-listp-of-mk-g-boolean
-         (implies (bfr-p x)
-                  (bfr-listp (fgl-object-bfrlist (mk-g-boolean x))))
-         :hints(("Goal" :in-theory (enable mk-g-boolean))))
+    (implies (bfr-p x)
+             (bfr-listp (fgl-object-bfrlist (mk-g-boolean x))))
+    :hints(("Goal" :in-theory (enable mk-g-boolean))))
 
   (defthm fgl-object-bfrlist-of-gobj-syntactic-boolean-fix
     (implies (not (member v (fgl-object-bfrlist x)))
@@ -1319,7 +1319,7 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
     (equal (fgl-object-bindings-bfrs-ok x)
            (bfr-listp (fgl-object-bindings-bfrlist x)))
     :hints(("Goal" :in-theory (enable fgl-object-bindings-bfrs-ok))))
-    
+  
 
   (local (in-theory (enable fgl-object-bindings-fix))))
 
@@ -1445,6 +1445,40 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
     :hints(("Goal" :in-theory (enable fgl-object-alist-bfrlist)))))
 
 
+(define fgl-arg-bfrlist ((x fgl-arg-p))
+  :returns (bfrlist true-listp :rule-classes :type-prescription)
+  (fgl-arg-case x
+    :unbound nil
+    :obj (fgl-object-bfrlist x.obj)))
 
+(define fgl-arglist-bfrlist ((x fgl-arglist-p))
+  :returns (bfrlist true-listp :rule-classes :type-prescription)
+  (if (atom x)
+      nil
+    (append (fgl-arg-bfrlist (car x))
+            (fgl-arglist-bfrlist (cdr x)))))
 
+(define fgl-arg-bfrs-ok ((x fgl-arg-p)
+                         &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :returns ok
+  (fgl-arg-case x
+    :unbound t
+    :obj (fgl-object-bfrs-ok x.obj))
+  ///
+  (defret <fn>-in-terms-of-bfrlist
+    (equal ok
+           (bfr-listp (fgl-arg-bfrlist x)))
+    :hints(("Goal" :in-theory (enable fgl-arg-bfrlist)))))
 
+(define fgl-arglist-bfrs-ok ((x fgl-arglist-p)
+                             &optional ((bfrstate bfrstate-p) 'bfrstate))
+  :returns ok
+  (if (atom x)
+      t
+    (and (fgl-arg-bfrs-ok (car x))
+         (fgl-arglist-bfrs-ok (cdr x))))
+  ///
+  (defret <fn>-in-terms-of-bfrlist
+    (equal ok
+           (bfr-listp (fgl-arglist-bfrlist x)))
+    :hints(("Goal" :in-theory (enable fgl-arglist-bfrlist)))))
