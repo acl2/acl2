@@ -107284,6 +107284,27 @@ Bug Fixes From AI via Eric Smith
   [well-founded-relation] rule.  See [community-book]
   [30m[47msystem/tests/wfr-two-domains.lisp[0m[0m.
 
+  A soundness bug in the code the [tau-system] uses to put [30m[47mIF[0m[0m-terms
+  into conjunctive or disjunctive normal form, [30m[47mcnf-dnf[0m[0m was fixed.
+  See [30m[47msystem/tests/tau-cnf-dnf-sign.lisp[0m[0m and
+  [30m[47msystem/tests/tau-cnf-dnf-not-cnfp.lisp[0m[0m.
+
+  A soundness bug was fixed in [30m[47mtau-term[0m[0m due to passing the wrong
+  arguments into the code that applies form 2 signature rules.  See
+  [30m[47msystem/tests/tau-form2-sig-actuals.lisp[0m[0m.
+
+  A soundness bug was fixed in [30m[47mconvert-term-to-pairs[0m[0m, which is used in
+  the [tau-system].  That code included code to transform an [30m[47mIF[0m[0m-term
+  into a set of rules for linking tau-like hypotheses to tau
+  conclusions and the transformation could inadventently drop a
+  hypothesis and thus produce an invalid rule.  See
+  [30m[47msystem/tests/tau-ancestor-literals.lisp[0m[0m.
+
+  A bug in the storage of tau rules, [30m[47mtau-put[0m[0m, could lead to a Lisp
+  error if a complex rational was passed into a function expecting a
+  rational.  The bug has been fixed.  See
+  [30m[47msystem/tests/tau-put-complex-evg.lisp[0m[0m.
+
 
 Other Bug Fixes
 
