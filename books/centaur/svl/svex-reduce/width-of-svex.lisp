@@ -103,6 +103,14 @@
                  (w2 (width-of-svex (second x.args)))
                  ((Unless w2) nil))
               (max w1 w2)))
+           ((and* (equal x.fn 'sv::arraysel)
+                   (equal-len x.args 3))
+            ;; The first argument is a slot index, not a bit index.  Once the
+            ;; field width is concrete, it determines the selected value's
+            ;; width regardless of the packed input's inferred width.
+            (b* ((idx (first x.args))
+                 (width (second x.args)))
+              (and (natp idx) (natp width) width)))
            ((and* (equal x.fn 'sv::partsel)
                   (equal-len x.args 3))
             ;; TODO: An option to do further search here can be implemented to see if
@@ -621,6 +629,12 @@
                             widths-of-svexlist)
                            ()))))
 
+(local
+ (defthm natp-of-4vec-times
+   (implies (and (natp x) (natp y))
+            (natp (sv::4vec-times x y)))
+   :hints(("Goal" :in-theory (enable sv::4vec-times 2vec 4vec)))))
+
 (svex-eval-lemma-tmpl
  (defret-mutual svex-eval-width-is-correct-1
    (defret svex-eval-<fn>-is-correct-1
@@ -700,7 +714,7 @@
                              svexlist-eval
                              4vec-part-select-of-4vec-bit?!-2
                              4vec-part-select-of-4vec-bit?-2
-
+                             4vec-array-select
                              )
                             (
                              (:definition svex-p)

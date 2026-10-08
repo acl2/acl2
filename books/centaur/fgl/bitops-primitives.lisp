@@ -451,6 +451,31 @@
   :origfn equal
   :returns (successp rhs hyps bindings))
 
+(def-fgl-meta equal-when-equal-functions-with-validity-check
+  (b* (((unless (and (fgl-object-case x :g-apply)
+                     (fgl-object-case y :g-apply)))
+        (mv nil nil nil nil))
+       ((g-apply x))
+       ((g-apply y))
+       ((unless (eq x.fn y.fn))
+        (mv nil nil nil nil)))
+    (mv t ''t
+        '((not (fgl-sat-check
+                '(:FGL-IPASIR-CONFIG (FGL::IGNORE-PATHCOND)
+                  (FGL::IGNORE-CONSTRAINT)
+                  (FGL::IPASIR-CALLBACK-LIMIT)
+                  (FGL::IPASIR-RECYCLE-CALLBACK-LIMIT)
+                  (FGL::IPASIR-INDEX . 0))
+                (not (equal xargs yargs)))))
+        (list (cons 'xargs (fgl-objectlist-to-object x.args))
+              (cons 'yargs (fgl-objectlist-to-object y.args)))))
+  :formals (x y)
+  :origfn equal
+  :returns (successp rhs hyps bindings))
+
+;; Turn the above rule off by default
+(remove-fgl-meta equal equal-when-equal-functions-with-validity-check)
+
 (local (in-theory (disable iff-forall-extensions-implies)))
 
 

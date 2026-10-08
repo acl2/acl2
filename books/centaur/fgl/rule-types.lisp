@@ -47,7 +47,12 @@
   (:meta    ((name pseudo-fnsym-p)))
   :layout :list)
 
-(fty::deflist fgl-runelist :elt-type fgl-rune :true-listp t)
+(fty::defprod fgl-rune-prio
+  ((rune fgl-rune-p)
+   (prio integerp))
+  :layout :list)
+
+(fty::deflist fgl-rune-priolist :elt-type fgl-rune-prio :true-listp t)
 
 
 (fty::deftagsum fgl-rule
@@ -97,7 +102,12 @@
   (:bmeta ((name pseudo-fnsym-p)))
   :layout :list)
 
-(fty::deflist fgl-binder-runelist :elt-type fgl-binder-rune :true-listp t)
+(fty::defprod fgl-binder-rune-prio
+  ((rune fgl-binder-rune)
+   (prio integerp))
+  :layout :list)
+
+(fty::deflist fgl-binder-rune-priolist :elt-type fgl-binder-rune-prio :true-listp t)
 
 (fty::deftagsum fgl-binder-rule
   (:brewrite ((rune fgl-binder-rune-p)
@@ -163,3 +173,24 @@
       (:rewrite (fgl-rule-rewrite->rune x))
       (:brewrite (fgl-binder-rule-brewrite->rune x))
       (otherwise x))))
+
+(define fgl-binder-rune->name ((rune fgl-binder-rune-p))
+  (fgl-binder-rune-case rune
+    :brewrite rune.name
+    :bformula rune.name
+    :bmeta rune.name))
+
+(define fgl-rune->name ((rune fgl-rune-p))
+  (fgl-rune-case rune
+    :rewrite rune.name
+    :definition rune.name
+    :formula rune.name
+    :primitive rune.name
+    :meta rune.name))
+
+(define fgl-generic-rune->name ((rune fgl-generic-rune-p))
+  (b* ((rune (fgl-generic-rune-fix rune)))
+    (case (tag rune)
+      ((:brewrite :bformula :bmeta)
+       (fgl-binder-rune->name rune))
+      (t (fgl-rune->name rune)))))

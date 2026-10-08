@@ -266,6 +266,32 @@
        (mv `(sv::4vec-part-install ,lsb ,width ,x (sv::4vec-part-select '0 ,width ,y))
            `(nil ,lsb-dont-rw ,width-dont-rw ,x-dont-rw (nil t ,width-dont-rw ,y-dont-rw)))))
 
+    ;; Preserve the slot index while trimming the installed value to one
+    ;; field.  Lowering this to part-install here would lose the array form
+    ;; needed by the later symbolic-vector translation.
+    (('sv::4VEC-ARRAY-INSTALL index width x y)
+     (b* (((unless (and (quotep width)
+                         (consp (cdr width))
+                         (natp (unquote width))))
+           (mv term dont-rw))
+          (index-dont-rw (rp::dont-rw-car (rp::dont-rw-cdr dont-rw)))
+          (width-dont-rw (rp::dont-rw-car
+                          (rp::dont-rw-cdr
+                           (rp::dont-rw-cdr dont-rw))))
+          (x-dont-rw (rp::dont-rw-car
+                       (rp::dont-rw-cdr
+                        (rp::dont-rw-cdr
+                         (rp::dont-rw-cdr dont-rw)))))
+          (y-dont-rw (rp::dont-rw-car
+                      (rp::dont-rw-cdr
+                       (rp::dont-rw-cdr
+                        (rp::dont-rw-cdr
+                         (rp::dont-rw-cdr dont-rw)))))))
+       (mv `(sv::4vec-array-install ,index ,width ,x
+                                     (sv::4vec-part-select '0 ,width ,y))
+           `(nil ,index-dont-rw ,width-dont-rw ,x-dont-rw
+                 (nil t ,width-dont-rw ,y-dont-rw)))))
+
     (&
      (mv term dont-rw))))
 
@@ -904,6 +930,21 @@ was ~st seconds."))
                  (hons-assoc-equal x (rp-evlt term a)))
             (hons-assoc-equal x env-falist))))
 
+
+(local
+ (encapsulate nil
+   (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+   (defthm 4vec-array-install-of-4vec-part-select-val
+     (implies (natp width)
+              (equal (4vec-array-install idx width x (4vec-part-select 0 width val))
+                     (4vec-array-install idx width x val)))
+     :hints(("Goal" :in-theory (enable 4vec-array-install
+                                       4vec-part-install
+                                       4vec-part-select
+                                       4vec-rsh
+                                       4vec-shift-core
+                                       4vec-concat))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; rp-evl-of-svex-eval-meta
 
@@ -1020,6 +1061,12 @@ was ~st seconds."))
                  (4vec-part-select x y z))
           (equal (4vec-part-select x y (4vec-fix z))
                  (4vec-part-select x y z))
+          (equal (4vec-array-select (4vec-fix x) y z)
+                 (4vec-array-select x y z))
+          (equal (4vec-array-select x (4vec-fix y) z)
+                 (4vec-array-select x y z))
+          (equal (4vec-array-select x y (4vec-fix z))
+                 (4vec-array-select x y z))
           (equal (4vec-part-install m (4vec-fix x) y z)
                  (4vec-part-install m x y z))
           (equal (4vec-part-install m x (4vec-fix y) z)
@@ -1027,11 +1074,21 @@ was ~st seconds."))
           (equal (4vec-part-install m x y (4vec-fix z))
                  (4vec-part-install m x y z))
           (equal (4vec-part-install (4vec-fix m) x y z)
-                 (4vec-part-install m x y z)))
+                 (4vec-part-install m x y z))
+          (equal (4vec-array-install (4vec-fix x) y z m)
+                 (4vec-array-install x y z m))
+          (equal (4vec-array-install x (4vec-fix y) z m)
+                 (4vec-array-install x y z m))
+          (equal (4vec-array-install x y (4vec-fix z) m)
+                 (4vec-array-install x y z m))
+          (equal (4vec-array-install x y z (4vec-fix m))
+                 (4vec-array-install x y z m)))
      :hints (("goal"
               :in-theory (e/d (sv::4vec-onehot0
                                4vec-part-install
-                               4vec-part-select) ()))))
+                               4vec-part-select
+                               4vec-array-install
+                               4vec-array-select) ()))))
    (local
     (defthm lemma1
       (and (equal (4vec-part-select x y nil)
@@ -1047,10 +1104,26 @@ was ~st seconds."))
            (equal (4vec-part-install m nil y z)
                   (4vec-part-install m '(-1 . 0) y z))
            (equal (4vec-part-install nil x y z)
-                  (4vec-part-install '(-1 . 0) x y z)))
+                  (4vec-part-install '(-1 . 0) x y z))
+           (equal (4vec-array-select x y nil)
+                  (4vec-array-select x y '(-1 . 0)))
+           (equal (4vec-array-select x nil z)
+                  (4vec-array-select x '(-1 . 0) z))
+           (equal (4vec-array-select nil y z)
+                  (4vec-array-select '(-1 . 0) y z))
+           (equal (4vec-array-install x y z nil)
+                  (4vec-array-install x y z '(-1 . 0)))
+           (equal (4vec-array-install x y nil m)
+                  (4vec-array-install x y '(-1 . 0) m))
+           (equal (4vec-array-install x nil z m)
+                  (4vec-array-install x '(-1 . 0) z m))
+           (equal (4vec-array-install nil y z m)
+                  (4vec-array-install '(-1 . 0) y z m)))
       :hints (("goal"
                :in-theory (e/d (4vec-part-select
-                                4vec-part-install) ())))))
+                                4vec-part-install
+                                4vec-array-select
+                                4vec-array-install) ())))))
 
    (local
     (defthm QUOTED-4VEC-LISTP-and-unquote-all-correct
@@ -1105,6 +1178,7 @@ was ~st seconds."))
                                 (:type-prescription o<)
                                 (:type-prescription sv::fnsym-equiv$inline)
                                 (:type-prescription 4vec-part-install)
+                                (:type-prescription 4vec-array-install)
                                 (:rewrite rp::rp-evl-of-typespec-check-call)
                                 (:rewrite rp::rp-evl-of-synp-call)
                                 (:rewrite rp::rp-evl-of-symbolp-call)

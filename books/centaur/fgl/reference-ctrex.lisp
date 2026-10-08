@@ -268,6 +268,76 @@ code, you can check first whether it is already a Boolean variable using
 
 (fancy-ev-add-primitive reference-ctrex-check-path-condition-satisfied t)
 
+
+(define interp-st-pathcond-to-cube (interp-st)
+  :returns (cube satlink::lit-listp)
+  (stobj-let ((pathcond (interp-st->pathcond interp-st)))
+             (cube)
+             (pathcond-to-cube pathcond nil)
+             cube)
+  ///
+  (local (in-theory (disable w (tau-system))))
+  (fancy-ev-add-primitive interp-st-pathcond-to-cube t))
+
+(define print-lit-assigns ((lits satlink::lit-listp)
+                           bitarr
+                           print-satisfied
+                           print-unsatisfied)
+  (if (atom lits)
+      nil
+    (prog2$ (b* ((lit (car lits))
+                 (val (satlink::eval-lit lit bitarr)))
+              (if (eql val 1)
+                  (and print-satisfied
+                       (cw "~x0  = 1~%" lit))
+                (and print-unsatisfied
+                     (cw "~x0  = 0~%" lit))))
+            (print-lit-assigns (cdr lits) bitarr print-satisfied print-unsatisfied))))
+                 
+
+(define reference-ctrex-debug-path-condition ((interp-st interp-st-bfrs-ok)
+                                              &key (print-satisfied 't)
+                                              (print-unsatisfied 't))
+  :returns new-interp-st
+  :irrelevant-formals-ok t
+  (b* (((fgl-config config) (interp-st->config interp-st))
+       ((unless config.reference-ctrex-action) interp-st)
+       (interp-st (reference-ctrex-update-env interp-st))
+       (pathcond-cube (interp-st-pathcond-to-cube interp-st)))
+    (stobj-let
+     ((logicman (interp-st->logicman interp-st))
+      (reference-ctrex (interp-st->reference-ctrex interp-st)))
+     (status)
+     (b* (((unless (lbfr-mode-is :aignet)) nil))
+       (stobj-let
+        ((env$ (reference-ctrex->env reference-ctrex))
+         (bitarr (reference-ctrex->invals reference-ctrex)))
+        (status)
+        (stobj-let
+         ((bitarr2 (env$->bitarr env$)))
+         (status)
+         (print-lit-assigns pathcond-cube bitarr2 print-satisfied print-unsatisfied)
+         status)
+        status))
+     (b* ((?ign status))
+       interp-st)))
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (not (equal (interp-st-field-fix key) :reference-ctrex))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+  
+  ;; (make-event
+  ;;  (cons 'progn (cdr (butlast *fancy-ev-primitive-thms* 1))))
+  ;; not the last one since we don't take state
+  ;; the first one is interp-st-get of which we have a better one above
+  )
+
+(fancy-ev-add-primitive reference-ctrex-debug-path-condition-fn t)
+
+
+
+
 (defxdoc reference-ctrex-check-path-condition-satisfied
   :parents (reference-ctrex)
   :short "Check whether the current path condition is true under the reference

@@ -1806,6 +1806,22 @@ the order given (LSBs-first).</p>")
                            (svcall rsh (first x.args)
                                    (svex-lhs-preproc (third x.args)))
                            0)))
+                
+                ((arraysel)
+                 (b* (((unless (and (eql (len x.args) 3)
+                                    (svex-case (first x.args) :quote)
+                                    (4vec-index-p (svex-quote->val (first x.args)))
+                                    (svex-case (second x.args) :quote)
+                                    (4vec-index-p (svex-quote->val (second x.args)))))
+                       x))
+                   (svcall concat
+                           (second x.args)
+                           (svcall rsh
+                                   (svex-quote
+                                    (2vec (* (2vec->val (svex-quote->val (first x.args)))
+                                             (2vec->val (svex-quote->val (second x.args))))))
+                                   (svex-lhs-preproc (third x.args)))
+                           0)))
 
                 (zerox
                  (b* (((unless (eql (len x.args) 2)) x))
@@ -1866,6 +1882,13 @@ the order given (LSBs-first).</p>")
                   (and stable-under-simplificationp
                        '(:in-theory (enable 4vec-concat))))))
 
+  (local (defthm 4vec-index-p-of-prod
+           (implies (and (natp x) (natp y))
+                    (4vec-index-p (2vec (* x y))))
+           :hints(("Goal" :in-theory (enable 4vec-index-p)))))
+  
+  (local (in-theory (enable 4vec-array-select 4vec-times)))
+  
   (defthm-svex-lhs-preproc-flag
     (defthm svex-lhs-preproc-correct
       (equal (svex-eval (svex-lhs-preproc x) env)
