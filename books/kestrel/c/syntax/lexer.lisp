@@ -1316,13 +1316,13 @@
             (lex-*-digit pos parstate)))
         (cond
          (digits ; f digits
-          (b* (((unless (member-equal (str::implode digits)
-                                      '("16" "32" "64" "128")))
+          (b* ((digits-str (str::implode digits))
+               ((unless (member-equal digits-str '("16" "32" "64" "128")))
                 (reterr-msg :where pos
                             :expected "one of ~
                                        f16, f32, f64, f128, ~
                                        f16x, f32x, f64x, f128x"
-                            :found (msg "f~s0" (str::implode digits))))
+                            :found (msg "f~s0" digits-str)))
                ((erp charx posx parstate) (read-char parstate))
                (n (str::dec-digit-chars-value digits)))
             (cond
@@ -1350,13 +1350,13 @@
             (lex-*-digit pos parstate)))
         (cond
          (digits ; F digits
-          (b* (((unless (member-equal (str::implode digits)
-                                      '("16" "32" "64" "128")))
+          (b* ((digits-str (str::implode digits))
+               ((unless (member-equal digits-str '("16" "32" "64" "128")))
                 (reterr-msg :where pos
                             :expected "one of ~
                                        F16, F32, F64, F128, ~
                                        F16x, F32x, F64x, F128x"
-                            :found (msg "F~s0" (str::implode digits))))
+                            :found (msg "F~s0" digits-str)))
                ((erp charx posx parstate) (read-char parstate))
                (n (str::dec-digit-chars-value digits)))
             (cond
