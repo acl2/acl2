@@ -20,6 +20,7 @@
 (local (include-book "../arithmetic-light/even-and-odd"))
 
 ;; Compute x to the nth power (x^n) modulo the prime. Note that n can be any natural.
+;; todo: crash: (thm (primep (pow -2 100000000 7)))
 (defund pow (x n p)
   (declare (xargs :guard (and (integerp p)
                               (< 1 p)
