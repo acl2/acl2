@@ -49,9 +49,9 @@
      this is the task of @(tsee dim-add-match), described here;
      the other kinds of patterns are matched structurally,
      as described in @(tsee dims-match);
-     indeed, for now we only have equivalence checking for additions,
-     not for multiplications and subtractions of dimensions,
-     which are treated as black boxes:
+     indeed, although the @(see ispace-equivalence-checker) interprets
+     multiplications and subtractions of dimensions,
+     the matcher treats them as black boxes:
      with them, the equations discussed below would no longer be linear,
      so we restrict the patterns instead,
      requiring the variables

@@ -42,11 +42,13 @@
      The latter is discussed in @(see ispace-equivalence-checker).")
    (xdoc::p
     "Like for ispace equivalence,
-     we are defining a high-level notion of type equivalence
-     that accommodates undecidability.
-     But we start with an executable checker
-     that has the same restriction as decidable ispace equivalence,
-     namely that dimension arithmetic is confined to addition only."))
+     we define a high-level notion of type equivalence
+     via inference rules (see @(see type-equivalence)),
+     and we provide an executable checker,
+     which uses the @(see ispace-equivalence-checker)
+     for the ispaces in the types.
+     The checker is intended to be equivalent to the inference rules,
+     but we have not proved that yet."))
   :order-subtopics t
   :default-parent t)
 
