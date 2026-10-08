@@ -107120,10 +107120,10 @@ Bug Fixes From AI via Eric Smith
   with respect to their [30m[47m[type][0m[0m [declaration]s.  See
   [30m[47msystem/tests/exploit-lambda-guard-typedecl.lisp[0m[0m.
 
-  Fixed a soundness bug in non-linear arithmetic, specifically in
-  function [30m[47minverse-polys[0m[0m.  See
-  [30m[47msystem/tests/linear-inverse-polys.lisp[0m[0m.  Thanks to Eric Smith for
-  supplying the fix.
+  Fixed two soundness bugs in [non-linear-arithmetic], both in function
+  [30m[47minverse-polys[0m[0m.  See [30m[47msystem/tests/linear-inverse-polys.lisp[0m[0m and
+  [30m[47msystem/tests/nonlinear-relation-variable.lisp[0m[0m.  Thanks to Eric
+  Smith for supplying the fix for the first of these bugs..
 
   Fixed a soundness bug where the [30m[47mkeys[0m[0m function for a [stobj-table]
   field returned internal stand-in symbols instead of the real stobj
@@ -107268,6 +107268,21 @@ Bug Fixes From AI via Eric Smith
   of [type-prescription] rules saved in a book's [certificate].  For
   an example see [community-book]
   [30m[47msystem/tests/cert-data-guarded-termp.lisp[0m[0m.
+
+  Fixed a soundness bug caused by incomplete checking of the legality
+  of [30m[47m[defpkg][0m[0m events.  See [community-book]
+  [30m[47msystem/tests/empty-pkg-nil.lisp[0m[0m for a proof of [30m[47mnil[0m[0m that expoited
+  this bug and no longer succeeds.
+
+  Fixed a soundness bug due to a check that was too weak for
+  [30m[47m:[0m[0m[30m[47m[clause-processor][0m[0m rules.  This bug is illustrated in
+  [community-book]
+  [30m[47msystem/tests/clause-processor-evaluator-shadow.lisp[0m[0m.
+
+  Fixed a bug caused by failure to check, when including a book, that
+  only one domain may be associated with a well-founded relation by a
+  [well-founded-relation] rule.  See [community-book]
+  [30m[47msystem/tests/wfr-two-domains.lisp[0m[0m.
 
 
 Other Bug Fixes

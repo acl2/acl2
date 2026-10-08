@@ -248,8 +248,12 @@
      (t
       (er-progn
        (cond
-        ((or package-entry
-             (eq (ld-skip-proofsp state) 'include-book))
+        (package-entry
+
+; We formerly also returned (value nil) here when (eq (ld-skip-proofsp state)
+; 'include-book).  The example in community book
+; system/tests/empty-pkg-nil.lisp shows why that isn't adequate.
+
          (value nil))
         ((not (stringp name))
          (er soft ctx
@@ -275,11 +279,6 @@
 
          (er soft ctx
              "The empty string is not a legal package name for defpkg."))
-        ((not (standard-char-listp (coerce name 'list)))
-         (er soft ctx
-             "~x0 is not a legal package name for defpkg, which requires the ~
-              name to contain only standard characters."
-             name))
         ((not (equal (string-upcase name) name))
          (er soft ctx
              "~x0 is not a legal package name for defpkg, which disallows ~
@@ -287,7 +286,7 @@
              name))
         ((equal name "LISP")
          (er soft ctx
-             "~x0 is disallowed as a a package name for defpkg, because this ~
+             "~x0 is disallowed as a package name for defpkg, because this ~
               package name is used under the hood in some Common Lisp ~
               implementations."
              name))
