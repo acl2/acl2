@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "dimension-polynomials")
+(include-book "abstract-syntax-constructors")
 
 (include-book "std/testing/assert-equal" :dir :system)
 
@@ -236,3 +237,149 @@
                                            (dim-poly-factor (dim-var "i"))
                                            (dim-poly-const 3)))
               (list (cons (list (dim-var "i")) 6)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Tests of the translations between dimensions and polynomials.
+; The dimensions are written with the constructor macros
+; DIM+, DIM*, and DIM-, where $i denotes a dimension variable.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; From dimensions to polynomials:
+; a variable,
+; a constant,
+; an addition with like terms,
+; a negation,
+; and the nullary subtraction.
+
+(assert-equal (dim-to-poly (dim-var "i"))
+              (dim-poly-factor (dim-var "i")))
+
+(assert-equal (dim-to-poly (dim-const 3))
+              (dim-poly-const 3))
+
+(assert-equal (dim-to-poly (dim+ 1 "$i" "$i"))
+              (list (cons nil 1)
+                    (cons (list (dim-var "i")) 2)))
+
+(assert-equal (dim-to-poly (dim- "$i"))
+              (list (cons (list (dim-var "i")) -1)))
+
+(assert-equal (dim-to-poly (dim-))
+              (dim-poly-factor (dim-sub nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; From polynomials to dimensions:
+; the zero polynomial,
+; a negative constant,
+; and a polynomial with a positive and a negative part.
+
+(assert-equal (poly-to-dim nil)
+              (dim-const 0))
+
+(assert-equal (poly-to-dim (dim-poly-const -1))
+              (dim- 1))
+
+(assert-equal (poly-to-dim (list (cons nil -1)
+                                 (cons (list (dim-var "i")) 1)))
+              (dim- "$i" 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Round trips from dimensions to polynomials and back,
+; i.e. canonical forms of dimensions.
+
+; Additions and multiplications of constants are calculated;
+; an empty addition is 0, an empty multiplication is 1,
+; and a singleton addition is its addend.
+
+(assert-equal (poly-to-dim (dim-to-poly (dim* 2 3)))
+              (dim-const 6))
+
+(assert-equal (poly-to-dim (dim-to-poly (dim+)))
+              (dim-const 0))
+
+(assert-equal (poly-to-dim (dim-to-poly (dim*)))
+              (dim-const 1))
+
+(assert-equal (poly-to-dim (dim-to-poly (dim+ "$i")))
+              (dim-var "i"))
+
+; Multiplication:
+; constant factors are collected first,
+; a unit factor is dropped,
+; a zero factor zeroes the product,
+; variable factors are sorted,
+; and repeated factors are kept.
+
+(assert-equal (poly-to-dim (dim-to-poly (dim* "$n" 2 1)))
+              (dim* 2 "$n"))
+
+(assert-equal (poly-to-dim (dim-to-poly (dim* 0 "$n")))
+              (dim-const 0))
+
+(assert-equal (poly-to-dim (dim-to-poly (dim* "$j" "$i")))
+              (dim* "$i" "$j"))
+
+(assert-equal (poly-to-dim (dim-to-poly (dim* "$i" "$i")))
+              (dim* "$i" "$i"))
+
+; Distribution:
+; the terms are ordered by their monomials,
+; so (* $m $n) precedes $n; like terms are collected.
+
+(assert-equal (poly-to-dim (dim-to-poly (dim* (dim+ 1 "$m")
+                                              (dim+ 1 "$n"))))
+              (dim+ 1 "$m" (dim* "$m" "$n") "$n"))
+
+(assert-equal (poly-to-dim (dim-to-poly (dim* (dim+ 1 "$m") 2)))
+              (dim+ 2 (dim* 2 "$m")))
+
+(assert-equal (poly-to-dim (dim-to-poly (dim+ "$n" "$n")))
+              (dim* 2 "$n"))
+
+; Subtraction:
+; a binary subtraction of a variable and a constant is unchanged,
+; a subtraction of constants is calculated into a negated constant,
+; a subtraction with several subtrahends has their sum as subtrahend,
+; and negations cancel.
+
+(assert-equal (poly-to-dim (dim-to-poly (dim- "$i" 1)))
+              (dim- "$i" 1))
+
+(assert-equal (poly-to-dim (dim-to-poly (dim- 3 5)))
+              (dim- 2))
+
+(assert-equal (poly-to-dim (dim-to-poly (dim- "$i" "$j" "$k")))
+              (dim- "$i" (dim+ "$j" "$k")))
+
+(assert-equal (poly-to-dim (dim-to-poly (dim+ (dim- "$i" 1) 1)))
+              (dim-var "i"))
+
+(assert-equal (poly-to-dim (dim-to-poly (dim- (dim- "$i"))))
+              (dim-var "i"))
+
+(assert-equal (poly-to-dim (dim-to-poly (dim* "$i" (dim- "$j"))))
+              (dim- (dim* "$i" "$j")))
+
+; The nullary subtraction is an indeterminate.
+
+(assert-equal (poly-to-dim (dim-to-poly (dim+ (dim-) (dim-))))
+              (dim* 2 (dim-)))
+
+; A product with both positive and negative terms,
+; and the idempotence of the round trip on it.
+
+(assert-equal (poly-to-dim (dim-to-poly (dim* (dim+ 1 "$m")
+                                              (dim- "$n" 1))))
+              (dim- (dim+ (dim* "$m" "$n") "$n") (dim+ 1 "$m")))
+
+(assert-equal (poly-to-dim
+               (dim-to-poly
+                (poly-to-dim
+                 (dim-to-poly (dim* (dim+ 1 "$m")
+                                    (dim- "$n" 1))))))
+              (poly-to-dim (dim-to-poly (dim* (dim+ 1 "$m")
+                                              (dim- "$n" 1)))))

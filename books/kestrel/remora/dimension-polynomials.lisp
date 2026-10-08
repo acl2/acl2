@@ -41,10 +41,12 @@
      in which equal polynomials have identical representations.
      This is used to normalize dimensions
      (see @(see ispace-equivalence-checker)):
-     a dimension is turned into the polynomial it denotes,
+     a dimension is turned into the polynomial it denotes
+     (see @(tsee dim-to-poly)),
      by interpreting its arithmetic operations
      as the corresponding operations on polynomials,
-     and the polynomial is turned back into a dimension in canonical form.")
+     and the polynomial is turned back into a dimension in canonical form
+     (see @(tsee poly-to-dim)).")
    (xdoc::p
     "A monomial is represented as the list of its factors,
      sorted according to the total order of ACL2 values,
@@ -66,7 +68,16 @@
      Thus, we treat it as an additional indeterminate,
      i.e. as a factor just like a dimension variable.
      Since the rules of dimension equivalence quantify over all dimensions,
-     this treatment is adequate for all dimensions, not only the valid ones."))
+     this treatment is adequate for all dimensions, not only the valid ones.")
+   (xdoc::p
+    "Each step of the translation of a dimension into a polynomial
+     is justified by a rule of dimension equivalence,
+     and so is each step of the translation of a polynomial into a dimension.
+     Thus, a dimension is equivalent to its canonical form,
+     and two dimensions are equivalent exactly when
+     they are turned into the same polynomial,
+     i.e. when they have the same canonical form.
+     We have not formally proved these facts yet."))
   :order-subtopics t
   :default-parent t)
 
@@ -301,3 +312,156 @@
         (t (dim-poly-mul (car polys)
                          (dim-poly-list-product (cdr polys)))))
   :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines dims-to-polys
+  :short "Turn dimensions and lists of dimensions into polynomials."
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (define dim-to-poly ((dim dimp))
+    :returns (poly dim-polyp)
+    :parents (dimension-polynomials dims-to-polys)
+    :short "Turn a dimension into the polynomial it denotes."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We interpret the arithmetic operations of the dimension
+       as the corresponding operations on polynomials
+       (see @(see dimension-polynomials)).")
+     (xdoc::p
+      "A variable is a factor with coefficient 1
+       and a constant is a constant polynomial.")
+     (xdoc::p
+      "An addition is the sum of the polynomials of its addends,
+       and a multiplication is the product of the polynomials of its factors;
+       the sum of no addends is 0, and the product of no factors is 1.")
+     (xdoc::p
+      "A subtraction is treated as in Common Lisp
+       (see @(tsee integer-list-subtraction)):
+       with one operand, it is the negation of the polynomial of the operand;
+       with two or more operands, it is the polynomial of the first operand
+       minus the sum of the polynomials of the other operands.
+       The invalid subtraction with no operands is an indeterminate,
+       i.e. a factor with coefficient 1,
+       as explained in @(see dimension-polynomials)."))
+    (dim-case
+     dim
+     :var (dim-poly-factor (dim-var dim.name))
+     :const (dim-poly-const dim.val)
+     :add (dim-poly-list-sum (dim-list-to-poly-list dim.dims))
+     :mul (dim-poly-list-product (dim-list-to-poly-list dim.dims))
+     :sub (cond ((endp dim.dims) (dim-poly-factor (dim-sub nil)))
+                ((endp (cdr dim.dims))
+                 (dim-poly-neg (dim-to-poly (car dim.dims))))
+                (t (dim-poly-sub
+                    (dim-to-poly (car dim.dims))
+                    (dim-poly-list-sum
+                     (dim-list-to-poly-list (cdr dim.dims)))))))
+    :measure (dim-count dim))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  (define dim-list-to-poly-list ((dims dim-listp))
+    :returns (polys dim-poly-listp)
+    :parents (dimension-polynomials dims-to-polys)
+    :short "Turn a list of dimensions into
+            the list of the polynomials they denote."
+    (cond ((endp dims) nil)
+          (t (cons (dim-to-poly (car dims))
+                   (dim-list-to-poly-list (cdr dims)))))
+    :measure (dim-list-count dims))
+
+  ;;;;;;;;;;;;;;;;;;;;
+
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv-mutual dims-to-polys))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define poly-to-dim ((poly dim-polyp))
+  :returns (dim dimp)
+  :short "Turn a polynomial into a dimension in canonical form."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A term with monomial @('(x1 ... xk)') and positive coefficient @('c')
+     is turned into the dimension
+     @('c') if there are no factors,
+     @('x1') if @('c') is 1 and there is one factor,
+     @('(* x1 ... xk)') if @('c') is 1 and there are two or more factors, and
+     @('(* c x1 ... xk)') otherwise, i.e. with the coefficient first.")
+   (xdoc::p
+    "The terms with positive coefficients form
+     the positive part of the polynomial,
+     and the terms with negative coefficients, with the coefficients negated,
+     form the negative part.
+     Each part is turned into
+     the dimension of its term if there is one term, or
+     the addition of the dimensions of its terms if there are two or more,
+     in the order of the entries of the polynomial,
+     i.e. with the constant term (if any) first.
+     The polynomial is turned into
+     @('0') if both parts are empty,
+     the positive part if the negative part is empty,
+     the unary subtraction of the negative part if the positive part is empty,
+     and the subtraction of the negative part from the positive part
+     otherwise.")
+   (xdoc::p
+    "Since the representation of polynomials is canonical
+     (see @(see dimension-polynomials)),
+     equal polynomials are turned into identical dimensions;
+     different polynomials are turned into different dimensions,
+     so that comparing the resulting dimensions
+     amounts to comparing the polynomials."))
+  (b* (((mv pos-terms neg-terms) (poly-to-dim-parts poly)))
+    (cond ((and (not (consp pos-terms))
+                (not (consp neg-terms)))
+           (dim-const 0))
+          ((not (consp neg-terms))
+           (poly-to-dim-sum pos-terms))
+          ((not (consp pos-terms))
+           (dim-sub (list (poly-to-dim-sum neg-terms))))
+          (t (dim-sub (list (poly-to-dim-sum pos-terms)
+                            (poly-to-dim-sum neg-terms))))))
+
+  :prepwork
+
+  ((define poly-to-dim-term ((mono dim-listp) (coeff posp))
+     :returns (dim dimp)
+     :parents nil
+     (b* ((mono (dim-list-fix mono))
+          (coeff (lposfix coeff)))
+       (cond ((endp mono) (dim-const coeff))
+             ((= coeff 1) (if (endp (cdr mono))
+                              (car mono)
+                            (dim-mul mono)))
+             (t (dim-mul (cons (dim-const coeff) mono))))))
+
+   (define poly-to-dim-parts ((poly dim-polyp))
+     :returns (mv (pos-terms dim-listp)
+                  (neg-terms dim-listp))
+     :parents nil
+     (b* (((when (omap::emptyp (dim-poly-fix poly))) (mv nil nil))
+          ((mv mono coeff) (omap::head poly))
+          ((mv pos-terms neg-terms)
+           (poly-to-dim-parts (omap::tail poly))))
+       (cond ((> coeff 0)
+              (mv (cons (poly-to-dim-term mono coeff) pos-terms)
+                  neg-terms))
+             ((< coeff 0)
+              (mv pos-terms
+                  (cons (poly-to-dim-term mono (- coeff)) neg-terms)))
+             (t (mv pos-terms neg-terms)))))
+
+   (define poly-to-dim-sum ((terms dim-listp))
+     :guard (consp terms)
+     :returns (dim dimp)
+     :parents nil
+     (if (= (len terms) 1)
+         (dim-fix (car terms))
+       (dim-add terms)))))
