@@ -25,25 +25,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We partially implement the ispace equivalence
+    "We implement the ispace equivalence
      defined in @(see ispace-equivalence),
      by normalizing ispaces and then comparing them syntactically.
-     The implementation is partial because currently
-     it treats dimension multiplication and subtraction
-     as uninterpreted operations:
-     no rule about them is applied, except the congruence rules.
-     Thus, the equivalence checks are intended to be sound in general,
-     since each normalization step is an instance of a rule,
-     and complete when there are no multiplications and subtractions,
-     which is the case covered by [thesis];
-     we have not proved either yet.")
-   (xdoc::p
-    "The normalization code is defined on all ispaces.
-     The additions in the operands of a multiplication or subtraction
-     are normalized,
-     but the multiplication or subtraction is otherwise
-     treated like a variable,
-     e.g. as an addend of an addition."))
+     Dimensions are normalized via polynomials
+     (see @(see dimension-polynomials)),
+     which interpret addition, multiplication, and subtraction;
+     shapes and ispaces are normalized to concatenations of
+     shape variables and single-dimension shapes
+     with normalized dimensions.
+     The equivalence checks are intended to be sound and complete,
+     since each normalization step is an instance of an inference rule
+     and equivalent ispaces have the same normal form;
+     we have not proved either yet."))
   :order-subtopics t
   :default-parent t)
 
@@ -280,11 +274,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We flatten and normalize all the additions,
-     including the ones in the operands of
-     multiplications and subtractions,
-     which are otherwise left as they are."))
-  (normalize-add-in-dim (flatten-add-in-dim dim)))
+    "We turn the dimension into the polynomial it denotes,
+     and the polynomial back into a dimension in canonical form
+     (see @(see dimension-polynomials)).
+     Equivalent dimensions have the same normal form."))
+  (poly-to-dim (dim-to-poly dim)))
 
 ;;;;;;;;;;;;;;;;;;;;
 

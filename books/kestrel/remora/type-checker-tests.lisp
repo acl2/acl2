@@ -552,13 +552,16 @@
 ; Shapes with multiplications, like the one of the result of flatten,
 ; are handled by the suffix check and by the join of shapes
 ; (see check-shape-suffix and join-shapes),
-; with the multiplications treated as uninterpreted
+; with the dimensions normalized to polynomials
 ; (see ispace-equivalence-checker).
 
 ; The result of flatten, of shape [(* 2 3)],
-; is passed to length instantiated at the same shape.
+; is passed to length instantiated at the same shape, or at the shape [6].
 (test-check-top-expr
  "(@length (Int) ((* 2 3) [])
+   (@flatten (Int) (2 3 []) (array [2 3] 1 2 3 4 5 6)))")
+(test-check-top-expr
+ "(@length (Int) (6 [])
    (@flatten (Int) (2 3 []) (array [2 3] 1 2 3 4 5 6)))")
 
 ; The result of flatten is the frame of an application of +.
@@ -729,7 +732,7 @@
 ; from the lengths (+ 1 $n) and (+ $n 1),
 ; as (+ 1 $n) from the length (+ 2 $n),
 ; as (+ $m $n) from the length (+ 1 $m $n),
-; and as the uninterpreted (* 2 $n) from the length (+ 1 (* 2 $n)).
+; and as (* 2 $n) from the length (+ 1 (* 2 $n)).
 (test-check-top-expr
  "(i-fn ($n) (fn ((x [Int (+ 1 $n)])) (head x)))")
 (test-check-top-expr
@@ -1181,24 +1184,21 @@
 (test-check-top-expr-fail
  "(flatten [1 2 3])")
 
-; The result has length (* 2 3),
-; with the multiplication uninterpreted (see ispace-equivalence-checker):
-; its length is inferred as (* 2 3), and matches the explicit (* 2 3);
-; its sum is inferred, since any shape matches.
+; The result has length (* 2 3), which is normalized to 6
+; (see ispace-equivalence-checker):
+; its length is inferred, and matches the explicit (* 2 3) as well as 6;
+; its sum is inferred, since any shape matches;
+; it has a head, since 6 is a successor,
+; and the dimension of head is inferred as 5.
 (test-check-top-expr
  "(length (flatten [[1 2 3] [4 5 6]]))")
 (test-check-top-expr
  "((i-app (t-app length Int) (* 2 3)) (flatten [[1 2 3] [4 5 6]]))")
 (test-check-top-expr
- "(sum (flatten [[1 2 3] [4 5 6]]))")
-
-; OBJECTIVE: the length (* 2 3) is equivalent to 6,
-; so the flattened matrix should match the explicit length 6
-; and should have a head (since the length is a successor);
-; but multiplication is uninterpreted, for now.
-(test-check-top-expr-fail
  "((i-app (t-app length Int) 6) (flatten [[1 2 3] [4 5 6]]))")
-(test-check-top-expr-fail
+(test-check-top-expr
+ "(sum (flatten [[1 2 3] [4 5 6]]))")
+(test-check-top-expr
  "(head (flatten [[1 2 3] [4 5 6]]))")
 
 ; OBJECTIVE: as for the other operations,
@@ -1219,10 +1219,11 @@
 (test-check-top-expr
  "(i-fn ($m $n) (fn ((x [Int $m $n])) (length (flatten x))))")
 
-; OBJECTIVE: the product of the successors (+ 1 $m) and (+ 1 $n)
-; is a successor, so the flattened matrix should have a head;
-; but multiplication is uninterpreted, for now.
-(test-check-top-expr-fail
+; The product of the successors (+ 1 $m) and (+ 1 $n)
+; is normalized to (+ 1 $m (* $m $n) $n), a successor,
+; so the flattened matrix has a head,
+; whose dimension is inferred as the sum of $m, $n, and (* $m $n).
+(test-check-top-expr
  "(i-fn ($m $n) (fn ((x [Int (+ 1 $m) (+ 1 $n)])) (head (flatten x))))")
 
 ; The first dimension is inferred as the witness of an unboxing,
