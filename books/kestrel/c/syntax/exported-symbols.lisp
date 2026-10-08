@@ -788,7 +788,6 @@
     type-list-count
 
     type-struct->uid
-    type-struct->tunit?
     type-struct->tag/members
 
     type-struni-tag/members-p

@@ -85,9 +85,8 @@
                        :units nil
                        :resolved-includes nil
                        :info (c$::make-trans-ensemble-vinfo
-                              :externals nil
-                              :completions nil
-                              :next-uid (c$::irr-uid)))
+                              :externals (treemap::empty)
+                              :completions (treemap::empty)))
          :ienv (c$::irr-ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;

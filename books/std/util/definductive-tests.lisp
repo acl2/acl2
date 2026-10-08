@@ -203,7 +203,8 @@
                   (bn 0))
             (step ((bn x)
                    (<= x 5))
-                  (bn (1+ x)))))
+                  (bn (1+ x))))
+   :verify-guards nil)
 
  (must-be-redundant
   (defthm bn-base
@@ -1022,7 +1023,8 @@
                      (evn (1+ x)))
             (odnstep ((natp x)
                       (evn x))
-                     (odn (1+ x)))))
+                     (odn (1+ x))))
+   :verify-guards nil)
 
  (must-be-redundant
   (defthm nt-nt0
@@ -1177,5 +1179,6 @@
                       (odd (1+ n)))
             (odd-step ((odd n))
                       (evn (1+ n))))
+   :verify-guards nil
    :parents (acl2::top)
    :short "Even and odd natural numbers."))

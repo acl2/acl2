@@ -7771,8 +7771,8 @@
                                      (flatten-ands-in-lit hyp)))
        ev)
       (case-match hyps
-        (((ev ('CONJOIN-CLAUSES cl-result)
-              &))
+        (((!ev ('CONJOIN-CLAUSES cl-result)
+               &))
          (case-match cl-result
            (('CLAUSES-RESULT (cl-proc !clause . rest-args))
             (mv t cl-proc clause alist rest-args ev (cadr cl-result)
@@ -10206,8 +10206,10 @@
 ; Finally, we also check :type-set-inverter rules.  Community book
 ; system/tests/tsi-pass2.lisp proves nil but has certified without that check.
 
-                (collect-keys-eq '(:meta :clause-processor :congruence
-                                         :type-set-inverter)
+                (collect-keys-eq '(:meta :clause-processor
+                                         :congruence
+                                         :type-set-inverter
+                                         :well-founded-relation)
                                  classes))
                (t classes))))
     (cond

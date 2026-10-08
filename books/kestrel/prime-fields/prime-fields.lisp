@@ -1,6 +1,6 @@
 ; Prime fields library
 ;
-; Copyright (C) 2019-2021 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -32,10 +32,5 @@
 (include-book "pow")
 (include-book "inv")
 (include-book "div")
-(local (include-book "support"))
-(local (include-book "../arithmetic-light/times"))
-(local (include-book "../arithmetic-light/expt"))
-(local (include-book "../arithmetic-light/mod"))
 
 (in-theory (disable (:e primep)))
-

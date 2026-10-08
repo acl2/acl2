@@ -349,11 +349,12 @@
                  '(:in-theory (enable rules-ev-good-fgl-rule-p
                                       rules-ev-theoremp))))))
 
-(define fgl-rules-from-runes ((runes fgl-runelist-p) (fn-lemma-map) (world plist-worldp))
+(define fgl-rules-from-runes ((runes fgl-rune-priolist-p) (fn-lemma-map) (world plist-worldp))
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
                (rules fgl-rulelist-p))
   (b* (((when (atom runes)) (mv nil nil))
-       ((mv errmsg1 rules1) (fgl-rules-from-rune (car runes) fn-lemma-map world))
+       ((mv errmsg1 rules1) (fgl-rules-from-rune (fgl-rune-prio->rune (car runes))
+                                                 fn-lemma-map world))
        ((mv errmsg2 rest) (fgl-rules-from-runes (cdr runes) fn-lemma-map world)))
     (mv (or errmsg1 errmsg2) (append rules1 rest)))
   ///
@@ -385,6 +386,8 @@
              (rules-ev-good-fgl-rules-p new-x))
     :hints(("Goal" :in-theory (enable rules-ev-good-fgl-rules-p)))))
 
+(defconst *fgl-default-definition-rewrite-priority* 10)
+
 (define fgl-rewrite-runes-from-lookup ((fn pseudo-fnsym-p)
                                        (look) ;; the pair resulting from looking up the function
                                        (world plist-worldp))
@@ -392,7 +395,8 @@
       (cdr look)
     (if (eq (fgetprop (pseudo-fnsym-fix fn) 'acl2::unnormalized-body :none world) :none)
         nil
-      (list (fgl-rune-formula fn)))))
+      (list (fgl-rune-prio (fgl-rune-formula fn)
+                           *fgl-default-definition-rewrite-priority*)))))
 
 (define fgl-rewrite-runes-lookup ((fn pseudo-fnsym-p) (alist) (world plist-worldp))
   (fgl-rewrite-runes-from-lookup fn (hons-get (pseudo-fnsym-fix fn) alist) world))
@@ -404,9 +408,9 @@
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
                (rules fgl-rulelist-p))
   (b* ((runes (fgl-rewrite-runes-from-lookup fn look world))
-       ((unless (fgl-runelist-p runes))
+       ((unless (fgl-rune-priolist-p runes))
         (mv (msg "Error: entry for ~x0 in the ~x1 table did not satisfy ~x2~%"
-                 (pseudo-fnsym-fix fn) 'fgl-rewrite-rules 'fgl-runelist-p)
+                 (pseudo-fnsym-fix fn) 'fgl-rewrite-rules 'fgl-rune-priolist-p)
             nil))
        (lemmas (fgetprop (pseudo-fnsym-fix fn) 'acl2::lemmas nil world))
        (map (map-rewrite-rules lemmas nil))
@@ -478,9 +482,9 @@
                                             (world plist-worldp))
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
                (rules fgl-rulelist-p))
-  (b* (((unless (fgl-runelist-p runes))
+  (b* (((unless (fgl-rune-priolist-p runes))
         (mv (msg "Error: entry for ~x0 in the ~x1 table did not satisfy ~x2~%"
-                 (pseudo-fnsym-fix fn) 'fgl-rewrite-rules 'fgl-runelist-p)
+                 (pseudo-fnsym-fix fn) 'fgl-rewrite-rules 'fgl-rune-priolist-p)
             nil))
        (lemmas (fgetprop 'if 'acl2::lemmas nil world))
        (map (map-rewrite-rules-memo lemmas))

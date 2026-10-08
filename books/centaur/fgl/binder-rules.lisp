@@ -663,11 +663,12 @@
 
 
 
-(define fgl-binder-rules-from-runes ((runes fgl-binder-runelist-p) (fn-lemma-map) (world plist-worldp))
+(define fgl-binder-rules-from-runes ((runes fgl-binder-rune-priolist-p) (fn-lemma-map) (world plist-worldp))
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
                (rules fgl-binder-rulelist-p))
   (b* (((when (atom runes)) (mv nil nil))
-       ((mv errmsg1 rules1) (fgl-binder-rules-from-rune (car runes) fn-lemma-map world))
+       ((mv errmsg1 rules1) (fgl-binder-rules-from-rune
+                             (fgl-binder-rune-prio->rune (car runes)) fn-lemma-map world))
        ((mv errmsg2 rest) (fgl-binder-rules-from-runes (cdr runes) fn-lemma-map world)))
     (mv (or errmsg1 errmsg2) (append rules1 rest)))
   ///
@@ -706,9 +707,9 @@
                                                (world plist-worldp))
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
                (rules fgl-binder-rulelist-p))
-  (b* (((unless (fgl-binder-runelist-p runes))
+  (b* (((unless (fgl-binder-rune-priolist-p runes))
         (mv (msg "Error: entry for ~x0 in the ~x1 table did not satisfy ~x2~%"
-                 (pseudo-fnsym-fix fn) 'fgl-rewrite-rules 'fgl-runelist-p)
+                 (pseudo-fnsym-fix fn) 'fgl-rewrite-rules 'fgl-rune-priolist-p)
             nil))
        (lemmas (fgetprop (pseudo-fnsym-fix fn) 'acl2::lemmas nil world))
        (map (map-rewrite-rules lemmas nil))

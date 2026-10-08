@@ -117,7 +117,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define struct-type-is-struct-spec-p ((uid uidp)
-                                      (tunit? filepath-optionp)
                                       (tag/members type-struni-tag/members-p)
                                       (spec sts-struct-specp))
   :returns (yes/no booleanp)
@@ -125,14 +124,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The first three inputs of this function are
+    "The first two inputs of this function are
      the fields of the @(':struct') summand of @(tsee type).
      The last input of this function specifies the struct type being split.
-     We check whether the struct type consisting of the three fields
+     We check whether the struct type consisting of the two fields
      has the same UID as the struct type being split.
-     The other two inputs are unused,
+     The other input is unused,
      but kept here for future extensibility."))
-  (declare (ignore tag/members tunit?))
+  (declare (ignore tag/members))
   (equal (sts-struct-spec->uid spec)
          (uid-fix uid)))
 
@@ -149,7 +148,6 @@
      see the documentation of that function."))
   (and (type-case type :struct)
        (struct-type-is-struct-spec-p (type-struct->uid type)
-                                     (type-struct->tunit? type)
                                      (type-struct->tag/members type)
                                      spec)))
 
@@ -252,7 +250,6 @@
        :ldoublec nil
        :bool nil
        :struct (or (struct-type-is-struct-spec-p type.uid
-                                                 type.tunit?
                                                  type.tag/members
                                                  spec)
                    (type-struni-tag/members-may-refer-to-struct-spec-p
@@ -587,7 +584,6 @@
        :bool t
        :struct (if (and nested
                         (struct-type-is-struct-spec-p type.uid
-                                                      type.tunit?
                                                       type.tag/members
                                                       spec))
                    (sts-reject `(:nested ,(type-fix type)))

@@ -409,6 +409,8 @@
       (:executable-counterpart sv::4vec-bit?)
       (:executable-counterpart sv::4vec-part-select)
       (:executable-counterpart sv::4vec-part-install)
+      (:executable-counterpart sv::4vec-array-select)
+      (:executable-counterpart sv::4vec-array-install)
 
       (:definition svexllist-eval-wog)
       ;(:rewrite rp::svexllist-eval-wog-opener_lambda-opener)
@@ -452,5 +454,4 @@
                       ',rule
                       '(:inside-out . t)))))
    `(progn ,@events)))
-
 

@@ -45,6 +45,10 @@
 
 
 (fancy-ev-add-primitive interp-st-prof-reset t)
+(fancy-ev-add-primitive interp-st-prof-enable t)
+(fancy-ev-add-primitive interp-st-prof-disable t)
+(fancy-ev-add-primitive interp-st-prof-enabledp t)
+(fancy-ev-add-primitive update-interp-st-prof-enabledp (booleanp val))
 (fancy-ev-add-primitive interp-st-prof-report t)
 (fancy-ev-add-primitive interp-st-prof-print-report t)
 (fancy-ev-add-primitive interp-st-stack-frames$inline t)

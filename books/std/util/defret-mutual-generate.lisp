@@ -124,6 +124,14 @@ affect subsequent conclusions added.</li>
 to the resulting @('defret') form; typical keys to use are @(':hints') and
 @(':rule-classes').</li>
 
+<li>@('(:append-keyword key val ...)') or similarly @('(:prepend-keyword ...)')
+adds the keyword/value pairs as arguments to the resulting @('defret') form,
+but for a given keyword/value pair, if that keyword is already bound, the
+values are appended after/prepended before (respectively) the current binding
+of the keyword. This is useful for hints, in particular, if there are e.g. some
+hints to apply to many functions and other more specific hints to also apply to
+a subset.</li>
+
 <li>@('(:set-thmname template)') sets the theorem name template for the
 @('defret') to the given symbol, which may include the substring @('<FN>')
 which is replaced by the name of the function.</li>
@@ -224,13 +232,16 @@ described below.</p>
    :instructions rarely-used
    :no-induction-hint nil
    :otf-flg nil
+   ;; see section on universally quantified variables below
+   :universally-quantify (foo bar)
    ;; defaults to the most recent defines form:
    :mutual-recursion defines-name)
  })
 
 <p>A few other keywords effectively generate additional @(':rules') entries, as
 discussed below under Common Abbreviations.  These may be used wherever
-@(':rules') may occur.</p>
+@(':rules') may occur. The topic @(see defretgen-rules) describes how rules are
+used to generate the theorems.</p>
 
 <p>For example:</p>
 
@@ -273,6 +284,48 @@ recursion, and makes a @('defret-mutual') form containing all of the resulting
 
 <p>The format of rules and rule abbreviations are described in the topic @(see
 defretgen-rules).</p>
+
+<h3>Induction over universally quantified variables</h3>
+
+<p>Occasionally there is a theorem that won't prove with the induction scheme
+of the main function involved because some variable's substitution in the
+induction scheme is too specific. A frequent example is when trying to
+eliminate an accumulator: we want to prove that a general call of a function f
+with an accumulator normalizes to some combination of the accumulator with the
+call of f with an empty accumulator. The typical problem occurs where f adds
+some element to the accumulator when recurring. The induction scheme
+instantiates the theorem with the recursive call of f on the accumulator with
+the element added. But the call of f with the empty accumulator expands to a
+similar call of f, but with the element added to the empty accumulator. The
+induction scheme is missing the fact we need about this call; we ought to
+instantiate the theorem for this call of f as well.</p>
+
+<p>@(csee Defun-sk) provides a way around this without defining a new induction
+scheme, provided the variable that needs to be instantiated differently isn't
+one of the measured formals of the function. Instead of inductively proving the
+theorem we want, we can instead inductively prove the Skolemized universal
+quantification over those variables. In the accumulator example, define a
+Skolem function for the theorem universally quantified over accumulators, and
+prove that inductively. Since free variables in ACL2 theorems are universally
+quantified anyway, this is logically equivalent, but the induction hypothesis
+is that the theorem holds for some substitution of the other variables, for all
+accumulators.</p>
+
+<p>Defret-mutual-generate provides limited support for this defun-sk trick with
+the optional argument @(':universally-quantify'), which takes a list of
+variables as its argument. When that list is empty (the default), we don't use
+this trick. If it is nonempty, then we locally create one Skolem function for
+each @('defret') to be proved, locally prove the mutually inductive theorem
+over the Skolem functions, then use these to (non-locally) prove the original
+theorems with the Skolem functions removed.</p>
+
+<p>Limitations: When using this feature, we currently assume that for each
+function of the mutual recursion, the only variables in the generated theorem
+are that function's formals and the universally quantified variables. (The
+formals may also be among the universally quantified variables.) We don't
+currently allow different sets of universally quantified variables per function
+or per set of rules (in the multiple @('defret-generate') case.</p>
+
 ")
 
 
@@ -593,7 +646,7 @@ defretgen-rules).</p>
       (:pop-hyp (dmgen-check-pop-hyp-action action))
       ((:each-formal :each-return) (dmgen-check-each-formal/return-action action))
       (:add-bindings (dmgen-check-add-bindings-action action))
-      (:add-keyword (dmgen-check-add-keyword-action action))
+      ((:add-keyword :append-keyword :prepend-keyword) (dmgen-check-add-keyword-action action))
       (:set-thmname (dmgen-check-set-thmname-action action))
       (t (msg "Bad action: ~x0" action)))))
 
@@ -612,6 +665,38 @@ defretgen-rules).</p>
       nil
     (or (dmgen-check-rule (car rules))
         (dmgen-check-rules (cdr rules)))))
+
+(defun dmgen-append-keyword (key val keyvals)
+  (if (atom keyvals)
+      (list key val)
+    (if (eq (car keyvals) key)
+        (list* key
+               (append (cadr keyvals) val)
+               (cddr keyvals))
+      (list* (car keyvals) (cadr keyvals)
+             (dmgen-append-keyword key val (cddr keyvals))))))
+
+(defun dmgen-prepend-keyword (key val keyvals)
+  (if (atom keyvals)
+      (list key val)
+    (if (eq (car keyvals) key)
+        (list* key
+               (append val (cadr keyvals))
+               (cddr keyvals))
+      (list* (car keyvals) (cadr keyvals)
+             (dmgen-prepend-keyword key val (cddr keyvals))))))
+
+(defun dmgen-append-keywords (new-keyvals keyvals)
+  (if (atom new-keyvals)
+      keyvals
+    (dmgen-append-keywords (cddr new-keyvals)
+                           (dmgen-append-keyword (car new-keyvals) (cadr new-keyvals) keyvals))))
+
+(defun dmgen-prepend-keywords (new-keyvals keyvals)
+  (if (atom new-keyvals)
+      keyvals
+    (dmgen-prepend-keywords (cddr new-keyvals)
+                            (dmgen-prepend-keyword (car new-keyvals) (cadr new-keyvals) keyvals))))
 
 (defun dmgen-action (action guts form wrld)
   (b* (((dmgen-defret-form form)))
@@ -636,6 +721,8 @@ defretgen-rules).</p>
                        form (defguts->returnspecs guts)
                        guts wrld)))
       (:add-keyword (change-dmgen-defret-form form :keywords (append (cdr action) form.keywords)))
+      (:append-keyword (change-dmgen-defret-form form :keywords (dmgen-append-keywords (cdr action) form.keywords)))
+      (:prepend-keyword (change-dmgen-defret-form form :keywords (dmgen-prepend-keywords (cdr action) form.keywords)))
       (:set-thmname (change-dmgen-defret-form form :thmname (cadr action))))))
 
 (defun dmgen-actions (actions guts form wrld)
@@ -933,7 +1020,62 @@ defretgen-rules).</p>
           (list* (car keys) (cdr look)
                  (kwd-alist-to-keyword-value-list (cdr keys) kwd-alist))
         (kwd-alist-to-keyword-value-list (cdr keys) kwd-alist)))))
-      
+
+(defun postprocess-defrets-for-universal-quantification (qvars defrets guts world)
+  ;; returns (mv defun-sks lemma-defrets final-defrets)
+  (b* (((when (atom defrets)) (mv nil nil nil))
+       ((mv rest-defun-sks rest-lemma-defrets rest-final-defrets)
+        (postprocess-defrets-for-universal-quantification qvars (cdr defrets) guts world))
+       ((list* ?defret thmname defret-args) (car defrets))
+       ((cons body kwdlist) defret-args)
+       (fn (cadr (assoc-keyword :fn kwdlist)))
+       ((defguts guts) (defgutslist-find fn guts))
+       (formals (acl2::formals guts.name-fn world))
+       (expanded-form (defret-fn thmname defret-args nil world))
+       ((list* ?defthm expanded-thmname expanded-body ?expanded-kwdlist) expanded-form)
+       (sk-name (intern-in-package-of-symbol
+                 (concatenate 'string (symbol-name expanded-thmname) "-COND")
+                 thmname))
+       (sk-name-necc (intern-in-package-of-symbol
+                      (concatenate 'string (symbol-name expanded-thmname) "-COND-NECC")
+                      thmname))
+       (lemma-name (intern-in-package-of-symbol
+                    (concatenate 'string (symbol-name thmname) "-LEMMA")
+                    thmname))
+       (lemma-name-expanded (intern-in-package-of-symbol
+                             (concatenate 'string (symbol-name expanded-thmname) "-LEMMA")
+                             thmname))
+       (nonq-formals (set-difference-eq formals qvars))
+       (defun `(progn (defun-sk ,sk-name ,nonq-formals
+                        (forall ,qvars
+                                ,expanded-body)
+                        :rewrite :direct)
+                      (in-theory (disable ,sk-name))))
+       (hints-arg (let ((look (assoc-keyword :hints kwdlist)))
+                    (and look (take 2 look))))
+       (rule-classes-arg (let ((look (assoc-keyword :rule-classes kwdlist)))
+                           (and look (take 2 look))))
+       (lemma-defret
+        `(defret ,lemma-name
+           (,sk-name . ,nonq-formals)
+           ,@hints-arg
+           :fn ,fn))
+       (final-defret
+        `(defret ,thmname
+           ,body
+           :hints (("goal" :use (,lemma-name-expanded ,sk-name-necc)
+                    :in-theory nil))
+           ,@rule-classes-arg
+           :fn ,fn)))
+    (mv (cons defun rest-defun-sks)
+        (cons lemma-defret rest-lemma-defrets)
+        (cons final-defret rest-final-defrets))))
+                                 
+                    
+       
+       
+    
+
 
 (defun dmgen-multi (kwd-alist dmgen-forms world)
   (b* ((defines-alist (get-defines-alist world))
@@ -947,13 +1089,31 @@ defretgen-rules).</p>
         (er hard? 'defret-mutual-generate
             "~x0 is not the name of a mutual recursion created with defines." mutual-recursion))
        (defrets (dmgen-multi-rulesets dmgen-forms guts world))
-       (top-thmname (cadar dmgen-forms)))
-    `(defret-mutual ,top-thmname
-       ,@defrets
-       :skip-others t
-       ,@(kwd-alist-to-keyword-value-list
-          '(:mutual-recursion :hints :no-induction-hint :instructions :otf-flg)
-          kwd-alist))))
+       (top-thmname (cadar dmgen-forms))
+       (qvars (cdr (assoc :universally-quantify kwd-alist)))
+       ((unless qvars)
+        `(defret-mutual ,top-thmname
+           ,@defrets
+           :skip-others t
+           ,@(kwd-alist-to-keyword-value-list
+              '(:mutual-recursion :hints :no-induction-hint :instructions :otf-flg)
+              kwd-alist)))
+       ;; If we're universally quantifying some variables, split 
+       ((mv defun-sks lemma-defrets final-defrets)
+        (postprocess-defrets-for-universal-quantification qvars defrets (defines-guts->gutslist guts) world))
+       (lemma-top-thmname (intern-in-package-of-symbol
+                           (concatenate 'string (symbol-name top-thmname) "-LEMMA")
+                           top-thmname)))
+    `(defsection ,top-thmname
+       (local (progn . ,defun-sks))
+       (local (defret-mutual ,lemma-top-thmname
+                ,@lemma-defrets
+                :skip-others t
+                ,@(kwd-alist-to-keyword-value-list
+                   '(:mutual-recursion :hints :no-induction-hint :instructions :otf-flg)
+                   kwd-alist)))
+       (progn . ,final-defrets))))
+                
 
 
 (defun dmgen-extract-keywords (args keys)
@@ -975,7 +1135,7 @@ defretgen-rules).</p>
             "Bad arguments: not a keyword-value list"))
        ((mv defret-generate-args top-kwd-alist)
         (dmgen-extract-keywords keywords '(:mutual-recursion :hints :no-induction-hint
-                                           :instructions :otf-flg)))
+                                           :instructions :otf-flg :universally-quantify)))
        (dmgen-forms `((defret-generate ,thmname . ,defret-generate-args))))
     (dmgen-multi top-kwd-alist dmgen-forms world)))
 
@@ -985,7 +1145,7 @@ defretgen-rules).</p>
         (dmgen-single args world))
        ((mv defret-generate-forms top-kwd-alist)
         (dmgen-extract-keywords args '(:mutual-recursion :hints :no-induction-hint
-                                       :instructions :otf-flg))))
+                                       :instructions :otf-flg :universally-quantify))))
     (dmgen-multi top-kwd-alist defret-generate-forms world)))
 
 (defmacro defret-mutual-generate (&rest args)

@@ -292,22 +292,8 @@
    (xdoc::p
     "Each declaration of a given identifier with external linkage
      must agree on the type [C17:6.2.2/2] [C17:6.2.7/2].
-     Therefore, we store the type to check type compatibility
-     of any declaration after the first.")
-   (xdoc::p
-    "We also store the set of translation units
-     (represented by their @(see filepath)s)
-     in which the identifier has been declared.
-     This is used to ensure the same identifier has not been declared
-     with both internal and external linkage in the same translation unit
-     [C17:6.2.2/7].")
-   (xdoc::p
-    "Finally, we store a "
-    (xdoc::seetopic "uid" "unique identifier")
-    " for the object.
-     All identifiers of the same name with external linkage
-     refer to the same object and therefore possess
-     the same unique identifier.")
+     Therefore, we store the composite of the types of the declarations,
+     to check type compatibility of any further declaration.")
    (xdoc::p
     "Eventually, we may wish to store a boolean flag indicating
      whether the identifier has been externally defined.
@@ -315,9 +301,7 @@
      that externally linked identifiers are defined at most once
      (or exactly once, if the identifier is used in an expression) [C17:6.9/5].
      For now, we conservatively allow any number of definitions."))
-  ((type type)
-   (declared-in filepath-set)
-   (uid uid))
+  ((type type))
   :pred valid-ext-infop)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -364,10 +348,20 @@
      and the rightmost scope is the outermost
      (i.e. the file scope [C17:6.2.1/4].)")
    (xdoc::p
-    "The @('macros') field stores the macro table."))
+    "The @('macros') field stores the macro table.")
+   (xdoc::p
+    "The @('externals') field stores the validation information
+     for the identifiers with external linkage
+     declared in any scope of the translation unit,
+     including scopes that have been popped from the stack.")
+   (xdoc::p
+    "The @('completions') field stores the members of
+     the structure and union types of the translation unit."))
   ((filepath filepath)
    (scopes valid-scope-list)
-   (macros macro-table))
+   (macros macro-table)
+   (externals valid-externals)
+   (completions type-completions))
   :pred valid-tablep)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -375,7 +369,11 @@
 (defirrelevant irr-valid-table
   :short "An irrelevant validation table."
   :type valid-tablep
-  :body (valid-table (irr-filepath) nil (irr-macro-table)))
+  :body (valid-table (irr-filepath)
+                     nil
+                     (irr-macro-table)
+                     (treemap::empty)
+                     (treemap::empty)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -406,10 +404,14 @@
   (xdoc::topstring
    (xdoc::p
     "This contains one empty scope (the initial file scope),
-     and the initial macro table for the given dialect."))
+     the initial macro table for the given dialect,
+     no information about identifiers with external linkage,
+     and no type completions."))
   (make-valid-table :filepath filepath
                     :scopes (list (empty-valid-scope))
-                    :macros (macro-init dialect)))
+                    :macros (macro-init dialect)
+                    :externals (treemap::empty)
+                    :completions (treemap::empty)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

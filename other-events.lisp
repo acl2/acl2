@@ -1466,8 +1466,12 @@
      (t
       (er-progn
        (cond
-        ((or package-entry
-             (eq (ld-skip-proofsp state) 'include-book))
+        (package-entry
+
+; We formerly also returned (value nil) here when (eq (ld-skip-proofsp state)
+; 'include-book).  The example in community book
+; system/tests/empty-pkg-nil.lisp shows why that isn't adequate.
+
          (value nil))
         ((not (stringp name))
          (er soft ctx

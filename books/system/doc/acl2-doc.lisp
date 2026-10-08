@@ -110355,6 +110355,20 @@ it."
  example see @(see community-book)
  @('system/tests/cert-data-guarded-termp.lisp').</p>
 
+ <p>Fixed a soundness bug caused by incomplete checking of the legality of
+ @(tsee defpkg) events.  See @(see community-book)
+ @('system/tests/empty-pkg-nil.lisp') for a proof of @('nil') that expoited
+ this bug and no longer succeeds.</p>
+
+ <p>Fixed a soundness bug due to a check that was too weak for @(':')@(tsee
+ clause-processor) rules.  This bug is illustrated in @(see community-book)
+ @('system/tests/clause-processor-evaluator-shadow.lisp').</p>
+
+ <p>Fixed a bug caused by failure to check, when including a book, that only
+ one domain may be associated with a well-founded relation by a @(see
+ well-founded-relation) rule.  See @(see community-book)
+ @('system/tests/wfr-two-domains.lisp').</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2

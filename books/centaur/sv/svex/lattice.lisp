@@ -243,6 +243,8 @@ acl2::4v-monotonicity).</p>"
                             4vec-rev-blocks
                             4vec-part-select
                             4vec-part-install
+                            4vec-array-select
+                            4vec-array-install
                             4vec-shift-core)))
 
   (def-4vec-monotonicity 4vec-fix)
@@ -295,6 +297,32 @@ acl2::4v-monotonicity).</p>"
   (def-4vec-monotonicity 4vec-pow)
   (def-4vec-monotonicity 4vec-part-select)
   (def-4vec-monotonicity 4vec-part-install)
+  (defthm 4vec-array-select-monotonic
+    (implies (and (4vec-<<= index index1)
+                  (4vec-<<= width width1)
+                  (4vec-<<= in in1))
+             (4vec-<<= (4vec-array-select index width in)
+                        (4vec-array-select index1 width1 in1)))
+    :hints (("Goal" :in-theory (enable 4vec-array-select)
+             :use ((:instance 4vec-times-monotonic
+                    (x index) (x1 index1) (y width) (y1 width1))
+                   (:instance 4vec-part-select-monotonic
+                    (lsb (4vec-times index width))
+                    (lsb1 (4vec-times index1 width1)))))))
+
+  (defthm 4vec-array-install-monotonic
+    (implies (and (4vec-<<= index index1)
+                  (4vec-<<= width width1)
+                  (4vec-<<= in in1)
+                  (4vec-<<= val val1))
+             (4vec-<<= (4vec-array-install index width in val)
+                        (4vec-array-install index1 width1 in1 val1)))
+    :hints (("Goal" :in-theory (enable 4vec-array-install)
+             :use ((:instance 4vec-times-monotonic
+                    (x index) (x1 index1) (y width) (y1 width1))
+                   (:instance 4vec-part-install-monotonic
+                    (lsb (4vec-times index width))
+                    (lsb1 (4vec-times index1 width1)))))))
 
   (local (in-theory (enable (:t logbitp)
                              bit->bool)))

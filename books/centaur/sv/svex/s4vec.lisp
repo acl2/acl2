@@ -1137,6 +1137,23 @@
   ///
   (s4vec-correct :enable (2vec)))
 
+(define s4vec-array-select ((index s4vec-p)
+                             (width s4vec-p)
+                             (in s4vec-p))
+  :returns (res s4vec-p)
+  (s4vec-part-select (s4vec-times index width) width in)
+  ///
+  (s4vec-correct :enable (4vec-array-select)))
+
+(define s4vec-array-install ((index s4vec-p)
+                              (width s4vec-p)
+                              (in s4vec-p)
+                              (val s4vec-p))
+  :returns (res s4vec-p)
+  (s4vec-part-install (s4vec-times index width) width in val)
+  ///
+  (s4vec-correct :enable (4vec-array-install)))
+
 (define s4vec-xfree-p ((x s4vec-p))
   :returns (res)
   (b* (((s4vec x)))

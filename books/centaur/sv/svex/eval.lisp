@@ -218,7 +218,9 @@ expect or preserve @(see fast-alists)."
     (bit?!     4vec-bit?!          (test then else)    "bitwise if-then-else, only chooses then[i] when test[i]===1")
     (?!        4vec-?!             (test then else)    "procedural if-then-else, only chooses then when test has a definite 1 bit")
     (partsel   4vec-part-select    (lsb width in)      "part select")
-    (partinst  4vec-part-install   (lsb width in val)  "part install")))
+    (partinst  4vec-part-install   (lsb width in val)  "part install")
+    (arraysel  4vec-array-select   (index width in)    "array select")
+    (arrayinst 4vec-array-install  (index width in val) "array install")))
 
 (encapsulate
   ()

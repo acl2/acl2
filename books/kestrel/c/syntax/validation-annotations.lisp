@@ -154,7 +154,6 @@
            :struct type
            :otherwise (make-type-struct
                         :uid (irr-uid)
-                        :tunit? nil
                         :tag/members (make-type-struni-tag/members-tagged
                                        :tag (irr-ident))))))
   :require (type-case type :struct)
@@ -178,7 +177,6 @@
           :union type
           :otherwise (make-type-union
                       :uid (irr-uid)
-                      :tunit? nil
                       :tag/members (make-type-struni-tag/members-tagged
                                     :tag (irr-ident))))))
   :require (type-case type :union)
@@ -255,14 +253,12 @@
     "This is the type of the annotations that
      the validator adds to translation ensembles.
      The information consists of
-     the validation information related to identifiers with external linkage,
-     the map of structure and union type UIDs to their members,
-     and the next unused "
-    (xdoc::seetopic "uid" "unique identifier")
-    "."))
+     the validation information related to identifiers with external linkage
+     and the map of structure and union type UIDs to their members.
+     Both are obtained by merging the corresponding information
+     from each translation unit."))
   ((externals valid-externals)
-   (completions type-completions)
-   (next-uid uidp))
+   (completions type-completions))
   :pred trans-ensemble-vinfop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

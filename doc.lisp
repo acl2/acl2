@@ -107269,6 +107269,21 @@ Bug Fixes From AI via Eric Smith
   an example see [community-book]
   [30m[47msystem/tests/cert-data-guarded-termp.lisp[0m[0m.
 
+  Fixed a soundness bug caused by incomplete checking of the legality
+  of [30m[47m[defpkg][0m[0m events.  See [community-book]
+  [30m[47msystem/tests/empty-pkg-nil.lisp[0m[0m for a proof of [30m[47mnil[0m[0m that expoited
+  this bug and no longer succeeds.
+
+  Fixed a soundness bug due to a check that was too weak for
+  [30m[47m:[0m[0m[30m[47m[clause-processor][0m[0m rules.  This bug is illustrated in
+  [community-book]
+  [30m[47msystem/tests/clause-processor-evaluator-shadow.lisp[0m[0m.
+
+  Fixed a bug caused by failure to check, when including a book, that
+  only one domain may be associated with a well-founded relation by a
+  [well-founded-relation] rule.  See [community-book]
+  [30m[47msystem/tests/wfr-two-domains.lisp[0m[0m.
+
 
 Other Bug Fixes
 
