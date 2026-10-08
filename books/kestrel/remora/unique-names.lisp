@@ -15,6 +15,7 @@
 (include-book "all-variable-operations")
 (include-book "fresh-variable-operations")
 (include-book "variable-renaming-operations")
+(include-book "primop-names")
 (include-book "osets")
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
@@ -1906,8 +1907,9 @@
    (xdoc::p
     "Traverses the expression left-to-right, accumulating the set of names seen
      so far, initialized with the names of the expression's free variables in
-     all namespaces (so that no binder is renamed to, or left colliding with,
-     e.g. a built-in function name).  A binder --- a bind, or a parameter of
+     all namespaces and with the names of the primitive operations (see
+     @(tsee primop-names)), so that no binder is renamed to, or left
+     colliding with, a free variable or a built-in operation name.  A binder --- a bind, or a parameter of
      a lambda (of any kind), an unbox, or a function bind --- whose name has
      not been seen keeps it; otherwise the binder is renamed to a fresh
      variant of its name (the name with a numeric suffix), and the renaming
@@ -1928,7 +1930,7 @@
      (see the @('avoid') component of @(tsee var-renamings)), so the
      renamings applied to the binds' scopes are capture-free."))
   (b* ((expr (expr-fix expr))
-       (used (expr-free-var-names expr))
+       (used (set::union (expr-free-var-names expr) (primop-names)))
        (avoid (expr-all-var-names expr))
        (r (make-var-renamings :dim nil :shape nil :atom nil :array nil
                               :expr nil :avoid avoid))
@@ -1991,7 +1993,8 @@
 (defruledl expr-uniquify-names-is-uniq-expr
   (equal (expr-uniquify-names expr)
          (mv-nth 1 (uniq-expr (expr-fix expr)
-                              (expr-free-var-names expr)
+                              (set::union (expr-free-var-names expr)
+                                          (primop-names))
                               (make-var-renamings
                                :dim nil :shape nil :atom nil :array nil
                                :expr nil :avoid (expr-all-var-names expr)))))
@@ -2001,24 +2004,38 @@
   :parents (expr-uniquify-names expr-duplicate-names)
   :short "@(tsee expr-uniquify-names) is the identity on an expression whose
           binder names are already distinct and distinct from its free
-          variable names."
+          variable names and from the primitive operations' names."
   :long
   (xdoc::topstring
    (xdoc::p
     "The second hypothesis cannot be dropped: the traversal starts with the
      set of seen names initialized to the free variable names of the
-     expression (see @(tsee expr-free-var-names)), so a binder whose name
-     also occurs free elsewhere in the expression is renamed even when no
-     other binder binds that name."))
+     expression (see @(tsee expr-free-var-names)) and to the names of the
+     primitive operations (see @(tsee primop-names)), so a binder whose name
+     also occurs free elsewhere in the expression, or names a primitive
+     operation, is renamed even when no other binder binds that name."))
   (implies (and (not (expr-duplicate-names expr))
                 (not (intersectp-equal (expr-binder-names expr)
-                                       (expr-free-var-names expr))))
+                                       (set::union (expr-free-var-names expr)
+                                                   (primop-names)))))
            (equal (expr-uniquify-names expr)
                   (expr-fix expr)))
+  :use ((:instance uniq-expr-identity
+                   (x (expr-fix expr))
+                   (used (set::union (expr-free-var-names expr)
+                                     (primop-names)))
+                   (r (make-var-renamings
+                       :dim nil :shape nil :atom nil :array nil
+                       :expr nil :avoid (expr-all-var-names expr)))))
   :enable (expr-uniquify-names-is-uniq-expr
            expr-duplicate-names
            var-renamings-emptyp
            ;; the seed USED is an oset, hence already a list, so its
            ;; STRING-LIST-FIX is the identity
            acl2::string-listp-when-string-setp
-           str::string-list-fix-when-string-listp))
+           str::string-list-fix-when-string-listp)
+  ;; Keep (PRIMOP-NAMES) opaque: if it is evaluated, the disjointness
+  ;; hypothesis is shredded into 68 separate MEMBER-EQUAL facts about the
+  ;; individual names, and the identity theorem UNIQ-EXPR-IDENTITY, which
+  ;; needs the hypothesis in its INTERSECTP-EQUAL form, no longer applies.
+  :disable ((:e primop-names) primop-names))

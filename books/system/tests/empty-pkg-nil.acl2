@@ -1,0 +1,8 @@
+; Added by Matt Kaufmann:
+(include-book "std/testing/must-fail" :dir :system)
+(set-ld-skip-proofsp 'include-book state)
+(must-fail ; Must-fail wrapper Added by Matt Kaufmann:
+(defpkg "" nil)
+)
+; Commented out by Matt Kaufmann:
+(set-ld-skip-proofsp nil state)

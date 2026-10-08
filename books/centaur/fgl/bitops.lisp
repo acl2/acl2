@@ -973,6 +973,7 @@
 
 
 
+
 (def-fgl-rewrite fgl-equal
   (equal (equal x y)
          (cond ((check-integerp x-intp x)
@@ -989,7 +990,7 @@
                                          (equal (intcdr x) (intcdr y)))
                                         (t (let ((xcdr (intcdr x))
                                                  (ycdr (intcdr y)))
-                                             (fgl::fgl-hide (equal xcdr ycdr))))))
+                                             (and (fgl::fgl-hide (equal xcdr ycdr)) t)))))
                            (abort-rewrite (equal x y)))))
                       ((check-non-integerp y-non-intp y) nil)
                       (t (abort-rewrite (equal x y)))))

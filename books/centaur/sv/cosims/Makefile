@@ -34,9 +34,14 @@ all:
 STARTJOB ?= $(SHELL)
 ACL2 ?= acl2
 
+# Disable Verilator by default
+NO_VERILATOR ?= 1
+export NO_VERILATOR
+
 # For any extra VCS/NCVerilog flags
 VCS_FLAGS ?=
 NCV_FLAGS ?=
+VERILATOR_FLAGS ?=
 
 CORE := ./cosim-core
 IMG_EXT ?= lx86cl64
@@ -120,9 +125,11 @@ TESTCERTS := $(patsubst %,%/ok,$(TESTS))
 OUTDATAS_NCV := $(patsubst %,%/outputs.ncv.data,$(TESTS))
 OUTDATAS_VCS := $(patsubst %,%/outputs.vcs.data,$(TESTS))
 OUTDATAS_IV  := $(patsubst %,%/outputs.iv.data,$(TESTS))
+OUTDATAS_VERILATOR := $(patsubst %,%/outputs.verilator.data,$(TESTS))
 
 PASSING_TESTS := $(filter-out $(FAILING_TEST_TARGETS), $(TESTCERTS))
 OUTDIRS_VCS := $(patsubst %,%/simv.daidir,$(TESTS))
+OUTDIRS_VERILATOR := $(patsubst %,%/obj_dir,$(TESTS))
 print_tests :
 	@echo $(TESTS)
 
@@ -130,6 +137,12 @@ ifneq ($(NO_NCV),1)
 NCV_PAT := %/outputs.ncv.data
 else
 NCV_PAT :=
+endif
+
+ifneq ($(NO_VERILATOR),1)
+VERILATOR_PAT := %/outputs.verilator.data
+else
+VERILATOR_PAT :=
 endif
 
 ifneq ($(NO_VCS),1)
@@ -145,7 +158,7 @@ IV_PAT :=
 endif
 
 # %/ok : %/outputs.ncv.data %/outputs.vcs.data %/outputs.iv.data cosim-core
-%/ok : $(NCV_PAT) $(VCS_PAT) $(IV_PAT) cosim-core
+%/ok : $(NCV_PAT) $(VCS_PAT) $(IV_PAT) $(VERILATOR_PAT) cosim-core
 	@echo "Making $*/ok"
 	@rm -f $*.ok $*/cosim.out
 	COSIM_TESTDIR=$* $(STARTJOB) -c "./cosim-core < run.lsp &> $*/cosim.out"
@@ -169,6 +182,19 @@ endif
 		ncverilog $(NCV_FLAGS) -sv spec.sv ../test.sv +define+infile=\"$$infile\" +define+outfile=\"outputs.ncv.data\" +define+test_define=3 +test_is_$* ; \
 	 fi
 	@ls -l $*/outputs.ncv.data
+
+# NOTE: Verilator doesn't much support fourstate logic so we restrict it to twovalued data.
+%/outputs.verilator.data : %/spec.sv twovalued.data fourvalued.data test.sv
+	@echo "Making $*/outputs.verilator.data"
+	@cd $*; \
+         infile=../twovalued.data; \
+	 if [ -e no_verilator ]; then \
+		touch outputs.verilator.data; \
+         else \
+		verilator $(VERILATOR_FLAGS) -sv spec.sv ../test.sv +define+infile=\"$$infile\" +define+outfile=\"outputs.verilator.data\" +define+test_define=3 --binary -Wno-fatal &> verilator_build.log && ./obj_dir/Vspec +test_is_$* &> verilator_run.log ; \
+	 fi
+	@ls -l $*/outputs.verilator.data
+
 
 %/outputs.vcs.data : %/spec.sv twovalued.data fourvalued.data test.sv
 	@echo "Making $*/outputs.vcs.data"
@@ -200,12 +226,15 @@ endif
 	 if [ -e no_iv ]; then \
 		touch outputs.iv.data; \
 	 else \
-		 iverilog -g2012 spec.sv ../test.sv -Dinfile=\"$$infile\" -Doutfile=\"outputs.iv.data\" && ./a.out; \
+		 iverilog -g2012 -D infile=\"$$infile\" -D outfile=\"outputs.iv.data\" spec.sv ../test.sv && ./a.out; \
 	 fi
 	@ls -l $*/outputs.iv.data
 
 .PHONY: ncv
 ncv : $(OUTDATAS_NCV)
+
+.PHONY: verilator
+verilator : $(OUTDATAS_VERILATOR)
 
 .PHONY: vcs
 vcs : $(OUTDATAS_VCS)
@@ -224,7 +253,7 @@ all : $(TESTCERTS)
 
 .PHONY: cleansim
 cleansim:
-	rm -f $(OUTDATAS_NCV) $(OUTDATAS_VCS) $(OUTDATAS_IV)
+	rm -f $(OUTDATAS_NCV) $(OUTDATAS_VERILATOR) $(OUTDATAS_VCS) $(OUTDATAS_IV)
 	rm -rf $(OUTDIRS_VCS)
 	rm -rf */INCA_libs
 	rm -rf */csrc
@@ -233,6 +262,8 @@ cleansim:
 	rm -f */a.out
 	rm -f */irun.history */ncverilog.history
 	rm -f */ncverilog.log
+	rm -f */verilator-build.log
+	rm -f */verilator-run.log
 	rm -f */test.vcd
 	rm -f */ucli.key
 	rm -f */ok
