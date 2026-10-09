@@ -13,6 +13,9 @@
 (include-book "abstract-syntax-trees")
 (include-book "abstract-syntax-derived-fixtypes")
 (include-book "abstract-syntax-structurals")
+(include-book "free-variable-operations")
+
+(local (include-book "osets"))
 
 (include-book "kestrel/fty/deffold-map" :dir :system)
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
@@ -36,7 +39,54 @@
   (if (endp binds)
       (expr-fix body)
     (expr-let (list (bind-fix (car binds)))
-              (nest-let-binds (cdr binds) body))))
+              (nest-let-binds (cdr binds) body)))
+
+  ///
+
+  ; The free variables of the nested form are those of the multi-bind form:
+  ; the bindings' free variables, and the body's minus the bound ones.
+
+  (defrule expr-free-expr-vars-of-nest-let-binds
+    (equal (expr-free-expr-vars (nest-let-binds binds body))
+           (set::union (bind-list-free-expr-vars binds)
+                       (set::difference (expr-free-expr-vars body)
+                                        (bind-list-bound-expr-vars binds))))
+    :induct t
+    :enable (nest-let-binds
+             bind-list-bound-expr-vars
+             union-difference-nest-identity)
+    :expand ((:free (bs b) (expr-free-expr-vars (expr-let bs b)))
+             (:free (a l) (bind-list-free-expr-vars (cons a l)))
+             (bind-list-free-expr-vars binds)
+             (bind-list-free-expr-vars nil)))
+
+  (defrule expr-free-ispace-vars-of-nest-let-binds
+    (equal (expr-free-ispace-vars (nest-let-binds binds body))
+           (set::union (bind-list-free-ispace-vars binds)
+                       (set::difference (expr-free-ispace-vars body)
+                                        (bind-list-bound-ispace-vars binds))))
+    :induct t
+    :enable (nest-let-binds
+             bind-list-bound-ispace-vars
+             union-difference-nest-identity)
+    :expand ((:free (bs b) (expr-free-ispace-vars (expr-let bs b)))
+             (:free (a l) (bind-list-free-ispace-vars (cons a l)))
+             (bind-list-free-ispace-vars binds)
+             (bind-list-free-ispace-vars nil)))
+
+  (defrule expr-free-type-vars-of-nest-let-binds
+    (equal (expr-free-type-vars (nest-let-binds binds body))
+           (set::union (bind-list-free-type-vars binds)
+                       (set::difference (expr-free-type-vars body)
+                                        (bind-list-bound-type-vars binds))))
+    :induct t
+    :enable (nest-let-binds
+             bind-list-bound-type-vars
+             union-difference-nest-identity)
+    :expand ((:free (bs b) (expr-free-type-vars (expr-let bs b)))
+             (:free (a l) (bind-list-free-type-vars (cons a l)))
+             (bind-list-free-type-vars binds)
+             (bind-list-free-type-vars nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

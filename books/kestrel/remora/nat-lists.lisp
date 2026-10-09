@@ -94,7 +94,24 @@
   (defruled nat-list-product-divided-by-car
     (implies (and (nat-listp dims)
                   (consp dims))
-             (integerp (/ (nat-list-product dims) (car dims))))))
+             (integerp (/ (nat-list-product dims) (car dims)))))
+
+  (defruled posp-of-len-over-car-of-dims
+    :short "Splitting a list whose length is the product of
+            non-empty, non-zero dimensions into as many chunks
+            as the first dimension gives chunks of positive length."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The chunk length is stated in the form that arises
+       from splitting the list (see @(tsee list-split))."))
+    (implies (and (nat-listp dims)
+                  (not (member-equal 0 dims))
+                  (consp dims)
+                  (equal (len vals) (nat-list-product dims)))
+             (posp (* (/ (car dims)) (len vals))))
+    :enable posp
+    :use nat-list-product-divided-by-car))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
